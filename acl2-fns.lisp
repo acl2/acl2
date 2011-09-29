@@ -1173,7 +1173,7 @@ notation causes an error and (b) the use of ,. is not permitted."
   (let ((fn
          #+gcl       'si::getenv
          #+allegro   'sys::getenv
-         #+lispworks 'cl::getenv
+         #+lispworks 'hcl::getenv
          #+ccl       'ccl::getenv
          #+sbcl      'sb-ext::posix-getenv
          #+clisp     'ext:getenv))
@@ -1364,7 +1364,7 @@ notation causes an error and (b) the use of ,. is not permitted."
   #+ccl
   `(common-lisp::special-operator-p ,name)
   #+(and (not DRAFT-ANSI-CL-2) (not CLTL2)
-         (not cmu) (not sbcl) (not clisp) (not ccl))
+         (not cmu) (not sbcl) (not clisp) (not ccl) (not lispworks))
   `(lisp::special-form-p ,name)
   #+(or (and DRAFT-ANSI-CL-2 (not ccl)) cmu sbcl clisp)
   `(special-operator-p ,name))

@@ -31233,7 +31233,7 @@
         #+(or gcl allegro lispworks ccl sbcl clisp)
         (let ((fn
                #+gcl       'si::setenv
-               #+lispworks 'cl::setenv
+               #+lispworks 'hcl::setenv
                #+ccl       'ccl::setenv))
           (and (fboundp fn)
                (funcall fn str val)))
@@ -44028,11 +44028,12 @@ Lisp definition."
   (declare (xargs :guard (and (state-p state)
                               (member-eq val '(t nil :never :break :bt
                                                  :break-bt :bt-break)))))
+  (f-put-global 'debugger-enable val state)
   #+(and (not acl2-loop-only)
          (and gcl (not ansi-cl)))
   (when (live-state-p state)
-    (setq lisp::*break-enable* (debugger-enabledp state)))
-  (f-put-global 'debugger-enable val state))
+    (setq lisp::*break-enable* (debugger-enabledp state))
+    state))
 
 ; See comment in true-listp-cadr-assoc-eq-for-open-channels-p.
 (in-theory (disable true-listp-cadr-assoc-eq-for-open-channels-p))

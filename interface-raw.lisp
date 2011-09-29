@@ -7045,7 +7045,8 @@ Missing functions:
            (unless *acl2-error-p*
              (format
               t
-              "~%If you didn't cause an explicit interrupt (Control-C),~%~
+              "~%The message above might explain the error.  If not, and~%~
+               if you didn't cause an explicit interrupt (Control-C),~%~
                then the root cause may be call of a :program mode~%~
                function that has the wrong guard specified, or even no~%~
                guard specified (i.e., an implicit guard of t).~%~

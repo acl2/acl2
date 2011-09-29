@@ -18095,8 +18095,6 @@
 
 ; Improved comments about step-limits.
 
-; Incorporated a Lispworks-specific patch from Martin Simmons.
-
 ; Here is a slightly simplified version of the example sent to us by Warren
 ; Hunt for the defstobj bug involving, quoting the :doc below, "excessively
 ; restrictive type declarations".
@@ -18136,6 +18134,11 @@
 
 ; The soundness bug for with-live-state has been recorded in a comment where
 ; that macro is defined.
+
+; (Lispworks mods courtesy of Martin Simmons) Changed calls of
+; special-form-or-op-p to expand to calls of special-operator-p.  Changed
+; 'cl::getenv to 'hcl::getenv and changed 'cl::setenv to 'hcl::setenv.
+; Changed lisp::quit to lispworks:quit in acl2.lisp.
 
   :doc
   ":Doc-Section release-notes
@@ -18297,6 +18300,9 @@
   Fixed a bug in the output from ~ilc[defattach], which was failing to list
   previous ~il[events] in the message about ``bypassing constraints that have
   been proved when processing the event(s)''.
+
+  (GCL only) Fixed a bug in ~ilc[set-debugger-enable] (which was only a bug in
+  GCL, not an issue for other host Lisps).
 
   ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]
 
