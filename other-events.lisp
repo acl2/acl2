@@ -21457,9 +21457,15 @@
 
 ; Warning: Keep this in sync with custom-trace-ppr.
 
-  (if (< (f-get-global 'trace-level state) 10)
-      (1+ (* 2 (f-get-global 'trace-level state)))
-    22))
+  (cond ((< (f-get-global 'trace-level state) 10)
+         (1+ (* 2 (f-get-global 'trace-level state))))
+        ((< (f-get-global 'trace-level state) 100)
+         22)
+        ((< (f-get-global 'trace-level state) 1000)
+         23)
+        ((< (f-get-global 'trace-level state) 10000)
+         24)
+        (t 25)))
 
 (defun trace-ppr (x trace-evisc-tuple msgp state)
   (fmt1 (if msgp "~@0~|" "~y0~|")

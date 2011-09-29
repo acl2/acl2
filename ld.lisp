@@ -18304,6 +18304,9 @@
   (GCL only) Fixed a bug in ~ilc[set-debugger-enable] (which was only a bug in
   GCL, not an issue for other host Lisps).
 
+  Fixed ACL2 trace output to indent properly for levels above 99 (up to 9999).
+  Thanks to Warren Hunt for bringing this bug to our attention.
+
   ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]
 
   Although the HTML documentation is distributed with ACL2, it had not been
