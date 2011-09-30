@@ -16,6 +16,7 @@ Makefile-tmp
 *.fasl
 *.ufsl
 *.64ufasl
+*.ufasl
 *.pfsl
 *.dfsl
 *.dx32fsl
