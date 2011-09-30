@@ -26,6 +26,35 @@ if not at UT CS):
   (svn propset svn:ignore -F tmp .) ; \
   (rm tmp)
 
+Here is an example of a file "tmp" I created in
+/projects/acl2/devel/books/, so that I could just execute ./tmp in
+that directory.
+
+#!/lusr/bin/bash
+
+for dir in \
+xdoc \
+clause-processors/SULFA/c-files \
+clause-processors/SULFA/scripts \
+clause-processors/SULFA/books/sat-tests \
+clause-processors/SULFA/books/sat \
+cutil \
+bdd \
+workshops/2003/kaufmann/support/input \
+workshops/2003/kaufmann/support/rtl \
+workshops/2003/greve-wilding-vanfleet/support \
+workshops/2004/sumners-ray/support \
+workshops/1999/multiplier \
+centaur \
+serialize ; \
+do \
+pushd $dir ; \
+(cat /projects/acl2/devel/books/unversioned-files.txt unversioned-files-extra.txt > tmp) ; \
+(svn propset svn:ignore -F tmp .) ; \
+(rm tmp) ;
+popd ;
+done
+
 .....
 
 For the record, here is what was done for the commit creating svn
