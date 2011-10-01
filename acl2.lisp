@@ -324,6 +324,138 @@
 #+ccl
 (setq ccl::*record-source-file* nil)
 
+; We have tried to build under ECL (Embeddable Common-Lisp), and with some
+; modifications, we made progress -- except there appears (as of Sept. 2011) to
+; be no good way for us to save an executable image.  Specifically, it appears
+; that c:build-program not will suffice for saving state (properties etc.) --
+; it's just for saving specified .o files.
+
+; Here we document steps to take towards possibly porting to ECL in the future.
+
+; If state-global-let* expansion causes an error due to excessive code blow-up,
+; then consider replacing its definition by placing the following after
+; state-free-global-let*.  HOWEVER, first think about whether this is right; we
+; haven't thought through the effect of mixing a stack of let*-bindings of
+; state global variables with the acl2-unwind-protect mechanism.
+
+;;; (defmacro state-global-let*-logical (bindings body)
+;;; 
+;;; ; NOTE: In April 2010 we discussed the possibility that we could simplify the
+;;; ; raw-Lisp code for state-global-let* to avoid acl2-unwind-protect, in favor of
+;;; ; let*-binding the state globals under the hood so that clean-up is done
+;;; ; automatically by Lisp; after all, state globals are special variables.  We
+;;; ; see no reason why this can't work, but we prefer not to mess with this very
+;;; ; stable code unless/until there is a reason.  (Note that we however do not
+;;; ; have in mind any potential change to the logic code for state-global-let*.)
+;;; ; See state-free-global-let* for such a variant that is appropriate to use when
+;;; ; state is not available.
+;;; 
+;;; ; A typical use is (state-global-let* ((<var1> <form1>) ...  (<vark> <formk>))
+;;; ; <body>).  Bindings thus are in the style of let* (but see the discussion of
+;;; ; setters below).  Body must return an error triple.  The meaning of this form
+;;; ; is to smash the global values of the "bound" variables with f-put-global,
+;;; ; execute body, restore the values to their previous values, and return the
+;;; ; triple produced by body (with its state as modified by the restoration).
+;;; ; Because we use acl2-unwind-protect, the restoration is guaranteed even in the
+;;; ; face of aborts.  The "bound" variables may initially be unbound in state and
+;;; ; restoration means to make them unbound again.
+;;; 
+;;; ; However, if any of the <vari> are untouchable then this won't work, because
+;;; ; the generated calls of f-put-global are illegal.  This is sad if there is a
+;;; ; ``setter'' function of the form (set-vari val state), equivalent to
+;;; ; (f-put-global '<vari> val state) except that set-vari is not untouchable (as
+;;; ; a function, of course).  If there is such a function symbol set-vari, then we
+;;; ; can use the ``binding'' (<vari> <formi> set-vari) in place of (<vari>
+;;; ; <formi>), in order to get the behavior described above even if <vari> is
+;;; ; untouchable.
+;;; 
+;;; ; Note: This function is a generalization of the now obsolete
+;;; ; WITH-STATE-GLOBAL-BOUND.
+;;; 
+;;; ; We call warn-about-parallelism-hazard, because use of this macro in a
+;;; ; parallel environment is a terrible idea.  It might work, because maybe no
+;;; ; variables are rebound that are changed inside the waterfall, but we, the
+;;; ; developers, want to know about any such rebinding.
+;;; 
+;;;   (declare (xargs :guard (and (state-global-let*-bindings-p bindings)
+;;;                               (no-duplicatesp-equal (strip-cars bindings)))))
+;;; 
+;;;   `(let ((state-global-let*-cleanup-lst
+;;;           (list ,@(state-global-let*-get-globals bindings))))
+;;;      ,@(and (null bindings)
+;;;             '((declare (ignore state-global-let*-cleanup-lst))))
+;;;      (acl2-unwind-protect
+;;;       "state-global-let*"
+;;;       (pprogn ,@(state-global-let*-put-globals bindings)
+;;;               (check-vars-not-free (state-global-let*-cleanup-lst) ,body))
+;;;       (pprogn
+;;;        ,@(state-global-let*-cleanup bindings 0)
+;;;        state)
+;;;       (pprogn
+;;;        ,@(state-global-let*-cleanup bindings 0)
+;;;        state))))
+;;; 
+;;; #-acl2-loop-only
+;;; (defmacro enforce-live-state-p (form)
+;;; 
+;;; ; Note that STATE is intended to be lexically bound at the point where this
+;;; ; macro is called.
+;;; 
+;;;   `(progn (when (not (live-state-p state)) ; (er hard! ...)
+;;;             (let ((*hard-error-returns-nilp* nil))
+;;;               (illegal 'enforce-live-state-p
+;;;                        "The state was expected to be live in the context of ~
+;;;                         an evaluation of the form:~|~x0"
+;;;                        (list (cons #\0 ',form)))))
+;;;           ,form))
+;;; 
+;;; (defmacro state-global-let* (bindings body)
+;;;   (cond #-acl2-loop-only
+;;;         ((and (symbol-doublet-listp bindings)
+;;;               (not (assoc-eq 'acl2-raw-mode-p bindings)))
+;;; 
+;;; ; The test above guarantees that we merely have bindings of state globals.  A
+;;; ; triple requires cleanup using a setter function.  Also we avoid giving this
+;;; ; simple treatment to 'acl2-raw-mode-p because the semantics of
+;;; ; state-global-let* are to call f-put-global, which has side effects in the
+;;; ; case of 'acl2-raw-mode-p.
+;;; 
+;;;          `(enforce-live-state-p
+;;;            (warn-about-parallelism-hazard
+;;;             '(state-global-let* ,bindings ,body)
+;;;             (state-free-global-let* ,bindings ,body))))
+;;;         (t `(state-global-let*-logical ,bindings ,body))))
+
+; Also, place the following forms in file acl2-fns.lisp, just above qfuncall
+; (but there may be better ways to do this).
+
+;;; ; The following is in acl2.lisp, but seems to be needed here as well.
+;;; #+ecl
+;;; (ext:package-lock "COMMON-LISP" nil)
+;;; 
+;;; Similarly in acl2.lisp, just before handling of package-lock on
+;;; "COMMON-LISP" for clisp:
+;;; 
+;;; #+ecl
+;;; (ext:package-lock "COMMON-LISP" nil)
+
+; Finally, consider thee additional notes.
+
+;;; We need (require "cmp") if we're to use c:build-program.
+
+;;; Special-form-or-op-p: treat ecl like sbcl.
+
+;;; System-call: treat ecl like akcl (actually replace #+akcl by #+(or akcl
+;;; ecl)).
+
+;;; Initialize-state-globals: treat ecl just like lispworks.
+
+;;; Where we have the binding (compiler:*suppress-compiler-notes* t) for akcl,
+;;; perhaps include the binding (*compile-verbose* t) for ecl.
+
+;;; Modify exit-lisp to treat ecl like akcl, except using ext::quit instead of
+;;; lisp::bye.
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                              PACKAGES
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

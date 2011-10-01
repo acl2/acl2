@@ -18129,9 +18129,6 @@
 ; when attempting to build with ECL (which bound the symbol
 ; COMMON-LISP:FUNCTION), in case this is something we try in the future.
 
-; Improved the efficiency of the raw Lisp definition of state-global-let* in
-; many cases, and reduced code size.
-
 ; The soundness bug for with-live-state has been recorded in a comment where
 ; that macro is defined.
 
