@@ -184,6 +184,12 @@ but perhaps the examples will help some.
 
 ===============================================================================
 
+equal-by-g.lisp -- a generic theorem for proving that records (in the sense of
+the misc/records book) are equal, by showing that any arbitrary field has the
+same value in both records.
+
+===============================================================================
+
 evalable-printing.lisp -- a
 "beginner-friendly" way of printing objects such that evaluating the
 printed result gives that same result
