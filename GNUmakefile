@@ -648,11 +648,19 @@ DOC: HTML EMACS_TEX STATS
 
 # Use ACL2_DOC_UNDOCUMENTED_FILE if you want to support broken links
 # (by having them point to a page acknowledging that the link is
-# broken, rather htan by having doc/create-acl2-html simply fail).
+# broken, rather than by having doc/create-acl2-html simply fail).
 # Note that this only works for the HTML target, not for the EMACS_TEX
 # or EMACS_ONLY targets.
 HTML:
-	PREFIX=$(PREFIX) ; export PREFIX ; ACL2_SUFFIX=$(ACL2_SUFFIX) ; export ACL2_SUFFIX ; doc/create-acl2-html
+	@if [ "$(ACL2)" = "" ]; then \
+	    ACL2="../../$(PREFIX)saved_acl2$(ACL2_SUFFIX)" ;\
+	    export ACL2 ;\
+	    doc/create-acl2-html ;\
+	else \
+	    ACL2=$(ACL2) ;\
+	    export ACL2 ;\
+	    doc/create-acl2-html ;\
+	fi
 
 # Note: doc/create-acl2-tex builds a ps file, so depends on texi2dvi
 # and dvips.  These might not be present on some systems (but is
@@ -663,14 +671,42 @@ HTML:
 # Note that doc/create-acl2-texinfo certifies doc/write-acl2-texinfo,
 # but (for efficiency) doc/create-acl2-tex does not.
 EMACS_TEX:
-	PREFIX=$(PREFIX) ; export PREFIX ; ACL2_SUFFIX=$(ACL2_SUFFIX) ; export ACL2_SUFFIX ; doc/create-acl2-texinfo ; doc/create-acl2-tex
+	@if [ "$(ACL2)" = "" ]; then \
+	    ACL2="./$(PREFIX)saved_acl2$(ACL2_SUFFIX)" ;\
+	    export ACL2 ;\
+	    doc/create-acl2-texinfo ; doc/create-acl2-tex ;\
+	else \
+	    ACL2=$(ACL2) ;\
+	    export ACL2 ;\
+	    doc/create-acl2-texinfo ; doc/create-acl2-tex ;\
+	fi
 
 EMACS_ONLY:
-	PREFIX=$(PREFIX) ; export PREFIX ; ACL2_SUFFIX=$(ACL2_SUFFIX) ; export ACL2_SUFFIX ; doc/create-acl2-texinfo
+	@if [ "$(ACL2)" = "" ]; then \
+	    ACL2="./$(PREFIX)saved_acl2$(ACL2_SUFFIX)" ;\
+	    export ACL2 ;\
+	    doc/create-acl2-texinfo ;\
+	else \
+	    ACL2=$(ACL2) ;\
+	    export ACL2 ;\
+	    doc/create-acl2-texinfo ;\
+	fi
 
 # See the Essay on Computing Code Size in the ACL2 source code.
 STATS:
-	@PREFIX=$(PREFIX) ; export PREFIX ; ACL2_SUFFIX=$(ACL2_SUFFIX) ; export ACL2_SUFFIX export ACL2_SOURCES="$(sources)" ; doc/create-acl2-code-size
+	@if [ "$(ACL2)" = "" ]; then \
+	    ACL2="../$(PREFIX)saved_acl2$(ACL2_SUFFIX)" ;\
+	    export ACL2 ;\
+	    ACL2_SOURCES="$(sources)" ;\
+	    export ACL2_SOURCES ;\
+	    doc/create-acl2-code-size ;\
+	else \
+	    ACL2=$(ACL2) ;\
+	    export ACL2 ;\
+	    ACL2_SOURCES="$(sources)" ;\
+	    export ACL2_SOURCES ;\
+	    doc/create-acl2-code-size ;\
+	fi
 
 .PHONY: clean
 clean:

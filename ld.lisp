@@ -18137,6 +18137,21 @@
 ; 'cl::getenv to 'hcl::getenv and changed 'cl::setenv to 'hcl::setenv.
 ; Changed lisp::quit to lispworks:quit in acl2.lisp.
 
+; Modified the DOC targets (and HTML, etc. targets under it) so that one can
+; specify ACL2=<your_acl2> on the command line with the make command or as an
+; environment variable.  If ACL2 is not thus specified, then PREFIX and
+; ACL2_SUFFIX will be used, as before.
+
+; The time-reporting bug was in initialize-summary-accumulators, which had
+; called main-timer without accumulating times.  The following simple example
+; clearly illustrates the bug, as the summary time should match the runtime
+; reported by time$.
+
+; (defun fib (n) (if (or (zp n) (eql n 1)) 1 (+ (fib (- n 1)) (fib (- n 2)))))
+; (time$ (progn (defun f1 (x) x)
+;               (value-triple (length (make-list 10000000)))
+;               (defun f2 (x) x)))
+
   :doc
   ":Doc-Section release-notes
 
@@ -18303,6 +18318,12 @@
 
   Fixed ACL2 trace output to indent properly for levels above 99 (up to 9999).
   Thanks to Warren Hunt for bringing this bug to our attention.
+
+  Fixed a bug in the reporting of times in event summaries ~-[] probably one
+  that has been very long-standing!  The times reported had often been too
+  small in the case of compound ~il[events], notably ~ilc[include-book].
+  Thanks to everyone who reported this problem (we have a record of emails from
+  Eric Smith and Jared Davis on this issue).
 
   ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]
 

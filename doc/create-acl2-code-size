@@ -42,7 +42,7 @@ echo '(certify-book "write-acl2-code-size")' >> workxxx.create-acl2-code-size
 echo '(acl2::write-acl2-code-size "acl2-wc.txt" "acl2-code-size.txt")' >> workxxx.create-acl2-code-size
 echo ':q' >> workxxx.create-acl2-code-size
 
-../${PREFIX}saved_acl2${ACL2_SUFFIX} < workxxx.create-acl2-code-size
+${ACL2} < workxxx.create-acl2-code-size
 
 # We could remove acl2-wc.txt at this point, but it seems harmless to leave it.
 rm -f workxxx.create-acl2-code-size

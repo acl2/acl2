@@ -10233,7 +10233,8 @@
   To begin further discussion of guards, ~pl[guard-introduction].  That section
   directs the reader to further sections for more details.  To see just a
   summary of some ~il[command]s related to guards,
-  ~pl[guard-quick-reference].~/
+  ~pl[guard-quick-reference].  For a discussion of the use of proof to verify
+  the absence of guard violations, ~pl[verify-guards].~/
 
   :cite verify-guards
   :cite set-verify-guards-eagerness"

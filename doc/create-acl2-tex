@@ -11,8 +11,8 @@
 #   make DOC
 # or
 #   make TEX
-# from the main ACL2 directory.  The make variables PREFIX and ACL2_SUFFIX are
-# used in this script.
+# from the main ACL2 directory.  The environment variable ACL2 is used
+# in this script; it is typically set in ../GNUmakefile.
 
 rm -f doc/workxxx.tex
 
@@ -34,7 +34,7 @@ echo '(include-book "doc/write-acl2-texinfo")' >> doc/workxxx.tex
 echo '(write-tex-file :dir-string "doc/TEX/" :file "acl2-book")' >> doc/workxxx.tex
 echo ':q' >> doc/workxxx.tex
 
-./${PREFIX}saved_acl2${ACL2_SUFFIX} < doc/workxxx.tex
+${ACL2} < doc/workxxx.tex
 
 cd doc/TEX
 

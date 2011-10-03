@@ -4258,12 +4258,14 @@
 
   In the ACL2 logic, ~c[(mbe :exec exec-code :logic logic-code)] equals
   ~c[logic-code]; the value of ~c[exec-code] is ignored.  However, in raw Lisp
-  it is the other way around:  this form macroexpands simply to ~c[exec-code].
+  it is the other way around: this form macroexpands simply to ~c[exec-code].
   ACL2's ~il[guard] verification mechanism ensures that the raw Lisp code is
   only evaluated when appropriate, since the guard proof obligations generated
-  for this call of ~c[mbe] are ~c[(equal exec-code logic-code)] together with
-  the guard proof obligations from ~c[exec-code].  ~l[verify-guards] and, for
-  general discussion of guards, ~pl[guard].
+  for this call of ~c[mbe] include not only the guard proof obligations from
+  ~c[exec-code], but also, under suitable contextual assumptions, the term
+  ~c[(equal exec-code logic-code)].  ~l[verify-guards] (in particular, for
+  discussion of the contextual assumptions from the ~c[:guard] and
+  ~ilc[IF]-tests) and, for general discussion of guards, ~pl[guard].
 
   Warning for nested ~ilc[mbe] calls: The equality of ~c[:exec] and ~c[:logic]
   code is not checked in the scope of superior ~c[:logic] code, as for the
@@ -15983,6 +15985,109 @@
   ":Doc-Section Events
 
   verify the ~il[guard]s of a function~/
+
+  ~l[guard] for a general discussion of guards.
+
+  Before discussing the ~c[verify-guards] event, we first discuss guard
+  verification, which can take place at definition time or, later, using
+  ~c[verify-guards].  Typically, guard verification takes place at definition
+  time if a ~c[:guard] has been supplied explicitly unless
+  ~c[:verify-guards nil] has been specified; ~pl[defun] and ~pl[xargs], and
+  ~pl[set-verify-guards-eagerness] for how to change this default.  The point
+  of guard verification is to ensure that during evaluation of an expression
+  without free variables, no guard violation takes place.
+
+  Guard verification is intended to guarantee that for any call of a given
+  function, if its ~il[guard] holds for that call then the ~il[guard] will hold
+  for every function call in the body of that function.  Moreover, in order to
+  avoid guard violations during evaluation of the function's guard itself,
+  guard verification also is intended to guarantee that the guards are
+  satisfied for all calls in the guard itself.  Consider the following simple
+  example.
+  ~bv[]
+  (defun f (x)
+    (declare (xargs :guard (and (consp x)
+                                (integerp (car x)))))
+    (if (rationalp (cdr x))
+        (+ (car x) (cdr x))
+      17))
+  ~ev[]
+  If you evaluate ~c[(f t)], for example, in the top-level loop, you will (by
+  default) get a guard error.  The point of guard verification is to guarantee
+  the absence of guard errors, and we start by using this example to illustrate
+  the proof obligations that guarantee such absence.
+
+  The body of the above definition has the following function calls, where the
+  first is the entire body.
+  ~bv[]
+    (if (rationalp (cdr x))
+        (< (car x) (cdr x))
+      17)
+    (rationalp (cdr x)) ; the test of the top-level IF call
+    (cdr x)             ; from (rationalp (cdr x))
+    (< (car x) (cdr x)) ; the true branch of the top-level IF call
+    (car x)             ; from (< (car x) (cdr x))
+    (cdr x)             ; from (< (car x) (cdr x))
+  ~ev[]
+  We thus see potentially six conditions to prove, one for each call.  The
+  guards of the function symbols of those calls are ~c[t] for ~ilc[if] and
+  ~ilc[rationalp], ~c[(or (consp x) (equal x nil))] for both ~c[(car x)] and
+  ~c[(cdr x)], and finally that both arguments are rationals for ~c[<].
+  Moreover, we can take advantage of ``contextual assumptions'': the
+  ~c[if]-test conditions and the top-level ~c[:guard].  Thus, for
+  ~c[verify-guards] the proof obligation from the body of ~c[f] is as follows.
+  ~bv[]
+  (implies 
+   (and (consp x) (integerp (car x))) ; from the :guard
+   (and t ; from the top-level IF call
+        t ; from (rationalp (cdr x))
+        (or (consp x) (equal x nil)) ; from the first (cdr x)
+        (implies
+         (rationalp (cdr x)) ; IF-test for calls in the true branch
+         (and (or (consp x) (equal x nil)) ; from (car x)
+              (or (consp x) (equal x nil)) ; from the second (cdr x)
+              (and (rationalp (car x)) (rationalp (cdr x))) ; from the < call
+              ))))
+  ~ev[]
+  But the ~c[:guard] itself generates a similar sort of proof obligation.  Note
+  that the guard ~c[(and (consp x) (integerp (car x)))] is really an
+  abbreviation (i.e. via the macro ~ilc[AND]) for the term
+  ~c[(if (consp x) (integerp (car x)) nil)].  The guard proof obligation for
+  the guard itself is thus as follows.
+  ~bv[]
+  (and t ; from (consp x)
+       (implies (consp x)
+                (and t         ; from (integerp (car x)) ;
+                     (consp x) ; from (car x) ;
+                     )))
+  ~ev[]
+  All of the above proof obligations are indeed theorems, and guard
+  verification succeeds for the above definition of ~c[f].
+
+  The example above illustrates the general procedure for generating the guard
+  proof obligation.  Each function call is considered in the body or guard of
+  the function, and it is required that the guard is met for that call, under
+  certain ``contextual assumptions'', which are as follows.  In the case of the
+  body of the named function, it is assumed that the guard holds for that
+  function on its formal parameters.  And in both cases ~-[] the body of the
+  named function and also its guard ~-[] the governing tests from superior
+  calls of ~ilc[IF] are also assumed.
+
+  As mentioned above, if the guard on a function is not ~c[t], then guard
+  verification requires not only consideration of the body under the assumption
+  that the guard is true, but also consideration of the guard itself.  Thus,
+  for example, guard verification fails in the following example, even though
+  there are no proof obligations arising from the body, because the guard
+  itself can cause a guard violation when evaluated for an arbitrary value of
+  ~c[x]:
+  ~bv[]
+  (defun foo (x)
+    (declare (xargs :guard (car x)))
+    x)
+  ~ev[]
+
+  We turn now to the ~c[verify-guards] event as a way of verifying the
+  ~il[guard]s for a function or theorem.
   ~bv[]
   Examples:
   (verify-guards flatten)
@@ -15999,19 +16104,16 @@
           :guard-debug  t ; typically t, but any value is legal
           :doc          doc-string)
   ~ev[]
-  ~l[guard] for a general discussion of guards.  In the General Form above,
-  ~c[name] is the name of a ~c[:]~ilc[logic] function (~pl[defun-mode]) or of a
-  theorem or axiom.  In the most common case ~c[name] is the name of a function
-  that has not yet had its ~il[guard]s verified, each subroutine of which has
-  had its ~il[guard]s verified. ~ilc[hints], ~ilc[otf-flg], and
-  ~ilc[guard-debug] are as described in the corresponding ~il[documentation]
-  entries; and ~ilc[doc-string], if supplied, is a string ~st[not] beginning
-  with ``~c[:Doc-Section]''.  The four keyword arguments above are all
-  optional.  ~c[Verify-guards] will attempt to prove that the ~il[guard] on the
-  named function implies the ~il[guard]s of all of the subroutines called in
-  the body of the function, and that the guards are satisfied for all function
-  calls in the guard itself (under an implicit guard of ~c[t]).  If successful,
-  ~c[name] is considered to have had its ~il[guard]s verified.
+  In the General Form above, ~c[name] is the name of a ~c[:]~ilc[logic]
+  function (~pl[defun-mode]) or of a theorem or axiom.  In the most common case
+  ~c[name] is the name of a function that has not yet had its ~il[guard]s
+  verified, each subroutine of which has had its ~il[guard]s verified.  The
+  values ~ilc[hints], ~ilc[otf-flg], and ~ilc[guard-debug] are as described in
+  the corresponding ~il[documentation] entries; and ~ilc[doc-string], if
+  supplied, is a string ~st[not] beginning with ``~c[:Doc-Section]''.  The four
+  keyword arguments above are all optional.  To admit this event, the
+  conjunction of the guard proof obligations must be proved.  If that proof is
+  successful, ~c[name] is considered to have had its ~il[guard]s verified.
 
   ~l[verify-guards-formula] for a utility that lets you view the formula to be
   proved by ~c[verify-guards], but without creating an event.
@@ -16113,19 +16215,6 @@
   ~il[documentation] data base.  Thus, we actually prohibit ~ilc[doc-string]
   from having the form of an ACL2 ~il[documentation] string;
   ~pl[doc-string].
-
-  If the guard on a function is not ~c[t], then guard verification
-  requires not only consideration of the body under the assumption
-  that the guard is true, but also consideration of the guard itself.
-  Thus, for example, guard verification fails in the following
-  example, even though there are no proof obligations arising from the
-  body, because the guard itself can cause a guard violation when
-  evaluated for an arbitrary value of ~c[x]:
-  ~bv[]
-  (defun foo (x)
-    (declare (xargs :guard (car x)))
-    x)
-  ~ev[]
 
   ~c[Verify-guards] must often be used when the value of a recursive call
   of a defined function is given as an argument to a subroutine that
@@ -40548,9 +40637,14 @@
   call of ~c[with-prover-time-limit].  (3) Thus, there is not a fixed number of
   values returned by ~c[with-prover-time-limit].
 
-  If you find that the time limit appears to be implemented too loosely, you
-  are encouraged to email an example to the ACL2 implementors with instructions
-  on how to observe the undesirable behavior.  This information can probably be
+  If you find that the time limit appears to be implemented too loosely, it may
+  be because the prover only checks the time elapsed at certain points during
+  the proof process, for example at entry to the rewriter.  For example, if you
+  write your own ~ilc[clause-processor] that does an expensive computation, the
+  time is unlikely to be checked during its execution.  If however you find the
+  time limit seems to be ignored even during ordinary prover operation, you are
+  encouraged to email an example to the ACL2 implementors with instructions on
+  how to observe the undesirable behavior.  This information can perhaps be
   used to improve ACL2 by the insertion of more checks for expiration of the
   time limit.
 

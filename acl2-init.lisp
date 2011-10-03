@@ -1166,6 +1166,14 @@ implementations.")
      (str sysout-name :direction :output)
      (let* ((prog (car sb-ext:*posix-argv*)))
        (write-exec-file
+
+; We have observed with SBCL 1.0.49 that "make HTML" fails on our 64-bit linux
+; system unless we start sbcl with --control-stack-size 4 [or larger].  The
+; default, according to http://www.sbcl.org/manual/, is 2.  The problem seems
+; to be stack overflow from fmt0, which is not tail recursive.  For now we will
+; leave it up to the user to edit their saved_acl2 script if this presents a
+; problem, but we might want to consider adding --control-stack-size 4.
+
         str
 
 ; In order to profile, Nikodemus Siivola has told us that we "need to set
