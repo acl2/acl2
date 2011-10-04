@@ -2043,6 +2043,7 @@ dft-ex.lisp
 dft.lisp
 doc-section.lisp
 dump-events.lisp
+equal-by-g.lisp
 evalable-printing.lisp
 expander.lisp
 fast-coerce.lisp

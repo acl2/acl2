@@ -25975,7 +25975,8 @@
   The reader interested in design and implementation issues considered during
   the addition of iprinting to ACL2 is invited to read the paper ``Abbreviated
   Output for Input in ACL2: An Implementation Case Study''; see the proceedings
-  of ACL2 Workshop 2009, ~url[http://www.cs.utexas.edu/users/sandip/acl2-09/]."
+  of ACL2 Workshop 2009,
+  ~url[http://www.cs.utexas.edu/users/moore/acl2/workshop-2009/]."
 
   (declare (xargs :guard ; the setters deal with illegal values
                   t))
