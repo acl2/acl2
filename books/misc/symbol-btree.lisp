@@ -26,8 +26,585 @@ ACL2 !>
 
 (in-package "ACL2")
 
-(local (include-book "ihs/quotient-remainder-lemmas" :dir :system))
-(local (in-theory (disable floor)))
+
+
+(defun symbol-btreep (x)
+  (declare (xargs :guard t))
+  (if (atom x)
+      (eq x nil)
+    (and (consp (car x))
+         (symbolp (caar x))
+         (listp (cdr x))
+         (symbol-btreep (cadr x))
+         (symbol-btreep (cddr x)))))
+
+
+(defun symbol-btree-update (key val btree)
+  (declare (xargs :guard (and (symbolp key)
+                              (symbol-btreep btree))))
+  (cond
+   ((endp btree)
+    (list (cons key val)))
+   ((eq key (caar btree))
+    (list* (cons key val) (cadr btree) (cddr btree)))
+   ((symbol-< key (caar btree))
+    (list* (car btree)
+           (symbol-btree-update key val (cadr btree))
+           (cddr btree)))
+   (t
+    (list* (car btree)
+           (cadr btree)
+           (symbol-btree-update key val (cddr btree))))))
+
+(defthm symbol-btreep-symbol-btree-update
+  (implies (and (symbol-btreep x)
+                (symbolp key))
+           (symbol-btreep (symbol-btree-update key val x))))
+
+
+(defun symbol-btree-find (key btree)
+  (declare (xargs :guard (and (symbolp key)
+                              (symbol-btreep btree))))
+  (cond ((atom btree)
+         nil)
+        ((eq key (caar btree))
+         (car btree))
+        ((symbol-< key (caar btree))
+         (symbol-btree-find key (cadr btree)))
+        (t
+         (symbol-btree-find key (cddr btree)))))
+
+(defun symbol-btree-lookup (key btree)
+  (declare (xargs :guard (and (symbolp key) (symbol-btreep btree))))
+  (cdr (symbol-btree-find key btree)))
+
+
+
+(defthm symbol-btree-find-symbol-btree-update
+  (equal (symbol-btree-find k1 (symbol-btree-update k2 val x))
+         (if (equal k1 k2)
+             (cons k1 val)
+           (symbol-btree-find k1 x)))
+  :hints(("Goal" :in-theory (disable symbol-<-transitive
+                                     symbol-<-trichotomy
+                                     symbol-<-asymmetric))))
+
+
+
+
+
+
+(defun symbol-btree-to-alist-aux (x acc)
+  (declare (Xargs :guard (symbol-btreep x)))
+  (if (consp x)
+      (symbol-btree-to-alist-aux
+       (cadr x)
+       (cons (car x)
+             (symbol-btree-to-alist-aux (cddr x) acc)))
+    acc))
+
+(defun symbol-btree-to-alist (x)
+  (declare (xargs :guard (symbol-btreep x)
+                  :verify-guards nil))
+  (mbe :logic
+       (if (consp x)
+           (append (symbol-btree-to-alist (cadr x))
+                   (cons (car x)
+                         (symbol-btree-to-alist (cddr x))))
+         nil)
+       :exec (symbol-btree-to-alist-aux x nil)))
+
+
+(defthm symbol-btree-to-alist-aux-is-symbol-btree-to-alist
+  (equal (symbol-btree-to-alist-aux x acc)
+         (append (symbol-btree-to-alist x) acc)))
+
+(defthm true-listp-symbol-btree-to-alist
+  (true-listp (symbol-btree-to-alist btree))
+  :rule-classes :type-prescription)
+
+(defthm symbol-alistp-symbol-btree-to-alist
+  (implies (symbol-btreep x)
+           (symbol-alistp (symbol-btree-to-alist x))))
+
+(defthm alistp-symbol-btree-to-alist
+  (implies (symbol-btreep x)
+           (alistp (symbol-btree-to-alist x))))
+
+(verify-guards symbol-btree-to-alist)
+
+
+
+
+
+
+(defun symbol-alist-sortedp (x)
+  (declare (xargs :guard (symbol-alistp x)))
+  (if (atom (cdr x))
+      t
+    (and (symbol-< (caar x) (caadr x))
+         (symbol-alist-sortedp (cdr x)))))
+
+
+
+(local
+ (progn
+
+   (defthm symbol-btree-find-thm-car
+     (equal (car (symbol-btree-find key x))
+            (and (symbol-btree-find key x)
+                 key)))
+
+   (defthm assoc-equal-of-append
+     (implies (alistp a)
+              (equal (assoc key (append a b))
+                     (or (assoc key a)
+                         (assoc key b)))))
+
+
+   (local (defthmd equal-of-booleans
+            (implies (and (booleanp a) (booleanp b))
+                     (equal (equal a b) (iff a b)))))
+
+   (defthm symbol-alist-sortedp-append
+     (equal (symbol-alist-sortedp (append a b))
+            (and (symbol-alist-sortedp a)
+                 (symbol-alist-sortedp b)
+                 (or (atom a) (atom b)
+                     (and (symbol-< (caar (last a)) (caar b)) t))))
+     :hints(("Goal" :in-theory
+             (e/d (equal-of-booleans)
+                  (true-listp-append
+                   true-listp
+                   (:type-prescription symbol-<)
+                   symbol-<-transitive
+                   symbol-<-trichotomy
+                   symbol-<-asymmetric)))))
+
+
+   (defthm symbol-alist-sortedp-and-symbol-<-last-implies-not-assoc
+     (implies (and (symbol-alistp x)
+                   (symbol-alist-sortedp x)
+                   (symbol-< (caar (last x)) key))
+              (not (assoc key x))))
+
+   (defthm symbol-alist-sortedp-and-symbol-<-first-implies-not-assoc
+     (implies (and (symbol-alistp x)
+                   (symbol-alist-sortedp x)
+                   (symbol-< key (caar x)))
+              (not (assoc key x))))
+
+   (defthm symbolp-caar-last-of-symbol-alistp
+     (implies (symbol-alistp x)
+              (symbolp (caar (last x)))))))
+
+(local
+ (defthm assoc-when-not-symbolp-key
+   (implies (and (not (symbolp key))
+                 (symbol-alistp x))
+            (equal (assoc key x) nil))))
+
+(local
+ (defthm symbol-btree-find-when-not-symbolp-key
+   (implies (and (not (symbolp key))
+                 (symbol-btreep x))
+            (equal (symbol-btree-find key x) nil))))
+
+(local (defthm assoc-in-symbol-btree-to-alist-when-symbolp-key
+         (implies (and (symbol-btreep x)
+                       (symbol-alist-sortedp (symbol-btree-to-alist x))
+                       (symbolp key))
+                  (equal (assoc key (symbol-btree-to-alist x))
+                         (symbol-btree-find key x)))
+         :hints(("Goal" :in-theory (disable default-car default-cdr alistp
+                                            true-listp-symbol-btree-to-alist
+                                            true-listp-append)
+                 :induct (symbol-btree-find key x)
+                 :expand ((symbol-btree-find key x))))))
+
+(defthm assoc-in-symbol-btree-to-alist
+  (implies (and (symbol-btreep x)
+                (symbol-alist-sortedp (symbol-btree-to-alist x)))
+           (equal (assoc key (symbol-btree-to-alist x))
+                  (symbol-btree-find key x)))
+  :hints(("Goal" :cases ((symbolp key)))))
+
+
+
+
+(local
+ (progn
+   (defthm consp-symbol-btree-to-alist
+     (iff (consp (symbol-btree-to-alist x))
+          (consp x)))
+
+   (defthm car-append
+     (equal (car (append a b))
+            (if (consp a) (car a) (car b))))
+
+   (defthm not-symbol-<-transitive1
+     (implies (and (not (symbol-< x y))
+                   (not (symbol-< y z))
+                   (symbolp x) (symbolp y) (symbolp z))
+              (not (symbol-< x z)))
+     :hints (("goal" :use (:instance symbol-<-transitive
+                           (x z) (y y) (z x)))))
+
+   (defthm not-symbol-<-transitive2
+     (implies (and (not (symbol-< y z))
+                   (not (symbol-< x y))
+                   (symbolp x) (symbolp y) (symbolp z))
+              (not (symbol-< x z)))
+     :hints (("goal" :use (:instance symbol-<-transitive
+                           (x z) (y y) (z x)))))
+
+   (defthm symbol-<-transitive1
+     (implies (and (symbol-< x y)
+                   (symbol-< y z)
+                   (symbolp x) (symbolp y) (symbolp z))
+              (symbol-< x z)))
+
+   (defthm symbol-<-transitive2
+     (implies (and (symbol-< y z)
+                   (symbol-< x y)
+                   (symbolp x) (symbolp y) (symbolp z))
+              (symbol-< x z)))
+
+
+   (defthm symbol-<=/<-transitive2
+     (implies (and (symbol-< y z)
+                   (not (symbol-< y x))
+                   (symbolp x) (symbolp y) (symbolp z))
+              (not (symbol-< z x))))
+
+   (defthm symbol-</<=-transitive1
+     (implies (and (symbol-< x y)
+                   (not (symbol-< z y))
+                   (symbolp x) (symbolp y) (symbolp z))
+              (not (symbol-< z x))))
+
+   (defthm symbol-</<=-transitive2
+     (implies (and (not (symbol-< z y))
+                   (symbol-< x y)
+                   (symbolp x) (symbolp y) (symbolp z))
+              (not (symbol-< z x))))
+
+   (defthm symbol-<=/<-transitive1
+     (implies (and (not (symbol-< y x))
+                   (symbol-< y z)
+                   (symbolp x) (symbolp y) (symbolp z))
+              (not (symbol-< z x))))
+
+
+
+   (local (in-theory (disable symbol-<-transitive)))
+
+   (deftheory symbol-<-transitivity
+     '(symbol-<-transitive1
+       symbol-<-transitive2
+       not-symbol-<-transitive1
+       not-symbol-<-transitive2
+       symbol-</<=-transitive1
+       symbol-</<=-transitive2
+       symbol-<=/<-transitive1
+       symbol-<=/<-transitive2))
+
+   (in-theory (disable symbol-<-transitivity))
+
+   (defthm symbolp-caar-symbol-btree-to-alist
+     (implies (symbol-btreep x)
+              (symbolp (caar (symbol-btree-to-alist x)))))
+
+   (defthm not-symbol-<-last-sorted
+     (implies (and (symbol-alistp x)
+                   (symbol-alist-sortedp x))
+              (not (symbol-< (caar (last x)) (caar x))))
+     :hints(("Goal" :in-theory (enable symbol-<-transitive1))))
+
+   (defthm caar-symbol-btree-update-to-alist-sorted
+     (implies (and (symbol-btreep x)
+                   (symbol-alist-sortedp (symbol-btree-to-alist x))
+                   (symbolp key))
+              (equal (caar (symbol-btree-to-alist (symbol-btree-update
+                                                   key val x)))
+                     (if (and x (symbol-< (caar (symbol-btree-to-alist x)) key))
+                         (caar (symbol-btree-to-alist x))
+                       key)))
+     :hints(("Goal" :in-theory (e/d (symbol-<-transitivity)
+                                    (default-car default-cdr
+                                      true-listp-symbol-btree-to-alist
+                                      alistp
+                                      symbol-</<=-transitive2
+                                      not-symbol-<-transitive1
+                                      symbol-<-transitive1
+                                      symbol-</<=-transitive1
+                                      symbol-<=/<-transitive1
+                                      (:type-prescription
+                                       symbol-btree-to-alist))))))
+
+   (defthm last-append
+     (equal (car (last (append a b)))
+            (if (consp b)
+                (car (last b))
+              (car (last a)))))
+
+   (defthm caar-last-symbol-btree-update-to-alist-sorted
+     (implies (and (symbol-btreep x)
+                   (symbol-alist-sortedp (symbol-btree-to-alist x))
+                   (symbolp key))
+              (equal (caar (last (symbol-btree-to-alist (symbol-btree-update
+                                                         key val x))))
+                     (if (and x (symbol-< key (caar (last (symbol-btree-to-alist x)))))
+                         (caar (last (symbol-btree-to-alist x)))
+                       key)))
+     :hints(("Goal" :in-theory (e/d (symbol-<-transitivity)
+                                    (default-car default-cdr
+                                      true-listp-symbol-btree-to-alist
+                                      alistp
+                                      symbol-</<=-transitive2
+                                      symbol-<-transitive1
+                                      (:type-prescription last)
+                                      (:type-prescription symbol-btree-to-alist))))))))
+
+(defthm symbol-alist-sortedp-symbol-btree-update
+  (implies (and (symbol-btreep x)
+                (symbol-alist-sortedp (symbol-btree-to-alist x))
+                (symbolp key))
+           (symbol-alist-sortedp (symbol-btree-to-alist (symbol-btree-update
+                                                         key val x))))
+  :hints(("Goal" :in-theory (disable symbol-alist-sortedp
+                                     symbol-btree-to-alist
+                                     (:definition symbol-btree-update))
+          :induct t
+          :expand ((:free (x y) (symbol-alist-sortedp (cons x y)))
+                   (:free (x y) (symbol-btree-to-alist (cons x y)))
+                   (symbol-btree-to-alist x)
+                   (symbol-btree-to-alist nil)
+                   (:free (key) (symbol-btree-update key val x))
+                   (:free (key) (symbol-btree-update key val nil))))))
+
+
+(local
+ (encapsulate nil
+   (local (include-book "ihs/quotient-remainder-lemmas" :dir :system))
+   (in-theory (disable floor))
+   (defthm floor-x-2-natp
+     (implies (natp x)
+              (natp (floor x 2)))
+     :rule-classes :type-prescription)
+   (defthm floor-x-2-<=-x
+     (implies (natp x)
+              (<= (floor x 2) x))
+     :rule-classes :linear)
+   (defthm floor-x-2-<-x
+     (implies (and (integerp x)
+                   (< 0 x))
+              (< (floor x 2) x))
+     :rule-classes :linear)))
+
+
+(defun symbol-alist-to-btree-aux (x n)
+  ;; Return 2 values:
+  ;;   (1) the symbol-btree corresponding to first n entries of x; and
+  ;;   (2) the rest of x.
+  (declare (xargs :guard (and (natp n)
+                              (alistp x))
+                  :verify-guards nil))
+  (cond ((zp n)
+         (mv nil x))
+        ((endp (cdr x))
+         (mv (list (car x))
+             ;; (to make it match nthcdr)
+             (mbe :logic (and (eql n 1) (cdr x))
+                  :exec nil)))
+        (t
+         (let ((n2 (floor n 2)))
+           (mv-let (left restx)
+                   (symbol-alist-to-btree-aux x n2)
+                   (mv-let (right restx2)
+                           (symbol-alist-to-btree-aux (cdr restx) (- n (1+ n2)))
+                           (mv (list* (car restx)
+                                      left
+                                      right)
+                               restx2)))))))
+
+
+
+
+(local
+ (encapsulate nil
+   (local (include-book "arithmetic/top" :dir :system))
+   (defthmd nthcdr-cdr
+     (equal (nthcdr n (cdr x))
+            (nthcdr (+ 1 (nfix n)) x)))
+
+   (defthmd cdr-nthcdr
+     (equal (cdr (nthcdr n x))
+            (nthcdr (+ 1 (nfix n)) x)))
+
+   (defthmd car-nthcdr
+     (equal (car (nthcdr n x))
+            (nth n x)))
+
+   (defthm nthcdr-nthcdr
+     (equal (nthcdr n (nthcdr m x))
+            (nthcdr (+ (nfix n) (nfix m)) x)))
+
+   (local (defthmd nthcdr-fudge
+            (implies (and (not (zp n))
+                          (atom x))
+                     (not (nthcdr n x)))))
+
+   (defthm symbol-alist-to-btree-aux-is-nthcdr
+     (equal (mv-nth 1 (symbol-alist-to-btree-aux x n))
+            (nthcdr n x))
+     :hints (("goal" :induct t
+              :in-theory (enable nthcdr-fudge nthcdr-cdr))
+             (and stable-under-simplificationp
+                  '(:expand ((nthcdr n x))
+                    :in-theory (disable nthcdr-cdr)))))
+
+
+
+   (defthm symbol-alistp-nthcdr
+     (implies (symbol-alistp x)
+              (symbol-alistp (nthcdr n x))))
+
+   (defthm alistp-nthcdr
+     (implies (alistp x)
+              (alistp (nthcdr n x))))
+
+
+   (defthm len-nthcdr
+     (equal (len (nthcdr n x))
+            (nfix (- (len x) (nfix n))))
+     :hints(("Goal" :in-theory (enable nthcdr-cdr))))
+
+   (defthm symbol-alist-sortedp-nthcdr
+     (implies (symbol-alist-sortedp x)
+              (symbol-alist-sortedp
+               (nthcdr n x))))))
+
+(encapsulate nil
+  (local (defthm consp-nthcdr-when-alistp
+           (implies (alistp x)
+                    (iff (consp (nthcdr n x))
+                         (nthcdr n x)))))
+
+  (local (defthm consp-car-nthcdr-when-alistp
+           (implies (alistp x)
+                    (iff (consp (car (nthcdr n x)))
+                         (car (nthcdr n x))))))
+
+  (verify-guards symbol-alist-to-btree-aux
+    :hints(("Goal" :in-theory (e/d (cdr-nthcdr))))))
+
+
+
+(local
+ (encapsulate nil
+   (defthm symbolp-car-nth-of-symbol-alist
+     (implies (symbol-alistp x)
+              (symbolp (car (nth n x)))))
+   (local (defthm consp-nth-of-symbol-alist
+            (implies (and (symbol-alistp x)
+                          (< (nfix n) (len x)))
+                     (consp (nth n x)))))
+   (defthm symbol-btreep-symbol-alist-to-btree-aux
+     (implies (and (symbol-alistp x)
+                   (<= n (len x)))
+              (symbol-btreep (car (symbol-alist-to-btree-aux x n))))
+     :hints(("Goal" :in-theory (e/d (car-nthcdr cdr-nthcdr)
+                                    (symbol-btreep
+                                     (:definition symbol-alist-to-btree-aux)
+                                     default-+-2 default-+-1
+                                     ;; floor-type-1 floor-type-2 floor-type-3
+                                     ;; floor-=-x/y
+                                     default-car default-cdr))
+             :induct t
+             :expand ((:free (x y) (symbol-btreep (cons x y)))
+                      (symbol-btreep nil)
+                      (symbol-alist-to-btree-aux x n)))))))
+
+
+
+
+
+(local (include-book "unicode/take" :dir :system))
+(local
+ (encapsulate nil
+   (local (include-book "arithmetic/top" :dir :system))
+   (defthm cons-nth-take-nthcdr
+     (implies (and (integerp n)
+                   (integerp k)
+                   (<= 0 n)
+                   (<= 0 k)
+                   (<= n (len x))
+                   (equal m (+ 1 n)))
+              (equal (cons (nth n x)
+                           (simpler-take k (nthcdr m x)))
+                     (take (+ 1 k) (nthcdr n x))))
+     :hints (("goal" :expand ((:free (x) (simpler-take (+ 1 k) x))))))
+
+   (defthm simpler-take-append
+     (implies (and (natp n) (natp k))
+              (equal (append (simpler-take n x)
+                             (simpler-take k (nthcdr n x)))
+                     (take (+ n k) x)))
+     :hints (("goal" :induct (simpler-take n x)
+              :in-theory (enable simpler-take))))
+
+   (defthm consp-nth-symbol-alist
+     (implies (and (symbol-alistp x)
+                   (< (nfix n) (len x)))
+              (consp (nth n x))))
+
+   (defthm consp-nth-alist
+     (implies (and (alistp x)
+                   (< (nfix n) (len x)))
+              (consp (nth n x))))
+
+   (defthm
+     symbol-btree-to-alist-of-symbol-alist-to-btree-aux
+     (implies (and (alistp x)
+                   (<= (nfix n) (len x)))
+              (equal
+               (symbol-btree-to-alist
+                ;; (mv-nth 0, ugh
+                (car (symbol-alist-to-btree-aux x n)))
+               (take n x)))
+     :hints (("goal" :induct (symbol-alist-to-btree-aux x n)
+              :in-theory (e/d (cdr-nthcdr car-nthcdr)
+                              ((:definition symbol-alist-to-btree-aux) 
+                               default-car default-cdr zp-open default-+-2
+                               |x < y  =>  0 < -x+y|
+                               |x < y  =>  0 < y-x|
+                               symbol-btree-to-alist
+                               ;; floor-type-1 floor-type-2
+                               ;; floor-type-3 floor-type-4
+                               ;; floor-=-x/y
+                               default-+-1 default-<-1 default-<-2
+                               true-listp-symbol-btree-to-alist
+                               (:type-prescription simpler-take)
+                               (:type-prescription symbol-btree-to-alist)
+                               (:type-prescription symbol-alist-sortedp)
+                               (:type-prescription symbol-alistp)
+                               true-listp-append
+                               (:type-prescription symbol-<)
+                               (:type-prescription eqlable-alistp)
+                               (:type-prescription alistp)
+                               (:type-prescription binary-append)
+                               nthcdr))
+              :expand ((symbol-alist-to-btree-aux x n)
+                       (:free (a b)
+                        (symbol-btree-to-alist (cons a b)))))
+             (and stable-under-simplificationp
+                  '(:expand ((simpler-take n x))))))))
+
+
+
+
+
 
 (local (defthm len-evens-<
          (implies (consp (cdr x))
@@ -42,60 +619,9 @@ ACL2 !>
          :hints (("Goal" :induct (evens x)))
          :rule-classes :linear))
 
-(local (defthm alistp-of-cdr
-         (implies (alistp x)
-                  (alistp (cdr x)))))
-
-(local (defthm true-listp-when-alistp
-         (implies (alistp x)
-                  (true-listp x))))
-
-(local (defthmd consp-under-iff-when-true-listp
-         (implies (true-listp x)
-                  (iff (consp x)
-                       x))))
-
-(local (defthm consp-of-car-when-alistp
-         (implies (alistp x)
-                  (equal (consp (car x))
-                         (consp x)))))
-
-(local (defthm symbol-alistp-of-append
-         (implies (and (symbol-alistp x)
-                       (symbol-alistp y))
-                  (symbol-alistp (append x y)))))
-
-(local (defthm alistp-when-symbol-alistp
-         (implies (symbol-alistp x)
-                  (alistp x))))
 
 
 
-(defun symbol-btreep (x)
-  (declare (xargs :guard t))
-  (or (not x)
-      (and (true-listp x)
-           (symbolp (car x))
-           (or (null (caddr x))
-               (and (symbol-btreep (caddr x))
-                    (symbol-< (car (caddr x))
-                              (car x))))
-           (or (null (cdddr x))
-               (and (symbol-btreep (cdddr x))
-                    (symbol-< (car x)
-                              (car (cdddr x))))))))
-
-(defun symbol-btree-lookup (key btree)
-  (declare (xargs :guard (and (symbolp key)
-                              (symbol-btreep btree))))
-  (cond ((atom btree)
-         nil)
-        ((eq key (car btree))
-         (cadr btree))
-        ((symbol-< key (car btree))
-         (symbol-btree-lookup key (caddr btree)))
-        (t
-         (symbol-btree-lookup key (cdddr btree)))))
 
 (defun merge-symbol-alist-< (l1 l2 acc)
   (declare (xargs :guard (and (symbol-alistp l1)
@@ -135,106 +661,62 @@ ACL2 !>
 (verify-guards merge-sort-symbol-alist-<)
 
 
-
-
-
-(defun sorted-symbol-alist-to-symbol-btree (x n)
-  ;; Return 2 values:
-  ;;   (1) the symbol-btree corresponding to first n entries of x; and
-  ;;   (2) the rest of x.
-  (declare (xargs :guard (and (natp n)
-                              (alistp x))
-                  :verify-guards nil))
-  (cond ((zp n)
-         (mv nil x))
-        ((endp (cdr x))
-         (mv (list (caar x) (cdar x))
-             (cdr x)))
-        (t
-         (let ((n2 (floor n 2)))
-           (mv-let (left restx)
-                   (sorted-symbol-alist-to-symbol-btree x n2)
-                   (mv-let (right restx2)
-                           (sorted-symbol-alist-to-symbol-btree (cdr restx) (- n (1+ n2)))
-                           (mv (list* (caar restx)
-                                      (cdar restx)
-                                      left
-                                      right)
-                               restx2)))))))
-
-(local (defthm alistp-of-mv-nth-1-of-sorted-symbol-alist-to-symbol-btree
-         (implies (alistp x)
-                  (equal (alistp (mv-nth 1 (sorted-symbol-alist-to-symbol-btree x n)))
-                         t))))
-
-(local (defthm consp-of-mv-nth-1-of-sorted-symbol-alist-to-symbol-btree
-         (implies (alistp x)
-                  (equal (consp (mv-nth 1 (sorted-symbol-alist-to-symbol-btree x n)))
-                         (if (mv-nth 1 (sorted-symbol-alist-to-symbol-btree x n))
-                             t
-                           nil)))))
-
-(verify-guards sorted-symbol-alist-to-symbol-btree
-               :hints(("Goal" 
-                       :do-not '(generalize fertilize eliminate-destructors)
-                       :in-theory (disable alistp)
-                       )))
-
-
-
-
+(local (defthmd alistp-when-symbol-alistp
+         (implies (symbol-alistp x)
+                  (alistp x))))
 
 (defun symbol-alist-to-btree (alist)
   (declare (xargs :guard (symbol-alistp alist)
-                  :verify-guards nil))
+                  :guard-hints
+                  (("Goal" :in-theory
+                    (enable alistp-when-symbol-alistp)))))
   (let ((n (length alist))
         (sorted-alist (merge-sort-symbol-alist-< alist)))
     (mv-let (ans empty)
-            (sorted-symbol-alist-to-symbol-btree sorted-alist n)
-            (declare (ignore empty))
-            ans)))
-
-(verify-guards symbol-alist-to-btree)
+      (symbol-alist-to-btree-aux sorted-alist n)
+      (declare (ignore empty))
+      ans)))
 
 
-
-
-(defun symbol-btree-update (key val btree)
-  (declare (xargs :guard (and (symbolp key)
-                              (symbol-btreep btree))))
-  (cond
-   ((endp btree)
-    (list* key val nil nil))
-   ((eq key (car btree))
-    (list* key val (caddr btree) (cdddr btree)))
-   ((symbol-< key (car btree))
-    (list* (car btree) (cadr btree)
-           (symbol-btree-update key val (caddr btree))
-           (cdddr btree)))
-   (t
-    (list* (car btree) (cadr btree)
-           (caddr btree)
-           (symbol-btree-update key val (cdddr btree))))))
-
-(defun symbol-btree-to-alist (x)
-  (declare (xargs :guard (symbol-btreep x)
-                  :verify-guards nil))
-  (if (consp x)
-      (cons (cons (car x) (cadr x))
-            (append (symbol-btree-to-alist (caddr x))
-                    (symbol-btree-to-alist (cdddr x))))
-    nil))
-
-(defthm true-listp-symbol-btree-to-alist
-  (true-listp (symbol-btree-to-alist btree))
-  :rule-classes :type-prescription)
-
-(verify-guards symbol-btree-to-alist)
 
 
 
 (defun rebalance-symbol-btree (btree)
   (declare (xargs :guard (symbol-btreep btree)))
-  (symbol-alist-to-btree
-   (symbol-btree-to-alist btree)))
+  (let ((alist (symbol-btree-to-alist btree)))
+    (mv-let (btree empty)
+      (symbol-alist-to-btree-aux alist (length alist))
+      (declare (ignore empty))
+      btree)))
+
+(defthm symbol-btreep-rebalance
+  (implies (symbol-btreep x)
+           (symbol-btreep (rebalance-symbol-btree x))))
+
+
+(local (encapsulate nil
+         (local (include-book "arithmetic/top" :dir :system))
+         (defthm simpler-take-of-own-len
+           (implies (true-listp x)
+                    (equal (simpler-take (len x) x)
+                           x)))))
+(defthm symbol-btree-to-alist-of-rebalance-symbol-btree
+  (implies (symbol-btreep x)
+           (equal (symbol-btree-to-alist (rebalance-symbol-btree x))
+                  (symbol-btree-to-alist x))))
+
+
+(defthm symbol-btree-find-rebalance
+  (implies (and (symbol-btreep x)
+                (symbol-alist-sortedp
+                 (symbol-btree-to-alist x)))
+           (equal (symbol-btree-find key (rebalance-symbol-btree x))
+                  (symbol-btree-find key x)))
+  :hints(("Goal" :in-theory (disable assoc-in-symbol-btree-to-alist
+                                     rebalance-symbol-btree)
+          :use ((:instance assoc-in-symbol-btree-to-alist
+                 (x (rebalance-symbol-btree x)))
+                (:instance assoc-in-symbol-btree-to-alist
+                 (x x)))
+          :do-not-induct t)))
 

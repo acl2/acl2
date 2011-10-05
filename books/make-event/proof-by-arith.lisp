@@ -32,6 +32,7 @@
 (include-book "arithmetic/top-with-meta" :dir :system)
 (include-book "arithmetic-3/top" :dir :system)
 (include-book "rtl/rel8/arithmetic/top" :dir :system)
+(include-book "rtl/rel5/arithmetic/top" :dir :system)
 (include-book "arithmetic-5/top" :dir :system)
 ||#
 
