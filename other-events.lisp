@@ -25410,6 +25410,7 @@
                   currently memoized."
                  str key))
             ((and (eq key-class :ideal)
+                  val ; memoize, not unmemoize
                   (let* ((pair (assoc-eq :ideal-okp val))
                          (okp (if pair
                                   (cdr pair)

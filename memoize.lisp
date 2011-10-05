@@ -566,13 +566,6 @@
                    "The symbol ~x0 is not a known function symbol, and thus ~
                     it cannot be memoized."
                    fn))
-              ((not (eq :common-lisp-compliant
-                        (symbol-class fn wrld)))
-               (er hard 'memoize
-                   "~x0 is not Common Lisp compliant, so is best memoized and ~
-                    called from raw Lisp (but raw Lisp should be avoiding ~
-                    unless you are hacking)."
-                   fn))
 
 ; Certify-book seems to do things twice, so the following is commented out.
 

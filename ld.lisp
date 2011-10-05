@@ -18354,7 +18354,15 @@
   It is now permitted to ~il[memoize] functions that take user-defined
   ~il[stobj]s as inputs, provided that no ~il[stobj]s are returned.  Thanks to
   Sol Swords for an observation that led to this improvement and useful
-  conversations.~eq[]
+  conversations.
+
+  Fixes have been made for memoizing with a non-~c[nil] value of
+  ~c[:ideal-okp].  Errors had occurred when memoizing with a ~c[:condition]
+  other than ~c[t] for a ~c[:]~ilc[logic] mode function that had not been
+  ~il[guard]-verified, even with a non-~c[nil] value of ~c[:ideal-okp]; and
+  after successfully memoizing such a function (without such ~c[:condition]),
+  it had not been possible to ~ilc[unmemoize] it.  Thanks to Sol Swords for
+  reporting issues with the ~c[:ideal-okp] argument of ~ilc[memoize].~eq[] 
 
   ~/~/")
 
