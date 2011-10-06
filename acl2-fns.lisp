@@ -1375,25 +1375,9 @@ notation causes an error and (b) the use of ,. is not permitted."
 
 (defmacro special-form-or-op-p (name)
 
-; This odd macro deals with the problem that the notion of special operator
-; is defined differently in different lisps.
+; At one time we thought that special-operator-p does not work in all Lisps.
+; But if that was true, it no longer seems to be the case in October 2011.
 
-; Even though cmu lisp purports to be CLTL2, in fact it does not
-; contain a defun for special-form-p and does contain a defun of
-; special-operator-p.
-
-; SBCL makes no claim to being CLTL2.  Unfortunately acl2.lisp helpfully
-; pushes :CLTL2 to *FEATURES* anyway (for all :ANSI-CL implementations).
-
-  #+(and (not DRAFT-ANSI-CL-2) CLTL2
-         (not cmu) (not sbcl) (not clisp) (not ccl))
-  `(common-lisp::special-form-p ,name)
-  #+ccl
-  `(common-lisp::special-operator-p ,name)
-  #+(and (not DRAFT-ANSI-CL-2) (not CLTL2)
-         (not cmu) (not sbcl) (not clisp) (not ccl) (not lispworks))
-  `(lisp::special-form-p ,name)
-  #+(or (and DRAFT-ANSI-CL-2 (not ccl)) cmu sbcl clisp)
   `(special-operator-p ,name))
 
 (defvar *startup-package-name* "ACL2")

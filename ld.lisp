@@ -18154,6 +18154,9 @@
 
 ; Cleaned up special-form-or-op-p.
 
+; Modified script saved for sbcl to double the control-stack-size, which
+; allowed "make DOC" to complete.
+
   :doc
   ":Doc-Section release-notes
 

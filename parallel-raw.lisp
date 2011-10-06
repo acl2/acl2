@@ -1260,6 +1260,11 @@
 ; with links to sections "Parallelism", "Hons", and "Set-gc-threshold"?
 
 (defun number-of-active-threads-aux (threads acc)
+  #-ccl
+  (declare (ignore threads acc))
+  #-ccl
+  0
+  #+ccl
   (cond ((atom threads)
          acc)
         ((equal (ccl:process-whostate (car threads)) "Active")
@@ -1270,6 +1275,11 @@
   (number-of-active-threads-aux (all-threads) 0))
 
 (defun number-of-threads-waiting-on-a-child-aux (threads acc)
+  #-ccl
+  (declare (ignore threads acc))
+  #-ccl
+  0
+  #+ccl
   (cond ((atom threads)
          acc)
         ((equal (ccl:process-whostate (car threads)) "semaphore wait")
