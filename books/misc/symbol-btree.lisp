@@ -45,7 +45,8 @@ ACL2 !>
   (cond
    ((endp btree)
     (list (cons key val)))
-   ((eq key (caar btree))
+   ((and (mbt (consp (car btree)))
+         (eq key (caar btree)))
     (list* (cons key val) (cadr btree) (cddr btree)))
    ((symbol-< key (caar btree))
     (list* (car btree)
@@ -67,7 +68,8 @@ ACL2 !>
                               (symbol-btreep btree))))
   (cond ((atom btree)
          nil)
-        ((eq key (caar btree))
+        ((and (mbt (consp (car btree)))
+              (eq key (caar btree)))
          (car btree))
         ((symbol-< key (caar btree))
          (symbol-btree-find key (cadr btree)))
@@ -99,8 +101,10 @@ ACL2 !>
   (if (consp x)
       (symbol-btree-to-alist-aux
        (cadr x)
-       (cons (car x)
-             (symbol-btree-to-alist-aux (cddr x) acc)))
+       (if (mbt (consp (car x)))
+           (cons (car x)
+                 (symbol-btree-to-alist-aux (cddr x) acc))
+         (symbol-btree-to-alist-aux (cddr x) acc)))
     acc))
 
 (defun symbol-btree-to-alist (x)
@@ -109,8 +113,10 @@ ACL2 !>
   (mbe :logic
        (if (consp x)
            (append (symbol-btree-to-alist (cadr x))
-                   (cons (car x)
-                         (symbol-btree-to-alist (cddr x))))
+                   (if (mbt (consp (car x)))
+                       (cons (car x)
+                             (symbol-btree-to-alist (cddr x)))
+                     (symbol-btree-to-alist (cddr x))))
          nil)
        :exec (symbol-btree-to-alist-aux x nil)))
 
@@ -235,8 +241,9 @@ ACL2 !>
 (local
  (progn
    (defthm consp-symbol-btree-to-alist
-     (iff (consp (symbol-btree-to-alist x))
-          (consp x)))
+     (implies (symbol-btreep x)
+              (iff (consp (symbol-btree-to-alist x))
+                   (consp x))))
 
    (defthm car-append
      (equal (car (append a b))
@@ -412,20 +419,16 @@ ACL2 !>
                   :verify-guards nil))
   (cond ((zp n)
          (mv nil x))
-        ((endp (cdr x))
-         (mv (list (car x))
-             ;; (to make it match nthcdr)
-             (mbe :logic (and (eql n 1) (cdr x))
-                  :exec nil)))
+        ((eql n 1)
+         (mv (list (car x)) (cdr x)))
         (t
          (let ((n2 (floor n 2)))
            (mv-let (left restx)
                    (symbol-alist-to-btree-aux x n2)
                    (mv-let (right restx2)
                            (symbol-alist-to-btree-aux (cdr restx) (- n (1+ n2)))
-                           (mv (list* (car restx)
-                                      left
-                                      right)
+                           (mv (cons (car restx)
+                                     (cons left right))
                                restx2)))))))
 
 
@@ -524,7 +527,8 @@ ACL2 !>
              :induct t
              :expand ((:free (x y) (symbol-btreep (cons x y)))
                       (symbol-btreep nil)
-                      (symbol-alist-to-btree-aux x n)))))))
+                      (symbol-alist-to-btree-aux x n)
+                      (symbol-alist-to-btree-aux x 1)))))))
 
 
 
@@ -596,6 +600,7 @@ ACL2 !>
                                (:type-prescription binary-append)
                                nthcdr))
               :expand ((symbol-alist-to-btree-aux x n)
+                       (symbol-alist-to-btree-aux x 1)
                        (:free (a b)
                         (symbol-btree-to-alist (cons a b)))))
              (and stable-under-simplificationp
@@ -720,3 +725,127 @@ ACL2 !>
                  (x x)))
           :do-not-induct t)))
 
+(in-theory (disable rebalance-symbol-btree))
+
+
+(defun symbol-btree-key-depth (key btree)
+  (declare (xargs :guard (and (symbolp key)
+                              (symbol-btreep btree))))
+  (cond
+   ((or (endp btree)
+        (and (mbt (consp (car btree)))
+              (eq key (caar btree)))) 0)
+   ((symbol-< key (caar btree))
+    (+ 1 (symbol-btree-key-depth key (cadr btree))))
+   (t
+    (+ 1 (symbol-btree-key-depth key (cddr btree))))))
+
+
+
+(defun symbol-btree-find/depth-aux (key btree depth)
+  (declare (xargs :guard (and (symbolp key)
+                              (symbol-btreep btree)
+                              (natp depth))))
+  (cond ((atom btree) (mv nil (+ 0 depth)))
+        ((and (mbt (consp (car btree)))
+              (eq key (caar btree)))
+         (mv (car btree) (+ 0 depth)))
+        ((symbol-< key (caar btree))
+         (symbol-btree-find/depth-aux key (cadr btree) (+ 1 depth)))
+        (t
+         (symbol-btree-find/depth-aux key (cddr btree) (+ 1 depth)))))
+
+(defthm symbol-btree-find/depth-aux-redef
+  (equal (symbol-btree-find/depth-aux key btree depth)
+         (mv (symbol-btree-find key btree)
+             (+ depth (symbol-btree-key-depth key btree)))))
+
+(defun symbol-btree-find/depth (key btree)
+  (declare (xargs :guard (and (symbolp key)
+                              (symbol-btreep btree))))
+  (mbe :logic
+       (cond ((atom btree) (mv nil 0))
+             ((and (mbt (consp (car btree)))
+                   (eq key (caar btree)))
+              (mv (car btree) 0))
+             ((symbol-< key (caar btree))
+              (mv-let (pair depth)
+                (symbol-btree-find/depth key (cadr btree))
+                (mv pair (+ 1 depth))))
+             (t
+              (mv-let (pair depth)
+                (symbol-btree-find/depth key (cddr btree))
+                (mv pair (+ 1 depth)))))
+       :exec (symbol-btree-find/depth-aux key btree 0)))
+
+(defthm symbol-btree-find/depth-redef
+  (equal (symbol-btree-find/depth key btree)
+         (mv (symbol-btree-find key btree)
+             (symbol-btree-key-depth key btree))))
+
+
+
+(defun symbol-btree-update/depth (key val btree)
+  (declare (xargs :guard (and (symbolp key)
+                              (symbol-btreep btree))))
+  (cond
+   ((endp btree)
+    (mv (list (cons key val)) 0))
+   ((and (mbt (consp (car btree)))
+         (eq key (caar btree)))
+    (mv (list* (cons key val) (cadr btree) (cddr btree))
+        0))
+   ((symbol-< key (caar btree))
+    (mv-let (sub depth)
+      (symbol-btree-update/depth key val (cadr btree))
+      (mv (list* (car btree)
+                 sub
+                 (cddr btree))
+          (+ 1 depth))))
+   (t
+    (mv-let (sub depth)
+      (symbol-btree-update/depth key val (cddr btree))
+      (mv (list* (car btree)
+                 (cadr btree)
+                 sub)
+          (+ 1 depth))))))
+
+(defthm symbol-btree-update/depth-redef
+  (equal (symbol-btree-update/depth key val btree)
+         (mv (symbol-btree-update key val btree)
+             (symbol-btree-key-depth key btree))))
+
+
+(defun symbol-btree-update/find/depth (key val btree)
+  (declare (xargs :guard (and (symbolp key)
+                              (symbol-btreep btree))))
+  (cond
+   ((endp btree)
+    (mv (list (cons key val)) nil 0))
+   ((and (mbt (consp (car btree)))
+         (eq key (caar btree)))
+    (mv (list* (cons key val) (cadr btree) (cddr btree))
+        (car btree)
+        0))
+   ((symbol-< key (caar btree))
+    (mv-let (sub pair depth)
+      (symbol-btree-update/find/depth key val (cadr btree))
+      (mv (list* (car btree)
+                 sub
+                 (cddr btree))
+          pair
+          (+ 1 depth))))
+   (t
+    (mv-let (sub pair depth)
+      (symbol-btree-update/find/depth key val (cddr btree))
+      (mv (list* (car btree)
+                 (cadr btree)
+                 sub)
+          pair
+          (+ 1 depth))))))
+
+(defthm symbol-btree-update/find/depth-redef
+  (equal (symbol-btree-update/find/depth key val btree)
+         (mv (symbol-btree-update key val btree)
+             (symbol-btree-find key btree)
+             (symbol-btree-key-depth key btree))))

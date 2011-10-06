@@ -2171,8 +2171,8 @@ The definition body, ~x1, is not a pseudo-term."
        (b* (((mv erp (cons clauses out-obligs) &)
              (glcp-generic-run-parametrized
               hyp concl untrans-concl vars bindings id abort-unknown
-              abort-ctrex nexamples hyp-clk concl-clk obligs overrides world
-              state)))
+              abort-ctrex abort-vacuous nexamples hyp-clk concl-clk obligs
+              overrides world state)))
          (implies (and (not (glcp-generic-ev concl alist))
                        (glcp-generic-ev-theoremp
                         (conjoin-clauses
@@ -2204,8 +2204,8 @@ The definition body, ~x1, is not a pseudo-term."
                     (acl2::bind-as-in-definition
                      (glcp-generic-run-parametrized
                       hyp concl untrans-concl (collect-vars concl) bindings id
-                      abort-unknown abort-ctrex nexamples hyp-clk concl-clk
-                      obligs overrides world state)
+                      abort-unknown abort-ctrex abort-vacuous nexamples hyp-clk
+                      concl-clk obligs overrides world state)
                      (cov-clause val-clause hyp-bdd hyp-val)
                      (b* ((binding-env '(shape-spec-to-env
                                          (strip-cadrs bindings)
@@ -2230,7 +2230,7 @@ The definition body, ~x1, is not a pseudo-term."
    (defthm glcp-generic-run-parametrized-bad-obligs
      (b* (((mv erp (cons & out-obligs) &)
            (glcp-generic-run-parametrized
-            hyp concl untrans-concl vars bindings id abort-unknown abort-ctrex
+            hyp concl untrans-concl vars bindings id abort-unknown abort-ctrex abort-vacuous
             nexamples hyp-clk concl-clk obligs overrides world state)))
        (implies (and (not erp)
                      (not (glcp-generic-ev-theoremp
@@ -2243,7 +2243,7 @@ The definition body, ~x1, is not a pseudo-term."
    (defthm glcp-generic-run-parametrized-ok-obligs
      (b* (((mv erp (cons & out-obligs) &)
            (glcp-generic-run-parametrized
-            hyp concl untrans-concl vars bindings id abort-unknown abort-ctrex
+            hyp concl untrans-concl vars bindings id abort-unknown abort-ctrex abort-vacuous
             nexamples hyp-clk concl-clk obligs overrides world state)))
        (implies (and (not erp)
                      (glcp-generic-ev-theoremp
@@ -2256,7 +2256,7 @@ The definition body, ~x1, is not a pseudo-term."
    (defthm glcp-generic-run-parametrized-defs-alistp
      (b* (((mv erp (cons & out-obligs) &)
            (glcp-generic-run-parametrized
-            hyp concl untrans-concl vars bindings id abort-unknown abort-ctrex
+            hyp concl untrans-concl vars bindings id abort-unknown abort-ctrex abort-vacuous
             nexamples hyp-clk concl-clk obligs overrides world state)))
        (implies (and (acl2::interp-defs-alistp obligs)
                      (acl2::interp-defs-alistp overrides)
@@ -2292,7 +2292,7 @@ The definition body, ~x1, is not a pseudo-term."
    (defthm glcp-generic-run-cases-interp-defs-alistp
      (b* (((mv erp (cons & out-obligs) &)
            (glcp-generic-run-cases
-            param-alist concl untrans-concl vars abort-unknown abort-ctrex
+            param-alist concl untrans-concl vars abort-unknown abort-ctrex abort-vacuous
             nexamples hyp-clk concl-clk run-before run-after obligs overrides
             world state)))
        (implies (and (acl2::interp-defs-alistp obligs)
@@ -2305,7 +2305,7 @@ The definition body, ~x1, is not a pseudo-term."
    (defthm glcp-generic-run-cases-correct
      (b* (((mv erp (cons clauses out-obligs) &)
            (glcp-generic-run-cases
-            param-alist concl untrans-concl vars abort-unknown abort-ctrex
+            param-alist concl untrans-concl vars abort-unknown abort-ctrex abort-vacuous
             nexamples hyp-clk concl-clk run-before run-after obligs overrides
             world state)))
        (implies (and (glcp-generic-ev-theoremp
@@ -2326,7 +2326,7 @@ The definition body, ~x1, is not a pseudo-term."
    (defthm glcp-generic-run-cases-bad-obligs
      (b* (((mv erp (cons & out-obligs) &)
            (glcp-generic-run-cases
-            param-alist concl untrans-concl vars abort-unknown abort-ctrex
+            param-alist concl untrans-concl vars abort-unknown abort-ctrex abort-vacuous
             nexamples hyp-clk concl-clk run-before run-after obligs overrides
             world state)))
        (implies (and (not erp)
@@ -2340,7 +2340,7 @@ The definition body, ~x1, is not a pseudo-term."
    (defthm glcp-generic-run-cases-ok-obligs
      (b* (((mv erp (cons & out-obligs) &)
            (glcp-generic-run-cases
-            param-alist concl untrans-concl vars abort-unknown abort-ctrex
+            param-alist concl untrans-concl vars abort-unknown abort-ctrex abort-vacuous
             nexamples hyp-clk concl-clk run-before run-after obligs overrides
             world state)))
        (implies (and (not erp)
@@ -2435,7 +2435,7 @@ The definition body, ~x1, is not a pseudo-term."
    (defthmd glcp-generic-run-parametrized-correct-rw
      (b* (((mv erp (cons clauses out-obligs) &)
            (glcp-generic-run-parametrized
-            hyp concl untrans-concl vars bindings id abort-unknown abort-ctrex
+            hyp concl untrans-concl vars bindings id abort-unknown abort-ctrex abort-vacuous
             nexamples hyp-clk concl-clk obligs overrides world st)))
        (implies (and (bind-free (check-top-level-bind-free
                                  '((alist . alist)) acl2::mfc state)
@@ -2463,7 +2463,7 @@ The definition body, ~x1, is not a pseudo-term."
    (defthmd glcp-generic-run-cases-correct-rw
      (b* (((mv erp (cons clauses out-obligs) &)
            (glcp-generic-run-cases
-            param-alist concl untrans-concl vars abort-unknown abort-ctrex
+            param-alist concl untrans-concl vars abort-unknown abort-ctrex abort-vacuous
             nexamples hyp-clk concl-clk run-before run-after obligs overrides
             world st)))
        (implies (and (bind-free (check-top-level-bind-free

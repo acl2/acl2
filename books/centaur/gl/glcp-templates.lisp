@@ -191,7 +191,8 @@ but its arity is ~x3.  Its formal parameters are ~x4."
 (defconst *glcp-run-parametrized-template*
   '(defun run-parametrized
      (hyp concl untrans-concl vars bindings id abort-unknown abort-ctrex
-          nexamples hyp-clk concl-clk obligs overrides world state)
+          abort-vacuous nexamples hyp-clk concl-clk obligs overrides world
+          state)
      (b* ((bound-vars (strip-cars bindings))
           ((er hyp)
            (if (pseudo-termp hyp)
@@ -245,8 +246,10 @@ In ~@0: The conclusion countains the following unbound variables: ~x1~%"
           (hyp-bdd (bfr-or (gtests-nonnil hyp-test)
                            (gtests-unknown hyp-test)))
           ((when (not hyp-bdd))
-           (cw "NOTE: Hypothesis is not satisfiable~%")
-           (value (cons (list cov-clause) obligs1)))
+           (if abort-vacuous
+               (glcp-error "Hypothesis is not satisfiable.")
+             (prog2$ (cw "NOTE: Hypothesis is not satisfiable~%")
+                     (value (cons (list cov-clause) obligs1)))))
           (param-al (gobj-alist-to-param-space al hyp-bdd))
           (hyp-param (bfr-to-param-space hyp-bdd hyp-bdd))
           ((mv er obligs2 val state)
@@ -265,17 +268,17 @@ In ~@0: The conclusion countains the following unbound variables: ~x1~%"
 
 (defconst *glcp-run-cases-template*
   '(defun run-cases
-     (param-alist concl untrans-concl vars abort-unknown abort-ctrex nexamples
-                  hyp-clk concl-clk run-before run-after obligs overrides world
-                  state)
+     (param-alist concl untrans-concl vars abort-unknown abort-ctrex
+                  abort-vacuous nexamples hyp-clk concl-clk run-before
+                  run-after obligs overrides world state)
      (declare (ignorable run-after))
      (if (atom param-alist)
          (value (cons nil obligs))
        (b* (((er (cons rest obligs))
              (run-cases
               (cdr param-alist) concl untrans-concl vars abort-unknown
-              abort-ctrex nexamples hyp-clk concl-clk run-before run-after
-              obligs overrides world state))
+              abort-ctrex abort-vacuous nexamples hyp-clk concl-clk run-before
+              run-after obligs overrides world state))
             (hyp (caar param-alist))
             (id (cadar param-alist))
             (g-bindings (cddar param-alist))
@@ -283,8 +286,8 @@ In ~@0: The conclusion countains the following unbound variables: ~x1~%"
             ((er (cons clauses obligs))
              (run-parametrized
               hyp concl untrans-concl vars g-bindings id abort-unknown
-              abort-ctrex nexamples hyp-clk concl-clk obligs overrides world
-              state))
+              abort-ctrex abort-vacuous nexamples hyp-clk concl-clk obligs
+              overrides world state))
             (- (glcp-cases-wormhole run-after id)))
          (value (cons (append clauses rest) obligs))))))
 
@@ -292,7 +295,8 @@ In ~@0: The conclusion countains the following unbound variables: ~x1~%"
   '(defun clause-proc (clause hints state)
      (b* (((list bindings param-bindings hyp param-hyp concl untrans-concl
                  hyp-clk concl-clk param-clk nexamples abort-unknown
-                 abort-ctrex run-before run-after case-split-override) hints)
+                 abort-ctrex abort-vacuous run-before run-after
+                 case-split-override) hints)
           (world (w state))
           ((er overrides)
            (preferred-defs-to-overrides
@@ -331,13 +335,13 @@ In ~@0: The conclusion countains the following unbound variables: ~x1~%"
                                 'obligs))
                    (run-parametrized
                     hyp params-cov-term params-cov-term params-cov-vars bindings
-                    "case-split coverage" abort-unknown abort-ctrex nexamples hyp-clk
+                    "case-split coverage" abort-unknown abort-ctrex abort-vacuous nexamples hyp-clk
                     param-clk 'obligs overrides world state)))
                 (- (cw "Case-split coverage OK~%"))
                 ((er (cons cases-res-clauses obligs1))
                  (run-cases
                   param-alist concl untrans-concl (collect-vars concl)
-                  abort-unknown abort-ctrex nexamples hyp-clk concl-clk
+                  abort-unknown abort-ctrex abort-vacuous nexamples hyp-clk concl-clk
                   run-before run-after obligs0 overrides world state)))
              (value (list* hyp-clause concl-clause
                            (append cases-res-clauses
@@ -349,7 +353,7 @@ In ~@0: The conclusion countains the following unbound variables: ~x1~%"
                (run-parametrized
                 hyp concl untrans-concl (collect-vars concl) bindings
                 "main theorem"
-                abort-unknown abort-ctrex nexamples hyp-clk concl-clk nil
+                abort-unknown abort-ctrex abort-vacuous nexamples hyp-clk concl-clk nil
                 overrides world state)))
            (value (list* hyp-clause concl-clause
                          (append res-clauses
