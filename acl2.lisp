@@ -1301,6 +1301,12 @@ which is saved just in case it's needed later.")
    #\!
    #'sharp-bang-read))
 
+(defun define-sharp-u ()
+  (set-dispatch-macro-character
+   #\#
+   #\u
+   #'sharp-u-read))
+
 (defun modify-acl2-readtable (do-all-changes)
   (let ((*readtable* *acl2-readtable*))
 
@@ -1352,7 +1358,8 @@ which is saved just in case it's needed later.")
       (define-sharp-dot)
       (define-sharp-comma)
       (define-sharp-atsign)
-      (define-sharp-bang))
+      (define-sharp-bang)
+      (define-sharp-u))
 
 ;  Keep control of character reader.  However, we do not need to keep such
 ;  control when reading in a .fas file for CLISP, and in fact, the set-theory
@@ -1382,6 +1389,7 @@ which is saved just in case it's needed later.")
           (define-sharp-comma)
           (define-sharp-atsign)
           (define-sharp-bang)
+          (define-sharp-u)
           (set-dispatch-macro-character
            #\#
            #\\

@@ -42599,6 +42599,58 @@ Lisp definition."
   this syntax nests as one might expect.  In the special case that ~c[expr] is
   a symbol, ~c[#!pkg-name expr] is equivalent to ~c[pkg-name::expr].")
 
+(defdoc sharp-u-reader
+  ":Doc-Section other
+
+  allow underscore characters in numbers~/
+
+  ~bv[]
+  Example:
+
+  ACL2 !>#ub1000_1000_1000_
+  2184
+  ACL2 !>#b100010001000
+  2184
+  ACL2 !>#uo1_1
+  9
+  ACL2 !>#o11
+  9
+  ACL2 !>#u34_5
+  345
+  ACL2 !>#u345
+  345
+  ACL2 !>345
+  345
+  ACL2 !>#ux12_a
+  298
+  ACL2 !>#ux12a
+  298
+  ACL2 !>#u x12a
+  298
+  ACL2 !>#x12a
+  298
+  ACL2 !>#u123_456/7_919
+  123456/7919
+  ACL2 !>
+  ~ev[]~/
+
+  The ACL2 reader supports the use of ~c[#ub], ~c[#uo], and ~c[#ux] where one
+  would otherwise write ~c[#b], ~c[#o], and ~c[#x], respectively (for binary,
+  octal, and hexadecimal numerals), but where underscore characters (`~c[_]')
+  are allowed but ignored.  Also supported is the prefix ~c[#u] in front of a
+  an expression that is a decimal numeral except that underscore characteres
+  are allowed but ignored.
+
+  The precise specification of ~c[#u] is as follows.  The Lisp reader reads one
+  expression after the ~c[#u].  If the result is a number, then that number is
+  returned by the reader.  Otherwise the result must be a symbol whose name
+  begins with one of the characters `~c[B]', `~c[O]', or `~c[X]', or else a
+  decimal digit (one of the characters `~c[0], ~c[1], ..., ~c[9]').  All
+  underscores are removed from the name of that symbol to obtain a string and
+  in the first three cases only, a `~c[#]' character is prepended to that
+  string.  The resulting string is then handed to the Lisp reader in order to
+  obtain the final result, which must be a number or else an error occurs.")
+
 (defdoc evisc-table
   ":Doc-Section events
 

@@ -18152,6 +18152,8 @@
 ;               (value-triple (length (make-list 10000000)))
 ;               (defun f2 (x) x)))
 
+; Cleaned up special-form-or-op-p.
+
   :doc
   ":Doc-Section release-notes
 
@@ -18235,6 +18237,10 @@
   A new, advanced ~il[proof-checker] command, ~c[geneqv], shows the generated
   equivalence relation at the current subterm.  Thanks to Dave Greve for an
   inquiry leading to this enhancement.
+
+  A new reader macro, ~c[#u], permits the use of underscore characters in a
+  number.  ~l[sharp-u-reader].  Thanks to Jared Davis for requesting this
+  capability.
 
   ~st[HEURISTIC IMPROVEMENTS]
 

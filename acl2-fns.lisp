@@ -881,6 +881,8 @@ notation causes an error and (b) the use of ,. is not permitted."
 
 (defvar *inhibit-sharp-comma-warning* nil)
 
+(defvar *inside-sharp-u-read* nil)
+
 (defun sharp-comma-read (stream char n)
   (or *inhibit-sharp-comma-warning*
       (format t
@@ -941,6 +943,31 @@ notation causes an error and (b) the use of ,. is not permitted."
                               ACL2 in this context."
                              package-name))))
     (read stream)))
+
+(defun sharp-u-read (stream char n)
+  (declare (ignore char n))
+  (let* ((*inside-sharp-u-read*
+          (or (not *inside-sharp-u-read*)
+              (error "Recursive attempt to read a sharp-u (#u)~%expression ~
+                      while inside a sharp-u expression.  This is not~%~
+                      allowed.")))
+         (x (read stream t nil t)))
+    (cond
+     ((numberp x) x)
+     ((not (symbolp x))
+      (error "Failure to read #u expression:~%~
+              #u was not followed by a symbol."))
+     (t (let* ((name (symbol-name x))
+               (c (and (not (equal name ""))
+                       (char name 0))))
+          (cond ((member c '(#\B #\O #\X))
+                 (read-from-string
+                  (concatenate 'string "#" (remove #\_ name))))
+                (t (let ((n (read-from-string (remove #\_ name))))
+                     (cond ((numberp n) n)
+                           (t (error "Failure to read #u expression:~%~
+                                      Result ~s is not a numeral."
+                                     n)))))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                            SUPPORT FOR #@
