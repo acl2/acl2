@@ -4343,18 +4343,24 @@
   General Form:
   (show-rewrites &optional rule-id enabled-only-flg)
   ~ev[]
-  Display ~il[rewrite] rules whose left-hand side matches the current subterm.
-  This command shows how the ~c[rewrite] command can be applied.  If
-  ~c[rule-id] is supplied and is a name (non-~c[nil] symbol) or a
-  ~c[:]~ilc[rewrite] or ~c[:]~ilc[definition] ~il[rune], then only the
-  corresponding rewrite rule(s) will be displayed, while if ~c[rule-id] is a
-  positive integer ~c[n], then only the ~c[n]th rule that would be in the list
-  is displayed.  In each case, the display will point out when a rule is
-  currently disabled (in the interactive environment), except that if
-  ~c[enabled-only-flg] is supplied and not ~c[nil], then disabled rules will
-  not be displayed at all.  Finally, among the free variables of any
-  rule (~pl[free-variables]), those that would remain free if the rule were
-  applied will be displayed.  Also ~pl[rewrite]."
+  This command displays ~il[rewrite] rules whose left-hand side matches the
+  current subterm, and shows how that command can be applied.  For each rule
+  displayed, hypotheses are shown that would need to be proved after the rule
+  is applied.  Note that hypotheses are omitted from the display when the
+  system can trivially verify that they hold; to see all hypotheses for each
+  rule in a display that is independent of the arguments of the current
+  subterm, use the ~c[pl] or ~c[pr] command.
+
+  Here are details on the arguments and the output.  If ~c[rule-id] is supplied
+  and is a name (non-~c[nil] symbol) or a ~c[:]~ilc[rewrite] or
+  ~c[:]~ilc[definition] ~il[rune], then only the corresponding rewrite rule(s)
+  will be displayed, while if ~c[rule-id] is a positive integer ~c[n], then
+  only the ~c[n]th rule that would be in the list is displayed.  In each case,
+  the display will point out when a rule is currently disabled (in the
+  interactive environment), except that if ~c[enabled-only-flg] is supplied and
+  not ~c[nil], then disabled rules will not be displayed at all.  Finally,
+  among the free variables of any rule (~pl[free-variables]), those that would
+  remain free if the rule were applied will be displayed.  Also ~pl[rewrite]."
 
   (when-goals
    (let ((conc (conc t))
@@ -4384,6 +4390,74 @@
   are identical."
 
   (value (cons :show-rewrites args)))
+
+(define-pc-macro pl (&optional x)
+
+  "print the rules for a given name~/
+  ~bv[]
+  Examples:
+  pl
+  (pl foo)~/
+
+  General Form:
+  (pl &optional x)
+  ~ev[]
+  This command simply invokes the corresponding command of the top-level ACL2
+  loop; ~pl[pl].  If no argument is given, or if the argument is ~c[nil], then
+  the current subterm should be a call of a function symbol, and the argument
+  is taken to be that symbol.
+
+  If you want information about applying rewrite rules to the current subterm,
+  consider the ~c[show-rewrites] (or equivalently, ~c[sr]) command."
+
+  (cond (x (value `(lisp (pl ',x))))
+        ((null (goals))
+         (pprogn (print-all-goals-proved-message state)
+                 (value 'skip)))
+        (t (let* ((conc (conc t))
+                  (current-addr (current-addr t))
+                  (current-term (fetch-term conc current-addr)))
+             (cond ((or (variablep current-term)
+                        (fquotep current-term)
+                        (flambda-applicationp current-term))
+                    (er soft 'pl
+                        "The current subterm is not the application of a ~
+                         function symbol."))
+                   (t (value `(lisp (pl ',(ffn-symb current-term))))))))))
+
+(define-pc-macro pr (&optional x)
+
+  "print the rules for a given name~/
+  ~bv[]
+  Examples:
+  pr
+  (pr foo)~/
+
+  General Form:
+  (pr &optional x)
+  ~ev[]
+  This command simply invokes the corresponding command of the top-level ACL2
+  loop; ~pl[pr].  If no argument is given, or if the argument is ~c[nil], then
+  the current subterm should be a call of a function symbol, and the argument
+  is taken to be that symbol.
+
+  If you want information about applying rewrite rules to the current subterm,
+  consider the ~c[show-rewrites] (or equivalently, ~c[sr]) command."
+
+  (cond (x (value `(lisp (pr ',x))))
+        ((null (goals))
+         (pprogn (print-all-goals-proved-message state)
+                 (value 'skip)))
+        (t (let* ((conc (conc t))
+                  (current-addr (current-addr t))
+                  (current-term (fetch-term conc current-addr)))
+             (cond ((or (variablep current-term)
+                        (fquotep current-term)
+                        (flambda-applicationp current-term))
+                    (er soft 'pr
+                        "The current subterm is not the application of a ~
+                         function symbol."))
+                   (t (value `(lisp (pr ',(ffn-symb current-term))))))))))
 
 (define-pc-help show-type-prescriptions (&optional rule-id)
 

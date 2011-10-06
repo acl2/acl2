@@ -18245,6 +18245,13 @@
   number.  ~l[sharp-u-reader].  Thanks to Jared Davis for requesting this
   capability.
 
+  New ~il[proof-checker] commands ~c[pl] and ~c[pr] provide interfaces to the
+  ACL2 commands ~c[:]~ilc[pl] and ~c[:]~ilc[pr], respectively.  These can be
+  useful if you want to see trivially-proved hypotheses, as now clarified in
+  the ~il[proof-checker] documentation for its ~c[show-rewrites] command.
+  ~l[proof-checker-commands].  Thanks to Pete Manolios for suggesting such
+  clarification and capability.
+
   ~st[HEURISTIC IMPROVEMENTS]
 
   Reading of ACL2 ~ilc[arrays] (~pl[aref1], ~pl[aref2]) has been made more
