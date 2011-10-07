@@ -3566,6 +3566,7 @@ strrpos.lisp
 strsplit.lisp
 strsubst.lisp
 strtok.lisp
+strval.lisp
 substrp.lisp
 suffixp.lisp
 timetest.lsp
