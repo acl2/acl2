@@ -1111,8 +1111,8 @@
 
 ; The number of pieces of work in the system, *parallelism-work-count*, must be
 ; less than *total-work-limit* in order to enable creation of new pieces of
-; work.  (However, we could go from 49 to 69 pieces of work when encountering a
-; pand; just not from 50 to 52.)
+; work.  (However, if *total-work-limit* were set to 50, we could go from 49 to
+; 69 pieces of work when encountering a pand; just not from 50 to 52.)
 
 ; Why limit the amount of work in the system?  :Doc parallelism-how-to
 ; (subtopic "Another Granularity Issue Related to Thread Limitations") provides
@@ -1129,11 +1129,17 @@
 ; *max-idle-thread-count*) threads.  Presumably you'll get a hard Lisp error
 ; (or seg fault!) if your Lisp cannot create that many threads.
 
-         50)
+; We picked a new value of 200 on September 2011 to support Robert Krug's
+; proof that took ~9000 seconds in serial mode.  Initially, when
+; *total-work-limit* was set to 50, the parallelized proof only saw an
+; improvement to ~2200 seconds, but after changing *total-work-limit* to 200,
+; the parallelized proof now takes ~1300 seconds.
+
+         200)
         (bound (* 2 *core-count*)))
     (when (< val bound)
-      (error "The variable *total-work-limit* needs to be at least ~s, i.e., ~%~
-              at least double the *core-count*.  Please redefine ~%~
+      (error "The variable *total-work-limit* needs to be at least ~s, ~%~
+              i.e., at least double the *core-count*.  Please redefine ~%~
               *total-work-limit* so that it is not ~s."
              bound
              val))
@@ -1146,4 +1152,4 @@
 ; *max-idle-thread-count* to limit this spawning in function
 ; spawn-worker-threads-if-needed.
 
-(* 2 *core-count*))
+  (* 2 *core-count*))

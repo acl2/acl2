@@ -1686,38 +1686,28 @@
                                           (mv nil tests)))))))))
 
 (defun simplify-tests-and-calls (tc)
-  (let* ((tests0 (access tests-and-calls tc :tests)))
+
+; For an example of the utility of removing guard holders, note that lemma
+; STEP2-PRESERVES-DL->NOT2 in
+; books/workshops/2011/verbeek-schmaltz/sources/correctness.lisp has failed
+; when we did not do so.
+
+  (let* ((tests0 (remove-guard-holders-lst
+                  (access tests-and-calls tc :tests))))
     (mv-let
      (var const)
      (term-equated-to-constant-in-termlist tests0)
-     (cond
-      (var
-       (mv-let
-        (changedp tests)
-        (simplify-tests var const tests0)
-        (cond ((null tests) (mv changedp nil)) ; contradictory case
-              (changedp (mv t
-                            (make tests-and-calls
-                                  :tests tests
-                                  :calls (access tests-and-calls tc :calls))))
-              (t (mv nil tc)))))
-      (t (mv nil tc))))))
-
-(defun simplify-tests-and-calls-lst-rec (tc-list)
-  (cond ((endp tc-list)
-         (mv nil nil))
-        (t (mv-let
-            (changedp1 tc)
-            (simplify-tests-and-calls (car tc-list))
-            (mv-let
-             (changedp2 rest)
-             (simplify-tests-and-calls-lst-rec (cdr tc-list))
-             (cond ((null tc) ; contradictory
-                    (mv t rest))
-                   ((or changedp1 changedp2)
-                    (mv t (cons tc rest)))
-                   (t
-                    (mv nil tc-list))))))))
+     (let ((tests
+            (cond (var (mv-let (changedp tests)
+                               (simplify-tests var const tests0)
+                               (declare (ignore changedp))
+                               tests))
+                  (t tests0))))
+       (cond ((null tests) nil) ; contradictory case
+             (t (make tests-and-calls
+                      :tests tests
+                      :calls (remove-guard-holders-lst
+                              (access tests-and-calls tc :calls)))))))))
 
 (defun simplify-tests-and-calls-lst (tc-list)
 
@@ -1736,10 +1726,10 @@
 
 ; (thm (equal (foo x) yyy))
 
-  (mv-let (changedp ans)
-          (simplify-tests-and-calls-lst-rec tc-list)
-          (declare (ignore changedp))
-          ans))
+  (cond ((endp tc-list)
+         nil)
+        (t (cons (simplify-tests-and-calls (car tc-list))
+                 (simplify-tests-and-calls-lst (cdr tc-list))))))
 
 (defun induction-machine-for-fn (names body ruler-extenders)
 
@@ -1978,12 +1968,9 @@
 
   As a ``user-friendly'' gesture, ACL2 implicitly moves ~c[map]-like functions
   out of encapsulations; logically speaking, they are introduced after the
-  encapsulation.  This simplifies the constraint.  This is done only for
-  ``top-level'' encapsulations.  When an ~c[encapsulate] containing a non-empty
-  ~il[signature] list is embedded in another ~c[encapsulate] with a non-empty
-  signature list, no attempt is made to move ~c[map]-like functions out.  The
-  user is advised, via the ``infected'' warning, to phrase the encapsulation in
-  the simplest way possible.
+  encapsulation.  This simplifies the constraint.  When the constraint cannot
+  be thus simplfied the user is advised, via the ``infected'' warning, to
+  phrase the encapsulation in the simplest way possible.
 
   The lingering bug between Versions 1.5 and 2.3 mentioned above was due to our
   failure to detect the ~c[g]-like nature of some functions when they were

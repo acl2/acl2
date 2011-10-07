@@ -2912,15 +2912,18 @@
   #+(and (not acl2-loop-only) acl2-rewrite-meter) ; for stats on rewriter depth
   (setq *rewrite-depth-max* 0)
 
-  (pprogn (push-timer 'other-time 0 state)
+  (pprogn (cond ((null (cdr (get-timer 'other-time state))) ; top-level event
+                 (mv-let (x state)
+                         (main-timer state)
+                         (declare (ignore x))
+                         state))
+                (t ; inbetween events
+                 (increment-timer 'other-time state)))
+          (push-timer 'other-time 0 state)
           (push-timer 'prove-time 0 state)
           (push-timer 'print-time 0 state)
           (push-timer 'proof-tree-time 0 state)
-          (push-warning-frame state)
-          (mv-let (x state)
-                  (main-timer state)
-                  (declare (ignore x))
-                  state)))
+          (push-warning-frame state)))
 
 (defun print-warnings-summary (state)
   (mv-let

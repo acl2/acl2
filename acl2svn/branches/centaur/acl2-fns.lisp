@@ -881,6 +881,8 @@ notation causes an error and (b) the use of ,. is not permitted."
 
 (defvar *inhibit-sharp-comma-warning* nil)
 
+(defvar *inside-sharp-u-read* nil)
+
 (defun sharp-comma-read (stream char n)
   (or *inhibit-sharp-comma-warning*
       (format t
@@ -941,6 +943,31 @@ notation causes an error and (b) the use of ,. is not permitted."
                               ACL2 in this context."
                              package-name))))
     (read stream)))
+
+(defun sharp-u-read (stream char n)
+  (declare (ignore char n))
+  (let* ((*inside-sharp-u-read*
+          (or (not *inside-sharp-u-read*)
+              (error "Recursive attempt to read a sharp-u (#u)~%expression ~
+                      while inside a sharp-u expression.  This is not~%~
+                      allowed.")))
+         (x (read stream t nil t)))
+    (cond
+     ((numberp x) x)
+     ((not (symbolp x))
+      (error "Failure to read #u expression:~%~
+              #u was not followed by a symbol."))
+     (t (let* ((name (symbol-name x))
+               (c (and (not (equal name ""))
+                       (char name 0))))
+          (cond ((member c '(#\B #\O #\X))
+                 (read-from-string
+                  (concatenate 'string "#" (remove #\_ name))))
+                (t (let ((n (read-from-string (remove #\_ name))))
+                     (cond ((numberp n) n)
+                           (t (error "Failure to read #u expression:~%~
+                                      Result ~s is not a numeral."
+                                     n)))))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                            SUPPORT FOR #@
@@ -1173,7 +1200,7 @@ notation causes an error and (b) the use of ,. is not permitted."
   (let ((fn
          #+gcl       'si::getenv
          #+allegro   'sys::getenv
-         #+lispworks 'cl::getenv
+         #+lispworks 'hcl::getenv
          #+ccl       'ccl::getenv
          #+sbcl      'sb-ext::posix-getenv
          #+clisp     'ext:getenv))
@@ -1348,25 +1375,9 @@ notation causes an error and (b) the use of ,. is not permitted."
 
 (defmacro special-form-or-op-p (name)
 
-; This odd macro deals with the problem that the notion of special operator
-; is defined differently in different lisps.
+; At one time we thought that special-operator-p does not work in all Lisps.
+; But if that was true, it no longer seems to be the case in October 2011.
 
-; Even though cmu lisp purports to be CLTL2, in fact it does not
-; contain a defun for special-form-p and does contain a defun of
-; special-operator-p.
-
-; SBCL makes no claim to being CLTL2.  Unfortunately acl2.lisp helpfully
-; pushes :CLTL2 to *FEATURES* anyway (for all :ANSI-CL implementations).
-
-  #+(and (not DRAFT-ANSI-CL-2) CLTL2
-         (not cmu) (not sbcl) (not clisp) (not ccl))
-  `(common-lisp::special-form-p ,name)
-  #+ccl
-  `(common-lisp::special-operator-p ,name)
-  #+(and (not DRAFT-ANSI-CL-2) (not CLTL2)
-         (not cmu) (not sbcl) (not clisp) (not ccl))
-  `(lisp::special-form-p ,name)
-  #+(or (and DRAFT-ANSI-CL-2 (not ccl)) cmu sbcl clisp)
   `(special-operator-p ,name))
 
 (defvar *startup-package-name* "ACL2")

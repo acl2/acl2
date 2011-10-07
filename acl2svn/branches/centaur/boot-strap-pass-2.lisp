@@ -735,7 +735,7 @@
 (defattach oncep-tp oncep-tp-builtin)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; Attachments: waterfall-parallelism and waterfall-printin
+;;; Attachments: waterfall-parallelism and waterfall-printing
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (encapsulate

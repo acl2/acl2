@@ -294,12 +294,32 @@
              0
            (1+ (mod ,subscript (1- *future-array-size*))))))
 
-(defun reset-future-parallelism-variables ()
-  ;(sleep 30)
-; We need to send-die-toall-except-initial-threads when we evaluate save-exec
-; to save the ACL2 image at the end of the build process
+(defvar *resource-and-timing-based-parallelizations*
+  0
+  "Tracks the number of times that we parallelize execution when
+  waterfall-parallelism is set to :resource-and-timing-based")
 
-;  (send-die-to-all-except-initial-threads)
+(defvar *resource-and-timing-based-serializations*
+  0
+  "Tracks the number of times that we do not parallize execution when
+  waterfall-parallelism is set to :resource-and-timing-based")
+
+(defvar *resource-based-parallelizations*
+  0
+  "Tracks the number of times that we parallelize execution when
+  waterfall-parallelism is set to :resource-based")
+
+(defvar *resource-based-serializations*
+  0
+  "Tracks the number of times that we do not parallize execution when
+  waterfall-parallelism is set to :resource-based")
+
+(defun reset-future-parallelism-variables ()
+
+; Parallelism wart: some relevant variables may be unintentionally omitted from
+; this reset.
+
+  ;(sleep 30)
 
   (setf *thread-array* 
         (make-array *future-array-size* :initial-element nil))
@@ -329,6 +349,10 @@
   (setf *last-slot-saved* (make-atomically-modifiable-counter 0))
   (setf *threads-spawned* 0)
 
+  (setf *total-future-count* (make-atomically-modifiable-counter 0))
+  (setf *unassigned-and-active-future-count*
+        (make-atomically-modifiable-counter 0))
+
 ; If we let the threads expire naturally instead of calling the above
 ; send-die-to-all-except-initial-threads, then this setting is unnecessary.
   (setf *idle-future-thread-count* (make-atomically-modifiable-counter 0))
@@ -336,6 +360,13 @@
 ; (setf *resumptive-future-thread-count* (make-atomically-modifiable-counter 0))
 
 ; (setf *acl2-par-arrays-lock* (make-lock))
+
+  (setf *resource-and-timing-based-parallelizations* 0)
+  (setf *resource-and-timing-based-serializations* 0)
+
+  (setf *resource-based-parallelizations* 0)
+  (setf *resource-based-serializations* 0)
+;  (setf *aborted-futures-total* 0)
   t ; return t
 )
 

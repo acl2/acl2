@@ -2258,7 +2258,9 @@
 
   ~c[Iff] is the ACL2 biconditional, ``if and only if''.  ~c[(iff P Q)]
   means that either ~c[P] and ~c[Q] are both false (i.e., ~c[nil]) or both true
-  (i.e., not ~c[nil]).~/~/"
+  (i.e., not ~c[nil]).
+
+  To see the ACL2 definition of this function, ~pl[pf].~/~/"
 
   (declare (xargs :guard t))
   (if p (if q t nil) (if q nil t)))
@@ -2270,7 +2272,9 @@
   logical ``exclusive or''~/
 
   ~c[Xor] is the ACL2 exclusive-or function.  ~c[(xor P Q)] means that either
-  ~c[P] or ~c[Q], but not both, is false (i.e., ~c[nil]).~/~/"
+  ~c[P] or ~c[Q], but not both, is false (i.e., ~c[nil]).
+
+  To see the ACL2 definition of this function, ~pl[pf].~/~/"
 
   (declare (xargs :guard t))
   (if p (if q nil t) (if q t nil)))
@@ -2285,7 +2289,9 @@
 
   ~l[generalized-booleans] for a discussion of a potential
   soundness problem for ACL2 related to the question:  Which Common
-  Lisp functions are known to return Boolean values?~/"
+  Lisp functions are known to return Boolean values?
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard t))
   (if (equal x t)
@@ -2310,7 +2316,10 @@
   logical implication~/
 
   ~c[Implies] is the ACL2 implication function.  ~c[(implies P Q)] means
-  that either ~c[P] is false (i.e., ~c[nil]) or ~c[Q] is true (i.e., not ~c[nil]).~/~/"
+  that either ~c[P] is false (i.e., ~c[nil]) or ~c[Q] is true (i.e., not
+  ~c[nil]).
+
+  To see the ACL2 definition of this function, ~pl[pf].~/~/"
 
   (declare (xargs :mode :logic :guard t))
   (if p (if q t nil) t))
@@ -2336,7 +2345,9 @@
   the negation of anything else is ~c[nil].~/
 
   ~c[Not] is a Common Lisp function.  See any Common Lisp documentation
-  for more information.~/"
+  for more information.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
  (declare (xargs :mode :logic :guard t))
  (if p nil t))
@@ -2542,7 +2553,9 @@
   recognizer for proper (null-terminated) lists~/
 
   ~c[True-listp] is the function that checks whether its argument is a
-  list that ends in, or equals, ~c[nil].~/~/"
+  list that ends in, or equals, ~c[nil].
+
+  To see the ACL2 definition of this function, ~pl[pf].~/~/"
 
   (declare (xargs :guard t :mode :logic))
   (if (consp x)
@@ -2797,7 +2810,9 @@
 
   (Low-level implementation note.  ACL2 provides a highly-optimized
   implementation of ~c[len], which is tail-recursive and fixnum-aware, that
-  differs from its simple ACL2 definition.)~/"
+  differs from its simple ACL2 definition.)
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard t :mode :logic))
   #-acl2-loop-only
@@ -2822,7 +2837,9 @@
   string.~/
 
   ~c[Length] is a Common Lisp function.  See any Common Lisp
-  documentation for more information.~/"
+  documentation for more information.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard (if (true-listp x)
                              t
@@ -2958,7 +2975,9 @@
   The predicate ~c[eqlablep] tests whether its argument is suitable for
   ~ilc[eql], at least one of whose arguments must satisfy this predicate
   in Common Lisp.  ~c[(Eqlablep x)] is true if and only if its argument
-  is a number, a symbol, or a character.~/~/"
+  is a number, a symbol, or a character.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/~/"
 
   (declare (xargs :mode :logic :guard t))
   (or (acl2-numberp x)
@@ -2987,7 +3006,9 @@
   recognizer for a true list of objects each suitable for ~ilc[eql]~/
 
   The predicate ~c[eqlable-listp] tests whether its argument is a
-  ~ilc[true-listp] of objects satisfying ~ilc[eqlablep].~/~/"
+  ~ilc[true-listp] of objects satisfying ~ilc[eqlablep].
+
+  To see the ACL2 definition of this function, ~pl[pf].~/~/"
 
   (declare (xargs :guard t))
   (if (consp l)
@@ -3029,7 +3050,9 @@
   ~ilc[cons] pair.~/
 
   ~c[Atom] has a ~il[guard] of ~c[t], and is a Common Lisp function.  See any
-  Common Lisp documentation for more information.~/"
+  Common Lisp documentation for more information.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
  (declare (xargs :mode :logic :guard t))
  (not (consp x)))
@@ -3043,7 +3066,9 @@
   ~il[coerce] to a list of characters~/
 
   Non-characters in the given list are ~il[coerce]d to the character with
-  code 0.~/~/"
+  code 0.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/~/"
 
   (declare (xargs :guard t))
   (cond ((atom x) nil)
@@ -3064,7 +3089,9 @@
 
   The predicate ~c[eqlable-alistp] tests whether its argument is a
   ~ilc[true-listp] of ~ilc[consp] objects whose ~ilc[car]s all satisfy
-  ~ilc[eqlablep].~/~/"
+  ~ilc[eqlablep].
+
+  To see the ACL2 definition of this function, ~pl[pf].~/~/"
 
   (declare (xargs :guard t))
   (cond ((atom x) (equal x nil))
@@ -3080,7 +3107,9 @@
 
   ~c[(alistp x)] is true if and only if ~c[x] is a list of ~ilc[cons] pairs.~/
 
-  ~c[(alistp x)] has a ~il[guard] of ~c[t].~/"
+  ~c[(alistp x)] has a ~il[guard] of ~c[t].
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard t))
   (cond ((atom l) (eq l nil))
@@ -3108,7 +3137,9 @@
 
   ~c[(Acons key datum alist)] has a ~il[guard] of ~c[(alistp alist)].
   ~c[Acons] is a Common Lisp function.  See any Common Lisp
-  documentation for more information.~/"
+  documentation for more information.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard (alistp alist)))
   (cons (cons key datum) alist))
@@ -3129,7 +3160,9 @@
   argument.  ~l[guard] for general information about ~il[guard]s.
 
   ~c[Endp] is a Common Lisp function.  See any Common Lisp
-  documentation for more information.~/"
+  documentation for more information.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :mode :logic
                   :guard (or (consp x) (equal x nil))))
@@ -3399,7 +3432,9 @@
   of a list using ~ilc[endp] instead of ~c[null]; ~pl[endp].~/
 
   ~c[Null] is a Common Lisp function.  See any Common Lisp
-  documentation for more information.~/"
+  documentation for more information.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :mode :logic :guard t))
   (eq x nil))
@@ -3411,7 +3446,9 @@
   recognizer for a true list of symbols~/
 
   The predicate ~c[symbol-listp] tests whether its argument is a
-  true list of symbols.~/~/"
+  true list of symbols.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/~/"
 
   (declare (xargs :guard t :mode :logic))
   (cond ((atom lst) (eq lst nil))
@@ -3566,7 +3603,9 @@
   collecting up all first components (~ilc[car]s).  This function is
   implemented in a tail-recursive way, despite its logical definition.~/
 
-  ~c[(strip-cars x)] has a ~il[guard] of ~c[(alistp x)].~/"
+  ~c[(strip-cars x)] has a ~il[guard] of ~c[(alistp x)].
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard (alistp x)))
 
@@ -3594,7 +3633,9 @@
   ~c[(strip-cdrs x)] has a ~il[guard] of ~c[(alistp x)], and returns the list
   obtained by walking through the list ~c[x] and collecting up all second
   components (~ilc[cdr]s).  This function is implemented in a tail-recursive
-  way, despite its logical definition.~/~/"
+  way, despite its logical definition.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/~/"
 
   (declare (xargs :guard (alistp x)))
 
@@ -4081,7 +4122,9 @@
      `(our-multiple-value-prog1 ;; better
        ,y
        (cw \"Message showing argument 1: ~~x0~~%\" ,x))))
-  ~ev[]~/"
+  ~ev[]
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (ignore fn eager-arg)
            (xargs :guard
@@ -4218,12 +4261,14 @@
 
   In the ACL2 logic, ~c[(mbe :exec exec-code :logic logic-code)] equals
   ~c[logic-code]; the value of ~c[exec-code] is ignored.  However, in raw Lisp
-  it is the other way around:  this form macroexpands simply to ~c[exec-code].
+  it is the other way around: this form macroexpands simply to ~c[exec-code].
   ACL2's ~il[guard] verification mechanism ensures that the raw Lisp code is
   only evaluated when appropriate, since the guard proof obligations generated
-  for this call of ~c[mbe] are ~c[(equal exec-code logic-code)] together with
-  the guard proof obligations from ~c[exec-code].  ~l[verify-guards] and, for
-  general discussion of guards, ~pl[guard].
+  for this call of ~c[mbe] include not only the guard proof obligations from
+  ~c[exec-code], but also, under suitable contextual assumptions, the term
+  ~c[(equal exec-code logic-code)].  ~l[verify-guards] (in particular, for
+  discussion of the contextual assumptions from the ~c[:guard] and
+  ~ilc[IF]-tests) and, for general discussion of guards, ~pl[guard].
 
   Warning for nested ~ilc[mbe] calls: The equality of ~c[:exec] and ~c[:logic]
   code is not checked in the scope of superior ~c[:logic] code, as for the
@@ -4949,7 +4994,9 @@
   recognizer for association lists with symbols as keys~/
 
   ~c[(Symbol-alistp x)] is true if and only if ~c[x] is a list of pairs of the
-  form ~c[(cons key val)] where ~c[key] is a ~ilc[symbolp].~/~/"
+  form ~c[(cons key val)] where ~c[key] is a ~ilc[symbolp].
+
+  To see the ACL2 definition of this function, ~pl[pf].~/~/"
 
   (declare (xargs :guard t))
   (cond ((atom x) (eq x nil))
@@ -5524,7 +5571,9 @@
   ~c[l] is a ~ilc[true-listp].
 
   ~c[Nth] is a Common Lisp function.  See any Common Lisp documentation
-  for more information.~/"
+  for more information.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard (and (integerp n)
                               (>= n 0)
@@ -5550,7 +5599,9 @@
   ~c[s] is a ~ilc[stringp].
 
   ~c[Char] is a Common Lisp function.  See any Common Lisp documentation
-  for more information.~/"
+  for more information.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard (and (stringp s)
                               (integerp n)
@@ -5565,7 +5616,9 @@
   recognizer for proper (null-terminated) non-empty lists~/
 
   ~c[Proper-consp] is the function that checks whether its argument is
-  a non-empty list that ends in ~c[nil].  Also ~pl[true-listp].~/~/"
+  a non-empty list that ends in ~c[nil].  Also ~pl[true-listp].
+
+  To see the ACL2 definition of this function, ~pl[pf].~/~/"
 
   (declare (xargs :guard t))
   (and (consp x)
@@ -5579,7 +5632,9 @@
 
   ~c[Improper-consp] is the function that checks whether its argument
   is a non-empty list that ends in other than ~c[nil].
-  ~l[proper-consp] and also ~pl[true-listp].~/~/"
+  ~l[proper-consp] and also ~pl[true-listp].
+
+  To see the ACL2 definition of this function, ~pl[pf].~/~/"
 
   (declare (xargs :guard t))
   (and (consp x)
@@ -5626,7 +5681,9 @@
   part.).~/
 
   ~c[Conjugate] is a Common Lisp function.  See any Common Lisp
-  documentation for more information.~/"
+  documentation for more information.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard (acl2-numberp x)))
   (if (complex/complex-rationalp x)
@@ -5985,7 +6042,9 @@
   ~pl[rfix] for analogous functions that coerce to a natural
   number, an integer, and a rational number, respectively.~/
 
-  ~c[Fix] has a ~il[guard] of ~c[t].~/"
+  ~c[Fix] has a ~il[guard] of ~c[t].
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard t))
   (if (acl2-numberp x)
@@ -7503,7 +7562,9 @@
 
   The predicate ~c[r-eqlable-alistp] tests whether its argument is a
   ~ilc[true-listp] of ~ilc[consp] objects whose ~ilc[cdr]s all satisfy
-  ~ilc[eqlablep].~/~/"
+  ~ilc[eqlablep].
+
+  To see the ACL2 definition of this function, ~pl[pf].~/~/"
 
   (declare (xargs :guard t))
   (cond ((atom x) (equal x nil))
@@ -7520,7 +7581,9 @@
   recognizer for association lists with symbols as values~/
 
   ~c[(R-symbol-alistp x)] is true if and only if ~c[x] is a list of pairs of
-  the form ~c[(cons key val)] where ~c[val] is a ~ilc[symbolp].~/~/"
+  the form ~c[(cons key val)] where ~c[val] is a ~ilc[symbolp].
+
+  To see the ACL2 definition of this function, ~pl[pf].~/~/"
 
   (declare (xargs :guard t))
   (cond ((atom x) (equal x nil))
@@ -7646,7 +7709,9 @@
   character.
 
   ~c[Standard-char-p] is a Common Lisp function.  See any Common Lisp
-  documentation for more information.~/"
+  documentation for more information.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
 ; The following guard is required by p. 234 of CLtL.
 
@@ -7665,7 +7730,9 @@
   null-terminated list all of whose members are standard ~il[characters].
   ~l[standard-char-p].~/
 
-  ~c[Standard-char-listp] has a ~il[guard] of ~c[t].~/"
+  ~c[Standard-char-listp] has a ~il[guard] of ~c[t].
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard t))
   (cond ((consp l)
@@ -7682,7 +7749,9 @@
   recognizer for a true list of characters~/
 
   The predicate ~c[character-listp] tests whether its argument is a
-  true list of ~il[characters].~/~/"
+  true list of ~il[characters].
+
+  To see the ACL2 definition of this function, ~pl[pf].~/~/"
 
   (declare (xargs :guard t))
   (cond ((atom l) (equal l nil))
@@ -7785,7 +7854,9 @@
   symbol, or a character.
 
   ~c[String] is a Common Lisp function.  See any Common Lisp
-  documentation for more information.~/"
+  documentation for more information.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard
 
@@ -7819,7 +7890,9 @@
   The ~il[guard] for ~c[alpha-char-p] requires its argument to be a character.
 
   ~c[Alpha-char-p] is a Common Lisp function.  See any Common Lisp
-  documentation for more information.~/"
+  documentation for more information.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
 ; The following guard is required by p. 235 of CLtL.
 
@@ -7845,7 +7918,9 @@
   character (~pl[standard-char-p]).
 
   ~c[Upper-case-p] is a Common Lisp function.  See any Common Lisp
-  documentation for more information.~/"
+  documentation for more information.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
 ; The guard characterp is required by p. 235 of CLtL.  However, In Allegro 6.0
 ; we see characters other than standard characters that are treated as upper
@@ -7872,7 +7947,9 @@
   character (~pl[standard-char-p]).
 
   ~c[Lower-case-p] is a Common Lisp function.  See any Common Lisp
-  documentation for more information.~/"
+  documentation for more information.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
 ; The guard characterp is required by p. 235 of CLtL.  However, In Allegro 6.0
 ; we see characters other than standard characters that are treated as upper
@@ -7899,7 +7976,9 @@
   character (~pl[standard-char-p]).
 
   ~c[Char-upcase] is a Common Lisp function.  See any Common Lisp
-  documentation for more information.~/"
+  documentation for more information.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
 ; The guard characterp is required by p. 231 of CLtL.  However, In Allegro 6.0
 ; we see characters other than standard characters that are treated as upper
@@ -7952,7 +8031,9 @@
   character (~pl[standard-char-p]).
 
   ~c[Char-downcase] is a Common Lisp function.  See any Common Lisp
-  documentation for more information.~/"
+  documentation for more information.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
 ; The guard characterp is required by p. 231 of CLtL.  However, In Allegro 6.0
 ; we see characters other than standard characters that are treated as upper
@@ -8057,7 +8138,9 @@
   containing only standard characters.
 
   ~c[String-downcase] is a Common Lisp function.  See any Common Lisp
-  documentation for more information.~/"
+  documentation for more information.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard (and (stringp x)
                               (standard-char-listp (coerce x 'list)))))
@@ -8095,7 +8178,9 @@
   containing only standard characters.
 
   ~c[String-upcase] is a Common Lisp function.  See any Common Lisp
-  documentation for more information.~/"
+  documentation for more information.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
     (declare (xargs :guard (and (stringp x)
                                 (standard-char-listp (coerce x 'list)))))
@@ -8210,7 +8295,9 @@
   standard ~il[characters] (~pl[standard-char-p]).
 
   ~c[Char-equal] is a Common Lisp function.  See any Common Lisp
-  documentation for more information.~/"
+  documentation for more information.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard (and (characterp x)
                               (standard-char-p x)
@@ -8228,7 +8315,9 @@
   The predicate ~c[atom-listp] tests whether its argument is a
   ~ilc[true-listp] of ~il[atom]s, i.e., of non-conses.~/
 
-  Also ~pl[good-atom-listp].~/"
+  Also ~pl[good-atom-listp].
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard t))
   (cond ((atom lst) (eq lst nil))
@@ -8257,7 +8346,9 @@
   ~ilc[true-listp] of ``good'' ~il[atom]s, i.e., where each element is a
   number, a symbol, a character, or a string.~/
 
-  Also ~pl[atom-listp].~/"
+  Also ~pl[atom-listp].
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard t))
   (cond ((atom lst) (eq lst nil))
@@ -8291,7 +8382,9 @@
   a natural number, a rational number, a real, and a number,
   respectively.~/
 
-  ~c[Ifix] has a ~il[guard] of ~c[t].~/"
+  ~c[Ifix] has a ~il[guard] of ~c[t].
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard t))
   (if (integerp x) x 0))
@@ -8308,7 +8401,9 @@
   functions that coerce to a natural number, an integer, a real, and a
   number, respectively.~/
 
-  ~c[Rfix] has a ~il[guard] of ~c[t].~/"
+  ~c[Rfix] has a ~il[guard] of ~c[t].
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard t))
   (if (rationalp x) x 0))
@@ -8335,7 +8430,9 @@
   that coerce to a natural number, an integer, a rational, and a
   number, respectively.~/
 
-  ~c[Realfix] has a ~il[guard] of ~c[t].~/"
+  ~c[Realfix] has a ~il[guard] of ~c[t].
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard t))
   (if (real/rationalp x) x 0))
@@ -8352,7 +8449,9 @@
   analogous functions that coerce to an integer, a rational number, a
   real, and a number, respectively.~/
 
-  ~c[Nfix] has a ~il[guard] of ~c[t].~/"
+  ~c[Nfix] has a ~il[guard] of ~c[t].
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard t))
   (if (and (integerp x) (>= x 0))
@@ -8398,7 +8497,9 @@
   consisting of standard characters (~pl[standard-char-listp]).
 
   ~c[String-equal] is a Common Lisp function.  See any Common Lisp
-  documentation for more information.~/"
+  documentation for more information.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard (and (stringp str1)
                               (standard-char-listp (coerce str1 'list))
@@ -8419,7 +8520,9 @@
   pairs of the form ~c[(cons key val)] where ~c[key] is a string all of whose
   characters are standard (~pl[standard-char-p]).~/
 
-  ~c[Standard-string-alistp] has a ~il[guard] of ~c[t].~/"
+  ~c[Standard-string-alistp] has a ~il[guard] of ~c[t].
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard t))
   (cond ((atom x) (eq x nil))
@@ -8445,7 +8548,9 @@
   rather than ~ilc[equal].~/
 
   The ~il[guard] for ~c[assoc-string-equal] requires that ~c[x] is a string
-  and ~c[alist] is an alist.~/"
+  and ~c[alist] is an alist.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard (and (stringp str)
                               (standard-char-listp (coerce str 'list))
@@ -8512,7 +8617,9 @@
   natural number, and ~c[nil] otherwise.  We recommend the file
   ~c[books/arithmetic/natp-posp.lisp] as a book for reasoning about ~c[posp]
   and ~c[natp].  This book is included in ~c[books/arithmetic/top] and
-  ~c[books/arithmetic/top-with-meta]."
+  ~c[books/arithmetic/top-with-meta].
+
+  To see the ACL2 definition of this function, ~pl[pf]."
 
   (declare (xargs :guard t :mode :logic))
   (and (integerp x)
@@ -8533,7 +8640,9 @@
   to ~c[(and (natp x) (not (equal x 0)))].  We recommend the file
   ~c[books/ordinals/natp-posp] as a book for reasoning about ~c[posp] and
   ~c[natp].  This book is included in ~c[books/arithmetic/top] and
-  ~c[books/arithmetic/top-with-meta]."
+  ~c[books/arithmetic/top-with-meta].
+
+  To see the ACL2 definition of this function, ~pl[pf]."
 
   (declare (xargs :guard t :mode :logic))
   (and (integerp x)
@@ -8553,7 +8662,9 @@
   We introduce the function ~c[o-finp] which returns ~c[t] for any ordinal that
   is finite, else ~c[nil].  This function is equivalent to the function
   ~ilc[atom], and is introduced so that we can ~ilc[disable] its definition
-  when dealing with ordinals (also ~pl[make-ord])."
+  when dealing with ordinals (also ~pl[make-ord]).
+
+  To see the ACL2 definition of this function, ~pl[pf]."
 
   (declare (xargs :guard t :mode :logic))
   (atom x))
@@ -8579,7 +8690,9 @@
   the case of a natural number, the value returned is 0 (since a natural
   number, ~c[n], can be thought of as (w^0)n).
 
-  For the corresponding coefficient, ~pl[o-first-coeff]."
+  For the corresponding coefficient, ~pl[o-first-coeff].
+
+  To see the ACL2 definition of this function, ~pl[pf]."
 
   (declare (xargs :guard (or (o-finp x) (consp (car x))) :mode :logic))
   (if (o-finp x)
@@ -8597,7 +8710,9 @@
   the case of a natural number, this function returns the ordinal itself
   (since a natural number, n, can be thought of as (w^0)n).
 
-  For the corresponding exponent, ~pl[o-first-expt]."
+  For the corresponding exponent, ~pl[o-first-expt].
+
+  To see the ACL2 definition of this function, ~pl[pf]."
 
   (declare (xargs :guard (or (o-finp x) (consp (car x))) :mode :logic))
   (if (o-finp x)
@@ -8614,7 +8729,9 @@
   of an ordinal can be obtained by using ~ilc[o-first-expt] and
   ~ilc[o-first-coeff] respectively.  To obtain the rest of the ordinal (for
   recursive analysis), use the ~c[o-rst] function. It returns the rest of the
-  ordinal after the first exponent and coefficient are removed."
+  ordinal after the first exponent and coefficient are removed.
+
+  To see the ACL2 definition of this function, ~pl[pf]."
 
   (declare (xargs :guard (consp x) :mode :logic))
   (cdr x))
@@ -8693,7 +8810,9 @@
    relations are shown well-founded by providing an order-preserving
    mapping from their domain into the ordinals.  ~l[defun] for
    details on how to specify which well-founded relation is to be
-   used."
+   used.
+
+  To see the ACL2 definition of this function, ~pl[pf]."
   (declare (xargs :guard (and (o<g x) (o<g y)) :mode :logic))
   (cond ((o-finp x)
          (or (o-infp y) (< x y)))
@@ -8900,7 +9019,9 @@
 
    Fundamental to ACL2 is the fact that ~ilc[o<] is well-founded on
    ~c[epsilon-0] ordinals.  That is, there is no ``infinitely descending
-   chain'' of such ordinals.  ~l[proof-of-well-foundedness]."
+   chain'' of such ordinals.  ~l[proof-of-well-foundedness].
+
+  To see the ACL2 definition of this function, ~pl[pf]."
 
   (declare (xargs :guard t
                   :verify-guards nil))
@@ -8950,7 +9071,9 @@
 
   The reason ~c[make-ord] is used rather than ~ilc[cons] is that it
   allows us to reason more abstractly about the ordinals, without
-  having to worry about the underlying representation."
+  having to worry about the underlying representation.
+
+  To see the ACL2 definition of this function, ~pl[pf]."
 
   (declare (xargs :guard (and (posp fco)
                               (o-p fe)
@@ -9120,6 +9243,9 @@
 ; that indicates that the stack must be unwound some (to cleanup after an
 ; aborted inferior).
 
+; Parallelism wart: Deal with the folowing comment.  David Rager suspects that
+; we might want to replace it with a pointer to elsewhere where we handle the
+; issue.
 ; Warning: This variable is let-bound in ld-fn.  This could present a problem
 ; if parallelism is enabled and the theorem prover uses parallelism
 ; primitives.  We can imagine (and we may have seen) a case in which there are
@@ -9451,7 +9577,9 @@
   ACL2 !>(symbol-package-name ':ABC)
   \"KEYWORD\"
   ACL2 !>
-  ~ev[]~/"
+  ~ev[]
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard t))
   (and (symbolp x) (equal (symbol-package-name x) "KEYWORD")))
@@ -9807,7 +9935,9 @@
   ~l[append]~/
 
   The ~il[guard] for ~c[binary-append] requires the first argument to be a
-  ~ilc[true-listp].~/"
+  ~ilc[true-listp].
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard (true-listp x)))
   (cond ((endp x) y)
@@ -9955,7 +10085,9 @@
   expands to the call
   ~bv[]
   (string-append str1 str2).
-  ~ev[]~/~/"
+  ~ev[]
+
+  To see the ACL2 definition of this function, ~pl[pf].~/~/"
 
   (declare (xargs :guard (and (stringp str1)
                               (stringp str2))))
@@ -9980,7 +10112,9 @@
   recognizer for a true list of strings~/
 
   The predicate ~c[string-listp] tests whether its argument is a
-  ~ilc[true-listp] of strings.~/~/"
+  ~ilc[true-listp] of strings.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/~/"
 
   (declare (xargs :guard t))
   (cond
@@ -10245,7 +10379,9 @@
   first list runs out.  (Hence in particular, if the second argument
   is ~c[nil] then each element of the first argument is paired with ~c[nil].)~/
 
-  The ~il[guard] for ~c[pairlis$] requires that its arguments are true lists.~/"
+  The ~il[guard] for ~c[pairlis$] requires that its arguments are true lists.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard (and (true-listp x)
                               (true-listp y))))
@@ -10774,7 +10910,9 @@
   The ~il[guard] for ~c[(revappend x y)] requires that ~c[x] is a true list.
 
   ~c[Revappend] is defined in Common Lisp.  See any Common Lisp
-  documentation for more information.~/"
+  documentation for more information.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard (true-listp x)))
   (if (endp x)
@@ -10805,7 +10943,9 @@
   or a string.
 
   ~c[Reverse] is defined in Common Lisp.  See any Common Lisp
-  documentation for more information.~/"
+  documentation for more information.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard (or (true-listp x)
                              (stringp x))))
@@ -10937,7 +11077,9 @@
   ~c[Listp] has no ~il[guard], i.e., its ~il[guard] is ~c[t].
 
   ~c[Listp] is a Common Lisp function.  See any Common Lisp
-  documentation for more information.~/"
+  documentation for more information.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :mode :logic :guard t))
   (or (consp x)
@@ -11127,7 +11269,9 @@
 
   ~c[Last] is a Common Lisp function.  See any Common Lisp
   documentation for more information.  Unlike Common Lisp, we do not
-  allow an optional second argument for ~c[last].~/"
+  allow an optional second argument for ~c[last].
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard (listp l)))
   (if (atom (cdr l))
@@ -11169,7 +11313,9 @@
   For related functions, ~pl[nthcdr] and ~pl[butlast].
 
   The ~il[guard] for ~c[(take n l)] is that ~c[n] is a nonnegative integer
-  and ~c[l] is a true list.~/"
+  and ~c[l] is a true list.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard
                    (and (integerp n)
@@ -11215,7 +11361,9 @@
   ~c[Butlast] is a Common Lisp function.  See any Common Lisp
   documentation for more information.  Note:  In Common Lisp the
   second argument of ~c[butlast] is optional, but in ACL2 it is
-  required.~/"
+  required.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard (and (true-listp lst)
                               (integerp n)
@@ -12076,7 +12224,9 @@
 
   For any object ~c[x], ~c[(kwote x)] returns the two-element list whose
   elements are the symbol ~c[quote] and the given ~c[x], respectively.
-  The guard of ~c[(kwote x)] is ~c[t].~/~/"
+  The guard of ~c[(kwote x)] is ~c[t].
+
+  To see the ACL2 definition of this function, ~pl[pf].~/~/"
 
   (declare (xargs :guard t))
   (list 'quote x))
@@ -12088,7 +12238,9 @@
   quote an arbitrary true list of objects~/
 
   The function ~c[kwote-lst] applies the function ~c[kwote] to each element of
-  a given list.  The guard of ~c[(kwote-lst lst)] is ~c[(true-listp lst)].~/~/"
+  a given list.  The guard of ~c[(kwote-lst lst)] is ~c[(true-listp lst)].
+
+  To see the ACL2 definition of this function, ~pl[pf].~/~/"
 
   (declare (xargs :guard (true-listp lst)))
   (cond ((endp lst) nil)
@@ -12778,7 +12930,9 @@
   derived from this function and apply to rational numbers.~/
 
   The ~il[guard] of ~c[(nonnegative-integer-quotient i j)] requires that
-  ~c[i] is a nonnegative integer and ~c[j] is a positive integer.~/"
+  ~c[i] is a nonnegative integer and ~c[j] is a positive integer.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard (and (integerp i)
                               (not (< i 0))
@@ -12802,7 +12956,9 @@
 
   ~c[True-list-listp] is the function that checks whether its argument
   is a list that ends in, or equals, ~c[nil], and furthermore, all of
-  its elements have that property.  Also ~pl[true-listp].~/~/"
+  its elements have that property.  Also ~pl[true-listp].
+
+  To see the ACL2 definition of this function, ~pl[pf].~/~/"
 
   (declare (xargs :guard t))
   (cond ((atom x) (eq x nil))
@@ -13167,7 +13323,9 @@
 
   ~c[Floor] is a Common Lisp function.  See any Common Lisp
   documentation for more information.  However, note that unlike Common Lisp,
-  the ACL2 ~c[floor] function returns only a single value, ~/"
+  the ACL2 ~c[floor] function returns only a single value, 
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard (and (real/rationalp i)
                               (real/rationalp j)
@@ -13224,7 +13382,9 @@
 
   ~c[Ceiling] is a Common Lisp function.  See any Common Lisp documentation for
   more information.  However, note that unlike Common Lisp, the ACL2
-  ~c[ceiling] function returns only a single value, ~/"
+  ~c[ceiling] function returns only a single value, 
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard (and (real/rationalp i)
                               (real/rationalp j)
@@ -13284,7 +13444,9 @@
   Lisp, the ACL2 ~c[truncate] function returns only a single value,  Also
   ~pl[nonnegative-integer-quotient], which is appropriate for integers and may
   simplify reasoning, unless a suitable arithmetic library is loaded, but be
-  less efficient for evaluation on concrete objects.~/"
+  less efficient for evaluation on concrete objects.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard (and (real/rationalp i)
                               (real/rationalp j)
@@ -13351,7 +13513,9 @@
 
   ~c[Round] is a Common Lisp function.  See any Common Lisp documentation for
   more information.  However, note that unlike Common Lisp, the ACL2 ~c[round]
-  function returns only a single value, ~/"
+  function returns only a single value, 
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard (and (real/rationalp i)
                               (real/rationalp j)
@@ -13408,7 +13572,9 @@
   (~il[real], in ACL2(r)) numbers and ~c[j] is non-zero.
 
   ~c[Mod] is a Common Lisp function.  See any Common Lisp documentation
-  for more information.~/"
+  for more information.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard (and (real/rationalp x)
                               (real/rationalp y)
@@ -13440,7 +13606,9 @@
   (~il[real], in ACL2(r)) numbers and ~c[j] is non-zero.
 
   ~c[Rem] is a Common Lisp function.  See any Common Lisp documentation
-  for more information.~/"
+  for more information.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard (and (real/rationalp x)
                               (real/rationalp y)
@@ -13460,7 +13628,9 @@
   The ~il[guard] for ~c[evenp] requires its argument to be an integer.
 
   ~c[Evenp] is a Common Lisp function.  See any Common Lisp
-  documentation for more information.~/"
+  documentation for more information.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard (integerp x)))
   (integerp (* x (/ 2))))
@@ -13477,7 +13647,9 @@
   The ~il[guard] for ~c[oddp] requires its argument to be an integer.
 
   ~c[Oddp] is a Common Lisp function.  See any Common Lisp
-  documentation for more information.~/"
+  documentation for more information.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard (integerp x)))
   (not (evenp x)))
@@ -13503,7 +13675,9 @@
   ~c[(zip x)] is preferred.  ~l[zero-test-idioms].
 
   ~c[Zerop] is a Common Lisp function.  See any Common Lisp
-  documentation for more information.~/"
+  documentation for more information.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (eql x 0))
 
@@ -13521,7 +13695,9 @@
   ACL2(r)) number.
 
   ~c[Plusp] is a Common Lisp function.  See any Common Lisp
-  documentation for more information.~/"
+  documentation for more information.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :mode :logic
                   :guard (real/rationalp x)))
@@ -13541,7 +13717,9 @@
   ACL2(r)) number.
 
   ~c[Minusp] is a Common Lisp function.  See any Common Lisp
-  documentation for more information.~/"
+  documentation for more information.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :mode :logic
                   :guard (real/rationalp x)))
@@ -13561,7 +13739,9 @@
   in ACL2(r)) numbers.
 
   ~c[Min] is a Common Lisp function.  See any Common Lisp documentation
-  for more information.~/"
+  for more information.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard (and (real/rationalp x)
                               (real/rationalp y))))
@@ -13583,7 +13763,9 @@
   in ACL2(r)) numbers.
 
   ~c[Max] is a Common Lisp function.  See any Common Lisp documentation
-  for more information.~/"
+  for more information.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard (and (real/rationalp x)
                               (real/rationalp y))))
@@ -13612,7 +13794,9 @@
   From ``Common Lisp the Language'' page 205, we must not allow
   complex ~c[x] as an argument to ~c[abs] in ACL2, because if we did we
   would have to return a number that might be a floating point number
-  and hence not an ACL2 object.~/"
+  and hence not an ACL2 object.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard (real/rationalp x)))
 
@@ -13637,7 +13821,9 @@
   ~c[signum] in terms of ~ilc[abs].  As explained elsewhere
   (~pl[abs]), the ~il[guard] for ~ilc[abs] requires its argument to be a
   rational (~il[real], in ACL2(r))  number; hence, we make the same
-  restriction for ~c[signum].~/"
+  restriction for ~c[signum].
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard (real/rationalp x)))
 
@@ -13667,7 +13853,9 @@
   The ~il[guard] for ~c[lognot] requires its argument to be an integer.
 
   ~c[Lognot] is a Common Lisp function.  See any Common Lisp
-  documentation for more information.~/"
+  documentation for more information.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard (integerp i)))
   (+ (- (ifix i)) -1))
@@ -13889,7 +14077,9 @@
 
   ~c[Expt] is a Common Lisp function.  See any Common Lisp
   documentation for more information.  Note that ~c[r] can be a complex
-  number; this is consistent with Common lisp.~/"
+  number; this is consistent with Common lisp.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
 ; CLtL2 (page 300) allows us to include complex rational arguments.
 
@@ -13914,7 +14104,9 @@
   ~c[(Logcount x)] has a ~il[guard] of ~c[(integerp x)].
 
   ~c[Logcount] is a Common Lisp function.  See any Common Lisp
-  documentation for more information.~/"
+  documentation for more information.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard (integerp x)))
   (cond
@@ -13951,7 +14143,9 @@
   integer and ~c[l] is a true list.
 
   ~c[Nthcdr] is a Common Lisp function.  See any Common Lisp
-  documentation for more information.~/"
+  documentation for more information.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard (and (integerp n)
                               (<= 0 n)
@@ -13974,7 +14168,9 @@
   ~c[j] is an integer.
 
   ~c[Logbitp] is a Common Lisp function.  See any Common Lisp
-  documentation for more information.~/"
+  documentation for more information.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard (and (integerp j)
                               (integerp i)
@@ -13997,7 +14193,9 @@
   The ~il[guard] for ~c[ash] requires that its arguments are integers.
 
   ~c[Ash] is a Common Lisp function.  See any Common Lisp documentation
-  for more information.~/"
+  for more information.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard (and (integerp i)
                               (integerp c))
@@ -14135,7 +14333,9 @@
   The ~il[guard] for ~c[char<] specifies that its arguments are ~il[characters].
 
   ~c[Char<] is a Common Lisp function.  See any Common Lisp
-  documentation for more information.~/"
+  documentation for more information.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard (and (characterp x) (characterp y))))
   (< (char-code x) (char-code y)))
@@ -14153,7 +14353,9 @@
   The ~il[guard] for ~c[char>] specifies that its arguments are ~il[characters].
 
   ~c[Char>] is a Common Lisp function.  See any Common Lisp
-  documentation for more information.~/"
+  documentation for more information.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard (and (characterp x) (characterp y))))
   (> (char-code x) (char-code y)))
@@ -14171,7 +14373,9 @@
   The ~il[guard] for ~c[char<=] specifies that its arguments are ~il[characters].
 
   ~c[Char<=] is a Common Lisp function.  See any Common Lisp
-  documentation for more information.~/"
+  documentation for more information.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard (and (characterp x) (characterp y))))
   (<= (char-code x) (char-code y)))
@@ -14189,7 +14393,9 @@
   The ~il[guard] for ~c[char>=] specifies that its arguments are ~il[characters].
 
   ~c[Char>=] is a Common Lisp function.  See any Common Lisp
-  documentation for more information.~/"
+  documentation for more information.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard (and (characterp x) (characterp y))))
   (>= (char-code x) (char-code y)))
@@ -14234,7 +14440,9 @@
   The ~il[guard] for ~c[string<] specifies that its arguments are strings.
 
   ~c[String<] is a Common Lisp function.  See any Common Lisp
-  documentation for more information.~/"
+  documentation for more information.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard (and (stringp str1)
                               (stringp str2))))
@@ -14255,7 +14463,9 @@
   ~l[string<].~/
 
   ~c[String>] is a Common Lisp function.  See any Common Lisp
-  documentation for more information.~/"
+  documentation for more information.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard (and (stringp str1)
                               (stringp str2))))
@@ -14277,7 +14487,9 @@
   The ~il[guard] for ~c[string<=] specifies that its arguments are strings.
 
   ~c[String<=] is a Common Lisp function.  See any Common Lisp
-  documentation for more information.~/"
+  documentation for more information.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard (and (stringp str1)
                               (stringp str2))))
@@ -14301,7 +14513,9 @@
   The ~il[guard] for ~c[string>=] specifies that its arguments are strings.
 
   ~c[String>=] is a Common Lisp function.  See any Common Lisp
-  documentation for more information.~/"
+  documentation for more information.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard (and (stringp str1)
                               (stringp str2))))
@@ -14323,7 +14537,9 @@
   So for example, ~c[(symbol-< 'abcd 'abce)] and
   ~c[(symbol-< 'acl2::abcd 'foo::abce)] are true.~/
 
-  The ~il[guard] for ~c[symbol] specifies that its arguments are symbols.~/"
+  The ~il[guard] for ~c[symbol] specifies that its arguments are symbols.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard (and (symbolp x) (symbolp y))))
   (let ((x1 (symbol-name x))
@@ -14369,7 +14585,9 @@
   ~c[Substitute] is a Common Lisp function.  See any Common Lisp
   documentation for more information.  Since ACL2 functions cannot
   take keyword arguments (though macros can), the test used in
-  ~c[substitute] is ~c[eql].~/"
+  ~c[substitute] is ~c[eql].
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard (or (and (stringp seq)
                                   (characterp new))
@@ -14404,7 +14622,9 @@
   lookup generated by ~c[sublis].
 
   ~c[Sublis] is defined in Common Lisp.  See any Common Lisp
-  documentation for more information.~/"
+  documentation for more information.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard (eqlable-alistp alist)))
   (cond ((atom tree)
@@ -14430,7 +14650,9 @@
   generated by ~c[subst].
 
   ~c[Subst] is defined in Common Lisp.  See any Common Lisp
-  documentation for more information.~/"
+  documentation for more information.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard (eqlablep old)))
   (cond ((eql old tree) new)
@@ -15766,6 +15988,109 @@
   ":Doc-Section Events
 
   verify the ~il[guard]s of a function~/
+
+  ~l[guard] for a general discussion of guards.
+
+  Before discussing the ~c[verify-guards] event, we first discuss guard
+  verification, which can take place at definition time or, later, using
+  ~c[verify-guards].  Typically, guard verification takes place at definition
+  time if a ~c[:guard] has been supplied explicitly unless
+  ~c[:verify-guards nil] has been specified; ~pl[defun] and ~pl[xargs], and
+  ~pl[set-verify-guards-eagerness] for how to change this default.  The point
+  of guard verification is to ensure that during evaluation of an expression
+  without free variables, no guard violation takes place.
+
+  Guard verification is intended to guarantee that for any call of a given
+  function, if its ~il[guard] holds for that call then the ~il[guard] will hold
+  for every function call in the body of that function.  Moreover, in order to
+  avoid guard violations during evaluation of the function's guard itself,
+  guard verification also is intended to guarantee that the guards are
+  satisfied for all calls in the guard itself.  Consider the following simple
+  example.
+  ~bv[]
+  (defun f (x)
+    (declare (xargs :guard (and (consp x)
+                                (integerp (car x)))))
+    (if (rationalp (cdr x))
+        (+ (car x) (cdr x))
+      17))
+  ~ev[]
+  If you evaluate ~c[(f t)], for example, in the top-level loop, you will (by
+  default) get a guard error.  The point of guard verification is to guarantee
+  the absence of guard errors, and we start by using this example to illustrate
+  the proof obligations that guarantee such absence.
+
+  The body of the above definition has the following function calls, where the
+  first is the entire body.
+  ~bv[]
+    (if (rationalp (cdr x))
+        (< (car x) (cdr x))
+      17)
+    (rationalp (cdr x)) ; the test of the top-level IF call
+    (cdr x)             ; from (rationalp (cdr x))
+    (< (car x) (cdr x)) ; the true branch of the top-level IF call
+    (car x)             ; from (< (car x) (cdr x))
+    (cdr x)             ; from (< (car x) (cdr x))
+  ~ev[]
+  We thus see potentially six conditions to prove, one for each call.  The
+  guards of the function symbols of those calls are ~c[t] for ~ilc[if] and
+  ~ilc[rationalp], ~c[(or (consp x) (equal x nil))] for both ~c[(car x)] and
+  ~c[(cdr x)], and finally that both arguments are rationals for ~c[<].
+  Moreover, we can take advantage of ``contextual assumptions'': the
+  ~c[if]-test conditions and the top-level ~c[:guard].  Thus, for
+  ~c[verify-guards] the proof obligation from the body of ~c[f] is as follows.
+  ~bv[]
+  (implies 
+   (and (consp x) (integerp (car x))) ; from the :guard
+   (and t ; from the top-level IF call
+        t ; from (rationalp (cdr x))
+        (or (consp x) (equal x nil)) ; from the first (cdr x)
+        (implies
+         (rationalp (cdr x)) ; IF-test for calls in the true branch
+         (and (or (consp x) (equal x nil)) ; from (car x)
+              (or (consp x) (equal x nil)) ; from the second (cdr x)
+              (and (rationalp (car x)) (rationalp (cdr x))) ; from the < call
+              ))))
+  ~ev[]
+  But the ~c[:guard] itself generates a similar sort of proof obligation.  Note
+  that the guard ~c[(and (consp x) (integerp (car x)))] is really an
+  abbreviation (i.e. via the macro ~ilc[AND]) for the term
+  ~c[(if (consp x) (integerp (car x)) nil)].  The guard proof obligation for
+  the guard itself is thus as follows.
+  ~bv[]
+  (and t ; from (consp x)
+       (implies (consp x)
+                (and t         ; from (integerp (car x)) ;
+                     (consp x) ; from (car x) ;
+                     )))
+  ~ev[]
+  All of the above proof obligations are indeed theorems, and guard
+  verification succeeds for the above definition of ~c[f].
+
+  The example above illustrates the general procedure for generating the guard
+  proof obligation.  Each function call is considered in the body or guard of
+  the function, and it is required that the guard is met for that call, under
+  certain ``contextual assumptions'', which are as follows.  In the case of the
+  body of the named function, it is assumed that the guard holds for that
+  function on its formal parameters.  And in both cases ~-[] the body of the
+  named function and also its guard ~-[] the governing tests from superior
+  calls of ~ilc[IF] are also assumed.
+
+  As mentioned above, if the guard on a function is not ~c[t], then guard
+  verification requires not only consideration of the body under the assumption
+  that the guard is true, but also consideration of the guard itself.  Thus,
+  for example, guard verification fails in the following example, even though
+  there are no proof obligations arising from the body, because the guard
+  itself can cause a guard violation when evaluated for an arbitrary value of
+  ~c[x]:
+  ~bv[]
+  (defun foo (x)
+    (declare (xargs :guard (car x)))
+    x)
+  ~ev[]
+
+  We turn now to the ~c[verify-guards] event as a way of verifying the
+  ~il[guard]s for a function or theorem.
   ~bv[]
   Examples:
   (verify-guards flatten)
@@ -15782,19 +16107,16 @@
           :guard-debug  t ; typically t, but any value is legal
           :doc          doc-string)
   ~ev[]
-  ~l[guard] for a general discussion of guards.  In the General Form above,
-  ~c[name] is the name of a ~c[:]~ilc[logic] function (~pl[defun-mode]) or of a
-  theorem or axiom.  In the most common case ~c[name] is the name of a function
-  that has not yet had its ~il[guard]s verified, each subroutine of which has
-  had its ~il[guard]s verified. ~ilc[hints], ~ilc[otf-flg], and
-  ~ilc[guard-debug] are as described in the corresponding ~il[documentation]
-  entries; and ~ilc[doc-string], if supplied, is a string ~st[not] beginning
-  with ``~c[:Doc-Section]''.  The four keyword arguments above are all
-  optional.  ~c[Verify-guards] will attempt to prove that the ~il[guard] on the
-  named function implies the ~il[guard]s of all of the subroutines called in
-  the body of the function, and that the guards are satisfied for all function
-  calls in the guard itself (under an implicit guard of ~c[t]).  If successful,
-  ~c[name] is considered to have had its ~il[guard]s verified.
+  In the General Form above, ~c[name] is the name of a ~c[:]~ilc[logic]
+  function (~pl[defun-mode]) or of a theorem or axiom.  In the most common case
+  ~c[name] is the name of a function that has not yet had its ~il[guard]s
+  verified, each subroutine of which has had its ~il[guard]s verified.  The
+  values ~ilc[hints], ~ilc[otf-flg], and ~ilc[guard-debug] are as described in
+  the corresponding ~il[documentation] entries; and ~ilc[doc-string], if
+  supplied, is a string ~st[not] beginning with ``~c[:Doc-Section]''.  The four
+  keyword arguments above are all optional.  To admit this event, the
+  conjunction of the guard proof obligations must be proved.  If that proof is
+  successful, ~c[name] is considered to have had its ~il[guard]s verified.
 
   ~l[verify-guards-formula] for a utility that lets you view the formula to be
   proved by ~c[verify-guards], but without creating an event.
@@ -15896,19 +16218,6 @@
   ~il[documentation] data base.  Thus, we actually prohibit ~ilc[doc-string]
   from having the form of an ACL2 ~il[documentation] string;
   ~pl[doc-string].
-
-  If the guard on a function is not ~c[t], then guard verification
-  requires not only consideration of the body under the assumption
-  that the guard is true, but also consideration of the guard itself.
-  Thus, for example, guard verification fails in the following
-  example, even though there are no proof obligations arising from the
-  body, because the guard itself can cause a guard violation when
-  evaluated for an arbitrary value of ~c[x]:
-  ~bv[]
-  (defun foo (x)
-    (declare (xargs :guard (car x)))
-    x)
-  ~ev[]
 
   ~c[Verify-guards] must often be used when the value of a recursive call
   of a defined function is given as an argument to a subroutine that
@@ -20022,7 +20331,9 @@
 
   See ~c[books/misc/getprop.lisp] for an example that illustrates the use
   of ACL2 utilities ~ilc[getprop] and ~c[putprop] to take advantage of
-  under-the-hood Lisp (hashed) property lists.~/~/")
+  under-the-hood Lisp (hashed) property lists.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/~/")
 
 (defun putprop (symb key value world-alist)
 
@@ -20037,7 +20348,9 @@
 
   See ~c[books/misc/getprop.lisp] for an example that illustrates the use
   of ACL2 utilities ~ilc[getprop] and ~c[putprop] to take advantage of
-  under-the-hood Lisp (hashed) property lists.~/~/"
+  under-the-hood Lisp (hashed) property lists.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/~/"
 
   (declare (xargs :guard (and (symbolp symb)
                               (symbolp key)
@@ -21575,7 +21888,9 @@
 
   ~c[(keyword-value-listp l)] is true if and only if ~c[l] is a list of
   even length of the form ~c[(k1 a1 k2 a2 ... kn an)], where each ~c[ki]
-  is a keyword.~/~/"
+  is a keyword.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/~/"
 
   (declare (xargs :guard t))
   (cond ((atom l) (null l))
@@ -21599,7 +21914,9 @@
   first tail of ~c[l] starting with ~c[key] if key is some ~c[ki], and is
   ~c[nil] otherwise.~/
 
-  The ~il[guard] for ~c[(assoc-keyword key l)] is ~c[(keyword-value-listp l)].~/"
+  The ~il[guard] for ~c[(assoc-keyword key l)] is ~c[(keyword-value-listp l)].
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard (keyword-value-listp l)))
   (cond ((endp l) nil)
@@ -23734,7 +24051,8 @@
                          (read-object ch state)
                          (value (list erp val)))
   ~ev[]
-  ~/"
+  
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard (and (integerp n)
                               (>= n 0))))
@@ -24230,7 +24548,9 @@
   ~c[(quote 3)].
 
   ~c[Mv-list] is the ACL2 analogue of the Common Lisp construct
-  ~c[multiple-value-list].~/"
+  ~c[multiple-value-list].
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard t
                   :mode :logic)
@@ -24442,7 +24762,9 @@
 
   The ~il[guard] of ~c[update-nth] requires that its first (position)
   argument is a natural number and its last (list) argument is a true
-  list.~/"
+  list.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard (true-listp l))
            (type (integer 0 *) key))
@@ -24488,7 +24810,9 @@
   recognizer for a true list of rational numbers~/
 
   The predicate ~c[rational-listp] tests whether its argument is a true
-  list of rational numbers.~/~/"
+  list of rational numbers.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/~/"
 
   (declare (xargs :guard t))
   (cond ((atom l)
@@ -24535,7 +24859,9 @@
   recognizer for a true list of integers~/
 
   The predicate ~c[integer-listp] tests whether its argument is a true
-  list of integers.~/~/"
+  list of integers.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/~/"
 
   (declare (xargs :guard t))
   (cond ((atom l)
@@ -25053,6 +25379,7 @@
     with-waterfall-parallelism-timings ; for #+acl2-par
     with-possible-parallelism-hazards ; for #+acl2-par
     warn-about-parallelism-hazard ; for #+acl2-par
+    state-global-let* ; raw Lisp version for efficiency
     ))
 
 (defmacro with-live-state (form)
@@ -25069,10 +25396,44 @@
 ;     ACL2_INVISIBLE::|The Live State Itself|
 ;     ? [RAW LISP] 
 
-; The present macro is provided in order to avoid this problem:
-; (with-live-state form) binds state to *the-live-state* in form after checking
-; that the current value of state really is *the-live-state*, which we expect
-; will always be the case.
+; The present macro is provided in order to avoid this problem: in raw Lisp
+; (with-live-state form) binds state to *the-live-state*.  This way, we avoid
+; the above compiler warning.
+
+; Unfortunately, our initial solution was unsound.  The following book
+; certifies in Versions 3.5 and 4.3, and probably all versions inbetween.
+
+;   (in-package "ACL2")
+;   
+;   (defun foo (state)
+;     (declare (xargs :stobjs state))
+;     (with-live-state state))
+;   
+;   (defthm thm1
+;     (equal (caddr (foo (build-state)))
+;            nil)
+;     :rule-classes nil)
+;   
+;   (defthm thm2
+;     (consp (caddr (build-state)))
+;     :rule-classes nil)
+;   
+;   (defthm contradiction
+;     nil
+;     :hints (("Goal"
+;              :use (thm1 thm2)
+;              :in-theory (disable build-state (build-state))))
+;     :rule-classes nil)
+
+; The problem was that state was bound to *the-live-state* for evaluation
+; during a proof, where lexically state had a different binding that should
+; have ruled.
+
+; Our solution is for this macro to expand trivially within the usual ACL2
+; loop, only binding state to *the-live-state* when outside the loop or in raw
+; mode.  In principle, everything takes place inside the loop without raw mode.
+; If one references a non-live state outside the loop or in raw mode, one could
+; thus get surprising results; but we can live with that.
 
   ":Doc-Section ACL2::Programming
 
@@ -25086,22 +25447,25 @@
   ~ev[]
   where form is an arbitrary form that mentions ~ilc[state].
 
-  Most users will not need ~c[with-live-state].  If for some reason a form
-  that mentions the variable ~ilc[state] might be executed in raw Lisp, outside
-  the ACL2 loop, then the use of ~c[with-live-state] is recommended in order to
-  avoid potential warnings or (less likely) errors.~/~/"
+  Most users will not need ~c[with-live-state].  If for some reason a form that
+  mentions the variable ~ilc[state] might be executed in raw Lisp ~-[] that is,
+  either outside the ACL2 loop or in raw mode (~pl[set-raw-mode]) ~-[] then the
+  use of ~c[with-live-state] is recommended in order to avoid potential
+  warnings or (much less likely) errors.  Note however that if ~c[state] is
+  lexically bound to a state other than the usual ``live'' state, surprising
+  behavior may occur when evaluating a call of ~c[with-live-state] in raw Lisp
+  or raw mode (either directly by evaluation or at compile time), because
+  ~c[with-live-state] will override that lexical binding of ~ilc[state] by a
+  lexical binding of ~c[state] to the usual ``live'' state.~/~/"
 
   #+acl2-loop-only
   form
   #-acl2-loop-only
-  `(progn
-     (or ;; add if needed, e.g. when doing the build: (not (boundp 'state))
-         (eq (symbol-value 'state) *the-live-state*)
-         (error "Implementation error:~%~p
-                 Illegal use of with-live-state on state that is not live."
-                ',form))
-     (let ((state *the-live-state*))
-       ,form)))
+  (cond ((or (> *ld-level* 0)
+             (f-get-global 'acl2-raw-mode-p *the-live-state*))
+         form)
+        (t `(let ((state *the-live-state*))
+              ,form))))
 
 (defun init-iprint-ar (hard-bound enabledp)
 
@@ -26525,7 +26889,9 @@
   ~c[Zpf] is exactly the same as ~ilc[zp], except that ~c[zpf] is intended for,
   and faster for, fixnum arguments.  Its guard is specified with a type
   declaration, ~c[(type (unsigned-byte 29) x)].  (~l[declare] and
-  ~pl[type-spec].)  Also ~pl[zp].~/~/"
+  ~pl[type-spec].)  Also ~pl[zp].
+
+  To see the ACL2 definition of this function, ~pl[pf].~/~/"
 
   (if (integerp x)
       (<= x 0)
@@ -26874,7 +27240,9 @@
 
   The ~il[guard] for ~c[integer-length] requires its argument to be an
   integer.  ~c[Integer-length] is defined in Common Lisp.  See any
-  Common Lisp documentation for more information.~/"
+  Common Lisp documentation for more information.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard (integerp i)
                   :hints (("Goal" :in-theory (disable acl2-count floor)))))
@@ -26909,7 +27277,9 @@
 
   The ~il[guard] for ~c[lognand] requires its arguments to be integers.
   ~c[Lognand] is defined in Common Lisp.  See any Common Lisp
-  documentation for more information.~/"
+  documentation for more information.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard (and (integerp i)
                               (integerp j))))
@@ -26933,7 +27303,9 @@
 
   The ~il[guard] for ~c[logorc1] requires its arguments to be integers.
   ~c[Logorc1] is defined in Common Lisp.  See any Common Lisp
-  documentation for more information.~/"
+  documentation for more information.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard (and (integerp i)
                               (integerp j))))
@@ -26952,7 +27324,9 @@
 
   The ~il[guard] for ~c[logorc2] requires its arguments to be integers.
   ~c[Logorc2] is defined in Common Lisp.  See any Common Lisp
-  documentation for more information.~/"
+  documentation for more information.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard (and (integerp i)
                               (integerp j))))
@@ -26971,7 +27345,9 @@
 
   The ~il[guard] for ~c[logandc1] requires its arguments to be integers.
   ~c[Logandc1] is defined in Common Lisp.  See any Common Lisp
-  documentation for more information.~/"
+  documentation for more information.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard (and (integerp i)
                               (integerp j))))
@@ -26990,7 +27366,9 @@
 
   The ~il[guard] for ~c[logandc2] requires its arguments to be integers.
   ~c[Logandc2] is defined in Common Lisp.  See any Common Lisp
-  documentation for more information.~/"
+  documentation for more information.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard (and (integerp i)
                               (integerp j))))
@@ -27020,7 +27398,9 @@
 
   The ~il[guard] for ~c[lognor] requires its arguments to be integers.
   ~c[Lognor] is defined in Common Lisp.  See any Common Lisp
-  documentation for more information.~/"
+  documentation for more information.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard (and (integerp i)
                               (integerp j))))
@@ -27042,7 +27422,9 @@
 
   The ~il[guard] for ~c[logtest] requires its arguments to be integers.
   ~c[Logtest] is defined in Common Lisp.  See any Common Lisp
-  documentation for more information.~/"
+  documentation for more information.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard (and (integerp x) (integerp y))))
   (not (zerop (logand x y))))
@@ -27105,7 +27487,9 @@
   constants above and that ~c[x] and ~c[y] are integers.
 
   See any Common Lisp documentation for analogous information about
-  Common Lisp function ~c[boole].~/"
+  Common Lisp function ~c[boole].
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (type (integer 0 15) op)
            (type integer i1 i2))
@@ -27483,7 +27867,9 @@
   also the binary, octal, and decimal digit.~/
 
   The ~il[guard] for ~c[digit-to-char] requires its argument to be an
-  integer between 0 and 15, inclusive.~/"
+  integer between 0 and 15, inclusive.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard (and (integerp n)
                               (<= 0 n)
@@ -27531,7 +27917,9 @@
 
   The ~il[guard] for ~c[explode-nonnegative-integer] requires the first
   argument to be a nonnegative integer and second argument to be a valid radix
-  for ACL2 (2, 8, 10, or 16).~/"
+  for ACL2 (2, 8, 10, or 16).
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard (and (integerp n)
                               (>= n 0)
@@ -29386,7 +29774,9 @@
   ~c[Subseq] is a Common Lisp function.  See any Common Lisp
   documentation for more information.  Note:  In Common Lisp the third
   argument of ~c[subseq] is optional, but in ACL2 it is required,
-  though it may be ~c[nil] as explained above.~/"
+  though it may be ~c[nil] as explained above.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard (and (or (true-listp seq)
                                   (stringp seq))
@@ -31145,7 +31535,7 @@
         #+(or gcl allegro lispworks ccl sbcl clisp)
         (let ((fn
                #+gcl       'si::setenv
-               #+lispworks 'cl::setenv
+               #+lispworks 'hcl::setenv
                #+ccl       'ccl::setenv))
           (and (fboundp fn)
                (funcall fn str val)))
@@ -38589,7 +38979,9 @@
 
   ~c[Fix-true-list] is the identity function on ~ilc[true-listp] objects.
   It converts every list to a true list by dropping the final ~ilc[cdr],
-  and it converts every ~il[atom] to ~c[nil].~/~/"
+  and it converts every ~il[atom] to ~c[nil].
+
+  To see the ACL2 definition of this function, ~pl[pf].~/~/"
 
   (declare (xargs :guard t))
   (if (consp x)
@@ -40224,12 +40616,17 @@
   affects the evaluation of its second argument (by causing an error during
   that evaluation if the time for completion is insufficient).  (2) The second
   argument can return multiple values (~pl[mv]), which are then returned by the
-  call of ~c[with-prover-time-limit] . (3) Thus, there is not a fixed number of
+  call of ~c[with-prover-time-limit].  (3) Thus, there is not a fixed number of
   values returned by ~c[with-prover-time-limit].
 
-  If you find that the time limit appears to be implemented too loosely, you
-  are encouraged to email an example to the ACL2 implementors with instructions
-  on how to observe the undesirable behavior.  This information can probably be
+  If you find that the time limit appears to be implemented too loosely, it may
+  be because the prover only checks the time elapsed at certain points during
+  the proof process, for example at entry to the rewriter.  For example, if you
+  write your own ~ilc[clause-processor] that does an expensive computation, the
+  time is unlikely to be checked during its execution.  If however you find the
+  time limit seems to be ignored even during ordinary prover operation, you are
+  encouraged to email an example to the ACL2 implementors with instructions on
+  how to observe the undesirable behavior.  This information can perhaps be
   used to improve ACL2 by the insertion of more checks for expiration of the
   time limit.
 
@@ -41310,7 +41707,9 @@ Lisp definition."
   complexes come before characters, characters before strings, and
   strings before symbols.  We also allow for ``bad atoms,'' i.e.,
   atoms that are not legal Lisp objects but make sense in the ACL2
-  logic; these come at the end, after symbols.~/"
+  logic; these come at the end, after symbols.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard (and (atom x) (atom y))))
   (cond ((real/rationalp x)
@@ -41373,7 +41772,9 @@ Lisp definition."
   the ~il[atom] comes first, and two ~il[cons]es are ordered so that
   the one with the recursively smaller ~ilc[car] comes first, with the
   ~ilc[cdr]s being compared only if the ~ilc[car]s are equal.   ~c[Lexorder]
-  compares two atoms by using ~ilc[alphorder].~/"
+  compares two atoms by using ~ilc[alphorder].
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard t))
   (cond ((atom x)
@@ -41977,7 +42378,9 @@ Lisp definition."
   and ~c[m] is a positive integer.  For other Lisp implementations, consider
   using function ~c[mod-expt-fast], defined in the book
   ~c[arithmetic-3/floor-mod/mod-expt-fast.lisp], which should still provide
-  significantly improved performance over this function.~/"
+  significantly improved performance over this function.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/"
 
 ; This is just an optimized version of (mod (expt base exp) mod).
 
@@ -42177,6 +42580,58 @@ Lisp definition."
   a string or symbol that names a package known to ACL2.  As illustrated above,
   this syntax nests as one might expect.  In the special case that ~c[expr] is
   a symbol, ~c[#!pkg-name expr] is equivalent to ~c[pkg-name::expr].")
+
+(defdoc sharp-u-reader
+  ":Doc-Section other
+
+  allow underscore characters in numbers~/
+
+  ~bv[]
+  Example:
+
+  ACL2 !>#ub1000_1000_1000_
+  2184
+  ACL2 !>#b100010001000
+  2184
+  ACL2 !>#uo1_1
+  9
+  ACL2 !>#o11
+  9
+  ACL2 !>#u34_5
+  345
+  ACL2 !>#u345
+  345
+  ACL2 !>345
+  345
+  ACL2 !>#ux12_a
+  298
+  ACL2 !>#ux12a
+  298
+  ACL2 !>#u x12a
+  298
+  ACL2 !>#x12a
+  298
+  ACL2 !>#u123_456/7_919
+  123456/7919
+  ACL2 !>
+  ~ev[]~/
+
+  The ACL2 reader supports the use of ~c[#ub], ~c[#uo], and ~c[#ux] where one
+  would otherwise write ~c[#b], ~c[#o], and ~c[#x], respectively (for binary,
+  octal, and hexadecimal numerals), but where underscore characters (`~c[_]')
+  are allowed but ignored.  Also supported is the prefix ~c[#u] in front of a
+  an expression that is a decimal numeral except that underscore characteres
+  are allowed but ignored.
+
+  The precise specification of ~c[#u] is as follows.  The Lisp reader reads one
+  expression after the ~c[#u].  If the result is a number, then that number is
+  returned by the reader.  Otherwise the result must be a symbol whose name
+  begins with one of the characters `~c[B]', `~c[O]', or `~c[X]', or else a
+  decimal digit (one of the characters `~c[0], ~c[1], ..., ~c[9]').  All
+  underscores are removed from the name of that symbol to obtain a string and
+  in the first three cases only, a `~c[#]' character is prepended to that
+  string.  The resulting string is then handed to the Lisp reader in order to
+  obtain the final result, which must be a number or else an error occurs.")
 
 (defdoc evisc-table
   ":Doc-Section events
@@ -43940,11 +44395,12 @@ Lisp definition."
   (declare (xargs :guard (and (state-p state)
                               (member-eq val '(t nil :never :break :bt
                                                  :break-bt :bt-break)))))
+  (f-put-global 'debugger-enable val state)
   #+(and (not acl2-loop-only)
          (and gcl (not ansi-cl)))
   (when (live-state-p state)
-    (setq lisp::*break-enable* (debugger-enabledp state)))
-  (f-put-global 'debugger-enable val state))
+    (setq lisp::*break-enable* (debugger-enabledp state))
+    state))
 
 ; See comment in true-listp-cadr-assoc-eq-for-open-channels-p.
 (in-theory (disable true-listp-cadr-assoc-eq-for-open-channels-p))
