@@ -195,8 +195,10 @@
   ":Doc-Section Str
   Coerces a list of digits into a natural number.~/
 
-  For instance, the digit-list-value of '(#\1 #\0 #\3) is 103.~/
-  "
+  For instance, the digit-list-value of '(#\1 #\0 #\3) is 103.
+
+  See also ~ilc[str::parse-nat-from-charlist] for a more flexible function that
+  can tolerate non-numeric characters after the number.~/~/"
 
   (declare (xargs :guard (and (character-listp x)
                               (digit-listp x))

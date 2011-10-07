@@ -149,3 +149,12 @@
 
 (defmacro strtok (x y) `(STR::strtok ,x ,y))
 (add-macro-alias strtok STR::strtok)
+
+(defmacro strval (x) `(STR::strval ,x))
+(add-macro-alias strval STR::strval)
+
+(defmacro strval8 (x) `(STR::strval8 ,x))
+(add-macro-alias strval8 STR::strval8)
+
+(defmacro strval16 (x) `(STR::strval16 ,x))
+(add-macro-alias strval16 STR::strval16)

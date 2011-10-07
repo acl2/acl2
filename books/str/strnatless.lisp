@@ -29,10 +29,23 @@
 
 (defund parse-nat-from-charlist (x val len)
 
-; Tries to extract a natural number from the beginning of the character list x.
-; VAL is an accumulator for the value of the digits we have read so far, and
-; LEN is an accumulator for the number of digits we have read.  We return (MV
-; VAL LEN REST), where REST is the non-numeric portion of the character list.
+  ":Doc-Section Str
+  Parse a natural number from the beginning of a character list.~/
+
+  ~c[(parse-nat-from-charlist x val len)] tries to read a natural number from
+  the beginning of the character list ~c[x].
+
+  ~c[val] is an accumulator for the value of the digits we have read so far,
+  and typically should be set to 0 to begin with.
+
+  ~c[len] is an accumulator for the number of digits we have read, and should
+  typically be set to 0 to begin with.
+
+  We return ~c[(mv val len rest)], where ~c[rest] is the remainder of ~c[x]
+  after reading as many digits as possible.
+
+  See also ~ilc[str::digit-list-value] for a simpler function that assumes the
+  whole list contains digit characters.~/~/"
 
   (declare (type integer val)
            (type integer len)
@@ -48,12 +61,12 @@
               (let ((digit-val (digit-val (car x))))
                 (parse-nat-from-charlist (cdr x)
 
-; A silly idea I have would be to instead multiply each character by 16, which
-; would mean that the operation could be done via ash and logior.  I think the
-; values produced by such a scheme would be ordered in the same way that the
-; values here are ordered.  And, rudimentary speed test suggests it could be as
-; much as 50% faster.  The proof seems difficult, so for now I don't have the
-; patience to attempt it.
+; A silly idea I have (for the purposes of strnatless, at least) would be to
+; instead multiply each character by 16, which would mean that the operation
+; could be done via ash and logior.  I think the values produced by such a
+; scheme would be ordered in the same way that the values here are ordered.
+; And, rudimentary speed test suggests it could be as much as 50% faster.  The
+; proof seems difficult, so for now I don't have the patience to attempt it.
 
                                          (+ digit-val (* 10 (nfix val)))
                                          (+ 1 (nfix len)))))

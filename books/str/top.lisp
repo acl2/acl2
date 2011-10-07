@@ -44,6 +44,7 @@
 (include-book "strsplit")
 (include-book "strsubst")
 (include-book "strtok")
+(include-book "strval")
 (include-book "substrp")
 (include-book "suffixp")
 
