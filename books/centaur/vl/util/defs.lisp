@@ -551,7 +551,6 @@ from <tt>alist</tt>."
     (implies (force (alistp alist))
              (alistp (remove-from-alist key alist)))))
 
-
 (defsection vl-remove-keys
   :parents (utilities)
   :short "@(call vl-remove-keys) removes all bindings for the given <tt>keys</tt>
@@ -560,10 +559,12 @@ from <tt>alist</tt>."
   :long "<p><b>BOZO</b> name consistency with @(see remove-from-alist).</p>"
 
   (defund vl-remove-keys (keys x)
-    (declare (xargs :guard (and (alistp x)
-                                (true-listp keys))))
+    (declare (xargs :guard (true-listp keys)))
     (cond ((atom x)
            nil)
+          ((atom (car x))
+           ;; bad alist convention
+           (vl-remove-keys keys (cdr x)))
           ((member-equal (caar x) keys)
            (vl-remove-keys keys (cdr x)))
           (t
@@ -578,22 +579,22 @@ from <tt>alist</tt>."
 
   (defthm vl-remove-keys-of-cons
     (equal (vl-remove-keys keys (cons a x))
-           (if (member-equal (car a) (double-rewrite keys))
+           (if (atom a)
                (vl-remove-keys keys x)
-             (cons a (vl-remove-keys keys x)))))
+             (if (member-equal (car a) (double-rewrite keys))
+                 (vl-remove-keys keys x)
+               (cons a (vl-remove-keys keys x))))))
 
   (defthm true-listp-of-vl-remove-keys
     (true-listp (vl-remove-keys keys x))
     :rule-classes :type-prescription)
 
   (defthm alistp-of-vl-remove-keys
-    (implies (force (alistp x))
-             (alistp (vl-remove-keys keys x))))
+    (alistp (vl-remove-keys keys x)))
 
   (defthm consp-of-car-of-vl-remove-keys
-    (implies (force (alistp x))
-             (equal (consp (car (vl-remove-keys keys x)))
-                    (consp (vl-remove-keys keys x)))))
+    (equal (consp (car (vl-remove-keys keys x)))
+           (consp (vl-remove-keys keys x))))
 
   (defthm acl2-count-of-vl-remove-keys
     (<= (acl2-count (vl-remove-keys keys x))

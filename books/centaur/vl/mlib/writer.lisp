@@ -635,9 +635,30 @@ displays.  The module browser's web pages are responsible for defining the
                (want-parens-1p (if (vl-fast-atom-p arg1)
                                    nil
                                  (vl-op-precedence-< (vl-nonatom->op arg1) op)))
-               (want-parens-2p (if (vl-fast-atom-p arg2)
-                                   nil
-                                 (vl-op-precedence-<= (vl-nonatom->op arg2) op))))
+               (want-parens-2p
+                (b* (((when (vl-fast-atom-p arg2))
+                      nil)
+
+                     (op2 (vl-nonatom->op arg2))
+                     ((when (vl-op-precedence-<= op2 op))
+                      t))
+
+; We found that Verilog-XL and NCVerilog got upset about expressions like:
+;
+;  a & &b
+;  a | |b
+;
+; even though they seem legal per the spec.  So, in our pretty-printer we
+; now add parens around the 2nd operand when we hit these cases, just so
+; that when we write out test benches they work.  We tried a lot of other
+; combinations like a ^ ^b, a && &b, etc., but these tools don't seem to
+; care about those things.
+
+                  (or (and (eq op :vl-binary-bitand)
+                           (eq op2 :vl-unary-bitand))
+                      (and (eq op :vl-binary-bitor)
+                           (eq op2 :vl-unary-bitor))))))
+
             (vl-ps-seq (if want-parens-1p (vl-print "(") ps)
                        (vl-pp-expr arg1)
                        (if want-parens-1p (vl-print ")") ps)
