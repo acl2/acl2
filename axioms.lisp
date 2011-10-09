@@ -25032,10 +25032,6 @@
   (declare (xargs :guard (true-listp st)))
   (update-nth 14 x st))
 
-
-; Warning:  The following list must satisfy the predicate ordered-symbol-alistp
-; above if build-state is to built a state-p.
-
 #-acl2-mv-as-values
 (defconst *initial-raw-arity-alist*
 
@@ -25445,17 +25441,36 @@
 
 ; The problem was that state was bound to *the-live-state* for evaluation
 ; during a proof, where lexically state had a different binding that should
-; have ruled.
+; have ruled.  This macro's conde included the check (eq (symbol-value 'state)
+; *the-live-state*), which unfortunately was no check at all: it was already
+; true because symbol-value returns the global value, and is not affected by a
+; superior lexical binding of state.
 
-; Our solution is for this macro to expand trivially within the usual ACL2
-; loop, only binding state to *the-live-state* when outside the loop or in raw
-; mode.  In principle, everything takes place inside the loop without raw mode.
-; If one references a non-live state outside the loop or in raw mode, one could
-; thus get surprising results; but we can live with that.
+; Our initial solution defined this macro to be the identity within the usual
+; ACL2 loop, as determined by (> *ld-level* 0).  But compile-file is called
+; when certifying a book, so state remained free in that place, generating a
+; compiler warning or (on occasion with CCL) an error.
+
+; So we have decided to keep the existing implementation, in which this macro
+; always binds state to *the-live-state* in raw Lisp, but to make this macro
+; untouchable.  Thus, users can call it freely in raw Lisp or raw-mode, where
+; they simply need to understand its spec.  But they will never be able to
+; exploit it to prove nil (without a trust tag or entering raw Lisp).
+
+; We could avoid making this macro untouchable if we had a way to query the
+; lexical environment to see if state is lexically bound.  If so, the macro
+; call would expand to the identity; if not, it would bind state to
+; *the-live-state*.  But we found no way in Common Lisp to do that.
 
   ":Doc-Section ACL2::Programming
 
   allow a reference to ~c[state] in raw Lisp~/
+
+  The macro ~c[with-live-state] is an advanced feature that very few users will
+  need (basically, only system hackers).  Indeed, it is untouchable;
+  ~pl[remove-untouchable] for how to enable calling ~c[with-live-state] in the
+  ACL2 loop.~/
+
   ~bv[]
   Example Form:
   (with-live-state (assign y 3))
@@ -25463,27 +25478,32 @@
   General form:
   (with-live-state form)
   ~ev[]
-  where form is an arbitrary form that mentions ~ilc[state].
+  where form is an arbitrary form with a free reference to the variable
+  ~ilc[state].
 
-  Most users will not need ~c[with-live-state].  If for some reason a form that
-  mentions the variable ~ilc[state] might be executed in raw Lisp ~-[] that is,
-  either outside the ACL2 loop or in raw mode (~pl[set-raw-mode]) ~-[] then the
-  use of ~c[with-live-state] is recommended in order to avoid potential
-  warnings or (much less likely) errors.  Note however that if ~c[state] is
-  lexically bound to a state other than the usual ``live'' state, surprising
-  behavior may occur when evaluating a call of ~c[with-live-state] in raw Lisp
-  or raw mode (either directly by evaluation or at compile time), because
-  ~c[with-live-state] will override that lexical binding of ~ilc[state] by a
-  lexical binding of ~c[state] to the usual ``live'' state.~/~/"
+  Logically, ~c[(with-live-state FORM)] macroexpands to ~c[FORM].  However, in
+  raw Lisp it expands to:
+  ~bv[]
+  (let ((state *the-live-state*))
+    FORM)
+  ~ev[]
+
+  If a form that mentions the variable ~ilc[state] might be executed in raw
+  Lisp ~-[] that is, either outside the ACL2 loop or in raw
+  mode (~pl[set-raw-mode]) ~-[] then the surrounding the form with
+  ~c[with-live-state] as shown above can avoid potential warnings or (much less
+  likely) errors.  Note however that if ~c[state] is lexically bound to a state
+  other than the usual ``live'' state, surprising behavior may occur when
+  evaluating a call of ~c[with-live-state] in raw Lisp or raw mode (either
+  directly by evaluation or at compile time), because ~c[with-live-state] will
+  override that lexical binding of ~ilc[state] by a lexical binding of
+  ~c[state] to the usual ``live'' state.~/"
 
   #+acl2-loop-only
   form
   #-acl2-loop-only
-  (cond ((or (> *ld-level* 0)
-             (f-get-global 'acl2-raw-mode-p *the-live-state*))
-         form)
-        (t `(let ((state *the-live-state*))
-              ,form))))
+  `(let ((state *the-live-state*))
+     ,form))
 
 (defun init-iprint-ar (hard-bound enabledp)
 
@@ -25522,7 +25542,9 @@
 
 (defconst *initial-global-table*
 
-; Keep this list in alphabetic order as per ordered-symbol-alistp.
+; Warning: Keep this list in alphabetic order as per ordered-symbol-alistp.  It
+; must satisfy the predicate ordered-symbol-alistp if build-state is to build a
+; state-p.
 
 ; When you add a new state global to this table, consider whether to modify
 ; *protected-system-state-globals*.
@@ -32561,6 +32583,8 @@
 
     f-put-global@par ; for #+acl2-par (modifies state under the hood)
 
+    with-live-state ; see comment in that macro
+
 ; We briefly included maybe-install-acl2-defaults-table, but that defeated the
 ; ability to call :puff.  It now seems unnecessary to include
 ; maybe-install-acl2-defaults-table, since its body is something one can call
@@ -35672,11 +35696,10 @@
   related to soundness will still be printed (which is probably not what was
   intended)."
 
-  `(with-live-state
-    (let ((ctx 'set-inhibit-output-lst))
-      (er-let* ((lst (chk-inhibit-output-lst ,lst ctx state)))
-        (pprogn (f-put-global 'inhibit-output-lst lst state)
-                (value lst))))))
+  `(let ((ctx 'set-inhibit-output-lst))
+     (er-let* ((lst (chk-inhibit-output-lst ,lst ctx state)))
+              (pprogn (f-put-global 'inhibit-output-lst lst state)
+                      (value lst)))))
 
 (defmacro set-inhibited-summary-types (lst)
 
@@ -35707,24 +35730,23 @@
 
   To control summary types for a single event, ~pl[with-output]."
 
-  `(with-live-state
-    (let ((lst ,lst)
-          (ctx 'set-inhibited-summary-types))
-      (cond ((not (true-listp lst))
-             (er soft ctx
-                 "The argument to set-inhibited-summary-types must evaluate ~
+  `(let ((lst ,lst)
+         (ctx 'set-inhibited-summary-types))
+     (cond ((not (true-listp lst))
+            (er soft ctx
+                "The argument to set-inhibited-summary-types must evaluate ~
                   to a true-listp, unlike ~x0."
-                 lst))
-            ((not (subsetp-eq lst *summary-types*))
-             (er soft ctx
-                 "The argument to set-inhibited-summary-types must evaluate ~
+                lst))
+           ((not (subsetp-eq lst *summary-types*))
+            (er soft ctx
+                "The argument to set-inhibited-summary-types must evaluate ~
                   to a subset of the list ~X01, but ~x2 contains ~&3."
-                 *summary-types*
-                 nil
-                 lst
-                 (set-difference-eq lst *summary-types*)))
-            (t (pprogn (f-put-global 'inhibited-summary-types lst state)
-                       (value lst)))))))
+                *summary-types*
+                nil
+                lst
+                (set-difference-eq lst *summary-types*)))
+           (t (pprogn (f-put-global 'inhibited-summary-types lst state)
+                      (value lst))))))
 
 #+acl2-loop-only
 (defmacro set-state-ok (x)
@@ -37330,8 +37352,17 @@
   the book is included.  (Note: The above behavior is generally preserved in
   raw-mode (~pl[set-raw-mode]),though by means other than a table.)~/"
 
-  `(with-live-state
-    (add-include-book-dir-fn ,keyword ,dir state)))
+  `(add-include-book-dir-fn ,keyword
+                            ,dir
+
+; We use state in the loop but the live state outside it.  This could be a
+; problem if we could define a function that can take a non-live state as an
+; argument; see the bug through Version_4.3 explained in a comment in
+; with-live-state.  However, we prevent that problem by putting
+; add-include-book-dir in a suitable list in the definition of translate11.
+
+                            #+acl2-loop-only state
+                            #-acl2-loop-only *the-live-state*))
 
 (defmacro delete-include-book-dir (keyword)
 
@@ -37360,8 +37391,16 @@
   in which it occurs; ~pl[add-include-book-dir] for a discussion of this aspect
   of both macros.~/"
 
-  `(with-live-state
-    (delete-include-book-dir-fn ,keyword state)))
+  `(delete-include-book-dir-fn ,keyword
+
+; We use state in the loop but the live state outside it.  This could be a
+; problem if we could define a function that can take a non-live state as an
+; argument; see the bug through Version_4.3 explained in a comment in
+; with-live-state.  However, we prevent that problem by putting
+; delete-include-book-dir in a suitable list in the definition of translate11.
+
+                               #+acl2-loop-only state
+                               #-acl2-loop-only *the-live-state*))
 
 ; Begin implementation of tables controlling non-linear arithmetic.
 

@@ -22867,20 +22867,19 @@
   the original predefined functions, not using their code installed by
   ~c[trace$].~/"
 
-  `(with-live-state
-    ,(cond
-      ((null trace-specs)
-       '(value (f-get-global 'trace-specs state)))
-      (t
-       `(pprogn
-         (if (equal (f-get-global 'trace-co state) *standard-co*)
-             state
-           (fms "**NOTE**: Trace output will continue to go to a file.~|~%"
-                nil *standard-co* state nil))
-         (if (eql 0 (f-get-global 'ld-level state))
-             (ld '((trace$-lst ',trace-specs 'trace$ state))
-                 :ld-verbose nil)
-           (trace$-lst ',trace-specs 'trace$ state)))))))
+  (cond
+   ((null trace-specs)
+    '(value (f-get-global 'trace-specs state)))
+   (t
+    `(pprogn
+      (if (equal (f-get-global 'trace-co state) *standard-co*)
+          state
+        (fms "**NOTE**: Trace output will continue to go to a file.~|~%"
+             nil *standard-co* state nil))
+      (if (eql 0 (f-get-global 'ld-level state))
+          (ld '((trace$-lst ',trace-specs 'trace$ state))
+              :ld-verbose nil)
+        (trace$-lst ',trace-specs 'trace$ state))))))
 
 (defmacro with-ubt! (form)
   (let ((label 'with-ubt!-label))
@@ -23321,26 +23320,25 @@
                                "~|~%")
                    (maybe-print-call-history *the-live-state*)
                    (break$)))))
-    `(with-live-state
-      (let ((on ,on))
-        (er-progn
-         (case on
-           (:all  (trace! ,error1-trace-form
-                          ,er-cmp-fn-trace-form
-                          ,throw-raw-ev-fncall-trace-form))
-           ((t)   (trace! ,error1-trace-form
-                          ,er-cmp-fn-trace-form
-                          (,@throw-raw-ev-fncall-trace-form
-                           :cond
-                           (not (f-get-global 'in-prove-flg
-                                              *the-live-state*)))))
+    `(let ((on ,on))
+       (er-progn
+        (case on
+          (:all  (trace! ,error1-trace-form
+                         ,er-cmp-fn-trace-form
+                         ,throw-raw-ev-fncall-trace-form))
+          ((t)   (trace! ,error1-trace-form
+                         ,er-cmp-fn-trace-form
+                         (,@throw-raw-ev-fncall-trace-form
+                          :cond
+                          (not (f-get-global 'in-prove-flg
+                                             *the-live-state*)))))
            ((nil) (with-output :off warning (untrace$ error1
                                                       er-cmp-fn
                                                       throw-raw-ev-fncall)))
            (otherwise (er soft 'break-on-error
                           "Illegal argument value for break-on-error: ~x0."
                           on)))
-         (value :invisible))))))
+         (value :invisible)))))
 
 (defun defexec-extract-key (x keyword result result-p)
 

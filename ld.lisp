@@ -18293,7 +18293,9 @@
   ~ev[]
 
   Fixed a soundness bug involving ~c[with-live-state].  ~l[with-live-state], as
-  the documentation for this macro has been updated.
+  the documentation for this macro has been updated; in particular this macro
+  is now untouchable (~pl[remove-untouchable]) and intended only for system
+  hackers.  Thanks to Jared Davis for reporting a bug in a first fix attempt.
 
   While calls of many event macros had been prohibited inside executable code,
   others should have been but were not.  For example, the following was
