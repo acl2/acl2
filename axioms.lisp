@@ -30218,13 +30218,6 @@
 ; seems trivial.)
 
                   (cons nil nil))
-;                #+ccl
-;                (ccl::*save-source-locations*
-
-; This binding was suggested 11/8/09 by Gary Byers as a possible way to speed
-; up ACL2.  It seems to do so, a bit anyhow.
-
-;                 nil)
                  (*package* (find-package
                              (current-package *the-live-state*)))
                  (*readtable* *acl2-readtable*)

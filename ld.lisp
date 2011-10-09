@@ -18292,10 +18292,13 @@
     :rule-classes nil)
   ~ev[]
 
-  Fixed a soundness bug involving ~c[with-live-state].  ~l[with-live-state], as
-  the documentation for this macro has been updated; in particular this macro
-  is now untouchable (~pl[remove-untouchable]) and intended only for system
-  hackers.  Thanks to Jared Davis for reporting a bug in a first fix attempt.
+  Fixed a soundness bug involving ~c[with-live-state], which could cause an
+  error in the use of ~ilc[add-include-book-dir] or
+  ~ilc[delete-include-book-dir] in a book or its ~il[portcullis] commands.
+  ~l[with-live-state], as the documentation for this macro has been updated; in
+  particular it is now untouchable (~pl[remove-untouchable]) and is intended
+  only for system hackers.  Thanks to Jared Davis for reporting a bug in the
+  use of ~ilc[add-include-book-dir] after our first attempt at a fix.
 
   While calls of many event macros had been prohibited inside executable code,
   others should have been but were not.  For example, the following was
@@ -18349,6 +18352,14 @@
   possible for users to build that documentation without omitting graphics, for
   example on the ACL2 home page.  That has been fixed, as files
   ~c[graphics/*.gif] are now distributed.
+
+  Compiler warnings are suppressed more completely than they had been before.
+  For example, the following had produced a compiler warning when the host Lisp
+  is CCL, but no longer does so.
+  ~bv[]
+  (defun f () (car 3))
+  (trace$ f)
+  ~ev[]
 
   ~st[EMACS SUPPORT]
 
@@ -18596,31 +18607,30 @@
                (assoc-eq fn (f-get-global 'trace-specs state))))
           (when trace-spec
             (untrace$-fn (list fn) state))
-          (with-more-warnings-suppressed
-           (let* ((stobj-function (getprop fn 'stobj-function nil
-                                           'current-acl2-world wrld))
-                  (form (cltl-def-from-name fn stobj-function wrld))
-                  (*1*fn (*1*-symbol fn))
-                  (raw-only-p  (and (consp fn0) (eq (car fn0) :raw)))
-                  (exec-only-p (and (consp fn0) (eq (car fn0) :exec))))
-             (cond
-              ((not (or exec-only-p
-                        (compiled-function-p! fn)))
-               (cond (form
-                      (eval (make-defun-declare-form fn form))))
-               (compile fn)))
-             (cond
-              ((and (not raw-only-p)
-                    (fboundp *1*fn)
-                    (not (compiled-function-p! *1*fn)))
-               #-acl2-mv-as-values ; may delete this restriction in the future
-               (eval
-                (make-defun-declare-form
-                 fn
-                 (cons 'defun (oneified-def fn wrld))))
-               (compile *1*fn)))
-             (when trace-spec
-               (trace$-fn trace-spec ctx state)))))
+          (let* ((stobj-function (getprop fn 'stobj-function nil
+                                          'current-acl2-world wrld))
+                 (form (cltl-def-from-name fn stobj-function wrld))
+                 (*1*fn (*1*-symbol fn))
+                 (raw-only-p  (and (consp fn0) (eq (car fn0) :raw)))
+                 (exec-only-p (and (consp fn0) (eq (car fn0) :exec))))
+            (cond
+             ((not (or exec-only-p
+                       (compiled-function-p! fn)))
+              (cond (form
+                     (eval (make-defun-declare-form fn form))))
+              (compile fn)))
+            (cond
+             ((and (not raw-only-p)
+                   (fboundp *1*fn)
+                   (not (compiled-function-p! *1*fn)))
+              #-acl2-mv-as-values ; may delete this restriction in the future
+              (eval
+               (make-defun-declare-form
+                fn
+                (cons 'defun (oneified-def fn wrld))))
+              (compile *1*fn)))
+            (when trace-spec
+              (trace$-fn trace-spec ctx state))))
         (value fn)))))))
 
 #-acl2-loop-only

@@ -5687,6 +5687,15 @@
       (acl2-unwind-protect
        "extend-world1"
        (value
+
+; It is a bit unfortunate to use with-more-warnings-suppressed below, since we
+; have such a call in LP.  However, this is how we see a way to suppress
+; complaints about undefined functions during the build, without suppressing
+; compiler warnings entirely during the build.  Note that with-compilation-unit
+; does not always defer warnings for calls of the compiler in general -- at
+; least, we have seen this with CCL and Allegro CL -- but only for calls of
+; compile-file.
+
         (with-more-warnings-suppressed
 
 ; Observe that wrld has recover-world properties (a) and (b).  (a) at
@@ -5699,12 +5708,12 @@
 ; of old-wrld).  (Of course, by "symbol in" here we mean "symbol
 ; occuring as the car of an element".)
 
-         (dolist (trip new-trips)
-           (add-trip name world-key trip))
-         (setf (car pair) wrld)
-         (cond ((eq name 'current-acl2-world)
-                (f-put-global 'current-acl2-world wrld *the-live-state*)
-                (update-wrld-structures wrld state)))))
+          (dolist (trip new-trips)
+            (add-trip name world-key trip))
+          (setf (car pair) wrld)
+          (cond ((eq name 'current-acl2-world)
+                 (f-put-global 'current-acl2-world wrld *the-live-state*)
+                 (update-wrld-structures wrld state)))))
        (recover-world 'extension name old-wrld wrld nil)
 
 ; Observe that wrld has recover-world properties (a) and (b).  (a) at
@@ -5939,6 +5948,15 @@
              nil))
         (fmt1 "Installing the new world.~%" nil 0
               (standard-co *the-live-state*) *the-live-state* nil)
+
+; It is a bit unfortunate to use with-more-warnings-suppressed below, since we
+; have such a call in LP.  However, this is how we see a way to suppress
+; complaints about undefined functions during the build, without suppressing
+; compiler warnings entirely during the build.  Note that with-compilation-unit
+; does not always defer warnings for calls of the compiler in general -- at
+; least, we have seen this with CCL and Allegro CL -- but only for calls of
+; compile-file.
+
         (with-more-warnings-suppressed
          (do ((tl rwtls (cdr tl)))
              ((null tl))
@@ -7202,13 +7220,15 @@ Missing functions:
 ; our-truename will generally return nil.  Hence, we sometimes call
 ; our-truename on "" rather than on a file name.
   
+  (with-more-warnings-suppressed
+
 ; Parallelism wart: we currently reset the parallelism variables twice on
 ; startup.  Removing the below call to reset-all-parallelism-variables should
 ; be the correct way to remove this double-reset, because we more thoroughly
 ; determine where to reset parallelism variables elsewhere in the code.
 
-  #+acl2-par
-  (reset-all-parallelism-variables)
+   #+acl2-par
+   (reset-all-parallelism-variables)
 
 ; Remark for #+acl2-par.  Here we set the gc-threshold to a high number.  If
 ; the Lisps support it, this threshold could be based off the actual memory in
@@ -7222,50 +7242,50 @@ Missing functions:
 ; problem when running several memory-intensive ACL2(p) sessions in parallel
 ; via make -j.
 
-  #+acl2-par
-  (when (not *lp-ever-entered-p*) (set-gc-threshold$ (expt 2 30) nil))
+   #+acl2-par
+   (when (not *lp-ever-entered-p*) (set-gc-threshold$ (expt 2 30) nil))
 
-  #+(and acl2-par lispworks)
-  (when (not *lp-ever-entered-p*)
-    (sys:set-default-segment-size 0 :cons 250)
-    (sys:set-default-segment-size 1 :cons 250)
-    (sys:set-default-segment-size 2 :cons 250)
-    (sys:set-default-segment-size 0 :other 250)
-    (sys:set-default-segment-size 1 :other 250)
-    (sys:set-default-segment-size 2 :other 250))
+   #+(and acl2-par lispworks)
+   (when (not *lp-ever-entered-p*)
+     (sys:set-default-segment-size 0 :cons 250)
+     (sys:set-default-segment-size 1 :cons 250)
+     (sys:set-default-segment-size 2 :cons 250)
+     (sys:set-default-segment-size 0 :other 250)
+     (sys:set-default-segment-size 1 :other 250)
+     (sys:set-default-segment-size 2 :other 250))
 
-  #+acl2-par
-  (f-put-global 'parallel-evaluation-enabled t *the-live-state*)
-  (let ((state *the-live-state*)
-        #+(and gcl (not ansi-cl))
-        (lisp::*break-enable* (debugger-enabledp *the-live-state*))
-        (raw-p
-         (cond
-          ((null args) nil)
-          ((equal args '(raw)) 'raw)
-          (t (error "LP either takes no args or a single argument, 'raw.")))))
-    (cond
-     ((> *ld-level* 0)
-      (when (raw-mode-p *the-live-state*)
-        (fms "You have attempted to enter the ACL2 read-eval-print loop from ~
-              within raw mode.  However, you appear already to be in that ~
-              loop.  If your intention is to leave raw mode, then execute:  ~
-              :set-raw-mode nil.~|"
-             nil (standard-co *the-live-state*) *the-live-state* nil))
-      (return-from lp nil))
-     (*lp-ever-entered-p*
-      (f-put-global 'standard-oi
-                    (if (and raw-p (not (raw-mode-p state)))
-                        (cons '(set-raw-mode t)
-                              *standard-oi*)
-                      *standard-oi*)
-                    *the-live-state*)
-      (with-suppression ; package locks, not just warnings; to read 'cl::foo
-       (ld-fn (f-get-ld-specials *the-live-state*)
-              *the-live-state*
-              nil)))
-     (t (set-initial-cbd)
-        (eval `(in-package ,*startup-package-name*)) ;only changes raw Lisp pkg
+   #+acl2-par
+   (f-put-global 'parallel-evaluation-enabled t *the-live-state*)
+   (let ((state *the-live-state*)
+         #+(and gcl (not ansi-cl))
+         (lisp::*break-enable* (debugger-enabledp *the-live-state*))
+         (raw-p
+          (cond
+           ((null args) nil)
+           ((equal args '(raw)) 'raw)
+           (t (error "LP either takes no args or a single argument, 'raw.")))))
+     (cond
+      ((> *ld-level* 0)
+       (when (raw-mode-p *the-live-state*)
+         (fms "You have attempted to enter the ACL2 read-eval-print loop from ~
+               within raw mode.  However, you appear already to be in that ~
+               loop.  If your intention is to leave raw mode, then execute:  ~
+               :set-raw-mode nil.~|"
+              nil (standard-co *the-live-state*) *the-live-state* nil))
+       (return-from lp nil))
+      (*lp-ever-entered-p*
+       (f-put-global 'standard-oi
+                     (if (and raw-p (not (raw-mode-p state)))
+                         (cons '(set-raw-mode t)
+                               *standard-oi*)
+                       *standard-oi*)
+                     *the-live-state*)
+       (with-suppression ; package locks, not just warnings; to read 'cl::foo
+        (ld-fn (f-get-ld-specials *the-live-state*)
+               *the-live-state*
+               nil)))
+      (t (set-initial-cbd)
+         (eval `(in-package ,*startup-package-name*)) ;only changes raw Lisp pkg
 
 ; We formerly set *debugger-hook* at the top level using setq, just below the
 ; definition of our-abort.  But that didn't work in Lispworks, where that value
@@ -7274,8 +7294,8 @@ Missing functions:
 ; globally to nil when input comes from a file, which is how ACL2 is built,
 ; rather than standard-input,
 
-        #-(and gcl (not ansi-cl))
-        (setq *debugger-hook* 'our-abort)
+         #-(and gcl (not ansi-cl))
+         (setq *debugger-hook* 'our-abort)
 
 ; Even with the setting of *stack-overflow-behaviour* to nil or :warn in
 ; acl2-init.lisp, we cannot eliminate the following form for LispWorks.  (We
@@ -7284,63 +7304,63 @@ Missing functions:
 ; certifying books/concurrent-programs/bakery/stutter2 and
 ; books/unicode/read-utf8.lisp.)
 
-        #+lispworks (hcl:extend-current-stack 400)
+         #+lispworks (hcl:extend-current-stack 400)
 
-        #+(and lispworks acl2-par)
-        (when (< (hcl:current-stack-length)
+         #+(and lispworks acl2-par)
+         (when (< (hcl:current-stack-length)
 
 ; Keep the below number (currently 80000) in sync with the value given to
 ; *sg-default-size* (set elsewhere in our code).
 
-                 80000)
-          (hcl:extend-current-stack
+                  80000)
+           (hcl:extend-current-stack
 
 ; this calculation sets the current stack length to be within 1% of 80000
 
-           (- (round (* 100 (/ (hcl:current-stack-length) 80000))) 100)))
+            (- (round (* 100 (/ (hcl:current-stack-length) 80000))) 100)))
 
 ; Acl2-default-restart isn't enough in Allegro, at least, to get the new prompt
 ; when we start up:
 
-        (let* ((system-dir (let ((str (getenv$-raw "ACL2_SYSTEM_BOOKS")))
-                             (and str
-                                  (maybe-add-separator str))))
-               (save-expansion (let ((s (getenv$-raw "ACL2_SAVE_EXPANSION")))
-                                 (and s
-                                      (not (equal s ""))
-                                      (not (equal (string-upcase s)
-                                                  "NIL")))))
-               (user-home-dir-path (our-user-homedir-pathname))
-               (user-home-dir0 (and user-home-dir-path
-                                    (our-truename user-home-dir-path t)))
-               (user-home-dir (if (eql (char user-home-dir0
-                                             (1- (length user-home-dir0)))
-                                       *directory-separator*)
-                                  (subseq user-home-dir0
-                                          0
-                                          (1- (length user-home-dir0)))
-                                user-home-dir0)))
-          (when system-dir
-            (f-put-global 'distributed-books-dir
-                          (canonical-dirname!
-                           (unix-full-pathname system-dir)
-                           'lp
-                           *the-live-state*)
-                          *the-live-state*))
-          (when (and save-expansion
-                     (not (equal (string-upcase save-expansion)
-                                 "NIL")))
-            (f-put-global 'save-expansion-file t *the-live-state*))
-          (when user-home-dir
-            (f-put-global 'user-home-dir user-home-dir *the-live-state*)))
-        #-hons
+         (let* ((system-dir (let ((str (getenv$-raw "ACL2_SYSTEM_BOOKS")))
+                              (and str
+                                   (maybe-add-separator str))))
+                (save-expansion (let ((s (getenv$-raw "ACL2_SAVE_EXPANSION")))
+                                  (and s
+                                       (not (equal s ""))
+                                       (not (equal (string-upcase s)
+                                                   "NIL")))))
+                (user-home-dir-path (our-user-homedir-pathname))
+                (user-home-dir0 (and user-home-dir-path
+                                     (our-truename user-home-dir-path t)))
+                (user-home-dir (if (eql (char user-home-dir0
+                                              (1- (length user-home-dir0)))
+                                        *directory-separator*)
+                                   (subseq user-home-dir0
+                                           0
+                                           (1- (length user-home-dir0)))
+                                 user-home-dir0)))
+           (when system-dir
+             (f-put-global 'distributed-books-dir
+                           (canonical-dirname!
+                            (unix-full-pathname system-dir)
+                            'lp
+                            *the-live-state*)
+                           *the-live-state*))
+           (when (and save-expansion
+                      (not (equal (string-upcase save-expansion)
+                                  "NIL")))
+             (f-put-global 'save-expansion-file t *the-live-state*))
+           (when user-home-dir
+             (f-put-global 'user-home-dir user-home-dir *the-live-state*)))
+         #-hons
 ; Hons users are presumably advanced enough to tolerate the lack of a
 ; "[RAW LISP]" prompt.
-        (install-new-raw-prompt)
-        (setq *lp-ever-entered-p* t)
-        #+hons (f-put-global 'serialize-character #\Z state)
-        #+(and (not acl2-loop-only) acl2-rewrite-meter)
-        (setq *rewrite-depth-alist* nil)
+         (install-new-raw-prompt)
+         (setq *lp-ever-entered-p* t)
+         #+hons (f-put-global 'serialize-character #\Z state)
+         #+(and (not acl2-loop-only) acl2-rewrite-meter)
+         (setq *rewrite-depth-alist* nil)
 
 ; Without the following call, it was impossible to read and write with ACL2 I/O
 ; functions to *standard-co* in CLISP 2.30.  Apparently the appropriate Lisp
@@ -7348,7 +7368,7 @@ Missing functions:
 ; up.  So we "refresh" the appropriate property lists with the current such
 ; Lisp streams.
 
-        (setup-standard-io)
+         (setup-standard-io)
 
 ; The following applies to CLISP 2.30, where charset:iso-8859-1 is defined, not to
 ; CLISP 2.27, where charset:utf-8 is not defined.  It apparently has to be
@@ -7356,66 +7376,66 @@ Missing functions:
 ; before saving an image, but the value of custom:*default-file-encoding* at
 ; startup was #<ENCODING CHARSET:ASCII :UNIX>.
 
-        #+(and clisp unicode)
-        (setq custom:*default-file-encoding* charset:iso-8859-1)
-        #+gcl
+         #+(and clisp unicode)
+         (setq custom:*default-file-encoding* charset:iso-8859-1)
+         #+gcl
 
 ; In GCL, at least through Version 2.6.7, there are only 1024 indices n
 ; available for the #n= reader macro.  That is such a small number that for
 ; GCL, we turn off the use of this reader macro when printing out files such as
 ; .cert files.
 
-        (f-put-global 'print-circle-files nil state)
-        (let ((customization-full-file-name
-               (initial-customization-filename)))
-          (cond
-           ((or (eq customization-full-file-name :none)
-                (global-val 'boot-strap-flg (w state)))
-            nil)
-           (customization-full-file-name
+         (f-put-global 'print-circle-files nil state)
+         (let ((customization-full-file-name
+                (initial-customization-filename)))
+           (cond
+            ((or (eq customization-full-file-name :none)
+                 (global-val 'boot-strap-flg (w state)))
+             nil)
+            (customization-full-file-name
 
 ; If the ACL2 customization file exists (and we are not booting) then it hasn't
 ; been included yet, and we include it now.
 
-            (fms "Customizing with ~x0.~%"
-                 (list (cons #\0 customization-full-file-name))
-                 *standard-co*
-                 state
-                 nil)
-            (let ((old-infixp (f-get-global 'infixp *the-live-state*)))
-              (f-put-global 'infixp nil *the-live-state*)
-              (with-suppression ; package locks, not just warnings, for read
-               (state-free-global-let*
-                ((connected-book-directory
-                  (f-get-global 'connected-book-directory state)))
-                (ld-fn (put-assoc-eq
-                        'standard-oi
-                        (if (and raw-p (not (raw-mode-p state)))
-                            (cons '(set-raw-mode t)
-                                  customization-full-file-name)
-                          customization-full-file-name)
-                        (put-assoc-eq
-                         'ld-error-action :return
-                         (f-get-ld-specials *the-live-state*)))
-                       *the-live-state*
-                       nil)))
-              (f-put-global 'infixp old-infixp *the-live-state*)))))
-        (f-put-global 'standard-oi
-                      (if (and raw-p (not (raw-mode-p state)))
-                          (cons '(set-raw-mode t)
-                                *standard-oi*)
-                        *standard-oi*)
-                      *the-live-state*)
-        (f-put-global 'ld-error-action :continue *the-live-state*)
-        (with-suppression ; package locks, not just warnings; to read 'cl::foo
-         (ld-fn (f-get-ld-specials state)
-                *the-live-state*
-                nil))))
-    (fms "Exiting the ACL2 read-eval-print loop.  To re-enter, execute (LP)."
-         nil *standard-co* *the-live-state* nil)
-    #+(and acl2-par lispworks)
-    (spawn-extra-lispworks-listener)
-    (values)))
+             (fms "Customizing with ~x0.~%"
+                  (list (cons #\0 customization-full-file-name))
+                  *standard-co*
+                  state
+                  nil)
+             (let ((old-infixp (f-get-global 'infixp *the-live-state*)))
+               (f-put-global 'infixp nil *the-live-state*)
+               (with-suppression ; package locks, not just warnings, for read
+                (state-free-global-let*
+                 ((connected-book-directory
+                   (f-get-global 'connected-book-directory state)))
+                 (ld-fn (put-assoc-eq
+                         'standard-oi
+                         (if (and raw-p (not (raw-mode-p state)))
+                             (cons '(set-raw-mode t)
+                                   customization-full-file-name)
+                           customization-full-file-name)
+                         (put-assoc-eq
+                          'ld-error-action :return
+                          (f-get-ld-specials *the-live-state*)))
+                        *the-live-state*
+                        nil)))
+               (f-put-global 'infixp old-infixp *the-live-state*)))))
+         (f-put-global 'standard-oi
+                       (if (and raw-p (not (raw-mode-p state)))
+                           (cons '(set-raw-mode t)
+                                 *standard-oi*)
+                         *standard-oi*)
+                       *the-live-state*)
+         (f-put-global 'ld-error-action :continue *the-live-state*)
+         (with-suppression ; package locks, not just warnings; to read 'cl::foo
+          (ld-fn (f-get-ld-specials state)
+                 *the-live-state*
+                 nil))))
+     (fms "Exiting the ACL2 read-eval-print loop.  To re-enter, execute (LP)."
+          nil *standard-co* *the-live-state* nil)
+     #+(and acl2-par lispworks)
+     (spawn-extra-lispworks-listener)
+     (values))))
 
 (defmacro lp! (&rest args)
   `(let ((*features* (add-to-set-eq :acl2-loop-only *features*)))
@@ -7450,35 +7470,34 @@ Missing functions:
   (progn
    (chk-book-name full-book-name full-book-name 'acl2-compile-file
                   *the-live-state*)
-   (with-more-warnings-suppressed
-    (let ((*readtable* *acl2-readtable*)
-          (ofile (convert-book-name-to-compiled-name
-                  (pathname-unix-to-os full-book-name *the-live-state*)))
-          (stream (get (proofs-co *the-live-state*)
-                       *open-output-channel-key*)))
+   (let ((*readtable* *acl2-readtable*)
+         (ofile (convert-book-name-to-compiled-name
+                 (pathname-unix-to-os full-book-name *the-live-state*)))
+         (stream (get (proofs-co *the-live-state*)
+                      *open-output-channel-key*)))
 
 ; It is tempting to evaluate (proclaim-file os-expansion-filename).  However,
 ; all functions in full-book-name were presumably already proclaimed, as
 ; appropriate, during add-trip.
 
-      (let ((*readtable* *reckless-acl2-readtable*)
+     (let ((*readtable* *reckless-acl2-readtable*)
 
 ; We reduce the compiled file size produced by CCL, even in the #+hons case
 ; where we may have set ccl::*save-source-locations* to t.  We have seen an
 ; example where this binding reduced the .dx64fsl size from 13696271 to 24493.
 
-            #+ccl (ccl::*save-source-locations* nil))
-        (compile-file os-expansion-filename :output-file ofile))
-      (let ((*compiling-certified-file* t))
+           #+ccl (ccl::*save-source-locations* nil))
+       (compile-file os-expansion-filename :output-file ofile))
+     (let ((*compiling-certified-file* t))
 
 ; See the comment about an optimization using *compiling-certified-file* in the
 ; raw Lisp definition of acl2::defconst.
 
-        (load-compiled ofile t))
-      (terpri stream)
-      (prin1 ofile stream)
-      (terpri stream)
-      (terpri stream)))))
+       (load-compiled ofile t))
+     (terpri stream)
+     (prin1 ofile stream)
+     (terpri stream)
+     (terpri stream))))
 
 (defun-one-output delete-auxiliary-book-files (full-book-name)
   (let* ((file (pathname-unix-to-os full-book-name *the-live-state*))
@@ -7543,20 +7562,19 @@ Missing functions:
     (warning$ 'compile-uncompiled-defuns nil
               "No functions to compile.")
     (return-from compile-uncompiled-defuns file)))
-  (with-more-warnings-suppressed
-   (let ((os-file (pathname-unix-to-os file state)))
-     (state-global-let*
-      ((print-circle (f-get-global 'print-circle-files state)))
-      (with-print-controls
-       :defaults
-       ((*print-circle* (f-get-global 'print-circle state)))
-       (let ((seen (make-hash-table :test 'eq))
-             (fns (cond ((eq fns :uncompiled)
-                         :some)
-                        ((eq fns t)
-                         :all)
-                        (t fns)))
-             (fn-file (format nil "~a.lisp" file)))
+  (let ((os-file (pathname-unix-to-os file state)))
+    (state-global-let*
+     ((print-circle (f-get-global 'print-circle-files state)))
+     (with-print-controls
+      :defaults
+      ((*print-circle* (f-get-global 'print-circle state)))
+      (let ((seen (make-hash-table :test 'eq))
+            (fns (cond ((eq fns :uncompiled)
+                        :some)
+                       ((eq fns t)
+                        :all)
+                       (t fns)))
+            (fn-file (format nil "~a.lisp" file)))
 
 ; (Warning: Do not delete the following comment without considering the pointer
 ; to it in compile-uncompiled-*1*-defuns.)
@@ -7568,80 +7586,80 @@ Missing functions:
 ; read by the outermost call to read; within this expression, the same label
 ; may not appear twice.
 
-         (with-output-object-channel-sharing
-          chan fn-file
-          (let ((str0 (get-output-stream-from-channel chan)))
-            (format str0
-                    "; This file is automatically generated, to be ~
-                     compiled.~%; Feel free to delete it after compilation.~%")
+        (with-output-object-channel-sharing
+         chan fn-file
+         (let ((str0 (get-output-stream-from-channel chan)))
+           (format str0
+                   "; This file is automatically generated, to be ~
+                    compiled.~%; Feel free to delete it after compilation.~%")
           
 ; We print (in-package "...") but we do it this way to guarantee that the
 ; symbol 'in-package is printed correctly.
 
-            (print-object$ (list 'in-package (current-package state))
-                           chan state)
-            (dolist (trip (w state))
-              (cond ((and (eq fns :some)
-                          (eq (car trip) 'command-landmark)
-                          (eq (cadr trip) 'global-value)
-                          (equal (access-command-tuple-form (cddr trip))
-                                 '(exit-boot-strap-mode)))
-                     (return))
-                    ((and (eq (car trip) 'cltl-command)
-                          (eq (cadr trip) 'global-value)
-                          (consp (cddr trip))
-                          (eq (caddr trip) 'defuns)
+           (print-object$ (list 'in-package (current-package state))
+                          chan state)
+           (dolist (trip (w state))
+             (cond ((and (eq fns :some)
+                         (eq (car trip) 'command-landmark)
+                         (eq (cadr trip) 'global-value)
+                         (equal (access-command-tuple-form (cddr trip))
+                                '(exit-boot-strap-mode)))
+                    (return))
+                   ((and (eq (car trip) 'cltl-command)
+                         (eq (cadr trip) 'global-value)
+                         (consp (cddr trip))
+                         (eq (caddr trip) 'defuns)
 
 ; The next test asks whether the ignorep field of the defuns tuple is
 ; '(defstobj . stobj).  If it is, this triple didn't actually make
 ; those definitions.
 
-                          (not (and (consp (caddr (cddr trip)))
-                                    (eq (car (caddr (cddr trip))) 'defstobj))))
-                     (dolist (x (cdddr (cddr trip)))
-                       (cond ((and (not (gethash (car x) seen))
-                                   (or (eq fns :some)
-                                       (member-eq (car x) fns)))
-                              (setf (gethash (car x) seen) t)
-                              (when (not (compiled-function-p! (car x)))
-                                (cond ((or (member-eq
-                                            (car x)
-                                            (f-get-global
-                                             'program-fns-with-raw-code
-                                             state))
-                                           (member-eq
-                                            (car x)
-                                            (f-get-global
-                                             'logic-fns-with-raw-code
-                                             state)))
-                                       (format t
-                                               "; (ACL2 Note) Compiling ~
-                                                separately due to raw code: ~
-                                                ~s~&"
-                                               (car x))
-                                       (compile (car x)))
-                                      (t (print-object$ (cons 'defun x)
-                                                        chan state))))))))
-                    ((and (eq (car trip) 'cltl-command)
-                          (eq (cadr trip) 'global-value)
-                          (consp (cddr trip))
-                          (eq (caddr trip) 'defstobj))
-                     (dolist (x (car (cddddr (cddr trip))))
+                         (not (and (consp (caddr (cddr trip)))
+                                   (eq (car (caddr (cddr trip))) 'defstobj))))
+                    (dolist (x (cdddr (cddr trip)))
+                      (cond ((and (not (gethash (car x) seen))
+                                  (or (eq fns :some)
+                                      (member-eq (car x) fns)))
+                             (setf (gethash (car x) seen) t)
+                             (when (not (compiled-function-p! (car x)))
+                               (cond ((or (member-eq
+                                           (car x)
+                                           (f-get-global
+                                            'program-fns-with-raw-code
+                                            state))
+                                          (member-eq
+                                           (car x)
+                                           (f-get-global
+                                            'logic-fns-with-raw-code
+                                            state)))
+                                      (format t
+                                              "; (ACL2 Note) Compiling ~
+                                               separately due to raw code: ~
+                                               ~s~&"
+                                              (car x))
+                                      (compile (car x)))
+                                     (t (print-object$ (cons 'defun x)
+                                                       chan state))))))))
+                   ((and (eq (car trip) 'cltl-command)
+                         (eq (cadr trip) 'global-value)
+                         (consp (cddr trip))
+                         (eq (caddr trip) 'defstobj))
+                    (dolist (x (car (cddddr (cddr trip))))
 
 ; (cddr trip) is of the form 
 ; (DEFSTOBJ name the-live-name init raw-defs template)
 ; and x here is one of the raw-defs.
 
-                       (cond
-                        ((and (not (gethash (car x) seen))
-                              (not (member-equal *stobj-inline-declare* x))
-                              (or (eq fns :some)
-                                  (member-eq (car x) fns)))
-                         (setf (gethash (car x) seen) t)
-                         (when (not (compiled-function-p! (car x)))
-                           (print-object$ (cons 'defun x)
-                                          chan state))))))
-                    ((eq (cadr trip) 'redefined)
+                      (cond
+                       ((and (not (gethash (car x) seen))
+                             (not (member-equal *stobj-inline-declare* x))
+                             (or (eq fns :some)
+                                 (member-eq (car x) fns)))
+                        (setf (gethash (car x) seen) t)
+                        (when (not (compiled-function-p! (car x)))
+                          (print-object$ (cons 'defun x)
+                                         chan state))))))
+                   ((eq (cadr trip) 'redefined)
 
 ; This case avoids redefining a macro back to an overritten function in the
 ; following example provided by Eric Smith.
@@ -7651,45 +7669,45 @@ Missing functions:
 ; (defmacro foo (x) x)
 ; :comp t
 
-                     (setf (gethash (car trip) seen) t))))
-            (newline chan state)
-            (close-output-channel chan state)))
-         (when (not (eq fns :some))
-           (let (missing)
-             (dolist (fn fns)
-               (when (not (gethash fn seen))
-                 (push fn missing)))
-             (when missing
-               (format t
-                       "~%Warning:  The following functions have not been ~
-                        compiled.~%  ~s~%Perhaps you have not defined them ~
-                        inside the ACL2 command loop.~%"
-                       missing))))
-         (cond
-          (gcl-flg
-           #+gcl
-           (compile-file
-            (our-truename (pathname-unix-to-os fn-file state) t)
-            :c-file t :h-file t)
-           #-gcl
-           (er hard 'compile-uncompiled-defuns
-               "The gcl-flg argument to compile-uncompiled-defuns is only ~
-                legal when running under GCL."))
-          (t
-           (let ((lisp-file
-                  (our-truename (pathname-unix-to-os fn-file state)
-                                t)))
-             (compile-file lisp-file)
-             (when (not (keep-tmp-files state))
-               (delete-file lisp-file)
-               #+clisp
-               (delete-file (concatenate 'string os-file ".lib"))))))
-         (load-compiled os-file t)
-         (if (not (keep-tmp-files state))
-             (delete-file (concatenate 'string os-file "."
-                                       *compiled-file-extension*))))
-       (value nil)))
-     os-file)))
+                    (setf (gethash (car trip) seen) t))))
+           (newline chan state)
+           (close-output-channel chan state)))
+        (when (not (eq fns :some))
+          (let (missing)
+            (dolist (fn fns)
+              (when (not (gethash fn seen))
+                (push fn missing)))
+            (when missing
+              (format t
+                      "~%Warning:  The following functions have not been ~
+                       compiled.~%  ~s~%Perhaps you have not defined them ~
+                       inside the ACL2 command loop.~%"
+                      missing))))
+        (cond
+         (gcl-flg
+          #+gcl
+          (compile-file
+           (our-truename (pathname-unix-to-os fn-file state) t)
+           :c-file t :h-file t)
+          #-gcl
+          (er hard 'compile-uncompiled-defuns
+              "The gcl-flg argument to compile-uncompiled-defuns is only ~
+               legal when running under GCL."))
+         (t
+          (let ((lisp-file
+                 (our-truename (pathname-unix-to-os fn-file state)
+                               t)))
+            (compile-file lisp-file)
+            (when (not (keep-tmp-files state))
+              (delete-file lisp-file)
+              #+clisp
+              (delete-file (concatenate 'string os-file ".lib"))))))
+        (load-compiled os-file t)
+        (if (not (keep-tmp-files state))
+            (delete-file (concatenate 'string os-file "."
+                                      *compiled-file-extension*))))
+      (value nil)))
+    os-file))
 
 (defun compile-uncompiled-*1*-defuns (file &optional (fns :some) gcl-flg chan0
                                            &aux
@@ -7719,81 +7737,80 @@ Missing functions:
     (warning$ 'compile-uncompiled-defuns nil
               "No functions to compile.")
     (return-from compile-uncompiled-*1*-defuns file)))
-  (with-more-warnings-suppressed
-   (let ((os-file (pathname-unix-to-os file state)))
-     (state-global-let*
-      ((print-circle (f-get-global 'print-circle-files state)))
-      (with-print-controls
-       :defaults
-       ((*print-circle* (f-get-global 'print-circle state)))
-       (let ((seen (let ((tbl (make-hash-table :test 'eq)))
-                     (when (not (eq fns :some))
-                       (dolist (fn fns)
-                         (setf (gethash fn tbl) :init)))
-                     tbl))
-             (fns (cond ((eq fns :uncompiled)
-                         :some)
-                        ((eq fns t)
-                         :all)
-                        (t fns)))
-             (fn-file (format nil "~a.lisp" file))
-             (not-boot-strap-p (null (global-val 'boot-strap-flg wrld))))
+  (let ((os-file (pathname-unix-to-os file state)))
+    (state-global-let*
+     ((print-circle (f-get-global 'print-circle-files state)))
+     (with-print-controls
+      :defaults
+      ((*print-circle* (f-get-global 'print-circle state)))
+      (let ((seen (let ((tbl (make-hash-table :test 'eq)))
+                    (when (not (eq fns :some))
+                      (dolist (fn fns)
+                        (setf (gethash fn tbl) :init)))
+                    tbl))
+            (fns (cond ((eq fns :uncompiled)
+                        :some)
+                       ((eq fns t)
+                        :all)
+                       (t fns)))
+            (fn-file (format nil "~a.lisp" file))
+            (not-boot-strap-p (null (global-val 'boot-strap-flg wrld))))
 
 ; See the comment just above the call of with-output-object-channel-sharing in
 ; compile-uncompiled-defuns.
 
-         (with-output-object-channel-sharing
-          chan fn-file
-          (cond
-           ((null chan)
-            (return-from compile-uncompiled-*1*-defuns
-                         (er hard 'compile-uncompiled-*1*-defuns
-                             "Unable to open file ~x0 for object output."
-                             fn-file)))
-           (t
-            (let ((defs nil) ; only used in the case chan0 is not nil
-                  (str0 (get-output-stream-from-channel chan)))
-              (cond ((null chan0) ; new output file
-                     (format str0
-                             "; This file is automatically generated, to be ~
-                              compiled.~%; Feel free to delete it after ~
-                              compilation.~%")
+        (with-output-object-channel-sharing
+         chan fn-file
+         (cond
+          ((null chan)
+           (return-from compile-uncompiled-*1*-defuns
+                        (er hard 'compile-uncompiled-*1*-defuns
+                            "Unable to open file ~x0 for object output."
+                            fn-file)))
+          (t
+           (let ((defs nil) ; only used in the case chan0 is not nil
+                 (str0 (get-output-stream-from-channel chan)))
+             (cond ((null chan0) ; new output file
+                    (format str0
+                            "; This file is automatically generated, to be ~
+                             compiled.~%; Feel free to delete it after ~
+                             compilation.~%")
 
 ; We print (in-package "...") but we do it this way to guarantee that the
 ; symbol 'in-package is printed correctly.
 
-                     (print-object$ (list 'in-package
-                                          (current-package state))
-                                    chan state))
-                    (t state))
-              (dolist (trip wrld)
-                (cond ((and (eq fns :some)
-                            (eq (car trip) 'command-landmark)
-                            (eq (cadr trip) 'global-value)
-                            (equal (access-command-tuple-form (cddr trip))
-                                   '(exit-boot-strap-mode)))
+                    (print-object$ (list 'in-package
+                                         (current-package state))
+                                   chan state))
+                   (t state))
+             (dolist (trip wrld)
+               (cond ((and (eq fns :some)
+                           (eq (car trip) 'command-landmark)
+                           (eq (cadr trip) 'global-value)
+                           (equal (access-command-tuple-form (cddr trip))
+                                  '(exit-boot-strap-mode)))
 
 ; If we are compiling while building the system, then we will never see
 ; 'exit-boot-strap-mode, which allows us to explore the entire world.  But when
 ; a user executes (comp t), thus calling this function with argument fns equal
 ; to :some, the exploration should only consider user-defined events.
 
-                       (return))
-                      ((and (eq (car trip) 'cltl-command)
-                            (eq (cadr trip) 'global-value)
-                            (consp (cddr trip))
-                            (eq (caddr trip) 'defuns))
-                       (dolist
-                         (x (cdddr (cddr trip)))
-                         (when (not (member-eq
-                                     (car x)
-                                     '(mv-list return-last wormhole-eval)))
-                           (let ((*1*fn (*1*-symbol (car x))))
-                             (cond
-                              ((and (fboundp *1*fn)
-                                    (cond
-                                     ((eq fns :some)
-                                      (and (not (gethash (car x) seen))
+                      (return))
+                     ((and (eq (car trip) 'cltl-command)
+                           (eq (cadr trip) 'global-value)
+                           (consp (cddr trip))
+                           (eq (caddr trip) 'defuns))
+                      (dolist
+                        (x (cdddr (cddr trip)))
+                        (when (not (member-eq
+                                    (car x)
+                                    '(mv-list return-last wormhole-eval)))
+                          (let ((*1*fn (*1*-symbol (car x))))
+                            (cond
+                             ((and (fboundp *1*fn)
+                                   (cond
+                                    ((eq fns :some)
+                                     (and (not (gethash (car x) seen))
 
 ; We have seen during development of v2-9 that in Allegro CL, when compiling
 ; *1* functions on the fly during boot-strap (because of code in add-trip), the
@@ -7811,9 +7828,9 @@ Missing functions:
 ; also the corresponding comment mentioning compile-uncompiled-*1*-defuns in
 ; add-trip.
 
-                                           (if not-boot-strap-p
-                                               (not (compiled-function-p!
-                                                     *1*fn))
+                                          (if not-boot-strap-p
+                                              (not (compiled-function-p!
+                                                    *1*fn))
 
 ; We have noticed about a corresponding 0.6% to 1.2% slowdown in the regression
 ; suite when we avoid compiling :program mode *1* functions for GCL during the
@@ -7842,29 +7859,29 @@ Missing functions:
 ; MB for the last.  So let's not write :program mode *1* functions to
 ; TMP1.lisp.  See the long comment about *fast-acl2-gcl-build* in add-trip.
 
-                                             (not (eq (cadr (cddr trip))
-                                                      :program)))
-                                           (setf (gethash (car x) seen) t)))
-                                     ((eq (gethash (car x) seen) :init)
-                                      (setf (gethash (car x) seen) t)
-                                      (or chan0
-                                          (not (compiled-function-p!
-                                                *1*fn))))))
-                               (let ((*1*def
-                                      (cons 'defun
-                                            (oneify-cltl-code
-                                             (cadr (cddr trip)) ; defun-mode
-                                             x
-                                             (getprop (car x)
-                                                      'stobj-function
-                                                      nil
-                                                      'current-acl2-world
-                                                      wrld)
-                                             wrld))))
-                                 (cond (chan0 (push *1*def defs))
-                                       (t (print-object$ *1*def chan
-                                                         state))))))))))
-                      ((eq (cadr trip) 'redefined)
+                                            (not (eq (cadr (cddr trip))
+                                                     :program)))
+                                          (setf (gethash (car x) seen) t)))
+                                    ((eq (gethash (car x) seen) :init)
+                                     (setf (gethash (car x) seen) t)
+                                     (or chan0
+                                         (not (compiled-function-p!
+                                               *1*fn))))))
+                              (let ((*1*def
+                                     (cons 'defun
+                                           (oneify-cltl-code
+                                            (cadr (cddr trip)) ; defun-mode
+                                            x
+                                            (getprop (car x)
+                                                     'stobj-function
+                                                     nil
+                                                     'current-acl2-world
+                                                     wrld)
+                                            wrld))))
+                                (cond (chan0 (push *1*def defs))
+                                      (t (print-object$ *1*def chan
+                                                        state))))))))))
+                     ((eq (cadr trip) 'redefined)
 
 ; This case avoids a hard error message when encountering a macro redefined
 ; from an earlier defun, in the following example provided by Eric Smith.
@@ -7874,52 +7891,52 @@ Missing functions:
 ; (defmacro foo (x) x)
 ; :comp t
 
-                       (setf (gethash (car trip) seen) t))))
-              (when chan0
+                      (setf (gethash (car trip) seen) t))))
+             (when chan0
 
 ; Print all the defs in a single progn, for maximum structure sharing via #n=
 ; and #n#.
 
-                (print-object$ (cons 'progn (nreverse defs)) chan state))
-              (newline chan state)
-              (cond (chan0 (return-from compile-uncompiled-*1*-defuns os-file))
-                    (t (close-output-channel chan state))))))
-          chan0)
-         (when (not (eq fns :some))
-           (let (missing)
-             (dolist (fn fns)
-               (when (not (eq (gethash fn seen) t))
-                 (push fn missing)))
-             (when missing
-               (format t
-                       "~%Warning:  The following executable-counterpart ~
-                        functions have not been compiled.~%  ~s~%Perhaps you ~
-                        have not defined them inside the ACL2 command loop.~%"
-                       missing))))
-         (cond
-          (gcl-flg
-           #+gcl
-           (compile-file
-            (our-truename (pathname-unix-to-os fn-file state) t)
-            :c-file t :h-file t)
-           #-gcl
-           (er hard 'compile-uncompiled-defuns
-               "The gcl-flg argument to compile-uncompiled-*1*-defuns is only ~
-                legal when running under GCL."))
-          (t
-           (let ((lisp-file
-                  (our-truename (pathname-unix-to-os fn-file state) t)))
-             (compile-file lisp-file)
-             (when (not (keep-tmp-files state))
-               (delete-file lisp-file)
-               #+clisp
-               (delete-file (concatenate 'string os-file ".lib"))))))
-         (load-compiled os-file t)
-         (if (not (keep-tmp-files state))
-             (delete-file (concatenate 'string os-file "."
-                                       *compiled-file-extension*)))
-         (value nil))))
-     os-file)))
+               (print-object$ (cons 'progn (nreverse defs)) chan state))
+             (newline chan state)
+             (cond (chan0 (return-from compile-uncompiled-*1*-defuns os-file))
+                   (t (close-output-channel chan state))))))
+         chan0)
+        (when (not (eq fns :some))
+          (let (missing)
+            (dolist (fn fns)
+              (when (not (eq (gethash fn seen) t))
+                (push fn missing)))
+            (when missing
+              (format t
+                      "~%Warning:  The following executable-counterpart ~
+                       functions have not been compiled.~%  ~s~%Perhaps you ~
+                       have not defined them inside the ACL2 command loop.~%"
+                      missing))))
+        (cond
+         (gcl-flg
+          #+gcl
+          (compile-file
+           (our-truename (pathname-unix-to-os fn-file state) t)
+           :c-file t :h-file t)
+          #-gcl
+          (er hard 'compile-uncompiled-defuns
+              "The gcl-flg argument to compile-uncompiled-*1*-defuns is only ~
+               legal when running under GCL."))
+         (t
+          (let ((lisp-file
+                 (our-truename (pathname-unix-to-os fn-file state) t)))
+            (compile-file lisp-file)
+            (when (not (keep-tmp-files state))
+              (delete-file lisp-file)
+              #+clisp
+              (delete-file (concatenate 'string os-file ".lib"))))))
+        (load-compiled os-file t)
+        (if (not (keep-tmp-files state))
+            (delete-file (concatenate 'string os-file "."
+                                      *compiled-file-extension*)))
+        (value nil))))
+    os-file))
 
 (defun compile-certified-file (expansion-filename full-book-name state)
 

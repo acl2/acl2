@@ -250,17 +250,6 @@
 ;                          LISP BUGS AND QUIRKS
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Patch from Gary Byers for OpenMCL 1.0 (CCL).  He says (4/13/07):
-;   Sometime over the last year or so, code was introduced into ACL2 that
-;   triggered a bug in OpenMCL 1.0 (namely, the initialization of binding
-;   of LOWER-BOUND in the THE-FIXNUM! macro in basis.lisp treats the expression
-;   (1+ UPPER-BOUND) as a fixnum (it isn't ...) and winds up negating the
-;   address of a bignum.
-#+(and ccl coral) ; the symbol :CORAL was on *FEATURES* in 1.0 and earlier
-(ccl:advise ccl::grovel-numeric-form
-            (let* ((ccl::*nx-form-type* t)) (:do-it))
-            :when :around)
-
 ; See acl2-fns.lisp for a fix to user-homedir-pathname for some versions of
 ; GCL.
 
@@ -986,6 +975,42 @@ ACL2 from scratch.")
 ; instead of the "LISP BUGS AND QUIRKS" section because we want to define this
 ; in the ACL2 package.
 
+(defmacro with-redefinition-suppressed (&rest forms)
+
+; This macro is equivalent to progn for SBCL and CMUCL, where we typically
+; suppress more warnings anyhow; see with-warnings-suppressed.
+
+  `(let (#+lispworks
+         (compiler::*redefinition-action* :QUIET)
+         #+allegro
+         (excl:*redefinition-warnings* nil)
+         #+clisp
+         (custom::*suppress-check-redefinition*
+
+; This binding may not suffice during the build.  Below is a comment that is
+; probably old as of this writing (Oct. 9, 2011).
+
+; Unfortunately, the above binding seems to be ignored when in the scope of
+; with-compilation-unit, so we get redefinition warnings from clisp during the
+; build.  Here is an example that exhibits that behavior CLISP 2.44.1 (even
+; without ACL2); and the same problem occurs if we switch the order of
+; with-compilation-unit and the binding of *suppress-check-redefinition*.
+
+;   (common-lisp::with-compilation-unit
+;    ()
+;    (let ((custom::*suppress-check-redefinition* t))
+;      (dolist (name '("foo" "bar"))
+;        (let ((source (make-pathname :name name :type "lisp")))
+;          (load source)
+;          (progn
+;            (compile-file source)
+;            (load (make-pathname :name name :type "fas")))))))
+
+          t)
+         #+ccl
+         (ccl::*compiler-warn-on-duplicate-definitions* nil))
+     ,@forms))
+
 (defmacro with-warnings-suppressed (&rest forms)
 
 ; See also the handler-bind call in init.lisp.  Thanks to Juho Snellman for his
@@ -1030,39 +1055,8 @@ ACL2 from scratch.")
                        (invoke-restart 'muffle-warning))))
            ,@forms))
 
-  #+lispworks
-  `(let ((compiler::*redefinition-action* :QUIET))
-     ,@forms)
-
-  #+allegro
-  `(let ((excl:*redefinition-warnings* nil)) ,@forms)
-
-  #+clisp
-  `(let ((custom::*suppress-check-redefinition* t))
-
-; Unfortunately, the above binding seems to be ignored when in the scope of
-; with-compilation-unity, so we get redefinition warnings from clisp during the
-; build.  Here is an example that exhibits that behavior CLISP 2.44.1 (even
-; without ACL2); and the same problem occurs if we switch the order of
-; with-compilation-unit and the binding of *suppress-check-redefinition*.
-
-;   (common-lisp::with-compilation-unit
-;    ()
-;    (let ((custom::*suppress-check-redefinition* t))
-;      (dolist (name '("foo" "bar"))
-;        (let ((source (make-pathname :name name :type "lisp")))
-;          (load source)
-;          (progn
-;            (compile-file source)
-;            (load (make-pathname :name name :type "fas")))))))
-
-     ,@forms)
-
-  #+ccl
-  `(let ((ccl::*compiler-warn-on-duplicate-definitions* nil)) ,@forms)
-
-  #-(or cmucl sbcl lispworks allegro clisp ccl)
-  (if (cdr forms) `(progn ,@forms) (car forms)))
+  #-(or sbcl cmu)
+  `(with-redefinition-suppressed ,@forms))
 
 (defmacro with-more-warnings-suppressed (&rest forms)
 
