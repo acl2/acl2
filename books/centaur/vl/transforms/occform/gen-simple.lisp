@@ -330,21 +330,25 @@ endmodule
   :short "Generate a 1-bit multiplexor module."
   :body
   (b* ((name (str::cat "VL_1_BIT_" (if approxp "APPROX_MUX" "MUX")))
-       (atts '(("VL_HANDS_OFF")))
+
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output 1))
        ((mv sel-expr sel-port sel-portdecl sel-netdecl) (vl-occform-mkport "sel" :vl-input  1))
        ((mv a-expr   a-port   a-portdecl   a-netdecl)   (vl-occform-mkport "a"   :vl-input  1))
        ((mv b-expr   b-port   b-portdecl   b-netdecl)   (vl-occform-mkport "b"   :vl-input  1))
+
        ((mv sbar-expr   sbar-netdecl)                   (vl-occform-mkwire "sbar"   1))
        ((mv sa-expr     sa-netdecl)                     (vl-occform-mkwire "s_a"    1))
        ((mv sbarb-expr  sbarb-netdecl)                  (vl-occform-mkwire "sbarb"  1))
-       (sbar-gate  (vl-make-unary-gateinst :vl-not sbar-expr sel-expr nil *vl-fakeloc*))
-       (sa-gate    (vl-make-binary-gateinst :vl-and sa-expr sel-expr a-expr nil *vl-fakeloc*))
+
+       (sbar-gate  (vl-make-unary-gateinst  :vl-not sbar-expr  sel-expr  nil        *vl-fakeloc*))
+       (sa-gate    (vl-make-binary-gateinst :vl-and sa-expr    sel-expr  a-expr nil *vl-fakeloc*))
        (sbarb-gate (vl-make-binary-gateinst :vl-and sbarb-expr sbar-expr b-expr nil *vl-fakeloc*))
-       (ports (list out-port sel-port a-port b-port))
+
+       (ports     (list out-port sel-port a-port b-port))
        (portdecls (list out-portdecl sel-portdecl a-portdecl b-portdecl))
-       (nets1  (list out-netdecl sel-netdecl a-netdecl b-netdecl sbar-netdecl sa-netdecl sbarb-netdecl))
-       (gates1 (list sbar-gate sa-gate sbarb-gate))
+       (nets1     (list out-netdecl sel-netdecl a-netdecl b-netdecl sbar-netdecl sa-netdecl sbarb-netdecl))
+       (gates1    (list sbar-gate sa-gate sbarb-gate))
+
        ((when approxp)
         ;; less exact version: out = sa | sbarb
         (b* ((out-gate (vl-make-binary-gateinst :vl-or out-expr sa-expr sbarb-expr nil *vl-fakeloc*)))
@@ -355,13 +359,15 @@ endmodule
                                        :netdecls  nets1
                                        :gateinsts (cons out-gate gates1)
                                        :minloc    *vl-fakeloc*
-                                       :maxloc    *vl-fakeloc*
-                                       :atts      atts))))
+                                       :maxloc    *vl-fakeloc*))))
+
        ((mv ab-expr ab-netdecl)     (vl-occform-mkwire "ab" 1))
        ((mv main-expr main-netdecl) (vl-occform-mkwire "main" 1))
+
        (ab-gate   (vl-make-binary-gateinst :vl-and ab-expr a-expr b-expr nil *vl-fakeloc*))
        (main-gate (vl-make-binary-gateinst :vl-or main-expr sa-expr sbarb-expr nil *vl-fakeloc*))
        (out-gate  (vl-make-binary-gateinst :vl-or out-expr main-expr ab-expr nil *vl-fakeloc*)))
+
     (list (make-honsed-vl-module :name      name
                                  :origname  name
                                  :ports     ports
@@ -369,8 +375,7 @@ endmodule
                                  :netdecls  (list* main-netdecl ab-netdecl nets1)
                                  :gateinsts (list* out-gate main-gate ab-gate gates1)
                                  :minloc    *vl-fakeloc*
-                                 :maxloc    *vl-fakeloc*
-                                 :atts      atts))))
+                                 :maxloc    *vl-fakeloc*))))
 
 (defconsts *vl-1-bit-mux*
   (car (vl-make-1-bit-mux nil)))
@@ -440,7 +445,7 @@ endmodule
             :induct t)
            (and stable-under-simplificationp
                 '(:expand (vl-make-n-bit-mux-aux outs sel as bs approxp nf))))))
-      
+
 (def-vl-modgen vl-make-n-bit-mux (n approxp)
   :short "Generate a wide multiplexor module."
 
@@ -487,14 +492,17 @@ T.</p>"
               (booleanp approxp))
 
   :body
-  (b* (((when (= n 1)) (list (if approxp *vl-1-bit-approx-mux* *vl-1-bit-mux*)))
+  (b* (((when (= n 1))
+        (list (if approxp *vl-1-bit-approx-mux* *vl-1-bit-mux*)))
+
        (name (str::cat "VL_" (str::natstr n) "_BIT_" (if approxp "APPROX_MUX" "MUX")))
        (nf (vl-empty-namefactory))
+
        ((mv out-name nf) (vl-namefactory-plain-name "out" nf))
        ((mv sel-name nf) (vl-namefactory-plain-name "sel" nf))
        ((mv a-name   nf) (vl-namefactory-plain-name "a"   nf))
        ((mv b-name   nf) (vl-namefactory-plain-name "b"   nf))
-       
+
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport out-name :vl-output n))
        ((mv sel-expr sel-port sel-portdecl sel-netdecl) (vl-occform-mkport sel-name :vl-input 1))
        ((mv a-expr a-port a-portdecl a-netdecl)         (vl-occform-mkport a-name   :vl-input n))
@@ -505,9 +513,9 @@ T.</p>"
        (b-wires   (vl-make-list-of-bitselects b-expr 0 (- n 1)))
 
        ((mv modinsts nf) (vl-make-n-bit-mux-aux out-wires sel-expr a-wires b-wires approxp nf))
-       
+
        (- (vl-free-namefactory nf))
-       
+
        (mod  (make-vl-module :name      name
                              :origname  name
                              :ports     (list out-port sel-port a-port b-port)

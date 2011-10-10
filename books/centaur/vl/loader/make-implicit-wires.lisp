@@ -168,7 +168,7 @@ isn't entirely contrived; someone might occasionally write things like
 
 <p><b>#4</b>.  Mostly as expected, neither tool allows undeclared wires on
 either side of an assignment in an always block.  The tools even reject
-implicit wires in procedural continuous assignments, e.g., <tt>always @(b)
+implicit wires in procedural continuous assignments, e.g., <tt>always @@(b)
 assign w = a;</tt>.  But this seems arguably incorrect: is not a procedural
 continuous assignment also a continuous assignment, whose LHS should therefore
 be able to contain implicit wires?</p>
@@ -385,8 +385,8 @@ allowed.</p>"
 
 (defsection vl-gateinst-exprs-for-implicit-wires
   :parents (make-implicit-wires)
-  :short "@(call vl-gateinstlist-exprs-for-implicit-wires) gets the expressions
-from gate instances for making implicit wires."
+  :short "@(call vl-gateinst-exprs-for-implicit-wires) gets the expressions
+from a gate instance for making implicit wires."
 
   :long "<p>We return <tt>(mv main other)</tt>, two expression lists where
 <tt>main</tt> has the expressions from the gateinst's port list where implicit

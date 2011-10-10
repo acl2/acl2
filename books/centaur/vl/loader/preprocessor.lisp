@@ -222,7 +222,7 @@ preprocessed each time `foo is encountered.  Hence, upon running</p>
 <p>On both Verilog-XL and NCVerilog, it appears that an <tt>`include</tt>
 directives within <tt>ifdef</tt>-ed away blocks are NOT expanded.  An easy
 way to test this is by writing a file called <tt>endif.v</tt> which simply
-contains:
+contains:</p>
 
 <code>
 `endif
@@ -237,7 +237,7 @@ contains:
 // the `ifdef has now ended
 </code>
 
-<p>And this:
+<p>And this:</p>
 
 <code>
 // suppose bar is undefined
@@ -264,12 +264,12 @@ in subtle ways.  For instance, Verilog-XL accepts the following input:</p>
 </code>
 
 <p>Yet when <tt>`foo</tt> is used inside of an ifdef'd-away section, it is not
- expanded.  And so, the above example becomes a parse error if you merely remove
- the <tt>`define condition 1</tt> line.</p>
+expanded.  And so, the above example becomes a parse error if you merely remove
+the <tt>`define condition 1</tt> line.</p>
 
 <p>Another subtlety.  As expected, defines found within ifdefed-away parts of
- the code have no effect.  For example, if not_defined is not defined, then
- upon running</p>
+the code have no effect.  For example, if not_defined is not defined, then upon
+running</p>
 
 <code>
 `define foo 3
@@ -1116,8 +1116,8 @@ defines table appropriately if <tt>activep</tt> is set.</p>"
   :parents (preprocessor)
   :short "Handler for <tt>undef</tt> directives."
 
-  :long "<p><b>Signature:</b> @(call vl-preprocess-undef) returns <tt>(mv
-successp new-defines remainder)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-process-undef) returns <tt>(mv successp
+new-defines remainder)</tt>.</p>
 
 <p>We assume that an <tt>`undef</tt> has just been read and <tt>echars</tt> is
 the text which follows it.  We try to read the name we are to undefine, then
