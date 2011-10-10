@@ -1352,23 +1352,21 @@
     (return-from oneify-cltl-code
                  (case-match def
                    ((fn formals ('declare ('xargs ':non-executable ':program))
-                        ('throw-or-attach fn formals alt-formals))
+                        ('throw-or-attach fn formals))
                     `(,(*1*-symbol fn)
                       ,formals
-                      (throw-or-attach ,fn ,formals ,alt-formals
-                                       t)))
+                      (throw-or-attach ,fn ,formals t)))
                    ((fn formals ('declare ('xargs ':guard guard))
-                        ('throw-or-attach fn formals alt-formals))
+                        ('throw-or-attach fn formals))
                     `(,(*1*-symbol fn)
                       ,formals
                       ,(cond ((or (eq guard t)
                                   (equal guard *t*))
                               (car (last def)))
                              (t
-                              `(throw-or-attach ,fn ,formals ,alt-formals
-                                                t)))))
+                              `(throw-or-attach ,fn ,formals t)))))
                    ((fn formals
-                        ('throw-or-attach fn formals &)) ; implicit :guard of t
+                        ('throw-or-attach fn formals)) ; implicit :guard of t
                     (prog2$ formals ; avoid compiler warning
                             `(,(*1*-symbol fn) ,@(cdr def))))
                    ((fn formals
@@ -8067,6 +8065,13 @@ Missing functions:
     (car alist))
    (t (assoc-eq-trace-alist val (cdr alist)))))
 
+(defun-one-output print-list-without-stobj-arrays (lst)
+  (loop for x in lst
+        collect
+        (or (and (arrayp x)
+                 (stobj-print-symbol x *user-stobj-alist*))
+            x)))
+
 (defun-one-output stobj-print-symbol (x user-stobj-alist-tail)
 
 ; Finds the (first) name of a pair (name . val) in user-stobj-alist-tail such
@@ -8074,11 +8079,15 @@ Missing functions:
 ; print when encountering x during tracing.
 
   (and user-stobj-alist-tail
-       (if (eq x (symbol-value (the-live-var (caar user-stobj-alist-tail))))
-           (intern-in-package-of-symbol
-            (stobj-print-name (caar user-stobj-alist-tail))
-            (caar user-stobj-alist-tail))
-         (stobj-print-symbol x (cdr user-stobj-alist-tail)))))
+       (let ((pair (car user-stobj-alist-tail)))
+         (if (eq x (symbol-value (the-live-var (car pair))))
+             (let ((name (stobj-print-name (car pair))))
+               (intern-in-package-of-symbol
+                (cond ((eq x (cdr pair)) name)
+                      (t (concatenate 'string name
+                                      "{local-stobj}")))
+                (car pair)))
+           (stobj-print-symbol x (cdr user-stobj-alist-tail))))))
 
 (defun-one-output trace-hide-world-and-state (l)
 

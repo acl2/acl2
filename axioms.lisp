@@ -9111,7 +9111,7 @@
     (list* 'ev-fncall-null-body-er
            ,ignored-attachment
            ',fn
-           (list ,@formals))))
+           (print-list-without-stobj-arrays (list ,@formals)))))
 
 (defvar *aokp*
 
@@ -9131,11 +9131,7 @@
               (null *attached-fn-called*))
      (setq *attached-fn-called* ,fn)))
 
-(defmacro throw-or-attach (fn formals alt-formals &optional *1*-p)
-
-; If alt-formals is non-nil, then it is to be used in place of formals when
-; reporting an undefined-function error.
-
+(defmacro throw-or-attach (fn formals &optional *1*-p)
   (let ((at-fn (attachment-symbol fn)))
     `(let ()
        (declare (special ,at-fn))
@@ -9152,15 +9148,14 @@
                  (and (boundp ',at-fn)
                       ,at-fn)
                  ,fn
-                 ,(or alt-formals
-                      formals)))))))
+                 ,formals))))))
 
 )
 
 (defun null-body-er (fn formals maybe-attach)
   (declare (xargs :guard t))
   (if maybe-attach
-      (list 'throw-or-attach fn formals nil)
+      (list 'throw-or-attach fn formals)
     (list 'throw-without-attach nil fn formals)))
 
 ; CLTL2 and the ANSI standard have made the main Lisp package name be
@@ -11720,28 +11715,18 @@
            (ignore fn actuals))
   #-acl2-loop-only
   (progn
-
-; Keep the following in sync with null-body-er.  The error message printed will
-; be a bit ugly since we don't do the trick done with null-body-er+ -- we tried
-; that and it didn't work when tracing because some conversion had already been
-; done, so we'll leave well enough alone as we don't really expect to call this
-; functions anyhow.  After all, this extra attention to causing an error
-; (actually, a throw) is merely to prevent the case where include-book loads
-; compiled code to overwrite a defun with :non-executable t -- that's why we
-; introduced defun-nx and insisted that non-executable functions have a call of
-; throw-nonexec-error.
-
     (throw-raw-ev-fncall
      (list* 'ev-fncall-null-body-er
 
 ; The following nil means that we never blame non-executability on aokp.  Note
 ; that defproxy is not relevant here, since that macro generates a call of
-; install-event-defuns, which calls intro-udf-lst2, which calls null-body-er+
+; install-event-defuns, which calls intro-udf-lst2, which calls null-body-er
 ; to lay down a call of throw-or-attach.  So in the defproxy case,
 ; throw-nonexec-error doesn't get called!
 
             nil
-            fn actuals))
+            fn
+            (print-list-without-stobj-arrays actuals)))
 
 ; Just in case throw-raw-ev-fncall doesn't throw -- though it always should.
 
@@ -11804,7 +11789,9 @@
   proof.  If an error message is produced by evaluating a call of the function
   on a list of arguments that includes ~c[state] or user-defined ~ilc[stobj]s,
   these arguments will be shown as symbols such as ~c[|<state>|] in the error
-  message.
+  message.  In the case of a user-defined stobj bound by
+  ~ilc[with-local-stobj], the symbol printed will include the suffix
+  ~c[{local-stobj}], for example, ~c[|<st>{local-stobj}|].
 
   It is harmless to include ~c[:non-executable t] in your own ~ilc[xargs]
   ~ilc[declare] form; ~c[defun-nx] will still lay down its own such

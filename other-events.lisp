@@ -22170,7 +22170,7 @@
                          (assert$ (not (eq formals t))
                                   (list fn
                                         formals
-                                        (null-body-er+ fn formals wrld t)))))))
+                                        (null-body-er fn formals t)))))))
          (formals-tail (assoc-keyword :formals trace-options))
          (formals-default (and (not formals-tail)
                                (atom def)

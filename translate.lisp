@@ -6229,6 +6229,20 @@
             ((args (translate11-lst (cdr x) t bindings known-stobjs
                                     nil flet-alist x ctx wrld state-vars)))
             (trans-value (fcons-term (car x) args))))
+          ((eq (getprop (car x) 'non-executablep nil 'current-acl2-world
+                        wrld)
+               t)
+
+; This case is handled essentially the same as the case (eq stobjs-out t) just
+; above.  Perhaps we could handle the two cases identically.  However, we want
+; to be quite sure in the present case that the bindings returned are the same
+; as the bindings passed in.
+
+           (let ((old-bindings bindings))
+             (trans-er-let*
+              ((args (translate11-lst (cdr x) t bindings known-stobjs
+                                      nil flet-alist x ctx wrld state-vars)))
+              (trans-value (fcons-term (car x) args) old-bindings))))
           ((eq (car x) 'return-last) ; and stobjs-out is not t
            (let* ((arg1 (nth 1 x))
                   (key (and (consp arg1)
@@ -6587,9 +6601,7 @@
 ; function symbol except that it tells us we are NOT processing a definition
 ; body.  As is noted below, if the initial stobjs-out is :stobjs-out, bindings
 ; MUST be '((:stobjs-out . :stobjs-out)) and we use (eq (caar bindings)
-; :stobjs-out) to determine that we are not in a definition.  [Note: as this
-; function recurs, bindings may grow because we add new bindings with cons; but
-; in the case of :stobjs-out it will always contain just that one key.]
+; :stobjs-out) to determine that we are not in a definition.
 
 ; CAUTION: If you call this function with stobjs-out being a symbol, say fn,
 ; make sure that
@@ -6614,7 +6626,28 @@
 ; bindings has been modified to bind every fn (ultimately) to a proper stobjs
 ; out setting.  Use translate-deref to recover the bindings.
 
-  (translate11 x stobjs-out bindings known-stobjs nil x ctx w state-vars))
+  (trans-er-let*
+   ((result
+     (translate11 x stobjs-out bindings known-stobjs nil x ctx w state-vars)))
+   (cond ((and bindings
+               (null (cdr bindings))
+               (symbolp (caar bindings))
+               (eq (caar bindings) (cdar bindings)))
+
+; This case can happen because x is the call of a non-executable function.  We
+; return a proper stobjs-out value, for example as passed by trans-eval to
+; ev-for-trans-eval.  This treatment is necessary for the following example, to
+; avoid being unable to determine the output signature of g.
+
+; (defun-nx f (x) x)
+; (defun g (x) (f x))
+
+; This treatment is consistent with our use of stobjs-out = (nil) for
+; non-executable functions.
+
+          (trans-value result
+                       (translate-bind (caar bindings) '(nil) bindings)))
+         (t (trans-value result)))))
 
 (defun@par translate1 (x stobjs-out bindings known-stobjs ctx w state)
   (cmp-and-value-to-error-quadruple@par

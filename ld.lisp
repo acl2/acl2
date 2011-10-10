@@ -18252,6 +18252,31 @@
   ~l[proof-checker-commands].  Thanks to Pete Manolios for suggesting such
   clarification and capability.
 
+  It is now legal to call ~il[non-executable] functions without the usual
+  ~il[signature] restrictions imposed on executable code.  For example,
+  the third event below was not admissible, but now it is.
+  ~bv[]
+  (defstobj foo fld)
+  (defun-nx id (x)
+    x)
+  (defun f (foo)
+    (declare (xargs :stobjs foo :verify-guards nil))
+    (cons 3 (id foo)))
+  ~ev[]
+  Thanks to Jared Davis for requesting this enhancement, in particular for
+  calling non-executable functions in the ~c[:logic] part of an ~ilc[mbe]
+  call.  Here is Jared's example, which is admissible now but formerly was
+  not.
+  ~bv[]
+  (defstobj foo (fld))
+  (defun-nx my-identity (x) x)
+  (defun my-fld (foo)
+    (declare (xargs :stobjs foo))
+    (mbe :logic (my-identity foo)
+         :exec (let ((val (fld foo)))
+                 (update-fld val foo))))
+  ~ev[]
+
   ~st[HEURISTIC IMPROVEMENTS]
 
   Reading of ACL2 ~ilc[arrays] (~pl[aref1], ~pl[aref2]) has been made more
