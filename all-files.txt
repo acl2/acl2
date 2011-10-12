@@ -618,6 +618,7 @@ alist-defs.lisp
 alist-equiv.lisp
 ap.lisp
 defapply.lisp
+equal-by-nths.lisp
 equal-sets.acl2
 equal-sets.lisp
 evaluator-metatheorems.lisp

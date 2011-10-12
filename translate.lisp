@@ -6232,17 +6232,13 @@
           ((eq (getprop (car x) 'non-executablep nil 'current-acl2-world
                         wrld)
                t)
-
-; This case is handled essentially the same as the case (eq stobjs-out t) just
-; above.  Perhaps we could handle the two cases identically.  However, we want
-; to be quite sure in the present case that the bindings returned are the same
-; as the bindings passed in.
-
-           (let ((old-bindings bindings))
+           (let ((computed-stobjs-out (compute-stobj-flags (cdr x)
+                                                           known-stobjs
+                                                           wrld)))
              (trans-er-let*
-              ((args (translate11-lst (cdr x) t bindings known-stobjs
+              ((args (translate11-lst (cdr x) computed-stobjs-out bindings known-stobjs
                                       nil flet-alist x ctx wrld state-vars)))
-              (trans-value (fcons-term (car x) args) old-bindings))))
+              (trans-value (fcons-term (car x) args)))))
           ((eq (car x) 'return-last) ; and stobjs-out is not t
            (let* ((arg1 (nth 1 x))
                   (key (and (consp arg1)
@@ -6481,7 +6477,7 @@
                             msg flet-alist cform ctx wrld state-vars)
 
 ; WARNING: This function's treatment of stobjs-out is unusual:
-; (1) stobjs-out must be either t, nil, or list of stobjs flags.
+; (1) stobjs-out must be either t, nil, or list of stobj flags.
 ;     It CANNOT be a function name (``an unknown'').
 ; (2) If stobjs-out is nil, it is treated as though it were a list of
 ;     nils as long as lst.
