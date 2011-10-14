@@ -250,20 +250,24 @@ concatenations.</p>")
 
 (def-vl-rangeresolve vl-rangeresolve
   :type vl-range-p
-  :body (let ((lval (vl-rangeexpr-reduce (vl-range->left x)))
-              (rval (vl-rangeexpr-reduce (vl-range->right x))))
-          (if (and lval rval (>= lval rval))
-              ;; Ordinary case, build a new range.
+  :body (let ((msb-val (vl-rangeexpr-reduce (vl-range->msb x)))
+              (lsb-val (vl-rangeexpr-reduce (vl-range->lsb x))))
+          (if (and msb-val lsb-val)
+              ;; Ordinary case, build a new range.  We could probably use
+              ;; vl-make-index here instead of constructing these manually, but
+              ;; it produces sized results and maybe it's slightly better not
+              ;; to size these yet.  Hrmn.  It probably doesn't matter.
+              ;; Whatever.
               (mv warnings
-                  (make-vl-range
-                   :left (make-vl-atom
-                          :guts (make-vl-constint :origwidth 32
-                                                  :origtype :vl-signed
-                                                  :value lval))
-                   :right (make-vl-atom
-                           :guts (make-vl-constint :origwidth 32
-                                                   :origtype :vl-signed
-                                                   :value rval))))
+                  (make-honsed-vl-range
+                   :msb (make-honsed-vl-atom
+                         :guts (make-honsed-vl-constint :origwidth 32
+                                                        :origtype :vl-signed
+                                                        :value msb-val))
+                   :lsb (make-honsed-vl-atom
+                         :guts (make-honsed-vl-constint :origwidth 32
+                                                        :origtype :vl-signed
+                                                        :value lsb-val))))
 
             ;; Failure, just return the unreduced range.
             (mv (cons (make-vl-warning
@@ -480,7 +484,7 @@ we try to evaluate expressions within it, e.g., replacing <tt>6-1</tt> with
             (index2 (third args))
             (val1   (vl-rangeexpr-reduce index1))
             (val2   (vl-rangeexpr-reduce index2))
-            ((unless (and val1 val2 (>= val1 val2)))
+            ((unless (and val1 val2))
              (mv (cons (make-vl-warning
                         :type :vl-bad-expression
                         ;; BOZO need some context
@@ -489,13 +493,13 @@ we try to evaluate expressions within it, e.g., replacing <tt>6-1</tt> with
                         :fn 'vl-op-selresolve)
                        warnings)
                  args))
-            (high (make-vl-atom :guts (make-vl-constint :origwidth 32
-                                                        :origtype :vl-signed
-                                                        :value val1)))
-            (low  (make-vl-atom :guts (make-vl-constint :origwidth 32
+            (msb (make-vl-atom :guts (make-vl-constint :origwidth 32
+                                                       :origtype :vl-signed
+                                                       :value val1)))
+            (lsb  (make-vl-atom :guts (make-vl-constint :origwidth 32
                                                         :origtype :vl-signed
                                                         :value val2))))
-         (mv warnings (list from high low))))
+         (mv warnings (list from msb lsb))))
 
       (:vl-bitselect
        (b* ((from  (first args))

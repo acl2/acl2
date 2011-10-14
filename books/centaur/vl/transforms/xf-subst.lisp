@@ -245,8 +245,8 @@ attributes is left up to the implementation.</p>")
 (def-vl-subst vl-range-subst
   :type vl-range-p
   :body (change-vl-range x
-                         :left (vl-expr-subst (vl-range->left x) sigma)
-                         :right (vl-expr-subst (vl-range->right x) sigma)))
+                         :msb (vl-expr-subst (vl-range->msb x) sigma)
+                         :lsb (vl-expr-subst (vl-range->lsb x) sigma)))
 
 (def-vl-subst vl-maybe-range-subst
   :type vl-maybe-range-p

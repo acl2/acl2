@@ -128,6 +128,9 @@ symbol; and</li>
 <tt>\"w\"</tt> to <tt>(ACL2::w[high] ... ACL2::w[low])</tt>, i.e., a list of
 symbols from high to low, inclusive.</li>
 
+<li>Given a Verilog wire, <tt>w</tt>, with range <tt>[low:high]</tt>, we bind
+<tt>\"w\"</tt> to <tt>(ACL2::w[low] ... ACL2::w[high])</tt>.</li>
+
 </ul>
 
 <p>Our @(see vl-emodwire-p) representation is robust and can reliably deal with
@@ -257,7 +260,7 @@ replacements.  This should not be too confusing since, e.g., in Verilog
 ;   Exec:  5.291, 5.232, 5.232
 
   #||
-(prog2$ (gc$)
+ (prog2$ (gc$)
         (time$
          (loop for i fixnum from 1 to 10000000 do
                (vl::vl-plain-wire-name "looksLikeAVerilogWire"))))
@@ -328,10 +331,10 @@ replacements.  This should not be too confusing since, e.g., in Verilog
 
 
 
-(defsection vl-msb-named-bitlist
+(defsection vl-emodwires-from-high-to-low
   :parents (vl-wirealist-p)
-  :short "@(call vl-msb-named-bitlist) returns a list of @(see vl-emodwire-p)s:
- <tt>(name[high] name[high-1] ... name[low])</tt>"
+  :short "@(call vl-emodwires-from-high-to-low) returns a list of @(see
+ vl-emodwire-p)s: <tt>(name[high] name[high-1] ... name[low])</tt>"
 
   :long "<p>The range is inclusive on both sides, so if <tt>low</tt> and
 <tt>high</tt> are the same you still get one wire.</p>"
@@ -341,10 +344,10 @@ replacements.  This should not be too confusing since, e.g., in Verilog
 ;; session that had just loaded the book up until here.
 
   #||
-(progn (gc$)
+ (progn (gc$)
        (time$
         (loop for i from 1 to 1000000 do
-              (vl::vl-msb-named-bitlist "aTypicalWireName" 7 0))))
+              (vl::vl-emodwires-from-high-to-low "aTypicalWireName" 7 0))))
   ||#
 
 ;; On fv-1, after adding fast-cat:
@@ -358,7 +361,7 @@ replacements.  This should not be too confusing since, e.g., in Verilog
 ;; take 3.33 seconds all by itself:
 
   #||
-(progn (gc$)
+ (progn (gc$)
        (time$
         (loop for i from 1 to 8000000 do
               (intern "aTypicalWireName" "ACL2"))))
@@ -370,7 +373,7 @@ replacements.  This should not be too confusing since, e.g., in Verilog
 ;; like changing the contents of the string you've interned is undefined, so I
 ;; guess it's just not a valid optimization.
 
-  (defund vl-msb-named-bitlist-aux (name high low acc)
+  (defund vl-emodwires-from-high-to-low-aux (name high low acc)
     ;; Name must be pre-encoded.
     (declare (type string name)
              (xargs :guard (and (natp high)
@@ -382,14 +385,14 @@ replacements.  This should not be too confusing since, e.g., in Verilog
          ((when (mbe :logic (<= (nfix high) (nfix low))
                      :exec (= high low)))
           acc))
-      (vl-msb-named-bitlist-aux name
+      (vl-emodwires-from-high-to-low-aux name
                                 (mbe :logic (nfix high)
                                      :exec high)
                                 (mbe :logic (+ 1 (nfix low))
                                      :exec (+ 1 low))
                                 acc)))
 
-  (definlined vl-msb-named-bitlist-aux-fixnum (name high low acc)
+  (definlined vl-emodwires-from-high-to-low-aux-fixnum (name high low acc)
     ;; Fixnum and otherwise optimized version of the above.
     (declare (type string name)
              (type (unsigned-byte 32) high)
@@ -412,7 +415,7 @@ replacements.  This should not be too confusing since, e.g., in Verilog
                      :exec (= (the (unsigned-byte 32) high)
                               (the (unsigned-byte 32) low))))
           acc))
-      (vl-msb-named-bitlist-aux-fixnum name
+      (vl-emodwires-from-high-to-low-aux-fixnum name
                                        (mbe :logic (nfix high)
                                             :exec high)
                                        (mbe :logic (+ 1 (nfix low))
@@ -420,36 +423,36 @@ replacements.  This should not be too confusing since, e.g., in Verilog
                                                        (+ low 1)))
                                        acc)))
 
-  (local (defthm vl-msb-named-bitlist-aux-fixnum-removal
-           (equal (vl-msb-named-bitlist-aux-fixnum name high low acc)
-                  (vl-msb-named-bitlist-aux name high low acc))
-           :hints(("Goal" :in-theory (enable vl-msb-named-bitlist-aux-fixnum
-                                             vl-msb-named-bitlist-aux)))))
+  (local (defthm vl-emodwires-from-high-to-low-aux-fixnum-removal
+           (equal (vl-emodwires-from-high-to-low-aux-fixnum name high low acc)
+                  (vl-emodwires-from-high-to-low-aux name high low acc))
+           :hints(("Goal" :in-theory (enable vl-emodwires-from-high-to-low-aux-fixnum
+                                             vl-emodwires-from-high-to-low-aux)))))
 
-  (defund vl-msb-named-bitlist (name high low)
+  (defund vl-emodwires-from-high-to-low (name high low)
     (declare (type string name)
              (xargs :guard (and (natp high)
                                 (natp low)
                                 (>= high low))
                     :measure (nfix (- (nfix high) (nfix low)))))
     (mbe :logic
-         (vl-msb-named-bitlist-aux (vl-emodwire-encode (string-fix name))
+         (vl-emodwires-from-high-to-low-aux (vl-emodwire-encode (string-fix name))
                                    (nfix high)
                                    (nfix low)
                                    nil)
          :exec
          (let ((name (vl-emodwire-encode name)))
            (if (< high (expt 2 30))
-               (vl-msb-named-bitlist-aux-fixnum name high low nil)
-             (vl-msb-named-bitlist-aux name high low nil)))))
+               (vl-emodwires-from-high-to-low-aux-fixnum name high low nil)
+             (vl-emodwires-from-high-to-low-aux name high low nil)))))
 
   (local (assert!
           ;; Basic sanity check, handy when mucking with the definition
-          (and (equal (vl-msb-named-bitlist "foo" 5 0)
+          (and (equal (vl-emodwires-from-high-to-low "foo" 5 0)
                       #!ACL2 '(|foo[5]| |foo[4]| |foo[3]| |foo[2]| |foo[1]| |foo[0]|))
-               (equal (vl-msb-named-bitlist "foo" 5 3)
+               (equal (vl-emodwires-from-high-to-low "foo" 5 3)
                       #!ACL2 '(|foo[5]| |foo[4]| |foo[3]|))
-               (equal (vl-msb-named-bitlist "foo" 5 5)
+               (equal (vl-emodwires-from-high-to-low "foo" 5 5)
                       #!ACL2 '(|foo[5]|)))))
 
 
@@ -462,10 +465,10 @@ replacements.  This should not be too confusing since, e.g., in Verilog
                  acc))
              (simpler-aux-function name (nfix high) (+ 1 (nfix low)) acc))))
 
-  (local (defthm vl-msb-named-bitlist-aux-removal
-           (equal (vl-msb-named-bitlist-aux (vl-emodwire-encode name) high low acc)
+  (local (defthm vl-emodwires-from-high-to-low-aux-removal
+           (equal (vl-emodwires-from-high-to-low-aux (vl-emodwire-encode name) high low acc)
                   (simpler-aux-function name high low acc))
-           :hints(("Goal" :in-theory (enable vl-msb-named-bitlist-aux
+           :hints(("Goal" :in-theory (enable vl-emodwires-from-high-to-low-aux
                                              vl-emodwire-is-vl-emodwire-exec
                                              vl-emodwire-exec)))))
 
@@ -536,32 +539,60 @@ replacements.  This should not be too confusing since, e.g., in Verilog
                      (vl-emodwirelist->indices
                       (simpler-aux-function name high low acc))))))
 
-  (local (in-theory (enable vl-msb-named-bitlist)))
+  (local (in-theory (enable vl-emodwires-from-high-to-low)))
 
-  (defthm true-listp-of-vl-msb-named-bitlist
-    (true-listp (vl-msb-named-bitlist name high low))
+  (defthm true-listp-of-vl-emodwires-from-high-to-low
+    (true-listp (vl-emodwires-from-high-to-low name high low))
     :rule-classes :type-prescription)
 
-  (defthm vl-emodwirelist-p-of-vl-msb-named-bitlist
-    (vl-emodwirelist-p (vl-msb-named-bitlist name high low)))
+  (defthm vl-emodwirelist-p-of-vl-emodwires-from-high-to-low
+    (vl-emodwirelist-p (vl-emodwires-from-high-to-low name high low)))
 
-  (defthm basenames-of-vl-msb-named-bitlist
-    (equal (vl-emodwirelist->basenames (vl-msb-named-bitlist name high low))
+  (defthm basenames-of-vl-emodwires-from-high-to-low
+    (equal (vl-emodwirelist->basenames (vl-emodwires-from-high-to-low name high low))
            (repeat (string-fix name)
-                   (len (vl-msb-named-bitlist name high low)))))
+                   (len (vl-emodwires-from-high-to-low name high low)))))
 
-  (defthm member-equal-of-indicies-of-vl-msb-named-bitlist
+  (defthm member-equal-of-indicies-of-vl-emodwires-from-high-to-low
     (implies (>= (nfix high) (nfix low))
              (iff (member-equal idx (vl-emodwirelist->indices
-                                     (vl-msb-named-bitlist name high low)))
+                                     (vl-emodwires-from-high-to-low name high low)))
                   (and (natp idx)
                        (<= (nfix low) idx)
                        (<= idx (nfix high))))))
 
-  (defthm unique-indicies-of-vl-msb-named-bitlist
+  (defthm unique-indicies-of-vl-emodwires-from-high-to-low
     (no-duplicatesp-equal
      (vl-emodwirelist->indices
-      (vl-msb-named-bitlist name high low)))))
+      (vl-emodwires-from-high-to-low name high low)))))
+
+
+
+(defsection vl-emodwires-from-msb-to-lsb
+  :parents (vl-wirealist-p)
+  :short "@(call vl-emodwires-from-msb-to-lsb) returns a list of @(see
+ vl-emodwire-p)s: <tt>(name[msb] name[msb +/- 1] ... name[lsb])</tt>"
+
+  :long "<p>The range is inclusive on both sides, so if <tt>msb</tt> and
+<tt>lsb</tt> are the same you still get one wire.</p>"
+
+; I'm just leaving this enabled.
+
+  (defun vl-emodwires-from-msb-to-lsb (name msb lsb)
+    (declare (type string name)
+             (xargs :guard (and (natp msb)
+                                (natp lsb))))
+    ;; We think most ranges we'll encounter are [high:low], so we don't bother to
+    ;; optimize the reverse case, but it would be easy enough to do if it's slow.
+    (b* ((high          (max msb lsb))
+         (low           (min msb lsb))
+         (|w[high:low]| (vl-emodwires-from-high-to-low name high low))
+         (|w[msb:lsb]|  (if (>= msb lsb)
+                            |w[high:low]|
+                          ;; Unusual case of a wire like w[0:3], so the
+                          ;; w[high:low] is in the wrong order.
+                          (reverse |w[high:low]|))))
+      |w[msb:lsb]|)))
 
 
 
@@ -600,10 +631,11 @@ successp warnings wires)</tt>.</p>"
 
          ((when (not x.range))
           (mv t warnings (list (vl-plain-wire-name x.name))))
-         (high  (vl-resolved->val (vl-range->left x.range)))
-         (low   (vl-resolved->val (vl-range->right x.range)))
-         (wires (vl-msb-named-bitlist x.name high low)))
-      (mv t warnings wires)))
+
+         (msb          (vl-resolved->val (vl-range->msb x.range)))
+         (lsb          (vl-resolved->val (vl-range->lsb x.range)))
+         (|w[msb:lsb]| (vl-emodwires-from-msb-to-lsb x.name msb lsb)))
+      (mv t warnings |w[msb:lsb]|)))
 
   (local (in-theory (enable vl-netdecl-msb-emodwires)))
 
@@ -706,10 +738,12 @@ fatal warning.</p>"
 
          ((when (not x.range))
           (mv t warnings (list (vl-plain-wire-name x.name))))
-         (high  (vl-resolved->val (vl-range->left x.range)))
-         (low   (vl-resolved->val (vl-range->right x.range)))
-         (wires (vl-msb-named-bitlist x.name high low)))
-      (mv t warnings wires)))
+
+         (msb          (vl-resolved->val (vl-range->msb x.range)))
+         (lsb          (vl-resolved->val (vl-range->lsb x.range)))
+         (|w[msb:lsb]| (vl-emodwires-from-msb-to-lsb x.name msb lsb)))
+
+      (mv t warnings |w[msb:lsb]|)))
 
   (local (in-theory (enable vl-regdecl-msb-emodwires)))
 
@@ -1217,7 +1251,7 @@ partial wire alist.</li>
 ; allocated, 112k faults So this is already pretty fast, the duplicate check is
 ; costing us about 6% of the runtime.  END OLD NOTES.
 
-; NEW NOTES.  Fast-cat.  Optimized vl-msb-named-bitlist.
+; NEW NOTES.  Fast-cat.  Optimized vl-emodwires-from-high-to-low.
 ;
 ; BASELINE RUNS: 21.51 sec avg
 
@@ -1518,30 +1552,26 @@ resolved, the indices are in bounds, and so on.</p>"
                                 (equal (vl-nonatom->op x) :vl-partselect-colon)
                                 (vl-wirealist-p walist)
                                 (vl-warninglist-p warnings))))
-    (b* ((args (vl-nonatom->args x))
-         (from (first args))
-         (high (second args))
-         (low  (third args))
+    (b* ((args  (vl-nonatom->args x))
+         (from  (first args))
+         (left  (second args))
+         (right (third args))
 
          ((unless (and (vl-idexpr-p from)
-                       (vl-expr-resolved-p high)
-                       (vl-expr-resolved-p low)
-                       (natp (vl-resolved->val high))
-                       (natp (vl-resolved->val low))
-                       (<= (vl-resolved->val low)
-                           (vl-resolved->val high))))
+                       (vl-expr-resolved-p left)
+                       (vl-expr-resolved-p right)))
           (b* ((w (make-vl-warning
                    :type :vl-bad-expr
-                   :msg "Expected a simple name and resolved indices with ~
-                         high >= low, but found ~a0."
+                   :msg "Expected a simple name and resolved indices, but ~
+                         found ~a0."
                    :args (list x)
                    :fatalp t
                    :fn 'vl-msb-partselect-bitlist)))
             (mv nil (cons w warnings) nil)))
 
-         (name (vl-idexpr->name from))
-         (high (vl-resolved->val high))
-         (low  (vl-resolved->val low))
+         (name  (vl-idexpr->name from))
+         (left  (vl-resolved->val left))
+         (right (vl-resolved->val right))
 
          (entry (hons-get name walist))
          ((unless entry)
@@ -1554,7 +1584,7 @@ resolved, the indices are in bounds, and so on.</p>"
             (mv nil (cons w warnings) nil)))
 
          (wires (mbe :logic (list-fix (cdr entry))
-                     :exec (cdr entry)))
+                     :exec  (cdr entry)))
 
          (plain-name (vl-plain-wire-name name))
 
@@ -1564,8 +1594,26 @@ resolved, the indices are in bounds, and so on.</p>"
 ; possibility is that high and low are both zero, in which case we are choosing
 ; name[0:0] which is the same as name.
 
-          (if (and (= high 0) (= low 0))
-              (mv t warnings wires)
+          (if (and (= left 0) (= right 0))
+
+; BOZO probably we should not be doing this.  But I suspect things will break
+; if we just remove this, so for now just add a non-fatal warning.  Hrmn, but
+; what about the scalared and vectored keywords?  Ugh.
+
+; If you fix this consider also the similar thing happening for bit-selects,
+; and also fix the vl-expr-allwires function.
+
+              (mv t
+                  (cons (make-vl-warning
+                         :type :vl-select-from-scalar
+                         :msg "~a0: permitting selecting bit 0 from a scalar ~
+                               wire, but this is probably wrong."
+                         :args (list x)
+                         :fatalp nil
+                         :fn 'vl-msb-partselect-bitlist)
+                      warnings)
+                  wires)
+
             (mv nil
                 (cons (make-vl-warning
                        :type :vl-bad-expr
@@ -1578,13 +1626,12 @@ resolved, the indices are in bounds, and so on.</p>"
 
 ; Otherwise, this is the ordinary case, and we are selecting some part of some
 ; ranged wire.  Since the wires in the walist are contiguous, we can check that
-; the whole part is in bound by merely checking that the low and high wires are
-; found.
+; the whole part is in bound by merely checking that both indices are found.
 
-         (name[high]     (make-vl-emodwire :basename name :index high))
-         (name[low]      (make-vl-emodwire :basename name :index low))
-         ((unless (and (member name[low] wires)
-                       (member name[high] wires)))
+         (name[left]     (make-vl-emodwire :basename name :index left))
+         (name[right]    (make-vl-emodwire :basename name :index right))
+         ((unless (and (member name[left] wires)
+                       (member name[right] wires)))
           (b* ((w (make-vl-warning
                    :type :vl-bad-expr
                    :msg "Select ~a0 is out of range; valid range is from ~
@@ -1597,7 +1644,7 @@ resolved, the indices are in bounds, and so on.</p>"
 ; We're fine.  It seems easiest to just re-intern the symbols instead of
 ; extracting the appropriate slice out of the wire alist.
 
-        (mv t warnings (vl-msb-named-bitlist name high low))))
+        (mv t warnings (vl-emodwires-from-msb-to-lsb name left right))))
 
   (defmvtypes vl-msb-partselect-bitlist (booleanp nil true-listp))
 
@@ -1673,7 +1720,7 @@ are careful to ensure that the selected bit is in bounds, etc.</p>"
 
 ; Special case.  This is a select of a single, non-ranged wire.  The only valid
 ; possibility is that the index is zero, in which case we are choosing name[0],
-; which is the same as name.
+; which is the same as name.  BOZO think about this again.  Should maybe warn here.
 
           (if (= index 0)
               (mv t warnings wires)
@@ -1925,3 +1972,257 @@ only the above forms into a list of <b>MSB order</b> bits.</p>"
                      (vl-msb-exprlist-bitlist x walist warnings)))))
 
   (verify-guards vl-msb-expr-bitlist))
+
+
+
+
+(defsection vl-expr-allwires
+  :parents (vl-wirealist-p)
+  :short "Collect an @(see vl-emodwirelist-p) of every wire that is mentioned
+in an expression."
+
+  :long "<p><b>Signature:</b> @(call vl-expr-allwires) returns <tt>(mv warnings
+wires)</tt>.</p>
+
+<p>This is similar to @(see vl-msb-expr-bitlist), but can be applied to more
+kinds of expressions.  For instance, given the expression <tt>a + b</tt>, this
+function will collect the wires of <tt>a</tt> and the wires of <tt>b</tt>,
+whereas <tt>vl-msb-expr-bitlist</tt> will just fail since this isn't a
+sliceable expression.</p>
+
+<p>This function tries to be very permissive and does not necessarily do the
+same level of error checking as @(see vl-msb-expr-bitlist).  Also, the wires
+are returned in a nonsensical order.</p>"
+
+  (mutual-recursion
+
+   (defund vl-expr-allwires (x walist)
+     "Returns (MV WARNINGS WIRES)"
+     (declare (xargs :guard (and (vl-expr-p x)
+                                 (vl-wirealist-p walist))
+                     :verify-guards nil
+                     :measure (two-nats-measure (acl2-count x) 1)))
+     (b* (((when (vl-fast-atom-p x))
+           (b* ((guts (vl-atom->guts x))
+
+                ((when (vl-fast-id-p guts))
+
+; BOZO?  Not repeating the sign bit if there's an implicit signed extension.
+; Not necessarily something we need to do.  We might want to do the sign
+; extension if we ever care about the duplicity of the resulting wires, but for
+; now we don't bother.
+
+                 (b* ((name  (vl-id->name guts))
+                      (entry (hons-get name walist))
+                      (wires (mbe :logic (list-fix (cdr entry))
+                                  :exec (cdr entry)))
+                      ((when entry)
+                       (mv nil wires))
+                      (w (make-vl-warning
+                          :type :vl-collect-wires-fail
+                          :msg "Failed to collect wires for ~w0; no such entry ~
+                                in the wire-alist."
+                          :args (list name)
+                          :fn 'vl-expr-allwires)))
+                   (mv (list w) nil)))
+
+                ((when (or (vl-fast-constint-p guts)
+                           (vl-fast-weirdint-p guts)
+                           (vl-fast-hidpiece-p guts)))
+                 (mv nil nil))
+
+                (w (make-vl-warning
+                    :type :vl-collect-wires-fail
+                    :msg "Failed to collect wires for ~a0; expression type is ~
+                          not supported."
+                    :args (list x)
+                    :fn 'vl-expr-allwires)))
+             (mv (list w) nil)))
+
+          (op   (vl-nonatom->op x))
+          (args (vl-nonatom->args x))
+
+          ((when (eq op :vl-bitselect))
+           (b* ((from (first args))
+                (index (second args))
+                ((unless (vl-idexpr-p from))
+                 (b* ((w (make-vl-warning
+                          :type :vl-collect-wires-fail
+                          :msg "Failed to collect wires for ~a0; expected to ~
+                                select only from identifiers."
+                          :args (list x)
+                          :fn 'vl-expr-allwires)))
+                   (mv (list w) nil)))
+
+                (name  (vl-idexpr->name from))
+                (entry (hons-get name walist))
+                (wires (mbe :logic (list-fix (cdr entry))
+                            :exec (cdr entry)))
+
+                ((unless entry)
+                 (b* ((w (make-vl-warning
+                          :type :vl-collect-wires-fail
+                          :msg "Failed to collect wires for ~a0; no entry for ~
+                               ~w1 in the wire alist."
+                          :args (list x name)
+                          :fn 'vl-expr-allwires)))
+                   (mv (list w) nil)))
+
+                ((unless (and (vl-expr-resolved-p index)
+                              (natp (vl-resolved->val index))))
+                 (b* ((w (make-vl-warning
+                          :type :vl-collect-wires-approx
+                          :msg "Approximating the wires for ~a0 with ~s1."
+                          :args (list x (vl-verilogify-emodwirelist wires))
+                          :fn 'vl-expr-allwires)))
+                   (mv (list w) wires)))
+
+                (option1 (vl-plain-wire-name name))
+                ((when (member option1 wires))
+                 (mv nil (list option1)))
+
+                (option2 (make-vl-emodwire :basename name
+                                           :index (vl-resolved->val index)))
+                ((when (member option2 wires))
+                 (mv nil (list option2)))
+
+                (w (make-vl-warning
+                    :type :vl-collect-wires-approx
+                    :msg "Failed to collect wires for ~a0; index out of range?"
+                    :args (list x)
+                    :fn 'vl-expr-allwires)))
+             (mv (list w) nil)))
+
+
+          ((when (eq op :vl-partselect-colon))
+           (b* ((from  (first args))
+                (left  (second args))
+                (right (third args))
+
+                ((unless (vl-idexpr-p from))
+                 (b* ((w (make-vl-warning
+                          :type :vl-collect-wires-fail
+                          :msg "Failed to collect wires for ~a0; expected to ~
+                                select only from identifiers."
+                          :args (list x)
+                          :fn 'vl-expr-allwires)))
+                   (mv (list w) nil)))
+
+                (name  (vl-idexpr->name from))
+                (entry (hons-get name walist))
+                (wires (mbe :logic (list-fix (cdr entry))
+                            :exec (cdr entry)))
+
+                ((unless entry)
+                 (b* ((w (make-vl-warning
+                          :type :vl-collect-wires-fail
+                          :msg "Failed to collect wires for ~a0; no entry for ~
+                                ~w1 in the wire alist."
+                          :args (list x name)
+                          :fn 'vl-expr-allwires)))
+                   (mv (list w) nil)))
+
+                ((unless (and (vl-expr-resolved-p left)
+                              (vl-expr-resolved-p right)))
+                 (b* ((w (make-vl-warning
+                          :type :vl-collect-wires-approx
+                          :msg "Approximating the wires for ~a0 with ~s1."
+                          :args (list x (vl-verilogify-emodwirelist wires))
+                          :args 'vl-expr-allwires)))
+                   (mv (list w) wires)))
+
+                (left  (vl-resolved->val left))
+                (right (vl-resolved->val right))
+
+; Special case for foo[0:0] when foo is a non-ranged wire.  BOZO this is
+; probably wrong, as in the normal partselect function.
+
+                ((when (and (= left 0)
+                            (= right 0)
+                            (equal wires (list (vl-plain-wire-name name)))))
+                 (mv nil wires))
+
+                (name[left]  (make-vl-emodwire :basename name :index left))
+                (name[right] (make-vl-emodwire :basename name :index right))
+
+                ((when (and (member name[left] wires)
+                            (member name[right] wires)))
+                 (mv nil (vl-emodwires-from-msb-to-lsb name left right)))
+
+                (w (make-vl-warning
+                    :type :vl-collect-wires-fail
+                    :msg "Failed to collect wires for ~a0; index out of range?"
+                    :args (list x)
+                    :fn 'vl-expr-allwires)))
+             (mv (list w) nil))))
+
+       (vl-exprlist-allwires args walist)))
+
+   (defund vl-exprlist-allwires (x walist)
+     "Returns (MV WARNINGS WIRES)"
+     (declare (xargs :guard (and (vl-exprlist-p x)
+                                 (vl-wirealist-p walist))
+                     :measure (two-nats-measure (acl2-count x) 0)))
+     (b* (((when (atom x))
+           (mv nil nil))
+          ((mv warnings1 car-wires)
+           (vl-expr-allwires (car x) walist))
+          ((mv warnings2 cdr-wires)
+           (vl-exprlist-allwires (cdr x) walist)))
+       (mv (append warnings1 warnings2)
+           (append car-wires cdr-wires)))))
+
+  (local (in-theory (enable vl-exprlist-allwires)))
+
+  (flag::make-flag flag-vl-expr-allwires
+                   vl-expr-allwires
+                   :flag-mapping ((vl-expr-allwires . expr)
+                                  (vl-exprlist-allwires . list)))
+
+  (defthm-flag-vl-expr-allwires
+    (defthm true-listp-of-vl-expr-allwires-0
+      (true-listp (mv-nth 0 (vl-expr-allwires x walist)))
+      :rule-classes :type-prescription
+      :flag expr)
+    (defthm true-listp-of-vl-exprlist-allwires-0
+      (true-listp (mv-nth 0 (vl-exprlist-allwires x walist)))
+      :rule-classes :type-prescription
+      :flag list)
+    :hints(("Goal" :expand ((vl-expr-allwires x walist)
+                            (vl-exprlist-allwires x walist)))))
+
+  (defthm-flag-vl-expr-allwires
+    (defthm true-listp-of-vl-expr-allwires-1
+      (true-listp (mv-nth 1 (vl-expr-allwires x walist)))
+      :rule-classes :type-prescription
+      :flag expr)
+    (defthm true-listp-of-vl-exprlist-allwires-1
+      (true-listp (mv-nth 1 (vl-exprlist-allwires x walist)))
+      :rule-classes :type-prescription
+      :flag list)
+    :hints(("Goal" :expand ((vl-expr-allwires x walist)
+                            (vl-exprlist-allwires x walist)))))
+
+  (defthm-flag-vl-expr-allwires
+    (defthm vl-warninglist-p-of-vl-expr-allwires
+      (vl-warninglist-p (mv-nth 0 (vl-expr-allwires x walist)))
+      :flag expr)
+    (defthm vl-warninglist-p-of-vl-exprlist-allwires
+      (vl-warninglist-p (mv-nth 0 (vl-exprlist-allwires x walist)))
+      :flag list)
+    :hints(("Goal" :expand ((vl-expr-allwires x walist)
+                            (vl-exprlist-allwires x walist)))))
+
+  (defthm-flag-vl-expr-allwires
+    (defthm vl-emodwirelist-p-of-vl-expr-allwires
+      (implies (force (vl-wirealist-p walist))
+               (vl-emodwirelist-p (mv-nth 1 (vl-expr-allwires x walist))))
+      :flag expr)
+    (defthm vl-emodwirelist-p-of-vl-exprlist-allwires
+      (implies (force (vl-wirealist-p walist))
+               (vl-emodwirelist-p (mv-nth 1 (vl-exprlist-allwires x walist))))
+      :flag list)
+    :hints(("Goal" :expand ((vl-expr-allwires x walist)
+                            (vl-exprlist-allwires x walist)))))
+
+  (verify-guards vl-expr-allwires))

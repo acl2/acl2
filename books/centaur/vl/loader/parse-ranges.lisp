@@ -43,12 +43,12 @@
   :count strong
   (seqw tokens warnings
         (:= (vl-match-token :vl-lbrack))
-        (left := (vl-parse-expression))
+        (msb := (vl-parse-expression))
         (:= (vl-match-token :vl-colon))
-        (right := (vl-parse-expression))
+        (lsb := (vl-parse-expression))
         (:= (vl-match-token :vl-rbrack))
-        (return (make-vl-range :left left
-                               :right right))))
+        (return (make-vl-range :msb msb
+                               :lsb lsb))))
 
 (defparser vl-parse-0+-ranges (tokens warnings)
   ;; Note: assumes brackets denote subsequent ranges to be matched, and as a
@@ -71,8 +71,8 @@
 (defun vl-pretty-range (x)
   (declare (xargs :guard (vl-range-p x)))
   (list 'range
-        (vl-pretty-expr (vl-range->left x))
-        (vl-pretty-expr (vl-range->right x))))
+        (vl-pretty-expr (vl-range->msb x))
+        (vl-pretty-expr (vl-range->lsb x))))
 
 (defun vl-pretty-maybe-range (x)
   (declare (xargs :guard (vl-maybe-range-p x)

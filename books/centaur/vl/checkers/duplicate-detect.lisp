@@ -107,8 +107,8 @@
     (declare (xargs :guard (vl-range-p x)))
     (b* (((vl-range x) x))
       (change-vl-range x
-                       :left (vl-expr-fix x.left)
-                       :right (vl-expr-fix x.right))))
+                       :msb (vl-expr-fix x.msb)
+                       :lsb (vl-expr-fix x.lsb))))
 
   (local (in-theory (enable vl-range-fix)))
 

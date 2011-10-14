@@ -261,10 +261,12 @@ non-zero.</p>"
                  nil)
                 (b-val (vl-resolved->val b))
                 (c-val (vl-resolved->val c)))
-             (and ;; we insist on foo[5:0] order rather than foo[0:5], since to
-                  ;; do otherwise seems crazy
-                  (>= b-val c-val)
-                  (eql x.finalwidth (+ 1 (- b-val c-val)))
+             (and
+
+; Historically we insisted on foo[5:0] order rather than foo[0:5], since to do
+; otherwise seems crazy, but now we support both orders so we had to drop that
+; restriction.
+                  (eql x.finalwidth (+ 1 (abs (- b-val c-val))))
                   (eq x.finaltype :vl-unsigned))))
 
           ((:vl-partselect-pluscolon :vl-partselect-minuscolon)

@@ -1566,34 +1566,34 @@ active high or low.</dd>
 
 
 (defaggregate vl-range
-  (left right)
+  (msb lsb)
   :tag :vl-range
   :legiblep nil
-  :require ((vl-expr-p-of-vl-range->left (vl-expr-p left))
-            (vl-expr-p-of-vl-range->right (vl-expr-p right)))
+  :require ((vl-expr-p-of-vl-range->msb (vl-expr-p msb))
+            (vl-expr-p-of-vl-range->lsb (vl-expr-p lsb)))
   :parents (modules)
   :short "Representation of ranges on wire declarations, instance array
 declarations, and so forth."
 
   :long "<p>Ranges are discussed in Section 7.1.5.</p>
 
-<p>Ranges in declarations and array instances look like <tt>[left:right]</tt>,
-but do not confuse them with part-select expressions which have the same
+<p>Ranges in declarations and array instances look like <tt>[msb:lsb]</tt>, but
+do not confuse them with part-select expressions which have the same
 syntax.</p>
 
-<p>The expressions in the <tt>left</tt> and <tt>right</tt> positions are
-expected to resolve to constants.  Note that the parser does not try to
-simplify these expressions, but some simplification is performed in
-transformations such as @(see rangeresolve) and @(see unparameterization).</p>
+<p>The expressions in the <tt>msb</tt> and <tt>lsb</tt> positions are expected
+to resolve to constants.  Note that the parser does not try to simplify these
+expressions, but some simplification is performed in transformations such as
+@(see rangeresolve) and @(see unparameterization).</p>
 
 <p>Even after the expressions have become constants, the Verilog specification
-does not require <tt>left</tt> to be greater than <tt>right</tt>, and neither
-index is required to be zero.  In fact, in Cadence even negative indicies seem
-to be permitted, which is quite amazing and strange.</p>
+does not require <tt>msb</tt> to be greater than <tt>lsb</tt>, and neither
+index is required to be zero.  In fact, even negative indicies seem to be
+permitted, which is quite amazing and strange.</p>
 
 <p>While we do not impose any restrictions in <tt>vl-range-p</tt> itself, some
-transformations expect the indices to be resolved to integers, and for
-<tt>left</tt> to be greater than or equal to <tt>right</tt>.</p>")
+transformations expect the indices to be resolved to integers.  However, we now
+try to support the use of both ascending and descending ranges.</p>")
 
 
 

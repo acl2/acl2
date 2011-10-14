@@ -1107,9 +1107,9 @@ original source code.)</p>"
   (b* (((vl-range x) x))
       (vl-ps-seq
        (vl-print "[")
-       (vl-pp-expr x.left)
+       (vl-pp-expr x.msb)
        (vl-println? ":")
-       (vl-pp-expr x.right)
+       (vl-pp-expr x.lsb)
        (vl-print "]"))))
 
 (defund vl-pps-range (x)

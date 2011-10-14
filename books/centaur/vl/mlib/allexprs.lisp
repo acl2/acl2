@@ -183,10 +183,10 @@ list-rec-s "), as described in @(see allexprs).</p>")))
   :type vl-range
   :exec-body
   (b* (((vl-range x) x))
-      (list* x.right x.left acc))
+      (list* x.lsb x.msb acc))
   :body
   (b* (((vl-range x) x))
-      (list x.left x.right)))
+      (list x.msb x.lsb)))
 
 (def-vl-allexprs
   :type vl-maybe-range

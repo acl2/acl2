@@ -67,7 +67,6 @@
 
     (:vl-bitselect
      ;; Depending on the declaration of foo, foo[i] may be reducible to foo.
-     ;; When we shifted ranges.
      (b* ((from  (first args))
           (what  (second args))
           ((unless (and (vl-idexpr-p from)
@@ -87,8 +86,8 @@
 
                ((and range
                      (vl-range-resolved-p range)
-                     (= index (vl-resolved->val (vl-range->left range)))
-                     (= index (vl-resolved->val (vl-range->right range))))
+                     (= index (vl-resolved->val (vl-range->msb range)))
+                     (= index (vl-resolved->val (vl-range->lsb range))))
                 ;; foo[i] of a foo with range [i:i] --> foo
                 from)
 
@@ -118,8 +117,8 @@
 
                ((and range
                      (vl-range-resolved-p range)
-                     (= l-index (vl-resolved->val (vl-range->left range)))
-                     (= r-index (vl-resolved->val (vl-range->right range))))
+                     (= l-index (vl-resolved->val (vl-range->msb range)))
+                     (= r-index (vl-resolved->val (vl-range->lsb range))))
                 ;; foo[left:right] from foo whose range is [left:right] --> foo
                 from)
 

@@ -719,27 +719,21 @@ expression-sizing).</p>"
       ((:vl-partselect-colon)
        ;; A part-select's width is one greater than the difference in its
        ;; indices.  For instance, a[3:0] is 4 bits, while a[3:3] is one bit.
-       (b* ((high (second args))
-            (low  (third args))
-            ((unless (and (vl-expr-resolved-p high)
-                          (vl-expr-resolved-p low)
-                          (>= (vl-resolved->val high)
-                              (vl-resolved->val low))))
-             ;; It seems reasonable to relax the high >= low restriction, but
-             ;; for now I'm keeping it since we don't support it anywhere else.
-             ;; Note: if you drop this restriction, you also need to update the
-             ;; size computation below, and the definition of well-typed.
+       (b* ((left  (second args))
+            (right (third args))
+            ((unless (and (vl-expr-resolved-p left)
+                          (vl-expr-resolved-p right)))
              (b* ((w (make-vl-warning
                       :type :vl-unresolved-select
                       :msg "~a0: cannot size ~a1 since it does not have ~
-                            resolved indices with left >= right."
+                            resolved indices."
                       :args (list elem context)
                       :fatalp t
                       :fn 'vl-op-selfsize)))
                (mv (cons w warnings) nil)))
-            (high-val (vl-resolved->val high))
-            (low-val  (vl-resolved->val low))
-            (size     (+ 1 (- high-val low-val))))
+            (left-val  (vl-resolved->val left))
+            (right-val (vl-resolved->val right))
+            (size      (+ 1 (abs (- left-val right-val)))))
          (mv warnings size)))
 
       ((:vl-partselect-pluscolon :vl-partselect-minuscolon)
@@ -3519,12 +3513,11 @@ context-determined expressions."
               (vl-exprlist-size args mod ialist elem warnings))
              ((unless successp)
               (mv nil warnings x))
-             (high-expr (second args-prime))
-             (low-expr  (third args-prime))
-             ((unless (and (vl-expr-resolved-p high-expr)
-                           (vl-expr-resolved-p low-expr)
-                           (>= (vl-resolved->val high-expr)
-                               (vl-resolved->val low-expr))))
+
+             (left-expr  (second args-prime))
+             (right-expr (third args-prime))
+             ((unless (and (vl-expr-resolved-p left-expr)
+                           (vl-expr-resolved-p right-expr)))
               (b* ((w (make-vl-warning
                        :type :vl-programming-error
                        :msg "~a0: part-select indices should be resolved."
@@ -3532,8 +3525,9 @@ context-determined expressions."
                        :fatalp t
                        :fn 'vl-expr-expandsizes)))
                 (mv nil (cons w warnings) x)))
-             (inner-width (+ 1 (- (vl-resolved->val high-expr)
-                                  (vl-resolved->val low-expr))))
+
+             (inner-width (+ 1 (abs (- (vl-resolved->val left-expr)
+                                       (vl-resolved->val right-expr)))))
              ((unless (<= inner-width finalwidth))
               (b* ((w (make-vl-warning
                        :type :vl-programming-error
@@ -4252,14 +4246,14 @@ a @(see " type-s ")"))
   :takes-elem t
   :type vl-range-p
   :body (b* (((vl-range x) x)
-             ((mv left-successp warnings left-prime)
-              (vl-expr-size nil x.left mod ialist elem warnings))
-             ((mv right-successp warnings right-prime)
-              (vl-expr-size nil x.right mod ialist elem warnings))
-             (successp (and left-successp right-successp))
+             ((mv msb-successp warnings msb-prime)
+              (vl-expr-size nil x.msb mod ialist elem warnings))
+             ((mv lsb-successp warnings lsb-prime)
+              (vl-expr-size nil x.lsb mod ialist elem warnings))
+             (successp (and msb-successp lsb-successp))
              (x-prime  (change-vl-range x
-                                        :left left-prime
-                                        :right right-prime)))
+                                        :msb msb-prime
+                                        :lsb lsb-prime)))
           (mv successp warnings x-prime)))
 
 (def-vl-exprsize vl-maybe-range-exprsize

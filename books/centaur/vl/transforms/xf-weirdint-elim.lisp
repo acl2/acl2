@@ -20,7 +20,6 @@
 
 (in-package "VL")
 (include-book "../mlib/allexprs")
-(include-book "../mlib/range-tools")
 (include-book "../mlib/namefactory")
 (include-book "../mlib/stmt-tools")
 (include-book "occform/gen-util")

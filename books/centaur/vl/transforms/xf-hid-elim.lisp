@@ -445,7 +445,7 @@ hierarchical references to wires inside of <tt>processor</tt>, etc.</p>")
           (b* ((signedp nil)
                (arrdims nil)
                (range   (if res-left
-                            (make-vl-range :left res-left :right res-right)
+                            (make-vl-range :msb res-left :lsb res-right)
                           nil))
                (netdecl (make-vl-netdecl :name flat-name
                                          :type :vl-wire

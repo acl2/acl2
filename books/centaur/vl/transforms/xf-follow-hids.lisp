@@ -722,10 +722,10 @@ identifier.</p>"
                             atts))
                  (atts    (if (and range-resolvedp range)
                               (let* ((atts (acons "VL_HID_RESOLVED_RANGE_LEFT"
-                                                  (vl-range->left range)
+                                                  (vl-range->msb range)
                                                   atts))
                                      (atts (acons "VL_HID_RESOLVED_RANGE_RIGHT"
-                                                  (vl-range->right range)
+                                                  (vl-range->lsb range)
                                                   atts)))
                                 atts)
                             atts))

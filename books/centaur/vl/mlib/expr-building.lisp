@@ -137,7 +137,45 @@
     :hints(("Goal" :in-theory (enable repeat)))))
 
 
+(defsection vl-make-msb-to-lsb-bitselects
 
+  (defund vl-make-msb-to-lsb-bitselects (expr msb lsb)
+    (declare (xargs :guard (and (vl-expr-p expr)
+                                (natp msb)
+                                (natp lsb))))
+    (b* ((msb  (mbe :logic (nfix msb) :exec msb))
+         (lsb  (mbe :logic (nfix lsb) :exec lsb))
+         (left-right-p (>= msb lsb))
+         (low  (if left-right-p lsb msb))
+         (high (if left-right-p msb lsb))
+         (list (vl-make-list-of-bitselects expr low high)))
+      (if left-right-p
+          (reverse list)
+        list)))
+
+  (local (in-theory (enable vl-make-msb-to-lsb-bitselects)))
+
+  (defthm true-listp-of-vl-make-msb-to-lsb-bitselects
+    (true-listp (vl-make-msb-to-lsb-bitselects expr msb lsb))
+    :rule-classes :type-prescription)
+
+  (defthm vl-exprlist-p-of-vl-make-msb-to-lsb-bitselects
+    (implies (force (vl-expr-p expr))
+             (vl-exprlist-p (vl-make-msb-to-lsb-bitselects expr msb lsb))))
+
+  (defthm len-of-vl-make-msb-to-lsb-bitselects
+    (equal (len (vl-make-msb-to-lsb-bitselects expr msb lsb))
+           (+ 1 (abs (- (nfix msb) (nfix lsb))))))
+
+  (defthm vl-exprlist->finalwidths-of-vl-make-msb-to-lsb-bitselects
+    (equal (vl-exprlist->finalwidths (vl-make-msb-to-lsb-bitselects expr msb lsb))
+           (repeat 1 (+ 1 (abs (- (nfix msb) (nfix lsb))))))
+    :hints(("Goal" :in-theory (enable repeat))))
+
+  (defthm vl-exprlist->finaltypes-of-vl-make-msb-to-lsb-bitselects
+    (equal (vl-exprlist->finaltypes (vl-make-msb-to-lsb-bitselects expr msb lsb))
+           (repeat :vl-unsigned (+ 1 (abs (- (nfix msb) (nfix lsb))))))
+    :hints(("Goal" :in-theory (enable repeat)))))
 
 
 (defsection vl-default-n-bit-expr

@@ -137,10 +137,10 @@ handle problems with collecting bits.</p>"
                     ((mv ?foundp range) (vl-find-net/reg-range name mod ialist))
                     (range-okp (and range (vl-range-resolved-p range)))
                     (left  (if range-okp
-                               (vl-resolved->val (vl-range->left range))
+                               (vl-resolved->val (vl-range->msb range))
                              0))
                     (right (if range-okp
-                               (vl-resolved->val (vl-range->right range))
+                               (vl-resolved->val (vl-range->lsb range))
                              0))
                     (high (max left right))
                     (low  (min left right)))

@@ -112,22 +112,19 @@ used only as a context for warnings.</li>
 </ul>
 
 <p>We produce <tt>names</tt>, a list of <tt>N+1</tt> names that are to be used
-as the instance names for the split up arguments.  We try to use names of the
-form <tt>instname_index</tt> if they are available, e.g., we would prefer to
-split the above instance array into:</p>
+as the instance names for the split up arguments.</p>
 
-<code>
-   type foo_0 (arg1-0, arg2-0, ..., argM-0);
-   type foo_1 (arg1-1, arg2-1, ..., argM-1);
-   ...
-   type foo_N (arg1-N, arg2-N, ..., argM-N);
-</code>
+<p>We try to use names of the form <tt>instname_index</tt> if they are
+available, e.g., for a range like [N:0], we would prefer to generate
+names like <tt>foo_N, ..., foo_0</tt>.</p>
 
-<p>The names we return are in largest-first order, <tt>foo_N, ..., foo_0</tt>,
-to agree with @(see vl-partition-lvalue).</p>"
+<p>We want to return the names so that the name corresponding to the most
+significant bits comes first.  If the range is like <tt>[N:0]</tt>, then we
+return <tt>foo_N, ..., foo_0</tt>.  But if the range goes the other way, i.e.,
+<tt>[0:N]</tt>, then we return <tt>foo_0, ..., foo_N</tt>.</p>"
 
   (defund vl-preferred-replicate-names (low high instname)
-    ;; Preferred names in lowest-first order, e.g., (foo_3 foo_4 foo_5)
+    ;; Preferred names from low to high, inclusive, e.g., (foo_3 foo_4 foo_5)
     (declare (xargs :guard (and (natp low)
                                 (natp high)
                                 (<= low high)
@@ -190,16 +187,23 @@ to agree with @(see vl-partition-lvalue).</p>"
                                 (or (vl-modinst-p inst)
                                     (vl-gateinst-p inst))
                                 (vl-warninglist-p warnings))))
-    (b* ((high (vl-resolved->val (vl-range->left instrange)))
-         (low  (vl-resolved->val (vl-range->right instrange)))
+    (b* ((left     (vl-resolved->val (vl-range->msb instrange)))
+         (right    (vl-resolved->val (vl-range->lsb instrange)))
+         (low      (min left right))
+         (high     (max left right))
          (instname (or instname "unnamed"))
-         (want (vl-preferred-replicate-names low high instname))
+
+         (names-low-to-high (vl-preferred-replicate-names low high instname))
+         (names-msb-first   (if (>= left right)
+                                (reverse names-low-to-high)
+                              names-low-to-high))
          ((mv fresh nf)
-          (vl-namefactory-plain-names want nf))
-         ((when (equal want fresh))
+          (vl-namefactory-plain-names names-msb-first nf))
+         ((when (equal names-msb-first fresh))
           ;; Great -- we can use exactly what we want to use.
-          (mv warnings (reverse fresh) nf))
-         ;; Use bad names.
+          (mv warnings names-msb-first nf))
+
+         ;; Use bad names.  We don't care what order them come in.
          ((mv fresh nf)
           (vl-bad-replicate-names (+ 1 (- high low))
                                   (str::cat "vl_badname_" instname)
@@ -211,7 +215,8 @@ to agree with @(see vl-partition-lvalue).</p>"
                      available, so using lousy vl_badname_* naming scheme ~
                      instead.  This conflict is caused by ~&2."
                  :args (list inst instname
-                             (difference (mergesort want) (mergesort fresh)))
+                             (difference (mergesort names-msb-first)
+                                         (mergesort fresh)))
                  :fatalp nil
                  :fn 'vl-replicated-instnames)
                 warnings)))
@@ -250,7 +255,14 @@ to agree with @(see vl-partition-lvalue).</p>"
 
 (defsection vl-replicate-orig-instnames
   :parents (replicate)
-  :short "Generate the original instance names (with square-bracketed indices) for @(see replicate)d instances."
+  :short "Generate the original instance names (with square-bracketed indices)
+for replicated instances."
+
+  :long "<p>These names are just going to be attributes for the new instances,
+which allow you to relate the original Verilog with the simplified Verilog.</p>
+
+<p>The names are returned in msb-first order to agree with @(see
+vl-replicated-instnames).</p>"
 
   (defund vl-replicate-orig-instnames1 (low high instname)
     ;; Preferred names in lowest-first order, e.g., (foo_3 foo_4 foo_5)
@@ -276,15 +288,28 @@ to agree with @(see vl-partition-lvalue).</p>"
            (+ 1 (nfix (- (nfix high) (nfix low)))))
     :hints(("Goal" :in-theory (enable vl-replicate-orig-instnames1))))
 
+
+
   (defund vl-replicate-orig-instnames (instname instrange)
     (declare (xargs :guard (and (vl-maybe-string-p instname)
                                 (vl-range-p instrange)
                                 (vl-range-resolved-p instrange))))
-    (b* ((high (vl-resolved->val (vl-range->left instrange)))
-         (low  (vl-resolved->val (vl-range->right instrange)))
-         ;; whoa, can this happen?
-         (instname (or instname "unnamed")))
-      (vl-replicate-orig-instnames1 low high instname)))
+    (b* ((left  (vl-resolved->val (vl-range->msb instrange)))
+         (right (vl-resolved->val (vl-range->lsb instrange)))
+         (low   (min left right))
+         (high  (max left right))
+
+; Sol asked if the instname can really be nil.  Yes, but it's pretty unusual.
+; The reason is that VL uses the same modinst representation for both module
+; instances and user-defined primitive instances (but we don't actually support
+; UDP's yet), and UDP's aren't required to have instance names.  Go figure.
+
+         (instname (or instname "unnamed"))
+
+         (low-to-high (vl-replicate-orig-instnames1 low high instname)))
+      (if (>= left right)
+          (reverse low-to-high)
+        low-to-high)))
 
   (defthm string-listp-of-vl-replicate-orig-instnames
     (string-listp (vl-replicate-orig-instnames instname instrange))
@@ -1005,13 +1030,13 @@ try to split it into a list of <tt>nil</tt>-ranged, simple gates.  The
                              x.atts)
                      x.atts))
 
-         (left-idx (vl-resolved->val (vl-range->left x.range)))
+         (left-idx (vl-resolved->val (vl-range->msb x.range)))
+         (right-idx (vl-resolved->val (vl-range->lsb x.range)))
+         (idx-incr (if (>= left-idx right-idx) -1 1))
 
          ;; Finally, assemble the gate instances.
          (new-gates
-          ;; range-resolved-p forces left to be greater than right, so we assume
-          ;; that here -- the idx-incr arg here is -1
-          (vl-assemble-gateinsts names transpose left-idx -1 x.type x.strength x.delay new-atts x.loc)))
+          (vl-assemble-gateinsts names transpose left-idx idx-incr x.type x.strength x.delay new-atts x.loc)))
 
       ;; And that's it!
       (mv warnings new-gates nf)))
@@ -1566,12 +1591,12 @@ The <tt>new-modinsts</tt> should replace <tt>x</tt> in the module.</p>"
                              x.atts)
                      x.atts))
 
-         (left-idx (vl-resolved->val (vl-range->left x.range)))
+         (left-idx  (vl-resolved->val (vl-range->msb x.range)))
+         (right-idx (vl-resolved->val (vl-range->lsb x.range)))
+         (idx-incr (if (>= left-idx right-idx) -1 1))
 
          (new-modinsts
-          ;; range-resolved-p forces left to be greater than right, so we assume
-          ;; that here -- the idx-incr arg here is -1
-          (vl-assemble-modinsts names new-args left-idx -1 x.modname x.str
+          (vl-assemble-modinsts names new-args left-idx idx-incr x.modname x.str
                                 x.delay x.paramargs new-atts x.loc)))
 
       (mv warnings new-modinsts nf)))

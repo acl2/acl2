@@ -503,9 +503,9 @@ met.</p>"
               (vl-range-resolved-p x))
   :body
   (vl-ps-seq (vl-print "[")
-             (vl-print (vl-resolved->val (vl-range->left x)))
+             (vl-print (vl-resolved->val (vl-range->msb x)))
              (vl-print ":")
-             (vl-print (vl-resolved->val (vl-range->right x)))
+             (vl-print (vl-resolved->val (vl-range->lsb x)))
              (vl-print "]")))
 
 (defpp vl-pp-pretty-maybe-range (x)
@@ -964,17 +964,25 @@ cdrs of the map are guaranteed to be unique and non-nil.</p>")
                                 (equal (vl-dreg->type x) :vl-flop))
                     :guard-debug t))
     (b* ((range    (vl-dreg->range x))
-         (high     (if (not range)
+
+         (msb      (if (not range)
                        0
-                     (vl-resolved->val (vl-range->left range))))
-         (low      (if (not range)
+                     (vl-resolved->val (vl-range->msb range))))
+         (lsb      (if (not range)
                        0
-                     (vl-resolved->val (vl-range->right range))))
-         ;; Verilog names.  Vindexes = (low, low+1, ..., high)
+                     (vl-resolved->val (vl-range->lsb range))))
+
+         (high         (max msb lsb))
+         (low          (min msb lsb))
+         (|[low:high]| (nats-from low (+ high 1)))  ;; (low, low+1, ..., high)
+         (|[msb:lsb]|  (if (>= msb lsb)
+                           (reverse |[low:high]|)
+                         |[low:high]|))
+
+         ;; Verilog names.
          (vroot      (vl-flatten-hidexpr (vl-dreg->hid x)))
-         (vindexes   (reverse (nats-from low (+ high 1))))
-         (vnames-acc (vl-verilog-style-flop-master-names vroot vindexes vnames-acc))
-         (vnames-acc (vl-verilog-style-flop-slave-names vroot vindexes vnames-acc))
+         (vnames-acc (vl-verilog-style-flop-master-names vroot |[msb:lsb]| vnames-acc))
+         (vnames-acc (vl-verilog-style-flop-slave-names vroot |[msb:lsb]| vnames-acc))
 
          ;; Emod names.
          (eroot    (reverse (coerce (vl-dreg-emod-root x nil) 'string)))
@@ -1000,8 +1008,8 @@ cdrs of the map are guaranteed to be unique and non-nil.</p>")
                                :args (list (make-vl-atom :guts (vl-hidpiece "bar"))
                                            (make-vl-atom :guts (vl-hidpiece "baz"))))))
             :iname "baz_inst"
-            :range (make-vl-range :left (vl-make-index 13)
-                                  :right (vl-make-index 10))
+            :range (make-vl-range :msb (vl-make-index 13)
+                                  :lsb (vl-make-index 10))
             :type :vl-flop)))
 
   (local (assert!
@@ -1191,16 +1199,24 @@ cdrs of the map are guaranteed to be unique and non-nil.</p>")
                                 (equal (vl-dreg->type x) :vl-latch))
                     :guard-debug t))
     (b* ((range    (vl-dreg->range x))
-         (high     (if (not range)
+         (msb      (if (not range)
                        0
-                     (vl-resolved->val (vl-range->left range))))
-         (low      (if (not range)
+                     (vl-resolved->val (vl-range->msb range))))
+         (lsb      (if (not range)
                        0
-                     (vl-resolved->val (vl-range->right range))))
-         ;; Verilog names.  Vindexes = (low, low+1, ..., high)
+                     (vl-resolved->val (vl-range->lsb range))))
+
+         (high         (max msb lsb))
+         (low          (min msb lsb))
+         (|[low:high]| (nats-from low (+ high 1)))
+         (|[msb:lsb]|  (if (>= msb lsb)
+                           (reverse |[low:high]|)
+                         |[low:high]|))
+
+
+         ;; Verilog names.
          (vroot      (vl-flatten-hidexpr (vl-dreg->hid x)))
-         (vindexes   (reverse (nats-from low (+ high 1))))
-         (vnames-acc (vl-verilog-style-latch-names vroot vindexes vnames-acc))
+         (vnames-acc (vl-verilog-style-latch-names vroot |[msb:lsb]| vnames-acc))
 
          ;; Emod names.
          (eroot    (reverse (coerce (vl-dreg-emod-root x nil) 'string)))
@@ -1223,8 +1239,8 @@ cdrs of the map are guaranteed to be unique and non-nil.</p>")
                                :args (list (make-vl-atom :guts (vl-hidpiece "bar"))
                                            (make-vl-atom :guts (vl-hidpiece "baz"))))))
             :iname "baz_inst"
-            :range (make-vl-range :left (vl-make-index 13)
-                                  :right (vl-make-index 10))
+            :range (make-vl-range :msb (vl-make-index 13)
+                                  :lsb (vl-make-index 10))
             :type :vl-latch)))
 
   (local (assert!
