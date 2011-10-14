@@ -11751,15 +11751,16 @@
 
   ":Doc-Section acl2::Events
 
-  define a non-executable function symbol~/~/
+  define a non-executable function symbol~/
 
   The macro ~c[defun-nx] introduces definitions using the ~ilc[defun] macro,
   always in ~c[:]~ilc[logic] mode, such that the calls of the resulting
-  function cannot be evaluated.  Such a definition is admitted without the
-  syntactic restrictions usually imposed on definitions, as opposed to
-  theorems, in particular regarding function signatures and the use of
-  single-threaded object names, even though such functions are permitted to
-  declare names to be ~c[:]~ilc[stobj]s.
+  function cannot be evaluated.  Such a definition is admitted without
+  enforcing the usual ~il[stobj] restrictions on arguments of its function
+  calls.  After such a definition is admitted, the usual syntactic rules for
+  ~ilc[state] and user-defined ~il[stobj]s are relaxed for its calls: each
+  argument that is not ~c[state] or the name of a user-defined ~il[stobj]
+  should evaluate to a single ordinary (non-~ilc[state], non-~il[stobj]) value.
 
   The syntax is identical to that of ~ilc[defun].  A form
   ~bv[]
@@ -11774,7 +11775,7 @@
             body))
   ~ev[]
   Note that because of the insertion of the above call of
-  ~c[throw-nonexec-error], no formal is ignored when using ~c[defun-nx].
+  ~c[throw-nonexec-error], no formal is ignored when using ~c[defun-nx].~/
 
   If you prefer to avoid the use of ~c[defun-nx] for non-executable function
   definitions in ~c[:]~ilc[logic] mode, you can use an ~ilc[xargs]
@@ -11797,7 +11798,7 @@
   ~ilc[declare] form; ~c[defun-nx] will still lay down its own such
   declaration, but ACL2 can tolerate the duplication.
 
-  Note that ~c[defund-nx] is also available.  It has an effect identitcal to
+  Note that ~c[defund-nx] is also available.  It has an effect identical to
   that of ~c[defun-nx] except that as with ~ilc[defund], it leaves the function
   disabled.
 

@@ -2097,6 +2097,7 @@ sin-cos.lisp
 sort-symbols.lisp
 sticky-disable.lisp
 symbol-btree.lisp
+take.lisp
 total-order.lisp
 trace-star.lisp
 transfinite.lisp
