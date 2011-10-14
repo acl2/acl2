@@ -2,7 +2,7 @@
 
 ##############################
 
-# Supporting materials included for:
+### Supporting materials included for:
 
 # John Cowles and Ruben Gamboa
 # Verifying Sierpinski and Riesel Numbers in ACL2
@@ -17,6 +17,25 @@
 
 # Freek Verbeek and Julien Schmaltz
 # Formal verification of a deadlock detection algorithm
+
+### Not contributing supporting materials:
+
+# Matt Kaufmann and J Moore. 
+# How Can I Do That with ACL2?  Recent Enhancements to ACL2
+
+# Harsh Raju Chamarthi, Peter C. Dillinger, Matt Kaufmann and
+# Panagiotis Manolios.
+# Integrating Testing and Interactive Theorem Proving
+
+# Peter-Michael Seidel. 
+# Formal Verification of an Iterative Low-Power X86 Floating-Point
+# Multiplier with Redundant Feedback
+
+### Waiting for materials:
+
+# Mike Dahlin, Ryan Johnson, Robert Krug, Michael Mccoyd and Bill
+# Young.
+# Toward the Verification of a Simple Hypervisor
 
 ##############################
 

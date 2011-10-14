@@ -534,7 +534,7 @@ ACL2 !>
 
 
 
-(local (include-book "unicode/take" :dir :system))
+(local (include-book "take"))
 (local
  (encapsulate nil
    (local (include-book "arithmetic/top" :dir :system))
