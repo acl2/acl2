@@ -3234,9 +3234,10 @@
                    (newer-pspv
                     (inform-simplify
                      (access candidate winning-candidate :tests-and-alists-lst)
-                     (cons (access candidate winning-candidate
-                                   :xinduction-term)
-                           (access candidate winning-candidate :xother-terms))
+                     (add-to-set-equal
+                      (access candidate winning-candidate
+                              :xinduction-term)
+                      (access candidate winning-candidate :xother-terms))
                      (change prove-spec-var new-pspv
                              :tag-tree
                              (cons-tag-trees

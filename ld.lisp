@@ -18157,6 +18157,9 @@
 ; Modified script saved for sbcl to double the control-stack-size, which
 ; allowed "make DOC" to complete.
 
+; Fixed the function INDUCT so that the second argument of the inform-simplify
+; call is less likely to have duplicates.
+
   :doc
   ":Doc-Section release-notes
 
@@ -18294,6 +18297,10 @@
   code for function ~c[dmr-flush], replacing ~c[finish-output] by
   ~c[force-output]).
 
+  We now avoid certain rewriting loops.  A long comment about this change,
+  including an example of a loop that no longer occurs, may be found in source
+  function ~c[expand-permission-result].
+
   ~st[BUG FIXES]
 
   Fixed a class of soundness bugs involving each of the following functions:
@@ -18370,6 +18377,15 @@
   small in the case of compound ~il[events], notably ~ilc[include-book].
   Thanks to everyone who reported this problem (we have a record of emails from
   Eric Smith and Jared Davis on this issue).
+
+  Fixed a bug in ~c[:expand] ~il[hints], where the use of ~c[:lambdas] could
+  prevent other parts of such a hint.  For example, the following invocation of
+  ~ilc[thm] failed before this fix was made.
+  ~bv[]
+  (defund foo (x) (cons x x))
+  (thm (equal (car (foo x)) x)
+  :hints ((\"Goal\" :expand (:lambdas (foo x)))))
+  ~ev[]
 
   ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]
 

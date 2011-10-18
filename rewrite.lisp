@@ -9142,14 +9142,17 @@
      )))
   t)
 
-(defun expand-permission-result (term expand-lst geneqv wrld)
+(defun expand-permission-result1 (term expand-lst geneqv wrld)
 
 ; This is a generalized version of member-equal that asks whether expand-lst
 ; gives term permission to be expanded, as described in :DOC hints.  Here, term
-; is a function application.  We return (mv new-term hyp unify-subst rune),
-; where if new-term is not nil, and assuming hyp if hyp is non-nil, then term
-; is provably equal to the application of unify-subst to term and, if non-nil,
-; rune justifies this equality.
+; is a function application.  We return (mv new-term hyp unify-subst rune k),
+; where if new-term is not nil, and assuming hyp if hyp is non-nil, then
+; new-term is provably equal to the application of unify-subst to term and, if
+; non-nil, rune justifies this equality.  If new-term is not nil then k is the
+; length of the tail of expand-lst whose car justifies the expansion of
+; new-term, but only if we want to remove that member of expand-lst for
+; heuristic purposes; otherwise k is nil.  See expand-permission-result.
 
   (if expand-lst
       (let ((x (car expand-lst)))
@@ -9159,47 +9162,139 @@
                           nil
                           (pairlis$ (lambda-formals (ffn-symb term))
                                     (fargs term))
+                          nil
                           nil))
-                     (t (mv nil nil nil nil))))
+                     (t (expand-permission-result1 term (cdr expand-lst) geneqv
+                                                   wrld))))
               ((not (geneqv-refinementp (access expand-hint x :equiv)
                                         geneqv
                                         wrld))
-               (expand-permission-result term (cdr expand-lst) geneqv wrld))
-              (t (mv-let
-                  (flg ignore-unify-subst)
-                  (cond
-                   ((eq (access expand-hint x :alist) :none)
-                    (mv (equal (access expand-hint x :pattern) term) nil))
-                   (t (one-way-unify1 (access expand-hint x :pattern)
-                                      term
-                                      (access expand-hint x :alist))))
-                  (declare (ignore ignore-unify-subst))
-                  (cond
-                   (flg
-                    (mv-let
-                     (flg unify-subst)
-                     (one-way-unify (access expand-hint x :lhs) term)
-                     (cond (flg
-                            (mv (access expand-hint x :rhs)
-                                (access expand-hint x :hyp)
-                                unify-subst
-                                (access expand-hint x :rune)))
-                           (t (expand-permission-result term (cdr expand-lst)
-                                                        geneqv wrld)))))
-                   (t (expand-permission-result term (cdr expand-lst)
-                                                geneqv wrld)))))))
-    (mv nil nil nil nil)))
+               (expand-permission-result1 term (cdr expand-lst) geneqv wrld))
+              (t (let ((alist-none-p (eq (access expand-hint x :alist) :none)))
+                   (mv-let
+                    (flg ignore-unify-subst)
+                    (cond
+                     (alist-none-p
+                      (mv (equal (access expand-hint x :pattern) term) nil))
+                     (t (one-way-unify1 (access expand-hint x :pattern)
+                                        term
+                                        (access expand-hint x :alist))))
+                    (declare (ignore ignore-unify-subst))
+                    (cond
+                     (flg
+                      (mv-let
+                       (flg unify-subst)
+                       (one-way-unify (access expand-hint x :lhs) term)
+                       (cond (flg
+                              (mv (access expand-hint x :rhs)
+                                  (access expand-hint x :hyp)
+                                  unify-subst
+                                  (access expand-hint x :rune)
+                                  (and alist-none-p
+                                       (length expand-lst))))
+                             (t (expand-permission-result1
+                                 term (cdr expand-lst) geneqv wrld)))))
+                     (t (expand-permission-result1 term (cdr expand-lst)
+                                                   geneqv wrld))))))))
+    (mv nil nil nil nil nil)))
 
-(defun expand-permission-p (term expand-lst geneqv wrld)
+(defun remove1-by-position (target-index lst acc)
+  (declare (xargs :guard (and (true-listp lst)
+                              (true-listp acc)
+                              (natp target-index)
+                              (< target-index (len lst)))))
+  (cond
+   ((zp target-index)
+    (revappend acc (cdr lst)))
+   (t (remove1-by-position (1- target-index) (cdr lst) (cons (car lst) acc)))))
+
+(defun expand-permission-result (term rcnst geneqv wrld)
+
+; This is a generalized version of member-equal that asks whether rcnst gives
+; term permission to be expanded, as described in :DOC hints.  Here, term is a
+; function application.  We return (mv new-term hyp unify-subst rune
+; new-rcnst), where if new-term is not nil:
+
+; - if hyp is non-nil, then assuming hyp, term is provably equal to the
+;   application of unify-subst to new-term;
+
+; - if rune is non-nil, rune justifies the above claim; and
+
+; - new-rcnst is either rcnst or an update of it that removes the reason for
+;   expansion of term from the :expand-lst (see long comment below).
+
+  (let ((expand-lst (access rewrite-constant rcnst :expand-lst)))
+    (mv-let
+     (new-term hyp unify-subst rune posn-from-end)
+     (expand-permission-result1 term expand-lst geneqv wrld)
+     (cond
+      (posn-from-end
+
+; In this case new-term is non-nil; so term will be expanded, and we want to
+; remove the reason for this expansion in order to avoid looping.  The thm
+; below did indeed cause a rewriting loop through Version_4.3.
+
+;   (defun first-nondecrease (lst)
+;     (cond ((endp lst) nil)
+;   	((endp (cdr lst)) (list (car lst)))
+;   	((> (car lst) (cadr lst)) (list (car lst)))
+;   	(t (cons (car lst) (first-nondecrease (cdr lst))))))
+;   
+;   (defun removeN (lst n)
+;     (cond ((endp lst) nil)		
+;   	((zp n) lst)	
+;   	(t (removeN (cdr lst) (1- n)))))
+;   
+;   (defthm len-removen  ; Needed to admint next fn.  If you disable this
+;     (implies (natp n)  ; lemma, the overflow no longer occurs.
+;              (equal (len (removen lst n))
+;                     (if (>= n (len lst))
+;                         0
+;                         (- (len lst) n)))))
+;   
+;   (defun longest-nondecrease (lst)
+;     (declare (xargs :measure (len lst)))
+;     (if (or (endp lst) (not (true-listp lst))) nil
+;         (let* ((first (first-nondecrease lst))
+;   	     (n (len first)))
+;   	(let ((remain (longest-nondecrease (removeN lst n))))
+;   	  (if (>= n (len remain)) first remain)))))
+;   
+;   ; This is an arithmetic lemma that may seem benign.
+;   (defthm equality-difference-hack
+;     (implies (and (acl2-numberp x)
+;                   (acl2-numberp y))
+;              (equal (equal (+ x (- y)) x)
+;                     (equal y 0))))
+;   
+;   ; Loops:
+;   (thm (implies (true-listp lst)
+;                 (equal (equal (len (longest-nondecrease lst)) (len lst))
+;                        (equal (longest-nondecrease lst) lst))))
+
+       (assert$
+        new-term
+        (mv new-term hyp unify-subst rune
+            (let ((expand-lst (access rewrite-constant rcnst :expand-lst)))
+              (change rewrite-constant rcnst
+                      :expand-lst
+                      (remove1-by-position (- (length expand-lst)
+                                              posn-from-end)
+                                           expand-lst
+                                           nil))))))
+      (t (mv new-term hyp unify-subst rune rcnst))))))
+
+(defun expand-permission-p (term rcnst geneqv wrld)
 
 ; Returns nil if we do not have permission from :expand hints to expand, else
-; non-nil.  It may be more appropriate to use expand-permission-result
-; instead.
+; returns rcnst possibly updated by removing term from the :expand-lst field
+; (see comments about that in expand-permission-result).  It may be more
+; appropriate to use expand-permission-result instead.
 
-  (mv-let (new-term hyp unify-subst rune)
-          (expand-permission-result term expand-lst geneqv wrld)
+  (mv-let (new-term hyp unify-subst rune new-rcnst)
+          (expand-permission-result term rcnst geneqv wrld)
           (declare (ignore hyp unify-subst rune))
-          new-term))
+          (and new-term new-rcnst)))
 
 (defun one-way-unify-restrictions1 (pat term restrictions)
   (cond
@@ -13857,18 +13952,19 @@
                                                 (caar stack)
                                                 (fargn term 1)
                                                 (cdar stack)))
-                                term)))
+                                term))
+                   (new-rcnst (expand-permission-p inst-term rcnst geneqv
+                                                   wrld)))
               (cond
-               ((expand-permission-p inst-term
-                                     (access rewrite-constant rcnst :expand-lst)
-                                     geneqv wrld)
+               (new-rcnst
 
 ; We abandon inst-term and rewrite the hidden part under the alist.
 
                 (rewrite-entry (rewrite (fargn term 1) alist 1)
                                :ttree (push-lemma
                                        (fn-rune-nume 'hide nil nil wrld)
-                                       ttree)))
+                                       ttree)
+                               :rcnst new-rcnst))
                (t (rewrite-entry
                    (rewrite-with-lemmas inst-term))))))
            ((lambda-nest-hidep term)
@@ -13891,19 +13987,19 @@
                                       (caar stack)
                                       new-body
                                       (cdar stack))
-                                   new-body))))
+                                   new-body)))
+                   (new-rcnst (expand-permission-p inst-term rcnst geneqv
+                                                   wrld)))
               (cond
-               ((expand-permission-p inst-term
-                                     (access rewrite-constant rcnst
-                                             :expand-lst)
-                                     geneqv wrld)
+               (new-rcnst
 
 ; We rewrite the ``instantiated'' term under the empty substitution.
 
                 (rewrite-entry (rewrite (fargn inst-term 1) nil 1)
                                :ttree (push-lemma
                                        (fn-rune-nume 'hide nil nil wrld)
-                                       ttree)))
+                                       ttree)
+                               :rcnst new-rcnst))
                (t (rewrite-entry
                    (rewrite-with-lemmas inst-term))))))
            ((eq (ffn-symb term) 'IMPLIES)
@@ -16475,10 +16571,8 @@
                            :fns-to-be-ignored-by-rewrite))
      (mv step-limit term ttree))
     ((flambda-applicationp term)
-     (mv-let (new-term hyp unify-subst rune)
-             (expand-permission-result term (access rewrite-constant rcnst
-                                                    :expand-lst)
-                                       geneqv wrld)
+     (mv-let (new-term hyp unify-subst rune rcnst)
+             (expand-permission-result term rcnst geneqv wrld)
              (cond (new-term
                     (assert$ (and (null rune) (null hyp))
                              (rewrite-entry (rewrite new-term unify-subst
@@ -16501,11 +16595,8 @@
            (cond
             (rewrittenp (mv step-limit rewritten-term ttree))
             (t (mv-let
-                (new-term hyp alist rune)
-                (expand-permission-result term
-                                          (access rewrite-constant rcnst
-                                                  :expand-lst)
-                                          geneqv wrld)
+                (new-term hyp alist rune rcnst)
+                (expand-permission-result term rcnst geneqv wrld)
                 (cond
                  ((and hyp new-term)
 
