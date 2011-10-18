@@ -18291,7 +18291,10 @@
   ``guard-holders'' (such as ~ilc[mbe] and ~ilc[prog2$] ~-[] indeed, any call
   of ~ilc[return-last] ~-[] and ~ilc[the]) are expanded away.  In particular,
   calls of equality variants such as ~ilc[member] are treated as their
-  corresponding function calls, e.g., ~ilc[member-equal]; ~pl[equality-variants].
+  corresponding function calls, e.g., ~ilc[member-equal];
+  ~pl[equality-variants].  Guard-holders are also now expanded away before
+  storing ~il[constraint]s for ~ilc[encapsulate] ~il[events], which can
+  sometimes result in simpler constraints.
 
   Improved the performance of ~ilc[dmr] (technical note: by modifying raw Lisp
   code for function ~c[dmr-flush], replacing ~c[finish-output] by

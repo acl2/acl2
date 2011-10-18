@@ -6832,7 +6832,20 @@
 ; constraint-lst properties; but to be safe we go ahead and collect all
 ; constraints.
 
-           (constraints-list infectious-fns wrld formula-lst1 nil)))
+; We apply remove-guard-holders in order to clean up a bit.  Consider for
+; example:
+
+; (defun-sk foo (x) (forall e (implies (member e x) (integerp e))))
+
+; If you then evaluate
+
+; (getprop 'foo-witness 'constraint-lst nil 'current-acl2-world (w state))
+
+; you'll see a much simpler result, with return-last calls removed, than if we
+; did not apply remove-guard-holders-lst here.
+
+           (remove-guard-holders-lst
+            (constraints-list infectious-fns wrld formula-lst1 nil))))
      (mv constraints constrained-fns subversive-fns infectious-fns fns))))
 
 (defun new-dependent-clause-processors (new-tbl old-tbl)
