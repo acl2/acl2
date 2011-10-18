@@ -12,6 +12,8 @@
 
 ; Probably preferred, but SBCL only: statistical call-graph profiling
 ; (with-sprofiling (mini-proveall)) ; SBCL only
+; The following SBCL documentation may be helpful:
+;   http://www.sbcl.org/manual/Statistical-Profiler.html
 
 ; Also supported:
 ; (with-profiling "ACL2" (mini-proveall)) ; efficient in SBCL, slow in CCL
