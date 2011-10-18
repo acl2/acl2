@@ -47,10 +47,8 @@
            ((EXISTS-X-F1 EXISTS-X-F1-WITNESS)
             :CONSTRAINT
             (AND (EQUAL (EXISTS-X-F1 Y)
-                        (PROG2$ (THROW-NONEXEC-ERROR 'EXISTS-X-F1
-                                                     (LIST Y))
-                                (LET ((X (EXISTS-X-F1-WITNESS Y)))
-                                     (F1 X Y))))
+                        (LET ((X (EXISTS-X-F1-WITNESS Y)))
+                             (F1 X Y)))
                  (IMPLIES (F1 X Y) (EXISTS-X-F1 Y))))
            (MY-THM :THEOREM (EQUAL (F X) (H (G X))))
            ((G F H)
