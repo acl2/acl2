@@ -152,13 +152,17 @@
         (t (cons (set-difference-equal (car lst-lst) lst)
                  (all-set-difference-equal (cdr lst-lst) lst)))))
 
-(defun remove1-by-position (index lst)
+(defun defopener-remove1-by-position (index lst)
+
+; Note: Renamed after ACL2 4.3 to avoid name conflict with new source function
+; remove1-by-position.
+
   (if (endp lst) ; perhaps impossible for intended application
       nil
     (if (zp index)
         (cdr lst)
       (cons (car lst)
-            (remove1-by-position (1- index) (cdr lst))))))
+            (defopener-remove1-by-position (1- index) (cdr lst))))))
 
 (defun split-clauses-to-term-rec (hyps-list concls)
 
@@ -187,8 +191,8 @@
                (let* ((i (index-of-shortest hyps-list))
                       (hyps (nth i hyps-list))
                       (concl (nth i concls))
-                      (hyps-list (remove1-by-position i hyps-list))
-                      (concls (remove1-by-position i concls))
+                      (hyps-list (defopener-remove1-by-position i hyps-list))
+                      (concls (defopener-remove1-by-position i concls))
                       (common-hyps
                        (intersection-equal-with-all hyps hyps-list))
                       (hyps-list
