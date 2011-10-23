@@ -18160,6 +18160,16 @@
 ; Fixed the function INDUCT so that the second argument of the inform-simplify
 ; call is less likely to have duplicates.
 
+; Here we say a bit more about the "logical modeling of the ACL2 evaluator"
+; mentioned below.  The function ev-fncall-rec is defined in the logic to be
+; ev-fncall-rec-logical, but they did not actually match up.  For example, the
+; result differed if ev-fncall-rec below was changed to ev-fncall-rec-logical.
+;   (defstub foo () t)
+;   (defttag t)
+;   (remove-untouchable ev-fncall-rec t)
+;   (ev-fncall-rec 'foo nil (w state) 100000 nil nil nil nil t)
+; We found several such discrepancies and have fixed them.
+
   :doc
   ":Doc-Section release-notes
 
@@ -18389,6 +18399,12 @@
   (thm (equal (car (foo x)) x)
   :hints ((\"Goal\" :expand (:lambdas (foo x)))))
   ~ev[]
+
+  Certain ``program-only'' function calls will now cause hard Lisp
+  errors.  (The rather obscure reason for this fix is to support logical
+  modeling of the ACL2 evaluator.  A relevant technical discussion may be found
+  in source function ~c[oneify-cltl-code], at the binding of variable
+  ~c[fail_program-only-safe].)
 
   ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]
 

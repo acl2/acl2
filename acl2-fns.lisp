@@ -929,7 +929,7 @@ notation causes an error and (b) the use of ,. is not permitted."
 ; Thanks to Pascal J. Bourguignon for suggesting this approach.
   
   (declare (ignore char n))
-  (let* ((package-name (read stream))
+  (let* ((package-name (read stream t nil t))
          (package-string (cond ((symbolp package-name)
                                 (symbol-name package-name))
                                ((stringp package-name)
@@ -942,7 +942,7 @@ notation causes an error and (b) the use of ,. is not permitted."
                       (error "There is no package named ~S that is known to ~
                               ACL2 in this context."
                              package-name))))
-    (read stream)))
+    (read stream t nil t)))
 
 (defun sharp-u-read (stream char n)
   (declare (ignore char n))

@@ -1672,9 +1672,43 @@
                                             'program-fns-with-raw-code
                                             *the-live-state*))))
              (fail_program-only-safe
-              (oneify-fail-form 'program-only-er fn formals guard
-                                super-stobjs-in wrld
-                                t))
+
+; At one time we put down a form here that throws to the tag 'raw-ev-fncall:
+
+;             (oneify-fail-form 'program-only-er fn formals guard
+;                               super-stobjs-in wrld
+;                               t)
+
+; However, because that throw is caught (in the function raw-ev-fncall), it
+; should be accounted for in the function ev-fncall-rec-logical.  However, that
+; function does not take state, which is unfortunate since the program-only
+; case (under which we lay down this form) is based on state global
+; 'program-fns-with-raw-code.  We considered moving that global to the world,
+; but were concerned about the effects that would have on ACL2s (see for
+; example the use of program-fns-with-raw-code in
+; workshops/2007/dillinger-et-al/code/hacker.lisp), and in general we'd have to
+; add yet another event and deal with whether the event should be local to
+; books.  Instead, we have decided to cause a raw Lisp error, which is always
+; legitimate (after all, Lisp might cause a resource error).
+
+              `(error "~%~a~%"
+                      (fms-to-string
+                       "~@0~%~@1"
+                       (list (cons #\0 (program-only-er-msg
+                                        ',fn (list ,@formals) t))
+                             (cons #\1 "~%Note: If you have a reason to ~
+                                        prefer an ACL2 error here instead of ~
+                                        a hard Lisp error, please contact the ~
+                                        ACL2 implementors."))
+                       :evisc-tuple
+                       (abbrev-evisc-tuple *the-live-state*)
+                       :fmt-control-alist
+                       (list (cons 'fmt-hard-right-margin
+                                   (f-get-global 'fmt-hard-right-margin
+                                                 *the-live-state*))
+                             (cons 'fmt-soft-right-margin
+                                   (f-get-global 'fmt-soft-right-margin
+                                                 *the-live-state*))))))
              (early-exit-code
               (let ((cl-compliant-code-guard-not-t
 
@@ -1683,7 +1717,7 @@
 ; fn, and if not, then it fails if appropriate and otherwise falls through.
 
                      (and
-                      (not guard-is-t) ; optimization for case when code below is used
+                      (not guard-is-t) ; optimization for code below
 
 ; NOTE: we have to test for live stobjs before we evaluate the guard, since the
 ; Common Lisp guard may assume all stobjs are live.  We actually only need

@@ -40925,7 +40925,7 @@
 
   Also note that ~ilc[certify-book] needs to be supplied with keyword argument
   ~c[:acl2x t] in order to read or write ~c[.acl2x] files; the value of
-  ~c[:acl2] is ~c[nil] by default.  The interaction of ~ilc[certify-book] with
+  ~c[:acl2x] is ~c[nil] by default.  The interaction of ~ilc[certify-book] with
   the corresponding ~c[.acl2x] file is as follows.
   ~bf[]
   o If ~c[:acl2x] is ~c[t], then:

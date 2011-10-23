@@ -371,25 +371,6 @@
          (remove-keyword word (cddr l)))
         (t (list* (car l) (cadr l) (remove-keyword word (cddr l))))))
 
-(defun ignored-attachment-msg (prefix ignored-attachment)
-  (cond (ignored-attachment (msg "~@0Note that because of logical ~
-                                  considerations, attachments (including ~x1) ~
-                                  must not be called in this context."
-                                 prefix ignored-attachment))
-        (t "")))
-
-(defun ev-fncall-null-body-er (ignored-attachment fn latches)
-  (mv t
-      (msg "ACL2 cannot evaluate the undefined function ~x0.~@1"
-           fn
-           (ignored-attachment-msg "  " ignored-attachment))
-      latches))
-
-(defconst *safe-mode-guard-er-addendum*
-  "  The guard is being checked because this function is a primitive and a ~
-   \"safe\" mode is being used for defconst, defpkg, macroexpansion, or ~
-   another operation where safe mode is required.")
-
 (defun error-trace-suggestion (two-leading-spaces)
 
 ; Warning: Do not eliminate the message about print-gv without first reading
@@ -400,6 +381,65 @@
        (if two-leading-spaces
            "  "
          "")))
+
+(defun ignored-attachment-msg (ignored-attachment)
+  (cond (ignored-attachment (msg "~|~%Note that because of logical ~
+                                  considerations, attachments (including ~x0) ~
+                                  must not be called in this context."
+                                 ignored-attachment))
+        (t "")))
+
+(defun ev-fncall-null-body-er-msg (ignored-attachment fn args)
+  (msg "ACL2 cannot ev the call of undefined function ~x0 on argument ~
+        list:~|~%~x1~@2~|~%~@3"
+       fn
+       args
+       (ignored-attachment-msg ignored-attachment)
+       (error-trace-suggestion nil)))
+
+(defun ev-fncall-null-body-er (ignored-attachment fn args latches)
+  (mv t
+      (ev-fncall-null-body-er-msg ignored-attachment fn args)
+      latches))
+
+(defun ev-fncall-creator-er-msg (fn)
+  (msg
+   "An attempt has been made to call the stobj creator function ~x0.  This ~
+    error is being reported even though guard-checking may have been turned ~
+    off, because ACL2 does not support non-compliant live stobj manipulation. ~
+    ~ If you did not explicitly call ~x0 then this error is probably due to ~
+    an attempt to evaluate a with-local-stobj form directly in the top-level ~
+    loop.  Such forms are only allowed in the bodies of functions and in ~
+    theorems.  Also see :DOC with-local-stobj.~@1"
+   fn
+   (error-trace-suggestion t)))
+
+(defun unknown-pkg-error-msg (fn pkg-name)
+  (msg
+   "The call ~x0 is illegal because the argument is not the name of a ~
+      package currently known to ACL2."
+   (list fn pkg-name)))
+
+(defun illegal-msg ()
+  (msg "Evaluation aborted.~@0"
+       (error-trace-suggestion t)))
+
+(defun program-only-er-msg (fn args safe-mode)
+  (msg
+   "The call ~x0 is an illegal call of a function that has been marked as ~
+    ``program-only,'' and hence has special raw Lisp code.  This call is ~
+    illegal because program-only functions are only allowed to invoke their ~
+    raw Lisp code, but in this case there was an attempt to invoke executable ~
+    counterpart code ~#1~[because of guard-checking (see :DOC ~
+    guard-evaluation-table)~/because it is being called under a ``safe mode'' ~
+    that is used, for example, during macroexpansion~]."
+   (cons fn args)
+   (if safe-mode 1 0)))
+
+(defconst *safe-mode-guard-er-addendum*
+  "  The guard is being checked because this function is a primitive and a ~
+   \"safe\" mode is being used for defconst, defpkg, macroexpansion, or ~
+   another operation where safe mode is required.")
 
 (defun find-first-non-nil (lst)
   (cond ((endp lst) nil)
@@ -1471,54 +1511,80 @@
          (mv nil x latches))
         #+:non-standard-analysis
         (I-LARGE-INTEGER ; We could omit this case, allowing a fall-through.
-         (ev-fncall-null-body-er nil fn latches))
+         (ev-fncall-null-body-er nil fn nil latches)) 
         (otherwise
-         (let ((alist (pairlis$ (formals fn w) args))
-               (body (body fn nil w))
-               (attachment (and aok
-                                (cdr (assoc-eq fn (all-attachments w))))))
-           (mv-let
-            (er val latches)
-            (ev-rec (if guard-checking-off
-                        ''t
-                      (guard fn nil w))
-                    alist
-                    w (decrement-big-n big-n) (eq extra t) guard-checking-off
-                    latches
-                    hard-error-returns-nilp
-                    aok)
-            (cond
-             (er (mv er val latches))
-             ((null val)
-              (ev-fncall-guard-er fn args w latches extra))
-             (attachment
-              (ev-fncall-rec-logical attachment args w
-                                     (decrement-big-n big-n)
-                                     safe-mode gc-off latches
-                                     hard-error-returns-nilp aok))
-             ((null body)
-              (ev-fncall-null-body-er
-               (and (not aok) attachment)
-               fn latches))
-             (t
-              (mv-let
-               (er val latches)
-               (ev-rec body alist
-                       w (decrement-big-n big-n) (eq extra t)
-                       guard-checking-off
-                       latches
-                       hard-error-returns-nilp
-                       aok)
-               (cond
-                (er (mv er val latches))
-                ((eq fn 'return-last) ; avoid taking stobjs-out of return-last
-                 (mv nil val latches))
-                (t (mv nil
-                       val
-                       (latch-stobjs
-                        (stobjs-out fn w)
-                        val
-                        latches)))))))))))))))
+         (cond
+          ((and (null args)
+                (car (stobjs-out fn w)))
+           (mv t
+               (ev-fncall-creator-er-msg fn)
+               latches))
+          (t
+           (let ((alist (pairlis$ (formals fn w) args))
+                 (body (body fn nil w))
+                 (attachment (and aok
+                                  (cdr (assoc-eq fn (all-attachments w))))))
+             (mv-let
+              (er val latches)
+              (ev-rec (if guard-checking-off
+                          ''t
+                        (guard fn nil w))
+                      alist
+                      w (decrement-big-n big-n) (eq extra t) guard-checking-off
+                      latches
+                      hard-error-returns-nilp
+                      aok)
+              (cond
+               (er (mv er val latches))
+               ((null val)
+                (ev-fncall-guard-er fn args w latches extra))
+               ((and (eq fn 'hard-error)
+                     (not hard-error-returns-nilp))
+
+; Before we added this case, the following returned nil even though the result
+; was t if we replaced ev-fncall-rec-logical by ev-fncall-rec.  That wasn't
+; quite a soundness bug, event though the latter is defined to be the former,
+; because ev-fncall-rec is untouchable; nevertheless the discrepancy was
+; troubling.
+ 
+;   (mv-let (erp val ign)
+;           (ev-fncall-rec-logical 'hard-error '(top "ouch" nil) (w state)
+;                                  100000 nil nil nil nil t)
+;           (declare (ignore ign val))
+;           erp)
+
+         
+                (mv t (illegal-msg) latches))
+               ((member-eq fn '(pkg-witness pkg-imports))
+                (mv t (unknown-pkg-error-msg fn (car args)) latches))
+               (attachment
+                (ev-fncall-rec-logical attachment args w
+                                       (decrement-big-n big-n)
+                                       safe-mode gc-off latches
+                                       hard-error-returns-nilp aok))
+               ((null body)
+                (ev-fncall-null-body-er
+                 (and (not aok) attachment)
+                 fn args latches))
+               (t
+                (mv-let
+                 (er val latches)
+                 (ev-rec body alist
+                         w (decrement-big-n big-n) (eq extra t)
+                         guard-checking-off
+                         latches
+                         hard-error-returns-nilp
+                         aok)
+                 (cond
+                  (er (mv er val latches))
+                  ((eq fn 'return-last) ; avoid stobjs-out for return-last
+                   (mv nil val latches))
+                  (t (mv nil
+                         val
+                         (latch-stobjs
+                          (stobjs-out fn w)
+                          val
+                          latches)))))))))))))))))
 
 (defun ev-fncall-rec (fn args w big-n safe-mode gc-off latches
                          hard-error-returns-nilp aok)
@@ -2232,18 +2298,13 @@
       latches))
 
 (defun ev-fncall-msg (val wrld)
+
+; Warning: Keep this in sync with ev-fncall-rec-logical.
+
   (cond
    ((and (consp val)
          (eq (car val) 'ev-fncall-null-body-er))
-
-; We get here if val is of the form (ev-fncall-null-body-er fn).
-
-    (msg "ACL2 cannot ev the call of undefined function ~x0 on argument ~
-          list:~|~%~x1~@2~|~%~@3"
-         (caddr val)
-         (cdddr val)
-         (ignored-attachment-msg "~|~%" (cadr val))
-         (error-trace-suggestion nil)))
+    (ev-fncall-null-body-er-msg (cadr val) (caddr val) (cdddr val)))
    ((and (consp val)
          (eq (car val) 'ev-fncall-guard-er))
 
@@ -2259,44 +2320,25 @@
 
 ; This is similar to the preceding case, except that there are no stobjs-in.
 
-    (msg
-     "An attempt has been made to call the stobj creator function ~x0.  This ~
-      error is being reported even though guard-checking may have been turned ~
-      off, because ACL2 does not support non-compliant live stobj ~
-      manipulation.  If you did not explicitly call ~x0 then this error is ~
-      probably due to an attempt to evaluate a with-local-stobj form directly ~
-      in the top-level loop.  Such forms are only allowed in the bodies of ~
-      functions and in theorems.  Also see :DOC with-local-stobj.~@1"
-     (cadr val)
-     (error-trace-suggestion t)))
+    (ev-fncall-creator-er-msg
+     (cadr val)))
    ((and (consp val)
-         (eq (car val) 'pkg-witness-er))
-    (msg
-     "The call ~x0 is illegal because the second argument is not the name of a ~
-      package currently known to ACL2."
-     (list 'pkg-witness (cadr val))))
-   ((and (consp val)
-         (eq (car val) 'pkg-imports-er))
-    (msg
-     "The call ~x0 is illegal because the argument is not the name of a ~
-      package currently known to ACL2."
-     (list 'pkg-imports (cadr val))))
-   ((and (consp val)
-         (eq (car val) 'program-only-er))
-    (msg
-     "The call ~x0 is an illegal call of a function that has been marked as ~
-      ``program-only,'' and hence has special raw Lisp code.  This call is ~
-      illegal because program-only functions are only allowed to invoke their ~
-      raw Lisp code, but in this case there was an attempt to invoke ~
-      executable counterpart code ~#2~[because of guard-checking (see :DOC ~
-      guard-evaluation-table)~/because it is being called under a ``safe ~
-      mode'' that is used, for example, during macroexpansion~]."
-     (cons (cadr val) (caddr val))
-     (cadr val)
-     (if (cadr (cddddr val)) 1 0)))
+         (member-eq (car val) '(pkg-witness-er pkg-imports-er)))
+    (unknown-pkg-error-msg (car val) (cadr val)))
+
+; At one time we had the following case:
+
+;  ((and (consp val)
+;        (eq (car val) 'program-only-er))
+
+; In this case we (essentially) returned (program-only-er-msg (cadr val) (caddr
+; val) (cadr (cddddr val))).  But we get here by catching a throw of val, which
+; no longer is of the form (program-only-er ...); see the comment about the
+; call of oneify-fail-form on 'program-only-er (and other arguments) in
+; oneify-cltl-code.
+
    ((eq val 'illegal)
-    (msg "Evaluation aborted.~@0"
-         (error-trace-suggestion t)))
+    (illegal-msg))
    (t (er hard 'raw-ev-fncall
           "An unrecognized value, ~x0, was thrown to 'raw-ev-fncall.~@1"
           val
