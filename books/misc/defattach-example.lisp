@@ -2,10 +2,21 @@
 ; Distributed with ACL2 as:
 ; books/misc/defattach-example.lisp
 
+; See also books/misc/defattach-bang.lisp for a macro based
+; on defattach that does not require guard verification.
+
+; Defattach was introduced in ACL2 Version 4.0 (July, 2011).
+
 ; In this little example we show how defattach may be used
 ; to build systems of executable programs in which some of
 ; the functions are constrained.  Be sure to see the final
 ; comment, which is really the punch line.
+
+; For a demo using 800x600 resolution on a 15" laptop:
+#||
+(set-fmt-soft-right-margin 51 state)
+(set-fmt-hard-right-margin 60 state)
+||#
 
 (in-package "ACL2")
 
@@ -18,13 +29,12 @@
 ;     about functions that are shown to hold for some
 ;     witness functions.
 
-; (2) Prove some theorems about those specification
-;     functions.
+; (2) Prove some theorems about the specification functions.
 
 ; (3) Write corresponding concrete definitions.
 
-; (4) Prove that those satisfy the abstract specifications
-;     (from (1)).
+; (4) Prove that the concrete definitions satisfy the
+;     abstract specifications.
 
 ; (5) Conclude using functional instantiation that the
 ;     theorems (from (2)) hold for the concrete functions
@@ -73,12 +83,8 @@
 
 (encapsulate
 
-; (1) Abstract spec:
-;     - Specify that ac-fn is associative-commutative
-;       (example: +).
-;     - Define fold-ac to apply ac-fn to successive elements
-;       of list; for example, (fold-ac '(1 2 3) r) is
-;       (ac 1 (ac 2 (ac 3 r))).
+; (1) Abstract spec: Specify that ac-fn is
+;     associative-commutative (example: +). 
 
  ((ac-fn (x y) t))
 
@@ -97,6 +103,11 @@
           (ac-fn x (ac-fn y z)))))
 
 (defun fold-ac (x root)
+
+; Complete abstract spec: define fold-ac to apply ac-fn to
+; successive elements of a list; for example,
+; (fold-ac '(1 2 3) r) = (ac-fn 1 (ac-fn 2 (ac-fn 3 r))).
+
   (if (consp x)
       (ac-fn (car x)
              (fold-ac (cdr x) root))
@@ -104,11 +115,8 @@
 
 (encapsulate ()
 
-; (2) Prove some theorems about those specification
-; functions.
-
-; We prove that fold-ac(x) = fold-ac(reverse x), which is
-; theorem fold-ac-reverse, below; the others are lemmas.
+; (2) Prove some theorems about the specification functions.
+; We prove fold-ac-reverse, below; the others are lemmas.
 
  (local (defthm ac-fn-comm2
           (equal (ac-fn x (ac-fn y z))
@@ -147,8 +155,8 @@
 
 (defthm fold-mult-reverse
 
-; (4) Prove that those satisfy the abstract specifications
-; (from (1)).
+; (4) Prove that the concrete definitions satisfy the
+;     abstract specifications.
 
 ; We prove that the pair <mult,fold-mult> satisfies the
 ; abstract spec for <ac-fn,fold-ac>.  It is generated as
@@ -162,15 +170,18 @@
 
   (equal (fold-mult (reverse x) root)
          (fold-mult x root))
-  :hints (("Goal"
-           :by (:functional-instance
-                fold-ac-reverse
-                (ac-fn mult)
-                (fold-ac fold-mult)))))
+  :hints (("Goal" :by (:functional-instance
+                       fold-ac-reverse
+                       (ac-fn mult)
+                       (fold-ac fold-mult)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;; EXAMPLE WITH DEFATTACH ;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+#||
+(fold-ac '(3 4 5) 1) ; error (undefined function ac-fn)
+||#
 
 (verify-guards ; guard verification needed for defattach
  mult)
@@ -183,7 +194,7 @@
 ; proved (and then cached) at the earlier functional
 ; instantiation (see fold-mult-reverse).
 
-(defattach ac-fn mult)
+(defattach ac-fn mult) ; note cached proof obligations
 
 ; Next we do a sample computation using fold-ac
 ; (interestingly, without calling fold-mult).  The
@@ -193,8 +204,12 @@
 ; theorem of the evaluation theory, but not of the (weaker)
 ; current theory.
 
-; To see ac-fn transfer control to mult:
-; (trace$ ac-fn mult)
+#||
+(fold-ac '(3 4 5) 1)
+(trace$ ac-fn mult) ; to see ac-fn transfer control to mult
+(fold-ac '(3 4 5) 1)
+(untrace$)
+||#
 
 (assert-event (equal (fold-ac '(3 4 5) 1)
                      60))
@@ -221,7 +236,7 @@
 
 (verify-guards add)
 
-(defattach ac-fn add)
+(defattach ac-fn add) ; note constraint proof this time
 
 ; The following example execution really makes our main
 ; point: We don't even need to define a fold function for
@@ -241,3 +256,14 @@
 
 (assert-event (equal (fold-ac '(3 4 5) 100)
                      112))
+
+; Here are some forms to run at the end of a demo:
+#||
+(defattach ac-fn mult) ; note cached proof obligations
+
+(fold-ac '(3 4 5) 1)
+
+(thm ; FAILS!
+ (equal (fold-ac '(3 4 5) 1)
+        60))
+||#
