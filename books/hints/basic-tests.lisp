@@ -551,6 +551,12 @@
 ; *preprocess-clause-ledge* that do not correspond to simplification
 ; checkpoints.
 
+; Also note that the above call of add-override-hints arranges for all hints to
+; be ignored!  That's because the application of this override-hint selects a
+; hint of the form (:backtrack <expr>) where <expr> evaluates to (mv nil nil
+; state) -- so any other hint is ignored (superseded by this :backtrack hint),
+; but this :backtrack hint actually has no effect on the proof.
+
 (set-override-hints nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
