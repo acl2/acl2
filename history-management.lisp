@@ -18464,23 +18464,25 @@
   hint keywords and their values, whose source is either an explicit hint
   ~c[(goal-name :key1 val1 ... :keyn valn)] where the ~c[:keyi] are allowed to
   be custom hint keywords (which are expanded away; ~pl[custom-keyword-hints]),
-  or else is the non-~c[nil] result from evaluating a computed hint.  Then the
-  override-hints are applied to that keyword-alist as follows, one at a time,
-  in order of their occurrence in the list of override-hints (as determined by
-  the use of ~ilc[set-override-hints] and ~ilc[add-override-hints]).  The first
-  override-hint is evaluated, in the usual manner of evaluating computed hints
-  but with the variable ~c[KEYWORD-ALIST] bound to the above keyword-alist.
-  That evaluation produces a result that should also be a keyword-alist, or
-  else an error occurs.  Any custom keyword hints are then eliminated from that
-  keyword-alist.  The resulting keyword-alist must not contain the ~c[:ERROR]
-  hint keyword and must not start with the ~c[:COMPUTED-HINT-REPLACEMENT]
-  keyword; otherwise an error occurs.  With ~c[KEYWORD-ALIST] bound to this
-  result, the second override-hint is similarly evaluated.  This process
-  continues, and the keyword-alist returned by the final override-hint is the
-  one used when processing the goal at hand.  If the final result is ~c[nil],
-  then the hint is discarded and the remaining hints are considered as above,
-  regardless of whether the tentatively selected hint object came from a
-  computed hint or from an explicit hint.
+  or else is the non-~c[nil] keyword-alist produced by evaluating a computed
+  hint.  Then the override-hints are applied to that keyword-alist as follows,
+  one at a time, in order of their occurrence in the list of override-hints (as
+  determined by the use of ~ilc[set-override-hints] and
+  ~ilc[add-override-hints]).  The first override-hint is evaluated, in the
+  usual manner of evaluating computed hints but with the variable
+  ~c[KEYWORD-ALIST] bound to the above keyword-alist.  That evaluation produces
+  a result that should also be a keyword-alist, or else an error occurs.  Any
+  custom keyword hints are then eliminated from that keyword-alist.  The
+  resulting keyword-alist must not contain the ~c[:ERROR] hint keyword and must
+  not start with the ~c[:COMPUTED-HINT-REPLACEMENT] keyword; otherwise an error
+  occurs.  With ~c[KEYWORD-ALIST] bound to this result, the second
+  override-hint is similarly evaluated.  This process continues, and the
+  keyword-alist returned by the final override-hint is the one used when
+  processing the goal at hand.  Except: If that keyword-alist is ~c[nil], then
+  the next hint among the pending hints is tentatively selected and the process
+  repeats, applying each override hint to that new tentative selection.  Of
+  course we might obtain ~c[nil] again, in which case we tentatively select the
+  next pending hint; and so on.
 
   If finally no hint is selected for the current goal, then ~c[KEYWORD-ALIST]
   is bound to ~c[nil] and the override-hints are applied as described above.
@@ -19138,7 +19140,7 @@
   ~pl[hints] for an introduction to ACL2 hints, including detailed
   ~il[documentation] for specific hint types.
 
-  The remainder of this topic serves as a references in case one needs a deeper
+  The remainder of this topic serves as a reference in case one needs a deeper
   understanding of the workings of ACL2's handling of hints.  Also, for
   examples of the sophisticated use of hints, primarily for experts, see
   distributed book ~c[books/hints/basic-tests.lisp].
@@ -19236,11 +19238,11 @@
   ~c[\"Subgoal 3.2.1\"] (unless overriden by hints on those goals); but the
   theory specifying ~c[foo] is not re-installed at every such subgoal.
 
-  When a hint is selected, the list of hint-settings is updated so that for
+  When a hint is selected, the list of hint settings is updated so that for
   each keyword ~c[:kwd] and associated value ~c[val] from the hint, ~c[:kwd] is
-  associated with ~c[val] in the hint-settings, discarding any previous
-  association of ~c[:kwd] with a value in the hint-settings.  Except, certain
-  ``top-level'' hints are never saved in the hint-settings: ~c[:use],
+  associated with ~c[val] in the hint settings, discarding any previous
+  association of ~c[:kwd] with a value in the hint settings.  Except, certain
+  ``top-level'' hints are never saved in the hint settings: ~c[:use],
   ~c[:cases], ~c[:by], ~c[:bdd], ~c[:or], and ~c[:clause-processor].
 
   For example, suppose that we specify the following hints, with no default
@@ -19270,16 +19272,16 @@
   ~c[:in-theory] association is removed from the hint settings and the global
   theory is re-installed.  However, the list of pending hints remains empty.
 
-  It remains to describe how hints are chosen for a goal.  When a goal is first
-  considered (hence at the top of the waterfall), the list of pending hints is
-  scanned, in order, until one of the hints is suitable for the goal.  An
-  explicit hint ~c[(goal-name :kwd1 val1 ... :kwdn valn)] is suitable if
+  It remains to describe how a hint is selected for a goal.  When a goal is
+  first considered (hence at the top of the waterfall), the list of pending
+  hints is scanned, in order, until one of the hints is suitable for the goal.
+  An explicit hint ~c[(goal-name :kwd1 val1 ... :kwdn valn)] is suitable if
   ~c[goal-name] is the name of the current goal and there is at least one
-  keyword.  A computed hint is suitable if it evaluates to a non-~c[nil]
-  value.  As indicated earlier in this documentation topic, an exception occurs
-  when a computed hint is selected after simplification fails (the
+  keyword.  A computed hint is suitable if it evaluates to a non-~c[nil] value.
+  As indicated earlier in this documentation topic, an exception occurs when a
+  computed hint is selected after simplification fails (the
   ``~c[stable-under-simplificationp]'' case): in that case, the goal returns to
-  the top of the waterfall with that hint is the selected hint, and no
+  the top of the waterfall with that hint as the selected hint, and no
   additional search for a hint to select is made at that time.
 
   The following slightly tricky example illustrates handling of hints.
@@ -19305,17 +19307,17 @@
   ~ev[]
 
   The warning above is printed because ~c[\"Goal\"] is associated with two
-  hints: one given by the ~ilc[set-default-hints] call and one supplied by the
-  ~c[:]~ilc[hints] keyword of the ~ilc[thm] form.  The ~c[:in-theory] hint is
-  selected because user-supplied hints are ahead of default hints in the list
-  of hints to consider; we then get the first ``Note'' above.  The goal
+  pending hints: one given by the ~ilc[set-default-hints] call and one supplied
+  by the ~c[:]~ilc[hints] keyword of the ~ilc[thm] form.  The ~c[:in-theory]
+  hint is selected because user-supplied hints are ahead of default hints in
+  the list of pending hints; we then get the first ``Note'' above.  The goal
   progresses through the waterfall without any proof process applying to the
   goal; in particular, it cannot be further simplified.  After the
   simplification process, a ``settled-down'' process applies, as discussed
-  above, immediately causing another trip through the waterfall.  At that point
-  the ~c[:in-theory] hint had previously been removed when it was applied,
-  leaving the default (~c[:do-not]) hint as the only applicable hint.  That
-  hint is indeed applied, resulting in the second ``Note'' above.
+  above, immediately causing another trip through the waterfall.  Since the
+  ~c[:in-theory] hint was earlier removed from the list of pending hints when
+  it was applied, the default (~c[:do-not]) hint is now the only pending hint.
+  That hint is applied, resulting in the second ``Note'' above.
 
   Again, more examples may be found in the distributed book
   ~c[books/hints/basic-tests.lisp].  A particularly tricky but informative
@@ -20058,7 +20060,9 @@
   can loop; care should be taken to keep that from happening.
 
   A final note about ~c[:BACKTRACK] hints: ~il[override-hints] (if any) are
-  applied in their processing.  ~l[override-hints].~/")
+  applied in their processing.  In summary: the backtrack hint is successively
+  modified with each override-hint, to produce a final hint that is actually
+  used (or, ignored if that final hint is ~c[nil]).  ~l[override-hints].~/")
 
 (deflabel clause-identifier
   :doc
