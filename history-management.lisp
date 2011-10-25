@@ -18309,7 +18309,7 @@
 
 ; A note on the taxonomy of hints.  A "hint setting" is a pair of the
 ; form (key . val), such as (:DO-NOT-INDUCT . T) or (:USE . (lmi-lst
-; (h1...hn) ...)).  List of such pairs are called "hint settings."  A
+; (h1...hn) ...)).  Lists of such pairs are called "hint settings."  A
 ; pair consisting of a clause-id and some hint-settings is called a
 ; "hint".  A list of such pairs is called "hints."
 

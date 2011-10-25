@@ -707,6 +707,7 @@ duplicate-detect.lisp
 leftright.lisp
 multidrive-detect.lisp
 portcheck.lisp
+oddexpr.lisp
 qmarksize-check.lisp
 selfassigns.lisp
 skip-detect.lisp
