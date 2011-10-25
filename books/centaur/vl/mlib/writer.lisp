@@ -574,7 +574,8 @@ displays.  The module browser's web pages are responsible for defining the
       (cdr (assoc y *vl-ops-precedence-table*))))
 
 (defconst *vl-pp-expr-special-atts*
-  (list "VL_ORIG_EXPR"))
+  (list "VL_ORIG_EXPR"
+        "VL_EXPLICIT_PARENS"))
 
 (mutual-recursion
  (defund vl-pp-expr-fn (x ps)
@@ -593,8 +594,7 @@ displays.  The module browser's web pages are responsible for defining the
        (vl-pp-atom x)
      (let ((op   (vl-nonatom->op x))
            (args (vl-nonatom->args x))
-           (atts (vl-remove-keys *vl-pp-expr-special-atts*
-                                 (vl-nonatom->atts x))))
+           (atts (vl-remove-keys *vl-pp-expr-special-atts* (vl-nonatom->atts x))))
        (case op
          ((:vl-unary-plus
            :vl-unary-minus :vl-unary-lognot :vl-unary-bitnot :vl-unary-bitand
@@ -634,7 +634,8 @@ displays.  The module browser's web pages are responsible for defining the
                ;; arg if its precedence is less than ours.
                (want-parens-1p (if (vl-fast-atom-p arg1)
                                    nil
-                                 (vl-op-precedence-< (vl-nonatom->op arg1) op)))
+                                 (or (vl-op-precedence-< (vl-nonatom->op arg1) op)
+                                     (assoc-equal "VL_EXPLICIT_PARENS" (vl-nonatom->atts arg1)))))
                (want-parens-2p
                 (b* (((when (vl-fast-atom-p arg2))
                       nil)
@@ -657,7 +658,8 @@ displays.  The module browser's web pages are responsible for defining the
                   (or (and (eq op :vl-binary-bitand)
                            (eq op2 :vl-unary-bitand))
                       (and (eq op :vl-binary-bitor)
-                           (eq op2 :vl-unary-bitor))))))
+                           (eq op2 :vl-unary-bitor))
+                      (assoc-equal "VL_EXPLICIT_PARENS" (vl-nonatom->atts arg2))))))
 
             (vl-ps-seq (if want-parens-1p (vl-print "(") ps)
                        (vl-pp-expr arg1)

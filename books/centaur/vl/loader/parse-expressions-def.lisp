@@ -24,6 +24,7 @@
 (local (include-book "../util/arithmetic"))
 
 
+
 (local (in-theory (disable consp-under-iff-when-true-listp
                            member-equal-when-member-equal-of-cdr-under-iff
                            default-car
@@ -243,6 +244,47 @@
   (defthm vl-atomguts-p-of-make-guts-from-inttoken
     (implies (force (vl-inttoken-p x))
              (vl-atomguts-p (vl-make-guts-from-inttoken x)))))
+
+
+
+(defsection vl-mark-as-explicit-parens
+
+; For some kinds of linting checks, we may want to know whether the original
+; expression had any parens, e.g., we might want to warn the user if they
+; have typed
+;
+;        a & b < c
+;
+; Because this gets parsed as a & (b < c), which seems strange and may catch
+; the user by surprise.  On the other hand, if they've typed
+;
+;        a & (b < c)
+;
+; Then, as strange as this is, it seems to be what they want, and we probably
+; don't want to complain about it.
+;
+; But these expressions will be identical after parsing unless we somehow
+; remember where explicit parens were.  To facilitate this, we set the
+; VL_EXPLICIT_PARENS attribute on non-atoms that have explicit parens.  We
+; don't bother to set VL_EXPLICIT_PARENS on atoms, e.g., the following really
+; are still parsed equivalently:
+;
+;    (a) & b      vs.    a & b
+;
+; This is possibly unfortunate, but atoms don't have attributes so what else
+; would we do?
+
+  (defund vl-mark-as-explicit-parens (x)
+    (declare (xargs :guard (vl-expr-p x)))
+    (if (vl-fast-atom-p x)
+        x
+      (change-vl-nonatom x :atts (acons "VL_EXPLICIT_PARENS" nil (vl-nonatom->atts x)))))
+
+  (local (in-theory (enable vl-mark-as-explicit-parens)))
+
+  (defthm vl-expr-p-of-vl-mark-as-explicit-parens
+    (implies (force (vl-expr-p x))
+             (vl-expr-p (vl-mark-as-explicit-parens x)))))
 
 
 
@@ -631,7 +673,7 @@
                 (:= (vl-match-token :vl-lparen))
                 (expr := (vl-parse-mintypmax-expression))
                 (:= (vl-match-token :vl-rparen))
-                (return expr)))
+                (return (vl-mark-as-explicit-parens expr))))
 
          (t
           (vl-parse-error (str::cat "Expected a primary, but found a "

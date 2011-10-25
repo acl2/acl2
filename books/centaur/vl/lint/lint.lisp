@@ -35,6 +35,7 @@
 (include-book "../checkers/duplicate-detect")
 (include-book "../checkers/leftright")
 (include-book "../checkers/multidrive-detect")
+(include-book "../checkers/oddexpr")
 (include-book "../checkers/portcheck")
 (include-book "../checkers/qmarksize-check")
 (include-book "../checkers/selfassigns")
@@ -228,6 +229,7 @@
        (mods (cwtime (vl-modulelist-find-disconnected mods)))
 
        (- (cw "~%vl-lint: processing expressions...~%"))
+       (mods (cwtime (vl-modulelist-oddexpr-check mods)))
        (mods (cwtime (vl-modulelist-oprewrite mods)))
        (mods (cwtime (vl-modulelist-exprsize mods)))
        (mods (cwtime (vl-modulelist-qmarksize-check mods)))
