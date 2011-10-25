@@ -2227,9 +2227,14 @@ hint-tests.lisp
 matrix-multiplication-parallel.lisp
 matrix-multiplication-serial.lisp
 matrix-multiplication-setup.lisp
+proofs
 spec-mv-let.lisp
 stress-tests.lisp
 syntax-tests.lisp
+
+books/parallel/proofs:
+Makefile
+ideal-speedup.lisp
 
 books/powerlists:
 Makefile
