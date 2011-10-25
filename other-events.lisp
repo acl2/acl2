@@ -18145,7 +18145,7 @@
                 ((null etype-term)
                  (er soft ctx
                      "The element type specified for the ~x0 field of ~
-                      ~x1, namely ~x0, is not recognized by ACL2 as a ~
+                      ~x1, namely ~x2, is not recognized by ACL2 as a ~
                       type-spec.  See :DOC type-spec."
                      field name type))
                 ((not (natp n))
