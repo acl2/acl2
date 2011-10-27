@@ -5,7 +5,7 @@
 ; See also books/misc/defattach-bang.lisp for a macro based
 ; on defattach that does not require guard verification.
 
-; Defattach was introduced in ACL2 Version 4.0 (July, 2011).
+; Defattach was introduced in ACL2 Version 4.0 (July, 2010).
 
 ; In this little example we show how defattach may be used
 ; to build systems of executable programs in which some of
@@ -55,20 +55,20 @@
 ; steps shown above.
 
 ; (1) Abstract spec:
-;     - Specify that ac-fn is associative-commutative
+;     - Specify that abst is associative-commutative
 ;       (example: +).
-;     - Define fold-ac to apply ac-fn to successive elements
-;       of list; for example, (fold-ac '(1 2 3) r) is
-;       (ac 1 (ac 2 (ac 3 r))).
+;     - Define fold-abst to apply abst to successive elements
+;       of list; for example, (fold-abst '(1 2 3) r) is
+;       (abst 1 (abst 2 (abst 3 r))).
 
-; (2) Prove that fold-ac(x) = fold-ac(reverse x).
+; (2) Prove that fold-abst(x) = fold-abst(reverse x).
 
 ; (3) Concrete definitions:
 ;     - Define mult to be multiplication.
 ;     - Define fold-mult in the obvious way.
 
 ; (4) Prove that the pair <mult,fold-mult> satisfies the
-;     abstract spec for <ac-fn,fold-ac>.
+;     abstract spec for <abst,fold-abst>.
 
 ; (5) Conclude that (fold-mult x) = (fold-mult (reverse x)).
 
@@ -83,57 +83,57 @@
 
 (encapsulate
 
-; (1) Abstract spec: Specify that ac-fn is
+; (1) Abstract spec: Specify that abst is
 ;     associative-commutative (example: +). 
 
- ((ac-fn (x y) t))
+ ((abst (x y) t))
 
-; We introduce ac-fn, a function of two arguments.
+; We introduce abst, a function of two arguments.
 ; Our witnessing example is as follows:
 
- (local (defun ac-fn (x y)
+ (local (defun abst (x y)
           (+ x y)))
 
 ; Exported specifications:
 
- (defthm ac-fn-comm
-   (equal (ac-fn x y) (ac-fn y x)))
- (defthm ac-fn-assoc
-   (equal (ac-fn (ac-fn x y) z)
-          (ac-fn x (ac-fn y z)))))
+ (defthm abst-comm
+   (equal (abst x y) (abst y x)))
+ (defthm abst-assoc
+   (equal (abst (abst x y) z)
+          (abst x (abst y z)))))
 
-(defun fold-ac (x root)
+(defun fold-abst (x root)
 
-; Complete abstract spec: define fold-ac to apply ac-fn to
+; Complete abstract spec: define fold-abst to apply abst to
 ; successive elements of a list; for example,
-; (fold-ac '(1 2 3) r) = (ac-fn 1 (ac-fn 2 (ac-fn 3 r))).
+; (fold-abst '(1 2 3) r) = (abst 1 (abst 2 (abst 3 r))).
 
   (if (consp x)
-      (ac-fn (car x)
-             (fold-ac (cdr x) root))
+      (abst (car x)
+            (fold-abst (cdr x) root))
     root))
 
 (encapsulate ()
 
 ; (2) Prove some theorems about the specification functions.
-; We prove fold-ac-reverse, below; the others are lemmas.
+; We prove fold-abst-reverse, below; the others are lemmas.
 
- (local (defthm ac-fn-comm2
-          (equal (ac-fn x (ac-fn y z))
-                 (ac-fn y (ac-fn x z)))
+ (local (defthm abst-comm2
+          (equal (abst x (abst y z))
+                 (abst y (abst x z)))
           :hints (("Goal"
-                   :use ((:instance ac-fn-assoc (x x) (y y))
-                         (:instance ac-fn-assoc (x y) (y x)))
-                   :in-theory (disable ac-fn-assoc)))))
- (local (defthm fold-ac-ac-fn
-          (equal (fold-ac x (ac-fn a b))
-                 (ac-fn a (fold-ac x b)))))
- (local (defthm fold-ac-revappend
-          (equal (fold-ac (revappend x y) root)
-                 (fold-ac x (fold-ac y root)))))
- (defthm fold-ac-reverse
-   (equal (fold-ac (reverse x) root)
-          (fold-ac x root))))
+                   :use ((:instance abst-assoc (x x) (y y))
+                         (:instance abst-assoc (x y) (y x)))
+                   :in-theory (disable abst-assoc)))))
+ (local (defthm fold-abst-abst
+          (equal (fold-abst x (abst a b))
+                 (abst a (fold-abst x b)))))
+ (local (defthm fold-abst-revappend
+          (equal (fold-abst (revappend x y) root)
+                 (fold-abst x (fold-abst y root)))))
+ (defthm fold-abst-reverse
+   (equal (fold-abst (reverse x) root)
+          (fold-abst x root))))
 
 (defun mult (x y)
 
@@ -159,7 +159,7 @@
 ;     abstract specifications.
 
 ; We prove that the pair <mult,fold-mult> satisfies the
-; abstract spec for <ac-fn,fold-ac>.  It is generated as
+; abstract spec for <abst,fold-abst>.  It is generated as
 ; part of the proof obligations from the hint below.
 
 ; (5) Conclude using functional instantiation that the
@@ -171,32 +171,32 @@
   (equal (fold-mult (reverse x) root)
          (fold-mult x root))
   :hints (("Goal" :by (:functional-instance
-                       fold-ac-reverse
-                       (ac-fn mult)
-                       (fold-ac fold-mult)))))
+                       fold-abst-reverse
+                       (abst mult)
+                       (fold-abst fold-mult)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;; EXAMPLE WITH DEFATTACH ;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 #||
-(fold-ac '(3 4 5) 1) ; error (undefined function ac-fn)
+(fold-abst '(3 4 5) 100) ; error (undefined function abst)
 ||#
 
 (verify-guards ; guard verification needed for defattach
  mult)
 
 ; Next we attach the executable function mult to the
-; abstract specification function ac-fn.  The proof
+; abstract specification function abst.  The proof
 ; obligations ensure, roughly speaking, that mult satisfies
-; the constraints on ac-fn.  In this case the proofs of
+; the constraints on abst.  In this case the proofs of
 ; those obligations are skipped because they were already
 ; proved (and then cached) at the earlier functional
 ; instantiation (see fold-mult-reverse).
 
-(defattach ac-fn mult) ; note cached proof obligations
+(defattach abst mult) ; note cached proof obligations
 
-; Next we do a sample computation using fold-ac
+; Next we do a sample computation using fold-abst
 ; (interestingly, without calling fold-mult).  The
 ; foundations guarantees that this computation is taking
 ; place in a consistent extension of the current theory,
@@ -205,28 +205,28 @@
 ; current theory.
 
 #||
-(fold-ac '(3 4 5) 1)
-(trace$ ac-fn mult) ; to see ac-fn transfer control to mult
-(fold-ac '(3 4 5) 1)
+(fold-abst '(3 4 5) 100)
+(trace$ abst mult) ; to see abst transfer control to mult
+(fold-abst '(3 4 5) 100)
 (untrace$)
 ||#
 
-(assert-event (equal (fold-ac '(3 4 5) 1)
-                     60))
+(assert-event (equal (fold-abst '(3 4 5) 100)
+                     6000))
 
 ; Note that this equality is NOT a theorem of the current
 ; session; it's only a theorem if we extend the session by
 ; "attachment equations" such as the following, to obtain
 ; the so-called "evaluation history":
 
-; (forall x y) (equal (ac-fn x y) (mult x y))
+; (forall x y) (equal (abst x y) (mult x y))
 
 ; Not included because the books/make-event/ directory
 ; depends on books/misc/:
 
 ; (include-book "make-event/eval" :dir :system)
-; (must-fail (thm (equal (fold-ac '(3 4 5) 1)
-;                        60)))
+; (must-fail (thm (equal (fold-abst '(3 4 5) 100)
+;                        6000)))
 
 ; Here is a second example, which provides a different
 ; extension of the current theory to the evaluation theory.
@@ -236,34 +236,41 @@
 
 (verify-guards add)
 
-(defattach ac-fn add) ; note constraint proof this time
+(defattach abst add) ; note constraint proof this time
 
 ; The following example execution really makes our main
 ; point: We don't even need to define a fold function for
-; add!  We execute with the "abstract" function fold-ac,
+; add!  We execute with the "abstract" function fold-abst,
 ; which we think of as "abstract" because it calls the
-; encapsulated function ac-fn.  One can imagine more complex
+; encapsulated function abst.  One can imagine more complex
 ; examples in which a large system of programs contains a
 ; few attachments at the leaves of the call trees.  In such
 ; a case, it's particularly helpful that one can instantiate
 ; the system to different executable programs without
 ; defining analogues of the higher-level functions (like
-; fold-ac), thus giving ACL2 some ability to mimic a
+; fold-abst), thus giving ACL2 some ability to mimic a
 ; higher-order programming language.
 
-; To see ac-fn transfer control to add:
-; (trace$ ac-fn add)
+; To see abst transfer control to add:
+; (trace$ abst add)
 
-(assert-event (equal (fold-ac '(3 4 5) 100)
+(assert-event (equal (fold-abst '(3 4 5) 100)
                      112))
 
 ; Here are some forms to run at the end of a demo:
 #||
-(defattach ac-fn mult) ; note cached proof obligations
+(defattach abst mult) ; note cached proof obligations
 
-(fold-ac '(3 4 5) 1)
+(fold-abst '(3 4 5) 100)
 
-(thm ; FAILS!
- (equal (fold-ac '(3 4 5) 1)
-        60))
+(thm
+
+; This FAILS!  ACL2 does not use attachments for
+; evaluation of ground terms during rewriting, because
+; it is proving theorems about the current ACL2 world,
+; not the so-called "evaluation theory" in which we know
+; (equal (abst x y) (mult x y)).
+
+ (equal (fold-abst '(3 4 5) 100)
+        6000))
 ||#
