@@ -18170,6 +18170,10 @@
 ;   (ev-fncall-rec 'foo nil (w state) 100000 nil nil nil nil t)
 ; We found several such discrepancies and have fixed them.
 
+; After remarks from Gary Byers, improved fgetprop a bit by using defconstant
+; to introduce *current-acl2-world-key* and by using symbol-value for
+; 'ACL2_GLOBAL_ACL2::CURRENT-ACL2-WORLD.
+
   :doc
   ":Doc-Section release-notes
 

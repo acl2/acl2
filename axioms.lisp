@@ -20553,13 +20553,6 @@
 ; interface-raw.lisp.  But it is used earlier than that in the
 ; initialization process.
 
-; *current-acl2-world-key* is the property used for the current-acl2-
-; world world.  We use a defvar here so that it will not get reset
-; merely by reloading the sources of this file when debugging.
-
-#-acl2-loop-only
-(defvar *current-acl2-world-key* (make-symbol "*CURRENT-ACL2-WORLD-KEY*"))
-
 (defun fgetprop (symb key default world-alist)
 
 ; This is getprop's meaning when we know the world name is 'current-acl2-world.
@@ -20586,8 +20579,6 @@
                ans)))
         (t (fgetprop symb key default (cdr world-alist))))
   #-acl2-loop-only
-  (declare (special *current-acl2-world-key*
-                    ACL2_GLOBAL_ACL2::CURRENT-ACL2-WORLD))
 
 ; The following two lines are commented out.  They collect the fgetprop-stats.
 ; Those stats will tell you, for a given run of the system, which properties
@@ -20604,7 +20595,7 @@
   #-acl2-loop-only
   (cond
    ((eq world-alist
-        ACL2_GLOBAL_ACL2::CURRENT-ACL2-WORLD)
+        (symbol-value 'ACL2_GLOBAL_ACL2::CURRENT-ACL2-WORLD))
     (let ((temp
            (assoc-eq key
                      (get symb *current-acl2-world-key*))))
@@ -20618,7 +20609,7 @@
               (t (getprop-default symb key default))))
             (t (getprop-default symb key default)))))
    (t (sgetprop1 symb key default world-alist
-                 ACL2_GLOBAL_ACL2::CURRENT-ACL2-WORLD
+                 (symbol-value 'ACL2_GLOBAL_ACL2::CURRENT-ACL2-WORLD)
                  *current-acl2-world-key*))))
 
 (defun sgetprop (symb key default world-name world-alist)
@@ -25169,6 +25160,7 @@
     fchecksum-atom
     step-limit-error1
     waterfall1-lst@par ; for #+acl2-par
+    waterfall1-wrapper@par-before ; for #+acl2-par
     waterfall1-wrapper@par-after ; for #+acl2-par
     increment-waterfall-parallelism-counter ; for #+acl2-par
     flush-waterfall-parallelism-hashtables ; for #+acl2-par

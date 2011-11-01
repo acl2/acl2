@@ -6604,7 +6604,13 @@
 ; Parallelism wart: here, and at many other ACL2(p)-specific places, consider
 ; using observation-cw or printing that can be inhibited, instead of cw.
 
-           (cw "Starting ~x0~%"
+           (cw "At time ~c0, starting: ~x1~%" 
+
+; By limiting the width to 15, we assume that no ACL2 session will run for more
+; than a year.
+
+               #+acl2-loop-only (cons nil 15)
+               #-acl2-loop-only (cons (get-internal-real-time) 15)
                (string-for-tilde-@-clause-id-phrase cl-id)))))
     (:very-limited
      (with-output-lock
@@ -6614,17 +6620,23 @@
 #+acl2-par
 (defun waterfall1-wrapper@par-after (cl-id start-time state)
   #+acl2-loop-only
-  (declare (ignore cl-id start-time))
+  (declare (ignore start-time))
   #-acl2-loop-only 
   (save-waterfall-timings-for-cl-id 
    cl-id 
    (- (get-internal-real-time) ; end time
       start-time))
-  (cond ((and (equal (waterfall-printing) :very-limited)
-              (f-get-global 'waterfall-printing-when-finished state))
-         (with-output-lock
-          (cw ",")))
-        (t nil)))
+  (cond ((f-get-global 'waterfall-printing-when-finished state)
+         (cond ((equal (waterfall-printing) :very-limited)
+                (with-output-lock (cw ",")))
+               ((equal (waterfall-printing) :limited)
+                (with-output-lock 
+                 (cw "At time ~c0, finished: ~x1~%"
+                     #+acl2-loop-only (cons nil 15)
+                     #-acl2-loop-only (cons (get-internal-real-time) 15)
+                     (string-for-tilde-@-clause-id-phrase cl-id))))
+               (t nil)))
+         (t nil)))
 
 #+acl2-par
 (defmacro waterfall1-wrapper@par (&rest form)

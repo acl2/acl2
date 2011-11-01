@@ -353,6 +353,15 @@
 
 (defparameter *reset-parallelism-variables* nil)
 
+(defparameter *reset-core-count-too* 
+
+; This variable has a relatively unsophisticated use: When Rager runs his
+; dissertation performance test scripts, sometimes he adjusts the number of
+; cpu-cores to be a factor of the actual cpu-core count.  In this case we are
+; just testing, and we don't want to override 
+  
+  nil)
+
 (defun reset-parallelism-variables ()
 
 ; We use this function (a) to kill all worker threads, (b) to reset "most" of
@@ -374,6 +383,17 @@
 
 ; (b) Reset "most" of the parallelism variables.
 
+; Parallelism wart: this commented setting of *core-count* needs to be
+; reinstated once I stop playing around with the number of active threads.
+
+  (when *reset-core-count-too*
+    (setf *core-count*
+          
+; We reset *core-count* so that it gets the appropriate value for the machine
+; upon which the Lisp is currently running.
+          
+          (core-count-raw)))
+
   (setf *idle-thread-count* (make-atomically-modifiable-counter 0))
 
   (setf *idle-core-count*
@@ -393,8 +413,6 @@
   (setf *throwable-worker-thread* nil)
 
   (setf *total-parallelism-piece-historical-count* 0)
-
-  (setf *core-count* (core-count-raw))
 
   (setf *reset-parallelism-variables* nil)
 
@@ -1311,13 +1329,17 @@
    'string
    (format nil "  Printing stats related to executing in parallel.~% ")
    (value-of-symbol *idle-future-core-count*)
-   (value-of-symbol *idle-future-core-count*)
    (value-of-symbol *idle-future-resumptive-core-count*)
    (value-of-symbol *idle-future-thread-count*)
+   (format nil "~% ")
 
    (value-of-symbol *unassigned-and-active-future-count*)
+   (value-of-symbol *unassigned-and-active-work-count-limit*)
+
+   (value-of-symbol *total-future-count*)
    (value-of-symbol *total-work-limit*)
 
+   (format nil "~% ")
    (value-of-symbol number-of-active-threads)
    (value-of-symbol number-of-threads-waiting-on-a-child)
 
@@ -1334,9 +1356,6 @@
    (value-of-symbol *resource-and-timing-based-parallelizations*)
    (value-of-symbol *resource-and-timing-based-serializations*)
 
-
-
-   (value-of-symbol *total-future-count*)  
    (value-of-symbol *futures-resources-available-count*)
    (value-of-symbol *futures-resources-unavailable-count*)
 

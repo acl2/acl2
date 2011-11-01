@@ -200,6 +200,14 @@ implementations.")
 
 (in-package "ACL2")
 
+; *Current-acl2-world-key* is the property used for the current-acl2- world
+; world.  We formerly used a defvar, but there is really no reason to use a
+; special variable, which Gary Byers has pointed out takes about 5 instructions
+; to read in CCL in order to check if a thread-local binding is dynamically in
+; effect.  So we use a constant.
+
+(defconstant *current-acl2-world-key* (make-symbol "*CURRENT-ACL2-WORLD-KEY*"))
+
 #+(and gcl hons)
 (when (not (gcl-version->= 2 7 0))
   (format t
