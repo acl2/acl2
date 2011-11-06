@@ -300,6 +300,123 @@
 ; Test :backtrack hints.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Parts of the following basic example correspond to the slides presentated at
+; ACL2 Workshop 2011 for the paper "Integrating Testing and Interactive Theorem
+; Proving" by Harsh Raju Chamarthi, Peter C. Dillinger, Matt Kaufmann, and
+; Panagiotis Manolios.
+
+; This basic example works equally well with default-hints and override-hints.
+; The advantage in general of override-hints is that they fire even if the user
+; has supplied an explicit hint.  The last part below shows a failure of
+; default-hints, to illustrate why override-hints are preferable.
+
+;;;;; basic definitions ;;;;;
+
+(defun app (x y)
+  (if (consp x)
+      (cons (car x) (app (cdr x) y))
+    y))
+
+(defun rev0 (x) ; called rev0 to avoid name clash with earlier rev
+  (if (consp x)
+      (app (rev0 (cdr x)) (cons (car x) nil))
+    nil))
+
+(defthm app-assoc
+  (equal (app (app x y) z)
+         (app x (app y z))))
+
+; Fails (bad generalization produces non-theorem, Subgoal *1/2''):
+(must-fail
+ (thm
+  (equal (rev0 (app a b))
+         (app (rev0 b) (rev0 a)))))
+
+(defun test-clause (cl state)
+  (declare (xargs :stobjs state :mode :program))
+  (pprogn
+   (fms "Test-clause:~|~x0~|"
+        (list (cons #\0 cl))
+        *standard-co* state nil)
+   (er-let* ((term/val
+              (simple-translate-and-eval
+               (conjoin cl)
+               (cons (cons 'rv 3) (pairlis$ (all-vars1-lst cl nil) nil))
+               nil "" 'test-clause (w state) state t)))
+            (value (not (cdr term/val))))))
+
+;;;;; using override-hint ;;;;;
+
+(defun test-gen-checkpoint (keyword-alist)
+  `(:backtrack
+    (cond
+     ((eq processor 'generalize-clause)
+      (er-let*
+       ((res (test-clause (car clause-list) state)))
+       (value (cond (res '(:do-not '(generalize)))
+                    (t nil)))))
+     (t (value nil)))
+    ,@keyword-alist))
+
+(add-override-hints
+ '((test-gen-checkpoint keyword-alist)))
+
+; Succeeds:
+(must-succeed
+ (thm
+  (equal (rev0 (app a b))
+         (app (rev0 b) (rev0 a)))))
+
+(remove-override-hints
+ '((test-gen-checkpoint keyword-alist)))
+
+; Fails again (override-hint was removed)
+(must-fail
+ (thm
+  (equal (rev0 (app a b))
+         (app (rev0 b) (rev0 a)))))
+
+(defun test-gen-checkpoint2 ()
+  `(:backtrack
+    (cond
+     ((eq processor 'generalize-clause)
+      (er-let*
+       ((res (test-clause (car clause-list) state)))
+       (value (cond (res '(:do-not '(generalize)))
+                    (t nil)))))
+     (t (value nil)))))
+
+(add-default-hints
+ '((test-gen-checkpoint2)))
+
+; Succeeds:
+(must-succeed
+ (thm
+  (equal (rev0 (app a b))
+         (app (rev0 b) (rev0 a)))
+  :hints (("Subgoal *1/2'" :in-theory (enable nth)))))
+
+; The rest of this is to show the advantage of override-hints over
+; default-hints.  (Technical point: It takes a bit of effort to defeat
+; default-hints, because settled-down-clause hits and pops us up to the top of
+; the waterfall for a second try.  So we actually need two hints in front of
+; test-gen-checkpoint2 in order to keep it from firing.)
+
+(defun silly-expand-hint ()
+  `(:computed-hint-replacement t :expand ((nth u v))))
+
+(add-default-hints
+ '((silly-expand-hint)))
+
+; Fails, because default-hint doesn't apply
+(must-fail
+ (thm
+  (equal (rev0 (app a b))
+         (app (rev0 b) (rev0 a)))
+  :hints (("Subgoal *1/2'" :expand ((nth y z))))))
+
+; End of basic example of the use of :backtrack hints.
+
 (defconst *backtrack-failure*
   '(:backtrack
     (and (eq processor 'generalize-clause)
