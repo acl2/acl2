@@ -18248,6 +18248,13 @@
         (+ 3 x)))
   ~ev[]
 
+  The macro ~ilc[defmacro-last] and the ~il[table] ~ilc[return-last-table] have
+  been modified so that when they give special treatment to a macro ~c[mac] and
+  its raw Lisp counterpart ~c[mac-raw], a call ~c[(return-last 'mac-raw ...)]
+  can be made illegal when encountered directly in the top level loop, as
+  opposed to inside a function body.  ~l[return-last].  Thanks to Harsh Raju
+  Chamarthi for showing us an example that led us to make this improvement.
+
   ~st[NEW FEATURES]
 
   Users may now arrange for additional summary information to be printed at the

@@ -28667,18 +28667,20 @@
 
 ; Key is a symbol such as prog2$ that has a macro definition in raw Lisp that
 ; takes two arguments.  Val is either nil, denoting that key is not in the
-; table; t, denoting that key is in the table and no check needs to be made on
-; calls of the form (return-last 'key arg1 arg2); or else val is a term
-; mentioning at most the variables arg1, arg2, and world, which is to be
-; evaluated at translate time to determine if the above return-last call is
-; legal.
+; table; the name of a macro known to ACL2; or (list m), where m is the name of
+; a macro known to ACL2.  The latter case causes ACL2 to disallow corresponding
+; return-last calls at the top level (as opposed to inside function bodies).
 
   (declare (xargs :guard (plist-worldp wrld)
                   :mode :program))
   (cond ((ttag wrld)
          (and (symbolp key)
               key
-              (symbolp val)
+              (or (symbolp val)
+                  (and (consp val)
+                       (symbolp (car val))
+                       (car val)
+                       (null (cdr val))))
               (or (not (member-eq key '(progn mbe1-raw ec-call1-raw
                                               with-guard-checking1-raw)))
 
@@ -28690,13 +28692,16 @@
                        given special treatment.  See :DOC return-last."
                       key 'return-last-table))
               (or (null val)
-                  (getprop val 'macro-body nil 'current-acl2-world wrld)
-                  (er hard! 'chk-return-last-entry
-                      "The proposed value ~x0 for key ~x1 in ~x2 is illegal ~
-                       because this value is not the name of a macro known to ~
-                       ACL2.  See :DOC return-last and (for the above point ~
-                       made explicitly) see :DOC return-last-table."
-                      val key 'return-last))
+                  (let ((val2 (if (symbolp val) val (car val))))
+                    (or
+                     (getprop val2 'macro-body nil 'current-acl2-world wrld)
+                     (er hard! 'chk-return-last-entry
+                         "The proposed value ~x0 for key ~x1 in ~x2 is ~
+                          illegal because ~x3 is not the name of a macro ~
+                          known to ACL2.  See :DOC return-last and (for the ~
+                          above point made explicitly) see :DOC ~
+                          return-last-table."
+                         val key 'return-last-table val2))))
               #-acl2-loop-only
               (or (fboundp key)
 
@@ -28724,27 +28729,28 @@
 
   install special raw Lisp behavior~/
 
-  Please first ~pl[return-last] for background.
+  Please first ~pl[return-last] for relevant background.
 
   This ~il[table] is for advanced users only, and requires an active trust
   tag (~pl[defttag]).  We recommend that you do not modify this table directly,
-  but instead use the macro ~c[defmacro-last].  ~l[return-last] for relevant
-  discussion.  Here we augment that discussion with some highly technical
-  observations that can probably be ignored if you use ~c[defmacro-last].~/
+  but instead use the macro ~c[defmacro-last].  Here we augment that discussion
+  with some highly technical observations that can probably be ignored if you
+  use ~c[defmacro-last].~/
 
   This ~il[table] has a ~c[:guard] requiring that each key be a symbol defined
   in raw Lisp, generally as a macro, and requiring that each non-~c[nil] value
-  be associated with a symbol that names a macro defined in ACL2.  The table
-  can only be modified when there is an active trust tag; ~pl[defttag].  If a
-  key is associated with the value ~c[nil], then that key is treated as though
-  it were not in the table.
+  be associated either with a symbol that names a macro defined in ACL2, or
+  else with a list of one element containing such a symbol.  The table can only
+  be modified when there is an active trust tag; ~pl[defttag].  If a key is
+  associated with the value ~c[nil], then that key is treated as though it were
+  not in the table.
 
   Note that keys of this table are not eligible to be bound by ~ilc[flet].  The
   current value of this table may be obtained by evaluating the form
   ~c[(table-alist 'return-last-table (w state))].  The built-in constant
   ~c[*initial-return-last-table*] holds the initial value of this table.~/")
 
-(defmacro defmacro-last (fn &key raw)
+(defmacro defmacro-last (fn &key raw (top-level-ok 't))
 
   ":Doc-Section Programming
 
@@ -28760,7 +28766,8 @@
                       fn))))
     `(progn (defmacro ,fn (x y)
               (list 'return-last (list 'quote ',raw) x y))
-            (table return-last-table ',raw ',fn))))
+            (table return-last-table ',raw '
+                   ,(if top-level-ok fn (list fn))))))
 
 ; Formatted printing to strings requires local stobjs (actually
 ; with-local-state), so we place the relevant code below.  It could certainly

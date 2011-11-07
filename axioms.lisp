@@ -3964,6 +3964,38 @@
   modifying the symbol ~c[NAME] by suffixing the string ~c[\"-RAW\"] to the
   ~ilc[symbol-name] of ~c[NAME].~eq[]
 
+  WARNING: Not every use of ~c[return-last] can be soundly evaluated outside a
+  function body.  The reason is that ACL2's evaluator, ~c[ev-rec], recurs
+  through terms that are presented in the top-level loop, and handles
+  ~c[return-last] calls in a special manner: basically, the call of ~c[ev-rec]
+  on the form ~c[(return-last 'mac-raw x y)] leads to evaluation of a macro
+  call of the form ~c[(mac-raw *return-last-arg2* (ev-rec ...))], where
+  *return-last-arg2* is a global variable bound to the result of evaluating
+  ~c[x] with ~c[ev-rec].  Consider the following example.
+  ~bv[]
+  (defttag t)
+  (set-raw-mode-on state)
+  (defmacro mac-raw (str y) ; print message is an atom
+   `(let ((result (consp ,y))
+          (str ,str))
+      (or result
+          (prog2$ (fmx ,str ',y)
+                  nil))))
+  (set-raw-mode-off state)
+  (defmacro-last mac)
+  ; Horrible error:
+  (mac \"Not a cons: ~~x0\~~%\" 17)
+  ; Works, but probably many would consider it awkward to use top-level:
+  (top-level (mac \"Not a cons: ~~x0\~~%\" 17))
+  ~ev[]
+  In such cases we suggest supplying keyword ~c[:top-level-ok nil] to the call
+  of ~c[defmacro-last], for example:
+  ~bv[]
+  (defmacro-last mac :top-level-ok nil)
+  ~ev[]
+  Then any attempt to call ~c[mac] at the top level, as opposed to inside a
+  function body, will cause a clean error before evaluation begins.
+
   It is useful to explore what is done by ~c[defmacro-last].
   ~bv[]
   ACL2 !>:trans1 (defmacro-last with-profiling)
@@ -4002,10 +4034,10 @@
   We mentioned above that ACL2 tends to print calls of ~ilc[prog2$] or
   ~ilc[time$] (or other such utilities) instead of calls of ~c[return-last].
   Here we elaborate that point.  ACL2's `~c[untranslate]' utility treats
-  ~c[(return-last (quote F) X Y)] as ~c[(F X Y)] if ~c[F] is a key in
-  ~c[return-last-table].  However, it is generally rare to encounter such a
-  term during a proof, since calls of ~c[return-last] are generally expanded
-  away early during a proof.
+  ~c[(return-last (quote F) X Y)] as ~c[(G X Y)] if ~c[F] corresponds to the
+  symbol ~c[G] in ~c[return-last-table].  However, it is generally rare to
+  encounter such a term during a proof, since calls of ~c[return-last] are
+  generally expanded away early during a proof.
 
   Calls of ~c[return-last] that occur in code ~-[] forms submitted in the
   top-level ACL2 loop, and definition bodies other than those marked as
@@ -33650,6 +33682,23 @@
                               (plist-worldp wrld))))
   (getprop name 'table-alist nil 'current-acl2-world wrld))
 
+(defun ruler-extenders-msg-aux (vals return-last-table)
+
+; We return the intersection of vals with the symbols in the cdr of
+; return-last-table.
+
+  (declare (xargs :guard (and (symbol-listp vals)
+                              (symbol-alistp return-last-table))))
+  (cond ((endp return-last-table) nil)
+        (t (let* ((first-cdr (cdar return-last-table))
+                  (sym (if (consp first-cdr) (car first-cdr) first-cdr)))
+             (cond ((member-eq sym vals)
+                    (cons sym
+                          (ruler-extenders-msg-aux vals
+                                                   (cdr return-last-table))))
+                   (t (ruler-extenders-msg-aux vals
+                                               (cdr return-last-table))))))))
+
 (defun ruler-extenders-msg (x wrld)
 
 ; This message, if not nil, is passed to chk-ruler-extenders.
@@ -33667,13 +33716,9 @@
         ((not (symbol-listp x))
          (msg "~x0 is not a true list of symbols" x))
         (t (let* ((vals (illegal-ruler-extenders-values x wrld))
-                  (suspects
-                   (and vals
-                        (intersection-eq
-                         (list* 'prog2$ 'ec-call ; common mistakes?
-                                (strip-cdrs (table-alist 'return-last-table
-                                                         wrld)))
-                         vals))))
+                  (suspects (ruler-extenders-msg-aux
+                             vals
+                             (table-alist 'return-last-table wrld))))
              (cond (vals
                     (msg "~&0 ~#0~[is not a~/are not~] legal ruler-extenders ~
                           value~#0~[~/s~].~@1"
@@ -33682,7 +33727,7 @@
                                 (msg "  Note in particular that ~&0 ~#0~[is a ~
                                       macro~/are macros~] that may expand to ~
                                       calls of ~x1, which you may want to ~
-                                      specify instead~"
+                                      specify instead."
                                      suspects 'return-last))
                                (t ""))))
                    (t nil))))))

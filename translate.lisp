@@ -2531,7 +2531,9 @@
                          (let* ((key (unquote (fargn term 1)))
                                 (fn (and (symbolp key)
                                          key
-                                         (return-last-lookup key wrld))))
+                                         (let ((tmp (return-last-lookup key
+                                                                        wrld)))
+                                           (if (consp tmp) (car tmp) tmp)))))
                            (and fn
                                 (cons fn
                                       (untranslate1-lst (cdr (fargs term)) nil
@@ -5380,7 +5382,8 @@
 ;                  of its body, as we translate.  We also enforce prohibitions
 ;                  against the use of DEFUN, IN-PACKAGE, etc inside bodies.
 ; :stobjs-out    - like a function name, except we know we are NOT in a defun
-;                  body and allow DEFUN, IN-PACKAGE, etc.
+;                  body and allow DEFUN, IN-PACKAGE, etc., but restrict certain
+;                  calls of return-last.
 
 ; See the essay on STOBJS-IN and STOBJS-OUT, above.
 
@@ -6360,7 +6363,11 @@
                                   (t (msg "~x0 is a macro, not a function ~
                                            symbol"
                                           fn))))))
-               ((and keyp (not (return-last-lookup key wrld)))
+               ((and keyp
+                     (let ((val (return-last-lookup key wrld)))
+                       (or (null val)
+                           (and (consp val) ; see chk-return-last-entry
+                                (eq stobjs-out :stobjs-out)))))
 
 ; In an early implementation of return-last, we insisted that keyp be true.  But
 ; when we attempted to update the "GL" work of Sol Swords to use return-last,
@@ -6370,12 +6377,25 @@
 ; want to write meta-level functions that cons up return-last terms without a
 ; quoted first argument; and since it is easy to support that, we do so.
 
-                (trans-er ctx
-                          "The symbol ~x0 is specified in the first argument ~
-                           of the form ~x1.  But ~x0 is not associated in the ~
-                           table ~x2 with a non-nil symbol.  See :DOC ~
-                           return-last."
-                          key x 'return-last-table))
+                (cond
+                 ((null (return-last-lookup key wrld))
+                  (trans-er ctx
+                            "The symbol ~x0 is specified in the first ~
+                             argument of the form ~x1.  But ~x0 is not ~
+                             associated in the table ~x2 with a non-nil ~
+                             value.  See :DOC return-last."
+                            key x 'return-last-table))
+                 (t
+                  (trans-er ctx
+                            "Illegal call, ~x0: the association of ~x1 with ~
+                             the symbol ~x2 has been restricted to avoid ~
+                             top-level evaluation of such calls of ~x3.  See ~
+                             :DOC return-last.  Also consider placing the ~
+                             offending call inside a call of ~x4; see :DOC ~
+                             ~x4."
+                            x key
+                            (car (return-last-lookup key wrld))
+                            'return-last 'top-level))))
                (t
                 (mv-let
                  (erp targ2 targ2-bindings)

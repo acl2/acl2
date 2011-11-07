@@ -18307,11 +18307,11 @@
 
 (defun@par translate-hints1 (name-tree lst hint-type override-hints ctx wrld state)
 
-; A note on the taxonomy of hints.  A "hint setting" is a pair of the
-; form (key . val), such as (:DO-NOT-INDUCT . T) or (:USE . (lmi-lst
-; (h1...hn) ...)).  Lists of such pairs are called "hint settings."  A
-; pair consisting of a clause-id and some hint-settings is called a
-; "hint".  A list of such pairs is called "hints."
+; A note on the taxonomy of translated hints.  A "hint setting" is a pair of
+; the form (key . val), such as (:DO-NOT-INDUCT . T) or (:USE . (lmi-lst
+; (h1...hn) ...)).  Lists of such pairs are called "hint settings."  A pair
+; consisting of a clause-id and some hint-settings is called a "(translated)
+; hint".  A list of such pairs is called "(translated) hints."
 
 ; Thus, following the :HINTS keyword to defthm, the user types "hints" (in
 ; untranslated form).  This function takes a lst, which is supposed be some
@@ -19178,7 +19178,7 @@
   settling down has occurred and modify their heuristics accordingly.)  For
   example, if ~c[\"Goal\"] simplifies to ~c[\"Subgoal 2\"] (among others), and
   ~c[\"Subgoal 2\"] simplifies to ~c[\"Subgoal 2.3\"] (among others), which in
-  turn is not further simplified, then the the ``settled-down'' process hits on
+  turn is not further simplified, then the ``settled-down'' process hits on
   ~c[\"Subgoal 2.3\"] but not on any of its children, their children, and so
   on.
 
@@ -19227,15 +19227,16 @@
   The list of hint settings associates hint keywords with values.  It is passed
   from the current goal to its children (and hence the children's children, and
   so on), though modified by hints selected from pending hints, as described
-  below.  This list is consulted when a goal is pushed for later proof by
-  induction, at which time the hint settings are stored so that when the
-  induction proof begins, it begins with those hint settings.  Note that the
-  list of hint settings is not re-applied to descendents of a goal; a hint is
-  applied only when it is selected.  For example, if the hint selected for
-  ~c[\"Subgoal 3\"] includes ~c[:in-theory (enable foo)], then the hint
-  settings are correspondingly updated when processing ~c[\"Subgoal 3\"], and
-  they persist at subgoals such as ~c[\"Subgoal 3.2\"] and
-  ~c[\"Subgoal 3.2.1\"] (unless overriden by hints on those goals); but the
+  below.  This list is maintained so that when a goal is pushed for proof by
+  induction, the hint settings are applied at the start of the proof by
+  induction.  Note that the list of hint settings is not re-applied to
+  descendents of a goal in the current waterfall; a hint is applied only when
+  it is selected (and also perhaps later as just described, through the stored
+  hint settings at the start of a proof by induction).  For example, if the
+  hint selected for ~c[\"Subgoal 3\"] includes ~c[:in-theory (enable foo)],
+  then the hint settings are correspondingly updated when processing
+  ~c[\"Subgoal 3\"], and they persist at subgoals such as ~c[\"Subgoal 3.2\"]
+  and ~c[\"Subgoal 3.2.1\"] (unless overriden by hints on those goals); but the
   theory specifying ~c[foo] is not re-installed at every such subgoal.
 
   When a hint is selected, the list of hint settings is updated so that for
@@ -20051,16 +20052,17 @@
   returns ~c[nil], then the ~c[:backtrack] hint has no effect, and the goal is
   replaced by the list of goals (the value of ~c[CLAUSE-LIST] described above),
   as usual.  Otherwise, the clause processor is deemed to have failed, and the
-  goal clause is tried again after applying the hint returned by the above
-  evaluation.  That hint will normally be an alternating list of hint keywords
-  and their values, but if it is a custom keyword hint
-  (~pl[custom-keyword-hints]), then it will be handled in the usual manner but
-  with the first three variables above bound to the symbol ~c[:OMITTED].  Of
-  course, if the new hint includes a value for ~c[:BACKTRACK] then this process
-  can loop; care should be taken to keep that from happening.
+  goal clause is tried again starting at the top of the waterfall after
+  selecting the hint returned by the above evaluation.  That hint will normally
+  be an alternating list of hint keywords and their values, but if it is a
+  custom keyword hint (~pl[custom-keyword-hints]), then it will be handled in
+  the usual manner but with the first three variables above bound to the symbol
+  ~c[:OMITTED].  Of course, if the new hint includes a value for ~c[:BACKTRACK]
+  then this process can loop; care should be taken to keep that from happening.
 
-  A final note about ~c[:BACKTRACK] hints: ~il[override-hints] (if any) are
-  applied in their processing.  In summary: the backtrack hint is successively
+  A final note about ~c[:BACKTRACK] hints: since these are a form of computed
+  hints, ~il[override-hints] (if any) are applied to their evaluation result
+  just as with any computed hint.  That is, the backtrack hint is successively
   modified with each override-hint, to produce a final hint that is actually
   used (or, ignored if that final hint is ~c[nil]).  ~l[override-hints].~/")
 
