@@ -776,7 +776,7 @@
     `(defthm ,(appsyms (list recognizer constructor))
        ,(if (eq t type-checklist)
             `(,recognizer ,constr-call)
-          `(implies ,type-checklist (,recognizer ,constr-call)))
+          `(iff (,recognizer ,constr-call) ,type-checklist))
      :hints (("Goal" :in-theory (disable ,precog ,constructor
                                          ,@(product-accessor-list product)))))))
 
