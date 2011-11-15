@@ -132,7 +132,9 @@
      gl-aside gl-ignore nonnil-symbol-listp env
 
      xor
-     gl-bdd-mode gl-aig-mode gl-mbe))
+     gl-bdd-mode gl-aig-mode gl-mbe
+
+     defsection))
   '()))
 
 (defpkg "GL-SYM" nil)

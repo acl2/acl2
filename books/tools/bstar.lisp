@@ -274,6 +274,17 @@ examples, and additionally PATBIND-NTHS, PATBIND-ER, and so forth.
         (t
          (cw "; Not a binder list; first bad entry is ~x0.~%" (car x)))))
 
+(defun debuggable-binders-p (x)
+  (declare (xargs :guard t))
+  (cond ((atom x) 
+         (or (equal x nil)
+             (cw "; Not a binder list; ends with ~x0, instead of nil.~%" x)))
+        ;; This used to check that the cdar was also a cons and a true-list,
+        ;; but this can be left up to the individual binders.
+        ((consp (car x)) t)
+        (t
+         (cw "; Not a binder list; first bad entry is ~x0.~%" (car x)))))
+
 (defun decode-varname-for-patbind (pattern)
   (let* ((name (symbol-name pattern))
          (len (length name))
@@ -337,20 +348,28 @@ single term." pattern assign-exprs)
   (patbindfn pattern assign-exprs nested-expr))
 
 
-(defun b*-fn1 (bindlist expr)
-  (declare (xargs :guard (debuggable-binder-list-p bindlist)))
-  (if (atom bindlist)
-      expr
-    `(patbind ,(caar bindlist) ,(cdar bindlist)
-              ,(b*-fn1 (cdr bindlist) expr))))
+;; (defun b*-fn1 (bindlist expr)
+;;   (declare (xargs :guard (debuggable-binders-p bindlist)))
+;;   (if (atom bindlist)
+;;       expr
+;;     `(patbind ,(caar bindlist) ,(cdar bindlist)
+;;               ,(b*-fn1 (cdr bindlist) expr))))
+
+;; (defun b*-fn (bindlist exprs)
+;;   (declare (xargs :guard (and (debuggable-binders-p bindlist)
+;;                               (consp exprs))))
+;;   (b*-fn1 bindlist `(progn$ . ,exprs)))
 
 (defun b*-fn (bindlist exprs)
-  (declare (xargs :guard (and (debuggable-binder-list-p bindlist)
+  (declare (xargs :guard (and (debuggable-binders-p bindlist)
                               (consp exprs))))
-  (b*-fn1 bindlist `(progn$ . ,exprs)))
+  (if (atom bindlist)
+      (cons 'progn$ exprs)
+    `(patbind ,(caar bindlist) ,(cdar bindlist)
+              (b* ,(cdr bindlist) . ,exprs))))
 
 (defmacro b* (bindlist expr &rest exprs)
-  (declare (xargs :guard (debuggable-binder-list-p bindlist)))
+  (declare (xargs :guard (debuggable-binders-p bindlist)))
   (b*-fn bindlist (cons expr exprs)))
 
 
