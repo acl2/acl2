@@ -4681,6 +4681,27 @@
     brr-gstack
     brr-alist))
 
+(defun unknown-binding-msg-er (x ctx stobjs-bound str1 str2 str3)
+  (mv-let
+   (erp msg bindings)
+   (let ((bindings nil)) ; don't-care
+     (trans-er+
+      x ctx
+      "~@0"
+      (msg "The single-threaded object~#0~[ ~&0 has~/s ~&0 have~] been bound ~
+            in ~@1.  It is a requirement that ~#0~[this object~/these ~
+            objects~] be among the outputs of ~@2.  But, at the time at which ~
+            we process ~@2, we are unable to determine what the outputs are ~
+            and so cannot allow it.  This situation can arise when the output ~
+            of ~@2 is a recursive call of the function being admitted and no ~
+            other IF branch of the body of the function (or in the case of ~
+            mutual recursion, the body of any other function in the clique) ~
+            tells us the output signature of the function.  Perhaps a ~
+            recursion's base case is missing."
+           stobjs-bound str1 str2 str3)))
+   (declare (ignore bindings))
+   (mv erp msg :UNKNOWN-BINDINGS)))
+
 (mutual-recursion
 
 (defun translate11-flet-alist (form fives stobjs-out bindings known-stobjs
@@ -4755,11 +4776,7 @@
                                               bindings))
                             known-stobjs
                             flet-alist form ctx wrld state-vars)))
-       (let ((stobjs-bound
-              (collect-non-x nil (compute-stobj-flags bound-vars
-                                                      known-stobjs
-                                                      wrld)))
-             (used-vars (union-eq (all-vars tbody)
+       (let ((used-vars (union-eq (all-vars tbody)
                                   (all-vars1-lst tdcls nil)))
              (ignore-vars (ignore-vars edcls))
              (ignorable-vars (ignorable-vars edcls))
@@ -4767,17 +4784,28 @@
          (cond
 
 ; We skip the following case, where stobjs-out is not yet bound to a consp and
-; some formal is a stobj, in favor of the next, which removes the stobj
+; some formal is a stobj, in favor of the next, which removes the stobjs-bound
 ; criterion.  But we leave this case here as a comment in case we ultimately
-; find a way to eliminate the more sweeping case after it.
+; find a way to eliminate the more sweeping case after it.  Note: 
+; unknown-binding-msg has been replaced by unknown-binding-msg-er, so a bit of
+; rework will be needed if this case is to be reinstalled.  Also note that we
+; will need to bind stobjs-bound to
 
 ;         ((and (not (eq stobjs-out t))
-;               stobjs-bound
+;               (collect-non-x ; stobjs-bound
+;                nil
+;                (compute-stobj-flags bound-vars
+;                                     known-stobjs
+;                                     wrld))
 ;               (not (consp stobjs-out)))
 ;          (trans-er ctx
 ;                    "~@0"
 ;                    (unknown-binding-msg
-;                     stobjs-bound
+;                     (collect-non-x ; stobjs-bound
+;                      nil
+;                      (compute-stobj-flags bound-vars
+;                                           known-stobjs
+;                                           wrld))
 ;                     (msg "the formals of an FLET binding for function ~x0"
 ;                          name)
 ;                     "the body of this FLET binding"
@@ -4789,6 +4817,10 @@
 ; Warning: Before changing this case, see the comment above about the
 ; commented-out preceding case.
 
+; We might be able to fix this case by using the :UNKNOWN-BINDINGS trick
+; employed by unknown-binding-msg-er; see that function and search for
+; :UNKNOWN-BINDINGS, to see how that works.
+
            (trans-er+ form ctx
                       "We are unable to determine the output signature for an ~
                        FLET-binding of ~x0.  You may be able to remedy the ~
@@ -4799,23 +4831,6 @@
                        ACL2 should be able to complete this translation, ~
                        please send such an example to the ACL2 implementors."
                      name))
-          ((and (not (eq stobjs-out t))
-                stobjs-bound
-                (not (subsetp-eq stobjs-bound
-                                 (collect-non-x nil stobjs-out))))
-           (let ((stobjs-returned (collect-non-x nil stobjs-out)))
-             (trans-er+ form ctx
-                        "The single-threaded object~#0~[ ~&0 is a formal~/s ~
-                         ~&0 are formals~] of an FLET-binding of ~x3.  It is ~
-                         a requirement that ~#0~[this object~/these objects~] ~
-                         be among the outputs of the body of that binding, ~
-                         but ~#0~[it is~/they are~] not.  That body returns ~
-                         ~#1~[no single-threaded objects~/the single-threaded ~
-                         object ~&2~/the single-threaded objects ~&2~]."
-                       (set-difference-eq stobjs-bound stobjs-returned)
-                       (zero-one-or-more stobjs-returned)
-                       stobjs-returned
-                       name)))
           ((intersectp-eq used-vars ignore-vars)
            (trans-er+ form ctx
                       "Contrary to the declaration that ~#0~[it is~/they ~
@@ -5072,10 +5087,8 @@
                          local-stobj))
              ((and stobjs-bound
                    (not (consp stobjs-out)))
-              (trans-er+ x ctx
-                         "~@0"
-                         (unknown-binding-msg
-                          stobjs-bound "an MV-LET" "the MV-LET" "the MV-LET")))
+              (unknown-binding-msg-er x ctx stobjs-bound
+                                      "an MV-LET" "the MV-LET" "the MV-LET"))
              ((and stobjs-bound
                    (not (subsetp stobjs-bound
                                  (collect-non-x nil stobjs-out))))
@@ -6016,10 +6029,8 @@
                  ((and (not (eq stobjs-out t))
                        stobjs-bound
                        (not (consp stobjs-out)))
-                  (trans-er+ x ctx
-                             "~@0"
-                             (unknown-binding-msg
-                              stobjs-bound "a LET" "the LET" "the LET")))
+                  (unknown-binding-msg-er x ctx stobjs-bound
+                                          "a LET" "the LET" "the LET"))
                  ((and (not (eq stobjs-out t))
                        stobjs-bound
                        (not (subsetp-eq stobjs-bound
@@ -6136,30 +6147,56 @@
                        on untouchable-fns."
                       (car x)))
           ((eq (car x) 'if)
-           (cond ((stobjp (cadr x) known-stobjs wrld)
-                  (trans-er+ x ctx
-                             "It is illegal to test on a single-threaded ~
-                              object such as ~x0."
-                             (cadr x)))
+           (cond
+            ((stobjp (cadr x) known-stobjs wrld)
+             (trans-er+ x ctx
+                        "It is illegal to test on a single-threaded object ~
+                         such as ~x0."
+                        (cadr x)))
 
 ; Because (cadr x) has not yet been translated, we do not really know it is not
 ; a stobj!  It could be a macro call that expands to a stobj.'  The error
 ; message above is just to be helpful.  An accurate check is made below.
 
-                 (t (trans-er-let*
-                     ((arg1 (translate11 (cadr x)
-                                         (if (eq stobjs-out t)
-                                             t
-                                           '(nil))
-                                         bindings known-stobjs
-                                         flet-alist x ctx wrld state-vars))
-                      (arg2 (translate11 (caddr x)
-                                         stobjs-out bindings known-stobjs
-                                         flet-alist x ctx wrld state-vars))
-                      (arg3 (translate11 (cadddr x)
-                                         stobjs-out bindings known-stobjs
-                                         flet-alist x ctx wrld state-vars)))
-                     (trans-value (fcons-term* 'if arg1 arg2 arg3))))))
+            (t
+             (trans-er-let*
+              ((arg1 (translate11 (cadr x)
+                                  (if (eq stobjs-out t)
+                                      t
+                                    '(nil))
+                                  bindings known-stobjs
+                                  flet-alist x ctx wrld state-vars)))
+              (mv-let
+               (erp2 arg2 bindings2)
+               (trans-er-let*
+                ((arg2 (translate11 (caddr x)
+                                    stobjs-out bindings known-stobjs
+                                    flet-alist x ctx wrld state-vars)))
+                (trans-value arg2))
+               (cond
+                (erp2
+                 (cond
+                  ((eq bindings2 :UNKNOWN-BINDINGS)
+                   (mv-let
+                    (erp3 arg3 bindings)
+                    (translate11 (cadddr x)
+                                 stobjs-out bindings known-stobjs
+                                 flet-alist x ctx wrld state-vars)
+                    (cond
+                     (erp3 (mv erp2 arg2 bindings2))
+                     (t (trans-er-let*
+                         ((arg2 (translate11 (caddr x)
+                                             stobjs-out bindings known-stobjs
+                                             flet-alist x ctx wrld state-vars)))
+                         (trans-value (fcons-term* 'if arg1 arg2 arg3)))))))
+                  (t (mv erp2 arg2 bindings2))))
+                (t
+                 (let ((bindings bindings2))
+                   (trans-er-let*
+                    ((arg3 (translate11 (cadddr x)
+                                        stobjs-out bindings known-stobjs
+                                        flet-alist x ctx wrld state-vars)))
+                    (trans-value (fcons-term* 'if arg1 arg2 arg3)))))))))))
           ((eq (car x) 'synp)
 
 ; Synp is a bit odd.  We store the quotation of the term to be evaluated in the

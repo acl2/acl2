@@ -18255,6 +18255,24 @@
   opposed to inside a function body.  ~l[return-last].  Thanks to Harsh Raju
   Chamarthi for showing us an example that led us to make this improvement.
 
+  We removed a barrier to admitting function definitions, as we explain using
+  the following example.
+  ~bv[]
+  (defun foo (m state)
+    (declare (xargs :stobjs state))
+    (if (consp m)
+        (let ((state (f-put-global 'last-m m state)))
+          (foo (cdr m) state))
+      state))
+  ~ev[]
+  Previously, ACL2 complained that it could not determine the outputs of the
+  ~ilc[LET] form, as is necessary in order to ensure that ~ilc[STATE] is
+  returned by it.  ACL2 now works harder to solve this problem as well as the
+  analogous problem for ~ilc[MV-LET] and, more generally for
+  ~ilc[mutual-recursion].  (The main idea is to reverse the order of processing
+  the ~ilc[IF] branches if necessary.)  We thank Sol Swords for contributing a
+  version of the above example and requesting this improvement.
+
   ~st[NEW FEATURES]
 
   Users may now arrange for additional summary information to be printed at the
@@ -18416,6 +18434,17 @@
   modeling of the ACL2 evaluator.  A relevant technical discussion may be found
   in source function ~c[oneify-cltl-code], at the binding of variable
   ~c[fail_program-only-safe].)
+
+  There was an unnecessary restriction that ~ilc[FLET]-bound functions must
+  return all ~il[stobj]s among their inputs.  For example, the following
+  definition was rejected because ~c[state] was not among the outputs of ~c[h].
+  This restriction has been removed.
+  ~bv[]
+  (defun foo (state)
+    (declare (xargs :stobjs state))
+    (flet ((h (state) (f-boundp-global 'x state)))
+      (h state)))
+  ~ev[]
 
   ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]
 

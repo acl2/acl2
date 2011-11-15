@@ -45,26 +45,53 @@
 ; defproxy, non-executablep will be nil.
 
   (cond ((null bodies) (trans-value nil))
-        (t (trans-er-let*
-            ((x (translate1-cmp (car bodies)
-                                (if non-executablep t (car names))
-                                (if non-executablep nil bindings)
-                                (car known-stobjs-lst)
-                                (if (and (consp ctx)
-                                         (equal (car ctx)
-                                                *mutual-recursion-ctx-string*))
-                                    (msg "( MUTUAL-RECURSION ... ( DEFUN ~x0 ...) ~
+        (t (mv-let
+            (erp x bindings2)
+            (translate1-cmp (car bodies)
+                            (if non-executablep t (car names))
+                            (if non-executablep nil bindings)
+                            (car known-stobjs-lst)
+                            (if (and (consp ctx)
+                                     (equal (car ctx)
+                                            *mutual-recursion-ctx-string*))
+                                (msg "( MUTUAL-RECURSION ... ( DEFUN ~x0 ...) ~
                                       ...)"
-                                         (car names))
-                                  ctx)
-                                wrld state-vars))
-             (y (translate-bodies1 non-executablep
-                                   (cdr names)
-                                   (cdr bodies)
-                                   bindings
-                                   (cdr known-stobjs-lst)
-                                   ctx wrld state-vars)))
-            (trans-value (cons x y))))))
+                                     (car names))
+                              ctx)
+                            wrld state-vars)
+            (cond
+             ((and erp
+                   (eq bindings2 :UNKNOWN-BINDINGS))
+              (trans-er-let*
+               ((y (translate-bodies1 non-executablep
+                                      (cdr names)
+                                      (cdr bodies)
+                                      bindings
+                                      (cdr known-stobjs-lst)
+                                      ctx wrld state-vars))
+                (x (translate1-cmp (car bodies)
+                                   (if non-executablep t (car names))
+                                   (if non-executablep nil bindings)
+                                   (car known-stobjs-lst)
+                                   (if (and (consp ctx)
+                                            (equal (car ctx)
+                                                   *mutual-recursion-ctx-string*))
+                                       (msg "( MUTUAL-RECURSION ... ( DEFUN ~x0 ...) ~
+                                      ...)"
+                                            (car names))
+                                     ctx)
+                                   wrld state-vars)))
+               (trans-value (cons x y))))
+             (erp (mv erp x bindings2))
+             (t (let ((bindings bindings2))
+                  (trans-er-let*
+                   ((y (translate-bodies1 non-executablep
+                                          (cdr names)
+                                          (cdr bodies)
+                                          bindings
+                                          (cdr known-stobjs-lst)
+                                          ctx wrld state-vars)))
+                   (trans-value (cons x y))))))))))
 
 (defun throw-nonexec-error-p (body)
 

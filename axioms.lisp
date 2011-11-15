@@ -16471,7 +16471,9 @@
   Note that ~c[defconst] uses a ``safe mode'' to evaluate its form, in order
   to avoids soundness issues but with an efficiency penalty (perhaps increasing
   the evaluation time by several hundred percent).  If efficiency is a concern,
-  consider using the macro ~c[defconst-fast] instead, defined in
+  or if for some reason you need the form to be evaluated without safe mode
+  (e.g., you are an advanced system hacker using trust tags to traffic in raw
+  Lisp code), consider using the macro ~c[defconst-fast] instead, defined in
   ~c[books/make-event/defconst-fast.lisp], for example:
   ~bv[]
   (defconst-fast *x* (expensive-fn ...))

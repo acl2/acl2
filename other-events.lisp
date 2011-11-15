@@ -21181,7 +21181,54 @@
   by the code that has been evaluated.  You are welcome to look in the the ACL2
   source code at the definition of macro ~c[channel-to-string], which employs
   ~c[with-local-state] to create a local ~il[state] for the purpose of creating
-  a string.~/~/"
+  a string.~/
+
+  Here is an example use of ~c[with-local-state].  Notice the use of
+  ~ilc[defttag] ~-[] and indeed, please understand that we are just hacking
+  here, and in general it takes significant effort to be sure that one is using
+  ~c[with-local-state] correctly!
+  ~bv[]
+  (defttag t)
+
+  (remove-untouchable create-state t)
+
+  (set-state-ok t)
+
+  (defun foo (state)
+    (declare (xargs :mode :program))
+    (mv-let
+     (channel state)
+     (open-input-channel \"my-file\" :object state)
+     (mv-let (eofp obj state)
+             (read-object channel state)
+             (declare (ignore eofp))
+             (let ((state (close-input-channel channel state)))
+               (mv obj state)))))
+
+  (defun bar ()
+    (declare (xargs :mode :program))
+    (with-local-state (mv-let (result state)
+                              (foo state)
+                              result)))
+
+  ; Multiple-value return version:
+
+  (defun foo2 (state)
+    (declare (xargs :mode :program))
+    (mv-let
+     (channel state)
+     (open-input-channel \"my-file\" :object state)
+     (mv-let (eofp obj state)
+             (read-object channel state)
+             (let ((state (close-input-channel channel state)))
+               (mv eofp obj state)))))
+
+  (defun bar2 ()
+    (declare (xargs :mode :program))
+    (with-local-state (mv-let (eofp result state)
+                              (foo2 state)
+                              (mv eofp result))))
+  ~ev[]~/"
 
   `(with-local-stobj state ,mv-let-form))
 
