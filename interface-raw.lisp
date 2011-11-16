@@ -7520,14 +7520,35 @@ Missing functions:
 
            #+ccl (ccl::*save-source-locations* nil))
        (compile-file os-expansion-filename :output-file ofile))
-     (let ((*compiling-certified-file* t))
+
+; Warning: Keep the following "compile on the fly" readtime conditional in sync
+; with the one in initialize-state-globals.  Here, we avoid loading the
+; compiled file when compiling a certified book, because all functions are
+; already compiled.  Thus, the code dealing with hons-enabledp below is
+; irrelevant as long as under-the-hood hons/memoize code is only used in CCL
+; (or SBCL) builds.
+
+     #-(or ccl sbcl)
+     (let ((*compiling-certified-file*
 
 ; See the comment about an optimization using *compiling-certified-file* in the
 ; raw Lisp definition of acl2::defconst.
 
-       (load-compiled ofile t))
-     (terpri stream)
-     (prin1 ofile stream)
+            t)
+           (alist (and (hons-enabledp *the-live-state*)
+                       (loop for pair in
+                             (table-alist 'memoize-table (w *the-live-state*))
+                             when (fboundp (car pair)) ; always true?
+                             collect (cons (car pair)
+                                           (symbol-function (car pair)))))))
+       (load-compiled ofile t)
+       (loop for pair in alist ; nil if not hons-enabledp
+             when (not (eq (symbol-function (car pair))
+                           (cdr pair)))
+             do (setf (symbol-function (car pair))
+                      (cdr pair)))
+       (terpri stream)
+       (prin1 ofile stream))
      (terpri stream)
      (terpri stream))))
 

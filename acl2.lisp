@@ -839,7 +839,11 @@ ACL2 from scratch.")
                                             ,acl2-compiler-enabled-var))
                                  ,acl2-compiler-enabled-var)
                                 (t
-                                 #+(or ccl sbcl) ; these compile on the fly
+
+; Warning: Keep the following "compile on the fly" readtime conditional in sync
+; with the one in acl2-compile-file.
+
+                                 #+(or ccl sbcl)
                                  :books
                                  #-(or ccl sbcl)
                                  t))

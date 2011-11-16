@@ -18273,6 +18273,11 @@
   the ~ilc[IF] branches if necessary.)  We thank Sol Swords for contributing a
   version of the above example and requesting this improvement.
 
+  (CCL and SBCL only) When the host Lisp is CCL or SBCL, then since all
+  functions are compiled, a ~ilc[certify-book] command will no longer load the
+  newly-compiled file (and similarly for ~ilc[include-book] with argument
+  ~c[:load-compiled-file :comp]).
+
   ~st[NEW FEATURES]
 
   Users may now arrange for additional summary information to be printed at the
@@ -18491,7 +18496,14 @@
   ~il[guard]-verified, even with a non-~c[nil] value of ~c[:ideal-okp]; and
   after successfully memoizing such a function (without such ~c[:condition]),
   it had not been possible to ~ilc[unmemoize] it.  Thanks to Sol Swords for
-  reporting issues with the ~c[:ideal-okp] argument of ~ilc[memoize].~eq[] 
+  reporting issues with the ~c[:ideal-okp] argument of ~ilc[memoize].
+
+  If a book defined a function that was subsequently ~il[memoize]d in that
+  book, the function would no longer behaves as memoized upon completion of
+  book certification (unless that ~ilc[certify-book] command was undone and
+  replaced by evaluation of a corresponding ~ilc[include-book] command).  This
+  has been fixed.  Thanks to David Rager for pointing out the problem by
+  sending an example.~eq[]
 
   ~/~/")
 

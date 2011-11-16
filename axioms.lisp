@@ -20612,7 +20612,6 @@
                default
                ans)))
         (t (fgetprop symb key default (cdr world-alist))))
-  #-acl2-loop-only
 
 ; The following two lines are commented out.  They collect the fgetprop-stats.
 ; Those stats will tell you, for a given run of the system, which properties
