@@ -6958,8 +6958,7 @@
          (relevant-posns-lambdas
           (lambda-body (ffn-symb term))
           (acons (ffn-symb term)
-                 (make-posns (lambda-formals (ffn-symb term))
-                             (all-vars (lambda-body (ffn-symb term))))
+                 nil
                  (relevant-posns-lambdas-lst (fargs term) ans))))
         (t (relevant-posns-lambdas-lst (fargs term) ans))))
 

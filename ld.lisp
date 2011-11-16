@@ -18451,6 +18451,19 @@
       (h state)))
   ~ev[]
 
+  We fixed a bug, introduced in the preceding release (4.3), in the check for
+  irrelevant formals (~pl[irrelevant-formals]).  That check had been too
+  lenient in its handling of lambda (~il[LET]) expressions, for example
+  allowing the following definition to be admitted in spite of its first
+  formal parameter obviously being irrelevant.
+  ~bv[]
+  (defun foo (x clk)
+    (if (zp clk)
+        :diverge
+      (let ((clk (1- clk)))
+        (foo x clk))))
+  ~ev[]
+
   ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]
 
   Although the HTML documentation is distributed with ACL2, it had not been

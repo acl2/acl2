@@ -8168,7 +8168,7 @@
                                   force-flg dwp type-alist ancestors ens w
                                   pot-lst pt backchain-limit))))))
 
-(defun type-set-relieve-hyps-free (term typ forcep rest-type-alist
+(defun type-set-relieve-hyps-free (term typ rest-type-alist
                                         rune target hyps backchain-limit-lst
                                         force-flg dwp alist type-alist
                                         ancestors ens wrld ttree ttree0 pot-lst pt
@@ -8205,7 +8205,7 @@
                               bkptr+1)
        (cond
         (relieve-hyps-ans (mv relieve-hyps-ans type-alist ttree))
-        (t (type-set-relieve-hyps-free term typ forcep rest-type-alist
+        (t (type-set-relieve-hyps-free term typ rest-type-alist
                                        rune target hyps backchain-limit-lst
                                        force-flg dwp alist type-alist
                                        ancestors ens wrld ttree ttree0 pot-lst pt
@@ -8428,7 +8428,7 @@
                     (cond
                      (relieve-hyps-ans (mv relieve-hyps-ans type-alist ttree))
                      (t (type-set-relieve-hyps-free
-                         term typ forcep rest-type-alist
+                         term typ rest-type-alist
                          rune target hyps backchain-limit-lst
                          force-flg dwp alist type-alist
                          ancestors ens wrld ttree ttree0 pot-lst pt
