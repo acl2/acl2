@@ -137,3 +137,91 @@ a:hover {
 }
 
 
+
+
+/* Extra stuff for Symbolic Test Vectors at Centaur */
+
+
+.stv {
+  margin-left: 1em;
+  border: 1px;
+  border-color: black;
+  border-style: solid;
+}
+
+.stv th {
+  font-family: "Tahoma", "Geneva", "Verdana", sans-serif;
+}
+
+.stv td {
+  font-family: "Consolas", "Bitstream Vera Sans Mono", "DejaVu Sans Mono", "Lucida Console", monospace;
+
+  text-align: right;
+  padding-left: .5em;
+  padding-right: .5em;
+}
+
+.stv_labels {
+  background-color: #e0ffc3;
+}
+
+.stv_labels th:nth-child(even) {
+  background-color: #e9ffd6;
+}
+
+.stv_labels th {
+  font-family: "Tahoma", "Geneva", "Verdana", sans-serif;
+  text-align: left;
+
+  border-bottom: 2px;
+  border-bottom-style: solid;
+  border-bottom-color: #b0dda3;
+
+  border-right: 1px;
+  border-right-style: solid;
+  border-right-color: #b0dda3;
+}
+
+.stv_input_line {
+  background-color: #ffe0c3;
+}
+
+.stv_input_line td:nth-child(even) {
+  background-color: #ffe9d6;
+}
+
+.stv_input_line td {
+  border-bottom: 1px;
+  border-bottom-color: #ddb0a3;
+  border-bottom-style: solid;
+  border-right: 1px;
+  border-right-style: solid;
+  border-right-color: #ddb0a3;
+}
+
+
+.stv_output_line {
+    background-color: #c3e0ff;
+}
+
+.stv_output_line td:nth-child(even) {
+  background-color: #d6e9ff;
+}
+
+.stv_output_line td {
+  border-bottom: 1px;
+  border-bottom-color: #a3b0dd;
+  border-bottom-style: solid;
+  border-right: 1px;
+  border-right-style: solid;
+  border-right-color: #a3b0dd;
+}
+
+
+.stv_name {
+    border-right: 2px;
+    border-right-style: solid;
+    border-right-color: #000060;
+    text-align: left;
+    padding-right: 1em;
+}
