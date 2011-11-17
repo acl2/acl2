@@ -30,6 +30,11 @@ export ACL2_CUSTOMIZATION ?= NONE
 # Default ACL2 to whatever is in the path
 ACL2 ?= acl2
 
+# STARTJOB can be set in the environment to be some other command than the shell,
+# which should take the syntax "startjob -c 'shell command'".  For example, this 
+# could be a queueing command to submit the job to a cluster.
+STARTJOB ?= $(SHELL)
+
 define make_cert
 	@TARGETEXT=$(1) ;\
 	PASSES=$(2) ;\
@@ -103,9 +108,9 @@ define make_cert
 	echo "$(OUTFILE_HEADER)" > $$OUTFILE ;\
 	if [ "$$TIME_CERT" != "" ] ;\
 	then \
-	  ( time ( ( $$ACL2 < $$WORKXXXFILE 2>&1) >> $$OUTFILE ) ) 2> $$TIMEFILE ;\
+	  $(STARTJOB) -c "( time ( ( $$ACL2 < $$WORKXXXFILE 2>&1) >> $$OUTFILE ) ) 2> $$TIMEFILE" ;\
 	else \
-	  ($$ACL2 < $$WORKXXXFILE 2>&1) >> $$OUTFILE ;\
+	  $(STARTJOB) -c "($$ACL2 < $$WORKXXXFILE 2>&1) >> $$OUTFILE" ;\
 	fi ;\
         STATUS=$$? ;\
 	rm -f $$WORKXXXFILE ;\
