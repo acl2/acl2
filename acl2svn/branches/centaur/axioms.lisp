@@ -3967,6 +3967,38 @@
   modifying the symbol ~c[NAME] by suffixing the string ~c[\"-RAW\"] to the
   ~ilc[symbol-name] of ~c[NAME].~eq[]
 
+  WARNING: Not every use of ~c[return-last] can be soundly evaluated outside a
+  function body.  The reason is that ACL2's evaluator, ~c[ev-rec], recurs
+  through terms that are presented in the top-level loop, and handles
+  ~c[return-last] calls in a special manner: basically, the call of ~c[ev-rec]
+  on the form ~c[(return-last 'mac-raw x y)] leads to evaluation of a macro
+  call of the form ~c[(mac-raw *return-last-arg2* (ev-rec ...))], where
+  *return-last-arg2* is a global variable bound to the result of evaluating
+  ~c[x] with ~c[ev-rec].  Consider the following example.
+  ~bv[]
+  (defttag t)
+  (set-raw-mode-on state)
+  (defmacro mac-raw (str y) ; print message is an atom
+   `(let ((result (consp ,y))
+          (str ,str))
+      (or result
+          (prog2$ (fmx ,str ',y)
+                  nil))))
+  (set-raw-mode-off state)
+  (defmacro-last mac)
+  ; Horrible error:
+  (mac \"Not a cons: ~~x0\~~%\" 17)
+  ; Works, but probably many would consider it awkward to use top-level:
+  (top-level (mac \"Not a cons: ~~x0\~~%\" 17))
+  ~ev[]
+  In such cases we suggest supplying keyword ~c[:top-level-ok nil] to the call
+  of ~c[defmacro-last], for example:
+  ~bv[]
+  (defmacro-last mac :top-level-ok nil)
+  ~ev[]
+  Then any attempt to call ~c[mac] at the top level, as opposed to inside a
+  function body, will cause a clean error before evaluation begins.
+
   It is useful to explore what is done by ~c[defmacro-last].
   ~bv[]
   ACL2 !>:trans1 (defmacro-last with-profiling)
@@ -4005,10 +4037,10 @@
   We mentioned above that ACL2 tends to print calls of ~ilc[prog2$] or
   ~ilc[time$] (or other such utilities) instead of calls of ~c[return-last].
   Here we elaborate that point.  ACL2's `~c[untranslate]' utility treats
-  ~c[(return-last (quote F) X Y)] as ~c[(F X Y)] if ~c[F] is a key in
-  ~c[return-last-table].  However, it is generally rare to encounter such a
-  term during a proof, since calls of ~c[return-last] are generally expanded
-  away early during a proof.
+  ~c[(return-last (quote F) X Y)] as ~c[(G X Y)] if ~c[F] corresponds to the
+  symbol ~c[G] in ~c[return-last-table].  However, it is generally rare to
+  encounter such a term during a proof, since calls of ~c[return-last] are
+  generally expanded away early during a proof.
 
   Calls of ~c[return-last] that occur in code ~-[] forms submitted in the
   top-level ACL2 loop, and definition bodies other than those marked as
@@ -9114,7 +9146,7 @@
     (list* 'ev-fncall-null-body-er
            ,ignored-attachment
            ',fn
-           (list ,@formals))))
+           (print-list-without-stobj-arrays (list ,@formals)))))
 
 (defvar *aokp*
 
@@ -9134,11 +9166,7 @@
               (null *attached-fn-called*))
      (setq *attached-fn-called* ,fn)))
 
-(defmacro throw-or-attach (fn formals alt-formals &optional *1*-p)
-
-; If alt-formals is non-nil, then it is to be used in place of formals when
-; reporting an undefined-function error.
-
+(defmacro throw-or-attach (fn formals &optional *1*-p)
   (let ((at-fn (attachment-symbol fn)))
     `(let ()
        (declare (special ,at-fn))
@@ -9155,15 +9183,14 @@
                  (and (boundp ',at-fn)
                       ,at-fn)
                  ,fn
-                 ,(or alt-formals
-                      formals)))))))
+                 ,formals))))))
 
 )
 
 (defun null-body-er (fn formals maybe-attach)
   (declare (xargs :guard t))
   (if maybe-attach
-      (list 'throw-or-attach fn formals nil)
+      (list 'throw-or-attach fn formals)
     (list 'throw-without-attach nil fn formals)))
 
 ; CLTL2 and the ANSI standard have made the main Lisp package name be
@@ -11723,28 +11750,18 @@
            (ignore fn actuals))
   #-acl2-loop-only
   (progn
-
-; Keep the following in sync with null-body-er.  The error message printed will
-; be a bit ugly since we don't do the trick done with null-body-er+ -- we tried
-; that and it didn't work when tracing because some conversion had already been
-; done, so we'll leave well enough alone as we don't really expect to call this
-; functions anyhow.  After all, this extra attention to causing an error
-; (actually, a throw) is merely to prevent the case where include-book loads
-; compiled code to overwrite a defun with :non-executable t -- that's why we
-; introduced defun-nx and insisted that non-executable functions have a call of
-; throw-nonexec-error.
-
     (throw-raw-ev-fncall
      (list* 'ev-fncall-null-body-er
 
 ; The following nil means that we never blame non-executability on aokp.  Note
 ; that defproxy is not relevant here, since that macro generates a call of
-; install-event-defuns, which calls intro-udf-lst2, which calls null-body-er+
+; install-event-defuns, which calls intro-udf-lst2, which calls null-body-er
 ; to lay down a call of throw-or-attach.  So in the defproxy case,
 ; throw-nonexec-error doesn't get called!
 
             nil
-            fn actuals))
+            fn
+            (print-list-without-stobj-arrays actuals)))
 
 ; Just in case throw-raw-ev-fncall doesn't throw -- though it always should.
 
@@ -11769,15 +11786,16 @@
 
   ":Doc-Section acl2::Events
 
-  define a non-executable function symbol~/~/
+  define a non-executable function symbol~/
 
   The macro ~c[defun-nx] introduces definitions using the ~ilc[defun] macro,
   always in ~c[:]~ilc[logic] mode, such that the calls of the resulting
-  function cannot be evaluated.  Such a definition is admitted without the
-  syntactic restrictions usually imposed on definitions, as opposed to
-  theorems, in particular regarding function signatures and the use of
-  single-threaded object names, even though such functions are permitted to
-  declare names to be ~c[:]~ilc[stobj]s.
+  function cannot be evaluated.  Such a definition is admitted without
+  enforcing the usual ~il[stobj] restrictions on arguments of its function
+  calls.  After such a definition is admitted, the usual syntactic rules for
+  ~ilc[state] and user-defined ~il[stobj]s are relaxed for its calls: each
+  argument that is not ~c[state] or the name of a user-defined ~il[stobj]
+  should evaluate to a single ordinary (non-~ilc[state], non-~il[stobj]) value.
 
   The syntax is identical to that of ~ilc[defun].  A form
   ~bv[]
@@ -11792,7 +11810,7 @@
             body))
   ~ev[]
   Note that because of the insertion of the above call of
-  ~c[throw-nonexec-error], no formal is ignored when using ~c[defun-nx].
+  ~c[throw-nonexec-error], no formal is ignored when using ~c[defun-nx].~/
 
   If you prefer to avoid the use of ~c[defun-nx] for non-executable function
   definitions in ~c[:]~ilc[logic] mode, you can use an ~ilc[xargs]
@@ -11807,13 +11825,15 @@
   proof.  If an error message is produced by evaluating a call of the function
   on a list of arguments that includes ~c[state] or user-defined ~ilc[stobj]s,
   these arguments will be shown as symbols such as ~c[|<state>|] in the error
-  message.
+  message.  In the case of a user-defined stobj bound by
+  ~ilc[with-local-stobj], the symbol printed will include the suffix
+  ~c[{local-stobj}], for example, ~c[|<st>{local-stobj}|].
 
   It is harmless to include ~c[:non-executable t] in your own ~ilc[xargs]
   ~ilc[declare] form; ~c[defun-nx] will still lay down its own such
   declaration, but ACL2 can tolerate the duplication.
 
-  Note that ~c[defund-nx] is also available.  It has an effect identitcal to
+  Note that ~c[defund-nx] is also available.  It has an effect identical to
   that of ~c[defun-nx] except that as with ~ilc[defund], it leaves the function
   disabled.
 
@@ -16454,7 +16474,9 @@
   Note that ~c[defconst] uses a ``safe mode'' to evaluate its form, in order
   to avoids soundness issues but with an efficiency penalty (perhaps increasing
   the evaluation time by several hundred percent).  If efficiency is a concern,
-  consider using the macro ~c[defconst-fast] instead, defined in
+  or if for some reason you need the form to be evaluated without safe mode
+  (e.g., you are an advanced system hacker using trust tags to traffic in raw
+  Lisp code), consider using the macro ~c[defconst-fast] instead, defined in
   ~c[books/make-event/defconst-fast.lisp], for example:
   ~bv[]
   (defconst-fast *x* (expensive-fn ...))
@@ -20545,13 +20567,6 @@
 ; interface-raw.lisp.  But it is used earlier than that in the
 ; initialization process.
 
-; *current-acl2-world-key* is the property used for the current-acl2-
-; world world.  We use a defvar here so that it will not get reset
-; merely by reloading the sources of this file when debugging.
-
-#-acl2-loop-only
-(defvar *current-acl2-world-key* (make-symbol "*CURRENT-ACL2-WORLD-KEY*"))
-
 (defun fgetprop (symb key default world-alist)
 
 ; This is getprop's meaning when we know the world name is 'current-acl2-world.
@@ -20577,9 +20592,6 @@
                default
                ans)))
         (t (fgetprop symb key default (cdr world-alist))))
-  #-acl2-loop-only
-  (declare (special *current-acl2-world-key*
-                    ACL2_GLOBAL_ACL2::CURRENT-ACL2-WORLD))
 
 ; The following two lines are commented out.  They collect the fgetprop-stats.
 ; Those stats will tell you, for a given run of the system, which properties
@@ -20596,7 +20608,7 @@
   #-acl2-loop-only
   (cond
    ((eq world-alist
-        ACL2_GLOBAL_ACL2::CURRENT-ACL2-WORLD)
+        (symbol-value 'ACL2_GLOBAL_ACL2::CURRENT-ACL2-WORLD))
     (let ((temp
            (assoc-eq key
                      (get symb *current-acl2-world-key*))))
@@ -20610,7 +20622,7 @@
               (t (getprop-default symb key default))))
             (t (getprop-default symb key default)))))
    (t (sgetprop1 symb key default world-alist
-                 ACL2_GLOBAL_ACL2::CURRENT-ACL2-WORLD
+                 (symbol-value 'ACL2_GLOBAL_ACL2::CURRENT-ACL2-WORLD)
                  *current-acl2-world-key*))))
 
 (defun sgetprop (symb key default world-name world-alist)
@@ -25013,10 +25025,6 @@
   (declare (xargs :guard (true-listp st)))
   (update-nth 14 x st))
 
-
-; Warning:  The following list must satisfy the predicate ordered-symbol-alistp
-; above if build-state is to built a state-p.
-
 #-acl2-mv-as-values
 (defconst *initial-raw-arity-alist*
 
@@ -25167,6 +25175,7 @@
     fchecksum-atom
     step-limit-error1
     waterfall1-lst@par ; for #+acl2-par
+    waterfall1-wrapper@par-before ; for #+acl2-par
     waterfall1-wrapper@par-after ; for #+acl2-par
     increment-waterfall-parallelism-counter ; for #+acl2-par
     flush-waterfall-parallelism-hashtables ; for #+acl2-par
@@ -25427,17 +25436,36 @@
 
 ; The problem was that state was bound to *the-live-state* for evaluation
 ; during a proof, where lexically state had a different binding that should
-; have ruled.
+; have ruled.  This macro's conde included the check (eq (symbol-value 'state)
+; *the-live-state*), which unfortunately was no check at all: it was already
+; true because symbol-value returns the global value, and is not affected by a
+; superior lexical binding of state.
 
-; Our solution is for this macro to expand trivially within the usual ACL2
-; loop, only binding state to *the-live-state* when outside the loop or in raw
-; mode.  In principle, everything takes place inside the loop without raw mode.
-; If one references a non-live state outside the loop or in raw mode, one could
-; thus get surprising results; but we can live with that.
+; Our initial solution defined this macro to be the identity within the usual
+; ACL2 loop, as determined by (> *ld-level* 0).  But compile-file is called
+; when certifying a book, so state remained free in that place, generating a
+; compiler warning or (on occasion with CCL) an error.
+
+; So we have decided to keep the existing implementation, in which this macro
+; always binds state to *the-live-state* in raw Lisp, but to make this macro
+; untouchable.  Thus, users can call it freely in raw Lisp or raw-mode, where
+; they simply need to understand its spec.  But they will never be able to
+; exploit it to prove nil (without a trust tag or entering raw Lisp).
+
+; We could avoid making this macro untouchable if we had a way to query the
+; lexical environment to see if state is lexically bound.  If so, the macro
+; call would expand to the identity; if not, it would bind state to
+; *the-live-state*.  But we found no way in Common Lisp to do that.
 
   ":Doc-Section ACL2::Programming
 
   allow a reference to ~c[state] in raw Lisp~/
+
+  The macro ~c[with-live-state] is an advanced feature that very few users will
+  need (basically, only system hackers).  Indeed, it is untouchable;
+  ~pl[remove-untouchable] for how to enable calling ~c[with-live-state] in the
+  ACL2 loop.~/
+
   ~bv[]
   Example Form:
   (with-live-state (assign y 3))
@@ -25445,27 +25473,32 @@
   General form:
   (with-live-state form)
   ~ev[]
-  where form is an arbitrary form that mentions ~ilc[state].
+  where form is an arbitrary form with a free reference to the variable
+  ~ilc[state].
 
-  Most users will not need ~c[with-live-state].  If for some reason a form that
-  mentions the variable ~ilc[state] might be executed in raw Lisp ~-[] that is,
-  either outside the ACL2 loop or in raw mode (~pl[set-raw-mode]) ~-[] then the
-  use of ~c[with-live-state] is recommended in order to avoid potential
-  warnings or (much less likely) errors.  Note however that if ~c[state] is
-  lexically bound to a state other than the usual ``live'' state, surprising
-  behavior may occur when evaluating a call of ~c[with-live-state] in raw Lisp
-  or raw mode (either directly by evaluation or at compile time), because
-  ~c[with-live-state] will override that lexical binding of ~ilc[state] by a
-  lexical binding of ~c[state] to the usual ``live'' state.~/~/"
+  Logically, ~c[(with-live-state FORM)] macroexpands to ~c[FORM].  However, in
+  raw Lisp it expands to:
+  ~bv[]
+  (let ((state *the-live-state*))
+    FORM)
+  ~ev[]
+
+  If a form that mentions the variable ~ilc[state] might be executed in raw
+  Lisp ~-[] that is, either outside the ACL2 loop or in raw
+  mode (~pl[set-raw-mode]) ~-[] then the surrounding the form with
+  ~c[with-live-state] as shown above can avoid potential warnings or (much less
+  likely) errors.  Note however that if ~c[state] is lexically bound to a state
+  other than the usual ``live'' state, surprising behavior may occur when
+  evaluating a call of ~c[with-live-state] in raw Lisp or raw mode (either
+  directly by evaluation or at compile time), because ~c[with-live-state] will
+  override that lexical binding of ~ilc[state] by a lexical binding of
+  ~c[state] to the usual ``live'' state.~/"
 
   #+acl2-loop-only
   form
   #-acl2-loop-only
-  (cond ((or (> *ld-level* 0)
-             (f-get-global 'acl2-raw-mode-p *the-live-state*))
-         form)
-        (t `(let ((state *the-live-state*))
-              ,form))))
+  `(let ((state *the-live-state*))
+     ,form))
 
 (defun init-iprint-ar (hard-bound enabledp)
 
@@ -25504,7 +25537,9 @@
 
 (defconst *initial-global-table*
 
-; Keep this list in alphabetic order as per ordered-symbol-alistp.
+; Warning: Keep this list in alphabetic order as per ordered-symbol-alistp.  It
+; must satisfy the predicate ordered-symbol-alistp if build-state is to build a
+; state-p.
 
 ; When you add a new state global to this table, consider whether to modify
 ; *protected-system-state-globals*.
@@ -30178,13 +30213,6 @@
 ; seems trivial.)
 
                   (cons nil nil))
-;                #+ccl
-;                (ccl::*save-source-locations*
-
-; This binding was suggested 11/8/09 by Gary Byers as a possible way to speed
-; up ACL2.  It seems to do so, a bit anyhow.
-
-;                 nil)
                  (*package* (find-package
                              (current-package *the-live-state*)))
                  (*readtable* *acl2-readtable*)
@@ -32543,6 +32571,8 @@
 
     f-put-global@par ; for #+acl2-par (modifies state under the hood)
 
+    with-live-state ; see comment in that macro
+
 ; We briefly included maybe-install-acl2-defaults-table, but that defeated the
 ; ability to call :puff.  It now seems unnecessary to include
 ; maybe-install-acl2-defaults-table, since its body is something one can call
@@ -33635,6 +33665,23 @@
                               (plist-worldp wrld))))
   (getprop name 'table-alist nil 'current-acl2-world wrld))
 
+(defun ruler-extenders-msg-aux (vals return-last-table)
+
+; We return the intersection of vals with the symbols in the cdr of
+; return-last-table.
+
+  (declare (xargs :guard (and (symbol-listp vals)
+                              (symbol-alistp return-last-table))))
+  (cond ((endp return-last-table) nil)
+        (t (let* ((first-cdr (cdar return-last-table))
+                  (sym (if (consp first-cdr) (car first-cdr) first-cdr)))
+             (cond ((member-eq sym vals)
+                    (cons sym
+                          (ruler-extenders-msg-aux vals
+                                                   (cdr return-last-table))))
+                   (t (ruler-extenders-msg-aux vals
+                                               (cdr return-last-table))))))))
+
 (defun ruler-extenders-msg (x wrld)
 
 ; This message, if not nil, is passed to chk-ruler-extenders.
@@ -33652,13 +33699,9 @@
         ((not (symbol-listp x))
          (msg "~x0 is not a true list of symbols" x))
         (t (let* ((vals (illegal-ruler-extenders-values x wrld))
-                  (suspects
-                   (and vals
-                        (intersection-eq
-                         (list* 'prog2$ 'ec-call ; common mistakes?
-                                (strip-cdrs (table-alist 'return-last-table
-                                                         wrld)))
-                         vals))))
+                  (suspects (ruler-extenders-msg-aux
+                             vals
+                             (table-alist 'return-last-table wrld))))
              (cond (vals
                     (msg "~&0 ~#0~[is not a~/are not~] legal ruler-extenders ~
                           value~#0~[~/s~].~@1"
@@ -33667,7 +33710,7 @@
                                 (msg "  Note in particular that ~&0 ~#0~[is a ~
                                       macro~/are macros~] that may expand to ~
                                       calls of ~x1, which you may want to ~
-                                      specify instead~"
+                                      specify instead."
                                      suspects 'return-last))
                                (t ""))))
                    (t nil))))))
@@ -35654,11 +35697,10 @@
   related to soundness will still be printed (which is probably not what was
   intended)."
 
-  `(with-live-state
-    (let ((ctx 'set-inhibit-output-lst))
-      (er-let* ((lst (chk-inhibit-output-lst ,lst ctx state)))
-        (pprogn (f-put-global 'inhibit-output-lst lst state)
-                (value lst))))))
+  `(let ((ctx 'set-inhibit-output-lst))
+     (er-let* ((lst (chk-inhibit-output-lst ,lst ctx state)))
+              (pprogn (f-put-global 'inhibit-output-lst lst state)
+                      (value lst)))))
 
 (defmacro set-inhibited-summary-types (lst)
 
@@ -35689,24 +35731,23 @@
 
   To control summary types for a single event, ~pl[with-output]."
 
-  `(with-live-state
-    (let ((lst ,lst)
-          (ctx 'set-inhibited-summary-types))
-      (cond ((not (true-listp lst))
-             (er soft ctx
-                 "The argument to set-inhibited-summary-types must evaluate ~
+  `(let ((lst ,lst)
+         (ctx 'set-inhibited-summary-types))
+     (cond ((not (true-listp lst))
+            (er soft ctx
+                "The argument to set-inhibited-summary-types must evaluate ~
                   to a true-listp, unlike ~x0."
-                 lst))
-            ((not (subsetp-eq lst *summary-types*))
-             (er soft ctx
-                 "The argument to set-inhibited-summary-types must evaluate ~
+                lst))
+           ((not (subsetp-eq lst *summary-types*))
+            (er soft ctx
+                "The argument to set-inhibited-summary-types must evaluate ~
                   to a subset of the list ~X01, but ~x2 contains ~&3."
-                 *summary-types*
-                 nil
-                 lst
-                 (set-difference-eq lst *summary-types*)))
-            (t (pprogn (f-put-global 'inhibited-summary-types lst state)
-                       (value lst)))))))
+                *summary-types*
+                nil
+                lst
+                (set-difference-eq lst *summary-types*)))
+           (t (pprogn (f-put-global 'inhibited-summary-types lst state)
+                      (value lst))))))
 
 #+acl2-loop-only
 (defmacro set-state-ok (x)
@@ -37312,8 +37353,17 @@
   the book is included.  (Note: The above behavior is generally preserved in
   raw-mode (~pl[set-raw-mode]),though by means other than a table.)~/"
 
-  `(with-live-state
-    (add-include-book-dir-fn ,keyword ,dir state)))
+  `(add-include-book-dir-fn ,keyword
+                            ,dir
+
+; We use state in the loop but the live state outside it.  This could be a
+; problem if we could define a function that can take a non-live state as an
+; argument; see the bug through Version_4.3 explained in a comment in
+; with-live-state.  However, we prevent that problem by putting
+; add-include-book-dir in a suitable list in the definition of translate11.
+
+                            #+acl2-loop-only state
+                            #-acl2-loop-only *the-live-state*))
 
 (defmacro delete-include-book-dir (keyword)
 
@@ -37342,8 +37392,16 @@
   in which it occurs; ~pl[add-include-book-dir] for a discussion of this aspect
   of both macros.~/"
 
-  `(with-live-state
-    (delete-include-book-dir-fn ,keyword state)))
+  `(delete-include-book-dir-fn ,keyword
+
+; We use state in the loop but the live state outside it.  This could be a
+; problem if we could define a function that can take a non-live state as an
+; argument; see the bug through Version_4.3 explained in a comment in
+; with-live-state.  However, we prevent that problem by putting
+; delete-include-book-dir in a suitable list in the definition of translate11.
+
+                               #+acl2-loop-only state
+                               #-acl2-loop-only *the-live-state*))
 
 ; Begin implementation of tables controlling non-linear arithmetic.
 
@@ -40887,7 +40945,7 @@
 
   Also note that ~ilc[certify-book] needs to be supplied with keyword argument
   ~c[:acl2x t] in order to read or write ~c[.acl2x] files; the value of
-  ~c[:acl2] is ~c[nil] by default.  The interaction of ~ilc[certify-book] with
+  ~c[:acl2x] is ~c[nil] by default.  The interaction of ~ilc[certify-book] with
   the corresponding ~c[.acl2x] file is as follows.
   ~bf[]
   o If ~c[:acl2x] is ~c[t], then:

@@ -1029,7 +1029,7 @@
 
 (defmacro memoize-on (fn form)
 
-; MEMOIZE-ON evaluates x.  During the evaluation the symbol fn has as
+; MEMOIZE-ON evaluates form.  During the evaluation the symbol fn has as
 ; its symbol-function what it had immediately AFTER the memoization of
 ; fn.  Hence, the values of calls of fn may be remembered during the
 ; evaluation and later.  Warning: to use MEMOIZE-ON, fn must already
@@ -1044,7 +1044,7 @@
 
 (defmacro memoize-off (fn form)
 
-; MEMOIZE-OFF evaluates x.  During the evaluation the symbol fn has as
+; MEMOIZE-OFF evaluates form.  During the evaluation the symbol fn has as
 ; its symbol-function what it had immediately BEFORE the memoization
 ; of fn.  Hence the values of calls of fn may not be remembered during
 ; the evaluation.  Warning: to use MEMOIZE-OFF, fn must already be

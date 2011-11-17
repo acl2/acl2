@@ -6830,7 +6830,20 @@
 ; constraint-lst properties; but to be safe we go ahead and collect all
 ; constraints.
 
-           (constraints-list infectious-fns wrld formula-lst1 nil)))
+; We apply remove-guard-holders in order to clean up a bit.  Consider for
+; example:
+
+; (defun-sk foo (x) (forall e (implies (member e x) (integerp e))))
+
+; If you then evaluate
+
+; (getprop 'foo-witness 'constraint-lst nil 'current-acl2-world (w state))
+
+; you'll see a much simpler result, with return-last calls removed, than if we
+; did not apply remove-guard-holders-lst here.
+
+           (remove-guard-holders-lst
+            (constraints-list infectious-fns wrld formula-lst1 nil))))
      (mv constraints constrained-fns subversive-fns infectious-fns fns))))
 
 (defun new-dependent-clause-processors (new-tbl old-tbl)
@@ -18101,7 +18114,7 @@
                 ((null etype-term)
                  (er soft ctx
                      "The element type specified for the ~x0 field of ~
-                      ~x1, namely ~x0, is not recognized by ACL2 as a ~
+                      ~x1, namely ~x2, is not recognized by ACL2 as a ~
                       type-spec.  See :DOC type-spec."
                      field name type))
                 ((not (natp n))
@@ -21152,7 +21165,54 @@
   by the code that has been evaluated.  You are welcome to look in the the ACL2
   source code at the definition of macro ~c[channel-to-string], which employs
   ~c[with-local-state] to create a local ~il[state] for the purpose of creating
-  a string.~/~/"
+  a string.~/
+
+  Here is an example use of ~c[with-local-state].  Notice the use of
+  ~ilc[defttag] ~-[] and indeed, please understand that we are just hacking
+  here, and in general it takes significant effort to be sure that one is using
+  ~c[with-local-state] correctly!
+  ~bv[]
+  (defttag t)
+
+  (remove-untouchable create-state t)
+
+  (set-state-ok t)
+
+  (defun foo (state)
+    (declare (xargs :mode :program))
+    (mv-let
+     (channel state)
+     (open-input-channel \"my-file\" :object state)
+     (mv-let (eofp obj state)
+             (read-object channel state)
+             (declare (ignore eofp))
+             (let ((state (close-input-channel channel state)))
+               (mv obj state)))))
+
+  (defun bar ()
+    (declare (xargs :mode :program))
+    (with-local-state (mv-let (result state)
+                              (foo state)
+                              result)))
+
+  ; Multiple-value return version:
+
+  (defun foo2 (state)
+    (declare (xargs :mode :program))
+    (mv-let
+     (channel state)
+     (open-input-channel \"my-file\" :object state)
+     (mv-let (eofp obj state)
+             (read-object channel state)
+             (let ((state (close-input-channel channel state)))
+               (mv eofp obj state)))))
+
+  (defun bar2 ()
+    (declare (xargs :mode :program))
+    (with-local-state (mv-let (eofp result state)
+                              (foo2 state)
+                              (mv eofp result))))
+  ~ev[]~/"
 
   `(with-local-stobj state ,mv-let-form))
 
@@ -22149,7 +22209,7 @@
                          (assert$ (not (eq formals t))
                                   (list fn
                                         formals
-                                        (null-body-er+ fn formals wrld t)))))))
+                                        (null-body-er fn formals t)))))))
          (formals-tail (assoc-keyword :formals trace-options))
          (formals-default (and (not formals-tail)
                                (atom def)
@@ -22846,20 +22906,19 @@
   the original predefined functions, not using their code installed by
   ~c[trace$].~/"
 
-  `(with-live-state
-    ,(cond
-      ((null trace-specs)
-       '(value (f-get-global 'trace-specs state)))
-      (t
-       `(pprogn
-         (if (equal (f-get-global 'trace-co state) *standard-co*)
-             state
-           (fms "**NOTE**: Trace output will continue to go to a file.~|~%"
-                nil *standard-co* state nil))
-         (if (eql 0 (f-get-global 'ld-level state))
-             (ld '((trace$-lst ',trace-specs 'trace$ state))
-                 :ld-verbose nil)
-           (trace$-lst ',trace-specs 'trace$ state)))))))
+  (cond
+   ((null trace-specs)
+    '(value (f-get-global 'trace-specs state)))
+   (t
+    `(pprogn
+      (if (equal (f-get-global 'trace-co state) *standard-co*)
+          state
+        (fms "**NOTE**: Trace output will continue to go to a file.~|~%"
+             nil *standard-co* state nil))
+      (if (eql 0 (f-get-global 'ld-level state))
+          (ld '((trace$-lst ',trace-specs 'trace$ state))
+              :ld-verbose nil)
+        (trace$-lst ',trace-specs 'trace$ state))))))
 
 (defmacro with-ubt! (form)
   (let ((label 'with-ubt!-label))
@@ -23300,26 +23359,25 @@
                                "~|~%")
                    (maybe-print-call-history *the-live-state*)
                    (break$)))))
-    `(with-live-state
-      (let ((on ,on))
-        (er-progn
-         (case on
-           (:all  (trace! ,error1-trace-form
-                          ,er-cmp-fn-trace-form
-                          ,throw-raw-ev-fncall-trace-form))
-           ((t)   (trace! ,error1-trace-form
-                          ,er-cmp-fn-trace-form
-                          (,@throw-raw-ev-fncall-trace-form
-                           :cond
-                           (not (f-get-global 'in-prove-flg
-                                              *the-live-state*)))))
+    `(let ((on ,on))
+       (er-progn
+        (case on
+          (:all  (trace! ,error1-trace-form
+                         ,er-cmp-fn-trace-form
+                         ,throw-raw-ev-fncall-trace-form))
+          ((t)   (trace! ,error1-trace-form
+                         ,er-cmp-fn-trace-form
+                         (,@throw-raw-ev-fncall-trace-form
+                          :cond
+                          (not (f-get-global 'in-prove-flg
+                                             *the-live-state*)))))
            ((nil) (with-output :off warning (untrace$ error1
                                                       er-cmp-fn
                                                       throw-raw-ev-fncall)))
            (otherwise (er soft 'break-on-error
                           "Illegal argument value for break-on-error: ~x0."
                           on)))
-         (value :invisible))))))
+         (value :invisible)))))
 
 (defun defexec-extract-key (x keyword result result-p)
 
@@ -28628,18 +28686,20 @@
 
 ; Key is a symbol such as prog2$ that has a macro definition in raw Lisp that
 ; takes two arguments.  Val is either nil, denoting that key is not in the
-; table; t, denoting that key is in the table and no check needs to be made on
-; calls of the form (return-last 'key arg1 arg2); or else val is a term
-; mentioning at most the variables arg1, arg2, and world, which is to be
-; evaluated at translate time to determine if the above return-last call is
-; legal.
+; table; the name of a macro known to ACL2; or (list m), where m is the name of
+; a macro known to ACL2.  The latter case causes ACL2 to disallow corresponding
+; return-last calls at the top level (as opposed to inside function bodies).
 
   (declare (xargs :guard (plist-worldp wrld)
                   :mode :program))
   (cond ((ttag wrld)
          (and (symbolp key)
               key
-              (symbolp val)
+              (or (symbolp val)
+                  (and (consp val)
+                       (symbolp (car val))
+                       (car val)
+                       (null (cdr val))))
               (or (not (member-eq key '(progn mbe1-raw ec-call1-raw
                                               with-guard-checking1-raw)))
 
@@ -28651,13 +28711,16 @@
                        given special treatment.  See :DOC return-last."
                       key 'return-last-table))
               (or (null val)
-                  (getprop val 'macro-body nil 'current-acl2-world wrld)
-                  (er hard! 'chk-return-last-entry
-                      "The proposed value ~x0 for key ~x1 in ~x2 is illegal ~
-                       because this value is not the name of a macro known to ~
-                       ACL2.  See :DOC return-last and (for the above point ~
-                       made explicitly) see :DOC return-last-table."
-                      val key 'return-last))
+                  (let ((val2 (if (symbolp val) val (car val))))
+                    (or
+                     (getprop val2 'macro-body nil 'current-acl2-world wrld)
+                     (er hard! 'chk-return-last-entry
+                         "The proposed value ~x0 for key ~x1 in ~x2 is ~
+                          illegal because ~x3 is not the name of a macro ~
+                          known to ACL2.  See :DOC return-last and (for the ~
+                          above point made explicitly) see :DOC ~
+                          return-last-table."
+                         val key 'return-last-table val2))))
               #-acl2-loop-only
               (or (fboundp key)
 
@@ -28685,27 +28748,28 @@
 
   install special raw Lisp behavior~/
 
-  Please first ~pl[return-last] for background.
+  Please first ~pl[return-last] for relevant background.
 
   This ~il[table] is for advanced users only, and requires an active trust
   tag (~pl[defttag]).  We recommend that you do not modify this table directly,
-  but instead use the macro ~c[defmacro-last].  ~l[return-last] for relevant
-  discussion.  Here we augment that discussion with some highly technical
-  observations that can probably be ignored if you use ~c[defmacro-last].~/
+  but instead use the macro ~c[defmacro-last].  Here we augment that discussion
+  with some highly technical observations that can probably be ignored if you
+  use ~c[defmacro-last].~/
 
   This ~il[table] has a ~c[:guard] requiring that each key be a symbol defined
   in raw Lisp, generally as a macro, and requiring that each non-~c[nil] value
-  be associated with a symbol that names a macro defined in ACL2.  The table
-  can only be modified when there is an active trust tag; ~pl[defttag].  If a
-  key is associated with the value ~c[nil], then that key is treated as though
-  it were not in the table.
+  be associated either with a symbol that names a macro defined in ACL2, or
+  else with a list of one element containing such a symbol.  The table can only
+  be modified when there is an active trust tag; ~pl[defttag].  If a key is
+  associated with the value ~c[nil], then that key is treated as though it were
+  not in the table.
 
   Note that keys of this table are not eligible to be bound by ~ilc[flet].  The
   current value of this table may be obtained by evaluating the form
   ~c[(table-alist 'return-last-table (w state))].  The built-in constant
   ~c[*initial-return-last-table*] holds the initial value of this table.~/")
 
-(defmacro defmacro-last (fn &key raw)
+(defmacro defmacro-last (fn &key raw (top-level-ok 't))
 
   ":Doc-Section Programming
 
@@ -28721,7 +28785,8 @@
                       fn))))
     `(progn (defmacro ,fn (x y)
               (list 'return-last (list 'quote ',raw) x y))
-            (table return-last-table ',raw ',fn))))
+            (table return-last-table ',raw '
+                   ,(if top-level-ok fn (list fn))))))
 
 ; Formatted printing to strings requires local stobjs (actually
 ; with-local-state), so we place the relevant code below.  It could certainly

@@ -18095,8 +18095,6 @@
 
 ; Improved comments about step-limits.
 
-; Incorporated a Lispworks-specific patch from Martin Simmons.
-
 ; Here is a slightly simplified version of the example sent to us by Warren
 ; Hunt for the defstobj bug involving, quoting the :doc below, "excessively
 ; restrictive type declarations".
@@ -18122,6 +18120,59 @@
 ; throw-nonexec-error, get-output-stream-string$-fn, and set-debugger-enable-fn
 ; just a bit, just to be safe, though we're not aware of a soundness bug for
 ; those functions.
+
+; We removed a #-acl2-loop-only shortcut in plist-worldp, which remains as a
+; comment in that function.
+
+; Modified the check in acl2-check.lisp related to
+; *common-lisp-specials-and-constants*, so that it no longer causes an error
+; when attempting to build with ECL (which bound the symbol
+; COMMON-LISP:FUNCTION), in case this is something we try in the future.
+
+; The soundness bug for with-live-state has been recorded in a comment where
+; that macro is defined.
+
+; (Lispworks mods courtesy of Martin Simmons) Changed calls of
+; special-form-or-op-p to expand to calls of special-operator-p.  Changed
+; 'cl::getenv to 'hcl::getenv and changed 'cl::setenv to 'hcl::setenv.
+; Changed lisp::quit to lispworks:quit in acl2.lisp.
+
+; Modified the DOC targets (and HTML, etc. targets under it) so that one can
+; specify ACL2=<your_acl2> on the command line with the make command or as an
+; environment variable.  If ACL2 is not thus specified, then PREFIX and
+; ACL2_SUFFIX will be used, as before.
+
+; The time-reporting bug was in initialize-summary-accumulators, which had
+; called main-timer without accumulating times.  The following simple example
+; clearly illustrates the bug, as the summary time should match the runtime
+; reported by time$.
+
+; (defun fib (n) (if (or (zp n) (eql n 1)) 1 (+ (fib (- n 1)) (fib (- n 2)))))
+; (time$ (progn (defun f1 (x) x)
+;               (value-triple (length (make-list 10000000)))
+;               (defun f2 (x) x)))
+
+; Cleaned up special-form-or-op-p.
+
+; Modified script saved for sbcl to double the control-stack-size, which
+; allowed "make DOC" to complete.
+
+; Fixed the function INDUCT so that the second argument of the inform-simplify
+; call is less likely to have duplicates.
+
+; Here we say a bit more about the "logical modeling of the ACL2 evaluator"
+; mentioned below.  The function ev-fncall-rec is defined in the logic to be
+; ev-fncall-rec-logical, but they did not actually match up.  For example, the
+; result differed if ev-fncall-rec below was changed to ev-fncall-rec-logical.
+;   (defstub foo () t)
+;   (defttag t)
+;   (remove-untouchable ev-fncall-rec t)
+;   (ev-fncall-rec 'foo nil (w state) 100000 nil nil nil nil t)
+; We found several such discrepancies and have fixed them.
+
+; After remarks from Gary Byers, improved fgetprop a bit by using defconstant
+; to introduce *current-acl2-world-key* and by using symbol-value for
+; 'ACL2_GLOBAL_ACL2::CURRENT-ACL2-WORLD.
 
   :doc
   ":Doc-Section release-notes
@@ -18170,11 +18221,108 @@
   introduces that function.  Thanks to Nathan Wetzler for a helpful discussion
   leading to this improvement.
 
+  The test for redundancy (~pl[redundant-events]) of ~ilc[encapsulate]
+  ~il[events] has been improved in cases involving redefinition
+  (~pl[ld-redefinition-action]).  Thanks to Jared Davis for providing the
+  following example, which illustrates the problem.
+  ~bv[]
+    (redef!)
+
+    (encapsulate ()
+      (defun g (x)
+        (+ 3 x)))
+
+    (g 0) ; 3, as expected
+
+    (encapsulate ()
+      (defun g (x)
+        (+ 4 x)))
+
+    (g 0) ; 4, as expected
+
+    ; Unfortunately, the following was flagged as redundant because it agreed
+    ; with the first encapsulate above.  That has been fixed; now, it is
+    ; recognized as not being redundant.
+    (encapsulate ()
+      (defun g (x)
+        (+ 3 x)))
+  ~ev[]
+
+  The macro ~ilc[defmacro-last] and the ~il[table] ~ilc[return-last-table] have
+  been modified so that when they give special treatment to a macro ~c[mac] and
+  its raw Lisp counterpart ~c[mac-raw], a call ~c[(return-last 'mac-raw ...)]
+  can be made illegal when encountered directly in the top level loop, as
+  opposed to inside a function body.  ~l[return-last].  Thanks to Harsh Raju
+  Chamarthi for showing us an example that led us to make this improvement.
+
+  We removed a barrier to admitting function definitions, as we explain using
+  the following example.
+  ~bv[]
+  (defun foo (m state)
+    (declare (xargs :stobjs state))
+    (if (consp m)
+        (let ((state (f-put-global 'last-m m state)))
+          (foo (cdr m) state))
+      state))
+  ~ev[]
+  Previously, ACL2 complained that it could not determine the outputs of the
+  ~ilc[LET] form, as is necessary in order to ensure that ~ilc[STATE] is
+  returned by it.  ACL2 now works harder to solve this problem as well as the
+  analogous problem for ~ilc[MV-LET] and, more generally for
+  ~ilc[mutual-recursion].  (The main idea is to reverse the order of processing
+  the ~ilc[IF] branches if necessary.)  We thank Sol Swords for contributing a
+  version of the above example and requesting this improvement.
+
+  (CCL and SBCL only) When the host Lisp is CCL or SBCL, then since all
+  functions are compiled, a ~ilc[certify-book] command will no longer load the
+  newly-compiled file (and similarly for ~ilc[include-book] with argument
+  ~c[:load-compiled-file :comp]).
+
   ~st[NEW FEATURES]
 
   Users may now arrange for additional summary information to be printed at the
   end of ~il[events]; ~pl[print-summary-user].  Thanks to Harsh Raju Chamarthi
   for requesting this feature and participating in a design discussion.
+
+  A new, advanced ~il[proof-checker] command, ~c[geneqv], shows the generated
+  equivalence relation at the current subterm.  Thanks to Dave Greve for an
+  inquiry leading to this enhancement.
+
+  A new reader macro, ~c[#u], permits the use of underscore characters in a
+  number.  ~l[sharp-u-reader].  Thanks to Jared Davis for requesting this
+  capability.
+
+  New ~il[proof-checker] commands ~c[pl] and ~c[pr] provide interfaces to the
+  ACL2 commands ~c[:]~ilc[pl] and ~c[:]~ilc[pr], respectively.  These can be
+  useful if you want to see trivially-proved hypotheses, as now clarified in
+  the ~il[proof-checker] documentation for its ~c[show-rewrites] command.
+  ~l[proof-checker-commands].  Thanks to Pete Manolios for suggesting such
+  clarification and capability.
+
+  It is now legal to call ~il[non-executable] functions without the usual
+  ~il[signature] restrictions imposed on executable code.  For example,
+  the third event below was not admissible, but now it is.
+  ~bv[]
+  (defstobj foo fld)
+  (defun-nx id (x)
+    x)
+  (defun f (foo)
+    (declare (xargs :stobjs foo :verify-guards nil))
+    (cons 3 (id foo)))
+  ~ev[]
+  Thanks to Jared Davis for requesting this enhancement, in particular for
+  calling non-executable functions in the ~c[:logic] part of an ~ilc[mbe]
+  call.  Here is Jared's example, which is admissible now but formerly was
+  not.
+  ~bv[]
+  (defstobj foo (fld))
+  (defun-nx my-identity (x) x)
+  (defun my-fld (foo)
+    (declare (xargs :stobjs foo))
+    (mbe :logic (my-identity foo)
+         :exec (let ((val (fld foo)))
+                 (update-fld val foo))))
+  ~ev[]
 
   ~st[HEURISTIC IMPROVEMENTS]
 
@@ -18182,6 +18330,23 @@
   efficient (as tested with CCL as the host Lisp) in the case of consecutive
   repeated reads of the same named array.  Thanks to Jared Davis and Sol Swords
   for contributing this improvement.
+
+  Slightly modified the induction schemes stored, so that calls of so-called
+  ``guard-holders'' (such as ~ilc[mbe] and ~ilc[prog2$] ~-[] indeed, any call
+  of ~ilc[return-last] ~-[] and ~ilc[the]) are expanded away.  In particular,
+  calls of equality variants such as ~ilc[member] are treated as their
+  corresponding function calls, e.g., ~ilc[member-equal];
+  ~pl[equality-variants].  Guard-holders are also now expanded away before
+  storing ~il[constraint]s for ~ilc[encapsulate] ~il[events], which can
+  sometimes result in simpler constraints.
+
+  Improved the performance of ~ilc[dmr] (technical note: by modifying raw Lisp
+  code for function ~c[dmr-flush], replacing ~c[finish-output] by
+  ~c[force-output]).
+
+  We now avoid certain rewriting loops.  A long comment about this change,
+  including an example of a loop that no longer occurs, may be found in source
+  function ~c[expand-permission-result].
 
   ~st[BUG FIXES]
 
@@ -18205,6 +18370,14 @@
              :use not-true))
     :rule-classes nil)
   ~ev[]
+
+  Fixed a soundness bug involving ~c[with-live-state], which could cause an
+  error in the use of ~ilc[add-include-book-dir] or
+  ~ilc[delete-include-book-dir] in a book or its ~il[portcullis] commands.
+  ~l[with-live-state], as the documentation for this macro has been updated; in
+  particular it is now untouchable (~pl[remove-untouchable]) and is intended
+  only for system hackers.  Thanks to Jared Davis for reporting a bug in the
+  use of ~ilc[add-include-book-dir] after our first attempt at a fix.
 
   While calls of many event macros had been prohibited inside executable code,
   others should have been but were not.  For example, the following was
@@ -18240,12 +18413,71 @@
   previous ~il[events] in the message about ``bypassing constraints that have
   been proved when processing the event(s)''.
 
+  (GCL only) Fixed a bug in ~ilc[set-debugger-enable] (which was only a bug in
+  GCL, not an issue for other host Lisps).
+
+  Fixed ACL2 trace output to indent properly for levels above 99 (up to 9999).
+  Thanks to Warren Hunt for bringing this bug to our attention.
+
+  Fixed a bug in the reporting of times in event summaries ~-[] probably one
+  that has been very long-standing!  The times reported had often been too
+  small in the case of compound ~il[events], notably ~ilc[include-book].
+  Thanks to everyone who reported this problem (we have a record of emails from
+  Eric Smith and Jared Davis on this issue).
+
+  Fixed a bug in ~c[:expand] ~il[hints], where the use of ~c[:lambdas] could
+  prevent other parts of such a hint.  For example, the following invocation of
+  ~ilc[thm] failed before this fix was made.
+  ~bv[]
+  (defund foo (x) (cons x x))
+  (thm (equal (car (foo x)) x)
+  :hints ((\"Goal\" :expand (:lambdas (foo x)))))
+  ~ev[]
+
+  Certain ``program-only'' function calls will now cause hard Lisp
+  errors.  (The rather obscure reason for this fix is to support logical
+  modeling of the ACL2 evaluator.  A relevant technical discussion may be found
+  in source function ~c[oneify-cltl-code], at the binding of variable
+  ~c[fail_program-only-safe].)
+
+  There was an unnecessary restriction that ~ilc[FLET]-bound functions must
+  return all ~il[stobj]s among their inputs.  For example, the following
+  definition was rejected because ~c[state] was not among the outputs of ~c[h].
+  This restriction has been removed.
+  ~bv[]
+  (defun foo (state)
+    (declare (xargs :stobjs state))
+    (flet ((h (state) (f-boundp-global 'x state)))
+      (h state)))
+  ~ev[]
+
+  We fixed a bug, introduced in the preceding release (4.3), in the check for
+  irrelevant formals (~pl[irrelevant-formals]).  That check had been too
+  lenient in its handling of lambda (~il[LET]) expressions, for example
+  allowing the following definition to be admitted in spite of its first
+  formal parameter obviously being irrelevant.
+  ~bv[]
+  (defun foo (x clk)
+    (if (zp clk)
+        :diverge
+      (let ((clk (1- clk)))
+        (foo x clk))))
+  ~ev[]
+
   ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]
 
   Although the HTML documentation is distributed with ACL2, it had not been
   possible for users to build that documentation without omitting graphics, for
   example on the ACL2 home page.  That has been fixed, as files
   ~c[graphics/*.gif] are now distributed.
+
+  Compiler warnings are suppressed more completely than they had been before.
+  For example, the following had produced a compiler warning when the host Lisp
+  is CCL, but no longer does so.
+  ~bv[]
+  (defun f () (car 3))
+  (trace$ f)
+  ~ev[]
 
   ~st[EMACS SUPPORT]
 
@@ -18262,7 +18494,29 @@
 
   Printing of certain messages has been sped up (by using Lisp function
   ~c[force-output] in place of ~c[finish-output]).  Thanks to Jared Davis for
-  contributing this improvement.~eq[]
+  contributing this improvement.
+
+  ~il[Stobj] array writes are perhaps twice as fast.
+
+  It is now permitted to ~il[memoize] functions that take user-defined
+  ~il[stobj]s as inputs, provided that no ~il[stobj]s are returned.  Thanks to
+  Sol Swords for an observation that led to this improvement and useful
+  conversations.
+
+  Fixes have been made for memoizing with a non-~c[nil] value of
+  ~c[:ideal-okp].  Errors had occurred when memoizing with a ~c[:condition]
+  other than ~c[t] for a ~c[:]~ilc[logic] mode function that had not been
+  ~il[guard]-verified, even with a non-~c[nil] value of ~c[:ideal-okp]; and
+  after successfully memoizing such a function (without such ~c[:condition]),
+  it had not been possible to ~ilc[unmemoize] it.  Thanks to Sol Swords for
+  reporting issues with the ~c[:ideal-okp] argument of ~ilc[memoize].
+
+  If a book defined a function that was subsequently ~il[memoize]d in that
+  book, the function would no longer behaves as memoized upon completion of
+  book certification (unless that ~ilc[certify-book] command was undone and
+  replaced by evaluation of a corresponding ~ilc[include-book] command).  This
+  has been fixed.  Thanks to David Rager for pointing out the problem by
+  sending an example.~eq[]
 
   ~/~/")
 
@@ -18478,31 +18732,30 @@
                (assoc-eq fn (f-get-global 'trace-specs state))))
           (when trace-spec
             (untrace$-fn (list fn) state))
-          (with-more-warnings-suppressed
-           (let* ((stobj-function (getprop fn 'stobj-function nil
-                                           'current-acl2-world wrld))
-                  (form (cltl-def-from-name fn stobj-function wrld))
-                  (*1*fn (*1*-symbol fn))
-                  (raw-only-p  (and (consp fn0) (eq (car fn0) :raw)))
-                  (exec-only-p (and (consp fn0) (eq (car fn0) :exec))))
-             (cond
-              ((not (or exec-only-p
-                        (compiled-function-p! fn)))
-               (cond (form
-                      (eval (make-defun-declare-form fn form))))
-               (compile fn)))
-             (cond
-              ((and (not raw-only-p)
-                    (fboundp *1*fn)
-                    (not (compiled-function-p! *1*fn)))
-               #-acl2-mv-as-values ; may delete this restriction in the future
-               (eval
-                (make-defun-declare-form
-                 fn
-                 (cons 'defun (oneified-def fn wrld))))
-               (compile *1*fn)))
-             (when trace-spec
-               (trace$-fn trace-spec ctx state)))))
+          (let* ((stobj-function (getprop fn 'stobj-function nil
+                                          'current-acl2-world wrld))
+                 (form (cltl-def-from-name fn stobj-function wrld))
+                 (*1*fn (*1*-symbol fn))
+                 (raw-only-p  (and (consp fn0) (eq (car fn0) :raw)))
+                 (exec-only-p (and (consp fn0) (eq (car fn0) :exec))))
+            (cond
+             ((not (or exec-only-p
+                       (compiled-function-p! fn)))
+              (cond (form
+                     (eval (make-defun-declare-form fn form))))
+              (compile fn)))
+            (cond
+             ((and (not raw-only-p)
+                   (fboundp *1*fn)
+                   (not (compiled-function-p! *1*fn)))
+              #-acl2-mv-as-values ; may delete this restriction in the future
+              (eval
+               (make-defun-declare-form
+                fn
+                (cons 'defun (oneified-def fn wrld))))
+              (compile *1*fn)))
+            (when trace-spec
+              (trace$-fn trace-spec ctx state))))
         (value fn)))))))
 
 #-acl2-loop-only

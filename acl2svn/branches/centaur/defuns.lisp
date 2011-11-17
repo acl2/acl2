@@ -45,26 +45,53 @@
 ; defproxy, non-executablep will be nil.
 
   (cond ((null bodies) (trans-value nil))
-        (t (trans-er-let*
-            ((x (translate1-cmp (car bodies)
-                                (if non-executablep t (car names))
-                                (if non-executablep nil bindings)
-                                (car known-stobjs-lst)
-                                (if (and (consp ctx)
-                                         (equal (car ctx)
-                                                *mutual-recursion-ctx-string*))
-                                    (msg "( MUTUAL-RECURSION ... ( DEFUN ~x0 ...) ~
+        (t (mv-let
+            (erp x bindings2)
+            (translate1-cmp (car bodies)
+                            (if non-executablep t (car names))
+                            (if non-executablep nil bindings)
+                            (car known-stobjs-lst)
+                            (if (and (consp ctx)
+                                     (equal (car ctx)
+                                            *mutual-recursion-ctx-string*))
+                                (msg "( MUTUAL-RECURSION ... ( DEFUN ~x0 ...) ~
                                       ...)"
-                                         (car names))
-                                  ctx)
-                                wrld state-vars))
-             (y (translate-bodies1 non-executablep
-                                   (cdr names)
-                                   (cdr bodies)
-                                   bindings
-                                   (cdr known-stobjs-lst)
-                                   ctx wrld state-vars)))
-            (trans-value (cons x y))))))
+                                     (car names))
+                              ctx)
+                            wrld state-vars)
+            (cond
+             ((and erp
+                   (eq bindings2 :UNKNOWN-BINDINGS))
+              (trans-er-let*
+               ((y (translate-bodies1 non-executablep
+                                      (cdr names)
+                                      (cdr bodies)
+                                      bindings
+                                      (cdr known-stobjs-lst)
+                                      ctx wrld state-vars))
+                (x (translate1-cmp (car bodies)
+                                   (if non-executablep t (car names))
+                                   (if non-executablep nil bindings)
+                                   (car known-stobjs-lst)
+                                   (if (and (consp ctx)
+                                            (equal (car ctx)
+                                                   *mutual-recursion-ctx-string*))
+                                       (msg "( MUTUAL-RECURSION ... ( DEFUN ~x0 ...) ~
+                                      ...)"
+                                            (car names))
+                                     ctx)
+                                   wrld state-vars)))
+               (trans-value (cons x y))))
+             (erp (mv erp x bindings2))
+             (t (let ((bindings bindings2))
+                  (trans-er-let*
+                   ((y (translate-bodies1 non-executablep
+                                          (cdr names)
+                                          (cdr bodies)
+                                          bindings
+                                          (cdr known-stobjs-lst)
+                                          ctx wrld state-vars)))
+                   (trans-value (cons x y))))))))))
 
 (defun throw-nonexec-error-p (body)
 
@@ -6931,8 +6958,7 @@
          (relevant-posns-lambdas
           (lambda-body (ffn-symb term))
           (acons (ffn-symb term)
-                 (make-posns (lambda-formals (ffn-symb term))
-                             (all-vars (lambda-body (ffn-symb term))))
+                 nil
                  (relevant-posns-lambdas-lst (fargs term) ans))))
         (t (relevant-posns-lambdas-lst (fargs term) ans))))
 
@@ -8757,28 +8783,7 @@
                            (intro-udf (car insigs)
                                       wrld)))))
 
-(defun apply-stobj-print-names (vars stobjs)
-  (cond ((endp vars) nil)
-        (t (cons (cond
-                  ((member-eq (car vars) stobjs)
-                   (kwote
-                    (intern-in-package-of-symbol (stobj-print-name (car vars))
-                                                 (car vars))))
-                  (t (car vars)))
-                 (apply-stobj-print-names (cdr vars) stobjs)))))
-
-(defun null-body-er+ (fn formals wrld maybe-attach)
-  (let ((alt-formals
-         (let ((stobjs-in (stobjs-in fn wrld)))
-           (cond ((and stobjs-in
-                       (not (all-nils stobjs-in)))
-                  (apply-stobj-print-names formals stobjs-in))
-                 (t formals)))))
-    (if maybe-attach
-        (list 'throw-or-attach fn formals alt-formals)
-      (list 'throw-without-attach nil fn alt-formals))))
-
-(defun intro-udf-lst2 (insigs kwd-value-list-lst wrld)
+(defun intro-udf-lst2 (insigs kwd-value-list-lst)
 
 ; Warning: Keep this in sync with oneify-cltl-code.
 
@@ -8808,15 +8813,13 @@
                                                 (car kwd-value-list-lst)))))
                       (and guard
                            `((declare (xargs :guard ,guard)))))))
-              ,(null-body-er+ (caar insigs)
-                              (cadar insigs)
-                              wrld
-                              t))
+              ,(null-body-er (caar insigs)
+                             (cadar insigs)
+                             t))
             (intro-udf-lst2 (cdr insigs)
                             (if (eq kwd-value-list-lst 'non-executable-programp)
                                 'non-executable-programp
-                              (cdr kwd-value-list-lst))
-                            wrld)))))
+                              (cdr kwd-value-list-lst)))))))
 
 (defun intro-udf-lst (insigs kwd-value-list-lst wrld)
 
@@ -8832,8 +8835,7 @@
     (put-cltl-command `(defuns nil nil
                          ,@(intro-udf-lst2 insigs
                                            (and (not (eq kwd-value-list-lst t))
-                                                kwd-value-list-lst)
-                                           wrld))
+                                                kwd-value-list-lst)))
                       (intro-udf-lst1 insigs wrld)
                       wrld)))
 
@@ -8875,8 +8877,7 @@
                       ,@(intro-udf-lst2
                          (make-udf-insigs names wrld)
                          (and (eq non-executablep :program)
-                              'non-executable-programp)
-                         wrld)))
+                              'non-executable-programp))))
                   (t `(defuns ,(if (eq symbol-class :program)
                                    :program
                                  :logic)

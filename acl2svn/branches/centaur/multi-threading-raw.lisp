@@ -993,34 +993,28 @@
   #-sbcl
   (null (set-difference (all-threads) (initial-threads))))
 
-; Parallelism wart: consider deleting the following comment and associated
-; code.
+(defun all-given-threads-are-reset (threads)
+  (if (endp threads)
+      t
+    (and (equal (ccl:process-whostate (car threads))
+                "Reset")
+         (all-given-threads-are-reset (cdr threads)))))
 
-; The below commented code (functions all-given-threads-are-reset and
-; all-threads-except-initial-threads-are-dead-or-reset) implements a scheme for
-; CCL that, for the most part, would prevent the need to call sleep inside
-; send-die-to-all-except-initial-threads.  That being said, the solution to
-; call sleep is simpler (and ports more easily to other Lisps), so we use that
-; solution instead.  We preserve this code as an example alternative to calling
-; sleep.
+ (defun all-threads-except-initial-threads-are-dead-or-reset ()
+   (format t "All-threads is ~s~%" (all-threads))
 
-;; (defun all-given-threads-are-reset (threads)
-;;   (if (endp threads)
-;;       t
-;;     (and (equal (ccl:process-whostate (car threads))
-;;                 "Reset")
-;;          (all-given-threads-are-reset (cdr threads)))))
+; CCL has a bug that if you try to throw a thread that is "reset" ("reset" is a
+; CCL term), it ignores the throw (and the thread never expires).  As such, we
+; do not let threads in the "reset" state prevent us from finishing the
+; resetting of parallelism variables.
 
-;; (defun all-threads-except-initial-threads-are-dead-or-reset ()
-;;   (format t "All-threads is ~s~%" (all-threads))
-;;   #+ccl
-;;   (all-given-threads-are-reset 
-;;    (set-difference (all-threads) (initial-threads)))
-;;   #+sbcl
-;;   (<= (length (all-threads)) 1)
-;;   #-(or ccl sbcl)
-;;   (null (set-difference (all-threads) (initial-threads))))
-
+  #+ccl
+  (all-given-threads-are-reset 
+   (set-difference (all-threads) (initial-threads)))
+  #+sbcl
+  (<= (length (all-threads)) 1)
+  #-(or ccl sbcl)
+  (null (set-difference (all-threads) (initial-threads))))
 
 (defun send-die-to-all-except-initial-threads ()
 
@@ -1030,7 +1024,7 @@
                                         (initial-threads))))
     (throw-all-threads-in-list target-threads)
     (let ((round 0))
-      (when (not (all-threads-except-initial-threads-are-dead))
+      (loop do
       
 ; We used to call "(thread-wait 'all-threads-except-initial-threads-are-dead)".
 ; However, we noticed a synchronization problem between what we might prefer
@@ -1043,10 +1037,18 @@
 ; this problem, we punt, and simply wait for one second before issuing a new
 ; throw.  In practice, this works just fine.
 
-        (when (equal (mod round 10) 0)
-          (throw-all-threads-in-list target-threads))
-        (sleep 0.1)
-        (incf round)))))
+            (when (equal (mod round 10) 0)
+              (throw-all-threads-in-list target-threads)
+
+; The following commented code is only for debugging
+
+;              (format t "Waiting for all non-initial threads to halt.~%")
+;              (format t "Current threads are ~%~s~%~%" (all-threads))
+
+              )
+            (sleep 0.1)
+            (incf round)
+            while (not (all-threads-except-initial-threads-are-dead-or-reset))))))
 
 (defun kill-all-except-initial-threads ()
 
@@ -1086,6 +1088,10 @@
     (or default 16)))
 
 (defvar *core-count*
+
+; *core-count* is a variable so that we can redefine it dynamically (for
+; performance testing) and not have to redefine everything that uses it.
+
   (core-count-raw)
   "The total number of CPU cores in the system.")
 
@@ -1129,13 +1135,14 @@
 ; *max-idle-thread-count*) threads.  Presumably you'll get a hard Lisp error
 ; (or seg fault!) if your Lisp cannot create that many threads.
 
-; We picked a new value of 200 on September 2011 to support Robert Krug's
+; We picked a new value of 400 on September 2011 to support Robert Krug's
 ; proof that took ~9000 seconds in serial mode.  Initially, when
 ; *total-work-limit* was set to 50, the parallelized proof only saw an
 ; improvement to ~2200 seconds, but after changing *total-work-limit* to 200,
 ; the parallelized proof now takes ~1300 seconds.
 
-         200)
+         400)
+
         (bound (* 2 *core-count*)))
     (when (< val bound)
       (error "The variable *total-work-limit* needs to be at least ~s, ~%~

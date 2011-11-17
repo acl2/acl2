@@ -5386,7 +5386,8 @@
                        cl-set0
                        (normalized-evaluator-cl-set evfn-lst wrld)))
                      (cl-set2
-                      (evaluator-clauses evfn evfn-lst fn-args-lst)))
+                      (remove-guard-holders-lst-lst
+                       (evaluator-clauses evfn evfn-lst fn-args-lst))))
                 (cond
                  ((not (and (clause-set-subsumes nil cl-set1 cl-set2)
                             (clause-set-subsumes nil cl-set2 cl-set1)))
