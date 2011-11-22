@@ -62,6 +62,28 @@
             (cond
              ((and erp
                    (eq bindings2 :UNKNOWN-BINDINGS))
+
+; We try translating in some other order.  This attempt isn't complete; for
+; example, the following succeeds, but it fails if we switch the first two
+; definitions.  But it's cheap and better than nothing; without it, the
+; unswitched version would fail, too.  If this becomes an issue, consider the
+; potentially quadratic algorithm of first finding one definition that
+; translates successfully, then another, and so on, until all have been
+; translated.
+
+; (set-state-ok t)
+; (set-bogus-mutual-recursion-ok t)
+; (program)
+; (mutual-recursion
+;  (defun f1 (state)
+;    (let ((state (f-put-global 'last-m 1 state)))
+;      (f2 state)))
+;  (defun f2 (state)
+;    (let ((state (f-put-global 'last-m 1 state)))
+;      (f3 state)))
+;  (defun f3 (state)
+;    state))
+
               (trans-er-let*
                ((y (translate-bodies1 non-executablep
                                       (cdr names)

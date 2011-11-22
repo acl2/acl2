@@ -3942,7 +3942,7 @@
 
   `(mv-let (ctx msg-or-val)
            (er-cmp ,ctx
-                   "~@0  Note:  This error occurred in the context ~x1."
+                   "~@0  Note:  this error occurred in the context ~x1."
                    (msg ,str ,@args)
                    ,form)
            (mv ctx msg-or-val bindings)))
@@ -4692,13 +4692,12 @@
             in ~@1.  It is a requirement that ~#0~[this object~/these ~
             objects~] be among the outputs of ~@2.  But, at the time at which ~
             we process ~@2, we are unable to determine what the outputs are ~
-            and so cannot allow it.  This situation can arise when the output ~
-            of ~@2 is a recursive call of the function being admitted and no ~
-            other IF branch of the body of the function (or in the case of ~
-            mutual recursion, the body of any other function in the clique) ~
-            tells us the output signature of the function.  Perhaps a ~
-            recursion's base case is missing."
-           stobjs-bound str1 str2 str3)))
+            and so cannot allow it.  In the case of the admission of a clique ~
+            of mutually-recursive functions, this situation can arise when ~
+            the output of ~@2 is a call of a function defined in the clique ~
+            after the definition containing ~@2, in which case the problem ~
+            might be eliminated by rearranging the order of the definitions."
+            stobjs-bound str1 str2 str3)))
    (declare (ignore bindings))
    (mv erp msg :UNKNOWN-BINDINGS)))
 
