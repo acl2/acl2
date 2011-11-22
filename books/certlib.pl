@@ -83,6 +83,9 @@ sub abs_canonical_path {
     my $path = shift;
     my $abspath = File::Spec->rel2abs(rec_readlink($path));
     my ($vol, $dir, $file) = File::Spec->splitpath($abspath);
+    if (! -d $dir) {
+	print "Oops, trying to go into $dir\n";
+    }
     my $absdir = Cwd::fast_abs_path($dir);
     if ($absdir) {
 	return File::Spec->catpath($vol, $absdir, $file);

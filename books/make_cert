@@ -1,141 +1,91 @@
 # -*- mode: Makefile; -*-
 
-######################################################################
-## NOTE.  This file is not part of the standard ACL2 books build
-## process; it is part of an experimental build system that is not yet
-## intended, for example, to be capable of running the whole
-## regression.  The ACL2 developers do not maintain this file.
-##
-## Please contact Jared Davis <jared@cs.utexas.edu> or Sol Swords
-## <sswords@cs.utexas.edu> with any questions/comments.
-######################################################################
+# cert.pl build system
+# Copyright (C) 2008-2011 Centaur Technology
+#
+# Contact:
+#   Centaur Technology Formal Verification Group
+#   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+#   http://www.centtech.com/
+#
+# This program is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free Software
+# Foundation; either version 2 of the License, or (at your option) any later
+# version.  This program is distributed in the hope that it will be useful but
+# WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+# more details.  You should have received a copy of the GNU General Public
+# License along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+#
+# Original authors: Sol Swords <sswords@centtech.com>
+#                   Jared Davis <jared@centtech.com>
+#
+# NOTE: This file is not part of the standard ACL2 books build process; it is
+# part of an experimental build system.  The ACL2 developers do not maintain
+# this file.
 
-# Copyright 2008 by Sol Swords and Jared Davis.
-# Credit to Matt Kaufmann and J Strother Moore for code from Makefile-generic.
 
-# This file can be included in a GNU makefile (with SHELL set to bash)
-# to provide a rule for certifying ACL2 books.
+# make_cert -- this file can be included in a GNU Makefile (with SHELL set to
+# bash) to provide a rule for certifying ACL2 books.
 
+# BOZO do we still need this?
 SHELL := $(shell which bash)
 
-COMPILE_FLG ?= t :ttags :all :skip-proofs-okp t
-COMPILE_FLG_TWOPASS ?= t :ttagsx :all :ttags :all :skip-proofs-okp t :acl2x t
-INHIBIT ?= (set-inhibit-output-lst (list (quote prove) (quote proof-tree) (quote warning) (quote observation) (quote event) (quote expansion)))
-ACL2_BOOKS_DEBUG ?=
-OUTFILE_HEADER ?= "-*- Mode: auto-revert -*-"
+# Default ACL2 to whatever 'acl2' is in the path
+export ACL2 ?= acl2
+
+# If this is non-empty, we'll print various debugging messages.
+export ACL2_BOOKS_DEBUG ?=
+
+# If this is non-empty, we'll execute the ON_FAILURE_CMD whenever anything
+# fails.  For instance, you could email yourself or something.
+export ON_FAILURE_CMD ?=
+
+# If this is non-empty, we'll create .time files that can be used by
+# critpath.pl
+export TIME_CERT ?=
+
+# Arguments for certify-book (one-pass certification).  We prefer to allow
+# proof-skipping and ttags by default, since otherwise adding a ttag or
+# skipping a single proof in a widely-included book could lead to a huge
+# problem in updating all of the affected books.
+export COMPILE_FLG ?= t :ttags :all :skip-proofs-okp t
+
+# Arguments to certify-book (two-pass certification).
+export COMPILE_FLG_TWOPASS ?= t :ttagsx :all :ttags :all :skip-proofs-okp t :acl2x t
+
+# Typically you want to inhibit most proof output during certification, since
+# this can greatly reduce the size of .out files.
+export INHIBIT ?= (set-inhibit-output-lst (list (quote prove) \
+                                         (quote proof-tree) \
+                                         (quote warning) \
+                                         (quote observation) \
+                                         (quote event) \
+                                         (quote expansion)))
+
+# Modeline for .out files.  We like to have the .out files open in auto-revert
+# mode, for those cases where you are watching the file as it is being
+# certified.
+export OUTFILE_HEADER ?= "-*- Mode: auto-revert -*-"
+
+# Max number of seconds to wait for files to appear before giving up.  Don't be
+# scared by this!  Ordinarily we don't even have to wait at all.  But if the
+# exit status of ACL2 indicates that the certification succeeded without the
+# .cert file having appeared, we'll start polling in one-second intervals to
+# see if the file shows up.
+export MAX_NFS_LAG ?= 100
 
 # Avoid loading customization file unless environment variable is already set.
 export ACL2_CUSTOMIZATION ?= NONE
 
-# Default ACL2 to whatever is in the path
-ACL2 ?= acl2
-
 # STARTJOB can be set in the environment to be some other command than the shell,
-# which should take the syntax "startjob -c 'shell command'".  For example, this 
+# which should take the syntax "startjob -c 'shell command'".  For example, this
 # could be a queueing command to submit the job to a cluster.
-STARTJOB ?= $(SHELL)
+export STARTJOB ?= $(SHELL)
 
-define make_cert
-	@TARGETEXT=$(1) ;\
-	PASSES=$(2) ;\
-	if [ $$PASSES == 2 ] ;\
-	then \
-	   FLAGS="$(COMPILE_FLG_TWOPASS)" ;\
-	else \
-	   FLAGS="$(COMPILE_FLG)" ;\
-	fi ;\
-	echo "Making $*.$$TARGETEXT on `date`" ;\
-	DIR=`dirname $*` ;\
-	FILE=`basename $*` ;\
-        ACL2=`which $(ACL2) 2> /dev/null` ;\
-	cd $$DIR ;\
-	if [ -f $$FILE.image ] ; then \
-	   IM=`cat $$FILE.image` ;\
-	   if [ "$${IM}" != "" ] ; then \
-	      ACL2=$${IM} ;\
-	   fi ;\
-	elif [ -f cert.image ] ; then \
-	   IM=`cat cert.image` ;\
-	   if [ "$${IM}" != "" ] ; then \
-	      ACL2=$${IM} ;\
-	   fi ;\
-	fi ;\
-	rm -f $$FILE.$$TARGETEXT ;\
-	WORKXXXFILE=workxxx.$$FILE.$$TARGETEXT.$$RANDOM ;\
-	echo '(acl2::value :q)' > $$WORKXXXFILE ;\
-	echo '(in-package "ACL2")' >> $$WORKXXXFILE ;\
-	echo '(acl2::lp)' >> $$WORKXXXFILE ;\
-	if [ $$TARGETEXT == acl2x ] ;\
-	  then echo '(set-write-acl2x t state)' >> $$WORKXXXFILE ;\
-	fi ;\
-	echo '$(INHIBIT)' >> $$WORKXXXFILE ;\
-	if [ -f $$FILE.acl2 ] ;\
-	then \
-	  cat $$FILE.acl2 >> $$WORKXXXFILE ;\
-	elif [ -f cert.acl2 ] ;\
-	then \
-	  cat cert.acl2 >> $$WORKXXXFILE ;\
-	  echo "" >> $$WORKXXXFILE ;\
-	  echo "(time$$ (certify-book \"$$FILE\" ? $$FLAGS))" \
-	        >> $$WORKXXXFILE ;\
-	else \
-	  echo "" >> $$WORKXXXFILE ;\
-	  echo "(time$$ (certify-book \"$$FILE\" ? $$FLAGS))" \
-	        >> $$WORKXXXFILE ;\
-	fi ;\
-	echo "" >> $$WORKXXXFILE ;\
-	if [ $$TARGETEXT != acl2x ] ;\
-	then \
-	    echo "(acl2::ld \"make_cert.lsp\" :dir :system)" >> $$WORKXXXFILE ;\
-	    echo "(acl2::horrible-include-book-exit \"$$FILE\" acl2::state)" \
-                 >> $$WORKXXXFILE ;\
-	fi ;\
-	if [ -n "$(ACL2_BOOKS_DEBUG)" ] ;\
-	then \
-	  echo "[make_cert]: certify book commands for $$FILE.$$TARGETEXT:" ;\
-	  echo "" ;\
-	  cat $$WORKXXXFILE ;\
-	  echo "" ;\
-	fi ;\
-	if [ $$TARGETEXT == acl2x ] ;\
-	then \
-	  TIMEFILE=$$FILE.acl2x.time ;\
-	  OUTFILE=$$FILE.acl2x.out ;\
-	else \
-	  TIMEFILE=$$FILE.time ;\
-	  OUTFILE=$$FILE.out ;\
-	fi ;\
-	echo "$(OUTFILE_HEADER)" > $$OUTFILE ;\
-	if [ "$$TIME_CERT" != "" ] ;\
-	then \
-	  $(STARTJOB) -c "( time ( ( $$ACL2 < $$WORKXXXFILE 2>&1) >> $$OUTFILE ) ) 2> $$TIMEFILE" ;\
-	else \
-	  $(STARTJOB) -c "($$ACL2 < $$WORKXXXFILE 2>&1) >> $$OUTFILE" ;\
-	fi ;\
-        STATUS=$$? ;\
-	rm -f $$WORKXXXFILE ;\
-	if [[   ( $$TARGETEXT != acl2x && "$$STATUS" == "43" ) \
-	     || ( $$TARGETEXT == acl2x && -e $$FILE.$$TARGETEXT ) ]] ; then \
-	   ls -al $$FILE.$$TARGETEXT || echo "NFS problem for $$FILE.$$TARGETEXT?" ;\
-	else \
-	  if [[ $$TARGETEXT == acl2x ]] ;\
-	    then TASKNAME="ACL2X GENERATION" ;\
-	    else TASKNAME="CERTIFICATION" ;\
-	  fi ;\
-	  echo "**$$TASKNAME FAILED** for $$DIR/$$FILE.lisp" ;\
-	  echo "" ;\
-	  echo $$OUTFILE : ;\
-          tail -300 $$OUTFILE | sed 's/^/   | /' ;\
-	  echo "" ;\
-	  echo "" ;\
-	  if [ "$$ON_FAILURE_CMD" != "" ] ;\
-	  then \
-	     $$ON_FAILURE_CMD ;\
-	  fi ;\
-          echo "**CERTIFICATION FAILED** for $$DIR/$$FILE.lisp" ;\
-          exit 1 ;\
-        fi
-endef
+# MAKE_CERT_SH must point to wherever make_cert.sh lives.
+export MAKE_CERT_SH ?= $(ACL2_SYSTEM_BOOKS)/make_cert_help.sh
 
 
 # A cert file is made using the two-pass scheme iff the .acl2x file is
@@ -145,8 +95,8 @@ endef
 # cert.pl independently, for files containing the phrase
 # "two-pass certification".
 %.cert : %.lisp
-	$(call make_cert,cert,$(if $(filter $*.acl2x, $^),2,1))
+	@$(MAKE_CERT_SH) "$*" "cert" $(if $(filter $*.acl2x, $^), "2", "1")
 
 %.acl2x : %.lisp
-	$(call make_cert,acl2x,2)
+	@$(MAKE_CERT_SH) "$*" "acl2x" "2"
 
