@@ -25613,10 +25613,8 @@
     (bddnotes . nil)
     (certify-book-info .
 
-; Certify-Book-Info is non-nil when certifying a book, in which case it is the
-; full-book-name of the book being certified, except if the book is known to be
-; "tainted" (a certificate of some included book has the wrong version) then it
-; is a one-element list containing that full-book-name.
+; Certify-book-info is non-nil when certifying a book, in which case it is a
+; certify-book-info record.
 
                        nil)
     (check-sum-weirdness . nil)
@@ -25736,7 +25734,6 @@
     (standard-co . acl2-output-channel::standard-character-output-0)
     (standard-oi . acl2-output-channel::standard-object-input-0)
     (step-limit-record . nil)
-    (tainted-okp . nil)
     (temp-touchable-fns . nil)
     (temp-touchable-vars . nil)
     (term-evisc-tuple . :default)

@@ -9076,8 +9076,8 @@
   The ~il[proof-checker] now does non-linear arithmetic when appropriate.  It
   had formerly ignored ~ilc[set-non-linearp] executed in the ACL2 command loop.
 
-  Incremental releases are now supported.  ~l[version] and
-  ~pl[set-tainted-okp].  Thanks to Hanbing Liu for discovering a flaw in our
+  Incremental releases are now supported.  ~l[version] and {obsolete after 4.3}
+  set-tainted-okp.  Thanks to Hanbing Liu for discovering a flaw in our
   original design.
 
   The pattern-matching algorithm for ~c[:]~ilc[rewrite] rules has been made
@@ -13538,7 +13538,7 @@
   to the ~il[documentation] and to adding this warning.
 
   You may now use ~ilc[set-non-linear], ~ilc[set-let*-abstraction],
-  ~ilc[set-tainted-ok], and ~ilc[set-ld-skip-proofs] in place of their versions
+  ~c[set-tainted-ok], and ~ilc[set-ld-skip-proofs] in place of their versions
   ending in ``~c[p]''.  Thanks to Jared Davis for suggesting consideration of
   such a change.  All ``~c[set-]'' utilites now have a version without the
   final ``~c[p]'' (and most do not have a version with the final ``~c[p]'').
@@ -18479,6 +18479,11 @@
   (trace$ f)
   ~ev[]
 
+  Removed support for ``tainted'' ~il[certificate]s.  One reason is that there
+  are rarely incremental releases.  A stronger reason is that for the
+  compatibility of a new release is with the previous non-incremental release,
+  it's not particularly relevant whether or not the new release is incremental.
+
   ~st[EMACS SUPPORT]
 
   ~st[EXPERIMENTAL VERSIONS]
@@ -18516,7 +18521,9 @@
   book certification (unless that ~ilc[certify-book] command was undone and
   replaced by evaluation of a corresponding ~ilc[include-book] command).  This
   has been fixed.  Thanks to David Rager for pointing out the problem by
-  sending an example.~eq[]
+  sending an example.
+
+  ~il[Gag-mode] now is initially set to ~c[:goals] instead of ~c[t].~eq[]
 
   ~/~/")
 

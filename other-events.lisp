@@ -11031,30 +11031,6 @@
         (t (cons (car post-alist3)
                  (unmark-and-delete-local-included-books (cdr post-alist3))))))
 
-; Essay on Tainted Books
-
-; A notion of incremental version number, or incrl, was introduced in ACL2
-; Version_2.9.1, in order to support incremental releases.  We wanted to make
-; it easy for the ACL2 user to experiment with incremental releases without
-; being required to recertify all books.  See :DOC set-tainted-okp for more
-; high-level discussion of this issue and how it is dealt with from a user
-; perspective.  In a nutshell, we mark a book as "tainted" by putting
-; "(tainted)" into the version string of its certificate, and we do this when
-; we detect the possibility that the book depends on the inclusion of at least
-; one book with a mismatch of the incrl version number (see :DOC version).  We
-; disallow certification of tainted books, and treat include-book of tainted
-; books as uncertified, except when the user has evaluated (set-tainted-okp t),
-
-; Two state globals support handling of tainted books.  State global
-; 'certify-book-info is generally nil, but is set to the full book name while
-; certifying a book and transitions from that to (list full-book-name) if we
-; encounter inclusion of a book that is either explicitly tainted or has a
-; version mismatch of its incrl field.  State global 'tainted-okp is initially
-; nil, which disallows certification of tainted books and treates included
-; tainted books as uncertified.  The user may call set-tainted-okp to set this
-; variable to t in order to allow include-book and certify book to accept
-; tainted books fully, albeit with "Tainted" warnings.
-
 (defun decimal-string-to-number (s bound expo)
 
 ; Returns 10^expo times the integer represented by the digits of string s from
@@ -11086,47 +11062,15 @@
                            \"~s1\"."
                           pos s)))))))
 
-(defun tainted-stringp (s)
-
-; Keep this in sync with taint-string.
-
-; This function recognizes acl2-version strings that are "tainted".  Books with
-; certificates containing such acl2-version strings are not to be fully
-; trusted.
-
-; We could just look in s for "(tainted)".  But this function allows strings
-; such as "(tainted[some-other-info])", which may somehow be of use for us down
-; the road.
-
-  (let ((p1 (position #\( s)))
-    (and p1
-         (let ((p2 (position #\) s)))
-           (and p2
-                (<= 8 (- p2 p1))
-                (equal (subseq s (+ 1 p1) (+ 8 p1)) "tainted"))))))
-
-(defun taint-string (v)
-
-; Keep this in sync with tainted-stringp.
-
-  (let ((p (position #\( v))
-        (tnt "(tainted)"))
-    (cond (p (concatenate 'string
-                          (subseq v 0 p)
-                          tnt
-                          (subseq v p (length v))))
-          (t (concatenate 'string v tnt)))))
-
 (defun parse-version (version)
 
 ; Version is an ACL2 version string, as in state global 'acl2-version.  We
-; return (mv major minor incrl taintedp rest), where either major is nil,
-; indicating an ill-formed version; or else major, minor, and incrl are natural
-; numbers indicating the major, minor, and incrl version, and rest is the part
-; of the string starting with #\(, if any, with its initial "(...)"  removed if
-; "..." begins with "tainted".  For example, (parse-version "ACL2 Version
-; 2.10") is (mv 2 10 0 nil "") and (parse-version "ACL2 Version
-; 2.10.1(tainted)(r)") is (mv 2 10 1 t "(r)").
+; return (mv major minor incrl rest), where either major is nil, indicating an
+; ill-formed version; or else major, minor, and incrl are natural numbers
+; indicating the major, minor, and incrl version, and rest is the part of the
+; string starting with #\(, if any.  For example,
+; (parse-version "ACL2 Version 2.10") is (mv 2 10 0 "") and
+; (parse-version "ACL2 Version 2.10.1(r)") is (mv 2 10 1 "(r)").
 
   (let* ((root "ACL2 Version")
          (pos0 (if (and (stringp version)
@@ -11139,12 +11083,7 @@
          (pos-lparen (position #\( version))
          (end0 (or pos-lparen
                    (length version)))
-         (rest0 (subseq version end0 (length version)))
-         (taintedp (and pos-lparen ; optimization
-                        (tainted-stringp version)))
-         (rest (if taintedp
-                   (subseq rest0 (1+ (position #\) rest0)) (length rest0))
-                 rest0))
+         (rest (subseq version end0 (length version)))
          (from-pos0 (and pos0 (subseq version pos0 end0)))
          (pos1-from-pos0 (and pos0 (position #\. from-pos0)))
          (pos1 (and pos1-from-pos0 (+ pos0 pos1-from-pos0)))
@@ -11165,13 +11104,13 @@
                      (1- (- end0 pos2))
                      0)
                   0)))
-    (mv major minor incrl taintedp rest)))
+    (mv major minor incrl rest)))
 
 #-acl2-loop-only
 (defun-one-output latest-release-note-string ()
-  (mv-let (major minor incrl taintedp rest)
+  (mv-let (major minor incrl rest)
     (parse-version (f-get-global 'acl2-version *the-live-state*))
-    (declare (ignore taintedp rest))
+    (declare (ignore rest))
     (if (zerop incrl)
         (format nil "note-~s-~s" major minor)
       (format nil "note-~s-~s-~s" major minor incrl))))
@@ -11179,16 +11118,16 @@
 (defun earlier-acl2-versionp (version1 version2)
 
 ; This function ignores the part of each version string after the first
-; parenthesis (if any), including "(tainted)".  While it is no longer used in
-; the sources (as of May 1, 2010), it is used in books/hacking/ and is a handy
-; utility, so we leave it here.
+; parenthesis (if any).  While it is no longer used in the sources (as of May
+; 1, 2010), it is used in books/hacking/ and is a handy utility, so we leave it
+; here.
 
-  (mv-let (major1 minor1 incrl1 taintedp1 rest1)
+  (mv-let (major1 minor1 incrl1 rest1)
     (parse-version version1)
-    (declare (ignore taintedp1 rest1))
-    (mv-let (major2 minor2 incrl2 taintedp2 rest2)
+    (declare (ignore rest1))
+    (mv-let (major2 minor2 incrl2 rest2)
       (parse-version version2)
-      (declare (ignore taintedp2 rest2))
+      (declare (ignore rest2))
       (cond
        ((or (null major1) (null major2))
         (er hard 'earlier-acl2-versionp
@@ -11466,70 +11405,17 @@
    (state-global-let* ((infixp nil)) (read-object ch state))
    (cond
     (eofp (er soft ctx *ill-formed-certificate-msg* file1 file2))
-    (t (let* ((version-okp (equal version (f-get-global 'acl2-version state)))
-              (version-okp-tainted
-               (and (not version-okp)
-                    (mv-let (major1 minor1 incrl1 taintedp1 rest1)
-                      (parse-version version)
-                      (declare (ignore taintedp1))
-                      (mv-let (major2 minor2 incrl2 taintedp2 rest2)
-                        (parse-version (f-get-global 'acl2-version state))
-                        (declare (ignore taintedp2))
-                        (and (eql major1 major2)
-                             (eql minor1 minor2)
-                             (equal rest1 rest2)
-                             (if (eql incrl1 incrl2)
-                                 'tainted
-                               'incrl-mismatch)))))))
+    (t (let* ((version-okp (equal version (f-get-global 'acl2-version state))))
          (cond
-          ((or version-okp
-               (and version-okp-tainted
-                    (f-get-global 'tainted-okp state)))
+          (version-okp
            (mv-let
              (eofp key state)
              (state-global-let* ((infixp nil)) (read-object ch state))
              (cond
               ((or eofp (not (eq key :begin-portcullis-cmds)))
                (er soft ctx *ill-formed-certificate-msg* file1 file2))
-              (t (er-let* ((cert-obj
-                            (chk-raise-portcullis file1 file2 ch
-                                                  light-chkp
-                                                  ctx state
-                                                  suspect-book-action-alist
-                                                  evalp)))
-                   (cond (version-okp-tainted
-                          (pprogn (let ((certify-book-info (f-get-global
-                                                            'certify-book-info
-                                                            state)))
-                                    (if (stringp certify-book-info)
-                                        (f-put-global 'certify-book-info
-                                                      (list certify-book-info)
-                                                      state)
-                                      state))
-                                  (warning$ ctx "Tainted"
-                                            "The book ~x0 is being treated as ~
-                                             certified even though ~
-                                             ~#1~[~@2~/~@3~].  See :DOC ~
-                                             set-tainted-okp."
-                                            file1
-                                            (if (eq version-okp-tainted
-                                                    'tainted)
-                                                0
-                                              1)
-                                            "some potential version ~
-                                             discrepancies were encountered ~
-                                             during its certification"
-                                            `("the ``incrl'' field of its ~
-                                              acl2-version, ~xa, differs from ~
-                                              that of the current ~
-                                              acl2-version, ~xb; see :DOC ~
-                                              version"
-                                              (#\a . ,version)
-                                              (#\b . ,(f-get-global
-                                                       'acl2-version 
-                                                       state))))
-                                  (value cert-obj)))
-                         (t (value cert-obj))))))))
+              (t (chk-raise-portcullis file1 file2 ch light-chkp ctx state
+                                       suspect-book-action-alist evalp)))))
           ((not (equal (acl2-version-r-p (f-get-global 'acl2-version state))
                        (acl2-version-r-p version)))
            (er soft ctx
@@ -11548,25 +11434,11 @@
                       this book in the current ACL2 may render this ACL2 ~
                       sesion unsound!  We recommend you recertify the book ~
                       with the current version, ~sb.  See :DOC version.  No ~
-                      compiled file will be loaded with this book.~@c"
+                      compiled file will be loaded with this book."
                     (list (cons #\a (if (eq version :begin-portcullis-cmds)
                                         "ACL2 Version 1.8"
                                       version))
-                          (cons #\b (f-get-global 'acl2-version state))
-                          (cons #\c
-                                (case version-okp-tainted
-                                  (incrl-mismatch
-                                   "~|  NOTE that only the ``incrl'' version ~
-                                    fields disagree.  See :DOC set-tainted-okp ~
-                                    for an untrusted workaround for this ~
-                                    problem.")
-                                  (tainted
-                                   "~|  NOTE that the above book was certified ~
-                                    in an ACL2 world in which some version ~
-                                    discrepancies were ignored.  See :DOC ~
-                                    set-tainted-okp for an untrusted ~
-                                    workaround for this problem.")
-                                  (otherwise "")))))
+                          (cons #\b (f-get-global 'acl2-version state))))
               :uncertified-okp
               suspect-book-action-alist
               ctx state)
@@ -12018,11 +11890,7 @@
              (print-circle (f-get-global 'print-circle-files state)))
             (pprogn
              (print-object$ '(in-package "ACL2") ch state)
-             (print-object$
-              (if (consp (f-get-global 'certify-book-info state))
-                  (taint-string (f-get-global 'acl2-version state))
-                (f-get-global 'acl2-version state))
-              ch state)
+             (print-object$ (f-get-global 'acl2-version state) ch state)
              (print-object$ :BEGIN-PORTCULLIS-CMDS ch state)
              (print-objects (hons-copy (car portcullis)) ch state)
              (print-object$ :END-PORTCULLIS-CMDS ch state)
@@ -12105,7 +11973,7 @@
 ; following form:
 
 ; (in-package "ACL2")
-; "ACL2 Version x.y"      ; but see below, regarding tainting
+; "ACL2 Version x.y"
 ; :BEGIN-PORTCULLIS-CMDS  ; this is here just to let us check that the file
 ; cmd1                    ; is not a normal list of events.
 ; ...
@@ -12123,11 +11991,6 @@
 ; individually.
 
 ; Optionally, create .cert.final file as well; see comment below.
-
-; Finally, if the book is to be tainted, we taint the acl2-version in the
-; certificate.  However, this function is not responsible for checking if
-; tainting is legal; such a check should already have been made if we are to
-; taint the book.
 
   (let ((certification-file (convert-book-name-to-cert-name file))
         (post-alist3 (mark-local-included-books post-alist1 post-alist2)))
@@ -14062,7 +13925,7 @@
 (defun print-certify-book-step-5 (full-book-name state)
   (io? event nil state
        (full-book-name)
-       (fms "* Step 5:  Compiling the functions defined in ~x0.~%"
+       (fms "* Step 5:  Compile the functions defined in ~x0.~%"
             (list (cons #\0 full-book-name))
             (proofs-co state) state nil)))
 
@@ -14497,7 +14360,9 @@
           (full-book-name directory-name familiar-name)
           (parse-book-name (cbd) user-book-name ".lisp" ctx state)
           (state-global-let*
-           ((certify-book-info full-book-name)
+           ((certify-book-info (make certify-book-info
+                                     :full-book-name full-book-name
+                                     :other-info nil))
             (match-free-error nil)
             (defaxioms-okp-cert defaxioms-okp)
             (skip-proofs-okp-cert skip-proofs-okp)
@@ -15934,18 +15799,7 @@
   Incremental releases are accompanied by a bump in the incrl field of the
   version field, while normal releases are accompanied by a bump in the minor
   or (much less frequently) major field and zeroing out of the incrl field.
-
-  Note that LOGICALLY SPEAKING, INCREMENTAL RELEASES ARE FULL-FLEDGE RELEASES.
-  However, ACL2 users may wish to experiment with incremental releases without
-  recertifying all of their existing ACL2 ~il[books] (~pl[certify-book]).  In
-  order to learn how to avoid such recertification, ~pl[set-tainted-okp].  The
-  basic idea is that if certification may depend on including books from an
-  ACL2 version with a different incrl field, the book's ~il[certificate] is
-  marked with a ``tainted'' version, i.e., a version with ~c[\"(tainted\"] as a
-  substring.  Subsequent inclusion of any such book is restricted to sessions
-  in which the user explicitly invokes ~c[(]~ilc[set-tainted-okp]~c[ t)], which
-  is intended as an acknowledgment that including such a book may render the
-  ACL2 session unsound.~/")
+  Note that incremental releases are full-fledged releases.~/")
 
 (deflabel keep
   :doc
@@ -25035,77 +24889,6 @@
                               state
                               '(table custom-keywords-table))))))))))
 
-(defmacro set-tainted-okp (x)
-
-  ":Doc-Section switches-parameters-and-modes
-
-  control output~/
-  ~bv[]
-  Forms:
-  (set-tainted-okp nil) ; do not allow incremental version mismatches (default)
-  (set-tainted-okp t)   ; allow incremental version mismatches
-  ~ev[]
-
-  ~c[Set-tainted-okp] is of use only in the presence of incremental releases.
-  In short, evaluation of ~c[(set-tainted-okp t)] instructs ACL2 to consider an
-  incremental release to have the same ACL2 ~il[version] as the most recently
-  preceding normal release.  BUT THIS IS NOT THE CASE BY DEFAULT BECAUSE ACL2
-  IS POTENTIALLY UNSOUND WHEN ~c[SET-TAINTED-OKP] IS EVALUATED.~/
-
-  Incremental releases have an incremental (incrl) ~il[version] field, for
-  example the number 1 in version  2.9.1.  (Also ~pl[version].)  Ordinary
-  releases have an implicit incrl version field of 0 (for example, in version
-  2.9).  By default, ~ilc[include-book] and ~ilc[certify-book] consider all
-  fields of ACL2 version strings, including their incrl fields, in order to
-  decide if there are version mismatches.  But it may be convenient to treat an
-  incremental release as the same as the corresponding (immediately preceding)
-  normal release, in order to avoid recertification of existing certified
-  books.  SUCH RECERTIFICATION IS LOGICALLY REQUIRED, but we provide
-  ~c[(set-tainted-okp t)] as a mechanism to allow users to experiment with
-  incremental releases.
-
-  Below we describe how books can be certified even though their certification
-  has depended on ignoring mismatches of incrl version fields.  We call such
-  certified books ``tainted''.
-
-  If ~c[(set-tainted-okp t)] is evaluated, then any discrepancy is ignored
-  between the incrl version field of an included book (representing the version
-  of ACL2 in which that book was certified) and the current ACL2 version,
-  namely the value of ~c[(@ acl2-version)].  Thus, with ~c[(set-tainted-okp t)]
-  we allow certification of books that depend on included books that have such
-  version mismatches with the current ACL2 version or are themselves tainted.
-  Any book thus certified will have the string \"(tainted)\" included in its
-  ~il[certificate]'s ~il[version] string.  Indeed, when ACL2 detects that a
-  book may depend either on a book whose version's incrl field differs from
-  that of the current ACL2 ~il[version], or on a tainted book, then such a book
-  is marked as tainted.
-
-  When ~c[(set-tainted-okp t)] has been executed, then even though ACL2
-  ``ignores'' issues of tainting as discussed above, a ~c[\"Tainted\"] warning
-  is printed whenever a tainted book is included or certified.~/"
-
-  (if (member-eq x '(nil t))
-      `(pprogn (f-put-global 'tainted-okp ,x state)
-               (if ,x
-                   (warning$ 'set-tainted-okp "Tainted"
-                             "Inclusion of tainted books may render an ACL2 ~
-                              session unsound.  See :DOC set-tainted-okp.")
-                 state)
-               (value ,x))
-    `(er soft 'set-tainted-okp
-         "The legal values of set-tainted-okp are ~x0 and ~x1.  Thus ~x2 is ~
-          not a legal value.  See :DOC set-tainted-okp."
-         t nil ,x)))
-
-(defmacro set-tainted-ok (x)
-
-; Usually we call such utilities "set-.*-ok" rather than "set-.*-okp".  We
-; leave the okp version of this one for backward compatibility, but we add the
-; "ok" version for consistency.
-
-  `(set-tainted-okp ,x))
-
-(link-doc-to set-tainted-ok switches-parameters-and-modes set-tainted-okp)
 (link-doc-to set-non-linear switches-parameters-and-modes set-non-linearp)
 (link-doc-to set-let*-abstraction switches-parameters-and-modes
              set-let*-abstractionp)

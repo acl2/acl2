@@ -16785,11 +16785,6 @@
             more-doc-state             ;;; for proof-checker :more command
             pc-ss-alist                ;;; for saves under :instructions hints
             last-step-limit            ;;; propagate step-limit past expansion
-
-; Note that tainted-okp is deliberately omitted from this list of exceptions,
-; since its global value is the one that should be used during event
-; processing.
-
             ))))
     val))
 
@@ -21440,6 +21435,10 @@
            (declare (ignore col))
            (value ':invisible)))
 
+(defrec certify-book-info
+  (full-book-name . other-info)
+  nil) ; could replace with t sometime
+
 (defun active-book-name (wrld state)
 
 ; This returns the full book name (an absolute pathname ending in .lisp) of the
@@ -21448,7 +21447,7 @@
 
   (or (car (global-val 'include-book-path wrld))
       (let ((x (f-get-global 'certify-book-info state)))
-        (cond (x (let ((y (if (consp x) (car x) x)))
+        (cond (x (let ((y (access certify-book-info x :full-book-name)))
                    (assert$ (stringp y) y)))))))
 
 (defrec deferred-ttag-note

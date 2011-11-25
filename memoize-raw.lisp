@@ -3884,7 +3884,8 @@ the calls took.")
 
           (loop for x in (union stobjs-in stobjs-out)
                 when x
-                collect (assert$ (not (eq x 'state)) ; see memoize-table-chk
+                collect (assert$ (not (and condition
+                                           (eq x 'state))) ; see memoize-table-chk
                                  (st-lst x))))
 
          ;; Number of arguments.  Specials only matter for common lisp functions, see the notes above in memoize-fn.
@@ -6044,7 +6045,7 @@ next GC.~%"
        (fresh-line)
        (princ "Better use a version of CCL past revision 13280."))
 
-     (set-gag-mode t)
+     (set-gag-mode :goals)
 
      "If the ACL2 global PRINT-CIRCLE is not t,
       then .cert files may be huge."

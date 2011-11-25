@@ -8114,7 +8114,6 @@
   '("Uncertified"
     "Skip-proofs"
     "Defaxioms"
-    "Tainted"
     "Ttags"
 
 ; The above are included because of soundness.  But "Compiled file", below, is
