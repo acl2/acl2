@@ -84,8 +84,8 @@ export ACL2_CUSTOMIZATION ?= NONE
 # could be a queueing command to submit the job to a cluster.
 export STARTJOB ?= $(SHELL)
 
-# MAKE_CERT_SH must point to wherever make_cert.sh lives.
-export MAKE_CERT_SH ?= $(ACL2_SYSTEM_BOOKS)/make_cert_help.sh
+# MAKE_CERT_PL must point to wherever make_cert_help.pl lives.
+export MAKE_CERT_PL ?= $(ACL2_SYSTEM_BOOKS)/make_cert_help.pl
 
 
 # A cert file is made using the two-pass scheme iff the .acl2x file is
@@ -95,8 +95,8 @@ export MAKE_CERT_SH ?= $(ACL2_SYSTEM_BOOKS)/make_cert_help.sh
 # cert.pl independently, for files containing the phrase
 # "two-pass certification".
 %.cert : %.lisp
-	@$(MAKE_CERT_SH) "$*" "cert" $(if $(filter $*.acl2x, $^), "2", "1")
+	@$(MAKE_CERT_PL) "$*" "cert" $(if $(filter $*.acl2x, $^), "2", "1")
 
 %.acl2x : %.lisp
-	@$(MAKE_CERT_SH) "$*" "acl2x" "2"
+	@$(MAKE_CERT_PL) "$*" "acl2x" "2"
 

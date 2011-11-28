@@ -42,6 +42,22 @@
 
 
 (defun set-max-mem (n)
+
+; On CCL, this basically means, "try to stay within about N gigabytes of memory."
+;
+; The cert.pl build system scans for calls of set-max-mem.  Loosely speaking, if
+; a book contains somethign like:
+;
+;   (value-triple (set-max-mem (* 4 (expt 2 30))))
+;
+; Then a memory limit of 4 GB (plus some padding) will be placed on the job.
+; This limit is probably ignored unless you are using a clustering system like
+; PBS.
+;
+; NOTE: A perl script is going to parse this, so for this to work you can't
+; just use an arbitrary Lisp expression here.  Explicitly supported expressions
+; are: (* n (expt 2 30)) and (expt 2 n).
+
   (declare (xargs :guard t)
            (ignore n))
   (cw "set-max-mem is defined under the hood~%"))
@@ -64,6 +80,34 @@
   `(last-chance-wash-memory-fn))
 
 (add-macro-alias last-chance-wash-memory last-chance-wash-memory-fn)
+
+
+(defund set-max-time (minutes)
+
+; In ACL2, this does nothing.
+;
+; The cert.pl build system scans for calls of set-max-time.  Loosely speaking,
+; if a book contains something like:
+;
+;   (value-triple (set-max-time 10))
+;
+; Then this means a time limit of 10 minutes should be put on the job.  This
+; time limit is probably ignored unless you are using a clustering system like
+; PBS.  We generally use a time limit of 3 hours as the default, so that we
+; only need to include a set-max-time command in books that take a really long
+; time to certify.
+;
+; NOTE: A perl script is going to parse this directive, so the argument should
+; typically be a constant number, rather than any kind of complex expression.
+; It also needs to be on the same line as the set-max-time call, etc.
+;
+; We generally interpret this as, "There's no way this book should ever take
+; longer than 10 minutes, so just kill the job if it hasn't finished within
+; that amount of time."
+
+  (declare (xargs :guard t)
+           (ignore minutes))
+  nil)
 
 
 (in-theory (disable maybe-wash-memory
