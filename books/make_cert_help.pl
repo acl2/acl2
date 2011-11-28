@@ -296,8 +296,14 @@ write_whole_file($lisptmp, $instrs);
 my $shtmp = "$tmpbase.sh";
 my $shinsts = "#!/bin/sh\n\n";
 
-my $max_mem = scan_for_set_max_mem("$file.lisp") || 6;
-my $max_time = scan_for_set_max_time("$file.lisp") || 180;
+# If we find a set-max-mem line, add 3 gigs of padding for the stacks and to
+# allow the lisp to have some room to go over.  Default to 6 gigs.
+my $max_mem = scan_for_set_max_mem("$file.lisp");
+$max_mem = $max_mem ? ($max_mem + 3) : 6;
+
+# If we find a set-max-time line, honor it directly; otherwise default to
+# 240 minutes.
+my $max_time = scan_for_set_max_time("$file.lisp") || 240;
 
 print "-- Resource limits: $max_mem gigabytes, $max_time minutes.\n\n" if $DEBUG;
 
