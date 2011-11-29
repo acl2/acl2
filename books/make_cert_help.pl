@@ -168,7 +168,7 @@ sub parse_max_mem_arg
 	# (* (expt 2 30) n) is n gigabytes
 	$ret = $1;
     }
-    elsif ($arg =~ m/^\(expt 2 ([0-9]+)\)$/) {             # Example: arg is (expt 2 36)
+    elsif ($arg =~ m/^\(expt 2 ([0-9]+)\)*$/) {       # Example: arg is (expt 2 36))
 	my $expt  = $1;                               # 36
 	my $rexpt = ($expt > 30) ? ($expt - 30) : 0;  # 6  (but at least 0 in general)
 	$ret      = 2 ** $rexpt;                      # 64 (e.g., 2^6)
