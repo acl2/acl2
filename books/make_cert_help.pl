@@ -53,6 +53,15 @@ use warnings;
 use strict;
 use File::Spec;
 use FindBin qw($RealBin);
+use POSIX qw(strftime);
+
+sub trim
+{
+	my $str = shift;
+	$str =~ s/^\s+//;
+	$str =~ s/\s+$//;
+	return $str;
+}
 
 sub read_whole_file
 {
@@ -79,15 +88,58 @@ sub remove_file_if_exists
     }
 }
 
+sub nfs_file_exists
+{
+    # In theory, this is just -f $filename.  In practice, NFS client caching
+    # may mean that -f $filename does not mean what you think it does.
+    #
+    # Jared's notes.  I originally tried to just use a -f $filename when
+    # waiting for NFS files to come into existence.  But it appears that, at
+    # least under some configurations of NFS, the NFS client (not perl or
+    # something) can cache whether a file exists or not.
+    #
+    # This caching can last for a long time, at least several minutes, perhaps
+    # indefinitely.  (I literally went down the hall and got a lesson on NFS
+    # from the sysamin, and when we came back to my office my "ls" loop was
+    # still running and not seeing the file.)
+    #
+    # For our particular network setup, the file in question was not visible
+    # from fv-hpc, but was visible from the compute nodes.  We used "df" to
+    # investigate which NFS servers the compute nodes and fv-hpc were connected
+    # to for that particular drive, and found that some nodes using the same
+    # server could see the file.  Hence, we concluded it was not a server-side
+    # issue.
+    #
+    # We then did an "ls" in the directory, and suddenly the client got a
+    # refreshed view of the directory and could see the file.  So, it seems
+    # that the client was caching the individual file, but not the directory
+    # list.
+    #
+    # So, to really try to test whether the NFS file exists, we first do an
+    # "ls" which apparently seems to be sufficient to clear the NFS cache for
+    # that directory, and then ask if the file exists.  This seems to be good
+    # enough for our setup.  If it doesn't work for somebody else's setup,
+    # maybe they can figure out a better solution.
+
+    my $filename = shift;
+    my $blah = `ls`; # hit the directory again, to try to get NFS to not cache things
+    return -f $filename;
+
+#    my $output = `test -f '$filename'`;
+#    my $status = $? >> 8;
+#    return $status == 0;
+}
+
 sub wait_for_nfs
 {
     my $filename = shift;
     my $max_lag = shift;
-    for(my $i = 0; $i < $max_lag; $i = $i++)
+    for(my $i = 0; $i < $max_lag; $i++)
     {
 	print "NFS Lag?  Waited $i seconds for $filename...\n";
 	sleep(1);
-	return 1 if (-f $filename);
+
+	return 1 if nfs_file_exists($filename);
     }
     return 0;
 }
@@ -200,7 +252,8 @@ if ($DEBUG)
 my $full_file = File::Spec->rel2abs($TARGET);
 (my $vol, my $dir, my $file) = File::Spec->splitpath($full_file);
 my $goal = "$file.$TARGETEXT";
-print "Making $goal on `date`\n";
+
+print "Making $goal on " . strftime('%d-%b-%Y %H:%M',localtime) . "\n";
 
 my $fulldir = File::Spec->canonpath(File::Spec->catpath($vol, $dir, ""));
 print "-- Entering directory $fulldir\n" if $DEBUG;
@@ -210,7 +263,7 @@ chdir($fulldir) || die("Error switching to $fulldir: $!\n");
 my $acl2 = read_whole_file_if_exists("$file.image");
 $acl2 = read_whole_file_if_exists("cert.image") if !$acl2;
 $acl2 = $default_acl2 if !$acl2;
-chomp($acl2);
+$acl2 = trim($acl2);
 $ENV{"ACL2"} = $acl2;
 print "-- Image to use = $acl2\n" if $DEBUG;
 die("Can't determine which ACL2 to use.") if !$acl2;
@@ -237,7 +290,8 @@ write_whole_file($outfile, $HEADER);
 
 my $rnd = int(rand(2**30));
 my $tmpbase = "workxxx.$goal.$rnd";
-my $lisptmp = "$tmpbase.lisp";
+# upper-case .LISP so if it doesn't get deleted, we won't try to certify it
+my $lisptmp = "$tmpbase.LISP";
 print "-- Temporary lisp file: $lisptmp\n" if $DEBUG;
 
 my $instrs = "";
@@ -282,7 +336,7 @@ if ($TARGETEXT ne "acl2x") {
 }
 
 if ($DEBUG) {
-    print "-- ACL2 Instructions ----------------------------------\n";
+    print "-- ACL2 Instructions: $lisptmp --\n";
     print "$instrs\n";
     print "-------------------------------------------------------\n\n";
 }
@@ -293,7 +347,8 @@ write_whole_file($lisptmp, $instrs);
 
 # ------------ TEMPORARY SHELL SCRIPT FOR RUNNING ACL2 ------------------------
 
-my $shtmp = "$tmpbase.sh";
+# upper-case .SH to agree with upper-case .LISP
+my $shtmp = "$tmpbase.SH";
 my $shinsts = "#!/bin/sh\n\n";
 
 # If we find a set-max-mem line, add 3 gigs of padding for the stacks and to
@@ -310,6 +365,19 @@ print "-- Resource limits: $max_mem gigabytes, $max_time minutes.\n\n" if $DEBUG
 $shinsts .= "#PBS -l pmem=${max_mem}gb\n";
 $shinsts .= "#PBS -l walltime=${max_time}:00\n\n";
 
+$shinsts .= "echo >> $outfile\n";
+$shinsts .= "hostname >> $outfile\n";
+$shinsts .= "echo >> $outfile\n";
+
+$shinsts .= "echo Temp lisp file: >> $outfile\n";
+$shinsts .= "cat $lisptmp >> $outfile\n";
+$shinsts .= "echo >> $outfile\n";
+
+$shinsts .= "echo Start of output: >> $outfile\n";
+$shinsts .= "echo >> $outfile\n";
+
+
+
 if ($TIME_CERT) {
     $shinsts .= "(time (($acl2 < $lisptmp 2>&1) >> $outfile)) 2> $timefile\n";
 }
@@ -317,8 +385,13 @@ else {
     $shinsts .= "($acl2 < $lisptmp 2>&1) >> $outfile\n";
 }
 
+$shinsts .= "EXITCODE=\$?\n";
+$shinsts .= "ls -l $goal >> $outfile || echo $goal seems to be missing >> $outfile\n";
+$shinsts .= "exit \$EXITCODE\n";
+
+
 if ($DEBUG) {
-    print "-- Wrapper Script -------------------------------------\n";
+    print "-- Wrapper Script: $shtmp --\n";
     print "$shinsts\n";
     print "-------------------------------------------------------\n\n";
 }
@@ -331,8 +404,8 @@ write_whole_file($shtmp, $shinsts);
 system("$STARTJOB $shtmp");
 my $status = $? >> 8;
 
-unlink($lisptmp);
-unlink($shtmp);
+unlink($lisptmp) if !$DEBUG;
+unlink($shtmp) if !$DEBUG;
 
 
 
