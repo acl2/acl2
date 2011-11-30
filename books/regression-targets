@@ -712,6 +712,7 @@
 ./misc/dft-ex.cert
 ./misc/doc-section.cert
 ./misc/dump-events.cert
+./misc/equal-by-g.cert
 ./misc/evalable-printing.cert
 ./misc/expander.cert
 ./misc/fast-coerce.cert
@@ -758,6 +759,7 @@
 ./misc/sort-symbols.cert
 ./misc/sticky-disable.cert
 ./misc/symbol-btree.cert
+./misc/take.cert
 ./misc/total-order.cert
 ./misc/trace-star.cert
 ./misc/transfinite.cert
@@ -808,9 +810,11 @@
 ./paco/type-set.cert
 ./paco/utilities.cert
 ./parallel/fibonacci.cert
+./parallel/hint-tests.cert
 ./parallel/matrix-multiplication-parallel.cert
 ./parallel/matrix-multiplication-serial.cert
 ./parallel/matrix-multiplication-setup.cert
+./parallel/proofs/ideal-speedup.cert
 ./parallel/spec-mv-let.cert
 ./parallel/stress-tests.cert
 ./parallel/syntax-tests.cert
@@ -1600,6 +1604,7 @@
 ./security/jfkr/encryption.cert
 ./security/jfkr/jfkr.cert
 ./security/jfkr/random.cert
+./serialize/compact-print.cert
 ./serialize/serialize.cert
 ./serialize/serialize-tests.cert
 ./serialize/unsound-read.cert
@@ -1648,6 +1653,7 @@
 ./str/strsplit.cert
 ./str/strsubst.cert
 ./str/strtok.cert
+./str/strval.cert
 ./str/substrp.cert
 ./str/suffixp.cert
 ./str/top.cert
@@ -1671,6 +1677,7 @@
 ./system/too-many-ifs.cert
 ./system/top.cert
 ./system/worldp-check.cert
+# Omitting taspi/ (it's hons-only)
 ./textbook/chap10/ac-example.cert
 ./textbook/chap10/adder.cert
 ./textbook/chap10/compiler.cert
@@ -2477,6 +2484,20 @@
 ./workshops/2009/verbeek-schmaltz/verbeek/instantiations/scheduling/circuit-switching-global/intersect.cert
 ./workshops/2009/verbeek-schmaltz/verbeek/instantiations/simulation/simple/simple.cert
 ./workshops/2009/verbeek-schmaltz/verbeek/instantiations/synchronization/circuit-global/circuit.cert
+./workshops/2011/cowles-gamboa-sierpinski/support/r-no-cover.cert
+./workshops/2011/cowles-gamboa-sierpinski/support/s-no-cover1.cert
+./workshops/2011/cowles-gamboa-sierpinski/support/s-no-cover.cert
+./workshops/2011/cowles-gamboa-sierpinski/support/verifying-macros.cert
+./workshops/2011/verbeek-schmaltz/sources/algorithm.cert
+./workshops/2011/verbeek-schmaltz/sources/correctness2.cert
+./workshops/2011/verbeek-schmaltz/sources/correctness.cert
+./workshops/2011/verbeek-schmaltz/sources/definitions.cert
+./workshops/2011/verbeek-schmaltz/sources/GeNoC-misc.cert
+./workshops/2011/verbeek-schmaltz/sources/GeNoC-types.cert
+./workshops/2011/verbeek-schmaltz/sources/invariants2.cert
+./workshops/2011/verbeek-schmaltz/sources/invariants3.cert
+./workshops/2011/verbeek-schmaltz/sources/invariants.cert
+./workshops/2011/verbeek-schmaltz/sources/perm.cert
 ./wp-gen/mutrec/mutrec.cert
 ./wp-gen/shared.cert
 ./wp-gen/wp-gen.cert

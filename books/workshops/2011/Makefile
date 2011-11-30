@@ -7,6 +7,14 @@
 # John Cowles and Ruben Gamboa
 # Verifying Sierpinski and Riesel Numbers in ACL2
 
+# Mike Dahlin, Ryan Johnson, Robert Krug, Michael Mccoyd and Bill
+# Young.
+# Toward the Verification of a Simple Hypervisor
+# NOTE!  This is not included in an ordinary make, because
+# certification of MinVisor/setup-nested-page-tables.lisp took over an
+# hour and 38 minutes on an "Intel(R) Xeon(R) CPU E31280 @ 3.50GHz", a
+# very fast machine as of November, 2011.
+
 # Peter Reid and Ruben Gamboa
 # Implementing an Automatic Differentiator in ACL2
 # [Note: ACL2(r) only; see README file.]
@@ -30,12 +38,6 @@
 # Peter-Michael Seidel. 
 # Formal Verification of an Iterative Low-Power X86 Floating-Point
 # Multiplier with Redundant Feedback
-
-### Waiting for materials:
-
-# Mike Dahlin, Ryan Johnson, Robert Krug, Michael Mccoyd and Bill
-# Young.
-# Toward the Verification of a Simple Hypervisor
 
 ##############################
 
