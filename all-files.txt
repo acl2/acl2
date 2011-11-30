@@ -135,7 +135,7 @@ make-all-deps.sh
 make-event
 make-targets
 make_cert
-make_cert_help.sh
+make_cert_help.pl
 make_cert.lsp
 meta
 misc
