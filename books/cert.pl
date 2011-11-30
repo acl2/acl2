@@ -473,9 +473,8 @@ unless ($no_makefile) {
     print $mf $mf_intro_string;
 
     unless ($no_boilerplate) {
-	print $mf "include "
-	    . canonical_path(rel_path($RealBin, "make_cert"))
-	    . "\n\n";
+	print $mf "ACL2_SYSTEM_BOOKS ?= " . canonical_path($RealBin) . "\n";
+	print $mf "include \$(ACL2_SYSTEM_BOOKS)/make_cert\n\n";
     }
 
     foreach my $incl (@includes) {
