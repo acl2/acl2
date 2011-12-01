@@ -643,6 +643,18 @@
                              maybe-wash-args))))
 
 
+;; makes a fast, honsed alist consisting of the pairs of x whose cdrs are boolean
+(defun bddify-extract-bool-alist (x full last)
+  (declare (Xargs :guard t))
+  (if (atom x)
+      last
+    (if (atom (car x))
+        (bddify-extract-bool-alist (cdr x) full last)
+      (let ((pair (hons-get (caar x) full)))
+        (if (and pair (booleanp (cdr pair)))
+            (hons-acons! (caar x) (cdr pair)
+                         (bddify-extract-bool-alist (cdr x) full last))
+          (bddify-extract-bool-alist (cdr x) full last))))))
 
 
 ;!paper-note:  AL-MAX-DEPTH is called TABLE-MAX-VAR.
@@ -659,9 +671,15 @@
   :rule-classes (:rewrite :linear))
 
 (defun aig-bddify-list (tries x al maybe-wash-args)
-  (let ((var-depth (al-max-depth al)))
-    (aig-bddify-list-iter1 tries (hons-copy x) al 'fmemo (qv var-depth)
-                           var-depth maybe-wash-args)))
+  (let* ((var-depth (al-max-depth al))
+         (bool-al (bddify-extract-bool-alist al al 'bddify-tmp-bool-alist))
+         (x (hons-copy x))
+         (reduced-x (if (consp bool-al)
+                        (aig-restrict-list x bool-al)
+                      x)))
+    (prog2$ (fast-alist-free bool-al)
+            (aig-bddify-list-iter1 tries reduced-x al 'fmemo (qv var-depth)
+                                   var-depth maybe-wash-args))))
 
 
 

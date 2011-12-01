@@ -2343,6 +2343,56 @@
 
 (in-theory (disable aig-bddify-list-iter1))
 
+(encapsulate
+  nil
+  (local
+   (progn
+     (defthm lookup-bddify-extract-bool-alist-when-not-in-valal
+       (implies (or (not (hons-assoc-equal x valal))
+                    (not (booleanp (cdr (hons-assoc-equal x valal)))))
+                (equal (hons-assoc-equal x (bddify-extract-bool-alist keyal valal
+                                                                      last))
+                       (hons-assoc-equal x last)))
+       :hints(("Goal" :in-theory (e/d (hons-assoc-equal)))))
+
+     (defthm car-hons-assoc-equal
+       (equal (car (hons-assoc-equal x al))
+              (and (hons-assoc-equal x al) x))
+       :hints(("Goal" :in-theory (enable hons-assoc-equal))))
+
+     (defthm cons-x-cdr-hons-assoc-equal
+       (implies (hons-assoc-equal x al)
+                (equal (cons x (cdr (hons-assoc-equal x al)))
+                       (hons-assoc-equal x al)))
+       :hints(("Goal" :in-theory (enable hons-assoc-equal))))))
+
+  (defthm lookup-bddify-extract-bool-alist
+    (equal (hons-assoc-equal x (bddify-extract-bool-alist keyal valal last))
+           (or (and (hons-assoc-equal x keyal)
+                    (hons-assoc-equal x valal)
+                    (booleanp (cdr (hons-assoc-equal x valal)))
+                    (hons-assoc-equal x valal))
+               (hons-assoc-equal x last)))
+    :hints(("Goal" :in-theory (e/d (hons-assoc-equal))))))
+
+(defthm aig-q-compose-of-aig-restrict-of-bddify-extract
+  (implies (and (atom last) (normp-val-alistp al))
+           (equal (aig-q-compose
+                   (aig-restrict x (bddify-extract-bool-alist keyal al last))
+                   al)
+                  (aig-q-compose x al)))
+  :hints(("Goal" :induct t)
+         (and stable-under-simplificationp
+              '(:in-theory (enable hons-assoc-equal)))))
+
+(defthm aig-q-compose-list-of-aig-restrict-list-of-bddify-extract
+  (implies (and (atom last) (normp-val-alistp al))
+           (equal (aig-q-compose-list
+                   (aig-restrict-list x (bddify-extract-bool-alist keyal al last))
+                   al)
+                  (aig-q-compose-list x al)))
+  :hints (("goal" :induct t)))
+
 (defthm aig-bddify-list-ok
   (implies (normp-val-alistp al)
            (b* ((ans (aig-bddify-list tries x al maybe-wash-args))
@@ -2351,7 +2401,9 @@
              (and (implies exact (equal bdds exact-bdds))
                   (norm-listp bdds)
                   (equal (aig-q-compose-list new-aigs al)
-                         exact-bdds)))))
+                         exact-bdds))))
+  :hints(("Goal" :in-theory (e/d () (eval-bdd-cp-hint))
+          :do-not-induct t)))
 
 (in-theory (disable aig-bddify-list))
 
