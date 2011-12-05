@@ -6649,13 +6649,24 @@
                                                   (strip-cars def-lst))))
                          (t ans)))))))))
 
+(defun get-unnormalized-bodies (names wrld)
+  (cond ((endp names) nil)
+        (t (cons (getprop (car names) 'unnormalized-body nil
+                          'current-acl2-world wrld)
+                 (get-unnormalized-bodies (cdr names) wrld)))))
+
 (defun redundant-or-reclassifying-defunsp (defun-mode symbol-class
-                                            ld-skip-proofsp def-lst wrld)
+                                            ld-skip-proofsp def-lst ctx wrld
+                                            ld-redefinition-action fives
+                                            non-executablep stobjs-in-lst
+                                            default-state-vars)
 
 ; We return 'redundant if the functions in def-lst are already identically
 ; defined with :mode defun-mode and class symbol-class.  We return
-; 'reclassifying if they are all identically defined :programally and
-; defun-mode is :logic.  We return nil otherwise.
+; 'verify-guards if they are al identically defined with :mode :logic and class
+; :ideal, but this definition indicates promotion to :common-lisp-compliant.
+; Finally, we return 'reclassifying if they are all identically defined in
+; :mode :program and defun-mode is :logic.  We return nil otherwise.
 
 ; We start to answer this question by independently considering each def in
 ; def-lst.  We then add additional requirements pertaining to mutual-recursion.
@@ -6737,8 +6748,26 @@
 ;  ignorep def1 ... defn) means (defuns def1 ...  defn) was executed in this
 ;  world with the indicated defun-mode.
 
-  (redundant-or-reclassifying-defunsp0 defun-mode symbol-class
-                                       ld-skip-proofsp t def-lst wrld))
+  (let ((ans
+         (redundant-or-reclassifying-defunsp0 defun-mode symbol-class
+                                              ld-skip-proofsp t def-lst wrld)))
+    (cond ((and ld-redefinition-action
+                (member-eq ans '(redundant reclassifying verify-guards)))
+           (let ((names (strip-cars fives))
+                 (bodies (get-bodies fives)))
+             (mv-let (erp lst bindings)
+                     (translate-bodies1 (eq non-executablep t) ; not :program
+                                        names bodies
+                                        (pairlis$ names names)
+                                        stobjs-in-lst
+                                        ctx wrld default-state-vars)
+                     (declare (ignore bindings))
+                     (cond ((and (null erp)
+                                 (equal lst
+                                        (get-unnormalized-bodies names wrld)))
+                            ans)
+                           (t nil)))))
+          (t ans))))
 
 (defun collect-when-cadr-eq (sym lst)
   (cond ((null lst) nil)
@@ -7942,7 +7971,11 @@
             (non-executablep (caddr tuple))
             (symbol-class (cdddr tuple))
             (rc (redundant-or-reclassifying-defunsp
-                 defun-mode symbol-class (ld-skip-proofsp state) lst wrld)))
+                 defun-mode symbol-class (ld-skip-proofsp state) lst
+                 ctx wrld
+                 (ld-redefinition-action state)
+                 fives non-executablep stobjs-in-lst
+                 (default-state-vars t))))
        (cond
         ((eq rc 'redundant)
          (chk-acceptable-defuns-redundancy names ctx wrld state))

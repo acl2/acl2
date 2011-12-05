@@ -18248,6 +18248,15 @@
         (+ 3 x)))
   ~ev[]
 
+  The test for redundancy of ~ilc[defun] and ~ilc[defconst] events has been
+  improved in the case that redefinition is active.  In that case, redundancy
+  now additionally requires that the ``translated'' body is unchanged, i.e.,
+  even after expanding macro calls and replacing constants (defined by
+  ~ilc[defconst]) with their values.  Thanks for Sol Swords for requesting this
+  enhancement.  ~pl[redundant-events], in particular the ``Note About
+  Unfortunate Redundancies''.  Note that this additional requirement was
+  already in force for redundancy of ~ilc[defmacro] events.
+
   The macro ~ilc[defmacro-last] and the ~il[table] ~ilc[return-last-table] have
   been modified so that when they give special treatment to a macro ~c[mac] and
   its raw Lisp counterpart ~c[mac-raw], a call ~c[(return-last 'mac-raw ...)]

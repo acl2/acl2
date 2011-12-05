@@ -460,12 +460,15 @@
       (let ((const-prop (getprop name 'const nil 'current-acl2-world wrld1)))
         (cond
          ((and const-prop
+               (not (ld-redefinition-action state))
                (equal event-form (get-event name wrld1)))
 
 ; We stop the redundant event even before evaluating the form.  We believe
 ; that this is merely an optimization, even if the form calls compress1 or
 ; compress2 (which will not update the 'acl2-array property when supplied the
-; same input as the last time the compress function was called).
+; same input as the last time the compress function was called).  We avoid this
+; optimization if redefinition is on, in case we have redefined a constant or
+; macro used in the body of this defconst form.
 
           (stop-redundant-event ctx state))
          (t
@@ -6702,12 +6705,6 @@
              (cond (new-name
                     (cons new-name (exported-function-names (cdr new-trips))))
                    (t (exported-function-names (cdr new-trips))))))))
-
-(defun get-unnormalized-bodies (names wrld)
-  (cond ((endp names) nil)
-        (t (cons (getprop (car names) 'unnormalized-body nil
-                          'current-acl2-world wrld)
-                 (get-unnormalized-bodies (cdr names) wrld)))))
 
 (defun get-subversives (fns wrld)
   (cond ((endp fns) nil)

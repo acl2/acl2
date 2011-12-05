@@ -5172,10 +5172,10 @@
   names that will not shift around when the ~il[books] are included.  The
   best such names are those created by ~ilc[deflabel].
 
-  ~em[Note About Unfortunate Redundancies:]
+  ~em[Note About Unfortunate Redundancies.]
 
   Notice that our syntactic criterion for redundancy of ~ilc[defun] ~il[events]
-  does not allow redefinition to take effect unless there is a syntactic change
+  may not allow redefinition to take effect unless there is a syntactic change
   in the definition.  The following example shows how an attempt to redefine a
   function can fail to make any change.
   ~bv[]
@@ -5183,18 +5183,46 @@
   (defmacro mac (x) x)
   (defun foo (x) (mac x))
   (defmacro mac (x) (list 'car x))
+  (set-ld-redefinition-action nil state)
   (defun foo (x) (mac x)) ; redundant, unfortunately; foo does not change
   (thm (equal (foo 3) 3)) ; succeeds, showing that redef of foo didn't happen
   ~ev[]
-  The call of macro ~c[mac] was expanded away when the first definition of
-  ~c[foo] was processed, so the new definition of ~c[mac] is not seen in
-  ~c[foo] unless ~c[foo] is redefined; yet our attempt at redefinition failed!
-  An easy workaround is first to supply a different definition of ~c[foo], just
-  before the last definition of ~c[foo] above.  Then that final definition will
-  no longer be redundant.
+  The call of macro ~c[mac] was expanded away before storing the first
+  definition of ~c[foo] for the theorem prover.  Therefore, the new definition
+  of ~c[mac] does not affect the expansion of ~c[foo] by the theorem prover,
+  because the new definition of ~c[foo] is ignored.
 
-  The phenomenon illustrated above can occur even without macros.  Here is a
-  more complex example, based on one supplied by Grant Passmore.
+  One workaround is first to supply a different definition of ~c[foo], just
+  before the last definition of ~c[foo] above.  Then that final definition will
+  no longer be redundant.  However, as a courtesy to users, we strengthen the
+  redundancy check for function definitions when redefinition is active.  If in
+  the example above we remove the form
+  ~c[(set-ld-redefinition-action nil state)], then the problem goes away:
+
+  ~bv[]
+  (set-ld-redefinition-action '(:warn . :overwrite) state)
+  (defmacro mac (x) x)
+  (defun foo (x) (mac x))
+  (defmacro mac (x) (list 'car x))
+  (defun foo (x) (mac x)) ; no longer redundant
+  (thm (equal (foo 3) 3)) ; fails, as we would like
+  ~ev[]
+
+  To summarize: If a ~ilc[defun] form is submitted that meets the usual
+  redundancy criteria, then it may be considered redundant even if a macro
+  called in the definition has since been redefined.  The analogous problem
+  applie to constants, i.e., symbols defined by ~ilc[defconst] that occur in
+  the definition body.  However, if redefinition is currently active the
+  problem goes away: that is, the redundancy check is strengthened to check the
+  ``translated'' body, in which macro calls and constants defined by
+  ~ilc[defconst] are expanded away.
+
+  The above discussion for ~ilc[defun] forms applies to ~ilc[defconst] forms as
+  well.  However, for ~ilc[defmacro] forms ACL2 always checks translated
+  bodies, so such bogus redundancy does not occur.
+
+  Here is more complex example illustrating the limits of redefinition, based
+  on one supplied by Grant Passmore.
   ~bv[]
   (defun n3 () 0)
   (defun n4 () 1)
@@ -5202,51 +5230,48 @@
   (thm (equal (n5) nil)) ; succeeds, trivially
   (set-ld-redefinition-action '(:warn . :overwrite) state)
   (defun n3 () 2)
+  (thm (equal (n5) nil)) ; still succeeds, sadly
   ~ev[]
-  If now we execute ~c[(thm (equal (n5) nil))], it still succeeds even though
-  we expect ~c[(n5)] = ~c[(> (n3) (n4))] = ~c[(> 2 1)] = ~c[t].  That is
-  because the body of ~c[n5] was normalized to ~c[nil].  (Such normalization
-  can be avoided; see the brief discussion of ~c[:normalize] in the
-  documentation for ~ilc[defun].)  So, given this unfortunate situation, one
-  might expect at this point simply to redefine ~c[n5] using the same
-  definition as before, in order to pick up the new definition of ~c[n3].  Such
-  ``redefinition'' would, however, be redundant, for the same reason as in the
-  previous example:  no syntactic change was made to the definition.  The same
-  workaround applies as before: redefine ~c[n5] to be something different, and
-  then redefine ~c[n5] again to be as desired.
+  We may expect the final ~ilc[thm] call to fail because of the following
+  reasoning: ~c[(n5)] = ~c[(> (n3) (n4))] = ~c[(> 2 1)] = ~c[t].  Unfortunatly,
+  the body of ~c[n5] was simplified (``normalized'') to ~c[nil] when ~c[n5] was
+  admitted, so the redefinition of ~c[n3] is ignored during the final ~c[thm]
+  call.  (Such normalization can be avoided; see the brief discussion of
+  ~c[:normalize] in the documentation for ~ilc[defun].)  So, given this
+  unfortunate situation, one might expect at this point simply to redefine
+  ~c[n5] using the same definition as before, in order to pick up the new
+  definition of ~c[n3].  Such ``redefinition'' would, however, be redundant,
+  for the same reason as in the previous example: no syntactic change was made
+  to the definition.  Even with redefinition active, there is no change in the
+  body of ~c[n5], even with macros and constants (defined by ~ilc[defconst])
+  expanded; there are none such!  The same workaround applies as before:
+  redefine ~c[n5] to be something different, and then redefine ~c[n5] again to
+  be as desired.
 
   A related phenomenon can occur for ~ilc[encapsulate].  As explained above, an
   ~c[encapsulate] event is redundant if it is identical to one already in the
   database.  Consider then the following contrived example.
   ~bv[]
-  (encapsulate () (defun foo (x) x))
+  (defmacro mac (x) x)
+  (encapsulate () (defun foo (x) (mac x)))
   (set-ld-redefinition-action '(:warn . :overwrite) state)
-  (defun foo (x) (cons x x))
-  (encapsulate () (defun foo (x) x)) ; redundant!
+  (defmacro mac (x) (list 'car x))
+  (encapsulate () (defun foo (x) (mac x)))
   ~ev[]
   The last ~c[encapsulate] event is redundant because it meets the criterion
-  for redundancy: it is identical to the earlier ~c[encapsulate] event.  A
-  workaround can be to add something trivial to the ~c[encapsulate], for
+  for redundancy: it is identical to the earlier ~c[encapsulate] event.  Even
+  though redefinition is active, and hence ACL2 ``should'' be able to see that
+  the new ~ilc[defun] of ~c[foo] is not truly redundant, nevertheless the
+  criterion for redundancy of ~ilc[encapsulate] allows the new ~c[encapsulate]
+  form to be redundant.
+
+  A workaround can be to add something trivial to the ~c[encapsulate], for
   example:
   ~bv[]
   (encapsulate () 
     (deflabel try2) ; ``Increment'' to try3 next time, and so on.
     (defun foo (x) x))
-  ~ev[]
-
-  The examples above are suggestive but by no means exhaustive.  Consider the
-  following example.
-  ~bv[]
-  (defstub f1 () => *)
-  (set-ld-redefinition-action '(:warn . :overwrite) state)
-  (defun f1 () 3)
-  (defstub f1 () => *) ; redundant -- has no effect
-  ~ev[]
-  The reason that the final ~ilc[defstub] is redundant is that ~c[defstub] is
-  a macro that expands to a call of ~c[encapsulate]; so this is very similar to
-  the immediately preceding example.
-
-  ")
+  ~ev[]")
 
 (defun stop-redundant-event (ctx state)
   (let ((chan (proofs-co state)))
