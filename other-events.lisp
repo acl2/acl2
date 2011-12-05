@@ -12418,13 +12418,13 @@
           (car (car post-alist))))
        (t (skipped-proofsp-in-post-alist (cdr post-alist))))))))
 
-(defun check-sum-cert (portcullis-cmds book-ev-lst)
+(defun check-sum-cert (portcullis-cmds expansion-alist book-ev-lst)
 
 ; This function computes a check-sum for post-alists in .cert files.  It is a
 ; bit odd because get-portcullis-cmds gives the results of make-event expansion
 ; but book-ev-lst does not.  But that seems OK.
 
-  (check-sum-obj (cons portcullis-cmds book-ev-lst)))
+  (check-sum-obj (list* portcullis-cmds expansion-alist book-ev-lst)))
 
 ; For a discussion of early loading of compiled files for include-book, which
 ; is supported by the next few forms, see the Essay on Hash Table Support for
@@ -12653,6 +12653,7 @@
                         (check-sum-cert (and cert-obj
                                              (access cert-obj cert-obj
                                                      :cmds))
+                                        expansion-alist
                                         ev-lst))))
                  (cond
                   ((not (integerp ev-lst-chk-sum))
@@ -14738,6 +14739,7 @@
                                                        new-defpkg-list))
                                              (chk-sum
                                               (check-sum-cert portcullis-cmds
+                                                              expansion-alist
                                                               ev-lst))
                                              (extra-entry
                                               (list* full-book-name

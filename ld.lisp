@@ -18174,6 +18174,50 @@
 ; to introduce *current-acl2-world-key* and by using symbol-value for
 ; 'ACL2_GLOBAL_ACL2::CURRENT-ACL2-WORLD.
 
+; Here is an example showing the "security hole" mentioned in these release
+; notes, below.
+
+;   ;;;;; File foo.lisp ;;;;;
+;   (in-package "ACL2")
+;   
+;   (defun foo (x)
+;     x)
+;   
+;   ;;;;; File foo.acl2x ;;;;;
+;   ((1 . (defun foo (x) (cons x x))))
+;   
+;   ;;;;; File top.lisp ;;;;;
+;   (in-package "ACL2")
+;   
+;   (include-book "foo")
+;   
+;   (defthm foo-cons
+;     (equal (foo x)
+;            (cons x x)))
+;   
+;   ;;;;; File top2.lisp ;;;;;
+;   (in-package "ACL2")
+;   
+;   (include-book "top")
+;   
+;   (defthm ouch
+;     nil
+;     :hints (("Goal" :in-theory (disable foo-cons)
+;              :use foo-cons))
+;     :rule-classes nil)
+;   
+;   ;;;;; File cert.lsp ;;;;;
+;   
+;   (certify-book "foo" 0 t :acl2x t)
+;   (u)
+;   (certify-book "top")
+;   (u)
+;   (certify-book "foo" 0 t)
+;   (u)
+;   (certify-book "top2")
+;   
+;   ;;;;; Now evaluate (ld "cert.lsp") ;;;;;
+
   :doc
   ":Doc-Section release-notes
 
@@ -18387,6 +18431,13 @@
   particular it is now untouchable (~pl[remove-untouchable]) and is intended
   only for system hackers.  Thanks to Jared Davis for reporting a bug in the
   use of ~ilc[add-include-book-dir] after our first attempt at a fix.
+
+  (Technical change, primarily related to ~ilc[make-event]:) Plugged a security
+  hole that allowed ~il[books]' ~il[certificate]s to be out-of-date with
+  respect to ~ilc[make-event] expansions, but not recognized as such.  The
+  change is to include the so-called expansion-alist in the certificate's
+  checksum.  An example appears in a comment in the ACL2 sources, in
+  ~c[(deflabel note-4-4 ...)].
 
   While calls of many event macros had been prohibited inside executable code,
   others should have been but were not.  For example, the following was
@@ -19232,6 +19283,7 @@
              (check-sum-cert (and cert-obj
                                   (access cert-obj cert-obj
                                           :cmds))
+                             expansion-alist
                              ev-lst)))
            (cond
             ((not (integerp ev-lst-chk-sum))
