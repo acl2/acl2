@@ -488,6 +488,7 @@ clean-hons:
 	  $(ACL2_HONS_OPT) \
 	  --acl2-books "`pwd`" \
 	  -q
+	cd taspi/ ; make clean
 
 # Keep the following three pairs in sync with the two targets just above.
 # They will create compiled files for books that may have already been
