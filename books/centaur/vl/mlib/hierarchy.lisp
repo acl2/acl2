@@ -2068,8 +2068,21 @@ point."
          ((unless remaining)
           (make-fal updates alist))
          ((when (same-lengthp mods remaining))
-          (prog2$ (er hard? 'vl-deporder-pass* "Failed to reach a fixed point.")
-                  alist))
+          (b* ((instanced (mergesort (vl-modulelist-everinstanced mods)))
+               (missing (difference instanced
+                                    (union (mergesort (alist-keys alist))
+                                           (mergesort (vl-modulelist->names
+                                                       mods)))))
+               ((when missing)
+                (er hard? 'vl-deporder-pass*
+                    "The following modules are instanced but not defined: ~x0~%"
+                    missing)
+                alist))
+            (er hard? 'vl-deporder-pass*
+                "Failed to determine a dependency order for the following ~
+                 modules.  We probably have circular dependencies.  ~x0~%"
+                (vl-modulelist->names mods))
+            alist))
          (alist (make-fal updates alist)))
       (vl-deporder-pass* remaining alist)))
 
