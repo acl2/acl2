@@ -407,7 +407,8 @@
               
 (verify-guards 
  build-term-helper
- :hints (("Goal" :do-not-induct t)
+ :hints (("Goal" :do-not-induct t
+          :in-theory (disable (:executable-counterpart tau-system)))
          ("Subgoal 21" :in-theory 
           (disable mytips-btree-to-fringe)
           :use (:instance mytips-btree-to-fringe

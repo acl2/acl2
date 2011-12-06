@@ -347,7 +347,9 @@
                               (charstate-scorelist-map-p cssl-map (len matrix))
                               (cost-matrixp-nstates matrix (len matrix)))
                   :guard-hints
-                  (("Subgoal 1"
+                  (("Goal"
+                    :in-theory (disable (:executable-counterpart tau-system)))
+                   ("Subgoal 1"
                     :use (:instance
                           char-scorelistp-rational-or-nil-list-listp
                           (x (score-tree-and-sequences t tree sequences cssl-map

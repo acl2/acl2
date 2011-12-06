@@ -36,6 +36,15 @@
 ; Fall 2001.
 ;  Modified 28 December 2001.
 ;  Last modified 2 March 2002.
+
+; JSM - August, 2011: This file contains one or more occurrences of
+; (:executable-counterpart tau-system) added when the Tau System was
+; implemented on top of Version_4.3.  Some occurrences may have been commented
+; out but left to mark the locations of changes made necessary because of the
+; tau literal deletion problem described in the Essay on Tau-Clause -- Using
+; Tau to Prove or Mangle Clauses.  When tau was no longer allowed to delete
+; literals, those disablings of tau-system were no longer required.
+
 #|
  To certify (originally in ACL2 Version 2.6):
  (defpkg 
@@ -265,7 +274,7 @@ Heuristics suggest that second list should be right strict.
     (<def= (f1-chain i x)
 	   (lub-f1-chain x))
     :hints (("Goal"
-	     :by
+             :by
 	     (:functional-instance
 	      lub-$bottom$-based-chain-is-upper-bound
 	      ($<=$ <def=)
@@ -274,7 +283,12 @@ Heuristics suggest that second list should be right strict.
 	      (lub-$bottom$-based-chain lub-f1-chain)
 	      (lub-$bottom$-based-chain-nat-i lub-f1-chain-nat-i)
 	      (lub-$bottom$-based-chain-i lub-f1-chain-i)))
-	    ("Subgoal 3"
+
+; This comment contains (:executable-counterpart tau-system) just so that rune
+; is a reliable marker for changes made to support tau.  The change was motivated
+; by the subgoal renaming problem.
+
+	    ("Subgoal 2" ; tau on: {"Subgoal 2"} tau off: {"Subgoal 3"}
 	     :use f1-chain-is-<def=-chain)))
 
 (defthm
@@ -378,13 +392,17 @@ Heuristics suggest that second list should be right strict.
 				      (- (cadr x) 1)))))
 		  (i (Skolem-f1 x)))))))
 
+; This comment contains (:executable-counterpart tau-system) just so that rune
+; is a reliable marker for changes made to support tau.  The changes below were
+; motivated by the subgoal renaming problem.
+
 (defthm
     lub-f1-chain=ub-g1-chain
     (equal (lub-f1-chain x)(ub-g1-chain x))
     :rule-classes nil
     :hints (("Goal"
-	     :by 
-	     (:functional-instance
+             :by 
+             (:functional-instance
 	      lub-$chain$=ub-shifted-$chain$
 	      ($<=$ <def=)
 	      ($bottom$ (lambda () 'undef$))
@@ -395,9 +413,9 @@ Heuristics suggest that second list should be right strict.
 	      ($f$ Skolem-f1)
 	      (shifted-$chain$ g1-chain)
 	      (ub-shifted-$chain$ ub-g1-chain)))
-	    ("Subgoal 5"
+	    ("Subgoal 4" ; tau on: {"Subgoal 4"} tau off: {"Subgoal 5"} 
 	     :use g1-chain-<def=-ub-g1-chain)
-	    ("Subgoal 4"
+	    ("Subgoal 3" ; tau on: {"Subgoal 3"} tau off: {"Subgoal 4"}
 	     :use f1-chain-is-<def=-chain)
 	    ))
 

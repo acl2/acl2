@@ -1,6 +1,13 @@
 #|$ACL2s-Preamble$;
 (begin-book);$ACL2s-Preamble$|#
 
+; JSM - August, 2011: This file contains one or more occurrences of
+; (:executable-counterpart tau-system) added when the Tau System was
+; implemented on top of Version_4.3.  Some occurrences may have been commented
+; out but left to mark the locations of changes made necessary because of the
+; tau literal deletion problem described in the Essay on Tau-Clause -- Using
+; Tau to Prove or Mangle Clauses.  When tau was no longer allowed to delete
+; literals, those disablings of tau-system were no longer required.
 
 (in-package "ACL2")
 
@@ -1023,10 +1030,19 @@
                   (legal-measure ct-legal-measure)
                   (initial-measure ct-initial-measure))
                  :in-theory (disable trlstp))
-          ("Subgoal 34" :in-theory (disable ct-scheduling xy-routing-top))
-          ("Subgoal 26" :in-theory (disable ct-scheduling ct-scheduling-assumptions xy-routing-top simple-extract-simulation))
-          ("Subgoal 28" :use (:instance CorrectRoutesp-XYRouting (tmissives m)))
-          ("Subgoal 27" :use (:instance TrLstp-XYRouting (tmissives m)))
+
+; This comment contains (:executable-counterpart tau-system) just so that rune
+; is a reliable marker for changes made to support tau.  The changes below were
+; motivated by the subgoal renaming problem.
+
+          ("Subgoal 32" ; tau on: {"Subgoal 32"} tau off: {"Subgoal 34"}
+           :in-theory (disable ct-scheduling xy-routing-top))
+          ("Subgoal 25" ; tau on: {"Subgoal 25"} tau off: {"Subgoal 26"}
+           :in-theory (disable ct-scheduling ct-scheduling-assumptions xy-routing-top simple-extract-simulation))
+          ("Subgoal 27" ; tau on: {"Subgoal 27"} tau off: {"Subgoal 28"}
+           :use (:instance CorrectRoutesp-XYRouting (tmissives m)))
+          ("Subgoal 26" ; tau on: {"Subgoal 26"} tau off: {"Subgoal 27"}
+           :use (:instance TrLstp-XYRouting (tmissives m)))
           ("Subgoal 13.2'" :use (:instance not-in-v-ids-ct (prev nil)))
           ("subgoal 10" :in-theory (disable consp-last trlstp))
           ("subgoal 10.2" :in-theory (e/d (trlstp) (consp-last)))

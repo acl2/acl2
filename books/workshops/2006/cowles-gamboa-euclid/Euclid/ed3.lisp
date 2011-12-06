@@ -24,6 +24,15 @@
 ; Laramie, WY 82071-3682 U.S.A.
 
 ; Last modified Feb. 2006.
+
+; JSM - August, 2011: This file contains one or more occurrences of
+; (:executable-counterpart tau-system) added when the Tau System was
+; implemented on top of Version_4.3.  Some occurrences may have been commented
+; out but left to mark the locations of changes made necessary because of the
+; tau literal deletion problem described in the Essay on Tau-Clause -- Using
+; Tau to Prove or Mangle Clauses.  When tau was no longer allowed to delete
+; literals, those disablings of tau-system were no longer required.
+
 #|
 To certify this book, first, create a world with the following packages:
 
@@ -1996,7 +2005,12 @@ To certify this book, first, create a world with the following packages:
 		 (acl2-agp::inv (lambda (x)(divides-pp-witness x (1_e)))))
 		(acl2-agp::x x)
 		(acl2-agp::y y)))
-	  ("Subgoal 8"
+; This comment contains the rune (:executable-counterpart tau-system) simply so it
+; is a reliable marker for occurrences of changes made to support tau.  The
+; following change to the Version_4.3 edition of this book is necessitated by
+; the subgoal renaming problem raised by tau.
+
+	  ("Subgoal 7"  ; tau on: {"Subgoal 7"} tau off: {"Subgoal 8"}
 	   :use (:instance
 		 Unit-pp-closure-**_e
 		 (u acl2-agp::x)
@@ -2783,7 +2797,17 @@ To certify this book, first, create a world with the following packages:
 	   (==_e (**_e-lst (irreducible-factors-1 x)) x))
   :hints (("Goal"
 	   :in-theory (disable (:definition mv-nth)
-			       (:definition unit-pp)))))
+			       (:definition unit-pp)
+; The authors want unit-pp to stay in the problem.  But the enabled rewrite rule
+; (DEFTHM UNIT-PP-NOT-REDUCIBLE-PP
+;  (IMPLIES (UNIT-PP X)
+;           (NOT (REDUCIBLE-PP X))))
+; is also a tau rule that removes unit-pp given the earlier assumption of
+; (reducible-pp x).  So we must ensure that the tau-system is disabled.
+
+                               ; tau on: {(:executable-counterpart tau-system)} tau off: {}
+                               (:executable-counterpart tau-system)
+                               ))))
 
 (defthm
   Right-unicity-law-for-*_e

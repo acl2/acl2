@@ -964,6 +964,123 @@
   (symbol-listp val))
 
 ; -----------------------------------------------------------------
+; TAU-CONJUNCTIVE-RULES [GLOBAL-VALUE]
+
+(defun pseudo-tau-pairp (sym val)
+
+; This is a non-traditional pseudo- recognizer.  Sym is supposed to be the
+; symbol on which this val is stored on the 'tau-pair property.  Thus, sym
+; should be eq to the cdr of the val.  However, we also need the concept of a
+; tau pair found elsewhere, e.g., as the pos-implicants property.  We make this
+; predicate do double duty.  If sym is nil, then we do not check for any
+; relationship between sym and val.  We could insist on a guard of
+; (symbolp sym) for this function but that
+
+  (declare (xargs :guard (symbolp sym)))
+  (cond (sym
+         (and (consp val)
+              (natp (car val))
+              (eq (cdr val) sym)))
+        (t (and (consp val)
+                (natp (car val))
+                (symbolp (cdr val))))))
+
+(defun pseudo-tau-pairp-listp (lst)
+  (cond ((atom lst) (equal lst nil))
+        (t (and (consp (car lst))
+                (pseudo-tau-pairp nil (car lst))
+                (pseudo-tau-pairp-listp (cdr lst))))))
+
+(defun indexed-pairs-ordered-strictly-descendingp (lst)
+  (declare (xargs :guard (pseudo-tau-pairp-listp lst)))
+  (cond ((endp lst) t)
+        ((endp (cdr lst)) t)
+        ((> (car (car lst)) (car (cadr lst)))
+         (indexed-pairs-ordered-strictly-descendingp (cdr lst)))
+        (t nil)))
+
+(defun pseudo-tau-pairsp (x)
+  (and (pseudo-tau-pairp-listp x)
+       (indexed-pairs-ordered-strictly-descendingp x)))
+
+(defun pseudo-evg-singletonp (x)
+  (and (consp x)
+       (null (cdr x))))
+
+(defun pseudo-evg-singletonsp1 (lst)
+  (cond ((atom lst) (equal lst nil))
+        (t (and (pseudo-evg-singletonp (car lst))
+                (pseudo-evg-singletonsp1 (cdr lst))))))
+         
+(defun lexordered-ascendingp (lst)
+  (cond ((atom lst) t)
+        ((atom (cdr lst)) t)
+        ((lexorder (car lst) (cadr lst))
+         (lexordered-ascendingp (cdr lst)))
+        (t nil)))
+
+(defun pseudo-evg-singletonsp (lst)
+  (and (pseudo-evg-singletonsp1 lst)
+       (lexordered-ascendingp lst)))
+
+(defun pseudo-taup (x)
+
+; While the defrec for tau is
+; (defrec tau
+;   ((pos-evg . neg-evgs) . (pos-pairs . neg-pairs))
+;   t)
+; where
+; pos-evg:   nil or a singleton list containing an evg
+; neg-evgs:  list of singleton lists of evgs, duplicate-free ordered ascending
+; pos-pairs: list of tau-pairs, duplicate-free, ordered descending
+; neg-pairs: list of tau-pairs, duplicate-free ordered descending
+
+; it is possible for cons above to be represented by NIL if the corresponding
+; fields are empty.  This happens because we sometimes pass in nil as an empty
+; tau and then change one field, constructing something like (nil nil
+; . neg-pairs) where you might expect ((nil . nil) nil . neg-pairs).
+
+  (cond ((atom x)
+         (equal x nil))
+        ((atom (car x))
+         (and (equal (car x) nil)
+              (cond ((atom (cdr x))
+                     (equal (cdr x) nil))
+                    (t (and (pseudo-tau-pairsp (car (cdr x)))
+                            (pseudo-tau-pairsp (cdr (cdr x))))))))
+        (t (and (and (or (null (car (car x)))
+                         (pseudo-evg-singletonp (car (car x))))
+                     (pseudo-evg-singletonsp (cdr (car x))))
+                (cond
+                 ((atom (cdr x))
+                  (equal (cdr x) nil))
+                 (t (and (pseudo-tau-pairsp (car (cdr x)))
+                         (pseudo-tau-pairsp (cdr (cdr x))))))))))
+
+(defun pseudo-taup-listp (x)
+  (cond ((atom x) (equal x nil))
+        (t (and (pseudo-taup (car x))
+                (pseudo-taup-listp (cdr x))))))
+
+(defun pseudo-tau-conjunctive-rulesp (val)
+  (pseudo-taup-listp val))
+
+; -----------------------------------------------------------------
+; TAU-RUNES [GLOBAL-VALUE]
+; TAU-LOST-RUNES [GLOBAL-VALUE]
+
+(defun pseudo-runep-listp (val)
+  (cond ((atom val) (equal val nil))
+        (t (and (pseudo-runep (car val))
+                (pseudo-runep-listp (cdr val))))))
+
+; -----------------------------------------------------------------
+; TAU-NEXT-INDEX [GLOBAL-VALUE]
+; TAU-MV-NTH-SYNONYMS [GLOBAL-VALUE]
+
+; These are all handled by previously defined functions.
+
+; -----------------------------------------------------------------
 ; TTAGS-SEEN [GLOBAL-VALUE]
 
 ; This is an association list pairing ttags with lists of filenames with which they
@@ -1053,6 +1170,28 @@
 ; pseudo-function-symbolps with pseudo-function-symbolp.
 
       (symbol-alistp val)))
+
+;-----------------------------------------------------------------
+; BIG-SWITCH
+
+(defun pseudo-big-switchp (sym val)
+
+; (defrec big-switch-rule (formals switch-var switch-var-pos body) nil)
+; where switch-var is the switch var and switch-var-pos is its position in
+; formals.
+  (declare (ignore sym))
+  (and (true-listp val)
+       (equal (len val) 5)
+       (eq (car val) 'big-switch-rule)
+       (let ((formals (nth 1 val))
+             (switch-var (nth 2 val))
+             (switch-var-pos (nth 3 val))
+             (body (nth 4 val)))
+         (and (pseudo-arglistp formals)
+              (natp switch-var-pos)
+              (< switch-var-pos (length formals))
+              (equal (nth switch-var-pos formals) switch-var)
+              (pseudo-termp body)))))
 
 ;-----------------------------------------------------------------
 ; CLASSES
@@ -1383,10 +1522,16 @@
     (FREE-VAR-RUNES-ALL (pseudo-free-var-runes-allp val))
     (FREE-VAR-RUNES-ONCE (pseudo-free-var-runes-oncep val))
     (CHK-NEW-NAME-LST (chk-new-name-lstp val))
+    (TAU-CONJUNCTIVE-RULES (pseudo-tau-conjunctive-rulesp val))
+    (TAU-NEXT-INDEX (natp val))
+    (TAU-RUNES (pseudo-runep-listp val))
+    (TAU-MV-NTH-SYNONYMS (pseudo-function-symbol-listp val nil))
+    (TAU-LOST-RUNES (pseudo-runep-listp val))
     (TTAGS-SEEN (ttags-seenp val))
     (UNTOUCHABLE-FNS (untouchable-fnsp val))
     (UNTOUCHABLE-VARS (untouchable-varsp val))
-    (DEFINED-HEREDITARILY-CONSTRAINED-FNS (pseudo-defined-hereditarily-constrained-fnsp val))
+    (DEFINED-HEREDITARILY-CONSTRAINED-FNS
+      (pseudo-defined-hereditarily-constrained-fnsp val))
     (WORLD-GLOBALS (world-globalsp val))
     (otherwise nil)))
 
@@ -1734,6 +1879,13 @@
   (pseudo-termp val))
 
 ;-----------------------------------------------------------------
+; NEG-IMPLICANTS
+
+(defun pseudo-neg-implicantsp (sym val)
+  (declare (ignore sym))
+  (pseudo-taup val))
+
+;-----------------------------------------------------------------
 ; NON-EXECUTABLEP
 
 (defun non-executablepp (sym val)
@@ -1747,6 +1899,13 @@
 (defun nth-update-rewriter-targetpp (sym val)
   (declare (ignore sym))
   (booleanp val))
+
+;-----------------------------------------------------------------
+; POS-IMPLICANTS
+
+(defun pseudo-pos-implicantsp (sym val)
+  (declare (ignore sym))
+  (pseudo-taup val))
 
 ;-----------------------------------------------------------------
 ; PREDEFINED
@@ -1988,6 +2147,49 @@
   (pseudo-function-symbol-listp val nil))
 
 ;-----------------------------------------------------------------
+; SIGNATURE-RULES-FORM-1
+
+(defun pseudo-signaturep (x)
+
+; (defrec signature-rule (input-tau-list output-sign output-recog) t)
+; where:
+; :inputs-tau-list  - a list of tau in 1:1 correspondence with formals
+; :output-sign     - T (positive) or NIL (negative)
+; :output-recog    - (i . pred) | (evg) ; i.e., tau-pair or singleton evg list
+
+
+  (and (true-listp x)
+       (equal (len x) 3)
+       (let ((inputs-tau-list (nth 0 x))
+             (output-sign (nth 1 x))
+             (output-recog (nth 2 x)))
+         (and (pseudo-taup-listp inputs-tau-list)
+              (booleanp output-sign)
+              (or (pseudo-tau-pairp nil output-recog)
+                  (pseudo-evg-singletonp output-recog))))))
+
+(defun pseudo-signaturep-listp (x)
+  (cond ((atom x) (equal x nil))
+        (t (and (pseudo-signaturep (car x))
+                (pseudo-signaturep-listp (cdr x))))))
+
+(defun pseudo-signature-rules-form-1p (sym val)
+  (declare (ignore sym))
+  (pseudo-signaturep-listp val))
+
+;-----------------------------------------------------------------
+; SIGNATURE-RULES-FORM-2
+
+(defun pseudo-signaturep-listp-listp (x)
+  (cond ((atom x) (equal x nil))
+        (t (and (pseudo-signaturep-listp (car x))
+                (pseudo-signaturep-listp-listp (cdr x))))))
+
+(defun pseudo-signature-rules-form-2p (sym val)
+  (declare (ignore sym))
+  (pseudo-signaturep-listp-listp val))
+
+;-----------------------------------------------------------------
 ; STOBJ
 
 (defun pseudo-stobjp (sym val)
@@ -2084,6 +2286,12 @@
   (pseudo-termp val))
 
 ;-----------------------------------------------------------------
+; TAU-PAIR
+; TAU-PAIR-SAVED
+
+; This was taken care of when we defined the NEG-IMPLICANTS property.
+
+;-----------------------------------------------------------------
 ; THEOREM
 
 (defun pseudo-theoremp (sym val)
@@ -2130,6 +2338,16 @@
 (defun pseudo-type-prescriptionsp (sym val)
   (declare (ignore sym))
   (pseudo-type-prescription-listp val))
+
+;-----------------------------------------------------------------
+; UNEVALABLE-BUT-KNOWN
+
+(defun pseudo-unevalable-but-knownp (sym val)
+  (declare (ignore sym))
+  (cond ((atom val) (equal val nil))
+        (t (and (consp (car val))
+                (booleanp (cdr (car val)))
+                (pseudo-unevalable-but-knownp nil (cdr val))))))
 
 ;-----------------------------------------------------------------
 ; UNNORMALIZED-BODY
@@ -2296,6 +2514,7 @@
                (absolute-event-numberp sym val)))
           (ACCESSOR-NAMES (accessor-namesp sym val))
           (ATTACHMENT (attachment-propertyp sym val))
+          (BIG-SWITCH (pseudo-big-switchp sym val))
           (CLASSES (classesp sym val))
           (CLASSICALP (or (eq val *acl2-property-unbound*)
                           (classicalpp sym val)))
@@ -2332,9 +2551,11 @@
           (LINEAR-LEMMAS (pseudo-linear-lemmasp sym val))
           (MACRO-ARGS (pseudo-macro-argsp sym val))
           (MACRO-BODY (pseudo-macro-bodyp sym val))
+          (NEG-IMPLICANTS (pseudo-neg-implicantsp sym val))
           (NON-EXECUTABLEP (or (eq val *acl2-property-unbound*) ; upgrade proxy
                                (non-executablepp sym val)))
           (NTH-UPDATE-REWRITER-TARGETP (nth-update-rewriter-targetpp sym val))
+          (POS-IMPLICANTS (pseudo-pos-implicantsp sym val))
           (PREDEFINED (or (eq val *acl2-property-unbound*) ; upgrade defproxy
                           (predefinedp sym val)))
           (PRIMITIVE-RECURSIVE-DEFUNP (primitive-recursive-defunpp sym val))
@@ -2344,6 +2565,10 @@
           (REDUNDANCY-BUNDLE (pseudo-redundancy-bundlep sym val))
           (RUNIC-MAPPING-PAIRS (pseudo-runic-mapping-pairsp sym val))
           (SIBLINGS (siblings-propertyp sym val))
+          (SIGNATURE-RULES-FORM-1
+           (pseudo-signature-rules-form-1p sym val))
+          (SIGNATURE-RULES-FORM-2
+           (pseudo-signature-rules-form-2p sym val))
           (STOBJ (pseudo-stobjp sym val))
           (STOBJ-CONSTANT (pseudo-stobj-constantp sym val))
           (STOBJ-FUNCTION (pseudo-stobj-functionp sym val))
@@ -2359,11 +2584,14 @@
                (symbol-classp sym val)))
           (TABLE-ALIST (table-alistp sym val))
           (TABLE-GUARD (pseudo-table-guardp sym val))
+          (TAU-PAIR (pseudo-tau-pairp sym val))
+          (TAU-PAIR-SAVED (pseudo-tau-pairp sym val))
           (THEOREM (pseudo-theoremp sym val))
           (THEORY (pseudo-theoryp sym val))
           (TYPE-PRESCRIPTIONS
            (or (eq val *acl2-property-unbound*)
                (pseudo-type-prescriptionsp sym val)))
+          (UNEVALABLE-BUT-KNOWN (pseudo-unevalable-but-knownp sym val))
           (UNNORMALIZED-BODY
            (or (eq val *acl2-property-unbound*)
                (unnormalized-bodyp sym val)))

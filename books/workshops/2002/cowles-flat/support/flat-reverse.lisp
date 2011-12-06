@@ -39,6 +39,15 @@
 
 ; Fall 2001.
 ;  Last modified 28 December 2001.
+
+; JSM - August, 2011: This file contains one or more occurrences of
+; (:executable-counterpart tau-system) added when the Tau System was
+; implemented on top of Version_4.3.  Some occurrences may have been commented
+; out but left to mark the locations of changes made necessary because of the
+; tau literal deletion problem described in the Essay on Tau-Clause -- Using
+; Tau to Prove or Mangle Clauses.  When tau was no longer allowed to delete
+; literals, those disablings of tau-system were no longer required.
+
 #|
  To certify (originally in ACL2 Version 2.6):
  (defpkg 
@@ -227,7 +236,7 @@
     (<def= (f-chain i x)
 	   (lub-f-chain x))
     :hints (("Goal"
-	     :by
+             :by
 	     (:functional-instance
 	      lub-$bottom$-based-chain-is-upper-bound
 	      ($<=$ <def=)
@@ -236,7 +245,13 @@
 	      (lub-$bottom$-based-chain lub-f-chain)
 	      (lub-$bottom$-based-chain-nat-i lub-f-chain-nat-i)
 	      (lub-$bottom$-based-chain-i lub-f-chain-i)))
-	    ("Subgoal 3"
+
+
+; This comment contains (:executable-counterpart tau-system) just so that is a reliable
+; marker for changes made to support tau.  THe two changes below were motivated by
+; the subgoal renaming problem.
+
+	    ("Subgoal 2" ; tau on: {"Subgoal 2"} tau off: {"Subgoal 3"}
 	     :use f-chain-is-<def=-chain)))
 
 (defthm
@@ -246,7 +261,7 @@
 	     (equal (lub-f-chain x)
 		    (f-chain i x)))
     :hints (("Goal"
-	     :by 
+             :by 
 	     (:functional-instance
 	      $bottom$-based-chain-is-$<=$-chain-f
 	      ($<=$ <def=)
@@ -330,7 +345,7 @@
     (equal (lub-f-chain x)(ub-g-chain x))
     :rule-classes nil
     :hints (("Goal"
-	     :by 
+             :by 
 	     (:functional-instance
 	      lub-$chain$=ub-shifted-$chain$
 	      ($<=$ <def=)
@@ -342,9 +357,14 @@
 	      ($f$ Skolem-f)
 	      (shifted-$chain$ g-chain)
 	      (ub-shifted-$chain$ ub-g-chain)))
-	    ("Subgoal 5"
+
+; This comment contains (:executable-counterpart tau-system) just so that is a reliable
+; marker for changes made to support tau.  THe two changes below were motivated by
+; the subgoal renaming problem.
+
+	    ("Subgoal 4" ; tau on: {"Subgoal 4"} tau off {"Subgoal 5"}
 	     :use g-chain-<def=-ub-g-chain)
-	    ("Subgoal 4"
+	    ("Subgoal 3" ; tau on: {"Subgoal 3"} tau off {"Subgoal 4"}
 	     :use f-chain-is-<def=-chain)
 	    ))
 

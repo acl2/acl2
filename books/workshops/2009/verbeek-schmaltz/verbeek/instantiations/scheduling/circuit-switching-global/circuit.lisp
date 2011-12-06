@@ -8,6 +8,15 @@
 
 (begin-book);$ACL2s-Preamble$|#
 
+; JSM - August, 2011: This file contains one or more occurrences of
+; (:executable-counterpart tau-system) added when the Tau System was
+; implemented on top of Version_4.3.  Some occurrences may have been commented
+; out but left to mark the locations of changes made necessary because of the
+; tau literal deletion problem described in the Essay on Tau-Clause -- Using
+; Tau to Prove or Mangle Clauses.  When tau was no longer allowed to delete
+; literals, those disablings of tau-system were no longer required.
+
+
 (in-package "ACL2")
 (include-book "../../../generic-modules/GeNoC-scheduling")
 (include-book "intersect")
@@ -566,6 +575,7 @@
 ;; -----------------------------------------------------------
 ;; Compliance to generic model
 ;; ------------------------------------------------------------
+
 (definstance genericscheduling check-compliance-ct-scheduling
   :functional-substitution
   ((scheduling ct-scheduling)
@@ -593,10 +603,16 @@
 ; (which was a change to the way ACL2 translates mv-let expressions in theorems
 ; into internal form).  It seems that this mv-let change may have affected the
 ; way make-event expansion is done here.
-          ("subgoal 8.2'" :use ((:instance tomissives-extract-sublst (l (totmissives trlst))
-                                           (ids (tm-ids (totmissives trlst))))
-                                (:instance totmissives-extract-sublst (l trlst)
-                                           (ids (v-ids trlst)))
-                                (:instance extract-sublst-identity)))))
+
+; This comment contains (:executable-counterpart tau-system) just so that rune
+; is a reliable marker for changes made to support tau.  The change was motivated
+; by the subgoal renaming problem.
+
+          ("Subgoal 7.2'" ; tau on: {"Subgoal 7.2'"} tau off {"Subgoal 8.2'"}
+           :use ((:instance tomissives-extract-sublst (l (totmissives trlst))
+                            (ids (tm-ids (totmissives trlst))))
+                 (:instance totmissives-extract-sublst (l trlst)
+                            (ids (v-ids trlst)))
+                 (:instance extract-sublst-identity)))))
 
 (in-theory (enable update-ntkstate))#|ACL2s-ToDo-Line|#
