@@ -18333,6 +18333,8 @@
 
   ~st[NEW FEATURES]
 
+  A new ``tau system'' provides a kind of ``type checker.''  ~l[tau-system].
+
   Users may now arrange for additional summary information to be printed at the
   end of ~il[events]; ~pl[print-summary-user].  Thanks to Harsh Raju Chamarthi
   for requesting this feature and participating in a design discussion.

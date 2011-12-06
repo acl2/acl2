@@ -730,6 +730,7 @@
     "type-set-b"
     "linear-b"
     "non-linear"
+    "tau"
     "rewrite"
     "simplify"
     "bdd"

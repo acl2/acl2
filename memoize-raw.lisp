@@ -2217,6 +2217,7 @@ the calls took.")
             no-op-histp
             nominate-destructor-candidates
             non-linearp
+            tau-auto-modep
             non-stobjps
             normalize
             normalize-lst

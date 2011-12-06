@@ -5699,6 +5699,7 @@
                       mutual-recursion
                       progn!
                       push-untouchable
+                      regenerate-tau-data-base
                       remove-untouchable
                       reset-prehistory
                       set-body

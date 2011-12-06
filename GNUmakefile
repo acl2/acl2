@@ -267,12 +267,12 @@ sources := axioms.lisp memoize.lisp hons.lisp boot-strap-pass-2.lisp\
            basis.lisp parallel.lisp translate.lisp\
            type-set-a.lisp linear-a.lisp\
            type-set-b.lisp linear-b.lisp\
-           non-linear.lisp\
+           non-linear.lisp tau.lisp\
            rewrite.lisp simplify.lisp bdd.lisp\
            other-processes.lisp induct.lisp prove.lisp\
            proof-checker-a.lisp history-management.lisp defuns.lisp defthm.lisp\
            other-events.lisp ld.lisp proof-checker-b.lisp interface-raw.lisp\
-	   serialize.lisp serialize-raw.lisp\
+           serialize.lisp serialize-raw.lisp\
            defpkgs.lisp
 
 ifdef ACL2_HONS

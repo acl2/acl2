@@ -1031,6 +1031,11 @@
             'state
             (list 'quote doc)
             (list 'quote event-form)))
+    (defmacro regenerate-tau-data-base (&whole event-form &key doc)
+      (list 'regenerate-tau-data-base-fn
+            'state
+            (list 'quote doc)
+            (list 'quote event-form)))
     (defmacro push-untouchable (&whole event-form name fn-p &key doc)
       (list 'push-untouchable-fn
             (list 'quote name)
@@ -1365,11 +1370,6 @@
                     :vars nil
                     :corollary '(booleanp (o< x y))))))
 
-(defun strip-caddrs (x)
-  (declare (xargs :guard (all->=-len x 3)))
-  (cond ((null x) nil)
-        (t (cons (caddar x) (strip-caddrs (cdr x))))))
-
 (defun collect-world-globals (wrld ans)
   (cond ((null wrld) ans)
         ((eq (cadar wrld) 'global-value)
@@ -1453,6 +1453,16 @@
                     (current-theory-augmented nil)
                     (current-theory-index -1)
                     (generalize-rules nil)
+
+; Make sure the following tau globals are initialized this same way
+; by initialize-tau-globals:
+
+                    (tau-runes nil)
+                    (tau-next-index 0)
+                    (tau-conjunctive-rules nil)
+                    (tau-mv-nth-synonyms nil)
+                    (tau-lost-runes nil)
+
                     (clause-processor-rules nil)
                     (boot-strap-flg t)
                     (boot-strap-pass-2 nil)
@@ -1466,7 +1476,7 @@
                          defpkg defun defuns mutual-recursion defmacro defconst
                          defstobj defthm defaxiom progn encapsulate include-book 
                          deflabel defdoc deftheory
-                         in-theory in-arithmetic-theory
+                         in-theory in-arithmetic-theory regenerate-tau-data-base
                          push-untouchable remove-untouchable set-body table
                          reset-prehistory verify-guards verify-termination-boot-strap
                          local defchoose ld-skip-proofsp
@@ -1476,6 +1486,7 @@
                          defthm-fn defaxiom-fn progn-fn encapsulate-fn
                          include-book-fn deflabel-fn defdoc-fn
                          deftheory-fn in-theory-fn in-arithmetic-theory-fn
+                         regenerate-tau-data-base-fn
                          push-untouchable-fn remove-untouchable-fn
                          reset-prehistory-fn set-body-fn
                          table-fn verify-guards-fn verify-termination-boot-strap-fn
@@ -1546,51 +1557,53 @@
       'enter-boot-strap-mode
       (append (strip-cars *primitive-formals-and-guards*)
               (strip-non-hidden-package-names *initial-known-package-alist*))
-      (putprop
-       'equal
-       'coarsenings
-       '(equal)
-       (putprop-x-lst1
-        names 'absolute-event-number 0
+      (initialize-tau-preds 
+       *primitive-monadic-booleans*
+       (putprop
+        'equal
+        'coarsenings
+        '(equal)
         (putprop-x-lst1
-         names 'predefined t
-         (putprop-defun-runic-mapping-pairs
-          names nil
-          (putprop-x-lst1
-           ns-names ; nil in the #-:non-standard-analysis case
-           'classicalp nil
+         names 'absolute-event-number 0
+         (putprop-x-lst1
+          names 'predefined t
+          (putprop-defun-runic-mapping-pairs
+           names nil
            (putprop-x-lst1
-            ns-names
-            'constrainedp t
+            ns-names ; nil in the #-:non-standard-analysis case
+            'classicalp nil
             (putprop-x-lst1
-             names
-             'symbol-class :common-lisp-compliant
-             (putprop-x-lst2-unless
-              names 'guard guards *t*
-              (putprop-x-lst2
-               names 'formals arglists
+             ns-names
+             'constrainedp t
+             (putprop-x-lst1
+              names
+              'symbol-class :common-lisp-compliant
+              (putprop-x-lst2-unless
+               names 'guard guards *t*
                (putprop-x-lst2
-                (strip-cars *initial-type-prescriptions*)
-                'type-prescriptions
-                (strip-cdrs *initial-type-prescriptions*)
-                (putprop-x-lst1
-                 names 'coarsenings nil
+                names 'formals arglists
+                (putprop-x-lst2
+                 (strip-cars *initial-type-prescriptions*)
+                 'type-prescriptions
+                 (strip-cdrs *initial-type-prescriptions*)
                  (putprop-x-lst1
-                  names 'congruences nil
-                  (putprop-x-lst2
-                   names 'stobjs-in (arglists-to-nils arglists)
-                   (putprop-x-lst1
-                    names 'stobjs-out '(nil)
-                    (primordial-event-macros-and-fns
-                     *initial-event-defmacros*
+                  names 'coarsenings nil
+                  (putprop-x-lst1
+                   names 'congruences nil
+                   (putprop-x-lst2
+                    names 'stobjs-in (arglists-to-nils arglists)
+                    (putprop-x-lst1
+                     names 'stobjs-out '(nil)
+                     (primordial-event-macros-and-fns
+                      *initial-event-defmacros*
 
 ; This putprop must be here, into the world seen by
 ; primordial-event-macros-and-fns!
 
-                     (putprop
-                      'state 'stobj '(*the-live-state*)
-                      (primordial-world-globals
-                       operating-system)))))))))))))))))
+                      (putprop
+                       'state 'stobj '(*the-live-state*)
+                       (primordial-world-globals
+                        operating-system))))))))))))))))))
       t))))
 
 (defun same-name-twice (l)
@@ -4206,6 +4219,7 @@
      progn!
      program
      push-untouchable
+     regenerate-tau-data-base
      remove-default-hints!
      remove-untouchable
      reset-prehistory
@@ -4234,6 +4248,7 @@
      set-ruler-extenders
      set-rw-cache-state!
      set-state-ok
+     set-tau-auto-mode
      set-verify-guards-eagerness
      set-well-founded-relation
      table
@@ -4480,6 +4495,7 @@
 ; defmacro-fn                (name MACRO-BODY . &)
 ; in-theory-fn               ---
 ; in-arithmetic-theory-fn    ---
+; regenerate-tau-data-base   ---
 ; push-untouchable-fn        ---
 ; remove-untouchable-fn      ---
 ; reset-prehistory           ---
@@ -4691,6 +4707,7 @@
                            '(add-custom-keyword-hint
                              add-include-book-dir
                              add-match-free-override
+                             defttag
                              delete-include-book-dir
                              logic
                              program
@@ -4710,13 +4727,13 @@
                              set-measure-function
                              set-non-linearp
                              set-nu-rewriter-mode
+                             set-prover-step-limit
                              set-rewrite-stack-limit
                              set-ruler-extenders
                              set-state-ok
-                             set-prover-step-limit
+                             set-tau-auto-mode
                              set-verify-guards-eagerness
-                             set-well-founded-relation
-                             defttag)))
+                             set-well-founded-relation)))
            (er soft ctx local-str
                form
                " because it implicitly sets the acl2-defaults-table in a ~
@@ -27485,12 +27502,13 @@
                     (instructions
                      (proof-checker nil ugoal goal nil instructions
                                     wrld state))
-                    (t (prove goal
-                              (make-pspv ens
-                                         wrld
-                                         :displayed-goal ugoal
-                                         :otf-flg otf-flg)
-                              hints ens wrld ctx state)))))
+                    (t
+                     (prove goal
+                            (make-pspv ens
+                                       wrld
+                                       :displayed-goal ugoal
+                                       :otf-flg otf-flg)
+                            hints ens wrld ctx state)))))
            (value ttree)))))))))
 
 ; Essay on Merging Attachment Records

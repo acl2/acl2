@@ -81,6 +81,7 @@ serialize-raw.lisp
 serialize.lisp
 simplify.lisp
 sum-list-example.lisp
+tau.lisp
 translate.lisp
 tutorial.lisp
 type-set-a.lisp

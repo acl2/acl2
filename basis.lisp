@@ -2420,6 +2420,10 @@
 ; a list of nils of the same length as its formals, and a 'stobjs-out of
 ; '(nil).  Revisit that code if you add a primitive that involves stobjs!
 
+; WARNING:  Just below you will find another list, *primitive-monadic-booleans*
+; that lists the function names from this list that are monadic booleans.  The
+; names must appear in the same order as here!
+
   '((acl2-numberp (x) 't)
     (bad-atom<= (x y) (if (bad-atom x) (bad-atom y) 'nil))
     (binary-* (x y) (if (acl2-numberp x) (acl2-numberp y) 'nil))
@@ -2482,6 +2486,27 @@
     (standard-part (x) (acl2-numberp x))
     #+:non-standard-analysis
     (i-large-integer () 't)))
+
+(defconst *primitive-monadic-booleans*
+
+; This is the list of primitive monadic boolean function symbols.  Each
+; function must be listed in *primitive-formals-and-guards* and they should
+; appear in the same order.  (The reason order matters is simply to make it
+; easier to check at the end of boot-strap that we have included all the
+; monadic booleans.)
+
+  '(acl2-numberp
+    characterp
+    complex-rationalp
+    consp
+    integerp
+    rationalp
+    #+:non-standard-analysis
+    realp
+    stringp
+    symbolp
+    #+:non-standard-analysis
+    standardp))
 
 (defconst *0* (quote (quote 0)))
 
@@ -6692,6 +6717,7 @@
      defmacro
      in-theory
      in-arithmetic-theory
+     regenerate-tau-data-base
      push-untouchable
      remove-untouchable
      reset-prehistory
@@ -12328,6 +12354,11 @@
              (fargn term 2)))
         (t (fcons-term* 'not term))))
 
+(defun dumb-negate-lit-lst (lst)
+  (cond ((endp lst) nil)
+        (t (cons (dumb-negate-lit (car lst))
+                 (dumb-negate-lit-lst (cdr lst))))))
+
 (mutual-recursion
 
 (defun term-stobjs-out-alist (vars args alist wrld)
@@ -13518,7 +13549,15 @@
                          TABLE-ALIST
                          MACRO-BODY
                          MACRO-ARGS
-                         PREDEFINED)
+                         PREDEFINED
+                         TAU-PAIR
+                         POS-IMPLICANTS
+                         NEG-IMPLICANTS
+                         UNEVALABLE-BUT-KNOWN
+                         SIGNATURE-RULES-FORM-1
+                         SIGNATURE-RULES-FORM-2
+                         BIG-SWITCH
+                         )
                        'current-acl2-world
                        wrld
                        nil)))

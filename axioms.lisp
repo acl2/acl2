@@ -1976,6 +1976,10 @@
   (declare (ignore args))
   nil)
 
+(defmacro regenerate-tau-data-base (&rest args)
+  (declare (ignore args))
+  nil)
+
 (defmacro push-untouchable (&rest args)
   (declare (ignore args))
   nil)
@@ -7370,6 +7374,590 @@
 
   'extra-info)
 
+; We deflabel Rule-Classes here, so we can refer to it in the doc string for
+; tau-system.  We define tau-system (the noop fn whose rune controls the
+; whether the tau data base is used during proofs) in axioms.lisp because we
+; build in the nume of its executable counterpart as a constant (e.g., as we do
+; with FORCE) and do not want constants additions to the sources to require
+; changing that nume (as would happen if tau-system were defined in
+; rewrite.lisp where rule-classes was originally defined).
+
+(deflabel rule-classes
+  :doc
+  ":Doc-Section Rule-Classes
+
+  adding rules to the data base~/
+  ~bv[]
+  Example Form (in a defthm from books/finite-set-theory/total-ordering.lisp):
+  (defthm <<-trichotomy
+    (implies (and (ordinaryp x)
+                  (ordinaryp y))
+             (or (<< x y)
+                 (equal x y)
+                 (<< y x)))
+    :rule-classes
+    ((:rewrite :corollary
+               (implies (and (ordinaryp x)
+                             (ordinaryp y)
+                             (not (<< x y))
+                             (not (equal x y)))
+                        (<< y x)))))
+
+  General Form:
+  a true list of rule class objects as defined below
+
+  Special Cases:
+  a symbol abbreviating a single rule class object
+  ~ev[]
+
+  When ~ilc[defthm] is used to prove a named theorem, rules may be derived from
+  the proved formula and stored in the database.  The user specifies which
+  kinds of rules are to be built, by providing a list of rule class ~i[names]
+  or, more generally, rule class ~i[objects], which name the kind of rule to
+  build and optionally specify varioius attributes of the desired rule.
+  The rule class names are ~c[:]~ilc[REWRITE], ~c[:]~ilc[BUILT-IN-CLAUSE],
+  ~c[:]~ilc[CLAUSE-PROCESSOR], ~c[:]~ilc[COMPOUND-RECOGNIZER],
+  ~c[:]~ilc[CONGRUENCE], ~c[:]~ilc[DEFINITION], ~c[:]~ilc[ELIM],
+  ~c[:]~ilc[EQUIVALENCE], ~c[:]~ilc[FORWARD-CHAINING], ~c[:]~ilc[GENERALIZE],
+  ~c[:]~ilc[INDUCTION], ~c[:]~ilc[LINEAR], ~c[:]~ilc[META],
+  ~c[:]~ilc[REFINEMENT], ~c[:]~ilc[TAU-SYSTEM], ~c[:]~ilc[TYPE-PRESCRIPTION],
+  ~c[:]~ilc[TYPE-SET-INVERTER], and ~c[:]~ilc[WELL-FOUNDED-RELATION].  Some
+  classes ~i[require] the user-specification of certain class-specific
+  attributes.  Each class of rule affects the theorem prover's behavior in a
+  different way, as discussed in the corresponding documentation topic.  In
+  this topic we discuss the various attributes that may be attached to rule
+  classes.
+
+  A rule class object is either one of the ~c[:class] keywords or else is a
+  list of the form shown below.  Those fields marked with ``(!)''  are required
+  when the ~c[:class] is as indicated.
+  ~bv[]
+  (:class 
+    :COROLLARY term
+    :TRIGGER-FNS (fn1 ... fnk) ; provided :class = :META (!)
+    :TRIGGER-TERMS (t1 ... tk) ; provided :class = :FORWARD-CHAINING
+                               ;       or :class = :LINEAR
+    :TYPE-SET n                ; provided :class = :TYPE-SET-INVERTER
+    :TYPED-TERM term           ; provided :class = :TYPE-PRESCRIPTION
+    :CLIQUE (fn1 ... fnk)      ; provided :class = :DEFINITION
+    :CONTROLLER-ALIST alist    ; provided :class = :DEFINITION
+    :INSTALL-BODY directive    ; provided :class = :DEFINITION
+    :LOOP-STOPPER alist        ; provided :class = :REWRITE
+    :PATTERN term              ; provided :class = :INDUCTION (!)
+    :CONDITION term            ; provided :class = :INDUCTION
+    :SCHEME term               ; provided :class = :INDUCTION (!)
+    :MATCH-FREE all-or-once    ; provided :class = :REWRITE
+                                       or :class = :LINEAR
+                                       or :class = :FORWARD-CHAINING
+    :BACKCHAIN-LIMIT-LST limit ; provided :class = :REWRITE
+                                       or :class = :META
+                                       or :class = :LINEAR
+                                       or :class = :TYPE-PRESCRIPTION
+    :HINTS hints               ; provided instrs = nil
+    :INSTRUCTIONS instrs       ; provided  hints = nil
+    :OTF-FLG flg)
+  ~ev[]
+  When rule class objects are provided by the user, most of the fields are
+  optional and their values are computed in a context sensitive way.  When a
+  ~c[:class] keyword is used as a rule class object, all relevant fields are
+  determined contextually.  Each rule class object in ~c[:rule-classes] causes
+  one or more rules to be added to the data base.  The ~c[:class] keywords are
+  documented individually under the following names.  Note that when one of
+  these names is used as a ~c[:class], it is expected to be in the keyword
+  package (i.e., the names below should be preceded by a colon but the ACL2
+  ~il[documentation] facilities do not permit us to use keywords below).
+
+  ~/
+  See also ~ilc[force], ~il[case-split], ~ilc[syntaxp], and ~ilc[bind-free]
+  for ``pragmas'' one can wrap around individual hypotheses of ~c[linear] and
+  ~c[rewrite] rules to affect how the hypothesis is relieved.
+
+  Before we get into the discussion of rule classes, let us return to an
+  important point.  In spite of the large variety of rule classes available, at
+  present we recommend that new ACL2 users rely almost exclusively on
+  (conditional) rewrite rules.  A reasonable but slightly bolder approach is to
+  use ~c[:]~ilc[type-prescription] and ~c[:]~ilc[forward-chaining] rules for
+  ``type-theoretic'' rules, especially ones whose top-level function symbol is
+  a common one like ~ilc[true-listp] or ~ilc[consp]; ~pl[type-prescription] and
+  ~pl[forward-chaining].  However, the rest of the rule classes are really not
+  intended for widespread use, but rather are mainly for experts.
+
+  We expect that we will write more about the question of which kind of rule to
+  use.  For now: when in doubt, use a ~c[:]~ilc[rewrite] rule.
+
+  ~c[:Rule-classes] is an optional keyword argument of the ~ilc[defthm] (and
+  ~ilc[defaxiom]) event.  In the following, let ~c[name] be the name of the
+  event and let ~c[thm] be the formula to be proved or added as an axiom.
+
+  If ~c[:rule-classes] is not specified in a ~ilc[defthm] (or ~ilc[defaxiom])
+  event, it is as though what was specified was to make one or more
+  ~c[:]~ilc[rewrite] rules, i.e., as though ~c[:rule-classes] ~c[((:rewrite))]
+  had been used.  Use ~c[:rule-classes] ~c[nil] to specify that no rules are to
+  be generated.
+
+  If ~c[:rule-classes] class is specified, where class is a non-~c[nil] symbol,
+  it is as though ~c[:rule-classes] ~c[((class))] had been used.  Thus,
+  ~c[:rule-classes] ~c[:]~ilc[forward-chaining] is equivalent to
+  ~c[:rule-classes] ~c[((:forward-chaining))].
+
+  We therefore now consider ~c[:rule-classes] as a true list.  If any element
+  of that list is a keyword, replace it by the singleton list containing that
+  keyword.  Thus, ~c[:rule-classes] ~c[(:rewrite :elim)] is the same as
+  ~c[:rule-classes] ~c[((:rewrite) (:elim))].
+
+  Each element of the expanded value of ~c[:rule-classes] must be a true list
+  whose ~ilc[car] is one of the rule class keyword tokens listed above, e.g.,
+  ~c[:]~ilc[rewrite], ~c[:]~ilc[elim], etc., and whose ~ilc[cdr] is a ``keyword
+  alist'' alternately listing keywords and values.  The keywords in this alist
+  must be taken from those shown below.  They may be listed in any order and
+  most may be omitted, as specified below.~bq[]
+
+  ~c[:]~ilc[Corollary] ~-[] its value, ~c[term], must be a term.  If omitted,
+  this field defaults to ~c[thm].  The ~c[:]~ilc[corollary] of a rule class
+  object is the formula actually used to justify the rule created and thus
+  determines the form of the rule.  Nqthm provided no similar capability: each
+  rule was determined by ~c[thm], the theorem or axiom added.  ACL2 permits
+  ~c[thm] to be stated ``elegantly'' and then allows the ~c[:]~ilc[corollary]
+  of a rule class object to specify how that elegant statement is to be
+  interpreted as a rule.  For the rule class object to be well-formed, its
+  (defaulted) ~c[:]~ilc[corollary], ~c[term], must follow from ~c[thm].  Unless
+  ~c[term] is trivially implied by ~c[thm], using little more than
+  propositional logic, the formula ~c[(implies thm term)] is submitted to the
+  theorem prover and the proof attempt must be successful.  During that proof
+  attempt the values of ~c[:]~ilc[hints], ~c[:]~ilc[instructions], and
+  ~c[:]~ilc[otf-flg], as provided in the rule class object, are provided as
+  arguments to the prover.  Such auxiliary proofs give the sort of output that
+  one expects from the prover.  However, as noted above, corollaries that
+  follow trivially are not submitted to the prover; thus, such corollaries
+  cause no prover output.
+
+  Note that before ~c[term] is stored, all calls of macros in it are expanded
+  away.  ~l[trans].
+
+  ~c[:]~ilc[Hints], ~c[:]~ilc[instructions], ~c[:]~ilc[otf-flg] ~-[] the values
+  of these fields must satisfy the same restrictions placed on the fields of
+  the same names in ~ilc[defthm].  These values are passed to the recursive
+  call of the prover used to establish that the ~c[:]~ilc[corollary] of the
+  rule class object follows from the theorem or axiom ~c[thm].
+
+  ~c[:]~ilc[Type-set] ~-[] this field may be supplied only if the ~c[:class] is
+  ~c[:]~ilc[type-set-inverter].  When provided, the value must be a type-set,
+  an integer in a certain range.  If not provided, an attempt is made to
+  compute it from the corollary.  ~l[type-set-inverter].
+
+  ~c[:Typed-term] ~-[] this field may be supplied only if the ~c[:class] is
+  ~c[:]~ilc[type-prescription].  When provided, the value is the term for which
+  the ~c[:]~ilc[corollary] is a type-prescription lemma.  If no ~c[:typed-term]
+  is provided in a ~c[:]~ilc[type-prescription] rule class object, we try to
+  compute heuristically an acceptable term.  ~l[type-prescription].
+
+  ~c[:Trigger-terms] ~-[] this field may be supplied only if the ~c[:class] is
+  ~c[:]~ilc[forward-chaining] or ~c[:]~ilc[linear].  When provided, the value
+  is a list of terms, each of which is to trigger the attempted application of
+  the rule.  If no ~c[:trigger-terms] is provided, we attempt to compute
+  heuristically an appropriate set of triggers.  ~l[forward-chaining] or
+  ~pl[linear].
+
+  ~c[:Trigger-fns] ~-[] this field must (and may only) be supplied if the
+  ~c[:class] is ~c[:]~ilc[meta].  Its value must be a list of function symbols
+  (except that a macro alias can stand in for a function symbol;
+  ~pl[add-macro-alias]).  Terms with these symbols trigger the application of
+  the rule.  ~l[meta].
+
+  ~c[:Clique] and ~c[:controller-alist] ~-[] these two fields may only be
+  supplied if the ~c[:class] is ~c[:]~ilc[definition].  If they are omitted,
+  then ACL2 will attempt to guess them.  Suppose the ~c[:]~ilc[corollary] of
+  the rule is ~c[(implies hyp (equiv (fn a1 ... an) body))].  The value of the
+  ~c[:clique] field should be a true list of function symbols, and if
+  non-~c[nil] must include ~c[fn].  These symbols are all the members of the
+  mutually recursive clique containing this definition of ~c[fn].  That is, a
+  call of any function in ~c[:clique] is considered a ``recursive call'' for
+  purposes of the expansion heuristics.  The value of the ~c[:controller-alist]
+  field should be an alist that maps each function symbol in the ~c[:clique] to
+  a list of ~c[t]'s and ~c[nil]'s of length equal to the arity of the function.
+  For example, if ~c[:clique] consists of just two symbols, ~c[fn1] and
+  ~c[fn2], of arities ~c[2] and ~c[3] respectively, then
+  ~c[((fn1 t nil) (fn2 nil t t))] is a legal value of ~c[:controller-alist].
+  The value associated with a function symbol in this alist is a ``mask''
+  specifying which argument slots of the function ``control'' the recursion for
+  heuristic purposes.  Sloppy choice of ~c[:clique] or ~c[:controller-alist]
+  can result in infinite expansion and stack overflow.
+
+  ~c[:Install-body] ~-[] this field may only be supplied if the ~c[:class] is
+  ~c[:]~ilc[definition].  Its value must be ~c[t], ~c[nil], or the default,
+  ~c[:normalize].  A value of ~c[t] or ~c[:normalize] will cause ACL2 to
+  install this rule as the new body of the function being ``defined'' (~c[fn]
+  in the paragraph just above); hence this definition will be installed for
+  future ~c[:expand] ~il[hints].  Furthermore, if this field is omitted or the
+  value is ~c[:normalize], then this definition will be simplified using the
+  so-called ``normalization'' procedure that is used when processing
+  definitions made with ~ilc[defun].  You must explicitly specify
+  ~c[:install-body nil] in the following cases: ~c[fn] (as above) is a member
+  of the value of constant ~c[*definition-minimal-theory*], the arguments are
+  not a list of distinct variables, ~c[equiv] (as above) is not ~ilc[equal], or
+  there are free variables in the hypotheses or right-hand side
+  (~pl[free-variables]).  However, supplying ~c[:install-body nil] will not
+  affect the rewriter's application of the ~c[:definition] rule, other than to
+  avoid using the rule to apply ~c[:expand] hints.  If a definition rule
+  equates ~c[(f a1 ... ak)] with ~c[body] but there are hypotheses, ~c[hyps],
+  then ~c[:expand] ~il[hints] will replace terms ~c[(f term1 ... termk)] by
+  corresponding terms ~c[(if hyps body (hide (f term1 ... termk)))].
+
+  ~c[:]~ilc[Loop-stopper] ~-[] this field may only be supplied if the class is
+  ~c[:]~ilc[rewrite].  Its value must be a list of entries each consisting of
+  two variables followed by a (possibly empty) list of functions, for example
+  ~c[((x y binary-+) (u v foo bar))].  It will be used to restrict application
+  of rewrite rules by requiring that the list of instances of the second
+  variables must be ``smaller'' than the list of instances of the first
+  variables in a sense related to the corresponding functions listed;
+  ~pl[loop-stopper].  The list as a whole is allowed to be ~c[nil], indicating
+  that no such restriction shall be made.  Note that any such entry that
+  contains a variable not being instantiated, i.e., not occurring on the left
+  side of the rewrite rule, will be ignored.  However, for simplicity we merely
+  require that every variable mentioned should appear somewhere in the
+  corresponding ~c[:]~ilc[corollary] formula.
+
+  ~c[:Pattern], ~c[:Condition], ~c[:Scheme] ~-[] the first and last of these
+  fields must (and may only) be supplied if the class is ~c[:]~ilc[induction].
+  ~c[:Condition] is optional but may only be supplied if the class is
+  ~c[:]~ilc[induction].  The values must all be terms and indicate,
+  respectively, the pattern to which a new induction scheme is to be attached,
+  the condition under which the suggestion is to be made, and a term which
+  suggests the new scheme.  ~l[induction].
+
+  ~c[:Match-free] ~-[] this field must be ~c[:all] or ~c[:once] and may be
+  supplied only if the ~c[:class] is either ~c[:]~ilc[rewrite],
+  ~c[:]~ilc[linear], or ~c[:]~ilc[forward-chaining].  (This field is not
+  implemented for other rule classes, including the
+  ~c[:]~ilc[type-prescription] rule class.)  ~l[free-variables] for a
+  description of this field.  Note: Although this field is intended to be used
+  for controlling retries of matching free variables in hypotheses, it is legal
+  to supply it even if there are no such free variables.  This can simplify the
+  automated generation of rules, but note that when ~c[:match-free] is
+  supplied, the warning otherwise provided for the presence of free variables
+  in hypotheses will be suppressed.
+
+  ~c[:Backchain-limit-lst] ~-[] this field may be supplied only if the
+  ~c[:class] is either ~c[:]~ilc[rewrite], ~c[:]~ilc[meta], ~c[:]~ilc[linear],
+  or ~c[:]~ilc[type-prescription].  It is further required either only one rule
+  is generated from the formula or, at least, every such rule has the same list
+  of hypotheses.  The value for ~c[:backchain-limit-lst] must be ~c[nil]; a
+  non-negative integer; or, except in the case of ~c[:]~ilc[meta] rules, a true
+  list each element of which is either ~c[nil] or a non-negative integer.  If
+  it is a list, its length must be equal to the number of hypotheses of the
+  rule and each item in the list is the ``backchain limit'' associated with the
+  corresponding hypothesis.  If ~c[backchain-limit-lst] is a non-negative
+  integer, it is defaulted to a list of the appropriate number of repetitions
+  of that integer.  The backchain limit of a hypothesis is used to limit the
+  effort that ACL2 will expend when relieving the hypothesis.  If it is
+  ~c[NIL], no new limits are imposed; if it is an integer, the hypothesis will
+  be limited to backchaining at most that many times.  Note that backchaining
+  may be further limited by a global ~c[backchain-limit]; ~pl[backchain-limit]
+  for details.  For different ways to reign in the rewriter,
+  ~pl[rewrite-stack-limit] and ~pl[set-prover-step-limit].  Jared Davis has
+  pointed out that you can set the ~c[:backchain-limit-lst] to 0 to avoid any
+  attempt to relieve ~ilc[force]d hypotheses, which can lead to a significant
+  speed-up in some cases.
+
+  ~eq[]Once ~c[thm] has been proved (in the case of ~ilc[defthm]) and each rule
+  class object has been checked for well-formedness (which might require
+  additional proofs), we consider each rule class object in turn to generate
+  and add rules.  Let ~c[:class] be the class keyword token of the ~c[i]th
+  class object (counting from left to right).  Generate the ~il[rune]
+  ~c[(:class name . x)], where ~c[x] is ~c[nil] if there is only one class and
+  otherwise ~c[x] is ~c[i].  Then, from the ~c[:]~ilc[corollary] of that
+  object, generate one or more rules, each of which has the name
+  ~c[(:class name . x)].  See the ~c[:]~ilc[doc] entry for each rule class to
+  see how formulas determine rules.  Note that it is in principle possible for
+  several rules to share the same name; it happens whenever a
+  ~c[:]~ilc[corollary] determines more than one rule.  This in fact only occurs
+  for ~c[:]~ilc[rewrite], ~c[:]~ilc[linear], and ~c[:]~ilc[forward-chaining]
+  class rules and only then if the ~c[:]~ilc[corollary] is essentially a
+  conjunction.  (See the documentation for ~il[rewrite], ~il[linear], or
+  ~il[forward-chaining] for details.)~/")
+
+(defun tau-system (x)
+
+  ":Doc-Section Rule-Classes
+
+  make a rule for the ACL2 ``type checker''~/
+
+  This documentation describes ACL2's tau system, a kind of ``type checker,''
+  and the ~c[:tau-system] rule class.  This doc topic is the main source of
+  information about the tau system and discusses both the general idea and the
+  specifics of ~c[:tau-system] rules.  There happens to be a ~i[function] named
+  ~c[tau-system], defined as the identity function.  Its only role is to
+  provide the rune ~c[(:EXECUTABLE-COUNTERPART TAU-SYSTEM)], which is used
+  to enable and disable the tau system.  Otherwise the function ~c[tau-system]
+  has no purpose and we recommend that you avoid using it so you are free to
+  enable and disable the tau system.
+
+  ~i[Background on the Tau System]
+
+  Because ACL2 is an untyped language it is impossible to type check it.  All
+  functions are total.  An ~i[n]-ary function may be applied to any combination
+  of ~i[n] ACL2 objects.  Nevertheless, the system provides a variety of
+  monadic Boolean function symbols, like ~ilc[natp], ~ilc[integerp],
+  ~ilc[alistp], etc., that recognize different ``types'' of objects at runtime.
+  Users typically define many more such recognizers for domain-specific
+  ``types.''  Because of the prevalence of such ``types,'' ACL2 must frequently
+  reason about the inclusion of one ``type'' in another.  It must also reason
+  about the consequences of functions being defined so as to produce objects of
+  certain ``types'' when given arguments of certain other ``types.''
+
+  Because the word ``type'' in computer science tends to imply syntactic
+  or semantic restrictions on functions, we avoid using that word henceforth.
+  Instead, we just reason about monadic Boolean predicates.  
+
+  The tau system consists of both a data base and an algorithm for using the
+  data base.  The data base contains theorems that match certain schemas allowing
+  them to be stored in the tau data base.  Roughly speaking the schemas encode
+  ``inclusion'' and ``exclusion'' relations, e.g., that ~c[natp] implies ~c[integerp]
+  and that ~c[integerp] implies not ~c[consp], and they encode ``signatures'' of
+  functions, e.g., theorems that relate the output of a function to the input,
+  provided only tau predicates are involved.
+
+  By ``tau predicates'' we mean the application of a monadic Boolean, the
+  equality of something to a quoted constant, or the negation of such a term.
+  Thus ~c[(natp i)], ~c[(not (consp x))], ~c[(equal tag 'ARRAY-HEADER)] and
+  ~c[(not (eq op 'SKIP))] are tau predicates.  The tau system recognizes several
+  variants of ~ilc[EQUAL].
+
+  The tau algorithm is a decision procedure for the logical theory described (only)
+  by the rules in the data base.  The decision procedure can be enabled or
+  disabled.  It is disabled by default, for backwards compability with the books
+  in ACL2's regression suite.
+
+  The data base contains rules derived from theorems stated by the user.
+  Unlike a type system, the tau system cannot automatically infer relations
+  between types or the signatures of functions.  Such rules must be stated by
+  the user.  Furthermore, only theorems matching certain schemas can be stored
+  in the tau data base.
+
+  The data base can be populated with new tau facts via either of two
+  mechanisms depending on a mode controlled by ~ilc[tau-status] or,
+  alternatively, ~ilc[set-tau-auto-mode].  When in ``manual'' mode, the data
+  base is extended only when (suitably shaped) theorems tagged with the rule
+  class ~c[:tau-system] are proved.  When in ``automatic'' mode, the data base
+  is extended whenever any (suitably shaped) theorem of any rule class is
+  proved.  The system is in automatic mode by default  -- the tau data base is
+  implicitly extended every time a suitable theorem is proved and stored as
+  any kind of rule.
+
+  Unlike other high-level deduction algorithms in ACL2, the tau system does not
+  keep track of the names (runes) of the rules it is using.  To prevent the tau
+  system from using a rule, you must regenerate the tau data base with that
+  rule disabled.
+
+  We now give a more technical description of the tau system.
+
+  ~i[Technical Details]
+
+  The tau system's decision procedure is disabled by default, for backwards
+  compatibility.  To enable it globally do
+  ~bv[]
+  (in-theory (enable (:executable-counterpart tau-system)))
+  ~ev[]
+  Alternatively, ~pl[tau-status].  Note therefore that there are two ``modes''
+  controlling the tau system: one controls whether or not the algorithm is
+  employed in theorem proving, the other controls whether the data base is
+  built only from ~c[:tau-system] rules (``manual'' mode) or from any rule of
+  suitable form (``automatic'' mode).  Both modes may be set by
+  ~ilc[tau-status].
+
+  However, to be effective, the tau system must be ``programmed'' with rules.
+  These rules are generally either statements of establishing that one monadic
+  Boolean implies another or statements (e.g., ``type inclusion or exclusion'')
+  or statements about the signatures of functions expressed in terms of monadic
+  Boolean predicates about the inputs and output of functions (e.g.,
+  ``signatures'').
+
+  If you have not provided such rules, you are likely to notice little
+  difference between having the tau system enbled or disabled -- in fact, if
+  anything, having it enabled without a coherent set of rules is liable to
+  cause more trouble than it is worth because an incoherent set of rules will
+  make the system seem to act in an arbitrary way.
+
+  ~l[rule-classes] for a general discussion of rule classes and how they are
+  used to build rules from formulas.
+
+  ~b[Important Note]: ACL2 does not track or report the use of tau rules.  You
+  cannot disable them individually!  The tau system will evaluate monadic
+  Boolean functions on constants, even when the executable counterparts of
+  those functions are disabled!  You can shut off the whole tau system by
+  disabling the rune ~c[(:EXECUTABLE-COUNTERPART TAU-SYSTEM)], locally for a
+  subgoal (using an ~c[:in-theory] hint (~pl[hints]) or globally (using the
+  ~ilc[in-theory] event or the ~ilc[tau-status] macro).~/
+  
+  Many different formula shapes are recognized as ~c[:tau-system] rules.  In
+  addition, there is a mode in which ACL2 will automatically make a
+  ~c[:tau-system] rule out of any suitable ~c[defun] or ~c[defthm] event.
+  ~l[set-tau-auto-mode].
+
+  The shapes of the ~c[:]~ilc[corollary] formulas from which ~c[:tau-system]
+  rules are built are listed below.  Where distinct variable symbols appear in
+  the schemas below you must write distinct variable symbols.  Where predicate
+  letters appear, e.g., ~c[p], ~c[p2], and ~c[q], you must write monadic
+  Boolean function symbols or equalities in which one argument is an explicit
+  constant.  Furthermore, you may optionally negate the predicates.  By
+  ``Boolean'' we mean not only that the function return ~c[T] or ~c[NIL] but
+  that it not be constantly ~c[T] or constantly ~c[NIL], and that its Boolean
+  nature was identified by ACL2 when the function was defined or that a
+  suitable ~c[:]~ilc[tau-system] or (when the tau system is in automatic mode,
+  ~c[:]~ilc[type-prescription]) lemma has been proved about it.  By
+  ``equalities'' we mean calls of ~ilc[EQUAL], ~ilc[EQ], ~ilc[EQL], and
+  ~ilc[=].  We include in ~i[italics] below our internal name for each schema
+  so that we can document their use.
+
+  For example the schema called a ``Simple'' tau rule below matches both
+   ~bv[]
+  (implies (natp i) (integerp i))
+
+  (implies (natp j) (not (consp j)))
+  ~ev[]
+  and the second schema, called a ``Conjunctive'' tau rule, matches
+  ~bv[]
+  (implies (and (not (equal z nil)) (true-listp z)) (consp z))
+  ~ev[]
+  Note that the Simple rules capture ``type inclusion'' and ``type exclusion.''
+  Conjunctive rules allow us to infer ``types'' from (conjunctive) combinations of
+  ``types.''  Signature rules, shown below, are used in the obvious way.
+
+  ~bv[]
+  General Forms:
+  ~i[Boolean]:
+  (booleanp (fn v))
+
+  ~i[Simple]:
+  (implies (p v) (q v))
+
+  ~i[Conjunctive]:
+  (implies (and (p1 v) ... (pk v)) (q v)), ; Here k must exceed 1.
+
+  ~i[Signature Form 1]:
+  (implies (and (p1 x1) (p2 x2) ...)       ; See Note below
+           (q (fn x1 x2 ...)))
+
+  ~i[Signature Form 2]:
+  (implies (and (p1 x1) (p2 x2) ...)       ; See Note below
+           (q (mv-nth 'n (fn x1 x2 ...))))
+
+  ~i[Big Switch]:
+  (equal (fn . formals) body),              ; See Note below.
+
+  ~i[MV-NTH Synonym]:
+  (equal (fn x y) (mv-nth x y))
+  ~ev[]
+
+  Note on the Boolean Form: When a ~c[:tau-system] rule of this form is proved,
+  it makes ~c[fn] one of the monadic Boolean predicate symbols that the tau
+  system tracks.  This does not inform ~ilc[type-set] that ~c[fn] is a Boolean
+  function!  To do that, you should make the formula a
+  ~c[:]~ilc[type-prescription] rule also.  If you have the tau system in
+  automatic mode (~pl[set-tau-auto-mode]), the ~c[:type-prescription] rule will
+  suffice for both purposes.
+
+  Note on the Signature Forms: Each of the hypotheses must be a tau-style
+  predicate (monadic Boolean or equality-with-constant), possibly negated,
+  about a single variable.  But there may be multiple hypotheses about a given
+  variable.  For example, one might include both that ~c[(NATP x1)] and
+  ~c[(NOT (EQUAL x1 23))].  Any hypothesis containing a variable other than the
+  ~c[x1], ..., ~c[xn] is ignored.
+
+  Note on the Big Switch Form: ~c[body], above, must be a ``big switch'' term,
+  i.e., one that case splits on tau predicates about a single variable and
+  produces a term not involving that variable.  Since ~c[(EQUAL X 'LOAD)] is
+  considered tau predicate, a simple example of a big switch is a ~ilc[CASE]
+  expression in which a variable is compared successively to a sequence of
+  symbols.  Only the ~i[first] big switch equation for a given function symbol
+  ~c[fn] is stored!
+
+  To see what the tau system ``knows'' about a given function symbol
+  ~pl[tau-data].  To see the entire tau data base, ~pl[tau-data-base].
+  To regenerate the tau data base using only the runes listed in the current
+  enabled theory, ~pl[regenerate-tau-data-base].
+
+  Think of the tau system as being a fast, complete theorem prover that only
+  deals with axioms of the above form.  We do not provide any other
+  documentation of the tau system at this time!~/"
+
+  (declare (xargs :mode :logic :guard t))
+  x)
+
+; Essay on the Status of the Tau System During and After Bootstrapping
+
+; Think of there being two ``status bits'' associated with the tau system: (a)
+; whether it is enabled or disabled and (b) whether it is automatically making
+; :tau-system rules from non-:tau-system rules.  These two bits are independent.
+
+; Bit (a) may be inspected by (enabled-numep *tau-system-xnume* (ens state))
+; Bit (b) may be inspected by (table acl2-defaults-table :tau-auto-modep)
+
+; To boot, we must think about two things: how we want these bits set DURING
+; bootstrap and how we want them set (for the user) AFTER bootstrap.  Our
+; current choices are:
+
+; During Bootstrapping:
+; (1.a) tau is disabled -- unavailable for use in boot-strap proofs, and
+; (1.b) tau is in manual mode -- make no :tau-system rules except those so tagged
+
+; We don't actually have any reason for (1.a).  The bootstrap process works
+; fine either way, as of this writing (Aug, 2011) when the tau system was first
+; integrated into ACL2.  But we feel (1.b) is important: it is convenient if  <------ ???? tau to do
+; the tau database contains the rules laid down during the bootstrap process,
+; e.g., the tau signatures of the primitives so that if the user immediately
+; selects automatic mode for the session, the tau database is up to date as of
+; that selection.
+
+; After Bootstrapping:
+; (2.a) tau is disabled -- not available for use in proofs, BUT
+; (2.b) tau is in automatic mode -- makes :tau-system rules out of  <---- ??? actually in manual mode
+; non-:tau-system rules
+
+; We feel that after booting, (2.a) is important because of backwards
+; compatibility during book certification: we don't want goals eliminated by
+; tau, causing subgoals to be renumbered.  We feel that (2.b) is important in the
+; long run: we'd like tau to be fully automatic and robust in big proof
+; efforts, so we are trying to stress it by collecting tau rules even during
+; book certification.  In addition, we want the user who turns on the tau
+; system to find that it knows as much as possible.
+
+; Our post-bootstrap selections for these two bits affects the regression
+; suite.  If the tau system is enabled by default, then some adjustments must
+; be made in the regression suite books!  We have successfully recertified the
+; regression suite with tau enabled, but only after making certain changes
+; described in Essay on Tau-Clause -- Using Tau to Prove or Mangle Clauses.
+; If tau is enabled by default, the regression slows down by about
+; real slowdown:  5.3%
+; user slowdown:  5.8%
+; sys  slowdown: 12.3%
+; as measured with time make -j 3 regression-fresh on a Macbook Pro 2.66 GHz
+; Intel Core i7 with 8 GB 1067 MHz DDR3 running Clozure Common Lisp Version
+; 1.6-dev-r14316M-trunk (DarwinX8632).
+
+; How do we achieve these settings?  The following constant defines all four
+; settings.  To rebuild the system with different settings, just redefine this
+; constant.  It is not (always) possible to adjust these settings during boot
+; by set-tau-auto-mode events, for example, because the acl2-defaults-table may
+; not exist.
+
+(defconst *tau-status-boot-strap-settings*
+   '((t . t) . (t . t)))
+;  '((t . t) . (nil . t)))                       ; ((1.a . 1.b) . (2.a . 2.b))
+
+; Thus,
+; (1.a) = (caar *tau-status-boot-strap-settings*) ; tau system on/off during boot
+; (1.b) = (cdar *tau-status-boot-strap-settings*) ; tau auto mode during boot
+; (2.a) = (cadr *tau-status-boot-strap-settings*) ; tau system on/off after boot
+; (2.b) = (cddr *tau-status-boot-strap-settings*) ; tau auto mode after boot
+
+(in-theory (if (caar *tau-status-boot-strap-settings*)
+               (enable (:executable-counterpart tau-system))
+               (disable (:executable-counterpart tau-system))))
+
+(defconst *tau-system-xnume*
+  (+ *force-xnume* 12))
+
 ; The following axiom can be proved.  John Cowles has proved some of these and
 ; we have proved others in our efforts to verify the guards in our code.
 ; Eventually we will replace some of these axioms by theorems.  But not now
@@ -7435,8 +8023,7 @@
            (equal n 1))
   :rule-classes nil)
 
-; 
-; the following predicates are disjoint:
+; The following predicates are disjoint and these facts are all built into type-set:
 ;   (((acl2-numberp x)
 ;     (complex-rationalp x)
 ;     ((rationalp x)
@@ -7448,8 +8035,35 @@
 ;    (stringp x)
 ;    (characterp x)
 ;    (other-kinds-of-objects))
-; 
-; 
+
+; Here we prove some rules that the tau system uses to manage primitive type-sets.
+
+(defthm basic-tau-rules
+  (and (implies (posp v) (not (minusp v)))
+       (implies (posp v) (integerp v))
+       (implies (integerp v) (rationalp v))
+       (implies (rationalp v) (not (complex-rationalp v)))
+       (implies (rationalp v) (not (characterp v)))
+       (implies (rationalp v) (not (stringp v)))
+       (implies (rationalp v) (not (consp v)))
+       (implies (rationalp v) (not (symbolp v)))
+
+       (implies (complex-rationalp v) (not (characterp v)))
+       (implies (complex-rationalp v) (not (stringp v)))
+       (implies (complex-rationalp v) (not (consp v)))
+       (implies (complex-rationalp v) (not (symbolp v)))
+       
+       (implies (characterp v) (not (stringp v)))
+       (implies (characterp v) (not (consp v)))
+       (implies (characterp v) (not (symbolp v)))
+
+       (implies (stringp v) (not (consp v)))
+       (implies (stringp v) (not (symbolp v)))
+
+       (implies (consp v) (not (symbolp v))))
+       
+  :rule-classes :tau-system)
+
 ; ; For each of the primitives we have the axiom that when their guards
 ; ; are unhappy, the result is given by apply.  This is what permits us
 ; ; to replace unguarded terms by apply's.  E.g.,
@@ -17432,6 +18046,47 @@
         (list 'quote event-form)))
 
 #+acl2-loop-only
+(defmacro regenerate-tau-data-base (&whole event-form &key doc)
+
+; Warning: See the Important Boot-Strapping Invariants before modifying!
+
+; Warning: If this event ever generates proof obligations, remove it from the
+; list of exceptions in install-event just below its "Comment on irrelevance of
+; skip-proofs".
+
+  ":Doc-Section Events
+
+  regenerate the tau data base relative to the current enabled theory~/
+  ~bv[]
+  Example:
+  (regenerate-tau-data-base)~/
+
+  General Form:
+  (regenerate-tau-data-base :doc doc-string)
+  ~ev[]
+  where ~ilc[doc-string] is an optional ~il[documentation] string not beginning
+  with ``~c[:doc-section] ...''.
+
+  The tau data base is regenerated by scanning the current logical world and
+  re-processing every event in it relative to the current enabled theory and
+  current tau auto mode settings.
+
+  BECAUSE NO UNIQUE name is associated with a ~c[regenerate-tau-data-base] event,
+  there is no way we can store the ~il[documentation] string ~ilc[doc-string]
+  in our il[documentation] data base.  Hence, we actually prohibit ~ilc[doc-string]
+  from having the form of an ACL2 ~il[documentation] string;
+  ~pl[doc-string].
+
+  ~l[tau-system].~/"
+
+; Warning: See the Important Boot-Strapping Invariants before modifying!
+
+  (list 'regenerate-tau-data-base-fn
+        'state
+        (list 'quote doc)
+        (list 'quote event-form)))
+
+#+acl2-loop-only
 (defmacro push-untouchable (&whole event-form name fn-p &key doc)
 
 ; Warning: See the Important Boot-Strapping Invariants before modifying!
@@ -25337,7 +25992,7 @@
     set-rw-cache-state! set-override-hints-macro
     deftheory pstk verify-guards defchoose
     set-default-backchain-limit set-state-ok
-    set-ignore-ok set-non-linearp with-output
+    set-ignore-ok set-non-linearp set-tau-auto-mode with-output
     set-compile-fns add-include-book-dir
     clear-pstk add-custom-keyword-hint
     initial-gstack
@@ -25355,7 +26010,7 @@
     mutual-recursion set-rewrite-stack-limit set-prover-step-limit
     add-match-free-override
     set-match-free-default
-    the-mv table in-arithmetic-theory
+    the-mv table in-arithmetic-theory regenerate-tau-data-base
     set-case-split-limitations
     set-irrelevant-formals-ok remove-untouchable
     in-theory with-output-forced dmr-start
@@ -33871,6 +34526,8 @@
          (integerp val))
         ((eq key :non-linearp)
          (booleanp val))
+        ((eq key :tau-auto-modep)
+         (booleanp val))
         ((eq key :include-book-dir-alist)
          (and (include-book-dir-alistp val (os world))
               (null (assoc-eq :SYSTEM val))))
@@ -34092,6 +34749,13 @@
   This key's value is either ~c[t] or ~c[nil] and indicates whether the user
   wishes ACL2 to extend the linear arithmetic decision procedure to include
   non-linear reasoning.  ~l[non-linear-arithmetic].
+  ~bv[]
+  :tau-auto-modep
+  ~ev[]
+  This key's value is either ~c[t] or ~c[nil] and indicates whether the user
+  wishes ACL2 to look for opportunities to create ~c[:]~ilc[tau-system] rules from
+  all suitable ~c[defun]s and from all suitable ~c[defthm]s (with non-~c[nil]
+  ~c[:]~ilc[rule-classes]).  ~l[set-tau-auto-mode].
   ~bv[]
   :ruler-extenders
   ~ev[]
@@ -34726,6 +35390,7 @@
   deftheory
   in-theory
   in-arithmetic-theory
+  regenerate-tau-data-base
   theory-invariant
   defchoose
   ~ev[]
@@ -36884,9 +37549,10 @@
 ; as follows, in end-prehistoric-world.
 
 (defconst *initial-acl2-defaults-table*
-  '((:DEFUN-MODE . :LOGIC)
+  `((:DEFUN-MODE . :LOGIC)
     (:INCLUDE-BOOK-DIR-ALIST . NIL)
-    (:CASE-SPLIT-LIMITATIONS . (500 100))))
+    (:CASE-SPLIT-LIMITATIONS . (500 100))
+    (:TAU-AUTO-MODEP . ,(cddr *tau-status-boot-strap-settings*)))) ; (2.b)
 
 (defun binop-table (wrld)
 
@@ -37468,6 +38134,137 @@
 ; consistency.
 
   `(set-non-linearp ,toggle))
+
+(defun tau-auto-modep (wrld)
+
+; See the Essay on the Status of the Tau System During and After Bootstrapping
+; for further details.
+
+; The tau system either makes :tau-system rules out of non-:tau-system rules on
+; the fly or it does not.  It does if auto mode is t; it doesn't if auto mode
+; is nil.
+
+; The auto mode is stored in the acl2-defaults-table.  The default auto mode
+; when bootstrapping is completed, i.e., choice (2.b) of the essay cited above,
+; is t, by virtue of the setting of *initial-acl2-defaults-table*.  However,
+; that constant is loaded into the acl2-defaults-table only at the very end of
+; the bootstrap process, in end-prehistoric-world.  So how do we implement
+; (1.b), the status of tau-auto-modep during bootstrapping?  Answer: here.
+
+; Note: Once we tried to adjust the (1.b) decision by inserting a
+; (set-tau-auto-mode ...) event into the boot strap sequence.  But that doesn't
+; work because you can't insert it early enough, since many events are
+; processed before the acl2-defaults-table even exists.
+
+; Note: if the user clears the acl2-defaults-table, then the auto mode is just
+; returns to its default value as specified by
+; *tau-status-boot-strap-settings*, not to (cdr nil).
+
+  (declare (xargs :guard
+                  (and (plist-worldp wrld)
+                       (alistp (table-alist 'acl2-defaults-table wrld)))))
+  (let ((temp (assoc-eq :tau-auto-modep
+                        (table-alist 'acl2-defaults-table wrld))))
+    (cond
+     ((null temp)
+      (if (global-val 'boot-strap-flg wrld)
+          (cdar *tau-status-boot-strap-settings*) ; (1.b) tau auto mode during boot strap
+          nil))
+     (t (cdr temp)))))
+
+#+acl2-loop-only
+(defmacro set-tau-auto-mode (toggle)
+
+  ":Doc-Section switches-parameters-and-modes
+
+  to turn on or off automatic generation of ~c[:tau-system] rules~/
+  ~bv[]
+  Examples:
+  (set-tau-auto-mode t)
+  (set-tau-auto-mode nil)
+  ~ev[]~/
+
+  This event is equivalent to
+  ~c[(table acl2-defaults-table :tau-auto-modep <t-or-nil>)],
+  and hence is ~ilc[local] to any ~il[books] and ~ilc[encapsulate] ~il[events]
+  in which it occurs; ~pl[acl2-defaults-table].
+
+  The initial value is ~c[nil] and we say that the ~ilc[tau-system] is in
+  ~i[manual] mode.  In manual mode, the only events that may create
+  ~c[:tau-system] rules are ~c[defthm] events explicitly specifying the
+  ~c[:]~ilc[tau-system] rule class in the ~c[:]~ilc[rule-classes] argument.  Of
+  course, for a ~c[:tau-system] rule to be created from a proved formula (or
+  its specified ~c[:corollary]), the formula must be of the appropriate
+  shape (syntactic form). ~l[tau-system].  If the ~c[:tau-system] rule class is
+  specified but the formula is not of an appropriate shape, an error is
+  signalled.
+
+  The tau system is initially in manual mode.
+
+  When the value of ~c[:tau-auto-modep] is ~c[t] we say the tau system is in
+  ~i[automatic] mode.  In automatic mode, a ~c[:tau-system] rule may be created
+  even by events not explicitly specifying the ~c[:tau-system] rule class.
+
+  In particular, in automatic mode, a ~c[:tau-system] rule may be created by
+  any of the events below, provided the definition or formula proved is of an
+  appropriate shape:
+
+  * ~c[defun] events introducing ``big switch'' or ``~c[mv-nth] synonyms,''
+
+  * ~c[defun] events creating type-prescription rules that may be also
+  represented as ``signature rules'' of form 1, and
+
+  * any ~c[defthm] event with a non-~c[nil] ~c[:rule-classes] argument if no
+    ~c[:tau-system] rule is among the rule classes and the formula proved is in
+    the shape of any ~c[tau-system] rule.
+
+  ~l[tau-system] for a description of the various shapes named above.
+
+  Note that any rule (of any rule class) created when the tau system is in
+  manual mode is also created in automatic mode.  For example, if an event
+  would create a ~c[:DEFINITION], ~c[:TYPE-PRESCRIPTION], ~c[FORWARD-CHAINING],
+  or ~c[:REWRITE] rule when the tau system is in manual mode, then the event
+  will create that same rule when the tau system is in automatic mode.
+  Automatic mode just means that some ~c[:tau-system] rules may be created
+  also.
+
+  Of course, if the tau system is in automatic mode and a ~c[defthm] event
+  explicitly specifies a ~c[:tau-system] rule class, that tau rule is created
+  from the proved formula (or the specified ~c[:corollary]) or else an error is
+  caused.  But if the tau system is in automatic mode and a ~c[defthm] event
+  explicitly creates other classes of rules, the system quietly checks whether
+  the formula can be stored as a tau rule and stores it that way if possible,
+  in addition to the specified ways.  It is the shape of the proved formula --
+  not some ~c[:corollary] of some non-~c[:tau-system] rule class -- that
+  determines whether a tau rule is generated.  Of course, no error is signalled
+  if a proved formula of some non-~c[:tau-system] rule class fails to be of an
+  appropriate shape for the tau system.
+
+  Recall that the use of tau rules is controlled by the rune
+  ~c[(:EXECUTABLE-COUNTERPART TAU-SYSTEM)].  When that rune is disabled, no tau rules
+  are used in proofs.  However, the tau system continues to collect tau rules
+  if the system is in automatic mode.  Thus, if and when the tau system is
+  re-enabled, rules automatically generated while the tau system was disabled
+  will be used as usual by the tau system.
+
+  Finally, note that ~c[defthm] events with ~c[:rule-classes] ~c[nil] do not
+  create ~c[:tau-system] rules even if the formula proved is of an appropriate
+  shape, regardless of whether the tau system is in automatic or manual mode.
+
+  The macro ~ilc[tau-status] provides a convenient way to enable/disable the
+  executable counterpart of ~c[tau-system] and/or to switch between manual and
+  automatic modes.  It may also be used to determine the current settings of
+  those two flags."
+
+  `(state-global-let*
+    ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
+     (progn (table acl2-defaults-table :tau-auto-modep ,toggle)
+            (table acl2-defaults-table :tau-auto-modep))))
+
+#-acl2-loop-only
+(defmacro set-tau-auto-mode (toggle)
+  (declare (ignore toggle))
+  nil)
 
 #+acl2-loop-only
 (defmacro defttag (tag-name &key doc)
@@ -42403,13 +43200,12 @@ Lisp definition."
 
 (encapsulate
  ()
+
  (logic)
 
 ; We verify termination (and guards) for the following functions, in order that
 ; certain macroexpansions avoid stack overflows during boot-strapping or at
-; least are sped up.  Note that preceding in-theory events are skipped during
-; pass 1 of the boot-strap, since we have only just above entered :logic mode
-; and in-theory events are skipped in :program mode.
+; least are sped up.
 
  (verify-termination-boot-strap alistp)
  (verify-termination-boot-strap symbol-alistp)

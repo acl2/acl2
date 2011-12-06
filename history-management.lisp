@@ -1844,6 +1844,7 @@
 ;           in-theory                0 (no name introduced)
 ;           in-arithmetic-theory     0 (no name introduced)
 ;           push-untouchable         0
+;           regenerate-tau-data-base 0 (no name introduced)
 ;           remove-untouchable       0
 ;           reset-prehistory         0
 ;           set-body                 0 (no name introduced)
@@ -1919,6 +1920,7 @@
                               (mutual-recursion (strip-cadrs (cdr form)))
                               ((verify-guards in-theory
                                               in-arithmetic-theory
+                                              regenerate-tau-data-base
                                               push-untouchable
                                               remove-untouchable
                                               reset-prehistory
@@ -1959,6 +1961,7 @@
           (mutual-recursion (strip-cadrs (cddr x)))
           ((verify-guards in-theory
                           in-arithmetic-theory
+                          regenerate-tau-data-base
                           push-untouchable remove-untouchable reset-prehistory
                           set-body table)
            0)
@@ -2771,7 +2774,15 @@
                  PREDEFINED
                  DEFAXIOM-SUPPORTER
                  ATTACHMENT ; see Essay on Defattach re: :ATTACHMENT-DISALLOWED
-                 CLAUSE-PROCESSOR))
+                 CLAUSE-PROCESSOR
+                 TAU-PAIR
+                 POS-IMPLICANTS
+                 NEG-IMPLICANTS
+                 UNEVALABLE-BUT-KNOWN
+                 SIGNATURE-RULES-FORM-1
+                 SIGNATURE-RULES-FORM-2
+                 BIG-SWITCH
+                 ))
 
 ; and these are not created by the introductory event of name (which must have
 ; been a defun or constrain) and hence are left untouched here.
@@ -4901,7 +4912,7 @@
                                 (global-val 'proved-functional-instances-alist
                                             wrld)) 
                         wrld)
-                     wrld))
+                       wrld))
 
 ; We set world global 'skip-proofs-seen or 'redef-seen if ld-skip-proofsp or
 ; ld-redefinition-action (respectively) is non-nil and the world global is not
@@ -4934,6 +4945,7 @@
                                             in-arithmetic-theory
                                             in-theory
                                             push-untouchable
+                                            regenerate-tau-data-base
                                             remove-untouchable
                                             reset-prehistory
                                             set-body
@@ -4970,37 +4982,42 @@
             (wrld4 (if cltl-cmd
                        (put-cltl-command cltl-cmd wrld3
                                          currently-installed-wrld)
-                     wrld3))
+                       wrld3)))
+       (er-let*
+         ((wrld5 (tau-visit-event t ev-type namex
+                                  (tau-auto-modep wrld4)
+                                  (ens state)
+                                  ctx wrld4 state)))
 
 ; WARNING: Do not put down any properties here!  The cltl-command should be the
 ; last property laid down before the call of add-event-landmark.  We rely on
 ; this invariant when looking for 'redefined tuples in
 ; compile-uncompiled-defuns and compile-uncompiled-*1*-defuns.
 
-            (wrld5 (add-event-landmark form ev-type namex wrld4
-                                       (global-val 'boot-strap-flg
-                                                   currently-installed-wrld))))
-       (pprogn
-        (f-put-global 'accumulated-ttree ttree state)
-        (cond
-         ((eq chk-theory-inv-p :protect)
-          (revert-world-on-error
-           (let ((state (set-w 'extension wrld5 state)))
-             (er-progn
-              (chk-theory-invariant1 :install
-                                     (ens state)
-                                     theory-invariant-table
-                                     nil ctx state)
-              (value val)))))
-         (t (let ((state (set-w 'extension wrld5 state)))
-              (cond (chk-theory-inv-p
-                     (er-progn
-                      (chk-theory-invariant1 :install
-                                             (ens state)
-                                             theory-invariant-table
-                                             nil ctx state)
-                      (value val)))
-                    (t (value val)))))))))))
+         (let ((wrld6 (add-event-landmark form ev-type namex wrld5
+                                          (global-val 'boot-strap-flg
+                                                      currently-installed-wrld))))
+           (pprogn
+            (f-put-global 'accumulated-ttree ttree state)
+            (cond
+             ((eq chk-theory-inv-p :protect)
+              (revert-world-on-error
+               (let ((state (set-w 'extension wrld6 state)))
+                 (er-progn
+                  (chk-theory-invariant1 :install
+                                         (ens state)
+                                         theory-invariant-table
+                                         nil ctx state)
+                  (value val)))))
+             (t (let ((state (set-w 'extension wrld6 state)))
+                  (cond (chk-theory-inv-p
+                         (er-progn
+                          (chk-theory-invariant1 :install
+                                                 (ens state)
+                                                 theory-invariant-table
+                                                 nil ctx state)
+                          (value val)))
+                        (t (value val)))))))))))))
 
 (deflabel redundant-events
   :doc
@@ -5080,8 +5097,8 @@
   definitions.  If you try to define the same theory name twice, you
   will get a ``name in use'' error.
 
-  An ~ilc[in-theory] event or ~ilc[defattach] event is never redundant because
-  it doesn't define any name.
+  An ~ilc[in-theory], ~ilc[defattach] or ~ilc[regenerate-tau-data-base] event
+  is never redundant because it doesn't define any name.
 
   A ~ilc[push-untouchable] event is redundant if every name supplied is
   already a member of the corresponding list of untouchable symbols.
@@ -6212,7 +6229,7 @@
     ((defconst defpkg)
      (zap-doc-string-from-event-form/third-arg form))
     ((verify-guards in-theory
-                    in-arithmetic-theory
+                    in-arithmetic-theory regenerate-tau-data-base
                     push-untouchable remove-untouchable reset-prehistory
                     table encapsulate defstobj) form)
     (otherwise form)))
@@ -13808,45 +13825,6 @@
         ((eq (car arg) 'lambda)
          (translate-hands-off-hint1@par (list arg) ctx wrld state))
         (t (translate-hands-off-hint1@par arg ctx wrld state))))
-
-; The next few functions are used to produced the formulas represented by
-; type-prescriptions.
-
-(defun convert-returned-vars-to-term-lst (term vars)
-  (cond ((null vars) nil)
-        (t (cons (mcons-term* 'equal term (car vars))
-                 (convert-returned-vars-to-term-lst term (cdr vars))))))
-
-(defun implicate (t1 t2)
-
-; We return a term equivalent to (IMPLIES t1 t2).
-
-  (cond ((equal t1 *t*) t2)
-        ((equal t1 *nil*) *t*)
-        ((equal t2 *t*) *t*)
-        ((equal t2 *nil*) (dumb-negate-lit t1))
-        (t (mcons-term* 'implies t1 t2))))
-
-(defun convert-type-prescription-to-term (tp ens wrld)
-
-; Tp is a type-prescription.  We generate a term that expresses it relative to
-; the supplied ens.  We will usually store this term in the :corollary of tp
-; itself; generally the current :corollary field of tp is *t* right now because
-; tp was generated by putprop-initial-type-prescriptions.  We return
-; the generated corollary term and a ttree citing the type-set-inverter
-; rules used.
-
-  (mv-let (concl ttree)
-          (convert-type-set-to-term (access type-prescription tp :term)
-                                    (access type-prescription tp :basic-ts)
-                                    ens wrld nil)
-          (mv (implicate (conjoin (access type-prescription tp :hyps))
-                         (disjoin
-                          (cons concl
-                                (convert-returned-vars-to-term-lst
-                                 (access type-prescription tp :term)
-                                 (access type-prescription tp :vars)))))
-              ttree)))
 
 (defun truncated-class (rune mapping-pairs classes)
 
