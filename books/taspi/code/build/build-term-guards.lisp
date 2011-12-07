@@ -407,30 +407,14 @@
               
 (verify-guards 
  build-term-helper
- :hints (("Goal" :do-not-induct t
-          :in-theory (disable (:executable-counterpart tau-system)))
-         ("Subgoal 21" :in-theory 
-          (disable mytips-btree-to-fringe)
+ :hints (("Goal"
+          :do-not-induct t
+          )
+         ("Subgoal 15'"
+          :in-theory (disable mytips-btree-to-fringe)
           :use (:instance mytips-btree-to-fringe
                           (x outstanding-taxa)))
-         ("Subgoal 15'" :cases ((consp outstanding-taxa)))
-         ("Subgoal 12.5'''" :cases ((consp required-subtrees1)))
-         ("Subgoal 12.5.1'" :in-theory (disable member-gen-skipper)
-          :use (:instance member-gen-skipper))
-         ("Subgoal 12.3'''" :in-theory (disable taspip-through-orderly-cons)
-          :use (:instance taspip-through-orderly-cons
-                          (x (build-term-helper
-                              required-subtrees1
-                              (subtrees-implying required-subtrees1 required-subtrees2)
-                              full-taxa-list-tree
-                              taxon-index-alist nil))
-                          (y ans)
-                          (flg nil)
-                          (flg2 nil)))
-         ("Subgoal 12.2'''" :cases ((consp required-subtrees1)))
-         ("Subgoal 12.2.1'" :in-theory (disable mytips-orderly-cons-skipper)
-          :use (:instance mytips-orderly-cons-skipper))
-))
+         ("Subgoal 11'" :cases ((consp outstanding-taxa)))))
 
 
 (verify-guards 
