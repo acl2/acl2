@@ -81,6 +81,7 @@ serialize-raw.lisp
 serialize.lisp
 simplify.lisp
 sum-list-example.lisp
+tau.lisp
 translate.lisp
 tutorial.lisp
 type-set-a.lisp
@@ -135,6 +136,7 @@ make-all-deps.sh
 make-event
 make-targets
 make_cert
+make_cert_help.pl
 make_cert.lsp
 meta
 misc
@@ -1811,6 +1813,7 @@ CHANGES.html
 COPYING
 Makefile
 README
+acl2-customization.lsp
 cert.acl2
 computed-hints.lisp
 fast.lisp
@@ -3573,6 +3576,7 @@ strrpos.lisp
 strsplit.lisp
 strsubst.lisp
 strtok.lisp
+strval.lisp
 substrp.lisp
 suffixp.lisp
 timetest.lsp

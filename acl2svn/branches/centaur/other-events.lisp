@@ -460,12 +460,15 @@
       (let ((const-prop (getprop name 'const nil 'current-acl2-world wrld1)))
         (cond
          ((and const-prop
+               (not (ld-redefinition-action state))
                (equal event-form (get-event name wrld1)))
 
 ; We stop the redundant event even before evaluating the form.  We believe
 ; that this is merely an optimization, even if the form calls compress1 or
 ; compress2 (which will not update the 'acl2-array property when supplied the
-; same input as the last time the compress function was called).
+; same input as the last time the compress function was called).  We avoid this
+; optimization if redefinition is on, in case we have redefined a constant or
+; macro used in the body of this defconst form.
 
           (stop-redundant-event ctx state))
          (t
@@ -1028,6 +1031,11 @@
             'state
             (list 'quote doc)
             (list 'quote event-form)))
+    (defmacro regenerate-tau-data-base (&whole event-form &key doc)
+      (list 'regenerate-tau-data-base-fn
+            'state
+            (list 'quote doc)
+            (list 'quote event-form)))
     (defmacro push-untouchable (&whole event-form name fn-p &key doc)
       (list 'push-untouchable-fn
             (list 'quote name)
@@ -1362,11 +1370,6 @@
                     :vars nil
                     :corollary '(booleanp (o< x y))))))
 
-(defun strip-caddrs (x)
-  (declare (xargs :guard (all->=-len x 3)))
-  (cond ((null x) nil)
-        (t (cons (caddar x) (strip-caddrs (cdr x))))))
-
 (defun collect-world-globals (wrld ans)
   (cond ((null wrld) ans)
         ((eq (cadar wrld) 'global-value)
@@ -1450,6 +1453,16 @@
                     (current-theory-augmented nil)
                     (current-theory-index -1)
                     (generalize-rules nil)
+
+; Make sure the following tau globals are initialized this same way
+; by initialize-tau-globals:
+
+                    (tau-runes nil)
+                    (tau-next-index 0)
+                    (tau-conjunctive-rules nil)
+                    (tau-mv-nth-synonyms nil)
+                    (tau-lost-runes nil)
+
                     (clause-processor-rules nil)
                     (boot-strap-flg t)
                     (boot-strap-pass-2 nil)
@@ -1463,7 +1476,7 @@
                          defpkg defun defuns mutual-recursion defmacro defconst
                          defstobj defthm defaxiom progn encapsulate include-book 
                          deflabel defdoc deftheory
-                         in-theory in-arithmetic-theory
+                         in-theory in-arithmetic-theory regenerate-tau-data-base
                          push-untouchable remove-untouchable set-body table
                          reset-prehistory verify-guards verify-termination-boot-strap
                          local defchoose ld-skip-proofsp
@@ -1473,6 +1486,7 @@
                          defthm-fn defaxiom-fn progn-fn encapsulate-fn
                          include-book-fn deflabel-fn defdoc-fn
                          deftheory-fn in-theory-fn in-arithmetic-theory-fn
+                         regenerate-tau-data-base-fn
                          push-untouchable-fn remove-untouchable-fn
                          reset-prehistory-fn set-body-fn
                          table-fn verify-guards-fn verify-termination-boot-strap-fn
@@ -1543,51 +1557,53 @@
       'enter-boot-strap-mode
       (append (strip-cars *primitive-formals-and-guards*)
               (strip-non-hidden-package-names *initial-known-package-alist*))
-      (putprop
-       'equal
-       'coarsenings
-       '(equal)
-       (putprop-x-lst1
-        names 'absolute-event-number 0
+      (initialize-tau-preds 
+       *primitive-monadic-booleans*
+       (putprop
+        'equal
+        'coarsenings
+        '(equal)
         (putprop-x-lst1
-         names 'predefined t
-         (putprop-defun-runic-mapping-pairs
-          names nil
-          (putprop-x-lst1
-           ns-names ; nil in the #-:non-standard-analysis case
-           'classicalp nil
+         names 'absolute-event-number 0
+         (putprop-x-lst1
+          names 'predefined t
+          (putprop-defun-runic-mapping-pairs
+           names nil
            (putprop-x-lst1
-            ns-names
-            'constrainedp t
+            ns-names ; nil in the #-:non-standard-analysis case
+            'classicalp nil
             (putprop-x-lst1
-             names
-             'symbol-class :common-lisp-compliant
-             (putprop-x-lst2-unless
-              names 'guard guards *t*
-              (putprop-x-lst2
-               names 'formals arglists
+             ns-names
+             'constrainedp t
+             (putprop-x-lst1
+              names
+              'symbol-class :common-lisp-compliant
+              (putprop-x-lst2-unless
+               names 'guard guards *t*
                (putprop-x-lst2
-                (strip-cars *initial-type-prescriptions*)
-                'type-prescriptions
-                (strip-cdrs *initial-type-prescriptions*)
-                (putprop-x-lst1
-                 names 'coarsenings nil
+                names 'formals arglists
+                (putprop-x-lst2
+                 (strip-cars *initial-type-prescriptions*)
+                 'type-prescriptions
+                 (strip-cdrs *initial-type-prescriptions*)
                  (putprop-x-lst1
-                  names 'congruences nil
-                  (putprop-x-lst2
-                   names 'stobjs-in (arglists-to-nils arglists)
-                   (putprop-x-lst1
-                    names 'stobjs-out '(nil)
-                    (primordial-event-macros-and-fns
-                     *initial-event-defmacros*
+                  names 'coarsenings nil
+                  (putprop-x-lst1
+                   names 'congruences nil
+                   (putprop-x-lst2
+                    names 'stobjs-in (arglists-to-nils arglists)
+                    (putprop-x-lst1
+                     names 'stobjs-out '(nil)
+                     (primordial-event-macros-and-fns
+                      *initial-event-defmacros*
 
 ; This putprop must be here, into the world seen by
 ; primordial-event-macros-and-fns!
 
-                     (putprop
-                      'state 'stobj '(*the-live-state*)
-                      (primordial-world-globals
-                       operating-system)))))))))))))))))
+                      (putprop
+                       'state 'stobj '(*the-live-state*)
+                       (primordial-world-globals
+                        operating-system))))))))))))))))))
       t))))
 
 (defun same-name-twice (l)
@@ -4156,8 +4172,9 @@
 (defun primitive-event-macros ()
   (declare (xargs :guard t :mode :logic))
 
-; Warning: If you add to this list, consider adding to the list in translate11
-; associated with a comment about primitive-event-macros.
+; Warning: If you add to this list, consider adding to
+; find-first-non-local-name and to the list in translate11 associated with a
+; comment about primitive-event-macros.
 
 ; Warning: Keep this in sync with oneify-cltl-code (see comment there about
 ; primitive-event-macros).
@@ -4202,6 +4219,7 @@
      progn!
      program
      push-untouchable
+     regenerate-tau-data-base
      remove-default-hints!
      remove-untouchable
      reset-prehistory
@@ -4230,6 +4248,7 @@
      set-ruler-extenders
      set-rw-cache-state!
      set-state-ok
+     set-tau-auto-mode
      set-verify-guards-eagerness
      set-well-founded-relation
      table
@@ -4476,6 +4495,7 @@
 ; defmacro-fn                (name MACRO-BODY . &)
 ; in-theory-fn               ---
 ; in-arithmetic-theory-fn    ---
+; regenerate-tau-data-base   ---
 ; push-untouchable-fn        ---
 ; remove-untouchable-fn      ---
 ; reset-prehistory           ---
@@ -4529,7 +4549,8 @@
                                      make-event-chk)
 
 ; WARNING: Keep this in sync with destructure-expansion, elide-locals-rec,
-; elide-locals-post, and make-include-books-absolute.
+; elide-locals-post, make-include-books-absolute, and
+; find-first-non-local-name.
 
 ; Note: For a test of this function, see the reference to foo.lisp below.
 
@@ -4686,6 +4707,7 @@
                            '(add-custom-keyword-hint
                              add-include-book-dir
                              add-match-free-override
+                             defttag
                              delete-include-book-dir
                              logic
                              program
@@ -4705,13 +4727,13 @@
                              set-measure-function
                              set-non-linearp
                              set-nu-rewriter-mode
+                             set-prover-step-limit
                              set-rewrite-stack-limit
                              set-ruler-extenders
                              set-state-ok
-                             set-prover-step-limit
+                             set-tau-auto-mode
                              set-verify-guards-eagerness
-                             set-well-founded-relation
-                             defttag)))
+                             set-well-founded-relation)))
            (er soft ctx local-str
                form
                " because it implicitly sets the acl2-defaults-table in a ~
@@ -5937,8 +5959,8 @@
            (constraint-lst
 
 ; As promised in a comment in encapsulate-constraint, here we explain why the
-; 'constraint-lst properties must be considered when as we collect up formulas
-; for an encapsulate event.  That is, we explain why after virtually moving
+; 'constraint-lst properties must be considered as we collect up formulas for
+; an encapsulate event.  That is, we explain why after virtually moving
 ; functions in front of an encapsulate where possible, then any
 ; sub-encapsulate's constraint is a formula that must be collected.  The
 ; following example illustrates, starting with the following event.
@@ -6700,12 +6722,6 @@
              (cond (new-name
                     (cons new-name (exported-function-names (cdr new-trips))))
                    (t (exported-function-names (cdr new-trips))))))))
-
-(defun get-unnormalized-bodies (names wrld)
-  (cond ((endp names) nil)
-        (t (cons (getprop (car names) 'unnormalized-body nil
-                          'current-acl2-world wrld)
-                 (get-unnormalized-bodies (cdr names) wrld)))))
 
 (defun get-subversives (fns wrld)
   (cond ((endp fns) nil)
@@ -7923,9 +7939,7 @@
               (warning$ ctx "Infected"
                         "Note that the definitional equation~#0~[~/s~] for ~
                          ~&0 infect~#0~[s~/~] the constraint of this ~
-                         en~-cap~-su~-la~-tion.  That can be caused either ~
-                         because we are not allowed to move a defun out of ~
-                         nested non-trivial encapsulates or because a ~
+                         en~-cap~-su~-la~-tion.  That can be caused because a ~
                          function ancestrally involves the constrained ~
                          functions of an encapsulate and is ancestrally ~
                          involved in the constraining theorems of those ~
@@ -7943,38 +7957,73 @@
 
 (defun find-first-non-local-name (x)
 
-; X is allegedly an embedded event form.  It may be a call of some
-; user macro and thus completely unrecognizable to us.  But it could
-; be a call of one of our primitive fns.  We are interested in the
-; question "If x is successfully executed, what is a logical name it
-; will introduce?"  Since no user event will introduce nil, we use nil
-; to indicate that we don't know about x (or, equivalently, that it is
-; some user form we don't recognizer, or that it introduces no names,
-; or that it is ill-formed and will blow up).  Otherwise, we return a
-; logical name that x will create.
+; Keep this in sync with chk-embedded-event-form and primitive-event-macros;
+; see comments below.
 
-  (case-match x
-              (('local . &) nil)
-              (('defun name . &) name)
-              (('defuns (name . &) . &) name)
-              (('defthm name . &) name)
-              (('defaxiom name . &) name)
-              (('skip-proofs ev) (find-first-non-local-name ev))
-              (('defconst name . &) name)
-              (('deflabel name . &) name)
-              (('deftheory name . &) name)
-              (('defstobj name . &) name)
-              (('defmacro name . &) name)
-              (('mutual-recursion ('defun name . &) . &) name)
-              (('encapsulate (((name . &) arrow &) . &) . &)
-               (and (symbolp arrow)
-                    (equal (symbol-name arrow) "=>")
-                    name))
-              (('encapsulate ((name . &) . &) . &) name)
-              (('encapsulate nil . ev-lst)
-               (find-first-non-local-name-lst ev-lst))
-              (('include-book name . &) name)
-              (& nil)))               
+; This function is used heuristically to help check redundancy of encapsulate
+; events.
+
+; X is allegedly an embedded event form, though we do not guarantee this.  It
+; may be a call of some user macro and thus completely unrecognizable to us.
+; But it could be a call of one of our primitive fns.  We are interested in the
+; question "If x is successfully executed, what is a logical name it will
+; introduce?"  Since no user event will introduce nil, we use nil to indicate
+; that we don't know about x (or, equivalently, that it is some user form we
+; don't recognizer, or that it introduces no names, or that it is ill-formed
+; and will blow up).  Otherwise, we return a logical name that x will create.
+; We are interested only in returning symbols, not book names or packages.
+
+  (let ((val
+         (case-match x
+
+; We are typically looking at events inside an encapsulate form.  Below, we
+; handle local and defun first, since these are the most common.  We then
+; handle all event forms in (primitive-event-macros) that introduce a new name
+; that is a symbol.  Finally, we deal with compound event forms that are
+; handled by chk-embedded-event-form.
+
+           (('local . &) nil)
+           (('defun name . &) name)
+
+; Others from (primitive-event-macros); see comment above.
+
+           (('defaxiom name . &) name)
+           (('defchoose name . &) name)
+           (('defconst name . &) name)
+           (('deflabel name . &) name)
+           (('defmacro name . &) name)
+           (('deftheory name . &) name)
+           (('defuns (name . &) . &) name)
+           (('defstobj name . &) name)
+           (('defthm name . &) name)
+           (('encapsulate (((name . &) arrow . &)
+                           . &)
+                          . &)
+            (and (symbolp arrow)
+                 (equal (symbol-name arrow) "=>")
+                 name))
+           (('encapsulate ((name . &)
+                           . &)
+                          . &)
+            name)
+           (('encapsulate nil . ev-lst)
+            (find-first-non-local-name-lst ev-lst))
+           (('mutual-recursion ('defun name . &) . &) name)
+           (('progn . ev-lst)
+            (find-first-non-local-name-lst ev-lst))
+
+; Keep the following in sync with chk-embedded-event-form; see comment above.
+
+           ((sym . lst)
+            (and (member-eq sym '(skip-proofs
+                                  with-output
+                                  with-prover-step-limit
+                                  with-prover-time-limit))
+                 (find-first-non-local-name (car (last lst)))))
+
+           (& nil))))
+    (and (symbolp val)
+         val)))               
 
 (defun find-first-non-local-name-lst (lst)
 
@@ -8019,18 +8068,24 @@
         (equal (cadr old) (cadr new))
         (corresponding-encap-events (cddr old) (cddr new) t))))
 
-(defun redundant-encapsulate-tuplep (event-form mode ruler-extenders vge wrld)
+(defun redundant-encapsulate-tuplep (event-form mode ruler-extenders vge
+                                                event-number wrld)
 
-; We return non-nil iff the non-prehistoric (if that's where we start) part of wrld
-; contains an event-tuple whose form is essentially equal to event-form.  We
-; return t if they are equal, else we return the old form.  See also the Essay
-; on Make-event.
+; We return non-nil iff the non-prehistoric (if that's where we start) part of
+; wrld later than the given absolute event number (unless it's nil) contains an
+; event-tuple whose form is essentially equal to event-form.  We return t if
+; they are equal, else we return the old form.  See also the Essay on
+; Make-event.
 
   (cond ((or (null wrld)
              (and (eq (caar wrld) 'command-landmark)
                   (eq (cadar wrld) 'global-value)
                   (equal (access-command-tuple-form (cddar wrld))
-                         '(exit-boot-strap-mode))))
+                         '(exit-boot-strap-mode)))
+             (and (integerp event-number)
+                  (eq (cadar wrld) 'absolute-event-number)
+                  (integerp (cddar wrld))
+                  (<= (cddar wrld) event-number)))
          nil)
         ((and (eq (caar wrld) 'event-landmark)
               (eq (cadar wrld) 'global-value)
@@ -8050,7 +8105,7 @@
                             old-event-form
                           t)))))))
         (t (redundant-encapsulate-tuplep event-form mode ruler-extenders vge
-                                         (cdr wrld)))))
+                                         event-number (cdr wrld)))))
 
 (defun redundant-encapsulatep (signatures ev-lst event-form wrld)
 
@@ -8076,72 +8131,62 @@
 ; return that earlier encapsulate, which is stored in expanded form.  See also
 ; the Essay on Make-event.  Otherwise we return nil.
 
-  (let ((name
-         (find-first-non-local-name
-          (list* 'encapsulate signatures ev-lst))))
-    (cond ((and name
-                (stringp name)
-                (not (find-non-hidden-package-entry
-                      name
-                      (global-val 'known-package-alist wrld)))
-                (not (assoc-equal name (global-val 'include-book-alist wrld))))
+  (cond
+   (signatures
+    (let ((name (case-match signatures
+                  ((((name . &) arrow . &) . &)
+                   (and (symbolp arrow)
+                        (equal (symbol-name arrow) "=>")
+                        name))
+                  (((name . &) . &)
+                   name))))
+      (and name
+           (not (new-namep name wrld))
+           (let* ((wrld-tail (lookup-world-index
+                              'event
+                              (getprop name 'absolute-event-number 0
+                                       'current-acl2-world wrld)
+                              wrld))
+                  (event-tuple (cddr (car wrld-tail)))
+                  (old-event-form (access-event-tuple-form
+                                   event-tuple))
+                  (equal? (corresponding-encaps old-event-form
+                                                event-form)))
+             (and
+              equal?
+              (let ((old-adt
+                     (table-alist 'acl2-defaults-table wrld-tail))
+                    (new-adt
+                     (table-alist 'acl2-defaults-table wrld)))
+                (and
+                 (eq (default-defun-mode-from-table old-adt)
+                     (default-defun-mode-from-table new-adt))
+                 (equal (default-ruler-extenders-from-table old-adt)
+                        (default-ruler-extenders-from-table new-adt))
+                 (eql (default-verify-guards-eagerness-from-table
+                        old-adt)
+                      (default-verify-guards-eagerness-from-table
+                        new-adt))
+                 (if (eq equal? :expanded)
+                     old-event-form
+                   t))))))))
+   (t (let ((name (find-first-non-local-name-lst ev-lst)))
+        (and (or (not name)
 
-; If the name we find is a string then it can only be a full-book-name, e.g.,
-; the first non-local event in the encapsulate was an include-book.  However,
-; just to remind us that stringp names can be package names we look there too,
-; even though a defpkg couldn't occur in an encapsulate.  Note that if we do
-; not find the name in the 'include-book-alist or the 'known-package-alist
-; (non-hidden; see the Essay on Hidden Packages) then this encapsulate could
-; not have been executed so it is not redundant.
+; A non-local name need not be found.  But if one is found, then redundancy
+; fails if that name is new.
 
-; It actually is tempting to cause an error here, since we believe that both
-; defpkg and non-local include-book forms are impossible.  But we haven't
-; checked that we have a legal embedded event form, so a string is possible;
-; consider for example (encapsulate () (defun "foo" (x) t)).
-
-           nil)
-          ((and name
-                (symbolp name)
-                (new-namep name wrld))
-           nil)
-          (t
-           (or (and name
-                    (symbolp name)
-                    (let* ((wrld-tail (lookup-world-index
-                                       'event
-                                       (getprop name 'absolute-event-number 0
-                                                'current-acl2-world wrld)
-                                       wrld))
-                           (event-tuple (cddr (car wrld-tail)))
-                           (old-event-form (access-event-tuple-form
-                                            event-tuple))
-                           (equal? (corresponding-encaps old-event-form
-                                                         event-form)))
-                      (and
-                       equal?
-                       (let ((old-adt
-                              (table-alist 'acl2-defaults-table wrld-tail))
-                             (new-adt
-                              (table-alist 'acl2-defaults-table wrld)))
-                         (and
-                          (eq (default-defun-mode-from-table old-adt)
-                              (default-defun-mode-from-table new-adt))
-                          (equal (default-ruler-extenders-from-table old-adt)
-                                 (default-ruler-extenders-from-table new-adt))
-                          (eql (default-verify-guards-eagerness-from-table
-                                 old-adt)
-                               (default-verify-guards-eagerness-from-table
-                                 new-adt))
-                          (if (eq equal? :expanded)
-                              old-event-form
-                            t))))))
-               (let ((new-adt (table-alist 'acl2-defaults-table wrld)))
-                 (redundant-encapsulate-tuplep
-                  event-form
-                  (default-defun-mode-from-table new-adt)
-                  (default-ruler-extenders-from-table new-adt)
-                  (default-verify-guards-eagerness-from-table new-adt)
-                  wrld)))))))
+                 (not (new-namep name wrld)))
+             (let ((new-adt (table-alist 'acl2-defaults-table wrld)))
+               (redundant-encapsulate-tuplep
+                event-form
+                (default-defun-mode-from-table new-adt)
+                (default-ruler-extenders-from-table new-adt)
+                (default-verify-guards-eagerness-from-table new-adt)
+                (and name
+                     (getprop name 'absolute-event-number nil
+                              'current-acl2-world wrld))
+                wrld)))))))
 
 (defun mark-missing-as-hidden-p (a1 a2)
 
@@ -9434,17 +9479,17 @@
                                     tmp)
                                    (t (case *canonical-unix-pathname-action*
                                         (:warning
-                                         (with-live-state
-                                          (warning$ 'canonical-unix-pathname
-                                                    "Pathname"
-                                                    "Unable to compute ~
-                                                     canonical-unix-pathname ~
-                                                     for ~x0.  (Debug info: ~
-                                                     truename is ~x1 while ~
-                                                     (truename tmp) is ~x2.)"
-                                                    x
-                                                    namestring-truename
-                                                    namestring-tmp)))
+                                         (let ((state *the-live-state*))
+                                           (warning$ 'canonical-unix-pathname
+                                                     "Pathname"
+                                                     "Unable to compute ~
+                                                      canonical-unix-pathname ~
+                                                      for ~x0.  (Debug info: ~
+                                                      truename is ~x1 while ~
+                                                      (truename tmp) is ~x2.)"
+                                                     x
+                                                     namestring-truename
+                                                     namestring-tmp)))
                                         (:error
                                          (er hard 'canonical-unix-pathname
                                              "Unable to compute ~
@@ -11000,30 +11045,6 @@
         (t (cons (car post-alist3)
                  (unmark-and-delete-local-included-books (cdr post-alist3))))))
 
-; Essay on Tainted Books
-
-; A notion of incremental version number, or incrl, was introduced in ACL2
-; Version_2.9.1, in order to support incremental releases.  We wanted to make
-; it easy for the ACL2 user to experiment with incremental releases without
-; being required to recertify all books.  See :DOC set-tainted-okp for more
-; high-level discussion of this issue and how it is dealt with from a user
-; perspective.  In a nutshell, we mark a book as "tainted" by putting
-; "(tainted)" into the version string of its certificate, and we do this when
-; we detect the possibility that the book depends on the inclusion of at least
-; one book with a mismatch of the incrl version number (see :DOC version).  We
-; disallow certification of tainted books, and treat include-book of tainted
-; books as uncertified, except when the user has evaluated (set-tainted-okp t),
-
-; Two state globals support handling of tainted books.  State global
-; 'certify-book-info is generally nil, but is set to the full book name while
-; certifying a book and transitions from that to (list full-book-name) if we
-; encounter inclusion of a book that is either explicitly tainted or has a
-; version mismatch of its incrl field.  State global 'tainted-okp is initially
-; nil, which disallows certification of tainted books and treates included
-; tainted books as uncertified.  The user may call set-tainted-okp to set this
-; variable to t in order to allow include-book and certify book to accept
-; tainted books fully, albeit with "Tainted" warnings.
-
 (defun decimal-string-to-number (s bound expo)
 
 ; Returns 10^expo times the integer represented by the digits of string s from
@@ -11055,47 +11076,15 @@
                            \"~s1\"."
                           pos s)))))))
 
-(defun tainted-stringp (s)
-
-; Keep this in sync with taint-string.
-
-; This function recognizes acl2-version strings that are "tainted".  Books with
-; certificates containing such acl2-version strings are not to be fully
-; trusted.
-
-; We could just look in s for "(tainted)".  But this function allows strings
-; such as "(tainted[some-other-info])", which may somehow be of use for us down
-; the road.
-
-  (let ((p1 (position #\( s)))
-    (and p1
-         (let ((p2 (position #\) s)))
-           (and p2
-                (<= 8 (- p2 p1))
-                (equal (subseq s (+ 1 p1) (+ 8 p1)) "tainted"))))))
-
-(defun taint-string (v)
-
-; Keep this in sync with tainted-stringp.
-
-  (let ((p (position #\( v))
-        (tnt "(tainted)"))
-    (cond (p (concatenate 'string
-                          (subseq v 0 p)
-                          tnt
-                          (subseq v p (length v))))
-          (t (concatenate 'string v tnt)))))
-
 (defun parse-version (version)
 
 ; Version is an ACL2 version string, as in state global 'acl2-version.  We
-; return (mv major minor incrl taintedp rest), where either major is nil,
-; indicating an ill-formed version; or else major, minor, and incrl are natural
-; numbers indicating the major, minor, and incrl version, and rest is the part
-; of the string starting with #\(, if any, with its initial "(...)"  removed if
-; "..." begins with "tainted".  For example, (parse-version "ACL2 Version
-; 2.10") is (mv 2 10 0 nil "") and (parse-version "ACL2 Version
-; 2.10.1(tainted)(r)") is (mv 2 10 1 t "(r)").
+; return (mv major minor incrl rest), where either major is nil, indicating an
+; ill-formed version; or else major, minor, and incrl are natural numbers
+; indicating the major, minor, and incrl version, and rest is the part of the
+; string starting with #\(, if any.  For example,
+; (parse-version "ACL2 Version 2.10") is (mv 2 10 0 "") and
+; (parse-version "ACL2 Version 2.10.1(r)") is (mv 2 10 1 "(r)").
 
   (let* ((root "ACL2 Version")
          (pos0 (if (and (stringp version)
@@ -11108,12 +11097,7 @@
          (pos-lparen (position #\( version))
          (end0 (or pos-lparen
                    (length version)))
-         (rest0 (subseq version end0 (length version)))
-         (taintedp (and pos-lparen ; optimization
-                        (tainted-stringp version)))
-         (rest (if taintedp
-                   (subseq rest0 (1+ (position #\) rest0)) (length rest0))
-                 rest0))
+         (rest (subseq version end0 (length version)))
          (from-pos0 (and pos0 (subseq version pos0 end0)))
          (pos1-from-pos0 (and pos0 (position #\. from-pos0)))
          (pos1 (and pos1-from-pos0 (+ pos0 pos1-from-pos0)))
@@ -11134,13 +11118,13 @@
                      (1- (- end0 pos2))
                      0)
                   0)))
-    (mv major minor incrl taintedp rest)))
+    (mv major minor incrl rest)))
 
 #-acl2-loop-only
 (defun-one-output latest-release-note-string ()
-  (mv-let (major minor incrl taintedp rest)
+  (mv-let (major minor incrl rest)
     (parse-version (f-get-global 'acl2-version *the-live-state*))
-    (declare (ignore taintedp rest))
+    (declare (ignore rest))
     (if (zerop incrl)
         (format nil "note-~s-~s" major minor)
       (format nil "note-~s-~s-~s" major minor incrl))))
@@ -11148,16 +11132,16 @@
 (defun earlier-acl2-versionp (version1 version2)
 
 ; This function ignores the part of each version string after the first
-; parenthesis (if any), including "(tainted)".  While it is no longer used in
-; the sources (as of May 1, 2010), it is used in books/hacking/ and is a handy
-; utility, so we leave it here.
+; parenthesis (if any).  While it is no longer used in the sources (as of May
+; 1, 2010), it is used in books/hacking/ and is a handy utility, so we leave it
+; here.
 
-  (mv-let (major1 minor1 incrl1 taintedp1 rest1)
+  (mv-let (major1 minor1 incrl1 rest1)
     (parse-version version1)
-    (declare (ignore taintedp1 rest1))
-    (mv-let (major2 minor2 incrl2 taintedp2 rest2)
+    (declare (ignore rest1))
+    (mv-let (major2 minor2 incrl2 rest2)
       (parse-version version2)
-      (declare (ignore taintedp2 rest2))
+      (declare (ignore rest2))
       (cond
        ((or (null major1) (null major2))
         (er hard 'earlier-acl2-versionp
@@ -11435,70 +11419,17 @@
    (state-global-let* ((infixp nil)) (read-object ch state))
    (cond
     (eofp (er soft ctx *ill-formed-certificate-msg* file1 file2))
-    (t (let* ((version-okp (equal version (f-get-global 'acl2-version state)))
-              (version-okp-tainted
-               (and (not version-okp)
-                    (mv-let (major1 minor1 incrl1 taintedp1 rest1)
-                      (parse-version version)
-                      (declare (ignore taintedp1))
-                      (mv-let (major2 minor2 incrl2 taintedp2 rest2)
-                        (parse-version (f-get-global 'acl2-version state))
-                        (declare (ignore taintedp2))
-                        (and (eql major1 major2)
-                             (eql minor1 minor2)
-                             (equal rest1 rest2)
-                             (if (eql incrl1 incrl2)
-                                 'tainted
-                               'incrl-mismatch)))))))
+    (t (let* ((version-okp (equal version (f-get-global 'acl2-version state))))
          (cond
-          ((or version-okp
-               (and version-okp-tainted
-                    (f-get-global 'tainted-okp state)))
+          (version-okp
            (mv-let
              (eofp key state)
              (state-global-let* ((infixp nil)) (read-object ch state))
              (cond
               ((or eofp (not (eq key :begin-portcullis-cmds)))
                (er soft ctx *ill-formed-certificate-msg* file1 file2))
-              (t (er-let* ((cert-obj
-                            (chk-raise-portcullis file1 file2 ch
-                                                  light-chkp
-                                                  ctx state
-                                                  suspect-book-action-alist
-                                                  evalp)))
-                   (cond (version-okp-tainted
-                          (pprogn (let ((certify-book-info (f-get-global
-                                                            'certify-book-info
-                                                            state)))
-                                    (if (stringp certify-book-info)
-                                        (f-put-global 'certify-book-info
-                                                      (list certify-book-info)
-                                                      state)
-                                      state))
-                                  (warning$ ctx "Tainted"
-                                            "The book ~x0 is being treated as ~
-                                             certified even though ~
-                                             ~#1~[~@2~/~@3~].  See :DOC ~
-                                             set-tainted-okp."
-                                            file1
-                                            (if (eq version-okp-tainted
-                                                    'tainted)
-                                                0
-                                              1)
-                                            "some potential version ~
-                                             discrepancies were encountered ~
-                                             during its certification"
-                                            `("the ``incrl'' field of its ~
-                                              acl2-version, ~xa, differs from ~
-                                              that of the current ~
-                                              acl2-version, ~xb; see :DOC ~
-                                              version"
-                                              (#\a . ,version)
-                                              (#\b . ,(f-get-global
-                                                       'acl2-version 
-                                                       state))))
-                                  (value cert-obj)))
-                         (t (value cert-obj))))))))
+              (t (chk-raise-portcullis file1 file2 ch light-chkp ctx state
+                                       suspect-book-action-alist evalp)))))
           ((not (equal (acl2-version-r-p (f-get-global 'acl2-version state))
                        (acl2-version-r-p version)))
            (er soft ctx
@@ -11517,25 +11448,11 @@
                       this book in the current ACL2 may render this ACL2 ~
                       sesion unsound!  We recommend you recertify the book ~
                       with the current version, ~sb.  See :DOC version.  No ~
-                      compiled file will be loaded with this book.~@c"
+                      compiled file will be loaded with this book."
                     (list (cons #\a (if (eq version :begin-portcullis-cmds)
                                         "ACL2 Version 1.8"
                                       version))
-                          (cons #\b (f-get-global 'acl2-version state))
-                          (cons #\c
-                                (case version-okp-tainted
-                                  (incrl-mismatch
-                                   "~|  NOTE that only the ``incrl'' version ~
-                                    fields disagree.  See :DOC set-tainted-okp ~
-                                    for an untrusted workaround for this ~
-                                    problem.")
-                                  (tainted
-                                   "~|  NOTE that the above book was certified ~
-                                    in an ACL2 world in which some version ~
-                                    discrepancies were ignored.  See :DOC ~
-                                    set-tainted-okp for an untrusted ~
-                                    workaround for this problem.")
-                                  (otherwise "")))))
+                          (cons #\b (f-get-global 'acl2-version state))))
               :uncertified-okp
               suspect-book-action-alist
               ctx state)
@@ -11987,11 +11904,7 @@
              (print-circle (f-get-global 'print-circle-files state)))
             (pprogn
              (print-object$ '(in-package "ACL2") ch state)
-             (print-object$
-              (if (consp (f-get-global 'certify-book-info state))
-                  (taint-string (f-get-global 'acl2-version state))
-                (f-get-global 'acl2-version state))
-              ch state)
+             (print-object$ (f-get-global 'acl2-version state) ch state)
              (print-object$ :BEGIN-PORTCULLIS-CMDS ch state)
              (print-objects (hons-copy (car portcullis)) ch state)
              (print-object$ :END-PORTCULLIS-CMDS ch state)
@@ -12074,7 +11987,7 @@
 ; following form:
 
 ; (in-package "ACL2")
-; "ACL2 Version x.y"      ; but see below, regarding tainting
+; "ACL2 Version x.y"
 ; :BEGIN-PORTCULLIS-CMDS  ; this is here just to let us check that the file
 ; cmd1                    ; is not a normal list of events.
 ; ...
@@ -12092,11 +12005,6 @@
 ; individually.
 
 ; Optionally, create .cert.final file as well; see comment below.
-
-; Finally, if the book is to be tainted, we taint the acl2-version in the
-; certificate.  However, this function is not responsible for checking if
-; tainting is legal; such a check should already have been made if we are to
-; taint the book.
 
   (let ((certification-file (convert-book-name-to-cert-name file))
         (post-alist3 (mark-local-included-books post-alist1 post-alist2)))
@@ -12527,13 +12435,13 @@
           (car (car post-alist))))
        (t (skipped-proofsp-in-post-alist (cdr post-alist))))))))
 
-(defun check-sum-cert (portcullis-cmds book-ev-lst)
+(defun check-sum-cert (portcullis-cmds expansion-alist book-ev-lst)
 
 ; This function computes a check-sum for post-alists in .cert files.  It is a
 ; bit odd because get-portcullis-cmds gives the results of make-event expansion
 ; but book-ev-lst does not.  But that seems OK.
 
-  (check-sum-obj (cons portcullis-cmds book-ev-lst)))
+  (check-sum-obj (list* portcullis-cmds expansion-alist book-ev-lst)))
 
 ; For a discussion of early loading of compiled files for include-book, which
 ; is supported by the next few forms, see the Essay on Hash Table Support for
@@ -12762,6 +12670,7 @@
                         (check-sum-cert (and cert-obj
                                              (access cert-obj cert-obj
                                                      :cmds))
+                                        expansion-alist
                                         ev-lst))))
                  (cond
                   ((not (integerp ev-lst-chk-sum))
@@ -14031,7 +13940,7 @@
 (defun print-certify-book-step-5 (full-book-name state)
   (io? event nil state
        (full-book-name)
-       (fms "* Step 5:  Compiling the functions defined in ~x0.~%"
+       (fms "* Step 5:  Compile the functions defined in ~x0.~%"
             (list (cons #\0 full-book-name))
             (proofs-co state) state nil)))
 
@@ -14466,7 +14375,9 @@
           (full-book-name directory-name familiar-name)
           (parse-book-name (cbd) user-book-name ".lisp" ctx state)
           (state-global-let*
-           ((certify-book-info full-book-name)
+           ((certify-book-info (make certify-book-info
+                                     :full-book-name full-book-name
+                                     :other-info nil))
             (match-free-error nil)
             (defaxioms-okp-cert defaxioms-okp)
             (skip-proofs-okp-cert skip-proofs-okp)
@@ -14845,6 +14756,7 @@
                                                        new-defpkg-list))
                                              (chk-sum
                                               (check-sum-cert portcullis-cmds
+                                                              expansion-alist
                                                               ev-lst))
                                              (extra-entry
                                               (list* full-book-name
@@ -15903,18 +15815,7 @@
   Incremental releases are accompanied by a bump in the incrl field of the
   version field, while normal releases are accompanied by a bump in the minor
   or (much less frequently) major field and zeroing out of the incrl field.
-
-  Note that LOGICALLY SPEAKING, INCREMENTAL RELEASES ARE FULL-FLEDGE RELEASES.
-  However, ACL2 users may wish to experiment with incremental releases without
-  recertifying all of their existing ACL2 ~il[books] (~pl[certify-book]).  In
-  order to learn how to avoid such recertification, ~pl[set-tainted-okp].  The
-  basic idea is that if certification may depend on including books from an
-  ACL2 version with a different incrl field, the book's ~il[certificate] is
-  marked with a ``tainted'' version, i.e., a version with ~c[\"(tainted\"] as a
-  substring.  Subsequent inclusion of any such book is restricted to sessions
-  in which the user explicitly invokes ~c[(]~ilc[set-tainted-okp]~c[ t)], which
-  is intended as an acknowledgment that including such a book may render the
-  ACL2 session unsound.~/")
+  Note that incremental releases are full-fledged releases.~/")
 
 (deflabel keep
   :doc
@@ -19199,11 +19100,7 @@
                                              ',init
                                              :element-type
                                              ',array-etype)))
-                      #+(and hons
-                             (not acl2-loop-only)
-; See the Essay on Memoization Involving Stobjs:
-                             memoize-stobjs-hack)
-                      (memoize-flush ,var)
+                      #+hons (memoize-flush ,var)
                       (setf (svref ,var ,n)
                             (,(pack2 'stobj-copy-array- fix-vref)
                              old new 0 min-index))
@@ -19221,11 +19118,7 @@
                      (type ,array-etype v))
             ,@(and inline (list *stobj-inline-declare*))
             (progn 
-              #+(and hons
-                     (not acl2-loop-only)
-; See the Essay on Memoization Involving Stobjs:
-                     memoize-stobjs-hack)
-              (memoize-flush ,var)
+              #+hons (memoize-flush ,var)
               (setf (,vref (the ,simple-type (svref ,var ,n))
                            (the (and fixnum (integer 0 *)) i))
                     (the ,array-etype v))
@@ -19237,12 +19130,9 @@
            (,updater-name (v ,var)
                           ,@(and inline (list *stobj-inline-declare*))
                           (progn
-                            #+(and hons
-                                   (not acl2-loop-only)
-; See the Essay on Memoization Involving Stobjs:
-                                   memoize-stobjs-hack)
-                            (memoize-flush ,var)
-                            (setf (svref ,var ,n) v) ,var))))
+                            #+hons (memoize-flush ,var)
+                            (setf (svref ,var ,n) v)
+                            ,var))))
         (t
          `((,accessor-name (,var)
                            ,@(and inline (list *stobj-inline-declare*))
@@ -19254,11 +19144,7 @@
                           (declare (type ,type v))
                           ,@(and inline (list *stobj-inline-declare*))
                           (progn
-                            #+(and hons
-                                   (not acl2-loop-only)
-; See the Essay on Memoization Involving Stobjs:
-                                   memoize-stobjs-hack)
-                            (memoize-flush ,var)
+                            #+hons (memoize-flush ,var)
                             (setf (aref (the (simple-array ,type (1))
                                           (svref ,var ,n))
                                         0)
@@ -21501,9 +21387,15 @@
 
 ; Warning: Keep this in sync with custom-trace-ppr.
 
-  (if (< (f-get-global 'trace-level state) 10)
-      (1+ (* 2 (f-get-global 'trace-level state)))
-    22))
+  (cond ((< (f-get-global 'trace-level state) 10)
+         (1+ (* 2 (f-get-global 'trace-level state))))
+        ((< (f-get-global 'trace-level state) 100)
+         22)
+        ((< (f-get-global 'trace-level state) 1000)
+         23)
+        ((< (f-get-global 'trace-level state) 10000)
+         24)
+        (t 25)))
 
 (defun trace-ppr (x trace-evisc-tuple msgp state)
   (fmt1 (if msgp "~@0~|" "~y0~|")
@@ -21940,20 +21832,19 @@
 
 ; Inline maybe-untrace$-fn:
 
-  (with-live-state
-   (progn
-     (when (assoc-eq fn (f-get-global 'trace-specs state))
-       (untrace$-fn1 fn state)
-       (when verbose
-         (observation "untracing"
-                      "Untracing ~x0."
-                      fn)))
-     (when (and (eval `(maybe-untrace ,fn))
-                verbose)
-       (observation "untracing"
-                    "Raw-Lisp untracing ~x0."
-                    fn))
-     nil)))
+  (let ((state *the-live-state*))
+    (when (assoc-eq fn (f-get-global 'trace-specs state))
+      (untrace$-fn1 fn state)
+      (when verbose
+        (observation "untracing"
+                     "Untracing ~x0."
+                     fn)))
+    (when (and (eval `(maybe-untrace ,fn))
+               verbose)
+      (observation "untracing"
+                   "Raw-Lisp untracing ~x0."
+                   fn))
+    nil))
 
 #-acl2-loop-only
 (defun increment-trace-level ()
@@ -22337,16 +22228,16 @@
                         #-(or gcl allegro)
                         (pprogn (when (assoc-keyword :multiplicity
                                                      trace-options)
-                                  (with-live-state
-                                   (with-output
-                                    :on (warning)
-                                    (warning$ ctx "Trace"
-                                              "The :multiplicity option of ~
+                                  (let ((state *the-live-state*))
+                                    (with-output
+                                     :on (warning)
+                                     (warning$ ctx "Trace"
+                                               "The :multiplicity option of ~
                                                trace$ has no effect in this ~
                                                Lisp.  Only one value will be ~
                                                passed to trace printing by ~
                                                function ~x0."
-                                              fn))))
+                                               fn))))
                                 trace-options-1)))
                   (if new-trace-options
                       (eval `(trace (,fn ,@new-trace-options)))
@@ -25014,77 +24905,6 @@
                               state
                               '(table custom-keywords-table))))))))))
 
-(defmacro set-tainted-okp (x)
-
-  ":Doc-Section switches-parameters-and-modes
-
-  control output~/
-  ~bv[]
-  Forms:
-  (set-tainted-okp nil) ; do not allow incremental version mismatches (default)
-  (set-tainted-okp t)   ; allow incremental version mismatches
-  ~ev[]
-
-  ~c[Set-tainted-okp] is of use only in the presence of incremental releases.
-  In short, evaluation of ~c[(set-tainted-okp t)] instructs ACL2 to consider an
-  incremental release to have the same ACL2 ~il[version] as the most recently
-  preceding normal release.  BUT THIS IS NOT THE CASE BY DEFAULT BECAUSE ACL2
-  IS POTENTIALLY UNSOUND WHEN ~c[SET-TAINTED-OKP] IS EVALUATED.~/
-
-  Incremental releases have an incremental (incrl) ~il[version] field, for
-  example the number 1 in version  2.9.1.  (Also ~pl[version].)  Ordinary
-  releases have an implicit incrl version field of 0 (for example, in version
-  2.9).  By default, ~ilc[include-book] and ~ilc[certify-book] consider all
-  fields of ACL2 version strings, including their incrl fields, in order to
-  decide if there are version mismatches.  But it may be convenient to treat an
-  incremental release as the same as the corresponding (immediately preceding)
-  normal release, in order to avoid recertification of existing certified
-  books.  SUCH RECERTIFICATION IS LOGICALLY REQUIRED, but we provide
-  ~c[(set-tainted-okp t)] as a mechanism to allow users to experiment with
-  incremental releases.
-
-  Below we describe how books can be certified even though their certification
-  has depended on ignoring mismatches of incrl version fields.  We call such
-  certified books ``tainted''.
-
-  If ~c[(set-tainted-okp t)] is evaluated, then any discrepancy is ignored
-  between the incrl version field of an included book (representing the version
-  of ACL2 in which that book was certified) and the current ACL2 version,
-  namely the value of ~c[(@ acl2-version)].  Thus, with ~c[(set-tainted-okp t)]
-  we allow certification of books that depend on included books that have such
-  version mismatches with the current ACL2 version or are themselves tainted.
-  Any book thus certified will have the string \"(tainted)\" included in its
-  ~il[certificate]'s ~il[version] string.  Indeed, when ACL2 detects that a
-  book may depend either on a book whose version's incrl field differs from
-  that of the current ACL2 ~il[version], or on a tainted book, then such a book
-  is marked as tainted.
-
-  When ~c[(set-tainted-okp t)] has been executed, then even though ACL2
-  ``ignores'' issues of tainting as discussed above, a ~c[\"Tainted\"] warning
-  is printed whenever a tainted book is included or certified.~/"
-
-  (if (member-eq x '(nil t))
-      `(pprogn (f-put-global 'tainted-okp ,x state)
-               (if ,x
-                   (warning$ 'set-tainted-okp "Tainted"
-                             "Inclusion of tainted books may render an ACL2 ~
-                              session unsound.  See :DOC set-tainted-okp.")
-                 state)
-               (value ,x))
-    `(er soft 'set-tainted-okp
-         "The legal values of set-tainted-okp are ~x0 and ~x1.  Thus ~x2 is ~
-          not a legal value.  See :DOC set-tainted-okp."
-         t nil ,x)))
-
-(defmacro set-tainted-ok (x)
-
-; Usually we call such utilities "set-.*-ok" rather than "set-.*-okp".  We
-; leave the okp version of this one for backward compatibility, but we add the
-; "ok" version for consistency.
-
-  `(set-tainted-okp ,x))
-
-(link-doc-to set-tainted-ok switches-parameters-and-modes set-tainted-okp)
 (link-doc-to set-non-linear switches-parameters-and-modes set-non-linearp)
 (link-doc-to set-let*-abstraction switches-parameters-and-modes
              set-let*-abstractionp)
@@ -25384,157 +25204,163 @@
                          (getprop key 'formals t 'current-acl2-world wrld)
                        t))
         (key-class (symbol-class key wrld)))
-    (cond
-     ((eq key-formals t)
-      (er hard ctx
-          "~@0~x1 is not a function symbol."
-          str key))
-     #-memoize-stobjs-hack ; see the Essay on Memoization Involving Stobjs
-     ((not (all-nils (stobjs-in key wrld)))
-      (let ((stobj (find-first-non-nil (stobjs-in key wrld))))
-        (cond ((eq stobj 'state)
+    (let ((result
+           (cond
+            ((eq key-formals t)
+             (er hard ctx
+                 "~@0~x1 is not a function symbol."
+                 str key))
+            ((member-eq 'state (stobjs-in key wrld))
+             (er hard ctx
+                 "~@0~x1 takes ACL2's STATE as an argument."
+                 str key))
+            ((not (all-nils (stobjs-out key wrld)))
+             (let ((stobj (find-first-non-nil (stobjs-out key wrld))))
                (er hard ctx
-                   "~@0~x1 takes ACL2's ~x2 as an argument."
-                   str key stobj))
-              (t
-               (er hard ctx
-                   "~@0~x1 takes a stobj, ~x2, as an argument."
-                   str key stobj)))))
-      #+memoize-stobjs-hack ; see the Essay on Memoization Involving Stobjs
-      ((member-eq 'state (stobjs-in key wrld))
-
-; Consider warning when memoizing a fn that takes a user-defined stobj as an
-; argument, saying that all modifications of such stobjs may be slow.  [A
-; variant of a test supplied by Warren Hunt, basically a big loop of
-; interleaved writes and reads, slowed down from about 19 seconds to nearly 100
-; seconds.]
-
-       (er hard ctx
-           "~@0~x1 takes ACL2's STATE as an argument."
-           str key))
-     ((member-eq key *hons-primitive-fns*)
-      (er hard ctx
-          "~@0~x1 is a HONS primitive."
-          str key))
-     ((not (cltl-def-from-name key nil wrld))
-      (er hard ctx
-          "~@0~x1 is not a defined ACL2 function."
-          str key))
-     ((getprop key 'constrainedp nil 'current-acl2-world wrld)
-      (er hard ctx
-          "~@0~x1 is constrained.  You may instead wish to memoize a caller ~
-           or to memoize its attachment (see :DOC defattach)."
-          str key))
-     ((if (eq key-class :program)
-          (member-eq key *primitive-program-fns-with-raw-code*)
-        (member-eq key *primitive-logic-fns-with-raw-code*))
-      (er hard ctx
-          "~@0The built-in function symbol ~x1 has associated raw-Lisp ~
-           code, hence is illegal to memoize."
-          str key))
-     ((not (symbol-alistp val))
-      (er hard ctx
-          "~@0Function symbol ~x1 must be associated with a symbol-alistp, ~
-           unlike ~x2."
-          str key val))
-     ((let ((pair (assoc-eq :memo-table-init-size val)))
-        (and pair (not (posp (cdr pair)))))
-      (er hard ctx
-          "~@0The :memo-table-init-size must be a positive integer, unlike ~
-           ~x1."
-          str (cdr (assoc-eq :memo-table-init-size val))))
-     ((not (memoize-table-chk-commutative str key val ctx wrld))
-      nil) ; an error was presumably already caused
+                   "~@0~x1 returns a stobj, ~x2."
+                   str key stobj)))
+            ((member-eq key *hons-primitive-fns*)
+             (er hard ctx
+                 "~@0~x1 is a HONS primitive."
+                 str key))
+            ((not (cltl-def-from-name key nil wrld))
+             (er hard ctx
+                 "~@0~x1 is not a defined ACL2 function."
+                 str key))
+            ((getprop key 'constrainedp nil 'current-acl2-world wrld)
+             (er hard ctx
+                 "~@0~x1 is constrained.  You may instead wish to memoize a ~
+                  caller or to memoize its attachment (see :DOC defattach)."
+                 str key))
+            ((if (eq key-class :program)
+                 (member-eq key *primitive-program-fns-with-raw-code*)
+               (member-eq key *primitive-logic-fns-with-raw-code*))
+             (er hard ctx
+                 "~@0The built-in function symbol ~x1 has associated raw-Lisp ~
+                  code, hence is illegal to memoize."
+                 str key))
+            ((not (symbol-alistp val))
+             (er hard ctx
+                 "~@0Function symbol ~x1 must be associated with a ~
+                  symbol-alistp, unlike ~x2."
+                 str key val))
+            ((let ((pair (assoc-eq :memo-table-init-size val)))
+               (and pair (not (posp (cdr pair)))))
+             (er hard ctx
+                 "~@0The :memo-table-init-size must be a positive integer, ~
+                  unlike ~x1."
+                 str (cdr (assoc-eq :memo-table-init-size val))))
+            ((not (memoize-table-chk-commutative str key val ctx wrld))
+             nil) ; an error was presumably already caused
 
 ; The next two checks require that we do not memoize or unmemoize a function
 ; that is already memoized or unmemoized, respectively.  The function
 ; maybe-push-undo-stack relies on this check.
 
-     ((and val (cdr (assoc-eq key memoize-table)))
-      (er hard ctx
-          "~@0Function ~x1 is already memoized."
-          str key))
-     ((and (null val) (null (cdr (assoc-eq key memoize-table))))
-      (er hard ctx
-          "~@0Cannot unmemoize function ~x1 because it is not currently ~
-           memoized."
-          str key))
-     ((and (eq key-class :ideal)
-           (let* ((pair (assoc-eq :ideal-okp val))
-                  (okp (if pair
-                           (cdr pair)
-                         (cdr (assoc-eq :memoize-ideal-okp
-                                        (table-alist 'acl2-defaults-table
-                                                     wrld))))))
-             (cond ((eq okp t)
-                    nil)
-                   ((not okp)
-                    (er hard ctx
-                        "~@0The function symbol ~x1 is in :logic mode but has ~
-                         not had its guards verified.  Either run ~x2, or ~
-                         specify :IDEAL-OKP ~x3 in your ~x4 call, or else ~
-                         evaluate ~x5 or ~x6."
-                        str key 'verify-guards t 'memoize
-                        '(table acl2-defaults-table :memoize-ideal-okp t)
-                        '(table acl2-defaults-table :memoize-ideal-okp :warn)))
-                   (t ; okp is :warn
-                    (prog2$ (warning$-cw
-                             'memoize-table-chk
-                             "The function ~x0 to be memoized is in :logic ~
-                              mode but has not had its guards verified. ~
-                              Memoization might therefore not take place; see ~
-                              :DOC memoize."
-                             key)
-                            nil))))))
+            ((and val (cdr (assoc-eq key memoize-table)))
+             (er hard ctx
+                 "~@0Function ~x1 is already memoized."
+                 str key))
+            ((and (null val) (null (cdr (assoc-eq key memoize-table))))
+             (er hard ctx
+                 "~@0Cannot unmemoize function ~x1 because it is not ~
+                  currently memoized."
+                 str key))
+            ((and (eq key-class :ideal)
+                  val ; memoize, not unmemoize
+                  (let* ((pair (assoc-eq :ideal-okp val))
+                         (okp (if pair
+                                  (cdr pair)
+                                (cdr (assoc-eq :memoize-ideal-okp
+                                               (table-alist 'acl2-defaults-table
+                                                            wrld))))))
+                    (cond ((eq okp t)
+                           nil)
+                          ((not okp)
+                           (er hard ctx
+                               "~@0The function symbol ~x1 is in :logic mode ~
+                                but has not had its guards verified.  Either ~
+                                run ~x2, or specify :IDEAL-OKP ~x3 in your ~
+                                ~x4 call, or else evaluate ~x5 or ~x6."
+                               str key 'verify-guards t 'memoize
+                               '(table acl2-defaults-table :memoize-ideal-okp t)
+                               '(table acl2-defaults-table :memoize-ideal-okp :warn)))
+                          (t ; okp is :warn
+                           (prog2$ (warning$-cw
+                                    'memoize-table-chk
+                                    "The function ~x0 to be memoized is in ~
+                                     :logic mode but has not had its guards ~
+                                     verified.  Memoization might therefore ~
+                                     not take place; see :DOC memoize."
+                                    key)
+                                   nil))))))
 
 ; Finally, check conditions on the memoization condition function.
 
-     (t
-      (let* ((condition (and val (cdr (assoc-eq :condition-fn val))))
-             (val-formals (and condition
-                               (if (symbolp condition)
-                                   (getprop condition 'formals t
-                                            'current-acl2-world wrld)
-                                 t)))
-             (val-guard (and condition
-                             (if (symbolp condition)
-                                 (getprop condition 'guard *t*
-                                          'current-acl2-world wrld)
-                               t))))
+            (t
+             (let* ((condition (and val (cdr (assoc-eq :condition-fn val))))
+                    (val-formals (and condition
+                                      (if (symbolp condition)
+                                          (getprop condition 'formals t
+                                                   'current-acl2-world wrld)
+                                        t)))
+                    (val-guard (and condition
+                                    (if (symbolp condition)
+                                        (getprop condition 'guard *t*
+                                                 'current-acl2-world wrld)
+                                      t))))
 
-        (cond
-         ((or (eq val nil)
-              (member-eq condition '(t nil)))
-          t)
-         ((eq val-formals t)
-          (er hard ctx
-              "~@0The proposed memoization condition function, ~x1, is ~
-               neither nil nor a function symbol known to ACL2."
-              str condition))
-         ((not (and (symbolp condition)
-                    (or (eq key-class :program)
-                        (eq (symbol-class condition wrld)
-                            :common-lisp-compliant))))
-          (er hard ctx
-              "~@0Function ~x1 cannot serve as a memoization condition ~
-               function for function ~x2, because unlike ~x2, ~x1 is not ~
-               common-lisp-compliant (a logic-mode function that has had its ~
-               guards verified)."
-              str condition key))
-         ((not (equal key-formals val-formals))
-          (er hard ctx
-              "~@0Function ~x1 cannot serve as a memoization condition ~
-               function for ~x2, because the two functions have different ~
-               formal parameter lists."
-              str condition key))
-         ((not (equal (getprop key 'guard *t* 'current-acl2-world wrld)
-                      val-guard))
-          (er hard ctx
-              "~@0Function ~x1 cannot serve as a memoization condition ~
-               function for ~x2, because the two functions have different ~
-               guards."
-              str condition key))
-         (t t)))))))
+               (cond
+                ((or (eq val nil)
+                     (member-eq condition '(t nil)))
+                 t)
+                ((eq val-formals t)
+                 (er hard ctx
+                     "~@0The proposed memoization condition function, ~x1, is ~
+                      neither nil nor a function symbol known to ACL2."
+                     str condition))
+                ((not (and (symbolp condition)
+                           (or (eq key-class :program)
+                               (eq (symbol-class condition wrld)
+                                   :common-lisp-compliant))))
+                 (er hard ctx
+                     "~@0Function ~x1 cannot serve as a memoization condition ~
+                      function for function ~x2, because unlike ~x2, ~x1 is ~
+                      not common-lisp-compliant (a logic-mode function that ~
+                      has had its guards verified)."
+                     str condition key))
+                ((not (equal key-formals val-formals))
+                 (er hard ctx
+                     "~@0Function ~x1 cannot serve as a memoization condition ~
+                      function for ~x2, because the two functions have ~
+                      different formal parameter lists."
+                     str condition key))
+                ((not (equal (getprop key 'guard *t* 'current-acl2-world wrld)
+                             val-guard))
+                 (er hard ctx
+                     "~@0Function ~x1 cannot serve as a memoization condition ~
+                      function for ~x2, because the two functions have ~
+                      different guards."
+                     str condition key))
+                (t t)))))))
+      (prog2$
+       (and val
+            (let ((stobjs-in (stobjs-in key wrld)))
+              (cond
+               ((find-first-non-nil stobjs-in)
+                (observation-cw
+                 ctx
+                 "The function ~x0 has input stobj~#1~[~/s~] ~&1.  The ~
+                  memoization table for ~x0 will be cleared whenever ~
+                  ~#2~[this stobj is~/either of these stobjs is~/any of these ~
+                  stobjs is~] updated.  Any update of a stobj may therefore ~
+                  be significantly slower, perhaps by a factor of 5 or 10, ~
+                  when it is an input of a memoized function."
+                 key
+                 (collect-non-x nil stobjs-in)
+                 (zero-one-or-more (cdr stobjs-in))))
+               (t nil))))
+       result))))
 
 (table memoize-table nil nil
        :guard
@@ -26007,7 +25833,8 @@
   The reader interested in design and implementation issues considered during
   the addition of iprinting to ACL2 is invited to read the paper ``Abbreviated
   Output for Input in ACL2: An Implementation Case Study''; see the proceedings
-  of ACL2 Workshop 2009, ~url[http://www.cs.utexas.edu/users/sandip/acl2-09/]."
+  of ACL2 Workshop 2009,
+  ~url[http://www.cs.utexas.edu/users/moore/acl2/workshop-2009/]."
 
   (declare (xargs :guard ; the setters deal with illegal values
                   t))
@@ -27675,12 +27502,13 @@
                     (instructions
                      (proof-checker nil ugoal goal nil instructions
                                     wrld state))
-                    (t (prove goal
-                              (make-pspv ens
-                                         wrld
-                                         :displayed-goal ugoal
-                                         :otf-flg otf-flg)
-                              hints ens wrld ctx state)))))
+                    (t
+                     (prove goal
+                            (make-pspv ens
+                                       wrld
+                                       :displayed-goal ugoal
+                                       :otf-flg otf-flg)
+                            hints ens wrld ctx state)))))
            (value ttree)))))))))
 
 ; Essay on Merging Attachment Records

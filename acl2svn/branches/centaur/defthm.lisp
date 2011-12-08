@@ -52,67 +52,6 @@
 ; from a term are legal.  We then develop add-rewrite-rule which does
 ; the actual generation and addition of the rules to the world.
 
-; We first tear up the user's term into a bunch of conjoined
-; implications, with unprettyify.
-
-(defun unprettyify/add-hyps-to-pairs (hyps lst)
-
-; Each element of lst is a pair of the form (hypsi . concli), where hypsi
-; is a list of terms.  We append hyps to hypsi in each pair.
-
-  (cond ((null lst) nil)
-        (t (cons (cons (append hyps (caar lst)) (cdar lst))
-                 (unprettyify/add-hyps-to-pairs hyps (cdr lst))))))
-
-(defun unprettyify (term)
-
-; This function returns a list of pairs (hyps . concl) such that the
-; conjunction of all (implies (and . hyps) concl) is equivalent to
-; term.  Hyps is a list of hypotheses, implicitly conjoined.  Concl
-; does not begin with an AND (of course, its a macro, but concl
-; doesn't begin with an IF that represents an AND) or IMPLIES.
-; In addition concl doesn't begin with an open lambda.
-
-; This function is used to extract the :REWRITE rules from a term.
-; Lambdas are sort of expanded to expose the conclusion.  They are not
-; expanded in the hypotheses, or within an function symbol other than
-; the top-level IFs and IMPLIES.  But top-level lambdas (those enclosing
-; the entire term) are blown away.
-
-; Thus, if you have a proposed :REWRITE rule
-;    (implies (and p q) (let ((x a)) (equal (f x) b)))
-; it will be converted to
-;    (implies (and p q) (equal (f a) b)).
-; The rule
-;    (let ((x a)) (implies (and (p x) (q x)) (equal (f x) b))) [1]
-; will become
-;    (implies (and (p a) (q a)) (equal (f a) b)).              [2]
-; But
-;    (implies (let ((x a)) (and (p x) (q x)))                  [3]
-;             (equal (let ((x a)) (f x)) b))
-; stays untouched.  In general, once you've moved the let into a
-; hypothesis it is not seen or opened.  Once you move it into the
-; equivalence relation of the conclusion it is not seen or opened.
-; Note that this processing of lambdas can cause terms to be duplicated
-; and simplified more than once (see a in [2] compared to [3]).  
-
-  (case-match term
-              (('if t1 t2 t3)
-               (cond ((equal t2 *nil*)
-                      (append (unprettyify (dumb-negate-lit t1))
-                              (unprettyify t3)))
-                     ((equal t3 *nil*)
-                      (append (unprettyify t1)
-                              (unprettyify t2)))
-                     (t (list (cons nil term)))))
-              (('implies t1 t2)
-               (unprettyify/add-hyps-to-pairs
-                (flatten-ands-in-lit t1)
-                (unprettyify t2)))
-              ((('lambda vars body) . args)
-               (unprettyify (subcor-var vars args body)))
-              (& (list (cons nil term)))))
-
 (mutual-recursion
 
 (defun remove-lambdas (term)
@@ -7192,13 +7131,13 @@
 (defun add-type-prescription-rule (rune nume typed-term term
                                         backchain-limit-lst ens wrld quietp)
   (mv-let
-    (erp hyps concl ts vars ttree)
-    (destructure-type-prescription (base-symbol rune)
-                                   typed-term term ens wrld)
-    (declare (ignore concl ttree))  
-    (cond
-     (erp
-      (cond (quietp
+   (erp hyps concl ts vars ttree)
+   (destructure-type-prescription (base-symbol rune)
+                                  typed-term term ens wrld)
+   (declare (ignore concl ttree))  
+   (cond
+    (erp
+     (cond (quietp
 
 ; We pass in the quietp flag when attempting to add a :type-prescription rule
 ; indirectly, as under a defequiv event.  The following example causes the
@@ -7228,15 +7167,15 @@
 ;        BOOLEANP (MY-EQUAL X Y))
 ;   ACL2 !>
 
-             (prog2$ (cw "~%NOTE:  ACL2 is unable to create a proposed ~
+            (prog2$ (cw "~%NOTE:  ACL2 is unable to create a proposed ~
                           type-prescription rule from the term ~x0 for ~
                           :typed-term ~x1, so this proposed rule is not being ~
                           added.~|"
-                         term typed-term)
-                     wrld))
-            (t
-             (er hard 'add-type-prescription-rule
-                 "Unable to process this :TYPE-PRESCRIPTION rule.  A possible ~
+                        term typed-term)
+                    wrld))
+           (t
+            (er hard 'add-type-prescription-rule
+                "Unable to process this :TYPE-PRESCRIPTION rule.  A possible ~
                   explanation is that we are in the second pass of an ~
                   include-book or encapsulate, and although this rule was ~
                   legal in the first pass, it is not legal in the second pass. ~
@@ -7244,27 +7183,27 @@
                   :COMPOUND-RECOGNIZER rule local to this encapsulate or ~
                   include-book.  The usual error message for ~
                   :TYPE-PRESCRIPTION rules now follows.~|~%~@0"
-                 erp))))
-     (t
-      (putprop (ffn-symb typed-term)
-               'type-prescriptions
-               (cons (make type-prescription
-                           :rune rune
-                           :nume nume
-                           :term typed-term
-                           :hyps hyps
-                           :backchain-limit-lst
-                           (rule-backchain-limit-lst
-                            backchain-limit-lst hyps wrld :ts)
-                           :basic-ts ts
-                           :vars vars
-                           :corollary term)
-                     (getprop (ffn-symb typed-term)
-                              'type-prescriptions
-                              nil
-                              'current-acl2-world
-                              wrld))
-               wrld)))))
+                erp))))
+    (t
+     (putprop (ffn-symb typed-term)
+              'type-prescriptions
+              (cons (make type-prescription
+                          :rune rune
+                          :nume nume
+                          :term typed-term
+                          :hyps hyps
+                          :backchain-limit-lst
+                          (rule-backchain-limit-lst
+                           backchain-limit-lst hyps wrld :ts)
+                          :basic-ts ts
+                          :vars vars
+                          :corollary term)
+                    (getprop (ffn-symb typed-term)
+                             'type-prescriptions
+                             nil
+                             'current-acl2-world
+                             wrld))
+              wrld)))))
 
 (defun chk-acceptable-type-prescription-rule (name typed-term term
                                                    backchain-limit-lst
@@ -9257,6 +9196,13 @@
                             (global-val 'type-set-inverter-rules wrld))
                       wrld)))
 
+; --------------------------------------------------------------------------
+; Section: :TAU-SYSTEM rules
+
+; The code for adding :tau-system rules is in a prior file, namely
+; history-management, where it is used in install-event as part of
+; tau-auto-modep.
+
 ;---------------------------------------------------------------------------
 ; Section:  :CLAUSE-PROCESSOR Rules
 
@@ -11155,6 +11101,7 @@
                                           ;   and :SCHEME
                        :TYPE-SET-INVERTER ; :TYPE-SET (optional)
                        :CLAUSE-PROCESSOR
+                       :TAU-SYSTEM
                        )))
   (cond
    ((not (member-eq (car class) rule-tokens))
@@ -11378,6 +11325,8 @@
             name
             (cadr (assoc-keyword :TYPE-SET (cdr class)))
             term ctx ens wrld state))
+          (:TAU-SYSTEM
+           (chk-acceptable-tau-rule name term ctx wrld state))
           (otherwise
            (value (er hard ctx
                       "Unrecognized rule class token ~x0 in CHK-ACCEPTABLE-X-RULE."
@@ -11584,6 +11533,16 @@
             rune nume
             (cadr (assoc-keyword :TYPE-SET (cdr class)))
             term ens wrld))
+
+          (:TAU-SYSTEM
+
+; One might think that :tau-system rules are added here, since every other rule
+; class is handled here.  But one would be wrong!  Because of the automatic mode in 
+; the tau system and because of the facility for regenerating the tau data base,
+; :tau-system rules are added by the tau-visit code invoked most often from
+; install-event. 
+           
+           wrld)
 
 ; WARNING: If this function is changed, change info-for-x-rules (and/or
 ; subsidiaries) and find-rules-of-rune2.
@@ -12208,7 +12167,9 @@
 ; See add-x-rule for an enumeration of rule classes that generate the
 ; properties shown below.
 
-; Warning: Keep this function in sync with find-rules-of-rune2.
+; Warning: Keep this function in sync with find-rules-of-rune2.  In that
+; spirit, tau rules are completely invisible and so we return nil for
+; any property affected by tau rules.
 
 ; Info functions inspect the various rules and turn them into alists of the
 ; form:
@@ -12518,7 +12479,7 @@
 ; a new, similar, rule-class.
 
 ; There is no record object generated only by        ;;; :refinement
-
+;                                                    ;;; :tau-system
   (case x
         (recognizer-tuple                            ;;; :compound-recognizer
          (access recognizer-tuple rule :rune))
@@ -12598,7 +12559,9 @@
 ; Wart: If key is 'eliminate-destructors-rule, then val is a single rule, not a
 ; list of rules.  We handle this case specially below.
 
-; Warning: Keep this function in sync with info-for-x-rules.
+; Warning: Keep this function in sync with info-for-x-rules.  In that spirit,
+; note that tau rules never store runes and hence are completely ignored
+; here, as in info-for-x-rules.
 
   (let ((token (car rune)))
 

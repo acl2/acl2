@@ -360,7 +360,7 @@
 ; cpu-cores to be a factor of the actual cpu-core count.  In this case we are
 ; just testing, and we don't want to override 
   
-  nil)
+ t)
 
 (defun reset-parallelism-variables ()
 

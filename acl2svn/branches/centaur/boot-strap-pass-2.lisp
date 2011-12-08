@@ -839,6 +839,15 @@
 
   :cited-by theory-functions")
 
+; See the Essay on the Status of the Tau System During and After Bootstrapping
+; in axioms.lisp where we discuss choices (1.a), (1.b), (2.a) and (2.b)
+; related to the status of the tau system.  Here is where we implement
+; (2.a).
+
+(in-theory (if (cadr *tau-status-boot-strap-settings*)          ; (2.a)
+               (enable (:executable-counterpart tau-system))
+               (disable (:executable-counterpart tau-system))))
+
 (deftheory ground-zero (current-theory :here)
 
 ; WARNING: Keep this near the end of *acl2-pass-2-files* in order for

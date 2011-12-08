@@ -960,17 +960,26 @@
 
 ; in type-set-b for more details on this latter criterion.
 
+                         (mv-let
+                          (clauses1 ttree1)
+                          (tau-clause-lst clauses
+                                          (access rewrite-constant
+                                                  rcnst
+                                                  :current-enabled-structure)
+                                          wrld
+                                          nil
+                                          nil)
                          (cond
-                          ((equal clauses (list cl))
+                          ((equal clauses1 (list cl))
 
 ; In this case, preprocess-clause has made no changes to the clause.
 
                            (mv step-limit 'miss nil nil nil))
-                          ((and (consp clauses)
-                                (null (cdr clauses))
+                          ((and (consp clauses1)
+                                (null (cdr clauses1))
                                 (no-op-histp hist)
                                 (equal (prettyify-clause
-                                        (car clauses)
+                                        (car clauses1)
                                         (let*-abstractionp state)
                                         wrld)
                                        (access prove-spec-var pspv
@@ -994,15 +1003,16 @@
 
                            (mv step-limit
                                'hit
-                               clauses
+                               clauses1
                                (add-to-tag-tree
-                                'hidden-clause t ttree)
+                                'hidden-clause t
+                                (cons-tag-trees ttree1 ttree))
                                pspv))
                           (t (mv step-limit
                                  'hit
-                                 clauses
-                                 ttree
-                                 pspv)))))))))))
+                                 clauses1
+                                 (cons-tag-trees ttree1 ttree)
+                                 pspv))))))))))))
 
 ; And here is the function that reports on a successful preprocessing.
 

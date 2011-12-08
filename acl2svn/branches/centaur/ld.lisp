@@ -9076,8 +9076,8 @@
   The ~il[proof-checker] now does non-linear arithmetic when appropriate.  It
   had formerly ignored ~ilc[set-non-linearp] executed in the ACL2 command loop.
 
-  Incremental releases are now supported.  ~l[version] and
-  ~pl[set-tainted-okp].  Thanks to Hanbing Liu for discovering a flaw in our
+  Incremental releases are now supported.  ~l[version] and {obsolete after 4.3}
+  set-tainted-okp.  Thanks to Hanbing Liu for discovering a flaw in our
   original design.
 
   The pattern-matching algorithm for ~c[:]~ilc[rewrite] rules has been made
@@ -13538,7 +13538,7 @@
   to the ~il[documentation] and to adding this warning.
 
   You may now use ~ilc[set-non-linear], ~ilc[set-let*-abstraction],
-  ~ilc[set-tainted-ok], and ~ilc[set-ld-skip-proofs] in place of their versions
+  ~c[set-tainted-ok], and ~ilc[set-ld-skip-proofs] in place of their versions
   ending in ``~c[p]''.  Thanks to Jared Davis for suggesting consideration of
   such a change.  All ``~c[set-]'' utilites now have a version without the
   final ``~c[p]'' (and most do not have a version with the final ``~c[p]'').
@@ -18174,6 +18174,50 @@
 ; to introduce *current-acl2-world-key* and by using symbol-value for
 ; 'ACL2_GLOBAL_ACL2::CURRENT-ACL2-WORLD.
 
+; Here is an example showing the "security hole" mentioned in these release
+; notes, below.
+
+;   ;;;;; File foo.lisp ;;;;;
+;   (in-package "ACL2")
+;   
+;   (defun foo (x)
+;     x)
+;   
+;   ;;;;; File foo.acl2x ;;;;;
+;   ((1 . (defun foo (x) (cons x x))))
+;   
+;   ;;;;; File top.lisp ;;;;;
+;   (in-package "ACL2")
+;   
+;   (include-book "foo")
+;   
+;   (defthm foo-cons
+;     (equal (foo x)
+;            (cons x x)))
+;   
+;   ;;;;; File top2.lisp ;;;;;
+;   (in-package "ACL2")
+;   
+;   (include-book "top")
+;   
+;   (defthm ouch
+;     nil
+;     :hints (("Goal" :in-theory (disable foo-cons)
+;              :use foo-cons))
+;     :rule-classes nil)
+;   
+;   ;;;;; File cert.lsp ;;;;;
+;   
+;   (certify-book "foo" 0 t :acl2x t)
+;   (u)
+;   (certify-book "top")
+;   (u)
+;   (certify-book "foo" 0 t)
+;   (u)
+;   (certify-book "top2")
+;   
+;   ;;;;; Now evaluate (ld "cert.lsp") ;;;;;
+
   :doc
   ":Doc-Section release-notes
 
@@ -18248,6 +18292,15 @@
         (+ 3 x)))
   ~ev[]
 
+  The test for redundancy of ~ilc[defun] and ~ilc[defconst] events has been
+  improved in the case that redefinition is active.  In that case, redundancy
+  now additionally requires that the ``translated'' body is unchanged, i.e.,
+  even after expanding macro calls and replacing constants (defined by
+  ~ilc[defconst]) with their values.  Thanks for Sol Swords for requesting this
+  enhancement.  ~pl[redundant-events], in particular the ``Note About
+  Unfortunate Redundancies''.  Note that this additional requirement was
+  already in force for redundancy of ~ilc[defmacro] events.
+
   The macro ~ilc[defmacro-last] and the ~il[table] ~ilc[return-last-table] have
   been modified so that when they give special treatment to a macro ~c[mac] and
   its raw Lisp counterpart ~c[mac-raw], a call ~c[(return-last 'mac-raw ...)]
@@ -18279,6 +18332,8 @@
   ~c[:load-compiled-file :comp]).
 
   ~st[NEW FEATURES]
+
+  A new ``tau system'' provides a kind of ``type checker.''  ~l[tau-system].
 
   Users may now arrange for additional summary information to be printed at the
   end of ~il[events]; ~pl[print-summary-user].  Thanks to Harsh Raju Chamarthi
@@ -18378,6 +18433,13 @@
   particular it is now untouchable (~pl[remove-untouchable]) and is intended
   only for system hackers.  Thanks to Jared Davis for reporting a bug in the
   use of ~ilc[add-include-book-dir] after our first attempt at a fix.
+
+  (Technical change, primarily related to ~ilc[make-event]:) Plugged a security
+  hole that allowed ~il[books]' ~il[certificate]s to be out-of-date with
+  respect to ~ilc[make-event] expansions, but not recognized as such.  The
+  change is to include the so-called expansion-alist in the certificate's
+  checksum.  An example appears in a comment in the ACL2 sources, in
+  ~c[(deflabel note-4-4 ...)].
 
   While calls of many event macros had been prohibited inside executable code,
   others should have been but were not.  For example, the following was
@@ -18479,6 +18541,11 @@
   (trace$ f)
   ~ev[]
 
+  Removed support for ``tainted'' ~il[certificate]s.  One reason is that there
+  are rarely incremental releases.  A stronger reason is that for the
+  compatibility of a new release is with the previous non-incremental release,
+  it's not particularly relevant whether or not the new release is incremental.
+
   ~st[EMACS SUPPORT]
 
   ~st[EXPERIMENTAL VERSIONS]
@@ -18516,7 +18583,9 @@
   book certification (unless that ~ilc[certify-book] command was undone and
   replaced by evaluation of a corresponding ~ilc[include-book] command).  This
   has been fixed.  Thanks to David Rager for pointing out the problem by
-  sending an example.~eq[]
+  sending an example.
+
+  ~il[Gag-mode] now is initially set to ~c[:goals] instead of ~c[t].~eq[]
 
   ~/~/")
 
@@ -19216,6 +19285,7 @@
              (check-sum-cert (and cert-obj
                                   (access cert-obj cert-obj
                                           :cmds))
+                             expansion-alist
                              ev-lst)))
            (cond
             ((not (integerp ev-lst-chk-sum))
