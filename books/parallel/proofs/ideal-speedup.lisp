@@ -4,7 +4,7 @@
 
 ; make this larger if you want the proofs to take longer
 
-  1)
+  50)
 
 ; call (set-waterfall-parallelism :full) to execute these proofs in parallel
 
