@@ -3953,6 +3953,7 @@ read-byte.lisp
 read-char.lisp
 read-file-bytes.lisp
 read-file-characters.lisp
+read-file-lines.lisp
 read-file-objects.lisp
 read-ints.lisp
 read-object.lisp
