@@ -61,7 +61,8 @@
   This documentation topic relates to an experimental extension of ACL2,
   ACL2(p), created initially by David L. Rager.  ~l[compiling-acl2p] for how to
   build an executable image that supports parallel execution.  Also see
-  ~c[books/parallel] for examples.
+  ~c[books/parallel] for examples.  For a completely different sort of
+  parallelism, at the system level, ~pl[provisional-certification].
 
   IMPORTANT NOTE.  We hope and expect that every evaluation result is correctly
   computed by ACL2(p), and that every formula proved using ACL2(p) is a theorem

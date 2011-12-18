@@ -8505,6 +8505,254 @@
                            (t state))
                      (value lst))))))
 
+; With er defined, we may now define chk-ld-skip-proofsp.
+
+(defconst *ld-special-error*
+  "~x1 is an illegal value for the state global variable ~x0.  See ~
+   :DOC ~x0.")
+
+(defun chk-ld-skip-proofsp (val ctx state)
+  (declare (xargs :mode :program))
+  (cond ((member-eq val
+                    '(t nil include-book
+                        initialize-acl2 include-book-with-locals))
+         (value nil))
+        (t (er soft ctx
+               *ld-special-error*
+               'ld-skip-proofsp val))))
+
+(defun set-ld-skip-proofsp (val state)
+  (declare (xargs :mode :program))
+  (er-progn
+   (chk-ld-skip-proofsp val 'set-ld-skip-proofsp state)
+   (pprogn
+    (f-put-global 'ld-skip-proofsp val state)
+    (value val))))
+
+(defmacro set-ld-skip-proofs (val state)
+
+; Usually the names of our set utilities do not end in "p".  We leave
+; set-ld-skip-proofsp for backward compatibility, but we add this version
+; for consistency.
+
+  (declare (ignore state)) ; avoid a stobj problem
+  `(set-ld-skip-proofsp ,val state))
+
+(defun set-write-acl2x (val state)
+
+  ":Doc-Section switches-parameters-and-modes
+
+  cause ~ilc[certify-book] to write out a ~c[.acl2x] file~/
+
+  ~bv[]
+  Example Forms:
+  (set-write-acl2x nil state)
+  (set-write-acl2x t state)
+  (set-write-acl2x '(nil) state) ; same as just above, but allow inclusion of
+                                 ; uncertified books during certify-book
+  (set-write-acl2x '(t) state)
+  (set-write-acl2x '(include-book-with-locals) state)
+  ~ev[]
+
+  ~bv[]
+  General Form:
+  (set-write-acl2x val state)
+  ~ev[]
+  where ~c[val] evaluates to ~c[t], ~c[nil], or a one-element list whose
+  element is a legal value for the global ~c['ld-skip-proofsp];
+  ~pl[ld-skip-proofsp].  The value returned is an error triple, which in the
+  non-error case is ~c[(mv nil v state)], where ~c[v] is the value of ~c[val]
+  and ~c[state] is the result of updating the input ~il[state] by assigning
+  state global ~c['write-acl2x] the value ~c[v].
+
+  The command ~c[(set-write-acl2x val state)] assigns the value of ~c[val] to
+  the ~il[state] global variable ~c['write-acl2x], affecting whether or not
+  ~ilc[certify-book] writes out a file with extension ~c[acl2x], called a
+  ``~c[.acl2x] file'' and pronounced ``dot-acl2x file''.  Such a file is read
+  or written by ~ilc[certify-book] when it is supplied with keyword argument
+  ~c[:acl2x t].  By default, such a call of ~c[certify-book] reads a ~c[.acl2x]
+  file; but if the value of state global variable ~c['write-acl2x] is not
+  ~c[nil], then ~c[certify-book] writes a ~c[.acl2x] file.  Consider for
+  example ~c[(certify-book \"foo\" 0 nil :acl2x t)].  By default, this command
+  reads file ~c[foo.acl2x], which supplies replacements for some forms in
+  ~c[foo.lisp], as described later below.  But if the value of state global
+  ~c['write-acl2x] is not ~c[nil], then instead, this ~c[certify-book] command
+  writes such a file ~c[foo.acl2x].
+
+  Before we discuss the function of ~c[.acl2x] files, we first explain more
+  about how a non-~c[nil] value of ~il[state] global ~c['write-acl2x] affects
+  the behavior of a command ~c[(certify-book ... :acl2x t ...)].  A significant
+  effect on the behavior is that after processing events in the given book,
+  ACL2 writes out a ~c[.acl2x] file and then returns, skipping the other
+  subsequent actions typically performed by ~ilc[certify-book]: a
+  ~il[local-incompatibility] check, writing of a ~il[certificate] file, and
+  possibly ~il[compilation].  Another effect is that proofs may be skipped when
+  processing ~il[events] assuming that the the ~c[certify-book] command does
+  not explicitly specify ~c[:skip-proofs-okp nil], as we now explain.  A
+  non-~c[nil] value of ~c['write-acl2x] should either be ~c[t] or a one-element
+  list ~c[(x)], where ~c[x] is a legal value for the ~il[state] global
+  ~c['ld-skip-proofsp] (~pl[ld-skip-proofsp]).  In both cases, ~c[certify-book]
+  will process ~il[events] to write out a ~c[.acl2x] file as described above.
+  But in the latter (list) case, event processing will take place according to
+  the value of ~c[x]: in particular, proofs will be skipped when ~c[x] is not
+  ~c[nil], and if moreover ~c[x] is the symbol ~c[include-book-with-locals],
+  then only one pass will be made through each ~ilc[encapsulate] form.  A third
+  effect of a non-~c[nil] value of ~c['write-acl2x], which is restricted to the
+  list case, is that ~il[include-book] events encountered during event
+  processing are allowed to succeed on uncertified books, something that is
+  prohibited during most calls of ~ilc[certify-book].
+
+  One use of ~c[set-write-acl2x] is to support the provisional certification
+  process; ~pl[provisional-certification] for a discussion of how that works.
+  In particular, that process typically evaluates the form
+  ~c[(set-write-acl2x '(include-book-with-locals) state)] which, as described
+  above, permits inclusion of uncertified books during processing of a call of
+  ~ilc[certify-book].  The rest of this documentation topic takes a perspective
+  primarily based on the other main use of ~c[set-write-acl2x], which is to
+  create certified books that do not depend on trust tags (~pl[defttag]), in
+  the case that trust tags are used only to perform ~ilc[make-event]
+  expansions.  However, much of what is said below is relevant to both uses.
+
+  When ~ilc[certify-book] is used to write out a ~c[.acl2x] file, there is
+  typically a subsequent run of ~ilc[certify-book] that reads that file.
+  Consider how this can work with a book ~c[foo.lisp].  In the first call of
+  ~c[certify-book], a file ~c[foo.acl2x] is written that contains all
+  ~ilc[make-event] expansions, but ~c[foo.cert] is not written.  In the second
+  call of ~c[certify-book], no ~ilc[make-event] expansion typically takes
+  place, because ~c[foo.acl2x] supplies the expansions.  The command
+  ~c[(set-write-acl2x t state)] should be evaluated before the first
+  certification (though another legal non-~c[nil] value may be used in place of
+  ~c[t]), setting the value of ~ilc[state] global ~c['write-acl2x] to ~c[t], to
+  enable writing of ~c[foo.acl2x]; and the command
+  ~c[(set-write-acl2x nil state)] may be evaluated before the second
+  run (though this is not necessary in a fresh ACL2 session) in order to
+  complete the certification (writing out ~c[foo.cert]) using ~c[foo.acl2x] to
+  supply the ~ilc[make-event] expansions.
+
+  When ~ilc[Certify-book] is supplied with keyword argument ~c[:acl2x t] it
+  will read or write the book's ~c[.acl2x] file; when supplied with
+ ~c[:acl2x nil], it will not read or write that ~c[.acl2x] file.  The value of
+  ~c[:acl2x] is ~c[nil] by default (unless environment variable ~c[ACL2_PCERT]
+  has a non-empty value; ~pl[provisional-certification]).  The interaction of
+  ~ilc[certify-book] with the corresponding ~c[.acl2x] file is as follows.
+  ~bf[]
+  o If ~c[:acl2x] is ~c[t], then:
+    - If ~c[set-write-acl2x] has been (most recently) called with a
+      value of ~c[t] for its first argument, then ACL2 writes the
+      corresponding ~c[.acl2x] file. 
+    - If ~c[set-write-acl2x] has been (most recently) called with a
+      value of ~c[nil] for its first argument, or not called at all,
+      then ACL2 insists on a corresponding ~c[.acl2x] file that is at
+      least as recent as the corresponding ~c[.lisp] file, causing an
+      error otherwise.
+  o If ~c[:acl2x] is ~c[nil], then:
+    - If ~c[set-write-acl2x] has been (most recently) called with a
+      value ~c[t] for its first argument, or if argument ~c[:ttagsx]
+      is supplied, then an error occurs.
+    - If the ~c[.acl2x] file exists, then regardless of whether or how
+      ~c[set-write-acl2x] has been called, ACL2 ignores the ~c[.acl2x]
+      file but issues a warning about it.
+  ~ef[]
+
+  Suppose you use the two-runs approach: first write a ~c[.acl2x] file, then
+  certify using (reading) that ~c[.acl2x] file.  Then with scripts such as
+  makefiles, then you may wish to provide a single ~ilc[certify-book] command
+  to use for both runs.  For that purpose, ~ilc[certify-book] supports the
+  keyword argument ~c[:ttagsx].  If this argument is supplied and
+  ~c[write-acl2x] is true, then this argument is treated as the ~c[:ttags]
+  argument, overriding a ~c[:ttags] argument if present.  That is, for the two
+  runs, ~c[:ttagsx] may be used to specify the trust tags used in the first
+  certification while ~c[:ttags] specifies the trust tags, if any (else
+  ~c[:ttags] may be omitted), used in the second certification.
+
+  The built-in ACL2 Makefile support automatically generates suitable
+  dependencies if you create a ~c[.acl2] file with a ~ilc[certify-book] call
+  matching the following regular expression, case-independent:
+  ~bv[]
+    (certify-book[^;]*:acl2x t
+  ~ev[]
+  ~l[book-makefiles], and for an example ~c[.acl2] file with a ~c[certify-book]
+  call matching the above pattern, see distributed file
+  ~c[books/make-event/double-cert-test-1.acl2].
+
+  Note that ~ilc[include-book] is generally not affected by
+  ~c[set-write-acl2x], other than through the indirect effect on
+  ~ilc[certify-book].  (The one exception is including a book during an Expand
+  or Pcertify step of provisional certification;
+  ~pl[provisional-certification].)  More precisely: All expansions are stored
+  in the ~il[certificate] file, so when ~ilc[include-book] is applied to a
+  certified book, the ~c[.acl2x] file is not consulted.~/
+
+  An example of how to put this all together may be found in distributed book
+  ~c[books/make-event/double-cert-test-1.lisp].  There, we see the following
+  form.
+  ~bv[]
+  (make-event
+   (progn (defttag :my-ttag)
+          (progn! (let ((val (sys-call \"pwd\" nil)))
+                    (value (list 'defun 'foo () val))))))
+  ~ev[]
+  Imagine that in place of the binding computed using ~ilc[sys-call], which by
+  the way requires a trust tag, is some computation of your choice (such as
+  reading forms from a file) that is used to construct your own event,
+  in place of the ~ilc[defun] event constructed above.  The ~c[Makefile] in
+  that directory contains the following added dependency, so that file
+  ~c[double-cert-test-1.acl2x] will be created:
+  ~bv[]
+  double-cert-test-1.cert: double-cert-test-1.acl2x
+  ~ev[]
+  There is also the file ~c[double-cert-test-1.acl2] in that directory, which
+  contains a single form as follows.
+  ~bv[]
+  (certify-book \"double-cert-test-1\" ? t :ttagsx :all :ttags nil)
+  ~ev[]
+  Thus, a call of ~c[make] first creates file ~c[double-cert-test-1.acl2x],
+  which uses the above ~c[:ttagsx] argument in order to support the use of
+  ~ilc[defttag] during ~ilc[make-event] expansion.  Then, ~c[make] goes on to
+  cause a second certification in which no trust tags are involved.  As a
+  result, the parent book ~c[double-cert-test.lisp] is ultimately certified
+  without requiring any trust tags.
+
+  The discussion above is probably sufficient for most users of the two-run
+  approach it describes.  We conclude with further details for those who want
+  more information.  Those who wish to see a yet lower-level explanation of how
+  all this works are invited to read the comment in the ACL2 source code
+  entitled ``Essay on .acl2x Files (Double Certification).
+
+  Consider the ~c[.acl2x] file produced by the first run as described above.
+  It contains a single expression, which is an association list whose keys are
+  all positive integers, which occur in increasing order.  When the ~c[.acl2x]
+  file is present and at least as recent as the corresponding ~c[.lisp] file,
+  then for a subsequent ~ilc[certify-book] with argument ~c[:acl2x t] and the
+  (default) value of ~c[nil] for ~il[state] global ~c['write-acl2x], that
+  association list will be applied to the top-level events in the book, as
+  follows.  Suppose the entry ~c[(n . ev)] belongs to the association list in
+  the ~c[.acl2x] file.  Then ~c[n] is a positive integer, and the ~c[n]th
+  top-level event in the book ~-[] where the ~c[0]th event is the initial
+  ~ilc[in-package] form ~-[] will be replaced by ~c[ev].  In practice, ~c[ev]
+  is the ~ilc[make-event] expansion created during certification for the
+  ~c[nth] top-level event in the book; and this will always be the case if the
+  ~c[.acl2x] file is created by ~ilc[certify-book] after execution of the form
+  ~c[(set-write-acl2x t state)].  However, you are welcome to associate indices
+  manually with any ~il[events] you wish into the alist stored in the
+  ~c[.acl2x] file.
+
+  Note: Also see the distributed book ~c[make-event/acl2x-help.lisp] for a
+  useful utility that can be used to skip proofs during the writing of
+  ~c[.acl2x] files.~/"
+
+  (declare (xargs :guard (state-p state)))
+  (er-progn
+   (cond ((member-eq val '(t nil)) (value nil))
+         ((and (consp val) (null (cdr val)))
+          (chk-ld-skip-proofsp (car val) 'set-write-acl2x state))
+         (t (er soft 'set-write-acl2x
+                "Illegal value for set-write-acl2x, ~x0.  See :DOC ~
+                 set-write-acl2x."
+                val)))
+   (pprogn (f-put-global 'write-acl2x val state)
+           (value val))))
+
 ;                             CHECK SUMS
 
 ; We begin by developing code to compute checksums for files, culminating in

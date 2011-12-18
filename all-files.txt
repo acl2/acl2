@@ -3624,11 +3624,21 @@ books/system:
 Makefile
 Readme.lsp
 hl-addr-combine.lisp
+pcert
 pseudo-good-worldp.lisp
 too-many-ifs.lisp
 top.lisp
 worldp-check.acl2
 worldp-check.lisp
+
+books/system/pcert:
+Makefile
+cert.acl2
+mid.acl2
+mid.lisp
+sub.lisp
+top.acl2
+top.lisp
 
 books/taspi:
 code

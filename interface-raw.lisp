@@ -4228,16 +4228,17 @@
 ; We are processing include-book-raw underneath include-book-fn (hence
 ; presumably not in raw mode).  File is an ACL2 full-book-name and
 ; load-compiled-file is non-nil.  We attempt to load the corresponding compiled
-; or perhaps expansion file if not out of date with respect to the book's .cert
-; file.  Normally, we return COMPLETE if such a suitable compiled file or
-; expansion file exists and is loaded to completion, but if file is the book
-; being processed by a surrounding include-book-fn and compilation is indicated
-; because load-compiled-file is :comp and the expansion file is loaded (not the
-; compiled file), then we return TO-BE-COMPILED in that case.  Otherwise we
-; return INCOMPLETE, that is, either no load is attempted for the compiled or
-; expansion file (because they don't exist or are out of date), or else such a
-; load but is aborted partway through, which can happen because of an
-; incomplete load of a subsidiary include-book's compiled or expansion file.
+; or perhaps expansion file if not out of date with respect to the book's
+; .pcert or .cert file.  Normally, we return COMPLETE if such a suitable
+; compiled file or expansion file exists and is loaded to completion, but if
+; file is the book being processed by a surrounding include-book-fn and
+; compilation is indicated because load-compiled-file is :comp and the
+; expansion file is loaded (not the compiled file), then we return
+; TO-BE-COMPILED in that case.  Otherwise we return INCOMPLETE, that is, either
+; no load is attempted for the compiled or expansion file (because they don't
+; exist or are out of date), or else such a load but is aborted partway
+; through, which can happen because of an incomplete load of a subsidiary
+; include-book's compiled or expansion file.
 
 ; As suggested above, we may allow the corresponding expansion file to take the
 ; place of a missing or out-of-date compiled file.  However, we do not allow
@@ -4246,114 +4247,154 @@
 
   (assert load-compiled-file)
   (let* ((os-file (pathname-unix-to-os file state))
-         (cfile (convert-book-name-to-cert-name os-file))
-         (cfile-exists (probe-file cfile))
-         (cfile-date (and cfile-exists (file-write-date cfile)))
-         (ofile (convert-book-name-to-compiled-name os-file))
-         (ofile-exists (probe-file ofile))
-         (ofile-date (and ofile-exists (file-write-date ofile)))
-         (ofile-p (and ofile-date cfile-date (>= ofile-date cfile-date)))
-         (efile (and (not (eq load-compiled-file t))
-                     (expansion-filename file t state)))
-         (efile-exists (and efile (probe-file efile)))
-         (file-is-older-str
-          "the file-write-date of ~x0 is less than that of ~x1"))
-    (cond
-     ((not cfile-exists)
-      (missing-compiled-book ctx
-                             file
-                             "that book is not certified"
-                             load-compiled-file
-                             state))
-     ((and (not ofile-exists)
-           (not efile-exists))
-      (missing-compiled-book ctx
-                             file
-                             "the compiled file does not exist"
-                             load-compiled-file
-                             state))
-     ((not cfile-date)
-      (missing-compiled-book
-       ctx
-       file
-       (msg "~x0 is ~x1 (which is odd since file ~x2 exists)"
-            `(file-write-date ,cfile)
-            nil
-            cfile)
-       load-compiled-file
-       state))
-     ((not (or ofile-p
-               (let ((efile-date (and efile-exists (file-write-date efile))))
-                 (and efile-date (>= efile-date cfile-date)))))
-      (cond
-       (ofile-exists
-        (missing-compiled-book
-         ctx
-         file
-         (msg file-is-older-str ofile cfile)
-         load-compiled-file
-         state))
-       (t ; hence efile-exists
-        (missing-compiled-book
-         ctx
-         file
-         (msg "the compiled file does not exist and ~@0"
-              (msg file-is-older-str efile cfile))
-         load-compiled-file
-         state))))
-     ((and (not ofile-p) ; hence efile is suitable to load, except:
-           (rassoc-eq t *load-compiled-stack*))
-      (missing-compiled-book
-       ctx
-       file
-       (if ofile-exists
-           "that compiled file does not exist"
-         "that compiled file is out-of-date")
-       load-compiled-file
-       state))
-     (t                       ; either ofile or efile is suitable for loading
-      (let ((to-be-compiled-p ; true at top level of include-book-fn wit :comp
-             (and (not ofile-p)
-                  (null *load-compiled-stack*)
-                  (eq load-compiled-file :comp)))
-            (status 'incomplete))
-        (when (and (not ofile-p)
-                   (not to-be-compiled-p))
+         (create-pcert-p (eq (cert-op state) :create-pcert))
+         (os-file-date (and create-pcert-p ; optimization
+                            (file-write-date os-file))))
+    (mv-let
+     (cfile cfile-date)
+
+; As discussed in :DOC provisional-certification, it suffices for loading a
+; compiled file that the .pcert file exists, even if the .cert file does not.
+; If we convert the .pcert file to the .cert file, the compiled file will be
+; more recent than the .pcert file but not more recent than the .cert file, so
+; we use the file-write-date of the .pcert file, if non-nil, for comparison
+; with the file-write-date of the compiled file.
+
+     (let* ((pfile (convert-book-name-to-cert-name os-file t))
+            (pfile-date (and (probe-file pfile)
+                             (file-write-date pfile))))
+       (cond (pfile-date
+              (mv pfile pfile-date))
+             (t ; else use .cert file instead of .pcert file
+              (let* ((cfile (convert-book-name-to-cert-name os-file nil))
+                     (cfile-date (and cfile (file-write-date cfile))))
+                (cond (cfile-date (mv cfile cfile-date))
+                      (t (mv nil nil)))))))
+     (let* ((ofile (convert-book-name-to-compiled-name os-file))
+            (ofile-exists (probe-file ofile))
+            (ofile-date (and ofile-exists (file-write-date ofile)))
+            (ofile-p (and ofile-date
+                          cfile-date
+                          (>= ofile-date cfile-date)
+                          (or (not create-pcert-p)
+
+; As discussed in :DOC provisional-certification, we require the compiled file
+; to be no older than the given book when Pcertifying.
+
+                              (and os-file-date
+                                   (>= ofile-date os-file-date)))))
+            (efile (and (not (eq load-compiled-file t))
+                        (expansion-filename file t state)))
+            (efile-exists (and efile (probe-file efile)))
+            (efile-date (and efile-exists
+                             (file-write-date efile)))
+            (file-is-older-str
+             "the file-write-date of ~x0 is less than that of ~x1"))
+       (cond
+        ((not cfile)
+         (missing-compiled-book ctx
+                                file
+                                "that book is not certified" ; or pcertified
+                                load-compiled-file
+                                state))
+        ((and (not ofile-exists) (not efile-exists))
+         (missing-compiled-book ctx
+                                file
+                                "the compiled file does not exist"
+                                load-compiled-file
+                                state))
+        ((not cfile-date)
+         (missing-compiled-book
+          ctx
+          file
+          (msg "~x0 is ~x1 (which is odd since file ~x2 exists)"
+               `(file-write-date ,cfile)
+               nil
+               cfile)
+          load-compiled-file
+          state))
+        ((not (or ofile-p
+                  (and efile-date
+                       (>= efile-date cfile-date)
+                       (or (not create-pcert-p)
+                           (and os-file-date
+                                (>= efile-date os-file-date))))))
+         (cond
+          (ofile-exists
+           (missing-compiled-book
+            ctx
+            file
+            (cond ((< ofile-date cfile-date)
+                   (msg file-is-older-str ofile cfile))
+                  (t (msg file-is-older-str ofile file)))
+            load-compiled-file
+            state))
+          (t ; hence efile-exists
+           (missing-compiled-book
+            ctx
+            file
+            (msg "the compiled file does not exist and ~@0"
+                 (cond ((< efile-date cfile-date)
+                        (msg file-is-older-str efile cfile))
+                       (t (msg file-is-older-str efile file))))
+            load-compiled-file
+            state))))
+        ((and (not ofile-p) ; hence efile is suitable to load, except:
+              (rassoc-eq t *load-compiled-stack*))
+         (missing-compiled-book
+          ctx
+          file
+          (if ofile-exists
+              "that compiled file does not exist"
+            "that compiled file is out-of-date")
+          load-compiled-file
+          state))
+        (t ; either ofile or efile is suitable for loading
+         (let ((to-be-compiled-p ; true at top of include-book-fn with :comp
+                (and (not ofile-p)
+                     (null *load-compiled-stack*)
+                     (eq load-compiled-file :comp)))
+               (status 'incomplete))
+           (when (and (not ofile-p)
+                      (not to-be-compiled-p))
 
 ; Hence efile is suitable and we are not in the special case of compiling it on
 ; behalf of include-book-fn.  Note that for the case of compiling on behalf of
 ; include-book-fn, either that compilation will succeed or there will be an
 ; error -- either way, there is no need to warn here.
 
-          (warning$ ctx "Compiled file"
-                    "Loading expansion file ~x0 in place of compiled file ~
-                     ~x1, because ~@2."
-                    efile ofile
-                    (cond (ofile-exists
-                           (msg file-is-older-str ofile cfile))
-                          (t
-                           (msg "the compiled file is missing")))))
-        (er-let* ((val
+             (warning$ ctx "Compiled file"
+                       "Loading expansion file ~x0 in place of compiled file ~
+                        ~x1, because ~@2."
+                       efile ofile
+                       (cond (ofile-exists
+                              (cond ((< ofile-date cfile-date)
+                                     (msg file-is-older-str ofile cfile))
+                                    (t (msg file-is-older-str ofile file))))
+                             (t
+                              (msg "the compiled file is missing")))))
+           (er-let* ((val
 
 ; Silly binding works around bogus compiler warning in Lispworks 6.0.1, which
 ; probably will be fixed in subsequent Lispworks releases.
 
-                   (catch 'missing-compiled-book
-                     (state-global-let*
-                      ((raw-include-book-dir-alist nil)
-                       (connected-book-directory directory-name))
-                      (let ((*load-compiled-stack* (acons file
-                                                          load-compiled-file
-                                                          *load-compiled-stack*)))
-                        (cond (ofile-p (load-compiled ofile t))
-                              (t (with-reckless-read (load efile))))
-                        (value (setq status (if to-be-compiled-p
-                                                'to-be-compiled
-                                              'complete))))))))
-          (value val))
-        (hcomp-transfer-to-hash-tables)
-        (assert$ (member-eq status '(to-be-compiled complete incomplete))
-                 status))))))
+                      (catch 'missing-compiled-book
+                        (state-global-let*
+                         ((raw-include-book-dir-alist nil)
+                          (connected-book-directory directory-name))
+                         (let ((*load-compiled-stack*
+                                (acons file
+                                       load-compiled-file
+                                       *load-compiled-stack*)))
+                           (cond (ofile-p (load-compiled ofile t))
+                                 (t (with-reckless-read (load efile))))
+                           (value (setq status (if to-be-compiled-p
+                                                   'to-be-compiled
+                                                 'complete))))))))
+             (value val))
+           (hcomp-transfer-to-hash-tables)
+           (assert$ (member-eq status '(to-be-compiled complete incomplete))
+                    status))))))))
 
 (defun include-book-raw (book-name directory-name load-compiled-file dir ctx
                                    state)
@@ -6458,6 +6499,7 @@
            defvar
            eval ; presumably no ACL2 fn or macro underneath
            eval-when ; presumably no ACL2 fn or macro underneath
+           f-put-global ; in axioms.lisp, before def. of set-ld-skip-proofsp
            in-package
            in-theory
            initialize-state-globals
@@ -6467,7 +6509,6 @@
            make-waterfall-parallelism-constants
            make-waterfall-printing-constants
            set-invisible-fns-table
-           set-ld-skip-proofsp
            set-tau-auto-mode
            set-waterfall-parallelism
            table
@@ -8070,7 +8111,8 @@ Missing functions:
              (value nil))
             (t
              (let* ((cfile (convert-book-name-to-cert-name
-                            (pathname-unix-to-os full-book-name state)))
+                            (pathname-unix-to-os full-book-name state)
+                            nil))
                     (cfile-write-date (and (probe-file cfile)
                                            (file-write-date cfile)))
                     (efile-write-date (and (probe-file efile)

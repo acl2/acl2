@@ -1735,7 +1735,7 @@
   (chk-package-reincarnation-import-restrictions2 name proposed-imports)
   t)
 
-(defun convert-book-name-to-cert-name (x)
+(defun convert-book-name-to-cert-name (x pcert-p)
 
 ; X is assumed to satisfy chk-book-name.  We generate the corresponding
 ; certification file name.
@@ -1744,7 +1744,9 @@
 ; the dot.
 
   (coerce (append (reverse (cddddr (reverse (coerce x 'list))))
-                  '(#\c #\e #\r #\t))
+                  (if pcert-p
+                      '(#\p #\c #\e #\r #\t)
+                    '(#\c #\e #\r #\t)))
           'string))
 
 (defun unrelativize-book-path (lst dir)
@@ -1786,7 +1788,7 @@
                               (car old-not-new))))
      (cons #\4 (if new-not-old "current" "previous"))
      (cons #\5 (zero-one-or-more book-path))
-     (cons #\6 (convert-book-name-to-cert-name (car book-path)))
+     (cons #\6 (convert-book-name-to-cert-name (car book-path) nil))
      (cons #\7 (car book-path))
      (cons #\8 (reverse book-path))
      (cons #\9 (if defpkg-book-path
@@ -5478,6 +5480,13 @@
                  x))
         (t form)))
 
+(defun make-record-expansion (event expansion)
+  (case-match event
+    (('record-expansion a &) ; & is a partial expansion
+     (list 'record-expansion a expansion))
+    (&
+     (list 'record-expansion event expansion))))
+
 (defun eval-event-lst (index expansion-alist ev-lst quietp environment
                              in-local-flg last-val other-control kpa
                              ctx channel state)
@@ -5645,15 +5654,15 @@
                     (cond
                      (expansion0
                       (acons index
-                             (list 'record-expansion
-                                   (car ev-lst)
-                                   (elide-locals
-                                    (mv-let (wrappers base-form)
-                                            (destructure-expansion form)
-                                            (declare (ignore base-form))
-                                            (rebuild-expansion wrappers
-                                                               expansion0))
-                                    environment))
+                             (make-record-expansion
+                              (car ev-lst)
+                              (elide-locals
+                               (mv-let (wrappers base-form)
+                                       (destructure-expansion form)
+                                       (declare (ignore base-form))
+                                       (rebuild-expansion wrappers
+                                                          expansion0))
+                               environment))
                              expansion-alist))
                      (t expansion-alist))
                     (cdr ev-lst) quietp
@@ -6580,7 +6589,8 @@
                          (t state))
                    (eval-event-lst index nil
                                    ev-lst
-                                   (ld-skip-proofsp state)
+                                   (and (ld-skip-proofsp state)
+                                        (not (eq caller 'certify-book)))
                                    (let* ((x (if (in-encapsulatep
                                                   new-embedded-event-lst nil)
                                                  '(encapsulate)
@@ -6722,6 +6732,12 @@
              (cond (new-name
                     (cons new-name (exported-function-names (cdr new-trips))))
                    (t (exported-function-names (cdr new-trips))))))))
+
+(defun get-unnormalized-bodies (names wrld)
+  (cond ((endp names) nil)
+        (t (cons (getprop (car names) 'unnormalized-body nil
+                          'current-acl2-world wrld)
+                 (get-unnormalized-bodies (cdr names) wrld)))))
 
 (defun get-subversives (fns wrld)
   (cond ((endp fns) nil)
@@ -8482,7 +8498,10 @@
                  (not (eq (ld-skip-proofsp state) 'initialize-acl2)))
 
 ; Ld-skip-proofsp is either t or nil.  But whatever it is, we will be
-; processing the LOCAL events.
+; processing the LOCAL events.  We are no longer sure why we do so when
+; ld-skip-proofsp is t, but a reasonable theory is that in such a case, the
+; user's intention is to do everything that one does other than actually
+; calling prove -- so in particular, we do both passes of an encapsulate.
 
             (er-let*
              ((trip (chk-acceptable-encapsulate1 signatures ev-lst
@@ -8864,6 +8883,22 @@
        :guard
        (eq key 'empty-event-key))
 
+(defun cert-op (state)
+
+; Possible return values:
+
+; - t              ; ordinary certification
+; - :create-pcert  ; pcertification
+; - :convert-pcert ; convert .pcert file to .cert file
+; - :write-acl2x   ; write .acl2x file, not allowing uncertified sub-books
+; - :write-acl2xu  ; write .acl2x file, allowing uncertified sub-books
+; - nil            ; none of the above
+
+  (let ((certify-book-info (f-get-global 'certify-book-info state)))
+    (and certify-book-info
+         (or (access certify-book-info certify-book-info :cert-op)
+             t))))
+
 (defun make-event-fn (form check-expansion on-behalf-of whole-form state)
   (let ((ctx (make-event-ctx whole-form))
         #-acl2-loop-only
@@ -8871,6 +8906,14 @@
     (with-ctx-summarized
      ctx
      (cond
+      ((and (member-eq (cert-op state) '(:create-pcert :convert-pcert))
+            (not (f-get-global 'in-local-flg state)))
+       (er soft ctx
+           "Make-event expansion is illegal during provisional certification ~
+            and convert-pcert operations.  Expansion for make-event of the ~
+            form ~x0 is thus not allowed.  The use of a .acl2x file might ~
+            well solve the problem.  See :DOC provisional-certification"
+           form))
       ((not (or (eq check-expansion nil)
                 (eq check-expansion t)
                 (consp check-expansion)))
@@ -10564,7 +10607,7 @@
         (t (collect-uncertified-books (cdr alist)))))
 
 (defun certificate-filep (file1 state)
-  (let ((file2 (convert-book-name-to-cert-name file1)))
+  (let ((file2 (convert-book-name-to-cert-name file1 nil)))
     (mv-let
      (ch state)
      (open-input-channel file2 :object state)
@@ -10734,7 +10777,7 @@
   (declare (ignore cdr-reqd-entry))
   (mv-let (erp pair state)
           (post-alist-and-checksum-from-cert-file
-           (convert-book-name-to-cert-name full-book-name)
+           (convert-book-name-to-cert-name full-book-name nil)
            state)
           (mv (let ((cert-maybe-unchanged-p
                      (cond (erp ; certificate was deleted
@@ -10913,7 +10956,7 @@
                           state)
                         (value val)))))))))
 
-(defun chk-raise-portcullis2 (file1 file2 ch ctx state ans)
+(defun chk-raise-portcullis2 (file1 file2 ch convert-pcert-p ctx state ans)
 
 ; Keep this in sync with get-cmds-from-portcullis1.
 
@@ -10930,13 +10973,19 @@
            ((infixp nil))
            (read-object ch state))
           (cond
-           (eofp (er soft ctx *ill-formed-certificate-msg* file1 file2))
-           ((eq form :END-PORTCULLIS-CMDS)
+           (eofp
+            (cond (convert-pcert-p (value (reverse ans)))
+                  (t (er soft ctx *ill-formed-certificate-msg* file1 file2))))
+           ((and (eq form :END-PORTCULLIS-CMDS)
+                 (not convert-pcert-p))
             (value (reverse ans)))
            (t (mv-let
                (error-flg trans-ans state)
                (trans-eval form
-                           (msg "the portcullis for ~x0"
+                           (msg (if convert-pcert-p
+                                    "the portcullis for ~x0 from provisional ~
+                                     certification"
+                                  "the portcullis for ~x0")
                                 file1)
                            state
                            t)
@@ -10949,26 +10998,44 @@
                  (cond
                   ((or error-flg erp-prime) ;erp'
                    (pprogn
-                    (warning$ ctx "Portcullis"
-                              "The error reported above was caused ~
-                               while trying to raise the portcullis ~
-                               for the book ~x0.  In particular, we ~
-                               were trying to execute ~x1 when the ~
-                               error occurred.  Because we cannot ~
-                               raise the portcullis, we cannot ~
-                               include this book in this world.  ~
-                               There are two standard responses to ~
-                               this situation.  Either change the ~
-                               current logical world so that this ~
-                               error does not occur, e.g., redefine ~
-                               one of your functions, or recertify ~
-                               the book in a different environment."
-                              file1 form)
+                    (cond
+                     (convert-pcert-p
+                      (warning$ ctx "Portcullis"
+                                "The error reported above was caused while ~
+                                 trying to execute commands that were present ~
+                                 in the world that was present when the book ~
+                                 ~x0 was provisionally certified.  In ~
+                                 particular, we were trying to execute ~x1 ~
+                                 when the error occurred.  Because of this ~
+                                 error, we cannot complete conversion from ~
+                                 provisional certification to certification ~
+                                 for this book, in the current world.  You ~
+                                 can probably eliminate this error by doing ~
+                                 the conversion in the boot-strap world, or ~
+                                 in the same world that was present when the ~
+                                 book was provisionally certified."
+                                file1 form))
+                     (t
+                      (warning$ ctx "Portcullis"
+                                "The error reported above was caused while ~
+                                 trying to raise the portcullis for the book ~
+                                 ~x0.  In particular, we were trying to ~
+                                 execute ~x1 when the error occurred.  ~
+                                 Because we cannot raise the portcullis, we ~
+                                 cannot include this book in this world.  ~
+                                 There are two standard responses to this ~
+                                 situation.  Either change the current ~
+                                 logical world so that this error does not ~
+                                 occur, e.g., redefine one of your functions, ~
+                                 or recertify the book in a different ~
+                                 environment."
+                                file1 form)))
                     (mv t nil state)))
-                  (t (chk-raise-portcullis2 file1 file2 ch ctx state
+                  (t (chk-raise-portcullis2 file1 file2 ch convert-pcert-p
+                                            ctx state
                                             (cons form ans))))))))))
 
-(defun chk-raise-portcullis1 (file1 file2 ch ctx state)
+(defun chk-raise-portcullis1 (file1 file2 ch convert-pcert-p ctx state)
 
 ; We read each of the forms in ch until we get to :END-PORTCULLIS-CMDS
 ; and eval them.  However, we temporarily skip proofs (in an error
@@ -10996,7 +11063,7 @@
 ; (set-verify-guards-eagerness 2), and then get a hard error with (foo 3).
 
      *initial-acl2-defaults-table* state)
-    (chk-raise-portcullis2 file1 file2 ch ctx state nil))))
+    (chk-raise-portcullis2 file1 file2 ch convert-pcert-p ctx state nil))))
 
 (defun mark-local-included-books (post-alist1 post-alist2)
 
@@ -11262,7 +11329,7 @@
   (er-let*
    ((portcullis-cmds
      (if evalp
-         (chk-raise-portcullis1 file1 file2 ch ctx state)
+         (chk-raise-portcullis1 file1 file2 ch nil ctx state)
        (get-cmds-from-portcullis file1 file2 ch ctx state))))
    (mv-let
     (eofp pre-alist state)
@@ -11503,7 +11570,7 @@
 ; suspect-book-action-alist.  In the case that we pronouce this book
 ; uncertified, we return nil.
 
-  (let ((file2 (convert-book-name-to-cert-name file1))
+  (let ((file2 (convert-book-name-to-cert-name file1 nil))
         (dir (or dir
                  (directory-of-absolute-pathname file1))))
     (mv-let
@@ -11544,7 +11611,8 @@
 ; whether the environment in which certify-book was called is actually
 ; suitable for a certification.
 
-(defun chk-acceptable-certify-book1 (file dir k cmds cbds names wrld ctx state)
+(defun chk-acceptable-certify-book1 (file dir k cmds cbds names cert-op
+                                          wrld ctx state)
 
 ; This function is checking the appropriateness of the environment in which
 ; certify-book is called.
@@ -11558,8 +11626,11 @@
 ; . pre-alist).
 
   (let ((pre-alist (global-val 'include-book-alist wrld))
-        (uncert-books (collect-uncertified-books
-                       (global-val 'include-book-alist-all wrld))))
+        (uncert-books
+         (and (not (member-eq cert-op ; else uncertified books are OK
+                              '(:write-acl2xu :create-pcert)))
+              (collect-uncertified-books (global-val 'include-book-alist-all
+                                                     wrld)))))
     (cond
      ((not (eq (default-defun-mode wrld) :logic))
       (er soft ctx
@@ -11571,8 +11642,8 @@
           "The second argument to certify-book must be either ~x0, ~x1, or an ~
            integer.  You supplied ~x2.  See :DOC certify-book."
           t '? k))
-     ((and (not (equal k (length cmds)))
-           (not (eq k '?)))
+     ((and (not (eq k '?))
+           (not (eql k (length cmds))))
       (er soft ctx
           "You indicated that the portcullis for ~x0 would be of ~
            length ~x1 but it is actually of length ~x2.  Perhaps you ~
@@ -11602,8 +11673,12 @@
 ; replace relative pathnames by absolute pathnames.  See fix-portcullis-cmds.
 
          (t (er-let* ((fixed-cmds
-                       (fix-portcullis-cmds dir cmds cbds names
-                                            (os wrld) wrld ctx state)))
+                       (cond ((member-eq cert-op ; no need to fix
+                                         '(:write-acl2x :write-acl2xu))
+                              (value cmds))
+                             (t (fix-portcullis-cmds dir cmds cbds names
+                                                     (os wrld) wrld ctx
+                                                     state)))))
                      (value (cons fixed-cmds pre-alist)))))))))
 
 (defun translate-book-names (filenames cbd state acc)
@@ -11671,8 +11746,9 @@
              ttags))
         (t (fix-ttags ttags ctx cbd state nil nil))))
 
-(defun chk-acceptable-certify-book (book-name full-book-name dir k ctx state
-                                              suspect-book-action-alist)
+(defun chk-acceptable-certify-book (book-name full-book-name dir
+                                              suspect-book-action-alist
+                                              cert-op k ctx state)
 
 ; This function determines that it is ok to run certify-book on full-book-name
 ; and k.  Unless an error is caused we return a pair (cmds . pre-alist) that
@@ -11691,9 +11767,13 @@
         (dir (or dir
                  (directory-of-absolute-pathname full-book-name))))
     (er-progn
-     (cond ((ld-skip-proofsp state)
+     (cond ((and (ld-skip-proofsp state)
+                 (not (member-eq cert-op
+                                 '(:write-acl2xu :create-pcert))))
             (er soft ctx
-                "Certify-book must be called with ld-skip-proofsp set to nil."))
+                "Certify-book must be called with ld-skip-proofsp set to nil ~
+                 (except when creating .pcert files or, when set-write-acl2x ~
+                 has specified skipping proofs, .acl2x files)."))
            ((f-get-global 'in-local-flg state)
             (er soft ctx
                 "Certify-book may not be called inside a LOCAL command."))
@@ -11797,10 +11877,12 @@
                                           cert-obj-cmds ;; cmds
                                           nil ; no cbds should be needed
                                           names
+                                          cert-op
                                           (w state)
                                           ctx state)))))
         (t (chk-acceptable-certify-book1 full-book-name dir k cmds cbds
-                                         names wrld ctx state))))))))
+                                         names cert-op wrld ctx
+                                         state))))))))
 
 (defun print-objects (lst ch state)
   (cond ((null lst) state)
@@ -11870,7 +11952,7 @@
         ,body))))
 
 (defun make-certificate-file1 (file portcullis certification-file post-alist3
-                                    expansion-alist ctx state)
+                                    expansion-alist cert-op ctx state)
 
 ; See make-certificate-file.
 
@@ -11878,14 +11960,14 @@
 ; certificate files.  We do all such writing with print-object$, which does not
 ; use iprinting.
 
-  (let
-    ((chk-sum (check-sum-obj (make cert-obj
-                                   :cmds (car portcullis)
-                                   :pre-alist (cdr portcullis)
-                                   :post-alist post-alist3
-                                   :expansion-alist expansion-alist))))
+  (let ((chk-sum (and (not (eq cert-op :create-pcert)) ; else not needed
+                      (check-sum-obj (make cert-obj
+                                           :cmds (car portcullis)
+                                           :pre-alist (cdr portcullis)
+                                           :post-alist post-alist3
+                                           :expansion-alist expansion-alist)))))
     (cond
-     ((not (integerp chk-sum))
+     ((not (or (integerp chk-sum) (eq cert-op :create-pcert)))
       (value (er hard ctx
                  "Check-sum-obj returned a non-integerp value on the ~
                   portcullis and post-alist3!")))
@@ -11904,24 +11986,37 @@
              (print-circle (f-get-global 'print-circle-files state)))
             (pprogn
              (print-object$ '(in-package "ACL2") ch state)
-             (print-object$ (f-get-global 'acl2-version state) ch state)
-             (print-object$ :BEGIN-PORTCULLIS-CMDS ch state)
-             (print-objects (hons-copy (car portcullis)) ch state)
-             (print-object$ :END-PORTCULLIS-CMDS ch state)
-             (cond (expansion-alist
-                    (pprogn (print-object$ :EXPANSION-ALIST ch state)
-                            (print-object$ (hons-copy expansion-alist) ch
-                                           state)))
-                   (t state))
-             (print-object$ (cdr portcullis) ch state)
-             (print-object$ post-alist3 ch state)
-             (print-object$ chk-sum ch state)
+             (cond
+              ((eq cert-op :create-pcert)
+               (pprogn
+                (print-object$ :SKIPPED-PROOFSP ch state)
+                (print-object$
+                 (let* ((extra-entry (car post-alist3))
+                        (cert-annotations (cadddr extra-entry))
+                        (skipped-proofsp (cdr (assoc-eq :SKIPPED-PROOFSP
+                                                        cert-annotations))))
+                   skipped-proofsp)
+                 ch state)
+                (print-objects (hons-copy (car portcullis)) ch state)))
+              (t (pprogn
+                  (print-object$ (f-get-global 'acl2-version state) ch state)
+                  (print-object$ :BEGIN-PORTCULLIS-CMDS ch state)
+                  (print-objects (hons-copy (car portcullis)) ch state)
+                  (print-object$ :END-PORTCULLIS-CMDS ch state)
+                  (cond (expansion-alist
+                         (pprogn (print-object$ :EXPANSION-ALIST ch state)
+                                 (print-object$ (hons-copy expansion-alist) ch
+                                                state)))
+                        (t state))
+                  (print-object$ (cdr portcullis) ch state)
+                  (print-object$ post-alist3 ch state)
+                  (print-object$ chk-sum ch state))))
              (close-output-channel ch state)
              (value certification-file))))))))))
 
 (defun make-certificate-file-relocated (file portcullis certification-file
                                              post-alist3 expansion-alist
-                                             old-dir new-dir ctx state)
+                                             old-dir new-dir cert-op ctx state)
 
 ; See make-certificate-file.
 
@@ -11933,19 +12028,25 @@
    certification-file
    (replace-string-prefix-in-tree
     post-alist3 old-dir (length old-dir) new-dir)
-   expansion-alist ctx state))
+   expansion-alist cert-op ctx state))
 
 (defun make-certificate-file (file portcullis post-alist1 post-alist2
-                                   expansion-alist compile-flg ctx state)
+                                   expansion-alist cert-op ctx state)
 
-; This function writes out, and returns, a certificate file.  But NOTE: if
-; compile-flg is true, then that file is given a temporary name, with the
-; expectation that afterwards, compilation is performed and then the
-; certificate file is renamed to its suitable .cert name.  This way, we expect
-; that that the compiled file will have a write date that is later than (or at
-; least, not earlier than) the write date of the certificate file; yet, we can
-; be assured that "make" targets that depend on the .cert file's existence will
-; be able to rely implicitly on the compiled file's existence as well.
+; This function writes out, and returns, a certificate file.  We first give
+; that file a temporary name.  Our original motivation was the expectation that
+; afterwards, compilation is performed and then the certificate file is renamed
+; to its suitable .cert name.  This way, we expect that that the compiled file
+; will have a write date that is later than (or at least, not earlier than) the
+; write date of the certificate file; yet, we can be assured that "make"
+; targets that depend on the .cert file's existence will be able to rely
+; implicitly on the compiled file's existence as well.  After Version_4.3 we
+; arranged that even when not compiling we use a temporary file, so that (we
+; hope) once the .cert file exists, it has all of its contents.  Before this
+; change, during development after Version_4.3, we found that provisional
+; certification could read a .cert file (for a sub-book) that was in the
+; process of being written by the convert-pcert process, and in fact could be
+; empty.
 
 ; We assume file satisfies chk-book-name.  The portcullis is a pair (cmds
 ; . pre-alist), where cmds is the list of portcullis commands that created the
@@ -12006,8 +12107,21 @@
 
 ; Optionally, create .cert.final file as well; see comment below.
 
-  (let ((certification-file (convert-book-name-to-cert-name file))
-        (post-alist3 (mark-local-included-books post-alist1 post-alist2)))
+  (let ((certification-file (convert-book-name-to-cert-name
+                             file
+                             (eq cert-op :create-pcert)))
+        (post-alist3
+         (cond ((eq cert-op :create-pcert)
+
+; We don't need anything except the first entry, which provides the value of
+; :skipped-proofsp for the present book.
+
+                post-alist2)
+               (t
+                (mark-local-included-books post-alist1 post-alist2))))
+        (expansion-alist
+         (and (not (eq cert-op :create-pcert)) ; else we don't need the expansion-alist
+              expansion-alist)))
     (er-progn
 
 ; For Debian release:
@@ -12053,9 +12167,8 @@
                      (make-certificate-file-relocated
                       file portcullis
                       (concatenate 'string certification-file ".final")
-                      post-alist3 expansion-alist
-                      old-dir new-dir
-                      ctx state))
+                      post-alist3 expansion-alist old-dir new-dir cert-op ctx
+                      state))
                     (t (er soft ctx
                            "Attempted to create ~x0 because state global ~
                             'old-certification-dir is bound to a non-nil ~
@@ -12068,13 +12181,8 @@
                            *directory-separator-string*))))
              (t (value :irrelevant-value))))
      (make-certificate-file1 file portcullis
-                             (cond (compile-flg ; see NOTE above
-                                    (concatenate 'string
-                                                 certification-file
-                                                 ".temp"))
-                                   (t certification-file))
-                             post-alist3
-                             expansion-alist ctx state))))
+                             (concatenate 'string certification-file ".temp")
+                             post-alist3 expansion-alist cert-op ctx state))))
                            
 ; We now develop a general-purpose read-object-file, which expects
 ; the given file to start with an IN-PACKAGE and then reads into that
@@ -12545,6 +12653,89 @@
                 reason t arg))
           (t arg))))
 
+(defun convert-book-name-to-acl2x-name (x)
+
+; X is assumed to satisfy chk-book-name.  We generate the corresponding
+; acl2x file name, in analogy to how convert-book-name-to-cert-name generates
+; certificate file.
+
+; See the Essay on .acl2x Files (Double Certification).
+
+  (coerce (append (reverse (cddddr (reverse (coerce x 'list))))
+                  '(#\a #\c #\l #\2 #\x))
+          'string))
+
+(defun acl2x-alistp (x index len)
+  (cond ((atom x)
+         (and (null x)
+              (< index len)))
+        ((consp (car x))
+         (and (integerp (caar x))
+              (< index (caar x))
+              (acl2x-alistp (cdr x) (caar x) len)))
+        (t nil)))
+
+(defun read-acl2x-file (acl2x-file full-book-name len acl2x ctx state)
+  (mv-let
+   (acl2x-date state)
+   (file-write-date$ acl2x-file state)
+   (cond
+    ((not acl2x)
+     (pprogn (cond (acl2x-date
+                    (warning$ ctx "acl2x"
+                              "Although the file ~x0 exists, it is being ~
+                               ignored because keyword option :ACL2X T was ~
+                               not supplied to certify-book."
+                              acl2x-file full-book-name))
+                   (t state))
+             (value nil)))
+    (t (mv-let
+        (book-date state)
+        (file-write-date$ full-book-name state)
+        (cond
+         ((or (not (natp acl2x-date))
+              (not (natp book-date))
+              (< acl2x-date book-date))
+          (cond
+           ((eq acl2x :optional)
+            (value nil))
+           (t
+            (er soft ctx
+                "Certify-book has been instructed with option :ACL2X T to ~
+                 read file ~x0.  However, this file ~#1~[does not exist~/has ~
+                 not been confirmed to be at least as recent as the book ~
+                 ~x2~].  See :DOC set-write-acl2x."
+                acl2x-file
+                (if acl2x-date 1 0)
+                full-book-name))))
+         (t (er-let* ((chan (open-input-object-file acl2x-file ctx state)))
+              (state-global-let*
+               ((current-package "ACL2"))
+               (cond
+                (chan (mv-let
+                       (eofp val state)
+                       (read-object chan state)
+                       (cond
+                        (eofp (er soft ctx
+                                  "No form was read in acl2x file ~x0.~|See ~
+                                   :DOC certify-book."
+                                  acl2x-file))
+                        ((acl2x-alistp val 0 len)
+                         (pprogn
+                          (observation ctx
+                                       "Using expansion-alist containing ~n0 ~
+                                        ~#1~[entries~/entry~/entries~] from ~
+                                        file ~x2."
+                                       (length val)
+                                       (zero-one-or-more val)
+                                       acl2x-file)
+                          (value val)))
+                        (t (er soft ctx
+                               "Illegal value in acl2x file:~|~x0~|See :DOC ~
+                                certify-book."
+                               val)))))
+                (t (value nil))))))))))))
+
 (defun include-book-fn1 (user-book-name state
                                         load-compiled-file
                                         expansion-alist
@@ -12585,11 +12776,10 @@
 
          (suspect-book-action-alist
           (list (cons :uncertified-okp
-                      (if (assoc-eq 'certify-book
-                                    (global-val 'embedded-event-lst
-                                                wrld0))
-                          nil
-                        uncertified-okp))
+                      (if (member-eq (cert-op state)
+                                     '(nil :create-pcert :write-acl2xu))
+                          uncertified-okp
+                        nil))
                 (cons :defaxioms-okp defaxioms-okp)
                 (cons :skip-proofs-okp skip-proofs-okp)))
          (include-book-alist0 (global-val 'include-book-alist wrld0)))
@@ -12622,11 +12812,6 @@
                                                 suspect-book-action-alist
                                                 t))))
              (wrld2 (value (w state)))
-             (expansion-alist (value (if behalf-of-certify-flg
-                                         expansion-alist
-                                       (and cert-obj
-                                            (access cert-obj cert-obj
-                                                    :expansion-alist)))))
              (post-alist (value (and cert-obj
                                      (access cert-obj cert-obj
                                              :post-alist))))
@@ -12665,26 +12850,25 @@
 ; ev-lst-chk-sum ought to be those for the current book.
 
                (let ((ev-lst-chk-sum
-                      (if behalf-of-certify-flg
-                          0 ; optimization, ignored in certify-book-fn
-                        (check-sum-cert (and cert-obj
-                                             (access cert-obj cert-obj
-                                                     :cmds))
-                                        expansion-alist
-                                        ev-lst))))
+                      (and cert-obj ; hence not behalf-of-certify-flg
+                           (check-sum-cert (access cert-obj cert-obj
+                                                   :cmds)
+                                           (access cert-obj cert-obj
+                                                   :expansion-alist)
+                                           ev-lst))))
                  (cond
-                  ((not (integerp ev-lst-chk-sum))
+                  ((and cert-obj
+                        (not (integerp ev-lst-chk-sum)))
 
-; This error should never arise because check-sum-obj is only called on
-; something produced by read-object, which checks that the object is ACL2
-; compatible, and perhaps make-event expansion.  The next form causes a soft
-; error, assigning proper blame.
+; This error should never arise because check-sum-obj (called by
+; check-sum-cert) is only called on something produced by read-object, which
+; checks that the object is ACL2 compatible, and perhaps make-event expansion.
+; The next form causes a soft error, assigning proper blame.
 
                    (er soft ctx
-                       "The file ~x0 is not a legal list of embedded event ~
-                        forms because it contains an object, ~x1, which check ~
+                       "ACL2 has enountered an object, ~x0, which check ~
                         sum was unable to handle."
-                       full-book-name ev-lst-chk-sum))
+                       ev-lst-chk-sum))
                   (t
                    (er-let*
                     ((no-errp-1
@@ -12744,15 +12928,23 @@
                          :uncertified-okp
                          suspect-book-action-alist
                          ctx state))
-                       (t (value t)))))
-                    (let* ((certified-p
-                            (and cert-obj no-errp-1 no-errp-2))
-                           (expansion-alist
-                            (if (or certified-p
-                                    behalf-of-certify-flg)
-                                expansion-alist
-                              nil))
-                           (cert-annotations
+                       (t (value t))))
+                     (certified-p
+                      (value (and cert-obj no-errp-1 no-errp-2)))
+                     (acl2x-file (value (convert-book-name-to-acl2x-name
+                                         full-book-name)))
+                     (expansion-alist
+                      (cond (behalf-of-certify-flg (value expansion-alist))
+                            (certified-p (value (access cert-obj cert-obj
+                                                        :expansion-alist)))
+                            ((eq (cert-op state) :create-pcert)
+                             (read-acl2x-file
+                              acl2x-file full-book-name
+                              (length ev-lst) ; includes in-package
+                              :optional ; acl2x
+                              ctx state))
+                            (t (value nil)))))
+                    (let* ((cert-annotations
                             (cadddr (car post-alist)))
                            (cert-ttags
                             (cdr (assoc-eq :ttags cert-annotations)))
@@ -13922,14 +14114,16 @@
             nil)))))
    (t (value nil))))
 
-(defun print-certify-book-step-4 (full-book-name expansion-filename state)
+(defun print-certify-book-step-4 (full-book-name expansion-filename cert-op
+                                                 state)
   (io? event nil state
-       (full-book-name expansion-filename)
+       (full-book-name expansion-filename cert-op)
        (fms "* Step 4:  Write the certificate for ~x0 in ~x1~@2.~%"
             (list
              (cons #\0 full-book-name)
              (cons #\1
-                   (convert-book-name-to-cert-name full-book-name))
+                   (convert-book-name-to-cert-name full-book-name
+                                                   (eq cert-op :create-pcert)))
              (cons #\2
                    (if expansion-filename
                        (msg ", and compile the expansion file, ~s0"
@@ -14041,18 +14235,6 @@
 
 ; We also provide Makefile support; see books/Makefile-generic.
 
-(defun convert-book-name-to-acl2x-name (x)
-
-; X is assumed to satisfy chk-book-name.  We generate the corresponding
-; acl2x file name, in analogy to how convert-book-name-to-cert-name generates
-; certificate file.
-
-; See the Essay on .acl2x Files (Double Certification).
-
-  (coerce (append (reverse (cddddr (reverse (coerce x 'list))))
-                  '(#\a #\c #\l #\2 #\x))
-          'string))
-
 (defstub acl2x-expansion-alist (expansion-alist state)
 
 ; Users are welcome to attach their own function to acl2x-expansion-alist,
@@ -14094,73 +14276,6 @@
          (print-object$ (acl2x-expansion-alist expansion-alist state) ch state)
          (close-output-channel ch state)
          (value acl2x-file)))))))
-
-(defun acl2x-alistp (x index len)
-  (cond ((atom x)
-         (and (null x)
-              (< index len)))
-        ((consp (car x))
-         (and (integerp (caar x))
-              (< index (caar x))
-              (acl2x-alistp (cdr x) (caar x) len)))
-        (t nil)))
-
-(defun read-acl2x-file (acl2x-file full-book-name len acl2x ctx state)
-  (mv-let
-   (acl2x-date state)
-   (file-write-date$ acl2x-file state)
-   (cond
-    ((not acl2x)
-     (pprogn (cond (acl2x-date
-                    (warning$ ctx "acl2x"
-                              "Although the file ~x0 exists, it is being ~
-                               ignored because keyword option :ACL2X T was ~
-                               not supplied to certify-book."
-                              acl2x-file full-book-name))
-                   (t state))
-             (value nil)))
-    (t (mv-let
-        (book-date state)
-        (file-write-date$ full-book-name state)
-        (cond
-         ((or (not (natp acl2x-date))
-              (not (natp book-date))
-              (< acl2x-date book-date))
-          (er soft ctx
-              "Certify-book has been instructed with option :ACL2X T to read ~
-               file ~x0.  However, this file ~#1~[does not exist~/has not ~
-               been confirmed to be at least as recent as the book ~x2~].  ~
-               See :DOC set-write-acl2x."
-              acl2x-file
-              (if acl2x-date 1 0)
-              full-book-name))
-         (t (er-let* ((chan (open-input-object-file acl2x-file ctx state)))
-              (state-global-let*
-               ((current-package "ACL2"))
-               (cond
-                (chan (mv-let
-                       (eofp val state)
-                       (read-object chan state)
-                       (cond
-                        (eofp (er soft ctx
-                                  "No form was read in acl2x file ~x0.~|See ~
-                                   :DOC certify-book."
-                                  acl2x-file))
-                        ((acl2x-alistp val 0 len)
-                         (pprogn
-                          (observation ctx
-                                       "Using expansion-alist containing ~n0 ~
-                                        ~#1~[entries~/entry~/entries~] from ~
-                                        file ~x2."
-                                       (length val)
-                                       (zero-one-or-more val)
-                                       acl2x-file)
-                          (value val)))
-                        (t (er soft ctx
-                               "Illegal value in acl2x file:~|~x0~|See :DOC ~
-                                certify-book."
-                               val)))))
-                (t (value nil))))))))))))
 
 (defun merge-into-expansion-alist1 (acl2x-expansion-alist
                                     computed-expansion-alist
@@ -14306,9 +14421,117 @@
                                 form))
                   acc)))))
 
+(defun convert-pcert-setup (full-book-name ctx state)
+
+; We call this function early in the certification process, to handle
+; information from an earlier Pcertify step stored in the .pcert file: obtain
+; the value of :SKIPPED-PROOFSP, and evaluate forms from the certification
+; world used in that Pcertify step.
+
+  (let ((pcert-file (convert-book-name-to-cert-name full-book-name t))
+        (dir (directory-of-absolute-pathname full-book-name)))
+    (pprogn
+     (fms "SETTING UP FOR CERTIFICATION ATTEMPT FOR ~s0~%"
+          (list (cons #\0 full-book-name))
+          (proofs-co state) state nil)
+     (mv-let
+      (ch state)
+      (open-input-channel pcert-file :object state)
+      (cond
+       ((null ch)
+        (er soft ctx
+            "ACL2 is unable to open the file~|  ~s0~|for input.  Apparently ~
+             this file does not exist or is not readable; yet, it is required ~
+             for the Convert step of provisional certification of the ~
+             corresponding book:~|  ~s1~|See :DOC provisional-certification."
+            pcert-file
+            full-book-name))
+       (t
+        (mv-let
+         (pcert-date state)
+         (file-write-date$ pcert-file state)
+         (mv-let
+          (book-date state)
+          (file-write-date$ full-book-name state)
+          (cond
+           ((null book-date)
+            (er soft ctx
+                "ACL2 is unable to determine the file write-date for the file ~
+                 ~s0.  Perhaps that file does not exist."
+                full-book-name))
+           ((null pcert-date)
+            (er soft ctx
+                "ACL2 is (surprisingly) unable to determine the file ~
+                 write-date for the provisional certificate file ~s0 for book ~
+                 ~s1."
+                pcert-file full-book-name))
+           ((< pcert-date book-date)
+            (er soft ctx
+                "The file ~s0 is older than the corresponding book, ~s1."
+                pcert-file full-book-name))
+           (t
+            (er-let* ((pkg (state-global-let*
+                            ((infixp nil))
+                            (chk-in-package ch pcert-file ctx state))))
+              (cond
+               ((not (equal pkg "ACL2"))
+                (er soft ctx
+                    "File ~x0 is corrupted.  It was expected to start with ~
+                     the form (in-package \"ACL2\")."
+                    pcert-file))
+               (t
+                (mv-let
+                 (eofp skipped-proofsp-kwd state)
+                 (read-object ch state)
+                 (mv-let
+                  (eofp skipped-proofsp state)
+                  (cond
+                   (eofp (mv t nil state))
+                   (t (read-object ch state)))
+                  (cond
+                   ((or eofp
+                        (not (eq skipped-proofsp-kwd :SKIPPED-PROOFSP))
+                        (not (booleanp skipped-proofsp)))
+                    (er soft ctx
+                        "File ~x0 is corrupted.  It was expected that ~
+                         following the initial (in-package \"ACL2\") would be ~
+                         found the keyword :SKIPPED-PROOFSP followed by T or ~
+                         NIL, but that is not the case."
+                        pcert-file))
+                   (t
+                    (state-global-let*
+                     ((current-package "ACL2")
+                      (connected-book-directory dir set-cbd-state))
+                     (mv-let (error-flg val state)
+                             (revert-world-on-error
+                              (chk-raise-portcullis1 full-book-name pcert-file ch t
+                                                     ctx state))
+                             (pprogn
+                              (close-input-channel ch state)
+                              (cond (error-flg
+                                     (silent-error state))
+                                    (t
+                                     (pprogn
+                                      (cond
+                                       ((null val) state)
+                                       (t
+                                        (fms "ACL2 has processed the ~n0 ~
+                                              command~#1~[~/s~] in place at ~
+                                              the start of the earlier ~
+                                              Pcertify step of provisional ~
+                                              certification, stored in ~
+                                              file:~%  ~s2.~%"
+                                             (list (cons #\0 (length val))
+                                                   (cons #\1 val)
+                                                   (cons #\2 pcert-file))
+                                             (proofs-co state) state nil)))
+                                      (mv nil
+                                          skipped-proofsp
+                                          state))))))))))))))))))))))))
+
 (defun certify-book-fn (user-book-name k compile-flg defaxioms-okp
                                        skip-proofs-okp ttags ttagsx ttagsxp
-                                       acl2x state)
+                                       acl2x pcert state)
   (with-ctx-summarized
    (if (output-in-infixp state)
        (list* 'certify-book user-book-name
@@ -14333,33 +14556,83 @@
                           "@expansion"))))
        (er soft ctx
            "Book names may not end in \"@expansion\"."))
-      ((and ttagsxp (not acl2x))
+      ((not (or (booleanp acl2x)
+                (eq acl2x :default)))
        (er soft ctx
-           "The argument :TTAGSX T for certify-book may only be supplied if ~
-            :ACL2X is T.  See :DOC set-write-acl2x."))
-      ((not (booleanp acl2x))
-       (er soft ctx
-           "The argument :ACL2X for certify-book must take on the value of T ~
-            or NIL.  The value ~x0 is thus illegal.  See :DOC certify-book."
+           "The argument :ACL2X for certify-book must take on the value of T, ~
+            NIL, or :DEFAULT.  The value ~x0 is thus illegal.  See :DOC ~
+            certify-book."
            acl2x))
       (t
-       (er-let* ((write-acl2x
+       (er-let* ((pcert-envp (er-let* ((temp (getenv$ "ACL2_PCERT" state)))
+                               (value (and (not (equal temp "")) temp))))
+                 (pcert (value (cond ((eq pcert :default)
+                                      (and pcert-envp
+                                           (cond
+                                            ((string-equal pcert-envp "CREATE")
+                                             :create)
+                                            ((string-equal pcert-envp "CONVERT")
+                                             :convert))))
+                                     (t pcert))))
+                 (acl2x (cond ((eq acl2x :default)
+                               (value (and pcert-envp t)))
+                              (t (value acl2x))))
+                 (write-acl2x
                   (cond (acl2x (value (f-get-global 'write-acl2x state)))
                         ((f-get-global 'write-acl2x state)
                          (er soft ctx
-                             "Apparently ~x0 has been evaluated, yet ~
-                              certify-book is being called without supplying ~
-                              keyword argument :ACL2X T.  This is illegal.  ~
-                              See :DOC set-write-acl2x.  If you do not intend ~
-                              to write a .acl2x file, you may wish to ~
-                              evaluate ~x1."
-                             '(set-write-acl2x t state)
+                             "Apparently set-write-acl2x has been evaluated ~
+                              with argument value ~x0, yet certify-book is ~
+                              being called without supplying keyword argument ~
+                              :ACL2X T.  This is illegal.  See :DOC ~
+                              set-write-acl2x.  If you do not intend to write ~
+                              a .acl2x file, you may wish to evaluate ~x1."
+                             (f-get-global 'write-acl2x state)
                              '(set-write-acl2x nil state)))
                         (t (value nil))))
-                 (ttags (chk-well-formed-ttags
-                         (cond (write-acl2x ttagsx)
-                               (t ttags))
-                         (cbd) ctx state))
+                 (cert-op (case pcert
+                            (:create (value :create-pcert))
+                            (:convert (value :convert-pcert))
+                            ((nil) (value nil)) ; see below for :write-acl2x[u]
+                            (otherwise (er soft ctx
+                                           "Illegal value of :pcert, ~x0.  ~
+                                            See :DOC certify-book."
+                                           pcert))))
+                 (cert-op                        ; comprehend write-acl2x
+                  (cond ((and write-acl2x pcert) ; (and write-acl2x cert-op)
+                         (er soft ctx
+                             "It is illegal for certify-book to write a ~
+                              .acl2x file (because of argument :ACL2X T ~
+                              together with an earlier call of ~
+                              set-write-acl2x on a non-nil value) when ~
+                              certify-book is supplied with a non-nil value ~
+                              of :pcert (in this case, ~x0).  Instead, you ~
+                              need to specify either that certify-book is to ~
+                              write a .acl2x file or that it is to write a ~
+                              certificate (.pcert or .cert) file."
+                             pcert))
+                        (write-acl2x (value (if (consp write-acl2x)
+                                                :write-acl2xu
+                                              :write-acl2x)))
+                        (t (value cert-op))))
+                 (skip-proofs-okp (value (cond ((eq skip-proofs-okp :default)
+                                                (consp write-acl2x))
+                                               (t skip-proofs-okp))))
+                 (uncertified-okp (value (cond
+                                          ((or (eq pcert :create)
+                                               (consp write-acl2x))
+                                           t)
+                                          (t nil))))
+                 (ttags
+                  (cond ((and ttagsxp (not acl2x))
+                         (er soft ctx
+                             "The  :TTAGSX argument for certify-book may only ~
+                              be supplied if :ACL2X is T.  See :DOC ~
+                              set-write-acl2x."))
+                        (t (chk-well-formed-ttags
+                            (cond (write-acl2x ttagsx)
+                                  (t ttags))
+                            (cbd) ctx state))))
                  (pair0 (chk-acceptable-ttags1
 
 ; We check whether the ttags in the certification world are legal for the given
@@ -14368,103 +14641,128 @@
                          (global-val 'ttags-seen wrld0)
                          nil ; correct active-book-name, but irrelevant
                          ttags
-                         nil ; irrelevant value for ttags-seen
-                         :quiet ; defttags in certification world were already reported
+                         nil    ; irrelevant value for ttags-seen
+                         :quiet ; ttags in certif. world were already reported
                          ctx state)))
          (mv-let
           (full-book-name directory-name familiar-name)
           (parse-book-name (cbd) user-book-name ".lisp" ctx state)
-          (state-global-let*
-           ((certify-book-info (make certify-book-info
-                                     :full-book-name full-book-name
-                                     :other-info nil))
-            (match-free-error nil)
-            (defaxioms-okp-cert defaxioms-okp)
-            (skip-proofs-okp-cert skip-proofs-okp)
-            (guard-checking-on nil)) ; see the Essay on Guard Checking
-           (er-let*
-               ((compile-flg
-                 (cond
-                  ((null (f-get-global 'compiler-enabled state))
-                   (value nil))
-                  (t (value compile-flg))))
-                (env-compile-flg
-                 (cond ((eq compile-flg :default)
-                        (getenv$ "ACL2_COMPILE_FLG" state))
-                       (t (value nil))))
-                (compile-flg
-                 (cond
+          (er-let* ((pcert-skipped-proofsp
+                     (cond ((eq cert-op :convert-pcert)
+                            (er-let* ((pcert-skipped-proofsp
+                                       (convert-pcert-setup full-book-name
+                                                            ctx
+                                                            state)))
+                              (cond ((and pcert-skipped-proofsp
+                                          (not skip-proofs-okp))
+                                     (er soft ctx
+                                         "Proofs were skipped during the ~
+                                          Pcertify step of provisional ~
+                                          certification of the book ~x0, yet ~
+                                          :SKIP-PROOFS-OKP has been specified ~
+                                          as NIL for the Conver step.  See ~
+                                          :DOC provisional-certification."
+                                         full-book-name))
+                                    (t (value pcert-skipped-proofsp)))))
+                           (t (value nil)))))
+            (state-global-let*
+             ((certify-book-info (make certify-book-info
+                                       :full-book-name full-book-name
+                                       :cert-op cert-op))
+              (match-free-error nil)
+              (defaxioms-okp-cert defaxioms-okp)
+              (skip-proofs-okp-cert skip-proofs-okp)
+              (guard-checking-on nil)) ; see the Essay on Guard Checking
+             (er-let*
+                 ((compile-flg
+                   (cond
+                    ((null (f-get-global 'compiler-enabled state))
+                     (value nil))
+                    (t (value compile-flg))))
                   (env-compile-flg
-                   (let ((flg (string-upcase env-compile-flg)))
-                     (cond ((member-equal flg '("T" "ALL"))
-                            (value t))
-                           ((equal flg "NIL")
-                            (value nil))
-                           (t (er soft ctx
-                                  "Illegal value, ~x0, for environment ~
-                                   variable ACL2_COMPILE_FLG.  The legal ~
-                                   values are (after converting to uppercase) ~
-                                   ~x1, ~x2. and (synonymous with ~x1) :ALL."
-                                  flg
-                                  t
-                                  nil
-                                  env-compile-flg)))))
-                  (compile-flg (value t))
-                  (t (value nil))))
-                (saved-acl2-defaults-table
-                 (value (table-alist 'acl2-defaults-table (w state))))
+                   (getenv$ "ACL2_COMPILE_FLG" state))
+                  (env-compile-flg
+                   (value (and env-compile-flg
+                               (if (equal env-compile-flg "")
+                                   nil
+                                 env-compile-flg))))
+                  (compile-flg
+                   (cond ((and env-compile-flg
+                               (string-equal env-compile-flg "ALL"))
+                          (value t))
+                         ((not (eq compile-flg :default))
+                          (value (or (eq compile-flg :all)
+                                     (and compile-flg
+                                          (not (eq cert-op :convert-pcert))))))
+                         ((eq cert-op :convert-pcert)
+                          (value nil))
+                         ((null env-compile-flg)
+                          (value t))
+                         ((string-equal env-compile-flg "T")
+                          (value t))
+                         ((string-equal env-compile-flg "NIL")
+                          (value nil))
+                         (t (er soft ctx
+                                "Illegal value, ~x0, for environment variable ~
+                                ACL2_COMPILE_FLG.  The legal values are ~
+                                (after converting to uppercase) \"T\", ~
+                                \"NIL\", \"\", and \"ALL\"."
+                                env-compile-flg))))
+                  (saved-acl2-defaults-table
+                   (value (table-alist 'acl2-defaults-table (w state))))
 
 ; If you add more keywords to this list, make sure you do the same to
 ; the list constructed by include-book-fn.
 
-                (suspect-book-action-alist
-                 (value (list '(:uncertified-okp . nil)
-                              (cons :defaxioms-okp defaxioms-okp)
-                              (cons :skip-proofs-okp skip-proofs-okp))))
-                (portcullis ; (cmds . pre-alist)
-                 (chk-acceptable-certify-book user-book-name
-                                              full-book-name
-                                              directory-name
-                                              k ctx state
-                                              suspect-book-action-alist)))
-             (let* ((wrld1 (w state)) ; extended by chk-acceptable-certify-book
-                    (wrld1-known-package-alist (global-val 'known-package-alist
-                                                           wrld1))
-                    (acl2x-file
-                     (convert-book-name-to-acl2x-name full-book-name)))
-               (pprogn
-                (io? event nil state
-                     (full-book-name write-acl2x)
-                     (fms "CERTIFICATION ATTEMPT~@0 FOR ~x1~%~s2~%~%*~ Step ~
-                           1:  Read ~x1 and compute its check sum.~%"
-                          (list (cons #\0 (cond
-                                           (write-acl2x
-                                            " (for writing .acl2x file)")
-                                           (t "")))
-                                (cons #\1 full-book-name)
-                                (cons #\2 (f-get-global 'acl2-version state)))
-                          (proofs-co state) state nil))
-                (er-let*
-                    ((ev-lst (read-object-file full-book-name ctx state))
-                     (acl2x-expansion-alist
+                  (suspect-book-action-alist
+                   (value (list (cons :uncertified-okp uncertified-okp)
+                                (cons :defaxioms-okp defaxioms-okp)
+                                (cons :skip-proofs-okp skip-proofs-okp))))
+                  (portcullis ; (cmds . pre-alist)
+                   (chk-acceptable-certify-book user-book-name
+                                                full-book-name
+                                                directory-name
+                                                suspect-book-action-alist
+                                                cert-op
+                                                k ctx state)))
+               (let* ((wrld1 (w state)) ; extended by chk-acceptable-certify-book
+                      (wrld1-known-package-alist (global-val 'known-package-alist
+                                                             wrld1))
+                      (acl2x-file (convert-book-name-to-acl2x-name
+                                   full-book-name)))
+                 (pprogn
+                  (io? event nil state
+                       (full-book-name write-acl2x)
+                       (fms "CERTIFICATION ATTEMPT~@0 FOR ~x1~%~s2~%~%*~ Step ~
+                            1:  Read ~x1 and compute its check sum.~%"
+                            (list (cons #\0 (cond
+                                             (write-acl2x
+                                              " (for writing .acl2x file)")
+                                             (t "")))
+                                  (cons #\1 full-book-name)
+                                  (cons #\2 (f-get-global 'acl2-version state)))
+                            (proofs-co state) state nil))
+                  (er-let*
+                      ((ev-lst (read-object-file full-book-name ctx state))
+                       (acl2x-expansion-alist
 
 ; See the Essay on .acl2x Files (Double Certification).
 
-                      (cond ((not write-acl2x)
-                             (read-acl2x-file acl2x-file full-book-name
-                                              (length ev-lst) ; includes in-package
-                                              acl2x ctx state))
-                            (t (value nil)))))
-                  (pprogn
-                   (print-certify-book-step-2 ev-lst
-                                              acl2x-expansion-alist
-                                              acl2x-file
-                                              state)
-                   (er-let*
-                       ((pass1-result
-                         (state-global-let*
-                          ((ttags-allowed (car pair0))
-                           (user-home-dir
+                        (cond ((not write-acl2x)
+                               (read-acl2x-file acl2x-file full-book-name
+                                                (length ev-lst) ; includes in-package
+                                                acl2x ctx state))
+                              (t (value nil)))))
+                    (pprogn
+                     (print-certify-book-step-2 ev-lst
+                                                acl2x-expansion-alist
+                                                acl2x-file
+                                                state)
+                     (er-let*
+                         ((pass1-result
+                           (state-global-let*
+                            ((ttags-allowed (car pair0))
+                             (user-home-dir
 
 ; We disallow ~/ in subsidiary include-book forms, because its meaning will be
 ; different when the superior book is included if the user changes (see :doc
@@ -14473,76 +14771,80 @@
 ; with ~/.  Step 3 presumably doesn't call any include-book forms not already
 ; considered in Step 2, so this decision should be OK.
 
-                            nil)
+                              nil)
 
 ; We will accumulate into the flag axiomsp whether any axioms have been added,
 ; starting with those in the portcullis.  We can identify axioms in the
 ; portcullis by asking if the current nonconstructive axioms are different from
 ; those at the end of boot-strap.
 
-                           (axiomsp (not
-                                     (equal
-                                      (global-val ;;; axioms as of boot-strap
-                                       'nonconstructive-axiom-names
-                                       (scan-to-landmark-number
-                                        'event-landmark
-                                        (global-val 'event-number-baseline
-                                                    wrld1)
-                                        wrld1))
-                                      (global-val ;;; axioms now
-                                       'nonconstructive-axiom-names
-                                       wrld1))))
-                           (ld-redefinition-action nil)
-                           (connected-book-directory directory-name))
-                          (revert-world-on-error
-                           (er-let* ((portcullis-skipped-proofsp
-                                      (value (and (global-val 'skip-proofs-seen
-                                                              (w state))
-                                                  t)))
-                                     (expansion-alist-and-index
+                             (axiomsp (not
+                                       (equal
+                                        (global-val ;;; axioms as of boot-strap
+                                         'nonconstructive-axiom-names
+                                         (scan-to-landmark-number
+                                          'event-landmark
+                                          (global-val 'event-number-baseline
+                                                      wrld1)
+                                          wrld1))
+                                        (global-val ;;; axioms now
+                                         'nonconstructive-axiom-names
+                                         wrld1))))
+                             (ld-redefinition-action nil)
+                             (connected-book-directory directory-name))
+                            (revert-world-on-error
+                             (er-let* ((portcullis-skipped-proofsp
+                                        (value (and (global-val 'skip-proofs-seen
+                                                                (w state))
+                                                    t)))
+                                       (expansion-alist-and-index
 
 ; The fact that we are under 'certify-book means that all calls of
 ; include-book will insist that the :uncertified-okp action is nil, meaning
 ; errors will be caused if uncertified books are read.
 
-                                      (process-embedded-events
-                                       'certify-book
-                                       saved-acl2-defaults-table
-                                       nil
-                                       (cadr (car ev-lst))
-                                       (list 'certify-book full-book-name)
-                                       (subst-by-position acl2x-expansion-alist
+                                        (process-embedded-events
+                                         'certify-book
+                                         saved-acl2-defaults-table
+                                         (cond ((eq cert-op :convert-pcert)
+                                                t)
+                                               ((consp write-acl2x)
+                                                (car write-acl2x))
+                                               (t nil))
+                                         (cadr (car ev-lst))
+                                         (list 'certify-book full-book-name)
+                                         (subst-by-position acl2x-expansion-alist
 
 ; See the Essay on .acl2x Files (Double Certification).
 
-                                                          (cdr ev-lst)
-                                                          1)
-                                       1 nil 'certify-book state))
-                                     (expansion-alist
-                                      (value
-                                       (cond (write-acl2x
-                                              (assert$
-                                               (null acl2x-expansion-alist)
-                                               (car expansion-alist-and-index)))
-                                             (t
-                                              (merge-into-expansion-alist
-                                               acl2x-expansion-alist
-                                               (car expansion-alist-and-index)))))))
-                             (cond
-                              (write-acl2x
+                                                            (cdr ev-lst)
+                                                            1)
+                                         1 nil 'certify-book state))
+                                       (expansion-alist
+                                        (value
+                                         (cond (write-acl2x
+                                                (assert$
+                                                 (null acl2x-expansion-alist)
+                                                 (car expansion-alist-and-index)))
+                                               (t
+                                                (merge-into-expansion-alist
+                                                 acl2x-expansion-alist
+                                                 (car expansion-alist-and-index)))))))
+                               (cond
+                                (write-acl2x
 
 ; See the Essay on .acl2x Files (Double Certification).
 
-                               (write-acl2x-file expansion-alist acl2x-file ctx
-                                                 state))
-                              (t
-                               (let ((expansion-alist
-                                      (elide-locals-from-expansion-alist
-                                       expansion-alist
-                                       nil)))
-                                 (value (list (let ((val (global-val 'skip-proofs-seen
-                                                                     (w state))))
-                                                (and val
+                                 (write-acl2x-file expansion-alist acl2x-file ctx
+                                                   state))
+                                (t
+                                 (let ((expansion-alist
+                                        (elide-locals-from-expansion-alist
+                                         expansion-alist
+                                         nil)))
+                                   (value (list (let ((val (global-val 'skip-proofs-seen
+                                                                       (w state))))
+                                                  (and val
 
 ; Here we are trying to record whether there was a skip-proofs form in the
 ; present book, not merely on behalf of an included book.  The post-alist will
@@ -14550,35 +14852,36 @@
 ; skipped-proofsp-in-post-alist.  See the comment about this comment in
 ; install-event.
 
-                                                     (not (eq (car val)
-                                                              :include-book))))
-                                              portcullis-skipped-proofsp
-                                              (f-get-global 'axiomsp state)
-                                              (global-val 'ttags-seen (w state))
-                                              (global-val 'include-book-alist-all
-                                                          (w state))
-                                              expansion-alist
-                                              (let ((index
-                                                     (cdr expansion-alist-and-index)))
-                                                (cond ((integerp index)
-                                                       (restrict-expansion-alist
-                                                        index
-                                                        expansion-alist))
-                                                      (t expansion-alist)))))))))))))
-                     (cond
-                      (write-acl2x ; early exit
-                       (value acl2x-file))
-                      (t
-                       (let* ((pass1-known-package-alist
-                               (global-val 'known-package-alist (w state)))
-                              (skipped-proofsp (nth 0 pass1-result))
-                              (portcullis-skipped-proofsp (nth 1 pass1-result))
-                              (axiomsp (nth 2 pass1-result))
-                              (ttags-seen (nth 3 pass1-result))
-                              (new-include-book-alist-all (nth 4 pass1-result))
-                              (expansion-alist (nth 5 pass1-result))
-                              (expansion-alist-to-check (nth 6 pass1-result))
-                              (expansion-alist-pkg-names
+                                                       (not (eq (car val)
+                                                                :include-book))))
+                                                portcullis-skipped-proofsp
+                                                (f-get-global 'axiomsp state)
+                                                (global-val 'ttags-seen (w state))
+                                                (global-val 'include-book-alist-all
+                                                            (w state))
+                                                expansion-alist
+                                                (let ((index
+                                                       (cdr expansion-alist-and-index)))
+                                                  (cond ((integerp index)
+                                                         (restrict-expansion-alist
+                                                          index
+                                                          expansion-alist))
+                                                        (t expansion-alist)))))))))))))
+                       (cond
+                        (write-acl2x ; early exit
+                         (value acl2x-file))
+                        (t
+                         (let* ((pass1-known-package-alist
+                                 (global-val 'known-package-alist (w state)))
+                                (skipped-proofsp (or pcert-skipped-proofsp
+                                                     (nth 0 pass1-result)))
+                                (portcullis-skipped-proofsp (nth 1 pass1-result))
+                                (axiomsp (nth 2 pass1-result))
+                                (ttags-seen (nth 3 pass1-result))
+                                (new-include-book-alist-all (nth 4 pass1-result))
+                                (expansion-alist (nth 5 pass1-result))
+                                (expansion-alist-to-check (nth 6 pass1-result))
+                                (expansion-alist-pkg-names
 
 ; Warning: If the following comment is modified or deleted, visit its reference
 ; in expansion-alist-pkg-names.  Also see the comments at the top of :doc
@@ -14594,37 +14897,37 @@
 ; defined in order for ACL2 to read the expansion-alist from the .cert file.
 ; Here we take the first step towards finding those packages.
 
-                               (expansion-alist-pkg-names
-                                expansion-alist-to-check
-                                wrld1-known-package-alist))
-                              (cert-annotations
-                               (list 
+                                 (expansion-alist-pkg-names
+                                  expansion-alist-to-check
+                                  wrld1-known-package-alist))
+                                (cert-annotations
+                                 (list 
                                 
 ; We set :skipped-proofsp in the certification annotations to t or nil
 ; according to whether there were any skipped proofs in either the
 ; portcullis or the body of this book.
 
-                                (cons :skipped-proofsp skipped-proofsp)
+                                  (cons :skipped-proofsp skipped-proofsp)
 
 ; We similarly set :axiomsp to t or nil.  Note that axioms in subbooks 
 ; are not counted as axioms in this one.
 
-                                (cons :axiomsp axiomsp)
-                                (cons :ttags ttags-seen))))
-                         (er-let* ((post-alist1
-                                    (value new-include-book-alist-all)))
-                           (er-progn
-                            (chk-cert-annotations cert-annotations
-                                                  portcullis-skipped-proofsp
-                                                  (car portcullis)
-                                                  full-book-name
-                                                  suspect-book-action-alist
-                                                  ctx state)
+                                  (cons :axiomsp axiomsp)
+                                  (cons :ttags ttags-seen))))
+                           (er-let* ((post-alist1
+                                      (value new-include-book-alist-all)))
+                             (er-progn
+                              (chk-cert-annotations cert-annotations
+                                                    portcullis-skipped-proofsp
+                                                    (car portcullis)
+                                                    full-book-name
+                                                    suspect-book-action-alist
+                                                    ctx state)
                         
-                            (pprogn
-                             (print-certify-book-step-3 state) ; start include-book
-                             (set-w 'retraction wrld1 state)
-                             #+(and gcl (not acl2-loop-only))
+                              (pprogn
+                               (print-certify-book-step-3 state) ; start include-book
+                               (set-w 'retraction wrld1 state)
+                               #+(and gcl (not acl2-loop-only))
 
 ; In GCL, object code (from .o files) may be stored in read-only memory, which
 ; is not collected by sgc.  In particular, such code just loaded from
@@ -14640,16 +14943,16 @@
 ; about 1/4 second per book certification for the ACL2 regression suite (as of
 ; 5/07).
 
-                             (progn
-                               (cond ((and (fboundp 'si::sgc-on)
-                                           (si::sgc-on))
-                                      (si::sgc-on nil)
-                                      (si::gbc t)
-                                      (si::sgc-on t))
-                                     (t (si::gbc t)))
-                               state)
-                             (with-hcomp-bindings
-                              compile-flg
+                               (progn
+                                 (cond ((and (fboundp 'si::sgc-on)
+                                             (si::sgc-on))
+                                        (si::sgc-on nil)
+                                        (si::gbc t)
+                                        (si::sgc-on t))
+                                       (t (si::gbc t)))
+                                 state)
+                               (with-hcomp-bindings
+                                compile-flg
 
 ; It may seem strange to call with-hcomp-bindings here -- after all, we call
 ; include-book-fn below, and we may think that include-book-fn will ultimately
@@ -14661,57 +14964,57 @@
 ; events on behalf of the call below of include-book-fn, where
 ; *inside-include-book-fn* is 'hcomp-build.
 
-                              (er-let* ((defpkg-items (defpkg-items
-                                                        pass1-known-package-alist
-                                                        ctx wrld1 state))
-                                        (declaim-list
-                                         (state-global-let*
-                                          ((ld-redefinition-action nil))
+                                (er-let* ((defpkg-items (defpkg-items
+                                                          pass1-known-package-alist
+                                                          ctx wrld1 state))
+                                          (declaim-list
+                                           (state-global-let*
+                                            ((ld-redefinition-action nil))
 
 ; Note that we do not bind connected-book-directory before calling
 ; include-book-fn, because it will bind it for us.  We leave the directory set
 ; as it was when we parsed user-book-name to get full-book-name, so that
 ; include-book-fn will parse user-book-name the same way again.
 
-                                          (er-progn
-                                           (hcomp-build-from-portcullis
-                                            (reverse
-                                             (global-val
-                                              'top-level-cltl-command-stack
-                                              wrld1))
-                                            state)
-                                           (include-book-fn user-book-name
-                                                            state
-                                                            nil
-                                                            expansion-alist
-                                                            nil ; uncertified-okp
-                                                            defaxioms-okp
-                                                            skip-proofs-okp
-                                                            ttags-seen
-                                                            nil nil nil)))))
-                                (let* ((wrld2 (w state))
-                                       (new-defpkg-list
-                                        (new-defpkg-list
-                                         defpkg-items
-                                         (delete-names-from-kpa
-                                          expansion-alist-pkg-names
-                                          (global-val 'known-package-alist wrld2))
-                                         wrld1-known-package-alist))
-                                       (new-fns (and (or (not (warning-disabled-p
-                                                               "Guards"))
-                                                         compile-flg)
+                                            (er-progn
+                                             (hcomp-build-from-portcullis
+                                              (reverse
+                                               (global-val
+                                                'top-level-cltl-command-stack
+                                                wrld1))
+                                              state)
+                                             (include-book-fn user-book-name
+                                                              state
+                                                              nil
+                                                              expansion-alist
+                                                              uncertified-okp
+                                                              defaxioms-okp
+                                                              skip-proofs-okp
+                                                              ttags-seen
+                                                              nil nil nil)))))
+                                  (let* ((wrld2 (w state))
+                                         (new-defpkg-list
+                                          (new-defpkg-list
+                                           defpkg-items
+                                           (delete-names-from-kpa
+                                            expansion-alist-pkg-names
+                                            (global-val 'known-package-alist wrld2))
+                                           wrld1-known-package-alist))
+                                         (new-fns (and (or (not (warning-disabled-p
+                                                                 "Guards"))
+                                                           compile-flg)
 
 ; The test above is an optimization; we only need new-fns if the test holds.
 
-                                                     (newly-defined-top-level-fns
-                                                      wrld1 wrld2 full-book-name)))
-                                       (os-expansion-filename
-                                        (and compile-flg
-                                             (expansion-filename
-                                              full-book-name t state)))
-                                       (post-alist2
-                                        (cdr (global-val 'include-book-alist
-                                                         wrld2))))
+                                                       (newly-defined-top-level-fns
+                                                        wrld1 wrld2 full-book-name)))
+                                         (os-expansion-filename
+                                          (and compile-flg
+                                               (expansion-filename
+                                                full-book-name t state)))
+                                         (post-alist2
+                                          (cdr (global-val 'include-book-alist
+                                                           wrld2))))
 
 ; The cdr above removes the certification tuple stored by the
 ; include-book-fn itself.  That pair is guaranteed to be last one
@@ -14724,64 +15027,76 @@
 ; we've included (and hence recognize as redundant) until after we've
 ; completed the processing.
 
-                                  (pprogn
-                                   (mv-let
-                                    (new-bad-fns all-bad-fns)
-                                    (cond ((not (warning-disabled-p "Guards"))
-                                           (mv (collect-ideals new-fns wrld2 nil)
-                                               (collect-ideal-user-defuns wrld2)))
-                                          (t (mv nil nil)))
-                                    (cond
-                                     ((or new-bad-fns all-bad-fns)
-                                      (print-certify-book-guards-warning
-                                       full-book-name new-bad-fns all-bad-fns k
-                                       ctx state))
-                                     (t state)))
-                                   (er-progn
-                                    (chk-certify-book-step-3 post-alist2
-                                                             post-alist1
-                                                             ctx state)
-                                    (state-global-let*
-                                     ((connected-book-directory
+                                    (pprogn
+                                     (mv-let
+                                      (new-bad-fns all-bad-fns)
+                                      (cond ((not (warning-disabled-p "Guards"))
+                                             (mv (collect-ideals new-fns wrld2 nil)
+                                                 (collect-ideal-user-defuns wrld2)))
+                                            (t (mv nil nil)))
+                                      (cond
+                                       ((or new-bad-fns all-bad-fns)
+                                        (print-certify-book-guards-warning
+                                         full-book-name new-bad-fns all-bad-fns k
+                                         ctx state))
+                                       (t state)))
+                                     (er-progn
+                                      (cond
+                                       ((eq cert-op :create-pcert)
+
+; We bypass the check from chk-certify-book-step-3, because some book may now
+; be certified that was not certified during the preceding step (Step 2).  We
+; could still check here that all certified books in the world created by Step
+; 2 still have the same include-book-alist entry after Step 3.  But we already
+; do only minimal checks like that for provisional certification, so we don't
+; bother here.
+
+                                        (value nil))
+                                       (t (chk-certify-book-step-3 post-alist2
+                                                                   post-alist1
+                                                                   ctx state)))
+                                      (state-global-let*
+                                       ((connected-book-directory
 
 ; This binding is for the call of compile-certified-file below, though perhaps
 ; there will be other uses.
 
-                                       directory-name))
-                                     (pprogn
-                                      (print-certify-book-step-4 ; write certificate
-                                       full-book-name os-expansion-filename state)
-                                      (let* ((portcullis-cmds
-                                              (append? (car portcullis)
-                                                       new-defpkg-list))
-                                             (chk-sum
-                                              (check-sum-cert portcullis-cmds
-                                                              expansion-alist
-                                                              ev-lst))
-                                             (extra-entry
-                                              (list* full-book-name
-                                                     user-book-name
-                                                     familiar-name
-                                                     cert-annotations
-                                                     chk-sum)))
-                                        (cond
-                                         ((not (integerp chk-sum))
+                                         directory-name))
+                                       (pprogn
+                                        (print-certify-book-step-4 ; write certificate
+                                         full-book-name os-expansion-filename
+                                         cert-op state)
+                                        (let* ((portcullis-cmds
+                                                (append? (car portcullis)
+                                                         new-defpkg-list))
+                                               (chk-sum
+                                                (check-sum-cert portcullis-cmds
+                                                                expansion-alist
+                                                                ev-lst))
+                                               (extra-entry
+                                                (list* full-book-name
+                                                       user-book-name
+                                                       familiar-name
+                                                       cert-annotations
+                                                       chk-sum)))
+                                          (cond
+                                           ((not (integerp chk-sum))
 
 ; This really shouldn't happen!  After all, we already called read-object-file
 ; above, which calls read-object, which calls chk-bad-lisp-object.
 
-                                          (er soft ctx
-                                              "The file ~x0 is not a legal ~
-                                               list of embedded event forms ~
-                                               because it contains an object, ~
-                                               ~x1, that check sum was unable ~
-                                               to handle.  This may be an ~
-                                               implementation error; feel ~
-                                               free to contact the ACL2 ~
-                                               implementors."
-                                              full-book-name
-                                              chk-sum))
-                                         (t
+                                            (er soft ctx
+                                                "The file ~x0 is not a legal ~
+                                                list of embedded event forms ~
+                                                because it contains an ~
+                                                object, ~x1, that check sum ~
+                                                was unable to handle.  This ~
+                                                may be an implementation ~
+                                                error; feel free to contact ~
+                                                the ACL2 implementors."
+                                                full-book-name
+                                                chk-sum))
+                                           (t
 
 ; It is important to write the compiled file before installing the certificate
 ; file, since "make" dependencies look for the .cert file, whose existence
@@ -14791,87 +15106,123 @@
 ; first, but with a temporary name, and then move it to its final name after
 ; compilation (if any) has completed.
 
-                                          (er-let*
-                                              ((temp-cert-file
-                                                (make-certificate-file
-                                                 full-book-name
-                                                 (cons portcullis-cmds
-                                                       (cdr portcullis))
-                                                 (cons extra-entry post-alist1)
-                                                 (cons extra-entry post-alist2)
-                                                 expansion-alist
-                                                 compile-flg
-                                                 ctx
-                                                 state)))
-                                            (er-progn
-                                             (cond
-                                              (compile-flg
-                                               (pprogn
-                                                (print-certify-book-step-5
-                                                 full-book-name state) 
-                                                (er-progn
-                                                 (write-expansion-file
-                                                  portcullis-cmds
-                                                  declaim-list
-                                                  new-fns
-                                                  (expansion-filename
-                                                   full-book-name nil state)
-                                                  expansion-alist
-                                                  expansion-alist-pkg-names
-                                                  ev-lst
-                                                  pass1-known-package-alist
-                                                  ctx state)
+                                            (er-let*
+                                                ((temp-cert-file
+                                                  (make-certificate-file
+                                                   full-book-name
+                                                   (cons portcullis-cmds
+                                                         (cdr portcullis))
+                                                   (cons extra-entry post-alist1)
+                                                   (cons extra-entry post-alist2)
+                                                   expansion-alist
+                                                   cert-op
+                                                   ctx
+                                                   state)))
+                                              (er-progn
+                                               (cond
+                                                (compile-flg
+                                                 (pprogn
+                                                  (print-certify-book-step-5
+                                                   full-book-name state) 
+                                                  (er-progn
+                                                   (write-expansion-file
+                                                    portcullis-cmds
+                                                    declaim-list
+                                                    new-fns
+                                                    (expansion-filename
+                                                     full-book-name nil state)
+                                                    expansion-alist
+                                                    expansion-alist-pkg-names
+                                                    ev-lst
+                                                    pass1-known-package-alist
+                                                    ctx state)
+                                                   #-acl2-loop-only
+                                                   (progn
+                                                     (compile-certified-file
+                                                      os-expansion-filename
+                                                      full-book-name
+                                                      state)
+                                                     (when (not (f-get-global
+                                                                 'save-expansion-file
+                                                                 state))
+                                                       (delete-expansion-file
+                                                        os-expansion-filename state))
+                                                     (value nil))
+                                                   (value nil))))
+                                                ((not (eq cert-op
+                                                          :convert-pcert))
                                                  #-acl2-loop-only
-                                                 (let ((cert-file
-                                                        (pathname-unix-to-os
-                                                         (convert-book-name-to-cert-name
-                                                          full-book-name)
-                                                         state)))
-                                                   (compile-certified-file
-                                                    os-expansion-filename
-                                                    full-book-name
-                                                    state)
-                                                   (when (probe-file cert-file)
-                                                     (delete-file cert-file))
-                                                   (rename-file
-                                                    (pathname-unix-to-os
-                                                     temp-cert-file
-                                                     state)
-                                                    cert-file)
-                                                   (when (not (f-get-global
-                                                               'save-expansion-file
-                                                               state))
-                                                     (delete-expansion-file
-                                                      os-expansion-filename state))
-                                                   (value nil))
-                                                 (value nil))))
-                                              (t
+                                                 (delete-auxiliary-book-files
+                                                  full-book-name)
+                                                 (value nil))
+                                                (t (value nil)))
                                                #-acl2-loop-only
-                                               (delete-auxiliary-book-files
-                                                full-book-name)
-                                               (value nil)))
-                                             (pprogn
-                                              (cond (acl2x-expansion-alist
-                                                     (observation
-                                                      ctx
-                                                      "Used expansion-alist ~
-                                                       obtained from file ~x0."
-                                                      acl2x-file))
-                                                    (t state))
-                                              (value
-                                               full-book-name))))))))))))))))))))))))))))))))))
+                                               (let ((cert-file
+                                                      (pathname-unix-to-os
+                                                       (convert-book-name-to-cert-name
+                                                        full-book-name
+                                                        (eq cert-op :create-pcert))
+                                                       state)))
+
+; Install temprary certificate file.
+
+
+                                                 (when (probe-file cert-file)
+                                                   (delete-file cert-file))
+                                                 (rename-file
+                                                  (pathname-unix-to-os
+                                                   temp-cert-file
+                                                   state)
+                                                  cert-file)
+
+; Delete stale certificates.
+
+                                                 (cond
+                                                  ((eq cert-op :create-pcert)
+                                                   (let ((orig-cert-file
+                                                          (pathname-unix-to-os
+                                                           (convert-book-name-to-cert-name
+                                                            full-book-name
+                                                            nil)
+                                                           state)))
+                                                     (when (probe-file orig-cert-file)
+                                                       (delete-file
+                                                        orig-cert-file))))
+                                                  ((not (eq cert-op :convert-pcert))
+                                                   (let ((pcert-file
+                                                          (pathname-unix-to-os
+                                                           (convert-book-name-to-cert-name
+                                                            full-book-name
+                                                            t)
+                                                           state)))
+                                                     (when (probe-file pcert-file)
+                                                       (delete-file
+                                                        pcert-file)))))
+                                                 (value nil))
+                                               (pprogn
+                                                (cond (acl2x-expansion-alist
+                                                       (observation
+                                                        ctx
+                                                        "Used expansion-alist ~
+                                                        obtained from file ~
+                                                        ~x0."
+                                                        acl2x-file))
+                                                      (t state))
+                                                (value
+                                                 full-book-name)))))))))))))))))))))))))))))))))))
 
 #+acl2-loop-only
 (defmacro certify-book (user-book-name
                         &optional
                         (k '0)
-                        (compile-flg 't compile-flg-supplied-p)
+                        (compile-flg ':default)
                         &key
                         (defaxioms-okp 'nil)
-                        (skip-proofs-okp 'nil)
+                        (skip-proofs-okp ':default)
                         (ttags 'nil)
                         (ttagsx 'nil ttagsxp)
-                        (acl2x 'nil))
+                        (acl2x ':default)
+                        (pcert ':default))
 
   ":Doc-Section Books
 
@@ -14895,33 +15246,38 @@
   General Form:
   (certify-book book-name
                 k                           ; [default 0]
-                compile-flg                 ; [default generally t]
+                compile-flg                 ; [default t]
                 :defaxioms-okp t/nil        ; [default nil]
                 :skip-proofs-okp t/nil      ; [default nil]
                 :ttags ttags                ; [default nil]
                 :acl2x t/nil                ; [default nil]
                 :ttagsx ttags               ; [default nil]
+                :pcert pcert                ; [default nil]
                 )
   ~ev[]
   where ~c[book-name] is a book name (~pl[book-name]), ~c[k] is used to
   indicate your approval of the ``certification ~il[world],'' and
-  ~c[compile-flg] can control whether the book is to be compiled.  All of these
-  arguments are described in detail below.
+  ~c[compile-flg] can control whether the book is to be compiled.  The defaults
+  for ~c[compile-flg], ~c[skip-proofs-okp], ~c[acl2x], and ~c[pcert] can be
+  affected by environment variables.  All of these arguments are described in
+  detail below, except that we assume below that the value of ~c[:pcert] is
+  ~c[nil].  For a discussion of this argument, ~pl[provisional-certification].
 
   Certification occurs in some logical ~il[world], called the ``certification
   ~il[world].''  That ~il[world] must contain the ~ilc[defpkg]s needed to read
   and execute the forms in the book.  The ~il[command]s necessary to recreate
-  that ~il[world] from the ACL2 initial ~il[world] will be copied into the
-  ~il[certificate] created for the book.  Those ~il[command]s will be
-  re-executed whenever the book is included, to ensure that the appropriate
-  packages (and all other names used in the certification ~il[world]) are
-  correctly defined.  The certified book will be more often usable if the
-  certification ~il[world] is kept to a minimal extension of the ACL2 initial
-  ~il[world] (for example, to prevent name clashes with functions defined in
-  other books).  Thus, before you call ~c[certify-book] for the first time on a
-  book, you may wish to get into the initial ACL2 ~il[world] (e.g., with
-  ~c[:ubt 1] or just starting a new version of ACL2), ~ilc[defpkg] the desired
-  packages, and then invoke ~c[certify-book].
+  that ~il[world] from the ACL2 initial ~il[world] are called the
+  ``~il[portcullis] commands,'' and will be copied into the ~il[certificate]
+  created for the book.  Those ~il[command]s will be re-executed whenever the
+  book is included, to ensure that the appropriate packages (and all other
+  names used in the certification ~il[world]) are correctly defined.  The
+  certified book will be more often usable if the certification ~il[world] is
+  kept to a minimal extension of the ACL2 initial ~il[world] (for example, to
+  prevent name clashes with functions defined in other books).  Thus, before
+  you call ~c[certify-book] for the first time on a book, you may wish to get
+  into the initial ACL2 ~il[world] (e.g., with ~c[:ubt 1] or just starting a
+  new version of ACL2), ~ilc[defpkg] the desired packages, and then invoke
+  ~c[certify-book].
 
   The ~c[k] argument to ~c[certify-book] must be either a nonnegative integer
   or else one of the symbols ~c[t] or ~c[?] in the ~c[ACL2] package.  If ~c[k]
@@ -14947,18 +15303,25 @@
   We next describe the meaning of ~c[compile-flg] and how it defaults.  If
   explicit compilation has been suppressed by ~c[(set-compiler-enabled nil)],
   then ~c[compile-flg] is coerced to ~c[nil]; ~pl[compilation].  Otherwise
-  ~c[compile-flg] may be given the value of ~c[t], indicating that the book is
-  to be compiled, or else ~c[nil].  Finally, suppose that ~c[compile-flg] is
-  not supplied.  If environment variable ~c[ACL2_COMPILE_FLG] is defined, then
-  its value should be ~c[T] or ~c[NIL] after converting to upper-case, in which
-  case ~c[compile-flg] is considered to have value ~c[t] or ~c[nil]
-  (respectively).  Otherwise ~c[compile-flg] defaults to ~c[t].
+  ~c[compile-flg] may be given the value of ~c[t] (or equivalently, ~c[:all]),
+  indicating that the book is to be compiled, or else ~c[nil].  (Note that
+  compilation initially creates a compiled file with a temporary file name, and
+  then moves that temporary file to the final compiled file name obtained by
+  adding a suitable extension to the book name.  Thus, a compiled file will
+  appear atomically in its intended location.)  Finally, suppose that
+  ~c[compile-flg] is not supplied (or is ~c[:default]).  If environment
+  variable ~c[ACL2_COMPILE_FLG] is defined and not the empty string, then its
+  value should be ~c[T] or ~c[NIL] after converting to upper-case, in which
+  case ~c[compile-flg] is considered to have value ~c[t] or
+  ~c[nil] (respectively).  Otherwise ~c[compile-flg] defaults to ~c[t].
 
   Two keyword arguments, ~c[:defaxioms-okp] and ~c[:skip-proofs-okp], determine
   how the system handles the inclusion of ~ilc[defaxiom] events and
   ~ilc[skip-proofs] events, respectively, in the book.  The value ~c[t] allows
-  such events, but prints a warning message.  The value ~c[nil] is the default,
-  and causes an error if such an event is found.
+  such events, but prints a warning message.  The value ~c[nil] causes an error
+  if such an event is found.  ~c[Nil] is the default unless keyword argument
+  ~c[:acl2x t] is provided and state global ~c['write-acl2x] is a cons
+  (~pl[set-write-acl2x]), in which case the default is ~c[t].
 
   The keyword argument ~c[:ttags] may normally be omitted.  A few constructs,
   used for example if you are building your own system based on ACL2, may
@@ -15049,19 +15412,24 @@
   :cited-by Programming"
 
   (declare (xargs :guard (member-eq compile-flg
-                                    '(nil t :all))))
+                                    '(nil t :all
+
+; We allow :default as a way for generated certify-book commands to specify
+; explicitly that they take compile-flg from environment variable
+; ACL2_COMPILE_FLG.
+
+                                          :default))))
   (list 'certify-book-fn
         (list 'quote user-book-name)
         (list 'quote k)
-        (list 'quote (if compile-flg-supplied-p
-                         compile-flg
-                       :default))
+        (list 'quote compile-flg)
         (list 'quote defaxioms-okp)
         (list 'quote skip-proofs-okp)
         (list 'quote ttags)
         (list 'quote ttagsx)
         (list 'quote ttagsxp)
         (list 'quote acl2x)
+        (list 'quote pcert)
         'state))
 
 (defmacro certify-book! (user-book-name &optional
@@ -15097,6 +15465,602 @@
              ,(if compile-flg-supplied-p
                   `(certify-book ,user-book-name ,k ,compile-flg ,@args)
                 `(certify-book ,user-book-name ,k))))
+
+(defdoc provisional-certification
+
+; Essay on Provisional Certification
+
+; This Essay completes our discussion of the provisional certification process
+; that is described in :DOC provisional-certification, covering some design and
+; implementation issues not already covered there.  We assume prior reading of
+; that :DOC topic.
+
+; We start by discussing why the Convert step involves all event processing
+; (with proofs skipped).  A key reason is the importance of recording hidden
+; defpkg events -- which, by the way, provide a reason not to trust .pcert
+; files without converting them to .cert files.  Of course, .pcert files are
+; already clearly insufficient, since the whole point is to create them without
+; checking that subsidiary books are certified, even provisionally.  But other
+; than hidden defpkg events, are there other reasons to require full
+; certification (albeit with proofs skipped) in order to convert a .pcert file
+; to a .cert file?  More specifically: Can we skip either the first pass where
+; we process local events or the second pass where we don't?  Well, we need the
+; first pass in order to detect a name conflict between a local event in the
+; (main) book and a portcullis command in a sub-book that was not executed
+; during the Pcertify step for the main book (because the sub-book was not yet
+; certified at the time it was included).  If we miss that name conflict, then
+; Convert may produce a .cert file that could not have been produced by
+; ordinary direct, non-provisional certification, which could be distressing
+; when non-provisional is tried at a future date.  And, we need the second pass
+; because only after that pass, ignoring local events, are we prepared to do
+; the usual post-alist computation and possibly (though not typically)
+; compilation.  Skipping the second pass would require careful thought about
+; other issues that we haven't addressed, for example perhaps about skip-proofs
+; tracking.
+
+; Our Fundamental Claim is that if a call of prove succeeds during the Pcertify
+; step, then it is sound for the corresponding call to succeed during direct
+; certification starting with the certification world saved from the start of
+; the Pcertify step.  In order to support this Claim, we need to make sure that
+; a .cert file produced by a Convert step includes the commands used to produce
+; that certification world.  We thus save those portcullis commands in the
+; .pcert file, to be executed at the start of the Convert step.
+
+; Turning to another issue: For provisional certification it is important that
+; there are no stale .cert files around.  Otherwise, we might be tempted to
+; load a compiled file that is invalid, which is problematic, as we now
+; explain.  Normally, i.e. in the absence of any provisional certification, the
+; presence of a stale .cert file might initiate an early load of the compiled
+; file, but ultimately we will find that the book is uncertified and hence all
+; bets are off (and also, we will remove the effect of the load of the compiled
+; file).  However, during provisional certification we do not look for books to
+; be certified.  A stale .cert file that is newer than a corresponding compiled
+; file will give permission for loading that compiled file.  Thus, before
+; beginning a Pcertify step, all stale .cert files should be removed.  ACL2
+; does not enforce this requirement; it is specified as a precondition for our
+; strongest soundness claim about provisional certification.
+
+; Next we explore further the handling of make-event calls.  Since make-event
+; expansion depends on the state, we are in danger of violating the Fundamental
+; Claim above.  Therefore, we disallow make-event expansion during Pcertify and
+; Convert steps, insisting instead that expansions are provided by the .acl2x
+; file.  The .acl2x file also serves the purpose of avoiding repeating the same
+; make-event expansion during Pcertification, when many books may include the
+; same uncertified book that contains a make-event call.  While we believe that
+; the above decisions are clear-cut for Pcertify steps, they are a little less
+; obvious for Convert steps, since we could save the expansion-alist in the
+; .pcert file, and maybe even use checksums like we do with .cert files.  But
+; that could increase disk space substantially for large expansions, and we are
+; already trusting that the filesystem isn't being messed with when doing
+; (P)certification.  And that disk space can't easily be reclaimed by deleting
+; .pcert files after Convert since, as mentioned earlier above, .pcert files
+; may be saved in order to validate (via time stamps) the compiled files.
+
+; Finally, note that when we create .acl2x files to support provisional
+; certification, we have dependencies analogous to those that we have for .cert
+; files: if book b1 includes book b2, then we must create b2.acl2x before we
+; create b1.acl2x.  So in general, we do not get as much parallelism for
+; creation of .acl2x files as we do for creation of .pcert files.  However,
+; writing of .acl2x files is generally very fast, avoiding the local
+; compatibility check, compilation, and even proofs.  After all, this step
+; needn't really be trusted.  While on the topic of parallelism in provisional
+; certification, it is worth noting that the Convert step has the sequential
+; dependencies of ordinary certification, hence those described above for
+; .acl2x files; but much as with .acl2x files, we expect Convert steps to be
+; relatively fast because of the lack of proofs and (to a lesser extent
+; perhaps) compilation.
+
+; This concludes the Essay on Provisional Certification.  Again, see :DOC
+; provisional-certification for more on the topic.
+
+  ":Doc-Section Books
+
+  certify a book in stages for improved parallelism~/
+
+  This is an advanced topic.  We assume that the reader is already familiar
+  with ~il[books], in particular ~ilc[certify-book] and ~ilc[include-book].
+  This topic is divided into sections: Introduction, Typical Process,
+  Correctness Claim and Issues, Process Steps, and Further Details.  The last
+  of these sections can probably be skipped by most readers.~/
+
+  ~st[Introduction]
+
+  The provisional certification process can increase parallelism at the system
+  level, typically using `make', when certifying a collection of ~il[books].
+  We got this idea from Jared Davis, who implemented a rudimentary version for
+  his ``Milawa'' system.
+
+  Recall that certification produces ~il[certificate] files whose names have
+  the extension ~c[.cert].  The provisional certification process produces
+  ``provisional certificate'' files with extension ~c[.pcert], sometimes called
+  ``~c[.pcert]'' files (pronounced ``dot pee cert''), before applying
+  ``Convert'' steps to produce true ~il[certificate]s, i.e., ~c[.cert] files.
+
+  The main idea is to break sequential dependencies caused by
+  ~ilc[include-book]: a book may be provisionally certified even if it includes
+  books (sometimes called ``sub-books'') that have not themselves been
+  certified.  For example, suppose that a proof development consists of books
+  ~c[A.lisp], ~c[B.lisp], and ~c[C.lisp], where file ~c[A.lisp] contains the
+  form ~c[(include-book \"B\")] and file ~c[B.lisp] contains the form
+  ~c[(include-book \"C\")].  Normally one would first certify ~c[C], then
+  ~c[B], and finally, ~c[A].  However, the provisional certification process
+  can speed up the process on a multi-core machine by using two steps:
+  ``Pcertify'' (pronounced ``pee certify'') steps that provisionally certify
+  the books, and ``Convert'' steps that complete the certification by creating
+  ~c[.cert] files based on ~c[.pcert] files.  In our example, the steps would
+  be as follows.
+
+  ~bf[]
+  o Pcertify books \"A\", \"B\", and \"C\" in parallel, allowing
+    ~ilc[include-book] to succeed for uncertified sub-books.
+
+  o Certify each of the three books using the ``Convert'' process, which relies
+    on the existence of a ~c[.pcert] file for each book and a ~c[.cert] file
+    for its included sub-books, but skips proofs.
+  ~ef[]
+
+  Notice that unlike the Pcertify steps, the Convert steps require that each
+  sub-book is already certified, hence can be slowed down by include-book
+  dependencies that are sequential in nature.  However, the Convert steps skip
+  proofs, so they are typically fast.
+
+  The two new steps, Pcertify and Convert, are implemented by supplying a value
+  for the keyword argument ~c[:pcert] of ~ilc[certify-book], namely ~c[:create]
+  or ~c[:convert], respectively.  Typically the ~c[compile-flg] argument of
+  ~ilc[certify-book] is effectively ~c[t] for the Pcertify step and ~c[nil] for
+  the Convert step, so that ~il[compilation] can take full advantage of
+  parallelism.  See also the Process Steps section below for more about how the
+  provisional certification process can invoke ~ilc[certify-book].
+
+  Below we discuss in some detail a complication due to ~ilc[make-event], but
+  for now we give just a quick summary of that issue.  A call of
+  ~ilc[make-event] is similar to a macro call, except that the expansion of a
+  ~c[make-event] form is ~il[state]-dependent.  Therefore, we insist on doing
+  such an expansion only once.  For a given book ~c[B], we therefore precede
+  its Pcertify step by an ``Expand'' step, to create a file ~c[B.acl2x] that
+  specifies the results of ~ilc[make-event] expansions.  So in general, the
+  full provisional certification process for a book ~c[B] begins with the
+  Expand step, creating file ~c[B.acl2x]; next is the Pcertify step, which
+  creates ~c[B.pcert]; and finally is the Convert step, which produces
+  ~c[B.cert].  Moreover, if a book ~c[A] includes book ~c[B], then ACL2 support
+  for ~c[make] arranges that ~c[B.acl2x] is created before the Expand and
+  Pcertify steps are begun for ~c[A], to avoid the need to do ~c[make-event]
+  expansion for events in ~c[B.lisp] when processing ~c[A].  Indeed,
+  ~c[make-event] expansion is illegal during the Pcertify and Convert steps,
+  except in ~ilc[local] contexts; see the Discussion section below if you want
+  to know more about this issue.
+
+  ~st[Typical Process]
+
+  ACL2 provides support for the use of the GNU `make' utility to certify books;
+  ~pl[book-makefiles].  In order to use the provisional certification process,
+  it suffices to issue the usual `~c[make]' command in a directory of books
+  using target `~c[all]' (i.e., the default target) and ~c[ACL2_PCERT=t], for
+  example:
+  ~bv[]
+  make -j 4 ACL2_PCERT=t
+  ~ev[]
+  Alternatively, you can set environment variable ~c[ACL2_PCERT] to a non-empty
+  value before issuing `~c[make]' with its default target, `~c[all]'.
+
+  Consider for example three books ~c[top.lisp], ~c[mid.lisp], and
+  ~c[sub.lisp], where ~c[top.lisp] contains the form ~c[(include-book \"mid\")]
+  and ~c[mid.lisp] contains the form ~c[(include-book \"sub\")].  Such an
+  example may be found in distributed books directory ~c[books/system/pcert/].
+  Here is a log of the provisional certification process for these books.  (In
+  this case, the addition of ``~c[ACL2_PCERT=t]'' to the command is not
+  necessary, because of how the ~c[Makefile] is constructed.)
+  ~bv[]
+    $ make -j 4 ACL2_PCERT=t
+    Updating dependencies in /Users/kaufmann/acl2/devel/books/system/pcert
+    Using ACL2=../../../saved_acl2
+    Making /Users/kaufmann/acl2/devel/books/system/pcert/sub.acl2x on Sun Dec 18 14:24:14 CST 2011
+    -rw-r--r--  1 kaufmann  staff  318 Dec 18 14:24 sub.acl2x
+    Making /Users/kaufmann/acl2/devel/books/system/pcert/mid.acl2x on Sun Dec 18 14:24:15 CST 2011
+    Making /Users/kaufmann/acl2/devel/books/system/pcert/sub.pcert on Sun Dec 18 14:24:15 CST 2011
+    -rw-r--r--  1 kaufmann  staff  4 Dec 18 14:24 mid.acl2x
+    Making /Users/kaufmann/acl2/devel/books/system/pcert/mid.pcert on Sun Dec 18 14:24:15 CST 2011
+    Making /Users/kaufmann/acl2/devel/books/system/pcert/top.acl2x on Sun Dec 18 14:24:15 CST 2011
+    -rw-r--r--  1 kaufmann  staff  92 Dec 18 14:24 sub.pcert
+    Making /Users/kaufmann/acl2/devel/books/system/pcert/sub.cert on Sun Dec 18 14:24:15 CST 2011
+    -rw-r--r--  1 kaufmann  staff  147 Dec 18 14:24 top.acl2x
+    Making /Users/kaufmann/acl2/devel/books/system/pcert/top.pcert on Sun Dec 18 14:24:15 CST 2011
+    -rw-r--r--  1 kaufmann  staff  39 Dec 18 14:24 mid.pcert
+    -rw-r--r--  1 kaufmann  staff  639 Dec 18 14:24 sub.cert
+    Making /Users/kaufmann/acl2/devel/books/system/pcert/mid.cert on Sun Dec 18 14:24:15 CST 2011
+    -rw-r--r--  1 kaufmann  staff  92 Dec 18 14:24 top.pcert
+    -rw-r--r--  1 kaufmann  staff  352 Dec 18 14:24 mid.cert
+    Making /Users/kaufmann/acl2/devel/books/system/pcert/top.cert on Sun Dec 18 14:24:15 CST 2011
+    -rw-r--r--  1 kaufmann  staff  691 Dec 18 14:24 top.cert
+    $ 
+  ~ev[]
+
+  If we look at the Makefile and a generated auxiliary file, we can understand
+  better how this process works.  Here is the user-created Makefile.
+
+  ~bv[]
+  include ../../Makefile-generic
+  -include Makefile-deps
+  ACL2_PCERT = t
+  ~ev[]
+
+  The file ~c[Makefile-deps] is generated automatically so that all necessary
+  dependencies are respected.  Some readers may find it helpful to see it, so
+  we include it now.  The files of the form ~c[*.acl2], which show up below,
+  are included in this example just to add a bit of ``spice''; you might not
+  need them in your own directories (~pl[book-makefiles]).
+
+  ~bv[]
+    # This file is automatically generated; do not hand edit.
+
+    mid.cert: mid.lisp
+    mid.cert: sub.cert
+    mid.cert: mid.acl2
+
+    sub.cert: sub.lisp
+    sub.cert: cert.acl2
+
+    top.cert: top.lisp
+    top.cert: mid.cert
+    top.cert: top.acl2
+    top.cert: cert.acl2
+
+    # DEPENDENCIES FOR PROVISIONAL CERTIFICATION ONLY:
+    ifneq ($(ACL2_PCERT),)
+
+    # Dependencies for .pcert files:
+
+    mid.pcert: mid.lisp
+    mid.pcert: mid.acl2x
+    mid.pcert: mid.acl2
+
+    sub.pcert: sub.lisp
+    sub.pcert: sub.acl2x
+    sub.pcert: cert.acl2
+
+    top.pcert: top.lisp
+    top.pcert: top.acl2x
+    top.pcert: top.acl2
+
+    # Dependencies for .acl2x files (similar to those for .cert files):
+
+    mid.acl2x: mid.lisp
+    mid.acl2x: sub.acl2x
+    mid.acl2x: mid.acl2
+
+    sub.acl2x: sub.lisp
+    sub.acl2x: cert.acl2
+
+    top.acl2x: top.lisp
+    top.acl2x: mid.acl2x
+    top.acl2x: top.acl2
+    top.acl2x: cert.acl2
+
+    # Dependencies for converting .pcert to .cert files:
+
+    mid.cert: mid.pcert
+    sub.cert: sub.pcert
+    top.cert: top.pcert
+
+    endif
+  ~ev[]
+
+  ~st[Correctness Claim and Issues]
+
+  The Basic Claim for certification is the same whether or not the provisional
+  certification process is employed: all books should be certified from
+  scratch, with no files written to the directories of the books except by
+  ACL2.  Moreover, no trust tags should be used (~pl[defttag]), or else it is
+  the responsibility of the user to investigate every occurrence of
+  ``~c[TTAG NOTE]'' that is printed to standard output.
+
+  But common practice is to certify a set of books in stages: certify a few
+  books, fix some books, re-certify changed books, certify some more books, and
+  so on.  In practice, we expect this process to be sound even though it does
+  not meet the preconditions for the Basic Claim above.  In particular, we
+  expect that the use of checksums in ~il[certificate]s will make it
+  exceedingly unlikely that a book is still treated as certified after some
+  event in the book has been modified.
+
+  Provisional certification opens the door to problems with the above
+  procedure.  In particular, ~c[.pcert] files do not have checksums, and
+  changes in sub-books of a book, ~c[B], do not invalidate ~c[B.pcert].  Also,
+  changes to ~c[B.acl2x] can affect the semantics of the book ~c[B], which
+  ultimately depends on the ~ilc[make-event] expansions in its
+  ~il[certificate], without invalidating ~c[B.pcert].  And finally, a normal
+  check done during certification is skipped by any Pcertify step, namely that
+  the book checksums after processing ~ilc[events] using proofs is consistent with
+  (essentially, a superset of) the book checksums after retracting and
+  including, indicated by ACL2 with the following message.
+  ~bv[]
+    * Step 3:  That completes the admissibility check.  Each form read
+    was an embedded event form and was admissible. We now retract back
+    to the initial world and try to include the book.  This may expose
+    local incompatibilities.
+  ~ev[]
+
+  Because of issues such as those above, it is safest in a ~c[make]-based
+  approach to issue the command ~c[`make clean'] before completing
+  certification using a provisional certification process, rather than leaving
+  around some possibly stale generated files.  (That said, it is likely to work
+  out fine if you don't bother cleaning first!)
+
+  Thus, the provisional certification process is not as trustworthy as ordinary
+  certification when the process is incremental.  But what is the soundness
+  claim when the preconditions are met for the Basic Claim above, i.e., when
+  all certification is done without any intervening edits?  While our intention
+  is that the provisional certification process satisfies the Basic Claim,
+  nevertheless there is a bit more risk of violating this Claim when
+  provisional certification is used.  For example, we have identified the
+  following issue of possible concern.  Suppose that book ~c[B.lisp] contains
+  the form ~c[(include-book \"C\")].  Suppose also that the book ~c[C.lisp] is
+  certified in a world that includes one or more ~il[portcullis] ~il[command]s,
+  one of which defines a package, ~c[\"MY-PKG\"].  If we Pcertify ~c[B] before
+  ~c[C] has been certified, then the above ~ilc[include-book] form will execute
+  events from ~c[C] without including the definition of ~c[\"MY-PKG\"] from the
+  ~il[portcullis] of ~c[C], which could cause a hard Lisp error.  Now we could
+  view that the way we view resource errors: basically, ACL2 is a partially
+  correct system in the sense that it is allowed to cause an error at any time.
+  Our reading of the Common Lisp standard is that an error would indeed occur,
+  halting evaluation, if the reader encountered a token of the form
+  ~c[MY-PKG::name], as Section 2.2 of the HyperSpec says that ``an error of
+  type reader-error is signaled if the token is not of valid syntax.''  Still,
+  error handling is a subtle business, and we can imagine that something
+  unexpected could occur in such cases, such corruption of the running ACL2
+  image or a silent continuation from the error.
+
+  Because of the situation with packages described above, you may find it
+  convenient to have a common sequence of portcullis commands for all books in
+  a given set of books.  You may even want to have a single book that is
+  certified in a world with all necessary packages, and set up a process that
+  first certifies that book (without provisional certification), and then uses
+  the provisional certification process on the remainder of the books with an
+  ~ilc[include-book] of that first book as their common portcullis command.
+
+  In summary, while we believe that the provisional certification process can
+  be trusted, we suggest that for maximum trust, it is best for all books in a
+  project to be certified from scratch without the provisional certification
+  process.
+
+  ~st[Process Steps]
+
+  As indicated above, the Pcertify and Convert steps of the provisional
+  certification process are implemented with calls of ~ilc[certify-book].
+  Moreover, an Expand step is needed first if there are non-~il[local]
+  ~ilc[make-event] forms, and it too is implemented using ~ilc[certify-book].
+  In this section we describe all such ~ilc[certify-book] calls and how they
+  are influenced by the environment variable ~c[ACL2_PCERT].
+
+  In a standard ~c[make]-based procedure, portcullis commands for all three
+  steps (Expand, Pcertify, and Convert) are taken from the same ~c[.acl2] file.
+
+  ~em[Expand.]  The Expand step writes out a ~c[.acl2x] file;
+  ~pl[set-write-acl2x] for details of how this works.  Here we give a succinct
+  summary and we also explain the role of environment variable ~c[ACL2_PCERT].
+  The first thing to do is to evaluate ~c[(set-write-acl2x val state)], where
+  ~c[val] expands to a legal value for ~ilc[set-write-acl2x].  We recommend the
+  value supplied by the use of `~c[make]' described above (in which the value
+  of environment variable ~c[ACL2_PCERT] is a non-empty string), as follows.
+  ~bv[]
+  (set-write-acl2x '(include-book-with-locals) state)
+  ~ev[]
+  This call sets ~il[state] global ~ilc[ld-skip-proofsp] to the symbol
+  ~c[include-book-with-locals], which arranges not only that proofs are skipped
+  when writing out the ~c[.acl2x] file, but also that only the second pass is
+  evaluated for each ~ilc[encapsulate] form encountered.  Then the second thing
+  to do is to invoke ~ilc[certify-book] with a keyword argument ~c[:acl2x] of
+  ~c[t], as follows.
+  ~bv[]
+  (certify-book \"foo\"    ; Book name
+                ?        ; Or, number of commands in the certification world
+                :default ; Compile-flg, irrelevant when writing .acl2x files
+                :acl2x t)
+  ~ev[]
+  Note however that if the ACL2 `~c[make]' approach is used to create the
+  ~c[.acl2x] file and environment variable ~c[ACL2_PCERT] has a non-empty
+  string value (perhaps supplied with the `~c[make]' command), then the
+  ~c[:acl2x] argument may be omitted.
+  ~bv[]
+  $ make -j 4 ACL2_PCERT=t
+  #   or
+  $ make -j 4 ACL2_PCERT=t foo.acl2x
+  #   or: first evaluate
+  $ export ACL2_PCERT = t
+  #   and then, within ACL2:
+  (certify-book \"foo\" ?)
+  ~ev[]
+
+  Note that if you carried out the Expand step interactively, rather than via
+  `~c[make]', then before a Pcertify or Convert step (or any ordinary
+  certification) you will need to evaluate the following form.
+  ~bv[]
+  (set-write-acl2x nil state)
+  ~ev[]
+
+  ~em[Pcertify].  The Pcertify step is carried out by calling
+  ~ilc[certify-book] with keyword argument ~c[:pcert :create], for example as
+  follows.  Note that the ~c[:acl2x] argument should be omitted if there is no
+  corresponding ~c[.acl2x] file to load.  (That file is only needed if there is
+  at least one non-~ilc[local] ~ilc[make-event] form in the book, although it
+  will be present if the `~c[make]'-based approach is used.)
+  ~bv[]
+  (certify-book \"foo\"    ; Book name
+                ?        ; Or, number of commands in the certification world
+                t        ; Typically we want Pcertify to compile
+                :acl2x t ; Omitted if file foo.acl2x does not exist
+                :pcert :create)
+  ~ev[]
+  Note however that if the ACL2 `~c[make]' approach is used to create the
+  ~c[.pcert] file and environment variable ~c[ACL2_PCERT] has a non-empty
+  string value (perhaps supplied with the `~c[make]' command), then the
+  ~c[:pcert] argument (and, as before, the ~c[:acl2x] argument) may be
+  omitted.
+  ~bv[]
+  $ make -j 4 ACL2_PCERT=t
+  #   or
+  $ make -j 4 ACL2_PCERT=t foo.pcert
+  #   or: first evaluate
+  $ export ACL2_PCERT = t
+  #   and then, within ACL2:
+  (certify-book \"foo\" ? t)
+  ~ev[]
+
+  ~em[Convert].  The Convert step is carried out by calling ~ilc[certify-book]
+  with keyword argument ~c[:pcert :create], for example as follows.  As
+  described above for the Pcertify step, the ~c[:acl2x] argument should be
+  omitted if there is no corresponding ~c[.acl2x] file to load.
+  ~bv[]
+  (certify-book \"foo\"    ; Book name
+                ?        ; Or, number of commands in the certification world
+                nil      ; Typically we want Convert NOT to compile, as
+                         ;   compilation was presumably carried out by Pcertify
+                :acl2x t ; Omitted if file foo.acl2x does not exist
+                :pcert :convert)
+  ~ev[]
+  Note however that if the ACL2 `~c[make]' approach is used to create the
+  ~c[.cert] file and environment variable ~c[ACL2_PCERT] has a non-empty
+  string value (perhaps supplied with the `~c[make]' command), then the
+  ~c[:pcert] argument (and, as before, the ~c[:acl2x] argument) may be
+  omitted.  Moreover, the ~c[compile-flg] argument may also generally be
+  omitted when calling ~ilc[certify-book] to perform the Convert process; see
+  the Further Details section below.
+  ~bv[]
+  $ make -j 4 ACL2_PCERT=t
+  # or
+  $ make -j 4 ACL2_PCERT=t foo.cert
+  #   or: first evaluate
+  $ export ACL2_PCERT = t
+  #   and then, within ACL2:
+  (certify-book \"foo\" ?)
+  ~ev[]
+
+  Finally, we note that the Convert step starts by executing the
+  ~il[portcullis] commands stored in the ~c[.pcert] file, i.e., the commands
+  that were present in the ACL2 logical ~il[world] at the time that the
+  Pcertify step took place.  In a standard ~c[make]-based procedure, where
+  portcullis commands for all three steps (Expand, Pcertify, and Convert) are
+  taken from the same ~c[.acl2] file, all of those initial commands executed by
+  the Convert step will be redundant.  However, there need not be a connection
+  between those commands from the ~c[.pcert] file and the commands currently in
+  the ACL2 world at the time the Convert step is initiated.  In that case, the
+  ~il[portcullis] commands in the final ~c[.cert] file will produce an
+  extension of the world produced by those in the ~c[.pcert] file.  This
+  situation is logically sound, since all the proofs were done during the
+  Pcertify step in the smaller of those two worlds, and hence are logically
+  defensible in the world produced by the larger of the two worlds (the one
+  produced by the portcullis of the ~c[.cert] file, which is loaded when the
+  certified book is later included).
+
+  ~st[Further Details]
+
+  In this final section we provide further details about the provisional
+  certification process.  It can probably be skipped by most readers, to be
+  used as a reference when needed.  For yet more details about the provisional
+  certification process, see the Essay on Provisional Certification in the ACL2
+  source code.
+
+  We start by saying a bit more about the interaction of ~ilc[make-event] and
+  the provisional certification process.  As already noted, if a book ~c[B] has
+  a non-~ilc[local] ~ilc[make-event] form, then in order for any parent book to
+  include ~c[B] during provisional certification before ~c[B] has been
+  certified, there must be a file ~c[B.acl2x] that specifies all non-~c[local]
+  ~c[make-event] expansions.  The reason that ~c[local] ~c[make-event] forms
+  need not have expansions specified is that ~c[local] ~il[events] are skipped
+  when including the book ~c[B].  The Expand step performs and saves
+  expansions of ~c[make-event] forms in ~c[B.lisp] exactly when they are not
+  ~il[local] to an ~ilc[encapsulate], assuming that proofs are skipped during
+  that step (as is generally the case).
+
+  Next we document how provisional certification can allow inclusion of
+  uncertified books by ~ilc[include-book].  The default for the Boolean
+  ~c[:uncertified-okp] argument of ~c[include-book] is ~c[t].  A consequence of
+  this default, familiar to ACL2 users, is that ~c[(include-book \"foo\")]
+  succeeds even if the book ~c[\"foo\"] is uncertified.  However, the
+  ~c[:uncertified-okp] argument of ~c[include-book] (whether explicit or by
+  default) is coerced to ~c[nil] under ``normal'' calls of ~c[certify-book],
+  since certification of a book depends on certification of its included
+  sub-books.  An exception is made when ~c[certify-book] is called on behalf of
+  an Expand or Pcertify step: the ~c[:uncertified-okp] argument is not coerced
+  in these cases.  Thus, one ordinarily can include uncertified books when
+  performing an Expand or Pcertify step, a fact that is critical to support a
+  highly parallel provisional certification process.
+
+  We next discuss how the provisional certification process affects the loading
+  of compiled files by ~ilc[include-book].  First suppose that the provisional
+  certification process is not used.  In that case, a compiled file must be at
+  least as recent as the corresponding ~c[.cert] file in order to be loaded by
+  ~c[include-book].  (This condition is met immediately after certification
+  when compilation is indicated: the ~il[certificate] is created as a temporary
+  file, then compilation takes place, and finally the certificate is
+  moved (without changing its write date) to the ~c[.cert] file.)  Now suppose
+  that provisional certification has produced a ~c[.pcert] file and a compiled
+  file.  In that case, the compiled file must be at least as recent as the
+  ~c[.pcert] file, regardless of whether the ~c[.cert] file exists or, if so,
+  what its write date might be.  The reason for this change is that typically
+  with provisional certification, the ~c[.cert] file is produced by the Convert
+  step and hence will be more recent than the compiled file, which was earlier
+  produced by the Pcertify step.
+
+  Let us consider an important consequence of the above fact, that a ~c[.cert]
+  file produced by the Convert step is typically more recent than the
+  corresponding compiled file.  Because of this, after a typical provisional
+  certification process (for example, as carried out by the `~c[make]'
+  procedure supported by ACL2), it is important not to delete the ~c[.pcert]
+  file even after the ~c[.cert] file has been created: the ~c[.pcert] file,
+  being older than the compiled file, gives ~ilc[include-book] permission to
+  load the compiled file.  If you really want to delete the ~c[.pcert] file in
+  such cases, without invalidating the compiled file, you can update the
+  write-date of the compiled file to the present, for example using the
+  `~c[touch]' shell command.
+
+  The change described above ~-[] a check by ~ilc[include-book] to ensure that
+  the compiled file is more recent than the corresponding ~c[.pcert] file
+  (rather than the ~c[.cert] file), if such exists ~-[] is almost the entire
+  story for how provisional certification affects loading of compiled files by
+  ~ilc[include-book].  But there is an additional change when in the process of
+  Pcertifying a book.  In that case, ACL2 also checks that the compiled file is
+  at least as recent as the book itself (a ~c[.lisp] file).  To see why this
+  additional check is needed, consider the other cases for ~ilc[certify-book].
+  With ordinary certification, as with the Convert step of the provisional
+  certification process, inclusion of uncertified books is disallowed, so we do
+  not need additional checks for the compiled file.  The other case is when
+  ~ilc[certify-book] is being used to create a ~c[.acl2x] file, which is a step
+  that does not need additional guarantees; you get what you get, and
+  ultimately the semantics of book certification depends on the
+  ~ilc[make-event] expansions stored in the ~c[.cert] file.
+
+  We next address an issue of warnings.  Unless certain warnings are inhibited
+  (~pl[set-inhibit-output-lst] and ~pl[set-inhibit-warnings]), you will see a
+  warning during an Expand or Pcertify step when including an uncertified book.
+  This warning is harmless, and to be expected.  We leave it in place by
+  default in case you find it useful to see which uncertified books are
+  included during an Expand or Pcertify step.
+
+  As promised above, we return to the issue of the ~c[compile-flg] argument to
+  ~c[certify-book].  Below is a precise specification.
+  ~bq[]
+
+  o If ~il[state] global ~c['compiler-enabled] is ~c[nil], then ~c[compile-flg]
+  is ~c[nil].
+
+  Otherwise let ~c[env-compile-flg] be the value of environment variable
+  ~c[ACL2_COMPILE_FLG].  Below, we ignore case in comparisons against this
+  string, and we treat the empty string as ~c[nil].
+
+  o Else if ~c[env-compile-flg] is ~c[\"ALL\"], then ~c[compile-flg] is ~c[t].
+
+  o Else if ~c[compile-flg] is supplied as ~c[:all], then ~c[compile-flg] is
+  ~c[t].
+
+  o Else if we are performing a Convert step, then ~c[compile-flg] is ~c[nil].
+
+  o Else if ~c[compile-flg] is supplied as ~c[t] or as ~c[nil], then
+  ~c[compile-flg] is ~c[t] or ~c[nil], respectively.
+
+  o Otherwise ~c[compile-flg] is not supplied or is supplied as ~c[:default].
+  If ~c[env-compile-flg] is the string ~c[\"NIL\"], then ~c[compile-flg] is
+  ~c[nil].  Otherwise ~c[env-compile-flg] should be ~c[nil] or the string
+  ~c[\"T\"] (else an error is signaled), and ~c[compile-flg] is ~c[t].~eq[]")
 
 (deflabel pathname
   :doc
@@ -16067,7 +17031,9 @@
 
   This concludes the basic instructions for creating a ~c[Makefile] in a
   directory including books.  Here are some other capabilities offered by
-  ~c[books/Makefile-subdirs].
+  ~c[books/Makefile-subdirs].  Not included below is a discussion of how to
+  increase parallelism by avoiding the need to certify included books before
+  certifying a given book; ~pl[provisional-certification].
 
   ~st[Subdirectory support.]  There is support for subdirectories.  For
   example, file ~c[books/arithmetic-3/Makefile] formerly had the following

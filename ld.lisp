@@ -18218,6 +18218,10 @@
 ;   
 ;   ;;;;; Now evaluate (ld "cert.lsp") ;;;;;
 
+; We improved the function chk-ld-skip-proofsp to cause a soft error instead of
+; a hard error.  For this purpose, we moved set-ld-skip-proofsp and replaced
+; its use in axioms.lisp with an f-put-global,
+
   :doc
   ":Doc-Section release-notes
 
@@ -18332,6 +18336,18 @@
   newly-compiled file (and similarly for ~ilc[include-book] with argument
   ~c[:load-compiled-file :comp]).
 
+  ~ilc[Set-write-acl2x] now returns an error triple and can take more values,
+  some of which automatically allow including uncertified books when
+  ~ilc[certify-book] is called with argument :acl2x t.
+
+  The environment variable ~c[COMPILE_FLG] has been renamed
+  ~c[ACL2_COMPILE_FLG]; ~pl[certify-book].
+
+  The macros ~ilc[defthmd] and ~ilc[defund] no longer return an error triple
+  with value ~c[:SKIPPED] when proofs are being skipped.  Rather, the value
+  returned is the same as would be returned on success when proofs are not
+  skipped.
+
   ~st[NEW FEATURES]
 
   A new ``tau system'' provides a kind of ``type checker.''  ~l[tau-system].
@@ -18379,6 +18395,13 @@
          :exec (let ((val (fld foo)))
                  (update-fld val foo))))
   ~ev[]
+
+  A new ``provisional certification'' process is supported that can allow
+  ~il[books] to be certified before their included sub-books have been
+  certified, thus allowing for potentially much greater `~c[make]'-level
+  parallelism.  ~l[provisional-certification].  Thanks to Jared Davis for
+  requesting this feature and for helpful discussions, based in part on a
+  rudimentary such capability that he created for his `Milawa' project.
 
   ~st[HEURISTIC IMPROVEMENTS]
 
