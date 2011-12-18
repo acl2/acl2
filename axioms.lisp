@@ -9881,7 +9881,7 @@
 ; that indicates that the stack must be unwound some (to cleanup after an
 ; aborted inferior).
 
-; Parallelism wart: Deal with the folowing comment.  David Rager suspects that
+; Parallelism wart: Deal with the following comment.  David Rager suspects that
 ; we might want to replace it with a pointer to elsewhere where we handle the
 ; issue.
 ; Warning: This variable is let-bound in ld-fn.  This could present a problem
@@ -9889,8 +9889,7 @@
 ; primitives.  We can imagine (and we may have seen) a case in which there are
 ; two threads doing rewriting, and one does a throw (say, because time has
 ; expired), which puts the two threads temporarily out of sync in their values
-; of *ld-level*.  So think about this sort of issue before parallelizing the
-; theorem prover!
+; of *ld-level*.
 
   0)
 
@@ -22671,7 +22670,7 @@
        *error-output*
        "~%~%**********************************************************~%~
           Slow Array Access!  A call of ~a on an array named~%~
-          ~a is being executed slowly.  See :DOC slow-array-warning~%~
+          ~a is being executed slowly.  See :DOC slow-array-warning.~%~
           **********************************************************~%~%"
        fn nm)
       (when (not (eq action :warning))
@@ -23585,21 +23584,21 @@
 ; enabled-array-structure now uses unique names based on the current subgoal
 ; and (2) the array implementation itself was improved to be "more" thread-safe
 ; (you can compare the implementation of aset1 and other related functions in
-; ACL2 3.6.1 and ACL2 4.0 to see the change).  However, there is almost no
-; evidence that arrays are thread-safe.
+; ACL2 3.6.1 and ACL2 4.0 to see the change).  However, we suspect that
+; that arrays are not thread-safe, as we have acknowledged in :DOC
+; unsupported-waterfall-parallelism-features.
 ;
-; I think that we stopped locking the array operations, because the prover
-; incurred significant overhead (if I can recall correctly, it was about a 40%
+; Rager thinks that we stopped locking the array operations because the prover
+; incurred significant overhead (if he can recall correctly, it was about a 40%
 ; increase in time required to certify a semi-expensive book) with locking
-; enabled.  I think that the change to enabled arrays, named (1) above, could
+; enabled.  He thinks that the change to enabled arrays, named (1) above, could
 ; have eliminated most of this overhead.  However, further investigation is
-; needed.
+; called for.
 
 ; For now, we do not lock any array operations, but we leave the dead code as
-; hints to ourselves that we may need to do so before we finish the parallelism
-; project.  When this wart is addressed, this dead code (which can be found by
-; searching for *acl2-par-arrays-lock*) should either be uncommented and
-; modified, or it should be removed.
+; hints to ourselves that we may need to do so.  When this wart is addressed,
+; this dead code (which can be found by searching for *acl2-par-arrays-lock*)
+; should either be uncommented and modified, or it should be removed.
 ;   #+(and acl2-par (not acl2-loop-only))
 ;   (deflock *acl2-par-arrays-lock*)
 
@@ -26059,7 +26058,7 @@
     with-prover-step-limit
     waterfall1-wrapper@par ; for #+acl2-par
     with-waterfall-parallelism-timings ; for #+acl2-par
-    with-possible-parallelism-hazards ; for #+acl2-par
+    with-parallelism-hazard-warnings ; for #+acl2-par
     warn-about-parallelism-hazard ; for #+acl2-par
     state-global-let* ; raw Lisp version for efficiency
     ))
@@ -26281,11 +26280,16 @@
     (connected-book-directory . nil)  ; set-cbd couldn't have put this!
     (current-acl2-world . nil)
     (current-package . "ACL2")
+    (debug-pspv .
 
-; Parallelism wart: remove this definition and uses of the global variable
-; debug-pspv.
+; This variable is used with #+acl2-par for printing information when certain
+; modifications are made to the pspv in the waterfall.  David Rager informs us
+; in December 2011 that he hasn't used this variable in some time, but that it
+; still works as far as he knows.  It should be harmless to remove it if there
+; is a reason to do so, but of course there would be fallout from doing so
+; (e.g., argument lists of various functions that take a debug-pspv argument).
 
-    (debug-pspv . nil) ; (#+acl2-par) for printing pspv mods in the waterfall
+                nil)
     (debugger-enable . nil) ; keep in sync with :doc set-debugger-enable
     (defaxioms-okp-cert . t) ; t when not inside certify-book
     (deferred-ttag-notes . :not-deferred)
@@ -26334,8 +26338,8 @@
     (more-doc-max-lines . 45)
     (more-doc-min-lines . 35)
     (more-doc-state . nil)
-    (parallel-evaluation-enabled . nil)
-    (parallelism-hazards-enabled . nil) ; should be one of nil, :warn, or :error
+    (parallel-execution-enabled . nil)
+    (parallelism-hazards-action . nil) ; nil or :error, else treated as :warn
     (pc-erp . nil)
     (pc-output . nil)
     (pc-print-macroexpansion-flg . nil)
@@ -27344,38 +27348,44 @@
 (defparameter *possible-parallelism-hazards*
 
 ; If *possible-parallelism-hazards* is non-nil and state global
-; 'parallelism-hazards-enabled is non-nil, then any operation known to cause
+; 'parallelism-hazards-action is non-nil, then any operation known to cause
 ; problems in a parallel environment will print a warning (and maybe cause an
 ; error).  For example, we know that calling state-global-let* in any
 ; environment where parallel execution is enabled could cause problems.  See
-; the use of with-possible-parallelism-hazards inside waterfall and the use of
+; the use of with-parallelism-hazard-warnings inside waterfall and the use of
 ; warn-about-parallelism-hazard inside state-global-let* for how we warn the
-; user of such a potential pitfalls.
+; user of such potential pitfalls.
 
 ; Here is a simple example that demonstrates their use:
 
-; (set-state-ok t)
+;   (set-state-ok t)
 
-; (skip-proofs
-;  (defun foo (state)
-;    (declare (xargs :guard t))
-;    (state-global-let* 
-;     ((x 3))
-;     (value (f-get-global 'x state)))))
+;   (skip-proofs
+;    (defun foo (state)
+;      (declare (xargs :guard t))
+;      (state-global-let* 
+;       ((x 3))
+;       (value (f-get-global 'x state)))))
  
-; (skip-proofs
-;  (defun bar (state) 
-;    (declare (xargs :guard t))
-;    (with-possible-parallelism-hazards
-;     (foo state))))
+;   (skip-proofs
+;    (defun bar (state) 
+;      (declare (xargs :guard t))
+;      (with-parallelism-hazard-warnings
+;       (foo state))))
 
-; (set-waterfall-parallelism :full)
+;   (set-waterfall-parallelism :full)
 
-; (bar state) ; prints the warning
+;   (bar state) ; prints the warning
+
+; See also the comment in warn-about-parallelism-hazard for a detailed
+; specification of how this all works.
 
   nil)
 
-(defmacro with-possible-parallelism-hazards (body)
+(defmacro with-parallelism-hazard-warnings (body)
+
+; See the comment in warn-about-parallelism-hazard.
+
   #+(and acl2-par (not acl2-loop-only))
   `(let ((*possible-parallelism-hazards* t))
      ,body)
@@ -27383,13 +27393,32 @@
   body)
 
 (defmacro warn-about-parallelism-hazard (call body)
+
+; This macro can cause a warning or error if raw Lisp global
+; *possible-parallelism-hazards* is bound to t or :error, respectively.  Such
+; binding takes place with a call of with-parallelism-hazard-warnings.  This
+; macro is essentially a no-op when not in the scope of such a call, since
+; *possible-parallelism-hazards* is nil by default.
+
+; It is the programmer's responsibility to wrap this macro around any code (or
+; callers that lead to such code) that can result in any "bad" behavior due to
+; executing that code in a multi-threaded setting.  For example, we call this
+; macro in state-global-let*, which we know can be unsafe to execute in
+; parallel with other state-modifying code.  And that's a good thing, since for
+; example state-global-let* is called by wormhole printing, which is invoked by
+; the code (io? prove t ...) in waterfall-msg when parallelism is enabled.
+
+; Recall the first paragraph above.  Thus, state-global-let* does not cause any
+; such warning or error by default, which is why in a #+acl2-par build, there
+; is a call of with-parallelism-hazard-warnings in waterfall.
+
   #-(and acl2-par (not acl2-loop-only))
   (declare (ignore call))
   #+(and acl2-par (not acl2-loop-only))
   `(progn
      (when (and *possible-parallelism-hazards*
                 (waterfall-parallelism)
-                (f-get-global 'parallelism-hazards-enabled *the-live-state*))
+                (f-get-global 'parallelism-hazards-action *the-live-state*))
        (format t
                "~%WARNING: A macro or function has been called that is not~%~
                 thread-safe.  Please email this message, including the~%~
@@ -27400,8 +27429,8 @@
        (format t
                "~%~%To disable the above warning, issue the form:~%~%~
                 ~s~%~%"
-               '(f-put-global 'parallelism-hazard-enabled nil state))
-       (when (eq (f-get-global 'parallelism-hazards-enabled *the-live-state*)
+               '(f-put-global 'parallelism-hazards-action nil state))
+       (when (eq (f-get-global 'parallelism-hazards-action *the-live-state*)
                  :error)
          (error "Encountered above parallelism hazard")))
      ,body)
@@ -27443,8 +27472,8 @@
 ; WITH-STATE-GLOBAL-BOUND.
 
 ; We call warn-about-parallelism-hazard, because use of this macro in a
-; parallel environment is a terrible idea.  It might work, because maybe no
-; variables are rebound that are changed inside the waterfall, but we, the
+; parallel environment is potentially dangerous.  It might work, because maybe
+; no variables are rebound that are changed inside the waterfall, but we, the
 ; developers, want to know about any such rebinding.
 
   (declare (xargs :guard (and (state-global-let*-bindings-p bindings)
@@ -30500,48 +30529,17 @@
 #+(or (not acl2-par) acl2-loop-only)
 (defmacro deflock (lock-symbol)
 
+; Note: The definition for #-(or (not acl2-par) acl2-loop-only) is in file
+; multi-threading-raw.lisp, which is where it needs to be.  The present
+; definition can't go into that file, because it's for the logic, whereas
+; multi-threading-raw.lisp is loaded into raw Lisp.  The documentation is in
+; yet a third file, parallel.lisp, because its doc-section, Parallelism, is
+; defined in that file.
+
 ; In the logic, and even in raw Lisp if #-acl2-par, a call of deflock
 ; macroexpands to a definition of a macro that returns its last argument
 ; (basically, an identity macro).  The raw Lisp #+acl2-par definition may be
-; found elsewhere.  The "wart" just below was, as with all parallelism warts as
-; of Version_4.3, contributed by David Rager.
-
-; Parallelism wart: see if Kaufmann and Moore are okay with the following
-; documentation.  Since deflock may still change in the short-run, this wart
-; should probably be addressed after the release of 4.3.
-
-;; ":Doc-Section ACL2::Parallelism
-
-;; define a wrapper macro that provides mutual exclusion in #+acl2-par!~/
-
-;; This ~il[documentation] topic relates to the experimental extension of
-;; ACL2 supporting parallel evaluation and proof; ~pl[parallelism].
-
-;; ~bv[]
-;; General Forms:
-;; (deflock *my-lock*)
-;; ~ev[]
-;; ~/
-
-;; This macro defines another macro that guarantees mutually exclusive
-;; execution, based off the given lock-symbol, in the #+acl2-par
-;; (~pl[compiling-acl2p]) build of ACL2.
-
-;; The defined macro has the name ~c[with-<modified-lock-symbol>], where
-;; ~c[<modified-lock-symbol>], is the given symbol with the leading and
-;; trailing ~c[*] characters removed.  In the raw Lisp version of the code,
-;; the provided macro uses a lock, with the given ~c[lock-symbol] name, to
-;; guarantee that no forms surrounded with the same use of
-;; ~c[with-<modified-lock-symbol>] execute concurrently with one another.
-
-;; An example script is as follows:
-
-;; ~bv[]
-;; (deflock *my-cw-lock*)
-;; (with-my-cw-lock 
-;;   (cw \"No other use of with-my-cw-lock can print concurrently with me\"))
-;; ~ev[]
-;; ~/"
+; found elsewhere.
 
   (declare (xargs :guard 
                   (and (symbolp lock-symbol)
@@ -33219,7 +33217,7 @@
 
 ;   read-idate - used by write-acl2-html, so can't be untouchable?
 
-    read-acl2-oracle
+    read-acl2-oracle read-acl2-oracle@par
     get-timer     ; might not need to be an untouchable function
 
     update-user-stobj-alist
@@ -33350,7 +33348,7 @@
     trace-level ; can change under the hood without logic explanation
     trace-specs
     retrace-p
-    parallel-evaluation-enabled
+    parallel-execution-enabled
     redundant-with-raw-code-okp
 
 ; print control variables
@@ -41553,31 +41551,25 @@
 
 ; Keep in sync with catch-time-limit5.
 
-; Parallelism wart: this definition is rather different from its non-@par
-; counterpart.  We need to check that this is what we need.  I think it
-; is okay, because we don't really support time-limits right now anyway.
-
   `(mv-let (step-limit x1 x2 x3 x4) ; values that cannot be stobjs
            #+acl2-loop-only
            ,form ; so, form returns neither a stobj nor state
            #-acl2-loop-only
            (progn
 
-; Parallelism no-fix: there is a rare race condition related to
+; Parallelism blemish: there is a rare race condition related to
 ; *next-acl2-oracle-value*.  Specifically, a thread might set the value of
 ; *next-acl2-oracle-value*, throw the 'time-limit5-tag, and the value of
 ; *next-acl2-oracle-value* wouldn't be read until after that tag was caught.
 ; In the meantime, maybe another thread would have cleared
-; *next-acl2-oracle-value*, and the needed value would be lost.  We do not plan
-; on fixing this wart until we have reason to believe that it is a practical
-; problem for users.
+; *next-acl2-oracle-value*, and the needed value would be lost.
 
              (setq *next-acl2-oracle-value* nil)
              (catch 'time-limit5-tag
                (let ((*time-limit-tags* (add-to-set-eq 'time-limit5-tag
                                                        *time-limit-tags*)))
                  ,form)))
-           (pprogn@par 
+           (pprogn@par
 
 ; Parallelism no-fix: we haven't analyzed the code to determine whether the
 ; following call of (f-put-global@par 'last-step-limit ...) will be overridden
@@ -45282,8 +45274,8 @@ Lisp definition."
                      true-list-listp-forward-to-true-listp-assoc-equal)))
 
 ; The definitions that follow provide support for the experimental parallelism
-; extension, ACL2(p), of ACL2.  Also see the Essay on Parallelism and
-; Parallelism Warts.
+; extension, ACL2(p), of ACL2.  Also see the Essay on Parallelism, Parallelism
+; Warts, Parallelism Blemishes, Parallelism No-fixes, and Parallelism Hazards.
 
 (defun add-@par-suffix (symbol)
   (declare (xargs :guard (symbolp symbol)))
@@ -45299,14 +45291,14 @@ Lisp definition."
                        (car symbols))
                  (generate-@par-mappings (cdr symbols))))))
 
-; Parallelism wart: consider adding a doc topic explaining that if a user finds
-; the #+acl2-par version of an "@par" function to be useful, that they should
-; contact the authors of ACL2.  The authors should then create a version of the
-; desired "@par" function, perhaps suffixing it with "@ns" (for "no state").
-; And then the "@par" function could simply call the "@ns" version.  A good
-; example candidate for this is simple-translate-and-eval@par, which could be
-; used inside Sol Swords's GL system to produce computed hints that don't
-; modify state.
+; Parallelism blemish: consider adding a doc topic explaining that if a user
+; finds the #+acl2-par version of an "@par" function to be useful, that they
+; should contact the authors of ACL2.  The authors should then create a version
+; of the desired "@par" function, perhaps suffixing it with "@ns" (for "no
+; state").  And then the "@par" function could simply call the "@ns" version.
+; A good example candidate for this is simple-translate-and-eval@par, which
+; could be used inside Sol Swords's GL system to produce computed hints that
+; don't modify state.
 
 (defconst *@par-mappings*
 
@@ -45518,11 +45510,11 @@ Lisp definition."
 #-acl2-par
 (define-@par-macros)
 
-; Parallelism wart: remove the following grep tip after the parallelism project
-; is done.
-
 ; To find places where we issue definitions both without the "@par" suffix and
-; with the "@par" suffix, one can run the following:
+; with the "@par" suffix, one can run the following.  (For example, there might
+; be a defun@par of foo, but there might instead be both a defun of foo and a
+; defun of foo@par.  The first line below can catch either of these.)
+
 ; grep "@par" *.lisp | grep "defun "
 ; grep "@par" *.lisp | grep "defmacro "
 
@@ -45542,10 +45534,6 @@ Lisp definition."
 
 #+acl2-par
 (defun defun@par-fn (name parallel-version rst)
-
-; Parallelism wart: consider having the @par version automatically lay down a
-; "(declare (ignorable state))" form.
-
   (declare (xargs :guard (and (symbolp name)
                               (booleanp parallel-version)
                               (true-listp rst))))

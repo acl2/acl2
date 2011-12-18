@@ -1944,13 +1944,13 @@ which is saved just in case it's needed later.")
 
 (defun exit-lisp (&optional (status '0 status-p))
 
-; Parallelism wart: In ACL2(p), LispWorks doesn't always successfully exit when
-; exit-lisp is called.  The below call to stop-multiprocessing is an attempt to
-; improve the chance of a succesful exit.  In practice, the call does not fix
-; the problem.  However, we leave it for now since we don't think it can hurt.
-; If exit-lisp starts working reliably without the following calls to
-; send-die-to-all-except-initial-threads and stop-multiprocessing, they should
-; be removed.
+; Parallelism blemish: In ACL2(p), LispWorks 6.0.1 hasn't always successfully
+; exited when exit-lisp was called.  The call below of stop-multiprocessing is
+; an attempt to improve the chance of a succesful exit.  In practice, the call
+; does not fix the problem.  However, we leave it for now since we don't think
+; it can hurt.  If exit-lisp starts working reliably without the following
+; calls to send-die-to-all-except-initial-threads and stop-multiprocessing,
+; they should be removed.
 
   #+(and acl2-par lispworks)
   (when mp::*multiprocessing*

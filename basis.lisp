@@ -8035,7 +8035,7 @@
 
 ; Keep the argument list in sync with io?.
 
-; Parallelism wart: surround the io? call below with a suitable lock.  Once
+; Parallelism blemish: surround the io? call below with a suitable lock.  Once
 ; this is done, remove any redundant locks around io?@par calls.
 
   (declare (ignore commentp))
@@ -8178,7 +8178,7 @@
   ((hons-enabled safe-mode . temp-touchable-vars)
    .
    (guard-checking-on ld-skip-proofsp
-                      temp-touchable-fns . parallel-evaluation-enabled))
+                      temp-touchable-fns . parallel-execution-enabled))
   nil)
 
 (defmacro default-state-vars
@@ -8188,7 +8188,7 @@
            (guard-checking-on 't guard-checking-on-p)
            (ld-skip-proofsp 'nil ld-skip-proofsp-p)
            (temp-touchable-fns 'nil temp-touchable-fns-p)
-           (parallel-evaluation-enabled 'nil parallel-evaluation-enabled-p))
+           (parallel-execution-enabled 'nil parallel-execution-enabled-p))
 
 ; Warning: Keep this in sync with defrec state-vars.
 
@@ -8221,10 +8221,10 @@
                 ,(if temp-touchable-fns-p
                      temp-touchable-fns
                    '(f-get-global 'temp-touchable-fns state))
-                :parallel-evaluation-enabled
-                ,(if parallel-evaluation-enabled-p
-                     parallel-evaluation-enabled
-                   '(f-get-global 'parallel-evaluation-enabled state))))
+                :parallel-execution-enabled
+                ,(if parallel-execution-enabled-p
+                     parallel-execution-enabled
+                   '(f-get-global 'parallel-execution-enabled state))))
         (t ; state-p is not t
          `(make state-vars
                 :hons-enabled ,(eq state-p :hons)
@@ -8233,7 +8233,7 @@
                 :guard-checking-on ,guard-checking-on
                 :ld-skip-proofsp ,ld-skip-proofsp
                 :temp-touchable-fns ,temp-touchable-fns
-                :parallel-evaluation-enabled ,parallel-evaluation-enabled))))
+                :parallel-execution-enabled ,parallel-execution-enabled))))
 
 (defun warning1-body (ctx summary str alist state)
   (let ((channel (f-get-global 'proofs-co state)))

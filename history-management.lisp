@@ -6288,11 +6288,28 @@
 ; Form evaluates to state.  Here, we want to evaluate form with the print base
 ; set to 10.
 
-  `(mv-let (erp val state)
-     (state-global-let* ((print-base 10 set-print-base))
-                        (pprogn ,form (value nil)))
-     (declare (ignore erp val))
-     state))
+; In order to avoid parallelism hazards due to wormhole printing from inside
+; the waterfall (see for example (io? prove t ...) in waterfall-msg), we avoid
+; calling state-global-let* below when the print-base is already 10, as it
+; typically will be (see with-ctx-summarized).  The downside is that we are
+; replicating the code, form.  Without this change, if you build ACL2 with
+; #+acl2-par, then evaluate the following forms, you'll see lots of parallelism
+; hazard warnings.
+
+;   :mini-proveall
+;   :ubt! force-test
+;   (set-waterfall-parallelism :pseudo-parallel)
+;   (set-waterfall-printing :full)
+;   (f-put-global 'parallelism-hazards-action t state)
+;   (DEFTHM FORCE-TEST ...) ; see mini-proveall
+
+  `(cond ((eq (f-get-global 'print-base state) 10)
+          ,form)
+         (t (mv-let (erp val state)
+                    (state-global-let* ((print-base 10 set-print-base))
+                                       (pprogn ,form (value nil)))
+                    (declare (ignore erp val))
+                    state))))
 
 (defun print-ldd-formula-column (state)
   (cond ((hons-enabledp state) ; extra column for the memoization status
@@ -16765,7 +16782,7 @@
             print-clause-ids           ;;; allow user to modify this in a book
             fmt-soft-right-margin      ;;; allow user to modify this in a book
             fmt-hard-right-margin      ;;; allow user to modify this in a book
-            parallel-evaluation-enabled ;; allow user to modify this in a book
+            parallel-execution-enabled ;;; allow user to modify this in a book
             saved-output-reversed      ;;; for feedback after expansion failure
             saved-output-p             ;;; for feedback after expansion failure
             ttags-allowed              ;;; propagate changes outside expansion

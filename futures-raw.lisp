@@ -394,7 +394,7 @@
 ; In summary, it is unneccessary to acquire a lock, because we just don't care
 ; if we miss a few chances to parallelize, or parallelize a few extra times.
 
-  (and (f-get-global 'parallel-evaluation-enabled *the-live-state*)
+  (and (f-get-global 'parallel-execution-enabled *the-live-state*)
        (< (atomically-modifiable-counter-read *unassigned-and-active-future-count*)
           *unassigned-and-active-work-count-limit*)
        (< (atomically-modifiable-counter-read *total-future-count*)

@@ -18551,6 +18551,9 @@
 
   ~st[EXPERIMENTAL VERSIONS]
 
+  For ACL2(p): The macro ~c[set-parallel-evaluation] has been renamed
+  ~ilc[set-parallel-execution].
+
   Among the enchancements for the HONS version (~pl[hons-and-memoization]) are
   the following.~bq[]
 

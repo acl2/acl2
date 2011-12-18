@@ -20675,7 +20675,7 @@
 ; We should lock this computation when #+acl2-par, even though special
 ; variables (including those bound above) are thread-local, 
 
-                      `(if (f-get-global 'parallel-evaluation-enabled
+                      `(if (f-get-global 'parallel-execution-enabled
                                          *the-live-state*)
                            (er hard! 'with-local-state
                                "The use of with-local-state ~
