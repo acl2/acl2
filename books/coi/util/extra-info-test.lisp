@@ -9,24 +9,11 @@
 (include-book "extra-info")
 (include-book "make-event/eval" :dir :system)
 
-; JSM - August, 2011: This file contains one or more occurrences of
-; (:executable-counterpart tau-system) added when the Tau System was
-; implemented on top of Version_4.3.  Some occurrences may have been commented
-; out but left to mark the locations of changes made necessary because of the
-; tau literal deletion problem described in the Essay on Tau-Clause -- Using
-; Tau to Prove or Mangle Clauses.  When tau was no longer allowed to delete
-; literals, those disablings of tau-system were no longer required.
-
-; In fact, we have to disable tau for this whole file.  The reason is that the
-; author taking advantage of disable to make a defined function, e.g., (defun
-; foo (x) t), seem like a constrained function.  Note, for example, the
+; We have to disable tau for this whole file.  The reason is that the
+; author is taking advantage of disable to make a defined function, e.g., 
+; (defun foo (x) t), seem like a constrained function.  Note, for example, the
 ; must-fail below, when in fact the theorem is trivial if the definition is not
-; hidden -- and tau sees the definition whether it is enabled or not!
-
-; This event is harmless if tau-system is already off by default!
-
-; tau on:  {(in-theory (disable (:executable-counterpart tau-system)))}
-; tau off: {}
+; hidden -- and tau ``sees'' the definition whether foo is enabled or not!
 
 (in-theory (disable (:executable-counterpart tau-system)))
 

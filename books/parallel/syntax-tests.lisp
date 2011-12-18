@@ -20,7 +20,7 @@
   '(let ((q 10)) (plet ((x 4) (y (+ 9 q))) (+ x y)))))
 
 (must-succeed
- (set-parallel-evaluation nil))
+ (set-parallel-execution nil))
 
 (assert!
  (and (pand)
