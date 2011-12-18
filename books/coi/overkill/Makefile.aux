@@ -60,10 +60,10 @@ BOOKS_O     = $(patsubst %, %.o, $(BOOKS))
 	then \
 	  cat cert.acl2 >> workxxx.$(*F) ; \
 	  echo "" >> workxxx.$(*F) ; \
-	  echo '(certify-book "$*" ? $(COMPILE_FLG))' >> workxxx.$(*F) ; \
+	  echo '(certify-book "$*" ? $(ACL2_COMPILE_FLG))' >> workxxx.$(*F) ; \
 	else \
 	  echo "" >> workxxx.$(*F) ; \
-	  echo '(certify-book! "$*" 0 $(COMPILE_FLG))' >> workxxx.$(*F) ; \
+	  echo '(certify-book! "$*" 0 $(ACL2_COMPILE_FLG))' >> workxxx.$(*F) ; \
 	fi
 	@echo '(acl2::value :q)' >> workxxx.$(*F)
 	@echo '(acl2::exit-lisp)' >> workxxx.$(*F)

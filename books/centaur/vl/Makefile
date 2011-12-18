@@ -4,7 +4,7 @@
 # # Dependencies:
 #
 # BOOKS := $(filter-out acl2-customization,$(BOOKS))
-# COMPILE_FLG := t :ttags :all :skip-proofs-okp t
+# ACL2_COMPILE_FLG := t :ttags :all :skip-proofs-okp t
 #
 # LISPFILES = $(wildcard *.lisp)
 # LSPFILES = $(wildcard *.lsp)

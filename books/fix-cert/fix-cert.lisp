@@ -77,7 +77,7 @@
     (:skip-proofs-okp . t)))
 
 (defun create-pkgs-for-cert-file (file1 ctx state)
-  (let ((file2 (convert-book-name-to-cert-name file1)))
+  (let ((file2 (convert-book-name-to-cert-name file1 nil)))
     (mv-let
      (ch state)
      (open-input-channel file2 :object state)
@@ -155,10 +155,10 @@
             (value :not-needed)
           (make-certificate-file-relocated
                  new-full-book-name portcullis
-                 (convert-book-name-to-cert-name new-full-book-name)
+                 (convert-book-name-to-cert-name new-full-book-name nil)
                  post-alist expansion-alist
                  old-directory-name new-directory-name
-                 ctx state)))))))
+                 nil ctx state)))))))
 
 ; Beware that in order to create packages before they are needed,
 ; the order of the books to be fixed needs to satisfy the dependencies.
