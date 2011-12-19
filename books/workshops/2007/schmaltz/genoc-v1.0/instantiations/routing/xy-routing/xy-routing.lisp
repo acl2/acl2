@@ -3,15 +3,6 @@
 ;; File: xy-routing.lisp
 ;; Application of GeNoC-routing to an XY-routing algorithm
 
-; JSM - August, 2011: This file contains one or more occurrences of
-; (:executable-counterpart tau-system) added when the Tau System was
-; implemented on top of Version_4.3.  Some occurrences may have been commented
-; out but left to mark the locations of changes made necessary because of the
-; tau literal deletion problem described in the Essay on Tau-Clause -- Using
-; Tau to Prove or Mangle Clauses.  When tau was no longer allowed to delete
-; literals, those disablings of tau-system were no longer required.
-
-
 (in-package "ACL2")
 ;; we import the generic definition
 (include-book "../../../generic-modules/GeNoC-routing")
@@ -532,10 +523,5 @@
                                mesh-nodeset-gen
                                trlstp mesh-hyps
                                Missivesp))
-
-; This comment contains (:executable-counterpart tau-system) just so that rune
-; is a reliable marker for changes made to support tau.  The change was motivated
-; by the subgoal renaming problem.
-
-          ("Subgoal 3"  ; tau on: {"Subgoal 3"} tau off {"Subgoal 4"}
+          ("Subgoal 3" ; changed after v4-3 from "Subgoal 4", for tau system
            :in-theory (enable mesh-hyps))))

@@ -6,14 +6,6 @@
 ;; between two nodes.
 ;; The algorithm is an interleaving of XY and YX. 
 
-; JSM - August, 2011: This file contains one or more occurrences of
-; (:executable-counterpart tau-system) added when the Tau System was
-; implemented on top of Version_4.3.  Some occurrences may have been commented
-; out but left to mark the locations of changes made necessary because of the
-; tau literal deletion problem described in the Essay on Tau-Clause -- Using
-; Tau to Prove or Mangle Clauses.  When tau was no longer allowed to delete
-; literals, those disablings of tau-system were no longer required.
-
 (in-package "ACL2")
 ;;; we need the xy routing algorithm
 (include-book "../xy-routing/xy-routing")
@@ -312,12 +304,7 @@
                                mesh-nodeset-gen
                                trlstp mesh-hyps
                                Missivesp))
-
-; This comment contains (:executable-counterpart tau-system) just so that rune
-; is a reliable marker for changes made to support tau.  The change was motivated
-; by the subgoal renaming problem.
-
-	  ("Subgoal 3"  ; tau on: {"Subgoal 3"} tau off {"Subgoal 4"}
+	  ("Subgoal 3" ; changed after v4-3 from "Subgoal 4", for tau system
 	   :in-theory (enable mesh-hyps))))
 
 ;; this concludes the verification of the YX algorithm. 
@@ -1230,12 +1217,7 @@
                                mesh-nodeset-gen
                                trlstp mesh-hyps
                                Missivesp))
-
-; This comment contains (:executable-counterpart tau-system) just so that rune
-; is a reliable marker for changes made to support tau.  The change was motivated
-; by the subgoal renaming problem.
-
-          ("Subgoal 4"  ; tau on: {"Subgoal 4"} tau off {"Subgoal 5"}
+          ("Subgoal 4" ; changed after v4-3 from "Subgoal 5", for tau system
            :in-theory (enable mesh-hyps))))
 
 ;; Q.E.D. !
