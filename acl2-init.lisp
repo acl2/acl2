@@ -197,13 +197,18 @@ implementations.")
 
 (in-package "ACL2")
 
-; *Current-acl2-world-key* is the property used for the current-acl2- world
-; world.  We formerly used a defvar, but there is really no reason to use a
+(defconstant *current-acl2-world-key*
+
+; *Current-acl2-world-key* is the property used for the current-acl2-world
+; world.  We formerly used a defvar, but there seemed to be no reason to use a
 ; special variable, which Gary Byers has pointed out takes about 5 instructions
 ; to read in CCL in order to check if a thread-local binding is dynamically in
-; effect.  So we use a constant.
+; effect.  So we tried using a defconstant.  Unfortunately, that trick failed
+; in Allegro CL; even if we use a boundp test to guard the defconstant, when we
+; used make-symbol to create the value; the build failed.  So the value is now
+; an interned symbol.
 
-(defconstant *current-acl2-world-key* (make-symbol "*CURRENT-ACL2-WORLD-KEY*"))
+  'acl2_invisible::*CURRENT-ACL2-WORLD-KEY*)
 
 #+(and gcl hons)
 (when (not (gcl-version->= 2 7 0))
