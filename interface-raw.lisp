@@ -4249,6 +4249,7 @@
   (let* ((os-file (pathname-unix-to-os file state))
          (create-pcert-p (eq (cert-op state) :create-pcert))
          (os-file-date (and create-pcert-p ; optimization
+                            (probe-file os-file)
                             (file-write-date os-file))))
     (mv-let
      (cfile cfile-date)
@@ -4267,7 +4268,8 @@
               (mv pfile pfile-date))
              (t ; else use .cert file instead of .pcert file
               (let* ((cfile (convert-book-name-to-cert-name os-file nil))
-                     (cfile-date (and cfile (file-write-date cfile))))
+                     (cfile-date (and (probe-file cfile)
+                                      (file-write-date cfile))))
                 (cond (cfile-date (mv cfile cfile-date))
                       (t (mv nil nil)))))))
      (let* ((ofile (convert-book-name-to-compiled-name os-file))
