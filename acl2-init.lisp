@@ -30,13 +30,19 @@
 ; CCL-specific changes made to hons-raw.lisp.  With some work this restriction
 ; could probably be relaxed, but it's not clear that it's worth the effort.
 #+(and hons (not ccl))
-
 (error "It is illegal to build the experimental HONS version
 of ACL2 in this Common Lisp.  For that version, the
 underlying Common Lisp must be CCL (Clozure Common Lisp,
 formerly OpenMCL).  CCL runs on many platforms, including
-both 32-bit and 64-bit Linux.  See the ACL2 installation
-instructions for how to obtain CCL.")
+Linux and Mac OS.  See the ACL2 installation instructions 
+how to obtain CCL.")
+
+#+(and hons ccl (not 64-bit-host)) ; use 64-bit-target instead?
+(error "It appears that you are trying to build the
+experimental HONS version of ACL2 in 32-bit CCL.  That is
+not currently supported; indeed, we have seen errors during
+a regression.  You can proceed by commenting out this error
+message in source file acl2-init.lisp.")
 
 ; Allow taking advantage of threads in SBCL, CCL, and Lispworks (where we may
 ; want to build a parallel version, which needs this to take place).

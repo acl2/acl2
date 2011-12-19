@@ -18612,7 +18612,11 @@
   has been fixed.  Thanks to David Rager for pointing out the problem by
   sending an example.
 
-  ~il[Gag-mode] now is initially set to ~c[:goals] instead of ~c[t].~eq[]
+  ~il[Gag-mode] now is initially set to ~c[:goals] instead of ~c[t].
+
+  An error now occurs when attempting to build the HONS version of ACL2 on a
+  32-bit platform.  We have seen regression failures on such a (CCL) platform.
+  ~eq[]
 
   ~/~/")
 
