@@ -29,6 +29,8 @@
 (defun p7 (n) (not (equal (countdown-wrapper n) 17)))
 (defun p8 (n) (not (equal (countdown-wrapper n) 18)))
 
+(comp t) ; avoid stack overflow, e.g. in Allegro CL
+
 (defthm ideal1
   (and (p1 x) (p2 x) (p3 x) (p4 x) (p5 x) (p6 x) (p7 x) (p8 x))
   :otf-flg t)
