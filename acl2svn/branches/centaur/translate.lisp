@@ -5890,7 +5890,7 @@
     (cond
      ((and (eq stobjs-out :stobjs-out)
            (member-eq (car x) '(pand por pargs plet))
-           (eq (access state-vars state-vars :parallel-evaluation-enabled)
+           (eq (access state-vars state-vars :parallel-execution-enabled)
                t))
       (trans-er ctx
                 "Parallel evaluation is enabled, but is not implemented for ~
@@ -5900,10 +5900,10 @@
                  allow such calls to be evaluated (but without parallelism), ~
                  either evaluate ~x2 or use the macro top-level.  See :DOC ~
                  parallelism-at-the-top-level and :DOC ~
-                 set-parallel-evaluation."
+                 set-parallel-execution."
                 '(pand por pargs plet)
                 x
-                '(set-parallel-evaluation :bogus-parallelism-ok)))
+                '(set-parallel-execution :bogus-parallelism-ok)))
      ((and (member-eq (car x) (global-val 'untouchable-fns wrld))
            (not (eq (access state-vars state-vars :temp-touchable-fns)
                     t))

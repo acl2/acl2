@@ -1273,7 +1273,7 @@
 ; *1.2 gets mistakenly called *1.1).  Rather than fix this (the problem is
 ; inherent to the naming scheme of ACL2), we punt and say what the name _could_
 ; be (e.g., we print *1.1 for what's really *1.2).  The following non-theorem
-; show-cases this problem.  See :doc topic set-waterfall-printing.
+; showcases this problem.  See :doc topic set-waterfall-printing.
 
 ; (thm (equal (append (car (cons x x)) y z) (append x x y)))
 
@@ -7931,7 +7931,7 @@
      (sl-let (signal new-pspv new-jppl-flg state)
              #+acl2-par
              (if (waterfall-parallelism)
-                 (with-possible-parallelism-hazards
+                 (with-parallelism-hazard-warnings
                   (mv-let (step-limit signal new-pspv new-jppl-flg)
                           (waterfall1-lst@par (cond ((null clauses) 0)
                                                     ((null (cdr clauses))

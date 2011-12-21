@@ -6655,6 +6655,12 @@
                           'current-acl2-world wrld)
                  (get-unnormalized-bodies (cdr names) wrld)))))
 
+(defun strip-last-elements (lst)
+  (declare (xargs :guard (true-list-listp lst)))
+  (cond ((endp lst) nil)
+        (t (cons (car (last (car lst)))
+                 (strip-last-elements (cdr lst))))))
+
 (defun redundant-or-reclassifying-defunsp (defun-mode symbol-class
                                             ld-skip-proofsp def-lst ctx wrld
                                             ld-redefinition-action fives
@@ -6753,6 +6759,18 @@
                                               ld-skip-proofsp t def-lst wrld)))
     (cond ((and ld-redefinition-action
                 (member-eq ans '(redundant reclassifying verify-guards)))
+
+; We do some extra checking, converting ans to nil, in order to consider there
+; to be true redefinition (by returning nil) in cases where that seems possible
+; -- in particular, because translated bodies have changed due to prior
+; redefinition of macros or defconsts called in a new body.  Our handling of
+; this case isn't perfect, for example because it may reject reclassification
+; when the order changes.  But at least it forces some definitions to be
+; considered as doing redefinition.  Notice that this extra effort is only
+; performed when redefinition is active, so as not to slow down the system in
+; the normal case.  If there has been no redefinition in the session, then we
+; expect this extra checking to be unnecessary.
+
            (let ((names (strip-cars fives))
                  (bodies (get-bodies fives)))
              (mv-let (erp lst bindings)
@@ -6762,9 +6780,34 @@
                                         stobjs-in-lst
                                         ctx wrld default-state-vars)
                      (declare (ignore bindings))
-                     (cond ((and (null erp)
-                                 (equal lst
-                                        (get-unnormalized-bodies names wrld)))
+                     (cond (erp ans)
+                           ((eq (symbol-class (car names) wrld)
+                                :program)
+                            (let ((old-defs (recover-defs-lst (car names)
+                                                              wrld)))
+                              (and (equal names (strip-cars old-defs))
+                                   (mv-let
+                                    (erp old-lst bindings)
+                                    (translate-bodies1
+
+; The old non-executablep is nil; see recover-defs-lst.
+
+                                     nil
+                                     names
+                                     (strip-last-elements old-defs)
+                                     (pairlis$ names names)
+                                     stobjs-in-lst
+                                     ctx wrld default-state-vars)
+                                    (declare (ignore bindings))
+                                    (cond ((and (null erp)
+                                                (equal lst old-lst))
+                                           ans)
+                                          (t nil))))))
+
+; Otherwise we expect to be dealing with :logic mode functions.
+
+                           ((equal lst
+                                   (get-unnormalized-bodies names wrld))
                             ans)
                            (t nil)))))
           (t ans))))

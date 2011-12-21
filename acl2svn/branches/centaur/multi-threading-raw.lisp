@@ -176,9 +176,11 @@
 ;          (1+ (sb-ext:atomic-incf
 ;               (atomically-modifiable-counter-val ,x))))
 
-; Parallelism wart: why is nil used in the call to with-recursive-lock?
+; Parallelism blemish: We do not recall why nil appears in the call to
+; with-recursive-lock below.  Probably it can be omitted.
 
-  `(sb-thread:with-recursive-lock ((atomically-modifiable-counter-lock ,x)) nil
+  `(sb-thread:with-recursive-lock ((atomically-modifiable-counter-lock ,x))
+                                  nil ; see comment above
                                   (incf (atomically-modifiable-counter-val ,x)))
   #+lispworks
   `(system:atomic-incf ,x)

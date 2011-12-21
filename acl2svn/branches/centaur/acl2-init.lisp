@@ -30,45 +30,48 @@
 ; CCL-specific changes made to hons-raw.lisp.  With some work this restriction
 ; could probably be relaxed, but it's not clear that it's worth the effort.
 #+(and hons (not ccl))
-
 (error "It is illegal to build the experimental HONS version
 of ACL2 in this Common Lisp.  For that version, the
 underlying Common Lisp must be CCL (Clozure Common Lisp,
 formerly OpenMCL).  CCL runs on many platforms, including
-both 32-bit and 64-bit Linux.  See the ACL2 installation
-instructions for how to obtain CCL.")
+Linux and Mac OS.  See the ACL2 installation instructions 
+how to obtain CCL.")
+
+#+(and hons ccl (not 64-bit-host)) ; use 64-bit-target instead?
+(error "It appears that you are trying to build the
+experimental HONS version of ACL2 in 32-bit CCL.  That is
+not currently supported; indeed, we have seen errors during
+a regression.  You can proceed by commenting out this error
+message in source file acl2-init.lisp.")
 
 ; Allow taking advantage of threads in SBCL, CCL, and Lispworks (where we may
 ; want to build a parallel version, which needs this to take place).
 #+(or (and sbcl sb-thread) ccl lispworks)
 (push :acl2-mv-as-values *features*)
 
-; Essay on Parallelism, Parallelism Warts, Parallelism No-fixes, and
-; Parallelism Hazards
+; Essay on Parallelism, Parallelism Warts, Parallelism Blemishes, Parallelism
+; No-fixes, and Parallelism Hazards
 
-; These sources incorporate code for an experimental extension for parallelism,
-; initiated in David Rager's dissertation work.  That extension may be produced
-; by setting the :acl2-par feature, for example using make (see :DOC
-; compiling-acl2p).  This work is evolving, but we have taken great pains to
-; preserve the functionality of ACL2 without parallelism.
+; These sources incorporate code for an experimental extension for parallelism
+; contributed by David Rager during his master's and Ph.D. dissertation work.
+; That extension may be built by setting the :acl2-par feature, for example
+; using make (see :DOC compiling-acl2p).  The incorporation of code supporting
+; parallelism has been carried out while taking great pains to preserve the
+; functionality of the ACL2 system proper (i.e., without the experimental
+; extension for parallelism).
 
-; As the parallelism extension is still under active development as of this
-; writing (May, 2011), we use the phrase "Parallelism wart:" to label comments
-; about known issues for the #+acl2-par build of ACL2 that we plan to fix.
-; These range from minor comment suggestions to deeper questions concerning the
-; correctness of the code.  Rager intends to address most of these parallelism
-; warts by the time his dissertation work is complete.  We also use the phrase
-; "Parallelism no-fix:" to label comments about known issues for the #+acl2-par
-; build of ACL2 that we do not currently plan to fix.  These parallelism
-; no-fixes also vary in sophistication.  The main motivation for such a label
-; is to document possible sources of bugs that we do not intend to fix until
-; users report a problem.  With every parallelism no-fix, there is an implicit
-; disclaimer that we will not fix the issue until a user complains, at which
-; point we would be much more eager to try to solve the given problem.
-; Searching through the parallism warts and no-fixes could be useful when a
-; user reports a bug in #+acl2-par that cannot be replicated in #-acl2-par.
+; We use the phrase "Parallelism wart:" to label comments about known issues
+; for the #+acl2-par build of ACL2 that we would like to fix, time permitting.
+; We also use the phrase "Parallelism blemish:" to identify known issues for
+; the #+acl2-par build of ACL2 that we intend to fix only if led to do so by
+; user complaints.  Finally, we use the phrase "Parallelism no-fix:" to label
+; comments about known issues for the #+acl2-par build of ACL2 that we do not
+; intend to fix, though we could reclassify these if there are sufficiently
+; strong user complaints.  Searching through the parallism warts, blemishes,
+; and no-fixes could be useful when a user reports a bug in #+acl2-par that
+; cannot be replicated in #-acl2-par.
 
-; Parallelism hazards are unrelated to parallelism warts and parallelism
+; Parallelism hazards are unrelated to parallelism warts, blemishes, and
 ; no-fixes.  Parallelism hazards are macros or functions that are known to be
 ; theoretically unsafe when performing multi-threaded execution.  We originally
 ; did not expect users to encounter parallelism hazards (because we should have
@@ -78,8 +81,8 @@ instructions for how to obtain CCL.")
 ; warning, in the event that users encounter a parallelism hazard, they will be
 ; asked to report the associated warning to the ACL2 maintainers.  For example,
 ; if state-global-let* is called while executing concurrently, we want to know
-; about it and develop a work-around.  See *possible-parallelism-hazards* for
-; more information.
+; about it and develop a work-around.  See *possible-parallelism-hazards* and
+; warn-about-parallelism-hazard for more information.
 
 ; In an effort to avoid code duplication, we created a definition scheme that
 ; supports defining both serial and parallel versions of a function with one
@@ -104,10 +107,10 @@ instructions for how to obtain CCL.")
 
 ; Only allow the feature :acl2-par in environments that support
 ; multi-threading.  Keep this in sync with the error message about CCL,
-; Lispworks, and SBCL in set-parallel-evaluation-fn and with :doc
+; Lispworks, and SBCL in set-parallel-execution-fn and with :doc
 ; compiling-acl2p.  If we add support for non-ANSI GCL, consider providing a
 ; call of reset-parallelism-variables analogous to the one generated by setting
-; *reset-parallelism-variables* in our-abort.
+
 #+(and acl2-par (not ccl) (not (and sbcl sb-thread)) (not lispworks))
 (error "It is currently illegal to build the parallel version of ACL2 in this
 Common Lisp.  See source file acl2-init.lisp for this error message,
@@ -200,13 +203,18 @@ implementations.")
 
 (in-package "ACL2")
 
-; *Current-acl2-world-key* is the property used for the current-acl2- world
-; world.  We formerly used a defvar, but there is really no reason to use a
+(defconstant *current-acl2-world-key*
+
+; *Current-acl2-world-key* is the property used for the current-acl2-world
+; world.  We formerly used a defvar, but there seemed to be no reason to use a
 ; special variable, which Gary Byers has pointed out takes about 5 instructions
 ; to read in CCL in order to check if a thread-local binding is dynamically in
-; effect.  So we use a constant.
+; effect.  So we tried using a defconstant.  Unfortunately, that trick failed
+; in Allegro CL; even if we use a boundp test to guard the defconstant, when we
+; used make-symbol to create the value; the build failed.  So the value is now
+; an interned symbol.
 
-(defconstant *current-acl2-world-key* (make-symbol "*CURRENT-ACL2-WORLD-KEY*"))
+  'acl2_invisible::*CURRENT-ACL2-WORLD-KEY*)
 
 #+(and gcl hons)
 (when (not (gcl-version->= 2 7 0))

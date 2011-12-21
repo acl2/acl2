@@ -9881,7 +9881,7 @@
 ; that indicates that the stack must be unwound some (to cleanup after an
 ; aborted inferior).
 
-; Parallelism wart: Deal with the folowing comment.  David Rager suspects that
+; Parallelism wart: Deal with the following comment.  David Rager suspects that
 ; we might want to replace it with a pointer to elsewhere where we handle the
 ; issue.
 ; Warning: This variable is let-bound in ld-fn.  This could present a problem
@@ -9889,8 +9889,7 @@
 ; primitives.  We can imagine (and we may have seen) a case in which there are
 ; two threads doing rewriting, and one does a throw (say, because time has
 ; expired), which puts the two threads temporarily out of sync in their values
-; of *ld-level*.  So think about this sort of issue before parallelizing the
-; theorem prover!
+; of *ld-level*.
 
   0)
 
@@ -16353,7 +16352,9 @@
          :off 'summary
          (list 'in-theory
                (list 'disable (car def))))
-        (list 'value-triple (list 'quote (xd-name 'defund (car def))))))
+        (list 'value-triple
+              (list 'quote (xd-name 'defund (car def)))
+              :on-skip-proofs t)))
 
 #-acl2-loop-only
 (defmacro defund (&rest def)
@@ -17234,7 +17235,9 @@
          :off 'summary
          (list 'in-theory
                (list 'disable name)))
-        (list 'value-triple (list 'quote (xd-name 'defthmd name)))))
+        (list 'value-triple
+              (list 'quote (xd-name 'defthmd name))
+              :on-skip-proofs t)))
 
 #+(and acl2-loop-only :non-standard-analysis)
 (defmacro defthm-std (&whole event-form
@@ -18793,7 +18796,7 @@
   (~pl[book-compiled-file]).
 
   ~c[:warn]: An attempt is made to load the compiled file, and a warning is
-  printed if that load takes place and runs to completion.
+  printed if that load fails to run to completion.
 
   ~c[:comp]: A compiled file is loaded as with value ~c[t], except that if a
   suitable ``expansion file'' exists but the compiled file does not, then the
@@ -22671,7 +22674,7 @@
        *error-output*
        "~%~%**********************************************************~%~
           Slow Array Access!  A call of ~a on an array named~%~
-          ~a is being executed slowly.  See :DOC slow-array-warning~%~
+          ~a is being executed slowly.  See :DOC slow-array-warning.~%~
           **********************************************************~%~%"
        fn nm)
       (when (not (eq action :warning))
@@ -23585,21 +23588,21 @@
 ; enabled-array-structure now uses unique names based on the current subgoal
 ; and (2) the array implementation itself was improved to be "more" thread-safe
 ; (you can compare the implementation of aset1 and other related functions in
-; ACL2 3.6.1 and ACL2 4.0 to see the change).  However, there is almost no
-; evidence that arrays are thread-safe.
+; ACL2 3.6.1 and ACL2 4.0 to see the change).  However, we suspect that
+; that arrays are not thread-safe, as we have acknowledged in :DOC
+; unsupported-waterfall-parallelism-features.
 ;
-; I think that we stopped locking the array operations, because the prover
-; incurred significant overhead (if I can recall correctly, it was about a 40%
+; Rager thinks that we stopped locking the array operations because the prover
+; incurred significant overhead (if he can recall correctly, it was about a 40%
 ; increase in time required to certify a semi-expensive book) with locking
-; enabled.  I think that the change to enabled arrays, named (1) above, could
+; enabled.  He thinks that the change to enabled arrays, named (1) above, could
 ; have eliminated most of this overhead.  However, further investigation is
-; needed.
+; called for.
 
 ; For now, we do not lock any array operations, but we leave the dead code as
-; hints to ourselves that we may need to do so before we finish the parallelism
-; project.  When this wart is addressed, this dead code (which can be found by
-; searching for *acl2-par-arrays-lock*) should either be uncommented and
-; modified, or it should be removed.
+; hints to ourselves that we may need to do so.  When this wart is addressed,
+; this dead code (which can be found by searching for *acl2-par-arrays-lock*)
+; should either be uncommented and modified, or it should be removed.
 ;   #+(and acl2-par (not acl2-loop-only))
 ;   (deflock *acl2-par-arrays-lock*)
 
@@ -26059,7 +26062,7 @@
     with-prover-step-limit
     waterfall1-wrapper@par ; for #+acl2-par
     with-waterfall-parallelism-timings ; for #+acl2-par
-    with-possible-parallelism-hazards ; for #+acl2-par
+    with-parallelism-hazard-warnings ; for #+acl2-par
     warn-about-parallelism-hazard ; for #+acl2-par
     state-global-let* ; raw Lisp version for efficiency
     ))
@@ -26281,11 +26284,16 @@
     (connected-book-directory . nil)  ; set-cbd couldn't have put this!
     (current-acl2-world . nil)
     (current-package . "ACL2")
+    (debug-pspv .
 
-; Parallelism wart: remove this definition and uses of the global variable
-; debug-pspv.
+; This variable is used with #+acl2-par for printing information when certain
+; modifications are made to the pspv in the waterfall.  David Rager informs us
+; in December 2011 that he hasn't used this variable in some time, but that it
+; still works as far as he knows.  It should be harmless to remove it if there
+; is a reason to do so, but of course there would be fallout from doing so
+; (e.g., argument lists of various functions that take a debug-pspv argument).
 
-    (debug-pspv . nil) ; (#+acl2-par) for printing pspv mods in the waterfall
+                nil)
     (debugger-enable . nil) ; keep in sync with :doc set-debugger-enable
     (defaxioms-okp-cert . t) ; t when not inside certify-book
     (deferred-ttag-notes . :not-deferred)
@@ -26334,8 +26342,8 @@
     (more-doc-max-lines . 45)
     (more-doc-min-lines . 35)
     (more-doc-state . nil)
-    (parallel-evaluation-enabled . nil)
-    (parallelism-hazards-enabled . nil) ; should be one of nil, :warn, or :error
+    (parallel-execution-enabled . nil)
+    (parallelism-hazards-action . nil) ; nil or :error, else treated as :warn
     (pc-erp . nil)
     (pc-output . nil)
     (pc-print-macroexpansion-flg . nil)
@@ -27344,38 +27352,44 @@
 (defparameter *possible-parallelism-hazards*
 
 ; If *possible-parallelism-hazards* is non-nil and state global
-; 'parallelism-hazards-enabled is non-nil, then any operation known to cause
+; 'parallelism-hazards-action is non-nil, then any operation known to cause
 ; problems in a parallel environment will print a warning (and maybe cause an
 ; error).  For example, we know that calling state-global-let* in any
 ; environment where parallel execution is enabled could cause problems.  See
-; the use of with-possible-parallelism-hazards inside waterfall and the use of
+; the use of with-parallelism-hazard-warnings inside waterfall and the use of
 ; warn-about-parallelism-hazard inside state-global-let* for how we warn the
-; user of such a potential pitfalls.
+; user of such potential pitfalls.
 
 ; Here is a simple example that demonstrates their use:
 
-; (set-state-ok t)
+;   (set-state-ok t)
 
-; (skip-proofs
-;  (defun foo (state)
-;    (declare (xargs :guard t))
-;    (state-global-let* 
-;     ((x 3))
-;     (value (f-get-global 'x state)))))
+;   (skip-proofs
+;    (defun foo (state)
+;      (declare (xargs :guard t))
+;      (state-global-let* 
+;       ((x 3))
+;       (value (f-get-global 'x state)))))
  
-; (skip-proofs
-;  (defun bar (state) 
-;    (declare (xargs :guard t))
-;    (with-possible-parallelism-hazards
-;     (foo state))))
+;   (skip-proofs
+;    (defun bar (state) 
+;      (declare (xargs :guard t))
+;      (with-parallelism-hazard-warnings
+;       (foo state))))
 
-; (set-waterfall-parallelism :full)
+;   (set-waterfall-parallelism :full)
 
-; (bar state) ; prints the warning
+;   (bar state) ; prints the warning
+
+; See also the comment in warn-about-parallelism-hazard for a detailed
+; specification of how this all works.
 
   nil)
 
-(defmacro with-possible-parallelism-hazards (body)
+(defmacro with-parallelism-hazard-warnings (body)
+
+; See the comment in warn-about-parallelism-hazard.
+
   #+(and acl2-par (not acl2-loop-only))
   `(let ((*possible-parallelism-hazards* t))
      ,body)
@@ -27383,13 +27397,32 @@
   body)
 
 (defmacro warn-about-parallelism-hazard (call body)
+
+; This macro can cause a warning or error if raw Lisp global
+; *possible-parallelism-hazards* is bound to t or :error, respectively.  Such
+; binding takes place with a call of with-parallelism-hazard-warnings.  This
+; macro is essentially a no-op when not in the scope of such a call, since
+; *possible-parallelism-hazards* is nil by default.
+
+; It is the programmer's responsibility to wrap this macro around any code (or
+; callers that lead to such code) that can result in any "bad" behavior due to
+; executing that code in a multi-threaded setting.  For example, we call this
+; macro in state-global-let*, which we know can be unsafe to execute in
+; parallel with other state-modifying code.  And that's a good thing, since for
+; example state-global-let* is called by wormhole printing, which is invoked by
+; the code (io? prove t ...) in waterfall-msg when parallelism is enabled.
+
+; Recall the first paragraph above.  Thus, state-global-let* does not cause any
+; such warning or error by default, which is why in a #+acl2-par build, there
+; is a call of with-parallelism-hazard-warnings in waterfall.
+
   #-(and acl2-par (not acl2-loop-only))
   (declare (ignore call))
   #+(and acl2-par (not acl2-loop-only))
   `(progn
      (when (and *possible-parallelism-hazards*
                 (waterfall-parallelism)
-                (f-get-global 'parallelism-hazards-enabled *the-live-state*))
+                (f-get-global 'parallelism-hazards-action *the-live-state*))
        (format t
                "~%WARNING: A macro or function has been called that is not~%~
                 thread-safe.  Please email this message, including the~%~
@@ -27400,8 +27433,8 @@
        (format t
                "~%~%To disable the above warning, issue the form:~%~%~
                 ~s~%~%"
-               '(f-put-global 'parallelism-hazard-enabled nil state))
-       (when (eq (f-get-global 'parallelism-hazards-enabled *the-live-state*)
+               '(f-put-global 'parallelism-hazards-action nil state))
+       (when (eq (f-get-global 'parallelism-hazards-action *the-live-state*)
                  :error)
          (error "Encountered above parallelism hazard")))
      ,body)
@@ -27443,8 +27476,8 @@
 ; WITH-STATE-GLOBAL-BOUND.
 
 ; We call warn-about-parallelism-hazard, because use of this macro in a
-; parallel environment is a terrible idea.  It might work, because maybe no
-; variables are rebound that are changed inside the waterfall, but we, the
+; parallel environment is potentially dangerous.  It might work, because maybe
+; no variables are rebound that are changed inside the waterfall, but we, the
 ; developers, want to know about any such rebinding.
 
   (declare (xargs :guard (and (state-global-let*-bindings-p bindings)
@@ -30500,48 +30533,17 @@
 #+(or (not acl2-par) acl2-loop-only)
 (defmacro deflock (lock-symbol)
 
+; Note: The definition for #-(or (not acl2-par) acl2-loop-only) is in file
+; multi-threading-raw.lisp, which is where it needs to be.  The present
+; definition can't go into that file, because it's for the logic, whereas
+; multi-threading-raw.lisp is loaded into raw Lisp.  The documentation is in
+; yet a third file, parallel.lisp, because its doc-section, Parallelism, is
+; defined in that file.
+
 ; In the logic, and even in raw Lisp if #-acl2-par, a call of deflock
 ; macroexpands to a definition of a macro that returns its last argument
 ; (basically, an identity macro).  The raw Lisp #+acl2-par definition may be
-; found elsewhere.  The "wart" just below was, as with all parallelism warts as
-; of Version_4.3, contributed by David Rager.
-
-; Parallelism wart: see if Kaufmann and Moore are okay with the following
-; documentation.  Since deflock may still change in the short-run, this wart
-; should probably be addressed after the release of 4.3.
-
-;; ":Doc-Section ACL2::Parallelism
-
-;; define a wrapper macro that provides mutual exclusion in #+acl2-par!~/
-
-;; This ~il[documentation] topic relates to the experimental extension of
-;; ACL2 supporting parallel evaluation and proof; ~pl[parallelism].
-
-;; ~bv[]
-;; General Forms:
-;; (deflock *my-lock*)
-;; ~ev[]
-;; ~/
-
-;; This macro defines another macro that guarantees mutually exclusive
-;; execution, based off the given lock-symbol, in the #+acl2-par
-;; (~pl[compiling-acl2p]) build of ACL2.
-
-;; The defined macro has the name ~c[with-<modified-lock-symbol>], where
-;; ~c[<modified-lock-symbol>], is the given symbol with the leading and
-;; trailing ~c[*] characters removed.  In the raw Lisp version of the code,
-;; the provided macro uses a lock, with the given ~c[lock-symbol] name, to
-;; guarantee that no forms surrounded with the same use of
-;; ~c[with-<modified-lock-symbol>] execute concurrently with one another.
-
-;; An example script is as follows:
-
-;; ~bv[]
-;; (deflock *my-cw-lock*)
-;; (with-my-cw-lock 
-;;   (cw \"No other use of with-my-cw-lock can print concurrently with me\"))
-;; ~ev[]
-;; ~/"
+; found elsewhere.
 
   (declare (xargs :guard 
                   (and (symbolp lock-symbol)
@@ -33219,7 +33221,7 @@
 
 ;   read-idate - used by write-acl2-html, so can't be untouchable?
 
-    read-acl2-oracle
+    read-acl2-oracle read-acl2-oracle@par
     get-timer     ; might not need to be an untouchable function
 
     update-user-stobj-alist
@@ -33350,7 +33352,7 @@
     trace-level ; can change under the hood without logic explanation
     trace-specs
     retrace-p
-    parallel-evaluation-enabled
+    parallel-execution-enabled
     redundant-with-raw-code-okp
 
 ; print control variables
@@ -41553,31 +41555,25 @@
 
 ; Keep in sync with catch-time-limit5.
 
-; Parallelism wart: this definition is rather different from its non-@par
-; counterpart.  We need to check that this is what we need.  I think it
-; is okay, because we don't really support time-limits right now anyway.
-
   `(mv-let (step-limit x1 x2 x3 x4) ; values that cannot be stobjs
            #+acl2-loop-only
            ,form ; so, form returns neither a stobj nor state
            #-acl2-loop-only
            (progn
 
-; Parallelism no-fix: there is a rare race condition related to
+; Parallelism blemish: there is a rare race condition related to
 ; *next-acl2-oracle-value*.  Specifically, a thread might set the value of
 ; *next-acl2-oracle-value*, throw the 'time-limit5-tag, and the value of
 ; *next-acl2-oracle-value* wouldn't be read until after that tag was caught.
 ; In the meantime, maybe another thread would have cleared
-; *next-acl2-oracle-value*, and the needed value would be lost.  We do not plan
-; on fixing this wart until we have reason to believe that it is a practical
-; problem for users.
+; *next-acl2-oracle-value*, and the needed value would be lost.
 
              (setq *next-acl2-oracle-value* nil)
              (catch 'time-limit5-tag
                (let ((*time-limit-tags* (add-to-set-eq 'time-limit5-tag
                                                        *time-limit-tags*)))
                  ,form)))
-           (pprogn@par 
+           (pprogn@par
 
 ; Parallelism no-fix: we haven't analyzed the code to determine whether the
 ; following call of (f-put-global@par 'last-step-limit ...) will be overridden
@@ -41718,144 +41714,6 @@
   (declare (xargs :guard t))
   `(with-guard-checking1 (chk-with-guard-checking-arg ,val)
                          ,form))
-
-(defun set-write-acl2x (flg state)
-
-  ":Doc-Section switches-parameters-and-modes
-
-  cause ~ilc[certify-book] to write out a ~c[.acl2x] file~/
-
-  ~bv[]
-  General Forms:
-  (set-write-acl2x t state)
-  (set-write-acl2x nil state)
-  ~ev[]
-
-  Note: Also see the distributed book ~c[make-event/acl2x-help.lisp] for a
-  useful utility that can be used to skip proofs during the writing of
-  ~c[.acl2x] files.
-
-  This command is provided for those who use trust tags (~pl[defttag]) to
-  perform ~ilc[make-event] expansions, yet wish to create certified books that
-  do not depend on trust tags.  This is accomplished using two runs of
-  ~ilc[certify-book] on a book, say ~c[foo.lisp].  In the first run, a file
-  ~c[foo.acl2x] is written that contains all ~ilc[make-event] expansions, but
-  ~c[foo.cert] is not written.  In the second certification, no
-  ~ilc[make-event] expansion typically takes place, because ~c[foo.acl2x]
-  supplies the expansions.  The command ~c[(set-write-acl2x t state)] should be
-  evaluated before the first certification, setting ~ilc[state] global
-  ~c[write-acl2x] to ~c[t], to enable writing of ~c[foo.acl2x]; and the command
-  ~c[(set-write-acl2x nil state)] may be evaluated before the second
-  run (though this is not necessary in a fresh ACL2 session) in order to
-  complete the certification (writing out ~c[foo.cert]) using ~c[foo.acl2x] to
-  supply the ~ilc[make-event] expansions.
-
-  Note that for the first certification (i.e., after evaluation of the form
-  ~c[(set-write-acl2x t state)]), it is permitted to skip proofs even if
-  keyword value ~c[:skip-proofs-okp t] has not been supplied to
-  ~ilc[certify-book].  An analogous situation holds for ~c[:defaxioms-okp].
-
-  Also note that ~ilc[certify-book] needs to be supplied with keyword argument
-  ~c[:acl2x t] in order to read or write ~c[.acl2x] files; the value of
-  ~c[:acl2x] is ~c[nil] by default.  The interaction of ~ilc[certify-book] with
-  the corresponding ~c[.acl2x] file is as follows.
-  ~bf[]
-  o If ~c[:acl2x] is ~c[t], then:
-    - If ~c[set-write-acl2x] has been (most recently) called with a
-      value of ~c[t] for its first argument, then ACL2 writes the
-      corresponding ~c[.acl2x] file. 
-    - If ~c[set-write-acl2x] has been (most recently) called with a
-      value of ~c[nil] for its first argument, or not called at all,
-      then ACL2 insists on a corresponding ~c[.acl2x] file that is at
-      least as recent as the corresponding ~c[.lisp] file, causing an
-      error otherwise.
-  o If ~c[:acl2x] is ~c[nil] (the default), then:
-    - If ~c[set-write-acl2x] has been (most recently) called with a
-      value ~c[t] for its first argument, or if argument ~c[:ttagsx]
-      is supplied, then an error occurs.
-    - Regardless of whether or how ~c[set-write-acl2x] has been
-      called, ACL2 ignores an existing ~c[.acl2x] file but issues a
-      warning about it.
-  ~ef[]
-
-  If you use this two-runs approach with scripts such as makefiles, then you
-  may wish to provide a single ~ilc[certify-book] command to use for both runs.
-  For that purpose, ~ilc[certify-book] supports the keyword argument
-  ~c[:ttagsx].  If this argument is supplied and ~c[write-acl2x] is true, then
-  this argument is treated as the ~c[:ttags] argument, overriding a ~c[:ttags]
-  argument if present.  That is, for the two runs, ~c[:ttagsx] may be used to
-  specify the trust tags used in the first certification while ~c[:ttags]
-  specifies the trust tags, if any (else ~c[:ttags] may be omitted), used in
-  the second certification.
-
-  The built-in ACL2 Makefile support automatically generates suitable
-  dependencies if you create a ~c[.acl2] file with a ~ilc[certify-book] call
-  matching the following pattern, case-independent:
-  ~c[(certify-book<characters_other_than_;>:acl2x t].  ~l[book-makefiles],
-  and for an example ~c[.acl2x] file see distributed file
-  ~c[books/make-event/double-cert-test-1.acl2].
-
-  Note that ~ilc[include-book] is not affected by ~c[set-write-acl2x], other
-  than through the indirect effect on ~ilc[certify-book].  More precisely: All
-  expansions will be stored in the ~il[certificate] file, so ~ilc[include-book]
-  does not depend on the ~c[.acl2x] file.~/
-
-  An example of how to put this all together may be found in distributed book
-  ~c[books/make-event/double-cert-test-1.lisp].  There, we see the following
-  form.
-  ~bv[]
-  (make-event
-   (progn (defttag :my-ttag)
-          (progn! (let ((val (sys-call \"pwd\" nil)))
-                    (value (list 'defun 'foo () val))))))
-  ~ev[]
-  Imagine that in place of the binding computed using ~ilc[sys-call], which by
-  the way requires a trust tag, is some computation of your choice (such as
-  reading forms from a file) that is used to construct your own event,
-  in place of the ~ilc[defun] event constructed above.  The ~c[Makefile] in
-  that directory contains the following added dependency, so that file
-  ~c[double-cert-test-1.acl2x] will be created:
-  ~bv[]
-  double-cert-test-1.cert: double-cert-test-1.acl2x
-  ~ev[]
-  There is also the file ~c[double-cert-test-1.acl2] in that directory, which
-  contains a single form as follows.
-  ~bv[]
-  (certify-book \"double-cert-test-1\" ? t :ttagsx :all :ttags nil)
-  ~ev[]
-  Thus, a call of ~c[make] first creates file ~c[double-cert-test-1.acl2x],
-  which uses the above ~c[:ttagsx] argument in order to support the use of
-  ~ilc[defttag] during ~ilc[make-event] expansion.  Then, ~c[make] goes on to
-  cause a second certification in which no trust tags are involved.  As a
-  result, the parent book ~c[double-cert-test.lisp] is ultimately certified
-  without requiring any trust tags.
-
-  The discussion above is probably sufficient for most users of the two-run
-  approach it describes.  We conclude with further details for those who want
-  more information.  Those who wish to see a yet lower-level explanation of how
-  all this works are invited to read the comment in the ACL2 source code
-  entitled ``Essay on .acl2x Files (Double Certification).
-
-  Consider the ~c[.acl2x] (pronounced ``dot-acl2x'') file produced by the first
-  run as described above.  It contains a single expression, which is an
-  association list whose keys are all positive integers, which occur in
-  increasing order.  When the ~c[.acl2x] file is present and at least as recent
-  as the corresponding ~c[.lisp] file, then for a subsequent ~ilc[certify-book]
-  when ~c[write-acl2x] is ~c[nil] (the default), that association list will be
-  applied to the top-level events in the book, as follows.  Suppose the entry
-  ~c[(n . ev)] belongs to the association list in the ~c[.acl2x] file.  Then
-  ~c[n] is a positive integer, and the ~c[n]th top-level event in the book ~-[]
-  where the ~c[0]th event is the initial ~ilc[in-package] form ~-[] will be
-  replaced by ~c[ev].  In practice, ~c[ev] is the ~ilc[make-event] expansion
-  created during certification for the ~c[nth] top-level event in the book; and
-  this will always be the case if the ~c[.acl2x] file is created by
-  ~ilc[certify-book] after execution of the form ~c[(set-write-acl2x t state)].
-  However, you are welcome to associate indices manually with any ~il[events]
-  you wish into the alist stored in the ~c[.acl2x] file.~/"
-
-  (declare (xargs :guard (and (booleanp flg)
-                              (state-p state))))
-  (f-put-global 'write-acl2x flg state))
 
 (defun abort! ()
 
@@ -43154,41 +43012,6 @@ Lisp definition."
    ((atom theories) '(CURRENT-THEORY :HERE))
    (t (e/d-fn '(CURRENT-THEORY :HERE) theories t))))
 
-(defconst *ld-special-error*
-  "~x1 is an illegal value for the state global variable ~x0.  See ~
-   :DOC ~x0.")
-
-(defun chk-ld-skip-proofsp (val ctx state)
-  (declare (xargs :mode :program))
-  (cond ((member-eq val '(t nil include-book
-                            initialize-acl2 include-book-with-locals))
-         (value nil))
-        (t
-
-; We would prefer to use (er soft ctx ...), but error1 has not yet been
-; introduced.
-
-         (value (illegal ctx *ld-special-error*
-                         (list (cons #\0 'ld-skip-proofsp)
-                               (cons #\1 val)))))))
-
-(defun set-ld-skip-proofsp (val state)
-  (declare (xargs :mode :program))
-  (er-progn
-   (chk-ld-skip-proofsp val 'set-ld-skip-proofsp state)
-   (pprogn
-    (f-put-global 'ld-skip-proofsp val state)
-    (value val))))
-
-(defmacro set-ld-skip-proofs (val state)
-
-; Usually the names of our set utilities do not end in "p".  We leave
-; set-ld-skip-proofsp for backward compatibility, but we add this version
-; for consistency.
-
-  (declare (ignore state)) ; avoid a stobj problem
-  `(set-ld-skip-proofsp ,val state))
-
 ; We avoid skipping proofs for the rest of initialization, so that we can do
 ; the verify-termination-boot-strap proofs below during the first pass.  See
 ; the comment in the encapsulate that follows.  Note that preceding in-theory
@@ -43196,7 +43019,7 @@ Lisp definition."
 ; now entering :logic mode and in-theory events are skipped in :program mode.
 
 #+acl2-loop-only
-(set-ld-skip-proofsp nil state)
+(f-put-global 'ld-skip-proofsp nil state) ; (set-ld-skip-proofsp nil state)
 
 (encapsulate
  ()
@@ -45282,8 +45105,8 @@ Lisp definition."
                      true-list-listp-forward-to-true-listp-assoc-equal)))
 
 ; The definitions that follow provide support for the experimental parallelism
-; extension, ACL2(p), of ACL2.  Also see the Essay on Parallelism and
-; Parallelism Warts.
+; extension, ACL2(p), of ACL2.  Also see the Essay on Parallelism, Parallelism
+; Warts, Parallelism Blemishes, Parallelism No-fixes, and Parallelism Hazards.
 
 (defun add-@par-suffix (symbol)
   (declare (xargs :guard (symbolp symbol)))
@@ -45299,14 +45122,14 @@ Lisp definition."
                        (car symbols))
                  (generate-@par-mappings (cdr symbols))))))
 
-; Parallelism wart: consider adding a doc topic explaining that if a user finds
-; the #+acl2-par version of an "@par" function to be useful, that they should
-; contact the authors of ACL2.  The authors should then create a version of the
-; desired "@par" function, perhaps suffixing it with "@ns" (for "no state").
-; And then the "@par" function could simply call the "@ns" version.  A good
-; example candidate for this is simple-translate-and-eval@par, which could be
-; used inside Sol Swords's GL system to produce computed hints that don't
-; modify state.
+; Parallelism blemish: consider adding a doc topic explaining that if a user
+; finds the #+acl2-par version of an "@par" function to be useful, that they
+; should contact the authors of ACL2.  The authors should then create a version
+; of the desired "@par" function, perhaps suffixing it with "@ns" (for "no
+; state").  And then the "@par" function could simply call the "@ns" version.
+; A good example candidate for this is simple-translate-and-eval@par, which
+; could be used inside Sol Swords's GL system to produce computed hints that
+; don't modify state.
 
 (defconst *@par-mappings*
 
@@ -45518,11 +45341,11 @@ Lisp definition."
 #-acl2-par
 (define-@par-macros)
 
-; Parallelism wart: remove the following grep tip after the parallelism project
-; is done.
-
 ; To find places where we issue definitions both without the "@par" suffix and
-; with the "@par" suffix, one can run the following:
+; with the "@par" suffix, one can run the following.  (For example, there might
+; be a defun@par of foo, but there might instead be both a defun of foo and a
+; defun of foo@par.  The first line below can catch either of these.)
+
 ; grep "@par" *.lisp | grep "defun "
 ; grep "@par" *.lisp | grep "defmacro "
 
@@ -45542,10 +45365,6 @@ Lisp definition."
 
 #+acl2-par
 (defun defun@par-fn (name parallel-version rst)
-
-; Parallelism wart: consider having the @par version automatically lay down a
-; "(declare (ignorable state))" form.
-
   (declare (xargs :guard (and (symbolp name)
                               (booleanp parallel-version)
                               (true-listp rst))))
