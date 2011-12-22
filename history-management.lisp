@@ -4931,7 +4931,9 @@
 ; generate a proof obligation.  Also do not include encapsulate; even though it
 ; takes responsibility for setting skip-proofs-seen based on its first pass,
 ; nevertheless it does not account for a skip-proofs surrounding the
-; encapsulate.
+; encapsulate.  Finally, do not include defattach; the use of (skip-proofs
+; (defattach f g)) can generate bogus data in world global
+; 'proved-functional-instances-alist that can be used to prove nil later.
 
                                           '(include-book
                                             defchoose

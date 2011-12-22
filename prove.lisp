@@ -3397,7 +3397,7 @@
   (processor cl-id signal clauses new-hist msg ttree pspv state)
   (pprogn
 
-; (maybe-show-gag-state cl-id pspv state) ; debug
+;  (maybe-show-gag-state cl-id pspv state) ; debug
 
    (cond
 

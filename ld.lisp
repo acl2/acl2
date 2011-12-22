@@ -18400,8 +18400,9 @@
   ~il[books] to be certified before their included sub-books have been
   certified, thus allowing for potentially much greater `~c[make]'-level
   parallelism.  ~l[provisional-certification].  Thanks to Jared Davis for
-  requesting this feature and for helpful discussions, based in part on a
-  rudimentary such capability that he created for his `Milawa' project.
+  requesting this feature and for helpful discussions, based in part on
+  rudimentary provisional certification schemes that he developed first at
+  Rockwell Collins and later for his `Milawa' project.
 
   ~st[HEURISTIC IMPROVEMENTS]
 

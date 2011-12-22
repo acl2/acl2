@@ -20517,7 +20517,7 @@
                                   event-form
                                   'defstobj
 
-; Note: The namex generated below has consists of the single-threaded
+; Note: The namex generated below consists of the single-threaded
 ; object name, the live variable name, and then the names of all the
 ; functions introduced.  Big-d-little-d-event knows it can cdr past
 ; the first two elements of the namex of a defstobj to find the list
