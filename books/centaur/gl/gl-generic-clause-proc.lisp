@@ -1671,6 +1671,9 @@
          ((er rest) (n-satisfying-assigns-and-specs (1- n) hyp-bdd bdd bound state)))
       (value (cons (list* "generated randomly:" assign assign-spec) rest)))))
 
+(defthm n-satisfying-assigns-does-not-fail
+  (not (mv-nth 0 (n-satisfying-assigns-and-specs n hyp-bdd bdd bound state))))
+
 
 (defun vars-onto-alist (vars val al)
   (if (atom vars)
@@ -1722,19 +1725,17 @@
                                  (acl2::unparam-env
                                   hyp-bdd
                                   (to-satisfying-assign-spec ts ctrex-info)))
-                          assigns)))))) 
+                          assigns))))))
+
+(defthm glcp-gen-assignments-does-not-fail
+  (not (mv-nth 0 (glcp-gen-assignments n hyp-bdd bdd bound state)))) 
 
 
-(defun glcp-pretty-print-assignments (assigns n alist concl state)
+(defun glcp-pretty-print-assignments (n ctrexes concl state)
   (declare (xargs :mode :program))
-  (if (atom assigns)
+  (if (atom ctrexes)
       (value nil)
-    (b* ((string (caar assigns))
-         (assign (cadar assigns))
-         (assign-spec (cddar assigns))
-         (assign-spec-alist (inspec-show-assign-spec alist assign-spec))
-         (assign-alist (generic-geval (shape-spec-to-gobj alist)
-                                      (list assign)))
+    (b* (((list string assign-alist assign-spec-alist) (car ctrexes))
          (bindings (bindings-quote-if-needed assign-alist))
          (- (if (bfr-mode)
                 (cw "Example ~x2, ~@0~%Assignment:~%~x1~%~%" string bindings n)
@@ -1749,16 +1750,15 @@
            nil nil "glcp: running conclusion failed"
            'glcp-pretty-print-assignments (w state) state t))
          (- (cw "Result: ~x0~%~%" val)))
-      (glcp-pretty-print-assignments (cdr assigns) (1+ n) alist concl state))))
+      (glcp-pretty-print-assignments (1+ n) (cdr ctrexes) concl state))))
 
-(defun glcp-print-ctrexamples (evfn bdd alist hyp-bdd n warn-err type concl state)
+(defun glcp-print-ctrexamples (evfn ctrexes warn-err type concl state)
   (declare (xargs :stobjs state
                   :mode :program)
            (ignorable evfn))
-  (b* (((er assigns) (glcp-gen-assignments bdd alist hyp-bdd n state))
-       (- (cw "
+  (b* ((- (cw "
 *** SYMBOLIC EXECUTION ~@0 ***: ~@1 found." warn-err type))
-       (- (and (not (zp n))
+       (- (and ctrexes
                (if (and (bfr-mode)
                         (bfr-counterex-mode))
                    (cw "~%Showing the example produced by SAT.~%~%")
@@ -1766,18 +1766,18 @@
 Showing ~x0 examples. Each example consists of a template and a
 concrete assignment.  The template shows a class of examples, and the
 concrete assignment represents a specific example from that
-class:~%~%" n))))
-       ((er &) (glcp-pretty-print-assignments assigns 1 alist concl state)))
+class:~%~%" (len ctrexes)))))
+       ((er &) (glcp-pretty-print-assignments 1 ctrexes concl state)))
     (value nil)))
 
-(defun glcp-counterexample-wormhole (bdd al hyp-bdd n warn-err type evfn concl)
+(defun glcp-counterexample-wormhole (ctrexes warn-err type evfn concl)
   (wormhole
    'glcp-counterexample-wormhole
    '(lambda (whs) whs)
    nil
    `(b* (((er &)
           (glcp-print-ctrexamples
-           ',evfn ',bdd ',al ',hyp-bdd ',n ',warn-err ',type ',concl state)))
+           ',evfn ',ctrexes ',warn-err ',type ',concl state)))
       (value :q))
    :ld-prompt nil
    :ld-pre-eval-print nil
@@ -1795,6 +1795,26 @@ class:~%~%" n))))
 
 (add-macro-alias glcp-error glcp-error-fn)
 
+(defun glcp-bit-to-obj-ctrexamples (assigns sspec-alist gobj-alist)
+  (if (atom assigns)
+      nil
+    (cons (list (caar assigns)
+                (generic-geval gobj-alist (list (cadar assigns)))
+                (inspec-show-assign-spec sspec-alist (cddar assigns)))
+          (glcp-bit-to-obj-ctrexamples (cdr assigns) sspec-alist gobj-alist))))
+
+(defun glcp-gen-ctrexes (ctrex-info alist hyp-bdd n state)
+  (b* (((er assigns) (glcp-gen-assignments ctrex-info alist hyp-bdd n state)))
+    (value (glcp-bit-to-obj-ctrexamples assigns alist (shape-spec-to-gobj
+                                                       alist)))))
+
+(defthm glcp-gen-ctrexes-does-not-fail
+  (not (mv-nth 0 (glcp-gen-ctrexes n hyp-bdd bdd bound state)))
+  :hints(("Goal" :in-theory (disable glcp-gen-assignments))))
+
+(in-theory (disable glcp-gen-ctrexes))
+  
+
 (defun glcp-analyze-interp-result (val al hyp-bdd abort-unknown abort-ctrex n
                                        geval-name clause-proc id concl state)
   (b* ((test (gtests val t))
@@ -1808,39 +1828,49 @@ class:~%~%" n))))
        (state (acl2::f-put-global 'glcp-indeterminate unk state))
        ((mv false-sat false-succ false-ctrex) (bfr-sat false))
        ((when (and false-sat false-succ))
-        (prog2$ (glcp-counterexample-wormhole
-                 false-ctrex al hyp-bdd n "ERROR" "Counterexamples" geval-name
-                 concl)
-                (if abort-ctrex
-                    (glcp-error
-                     (acl2::msg "~
+        (b* (((er ctrexes) (glcp-gen-ctrexes
+                            false-ctrex al hyp-bdd n state))
+             (state (acl2::f-put-global 'glcp-counterex-assignments
+                                        ctrexes state)))
+          (prog2$ (glcp-counterexample-wormhole
+                   ctrexes "ERROR" "Counterexamples" geval-name
+                   concl)
+                  (if abort-ctrex
+                      (glcp-error
+                       (acl2::msg "~
 ~x0: Counterexamples found in ~@1; aborting~%" clause-proc id))
-                  (value (list ''nil)))))
+                    (value (list ''nil))))))
        ;; False was either unsat or the check failed.  Either way we check unknown.
        ((mv unk-sat unk-succ unk-ctrex) (bfr-sat unk))
        ((when (and unk-sat unk-succ))
-        (prog2$ (glcp-counterexample-wormhole
-                 unk-ctrex al hyp-bdd n (if abort-unknown "ERROR" "WARNING")
-                 "Indeterminate results" geval-name concl)
-                (if abort-unknown
-                    (glcp-error
-                     (acl2::msg "~
+        (b* (((er ctrexes) (glcp-gen-ctrexes
+                            unk-ctrex al hyp-bdd n state))
+             (state (acl2::f-put-global 'glcp-indeterminate-assignments
+                                        ctrexes state)))
+          (prog2$ (glcp-counterexample-wormhole
+                   ctrexes (if abort-unknown "ERROR" "WARNING")
+                   "Indeterminate results" geval-name concl)
+                  (if abort-unknown
+                      (glcp-error
+                       (acl2::msg "~
 ~x0: Indeterminate results found in ~@1; aborting~%"
-                                clause-proc id))
-                  (value (list ''nil))
-                  ;; NOTE: We used to produce the following clause when an
-                  ;; unknown result was encountered, giving the user the chance
-                  ;; to prove that the resulting symbolic object actually
-                  ;; represented something constant-true.  But this seems
-                  ;; impractical, and it requires that the evaluator used to
-                  ;; prove the clause processor correct recognize geval, which
-                  ;; causes soundness problems regarding bfr-mode attachment,
-                  ;; because we're producing a term whose meaning depends on
-                  ;; the current bfr-mode.
-                  ;; 
-                  ;; (value `((not (gl-cp-hint 'result))
-                  ;;          (,geval-name ',val env)))
-                  )))
+                                  clause-proc id))
+                    (value (list ''nil))
+                    ;; NOTE: We used to produce the following clause when an
+                    ;; unknown result was encountered, giving the user the chance
+                    ;; to prove that the resulting symbolic object actually
+                    ;; represented something constant-true.  But this seems
+                    ;; impractical, and it requires that the evaluator used to
+                    ;; prove the clause processor correct recognize geval, which
+                    ;; causes soundness problems regarding bfr-mode attachment,
+                    ;; because we're producing a term whose meaning depends on
+                    ;; the current bfr-mode.  A fix might be to create separate
+                    ;; geval functions for the separate bfr modes and put down
+                    ;; whichever matches the current bfr mode.
+                    ;; 
+                    ;; (value `((not (gl-cp-hint 'result))
+                    ;;          (,geval-name ',val env)))
+                    ))))
        ((when (and false-succ unk-succ))
         ;; Both checks succeeded and were UNSAT, so the theorem is proved.
         (value (list ''t))))
@@ -1881,6 +1911,7 @@ class:~%~%" n))))
                                    val nil hyp-bdd abort-unknown abort-ctrex nil
                                    geval-name nil nil nil nil)))))
    :hints(("Goal" :in-theory '(glcp-analyze-interp-result
+                               glcp-gen-ctrexes-does-not-fail
                                glcp-error)))))
 
                                
