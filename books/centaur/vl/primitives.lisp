@@ -707,6 +707,89 @@ certain <tt>always</tt> statements into instances of this module.</p>")
 
 
 
+(defxdoc *vl-1-bit-resolve-wire*
+  :parents (primitives)
+  :short "Primitive module that resolves multiple drivers on a wire."
+  :long "<p>The Verilog definition of this module is:</p>
+
+<code>
+module VL_1_BIT_RESOLVE_WIRE (out, a, b) ;
+  output out;
+  input a;
+  input b;
+  assign out = a;
+  assign out = b;
+endmodule
+</code>
+
+<p>VL takes this as a primitive.  This module, and wrappers that extend it to
+higher arities and wider signals, may be introduced by the @(see multidrive)
+transform to deal with multiply driven wires.</p>")
+
+(defconsts *vl-1-bit-resolve-wire*
+  (b* ((name "VL_1_BIT_RESOLVE_WIRE")
+       (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
+       ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output 1))
+       ((mv a-expr   a-port   a-portdecl   a-netdecl)   (vl-occform-mkport "a"   :vl-input  1))
+       ((mv b-expr   b-port   b-portdecl   b-netdecl)   (vl-occform-mkport "b"   :vl-input  1))
+       (a-assign     (make-vl-assign :lvalue out-expr :expr a-expr :loc *vl-fakeloc*))
+       (b-assign     (make-vl-assign :lvalue out-expr :expr b-expr :loc *vl-fakeloc*)))
+    (make-honsed-vl-module :name      name
+                           :origname  name
+                           :ports     (list out-port     a-port      b-port)
+                           :portdecls (list out-portdecl a-portdecl  b-portdecl)
+                           :netdecls  (list out-netdecl  a-netdecl   b-netdecl)
+                           :assigns   (list              a-assign    b-assign)
+                           :minloc    *vl-fakeloc*
+                           :maxloc    *vl-fakeloc*
+                           :atts      atts)))
+
+
+
+
+(defxdoc *vl-1-bit-resolve-wor*
+  :parents (primitives)
+  :short "Primitive module that resolves multiple drivers on a <tt>wor</tt> net."
+  :long "<p>The Verilog definition of this module is:</p>
+
+<code>
+module VL_1_BIT_RESOLVE_WOR (out, a, b) ;
+  output out;
+  input a;
+  input b;
+
+  wor out;
+
+  assign out = a;
+  assign out = b;
+endmodule
+</code>
+
+<p>VL takes this as a primitive.  This module, and wrappers that extend it to
+higher arities and wider signals, may be introduced by the @(see multidrive)
+transform to deal with multiply driven wired ors.</p>")
+
+(defconsts *vl-1-bit-resolve-wor*
+  (b* ((name "VL_1_BIT_RESOLVE_WOR")
+       (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
+       ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output 1))
+       ((mv a-expr   a-port   a-portdecl   a-netdecl)   (vl-occform-mkport "a"   :vl-input  1))
+       ((mv b-expr   b-port   b-portdecl   b-netdecl)   (vl-occform-mkport "b"   :vl-input  1))
+       (out-netdecl  (change-vl-netdecl out-netdecl :type :vl-wor))
+       (a-assign     (make-vl-assign :lvalue out-expr :expr a-expr :loc *vl-fakeloc*))
+       (b-assign     (make-vl-assign :lvalue out-expr :expr b-expr :loc *vl-fakeloc*)))
+    (make-honsed-vl-module :name      name
+                           :origname  name
+                           :ports     (list out-port     a-port      b-port)
+                           :portdecls (list out-portdecl a-portdecl  b-portdecl)
+                           :netdecls  (list out-netdecl  a-netdecl   b-netdecl)
+                           :assigns   (list              a-assign    b-assign)
+                           :minloc    *vl-fakeloc*
+                           :maxloc    *vl-fakeloc*
+                           :atts      atts)))
+
+
+
 
 ;; (include-book "mlib/writer")
 ;; (vl-pps-module *vl-1-bit-x*)
@@ -725,4 +808,6 @@ certain <tt>always</tt> statements into instances of this module.</p>")
 ;; (vl-pps-module *vl-1-bit-zmux*)
 ;; (vl-pps-module *vl-1-bit-flop*)
 ;; (vl-pps-module *vl-1-bit-latch*)
+;; (vl-pps-module *vl-1-bit-resolve-wire*)
+;; (vl-pps-module *vl-1-bit-resolve-wor*)
 

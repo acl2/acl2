@@ -23,6 +23,7 @@
 (defconst *vl-lint-version* "0.07")
 
 (include-book "bit-use-set")
+(include-book "check-case")
 (include-book "check-namespace")
 (include-book "disconnected")
 (include-book "xf-drop-missing-submodules")
@@ -160,6 +161,7 @@
 
        (- (cw "~%vl-lint: initial processing...~%"))
        (mods (cwtime (vl-modulelist-portcheck mods)))
+       (mods (cwtime (vl-modulelist-check-case mods)))
        (mods (cwtime (vl-modulelist-duplicate-detect mods)))
        (mods (cwtime (vl-modulelist-condcheck mods)))
        (mods (cwtime (vl-modulelist-leftright-check mods)))
@@ -361,9 +363,62 @@
         :vl-dropped-modinst
         :vl-warn-function
         :vl-warn-taskdecl
-        :vl-unsupported-block
-        ))
+        :vl-unsupported-block))
 
+(defconst *basic-warnings*
+  (list :bad-mp-verror
+        :vl-bad-range
+        :vl-warn-duplicates
+        :vl-bad-instance
+        :vl-unresolved-hid
+        :vl-warn-unused-reg
+        :vl-warn-blank
+        :vl-undefined-names
+        :vl-port-mismatch))
+
+(defconst *trunc-warnings*
+  (list :vl-warn-extension
+        :vl-warn-truncation
+        :vl-warn-integer-size))
+
+(defconst *trunc-minor-warnings*
+  (list :vl-warn-extension-minor
+        :vl-warn-truncation-minor
+        :vl-warn-integer-size-minor
+        :vl-warn-vague-spec))
+
+(defconst *disconnected-warnings*
+  (list :vl-warn-disconnected
+        :vl-warn-disconnected-interesting
+        ;; Caveats that could make the analysis wrong
+        :vl-collect-wires-fail
+        :vl-collect-wires-approx
+        :vl-dropped-always
+        :vl-dropped-assign
+        :vl-dropped-initial
+        :vl-dropped-insts
+        :vl-dropped-modinst
+        :vl-warn-function
+        :vl-warn-taskdecl
+        :vl-unsupported-block))
+
+(defconst *smell-warnings*
+  (list :vl-warn-qmark-width
+        :vl-warn-qmark-const
+        :vl-warn-leftright
+        :vl-warn-selfassign
+        :vl-warn-instances-same
+        :vl-warn-case-sensitive-names))
+
+(defconst *smell-minor-warnings*
+  (list :vl-warn-partselect-same
+        :vl-warn-instances-same-minor))
+
+(defconst *multidrive-warnings*
+  (list :vl-warn-multidrive))
+
+(defconst *multidrive-minor-warnings*
+  (list :vl-warn-multidrive-minor))
 
 (defconst *warnings-covered*
 
@@ -371,51 +426,14 @@
   ;; these will get put into vl-other.txt
 
   (append *use-set-warnings*
-          (list
-           ;; basic
-           :bad-mp-verror
-           :vl-bad-range
-           :vl-warn-duplicates
-           :vl-bad-instance
-           :vl-unresolved-hid
-           :vl-warn-unused-reg
-           :vl-warn-blank
-           :vl-undefined-names
-           :vl-port-mismatch
-
-           ;; trunc
-           :vl-warn-extension
-           :vl-warn-truncation
-           :vl-warn-extension-minor
-           :vl-warn-truncation-minor
-           :vl-warn-integer-size
-           :vl-warn-integer-size-minor
-           :vl-warn-vague-spec
-
-           ;; disconnected
-           :vl-warn-disconnected
-           :vl-warn-disconnected-interesting
-           :vl-collect-wires-fail
-           :vl-collect-wires-approx
-           :vl-dropped-always
-           :vl-dropped-assign
-           :vl-dropped-initial
-           :vl-dropped-insts
-           :vl-dropped-modinst
-           :vl-warn-function
-           :vl-warn-taskdecl
-           :vl-unsupported-block
-
-           ;; smells
-           :vl-warn-qmark-width
-           :vl-warn-qmark-const
-           :vl-warn-leftright
-           :vl-warn-selfassign
-           :vl-warn-partselect-same
-
-           ;; multidrive
-           :vl-warn-multidrive
-           :vl-warn-multidrive-minor)))
+          *basic-warnings*
+          *trunc-warnings*
+          *trunc-minor-warnings*
+          *disconnected-warnings*
+          *smell-warnings*
+          *smell-minor-warnings*
+          *multidrive-warnings*
+          *multidrive-minor-warnings*))
 
 (defconst *warnings-ignored*
 
@@ -448,19 +466,7 @@
         (with-ps-file
          "vl-basic.txt"
          (vl-ps-update-autowrap-col 68)
-         (vl-lint-print-warnings "vl-basic.txt"
-                                 "Basic"
-                                 '(:bad-mp-verror
-                                   :vl-bad-range
-                                   :vl-warn-duplicates
-                                   :vl-bad-instance
-                                   :vl-unresolved-hid
-                                   :vl-warn-unused-reg
-                                   :vl-undefined-names
-                                   :vl-warn-blank
-                                   :vl-port-mismatch
-                                   )
-                                 walist)))
+         (vl-lint-print-warnings "vl-basic.txt" "Basic" *basic-warnings* walist)))
 
        (state
         (with-ps-file
@@ -472,12 +478,7 @@ mean and how to avoid them.
 
 ")
 
-         (vl-lint-print-warnings "vl-trunc.txt"
-                                 "Truncation/Extension"
-                                 '(:vl-warn-extension
-                                   :vl-warn-truncation
-                                   :vl-warn-integer-size)
-                                 walist)
+         (vl-lint-print-warnings "vl-trunc.txt" "Truncation/Extension" *trunc-warnings* walist)
 
          (vl-print "
 
@@ -522,31 +523,13 @@ you can see \"vl-trunc-minor.txt\" to review them.")))
         (with-ps-file
          "vl-disconnected.txt"
          (vl-ps-update-autowrap-col 68)
-         (vl-lint-print-warnings "vl-disconnected.txt"
-                                 "Disconnected Wire"
-                                 '(:vl-warn-disconnected
-                                   :vl-warn-disconnected-interesting
-                                   ;; Caveats that could make the analysis wrong
-                                   :vl-collect-wires-fail
-                                   :vl-collect-wires-approx
-                                   :vl-dropped-always
-                                   :vl-dropped-assign
-                                   :vl-dropped-initial
-                                   :vl-dropped-insts
-                                   :vl-dropped-modinst
-                                   :vl-warn-function
-                                   :vl-warn-taskdecl
-                                   :vl-unsupported-block)
-                                 walist)))
+         (vl-lint-print-warnings "vl-disconnected.txt" "Disconnected Wire" *disconnected-warnings* walist)))
 
        (state
         (with-ps-file
          "vl-multi.txt"
          (vl-ps-update-autowrap-col 68)
-         (vl-lint-print-warnings "vl-multi.txt"
-                                 "Multidrive"
-                                 '(:vl-warn-multidrive)
-                                 walist)))
+         (vl-lint-print-warnings "vl-multi.txt" "Multidrive" *multidrive-warnings* walist)))
 
        (state
         (if (not major)
@@ -569,13 +552,7 @@ NOTE: see the bottom of this file for an explanation of what these warnings
 mean and how to avoid them.
 
 ")
-         (vl-lint-print-warnings "vl-trunc-minor.txt"
-                                 "Minor Truncation/Extension"
-                                 '(:vl-warn-extension-minor
-                                   :vl-warn-truncation-minor
-                                   :vl-warn-integer-size-minor
-                                   :vl-warn-vague-spec)
-                                 walist)
+         (vl-lint-print-warnings "vl-trunc-minor.txt" "Minor Truncation/Extension" *trunc-minor-warnings* walist)
          (vl-print "
 
 UNDERSTANDING THESE WARNINGS.
@@ -627,10 +604,7 @@ wide addition instead of a 10-bit wide addition.")))
         (with-ps-file
          "vl-multi-minor.txt"
          (vl-ps-update-autowrap-col 68)
-         (vl-lint-print-warnings "vl-multi-minor.txt"
-                                 "Minor Multidrive"
-                                 '(:vl-warn-multidrive-minor)
-                                 walist)))
+         (vl-lint-print-warnings "vl-multi-minor.txt" "Minor Multidrive" *multidrive-minor-warnings* walist)))
 
        (state
         (if (not minor)
@@ -659,34 +633,19 @@ wide addition instead of a 10-bit wide addition.")))
         (with-ps-file
          "vl-smells.txt"
          (vl-ps-update-autowrap-col 68)
-         (vl-lint-print-warnings "vl-smells.txt"
-                                 "Code-Smell Warnings"
-                                 '(:vl-warn-qmark-width
-                                   :vl-warn-qmark-const
-                                   :vl-warn-leftright
-                                   :vl-warn-selfassign
-                                   :vl-warn-instances-same
-                                   )
-                                 walist)))
+         (vl-lint-print-warnings "vl-smells.txt" "Code-Smell Warnings" *smell-warnings* walist)))
 
        (state
         (with-ps-file
          "vl-smells-minor.txt"
          (vl-ps-update-autowrap-col 68)
-         (vl-lint-print-warnings "vl-smells-minor.txt"
-                                 "Minor Code-Smell Warnings"
-                                 '(:vl-warn-partselect-same
-                                   :vl-warn-instances-same-minor)
-                                 walist)))
+         (vl-lint-print-warnings "vl-smells-minor.txt" "Minor Code-Smell Warnings" *smell-minor-warnings* walist)))
 
        (state
         (with-ps-file
          "vl-other.txt"
          (vl-ps-update-autowrap-col 68)
-         (vl-lint-print-warnings "vl-other.txt"
-                                 "Other/Unclassified"
-                                 othertypes
-                                 walist)))
+         (vl-lint-print-warnings "vl-other.txt" "Other/Unclassified" othertypes walist)))
 
        (- (cw "~%")))
 

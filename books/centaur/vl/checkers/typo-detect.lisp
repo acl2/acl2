@@ -213,6 +213,7 @@ prevent matching between signals like <tt>bcDWCBAEnt_C0_P</tt> and
         "unused"
         "bit"
         "latch"
+        "EC"
         ))
 
 

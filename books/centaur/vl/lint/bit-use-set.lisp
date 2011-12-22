@@ -403,9 +403,9 @@
 ; we draw the above conclusions, we will think that A is "used but not set" in
 ; super and thus we will flag A as being a serious concern!  We will similarly
 ; think that B is "set but not used", which is a lesser concern but still
-; noisy.  The "inverse" problem happens with a deprecated qoutput port that
+; noisy.  The "inverse" problem happens with a deprecated output port that
 ; isn't actually driven by the submodule or used by the supermodule.  Taken
-; over the whole design, these problems cause a lot of "noise" in the analysis
+; over the whole design, these problems cause a lot of noise in the analysis
 ; that distracts us from the warnings that really are serious.
 ;
 ; New Approach.  In our new tool, we no longer automatically assume that the
@@ -891,6 +891,71 @@
                (and (vl-warninglist-p (mv-nth 0 ret))
                     (us-db-p (mv-nth 1 ret)))))
     :hints(("Goal" :in-theory (enable us-mark-wires-for-assignlist)))))
+
+
+
+(defsection us-mark-wires-for-netdecllist
+
+; If a net is declared to be a supply0 or a supply1, then we want to think
+; about it as being driven.
+
+  (defund us-mark-wires-for-netdecl (x walist db warnings)
+    "Returns (MV WARNINGS DB)"
+    (declare (xargs :guard (and (vl-netdecl-p x)
+                                (vl-wirealist-p walist)
+                                (us-db-p db)
+                                (vl-warninglist-p warnings))))
+    (b* (((vl-netdecl x) x)
+         ((unless (or (eq x.type :vl-supply0)
+                      (eq x.type :vl-supply1)))
+          (mv warnings db))
+
+         (entry (hons-get x.name walist))
+         (wires (cdr entry))
+         ((unless entry)
+          (b* ((w (make-vl-warning :type :vl-bad-netdecl
+                                   :msg "~a0: no corresponding wires."
+                                   :args (list (car x))
+                                   :fatalp t
+                                   :fn 'us-mark-wires-for-netdecl)))
+            (mv (cons w warnings) db)))
+
+         ((mv warnings db) (us-mark-wires-truly-set wires db warnings x)))
+      (mv warnings db)))
+
+  (defthm us-mark-wires-for-netdecl-basics
+    (implies (and (force (vl-netdecl-p x))
+                  (force (vl-wirealist-p walist))
+                  (force (us-db-p db))
+                  (force (vl-warninglist-p warnings)))
+             (let ((ret (us-mark-wires-for-netdecl x walist db warnings)))
+               (and (vl-warninglist-p (mv-nth 0 ret))
+                    (us-db-p (mv-nth 1 ret)))))
+    :hints(("Goal" :in-theory (enable us-mark-wires-for-netdecl))))
+
+  (defund us-mark-wires-for-netdecllist (x walist db warnings)
+    "Returns (MV WARNINGS DB)"
+    (declare (xargs :guard (and (vl-netdecllist-p x)
+                                (vl-wirealist-p walist)
+                                (us-db-p db)
+                                (vl-warninglist-p warnings))))
+    (b* (((when (atom x))
+          (mv warnings db))
+         ((mv warnings db)
+          (us-mark-wires-for-netdecl (car x) walist db warnings))
+         ((mv warnings db)
+          (us-mark-wires-for-netdecllist (cdr x) walist db warnings)))
+      (mv warnings db)))
+
+  (defthm us-mark-wires-for-netdecllist-basics
+    (implies (and (force (vl-netdecllist-p x))
+                  (force (vl-wirealist-p walist))
+                  (force (us-db-p db))
+                  (force (vl-warninglist-p warnings)))
+             (let ((ret (us-mark-wires-for-netdecllist x walist db warnings)))
+               (and (vl-warninglist-p (mv-nth 0 ret))
+                    (us-db-p (mv-nth 1 ret)))))
+    :hints(("Goal" :in-theory (enable us-mark-wires-for-netdecllist)))))
 
 
 
@@ -2660,6 +2725,8 @@
               (us-mark-toplevel-port-bits x.portdecls walist db warnings)
             (mv warnings db)))
 
+         ((mv warnings db) (cwtime (us-mark-wires-for-netdecllist x.netdecls walist db warnings)
+                                   :mintime 1/2))
          ((mv warnings db) (cwtime (us-mark-wires-for-assignlist x.assigns walist db warnings)
                                    :mintime 1/2))
          ((mv warnings db) (cwtime (us-mark-wires-for-gateinstlist x.gateinsts walist db warnings)
