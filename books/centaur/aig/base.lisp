@@ -220,6 +220,7 @@ valid <tt>action</tt>s are:</p>
   :parents (aig)
   :short "Control-flow macro to split into cases on what kind of AIG you have
 encountered."
+  :long "@(def aig-cases)"
 
   (defmacro aig-cases (x &key true false var inv and)
     `(let ((aig-cases-var ,x))

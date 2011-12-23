@@ -31,6 +31,8 @@
 ; actually produce a pretty significant impact when applied throughout the
 ; rewritten, split up, simplified tree.
 
+; WARNING: These are only valid on sized expressions!
+
 
 (defund vl-op-optimize (op args mod ialist)
   (declare (xargs :guard (and (vl-op-p op)

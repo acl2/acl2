@@ -101,8 +101,8 @@
 
 (defxdoc vl
   :short "VL Verilog Toolkit."
-  :long "<p>Note: thqis documentation is mainly a reference manual.  If you are
-new to VL, you may wish to start with @(see getting-started).</p>")
+  :long "<box><p><b>Note</b>: this documentation is mainly a reference manual.
+If you are new to VL, please see @(see getting-started) first.</p></box>")
 
 (defxdoc getting-started
   :parents (vl)

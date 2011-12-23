@@ -489,7 +489,11 @@ longer to implement such a cleaning phase.  My rationale is that:</p>
     not much of an argument since the cleaning code is relatively simple,
     but it still has some merit.</li>
 
-</ol>"
+</ol>
+
+<p>NOTE: we now have the function vl-expr-clean-concats in
+mlib/clean-concats.lisp, which does this cleaning.  It's currently not used, in
+case there are any bugs, but perhaps we should re-integrate it.</p>"
 
   (local (include-book "arithmetic-3/floor-mod/floor-mod" :dir :system))
 

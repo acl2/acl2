@@ -32,8 +32,8 @@
   :parents (vl)
   :short "Applicative \"printer\" for building strings."
 
-  :long "<p>We implement a \"printer\" as a stobj name @(see ps), and use it as
-the back-end for formatting our source code and for other output tasks.  Our
+  :long "<p>We implement a printer as a stobj name @(see ps), and use it as the
+back-end for formatting our source code and for other output tasks.  Our
 printer is applicative and the act of printing only accumulates characters or
 strings into a list.  These printed elements are kept in reverse order, which
 makes the sequential printing of small chunks of text reasonably
