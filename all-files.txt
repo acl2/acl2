@@ -722,6 +722,7 @@ books/centaur/vl/lint:
 acl2-customization.lsp
 bit-use-set.lisp
 cert.acl2
+check-case.lisp
 check-namespace.lisp
 disconnected.lisp
 lint.lisp
@@ -786,6 +787,7 @@ acl2-customization.lsp
 allexprs.lisp
 atts.lisp
 cert.acl2
+clean-concats.lisp
 comment-writer.lisp
 context.lisp
 ctxexprs.lisp
