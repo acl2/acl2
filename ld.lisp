@@ -18351,6 +18351,9 @@
   ~st[NEW FEATURES]
 
   A new ``tau system'' provides a kind of ``type checker.''  ~l[tau-system].
+  Thanks to Dave Greve for supplying a motivating example (on which this system
+  can provide significant speedup), and to Sol Swords for sending a very
+  helpful bug report on a preliminary implementation.
 
   Users may now arrange for additional summary information to be printed at the
   end of ~il[events]; ~pl[print-summary-user].  Thanks to Harsh Raju Chamarthi
