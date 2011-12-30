@@ -40,7 +40,7 @@
 (include-book "encryption")
 (include-book "diffie-helman")
 (include-book "random")
-(include-book "make-event/assert" :dir :system)
+(include-book "misc/assert" :dir :system)
 
 (defun identityp (x)
   (declare (xargs :guard t))

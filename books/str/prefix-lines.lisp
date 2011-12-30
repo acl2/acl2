@@ -22,71 +22,76 @@
 (include-book "cat")
 (local (include-book "arithmetic"))
 
-(defund prefix-lines-aux (n x xl acc prefix)
-  (declare (xargs :guard (and (natp n)
-                              (stringp x)
-                              (natp xl)
-                              (<= n xl)
-                              (= xl (length x))
-                              (stringp prefix))
-                  :measure (nfix (- (nfix xl) (nfix n)))))
-  (let ((n (mbe :logic (nfix n) :exec n))
-        (xl (mbe :logic (nfix xl) :exec xl)))
-    (if (mbe :logic (zp (- xl n))
-             :exec (= n xl))
-        acc
-      (let* ((char (char x n))
-             (acc  (cons char acc))
-             (acc  (if (eql char #\Newline)
-                       (str::revappend-chars prefix acc)
-                     acc)))
-        (prefix-lines-aux (+ 1 n) x xl acc prefix)))))
+(defsection prefix-lines
+  :parents (str)
+  :short "Add a prefix to every line in a string."
+  :long "<p>@(call prefix-lines) builds a new string by adding <tt>prefix</tt>
+to the start of every line in the string <tt>x</tt>.  The start of <tt>x</tt>
+is regarded as the start of a line, and also gets the prefix.  For instance,</p>
 
-(defthm character-listp-of-prefix-lines-aux
-  (implies (and (natp n)
-                (stringp x)
-                (natp xl)
-                (<= n xl)
-                (= xl (length x))
-                (stringp rprefix)
-                (character-listp acc))
-           (character-listp (prefix-lines-aux n x xl acc prefix)))
-  :hints(("Goal"
-          :induct (prefix-lines-aux n x xl acc prefix)
-          :in-theory (enable prefix-lines-aux))))
+<code>
+ (prefix-lines \"hello world
+ goodbye world\" \"  ** \")
+</code>
 
+<p>Would create the following result:</p>
 
+<code>
+ \"  ** hello world
+   ** goodbye world\"
+</code>
 
-(defund prefix-lines (x prefix)
-
-  ":Doc-Section Str
-Add a prefix to every line in a string~/
-
-~c[(prefix-lines x prefix)] builds a new string by adding ~c[prefix] to the
-start of every line in the string ~c[x].  The start of ~c[x] is regarded
-as the start of a line, and also gets the prefix.  For instance,
-~bv[]
-(prefix-lines \"hello world
-goodbye world\" \"  ** \")
-~ev[]
-Would create the following result:
-~bv[]
-\"  ** hello world
-  ** goodbye world\"
-~ev[]
-This is sometimes useful for indenting blobs of text when you are trying to
+<p>This is sometimes useful for indenting blobs of text when you are trying to
 pretty-print things.  The operation is fairly efficient: we cons everything
-into a character list and then coerce it back into a string at the end.~/~/"
+into a character list and then coerce it back into a string at the end.</p>"
 
-  (declare (xargs :guard (and (stringp x)
-                              (stringp prefix))))
-  (let* ((acc    (str::revappend-chars prefix nil))
-         (rchars (prefix-lines-aux 0 x (length x) acc prefix))
-         (rstr   (coerce rchars 'string)))
-    (reverse rstr)))
+  (defund prefix-lines-aux (n x xl acc prefix)
+    (declare (xargs :guard (and (natp n)
+                                (stringp x)
+                                (natp xl)
+                                (<= n xl)
+                                (= xl (length x))
+                                (stringp prefix))
+                    :measure (nfix (- (nfix xl) (nfix n)))))
+    (let ((n (mbe :logic (nfix n) :exec n))
+          (xl (mbe :logic (nfix xl) :exec xl)))
+      (if (mbe :logic (zp (- xl n))
+               :exec (= n xl))
+          acc
+        (let* ((char (char x n))
+               (acc  (cons char acc))
+               (acc  (if (eql char #\Newline)
+                         (str::revappend-chars prefix acc)
+                       acc)))
+          (prefix-lines-aux (+ 1 n) x xl acc prefix)))))
 
-(defthm stringp-of-prefix-lines
-  (stringp (prefix-lines x prefix))
-  :rule-classes :type-prescription
-  :hints(("Goal" :in-theory (enable prefix-lines))))
+  (defund prefix-lines (x prefix)
+    (declare (xargs :guard (and (stringp x)
+                                (stringp prefix))
+                    :verify-guards nil))
+    (let* ((acc    (str::revappend-chars prefix nil))
+           (rchars (prefix-lines-aux 0 x (length x) acc prefix))
+           (rstr   (coerce rchars 'string)))
+      (reverse rstr)))
+
+  (local (in-theory (enable prefix-lines-aux prefix-lines)))
+
+  (defthm character-listp-of-prefix-lines-aux
+    (implies (and (natp n)
+                  (stringp x)
+                  (natp xl)
+                  (<= n xl)
+                  (= xl (length x))
+                  (stringp rprefix)
+                  (character-listp acc))
+             (character-listp (prefix-lines-aux n x xl acc prefix)))
+    :hints(("Goal" :induct (prefix-lines-aux n x xl acc prefix))))
+
+  (verify-guards prefix-lines)
+
+  (defthm stringp-of-prefix-lines
+    (stringp (prefix-lines x prefix))
+    :rule-classes :type-prescription))
+
+
 

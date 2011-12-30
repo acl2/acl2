@@ -1,5 +1,5 @@
-; CUTIL - Centaur Basic Utilities
-; Copyright (C) 2008-2011 Centaur Technology
+; XDOC Documentation System for ACL2
+; Copyright (C) 2009-2011 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -18,6 +18,4 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-(ld "package.lsp")
-
-(certify-book "portcullis" ? t :ttags :all)
+(in-package "ACL2")

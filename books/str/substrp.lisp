@@ -22,39 +22,39 @@
 (include-book "strpos")
 (local (include-book "arithmetic"))
 
-(defund substrp (x y)
 
-  ":Doc-Section Str
-  Case-sensitive test for the existence of a substring~/
+(defsection substrp
+  :parents (substrings)
+  :short "Case-sensitive test for the existence of a substring."
+  :long "<p>@(call substrp) determines if x ever occurs as a substring of y.
+The test is case-sensitive.</p>
 
-  ~c[(substrp x y)] determines if x ever occurs as a substring of y.  The test is
-  case-sensitive.~/
+<p>See also @(see isubstrp) for a case-insensitive version, and @(see strpos)
+or @(see strrpos) for alternatives that say where a match occurs.</p>"
 
-  ~l[str::isubstrp], and ~pl[str::strpos]"
+  (defund substrp (x y)
+    (declare (type string x)
+             (type string y))
+    (if (strpos x y)
+        t
+      nil))
 
-  (declare (type string x)
-           (type string y))
+  (local (in-theory (enable substrp)))
 
-  (if (strpos x y)
-      t
-    nil))
+  (defthm prefixp-when-substrp
+    (implies (and (substrp x y)
+                  (force (stringp x))
+                  (force (stringp y)))
+             (prefixp (coerce x 'list)
+                      (nthcdr (strpos x y) (coerce y 'list)))))
 
-(defthm prefixp-when-substrp
-   (implies (and (substrp x y)
-                 (force (stringp x))
-                 (force (stringp y)))
-            (prefixp (coerce x 'list)
-                     (nthcdr (strpos x y) (coerce y 'list))))
-   :hints(("Goal" :in-theory (enable substrp))))
-
-(defthm completeness-of-substrp
-  (implies (and (prefixp (coerce x 'list)
-                         (nthcdr m (coerce y 'list)))
-                (force (natp m))
-                (force (stringp x))
-                (force (stringp y)))
-           (substrp x y))
-  :hints(("Goal"
-          :in-theory (e/d (substrp)
-                          (completeness-of-strpos))
-          :use ((:instance completeness-of-strpos)))))
+  (defthm completeness-of-substrp
+    (implies (and (prefixp (coerce x 'list)
+                           (nthcdr m (coerce y 'list)))
+                  (force (natp m))
+                  (force (stringp x))
+                  (force (stringp y)))
+             (substrp x y))
+    :hints(("Goal"
+            :in-theory (disable completeness-of-strpos)
+            :use ((:instance completeness-of-strpos))))))

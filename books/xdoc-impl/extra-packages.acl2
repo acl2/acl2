@@ -18,8 +18,18 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-;; BOZO shouldn't need this ttag if we can fix the sys-call issue
-;; for stupid-mkdir
 
-(include-book "portcullis")
-(certify-book "mkdir-raw" ? t :ttags '(:xdoc))
+;; Horrible hack for loading all packages before loading book documentation.
+
+(ld "cert.acl2")
+(ld "cowles/packages.lsp" :dir :system)
+(ld "clause-processors/SULFA/books/sat/sat-package.acl2" :dir :system)
+(ld "data-structures/define-u-package.lsp" :dir :system)
+(ld "data-structures/define-structures-package.lsp" :dir :system)
+(ld "data-structures/memories/package.lsp" :dir :system)
+(ld "hacking/hacker-pkg.lsp" :dir :system)
+(ld "cutil/package.lsp" :dir :system)
+(ld "serialize/package.lsp" :dir :system)
+(ld "str/package.lsp" :dir :system)
+(ld "tools/flag-package.lsp" :dir :system)
+(certify-book "extra-packages" ? t)

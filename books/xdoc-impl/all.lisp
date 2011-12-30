@@ -1,5 +1,5 @@
-; CUTIL - Centaur Basic Utilities
-; Copyright (C) 2008-2011 Centaur Technology
+; XDOC Documentation System for ACL2
+; Copyright (C) 2009-2011 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -18,6 +18,29 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-(ld "package.lsp")
 
-(certify-book "portcullis" ? t :ttags :all)
+; all.lisp -- most users should ignore this book and include top.lisp instead.
+;
+; Unlike top.lisp, this book depends on everything else in xdoc except for
+; bookdoc.dat.  It may be useful as a target in some Makefiles that want to
+; ensure that all of XDOC gets built.  Note that your Makefile will probably
+; also want to generate bookdoc.dat.
+
+(in-package "XDOC")
+
+(include-book "../xdoc/base")
+(include-book "../xdoc/top")
+(include-book "../xdoc/defxdoc-raw")
+(include-book "../xdoc/names")
+
+(include-book "display")
+(include-book "import-acl2doc")
+(include-book "mkdir")
+(include-book "mkdir-raw")
+(include-book "parse-xml")
+(include-book "preprocess")
+(include-book "save")
+(include-book "topics")
+(include-book "write-acl2-xdoc")
+
+

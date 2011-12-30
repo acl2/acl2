@@ -19,182 +19,252 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "STR")
-(include-book "doc")
+(include-book "cat")
+(local (include-book "unicode/take" :dir :system))
 (local (include-book "arithmetic"))
 
-(defund rpadchars (x len)
-  (declare (xargs :guard (and (character-listp x)
-                              (natp len))
-                  :guard-hints (("Goal" :in-theory (enable acl2::repeat))))
-           (type integer len))
-  (mbe :logic
-       (append x (make-list (nfix (- (nfix len) (len x)))
-                            :initial-element #\Space))
-       :exec
-       (let* ((x-len (length (the list x)))
-              (diff  (- len x-len)))
-         (if (> diff 0)
-             (append x (make-list diff :initial-element #\Space))
-           x))))
+(defsection pad-trim
+  :parents (str)
+  :short "Functions for trimming whitespace and padding with spaces.")
 
-(defthm character-listp-of-rpadchars
-  (implies (force (character-listp x))
-           (character-listp (rpadchars x len)))
-  :hints(("Goal" :in-theory (enable rpadchars))))
+(defsection rpadchars
+  :parents (pad-trim)
+  :short "Pad a character-list with spaces on the right."
 
-(defthm len-of-rpadchars
-  (equal (len (rpadchars x len))
-         (max (len x) (nfix len)))
-  :hints(("Goal" :in-theory (enable rpadchars))))
+  :long "<p>@(call rpadchars) extends the character list <tt>x</tt> to length
+<tt>len</tt> by adding spaces on the right.  For instance,</p>
 
+<code>
+  (rpadchars '(#\f #\o #\o) 5)
+     --&gt;
+  '(#\f #\o #\o #\Space #\Space)
+</code>
 
+<p>This is completely dumb: we don't try to account for newlines, tabs, or
+anything like that, and just add <tt>#\Space</tt> characters until reaching the
+desired width.</p>
 
-(defund rpadstr (x len)
-  ":Doc-Section Str
-Pad a string to some width by adding whitespace on the right.~/
+<p>If no new spaces are needed, <tt>x</tt> is returned unchanged and no consing
+is performed.</p>"
 
-Example:
-~bv[]
-  (rpadstr \"foo\" 5) --> \"foo  \"
-~ev[]
+  (defund rpadchars (x len)
+    (declare (xargs :guard (and (character-listp x)
+                                (natp len))
+                    :guard-hints (("Goal" :in-theory (enable acl2::repeat))))
+             (type integer len))
+    (mbe :logic
+         (append x (make-list (nfix (- (nfix len) (len x)))
+                              :initial-element #\Space))
+         :exec
+         (let* ((x-len (length (the list x)))
+                (diff  (- len x-len)))
+           (if (> diff 0)
+               (append x (make-list diff :initial-element #\Space))
+             x))))
 
-This is completely dumb: there's no accounting for newlines or anything, it
-just adds however many spaces are needed to reach the desired width.  If the
-string is already longer than the desired width, it's not changed.~/~/"
+  (local (in-theory (enable rpadchars)))
 
-  (declare (xargs :guard (and (stringp x)
-                              (natp len)))
-           (type string x)
-           (type integer len))
-  (coerce (rpadchars (coerce x 'list) len) 'string))
+  (defthm character-listp-of-rpadchars
+    (implies (force (character-listp x))
+             (character-listp (rpadchars x len))))
 
-(defthm stringp-of-rpadstr
-  (stringp (rpadstr x len))
-  :rule-classes :type-prescription )
-
-(defthm len-of-coerce-of-rpadstr
-  (implies (force (stringp x))
-           (equal (len (coerce (rpadstr x len) 'list))
-                  (max (length x)
-                       (nfix len))))
-  :hints(("Goal" :in-theory (enable rpadstr))))
+  (defthm len-of-rpadchars
+    (equal (len (rpadchars x len))
+           (max (len x) (nfix len)))))
 
 
+(defsection rpadstr
+  :parents (pad-trim)
+  :short "Pad a string with spaces on the right."
 
-(defund lpadchars-aux (x n)
-  (declare (xargs :guard (and (character-listp x)
-                              (natp n))
-                  :guard-hints (("Goal" :in-theory (enable lpadchars-aux acl2::repeat))))
-           (type integer n))
-  (mbe :logic
-       (append (make-list n :initial-element #\Space)
-               x)
-       :exec
-       (if (= n 0)
-           x
-         (lpadchars-aux (cons #\Space x) (- n 1)))))
+  :long "<p>@(call rpadstr) extends the string <tt>x</tt> to length
+<tt>len</tt> by adding spaces on the right.  For instance,</p>
 
-(defund lpadchars (x len)
-  (declare (xargs :guard (and (character-listp x)
-                              (natp len))
-                  :guard-hints (("Goal" :in-theory (enable lpadchars-aux))))
-           (type integer len))
-  (mbe :logic
-       (append (make-list (nfix (- (nfix len) (len x)))
-                          :initial-element #\Space)
-               x)
-       :exec
-       (let* ((x-len (length x))
-              (diff  (- len x-len)))
-         (if (< 0 diff)
-             (lpadchars-aux x diff)
-           x))))
+<code>
+  (rpadchars \"foo\" 5)
+     --&gt;
+  \"foo  \"
+</code>
 
-(defthm character-listp-of-lpadchars
-  (implies (force (character-listp x))
-           (character-listp (lpadchars x len)))
-  :hints(("Goal" :in-theory (enable lpadchars))))
+<p>This is completely dumb: we don't try to account for newlines, tabs, or
+anything like that, and just add <tt>#\Space</tt> characters until reaching the
+desired width.</p>
 
-(defthm len-of-lpadchars
-  (equal (len (lpadchars x len))
-         (max (len x) (nfix len)))
-  :hints(("Goal" :in-theory (enable lpadchars))))
+<p>If no new spaces are needed, <tt>x</tt> is returned unchanged and no consing
+or coercion is performed.</p>"
 
+  (local (in-theory (enable rpadchars append-chars)))
 
+  (defund rpadstr (x len)
+    (declare (xargs :guard (and (stringp x)
+                                (natp len))
+                    :guard-debug t)
+             (type string x)
+             (type integer len))
+    (mbe :logic
+         (coerce (rpadchars (coerce x 'list) len) 'string)
+         :exec
+         (let* ((x-len (length (the string x)))
+                (diff  (- len x-len)))
+           (if (> diff 0)
+               (let ((spaces (make-list diff :initial-element #\Space)))
+                 (coerce (mbe :logic (append-chars x spaces)
+                              :exec (if (= x-len 0)
+                                        spaces
+                                      (append-chars-aux x (- x-len 1) spaces)))
+                         'string))
+             x))))
 
+  (local (in-theory (enable rpadstr)))
 
-(defund lpadstr (x len)
+  (defthm stringp-of-rpadstr
+    (stringp (rpadstr x len))
+    :rule-classes :type-prescription)
 
-  ":Doc-Section Str
-Pad a string to some width by adding whitespace on the left.~/
-
-Example:
-~bv[]
-  (lpadstr \"foo\" 5) --> \"  foo\"
-~ev[]
-
-This is completely dumb: there's no accounting for newlines or anything, it
-just adds however many spaces are needed to reach the desired width.  If the
-string is already longer than the desired width, it's not changed.~/~/"
-
-  (declare (xargs :guard (and (stringp x)
-                              (natp len)))
-           (type string x)
-           (type integer len))
-  (coerce (lpadchars (coerce x 'list) len) 'string))
-
-(defthm stringp-of-lpadstr
-  (stringp (lpadstr x len))
-  :rule-classes :type-prescription)
-
-(defthm len-of-coerce-of-lpadstr
-  (implies (force (stringp x))
-           (equal (len (coerce (lpadstr x len) 'list))
-                  (max (length x)
-                       (nfix len))))
-  :hints(("Goal" :in-theory (enable lpadstr))))
+  (defthm len-of-coerce-of-rpadstr
+    (implies (force (stringp x))
+             (equal (len (coerce (rpadstr x len) 'list))
+                    (max (length x)
+                         (nfix len))))))
 
 
+(defsection lpadchars
+  :parents (pad-trim)
+  :short "Pad a character-list with spaces on the left."
+
+  :long "<p>@(call lpadchars) extends the character list <tt>x</tt> to length
+<tt>len</tt> by adding spaces on the left.  For instance,</p>
+
+<code>
+  (lpadchars '(#\f #\o #\o) 5)
+     --&gt;
+  '(#\Space #\Space #\f #\o #\o)
+</code>
+
+<p>This is completely dumb: we don't try to account for newlines, tabs, or
+anything like that, and just add <tt>#\Space</tt> characters until reaching the
+desired width.</p>
+
+<p>If no new spaces are needed, <tt>x</tt> is returned unchanged and no consing
+is performed.</p>"
+
+  (defund lpadchars (x len)
+    (declare (xargs :guard (and (character-listp x)
+                                (natp len)))
+             (type integer len))
+    (mbe :logic
+         (append (make-list (nfix (- (nfix len) (len x)))
+                            :initial-element #\Space)
+                 x)
+         :exec
+         (let* ((x-len (length x))
+                (diff  (- len x-len)))
+           (if (< 0 diff)
+               (make-list-ac diff #\Space x)
+             x))))
+
+  (local (in-theory (enable lpadchars)))
+
+  (defthm character-listp-of-lpadchars
+    (implies (force (character-listp x))
+             (character-listp (lpadchars x len))))
+
+  (defthm len-of-lpadchars
+    (equal (len (lpadchars x len))
+           (max (len x) (nfix len)))))
 
 
-(defund trim-aux (x)
-  (declare (xargs :guard (character-listp x)))
-  ;; Remove all whitespace characters from the front of a list.
-  (if (consp x)
-      (if (or (eql (car x) #\Space)
-              (eql (car x) #\Tab)
-              (eql (car x) #\Newline)
-              (eql (car x) #\Page))
-          (trim-aux (cdr x))
-        x)
-    nil))
+(defsection lpadstr
+  :parents (pad-trim)
+  :short "Pad a string with spaces on the left."
 
-(defthm character-listp-of-trim-aux
-  (implies (force (character-listp x))
-           (character-listp (trim-aux x)))
-  :hints(("Goal" :in-theory (enable trim-aux))))
+  :long "<p>@(call lpadstr) extends the string <tt>x</tt> to length
+<tt>len</tt> by adding spaces on the left.  For instance,</p>
+
+<code>
+  (lpadstr \"foo\" 5)
+     --&gt;
+  \"  foo\"
+</code>
+
+<p>This is completely dumb: we don't try to account for newlines, tabs, or
+anything like that, and just add <tt>#\Space</tt> characters until reaching the
+desired width.</p>
+
+<p>If no new spaces are needed, <tt>x</tt> is returned unchanged and no consing
+is performed.</p>"
+
+  (local (in-theory (enable lpadchars)))
+
+  (defund lpadstr (x len)
+    (declare (xargs :guard (and (stringp x)
+                                (natp len)))
+             (type string x)
+             (type integer len))
+    (mbe :logic
+         (coerce (lpadchars (coerce x 'list) len) 'string)
+         :exec
+         (let* ((x-len (length x))
+                (diff  (- len x-len)))
+           (if (< 0 diff)
+               (coerce (make-list-ac diff #\Space (coerce x 'list)) 'string)
+             x))))
+
+  (local (in-theory (enable lpadstr)))
+
+  (defthm stringp-of-lpadstr
+    (stringp (lpadstr x len))
+    :rule-classes :type-prescription)
+
+  (defthm len-of-coerce-of-lpadstr
+    (implies (force (stringp x))
+             (equal (len (coerce (lpadstr x len) 'list))
+                    (max (length x)
+                         (nfix len))))))
 
 
-(local (defthm true-listp-when-character-listp
-         (implies (character-listp x)
-                  (true-listp x))))
+(defsection trim
+  :parents (pad-trim)
+  :short "Remove whitespace from the front and end of a string."
 
-(defund trim (x)
-  ":Doc-Section Str
-  Remove whitespace from the front and end of a string.~/
+  :long "<p>@(call trim) removes whitespace characters from the front and end
+of the string <tt>x</tt>.</p>
 
-  BOZO eventually make this efficient.~/~/"
+<p>BOZO eventually make this efficient.</p>"
 
-  (declare (xargs :guard (stringp x)))
-  (let* ((chars (coerce x 'list))
-         (chars (trim-aux chars)) ;; eat spaces at the front
-         (chars (reverse chars))  ;; flip so we can get to the back
-         (chars (trim-aux chars)) ;; eat spaces at the back
-         (chars (reverse chars))) ;; flip again so it's back to normal
-    (coerce chars 'string)))
+  (defund trim-aux (x)
+    (declare (xargs :guard (character-listp x)))
+    ;; Remove all whitespace characters from the front of a list.
+    (if (consp x)
+        (if (or (eql (car x) #\Space)
+                (eql (car x) #\Tab)
+                (eql (car x) #\Newline)
+                (eql (car x) #\Page))
+            (trim-aux (cdr x))
+          x)
+      nil))
 
-(defthm stringp-of-trim
-  (stringp (trim x))
-  :hints(("Goal" :in-theory (enable trim)))
-  :rule-classes ((:rewrite)
-                 (:type-prescription)))
+  (local (in-theory (enable trim-aux)))
+
+  (defthm character-listp-of-trim-aux
+    (implies (force (character-listp x))
+             (character-listp (trim-aux x))))
+
+  (local (defthm true-listp-when-character-listp
+           (implies (character-listp x)
+                    (true-listp x))))
+
+  (defund trim (x)
+    (declare (xargs :guard (stringp x)))
+    (let* ((chars (coerce x 'list))
+           (chars (trim-aux chars)) ;; eat spaces at the front
+           (chars (reverse chars))  ;; flip so we can get to the back
+           (chars (trim-aux chars)) ;; eat spaces at the back
+           (chars (reverse chars))) ;; flip again so it's back to normal
+      (coerce chars 'string)))
+
+  (local (in-theory (enable trim)))
+
+  (defthm stringp-of-trim
+    (stringp (trim x))
+    :rule-classes :type-prescription))

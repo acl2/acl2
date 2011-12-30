@@ -23,66 +23,56 @@
 (include-book "unicode/prefixp" :dir :system)
 (local (include-book "arithmetic"))
 
-(defund iprefixp (x y)
+(defsection iprefixp
+  :parents (substrings)
+  :short "Case-insensitive character-list prefix test."
+  :long "<p>@(call iprefixp) determines whether one character list is a prefix
+of another, where each character is tested using @(see ichareqv).</p>"
 
-  ":Doc-Section Str
-  Case-insensitive character-list prefix test~/
+  (defund iprefixp (x y)
+    (declare (xargs :guard (and (character-listp x)
+                                (character-listp y))))
+    (if (consp x)
+        (and (consp y)
+             (ichareqv (car x) (car y))
+             (iprefixp (cdr x) (cdr y)))
+      t))
 
-  ~c[(iprefixp x y)] determines whether one character list is a prefix of another,
-  where each character is tested using ~il[str::ichareqv].~/
+  (local (in-theory (enable iprefixp)))
 
-  ~l[str::istrprefixp]"
+  (defthm iprefixp-when-not-consp-left
+    (implies (not (consp x))
+             (iprefixp x y)))
 
-  (declare (xargs :guard (and (character-listp x)
-                              (character-listp y))))
+  (defthm iprefixp-of-cons-left
+    (equal (iprefixp (cons a x) y)
+           (and (consp y)
+                (ichareqv a (car y))
+                (iprefixp x (cdr y)))))
 
-  (if (consp x)
-      (and (consp y)
-           (ichareqv (car x) (car y))
-           (iprefixp (cdr x) (cdr y)))
-    t))
+  (defthm iprefixp-when-not-consp-right
+    (implies (not (consp y))
+             (equal (iprefixp x y)
+                    (not (consp x))))
+    :hints(("Goal" :induct (len x))))
 
-(defthm iprefixp-when-not-consp-left
-  (implies (not (consp x))
-           (iprefixp x y))
-  :hints(("Goal" :in-theory (enable iprefixp))))
+  (defthm iprefixp-of-cons-right
+    (equal (iprefixp x (cons a y))
+           (if (consp x)
+               (and (ichareqv (car x) a)
+                    (iprefixp (cdr x) y))
+             t)))
 
-(defthm iprefixp-of-cons-left
-  (equal (iprefixp (cons a x) y)
-         (and (consp y)
-              (ichareqv a (car y))
-              (iprefixp x (cdr y))))
-  :hints(("Goal" :in-theory (enable iprefixp))))
+  (defthm iprefixp-of-list-fix-left
+    (equal (iprefixp (list-fix x) y)
+           (iprefixp x y)))
 
-(defthm iprefixp-when-not-consp-right
-  (implies (not (consp y))
-           (equal (iprefixp x y)
-                  (not (consp x))))
-  :hints(("Goal" :induct (len x))))
+  (defthm iprefixp-of-list-fix-right
+    (equal (iprefixp x (list-fix y))
+           (iprefixp x y)))
 
-(defthm iprefixp-of-cons-right
-  (equal (iprefixp x (cons a y))
-         (if (consp x)
-             (and (ichareqv (car x) a)
-                  (iprefixp (cdr x) y))
-           t)))
+  (defcong icharlisteqv equal (iprefixp x y) 1)
+  (defcong icharlisteqv equal (iprefixp x y) 2)
 
-(defthm iprefixp-of-list-fix-left
-  (equal (iprefixp (list-fix x) y)
-         (iprefixp x y))
-  :hints(("Goal" :in-theory (enable iprefixp))))
-
-(defthm iprefixp-of-list-fix-right
-  (equal (iprefixp x (list-fix y))
-         (iprefixp x y))
-  :hints(("Goal" :in-theory (enable iprefixp))))
-
-(defcong icharlisteqv equal (iprefixp x y) 1
-  :hints(("Goal" :in-theory (enable iprefixp))))
-
-(defcong icharlisteqv equal (iprefixp x y) 2
-  :hints(("Goal" :in-theory (enable iprefixp))))
-
-(defthm iprefixp-when-prefixp
-  (implies (prefixp x y) (iprefixp x y))
-  :hints(("Goal" :in-theory (enable iprefixp))))
+  (defthm iprefixp-when-prefixp
+    (implies (prefixp x y) (iprefixp x y))))

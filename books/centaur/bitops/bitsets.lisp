@@ -449,7 +449,9 @@ almost 5x faster than a regular version.  Here's the testing code I used:</p>
  (include-book \"../aig/random-sim\")
  (include-book \"../misc/memory-mgmt-raw\")
  (include-book \"tools/defconsts\" :dir :system)
- (set-max-mem (* 30 (expt 2 30)))
+
+ (set-max-mem ;; newline to fool dependency scanner
+   (* 30 (expt 2 30)))
 
  (defconsts (*random-data* state)
    (random-list 100000 (ash 1 5000) state))

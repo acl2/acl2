@@ -62,7 +62,7 @@ DIRS2_EXCEPT_WK_COI = ordinals data-structures bdd ihs arithmetic-2 arithmetic-3
 	data-structures/memories unicode str concurrent-programs/bakery \
 	concurrent-programs/german-protocol deduction/passmore clause-processors \
 	quadratic-reciprocity tools paco hacking security regex \
-        defsort hons-archive serialize wp-gen xdoc system tutorial-problems cutil
+        defsort hons-archive serialize wp-gen xdoc xdoc-impl system tutorial-problems cutil
 DIRS2_EXCEPT_WK = $(DIRS2_EXCEPT_WK_COI) coi misc/misc2
 DIRS2 = $(DIRS2_EXCEPT_WK) workshops
 SHORTDIRS2 = ordinals data-structures bdd
@@ -93,6 +93,7 @@ all:
 
 # Next, specify all of the directory dependencies.  At this point we do this
 # manually by inspecting the Makefiles.
+
 arithmetic: cowles
 meta: arithmetic
 ordinals: top-with-meta-cert
@@ -108,7 +109,7 @@ finite-set-theory: arithmetic ordinals
 finite-set-theory/osets: unicode
 powerlists: arithmetic ordinals data-structures
 textbook: arithmetic top-with-meta-cert ordinals ihs
-defexec: arithmetic misc ordinals make-event
+defexec: arithmetic misc ordinals
 symbolic: arithmetic arithmetic-2 data-structures ihs misc ordinals models/jvm/m5
 data-structures/memories: arithmetic-3 misc
 unicode: arithmetic arithmetic-3 ihs ordinals tools misc
@@ -117,30 +118,31 @@ concurrent-programs/bakery: misc ordinals
 concurrent-programs/german-protocol: misc
 deduction/passmore: 
 serialize: tools
-clause-processors: top-with-meta-cert make-event arithmetic-3 textbook arithmetic \
+clause-processors: top-with-meta-cert arithmetic-3 textbook arithmetic \
 	misc tools data-structures arithmetic-5
 quadratic-reciprocity: rtl
-misc/misc2: rtl make-event coi top-with-meta-cert
-hints: make-event
+misc/misc2: rtl coi top-with-meta-cert
+hints: misc
 models/jvm/m1: arithmetic-3/extra
 models/jvm/m5: top-with-meta-cert ordinals misc ihs
 # models/jvm/m5 is needed for paco/books, not paco
 paco: ihs ordinals top-with-meta-cert
 hacking: misc
 parallel: make-event tools
-security: make-event arithmetic-3
+security: misc arithmetic-3
 sorting: arithmetic-3/extra
 tools: arithmetic-5 misc
 regex: tools cutil
-defsort: misc make-event unicode tools
+defsort: misc unicode tools
 hons-archive: defsort unicode tools arithmetic-3
-str: arithmetic unicode defsort tools make-event
+str: arithmetic unicode defsort tools
 coi: arithmetic arithmetic-2 arithmetic-3 data-structures ihs make-event \
 	misc ordinals rtl
 wp-gen: ordinals
-xdoc: str tools
+# xdoc has no dependencies
+xdoc-impl: xdoc str tools
 system: tools arithmetic arithmetic-5
-cutil: xdoc tools str misc finite-set-theory defsort unicode make-event
+cutil: xdoc tools str misc finite-set-theory/osets defsort unicode
 # Note: There is no need to include values for "centaur:", since dependencies
 # are handled by cert.pl in that case.
 # There is also need to include taspi here -- after all, there is actually

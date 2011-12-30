@@ -2,7 +2,7 @@
 
 (in-package "ACL2")
 
-(include-book "make-event/eval" :dir :system)
+(include-book "misc/eval" :dir :system)
 
 (must-succeed
 ; 380 steps exactly in a version between ACL2 4.2 and 4.3

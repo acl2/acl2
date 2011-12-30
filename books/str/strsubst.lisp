@@ -21,102 +21,108 @@
 (in-package "STR")
 (include-book "cat")
 (include-book "strprefixp")
+(local (include-book "misc/assert" :dir :system))
 (local (include-book "arithmetic"))
 
-(defund strsubst-aux (old new x n xl oldl acc)
-  (declare (type string old)
-           (type string new)
-           (type string x)
-           (type integer n)
-           (type integer xl)
-           (type integer oldl)
-           (xargs :guard (and (stringp old)
-                              (stringp new)
-                              (stringp x)
-                              (natp n)
-                              (natp xl)
-                              (posp oldl)
-                              (= oldl (length old))
-                              (= xl (length x)))
-                  :measure (nfix (- (nfix xl) (nfix n)))))
-  (cond ((mbe :logic (zp oldl)
-              :exec nil)
-         acc)
+(defsection strsubst-aux
+  :parents (strsubst)
+  :short "Fast implementation of @(see strsubst)."
 
-        ((mbe :logic (zp (- (nfix xl) (nfix n)))
-              :exec (>= n xl))
-         acc)
+  (defund strsubst-aux (old new x n xl oldl acc)
+    (declare (type string old)
+             (type string new)
+             (type string x)
+             (type integer n)
+             (type integer xl)
+             (type integer oldl)
+             (xargs :guard (and (stringp old)
+                                (stringp new)
+                                (stringp x)
+                                (natp n)
+                                (natp xl)
+                                (posp oldl)
+                                (= oldl (length old))
+                                (= xl (length x)))
+                    :measure (nfix (- (nfix xl) (nfix n)))))
+    (cond ((mbe :logic (zp oldl)
+                :exec nil)
+           acc)
 
-        ((strprefixp-impl old x 0 n oldl xl)
-         (let ((acc (revappend-chars new acc)))
-           (strsubst-aux old new x
+          ((mbe :logic (zp (- (nfix xl) (nfix n)))
+                :exec (>= n xl))
+           acc)
+
+          ((strprefixp-impl old x 0 n oldl xl)
+           (let ((acc (revappend-chars new acc)))
+             (strsubst-aux old new x
                            (mbe :logic (+ oldl (nfix n))
                                 :exec (+ oldl n))
                            xl oldl acc)))
 
-        (t
-         (let ((acc (cons (char x n) acc)))
-           (strsubst-aux old new x
+          (t
+           (let ((acc (cons (char x n) acc)))
+             (strsubst-aux old new x
                            (mbe :logic (+ 1 (nfix n))
                                 :exec (+ 1 n))
                            xl oldl acc)))))
 
-(defthm character-listp-of-strsubst-aux
-  (implies (and (stringp old)
-                (stringp new)
-                (stringp x)
-                (natp n)
-                (natp xl)
-                (posp oldl)
-                (= oldl (length old))
-                (= xl (length x))
-                (character-listp acc))
-           (character-listp (strsubst-aux old new x n xl oldl acc)))
-  :hints(("Goal" :in-theory (enable strsubst-aux))))
+  (local (in-theory (enable strsubst-aux)))
 
-(defund strsubst (old new x)
+  (defthm character-listp-of-strsubst-aux
+    (implies (and (stringp old)
+                  (stringp new)
+                  (stringp x)
+                  (natp n)
+                  (natp xl)
+                  (posp oldl)
+                  (= oldl (length old))
+                  (= xl (length x))
+                  (character-listp acc))
+             (character-listp (strsubst-aux old new x n xl oldl acc)))))
 
-  ":Doc-Section Str
-Repalce substrings throughout a string~/
 
-~c[(strsubst old new x)] replaces each occurrence of ~c[old] with ~c[new]
-throughout ~c[x].  Each argument is a string.  A string is returned.  The
-replacement is done globally and non-recursively.
+(defsection strsubst
+  :parents (str)
+  :short "Replace substrings throughout a string."
+  :long "<p>@(call strsubst) replaces each occurrence <tt>old</tt> with
+<tt>new</tt> throughout <tt>x</tt>.  Each argument is a string, and a new
+string is returned.  The replacement is done globally and non-recursively.</p>
 
 Examples:
-~bv[]
- (strsubst \"World\" \"Star\" \"Hello, World!\") --> \"Hello, Star!\"
+<code>
+ (strsubst \"World\" \"Star\" \"Hello, World!\")
+   --&gt;
+ \"Hello, Star!\"
 
- (strsubst \"oo\" \"aa\" \"xoooyoo\") --> \"xaaoyaa\"
-~ev[]~/~/"
+ (strsubst \"oo\" \"aa\" \"xoooyoo\")
+   --&gt;
+ \"xaaoyaa\"
+</code>"
 
-  (declare (xargs :guard (and (stringp old)
-                              (stringp new)
-                              (stringp x))))
-  (let ((xl   (length x))
-        (oldl (length old)))
-    (if (= oldl 0)
-        (mbe :logic (if (stringp x)
-                        x
-                      "")
-             :exec x)
-      (reverse (coerce (strsubst-aux old new x 0 xl oldl nil) 'string)))))
+  (defund strsubst (old new x)
+    (declare (xargs :guard (and (stringp old)
+                                (stringp new)
+                                (stringp x))))
+    (let ((xl   (length x))
+          (oldl (length old)))
+      (if (= oldl 0)
+          (mbe :logic (if (stringp x)
+                          x
+                        "")
+               :exec x)
+        (reverse (coerce (strsubst-aux old new x 0 xl oldl nil) 'string)))))
 
-(defthm stringp-of-strsubst
-  (stringp (strsubst old new x))
-  :rule-classes :type-prescription
-  :hints(("Goal" :in-theory (enable strsubst))))
+  (local (in-theory (enable strsubst)))
 
+  (defthm stringp-of-strsubst
+    (stringp (strsubst old new x))
+    :rule-classes :type-prescription)
 
-(local
- (encapsulate
-   ()
+  (local (assert! (equal (strsubst "World" "Star" "Hello, World!")
+                         "Hello, Star!")))
 
-   (defthm test1 (equal (strsubst "World" "Star" "Hello, World!")
-                        "Hello, Star!"))
-
-   (defthm test2 (equal (strsubst "oo" "aa" "xoooyoo")
-                        "xaaoyaa"))))
+  (local (assert! (equal (strsubst "oo" "aa" "xoooyoo")
+                         "xaaoyaa"))))
 
 
 

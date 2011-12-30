@@ -355,8 +355,7 @@
 (local
  (defthm nth-of-nthcdr
    (equal (nth n (nthcdr m y))
-          (nth (+ (nfix n) (nfix m)) y))
-   :hints(("Goal" :in-theory (disable acl2::nthcdr-of-cdr)))))
+          (nth (+ (nfix n) (nfix m)) y))))
 
 
 
@@ -562,7 +561,6 @@
                         a)))))
    :hints(("Goal"
            :in-theory (disable nth-of-nthcdr assoc-equal-pairlis-nth
-                               acl2::car-of-nthcdr
                                run-gified-check-geval-thm)
            :use ((:instance run-gified-check-geval-thm-form)
                  (:instance run-gified-check-geval-thm-formals)
@@ -998,8 +996,7 @@
    (defthm gobject-listp-nthcdr
      (implies (gobject-listp lst)
               (gobject-listp (nthcdr n lst)))
-     :hints(("Goal" :in-theory (e/d (gobject-listp)
-                                    (acl2::nthcdr-of-cdr)))))
+     :hints(("Goal" :in-theory (enable gobject-listp))))
 
    (defthm gobject-listp-simpler-take
      (implies (gobject-listp gobj)
@@ -1091,7 +1088,7 @@
      :hints(("Goal" :use ((:instance
                            car-nthcdr
                            (a (run-gified-ev (list gevalfn args env) a))))
-             :in-theory (disable car-nthcdr acl2::car-of-nthcdr))))
+             :in-theory (disable car-nthcdr))))
 
    (defthm run-gified-ev-lst-kwote-lst
      (equal (run-gified-ev-lst (acl2::kwote-lst x) a)

@@ -1223,7 +1223,8 @@ partial wire alist.</li>
     "serialize/unsound-read" :dir :system)
   (include-book
     "centaur/misc/memory-mgmt-raw" :dir :system)
-  (value-triple (acl2::set-max-mem (* 30 (expt 2 30))))
+  (value-triple (acl2::set-max-mem ;; newline to fool limits scanner
+    (* 30 (expt 2 30))))
   (value-triple (acl2::hons-resize :addr-ht 10000000))
   (defconst *mods*
     (cdr (assoc :mods

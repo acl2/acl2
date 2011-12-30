@@ -20,7 +20,7 @@
 
 (in-package "CUTIL")
 (include-book "defprojection")
-(local (include-book "make-event/assert" :dir :system))
+(local (include-book "misc/assert" :dir :system))
 
 (local
  (encapsulate

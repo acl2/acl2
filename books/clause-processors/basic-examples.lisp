@@ -4,7 +4,7 @@
 (in-package "ACL2")
 
 ; Define must-succeed and must-fail macros.
-(include-book "make-event/eval" :dir :system)
+(include-book "misc/eval" :dir :system)
 
 ; A very basic example.
 

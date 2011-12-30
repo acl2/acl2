@@ -20,7 +20,7 @@
 
 (in-package "STR")
 (include-book "strprefixp")
-(local (include-book "make-event/assert" :dir :system))
+(local (include-book "misc/assert" :dir :system))
 
 (local (defthm prefixp-reflexive
          (prefixp x x)
@@ -41,39 +41,61 @@
                          (- (len x) n)))
          :hints(("Goal" :in-theory (enable nthcdr)))))
 
-(defund strsuffixp (x y)
+(defsection strsuffixp
+  :parents (substrings)
+  :short "Case-sensitive string suffix test."
 
-  ":Doc-Section Str
-  Case-sensitive string suffix test~/
+  :long "<p>@(call strsuffixp) determines if the string <tt>x</tt> is a suffix
+of the string <tt>y</tt>, in a case-sensitive manner.</p>
 
-  ~c[(strsuffixp x y)] determines if the string x is a suffix of the string y,
-  in a case-sensitive manner.
+<p>Logically, we ask whether <tt>|x| &lt; |y|</tt>, and whether</p>
 
-  Logically, we ask whether |x| < |y|, and whether
-  ~bv[]
-     (nthcdr (- |y| |x|) (coerce x 'list))
-       ==
-     (coerce y 'list)
-  ~ev[]
-  but we use a more efficient execution to avoid coercing the strings.~/~/"
+<code>
+  (equal (nthcdr (- |y| |x|) (coerce x 'list))
+         (coerce y 'list)
+</code>
 
-  (declare (xargs :guard (and (stringp x)
-                              (stringp y))))
-  (let* ((xlen (length x))
-         (ylen (length y)))
-    (and (<= xlen ylen)
-         (mbe :logic
-              (equal (nthcdr (- ylen xlen) (coerce y 'list))
-                     (coerce x 'list))
-              :exec
-              (strprefixp-impl x y 0 (- ylen xlen) xlen ylen)))))
+<p>But we use a more efficient implementation that avoids coercing the strings
+into lists; basically we ask if the last <tt>|x|</tt> characters of <tt>y</tt>
+are equal to <tt>x</tt>.</p>
 
-(local
- (progn
-   (assert! (strsuffixp "" ""))
-   (assert! (strsuffixp "" "foo"))
-   (assert! (strsuffixp "o" "foo"))
-   (assert! (strsuffixp "oo" "foo"))
-   (assert! (not (strsuffixp "ooo" "foo")))
-   (assert! (not (strsuffixp "fo" "foo")))
-   (assert! (strsuffixp "foo" "foo"))))
+<p>As a corner case, note that this regards the empty string as a suffix of
+every other string.  That is, <tt>(strsuffixp \"\" x)</tt> is always
+<tt>t</tt>.</p>"
+
+  (defund strsuffixp (x y)
+    (declare (xargs :guard (and (stringp x)
+                                (stringp y))))
+    (let* ((xlen (length x))
+           (ylen (length y)))
+      (and (<= xlen ylen)
+           (mbe :logic
+                (equal (nthcdr (- ylen xlen) (coerce y 'list))
+                       (coerce x 'list))
+                :exec
+                (strprefixp-impl x y 0 (- ylen xlen) xlen ylen)))))
+
+  (local (in-theory (enable strsuffixp)))
+
+  (local (defthm c0
+           (implies (and (natp n)
+                         (<= (len x) n)
+                         (true-listp x))
+                    (equal (nthcdr n x) nil))))
+
+  (local (defthm c1
+           (implies (true-listp x)
+                    (not (nthcdr (len x) x)))))
+
+  (defthm strsuffixp-of-empty
+    (strsuffixp "" y))
+
+  (local
+   (progn
+     (assert! (strsuffixp "" ""))
+     (assert! (strsuffixp "" "foo"))
+     (assert! (strsuffixp "o" "foo"))
+     (assert! (strsuffixp "oo" "foo"))
+     (assert! (not (strsuffixp "ooo" "foo")))
+     (assert! (not (strsuffixp "fo" "foo")))
+     (assert! (strsuffixp "foo" "foo")))))

@@ -18,5 +18,8 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-(include-book "portcullis")
-(certify-book "make-manual" ? t :ttags :all)
+;; BOZO shouldn't need this ttag if we can fix the sys-call issue
+;; for stupid-mkdir
+
+(ld "cert.acl2")
+(certify-book "mkdir-raw" ? t :ttags '(:xdoc))

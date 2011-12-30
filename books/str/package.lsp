@@ -18,12 +18,15 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
+(ld "xdoc/package.lsp" :dir :system)
+
 (defpkg "STR"
   (set-difference-eq
    (union-eq *acl2-exports*
              *common-lisp-symbols-from-main-lisp-package*
              '(quit exit simpler-take list-fix prefixp str b* assert!
-                    a b c d e f g h i j k l m n o p q r s t u v w x y z))
+                    a b c d e f g h i j k l m n o p q r s t u v w x y z)
+             '(defxdoc defsection))
 
    ;; Remove some "bad" acl2 string functions to try to prevent users from
    ;; accidentally using them.

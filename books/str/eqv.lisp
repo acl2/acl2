@@ -19,168 +19,171 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "STR")
-(include-book "doc")
+(include-book "xdoc/top" :dir :system)
+(include-book "unicode/list-fix" :dir :system)
 (local (include-book "arithmetic"))
-(local (include-book "char-support"))
 
 (in-theory (disable char<))
 
-(defund char-fix (x)
-  (declare (type character x))
-  (mbe :logic (if (characterp x)
-                  x
-                (code-char 0))
-       :exec x))
+(defsection char-fix
+  :parents (equivalences)
+  :short "Coerce to a character."
 
-(defthm char-fix-when-characterp
-  (implies (characterp x)
+  :long "<p>@(call char-fix) is the identity on @(see acl2::characters), and
+returns the NUL character (i.e., the character whose code is 0) for any
+non-character.</p>
+
+<p>This is similar to other fixing functions like @(see fix) and @(see nfix).
+See also @(see chareqv).</p>"
+
+  (defund char-fix (x)
+    (declare (xargs :guard t))
+    (if (characterp x)
+        x
+      (code-char 0)))
+
+  (local (in-theory (enable char-fix)))
+
+  (defthm char-fix-default
+    (implies (not (characterp x))
+             (equal (char-fix x)
+                    (code-char 0))))
+
+  (defthm char-fix-when-characterp
+    (implies (characterp x)
+             (equal (char-fix x)
+                    x)))
+
+  (defthm equal-of-char-codes
+    (equal (equal (char-code x) (char-code y))
            (equal (char-fix x)
-                  x))
-  :hints(("Goal" :in-theory (enable char-fix))))
-
-(defthm equal-of-char-codes
-  (equal (equal (char-code x) (char-code y))
-         (equal (char-fix x)
-                (char-fix y)))
-  :hints(("Goal" :in-theory (enable char-fix))))
+                  (char-fix y)))))
 
 
+(defsection chareqv
+  :parents (equivalences)
+  :short "Case-sensitive character equivalence test."
+
+  :long "<p>@(call chareqv) determines if <tt>x</tt> and <tt>y</tt> are
+equivalent when interpreted as characters.  That is, non-characters are first
+coerced to be the NUL character (via @(see char-fix)), then we see if these
+coerced arguments are equal.</p>
+
+<p>See also @(see ichareqv) for a case-insensitive alternative.</p>"
+
+  (defund chareqv (x y)
+    (declare (xargs :guard t))
+    (eql (char-fix x) (char-fix y)))
+
+  (local (in-theory (enable chareqv char-fix char<)))
+
+  (defequiv chareqv)
+
+  (defthm chareqv-of-char-fix
+    (chareqv (char-fix x) x))
+
+  (defcong chareqv equal (char-fix x) 1)
+  (defcong chareqv equal (char-code x) 1)
+  (defcong chareqv equal (char< x y) 1)
+  (defcong chareqv equal (char< x y) 2))
 
 
-(defund chareqv (x y)
+(defsection char<-order-thms
+  :parents (char<)
+  :short "Basic ordering facts about <tt>char&lt;</tt>."
 
-  ":Doc-Section Str
-   Case-sensitive character equivalence test~/
+  (local (in-theory (enable char<)))
 
-   ~c[(chareqv x y)] determines if x and y are equivalent when interpreted as characters.
-   That is, non-characters are first coerced to be the zero-character, then we ask whether
-   the results are equal.~/
+  (defthm char<-irreflexive
+    (equal (char< x x)
+           nil))
 
-   ~l[str::ichareqv] and ~pl[str::charlisteqv]"
+  (defthm char<-antisymmetric
+    (implies (char< x y)
+             (not (char< y x))))
 
-  (declare (type character x)
-           (type character y))
+  (defthm char<-transitive
+    (implies (and (char< x y)
+                  (char< y z))
+             (char< x z)))
 
-  (mbe :logic (equal (char-fix x) (char-fix y))
-       :exec (eql x y)))
+  (defthm char<-trichotomy-weak
+    (implies (and (not (char< x y))
+                  (not (char< y x)))
+             (equal (chareqv x y)
+                    t))
+    :hints(("Goal" :in-theory (enable chareqv))))
 
-(defequiv chareqv
-  :hints(("Goal" :in-theory (enable chareqv))))
-
-(defthm chareqv-of-char-fix
-  (chareqv (char-fix x)
-           x)
-  :hints(("Goal" :in-theory (enable chareqv))))
-
-(defcong chareqv equal (char-fix x) 1
-  :hints(("Goal" :in-theory (enable chareqv))))
-
-(defcong chareqv equal (char-code x) 1
-  :hints(("Goal" :in-theory (enable chareqv char-fix))))
-
-(defcong chareqv equal (char< x y) 1
-  :hints(("Goal" :in-theory (enable chareqv char-fix char<))))
-
-(defcong chareqv equal (char< x y) 2
-  :hints(("Goal" :in-theory (enable chareqv char-fix char<))))
-
-(defthm char<-irreflexive
-  (equal (char< x x)
-         nil)
-  :hints(("Goal" :in-theory (enable char<))))
-
-(defthm char<-antisymmetric
-  (implies (char< x y)
-           (not (char< y x)))
-  :hints(("Goal" :in-theory (enable char<))))
-
-(defthm char<-transitive
-  (implies (and (char< x y)
-                (char< y z))
-           (char< x z))
-  :hints(("Goal" :in-theory (enable char<))))
-
-(defthm char<-trichotomy-weak
-  (implies (and (not (char< x y))
-                (not (char< y x)))
-           (equal (chareqv x y)
-                  t))
-  :hints(("Goal" :in-theory (enable char< chareqv char-fix))))
-
-(defthm char<-trichotomy-strong
-  (equal (char< x y)
-         (and (not (chareqv x y))
-              (not (char< y x))))
-  :rule-classes ((:rewrite :loop-stopper ((x y)))))
+  (defthm char<-trichotomy-strong
+    (equal (char< x y)
+           (and (not (chareqv x y))
+                (not (char< y x))))
+    :rule-classes ((:rewrite :loop-stopper ((x y))))))
 
 
 
-(defund charlisteqv (x y)
+(defsection charlisteqv
+  :parents (equivalences)
+  :short "Case-sensitive character-list equivalence test."
 
-  ":Doc-Section Str
-   Case-sensitive character-list equivalence test~/
+  :long "<p>@(call charlisteqv) determines if <tt>x</tt> and <tt>y</tt> are
+equivalent when interpreted as character lists.  That is, <tt>x</tt> and
+<tt>y</tt> must have the same length and their elements must be @(see chareqv)
+to one another.</p>
 
-   ~c[(charlisteqv x y)] determines if x and y are equivalent when interpreted as character
-   lists.  That is, ~c[x] and ~c[y] must have the same length, and their elements must be
-   ~il[str::chareqv] to one another.~/
+<p>See also @(see icharlisteqv) for a case-insensitive alternative.</p>"
 
-   ~l[str::icharlisteqv]"
+  (defund charlisteqv (x y)
+    (declare (xargs :guard (and (character-listp x)
+                                (character-listp y))))
+    (if (consp x)
+        (and (consp y)
+             (chareqv (car x) (car y))
+             (charlisteqv (cdr x) (cdr y)))
+      (atom y)))
 
-  (declare (xargs :guard (and (character-listp x)
-                              (character-listp y))))
+  (local (in-theory (enable charlisteqv)))
 
-  (if (consp x)
-      (and (consp y)
-           (chareqv (car x) (car y))
-           (charlisteqv (cdr x) (cdr y)))
-    (atom y)))
+  (defequiv charlisteqv)
 
-(defequiv charlisteqv
-  :hints(("Goal" :in-theory (enable charlisteqv))))
+  (defcong charlisteqv chareqv     (car x)      1)
+  (defcong charlisteqv charlisteqv (cdr x)      1)
+  (defcong chareqv     charlisteqv (cons a x)   1)
+  (defcong charlisteqv charlisteqv (cons a x)   2)
+  (defcong charlisteqv equal       (len x)      1)
+  (defcong charlisteqv charlisteqv (list-fix x) 1)
+  (defcong charlisteqv chareqv     (nth n x)    2)
+  (defcong charlisteqv charlisteqv (nthcdr n x) 2)
+  (defcong charlisteqv charlisteqv (append x y) 1)
+  (defcong charlisteqv charlisteqv (append x y) 2)
+  (defcong charlisteqv charlisteqv (revappend x y) 2)
+  (defcong charlisteqv charlisteqv (revappend x y) 1)
 
-(defcong charlisteqv chareqv (car x) 1
-  :hints(("Goal" :in-theory (enable charlisteqv))))
+  (defthm charlisteqv-when-not-consp-left
+    (implies (not (consp x))
+             (equal (charlisteqv x y)
+                    (atom y))))
 
-(defcong charlisteqv charlisteqv (cdr x) 1
-  :hints(("Goal" :in-theory (enable charlisteqv))))
+  (defthm charlisteqv-when-not-consp-right
+    (implies (not (consp y))
+             (equal (charlisteqv x y)
+                    (atom x))))
 
-(defcong charlisteqv equal (len x) 1
-  :hints(("Goal" :in-theory (enable charlisteqv))))
+  (defthm charlisteqv-of-cons-right
+    (equal (charlisteqv x (cons a y))
+           (and (consp x)
+                (chareqv (car x) (double-rewrite a))
+                (charlisteqv (cdr x) (double-rewrite y)))))
 
-(defcong charlisteqv chareqv (nth n x) 2
-  :hints(("Goal" :in-theory (enable charlisteqv))))
+  (defthm charlisteqv-of-cons-left
+    (equal (charlisteqv (cons a x) y)
+           (and (consp y)
+                (chareqv (double-rewrite a) (car y))
+                (charlisteqv (double-rewrite x) (cdr y)))))
 
-(defcong charlisteqv charlisteqv (nthcdr n x) 2
-  :hints(("Goal" :in-theory (enable charlisteqv))))
+  (defthm charlisteqv-when-not-same-lens
+    (implies (not (equal (len x) (len y)))
+             (not (charlisteqv x y)))))
 
-(defthm charlisteqv-when-not-consp-left
-  (implies (not (consp x))
-           (equal (charlisteqv x y)
-                  (atom y)))
-  :hints(("Goal" :in-theory (enable charlisteqv))))
 
-(defthm charlisteqv-when-not-consp-right
-  (implies (not (consp y))
-           (equal (charlisteqv x y)
-                  (atom x)))
-  :hints(("Goal" :in-theory (enable charlisteqv))))
-
-(defthm charlisteqv-of-cons-right
-  (equal (charlisteqv x (cons a y))
-         (and (consp x)
-              (chareqv (car x) (double-rewrite a))
-              (charlisteqv (cdr x) (double-rewrite y))))
-  :hints(("Goal" :in-theory (enable charlisteqv))))
-
-(defthm charlisteqv-of-cons-left
-  (equal (charlisteqv (cons a x) y)
-         (and (consp y)
-              (chareqv (double-rewrite a) (car y))
-              (charlisteqv (double-rewrite x) (cdr y))))
-  :hints(("Goal" :in-theory (enable charlisteqv))))
-
-(defthm charlisteqv-when-not-same-lens
-  (implies (not (equal (len x) (len y)))
-           (not (charlisteqv x y)))
-  :hints(("Goal" :in-theory (enable charlisteqv))))
 

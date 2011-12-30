@@ -5,7 +5,7 @@
 (make-event (pprogn (show-custom-keyword-hint-expansion t)
                     (value '(value-triple nil))))
 
-(include-book "make-event/eval" :dir :system)
+(include-book "misc/eval" :dir :system)
 
 (defstub h (x) t)
 

@@ -524,7 +524,7 @@
 
 (logic)
 
-(local (include-book "make-event/eval" :dir :system))
+(local (include-book "misc/eval" :dir :system))
 
 (local
  (encapsulate

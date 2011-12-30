@@ -23,148 +23,144 @@
 (include-book "istrprefixp")
 (local (include-book "arithmetic"))
 
-(defund istrpos-impl (x y n xl yl)
-  (declare (type string x)
-           (type string y)
-           (type integer n)
-           (type integer xl)
-           (type integer yl)
-           (xargs :guard (and (stringp x)
-                              (stringp y)
-                              (natp xl)
-                              (natp yl)
-                              (natp n)
-                              (<= n (length y))
-                              (= xl (length x))
-                              (= yl (length y)))
-                  :measure (nfix (- (nfix yl) (nfix n)))))
-  (cond ((mbe :logic (iprefixp (coerce x 'list)
-                               (nthcdr n (coerce y 'list)))
-              :exec (istrprefixp-impl (the string x)
-                                      (the string y)
-                                      (the integer 0)
-                                      (the integer n)
-                                      (the integer xl)
-                                      (the integer yl)))
-         (mbe :logic (nfix n)
-              :exec n))
-        ((mbe :logic (zp (- (nfix yl) (nfix n)))
-              :exec (= (the integer n)
-                       (the integer yl)))
-         nil)
-        (t
-         (istrpos-impl (the string x)
-                       (the string y)
-                       (mbe :logic (+ (nfix n) 1)
-                            :exec (the integer (+ (the integer n) 1)))
-                       (the integer xl)
-                       (the integer yl)))))
+(defsection istrpos
+  :parents (substrings)
+  :short "Case-insensitivly locate the first occurrence of a substring."
 
-(defund istrpos (x y)
+  :long "<p>@(call istrpos) is like @(see strpos), but the comparisons are done
+in a case insensitive manner.  It returns <tt>nil</tt> if <tt>x</tt> never
+occurs in <tt>y</tt>, or returns the index of the first character of the first
+occurrence otherwise.</p>
 
-  ":Doc-Section Str
-  Case-insensitivly locate the first occurrence of a substring~/
+<p>The function is \"efficient\" in the sense that it does not coerce its
+arguments into lists, but rather traverses both strings with @(see char).  On
+the other hand, it is a naive string search which operates by repeatedly
+calling @(see istrprefixp) rather than some better algorithm.</p>
 
-  ~c[(istrpos x y)] is like ~il[str::strpos], but the comparisons are done in a
-  case insensitive manner.  It returns NIL if x never occurs in y, or returns
-  the index of the first character of the first occurrence.
+<p>The \"soundness\" and \"completness\" of strpos are established in the
+theorems <tt>iprefixp-of-istrpos</tt> and
+<tt>completeness-of-istrpos</tt>.</p>"
 
-  The function is \"efficient\" in the sense that it does not coerce its
-  arguments into lists, but rather traverses both strings with ~c[char].  On
-  the other hand, it is a naive string search which operates by repeatedly
-  calling ~il[str::istrprefixp], rather than some better algorithm.
+  (defund istrpos-impl (x y n xl yl)
+    (declare (type string x)
+             (type string y)
+             (type integer n)
+             (type integer xl)
+             (type integer yl)
+             (xargs :guard (and (stringp x)
+                                (stringp y)
+                                (natp xl)
+                                (natp yl)
+                                (natp n)
+                                (<= n (length y))
+                                (= xl (length x))
+                                (= yl (length y)))
+                    :measure (nfix (- (nfix yl) (nfix n)))))
+    (cond ((mbe :logic (iprefixp (coerce x 'list)
+                                 (nthcdr n (coerce y 'list)))
+                :exec (istrprefixp-impl (the string x)
+                                        (the string y)
+                                        (the integer 0)
+                                        (the integer n)
+                                        (the integer xl)
+                                        (the integer yl)))
+           (mbe :logic (nfix n)
+                :exec n))
+          ((mbe :logic (zp (- (nfix yl) (nfix n)))
+                :exec (= (the integer n)
+                         (the integer yl)))
+           nil)
+          (t
+           (istrpos-impl (the string x)
+                         (the string y)
+                         (mbe :logic (+ (nfix n) 1)
+                              :exec (the integer (+ (the integer n) 1)))
+                         (the integer xl)
+                         (the integer yl)))))
 
-  The \"soundness\" and \"completness\" of strpos are established in the
-  theorems ~c[iprefixp-of-istrpos] and ~c[completeness-of-istrpos].~/
+  (defund istrpos (x y)
+    (declare (type string x)
+             (type string y))
+    (istrpos-impl (the string x)
+                  (the string y)
+                  (the integer 0)
+                  (the integer (length (the string x)))
+                  (the integer (length (the string y)))))
 
-  ~l[str::strpos], ~pl[str::substrp], and ~pl[str::isubstrp]"
+  (local (in-theory (enable istrpos istrpos-impl)))
 
-  (declare (type string x)
-           (type string y))
+  (defthm istrpos-type
+    (or (and (integerp (istrpos x y))
+             (<= 0 (istrpos x y)))
+        (not (istrpos x y)))
+    :rule-classes :type-prescription)
 
-  (istrpos-impl (the string x)
-                (the string y)
-                (the integer 0)
-                (the integer (length (the string x)))
-                (the integer (length (the string y)))))
+  (encapsulate
+    ()
+    (local (defthm lemma
+             (implies (and (stringp x)
+                           (stringp y)
+                           (natp xl)
+                           (natp yl)
+                           (natp n)
+                           (<= n (length y))
+                           (= xl (length x))
+                           (= yl (length y))
+                           (istrpos-impl x y n xl yl))
+                      (iprefixp (coerce x 'list)
+                                (nthcdr (istrpos-impl x y n xl yl)
+                                        (coerce y 'list))))
+             :hints(("Goal" :induct (istrpos-impl x y n xl yl)))))
 
-(defthm istrpos-type
-  (or (and (integerp (istrpos x y))
-           (<= 0 (istrpos x y)))
-      (not (istrpos x y)))
-  :rule-classes :type-prescription)
+    (defthm iprefixp-of-istrpos
+      (implies (and (istrpos x y)
+                    (force (stringp x))
+                    (force (stringp y)))
+               (iprefixp (coerce x 'list)
+                         (nthcdr (istrpos x y) (coerce y 'list))))))
 
-(encapsulate
- ()
- (local (defthm lemma
-          (implies (and (stringp x)
-                        (stringp y)
-                        (natp xl)
-                        (natp yl)
-                        (natp n)
-                        (<= n (length y))
-                        (= xl (length x))
-                        (= yl (length y))
-                        (istrpos-impl x y n xl yl))
-                   (iprefixp (coerce x 'list)
-                                 (nthcdr (istrpos-impl x y n xl yl)
-                                         (coerce y 'list))))
-          :hints(("Goal"
-                  :in-theory (enable istrpos-impl)
-                  :induct (istrpos-impl x y n xl yl)))))
+  (encapsulate
+    ()
+    (local (defun my-induction (x y n m xl yl)
+             (declare (xargs :measure (nfix (- (nfix yl) (nfix n)))))
+             (cond ((iprefixp (coerce x 'list)
+                              (nthcdr n (coerce y 'list)))
+                    nil)
+                   ((zp (- (nfix yl) (nfix n)))
+                    (list x y n m xl yl))
+                   (t
+                    (my-induction x y
+                                  (+ (nfix n) 1)
+                                  (if (= (nfix n) (nfix m))
+                                      (+ (nfix m) 1)
+                                    m)
+                                  xl yl)))))
 
- (defthm iprefixp-of-istrpos
-   (implies (and (istrpos x y)
-                 (force (stringp x))
-                 (force (stringp y)))
-            (iprefixp (coerce x 'list)
-                      (nthcdr (istrpos x y) (coerce y 'list))))
-   :hints(("Goal" :in-theory (enable istrpos)))))
+    (local (defthm lemma
+             (implies (and (stringp x)
+                           (stringp y)
+                           (natp xl)
+                           (natp yl)
+                           (natp n)
+                           (natp m)
+                           (<= n m)
+                           (<= n (length y))
+                           (= xl (length x))
+                           (= yl (length y))
+                           (iprefixp (coerce x 'list)
+                                     (nthcdr m (coerce y 'list))))
+                      (and (natp (istrpos-impl x y n xl yl))
+                           (<= (istrpos-impl x y n xl yl) m)))
+             :hints(("Goal"
+                     :induct (my-induction x y n m xl yl)
+                     :do-not '(generalize fertilize)))))
 
-(encapsulate
- ()
- (local (defun my-induction (x y n m xl yl)
-          (declare (xargs :measure (nfix (- (nfix yl) (nfix n)))))
-          (cond ((iprefixp (coerce x 'list)
-                           (nthcdr n (coerce y 'list)))
-                 nil)
-                ((zp (- (nfix yl) (nfix n)))
-                 (list x y n m xl yl))
-                (t
-                 (my-induction x y
-                               (+ (nfix n) 1)
-                               (if (= (nfix n) (nfix m))
-                                   (+ (nfix m) 1)
-                                 m)
-                               xl yl)))))
-
- (local (defthm lemma
-          (implies (and (stringp x)
-                        (stringp y)
-                        (natp xl)
-                        (natp yl)
-                        (natp n)
-                        (natp m)
-                        (<= n m)
-                        (<= n (length y))
-                        (= xl (length x))
-                        (= yl (length y))
-                        (iprefixp (coerce x 'list)
-                                  (nthcdr m (coerce y 'list))))
-                   (and (natp (istrpos-impl x y n xl yl))
-                        (<= (istrpos-impl x y n xl yl) m)))
-          :hints(("Goal"
-                  :in-theory (enable istrpos-impl)
-                  :induct (my-induction x y n m xl yl)
-                  :do-not '(generalize fertilize)))))
-
- (defthm completeness-of-istrpos
-   (implies (and (iprefixp (coerce x 'list)
-                           (nthcdr m (coerce y 'list)))
-                 (force (natp m))
-                 (force (stringp x))
-                 (force (stringp y)))
-            (and (natp (istrpos x y))
-                 (<= (istrpos x y) m)))
-   :hints(("Goal" :in-theory (enable istrpos)))))
+    (defthm completeness-of-istrpos
+      (implies (and (iprefixp (coerce x 'list)
+                              (nthcdr m (coerce y 'list)))
+                    (force (natp m))
+                    (force (stringp x))
+                    (force (stringp y)))
+               (and (natp (istrpos x y))
+                    (<= (istrpos x y) m))))))
 

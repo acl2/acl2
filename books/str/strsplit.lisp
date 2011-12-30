@@ -19,7 +19,6 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "STR")
-(include-book "doc")
 (local (include-book "arithmetic"))
 (local (include-book "tools/mv-nth" :dir :system))
 
@@ -107,7 +106,7 @@
 
 
 
-(local (include-book "make-event/assert" :dir :system))
+(local (include-book "misc/assert" :dir :system))
 
 (local
  (encapsulate

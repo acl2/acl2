@@ -44,16 +44,13 @@
           :in-theory (disable istr-sort-creates-comparable-listp)
           :use ((:instance istr-sort-creates-comparable-listp)))))
 
-(defmacro istrsort (x)
+(defsection istrsort
+  :parents (ordering)
+  :short "Case-insensitively sort a string list."
+  :long "<p>This is an efficient, stable mergesort for string lists based on
+@(see istr<) and implemented with the defsort book.</p>"
 
-  ":Doc-Section Str
-  Case-insensitively sort a string list~/
-
-  This is an efficient, stable mergesort for string lists based on ~il[str::istr<]
-  and implemented with the \"defsort/defsort\" book.~/
-
-  ~l[str::istr<]"
-
-  `(istr-sort ,x))
+  (defmacro istrsort (x)
+    `(istr-sort ,x)))
 
 (add-macro-alias istrsort istr-sort)

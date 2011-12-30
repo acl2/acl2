@@ -18,5 +18,5 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-(include-book "portcullis")
+(ld "cert.acl2")
 (certify-book "all" ? t :ttags '(:xdoc))

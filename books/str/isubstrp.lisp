@@ -22,139 +22,138 @@
 (include-book "istrpos")
 (local (include-book "arithmetic"))
 
-(defund isubstrp (x y)
+(defsection isubstrp
+  :parents (substrings)
+  :short "Case-insensitively test for the existence of a substring."
+  :long "<p>@(call isubstrp) determines if x ever occurs as a case-insensitive
+substring of y.</p>
 
-  ":Doc-Section Str
-  Case-insensitively test for the existence of a substring~/
+<p>See also @(see substrp) for a case-sensitive version.</p>
 
-  ~c[(isubstrp x y)] determines if x ever occurs as a case-insensitive substring of y.~/
+<p>See also @(see istrpos) for an alternative that reports the position of the
+matched substring.</p>"
 
-  ~l[str::substrp], and ~pl[str::istrpos]"
+  (defund isubstrp (x y)
+    (declare (type string x)
+             (type string y))
+    (if (istrpos x y)
+        t
+      nil))
 
-  (declare (type string x)
-           (type string y))
+  (local (in-theory (enable isubstrp)))
 
-  (if (istrpos x y)
-      t
-    nil))
+  (defthm iprefixp-when-isubstrp
+    (implies (and (isubstrp x y)
+                  (force (stringp x))
+                  (force (stringp y)))
+             (iprefixp (coerce x 'list)
+                       (nthcdr (istrpos x y) (coerce y 'list)))))
 
-(defthm iprefixp-when-isubstrp
-  (implies (and (isubstrp x y)
-                (force (stringp x))
-                (force (stringp y)))
-           (iprefixp (coerce x 'list)
-                     (nthcdr (istrpos x y) (coerce y 'list))))
-  :hints(("Goal" :in-theory (enable isubstrp))))
-
-(defthm completeness-of-isubstrp
-  (implies (and (iprefixp (coerce x 'list)
-                          (nthcdr m (coerce y 'list)))
-                (force (natp m))
-                (force (stringp x))
-                (force (stringp y)))
-           (isubstrp x y))
-  :hints(("Goal"
-          :in-theory (e/d (isubstrp)
-                          (completeness-of-istrpos))
-          :use ((:instance completeness-of-istrpos)))))
-
-
-
-(defund collect-strs-with-isubstr (a x)
-
-  ":Doc-Section Str
-  Gather strings that have some (case-insensitive) substring.~/
-
-  ~c[(collect-strs-with-isubstr a x)] returns a list of all the strings in
-  ~c[x] that have ~c[a] as a substring.  The substring test is carried out in a
-  case-insensitive way with ~ilc[str::isubstrp].~/
-
-  ~l[str::isubstrp], and ~pl[str::collect-syms-with-isubstr]"
-
-  (declare (xargs :guard (and (stringp a)
-                              (string-listp x))))
-  (cond ((atom x)
-         nil)
-        ((str::isubstrp a (car x))
-         (cons (car x) (collect-strs-with-isubstr a (cdr x))))
-        (t
-         (collect-strs-with-isubstr a (cdr x)))))
-
-(defthm collect-strs-with-isubstr-when-atom
-  (implies (atom x)
-           (equal (collect-strs-with-isubstr a x)
-                  nil))
-  :hints(("Goal" :in-theory (enable collect-strs-with-isubstr))))
-
-(defthm collect-strs-with-isubstr-of-cons
-  (equal (collect-strs-with-isubstr a (cons b x))
-         (if (str::isubstrp a b)
-             (cons b (collect-strs-with-isubstr a x))
-           (collect-strs-with-isubstr a x)))
-  :hints(("Goal" :in-theory (enable collect-strs-with-isubstr))))
-
-(defthm member-equal-collect-strs-with-isubstr
-  (iff (member-equal b (collect-strs-with-isubstr a x))
-       (and (member-equal b x)
-            (str::isubstrp a b)))
-  :hints(("Goal" :induct (len x))))
-
-(defthm subsetp-equal-of-collect-strs-with-isubstr
-  (implies (subsetp-equal x y)
-           (subsetp-equal (collect-strs-with-isubstr a x) y))
-  :hints(("Goal" :induct (len x))))
-
-(defthm subsetp-equal-collect-strs-with-isubstr-self
-  (subsetp-equal (collect-strs-with-isubstr a x) x))
+  (defthm completeness-of-isubstrp
+    (implies (and (iprefixp (coerce x 'list)
+                            (nthcdr m (coerce y 'list)))
+                  (force (natp m))
+                  (force (stringp x))
+                  (force (stringp y)))
+             (isubstrp x y))
+    :hints(("Goal"
+            :in-theory (disable completeness-of-istrpos)
+            :use ((:instance completeness-of-istrpos))))))
 
 
 
+(defsection collect-strs-with-isubstr
+  :parents (substrings)
+  :short "Gather strings that have some (case-insensitive) substring."
 
-(defund collect-syms-with-isubstr (a x)
+  :long "<p>@(call collect-strs-with-isubstr) returns a list of all the strings
+in the list <tt>x</tt> that have <tt>a</tt> as a case-insensitve substring.
+The substring tests are carried out with @(see isubstrp).</p>
 
-  ":Doc-Section Str
-  Gather symbols whose names have some (case-insensitive) substring.~/
+<p>See also @(see collect-syms-with-isubstr), which is similar but for symbol
+lists instead of string lists.</p>"
 
-  ~c[(collect-syms-with-isubstr a x)] returns a list of all the symbols in
-  ~c[x] that have ~c[a] as a substring of their ~ilc[symbol-name].  The
-  substring test is carried out in a case-insensitive way with
-  ~ilc[str::isubstrp].~/
+  (defund collect-strs-with-isubstr (a x)
+    (declare (xargs :guard (and (stringp a)
+                                (string-listp x))))
+    (cond ((atom x)
+           nil)
+          ((str::isubstrp a (car x))
+           (cons (car x) (collect-strs-with-isubstr a (cdr x))))
+          (t
+           (collect-strs-with-isubstr a (cdr x)))))
 
-  ~l[str::isubstrp], and ~pl[str::collect-strs-with-isubstr]"
+  (local (in-theory (enable collect-strs-with-isubstr)))
 
-  (declare (xargs :guard (and (stringp a)
-                              (symbol-listp x))))
-  (cond ((atom x)
-         nil)
-        ((str::isubstrp a (symbol-name (car x)))
-         (cons (car x) (collect-syms-with-isubstr a (cdr x))))
-        (t
-         (collect-syms-with-isubstr a (cdr x)))))
+  (defthm collect-strs-with-isubstr-when-atom
+    (implies (atom x)
+             (equal (collect-strs-with-isubstr a x)
+                    nil)))
 
-(defthm collect-syms-with-isubstr-when-atom
-  (implies (atom x)
-           (equal (collect-syms-with-isubstr a x)
-                  nil))
-  :hints(("Goal" :in-theory (enable collect-syms-with-isubstr))))
+  (defthm collect-strs-with-isubstr-of-cons
+    (equal (collect-strs-with-isubstr a (cons b x))
+           (if (str::isubstrp a b)
+               (cons b (collect-strs-with-isubstr a x))
+             (collect-strs-with-isubstr a x))))
 
-(defthm collect-syms-with-isubstr-of-cons
-  (equal (collect-syms-with-isubstr a (cons b x))
-         (if (str::isubstrp a (symbol-name b))
-             (cons b (collect-syms-with-isubstr a x))
-           (collect-syms-with-isubstr a x)))
-  :hints(("Goal" :in-theory (enable collect-syms-with-isubstr))))
+  (defthm member-equal-collect-strs-with-isubstr
+    (iff (member-equal b (collect-strs-with-isubstr a x))
+         (and (member-equal b x)
+              (str::isubstrp a b))))
 
-(defthm member-equal-collect-syms-with-isubstr
-  (iff (member-equal b (collect-syms-with-isubstr a x))
-       (and (member-equal b x)
-            (str::isubstrp a (symbol-name b))))
-  :hints(("Goal" :induct (len x))))
+  (defthm subsetp-equal-of-collect-strs-with-isubstr
+    (implies (subsetp-equal x y)
+             (subsetp-equal (collect-strs-with-isubstr a x) y)))
 
-(defthm subsetp-equal-of-collect-syms-with-isubstr
-  (implies (subsetp-equal x y)
-           (subsetp-equal (collect-syms-with-isubstr a x) y))
-  :hints(("Goal" :induct (len x))))
+  (defthm subsetp-equal-collect-strs-with-isubstr-self
+    (subsetp-equal (collect-strs-with-isubstr a x) x)))
 
-(defthm subsetp-equal-collect-syms-with-isubstr-self
-  (subsetp-equal (collect-syms-with-isubstr a x) x))
+
+
+(defsection collect-syms-with-isubstr
+  :parents (substrings)
+  :short "Gather symbols whose names have some (case-insensitive) substring."
+
+  :long "<p>@(call collect-syms-with-isubstr) returns a list of all the symbols
+in the list <tt>x</tt> that have <tt>a</tt> as a case-insensitve substring of
+their @(see symbol-name).  The substring tests are carried out with @(see
+isubstrp).</p>
+
+<p>See also @(see collect-strs-with-isubstr), which is similar but for string
+lists instead of symbol lists.</p>"
+
+  (defund collect-syms-with-isubstr (a x)
+    (declare (xargs :guard (and (stringp a)
+                                (symbol-listp x))))
+    (cond ((atom x)
+           nil)
+          ((str::isubstrp a (symbol-name (car x)))
+           (cons (car x) (collect-syms-with-isubstr a (cdr x))))
+          (t
+           (collect-syms-with-isubstr a (cdr x)))))
+
+  (local (in-theory (enable collect-syms-with-isubstr)))
+
+  (defthm collect-syms-with-isubstr-when-atom
+    (implies (atom x)
+             (equal (collect-syms-with-isubstr a x)
+                    nil)))
+
+  (defthm collect-syms-with-isubstr-of-cons
+    (equal (collect-syms-with-isubstr a (cons b x))
+           (if (str::isubstrp a (symbol-name b))
+               (cons b (collect-syms-with-isubstr a x))
+             (collect-syms-with-isubstr a x))))
+
+  (defthm member-equal-collect-syms-with-isubstr
+    (iff (member-equal b (collect-syms-with-isubstr a x))
+         (and (member-equal b x)
+              (str::isubstrp a (symbol-name b)))))
+
+  (defthm subsetp-equal-of-collect-syms-with-isubstr
+    (implies (subsetp-equal x y)
+             (subsetp-equal (collect-syms-with-isubstr a x) y)))
+
+  (defthm subsetp-equal-collect-syms-with-isubstr-self
+    (subsetp-equal (collect-syms-with-isubstr a x) x)))
 

@@ -26,7 +26,7 @@
 (in-theory (enable acl2::make-list-ac->repeat))
 
 
-;; This whole file is a "bozo" that we should consider moving elsewhere.
+;; BOZO fundamental lemmas that should probably be part of other libraries.
 
 (defthm negative-when-natp
   (implies (natp x) (equal (< x 0) nil)))
@@ -112,3 +112,100 @@
 
 (defthm subsetp-equal-reflexive
   (subsetp-equal x x))
+
+
+;; Lemmas for working with character codes.
+
+(defthm equal-of-char-code-and-char-code
+  (implies (and (characterp x)
+                (characterp y))
+           (equal (equal (char-code x) (char-code y))
+                  (equal x y)))
+  :hints(("Goal" :use acl2::equal-char-code)))
+
+(defthm equal-of-char-code-and-constant
+  (implies (syntaxp (quotep c))
+           (equal (equal (char-code x) c)
+                  (if (characterp x)
+                      (and (natp c)
+                           (<= c 255)
+                           (equal x (code-char c)))
+                    (equal c 0)))))
+
+(defthm code-char-when-not-natp
+  (implies (not (natp x))
+           (equal (code-char x)
+                  (code-char 0)))
+  :hints(("Goal" :use ((:instance acl2::completion-of-code-char)))))
+
+(defthm equal-of-char-code-of-plus
+  (implies (and (syntaxp (quotep a))
+                (syntaxp (quotep const))
+                (characterp a)
+                (natp y)
+                (natp const)
+                (<= (+ const y) 255))
+           (equal (equal a (code-char (+ const y)))
+                  (equal y (- (char-code a) const)))))
+
+(encapsulate
+ ()
+ (local (defund exhaustive-test1 (x y)
+          (and (equal (equal (code-char x) (code-char y))
+                      (equal x y))
+               (or (zp y)
+                   (exhaustive-test1 x (- y 1))))))
+
+ (local (defund exhaustive-test2 (x y)
+          (and (exhaustive-test1 x y)
+               (or (zp x)
+                   (exhaustive-test2 (- x 1) y)))))
+
+ (local (defthm lemma1
+          (implies (and (exhaustive-test1 x y)
+                        (natp x)
+                        (natp y)
+                        (natp m)
+                        (<= m y)
+                        (<= x 255)
+                        (<= y 255))
+                   (equal (equal (code-char x) (code-char m))
+                          (equal x m)))
+          :hints(("Goal" :in-theory (enable exhaustive-test1)))))
+
+ (local (defthm lemma2
+          (implies (and (exhaustive-test2 x y)
+                        (natp x)
+                        (natp y)
+                        (<= x 255)
+                        (<= y 255)
+                        (natp n)
+                        (natp m)
+                        (<= n x)
+                        (<= m y))
+                   (equal (equal (code-char n) (code-char m))
+                          (equal n m)))
+          :hints(("Goal"
+                  :in-theory (enable exhaustive-test2)
+                  :induct (exhaustive-test2 x y))
+                 ("Subgoal *1/1"
+                  :in-theory (disable lemma1)
+                  :use ((:instance lemma1
+                                   (x 0)
+                                   (m m)
+                                   (y y)))))))
+
+ (defthm equal-of-code-chars
+   (implies (and (natp n)
+                 (natp m)
+                 (<= n 255)
+                 (<= m 255))
+            (equal (equal (code-char n) (code-char m))
+                   (equal n m)))
+   :hints(("Goal"
+           :in-theory (disable lemma2)
+           :use ((:instance lemma2
+                            (x 255)
+                            (y 255)
+                            (n n)
+                            (m m)))))))

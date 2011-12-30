@@ -33,7 +33,7 @@ Few ACL2 books have any documentation, and this script misses a few books that
 do have some documentation:
 
   - I intentionally omit the workshop books.
-  - I'm COI books seem to have some loading problems.
+  - I'm omitting the COI books since they have some loading problems.
   - The SULFA books seem to have some loading problems.
   - The clause-processors/basic-examples book has loading problems.
 
@@ -70,12 +70,12 @@ and :save commands are executed.
 ||#
 
 ; In case ACL2 starts up outside its loop (formerly true for Lispworks):
-(acl2::value :q)
-(acl2::lp)
+;(acl2::value :q)
+;(acl2::lp)
 
 (in-package "ACL2")
-(ld "package.lsp")
-(include-book "xdoc/import-acl2doc" :dir :system)
+(include-book "extra-packages")
+(include-book "xdoc-impl/import-acl2doc" :dir :system)
 
 
 (table book-doc 'doc nil)

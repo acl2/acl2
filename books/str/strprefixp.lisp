@@ -19,7 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "STR")
-(include-book "doc")
+(include-book "xdoc/top" :dir :system)
 (include-book "unicode/prefixp" :dir :system)
 (include-book "unicode/nthcdr" :dir :system)
 (local (include-book "arithmetic"))
@@ -43,83 +43,90 @@
                          (prefixp (cdr (nthcdr xn x)) (cdr (nthcdr yn y)))))
          :hints(("Goal" :in-theory (enable prefixp nth nthcdr)))))
 
-(defund strprefixp-impl (x y xn yn xl yl)
-  (declare (type string x)
-           (type string y)
-           (type integer xn)
-           (type integer yn)
-           (type integer xl)
-           (type integer yl)
-           (xargs :guard (and (stringp x)
-                              (stringp y)
-                              (natp xn)
-                              (natp yn)
-                              (natp xl)
-                              (natp yl)
-                              (= xl (length x))
-                              (= yl (length y))
-                              (<= xn (length x))
-                              (<= yn (length y)))
-                  :measure (min (nfix (- (nfix xl) (nfix xn)))
-                                (nfix (- (nfix yl) (nfix yn))))))
-  (cond ((mbe :logic (zp (- (nfix xl) (nfix xn)))
-              :exec (= (the integer xn)
-                       (the integer xl)))
-         t)
-        ((mbe :logic (zp (- (nfix yl) (nfix yn)))
-              :exec (= (the integer yn)
-                       (the integer yl)))
-         nil)
-        ((eql (the character (char x xn))
-              (the character (char y yn)))
-         (mbe :logic (strprefixp-impl x y
-                                      (+ (nfix xn) 1)
-                                      (+ (nfix yn) 1)
-                                      xl yl)
-              :exec  (strprefixp-impl (the string x)
-                                      (the string y)
-                                      (the integer (+ (the integer xn) 1))
-                                      (the integer (+ (the integer yn) 1))
-                                      (the integer xl)
-                                      (the integer yl))))
-        (t
-         nil)))
+(defsection strprefixp-impl
+  :parents (strprefixp)
+  :short "Fast implementation of @(see strprefixp)."
 
-(defthm strprefixp-impl-elim
-  (implies (and (force (stringp x))
-                (force (stringp y))
-                (force (natp xn))
-                (force (natp yn))
-                (force (= xl (length x)))
-                (force (= yl (length y)))
-                (force (<= xn xl))
-                (force (<= yn yl)))
-           (equal (strprefixp-impl x y xn yn xl yl)
-                  (prefixp (nthcdr xn (coerce x 'list))
-                           (nthcdr yn (coerce y 'list)))))
-  :hints(("Goal" :in-theory (enable strprefixp-impl))))
+  (defund strprefixp-impl (x y xn yn xl yl)
+    (declare (type string x)
+             (type string y)
+             (type integer xn)
+             (type integer yn)
+             (type integer xl)
+             (type integer yl)
+             (xargs :guard (and (stringp x)
+                                (stringp y)
+                                (natp xn)
+                                (natp yn)
+                                (natp xl)
+                                (natp yl)
+                                (= xl (length x))
+                                (= yl (length y))
+                                (<= xn (length x))
+                                (<= yn (length y)))
+                    :measure (min (nfix (- (nfix xl) (nfix xn)))
+                                  (nfix (- (nfix yl) (nfix yn))))))
+    (cond ((mbe :logic (zp (- (nfix xl) (nfix xn)))
+                :exec (= (the integer xn)
+                         (the integer xl)))
+           t)
+          ((mbe :logic (zp (- (nfix yl) (nfix yn)))
+                :exec (= (the integer yn)
+                         (the integer yl)))
+           nil)
+          ((eql (the character (char x xn))
+                (the character (char y yn)))
+           (mbe :logic (strprefixp-impl x y
+                                        (+ (nfix xn) 1)
+                                        (+ (nfix yn) 1)
+                                        xl yl)
+                :exec  (strprefixp-impl (the string x)
+                                        (the string y)
+                                        (the integer (+ (the integer xn) 1))
+                                        (the integer (+ (the integer yn) 1))
+                                        (the integer xl)
+                                        (the integer yl))))
+          (t
+           nil)))
 
-(defun strprefixp (x y)
+  (local (in-theory (enable strprefixp-impl)))
 
-  ":Doc-Section Str
-   Case-sensitive string prefix test~/
+  (defthm strprefixp-impl-elim
+    (implies (and (force (stringp x))
+                  (force (stringp y))
+                  (force (natp xn))
+                  (force (natp yn))
+                  (force (= xl (length x)))
+                  (force (= yl (length y)))
+                  (force (<= xn xl))
+                  (force (<= yn yl)))
+             (equal (strprefixp-impl x y xn yn xl yl)
+                    (prefixp (nthcdr xn (coerce x 'list))
+                             (nthcdr yn (coerce y 'list)))))))
 
-   ~c[(strprefixp x y)] determines if the string x is a prefix of the string y, in
-   a case-sensitive manner.
+(defsection strprefixp
+  :parents (substrings)
+  :short "Case-sensitive string prefix test."
+  :long "<p>@(call strprefixp) determines if the string <tt>x</tt> is a prefix
+of the string <tt>y</tt>, in a case-sensitive manner.</p>
 
-   Logically, this is identical to ~c[(prefixp (coerce x 'list) (coerce y 'list))],
-   but we use a more efficient implementation which avoids coercing the strings.~/
+<p>Logically, this is identical to</p>
 
-   ~l[str::istrprefixp]"
+<code>
+ (prefixp (coerce x 'list) (coerce y 'list))
+</code>
 
-  (declare (type string x)
-           (type string y))
+<p>But we use a more efficient implementation which avoids coercing the
+strings into character lists.</p>"
 
-  (mbe :logic (prefixp (coerce x 'list)
-                       (coerce y 'list))
-       :exec (strprefixp-impl (the string x)
-                              (the string y)
-                              (the integer 0)
-                              (the integer 0)
-                              (the integer (length (the string x)))
-                              (the integer (length (the string y))))))
+  (defun strprefixp (x y)
+    (declare (type string x)
+             (type string y))
+    (mbe :logic (prefixp (coerce x 'list)
+                         (coerce y 'list))
+         :exec (strprefixp-impl (the string x)
+                                (the string y)
+                                (the integer 0)
+                                (the integer 0)
+                                (the integer (length (the string x)))
+                                (the integer (length (the string y)))))))

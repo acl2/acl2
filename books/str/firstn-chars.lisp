@@ -19,88 +19,87 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "STR")
-(include-book "doc")
+(include-book "eqv")
 (local (include-book "arithmetic"))
 (local (include-book "unicode/take" :dir :system))
 
-(defund firstn-chars-aux (x n acc)
-  (declare (xargs :guard (and (stringp x)
-                              (natp n)
-                              (< n (length x))))
-           (type string x)
-           (type integer n))
-  (if (mbe :logic (zp n)
-           :exec (= n 0))
-      (cons (char x 0) acc)
-    (firstn-chars-aux x
-                      (- n 1)
-                      (cons (char x n) acc))))
+(defsection firstn-chars
+  :parents (str)
+  :short "Efficient way to take leading characters from a string."
 
-(defund firstn-chars (n x)
+  :long "<p>@(call firstn-chars) is logically equal to:</p>
+<code>
+    (take (min n (length x)) (coerce x 'list))
+</code>
+<p>But it is implemented more efficiently, via @(see char).</p>"
 
-  ":Doc-Section Str
-  Efficient way to take leading characters from a string ~/
+  (defund firstn-chars-aux (x n acc)
+    (declare (xargs :guard (and (stringp x)
+                                (natp n)
+                                (< n (length x))))
+             (type string x)
+             (type integer n))
+    (if (zp n)
+        (cons (char x 0) acc)
+      (firstn-chars-aux x
+                        (- n 1)
+                        (cons (char x n) acc))))
 
-  This function is logically equal to
-  ~bv[]
-    (take (min n (length x)) (coerce x 'list)),
-  ~ev[]
-  but is implemented more efficiently via ~c[char]. ~/ "
+  (defund firstn-chars (n x)
+    (declare (xargs :guard (and (stringp x)
+                                (natp n))
+                    :verify-guards nil)
+             (type string x))
+    (mbe :logic
+         (take (min n (length x)) (coerce x 'list))
+         :exec
+         (let ((n (min n (length x))))
+           (if (= n 0)
+               nil
+             (firstn-chars-aux x (- n 1) nil)))))
 
-  (declare (xargs :guard (and (stringp x)
-                              (natp n))
-                  :verify-guards nil)
-           (type string x))
+  (local (in-theory (enable firstn-chars-aux
+                            firstn-chars)))
 
-  (mbe :logic
-       (take (min n (length x)) (coerce x 'list))
-       :exec
-       (let ((n (min n (length x))))
-         (if (= n 0)
-             nil
-           (firstn-chars-aux x (- n 1) nil)))))
+  (defthm firstn-chars-aux-removal
+    (implies (and (stringp x)
+                  (natp n)
+                  (< n (length x)))
+             (equal (firstn-chars-aux x n acc)
+                    (append (take (+ n 1) (coerce x 'list))
+                            acc))))
 
-(local (defthm lemma
-         (implies (and (stringp x)
-                       (natp n)
-                       (< n (length x)))
-                  (equal (firstn-chars-aux x n acc)
-                         (append (take (+ n 1) (coerce x 'list))
-                                 acc)))
-         :hints(("Goal" :in-theory (enable firstn-chars-aux)))))
+  (verify-guards firstn-chars)
 
-(verify-guards firstn-chars)
-
-(defthm character-listp-of-firstn-chars
-  (implies (force (stringp x))
-           (character-listp (firstn-chars n x)))
-  :hints(("Goal" :in-theory (enable firstn-chars))))
-
+  (defthm character-listp-of-firstn-chars
+    (implies (force (stringp x))
+             (character-listp (firstn-chars n x)))))
 
 
-(defund append-firstn-chars (n x y)
-  (declare (xargs :guard (and (natp n)
-                              (stringp x))
-                  :verify-guards nil))
-  (mbe :logic
-       (append (firstn-chars n x) y)
-       :exec
-       (let ((n (min n (length x))))
-         (if (= n 0)
-             y
-           (firstn-chars-aux x (- n 1) y)))))
 
-(verify-guards append-firstn-chars
-               :hints(("Goal"
-                       :in-theory (enable firstn-chars))))
+(defsection append-firstn-chars
 
-(defthm character-listp-of-append-firstn-chars
-  (implies (and (force (stringp x))
-                (force (character-listp y)))
-           (character-listp (append-firstn-chars n x y)))
-  :hints(("Goal" :in-theory (enable append-firstn-chars))))
+  (defund append-firstn-chars (n x y)
+    (declare (xargs :guard (and (natp n)
+                                (stringp x))
+                    :verify-guards nil))
+    (mbe :logic
+         (append (firstn-chars n x) y)
+         :exec
+         (let ((n (min n (length x))))
+           (if (= n 0)
+               y
+             (firstn-chars-aux x (- n 1) y)))))
 
+  (local (in-theory (enable append-firstn-chars)))
 
+  (verify-guards append-firstn-chars
+    :hints(("Goal" :in-theory (enable firstn-chars))))
+
+  (defthm character-listp-of-append-firstn-chars
+    (implies (and (force (stringp x))
+                  (force (character-listp y)))
+             (character-listp (append-firstn-chars n x y)))))
 
 
 #||

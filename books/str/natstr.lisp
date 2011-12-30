@@ -19,9 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "STR")
-(include-book "doc")
 (include-book "digitp")
-(local (include-book "char-support"))
 (local (include-book "unicode/revappend" :dir :system))
 (local (include-book "arithmetic-3/floor-mod/floor-mod" :dir :system))
 (local (include-book "unicode/rev" :dir :system))
@@ -34,208 +32,201 @@
          :hints(("Goal" :in-theory (enable acl2::rev)))))
 
 
-(defund basic-natchars (n)
-  (declare (xargs :guard (natp n)))
-  (if (zp n)
-      nil
-    (cons (digit-to-char (mod n 10))
-          (basic-natchars (floor n 10)))))
+(defsection basic-natchars
 
-(defthm basic-natchars-when-zp
-  (implies (zp n)
-           (equal (basic-natchars n)
-                  nil))
-  :hints(("Goal" :in-theory (enable basic-natchars))))
+  (defund basic-natchars (n)
+    (declare (xargs :guard (natp n)))
+    (if (zp n)
+        nil
+      (cons (digit-to-char (mod n 10))
+            (basic-natchars (floor n 10)))))
 
-(defthm true-listp-of-basic-natchars
-  (true-listp (basic-natchars n))
-  :rule-classes :type-prescription)
+  (local (in-theory (enable basic-natchars)))
 
-(defthm character-listp-of-basic-natchars
-  (character-listp (basic-natchars n))
-  :hints(("Goal" :in-theory (enable basic-natchars))))
+  (defthm basic-natchars-when-zp
+    (implies (zp n)
+             (equal (basic-natchars n)
+                    nil)))
 
-(defthm digit-listp-of-basic-natchars
-  (digit-listp (basic-natchars n))
-  :hints(("Goal" :in-theory (enable basic-natchars))))
+  (defthm true-listp-of-basic-natchars
+    (true-listp (basic-natchars n))
+    :rule-classes :type-prescription)
 
-(defthm basic-natchars-under-iff
-  (iff (basic-natchars n)
-       (not (zp n)))
-  :hints(("Goal" :in-theory (enable basic-natchars))))
+  (defthm character-listp-of-basic-natchars
+    (character-listp (basic-natchars n)))
 
-(defthm consp-of-basic-natchars
-  (equal (consp (basic-natchars n))
-         (if (basic-natchars n)
-             t
-           nil))
-  :hints(("Goal" :in-theory (enable basic-natchars))))
+  (defthm digit-listp-of-basic-natchars
+    (digit-listp (basic-natchars n)))
 
-(encapsulate
- ()
- (local (defun my-induction (n m)
-          (if (or (zp n)
-                  (zp m))
-              nil
-            (my-induction (floor n 10) (floor m 10)))))
+  (defthm basic-natchars-under-iff
+    (iff (basic-natchars n)
+         (not (zp n))))
 
- (defthm basic-natchars-one-to-one
-   (equal (equal (basic-natchars n)
-                 (basic-natchars m))
-          (equal (nfix n)
-                 (nfix m)))
-   :hints(("Goal"
-           :in-theory (enable basic-natchars)
-           :induct (my-induction n m)))))
+  (defthm consp-of-basic-natchars
+    (equal (consp (basic-natchars n))
+           (if (basic-natchars n)
+               t
+             nil)))
 
-(local (defthm digit-list-value-of-rev-of-basic-natchars
-         (equal (digit-list-value (acl2::rev (basic-natchars n)))
-                (nfix n))
-         :hints(("Goal"
-                 :induct (basic-natchars n)
-                 :in-theory (e/d (basic-natchars)
-                                 (digit-to-char))))))
+  (encapsulate
+    ()
+    (local (defun my-induction (n m)
+             (if (or (zp n)
+                     (zp m))
+                 nil
+               (my-induction (floor n 10) (floor m 10)))))
+
+    (defthm basic-natchars-one-to-one
+      (equal (equal (basic-natchars n)
+                    (basic-natchars m))
+             (equal (nfix n)
+                    (nfix m)))
+      :hints(("Goal"
+              :induct (my-induction n m))))))
 
 
 
 
-(defund natchars-aux (n acc)
-  (declare (type integer n)
-           (xargs :guard (and (natp n)
-                              (character-listp acc))
-                  :verify-guards nil))
-  (if (mbe :logic (zp n)
-           :exec (= (the integer n) 0))
-      acc
-    (natchars-aux (the integer (truncate (the integer n) 10))
-                  (cons (the character (code-char
-                                        (the (unsigned-byte 8)
-                                          (+ (the (unsigned-byte 8) 48)
-                                             (the (unsigned-byte 8)
-                                               (rem (the integer n) 10))))))
-                        acc))))
+(defsection natchars
 
-(defthm natchars-aux-redefinition
-  (equal (natchars-aux n acc)
-         (revappend (basic-natchars n) acc))
-  :rule-classes :definition
-  :hints(("Goal" :in-theory (enable natchars-aux basic-natchars))))
+  (local (defthm digit-list-value-of-rev-of-basic-natchars
+           (equal (digit-list-value (acl2::rev (basic-natchars n)))
+                  (nfix n))
+           :hints(("Goal"
+                   :induct (basic-natchars n)
+                   :in-theory (e/d (basic-natchars)
+                                   (digit-to-char))))))
 
-(verify-guards natchars-aux)
+  (defund natchars-aux (n acc)
+    (declare (type integer n)
+             (xargs :guard (and (natp n)
+                                (character-listp acc))
+                    :verify-guards nil))
+    (if (mbe :logic (zp n)
+             :exec (= (the integer n) 0))
+        acc
+      (natchars-aux (the integer (truncate (the integer n) 10))
+                    (cons (the character (code-char
+                                          (the (unsigned-byte 8)
+                                            (+ (the (unsigned-byte 8) 48)
+                                               (the (unsigned-byte 8)
+                                                 (rem (the integer n) 10))))))
+                          acc))))
 
+  (defund natchars (n)
+    (declare (type integer n)
+             (xargs :guard (natp n)
+                    :verify-guards nil))
+    (or (natchars-aux n nil) '(#\0)))
 
+  (defthm natchars-aux-redefinition
+    (equal (natchars-aux n acc)
+           (revappend (basic-natchars n) acc))
+    :rule-classes :definition
+    :hints(("Goal" :in-theory (enable natchars-aux basic-natchars))))
 
-(defund natchars (n)
-  (declare (type integer n)
-           (xargs :guard (natp n)))
-  (or (natchars-aux n nil) '(#\0)))
+  (verify-guards natchars-aux)
+  (verify-guards natchars)
 
-(defthm true-listp-of-natchars
-  (true-listp (natchars n))
-  :rule-classes :type-prescription
-  :hints(("Goal" :in-theory (enable natchars))))
+  (local (in-theory (enable natchars)))
 
-(defthm character-listp-of-natchars
-  (character-listp (natchars n))
-  :hints(("Goal" :in-theory (enable natchars))))
+  (defthm true-listp-of-natchars
+    (true-listp (natchars n))
+    :rule-classes :type-prescription)
 
-(defthm digit-listp-of-natchars
-  (digit-listp (natchars n))
-  :hints(("Goal" :in-theory (enable natchars))))
+  (defthm character-listp-of-natchars
+    (character-listp (natchars n)))
 
-(encapsulate
- ()
- (local (defthm lemma1
-          (equal (equal (acl2::rev x) (list y))
-                 (and (consp x)
-                      (not (consp (cdr x)))
-                      (equal (car x) y)))
-          :hints(("Goal" :in-theory (enable acl2::rev)))))
+  (defthm digit-listp-of-natchars
+    (digit-listp (natchars n)))
 
- (local (defthmd lemma2
-          (not (equal (basic-natchars n) '(#\0)))
-          :hints(("Goal" :in-theory (enable basic-natchars)))))
+  (encapsulate
+    ()
+    (local (defthm lemma1
+             (equal (equal (acl2::rev x) (list y))
+                    (and (consp x)
+                         (not (consp (cdr x)))
+                         (equal (car x) y)))
+             :hints(("Goal" :in-theory (enable acl2::rev)))))
 
- (defthm natchars-one-to-one
-   (equal (equal (natchars n)
-                 (natchars m))
-          (equal (nfix n) (nfix m)))
-   :hints(("Goal"
-           :in-theory (e/d (natchars) (basic-natchars-one-to-one))
-           :use ((:instance basic-natchars-one-to-one)
-                 (:instance lemma2)
-                 (:instance lemma2 (n m)))))))
+    (local (defthmd lemma2
+             (not (equal (basic-natchars n) '(#\0)))
+             :hints(("Goal" :in-theory (enable basic-natchars)))))
 
-(defthm digit-list-value-of-natchars
-  (equal (digit-list-value (natchars n))
-         (nfix n))
-  :hints(("Goal" :in-theory (enable natchars))))
+    (defthm natchars-one-to-one
+      (equal (equal (natchars n)
+                    (natchars m))
+             (equal (nfix n) (nfix m)))
+      :hints(("Goal"
+              :in-theory (disable basic-natchars-one-to-one)
+              :use ((:instance basic-natchars-one-to-one)
+                    (:instance lemma2)
+                    (:instance lemma2 (n m)))))))
 
-
-
-
-(defund natstr (n)
-  (declare (type integer n)
-           (xargs :guard (natp n)))
-  (coerce (natchars n) 'string))
-
-(defthm stringp-of-natstr
-  (stringp (natstr n))
-  :rule-classes :type-prescription
-  :hints(("Goal" :in-theory (enable natstr))))
-
-(defthm digit-listp-of-natstr
-  (digit-listp (coerce (natstr n) 'list))
-  :hints(("Goal" :in-theory (enable natstr))))
-
-(defthm natstr-one-to-one
-  (equal (equal (natstr n) (natstr m))
-         (equal (nfix n) (nfix m)))
-  :hints(("Goal" :in-theory (enable natstr))))
-
-(defthm digit-list-value-of-natstr
-  (equal (digit-list-value (coerce (natstr n) 'list))
-         (nfix n))
-  :hints(("Goal" :in-theory (enable natstr))))
-
-(defthm natstr-nonempty
-  (not (equal (natstr n) ""))
-  :hints(("Goal" :in-theory (enable natstr))))
+  (defthm digit-list-value-of-natchars
+    (equal (digit-list-value (natchars n))
+           (nfix n))))
 
 
+(defsection natstr
 
+  (defund natstr (n)
+    (declare (type integer n)
+             (xargs :guard (natp n)))
+    (coerce (natchars n) 'string))
 
-(defund revappend-natchars-aux (n acc)
-  (declare (type integer n)
-           (xargs :guard (and (natp n))))
-  (if (mbe :logic (zp n)
-           :exec (= (the integer n) 0))
-      acc
-    (cons (the character (code-char
-                          (the (unsigned-byte 8)
-                            (+ (the (unsigned-byte 8) 48)
-                               (the (unsigned-byte 8)
-                                 (rem (the integer n) 10))))))
-          (revappend-natchars-aux
-           (the integer (truncate (the integer n) 10))
-           acc))))
+  (local (in-theory (enable natstr)))
 
-(defthm revappend-natchars-aux-redef
-  (equal (revappend-natchars-aux n acc)
-         (append (basic-natchars n) acc))
-  :hints(("Goal" :in-theory (enable revappend-natchars-aux basic-natchars))))
+  (defthm stringp-of-natstr
+    (stringp (natstr n))
+    :rule-classes :type-prescription)
 
-(defun revappend-natchars (n acc)
-  (declare (type integer n)
-           (xargs :guard (natp n)
-                  :guard-hints(("Goal" :in-theory (enable natchars)))))
-  (mbe :logic (revappend (natchars n) acc)
-       :exec (if (= n 0)
-                 (cons #\0 acc)
-               (revappend-natchars-aux n acc))))
+  (defthm digit-listp-of-natstr
+    (digit-listp (coerce (natstr n) 'list)))
+
+  (defthm natstr-one-to-one
+    (equal (equal (natstr n) (natstr m))
+           (equal (nfix n) (nfix m))))
+
+  (defthm digit-list-value-of-natstr
+    (equal (digit-list-value (coerce (natstr n) 'list))
+           (nfix n)))
+
+  (defthm natstr-nonempty
+    (not (equal (natstr n) ""))))
 
 
 
+(defsection revappend-natchars
+
+  (defund revappend-natchars-aux (n acc)
+    (declare (type integer n)
+             (xargs :guard (and (natp n))))
+    (if (mbe :logic (zp n)
+             :exec (= (the integer n) 0))
+        acc
+      (cons (the character (code-char
+                            (the (unsigned-byte 8)
+                              (+ (the (unsigned-byte 8) 48)
+                                 (the (unsigned-byte 8)
+                                   (rem (the integer n) 10))))))
+            (revappend-natchars-aux
+             (the integer (truncate (the integer n) 10))
+             acc))))
+
+  (defthm revappend-natchars-aux-redef
+    (equal (revappend-natchars-aux n acc)
+           (append (basic-natchars n) acc))
+    :hints(("Goal" :in-theory (enable revappend-natchars-aux basic-natchars))))
+
+  (defun revappend-natchars (n acc)
+    (declare (type integer n)
+             (xargs :guard (natp n)
+                    :guard-hints(("Goal" :in-theory (enable natchars)))))
+    (mbe :logic (revappend (natchars n) acc)
+         :exec (if (= n 0)
+                   (cons #\0 acc)
+                 (revappend-natchars-aux n acc)))))
 
 
 #|

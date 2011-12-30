@@ -22,7 +22,7 @@
 ; preprocess.lisp  -- the xdoc preprocessor
 
 (in-package "XDOC")
-(include-book "names")
+(include-book "../xdoc/names")
 (include-book "str/top" :dir :system)
 (set-state-ok t)
 (program)

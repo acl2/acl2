@@ -1,5 +1,5 @@
-; CUTIL - Centaur Basic Utilities
-; Copyright (C) 2008-2011 Centaur Technology
+; XDOC Documentation System for ACL2
+; Copyright (C) 2009-2011 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -18,12 +18,5 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-(in-package "ACL2")
-;(ld "../g-logic/package.lsp")
-;(ld "../aig/aigpu/package.lsp")
-;(ld "data-structures/define-u-package.lsp" :dir :system)
-;(ld "tools/flag-package.lsp" :dir :system)
-;(ld "serialize/package.lsp" :dir :system)
-(ld "str/package.lsp" :dir :system)
-(ld "xdoc/package.lsp" :dir :system)
-;(ld "cowles/packages.lsp" :dir :system)
+(ld "cert.acl2")
+(certify-book "make-manual" ? t :ttags :all)

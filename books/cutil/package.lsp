@@ -20,7 +20,9 @@
 
 (in-package "ACL2")
 
-;; Must be included here, not in other-packages.lsp, for sets:: stuff
+; We load these here now so we can import their symbols into cutil as desired.
+(ld "str/package.lsp" :dir :system)
+(ld "xdoc/package.lsp" :dir :system)
 (ld "finite-set-theory/osets/sets.defpkg" :dir :system)
 
 (defpkg "CUTIL"
@@ -94,6 +96,10 @@
                add-to-ruleset!
                get-ruleset
                ruleset-theory
+
+; Stuff I moved into xdoc:
+               xdoc::extract-keyword-from-args
+               xdoc::throw-away-keyword-parts
 
                ))
    ;; Things to remove:

@@ -26,7 +26,6 @@
 ; XDOC topics.
 
 (in-package "XDOC")
-(include-book "str/strsubst" :dir :system)
 (program)
 
 
@@ -113,9 +112,131 @@
 ;(reverse (coerce (simple-html-encode-chars '(#\a #\" #\b) nil) 'string))
 
 
+
+(defund revappend-chars-aux (x n xl y)
+  ;; YUCK, copy from string library to avoid str/ dependency
+  (declare (xargs :guard (and (stringp x)
+                              (natp n)
+                              (natp xl)
+                              (<= n xl)
+                              (equal xl (length x)))
+                  :measure (nfix (- (nfix xl) (nfix n)))))
+  (if (mbe :logic (zp (- (nfix xl) (nfix n)))
+           :exec (= n xl))
+      y
+    (revappend-chars-aux x
+                         (mbe :logic (+ (nfix n) 1)
+                              :exec (+ n 1))
+                         xl
+                         (cons (char x n) y))))
+
+(defund revappend-chars (x y)
+  ;; YUCK, copy from string library to avoid str/ dependency
+  (declare (xargs :guard (stringp x))
+           (type string x))
+
+  (mbe :logic (revappend (coerce x 'list) y)
+       :exec (revappend-chars-aux x 0 (length x) y)))
+
+(defund strprefixp-impl (x y xn yn xl yl)
+  ;; YUCK, copy from string library to avoid str/ dependency
+  (declare (type string x)
+           (type string y)
+           (type integer xn)
+           (type integer yn)
+           (type integer xl)
+           (type integer yl)
+           (xargs :guard (and (stringp x)
+                              (stringp y)
+                              (natp xn)
+                              (natp yn)
+                              (natp xl)
+                              (natp yl)
+                              (= xl (length x))
+                              (= yl (length y))
+                              (<= xn (length x))
+                              (<= yn (length y)))
+                  :measure (min (nfix (- (nfix xl) (nfix xn)))
+                                (nfix (- (nfix yl) (nfix yn))))))
+  (cond ((mbe :logic (zp (- (nfix xl) (nfix xn)))
+              :exec (= (the integer xn)
+                       (the integer xl)))
+         t)
+        ((mbe :logic (zp (- (nfix yl) (nfix yn)))
+              :exec (= (the integer yn)
+                       (the integer yl)))
+         nil)
+        ((eql (the character (char x xn))
+              (the character (char y yn)))
+         (mbe :logic (strprefixp-impl x y
+                                      (+ (nfix xn) 1)
+                                      (+ (nfix yn) 1)
+                                      xl yl)
+              :exec  (strprefixp-impl (the string x)
+                                      (the string y)
+                                      (the integer (+ (the integer xn) 1))
+                                      (the integer (+ (the integer yn) 1))
+                                      (the integer xl)
+                                      (the integer yl))))
+        (t
+         nil)))
+
+(defund strsubst-aux (old new x n xl oldl acc)
+  ;; YUCK, copy from string library to avoid str/ dependency
+  (declare (type string old)
+           (type string new)
+           (type string x)
+           (type integer n)
+           (type integer xl)
+           (type integer oldl)
+           (xargs :guard (and (stringp old)
+                              (stringp new)
+                              (stringp x)
+                              (natp n)
+                              (natp xl)
+                              (posp oldl)
+                              (= oldl (length old))
+                              (= xl (length x)))
+                  :measure (nfix (- (nfix xl) (nfix n)))))
+  (cond ((mbe :logic (zp oldl)
+              :exec nil)
+         acc)
+
+        ((mbe :logic (zp (- (nfix xl) (nfix n)))
+              :exec (>= n xl))
+         acc)
+
+        ((strprefixp-impl old x 0 n oldl xl)
+         (let ((acc (revappend-chars new acc)))
+           (strsubst-aux old new x
+                           (mbe :logic (+ oldl (nfix n))
+                                :exec (+ oldl n))
+                           xl oldl acc)))
+
+        (t
+         (let ((acc (cons (char x n) acc)))
+           (strsubst-aux old new x
+                           (mbe :logic (+ 1 (nfix n))
+                                :exec (+ 1 n))
+                           xl oldl acc)))))
+
+(defund strsubst (old new x)
+  ;; YUCK, copy from string library to avoid str/ dependency
+  (declare (xargs :guard (and (stringp old)
+                              (stringp new)
+                              (stringp x))))
+  (let ((xl   (length x))
+        (oldl (length old)))
+    (if (= oldl 0)
+        (mbe :logic (if (stringp x)
+                        x
+                      "")
+             :exec x)
+      (reverse (coerce (strsubst-aux old new x 0 xl oldl nil) 'string)))))
+
 (defun sneaky-downcase (x)
   (let ((down (string-downcase x)))
-    (str::strsubst "acl2" "ACL2" down)))
+    (strsubst "acl2" "ACL2" down)))
 
 ;(sneaky-downcase "SILLY-ACL2-TUTORIAL")
 

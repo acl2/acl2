@@ -64,10 +64,10 @@
 ; we include them explicitly to support the hons `make' target in the books/
 ; directory (and hence the regression-hons `make' target in the acl2-sources
 ; directory).
-(include-book "../xdoc/save")
+(include-book "../xdoc-impl/save")
 (include-book "../xdoc/defxdoc-raw")
-(include-book "../xdoc/mkdir-raw")
-(include-book "../xdoc/topics")
+(include-book "../xdoc-impl/mkdir-raw")
+(include-book "../xdoc-impl/topics")
 
 (make-event
 ; xdoc::save is an event, so we might have just called it directly.  But for

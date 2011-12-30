@@ -3,7 +3,7 @@
 
 (in-package "ACL2")
 
-(include-book "make-event/eval" :dir :system)
+(include-book "misc/eval" :dir :system)
 
 ; ==============================
 
