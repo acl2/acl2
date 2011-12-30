@@ -128,7 +128,7 @@
           x)
          (w (make-vl-warning
              :type :vl-warn-case-sensitive-names
-             :msg "In ~a0, found nams that differ only by case.  This might ~
+             :msg "In ~a0, found names that differ only by case.  This might ~
                    indicate a typo, and otherwise it might cause problems ~
                    for some Verilog tools.  Details: ~%~s1"
              :args (list x.name (with-local-ps (vl-equiv-strings-to-lines equiv-names)))
