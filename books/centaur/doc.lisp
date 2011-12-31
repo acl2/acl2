@@ -68,6 +68,7 @@
 (include-book "../xdoc/defxdoc-raw")
 (include-book "../xdoc-impl/mkdir-raw")
 (include-book "../xdoc-impl/topics")
+(include-book "../xdoc-impl/extra-packages")
 
 (make-event
 ; xdoc::save is an event, so we might have just called it directly.  But for
