@@ -18348,6 +18348,10 @@
   returned is the same as would be returned on success when proofs are not
   skipped.
 
+  For those who use ~ilc[set-write-acl2x]: now, when ~ilc[certify-book] is
+  called without a ~c[:ttagsx] argument supplied, then the value of ~c[:ttagsx]
+  defaults to the (explicit or default) value of the ~c[:ttags] argument.
+
   ~st[NEW FEATURES]
 
   A new ``tau system'' provides a kind of ``type checker.''  ~l[tau-system].
@@ -18573,6 +18577,9 @@
   are rarely incremental releases.  A stronger reason is that for the
   compatibility of a new release is with the previous non-incremental release,
   it's not particularly relevant whether or not the new release is incremental.
+
+  The `make' variable ~c[BOOKS] can now be defined above the line that includes
+  Makefile-generic.  (For relevant background, ~pl[book-makefiles].)
 
   ~st[EMACS SUPPORT]
 

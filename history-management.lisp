@@ -21485,44 +21485,59 @@
   (fms str alist *standard-co* state evisc-tuple))
 
 (defun print-ttag-note (val active-book-name include-bookp deferred-p state)
-  (pprogn
-   (let* ((filename (or active-book-name ""))
-          (included (if include-bookp
-                        " (for included book)"
-                      ""))
-          (str (if active-book-name
-                   "TTAG NOTE~s0: Adding ttag ~x1 from file ~s2."
-                 "TTAG NOTE~s0: Adding ttag ~x1 from the top level loop."))
-          (bound (+ (length included)
-                    (length str)
-                    (length (symbol-package-name val))
-                    2 ; for "::"
-                    (length (symbol-name val))
-                    (length filename))))
-     (mv-let (erp val state)
-             (state-global-let*
-              ((fmt-hard-right-margin bound set-fmt-hard-right-margin)
-               (fmt-soft-right-margin bound set-fmt-soft-right-margin))
-              (pprogn (fms-to-standard-co str
-                                          (list (cons #\0 included)
-                                                (cons #\1 val)
-                                                (cons #\2 filename))
-                                          state nil)
-                      (cond (deferred-p state)
-                            (t (newline *standard-co* state)))
-                      (value nil)))
-             (declare (ignore erp val))
-             state))
-   (cond ((and (consp include-bookp) ; (cons ctx full-book-name)
-               (not deferred-p))
-          (warning$ (car include-bookp) ; ctx
-                    "Ttags"
-                    "The ttag note just printed to the terminal indicates a ~
-                     modification to ACL2.  To avoid this warning, supply an ~
-                     explicit :TTAGS argument when including the book ~x0."
-                    (cdr include-bookp) ; full-book-name
-                    ))
-         (t state))))
+
+; Active-book-name is nil or else satisfies chk-book-name.  If non-nil, we
+; print it as "book x" where x omits the .lisp extension, since if the defttag
+; event might not be in the .lisp file.  For example, it could be in the
+; expansion-alist in the book's certificate or, if the book is not certified,
+; it could be in the .port file.
+
+; If include-bookp is a cons, then its cdr satisfies chk-book-name.
+
+  (flet ((book-name-root (book-name)
+                         (subseq book-name 0 (- (length book-name) 5))))
+    (pprogn
+     (let* ((book-name (cond (active-book-name
+                              (book-name-root active-book-name))
+                             (t "")))
+            (included (if include-bookp
+                          " (for included book)"
+                        ""))
+            (str (if active-book-name
+                     "TTAG NOTE~s0: Adding ttag ~x1 from book ~s2."
+                   "TTAG NOTE~s0: Adding ttag ~x1 from the top level loop."))
+            (bound (+ (length included)
+                      (length str)
+                      (length (symbol-package-name val))
+                      2 ; for "::"
+                      (length (symbol-name val))
+                      (length book-name))))
+       (mv-let (erp val state)
+               (state-global-let*
+                ((fmt-hard-right-margin bound set-fmt-hard-right-margin)
+                 (fmt-soft-right-margin bound set-fmt-soft-right-margin))
+                (pprogn (fms-to-standard-co str
+                                            (list (cons #\0 included)
+                                                  (cons #\1 val)
+                                                  (cons #\2 book-name))
+                                            state nil)
+                        (cond (deferred-p state)
+                              (t (newline *standard-co* state)))
+                        (value nil)))
+               (declare (ignore erp val))
+               state))
+     (cond ((and (consp include-bookp) ; (cons ctx full-book-name)
+                 (not deferred-p))
+            (warning$ (car include-bookp) ; ctx
+                      "Ttags"
+                      "The ttag note just printed to the terminal indicates a ~
+                       modification to ACL2.  To avoid this warning, supply ~
+                       an explicit :TTAGS argument when including the book ~
+                       ~x0."
+                      (book-name-root
+                       (cdr include-bookp)) ; full-book-name
+                      ))
+           (t state)))))
 
 (defun show-ttag-notes1 (notes state)
   (cond ((endp notes)

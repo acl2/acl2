@@ -949,6 +949,7 @@ nvalues-thms.lisp
 replace-defined-consts.acl2
 replace-defined-consts.lisp
 replace-impl.lisp
+term-patterns.acl2
 term-patterns.lisp
 unify-subst.acl2
 unify-subst.lisp
@@ -3353,7 +3354,6 @@ simplify-model-helpers-new-proofs.lisp
 simplify-model-helpers-new.lisp
 simplify-model-helpers-proofs.lisp
 simplify-model-helpers.lisp
-temp-emacs-file.lisp
 top.lisp
 util.lisp
 
@@ -3626,6 +3626,7 @@ Readme.lsp
 hl-addr-combine.lisp
 pcert
 pseudo-good-worldp.lisp
+too-many-ifs.acl2
 too-many-ifs.lisp
 top.lisp
 worldp-check.acl2
