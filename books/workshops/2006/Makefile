@@ -22,7 +22,11 @@
 
 # Lee Pike, Mark Shields, and John Matthews.
 # A Verifying Core for a Cryptographic Language Compiler
-# pike-shields-matthews/core_verifier/ needs super-ihs from Rockwell
+# pike-shields-matthews/core_verifier/ needs super-ihs from Rockwell;
+# when we add this, consider using -include Makefile-deps in all
+# Makefiles under pike-shields-matthews/, or else add
+#   override ACL2_PCERT =
+# to avoid provisional certification.
 
 ##############################
 

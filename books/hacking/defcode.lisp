@@ -1,5 +1,11 @@
 (in-package "ACL2")
-(include-book "hacker" :load-compiled-file :comp) ;was in portcullis
+
+; Modification by Matt K. after v4-3: Removed :load-compiled-file :comp, which
+; was part of both include-book forms in this file, in support of provisional
+; certification.  Presumably the indicate books have already been compiled by
+; now, anyhow.
+
+(include-book "hacker") ;was in portcullis
 
 (program)
 (set-state-ok t)
@@ -25,8 +31,7 @@
 ; beginning of actual dangerous stuff
 (defttag defcode)
 
-(include-book "progn-bang-enh" :ttags ((defcode))
-              :load-compiled-file :comp)
+(include-book "progn-bang-enh" :ttags ((defcode)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; defcode-fn

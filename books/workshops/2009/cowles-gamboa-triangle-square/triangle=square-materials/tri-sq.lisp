@@ -1606,7 +1606,9 @@ sqrt-posp-<=
 ; Include the log base 2 book.
 
 (include-book "log2"
-	      :uncertified-okp nil
+; Matt K.: Commenting out use of :uncertified-okp after v4-3 in order to
+; support provisional certification:
+;	      :uncertified-okp nil
 	      :defaxioms-okp nil
 	      :skip-proofs-okp nil) 
 

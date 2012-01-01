@@ -1,5 +1,10 @@
 (in-package "ACL2")
-(include-book "defstruct-parsing" :load-compiled-file :comp); was in portcullis
+
+; Modification by Matt K. after v4-3: Removed :load-compiled-file :comp, which
+; was part of the include-book forms just below, in support of provisional
+; certification.  Presumably the indicate books have already been compiled by
+; now, anyhow.
+(include-book "defstruct-parsing"); was in portcullis
 
 ;Needed to use, but not needed for certification:
 ;(include-book "defcode" :load-compiled-file :comp :ttags ((defcode)))

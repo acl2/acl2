@@ -23,7 +23,8 @@
  map.lisp
 
    This is an optional extension of the sets library, and is not 
-   included by default when you run (include-book "sets").
+   included by default when you run (include-book
+   "sets").
 
 
    Mappings Between Sets.

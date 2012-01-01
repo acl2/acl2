@@ -55,7 +55,14 @@ Jared Davis, Matt Kaufmann, and Sandip Ray contributed to this book.
               (prog2$ ,form
                       (,name (1- ,var))))))
          (value-triple (,name ,limit))
-         (value-triple '(value-triple :invisible)))))))
+         (value-triple '(value-triple :invisible)
+
+; The following keyword :on-skip-proofs t was added by Matt K. after v4-3.
+; Without it, value-triple returns (mv nil :skipped state) when skipping
+; proofs, as is done during the Expand/Port step of provisional certification
+; (see :DOC provisional-certification).
+
+                       :on-skip-proofs t))))))
 
 (defmacro dotimes$-with-error-triple
   (var-limit-form form &key (name 'dotimes-default-name-foo))
@@ -86,7 +93,10 @@ Jared Davis, Matt Kaufmann, and Sandip Ray contributed to this book.
                   (,name (1- ,var) state))))
             (set-state-ok nil)))
          (,name ,limit state)
-         (value-triple '(value-triple :invisible)))))))
+         (value-triple '(value-triple :invisible)
+; See comment about addition of :on-skip-proofs t in the definition of
+; dotimes$.
+                       :on-skip-proofs t))))))
 
 ; A test:
 (local

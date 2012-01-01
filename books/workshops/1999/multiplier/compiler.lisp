@@ -337,13 +337,15 @@
 		     (bodies (remove-parentheses-list 
 			      (get-sig-bodies noninputs defs) names))
 		     (list `((in-package "ACL2")
-                             (include-book "rtl")
+                             (include-book
+                              "rtl")
 			     ,@(gen-defuns noninputs args bodies)
 			     (set-ignore-ok t)
 			     (defun ,(intern (string-upcase name) "ACL2") ,inputs
 			       (let* ,(bindings noninputs args) ,output))))
 		     (list* `((in-package "ACL2")
-                              (include-book "spec")
+                              (include-book
+                               "spec")
 			      ,@(gen-defuns* noninputs args)
 			      (in-theory (disable ,@noninputs))
 			      (in-theory (disable ,@(exec-names* noninputs)))

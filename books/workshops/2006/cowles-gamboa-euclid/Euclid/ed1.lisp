@@ -75,7 +75,9 @@ To certify this book, first, create a world with the following package:
 
 (local
  (include-book "arithmetic/top" :dir :system 
-	       :uncertified-okp nil     
+; Matt K.: Commenting out use of :uncertified-okp after v4-3 in order to
+; support provisional certification:
+;	       :uncertified-okp nil     
 	       :defaxioms-okp nil 
 	       :skip-proofs-okp nil))
 

@@ -1,17 +1,20 @@
 (in-package "ACL2")
 
-(include-book "hacker" :load-compiled-file :comp)
+; Modification by Matt K. after v4-3: Removed :load-compiled-file :comp, which
+; was part of all include-book forms just below, in support of provisional
+; certification.  Presumably the indicate books have already been compiled by
+; now, anyhow.
 
-(include-book "defstruct-parsing" :load-compiled-file :comp)
-(include-book "rewrite-code" :load-compiled-file :comp)
+(include-book "hacker")
+
+(include-book "defstruct-parsing")
+(include-book "rewrite-code")
 
 (include-book "defcode"
-              :load-compiled-file :comp
               :ttags ((defcode)))
-(include-book "raw" :load-compiled-file :comp)
-(include-book "redefun" :load-compiled-file :comp)
-(include-book "bridge" :load-compiled-file :comp)
-(include-book "subsumption" :load-compiled-file :comp)
+(include-book "raw")
+(include-book "redefun")
+(include-book "bridge")
+(include-book "subsumption")
 (include-book "table-guard"
-              :load-compiled-file :comp
               :ttags ((defcode) (table-guard)))

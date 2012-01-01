@@ -6,10 +6,11 @@ top: fmul.lisp proof.cert
 
 include ../../../Makefile-generic
 
+# Avoid provisional certification since we are not using Makefile-deps, which is
+# because there are generated .lisp files.
+override ACL2_PCERT =
 
 compiler.cert: compiler.lisp
-# compiler.cert: rtl.cert
-# compiler.cert: spec.cert
 
 proof.cert: proof.lisp
 proof.cert: fmul-star.cert

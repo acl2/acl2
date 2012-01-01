@@ -91,7 +91,7 @@
          ((pkg 
            (state-global-let*
             ((infixp nil))
-            (chk-in-package ch file2 ctx state))))
+            (chk-in-package ch file2 nil ctx state))))
          (if (not (equal pkg "ACL2"))
            (er soft ctx *ill-formed-certificate-msg* file1 file2)
            (state-global-let*

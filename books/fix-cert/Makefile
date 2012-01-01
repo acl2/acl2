@@ -1,3 +1,7 @@
+# This is an unusual make process, given the way we copy and move
+# files, so we disable provisional certification.
+override ACL2_PCERT :=
+
 # This copies the .cert files as they are, but doesn't get them into their
 # final state.  We put this rule before the inclusion of Makefile-generic,
 # so that it will take priority over the rule for target %.cert in that file.

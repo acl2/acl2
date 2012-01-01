@@ -46,29 +46,4 @@ clean-more:
 	rm -f success.txt
 	rm -f run.date run.log run.err
 
-# Dependencies:
-# In the shell, execute
-# make -s dependencies
-# to obtain the result below.
-
-basis.cert: basis.lisp
-
-crit.cert: crit.lisp
-crit.cert: basis.cert
-
-# invp.cert: invp.lisp
-# invp.cert: basis.cert
-# invp.cert: crit.cert
-# invp.cert: mesi.cert
-
-mesi.cert: mesi.lisp
-mesi.cert: basis.cert
-mesi.cert: records.cert
-
-records.cert: records.lisp
-records.cert: sets.cert
-
-sets.cert: sets.lisp
-sets.cert: total-order.cert
-
-total-order.cert: total-order.lisp
+-include Makefile-deps

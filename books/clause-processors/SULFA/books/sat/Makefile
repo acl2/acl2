@@ -4,6 +4,11 @@
 # your contribution.
 ACL2_SYSTEM_BOOKS = ../../../..
 
+# Avoid provisional certification since we are not using Makefile-deps
+# (which is because there is a generated .lisp file and the existing
+# dependencies in this file appear rather complicated).
+override ACL2_PCERT =
+
 include ${ACL2_SYSTEM_BOOKS}/Makefile-generic
 
 # OPTIONALLY EDIT THE FOLLOWING.  But do not use "time" or "nice"; at least one

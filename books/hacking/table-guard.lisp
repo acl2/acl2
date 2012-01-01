@@ -1,8 +1,14 @@
 (in-package "ACL2")
+
+; Modification by Matt K. after v4-3: Removed :load-compiled-file :comp, which
+; was part of all three include-book forms just below, in support of
+; provisional certification.  Presumably the indicate books have already been
+; compiled by now, anyhow.
+
 ; were in portcullis:
-(include-book "defcode" :load-compiled-file :comp :ttags ((defcode)))
-(include-book "rewrite-code" :load-compiled-file :comp)
-(include-book "redefun" :load-compiled-file :comp)
+(include-book "defcode" :ttags ((defcode)))
+(include-book "rewrite-code")
+(include-book "redefun")
 
 #|
 

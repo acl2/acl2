@@ -26,7 +26,8 @@
          (TRANSFORM-DEFUNS
           "model-raw.lisp" *OLD2NEW-PKG-ALIST*
           :out-defs "model-defs.lisp"
-          :defs-pre `((include-book "../../../../../ordinals/e0-ordinal")
+          :defs-pre `((include-book
+                       "../../../../../ordinals/e0-ordinal")
                       (set-well-founded-relation e0-ord-<)
                       (SET-INHIBIT-WARNINGS "THEORY" "DISABLE" "NON-REC")
                       (INCLUDE-BOOK

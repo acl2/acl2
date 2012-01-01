@@ -625,7 +625,8 @@
               (evl (disjoin cl) a))
      :rule-classes :clause-processor)
 
-   (value-triple '(value-triple nil))))
+   (value-triple '(value-triple nil)
+                 :on-skip-proofs t)))
 
 ; Bad version:
 

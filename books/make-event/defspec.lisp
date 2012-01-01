@@ -377,7 +377,7 @@ sublis-fn.
 ;; This one fails since the constraints don't hold.
 
 (local
- (must-fail
+ (must-fail ; See note about ld-skip-proofsp in the definition of must-fail.
   (local
    (encapsulate
     ()
@@ -402,7 +402,7 @@ sublis-fn.
 ;; the presence of the deflabel.
 
 (local
- (must-fail
+ (must-fail ; See note about ld-skip-proofsp in the definition of must-fail.
   (local
    (encapsulate
     ()
@@ -422,7 +422,7 @@ sublis-fn.
 ;; the table-guard.
 
 (local
- (must-fail
+ (must-fail ; See note about ld-skip-proofsp in the definition of must-fail.
   (local
    (encapsulate
     ()

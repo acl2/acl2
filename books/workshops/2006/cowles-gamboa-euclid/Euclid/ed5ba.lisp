@@ -139,19 +139,25 @@ To certify this book, first, create a world with the following package:
 
 (local
 (include-book "nonstd/arithmetic/top" :dir :system
-	       :uncertified-okp nil
+; Matt K.: Commenting out use of :uncertified-okp after v4-3 in order to
+; support provisional certification:
+;	       :uncertified-okp nil
 	       :defaxioms-okp nil
 	       :skip-proofs-okp nil))
 
 (local
 (include-book "nonstd/ihs/quotient-remainder-lemmas" :dir :system
-	       :uncertified-okp nil
+; Matt K.: Commenting out use of :uncertified-okp after v4-3 in order to
+; support provisional certification:
+;	       :uncertified-okp nil
 	       :defaxioms-okp nil
 	       :skip-proofs-okp nil))
 
 (local
 (include-book "nonstd/nsa/sqrt" :dir :system
-	       :uncertified-okp nil
+; Matt K.: Commenting out use of :uncertified-okp after v4-3 in order to
+; support provisional certification:
+;	       :uncertified-okp nil
 	       :defaxioms-okp nil
 	       :skip-proofs-okp nil))
 
@@ -164,7 +170,9 @@ To certify this book, first, create a world with the following package:
 ;; Make temporary use of an ACL2 Euclidean Domain Book:
 (local
 (include-book "ed3"
-	       :uncertified-okp nil
+; Matt K.: Commenting out use of :uncertified-okp after v4-3 in order to
+; support provisional certification:
+;	       :uncertified-okp nil
 	       :defaxioms-okp nil
 	       :skip-proofs-okp nil))
 

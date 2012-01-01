@@ -84,8 +84,7 @@
 (set-non-linearp t)
 
 (local 
- (include-book 
-  "../../../../arithmetic-3/floor-mod/floor-mod"))
+ (include-book "../../../../arithmetic-3/floor-mod/floor-mod"))
 
 ;; now we prove that the properties on a myroute are preserved during the
 ;; construction of the travel list

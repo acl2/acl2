@@ -20,6 +20,10 @@ LIB_DIR = $(BOOKS_DIR)/rtl/rel4/lib
 
 include $(BOOKS_DIR)/Makefile-generic
 
+# Avoid provisional certification since we are not using Makefile-deps
+# (because there are generated .lisp files):
+override ACL2_PCERT =
+
 INHIBIT = (assign inhibit-output-lst (list (quote prove) (quote proof-tree) (quote warning) (quote observation) (quote event)))
 # We need to assign BOOKS in order to avoid attempting to certify the non-book
 # model-macro-aliases.lisp.

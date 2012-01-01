@@ -1,4 +1,4 @@
-(value :q)
+
 
 (lp)
 
@@ -8,7 +8,11 @@
 
 (include-book "cbf")
 
-(write-benchmark-file "be/" state)
+(mv-let (chan state)
+        (open-input-channel "benchmarks.lisp" :object state)
+        (cond (chan (pprogn (close-input-channel chan state)
+                            (value nil)))
+              (t (write-benchmark-file "be/" state))))
 
 :u
 

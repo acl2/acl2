@@ -33,7 +33,7 @@ top:
 	@for dir in $(DIRS) ; \
 	do \
 	if [ -f $$dir/Makefile ]; then \
-	(cd $$dir ; $(MAKE)) ; \
+	(cd $$dir ; $(MAKE) ACL2_PCERT=$(ACL2_PCERT)) ; \
 	my_status=$$? ; \
 	if [ $$my_status -ne 0 ] ; then exit 1 ; fi ; \
 	fi \

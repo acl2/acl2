@@ -1,6 +1,10 @@
 include ../../../../Makefile-generic
 BOOKS = firewallworks
 
+# Avoid provisional certification since we are not using Makefile-deps,
+# which is because there is a generated .lisp file.
+override ACL2_PCERT =
+
 separation.cert: separation.lisp 
 
 firewallspec.cert: separation.cert firewallspec.lisp

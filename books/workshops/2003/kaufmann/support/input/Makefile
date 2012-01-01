@@ -1,16 +1,8 @@
-# Instructions:
-
-# Before starting, see "Dependencies" below.
-
-# In the shell, execute
-# make
-# to create and certify all books.
-# To clean up (removing files *.cert, *.o, *.fasl, etc., and generated .lisp
-#    files), in the shell execute
-# make clean
-
 include ../../../../../Makefile-generic
 
+# Avoid provisional certification since we are not using Makefile-deps
+# (because there are generated .lisp files):
+override ACL2_PCERT =
 
 BOOKS = defs-in inputs lemmas-in defs-out defs-eq lemmas-out 
 
@@ -43,7 +35,7 @@ clean-more:
 
 defs-in.cert: defs-in.lisp
 defs-in.cert: defs-in.acl2
-defs-in.acl2: inputs.cert
+defs-in.cert: inputs.cert
 
 inputs.cert: inputs.lisp
 
@@ -52,12 +44,12 @@ lemmas-in.cert: defs-in.cert
 
 defs-out.cert: defs-out.lisp
 defs-out.cert: defs-out.acl2
-defs-out.acl2: inputs.cert
+defs-out.cert: inputs.cert
 
 defs-eq.cert: defs-eq.lisp
 defs-eq.cert: defs-eq.acl2
-defs-eq.acl2: defs-in.cert
-defs-eq.acl2: defs-out.cert
+defs-eq.cert: defs-in.cert
+defs-eq.cert: defs-out.cert
 
 lemmas-out.cert: lemmas-out.lisp
 lemmas-out.cert: defs-out.cert

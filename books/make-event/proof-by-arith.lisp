@@ -118,12 +118,22 @@
                                  'proof-by-arith
                                  state)))
     `(make-event
-      ,(if quietp
-           `(er-progn (set-inhibit-output-lst '(prove proof-tree warning
-                                                      observation event
-                                                      expansion summary))
-                      ,body)
-         body)
+      (state-global-let*
+       ((ld-skip-proofsp (if (eq (cert-op state) :write-acl2xu)
+
+; We are doing provisional certification, so we need to save the correct
+; expansion in the .acl2x file.  Normally we do a successful proof twice using
+; proof-by-arith, and that will still hold in this case: once when generating
+; the .acl2x file, and once when generating the .pcert file.
+
+                             nil
+                           (f-get-global 'ld-skip-proofsp state))))
+       ,(if quietp
+            `(er-progn (set-inhibit-output-lst '(prove proof-tree warning
+                                                       observation event
+                                                       expansion summary))
+                       ,body)
+          body))
       :on-behalf-of ,whole-form)))
 
 ; From John Erickson's email to acl2-help, 4/19/06.

@@ -1,15 +1,8 @@
 include ../../../../Makefile-generic
 
 # Don't alphabetize this list!
-BOOKS = float-extra float
- 
-# Dependencies:
+# [Matt K.: Not sure why not, or why we even need this list!  So, I'm
+# commenting it out.]
+#BOOKS = float-extra float
 
-
-float-extra.cert: float-extra.lisp
-float-extra.cert: ../lib1/top.cert
-
-float.cert: float.lisp
-float.cert: ../lib1/log.cert
-float.cert: ../lib1.delta1/float.cert
-float.cert: float-extra.cert
+-include Makefile-deps

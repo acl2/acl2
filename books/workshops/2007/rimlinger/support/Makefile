@@ -1,3 +1,2 @@
 include ../../../../Makefile-generic
-
-Rimlinger.cert: Rimlinger.lisp
+-include Makefile-deps

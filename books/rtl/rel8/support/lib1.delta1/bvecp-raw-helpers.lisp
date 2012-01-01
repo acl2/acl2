@@ -7,7 +7,7 @@
 (include-book "../lib1/rtlarr")
 
 (local (include-book "../lib1/bvecp-raw-helpers"))
-(local (include-book "../lib1.delta1/bvecp-raw-helpers-extra"))
+(local (include-book "bvecp-raw-helpers-extra"))
 
 (set-inhibit-warnings "theory") ; avoid warning in the next event
 (local (in-theory nil))

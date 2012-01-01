@@ -5,6 +5,11 @@
 #ACL2_SYSTEM_BOOKS = /projects/hvg/reeber-local/v2-9-4-linux/books
 ACL2_SYSTEM_BOOKS = ../../../..
 
+# Avoid provisional certification since the presence of "Fake
+# dependency added to avoid parallel execution" below makes us
+# nervious about adding parallelism with provisional certification.
+override ACL2_PCERT =
+
 include ${ACL2_SYSTEM_BOOKS}/Makefile-generic
 
 # OPTIONALLY EDIT THE FOLLOWING.  But do not use "time" or "nice"; at least one

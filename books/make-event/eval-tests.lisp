@@ -26,7 +26,7 @@
 
 ; The following should not generate any output.  An interesting thing to do is
 ; (assign make-event-debug t) to see the expansion process.
-(must-fail
+(must-fail ; See note about ld-skip-proofsp in the definition of must-fail.
  (with-output :off :all
               (thm (equal x (cons x x)))))
 
@@ -34,7 +34,7 @@
 ; nest macros that use make-event.  An interesting thing to do is (assign
 ; make-event-debug t) to see the expansion process.
 (must-succeed
- (must-fail
+ (must-fail ; See note about ld-skip-proofsp in the definition of must-fail.
   (with-output :off :all
                (thm (equal x (cons x x))))))
 
@@ -48,7 +48,7 @@
    (f-put-global 'saved-world-length (length (w state)) state)
    (must-fail
     (must-fail
-     (must-fail
+     (must-fail ; See note about ld-skip-proofsp in the definition of must-fail.
       (with-output
        :off :all
        (thm (equal x (cons x x))))))))))
@@ -84,7 +84,7 @@
         (t
          (must-fail
           (must-fail
-           (must-fail
+           (must-fail ; See note about ld-skip-proofsp in the definition of must-fail.
             (with-output
              :off error
              (thm (equal x (cons x x)))))))))))

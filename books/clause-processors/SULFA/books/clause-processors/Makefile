@@ -18,17 +18,8 @@ clean: sat-clean
 
 .PHONY: sat-clean
 
-# Pasted in from "make dependencies":
 sat-clean: 
 	rm -f *.cert *~ *.sexpr *.d *.sot *~ \#*\#
 	rm -f -r sat-temp-files
 
-sym-str.cert: sym-str.lisp
-sat-clause-processor.cert: sat-clause-processor.lisp
-
-sat-clause-processor.cert: ../sat/sat.cert
-
-
-
-
-
+-include Makefile-deps

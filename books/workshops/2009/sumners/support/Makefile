@@ -7,6 +7,10 @@ include ../../../../Makefile-generic
 # make examples.cert
 BOOKS = kas
 
+# Avoid provisional certification since we are not using Makefile-deps
+# (as explained above):
+override ACL2_PCERT =
+
 # From make dependencies, without BOOKS restriction above:
 
 examples.cert: examples.lisp

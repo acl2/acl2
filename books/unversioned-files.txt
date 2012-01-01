@@ -6,6 +6,7 @@ workxxx*
 *.cert.temp
 *.pcert
 *.pcert.temp
+*.port
 *.acl2x
 Makefile-deps
 Makefile-tmp
