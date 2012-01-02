@@ -18760,7 +18760,8 @@
   string; ~pl[doc-string].  If the book has no ~ilc[certificate], if its
   ~ilc[certificate] is invalid or if the certificate was produced by a
   different ~il[version] of ACL2, a warning is printed and the book is included
-  anyway; ~pl[certificate].  This can lead to serious errors;
+  anyway; ~pl[certificate].  This can lead to serious errors, perhaps mitigated
+  by the presence of a ~c[.port] file from an earlier certification;
   ~pl[uncertified-books].  If the portcullis of the ~il[certificate]
   (~pl[portcullis]) cannot be raised in the host logical ~il[world], an error
   is caused and no change occurs to the logic.  Otherwise, the non-~ilc[local]

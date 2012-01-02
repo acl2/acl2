@@ -8663,7 +8663,9 @@
   argument, overriding a ~c[:ttags] argument if present.  That is, for the two
   runs, ~c[:ttagsx] may be used to specify the trust tags used in the first
   certification while ~c[:ttags] specifies the trust tags, if any (else
-  ~c[:ttags] may be omitted), used in the second certification.
+  ~c[:ttags] may be omitted), used in the second certification.  Note: If the
+  argument ~c[:ttagsx] is not supplied, then its value defaults to the
+  (explicit or default) value of the ~c[:ttags] argument.
 
   The built-in ACL2 Makefile support automatically generates suitable
   dependencies if you create a ~c[.acl2] file with a ~ilc[certify-book] call

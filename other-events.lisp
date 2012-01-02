@@ -15447,16 +15447,19 @@
                 :ttags ttags                ; [default nil]
                 :acl2x t/nil                ; [default nil]
                 :ttagsx ttags               ; [default nil]
+                :write-port t/nil           ; [default t]
                 :pcert pcert                ; [default nil]
                 )
   ~ev[]
+
   where ~c[book-name] is a book name (~pl[book-name]), ~c[k] is used to
   indicate your approval of the ``certification ~il[world],'' and
   ~c[compile-flg] can control whether the book is to be compiled.  The defaults
-  for ~c[compile-flg], ~c[skip-proofs-okp], ~c[acl2x], and ~c[pcert] can be
-  affected by environment variables.  All of these arguments are described in
-  detail below, except that we assume below that the value of ~c[:pcert] is
-  ~c[nil].  For a discussion of this argument, ~pl[provisional-certification].
+  for ~c[compile-flg], ~c[skip-proofs-okp], ~c[acl2x], ~c[write-port], and
+  ~c[pcert] can be affected by environment variables.  All of these arguments
+  are described in detail below, except that we assume below that the value of
+  ~c[:pcert] is ~c[nil].  For a discussion of this argument,
+  ~pl[provisional-certification].
 
   Certification occurs in some logical ~il[world], called the ``certification
   ~il[world].''  That ~il[world] must contain the ~ilc[defpkg]s needed to read
@@ -15522,6 +15525,17 @@
   used for example if you are building your own system based on ACL2, may
   require it.  ~l[defttag] for an explanation of this argument.
 
+  When book ~c[B] is certified with value ~c[t] (the default) for keyword
+  argument ~c[:write-port], a file ~c[B.port] is written very early in the
+  certification process.  This file contains all of the ~il[portcullis]
+  ~il[command]s for ~c[B], i.e., all user commands present in the ACL2 logical
+  ~il[world] at the time ~c[certify-book] is called.  if ~c[B.lisp] later
+  becomes uncertified, say because ~il[events] from that file or an included
+  book have been edited, then ~c[(include-book \"B\")] will consult ~c[B.port]
+  to evaluate forms in that file before evaluating the events in ~c[B.lisp].
+  On the other hand, ~c[B.port] is ignored when including ~c[B] if ~c[B] is
+  certified.
+
   If you use ~il[guard]s, please note ~c[certify-book] is executed as though
   ~c[(set-guard-checking nil)] has been evaluated; ~pl[set-guard-checking].  If
   you want guards checked, consider using ~c[ld] instead, or in addition;
@@ -15561,10 +15575,13 @@
   certified.
 
   If you have a certified book that has remained unchanged for some time you
-  are unlikely even to remember the appropriate ~ilc[defpkg]s for it.  If you
-  begin to change the book, don't throw away its ~il[certificate] file just
-  because it has become invalid!  It is an important historical document until
-  the book is re-certified.
+  might well not remember the appropriate ~ilc[defpkg]s for it, though they are
+  stored in the ~il[certificate] file and (by default) also in the ~c[.port]
+  file.  If you begin to change the book, don't throw away its ~il[certificate]
+  file just because it has become invalid!  It is an important historical
+  document until the book is re-certified.  More important, don't throw away
+  the ~c[.port] file, as it will provide the ~il[portcullis] commands when
+  including the book as an uncertified book; ~pl[include-book].
 
   When ~c[certify-book] is directed to produce a compiled file, it calls the
   Common Lisp function ~c[compile-file] on the original source file.  This
@@ -15699,8 +15716,13 @@
 ; certification starting with the certification world saved from the start of
 ; the Pcertify step.  In order to support this Claim, we need to make sure that
 ; a .cert file produced by a Convert step includes the commands used to produce
-; that certification world.  We thus save those portcullis commands in the
-; .pcert file, to be executed at the start of the Convert step.
+; that certification world.  We thus check (in check-port-file-for-pcert) that
+; the .port file agrees with both relevant certification worlds: the one at the
+; start of the Pcertify step and the one at the start of the Convert step; then
+; we know that the two certification worlds are the same.  For this process we
+; can ignore the set of hidden defpkg events, since that set can only increase
+; from the certification world of Pcertify to that of Convert (where some books
+; may now be included as certified, including hidden defpkg events).
 
 ; Turning to another issue: For provisional certification it is important that
 ; there are no stale .cert files around.  Otherwise, we might be tempted to
@@ -15720,17 +15742,17 @@
 ; expansion depends on the state, we are in danger of violating the Fundamental
 ; Claim above.  Therefore, we disallow make-event expansion during Pcertify and
 ; Convert steps, insisting instead that expansions are provided by the .acl2x
-; file.  The .acl2x file also serves the purpose of avoiding repeating the same
-; make-event expansion during Pcertification, when many books may include the
-; same uncertified book that contains a make-event call.  While we believe that
-; the above decisions are clear-cut for Pcertify steps, they are a little less
-; obvious for Convert steps, since we could save the expansion-alist in the
-; .pcert file, and maybe even use checksums like we do with .cert files.  But
-; that could increase disk space substantially for large expansions, and we are
-; already trusting that the filesystem isn't being messed with when doing
+; file.  The .acl2x file also serves the purpose of avoiding repetition of the
+; same make-event expansion during Pcertification, when many books may include
+; the same uncertified book that contains a make-event call.  While we believe
+; that the above decisions are clear-cut for Pcertify steps, they are a little
+; less obvious for Convert steps, since we could save the expansion-alist in
+; the .pcert file, and maybe even use checksums like we do with .cert files.
+; But that could increase disk space substantially for large expansions, and we
+; are already trusting that the filesystem isn't being messed with when doing
 ; (P)certification.  And that disk space can't easily be reclaimed by deleting
-; .pcert files after Convert since, as mentioned earlier above, .pcert files
-; may be saved in order to validate (via time stamps) the compiled files.
+; .pcert files after Convert since .pcert files are typically to be saved in
+; order so that write dates make the compiled files valid.
 
 ; Finally, note that when we create .acl2x files to support provisional
 ; certification, we have dependencies analogous to those that we have for .cert
@@ -15743,11 +15765,7 @@
 ; certification, it is worth noting that the Convert step has the sequential
 ; dependencies of ordinary certification, hence those described above for
 ; .acl2x files; but much as with .acl2x files, we expect Convert steps to be
-; relatively fast because of the lack of proofs and (to a lesser extent
-; perhaps) compilation.
-
-; This concludes the Essay on Provisional Certification.  Again, see :DOC
-; provisional-certification for more on the topic.
+; relatively fast because of the lack of proofs and compilation.
 
   ":Doc-Section Books
 
@@ -15841,10 +15859,15 @@
   to do ~c[make-event] expansion for events in ~c[B.lisp] when processing
   ~c[A], while file ~c[B.port] supports inclusion of book ~c[B] by book ~c[A]
   by providing initial ~il[command]s to be executed from ~c[B]'s certification
-  ~il[world] before evaluating events from ~c[B].  Note that ~c[make-event]
-  expansion is illegal during the Pcertify and Convert steps, except in
-  ~ilc[local] contexts; see the Discussion section below if you want to know
-  more about this issue.
+  ~il[world] before evaluating events from ~c[B].
+
+  Note that ~c[make-event] expansion is illegal during the Pcertify and Convert
+  steps, except in ~ilc[local] contexts; see the Discussion section below if
+  you want to know more about this issue.  Also note that the keyword argument
+  ~c[:write-port] of ~ilc[certify-book] defaults to ~c[nil] during a Pcertify
+  or Convert step, since those steps are to read the ~c[.port] file generated
+  by the earlier Expand/Port step, as described above.  Indeed, it is illegal
+  to specify ~c[:write-port t] during a Pcertify or Convert step.
 
   ~st[Typical Process]
 
@@ -16047,12 +16070,13 @@
   which arranges that proofs are skipped when writing out the ~c[.acl2x] file.
   Then the second thing to do is to invoke ~ilc[certify-book] with value ~c[t]
   for keyword arguments ~c[:acl2x] and ~c[:write-port],as follows.  The
-  ~c[:write-port] argument is omitted; it takes its default value of ~c[nil],
-  so that no ~c[.port] file is created.
+  ~c[:write-port] argument may be omitted, in which case it takes its default
+  value of ~c[t].
   ~bv[]
-  (certify-book \"foo\"    ; Book name
-                ?        ; Or, number of commands in the certification world
-                :default ; Compile-flg, irrelevant when writing .acl2x files
+  (certify-book \"foo\"       ; Book name
+                ?             ; Or, number of commands in the current world
+                :default      ; Compile-flg, ignored when writing .acl2x files
+                :write-port t ; May be omitted
                 :acl2x t)
   ~ev[]
   Note however that if the ACL2 `~c[make]' approach is used and environment
@@ -16083,8 +16107,9 @@
 
   ~em[Pcertify].  The Pcertify step is carried out by calling
   ~ilc[certify-book] with keyword argument ~c[:pcert :create], for example as
-  follows.  The ~c[:write-port] argument is omitted; it takes its default value
-  of ~c[nil], so that no ~c[.port] file is created.
+  follows.  Note that the ~c[:write-port] argument is typically omitted; it
+  takes its default value of ~c[nil] for a ~c[Pcertify] step, so that no
+  ~c[.port] file is created.
   ~bv[]
   (certify-book \"foo\"    ; Book name
                 ?        ; Or, number of commands in the certification world
@@ -17118,55 +17143,67 @@
 
   invalid ~il[certificate]s and uncertified ~il[books]~/
 
-  ~ilc[Include-book] has a special provision for dealing with uncertified
-  ~il[books]: If the file has no ~il[certificate] or an invalid
-  ~il[certificate] (i.e., one whose check sums describe files other
-  than the ones actually read), a warning is printed and the book is
-  otherwise processed as though it were certified and had an open
-  ~il[portcullis].  (For details ~pl[books], ~pl[certificate],
-  and ~pl[portcullis].)
+  For relevant background ~pl[books], ~pl[certificate], and ~pl[portcullis].
 
-  This can be handy, but it can have disastrous consequences.~/
+  ~ilc[Include-book] has a special provision for dealing with an uncertified
+  book, i.e., a file with no ~il[certificate] or an invalid
+  ~il[certificate] (i.e., one whose check sums describe files other than the
+  ones actually read).  In this case, a warning is printed and the book is
+  otherwise processed much as though it were certified and had an open
+  ~il[portcullis].
 
-  The provision allowing uncertified ~il[books] to be included can
-  have disastrous consequences, ranging from hard lisp errors, to
-  damaged memory, to quiet logical inconsistency.
+  If a book ~c[B.lisp] is uncertified and a file ~c[B.port] exists, then the
+  forms in ~c[B.port] are evaluated before the forms in ~c[B.lisp].  Such a
+  file ~c[B.port] is typically created by a call of ~ilc[certify-book] on book
+  ~c[\"B\"], even if that call fails, so that ~c[B.port] contains the
+  ~il[portcullis] ~il[command]s for ~c[B] (the commands present in the
+  ~il[world] when that certification was attempted).  You can expect ~c[B.port]
+  to exist if you attempted certification of ~c[B.lisp] and did not delete
+  ~c[B.port].
 
-  It is possible for the inclusion of an uncertified book to render
-  the logic inconsistent.  For example, one of its non-~ilc[local] ~il[events]
-  might be ~c[(defthm t-is-nil (equal t nil))].  It is also possible
-  for the inclusion of an uncertified book to cause hard errors or
-  ~il[breaks] into raw Common Lisp.  For example, if the file has been
-  edited since it was certified, it may contain too many open
-  parentheses, causing Lisp to read past ``end of file.'' Similarly,
-  it might contain non-ACL2 objects such as ~c[3.1415] or ill-formed
-  event forms that cause ACL2 code to break.
+  Inclusion of uncertified books can be handy, but it can have disastrous
+  consequences.~/
 
-  Even if a book is perfectly well formed and could be certified (in a
-  suitable extension of ACL2's initial ~il[world]), its uncertified
-  inclusion might cause Lisp errors or inconsistencies!  For example,
-  it might mention packages that do not exist in the host ~il[world].
-  The ~il[portcullis] of a certified book ensures that the correct
-  ~ilc[defpkg]s have been admitted, but if a book is read without
-  actually raising its ~il[portcullis], symbols in the file, e.g.,
-  ~c[acl2-arithmetic::fn], could cause ``unknown package'' errors in
-  Common Lisp.  Perhaps the most subtle disaster occurs if the host
-  ~il[world] does have a ~ilc[defpkg] for each package used in the book
-  but the host ~ilc[defpkg] imports different symbols than those required
-  by the ~il[portcullis].  In this case, it is possible that formulas
-  which were theorems in the certified book are non-theorems in the
-  host ~il[world], but those formulas can be read without error and
-  will then be quietly assumed.
+  The provision allowing uncertified ~il[books] to be included can have
+  disastrous consequences, ranging from hard lisp errors, to damaged memory, to
+  quiet logical inconsistency.
 
-  In short, if you include an uncertified book, ~st[all bets are off]
-  regarding the validity of the future behavior of ACL2.
+  It is possible for the inclusion of an uncertified book to render the logic
+  inconsistent.  For example, one of its non-~ilc[local] ~il[events] might be
+  ~c[(defthm t-is-nil (equal t nil))].  It is also possible for the inclusion
+  of an uncertified book to cause hard errors or ~il[breaks] into raw Common
+  Lisp.  For example, if the file has been edited since it was certified, it
+  may contain too many open parentheses, causing Lisp to read past ``end of
+  file.'' Similarly, it might contain non-ACL2 objects such as ~c[3.1415] or
+  ill-formed event forms that cause ACL2 code to break.
 
-  That said, it should be noted that ACL2 is pretty tough and if
-  errors don't occur, the chances are that deductions after the
-  inclusion of an uncertified book are probably justified in the
-  (possibly inconsistent) logical extension obtained by assuming the
-  admissibility and validity of the definitions and conjectures in the
-  book.")
+  Even if a book is perfectly well formed and could be certified (in a suitable
+  extension of ACL2's initial ~il[world]), its uncertified inclusion might
+  cause Lisp errors or inconsistencies!  For example, it might mention packages
+  that do not exist in the host ~il[world], especially if the ~c[.port] file
+  (discussed above) does not exist from an earlier certification attempt.  The
+  ~il[portcullis] of a certified book ensures that the correct ~ilc[defpkg]s
+  have been admitted, but if a book is read without actually raising its
+  ~il[portcullis], symbols in the file, e.g., ~c[acl2-arithmetic::fn], could
+  cause ``unknown package'' errors in Common Lisp.  Perhaps the most subtle
+  disaster occurs if the host ~il[world] does have a ~ilc[defpkg] for each
+  package used in the book but the host ~ilc[defpkg] imports different symbols
+  than those required by the ~il[portcullis].  In this case, it is possible
+  that formulas which were theorems in the certified book are non-theorems in
+  the host ~il[world], but those formulas can be read without error and will
+  then be quietly assumed.
+
+  In short, if you include an uncertified book, ~st[all bets are off] regarding
+  the validity of the future behavior of ACL2.
+
+  That said, it should be noted that ACL2 is pretty tough and if errors don't
+  occur, the chances are that deductions after the inclusion of an uncertified
+  book are probably justified in the (possibly inconsistent) logical extension
+  obtained by assuming the admissibility and validity of the definitions and
+  conjectures in the book.
+
+  ~l[provisional-certification] for a setting in which the system may soundly
+  include uncertified books.")
 
 (deflabel book-makefiles
   :Doc
@@ -17379,8 +17416,9 @@
   ~bv[]
   make clean
   ~ev[]
-  will remove all ~c[.cert] files, files resulting from compilation, and other
-  ``junk''; see the full list under ``~c[clean:]'' in
+  will remove generated files including ~c[.cert] files, ~c[.port files]
+  (~pl[uncertified-books]), ~c[.acl2x] files (if any), files resulting from
+  compilation, and other ``junk''; see the full list under ``~c[clean:]'' in
   ~c[books/Makefile-generic].
 
   ~st[System books.] An environment variable ~c[ACL2_SYSTEM_BOOKS] is generally
