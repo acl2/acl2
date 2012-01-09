@@ -4060,6 +4060,7 @@ preprocess.lisp
 save.lisp
 sort.lisp
 topics.lisp
+unversioned-files-extra.txt
 write-acl2-xdoc.lisp
 
 books/xdoc/support:
