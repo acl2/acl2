@@ -11347,99 +11347,104 @@
 ; certificate object, which is a cert-obj record, or else we return nil,
 ; indicating that the book is presumed uncertified.
 
-  (er-let*
-   ((portcullis-cmds
-     (if evalp
-         (chk-raise-portcullis1 file1 file2 ch nil ctx state)
-       (get-cmds-from-portcullis file1 file2 ch ctx state))))
-   (mv-let
-    (eofp pre-alist state)
-    (state-global-let*
-     ((infixp nil))
-     (read-object ch state))
-    (er-let*
-     ((expansion-alist
-       (cond
-        (eofp (er soft ctx *ill-formed-certificate-msg* file1 file2))
-        ((eq pre-alist :expansion-alist)
-         (mv-let
-          (eofp expansion-alist state)
-          (state-global-let*
-           ((infixp nil))
-           (read-object ch state))
+  (with-reckless-readtable
+
+; We may use with-reckless-readtable above because the files we are reading
+; were written out automatically, not by users.
+
+   (er-let*
+    ((portcullis-cmds
+      (if evalp
+          (chk-raise-portcullis1 file1 file2 ch nil ctx state)
+        (get-cmds-from-portcullis file1 file2 ch ctx state))))
+    (mv-let
+     (eofp pre-alist state)
+     (state-global-let*
+      ((infixp nil))
+      (read-object ch state))
+     (er-let*
+      ((expansion-alist
+        (cond
+         (eofp (er soft ctx *ill-formed-certificate-msg* file1 file2))
+         ((eq pre-alist :expansion-alist)
+          (mv-let
+           (eofp expansion-alist state)
+           (state-global-let*
+            ((infixp nil))
+            (read-object ch state))
+           (cond
+            (eofp
+             (er soft ctx *ill-formed-certificate-msg* file1 file2))
+            (t (value expansion-alist)))))
+         (t (value nil))))
+       (pre-alist
+        (cond
+         ((eq pre-alist :expansion-alist)
+          (mv-let
+           (eofp pre-alist state)
+           (state-global-let*
+            ((infixp nil))
+            (read-object ch state))
+           (cond
+            (eofp (er soft ctx *ill-formed-certificate-msg* file1 file2))
+            (t (value pre-alist)))))
+         (t (value pre-alist))))
+       (pre-alist
+        (cond ((include-book-alistp pre-alist nil)
+               (value pre-alist))
+              (t (er soft ctx *ill-formed-certificate-msg* file1 file2)))))
+      (let ((actual-alist (global-val 'include-book-alist (w state))))
+        (mv-let
+         (eofp post-alist3 state)
+         (state-global-let*
+          ((infixp nil))
+          (read-object ch state))
+         (er-let*
+          ((post-alist3
+            (cond
+             ((include-book-alistp post-alist3 t)
+              (value post-alist3))
+             (t (er soft ctx *ill-formed-certificate-msg* file1 file2)))))
           (cond
            (eofp
             (er soft ctx *ill-formed-certificate-msg* file1 file2))
-           (t (value expansion-alist)))))
-        (t (value nil))))
-      (pre-alist
-       (cond
-        ((eq pre-alist :expansion-alist)
-         (mv-let
-          (eofp pre-alist state)
-          (state-global-let*
-           ((infixp nil))
-           (read-object ch state))
-          (cond
-           (eofp (er soft ctx *ill-formed-certificate-msg* file1 file2))
-           (t (value pre-alist)))))
-        (t (value pre-alist))))
-      (pre-alist
-       (cond ((include-book-alistp pre-alist nil)
-              (value pre-alist))
-             (t (er soft ctx *ill-formed-certificate-msg* file1 file2)))))
-     (let ((actual-alist (global-val 'include-book-alist (w state))))
-       (mv-let
-        (eofp post-alist3 state)
-        (state-global-let*
-         ((infixp nil))
-         (read-object ch state))
-        (er-let*
-         ((post-alist3
-           (cond
-            ((include-book-alistp post-alist3 t)
-             (value post-alist3))
-            (t (er soft ctx *ill-formed-certificate-msg* file1 file2)))))
-         (cond
-          (eofp
-           (er soft ctx *ill-formed-certificate-msg* file1 file2))
-          (t
-           (mv-let
-            (eofp chk-sum1 state)
-            (state-global-let*
-             ((infixp nil))
-             (read-object ch state))
-            (cond
-             ((or eofp (not (integerp chk-sum1)))
-              (er soft ctx *ill-formed-certificate-msg* file1 file2))
-             (t
-              (mv-let
-               (eofp temp state)
-               (state-global-let*
-                ((infixp nil))
-                (read-object ch state))
-               (declare (ignore temp))
-               (cond
-                ((not eofp)
-                 (er soft ctx *ill-formed-certificate-msg* file1 file2))
-                (t
-                 (let ((certificate-object
-                        (make cert-obj
-                              :cmds portcullis-cmds
-                              :pre-alist pre-alist
-                              :post-alist post-alist3
-                              :expansion-alist expansion-alist)))
-                   (cond
-                    ((and (not light-chkp)
-                          (let ((chk-sum2 (check-sum-obj certificate-object)))
-                            (or (not (integerp chk-sum2))
-                                (not (int= chk-sum1 chk-sum2)))))
-                     (er soft ctx *ill-formed-certificate-msg*
-                         file1 file2))
-                    ((and (not light-chkp)
-                          (not (include-book-alist-subsetp
-                                pre-alist
-                                actual-alist)))
+           (t
+            (mv-let
+             (eofp chk-sum1 state)
+             (state-global-let*
+              ((infixp nil))
+              (read-object ch state))
+             (cond
+              ((or eofp (not (integerp chk-sum1)))
+               (er soft ctx *ill-formed-certificate-msg* file1 file2))
+              (t
+               (mv-let
+                (eofp temp state)
+                (state-global-let*
+                 ((infixp nil))
+                 (read-object ch state))
+                (declare (ignore temp))
+                (cond
+                 ((not eofp)
+                  (er soft ctx *ill-formed-certificate-msg* file1 file2))
+                 (t
+                  (let ((certificate-object
+                         (make cert-obj
+                               :cmds portcullis-cmds
+                               :pre-alist pre-alist
+                               :post-alist post-alist3
+                               :expansion-alist expansion-alist)))
+                    (cond
+                     ((and (not light-chkp)
+                           (let ((chk-sum2 (check-sum-obj certificate-object)))
+                             (or (not (integerp chk-sum2))
+                                 (not (int= chk-sum1 chk-sum2)))))
+                      (er soft ctx *ill-formed-certificate-msg*
+                          file1 file2))
+                     ((and (not light-chkp)
+                           (not (include-book-alist-subsetp
+                                 pre-alist
+                                 actual-alist)))
 
 ; Note: Sometimes I have wondered how the expression above deals with
 ; LOCAL entries in the alists in question, because
@@ -11451,28 +11456,29 @@
 ; that we avoid needless computation (potentially reading certificate files) if
 ; no action is to be taken.
 
-                     (let ((warning-summary
-                            (include-book-er-warning-summary
-                             :uncertified-okp
-                             suspect-book-action-alist
-                             state)))
-                       (cond
-                        ((and (equal warning-summary "Uncertified")
-                              (warning-disabled-p "Uncertified"))
-                         (value nil))
-                        (t
-                         (mv-let
-                          (msgs state)
-                          (tilde-*-book-check-sums-phrase pre-alist
-                                                          actual-alist
-                                                          state)
-                          (include-book-er1 file1 file2
-                                            (cons
-                                             "After evaluating the portcullis ~
-                                              commands for the book ~x0:~|~*3."
-                                             (list (cons #\3 msgs)))
-                                            warning-summary ctx state))))))
-                    (t (value certificate-object)))))))))))))))))))
+                      (let ((warning-summary
+                             (include-book-er-warning-summary
+                              :uncertified-okp
+                              suspect-book-action-alist
+                              state)))
+                        (cond
+                         ((and (equal warning-summary "Uncertified")
+                               (warning-disabled-p "Uncertified"))
+                          (value nil))
+                         (t
+                          (mv-let
+                           (msgs state)
+                           (tilde-*-book-check-sums-phrase pre-alist
+                                                           actual-alist
+                                                           state)
+                           (include-book-er1 file1 file2
+                                             (cons
+                                              "After evaluating the ~
+                                               portcullis commands for the ~
+                                               book ~x0:~|~*3."
+                                              (list (cons #\3 msgs)))
+                                             warning-summary ctx state))))))
+                     (t (value certificate-object))))))))))))))))))))
 
 (defun chk-certificate-file1 (file1 file2 ch light-chkp
                                     ctx state suspect-book-action-alist
@@ -12879,8 +12885,21 @@
                (connected-book-directory dir set-cbd-state))
               (mv-let (error-flg val state)
                       (revert-world-on-error
-                       (chk-raise-portcullis1 full-book-name port-file ch t
-                                              ctx state))
+                       (with-reckless-readtable
+
+; Here we read the .port file.  We use with-reckless-readtable so that we can
+; read characters such as #\Null; otherwise, for example, we get an error using
+; CCL if we certify a book on top of the command (make-event `(defconst
+; *new-null* ,(code-char 0))).  Note that the .port file is not intended to be
+; written directly by users, so we can trust that we are reading back in what
+; was written unless a different host Lisp was used for reading and writing the
+; .port file.  Fortunately, the .port file is generally only used when
+; including uncertified books, where all bets are off.  There is one exception,
+; during provisional certification; but then a single Lisp is to be used for
+; writing and reading .port files.
+
+                        (chk-raise-portcullis1 full-book-name port-file ch t
+                                               ctx state)))
                       (pprogn
                        (close-input-channel ch state)
                        (cond (error-flg
@@ -12982,7 +13001,9 @@
                                                 suspect-book-action-alist
                                                 t))))
              (wrld2 (er-progn
-                     (cond (cert-obj (value nil))
+                     (cond ((or cert-obj
+                                behalf-of-certify-flg)
+                            (value nil))
                            (t (eval-port-file full-book-name ctx state)))
                      (value (w state))))
              (post-alist (value (and cert-obj

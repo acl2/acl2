@@ -5,6 +5,7 @@ Makefile
 # README-images.html -- developer file
 # The following is distributed but is not in the svn repository:
 TAGS
+acl2-characters
 acl2-check.lisp
 acl2-fns.lisp
 acl2-init.lisp

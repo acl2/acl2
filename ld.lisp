@@ -18352,6 +18352,16 @@
   called without a ~c[:ttagsx] argument supplied, then the value of ~c[:ttagsx]
   defaults to the (explicit or default) value of the ~c[:ttags] argument.
 
+  Improvements have been made related to the reading of characters.  In
+  particular, checks are now done for ASCII encoding and for the expected
+  ~ilc[char-code] values for ~c[Space],~c[Tab],~c[Newline],~c[Page], and
+  ~c[Rubout].  Also, an error no longer occurs with certain uses of
+  non-standard characters.  For example, it had caused an error to certify a
+  book after a single ~il[portcullis] ~il[command] of
+  ~c[(make-event `(defconst *my-null* ,(code-char 0)))]; but this is no longer
+  an issue.  Thanks to Jared Davis for helpful correspondence that led us to
+  make these improvements.
+
   ~st[NEW FEATURES]
 
   A new ``tau system'' provides a kind of ``type checker.''  ~l[tau-system].

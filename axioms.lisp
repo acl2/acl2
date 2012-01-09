@@ -26066,6 +26066,7 @@
     with-parallelism-hazard-warnings ; for #+acl2-par
     warn-about-parallelism-hazard ; for #+acl2-par
     state-global-let* ; raw Lisp version for efficiency
+    with-reckless-readtable
     ))
 
 (defmacro with-live-state (form)
@@ -44950,6 +44951,24 @@ Lisp definition."
   (and (member-eq (f-get-global 'debugger-enable state)
                   '(:bt :break-bt :bt-break))
        (print-call-history)))
+
+(defmacro with-reckless-readtable (form)
+
+; This macro creates a context in which reading takes place without usual
+; checks that #n# is only used after #n= and without the usual restrictions on
+; characters (specifically, *old-character-reader* is used rather than the ACL2
+; character reader, #'acl2-character-reader).  See *reckless-acl2-readtable*.
+
+  #+acl2-loop-only
+  form
+  #-acl2-loop-only
+  `(let ((*readtable* *reckless-acl2-readtable*)
+
+; Since print-object$ binds *readtable* to *acl2-readtable*, we bind the latter
+; here:
+
+         (*acl2-readtable* *reckless-acl2-readtable*))
+     ,form))
 
 (defmacro set-debugger-enable (val)
 
