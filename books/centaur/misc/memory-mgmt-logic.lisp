@@ -35,6 +35,10 @@
            (ignore n clear))
   (cw "maybe-wash-memory is defined under the hood~%"))
 
+(defun print-quick-memory-summary ()
+  (declare (xargs :guard t))
+  (cw "print-quick-memory-summary is defined under the hood~%"))
+
 (defmacro maybe-wash-memory (n &optional clear)
   `(maybe-wash-memory-fn ,n ,clear))
 

@@ -43,8 +43,12 @@
         (t
          t)))
 
-;; Return the longest tail of alist in which all keys are normed.
 (defun hl-make-fast-alist-check (alist hs)
+
+; Return the longest tail of alist in which all keys are normed.
+;   ** may install a new ADDR-HT, SBITS
+;   ** callers should not have ADDR-HT or SBITS let-bound!
+
   (declare (type hl-hspace hs))
   (let ((ok-tail alist))
     ;; ok-tail is a tail of alist on which we haven't yet found any unnormed keys.
@@ -55,9 +59,13 @@
               (setq ok-tail (cdr tail)))))
     ok-tail))
 
-;; Makes a copy of alist in which all keys are normed, assuming all keys are
-;; normed in tail.
 (defun hl-make-fast-norm-keys (alist tail hs)
+
+; Makes a copy of alist in which all keys are normed, assuming all keys are
+; normed in tail.
+;   ** may install a new ADDR-HT, SBITS
+;   ** callers should not have ADDR-HT or SBITS let-bound!
+
   (declare (type hl-hspace hs))
   (if (eq tail alist)
       alist
@@ -75,9 +83,11 @@
       (setf (cdr last-cons) tail)
       (cdr first-cons))))
 
-;; Puts the pairs in alist into table, ensuring that the first ones bound mask
-;; later ones.
 (defun hl-make-fast-alist-put-pairs (alist ht)
+
+; Puts the pairs in alist into table, ensuring that the first ones bound mask
+; later ones.
+
   (declare (type hash-table ht))
   (loop for rest on alist while (consp rest) do
         (let ((pair (car rest)))
@@ -85,9 +95,13 @@
                      (not (gethash (car pair) ht)))
             (setf (gethash (car pair) ht) pair)))))
 
+(defun hl-hspace-make-fast-alist (alist hs)
+
 ; This function ensures that there is a backing hash table for alist.  It
 ; returns either alist itself or an EQUAL copy.
-(defun hl-hspace-make-fast-alist (alist hs)
+;   ** may install a new ADDR-HT, SBITS
+;   ** callers should not have ADDR-HT or SBITS let-bound!
+
   (declare (type hl-hspace hs))
   ;; If alist is an atom, we're done.
   (if (atom alist)

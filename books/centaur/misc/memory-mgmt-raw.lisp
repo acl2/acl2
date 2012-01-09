@@ -74,7 +74,8 @@
       (hons-analyze-memory nil)
       ;; Jared changed this to force-output, since finish-output is slow
       ;; on an NFS.
-      (force-output))))
+      (force-output)))
+   nil)
 
  (defun maybe-wash-memory-fn (n clear)
    (when (or (eq n t)
