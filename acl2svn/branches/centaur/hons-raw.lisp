@@ -420,9 +420,9 @@
 ; details of what we record in the STR-HT actually depend on whether 'classic
 ; honsing' or 'static honsing' is being used.
 ;
-; Conses.  Like strings, there are equal conses which are not EQL.  We could
+; Conses.  Like strings, there are EQUAL conses which are not EQL.  We could
 ; account for this by setting up another equal hash table, as we did for
-; strings, but equal hashing of conses can be very slow.  More efficient
+; strings, but EQUAL hashing of conses can be very slow.  More efficient
 ; schemes are possible if we insist upon two reasonable invariants:
 ;
 ;   INVARIANT C1.  The car of a normed cons must be normed.
@@ -722,6 +722,9 @@
   (other-ht   (hl-mht :test #'eql :size *hl-hspace-other-ht-default-size*)
               :type hash-table)
 
+  ;; Address limits are discussed in the essay on ADDR-LIMIT, below.
+  #+static-hons
+  (addr-limit  *hl-hspace-addr-ht-default-size* :type fixnum)
 
   ;; Miscellaneous Fields.
 
@@ -765,6 +768,7 @@
   (hl-hspace-init-raw
    :str-ht           (hl-mht :test #'equal :size (max 100 str-ht-size))
    :addr-ht          (hl-mht :test #'eql   :size (max 100 addr-ht-size))
+   :addr-limit       (max 100 addr-ht-size)
    :other-ht         (hl-mht :test #'eql   :size (max 100 other-ht-size))
    :sbits            (make-array (max 100 sbits-size)
                                  :element-type 'bit
@@ -1234,7 +1238,168 @@
 
 ; ----------------------------------------------------------------------
 ;
-;                          HONS CONSTRUCTION
+;                            ADDR LIMIT
+;
+; ----------------------------------------------------------------------
+
+; ESSAY ON ADDR-LIMIT (Static Honsing Only)
+;
+; This is a new feature that Jared added in January 2012.
+;
+; The ADDR-HT can grow very large.  For example, as an experiment I made an
+; ADDR-HT with room for 100 million honses and filled it up to 99% full.  The
+; total space it used was about 3.8 GB: 1.6 GB of actual cons data and 2.2 GB
+; of overhead just for the table itself.  In some of our proofs, we allocate an
+; address table with room for 500 million entries.  In this case, the size of
+; the hash table's array (i.e., not counting the conses) would be 11 GB.
+;
+; Because of this, resizing the ADDR-HT can be very damaging.  What do I mean
+; by this?  Note that resizing a hash table generally involves:
+;
+;   (1) Allocating a new hash table that is bigger
+;   (2) Moving elements from the old hash table into the new hash table
+;   (3) Freeing the old hash table (immediately or later via GC)
+;
+; Until step 3 completes, we need to simultaneously have both the old and new
+; tables allocated.  But if the old table is already 11 GB, and we try to
+; allocate a new table with 1.5x more space, the new table will be 16.5 GB and
+; we'll need a total of 27.5 GB just for these tables.
+;
+; Practically, grabbing this much memory at once can be a problem.  If we're in
+; the middle of a big proof and we have giant memoization tables laying around,
+; we might already be running close to the max physical memory of the machine.
+; In this situation, trying to grab another 16.5 GB just because we want one
+; more HONS is probably a terrible idea.  It could cause us to start swapping,
+; etc.  But as a Common Lisp hash table, the ADDR-HT will be resized when the
+; Lisp decides, and there's not really anything we can do about it.
+;
+; Ha ha, only serious.
+;
+; The ADDR-LIMIT is an attempt to avoid this kind of trouble.  The basic idea
+; is that shortly before resizing the ADDR-HT, we will call the function
+; HL-ADDR-LIMIT-ACTION, which will inspect the ADDR-HT table and see if it's
+; big enough to warrant doing anything drastic before the resize.  If it is big
+; enough, we will do a CLEAR-MEMOIZE-TABLES and a HONS-WASH, which can throw
+; away the hash table before growing it.
+;
+; A practical difficulty of implementing this scheme is that Common Lisp
+; doesn't give us a pre-resize hook for a hash table.  Instead, we have to keep
+; track of how full the ADDR-HT is to decide when to call HL-ADDR-LIMIT-ACTION.
+; We just add a counter, ADDR-LIMIT, for this purpose.  The idea is that this
+; counter gets decreased every time we add a HONS into the ADDR-HT, and when it
+; reaches zero we will trigger the action.
+;
+; The ADDR-LIMIT itself should be regarded merely as a performance counter and
+; we generally do not make any claims about its accuracy or relevance to
+; anything.  We insist that it is a fixnum for performance, and this should
+; practically cause no soundness issues.
+
+#+static-hons
+(defparameter *hl-addr-limit-minimum*
+  ;; We don't do anything drastic during the HL-ADDR-LIMIT-ACTION unless the
+  ;; ADDR-HT has grown at least this big.  At 50 million entries, we're
+  ;; starting to get up into the gigabyte range on our allocations.  This could
+  ;; probably use some tuning.
+  50000000)
+
+#+static-hons
+(defun hl-make-addr-limit-current (hs)
+  (declare (type hl-hspace hs))
+
+; Reset the ADDR-LIMIT so that it will reach zero shortly after the table
+; becomes 99% full.
+
+  (let* ((addr-ht (hl-hspace-addr-ht hs))
+         (count   (hash-table-count addr-ht))
+         (size    (hash-table-size addr-ht))
+         (cutoff  (floor (* 0.995 (coerce size 'float)))))
+    (setf (hl-hspace-addr-limit hs) (- cutoff count))))
+
+#+static-hons
+(defun hl-make-addr-limit-next (hs)
+  (declare (type hl-hspace hs))
+
+; Reset the ADDR-LIMIT so that it will reach zero shortly after the table is
+; resized and then grows to 95% full.  Given reasonable rehashing sizes, this
+; seems reasonably likely to trigger after one resize but before two resizes.
+; At that point, HL-ADDR-LIMIT-ACTION will be able to do a better job of fixing
+; it up again.
+
+  (let* ((addr-ht       (hl-hspace-addr-ht hs))
+         (count         (hash-table-count addr-ht))
+         (size          (hash-table-size addr-ht))
+         (rehash-size   (hash-table-rehash-size addr-ht))
+         (future-cutoff (floor (* 0.995 rehash-size size))))
+    (setf (hl-hspace-addr-limit hs)
+          (- future-cutoff count))))
+
+#+static-hons
+(defun hl-addr-ht-fullness (hs)
+  (let* ((addr-ht  (hl-hspace-addr-ht hs))
+         (size     (hash-table-size addr-ht))
+         (count    (hash-table-count addr-ht)))
+    (/ (coerce count 'float) (coerce size 'float))))
+
+(defparameter *hl-addr-limit-should-clear-memo-tables*
+  ;; Not sure if this is a good idea or not.
+  t)
+
+#+static-hons
+(defun hl-addr-limit-action (hs)
+
+; (HL-ADDR-LIMIT-ACTION HS) --> NIL and destructively modifies HS
+;   ** may install a new ADDR-HT, SBITS
+;   ** callers should not have ADDR-HT or SBITS let-bound!
+;
+; See the Essay on ADDR-LIMIT.  We see if the ADDR-HT is large and almost full,
+; and if so we may clear the memoization tables and trigger a wash.  For the
+; wash to work properly, callers of this function must not have ADDR-HT bound.
+; This is especially important since the ADDR-HT of the new HS may be a new
+; hash table, i.e., the old ADDR-HT is not relevant anymore.
+
+  (declare (type hl-hspace hs))
+
+  (unless (> (hl-addr-ht-fullness hs) 0.99)
+    ;; This is a sort of safety mechanism to ensure that we only take
+    ;; corrective action when we're over 99% full.  This means we don't have to
+    ;; really work very hard to keep the ADDR-LIMIT accurate, it'll
+    ;; automatically get bumped up if we trigger it too soon.
+    (hl-make-addr-limit-current hs)
+    (return-from hl-addr-limit-action nil))
+
+  ;; We might eventually take this message out, but it seems nice to be able to
+  ;; know that the ADDR-HT is about to be resized.
+  (format t "; Hons-Note: ADDR-LIMIT reached, ~:D used of ~:D slots.~%"
+          (hash-table-count (hl-hspace-addr-ht hs))
+          (hash-table-size (hl-hspace-addr-ht hs)))
+
+  (unless (> (hash-table-size (hl-hspace-addr-ht hs)) *hl-addr-limit-minimum*)
+    ;; The table is small so it's not worth doing anything.  So, just bump up
+    ;; the ADDR-LIMIT so we won't look at it again until the next resize.
+    (hl-make-addr-limit-next hs)
+    (return-from hl-addr-limit-action nil))
+
+  ;; 99% full and the table is huge.  Do something drastic.
+  (format t "; Hons Note: Trying to reclaim space to avoid ADDR-HT resizing...~%")
+  (force-output)
+
+  (when *hl-addr-limit-should-clear-memo-tables*
+    (clear-memoize-tables))
+
+  (hl-hspace-hons-wash hs)
+
+  (format t "; Hons-Note: After ADDR-LIMIT actions, ~:D used of ~:D slots.~%"
+          (hash-table-count (hl-hspace-addr-ht hs))
+          (hash-table-size (hl-hspace-addr-ht hs)))
+  (force-output)
+
+  nil)
+
+
+
+; ----------------------------------------------------------------------
+;
+;                         HONS CONSTRUCTION
 ;
 ; ----------------------------------------------------------------------
 
@@ -1242,6 +1407,8 @@
 (defun hl-hspace-grow-sbits (idx hs)
 
 ; (HL-HSPACE-GROW-SBITS IDX HS) destructively updates HS
+;   ** may install a new SBITS
+;   ** callers should not have SBITS let-bound!
 ;
 ; Static Honsing only.  IDX must be a natural number and HS must be a Hons
 ; Space.  We generally expect this function to be called when SBITS has become
@@ -1322,6 +1489,8 @@
 (defun hl-hspace-hons-normed (a b hint hs)
 
 ; (HL-HSPACE-HONS-NORMED A B HINT HS) --> (A . B) and destructively updates HS.
+;    ** may install a new ADDR-HT, SBITS
+;    ** callers should not have ADDR-HT or SBITS let-bound!
 ;
 ; A and B may be any normed ACL2 objects and HS is a hons space.  HINT is
 ; either NIL, meaning no hint, or is a cons.
@@ -1350,27 +1519,42 @@
          (key      (hl-addr-combine* addr-a addr-b))
          (entry    (gethash key addr-ht)))
     (or entry
-        (let* ((hint-idx (and (consp hint)
-                              (eq (car hint) a)
-                              (eq (cdr hint) b)
-                              (ccl::%staticp hint)))
-               (pair     (if hint-idx
-                             ;; Safe to use hint.
-                             hint
-                           (ccl::static-cons a b)))
-               (idx      (or hint-idx (ccl::%staticp pair)))
-               (sbits    (hl-hspace-sbits hs)))
-          ;; Make sure there are enough sbits.  Ctrl+C Safe.
-          (when (>= (the fixnum idx)
-                    (the fixnum (length sbits)))
-            (hl-hspace-grow-sbits idx hs)
-            (setq sbits (hl-hspace-sbits hs)))
-          (ccl::without-interrupts
-           ;; Since we must simultaneously update SBITS and ADDR-HT, the
-           ;; installation of PAIR must be protected by without-interrupts.
-           (setf (aref sbits idx) 1)
-           (setf (gethash key addr-ht) pair))
-          pair)))
+        ;; Else, we are going to build and install a new HONS.  First, do our
+        ;; addr-limit checking.
+        (cond ((<= (decf (hl-hspace-addr-limit hs)) 0)
+               ;; I don't want to make any assumptions about what
+               ;; HL-ADDR-LIMIT-ACTION does, so after doing the cleanup let's
+               ;; just recur and start over.  That way, if somehow the cleanup
+               ;; ends up creating a HONS, we'll be sure we don't accidentally
+               ;; install some competing hons.
+
+               ;; NOTE: for the washing to be effective, we need to be sure to
+               ;; release our binding of the addr-ht.
+               (setq addr-ht nil)
+               (hl-addr-limit-action hs)
+               (hl-hspace-hons-normed a b hint hs))
+              (t
+               (let* ((hint-idx (and (consp hint)
+                                     (eq (car hint) a)
+                                     (eq (cdr hint) b)
+                                     (ccl::%staticp hint)))
+                      (pair     (if hint-idx
+                                    ;; Safe to use hint.
+                                    hint
+                                  (ccl::static-cons a b)))
+                      (idx      (or hint-idx (ccl::%staticp pair)))
+                      (sbits    (hl-hspace-sbits hs)))
+                 ;; Make sure there are enough sbits.  Ctrl+C Safe.
+                 (when (>= (the fixnum idx)
+                           (the fixnum (length sbits)))
+                   (hl-hspace-grow-sbits idx hs)
+                   (setq sbits (hl-hspace-sbits hs)))
+                 (ccl::without-interrupts
+                  ;; Since we must simultaneously update SBITS and ADDR-HT, the
+                  ;; installation of PAIR must be protected by without-interrupts.
+                  (setf (aref sbits idx) 1)
+                  (setf (gethash key addr-ht) pair))
+                 pair)))))
 
   #-static-hons
   ;; Classic Honsing Version
@@ -1416,6 +1600,8 @@
 ; ESSAY ON HL-HSPACE-NORM
 ;
 ; (HL-HSPACE-NORM X HS) --> X' and destructively updates HS.
+;    ** may install a new ADDR-HT, SBITS
+;    ** callers should not have ADDR-HT or SBITS let-bound!
 ;
 ; X is any ACL2 Object and might be normed or not; HS is a Hons Space.  We
 ; return an object that is EQUAL to X and is normed.  This may require us to
@@ -1456,7 +1642,9 @@
 
 (defun hl-hspace-norm-aux (x cache hs)
 
-; (HL-HSPACE-NORM-AUX X CACHE HS) --> X', destructively modifies CACHE and HS.
+; (HL-HSPACE-NORM-AUX X CACHE HS) --> X' and destructively modifies CACHE and HS.
+;    ** may install a new ADDR-HT, SBITS
+;    ** callers should not have ADDR-HT or SBITS let-bound!
 ;
 ; X is an ACL2 Object to copy.  CACHE is the cache table from HS, and HS is the
 ; Hons Space we are updating.  We return the normed version of X.
@@ -1479,9 +1667,15 @@
                x-prime))))))
 
 (defun hl-hspace-norm-expensive (x hs)
-  ;; X is assumed to be not an atom and not a honsp.  We put this in a separate
-  ;; function, mainly so that hl-hspace-norm can be inlined without resulting
-  ;; in too much code expansion.
+
+; (HL-HSPACE-NORM-EXPENSIVE X HS) --> X' and destructively modifies HS.
+;    ** may install a new ADDR-HT, SBITS
+;    ** callers should not have ADDR-HT or SBITS let-bound!
+;
+; X is assumed to be not an atom and not a honsp.  We put this in a separate
+; function, mainly so that hl-hspace-norm can be inlined without resulting in
+; too much code expansion.
+
   (let ((cache (hl-hspace-norm-cache hs)))
     (mv-let (present-p val)
             (hl-cache-get x cache)
@@ -1496,11 +1690,13 @@
         ((hl-hspace-honsp x hs)
          x)
         (t
-         (hl-hspace-norm-expensive x hs))))
+        (hl-hspace-norm-expensive x hs))))
 
 (defun hl-hspace-persistent-norm (x hs)
 
 ; (HL-HSPACE-PERSISTENT-NORM X HS) --> X' and destructively updates HS.
+;    ** may install a new ADDR-HT, SBITS
+;    ** callers should not have ADDR-HT or SBITS let-bound!
 ;
 ; X is any ACL2 object and HS is a Hons Space.  We produce a new object that is
 ; EQUAL to X and is normed, which may require us to destructively modify HS.
@@ -1525,6 +1721,8 @@
 
 ; (HL-HSPACE-HONS X Y HS) --> (X . Y) which is normed, and destructively
 ; updates HS.
+;    ** may install a new ADDR-HT, SBITS
+;    ** callers should not have ADDR-HT or SBITS let-bound!
 ;
 ; X and Y may be any ACL2 Objects, whether normed or not, and HS must be a Hons
 ; Space.  We produce a new cons, (X . Y), destructively extend HS so that it is
@@ -1782,6 +1980,15 @@ To avoid the following break and get only the above warning:~%  ~a~%"
          alist)))
 
 (defun hl-hspace-hons-get (key alist hs)
+
+; (HL-HSPACE-HONS-GET KEY ALIST HS) --> ANS and destructively modifies HS
+;   ** may install a new ADDR-HT, SBITS
+;   ** callers should not have ADDR-HT or SBITS let-bound!
+;
+; Fundamental fast alist lookup operation.  Norm the key (hence the possible
+; modifications to the HS), then look it up in the backing hash table for the
+; alist.
+
   (declare (type hl-hspace hs))
   (if (atom alist)
       nil
@@ -1800,8 +2007,9 @@ To avoid the following break and get only the above warning:~%  ~a~%"
 
 (defun hl-hspace-hons-acons (key value alist hs)
 
-; (HL-HSPACE-HONS-ACONS KEY VALUE ALIST HS) --> ALIST' and destructively
-; modifies HS.
+; (HL-HSPACE-HONS-ACONS KEY VALUE ALIST HS) --> ALIST' and destructively modifies HS.
+;   ** may install a new ADDR-HT, SBITS
+;   ** callers should not have ADDR-HT or SBITS let-bound!
 ;
 ;  - KEY and VALUE are any ACL2 Objects, whether normed or not.
 ;
@@ -1878,6 +2086,10 @@ To avoid the following break and get only the above warning:~%  ~a~%"
 
 (defun hl-hspace-hons-acons! (key value alist hs)
 
+; (HL-HSPACE-HONS-ACONS! KEY VALUE ALIST HS) --> ALIST' and destructively modifies HS.
+;   ** may install a new ADDR-HT, SBITS
+;   ** callers should not have ADDR-HT or SBITS let-bound!
+;
 ; Like HL-HSPACE-HONS-ACONS, except honses the ANS alist as well.  This is
 ; subtle because the ANS we create might already exist!
 
@@ -1924,8 +2136,9 @@ To avoid the following break and get only the above warning:~%  ~a~%"
 
 
 
-; (HL-HSPACE-SHRINK-ALIST ALIST ANS HONSP HS) --> ANS' and destructively
-; modifies HS.
+; (HL-HSPACE-SHRINK-ALIST ALIST ANS HONSP HS) --> ANS' and destructively modifies HS.
+;   ** may install a new ADDR-HT, SBITS
+;   ** callers should not have ADDR-HT or SBITS let-bound!
 ;
 ; ALIST is either a fast or slow alist, and ANS should be a fast alist.  HONSP
 ; says whether our extension of ANS' should be made with honses or conses.  HS
@@ -2123,6 +2336,8 @@ To avoid the following break and get only the above warning:~%  ~a~%"
            (hl-hspace-number-subtrees-aux (cdr x) seen)))))
 
 (defun hl-hspace-number-subtrees (x hs)
+;   ** may install a new ADDR-HT, SBITS
+;   ** callers should not have ADDR-HT or SBITS let-bound!
   (declare (type hl-hspace hs))
   (let ((x    (hl-hspace-norm x hs))
         (seen (hl-mht :test 'eq :size 10000)))
@@ -2133,9 +2348,19 @@ To avoid the following break and get only the above warning:~%  ~a~%"
 
 ; ----------------------------------------------------------------------
 ;
-;                          GARBAGE COLLECTION
+;                       CLEARING THE HONS SPACE
 ;
 ; ----------------------------------------------------------------------
+
+; This is a barbaric garbage collection mechanism that can be used in Classic
+; or Static honsing.
+;
+; The idea is to throw away all of the honses in the Hons Space, except that we
+; then want to restore any "persistent" honses and fast alist keys (so that
+; fast alists don't become slow).
+;
+; It is generally better to use HONS-WASH instead, but that only works in
+; Static Honsing.
 
 (defun hl-system-gc ()
   ;; Note that ccl::gc only schedules a GC to happen.  So, we need to both
@@ -2304,6 +2529,11 @@ To avoid the following break and get only the above warning:~%  ~a~%"
 ; The other fields are the corresponding fields from a Hons Space, but we
 ; assume they are detatched from any Hons Space and do not need to be updated
 ; in a manner that maintains their invariants in the face of interrupts.
+;
+; Note that we don't bother to do anything about the ADDR-LIMIT in this
+; function; we basically assume the ADDR-HT is big enough that it isn't going
+; to need resizing, and that the caller will fix up the ADDR-LIMIT after doing
+; all of the necessary restoration.
 
   (declare (type hash-table addr-ht)
            (type (simple-array bit (*)) sbits))
@@ -2390,26 +2620,146 @@ To avoid the following break and get only the above warning:~%  ~a~%"
      (setf (hl-hspace-addr-ht hs) addr-ht)
      (setf (hl-hspace-sbits hs) sbits))
     (setf (hl-hspace-faltable hs) faltable)
-    (setf (hl-hspace-persist-ht hs) persist-ht))
+    (setf (hl-hspace-persist-ht hs) persist-ht)
+
+    ;; If an interrupt stops us before here, that's fine; there's no soundness
+    ;; burden with the ADDR-LIMIT.
+    (hl-make-addr-limit-current hs))
 
   nil)
 
+
+; ----------------------------------------------------------------------
+;
+;                WASHING A HONS SPACE (Static Honsing Only)
+;
+; ----------------------------------------------------------------------
+
+; Washing is a much better garbage collection mechanism than clearing, made
+; possible by ccl::%static-inverse-cons.  Given the index of a static cons,
+; such as produced by ccl::%staticp, %static-inverse-cons produces the
+; corresponding static cons.  Given an invalid index (such as the index of a
+; cons that has been garbage collected), %static-inverse-cons produces NIL.
+; Hence, this gives us a way to tell if a cons has been garbage collected.
+
+; BOZO thread unsafe.  It is probably not okay to use this function in a
+; multi-threaded environment.  In particular, another thread could create a
+; static cons while we were restoring conses, and we'd think it had survived
+; the garbage collection.  So, to make this thread safe we would need to add a
+; locking mechanism to prevent access to HONS during the restore.  Actually we
+; would only need something like (with-lock (gc) (fix-sbits)).  We haven't
+; added this locking yet since it would slow down honsing.  But this might be a
+; good argument for using a truly shared hons space.
+
+#+static-hons
+(defun hl-fix-sbits-after-gc (sbits)
+
+; (HL-FIX-SBITS-AFTER-GC SBITS) destructively modifies SBITS and counts up how
+; many normed conses survived the garbage collection.  Each normed cons that
+; did not survive has its entry zeroed out.  We return the number of 1 bits in
+; the updated SBITS, i.e., the number of normed conses that survived.
+
+  (declare (type (simple-array bit (*)) sbits))
+  (let ((num-survivors 0)
+        (max-index     (length sbits)))
+    (declare (fixnum max-index)
+             (fixnum num-survivors))
+    (loop for i fixnum below max-index do
+          (when (= (aref sbits i) 1)
+            (let ((object (ccl::%static-inverse-cons i)))
+              (if object
+                  (incf num-survivors)
+                (setf (aref sbits i) 0)))))
+    num-survivors))
+
+#+static-hons
+(defun hl-rebuild-addr-ht (sbits addr-ht str-ht other-ht)
+
+; (HL-REBUILD-ADDR-HT SBITS ADDR-HT STR-HT OTHER-HT) destructively modifies
+; ADDR-HT.
+;
+; This is a subtle function which is really the key to washing.  We assume that
+; SBITS has already been fixed up so that only survivors are marked.  We assume
+; that ADDR-HT is empty to begin with.  We walk over the SBITS and install each
+; survivor into its proper place in the ADDR-HT.
+;
+; The STR-HT and OTHER-HT are only needed for address computations.
+
+  (declare (type (simple-array bit (*)) sbits)
+           (type hash-table addr-ht))
+  (let ((max-index (length sbits)))
+    (declare (fixnum max-index))
+    (loop for i fixnum below max-index do
+          (when (= (aref sbits i) 1)
+            ;; This object was previously normed.
+            (let ((object (ccl::%static-inverse-cons i)))
+              (cond ((not object)
+                     (error "Expected SBITS to already be fixed up."))
+                    (t
+                     (let* ((a      (car object))
+                            (b      (cdr object))
+                            ;; It might be that A or B are not actually
+                            ;; normed.  So why is it okay to call hl-addr-of?
+                            ;; It turns out to be okay.  In the atom case,
+                            ;; nothing has changed.  In the cons case, the
+                            ;; address calculation only depends on the static
+                            ;; index of a and b, which hasn't changed.
+                            (addr-a (hl-addr-of a str-ht other-ht))
+                            (addr-b (hl-addr-of b str-ht other-ht))
+                            (key    (hl-addr-combine* addr-a addr-b)))
+                       (setf (gethash key addr-ht) object)))))))))
+
+#+static-hons
+(defparameter *hl-addr-ht-resize-cutoff*
+  ;; After we've GC'd the honses in hons-wash, we will look at how many honses
+  ;; survived.  If there are fewer than OLD-SIZE * THRESHOLD honses surviving,
+  ;; we'll stay with the old size.  Otherwise, we'll allocate a new hash table
+  ;; with room for more entries.  This parameter could probably use some
+  ;; tuning.
+  0.75)
 
 (defun hl-hspace-hons-wash (hs)
 
 ; (HL-HSPACE-HONS-WASH HS) --> NIL and destructively modifies HS
 ;
-; We implement a new scheme for washing honses that takes advantage of
-; ccl::%static-inverse-cons.  Given the index of a static cons, such as
-; produced by ccl::%staticp, static-inverse-cons produces the corresponding
-; static cons.
-;
-; This function tries to GC normed conses, and ignores the static conses that
-; might be garbage collected in the STR-HT and OTHER-HT.  We have considered
-; how we might extend this function to also collect these atoms, but have
-; concluded it probably isn't worth doing.  Basically, we would need to
+; We try to GC normed honses but we do not try to GC normed atoms that might be
+; unreachable except for their entries in the STR-HT and OTHER-HT.  We have
+; considered how we might extend this function to also collect these atoms, but
+; have concluded it probably isn't worth doing.  Basically, we would need to
 ; separately record the indexes of the static conses in these tables, which is
 ; fine but would require us to allocate some memory.
+;
+;    (BOZO it might be possible to make STR-HT and OTHER-HT weak, but I haven't
+;     really thought it all the way through.)
+;
+; IMPORTANT OBLIGATIONS OF THE CALLER.
+;
+; For this to work practically work correctly, it is critical that the ADDR-HT
+; is not LET-bound anywhere in the call stack above this function.  We want
+; setting (hl-hspace-addr-ht hs) to NIL to be sufficient to make the ADDR-HT
+; unreachable, so that it can be GC'd.
+;
+; After adding the ADDR-LIMIT code, this function can be called by any ordinary
+; hons-creating operation such as HL-HSPACE-HONS, HL-HSPACE-HONS-NORM, etc.
+; This raises some subtle issues, because you can imagine "ordinary"
+; implementation level code that looks like this:
+;
+;    (let ((addr-ht (hl-hspace-addr-ht hs))
+;          (fal-ht  (hl-hspace-fal-ht hs))
+;          (...     (... (hl-hspace-hons ...)))
+;          (...     (foo addr-ht fal-ht)))
+;       ...)
+;
+; It would be a very bad error to write something like this: one can no longer
+; assume that ADDR-HT is the same after a hons-creating operation.  (This has
+; also always been true of SBITS: that is, calling any hons-creating operation
+; might alter SBITS).
+;
+; What about the other Hons Space fields?  Except for the ADDR-HT and SBITS,
+; the other fields like the FAL-HT, PERSIST-HT, NORM-CACHE, etc. are all
+; restored at the end of a wash, so there's no problem with let-binding them
+; and assuming they are the same.  It is only the ADDR-HT and SBITS that we
+; must be cautious with.
 
   (declare (type hl-hspace hs))
 
@@ -2419,20 +2769,27 @@ To avoid the following break and get only the above warning:~%  ~a~%"
   (format t "; Hons Note: washing is not available for classic honsing.~%")
 
   #+static-hons
-  (let* ((str-ht        (hl-hspace-str-ht hs))
-         (addr-ht       (hl-hspace-addr-ht hs))
+  (let* (;; Note: do not bind ADDR-HT here, we want it to get GC'd.
+         (addr-ht-size             (hash-table-size (hl-hspace-addr-ht hs)))
+         (addr-ht-count            (hash-table-count (hl-hspace-addr-ht hs)))
+         (addr-ht-rehash-size      (hash-table-rehash-size (hl-hspace-addr-ht hs)))
+         (addr-ht-rehash-threshold (hash-table-rehash-threshold (hl-hspace-addr-ht hs)))
+
+         (str-ht        (hl-hspace-str-ht hs))
          (sbits         (hl-hspace-sbits hs))
          (other-ht      (hl-hspace-other-ht hs))
          (faltable      (hl-hspace-faltable hs))
          (persist-ht    (hl-hspace-persist-ht hs))
          (norm-cache    (hl-hspace-norm-cache hs))
-         (temp-faltable (hl-faltable-init))
-         (temp-addr-ht  (hl-mht :test #'eql))
-         (temp-sbits    (make-array 1 :element-type 'bit :initial-element 0))
+
+         (temp-faltable   (hl-faltable-init))
+         (temp-addr-ht    (hl-mht :test #'eql))
+         (temp-sbits      (make-array 1 :element-type 'bit :initial-element 0))
          (temp-persist-ht (hl-mht :test #'eq)))
 
-    (format t "; Hons Note: Now washing ~:D normed conses.~%"
-            (hash-table-count addr-ht))
+    (format t "; Hons Note: washing ADDR-HT, ~:D used of ~:D slots.~%"
+            addr-ht-count addr-ht-size)
+    (force-output)
 
     ;; Clear the memo table since it might prevent conses from being garbage
     ;; collected and it's unsound to leave it as the sbits/addr-ht are cleared.
@@ -2442,62 +2799,70 @@ To avoid the following break and get only the above warning:~%  ~a~%"
     ;; so that if a user interrupts they merely end up with a mostly empty hons
     ;; space instead of an invalid one.  Note that nothing we're about to do
     ;; invalidates the STR-HT or OTHER-HT, so we leave them alone.
-
     (setf (hl-hspace-faltable hs) temp-faltable)
     (setf (hl-hspace-persist-ht hs) temp-persist-ht)
-    (ccl::without-interrupts
-     ;; These two must be done together or not at all.
+    (ccl::without-interrupts ;; These two must be done together or not at all.
      (setf (hl-hspace-addr-ht hs) temp-addr-ht)
      (setf (hl-hspace-sbits hs) temp-sbits))
 
     ;; At this point, we can do anything we want with FAL-HT, ADDR-HT, and
     ;; SBITS, because they are no longer part of a Hons Space.
-    (clrhash addr-ht)
+    ;;
+    ;; Historically, at this point we did: (CLRHASH ADDR-HT) so that conses
+    ;; within it could be garbage collected, explicitly trigger a GC, then
+    ;; "magically" restore the surviving conses using the static-inverse-cons
+    ;; trick (see HL-REBUILD-ADDR-HT).
+    ;;
+    ;; But when we added the ADDR-LIMIT stuff, we realized that this would be
+    ;; the perfect place to grow the ADDR-HT ourselves instead of allowing the
+    ;; Lisp to do it.  Here, we can exploit the magic of static-inverse-cons to
+    ;; avoid having to have both the old and new ADDR-HT existing at the same
+    ;; time.  So, now we don't CLRHASH the ADDR-HT.  We've already overridden
+    ;; the pointer to it inside the hons space.  Unless someone else has it
+    ;; bound (which they shouldn't), it can now be GC'd.
+
     (hl-system-gc)
 
-    ;; Now we need to restore each surviving object.
-    (let ((max-index (length sbits)))
-      (declare (type fixnum max-index))
-      (format t "; Hons Note: Restoring conses; max index ~:D.~%" max-index)
+    ;; Now we fix up the SBITS array by zeroing out any conses that got GC'd,
+    ;; and in the process we count how many survivors there are.  This will let
+    ;; us make a good decision about resizing the ADDR-HT.  If it would still
+    ;; be 75% full (or, really, whatever the *hl-addr-ht-resize-cutoff* says),
+    ;; we'll make the new table bigger.
+    (let* ((num-survivors (hl-fix-sbits-after-gc sbits))
+           (pct-full      (/ (coerce num-survivors 'float)
+                             (coerce addr-ht-size 'float)))
+           (addr-ht       nil))
+
+      (when (> pct-full *hl-addr-ht-resize-cutoff*)
+        (setq addr-ht-size (floor (* addr-ht-size addr-ht-rehash-size))))
+
+      (format t "; Hons Note: Making new ADDR-HT with size ~:D~%" addr-ht-size)
       (force-output)
-      (loop for i fixnum below max-index do
-            (when (= (aref sbits i) 1)
-              ;; This object was previously normed.
-              (let ((object (ccl::%static-inverse-cons i)))
-                (cond ((not object)
-                       ;; It got GC'd.  Take it out of sbits, don't put
-                       ;; anything into ADDR-HT.
-                       (setf (aref sbits i) 0))
-                      (t
-                       (let* ((a      (car object))
-                              (b      (cdr object))
-                              ;; It might be that A or B are not actually
-                              ;; normed.  So why is it okay to call hl-addr-of?
-                              ;; It turns out to be okay.  In the atom case,
-                              ;; nothing has changed.  In the cons case, the
-                              ;; address calculation only depends on the static
-                              ;; index of a and b, which hasn't changed.
-                              (addr-a (hl-addr-of a str-ht other-ht))
-                              (addr-b (hl-addr-of b str-ht other-ht))
-                              (key    (hl-addr-combine* addr-a addr-b)))
-                         (setf (gethash key addr-ht) object))))))))
-    (format t "; Hons Note: Done restoring~%")
-    (force-output)
 
-    ;; All objects restored.  The hons space should now be in a fine state
-    ;; once again.  Restore it.
-    (ccl::without-interrupts
-     (setf (hl-hspace-addr-ht hs) addr-ht)
-     (setf (hl-hspace-sbits hs) sbits))
-    (setf (hl-hspace-persist-ht hs) persist-ht)
-    (setf (hl-hspace-faltable hs) faltable)
+      ;; This can take several seconds...
+      (setq addr-ht (hl-mht :test #'eql
+                            :size addr-ht-size
+                            :rehash-size      addr-ht-rehash-size
+                            :rehash-threshold addr-ht-rehash-threshold))
 
-    (format t "; Hons Note: Done washing, ~:D normed conses remain.~%"
-            (hash-table-count addr-ht))
-    (force-output))
+      (format t "; Hons Note: Restoring ~:D conses~%" num-survivors)
+      (force-output)
+
+      ;; This can take hundreds of seconds...
+      (hl-rebuild-addr-ht sbits addr-ht str-ht other-ht)
+      (format t "; Hons Note: Done restoring~%")
+      (force-output)
+
+      ;; All objects restored.  The hons space should now be in a fine state
+      ;; once again.  Restore it.
+      (ccl::without-interrupts
+       (setf (hl-hspace-addr-ht hs) addr-ht)
+       (setf (hl-hspace-sbits hs) sbits))
+      (setf (hl-hspace-persist-ht hs) persist-ht)
+      (setf (hl-hspace-faltable hs) faltable)
+      (hl-make-addr-limit-current hs)))
 
   nil)
-
 
 
 (defun hl-maybe-resize-ht (size src)
@@ -2590,6 +2955,9 @@ To avoid the following break and get only the above warning:~%  ~a~%"
     (when (natp cdr-ht-eql-size)
       (setf (hl-ctables-cdr-ht-eql ctables)
             (hl-maybe-resize-ht cdr-ht-eql-size (hl-ctables-cdr-ht-eql ctables)))))
+
+  #+static-hons
+  (hl-make-addr-limit-current hs)
 
   nil)
 
