@@ -659,13 +659,39 @@ expression-sizing).</p>"
     (case op
 
       ((:vl-bitselect
-        :vl-binary-eq :vl-binary-neq :vl-binary-ceq :vl-binary-cne
-        :vl-binary-lt :vl-binary-lte :vl-binary-gt :vl-binary-gte
-        :vl-binary-logand :vl-binary-logor
         :vl-unary-bitand :vl-unary-nand :vl-unary-bitor :vl-unary-nor
-        :vl-unary-xor :vl-unary-xnor :vl-unary-lognot)
-       ;; All of these operations have one-bit results.
+        :vl-unary-xor :vl-unary-xnor :vl-unary-lognot
+        :vl-binary-logand :vl-binary-logor)
+       ;; All of these operations have one-bit results, and we have no
+       ;; expectations that their argument sizes should agree or anything like
+       ;; that.
        (mv warnings 1))
+
+      ((:vl-binary-eq :vl-binary-neq :vl-binary-ceq :vl-binary-cne
+        :vl-binary-lt :vl-binary-lte :vl-binary-gt :vl-binary-gte)
+       ;; These were previously part of the above case.  They all also return
+       ;; one-bit results.  However, we now add warnings if an implicit size
+       ;; extension will occur.
+       (b* ((warnings (if (mbe :logic (equal (nfix (first arg-sizes))
+                                             (nfix (second arg-sizes)))
+                               :exec (= (first arg-sizes) (second arg-sizes)))
+                          warnings
+                        (cons (make-vl-warning
+                               :type (if (or (= (first arg-sizes) 32)
+                                             (= (second arg-sizes) 32))
+                                         :vl-fussy-size-warning-1-minor
+                                       :vl-fussy-size-warning-1)
+                               :msg "~a0: arguments to a comparison operator ~
+                                     have different \"self-sizes\" (~x1 ~
+                                     versus ~x2).  The smaller argument will ~
+                                     be implicitly widened to match the ~
+                                     larger argument.  The sub-expression in ~
+                                     question is: ~a3."
+                               :args (list elem (first arg-sizes) (second arg-sizes) context)
+                               :fatalp nil
+                               :fn 'vl-op-selfsize)
+                              warnings))))
+         (mv warnings 1)))
 
       ((:vl-binary-power
         :vl-unary-plus :vl-unary-minus :vl-unary-bitnot
@@ -674,21 +700,70 @@ expression-sizing).</p>"
        (mv warnings (mbe :logic (nfix (first arg-sizes))
                          :exec (first arg-sizes))))
 
-      ((:vl-binary-plus
-        :vl-binary-minus :vl-binary-times :vl-binary-div :vl-binary-rem
-        :vl-binary-bitand :vl-binary-bitor :vl-binary-xor :vl-binary-xnor)
+      ((:vl-binary-plus :vl-binary-minus :vl-binary-times :vl-binary-div :vl-binary-rem)
        ;; All of these operations take the max size of either operand.
+       ;; Practically speaking we will probably never see times, div, or rem
+       ;; operators.  However, plus and minus are common.  We probably do not
+       ;; want to issue any size warnings in the case of plus or minus, since
+       ;; one argument or the other often needs to be expanded.
        (mv warnings (mbe :logic (max (nfix (first arg-sizes))
                                      (nfix (second arg-sizes)))
                          :exec (max (first arg-sizes)
                                     (second arg-sizes)))))
 
+      ((:vl-binary-bitand :vl-binary-bitor :vl-binary-xor :vl-binary-xnor)
+       ;; All of these operations take the max size of either operand.  But
+       ;; this is a place where implicit widening could be bad.  I mean, you
+       ;; probably don't want to be doing A & B when A and B are different
+       ;; sizes, right?
+       (b* ((max (mbe :logic (max (nfix (first arg-sizes))
+                                  (nfix (second arg-sizes)))
+                      :exec (max (first arg-sizes)
+                                 (second arg-sizes))))
+            (warnings (if (= (first arg-sizes) (second arg-sizes))
+                          warnings
+                        (cons (make-vl-warning
+                               :type (if (or (= (first arg-sizes) 32)
+                                             (= (second arg-sizes) 32))
+                                         :vl-fussy-size-warning-2-minor
+                                       :vl-fussy-size-warning-2)
+                               :msg "~a0: arguments to a bitwise operator ~
+                                     have different self-sizes (~x1 versus ~
+                                     ~x2).  The smaller argument will be ~
+                                     implicitly widened to match the larger ~
+                                     argument.  The sub-expression in ~
+                                     question is: ~a3."
+                               :args (list elem (first arg-sizes) (second arg-sizes) context)
+                               :fatalp nil
+                               :fn 'vl-op-selfsize)
+                              warnings))))
+         (mv warnings max)))
+
       ((:vl-qmark)
-       ;; The conditional takes the max size of its true and false branches
-       (mv warnings (mbe :logic (max (nfix (second arg-sizes))
-                                     (nfix (third arg-sizes)))
-                         :exec (max (second arg-sizes)
-                                    (third arg-sizes)))))
+       ;; The conditional takes the max size of its true and false branches.
+       ;; We now warn if the branches don't agree on their size and hence will
+       ;; be widened.
+       (b* ((max (mbe :logic (max (nfix (second arg-sizes))
+                                  (nfix (third arg-sizes)))
+                      :exec (max (second arg-sizes)
+                                 (third arg-sizes))))
+            (warnings (if (= (second arg-sizes) (third arg-sizes))
+                          warnings
+                        (cons (make-vl-warning
+                               :type (if (or (= (second arg-sizes) 32)
+                                             (= (third arg-sizes) 32))
+                                         :vl-fussy-size-warning-3-minor
+                                       :vl-fussy-size-warning-3)
+                               :msg "~a0: branches of a ?: operator have ~
+                                     different self-sizes (~x1 versus ~x2).  ~
+                                     The smaller branch will be implicitly ~
+                                     widened to match the larger argument.  ~
+                                     The sub-expression in question is: ~a3."
+                               :args (list elem (second arg-sizes) (third arg-sizes) context)
+                               :fatalp nil
+                               :fn 'vl-op-selfsize)
+                              warnings))))
+         (mv warnings max)))
 
       ((:vl-concat)
        ;; Concatenations have the sum of their arguments' widths

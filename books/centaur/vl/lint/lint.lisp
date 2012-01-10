@@ -420,6 +420,16 @@
 (defconst *multidrive-minor-warnings*
   (list :vl-warn-multidrive-minor))
 
+(defconst *fussy-size-warnings*
+  (list :vl-fussy-size-warning-1
+        :vl-fussy-size-warning-2
+        :vl-fussy-size-warning-3))
+
+(defconst *fussy-size-minor-warnings*
+  (list :vl-fussy-size-warning-1-minor
+        :vl-fussy-size-warning-2-minor
+        :vl-fussy-size-warning-3-minor))
+
 (defconst *warnings-covered*
 
   ;; Warnings that are covered by our regular reports.  Other warnings besides
@@ -433,7 +443,9 @@
           *smell-warnings*
           *smell-minor-warnings*
           *multidrive-warnings*
-          *multidrive-minor-warnings*))
+          *multidrive-minor-warnings*
+          *fussy-size-warnings*
+          *fussy-size-minor-warnings*))
 
 (defconst *warnings-ignored*
 
@@ -518,6 +530,18 @@ For instance:
 Note that we consider certain truncation and extension warnings to be \"minor\"
 and do not report them here.  Such warnings are unlikely to be a problem, but
 you can see \"vl-trunc-minor.txt\" to review them.")))
+
+       (state
+        (with-ps-file
+         "vl-fussy.txt"
+         (vl-ps-update-autowrap-col 68)
+         (vl-lint-print-warnings "vl-fussy.txt" "Fussy Size Warnings" *fussy-size-warnings* walist)))
+
+       (state
+        (with-ps-file
+         "vl-fussy-minor.txt"
+         (vl-ps-update-autowrap-col 68)
+         (vl-lint-print-warnings "vl-fussy-minor.txt" "Minor Fussy Size Warnings" *fussy-size-minor-warnings* walist)))
 
        (state
         (with-ps-file

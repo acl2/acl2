@@ -429,6 +429,9 @@ properly cleaned up and merged.</p>"
                       (vl-indent (vl-ps->autowrap-ind))))
              ;; Some warnings produced by DEFM can be absurdly long, so, for
              ;; now, we limit warnings to 3K characters.
+             (limit  (if (eq type :defm-fail)
+                         3000
+                       nil))
              (config (vl-ps-save-config))
              (col    (vl-ps->col))
              (ext    (with-local-ps (vl-ps-load-config config)
@@ -438,13 +441,13 @@ properly cleaned up and merged.</p>"
 
              (rchars (vl-ps->rchars))
              (rchars
-              (b* (((when (< len 3000))
+              (b* (((when (or (not limit) (< len limit)))
                     (cons #\Newline (str::revappend-chars ext rchars)))
-                   ;; Else, chop down the message to 3000 chars.
-                   (chop (subseq ext 0 3000))
+                   ;; Else, chop down the message.
+                   (chop (subseq ext 0 limit))
                    (rchars (str::revappend-chars chop rchars))
                    (rchars (str::revappend-chars "[... " rchars))
-                   (rchars (str::revappend-chars (str::natstr (- len 3000)) rchars))
+                   (rchars (str::revappend-chars (str::natstr (- len limit)) rchars))
                    (rchars (str::revappend-chars " more characters ...]" rchars))
                    (rchars (cons #\Newline rchars)))
                 rchars)))
