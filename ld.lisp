@@ -18575,6 +18575,10 @@
         (foo x clk))))
   ~ev[]
 
+  Fixed a bug in the ~c[mini-proveall] target in ~c[GNUmakefile].  The fix
+  includes a slight change to the ~c[:mini-proveall] ~il[command] (an extra
+  event at the end).  Thanks to Camm Maguire for reporting this bug.
+
   ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]
 
   Although the HTML documentation is distributed with ACL2, it had not been
@@ -20107,6 +20111,8 @@
                       (assoc-eq key l))
                  (ordered-symbol-alistp (delete-assoc-eq key l)))
         :hints (("Goal" :in-theory (disable ordered-symbol-alistp-delete-assoc-eq))))
+
+      (value-triple "Mini-proveall completed successfully.")
 
       )
     :ld-skip-proofsp nil

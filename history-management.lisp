@@ -2700,6 +2700,7 @@
                  NON-EXECUTABLEP
                  SIBLINGS
                  LEVEL-NO
+                 TAU-PAIR
                  QUICK-BLOCK-INFO
                  PRIMITIVE-RECURSIVE-DEFUNP
                  CONSTRAINEDP
@@ -2775,7 +2776,7 @@
                  DEFAXIOM-SUPPORTER
                  ATTACHMENT ; see Essay on Defattach re: :ATTACHMENT-DISALLOWED
                  CLAUSE-PROCESSOR
-                 TAU-PAIR
+                 TAU-PAIR-SAVED
                  POS-IMPLICANTS
                  NEG-IMPLICANTS
                  UNEVALABLE-BUT-KNOWN
