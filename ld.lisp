@@ -18362,6 +18362,13 @@
   an issue.  Thanks to Jared Davis for helpful correspondence that led us to
   make these improvements.
 
+  The ~c[:]~ilc[pl] and ~c[:]~ilc[pl2] ~il[command]s can now accept ~il[term]s
+  that had previously been rejected.  For example, the command
+  ~c[:pl (member a (append x y))] had caused an error, but now it works as one
+  might reasonably expect, treating ~ilc[member] as ~ilc[member-equal]
+  (~pl[equality-variants] for relevant background).  Thanks to Jared Davis for
+  reporting this problem by sending the above example.
+
   ~st[NEW FEATURES]
 
   A new ``tau system'' provides a kind of ``type checker.''  ~l[tau-system].

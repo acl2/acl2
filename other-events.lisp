@@ -25804,26 +25804,47 @@
            "The rule-id supplied to ~x0 must be a symbol or a rune, but ~x1 ~
             is neither.  See :DOC ~x0."
            caller rule-id))
-      ((or (variablep term)
-           (fquotep term)
-           (flambdap (ffn-symb term))
-           (eq (ffn-symb term) 'if))
-       (er soft caller
-           "~@0 must be a term that is not a variable or a constant, which is ~
-            not a LET (or LAMBDA application), and whose function symbol is ~
-            not IF.  But ~x1 does not meet this requirement."
-           (case caller
-             (pl (msg "A non-symbol argument of ~x0" caller))
-             (pl2 (msg "The first argument of ~x0" caller))
-             (otherwise (er hard 'pl2-fn
-                            "Implementation error: Unexpected case!  Please ~
-                             contact the ACL2 implementors.")))
-           form))
-      (t (pprogn (show-rewrites-fn rule-id nil ens term nil nil nil :none t
-                                   state)
-                 (show-meta-lemmas term rule-id state)
-                 (show-type-prescription-rules term rule-id nil nil ens state)
-                 (value :invisible)))))))
+      (t (mv-let
+          (flg term1)
+          (cond ((or (variablep term)
+                     (fquotep term)
+                     (flambdap (ffn-symb term))
+                     (eq (ffn-symb term) 'if))
+                 (mv t (remove-guard-holders term)))
+                (t (mv nil term)))
+          (cond ((or (variablep term1)
+                     (fquotep term1)
+                     (flambdap (ffn-symb term1))
+                     (eq (ffn-symb term1) 'if))
+                 (er soft caller
+                     "~@0 must represent a term that is not a variable or a ~
+                      constant, which is not a LET (or LAMBDA application), ~
+                      and whose function symbol is not IF.  But ~x1 does not ~
+                      meet this requirement."
+                     (case caller
+                       (pl (msg "A non-symbol argument of ~x0" caller))
+                       (pl2 (msg "The first argument of ~x0" caller))
+                       (otherwise (er hard 'pl2-fn
+                                      "Implementation error: Unexpected case! ~
+                                       ~ Please contact the ACL2 implementors.")))
+                     form))
+                (t (let ((term term1))
+                     (pprogn
+                      (cond (flg (fms "+++++++++~%**NOTE**:~%Instead showing ~
+                                       rules for the following term, which is ~
+                                       much more likely to be encountered ~
+                                       during proofs:~|~%  ~y0+++++++++~%"
+                                      (list (cons #\0 (untranslate term1
+                                                                   nil
+                                                                   (w state))))
+                                      (standard-co state) state nil))
+                            (t state))
+                      (show-rewrites-fn rule-id nil ens term nil nil nil :none t
+                                        state)
+                      (show-meta-lemmas term rule-id state)
+                      (show-type-prescription-rules term rule-id nil nil
+                                                    ens state)
+                      (value :invisible)))))))))))
 
 (defun pl-fn (name state)
   (cond
