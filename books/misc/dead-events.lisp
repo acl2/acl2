@@ -57,7 +57,13 @@
 ; - This tool is to be run in a world that was created without skipping proofs.
 ;   More complete documentation will likely come later.
 
-; - This code may not work as expected if there has been redefinition.
+; - This code may not work as expected if there has been redefinition.  Indeed,
+;   the macro dead-events requires keyword parameter :redef-ok t in that case.
+;   Search for "redefinition" below for at least a few places where
+;   redefinition presents problems.  But those comments are probably far from
+;   exhaustive; redefinition is tricky.  It may be difficult to give a sensible
+;   answer to the following question: What does it even mean for A to be a
+;   proof-supporter of B if we have redefined one of these events?
 
 ; - If you want to read the code below, it may be helpful to go top-down.  Some
 ;   key data structures passed around are as follows.
@@ -125,6 +131,17 @@
                              (strict-merge-sort-> (nthcdr n l)))))))
 
 (defun make-supp-ar-2 (nums new-nums supp-ar)
+
+; If there has been redefinition, the call of aref1 below may return 0 (the
+; default).  To see this, try the following.
+
+; (defun foo (x) x)
+; (defun bar (x) (foo x))
+; (set-ld-redefinition-action '(:doit . :overwrite) state)
+; (defun foo (x) (cons x x))
+; (include-book "misc/dead-events" :dir :system)
+; (dead-events '(bar) :redef-ok t)
+
   (cond ((endp nums) new-nums)
         (t (let* ((k (car nums))
                   (new-nums (strict-merge-> (aref1 *supp-ar-name* supp-ar k)
@@ -186,7 +203,7 @@
 
 ; We needn't worry about (cdar supp-alist), since presumably all
 ; absolute-event-numbers for its members are no greater than that of (caar
-; supp-alist).
+; supp-alist).  This may become false under redefinition.
 
                  (absolute-event-number (caar supp-alist) wrld nil))))))
 
@@ -257,7 +274,9 @@
 
 ; Trips is a tail of the current logical world, wrld.  We walk through trips,
 ; collecting dead event names into acc.  Live-names-ar is an array that maps
-; live event names (only) to t.
+; live event names (only) to t.  Since we are assuming that there has been no
+; redefinition, we do not have to concern ourselves with properties that have
+; been erased, i.e., we do not have to handle *acl2-property-unbound*.
 
   (cond ((null trips)
          (er hard 'dead-events-1
@@ -283,28 +302,38 @@
                (& (er hard 'dead-events-1
                       "Implementation error: Found non-triple in world!")))))))
 
-(defun dead-events-fn (names syntaxp start wrld)
-  (let* ((ctx 'dead-events)
-         (supp-ar (make-supp-ar syntaxp wrld))
-         (start (cond ((symbolp start)
-                       (if start
+(defun dead-events-fn (names syntaxp start redef-ok wrld)
+  (let ((ctx 'dead-events))
+    (cond
+     ((and (not redef-ok)
+           (global-val 'redef-seen wrld))
+      (er hard ctx
+          "Redefinition has taken place in the current ACL2 world.  However, ~
+           the DEAD-EVENTS utility has been designed under the assumption ~
+           that there has not been any redefinition.  If you wish to risk ~
+           hard errors and surprising results, use keyword parameter ~
+           :REDEF-OK T."))
+     (t
+      (let* ((supp-ar (make-supp-ar syntaxp wrld))
+             (start (cond ((symbolp start)
+                           (if start
 
 ; We subtract 1 here because we need to continue past the event-landmark for
 ; start (which is laid down last, towards the top of the world) up to the
 ; preceding event-landmark.
 
-                           (1- (absolute-event-number start wrld nil))
-                         (absolute-event-number 'end-of-pass-2 wrld nil)))
-                      ((posp start) (1- start))
-                      (t (er hard ctx
-                             "The first argument of dead-events must evaluate ~
-                              to a positive integer or a symbol, but ~x0 is ~
-                              neither."
-                             start))))
-         (live-names-ar (make-live-names-ar names supp-ar wrld)))
-    (dead-events-1 start live-names-ar wrld wrld nil)))
+                               (1- (absolute-event-number start wrld nil))
+                             (absolute-event-number 'end-of-pass-2 wrld nil)))
+                          ((posp start) (1- start))
+                          (t (er hard ctx
+                                 "The first argument of dead-events must ~
+                                  evaluate to a positive integer or a symbol, ~
+                                  but ~x0 is neither."
+                                 start))))
+             (live-names-ar (make-live-names-ar names supp-ar wrld)))
+        (dead-events-1 start live-names-ar wrld wrld nil))))))
 
-(defmacro dead-events (names &key (syntaxp 't) start)
-  `(dead-events-fn ,names ,syntaxp ,start (w state)))
+(defmacro dead-events (names &key (syntaxp 't) start redef-ok)
+  `(dead-events-fn ,names ,syntaxp ,start ,redef-ok (w state)))
 
 (logic)
