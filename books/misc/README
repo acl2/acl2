@@ -103,6 +103,12 @@ http://www.cs.utexas.edu/users/moore/acl2
 
 ===============================================================================
 
+dead-events.lisp -- an analysis tool that shows dependencies, and thus
+                    may help to eliminate dead events (both definitions
+                    and theorems that do not support the specified events)
+
+===============================================================================
+
 defattach-example.lisp -- illustration of using defattach for system building
 
 ===============================================================================

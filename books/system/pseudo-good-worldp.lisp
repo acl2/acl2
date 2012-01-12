@@ -938,6 +938,18 @@
       (pseudo-formp val)))
 
 ; -----------------------------------------------------------------
+; PROOF-SUPPORTERS-ALIST [GLOBAL-VALUE]
+
+(defun proof-supporters-alistp (val)
+  (cond ((atom val) (null val))
+        (t (and (consp (car val))
+                (or (symbolp (caar val))
+                    (symbol-listp (caar val)))
+                (cdar val)
+                (symbol-listp (cdar val))
+                (proof-supporters-alistp (cdr val))))))
+
+; -----------------------------------------------------------------
 ; FREE-VAR-RUNES-ALL [GLOBAL-VALUE]
 
 ; List of all runes for which :match-free :all was declared.
@@ -1519,6 +1531,7 @@
     (BOOT-STRAP-PASS-2 (boot-strap-pass-2p val))
     (SKIP-PROOFS-SEEN (skip-proofs-seenp val))
     (REDEF-SEEN (redef-seenp val))
+    (PROOF-SUPPORTERS-ALIST (proof-supporters-alistp val))
     (FREE-VAR-RUNES-ALL (pseudo-free-var-runes-allp val))
     (FREE-VAR-RUNES-ONCE (pseudo-free-var-runes-oncep val))
     (CHK-NEW-NAME-LST (chk-new-name-lstp val))
