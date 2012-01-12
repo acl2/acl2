@@ -1000,7 +1000,7 @@ arch: full init move-large regression-fresh proofs
 mini-proveall:
 	@rm -rf mini-proveall.out
 	@echo '(value :q) (lp) (mini-proveall)' | ./${PREFIXsaved_acl2} > mini-proveall.out
-	@(grep '^ ORDERED-SYMBOL-ALISTP-REMOVE-FIRST-PAIR-TEST' mini-proveall.out > /dev/null) || \
+	@(grep '^ "Mini-proveall completed successfully."' mini-proveall.out > /dev/null) || \
 	(echo 'Mini-proveall failed!' ; ls -l ./${PREFIXsaved_acl2}; cat mini-proveall.out ; exit 1)
 	@echo 'Mini-proveall passed.'
 

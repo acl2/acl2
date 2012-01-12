@@ -9008,7 +9008,6 @@
 
 (defthm characterp-nth
   (implies (and (character-listp x)
-                (integerp i)
                 (<= 0 i)
                 (< i (len x)))
            (characterp (nth i x))))
@@ -11723,7 +11722,7 @@
       (equal x nil)))
 
 (defconst *summary-types*
-  '(header form rules warnings time steps value))
+  '(header form rules hint-events warnings time steps value))
 
 (defun with-output-fn (ctx args off on gag-mode off-on-p gag-p stack
                            summary summary-p)
@@ -18760,7 +18759,8 @@
   string; ~pl[doc-string].  If the book has no ~ilc[certificate], if its
   ~ilc[certificate] is invalid or if the certificate was produced by a
   different ~il[version] of ACL2, a warning is printed and the book is included
-  anyway; ~pl[certificate].  This can lead to serious errors;
+  anyway; ~pl[certificate].  This can lead to serious errors, perhaps mitigated
+  by the presence of a ~c[.port] file from an earlier certification;
   ~pl[uncertified-books].  If the portcullis of the ~il[certificate]
   (~pl[portcullis]) cannot be raised in the host logical ~il[world], an error
   is caused and no change occurs to the logic.  Otherwise, the non-~ilc[local]
@@ -19419,19 +19419,25 @@
   ~c[encapsulate] forms, and raw Lisp.  This fact guarantees that an event form
   will always be treated as its original expansion.
 
-  ~st[A note on ttags]
+  ~st[Notes on ttags]
 
   ~l[defttag] for documentation of the notion of ``trust tag'' (``ttag'').  We
   note here that even if an event ~c[(defttag tag-name)] for non-~c[nil]
   ~c[tag-name] is admitted only during the expansion phase of a
   ~ilc[make-event] form, then such expansion will nevertheless still cause
   ~c[tag-name] to be recorded in the logical ~il[world] (assuming that the
-  ~c[make-event] form is admitted).  This behavior will avoid surprises
-  involving ttags and ~c[make-event] expansion in almost all cases, but we now
-  point out a case where one might get such a surprise.
+  ~c[make-event] form is admitted).  So in order to certify such a book, a
+  suitable ~c[:ttags] argument must be supplied; ~pl[certify-book].
 
-  Below we consider a ~c[make-event] specifying ~c[:check-expansion t], whose
-  expansion generates a ~ilc[defttag] event during ~ilc[include-book] but not
+  ACL2 does provide a way to avoid the need for ~c[:ttags] arguments in such
+  cases.  The idea is to certify a book twice, where the results of
+  ~c[make-event] expansion are saved from the first call of ~ilc[certify-book]
+  and provided to the second call.  ~pl[set-write-acl2x].
+
+  Finally, we discuss a very unusual case where certification does not involve
+  trust tags but a subsequent ~ilc[include-book] does involve trust tags: a
+  ~c[make-event] call specifying ~c[:check-expansion t], whose expansion
+  generates a ~ilc[defttag] event during ~ilc[include-book] but not
   ~ilc[certify-book].  Consider the following book.
   ~bv[]
   (in-package \"ACL2\")
@@ -19455,8 +19461,10 @@
   specify ~c[:foo] as a trust tag associated with the book, because no
   ~c[defttag] event was executed during book certification.  Unfortunately, if
   we try to include this book without specifying a value of ~c[:ttags] that
-  allows ~c[:foo], book inclusion will be attempted and will only fail when the
-  above ~ilc[defttag] event is eventually encountered.~/")
+  allows ~c[:foo], book inclusion will cause executing of the above
+  ~ilc[defttag].  If that inclusion happens in the context of certifying some
+  superior book and the appropriate ~c[:ttags] arguments have not been
+  provided, that certification will fail.~/")
 
 (defdoc using-tables-efficiently
  ":doc-section Table
@@ -26065,6 +26073,7 @@
     with-parallelism-hazard-warnings ; for #+acl2-par
     warn-about-parallelism-hazard ; for #+acl2-par
     state-global-let* ; raw Lisp version for efficiency
+    with-reckless-readtable
     ))
 
 (defmacro with-live-state (form)
@@ -27808,9 +27817,7 @@
    :hints (("Goal" :in-theory (enable symbol-< string<))))
 
  (defthm ordered-symbol-alistp-delete-assoc-eq
-   (implies (and (ordered-symbol-alistp l)
-                 (symbolp key)
-                 (assoc-eq key l))
+   (implies (ordered-symbol-alistp l)
             (ordered-symbol-alistp (delete-assoc-eq key l))))
 
  (defthm symbol-<-irreflexive
@@ -36401,10 +36408,17 @@
   ~ev[]
   where form evaluates to a true-list of symbols, each of which is among the
   values of the constant ~c[*summary-types*], i.e.: ~c[header], ~c[form],
-  ~c[rules], ~c[warnings], ~c[time], ~c[steps], and ~c[value].  Each specified
-  type inhibits printing of the corresponding portion of the summaries printed
-  at the conclusions of ~il[events], where ~c[header] refers to an initial
-  newline followed by the line containing just the word ~c[Summary].
+  ~c[rules], ~c[hint-events] ~c[warnings], ~c[time], ~c[steps], and ~c[value].
+  Each specified type inhibits printing of the corresponding portion of the
+  summaries printed at the conclusions of ~il[events], where ~c[header] refers
+  to an initial newline followed by the line containing just the word
+  ~c[Summary].
+
+  Note the distinction between ~c[rules] and ~c[hint-events].  ~c[Rules]
+  provides a record of automatic rule usage by the prover, while
+  ~c[hint-events] shows the names of events given to ~c[:USE] or ~c[:BY]
+  ~il[hints], as well as ~il[clause-processor] functions given to
+  ~c[:CLAUSE-PROCESSOR] hints that have an effect on the proof.
 
   Also ~pl[set-inhibit-output-lst].  Note that ~c[set-inhibited-summary-types]
   has no effect when ~c[summary] is one of the types inhibited by
@@ -44949,6 +44963,24 @@ Lisp definition."
   (and (member-eq (f-get-global 'debugger-enable state)
                   '(:bt :break-bt :bt-break))
        (print-call-history)))
+
+(defmacro with-reckless-readtable (form)
+
+; This macro creates a context in which reading takes place without usual
+; checks that #n# is only used after #n= and without the usual restrictions on
+; characters (specifically, *old-character-reader* is used rather than the ACL2
+; character reader, #'acl2-character-reader).  See *reckless-acl2-readtable*.
+
+  #+acl2-loop-only
+  form
+  #-acl2-loop-only
+  `(let ((*readtable* *reckless-acl2-readtable*)
+
+; Since print-object$ binds *readtable* to *acl2-readtable*, we bind the latter
+; here:
+
+         (*acl2-readtable* *reckless-acl2-readtable*))
+     ,form))
 
 (defmacro set-debugger-enable (val)
 

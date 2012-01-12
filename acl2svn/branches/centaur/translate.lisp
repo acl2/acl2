@@ -2277,6 +2277,11 @@
 ; where the function is either a primitive listed in *super-defun-wart-table*
 ; or is defined by defstobj.
 
+; Warning: Before removing this error, consider that in general guard-checking
+; may be defeated by :set-guard-checking :none, so we may be relying on this
+; error for built-in functions like aset-t-stack that rely on guard-checking to
+; validate their arguments.
+
              (msg "~|This error is being reported even though guard-checking ~
                    has been turned off, because the stobj argument of ~x0 is ~
                    the ``live'' ~p1 and ACL2 does not support non-compliant ~

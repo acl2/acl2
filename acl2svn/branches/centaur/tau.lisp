@@ -3451,7 +3451,7 @@
    (declare (ignore criterion))
    (let* ((fn (if (eql form 1) (ffn-symb e) (ffn-symb (fargn e 2))))
           (i (if (eql form 1) nil (cadr (fargn e 1))))
-          (vars (fargs e))
+          (vars (fargs (if (eql form 1) e (fargn e 2))))
           (alist (convert-tau-like-terms-to-subject-tau-alist
                   hyps nil hyps concl wrld))
           (rule (make signature-rule

@@ -1306,6 +1306,9 @@ which is saved just in case it's needed later.")
    #\u
    #'sharp-u-read))
 
+(defvar *old-character-reader*
+  (get-dispatch-macro-character #\# #\\))
+
 (defun modify-acl2-readtable (do-all-changes)
   (let ((*readtable* *acl2-readtable*))
 
@@ -1405,6 +1408,10 @@ which is saved just in case it's needed later.")
     (set-dispatch-macro-character #\#
                                   #\=
                                   #'reckless-sharp-equal-read)
+    (set-dispatch-macro-character
+     #\#
+     #\\
+     *old-character-reader*)
 
 ; Thanks to Jared Davis for contributing the code for #\Z and #\z (see
 ; serialize-raw.lisp).  But is this readtable even necessary now that

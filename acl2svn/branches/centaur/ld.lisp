@@ -18348,9 +18348,36 @@
   returned is the same as would be returned on success when proofs are not
   skipped.
 
+  For those who use ~ilc[set-write-acl2x]: now, when ~ilc[certify-book] is
+  called without a ~c[:ttagsx] argument supplied, then the value of ~c[:ttagsx]
+  defaults to the (explicit or default) value of the ~c[:ttags] argument.
+
+  Improvements have been made related to the reading of characters.  In
+  particular, checks are now done for ASCII encoding and for the expected
+  ~ilc[char-code] values for ~c[Space],~c[Tab],~c[Newline],~c[Page], and
+  ~c[Rubout].  Also, an error no longer occurs with certain uses of
+  non-standard characters.  For example, it had caused an error to certify a
+  book after a single ~il[portcullis] ~il[command] of
+  ~c[(make-event `(defconst *my-null* ,(code-char 0)))]; but this is no longer
+  an issue.  Thanks to Jared Davis for helpful correspondence that led us to
+  make these improvements.
+
+  The ~c[:]~ilc[pl] and ~c[:]~ilc[pl2] ~il[command]s can now accept ~il[term]s
+  that had previously been rejected.  For example, the command
+  ~c[:pl (member a (append x y))] had caused an error, but now it works as one
+  might reasonably expect, treating ~ilc[member] as ~ilc[member-equal]
+  (~pl[equality-variants] for relevant background).  Thanks to Jared Davis for
+  reporting this problem by sending the above example.
+
+  We have eliminated some hypotheses in built-in ~il[rewrite] rules
+  ~c[characterp-nth] and ~c[ordered-symbol-alistp-delete-assoc-eq].
+
   ~st[NEW FEATURES]
 
   A new ``tau system'' provides a kind of ``type checker.''  ~l[tau-system].
+  Thanks to Dave Greve for supplying a motivating example (on which this system
+  can provide significant speedup), and to Sol Swords for sending a very
+  helpful bug report on a preliminary implementation.
 
   Users may now arrange for additional summary information to be printed at the
   end of ~il[events]; ~pl[print-summary-user].  Thanks to Harsh Raju Chamarthi
@@ -18400,8 +18427,21 @@
   ~il[books] to be certified before their included sub-books have been
   certified, thus allowing for potentially much greater `~c[make]'-level
   parallelism.  ~l[provisional-certification].  Thanks to Jared Davis for
-  requesting this feature and for helpful discussions, based in part on a
-  rudimentary such capability that he created for his `Milawa' project.
+  requesting this feature and for helpful discussions, based in part on
+  rudimentary provisional certification schemes that he developed first at
+  Rockwell Collins and later for his `Milawa' project.
+
+  Event summaries now show the names of events that were mentioned in
+  ~il[hints] of type ~c[:use], ~c[:by], or ~c[:clause-processor].
+  ~l[set-inhibited-summary-types].  Thanks to Francisco J. Martín Mateos for
+  requesting such an enhancement (actually thanks to the community, as his
+  request is the most recent but this has come up from time to time before).
+
+  ACL2 now stores a data structure representing the relation ``Event A is used
+  in the proof of Event B.''  ~l[dead-events], which explains this data
+  structure and mentions one application: to identify dead code and unused
+  theorems.  Thanks to Shilpi Goel for requesting such a feature and for
+  helpful feedback.
 
   ~st[HEURISTIC IMPROVEMENTS]
 
@@ -18550,6 +18590,10 @@
         (foo x clk))))
   ~ev[]
 
+  Fixed a bug in the ~c[mini-proveall] target in ~c[GNUmakefile].  The fix
+  includes a slight change to the ~c[:mini-proveall] ~il[command] (an extra
+  event at the end).  Thanks to Camm Maguire for reporting this bug.
+
   ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]
 
   Although the HTML documentation is distributed with ACL2, it had not been
@@ -18569,6 +18613,9 @@
   are rarely incremental releases.  A stronger reason is that for the
   compatibility of a new release is with the previous non-incremental release,
   it's not particularly relevant whether or not the new release is incremental.
+
+  The `make' variable ~c[BOOKS] can now be defined above the line that includes
+  Makefile-generic.  (For relevant background, ~pl[book-makefiles].)
 
   ~st[EMACS SUPPORT]
 
@@ -20079,6 +20126,8 @@
                       (assoc-eq key l))
                  (ordered-symbol-alistp (delete-assoc-eq key l)))
         :hints (("Goal" :in-theory (disable ordered-symbol-alistp-delete-assoc-eq))))
+
+      (value-triple "Mini-proveall completed successfully.")
 
       )
     :ld-skip-proofsp nil

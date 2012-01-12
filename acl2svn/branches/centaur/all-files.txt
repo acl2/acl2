@@ -5,6 +5,7 @@ Makefile
 # README-images.html -- developer file
 # The following is distributed but is not in the svn repository:
 TAGS
+acl2-characters
 acl2-check.lisp
 acl2-fns.lisp
 acl2-init.lisp
@@ -722,6 +723,7 @@ books/centaur/vl/lint:
 acl2-customization.lsp
 bit-use-set.lisp
 cert.acl2
+check-case.lisp
 check-namespace.lisp
 disconnected.lisp
 lint.lisp
@@ -786,6 +788,7 @@ acl2-customization.lsp
 allexprs.lisp
 atts.lisp
 cert.acl2
+clean-concats.lisp
 comment-writer.lisp
 context.lisp
 ctxexprs.lisp
@@ -947,6 +950,7 @@ nvalues-thms.lisp
 replace-defined-consts.acl2
 replace-defined-consts.lisp
 replace-impl.lisp
+term-patterns.acl2
 term-patterns.lisp
 unify-subst.acl2
 unify-subst.lisp
@@ -1627,7 +1631,6 @@ defprojection-tests.lisp
 defprojection.lisp
 defsection.lisp
 gpl.txt
-other-packages.lsp
 package.lsp
 portcullis.acl2
 portcullis.lisp
@@ -2023,15 +2026,15 @@ term-lemmas.lisp
 books/misc:
 Makefile
 README
+assert.lisp
 bash.lisp
 beta-reduce.lisp
-book-thms.lisp
-book-thms-example.lisp
 callers-and-ancestors.lisp
 check-acl2-exports.lisp
 computed-hint-rewrite.lisp
 computed-hint.lisp
 csort.lisp
+dead-events.lisp
 defattach-bang.lisp
 defattach-example.lisp
 definline.acl2
@@ -2048,6 +2051,7 @@ dft.lisp
 doc-section.lisp
 dump-events.lisp
 equal-by-g.lisp
+eval.lisp
 evalable-printing.lisp
 expander.lisp
 fast-coerce.lisp
@@ -3352,7 +3356,6 @@ simplify-model-helpers-new-proofs.lisp
 simplify-model-helpers-new.lisp
 simplify-model-helpers-proofs.lisp
 simplify-model-helpers.lisp
-temp-emacs-file.lisp
 top.lisp
 util.lisp
 
@@ -3545,9 +3548,8 @@ arithmetic.lisp
 case-conversion.lisp
 cat.lisp
 cert.acl2
-char-support.lisp
+char-case.lisp
 digitp.lisp
-doc.lisp
 eqv.lisp
 fast-cat.acl2
 fast-cat.lisp
@@ -3626,6 +3628,7 @@ Readme.lsp
 hl-addr-combine.lisp
 pcert
 pseudo-good-worldp.lisp
+too-many-ifs.acl2
 too-many-ifs.lisp
 top.lisp
 worldp-check.acl2
@@ -4018,36 +4021,48 @@ mutrec.lisp
 books/xdoc:
 LICENSE
 Makefile
+README
+acl2-customization.lsp
+base.lisp
+book-thms-example.lisp
+book-thms.lisp
+cert.acl2
+defsection-tests.lisp
+defxdoc-raw.acl2
+defxdoc-raw.lisp
+emacsclient-wrapper.sh
+gpl.txt
+names.lisp
+package.lsp
+portcullis.acl2
+portcullis.lisp
+support
+top.lisp
+xdoc.el
+
+books/xdoc-impl:
+Makefile
 acl2-customization.lsp
 all.acl2
 all.lisp
-base.lisp
 bookdoc.lsp
 cert.acl2
-defxdoc-raw.acl2
-defxdoc-raw.lisp
 display.lisp
-emacsclient-wrapper.sh
-gpl.txt
+extra-packages.acl2
+extra-packages.lisp
 import-acl2doc.lisp
 make-manual.acl2
 make-manual.lisp
 mkdir-raw.acl2
 mkdir-raw.lisp
 mkdir.lisp
-names.lisp
-package.lsp
 parse-xml.lisp
-portcullis.acl2
-portcullis.lisp
 preprocess.lisp
 save.lisp
 sort.lisp
-support
-top.lisp
 topics.lisp
+unversioned-files-extra.txt
 write-acl2-xdoc.lisp
-xdoc.el
 
 books/xdoc/support:
 Makefile-trans

@@ -2296,10 +2296,12 @@ the calls took.")
             print-defun-msg/collect-type-prescriptions
             print-defun-msg/type-prescriptions
             print-defun-msg/type-prescriptions1
+            print-hint-events-summary
             print-prompt
             print-rational-as-decimal
             print-redefinition-warning
-            print-rules-summary
+            print-rules-and-hint-events-summary
+            print-runes-summary
             print-summary
             print-time-summary
             print-timer

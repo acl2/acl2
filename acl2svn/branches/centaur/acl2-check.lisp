@@ -159,28 +159,125 @@ most-negative-fixnum = ~s."
 ;                           ACL2 CHARACTERS
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; At one time we read the legal ACL2 characters from a string in a file, so
-; that we could be confident that we know exactly what they are.  But if
-; code-char is not a function, then we lose anyhow, because we have defined it
-; in ACL2.  And if code-char is a function, then we can do our checking without
-; having to get the characters from a file, the idea being that the range of
-; code-char on {0,1,...,255} is exactly the set of legal ACL2 characters.
+; It is difficult or impossible to ensure that #\c is read in as the same
+; character in different ACL2 sessions, for any ACL2 character c.  (Even
+; #\Newline is potentially problematic, as its char-code is 10 in most Common
+; Lisps but is 13 in [now-obsolete] MCL!)  Thus, the soundness of ACL2 rests on
+; a caveat that all books are certified using the same Lisp image.  When we say
+; ``same lisp image'' we don't mean the same exact process necessarily, but
+; rather, an invocation of the same saved image.  Another reason for such a
+; caveat, independent of the character-reading issue, is that different saved
+; images may be tied into different compilers, thus making the object files of
+; the books incompatible.
 
-; Note that this issue is orthogonal to the problem of ensuring that #\c is
-; read in as the same character in different ACL2 sessions, for any ACL2
-; character c.  (Even #\Newline is potentially problematic, as its char-code is
-; 10 in most Common Lisps but is 13 in MCL!)  Because of the latter issue, our
-; story about ACL2 could include a caveat that certified books may only be
-; soundly loaded into the same Lisp image in which they were certified.  When
-; we say ``same lisp image'' we don't mean the same exact process necessarily,
-; but rather simply an invocation of the same saved image.  Another reason for
-; such a caveat, independent of the character-reading issue, is that different
-; saved images may be tied into different compilers, thus making the object
-; files of the books incompatible.
+; Nevertheless, it would of course be nice if all host Lisp implementations of
+; ACL2 actually do agree on character and string constants provided by the Lisp
+; reader (based on *acl2-readtable*).  Our first check is intended to address
+; this point, by providing some confidence that the host Lisp has an ASCII
+; character set.  As explained above, we only intend soundness in the case that
+; all books are certified from scratch using the same host Lisp, and we do not
+; actually assume ASCII characters -- more precisely, we do not assume any
+; particular values for code-char and code-char -- so this check is not really
+; necessary, except for a claim about ASCII characters in "Precise Description
+; of the ACL2 Logic", which should perhaps be removed.  However, as of January
+; 2012 we seem to be able to make the following check in all supported Lisps,
+; at least on our Linux and Mac OS platforms.  It should be sound for users to
+; comment out this check, but with the understanding that ACL2 is taking
+; whatever the Lisp reader (using *acl2-readtable*) gives it.
 
-; However, we believe that we can prevent the most serious assaults on
-; soundness due to implementation dependencies, simply by making notes in the
-; version string, state global 'acl2-version; see :DOC version.
+(let ((filename "acl2-characters"))
+
+; Why do we read from a separate file, rather than just saving the relevant
+; characters in the present file?  For example, it may seem reasonable to use a
+; trusted host Lisp to obtain an alist by evaluating the following expression.
+
+; (loop for i from 0 to 255 do (princ (cons i (code-char i))))
+
+; Could the resulting the alist be placed into this file and used for the check
+; below?
+
+; We run into a problem right away with that approach because of Control-D.
+; For example, try this
+
+; (princ (cons 4 (code-char 4)))
+
+; and then try quoting the output and reading it back in.  Or,
+; try evaluating the following.
+
+; (read-from-string (format nil "~a" (code-char 4)))
+
+; We have seen an error in both cases.
+
+; So instead, we originally generated the file acl2-characters as follows,
+; using an ACL2 image based on CCL.
+
+; (with-open-file (str "acl2-characters" :direction :output)
+;                 (loop for i from 0 to 255
+;                       do (write-char (code-char i) str)))
+
+  (with-open-file
+   (str filename :direction :input
+
+; In SBCL and CLISP we have found the need to specify :external-format in order
+; to avoid errors.  Note that (for example) in our SBCL,
+; (stream-external-format *terminal-io*) evaluates to (:UTF-8 :REPLACEMENT
+; #\REPLACEMENT_CHARACTER).
+
+        #+(or clisp sbcl) :external-format
+        #+sbcl :iso-8859-1
+        #+clisp
+; The following came from
+; http://en.wikibooks.org/wiki/Common_Lisp/Advanced_topics/Files_and_Directories
+; in January 2012.
+        (ext:make-encoding :charset 'charset:iso-8859-1
+                           :line-terminator :unix))
+   (loop for i from 0 to 255
+
+; The function legal-acl2-character-p, called in bad-lisp-objectp for
+; characters and strings, checks that the char-code of any character that is
+; read must be between 0 and 255.
+
+         do (let ((temp (read-char str)))
+              (when #-clisp (not (eql (char-code temp) i))
+
+; In CLISP we find character 10 (Newline) at position 13 (expected Return).
+; Perhaps this has something to do CLISP's attempt to comply with the CL
+; HyperSpec Section 13.1.8, "Treatment of Newline during Input and Output".
+; But something is amiss.  Consider for example the following log (with some
+; output edited in the case of the first two forms, but no editing of output
+; for the third form).
+
+; ACL2 [RAW LISP]> (with-open-file (str "tmp" :direction :output)
+;                                  (write-char (code-char 13) str))
+; #\Return
+; ACL2 [RAW LISP]> (with-open-file (str "tmp" :direction :input)
+;                                  (equal (read-char str) (code-char 10)))
+; T
+; ACL2 [RAW LISP]> (format nil "~a" (code-char 13))
+; "
+; ACL2 [RAW LISP]> 
+
+; So our check for CLISP is incomplete, but as explained in the comment just
+; above this check, we can live with that.
+
+                    #+clisp
+                    (and (not (eql (char-code temp) i))
+                         (not (eql i 13)))
+                (error "Bad character in file ~s: character ~s at position ~s."
+                       filename (char-code temp) i))))))
+
+; The check just above does not say anything about the five character names
+; that we support (see acl2-read-character-string), as described in :doc
+; characters; so we add suitable checks on these here.
+
+(loop for pair in (pairlis '(#\Space #\Tab #\Newline #\Page #\Rubout)
+                           '(32 9 10 12 127))
+      do (let* ((ch (car pair))
+                (code (cdr pair))
+                (val (char-code ch)))
+           (or (eql val code)
+               (error "(char-code ~s) evaluated to ~s (expected ~s)."
+                      ch val code))))
 
 ; Test that all purportedly standard characters are standard, and vice versa.
 
