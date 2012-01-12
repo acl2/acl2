@@ -2034,6 +2034,7 @@ check-acl2-exports.lisp
 computed-hint-rewrite.lisp
 computed-hint.lisp
 csort.lisp
+dead-events.lisp
 defattach-bang.lisp
 defattach-example.lisp
 definline.acl2
