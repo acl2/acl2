@@ -23,6 +23,38 @@
 (include-book "parse-statements-error")
 (local (include-book "../util/arithmetic"))
 
+
+
+(local (in-theory (disable
+                   acl2-count-positive-when-consp
+                   acl2-count-when-member-equal
+                   (:type-prescription acl2-count)
+                   consp-under-iff-when-true-listp
+                   VL-IS-TOKEN?-FN-WHEN-NOT-CONSP-OF-TOKENS
+                   double-containment
+                   consp-by-len
+                   consp-when-member-equal-of-cons-listp
+                   member-equal-when-member-equal-of-cdr-under-iff
+                   default-<-1 default-<-2
+                   (:type-prescription vl-is-token?-fn)
+                   (:type-prescription vl-is-some-token?-fn)
+                   acl2::cancel_plus-lessp-correct
+                   acl2::cancel_times-equal-correct
+                   acl2::cancel_plus-equal-correct
+                   vl-tokenlist-p-of-vl-match-token-fn
+                   vl-parse-assignment-result
+                   car-when-all-equalp
+                   default-car default-cdr
+                   member-equal-when-subsetp-equal
+                   (:rules-of-class :type-prescription :here))))
+
+
+(local (defthm integerp-acl2-count
+         (integerp (acl2-count x))
+         :rule-classes :type-prescription))
+
+(local (in-theory (disable (tau-system))))
+
 (with-output
  :off prove :gag-mode :goals
  (make-event

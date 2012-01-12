@@ -22,6 +22,44 @@
 (include-book "parse-statements-def")
 (local (include-book "../util/arithmetic"))
 
+
+;; Sol -- accumulated-persistence hacking
+(local (in-theory (disable
+                   vl-tokenlist-p-when-subsetp-equal
+                   acl2-count-positive-when-consp
+                   vl-is-token?-fn-when-not-consp-of-tokens
+                   consp-under-iff-when-true-listp
+                   (:type-prescription vl-tokenlist-p)
+                   (:type-prescription vl-is-token?-fn)
+                   (:type-prescription vl-is-some-token?-fn)
+                   (:type-prescription acl2-count)
+                   double-containment
+                   acl2-count-when-member-equal
+                   consp-by-len
+                   consp-when-member-equal-of-cons-listp
+                   vl-tokenlist-p-when-member-equal-of-vl-tokenlistlist-p
+                   member-equal-when-member-equal-of-cdr-under-iff
+                   acl2::cancel_plus-equal-correct
+                   acl2::cancel_times-equal-correct
+                   acl2::cancel_plus-lessp-correct
+                   magically-resolve-vl-is-some-token?
+                   vl-is-some-token?-fn-when-not-consp-of-tokens
+                   vl-is-some-token?-fn-when-not-consp-of-types
+                   magically-reduce-possible-types-from-vl-is-some-token?
+                   vl-parse-expression-eof-vl-parse-expression-fn
+                   vl-exprlist-p-of-cons
+                   first-under-iff-when-vl-exprlist-p
+                   default-<-2 default-<-1
+                   member-equal-when-subsetp-equal
+                   rationalp-implies-acl2-numberp
+                   rationalp-when-integerp
+                   integerp-when-natp
+                   natp-when-posp
+                   default-car
+                   default-cdr
+                   car-when-all-equalp
+                   vl-tokenlist-p-when-not-consp)))
+
 (with-output
  :off prove :gag-mode :goals
  (make-event

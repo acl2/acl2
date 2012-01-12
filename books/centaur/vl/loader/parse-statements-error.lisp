@@ -22,6 +22,41 @@
 (include-book "parse-statements-def")
 (local (include-book "../util/arithmetic"))
 
+(local (in-theory (disable (:type-prescription vl-is-token?-fn)
+                           (:type-prescription acl2-count-positive-when-consp)
+                           (:linear acl2-count-positive-when-consp)
+                           vl-is-token?-fn-when-not-consp-of-tokens
+                           consp-under-iff-when-true-listp
+                           (:rewrite consp-by-len)
+                           consp-when-member-equal-of-cons-listp
+                           double-containment
+                           member-equal-when-member-equal-of-cdr-under-iff
+                           vl-is-some-token?-fn-when-not-consp-of-tokens
+                           vl-parse-expression-eof-vl-parse-expression-fn
+                           acl2-count-when-member-equal
+                           vl-tokenlist-p-of-vl-match-token-fn
+                           default-car
+                           vl-parse-assignment-result
+                           member-equal-when-subsetp-equal
+                           default-<-1
+                           default-<-2
+                           default-cdr
+                           (:type-prescription acl2-count)
+                           (:type-prescription vl-is-some-token?-fn)
+                           (:meta acl2::cancel_times-equal-correct)
+                           (:meta acl2::cancel_plus-equal-correct)
+                           (:meta acl2::cancel_plus-lessp-correct)
+                           (:rewrite vl-is-some-token?-fn-when-not-consp-of-types)
+                           magically-reduce-possible-types-from-vl-is-some-token?
+                           magically-resolve-vl-is-some-token?
+                           car-when-all-equalp
+                           member-equal-when-all-equalp
+                           not
+                           (:type-prescription vl-make-case-statement)
+                           first-under-iff-when-vl-exprlist-p
+                           vl-exprlist-p-of-cons
+                           )))
+
 (with-output
  :off prove :gag-mode :goals
  (make-event

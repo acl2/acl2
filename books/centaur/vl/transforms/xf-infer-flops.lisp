@@ -168,10 +168,11 @@ always @@(posedge clk)
    lhs [&lt;]= [#delay] rhs;  // i.e., \"lhs &lt;=rhs\" or \"lhs = rhs\"
 </code>
 
-<p>Where <tt>clk</tt> and <tt>lhs</tt> are simple identifier expressions.  If
-so, we extract and return the expressions for <tt>clk</tt>, <tt>lhs</tt>, and
+<p>We extract and return the expressions for <tt>clk</tt>, <tt>lhs</tt>, and
 <tt>rhs</tt>.  We only allow simple delays like <tt>#3</tt> and return them as
-a @(see vl-maybe-natp).</p>"
+a @(see vl-maybe-natp).  We used to require that <tt>clk</tt> and <tt>lhs</tt>
+be simple identifier expressions, but now check that separately (see @(see
+vl-match/check-flop)).</p>"
 
   (defund vl-pattern-match-flop (x)
     "Returns (mv successp clk-expr lhs-expr rhs-expr delay)"
@@ -192,11 +193,20 @@ a @(see vl-maybe-natp).</p>"
           (mv nil nil nil nil nil))
          (evatoms (vl-eventcontrol->atoms ctrl))
          ((unless (and (= (len evatoms) 1)
-                       (eq (vl-evatom->type (car evatoms)) :vl-posedge)))
+                       (or (eq (vl-evatom->type (car evatoms)) :vl-posedge)
+                           ;; The transformation in this file currently won't
+                           ;; allow the negedge (because when we find a
+                           ;; negedge, we negate the clock so it's no longer an
+                           ;; idexpr.)  But we may reuse this elsewhere and not
+                           ;; care that the clock is not an idexpr.
+                           (eq (vl-evatom->type (car evatoms)) :vl-negedge))))
           (mv nil nil nil nil nil))
          (clk-expr (vl-evatom->expr (car evatoms)))
-         ((unless (vl-idexpr-p clk-expr))
-          (mv nil nil nil nil nil))
+         (clk-expr (if (eq (vl-evatom->type (car evatoms)) :vl-negedge)
+                       (make-vl-nonatom
+                        :op :vl-unary-bitnot
+                        :args (list clk-expr))
+                     clk-expr))
 
          ;; Now that we've extracted the clock, try to match body with lhs [<]= #delay rhs
 
@@ -215,9 +225,7 @@ a @(see vl-maybe-natp).</p>"
          (delay    (if (vl-assignstmt->ctrl body)
                        (vl-resolved->val (vl-delaycontrol->value
                                           (vl-assignstmt->ctrl body)))
-                     nil))
-         ((unless (vl-idexpr-p lhs-expr))
-          (mv nil nil nil nil nil)))
+                     nil)))
         (mv t clk-expr lhs-expr rhs-expr delay)))
 
   (local (in-theory (enable vl-pattern-match-flop)))
@@ -230,15 +238,58 @@ a @(see vl-maybe-natp).</p>"
     (implies (force (vl-always-p x))
              (and (equal (vl-expr-p (mv-nth 1 (vl-pattern-match-flop x)))
                          (if (mv-nth 0 (vl-pattern-match-flop x)) t nil))
-                  (equal (vl-idexpr-p (mv-nth 1 (vl-pattern-match-flop x)))
-                         (if (mv-nth 0 (vl-pattern-match-flop x)) t nil))
                   (equal (vl-expr-p (mv-nth 2 (vl-pattern-match-flop x)))
-                         (if (mv-nth 0 (vl-pattern-match-flop x)) t nil))
-                  (equal (vl-idexpr-p (mv-nth 2 (vl-pattern-match-flop x)))
                          (if (mv-nth 0 (vl-pattern-match-flop x)) t nil))
                   (equal (vl-expr-p (mv-nth 3 (vl-pattern-match-flop x)))
                          (if (mv-nth 0 (vl-pattern-match-flop x)) t nil))
                   (vl-maybe-natp (mv-nth 4 (vl-pattern-match-flop x)))))))
+
+
+(defsection vl-match/check-flop
+  :parents (flop-inference)
+  :short "Recognize and deconstruct <tt>always</tt> statements that might be
+suitable for flop inference, with extra checks for soundness."
+
+  :long "<p><b>Signature:</b> @(call vl-match/check-flop) returns
+<tt>(mv successp clk-expr lhs-expr rhs-expr delay)</tt>.</p>
+
+<p><tt>x</tt> is an always statement (see @(see vl-always-p)).  We first
+determine whether it has the correct form for a flop; see @(see
+vl-pattern-match-flop).  Then we check whether the <tt>clk</tt> and
+<tt>lhs</tt> expressions are simple identifiers, and fail if not."
+
+  (defund vl-match/check-flop (x)
+    "Returns (mv successp clk-expr lhs-expr rhs-expr delay)"
+    (declare (xargs :guard (vl-always-p x)))
+
+    (b* (((mv successp clk-expr lhs-expr rhs-expr delay)
+          (vl-pattern-match-flop x))
+         ((unless (and successp
+                       (vl-idexpr-p lhs-expr)
+                       (vl-idexpr-p clk-expr)))
+          (mv nil nil nil nil nil)))
+
+      (mv t clk-expr lhs-expr rhs-expr delay)))
+
+  (local (in-theory (enable vl-match/check-flop)))
+
+  (defthm type-of-vl-match/check-flop
+    (booleanp (mv-nth 0 (vl-match/check-flop x)))
+    :rule-classes :type-prescription)
+
+  (defthm vl-match/check-flop-basics
+    (implies (force (vl-always-p x))
+             (and (equal (vl-expr-p (mv-nth 1 (vl-match/check-flop x)))
+                         (if (mv-nth 0 (vl-match/check-flop x)) t nil))
+                  (equal (vl-idexpr-p (mv-nth 1 (vl-match/check-flop x)))
+                         (if (mv-nth 0 (vl-match/check-flop x)) t nil))
+                  (equal (vl-expr-p (mv-nth 2 (vl-match/check-flop x)))
+                         (if (mv-nth 0 (vl-match/check-flop x)) t nil))
+                  (equal (vl-idexpr-p (mv-nth 2 (vl-match/check-flop x)))
+                         (if (mv-nth 0 (vl-match/check-flop x)) t nil))
+                  (equal (vl-expr-p (mv-nth 3 (vl-match/check-flop x)))
+                         (if (mv-nth 0 (vl-match/check-flop x)) t nil))
+                  (vl-maybe-natp (mv-nth 4 (vl-match/check-flop x)))))))
 
 
 
@@ -372,76 +423,120 @@ completeness.</p>"
 
 
 
+(defsection vl-pattern-match-latchbody
 
-(defun vl-pattern-match-latchbody-form1 (x)
-  "Returns (MV SUCCESSP CONDITION LHS RHS)"
-  (declare (xargs :guard (vl-stmt-p x)))
+  (defund vl-pattern-match-latchbody-form1 (x)
+    "Returns (MV SUCCESSP CONDITION LHS RHS)"
+    (declare (xargs :guard (vl-stmt-p x)))
 
 ; Recognize and decompose an assignment statement of the form:
 ;     lhs [<]= condition ? rhs : lhs ;
 
-  (b* (((unless (and (eq (tag x) :vl-assignstmt)
-                     (member (vl-assignstmt->type x) '(:vl-blocking :vl-nonblocking))))
-        (mv nil nil nil nil))
+    (b* (((unless (and (eq (tag x) :vl-assignstmt)
+                       (member (vl-assignstmt->type x) '(:vl-blocking :vl-nonblocking))))
+          (mv nil nil nil nil))
 
-       (lhs (vl-assignstmt->lvalue x))
-       (rhs (vl-assignstmt->expr x))
+         (lhs (vl-assignstmt->lvalue x))
+         (rhs (vl-assignstmt->expr x))
 
-       ((unless (and (eq (tag rhs) :vl-nonatom)
-                     (eq (vl-nonatom->op rhs) :vl-qmark)))
-        (mv nil nil nil nil))
+         ((unless (and (eq (tag rhs) :vl-nonatom)
+                       (eq (vl-nonatom->op rhs) :vl-qmark)))
+          (mv nil nil nil nil))
 
-       (args      (vl-nonatom->args rhs))
-       (condition (first args))
-       (rhs       (second args))
+         (args      (vl-nonatom->args rhs))
+         (condition (first args))
+         (rhs       (second args))
 
-       ((unless (equal lhs (third args)))
-        (mv nil nil nil nil)))
+         ((unless (equal lhs (third args)))
+          (mv nil nil nil nil)))
 
       (mv t condition lhs rhs)))
 
-(defun vl-pattern-match-latchbody-form2 (x)
-  "Returns (MV SUCCESSP CONDITION LHS RHS)"
-  (declare (xargs :guard (vl-stmt-p x)))
+  (local (in-theory (enable vl-pattern-match-latchbody-form1)))
+
+  (defthm vl-pattern-match-latchbody-form1-basics
+    (implies (vl-stmt-p x)
+             (and (equal (vl-expr-p (mv-nth 1 (vl-pattern-match-latchbody-form1 x)))
+                         (if (mv-nth 0 (vl-pattern-match-latchbody-form1 x)) t nil))
+                  (equal (vl-expr-p (mv-nth 2 (vl-pattern-match-latchbody-form1 x)))
+                         (if (mv-nth 0 (vl-pattern-match-latchbody-form1 x)) t nil))
+                  (equal (vl-expr-p (mv-nth 3 (vl-pattern-match-latchbody-form1 x)))
+                         (if (mv-nth 0 (vl-pattern-match-latchbody-form1 x)) t nil)))))
+
+  (defund vl-pattern-match-latchbody-form2 (x)
+    "Returns (MV SUCCESSP CONDITION LHS RHS)"
+    (declare (xargs :guard (vl-stmt-p x)))
 
 ; Recognize and decompose an if-statement of the form:
 ;     if (condition) lhs <= rhs;
 
-  (b* (((unless (and (eq (tag x) :vl-compoundstmt)
-                     (eq (vl-compoundstmt->type x) :vl-ifstmt)))
-        (mv nil nil nil nil))
+    (b* (((unless (and (eq (tag x) :vl-compoundstmt)
+                       (eq (vl-compoundstmt->type x) :vl-ifstmt)))
+          (mv nil nil nil nil))
 
-       (condition   (vl-ifstmt->condition x))
-       (truebranch  (vl-ifstmt->truebranch x))
-       (falsebranch (vl-ifstmt->falsebranch x))
+         (condition   (vl-ifstmt->condition x))
+         (truebranch  (vl-ifstmt->truebranch x))
+         (falsebranch (vl-ifstmt->falsebranch x))
 
-       ((unless (and (eq (tag falsebranch) :vl-nullstmt)
-                     (eq (tag truebranch) :vl-assignstmt)
-                     (member (vl-assignstmt->type truebranch)
-                             '(:vl-blocking :vl-nonblocking))))
-        (mv nil nil nil nil))
+         ((unless (and (eq (tag falsebranch) :vl-nullstmt)
+                       (eq (tag truebranch) :vl-assignstmt)
+                       (member (vl-assignstmt->type truebranch)
+                               '(:vl-blocking :vl-nonblocking))))
+          (mv nil nil nil nil))
 
-       (lhs (vl-assignstmt->lvalue truebranch))
-       (rhs (vl-assignstmt->expr truebranch)))
+         (lhs (vl-assignstmt->lvalue truebranch))
+         (rhs (vl-assignstmt->expr truebranch)))
       (mv t condition lhs rhs)))
 
-(defun vl-pattern-match-latchbody (x)
-  "Returns (MV SUCCESSP CONDITION LHS RHS)"
-  (declare (xargs :guard (vl-stmt-p x)))
+  (local (in-theory (enable vl-pattern-match-latchbody-form2)))
 
-  (b* (((mv successp condition lhs rhs) (vl-pattern-match-latchbody-form1 x)))
+  (defthm vl-pattern-match-latchbody-form2-basics
+    (implies (vl-stmt-p x)
+             (and (equal (vl-expr-p (mv-nth 1 (vl-pattern-match-latchbody-form2 x)))
+                         (if (mv-nth 0 (vl-pattern-match-latchbody-form2 x)) t nil))
+                  (equal (vl-expr-p (mv-nth 2 (vl-pattern-match-latchbody-form2 x)))
+                         (if (mv-nth 0 (vl-pattern-match-latchbody-form2 x)) t nil))
+                  (equal (vl-expr-p (mv-nth 3 (vl-pattern-match-latchbody-form2 x)))
+                         (if (mv-nth 0 (vl-pattern-match-latchbody-form2 x)) t nil)))))
+
+  (local (in-theory (disable vl-pattern-match-latchbody-form1
+                             vl-pattern-match-latchbody-form2)))
+
+  (defund vl-pattern-match-latchbody (x)
+    "Returns (MV SUCCESSP CONDITION LHS RHS)"
+    (declare (xargs :guard (vl-stmt-p x)))
+
+    (b* (((mv successp condition lhs rhs) (vl-pattern-match-latchbody-form1 x)))
       (if successp
           (mv successp condition lhs rhs)
         (vl-pattern-match-latchbody-form2 x))))
 
+  (local (in-theory (enable vl-pattern-match-latchbody)))
+
+  (defthm vl-pattern-match-latchbody-basics
+    (implies (vl-stmt-p x)
+             (and (equal (vl-expr-p (mv-nth 1 (vl-pattern-match-latchbody x)))
+                         (if (mv-nth 0 (vl-pattern-match-latchbody x)) t nil))
+                  (equal (vl-expr-p (mv-nth 2 (vl-pattern-match-latchbody x)))
+                         (if (mv-nth 0 (vl-pattern-match-latchbody x)) t nil))
+                  (equal (vl-expr-p (mv-nth 3 (vl-pattern-match-latchbody x)))
+                         (if (mv-nth 0 (vl-pattern-match-latchbody x)) t nil))))))
+
 
 
 (defsection vl-pattern-match-latch
+  :short "Checks whether an always statement is a recognizable form for a
+latch."
+  :long "Skips extra error checking for things like the LHS being an idexpr, it
+not occurring in the RHS, the right things being in the sensitivity list, etc."
 
-  (defund vl-pattern-match-latch (x warnings)
-    "Returns (mv warnings successp condition-expr lhs-expr rhs-expr)"
-    (declare (xargs :guard (and (vl-always-p x)
-                                (vl-warninglist-p warnings))))
+  (local (in-theory (disable double-containment
+                             vl-always-p-when-wrong-tag
+                             member-equal-when-member-equal-of-cdr-under-iff)))
+
+  (defund vl-pattern-match-latch (x)
+    "Returns (mv successp condition-expr lhs-expr rhs-expr)"
+    (declare (xargs :guard (vl-always-p x)))
 
 ; We once imagined trying to carry out the following rewrite.
 ;
@@ -496,7 +591,7 @@ completeness.</p>"
 
          ((unless (and (eq (tag stmt) :vl-compoundstmt)
                        (eq (vl-compoundstmt->type stmt) :vl-timingstmt)))
-          (mv warnings nil nil nil nil))
+          (mv nil nil nil nil nil))
 
 ; Make sure the control is ok and decompose it.
 
@@ -504,23 +599,64 @@ completeness.</p>"
          ((unless (and (eq (tag ctrl) :vl-eventcontrol)
                        (or (vl-eventcontrol->starp ctrl)
                            (vl-evatomlist-all-plain-p (vl-eventcontrol->atoms ctrl)))))
-          (mv warnings nil nil nil nil))
-
-         (starp (vl-eventcontrol->starp ctrl))
-         (atoms (vl-eventcontrol->atoms ctrl))
+          (mv nil nil nil nil nil))
 
 
 ; Make sure the body is ok and decompose it.
 
          (body (vl-timingstmt->body stmt))
-
          ((mv successp condition lhs rhs)
           (vl-pattern-match-latchbody body))
+         ((unless successp)
+          (mv nil nil nil nil nil)))
+
+      (mv t ctrl condition lhs rhs)))
+
+  (local (in-theory (enable vl-pattern-match-latch)))
+
+  (defthm booleanp-of-vl-pattern-match-latch
+    (booleanp (mv-nth 0 (vl-pattern-match-latch x)))
+    :rule-classes :type-prescription
+    :hints(("Goal" :in-theory (disable (force)))))
+
+  (defthm vl-pattern-match-latch-basics
+    (implies (force (vl-always-p x))
+             (and
+              (equal (vl-eventcontrol-p (mv-nth 1 (vl-pattern-match-latch x)))
+                     (if (mv-nth 0 (vl-pattern-match-latch x)) t nil))
+              (implies (and (mv-nth 0 (vl-pattern-match-latch x))
+                            (not (vl-eventcontrol->starp
+                                  (mv-nth 1 (vl-pattern-match-latch x)))))
+                       (vl-evatomlist-all-plain-p
+                        (vl-eventcontrol->atoms
+                         (mv-nth 1 (vl-pattern-match-latch x)))))
+              (equal (vl-expr-p (mv-nth 2 (vl-pattern-match-latch x)))
+                     (if (mv-nth 0 (vl-pattern-match-latch x)) t nil))
+              (equal (vl-expr-p (mv-nth 3 (vl-pattern-match-latch x)))
+                     (if (mv-nth 0 (vl-pattern-match-latch x)) t nil))
+              (equal (vl-expr-p (mv-nth 4 (vl-pattern-match-latch x)))
+                     (if (mv-nth 0 (vl-pattern-match-latch x)) t nil))))))
+
+
+
+(defsection vl-match/check-latch
+  :short "Checks whether an always statement is recognizable as a latch, plus
+extra sanity checking."
+  (defund vl-match/check-latch (x warnings)
+    "Returns (mv warnings successp condition-expr lhs-expr rhs-expr)"
+    (declare (xargs :guard (and (vl-always-p x)
+                                (vl-warninglist-p warnings))))
+
+
+    (b* (((mv successp ctrl condition lhs rhs)
+          (vl-pattern-match-latch x))
 
          ((unless (and successp
                        (vl-idexpr-p lhs)))
           (mv warnings nil nil nil nil))
-
+         
+         (starp (vl-eventcontrol->starp ctrl))
+         (atoms (vl-eventcontrol->atoms ctrl))
 
 ; Now do some sanity checks on what we've found.
 
@@ -584,29 +720,30 @@ completeness.</p>"
 
       (mv warnings t condition lhs rhs)))
 
-  (local (in-theory (enable vl-pattern-match-latch)))
+  (local (in-theory (enable vl-match/check-latch)))
 
-  (defthm vl-warninglist-p-of-vl-pattern-match-latch
+  (defthm vl-warninglist-p-of-vl-match/check-latch
     (implies (force (vl-warninglist-p warnings))
-             (vl-warninglist-p (mv-nth 0 (vl-pattern-match-latch x warnings))))
+             (vl-warninglist-p (mv-nth 0 (vl-match/check-latch x warnings))))
     :hints(("Goal" :in-theory (disable (force)))))
 
-  (defthm booleanp-of-vl-pattern-match-latch
-    (booleanp (mv-nth 1 (vl-pattern-match-latch x warnings)))
+  (defthm booleanp-of-vl-match/check-latch
+    (booleanp (mv-nth 1 (vl-match/check-latch x warnings)))
     :rule-classes :type-prescription
     :hints(("Goal" :in-theory (disable (force)))))
 
-  (defthm vl-pattern-match-latch-basics
+  (defthm vl-match/check-latch-basics
     (implies (force (vl-always-p x))
              (and
-              (equal (vl-expr-p (mv-nth 2 (vl-pattern-match-latch x warnings)))
-                     (if (mv-nth 1 (vl-pattern-match-latch x warnings)) t nil))
-              (equal (vl-expr-p (mv-nth 3 (vl-pattern-match-latch x warnings)))
-                     (if (mv-nth 1 (vl-pattern-match-latch x warnings)) t nil))
-              (equal (vl-idexpr-p (mv-nth 3 (vl-pattern-match-latch x warnings)))
-                     (if (mv-nth 1 (vl-pattern-match-latch x warnings)) t nil))
-              (equal (vl-expr-p (mv-nth 4 (vl-pattern-match-latch x warnings)))
-                     (if (mv-nth 1 (vl-pattern-match-latch x warnings)) t nil))))))
+              (equal (vl-expr-p (mv-nth 2 (vl-match/check-latch x warnings)))
+                     (if (mv-nth 1 (vl-match/check-latch x warnings)) t nil))
+              (equal (vl-expr-p (mv-nth 3 (vl-match/check-latch x warnings)))
+                     (if (mv-nth 1 (vl-match/check-latch x warnings)) t nil))
+              (equal (vl-idexpr-p (mv-nth 3 (vl-match/check-latch x warnings)))
+                     (if (mv-nth 1 (vl-match/check-latch x warnings)) t nil))
+              (equal (vl-expr-p (mv-nth 4 (vl-match/check-latch x warnings)))
+                     (if (mv-nth 1 (vl-match/check-latch x warnings)) t
+                       nil))))))
 
 
 
@@ -671,11 +808,11 @@ the module.</li>
 
           ;; Try to match either a flop or latch.
           (b* (((mv successp clk-expr lhs-expr rhs-expr delay)
-                (vl-pattern-match-flop x))
+                (vl-match/check-flop x))
                ((when successp)
                 (mv warnings t :flop clk-expr lhs-expr rhs-expr delay))
                ((mv warnings successp clk-expr lhs-expr rhs-expr)
-                (vl-pattern-match-latch x warnings)))
+                (vl-match/check-latch x warnings)))
               (mv warnings successp :latch clk-expr lhs-expr rhs-expr
                   ;; BOZO maybe eventually think about delays on latches
                   delay)))

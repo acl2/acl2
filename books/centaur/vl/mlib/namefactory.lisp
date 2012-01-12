@@ -709,6 +709,16 @@ vl-namefactory-indexed-name) and some notes may be printed."
     (implies (and (member-equal a (vl-namefactory-allnames factory))
                   (force (string-listp names))
                   (force (vl-namefactory-p factory)))
-             (not (member-equal a (mv-nth 0 (vl-namefactory-plain-names names factory)))))))
+             (not (member-equal a (mv-nth 0 (vl-namefactory-plain-names names
+                                                                        factory))))))
+
+  (defthm len-vl-namefactory-plain-names
+    (equal (len (mv-nth 0 (vl-namefactory-plain-names names factory)))
+           (len names)))
+
+  (defthm true-listp-vl-namefactory-plain-names
+    (true-listp (mv-nth 0 (vl-namefactory-plain-names names factory)))
+    :hints(("Goal" :in-theory (disable (force))))
+    :rule-classes :type-prescription))
 
 

@@ -24,14 +24,7 @@
 (include-book "parse-expressions-error")     ;; sucky
 (local (include-book "../util/arithmetic"))
 
-(local (in-theory (disable consp-under-iff-when-true-listp
-                           member-equal-when-member-equal-of-cdr-under-iff
-                           default-car
-                           default-cdr
-                           ;consp-when-vl-atomguts-p
-                           ;tag-when-vl-ifstmt-p
-                           ;tag-when-vl-seqblockstmt-p
-                           )))
+
 
 (defun vl-expression-claim-fn (name extra-args type)
   (let ((full-args (append extra-args '(tokens warnings))))
@@ -53,6 +46,19 @@
 
 (defmacro vl-expression-claim (name type &key extra-args)
   (vl-expression-claim-fn name extra-args type))
+
+(local (in-theory (disable consp-under-iff-when-true-listp
+                           member-equal-when-member-equal-of-cdr-under-iff
+                           default-car
+                           default-cdr
+                           vl-atom-p-by-tag-when-vl-expr-p
+                           acl2-count-positive-when-consp
+                           (:type-prescription acl2-count)
+                           
+                           ;consp-when-vl-atomguts-p
+                           ;tag-when-vl-ifstmt-p
+                           ;tag-when-vl-seqblockstmt-p
+                           )))
 
 (with-output
  :off prove :gag-mode :goals

@@ -788,6 +788,7 @@ operator.</p>
           (make-honsed-vl-atom
            :guts (make-honsed-vl-constint :origwidth 32
                                           :origtype :vl-signed
+                                          :wasunsized t
                                           :value value)
            :finalwidth 32
            :finaltype :vl-signed)

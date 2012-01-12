@@ -38,6 +38,43 @@
 (defmacro vl-stmt-claim (name type &key extra-args extra-hyps true-listp)
   (vl-stmt-claim-fn name extra-args extra-hyps type true-listp))
 
+
+;; Sol -- accumulated-persistence hacking
+(local (in-theory (disable vl-atomicstmt-p-by-tag-when-vl-stmt-p
+                           vl-eventtriggerstmt-p-by-tag-when-vl-atomicstmt-p
+                           vl-atomicstmt-p-when-vl-deassignstmt-p
+                           vl-disablestmt-p-by-tag-when-vl-atomicstmt-p
+                           vl-deassignstmt-p-by-tag-when-vl-atomicstmt-p
+                           vl-assignstmt-p-by-tag-when-vl-atomicstmt-p
+                           vl-nullstmt-p-by-tag-when-vl-atomicstmt-p
+                           vl-enablestmt-p-by-tag-when-vl-atomicstmt-p
+                           acl2-count-positive-when-consp
+                           vl-is-token?-fn-when-not-consp-of-tokens
+                           vl-stmt-p-when-neither-atomic-nor-compound
+                           consp-under-iff-when-true-listp
+                           double-containment
+                           member-equal-when-member-equal-of-cdr-under-iff
+                           consp-by-len
+                           acl2-count-when-member-equal
+                           consp-when-member-equal-of-cons-listp
+                           consp-when-member-equal-of-cons-listp
+                           true-listp-when-character-listp
+                           (:type-prescription vl-is-token?-fn)
+                           (:type-prescription acl2-count)
+                           (:type-prescription vl-tokenlist-p)
+                           vl-stmt-p-when-member-equal-of-vl-stmtlist-p
+                           rationalp-implies-acl2-numberp
+                           rationalp-when-integerp
+                           integerp-when-natp
+                           default-<-2
+                           default-<-1
+                           natp-when-posp
+                           not
+                           true-listp-when-symbol-listp
+                           true-listp-when-string-listp
+                           sets::sets-are-true-lists
+                           )))
+
 (with-output
  :off prove :gag-mode :goals
  (make-event

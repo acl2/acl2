@@ -28,6 +28,7 @@
 (include-book "parse-functions")  ;; vl-fundecllist-p
 (include-book "make-implicit-wires")
 (include-book "../mlib/context")  ;; vl-modelement-p, sorting modelements
+(include-book "../mlib/port-tools")  ;; vl-ports-from-portdecls
 (local (include-book "../util/arithmetic"))
 
 
@@ -525,22 +526,6 @@
                                          (vl-token->loc endkwd)
                                          warnings))))
 
-
-(defund vl-ports-from-portdecls (x)
-  (declare (xargs :guard (vl-portdecllist-p x)))
-  (if (atom x)
-      nil
-    (b* ((name (vl-portdecl->name (car x)))
-         (loc  (vl-portdecl->loc (car x)))
-         (guts (make-vl-id :name name))
-         (expr (make-vl-atom :guts guts)))
-      (cons (make-vl-port :name name :expr expr :loc loc)
-            (vl-ports-from-portdecls (cdr x))))))
-
-(defthm vl-portlist-p-of-vl-ports-from-portdecls
-  (implies (vl-portdecllist-p x)
-           (vl-portlist-p (vl-ports-from-portdecls x)))
-  :hints(("Goal" :in-theory (enable vl-ports-from-portdecls))))
 
 
 (defparser vl-parse-module-declaration-variant-2 (atts module_keyword id tokens warnings)

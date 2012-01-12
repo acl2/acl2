@@ -446,3 +446,22 @@ as an <tt>inout</tt>, and add a warning that this case is very unusual.</p>"
 (deflist vl-modinstlist-blankfree-p (x)
   (vl-modinst-blankfree-p x)
   :guard (vl-modinstlist-p x))
+
+
+
+(defund vl-ports-from-portdecls (x)
+  (declare (xargs :guard (vl-portdecllist-p x)))
+  (if (atom x)
+      nil
+    (b* ((name (vl-portdecl->name (car x)))
+         (loc  (vl-portdecl->loc (car x)))
+         (guts (make-vl-id :name name))
+         (expr (make-vl-atom :guts guts)))
+      (cons (make-vl-port :name name :expr expr :loc loc)
+            (vl-ports-from-portdecls (cdr x))))))
+
+(defthm vl-portlist-p-of-vl-ports-from-portdecls
+  (implies (vl-portdecllist-p x)
+           (vl-portlist-p (vl-ports-from-portdecls x)))
+  :hints(("Goal" :in-theory (enable vl-ports-from-portdecls))))
+
