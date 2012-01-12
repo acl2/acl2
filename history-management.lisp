@@ -1934,6 +1934,14 @@
                       (cons namex symbol-class))
                 form))))
 
+(defun access-event-tuple-number (x)
+
+; Warning: If we change the convention that n is (car x) when (car x)
+; is an integerp, then change the default value given getprop in
+; max-absolute-event-number.
+
+  (if (integerp (car x)) (car x) (caar x)))
+
 (defun access-event-tuple-depth (x)
   (if (integerp (car x)) 0 (cdar x)))
 
@@ -2052,14 +2060,6 @@
 
 (defun access-command-tuple-cbd (x)
   (access command-tuple x :cbd))
-
-(defun access-event-tuple-number (x)
-
-; Warning: If we change the convention that n is (car x) when (car x)
-; is an integerp, then change the default value given getprop in
-; max-absolute-event-number.
-
-  (if (integerp (car x)) (car x) (caar x)))
 
 ; Absolute Event and Command Numbers
 
@@ -3400,6 +3400,199 @@
              :skip-checks t)
   ~ev[]~/~/")
 
+(defun lmi-seed (lmi)
+
+; The "seed" of an lmi is either a symbolic name or else a term.  In
+; particular, the seed of a symbolp lmi is the lmi itself, the seed of
+; a rune is its base symbol, the seed of a :theorem is the term
+; indicated, and the seed of an :instance or :functional-instance is
+; obtained recursively from the inner lmi.
+
+; Warning: If this is changed so that runes are returned as seeds, it
+; will be necessary to change the use of filter-atoms below.
+
+  (cond ((atom lmi) lmi)
+        ((eq (car lmi) :theorem) (cadr lmi))
+        ((or (eq (car lmi) :instance)
+             (eq (car lmi) :functional-instance))
+         (lmi-seed (cadr lmi)))
+        (t (base-symbol lmi))))
+
+(defun lmi-techs (lmi)
+  (cond
+   ((atom lmi) nil)
+   ((eq (car lmi) :theorem) nil)
+   ((eq (car lmi) :instance)
+    (add-to-set-equal "instantiation" (lmi-techs (cadr lmi))))
+   ((eq (car lmi) :functional-instance)
+    (add-to-set-equal "functional instantiation" (lmi-techs (cadr lmi))))
+   (t nil)))
+
+(defun lmi-seed-lst (lmi-lst)
+  (cond ((null lmi-lst) nil)
+        (t (add-to-set-eq (lmi-seed (car lmi-lst))
+                          (lmi-seed-lst (cdr lmi-lst))))))
+
+(defun lmi-techs-lst (lmi-lst)
+  (cond ((null lmi-lst) nil)
+        (t (union-equal (lmi-techs (car lmi-lst))
+                        (lmi-techs-lst (cdr lmi-lst))))))
+
+(defun filter-atoms (flg lst)
+
+; If flg=t we return all the atoms in lst.  If flg=nil we return all
+; the non-atoms in lst.
+
+  (cond ((null lst) nil)
+        ((eq (atom (car lst)) flg)
+         (cons (car lst) (filter-atoms flg (cdr lst))))
+        (t (filter-atoms flg (cdr lst)))))
+
+(defun print-runes-summary (ttree channel state)
+
+; This should be called under (io? summary ...).
+
+  (let ((runes (merge-sort-runes
+                (all-runes-in-ttree ttree nil))))
+    (mv-let (col state)
+            (fmt1 "Rules: ~y0~|"
+                  (list (cons #\0 runes))
+                  0 channel state nil)
+            (declare (ignore col))
+            state)))
+
+; We admit the following sorting functions in :logic mode, verify their guards,
+; and prove properties of them in books/misc/sort-symbols.lisp.
+
+(defun strict-merge-symbol-< (l1 l2 acc)
+
+; If l1 and l2 are strictly ordered by symbol-< and above acc, which is also
+; thus strictly ordered, then the result is strictly ordered by symbol-<.
+
+  (declare (xargs :guard (and (symbol-listp l1)
+                              (symbol-listp l2)
+                              (true-listp acc))
+
+; We admit this to the logic and prove termination in
+; books/misc/sort-symbols.lisp.
+
+                  :mode :program))
+  (cond ((endp l1) (revappend acc l2))
+        ((endp l2) (revappend acc l1))
+        ((eq (car l1) (car l2))
+         (strict-merge-symbol-< (cdr l1) (cdr l2) (cons (car l1) acc)))
+        ((symbol-< (car l1) (car l2))
+         (strict-merge-symbol-< (cdr l1) l2 (cons (car l1) acc)))
+        (t (strict-merge-symbol-< l1 (cdr l2) (cons (car l2) acc)))))
+
+(defun strict-merge-sort-symbol-< (l)
+
+; Produces a result with the same elements as the list l of symbols, but
+; strictly ordered by symbol-name.
+
+  (declare (xargs :guard (symbol-listp l)
+
+; We admit this to the logic and prove termination in
+; books/misc/sort-symbols.lisp.
+
+                  :mode :program))
+  (cond ((endp (cdr l)) l)
+        (t (strict-merge-symbol-<
+            (strict-merge-sort-symbol-< (evens l))
+            (strict-merge-sort-symbol-< (odds l))
+            nil))))
+
+(defun strict-symbol-<-sortedp (x)
+  (declare (xargs :guard (symbol-listp x)))
+  (cond ((or (endp x) (null (cdr x)))
+         t)
+        (t (and (symbol-< (car x) (cadr x))
+                (strict-symbol-<-sortedp (cdr x))))))
+
+(defun sort-symbol-listp (x)
+  (declare (xargs :guard (symbol-listp x)))
+  (cond ((strict-symbol-<-sortedp x)
+         x)
+        (t (strict-merge-sort-symbol-< x))))
+
+(defun use-names-in-ttree (ttree)
+  (let* ((objs (tagged-objects :USE ttree))
+         (lmi-lst (append-lst (strip-cars (strip-cars objs))))
+         (seeds (lmi-seed-lst lmi-lst))
+         (lemma-names (filter-atoms t seeds)))
+    (sort-symbol-listp lemma-names)))
+
+(defun by-names-in-ttree (ttree)
+  (let* ((objs (tagged-objects :BY ttree))
+         (lmi-lst (append-lst (strip-cars objs)))
+         (seeds (lmi-seed-lst lmi-lst))
+         (lemma-names (filter-atoms t seeds)))
+    (sort-symbol-listp lemma-names)))
+
+(defrec clause-processor-hint
+  (term stobjs-out . verified-p)
+  nil)
+
+(defun clause-processor-fns (cl-proc-hints)
+  (cond ((endp cl-proc-hints) nil)
+        (t (cons (ffn-symb (access clause-processor-hint
+                                   (car cl-proc-hints)
+                                   :term))
+                 (clause-processor-fns (cdr cl-proc-hints))))))
+
+(defun cl-proc-names-in-ttree (ttree)
+  (let* ((objs (tagged-objects :CLAUSE-PROCESSOR ttree))
+         (cl-proc-hints (strip-cars objs))
+         (cl-proc-fns (clause-processor-fns cl-proc-hints)))
+    (sort-symbol-listp cl-proc-fns)))
+
+(defun print-hint-events-summary (ttree channel state)
+
+; This should be called under (io? summary ...).
+
+  (flet ((make-rune-like-objs (kwd lst)
+                              (and lst ; optimization for common case
+                                   (pairlis$ (make-list (length lst)
+                                                        :INITIAL-ELEMENT kwd)
+                                             (pairlis$ lst nil)))))
+    (let* ((use-lst (use-names-in-ttree ttree))
+           (by-lst (by-names-in-ttree ttree))
+           (cl-proc-lst (cl-proc-names-in-ttree ttree))
+           (lst (append (make-rune-like-objs :BY by-lst)
+                        (make-rune-like-objs :CLAUSE-PROCESSOR cl-proc-lst)
+                        (make-rune-like-objs :USE use-lst))))
+      (cond (lst (mv-let (col state)
+                         (fmt1 "Hint-events: ~y0~|"
+                               (list (cons #\0 lst))
+                               0 channel state nil)
+                         (declare (ignore col))
+                         state))
+            (t state)))))
+
+(defun print-rules-and-hint-events-summary (state)
+  (pprogn
+   (io? summary nil state
+        ()
+        (let ((channel (proofs-co state))
+              (acc-ttree (f-get-global 'accumulated-ttree state))
+              (inhibited-summary-types (f-get-global 'inhibited-summary-types
+                                                     state)))
+          (pprogn
+           (cond ((member-eq 'rules inhibited-summary-types)
+                  state)
+                 (t (print-runes-summary acc-ttree channel state)))
+           (cond ((member-eq 'hint-events inhibited-summary-types)
+                  state)
+                 (t (print-hint-events-summary acc-ttree channel state))))))
+
+; Since we've already printed from the accumulated-ttree, there is no need to
+; print again the next time we want to print rules or hint-events.  That is why
+; we set the accumulated-ttree to nil here.  If we ever want certify-book, say,
+; to be able to print rules and hint-events when it fails, then we should use a
+; stack of ttrees rather than a single accumulated-ttree.
+
+   (f-put-global 'accumulated-ttree nil state)))
+
 (defun print-summary (erp noop-flg ctx state)
 
 ; This function prints the Summary paragraph.  Part of that paragraph includes
@@ -3502,7 +3695,7 @@
                         (fmt-ctx ctx col channel state)
                         (declare (ignore col))
                         (newline channel state))))))))
-       (print-rules-summary state) ; Call of io? is inside
+       (print-rules-and-hint-events-summary state) ; call of io? is inside
        (pprogn (print-warnings-summary state)
                (print-time-summary state)
                (print-steps-summary state))
@@ -4819,6 +5012,52 @@
                             wrld))))
     (global-set 'cltl-command cltl-cmd wrld)))
 
+(defun strip-non-nil-base-symbols (runes acc)
+  (cond ((endp runes) acc)
+        (t (strip-non-nil-base-symbols
+            (cdr runes)
+            (let ((b (base-symbol (car runes))))
+              (cond ((null b) acc)
+                    (t (cons b acc))))))))
+
+(defun install-proof-supporters (namex ttree wrld)
+
+; This function returns an extension of wrld in which the world global
+; 'proof-supporters-alist is extended by associating namex, when a symbol or
+; list of symbols, with the list of names of events used in an admissibility
+; proof.  This list is sorted (by symbol-<) and is based on event names
+; recorded in ttree, including runes as well as events from hints of type :use,
+; :by, or :clause-processor.  However, if the list of events is empty, then we
+; do not extend wrld.  See :DOC dead-events.
+
+  (let* ((use-lst (use-names-in-ttree ttree))
+         (by-lst (by-names-in-ttree ttree))
+         (cl-proc-lst (cl-proc-names-in-ttree ttree))
+         (runes (all-runes-in-ttree ttree nil))
+         (names (append use-lst by-lst cl-proc-lst
+                        (strip-non-nil-base-symbols runes nil)))
+         (sorted-names (and names ; optimization
+                            (sort-symbol-listp
+                             (cond ((symbolp namex)
+                                    (cond ((member-eq namex names)
+
+; For example, the :induction rune for namex, or a :use (or maybe even :by)
+; hint specifying namex, can be used in the guard proof.
+
+                                           (remove-eq namex names))
+                                          (t names)))
+                                   ((intersectp-eq namex names)
+                                    (set-difference-eq names namex))
+                                   (t names))))))
+    (cond ((and (not (eql namex 0))
+                sorted-names)
+           (global-set 'proof-supporters-alist
+                       (acons namex
+                              sorted-names
+                              (global-val 'proof-supporters-alist wrld))
+                       wrld))
+          (t wrld))))
+
 (defun install-event (val form ev-type namex ttree cltl-cmd
                           chk-theory-inv-p ctx wrld state)
 
@@ -4906,14 +5145,18 @@
               (revappend (strip-cars (tagged-objects :use ttree))
                          (reverse ; for backwards compatibility with v4-2
                           (tagged-objects :by ttree)))))
+            (wrld0 (if (or (ld-skip-proofsp state)
+                           (and (atom namex) (not (symbolp namex))))
+                       wrld
+                     (install-proof-supporters namex ttree wrld)))
             (wrld1 (if new-proved-fnl-insts
                        (global-set
                         'proved-functional-instances-alist
                         (append new-proved-fnl-insts
                                 (global-val 'proved-functional-instances-alist
-                                            wrld)) 
-                        wrld)
-                       wrld))
+                                            wrld0)) 
+                        wrld0)
+                       wrld0))
 
 ; We set world global 'skip-proofs-seen or 'redef-seen if ld-skip-proofsp or
 ; ld-redefinition-action (respectively) is non-nil and the world global is not
@@ -14052,62 +14295,6 @@
                            (merge-sort-symbol-< (odds l))
                            nil))))
 
-; The following variants of the above sorting routines are used when processing
-; the in-package form at the top of proof-checker-pkg.lisp, so
-; other-events.lisp is too late; so we define them here.  We expect to admit
-; these, verify guards, and prove properties in books/misc/sort-symbols.lisp.
-
-(defun strict-merge-symbol-< (l1 l2 acc)
-
-; If l1 and l2 are strictly ordered by symbol-< and above acc, which is also
-; thus strictly ordered, then the result is strictly ordered by symbol-<.
-
-  (declare (xargs :guard (and (symbol-listp l1)
-                              (symbol-listp l2)
-                              (true-listp acc))
-
-; We admit this to the logic and prove termination in
-; books/misc/sort-symbols.lisp.
-
-                  :mode :program))
-  (cond ((endp l1) (revappend acc l2))
-        ((endp l2) (revappend acc l1))
-        ((eq (car l1) (car l2))
-         (strict-merge-symbol-< (cdr l1) (cdr l2) (cons (car l1) acc)))
-        ((symbol-< (car l1) (car l2))
-         (strict-merge-symbol-< (cdr l1) l2 (cons (car l1) acc)))
-        (t (strict-merge-symbol-< l1 (cdr l2) (cons (car l2) acc)))))
-
-(defun strict-merge-sort-symbol-< (l)
-
-; Produces a result with the same elements as the list l of symbols, but
-; strictly ordered by symbol-name.
-
-  (declare (xargs :guard (symbol-listp l)
-
-; We admit this to the logic and prove termination in
-; books/misc/sort-symbols.lisp.
-
-                  :mode :program))
-  (cond ((endp (cdr l)) l)
-        (t (strict-merge-symbol-<
-            (strict-merge-sort-symbol-< (evens l))
-            (strict-merge-sort-symbol-< (odds l))
-            nil))))
-
-(defun strict-symbol-<-sortedp (x)
-  (declare (xargs :guard (symbol-listp x)))
-  (cond ((or (endp x) (null (cdr x)))
-         t)
-        (t (and (symbol-< (car x) (cadr x))
-                (strict-symbol-<-sortedp (cdr x))))))
-
-(defun sort-symbol-listp (x)
-  (declare (xargs :guard (symbol-listp x)))
-  (cond ((strict-symbol-<-sortedp x)
-         x)
-        (t (strict-merge-sort-symbol-< x))))
-
 ;; RAG - I added the non-standard primitives here.
 
 (defconst *non-instantiable-primitives*
@@ -16607,10 +16794,6 @@
       "The value for a :reorder hint must be a true list of positive integers ~
        without duplicates, but ~x0 is not."
       arg)))
-
-(defrec clause-processor-hint
-  (term stobjs-out . verified-p)
-  nil)
 
 (defun arity-mismatch-msg (sym expected-arity wrld)
 

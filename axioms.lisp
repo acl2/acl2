@@ -11723,7 +11723,7 @@
       (equal x nil)))
 
 (defconst *summary-types*
-  '(header form rules warnings time steps value))
+  '(header form rules hint-events warnings time steps value))
 
 (defun with-output-fn (ctx args off on gag-mode off-on-p gag-p stack
                            summary summary-p)
@@ -36403,10 +36403,17 @@
   ~ev[]
   where form evaluates to a true-list of symbols, each of which is among the
   values of the constant ~c[*summary-types*], i.e.: ~c[header], ~c[form],
-  ~c[rules], ~c[warnings], ~c[time], ~c[steps], and ~c[value].  Each specified
-  type inhibits printing of the corresponding portion of the summaries printed
-  at the conclusions of ~il[events], where ~c[header] refers to an initial
-  newline followed by the line containing just the word ~c[Summary].
+  ~c[rules], ~c[hint-events] ~c[warnings], ~c[time], ~c[steps], and ~c[value].
+  Each specified type inhibits printing of the corresponding portion of the
+  summaries printed at the conclusions of ~il[events], where ~c[header] refers
+  to an initial newline followed by the line containing just the word
+  ~c[Summary].
+
+  Note the distinction between ~c[rules] and ~c[hint-events].  ~c[Rules]
+  provides a record of automatic rule usage by the prover, while
+  ~c[hint-events] shows the names of events given to ~c[:USE] or ~c[:BY]
+  ~il[hints], as well as ~il[clause-processor] functions given to
+  ~c[:CLAUSE-PROCESSOR] hints that have an effect on the proof.
 
   Also ~pl[set-inhibit-output-lst].  Note that ~c[set-inhibited-summary-types]
   has no effect when ~c[summary] is one of the types inhibited by

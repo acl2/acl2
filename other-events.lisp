@@ -1508,7 +1508,8 @@
                     (untouchable-fns nil)
                     (untouchable-vars nil)
                     (defined-hereditarily-constrained-fns nil)
-                    (attachment-records nil))))
+                    (attachment-records nil)
+                    (proof-supporters-alist nil))))
              (list* `(operating-system ,operating-system)
                     `(command-number-baseline-info
                       ,(make command-number-baseline-info
@@ -3030,7 +3031,8 @@
                        (list 'event-number-baseline
                              (next-absolute-event-number wrld))
                        (list 'skip-proofs-seen nil)
-                       (list 'redef-seen nil))
+                       (list 'redef-seen nil)
+                       (list 'proof-supporters-alist nil))
                  (putprop 'acl2-defaults-table
                           'table-alist
                           *initial-acl2-defaults-table*
@@ -8344,6 +8346,111 @@
                            *t* wrld-acc)
            wrld ctx state)))))))
 
+(defun assoc-proof-supporters-alist (sym alist)
+  (cond ((endp alist) nil)
+        ((if (consp (caar alist)) ; namex key is a consp
+             (member-eq sym (caar alist))
+           (eq sym (caar alist)))
+         (car alist))
+        (t (assoc-proof-supporters-alist sym (cdr alist)))))
+
+(defun update-proof-supporters-alist-3 (names local-alist old new wrld)
+  (cond ((endp names) (mv (reverse old) new))
+        ((getprop (car names) 'absolute-event-number nil 'current-acl2-world
+                  wrld)
+
+; We'd like to say that if the above getprop is non-nil, then (car names)
+; is non-local.  But maybe redefinition was on and some local event redefined
+; some name from before the encapsulate.  Oh well, redefinition isn't
+; necessarily fully supported in every possible way, and that obscure case is
+; one such way.  Note that we get here with a wrld that has already erased old
+; properties of signature functions (if they are being redefined), via
+; chk-acceptable-encapsulate; so at least we don't need to worry about those.
+
+         (update-proof-supporters-alist-3
+          (cdr names) local-alist
+          (cons (car names) old)
+          new
+          wrld))
+        (t
+         (let ((car-names-supporters
+                (cdr (assoc-proof-supporters-alist (car names) local-alist))))
+           (update-proof-supporters-alist-3
+            (cdr names) local-alist
+            old
+            (strict-merge-symbol-< car-names-supporters new nil)
+            wrld)))))
+
+(defun posn-first-non-event (names wrld idx)
+  (cond ((endp names) nil)
+        ((getprop (car names) 'absolute-event-number nil 'current-acl2-world
+                  wrld)
+         (posn-first-non-event (cdr names) wrld (1+ idx)))
+        (t idx)))
+
+(defun update-proof-supporters-alist-2 (names local-alist wrld)
+  (let ((n (posn-first-non-event names wrld 0)))
+    (cond ((null n) names)
+          (t (mv-let (rest-old-event-names rest-new-names)
+                     (update-proof-supporters-alist-3
+                      (nthcdr n names) local-alist nil nil wrld)
+                     (strict-merge-symbol-<
+                      (append (take n names) rest-old-event-names)
+                      rest-new-names
+                      nil))))))
+
+(defun update-proof-supporters-alist-1 (namex names local-alist
+                                              proof-supporters-alist
+                                              wrld)
+  (assert$
+   names ; sanity check; else we wouldn't have updated at install-event
+   (let ((non-local-names
+          (update-proof-supporters-alist-2 names local-alist wrld)))
+     (cond ((getprop (if (symbolp namex) namex (car namex))
+                     'absolute-event-number
+                     nil 'current-acl2-world wrld)
+; See comment for similar getprop call in  update-proof-supporters-alist-2.
+            (mv local-alist
+                (if non-local-names
+                    (acons namex non-local-names proof-supporters-alist)
+                  proof-supporters-alist)))
+           (t (mv (acons namex non-local-names local-alist)
+                  proof-supporters-alist))))))
+
+(defun update-proof-supporters-alist (new-proof-supporters-alist
+                                      proof-supporters-alist
+                                      wrld)
+
+; Both alists are indexed by namex values that occur in reverse order of
+; introduction; for example, the caar (if non-empty) is the most recent namex.
+
+  (cond ((endp new-proof-supporters-alist)
+         (mv nil proof-supporters-alist))
+        (t (mv-let
+            (local-alist proof-supporters-alist)
+            (update-proof-supporters-alist (cdr new-proof-supporters-alist)
+                                           proof-supporters-alist
+                                           wrld)
+            (update-proof-supporters-alist-1
+             (caar new-proof-supporters-alist)
+             (cdar new-proof-supporters-alist)
+             local-alist
+             proof-supporters-alist
+             wrld)))))
+
+(defun install-proof-supporters-alist (new-proof-supporters-alist
+                                       installed-wrld
+                                       wrld)
+  (let ((saved-proof-supporters-alist
+         (global-val 'proof-supporters-alist installed-wrld)))
+    (mv-let (local-alist proof-supporters-alist)
+            (update-proof-supporters-alist
+             new-proof-supporters-alist
+             saved-proof-supporters-alist
+             installed-wrld)
+            (declare (ignore local-alist))
+            (global-set 'proof-supporters-alist proof-supporters-alist wrld))))
+
 (defun encapsulate-fn (signatures ev-lst state event-form)
 
 ; Important Note:  Don't change the formals of this function without reading
@@ -8510,7 +8617,9 @@
                    (kwd-value-list-lst (cadr trip))
                    (wrld1 (cddr trip)))
                (pprogn
-                (set-w 'extension wrld1 state)
+                (set-w 'extension
+                       (global-set 'proof-supporters-alist nil wrld1)
+                       state)
                 (print-encapsulate-msg1 insigs ev-lst state)
                 (er-let*
                  ((expansion-alist
@@ -8536,7 +8645,9 @@
                         (post-pass-1-include-book-alist-all
                          (global-val 'include-book-alist-all wrld2))
                         (post-pass-1-ttags-seen
-                         (global-val 'ttags-seen wrld2)))
+                         (global-val 'ttags-seen wrld2))
+                        (post-pass-1-proof-supporters-alist
+                         (global-val 'proof-supporters-alist wrld2)))
                    (pprogn
                     (print-encapsulate-msg2 insigs ev-lst state)
                     (er-progn
@@ -8594,7 +8705,11 @@
                                                         wrld4
                                                         (global-val 'ttags-seen
                                                                     wrld3)))
-                                    (wrld6 (cond
+                                    (wrld6 (install-proof-supporters-alist
+                                            post-pass-1-proof-supporters-alist
+                                            wrld3
+                                            wrld5))
+                                    (wrld7 (cond
                                             ((or (global-val 'skip-proofs-seen
 
 ; We prefer that an error report about skip-proofs in certification world be
@@ -8603,19 +8718,19 @@
                                                              wrld3)
                                                  (null
                                                   post-pass-1-skip-proofs-seen))
-                                             wrld5)
+                                             wrld6)
                                             (t (global-set
                                                 'skip-proofs-seen
                                                 post-pass-1-skip-proofs-seen
-                                                wrld5))))
-                                    (wrld7 (global-set?
+                                                wrld6))))
+                                    (wrld8 (global-set?
                                             'include-book-alist-all
                                             post-pass-1-include-book-alist-all
-                                            wrld6
+                                            wrld7
                                             (global-val
                                              'include-book-alist-all
                                              wrld3))))
-                               wrld7)
+                               wrld8)
                              state))))))))))))))
 
            (t ; (ld-skip-proofsp state) = 'include-book
@@ -30248,6 +30363,80 @@
 (link-doc-to fmt!-to-string programming printing-to-strings)
 (link-doc-to fmt1-to-string programming printing-to-strings)
 (link-doc-to fmt1!-to-string programming printing-to-strings)
+
+(defdoc dead-events
+
+  ":Doc-Section Other
+
+  using proof supporters to identify dead code and unused theorems~/
+
+  Below, when we talk about ``an event ~c[A]'', we mean an event whose name is
+  ~c[A].
+
+  When event ~c[A] is used in a proof performed to admit event ~c[B] that you
+  submit to ACL2, we say that ~c[A] is a ``proof-supporter'' of ~c[B].  ACL2
+  stores an association list such that for every event ~c[B] with at least one
+  proof-supporter, ~c[B] is associated with a list of all of its
+  proof-supporters, sorted by ~ilc[symbol-<].  The following form evaluates to
+  that alist, which is called the ``proof-supporters-alist''.
+  ~bv[]
+  (global-val 'proof-supporters-alist (w state))
+  ~ev[]
+  By ``used in a proof'' above, we mean: applied as a rule or supplied
+  explicitly via ~il[hints] of type ~c[:use], ~c[:by], or
+  ~c[:clause-processor].  That is, the ~il[events] ``used in a proof'' for
+  admitting an event ~c[E] are those listed in the summary printed at the
+  conclusion of admitting ~c[E].~/
+
+  Note that if proofs are skipped when admitting event ~c[E], say because the
+  last admission of ~c[E] was done by ~ilc[include-book] (or ~c[certify-book],
+  which ends with an ~ilc[include-book]), then there will be no entry in that
+  alist for ~c[E].  An exception is made however for ~ilc[encapsulate]
+  ~il[events], where proof-supporters are remembered from the first pass.
+
+  The case for ~ilc[encapsulate] is slightly tricky.  Consider an example of
+  the following form.
+  ~bv[]
+  A ; event preceding the encapsulate
+  (encapsulate
+   ()
+   B
+   (local C) ; uses A and B in a proof
+   D ; uses C in a proof
+   )
+  ~ev[]
+  At the conclusion of this ~ilc[encapsulate] event, the proof-supporters-alist
+  associates ~c[D] with ~c[A] and ~c[B], but not ~c[C] (which has disappeared,
+  since it is ~il[local]).
+
+  Note that this sort of ``transitive closure'' operation is only performed
+  when necessary due to the disappearance of ~il[local] ~il[events].  For
+  example, if we replace ~c[(local C)] above by just ~c[C], then ~c[D] is
+  associated in the proof-supporters-alist only with ~c[C], not with ~c[A] or
+  ~c[B].  If you want the transitive closure of the relation computed by the
+  proof-supporters-alist, you have to compute it yourself. (This was a
+  deliberate design decision, in order to avoid slowing down event processing.)
+  However, there is help available on how to do such a computation:
+
+  A distributed book, ~c[books/misc/dead-events.lisp], does such a transitive
+  closure, and moreover uses that information to find ``dead events'' relative
+  to a list of ``desired'' events.  For example, suppose you use ~ilc[LD] to
+  process the events, with proofs, in a book intended to prove theorems
+  ~c[MAIN-1] and ~c[MAIN-2].  (Remember, ~ilc[certify-book] will not save such
+  information.)  Suppose furthermore that the book begins with some
+  ~ilc[include-book] forms followed by ~c[(deflabel book-start)].  You could
+  evaluate this form:
+  ~bv[]
+  (dead-events '(main-1 main-2) :start 'book-start)
+  ~ev[]
+  The result is a list of events that you probably can delete from the book
+  without causing any proofs to fail.  See the ~c[dead-events.lisp] book for
+  further documentation.
+
+  You might also find the code in the above book to be helpful for writing your
+  own utilities based on the proof-supporters-alist.~/")
+
+(link-doc-to proof-supporters-alist miscellaneous dead-events)
 
 ; Essay on Memoization with Attachments (relevant for #+hons version only)
 

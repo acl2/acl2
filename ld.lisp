@@ -18428,6 +18428,14 @@
   rudimentary provisional certification schemes that he developed first at
   Rockwell Collins and later for his `Milawa' project.
 
+  Event summaries now show the names of events that were mentioned in
+  ~il[hints] of type ~c[:use], ~c[:by], or ~c[:clause-processor].
+  ~l[set-inhibited-summary-types].
+
+  A new feature allows the tracking of dependencies to identify dead code and
+  unused theorems.  ~l[dead-events].  Thanks to Shilpi Goel for requesting such
+  a feature.
+
   ~st[HEURISTIC IMPROVEMENTS]
 
   Reading of ACL2 ~ilc[arrays] (~pl[aref1], ~pl[aref2]) has been made more

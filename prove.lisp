@@ -2470,57 +2470,6 @@
          (apply-top-hints-clause1 temp cl-id cl pspv wrld state step-limit)
          (mv@par step-limit signal clauses ttree new-pspv state))))))
 
-; We now develop the code for explaining the action taken above.  First we
-; arrange to print a phrase describing a list of lmis.
-
-(defun lmi-seed (lmi)
-
-; The "seed" of an lmi is either a symbolic name or else a term.  In
-; particular, the seed of a symbolp lmi is the lmi itself, the seed of
-; a rune is its base symbol, the seed of a :theorem is the term
-; indicated, and the seed of an :instance or :functional-instance is
-; obtained recursively from the inner lmi.
-
-; Warning: If this is changed so that runes are returned as seeds, it
-; will be necessary to change the use of filter-atoms below.
-
-  (cond ((atom lmi) lmi)
-        ((eq (car lmi) :theorem) (cadr lmi))
-        ((or (eq (car lmi) :instance)
-             (eq (car lmi) :functional-instance))
-         (lmi-seed (cadr lmi)))
-        (t (base-symbol lmi))))
-
-(defun lmi-techs (lmi)
-  (cond
-   ((atom lmi) nil)
-   ((eq (car lmi) :theorem) nil)
-   ((eq (car lmi) :instance)
-    (add-to-set-equal "instantiation" (lmi-techs (cadr lmi))))
-   ((eq (car lmi) :functional-instance)
-    (add-to-set-equal "functional instantiation" (lmi-techs (cadr lmi))))
-   (t nil)))
-
-(defun lmi-seed-lst (lmi-lst)
-  (cond ((null lmi-lst) nil)
-        (t (add-to-set-eq (lmi-seed (car lmi-lst))
-                          (lmi-seed-lst (cdr lmi-lst))))))
-
-(defun lmi-techs-lst (lmi-lst)
-  (cond ((null lmi-lst) nil)
-        (t (union-equal (lmi-techs (car lmi-lst))
-                        (lmi-techs-lst (cdr lmi-lst))))))
-
-(defun filter-atoms (flg lst)
-
-; If flg=t we return all the atoms in lst.  If flg=nil we return all
-; the non-atoms in lst.
-
-  (cond ((null lst) nil)
-        ((eq (atom (car lst)) flg)
-         (cons (car lst) (filter-atoms flg (cdr lst))))
-        (t (filter-atoms flg (cdr lst)))))
-
 (defun tilde-@-lmi-phrase (lmi-lst k event-names)
 
 ; Lmi-lst is a list of lmis.  K is the number of constraints we have to
