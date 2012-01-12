@@ -18369,6 +18369,9 @@
   (~pl[equality-variants] for relevant background).  Thanks to Jared Davis for
   reporting this problem by sending the above example.
 
+  We have eliminated some hypotheses in built-in ~il[rewrite] rules
+  ~c[characterp-nth] and ~c[ordered-symbol-alistp-delete-assoc-eq].
+
   ~st[NEW FEATURES]
 
   A new ``tau system'' provides a kind of ``type checker.''  ~l[tau-system].
@@ -18430,7 +18433,9 @@
 
   Event summaries now show the names of events that were mentioned in
   ~il[hints] of type ~c[:use], ~c[:by], or ~c[:clause-processor].
-  ~l[set-inhibited-summary-types].
+  ~l[set-inhibited-summary-types].  Thanks to Francisco J. Martín Mateos for
+  requesting such an enhancement (actually thanks to the community, as his
+  request is the most recent but this has come up from time to time before).
 
   A new feature allows the tracking of dependencies to identify dead code and
   unused theorems.  ~l[dead-events].  Thanks to Shilpi Goel for requesting such

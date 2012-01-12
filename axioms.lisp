@@ -9008,7 +9008,6 @@
 
 (defthm characterp-nth
   (implies (and (character-listp x)
-                (integerp i)
                 (<= 0 i)
                 (< i (len x)))
            (characterp (nth i x))))
@@ -19420,19 +19419,25 @@
   ~c[encapsulate] forms, and raw Lisp.  This fact guarantees that an event form
   will always be treated as its original expansion.
 
-  ~st[A note on ttags]
+  ~st[Notes on ttags]
 
   ~l[defttag] for documentation of the notion of ``trust tag'' (``ttag'').  We
   note here that even if an event ~c[(defttag tag-name)] for non-~c[nil]
   ~c[tag-name] is admitted only during the expansion phase of a
   ~ilc[make-event] form, then such expansion will nevertheless still cause
   ~c[tag-name] to be recorded in the logical ~il[world] (assuming that the
-  ~c[make-event] form is admitted).  This behavior will avoid surprises
-  involving ttags and ~c[make-event] expansion in almost all cases, but we now
-  point out a case where one might get such a surprise.
+  ~c[make-event] form is admitted).  So in order to certify such a book, a
+  suitable ~c[:ttags] argument must be supplied; ~pl[certify-book].
 
-  Below we consider a ~c[make-event] specifying ~c[:check-expansion t], whose
-  expansion generates a ~ilc[defttag] event during ~ilc[include-book] but not
+  ACL2 does provide a way to avoid the need for ~c[:ttags] arguments in such
+  cases.  The idea is to certify a book twice, where the results of
+  ~c[make-event] expansion are saved from the first call of ~ilc[certify-book]
+  and provided to the second call.  ~pl[set-write-acl2x].
+
+  Finally, we discuss a very unusual case where certification does not involve
+  trust tags but a subsequent ~ilc[include-book] does involve trust tags: a
+  ~c[make-event] call specifying ~c[:check-expansion t], whose expansion
+  generates a ~ilc[defttag] event during ~ilc[include-book] but not
   ~ilc[certify-book].  Consider the following book.
   ~bv[]
   (in-package \"ACL2\")
@@ -19456,8 +19461,10 @@
   specify ~c[:foo] as a trust tag associated with the book, because no
   ~c[defttag] event was executed during book certification.  Unfortunately, if
   we try to include this book without specifying a value of ~c[:ttags] that
-  allows ~c[:foo], book inclusion will be attempted and will only fail when the
-  above ~ilc[defttag] event is eventually encountered.~/")
+  allows ~c[:foo], book inclusion will cause executing of the above
+  ~ilc[defttag].  If that inclusion happens in the context of certifying some
+  superior book and the appropriate ~c[:ttags] arguments have not been
+  provided, that certification will fail.~/")
 
 (defdoc using-tables-efficiently
  ":doc-section Table
@@ -27810,9 +27817,7 @@
    :hints (("Goal" :in-theory (enable symbol-< string<))))
 
  (defthm ordered-symbol-alistp-delete-assoc-eq
-   (implies (and (ordered-symbol-alistp l)
-                 (symbolp key)
-                 (assoc-eq key l))
+   (implies (ordered-symbol-alistp l)
             (ordered-symbol-alistp (delete-assoc-eq key l))))
 
  (defthm symbol-<-irreflexive
