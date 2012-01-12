@@ -30391,8 +30391,13 @@
   Note that if proofs are skipped when admitting event ~c[E], say because the
   last admission of ~c[E] was done by ~ilc[include-book] (or ~c[certify-book],
   which ends with an ~ilc[include-book]), then there will be no entry in that
-  alist for ~c[E].  An exception is made however for ~ilc[encapsulate]
-  ~il[events], where proof-supporters are remembered from the first pass.
+  alist for ~c[E].  (An exception is made however for ~ilc[encapsulate]
+  ~il[events], where proof-supporters are remembered from the first pass; see
+  below.)  So if you want the proof-supporters-alist to include supporters for
+  events in a book, use ~ilc[ld] rather than ~ilc[include-book] or
+  ~ilc[certify-book] to process the events in that book.  If however you are
+  interested in the proof-supporters FROM a book that support a later event,
+  then it is fine to include that book.
 
   The case for ~ilc[encapsulate] is slightly tricky.  Consider an example of
   the following form.

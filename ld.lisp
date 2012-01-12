@@ -18437,9 +18437,11 @@
   requesting such an enhancement (actually thanks to the community, as his
   request is the most recent but this has come up from time to time before).
 
-  A new feature allows the tracking of dependencies to identify dead code and
-  unused theorems.  ~l[dead-events].  Thanks to Shilpi Goel for requesting such
-  a feature.
+  ACL2 now stores a data structure representing the relation ``Event A is used
+  in the proof of Event B.''  ~l[dead-events], which explains this data
+  structure and mentions one application: to identify dead code and unused
+  theorems.  Thanks to Shilpi Goel for requesting such a feature and for
+  helpful feedback.
 
   ~st[HEURISTIC IMPROVEMENTS]
 
