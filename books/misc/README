@@ -441,6 +441,11 @@ Quoting the file:
 
 ===============================================================================
 
+save-time.lisp -- utility for saving times into the ACL2 state and for printing
+                  those saved times
+
+===============================================================================
+
 seq.lisp -- the seq macro language
 seqw.lisp -- the seqw macro language
 seq-examples.lsp -- examples of using the seq macro
