@@ -2498,6 +2498,8 @@
   '(acl2-numberp
     characterp
     complex-rationalp
+    #+:non-standard-analysis
+    complexp
     consp
     integerp
     rationalp

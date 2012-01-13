@@ -631,6 +631,7 @@ f-put-global.lisp
 hons-analyze-memory-raw.lsp
 hons-extra.lisp
 hons-extra-raw.lsp
+hons-remove-dups.lisp
 hons-sets.lisp
 interp-function-lookup.lisp
 ls.lisp
@@ -855,6 +856,7 @@ xf-array-indexing.lisp
 xf-assigndelays.lisp
 xf-assign-trunc.lisp
 xf-blankargs.lisp
+xf-careless-infer-flops.lisp
 xf-clean-params.lisp
 xf-designregs.lisp
 xf-designwires.lisp
