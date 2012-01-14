@@ -9880,15 +9880,20 @@
 ; that indicates that the stack must be unwound some (to cleanup after an
 ; aborted inferior).
 
-; Parallelism wart: Deal with the following comment.  David Rager suspects that
-; we might want to replace it with a pointer to elsewhere where we handle the
-; issue.
-; Warning: This variable is let-bound in ld-fn.  This could present a problem
-; if parallelism is enabled and the theorem prover uses parallelism
-; primitives.  We can imagine (and we may have seen) a case in which there are
-; two threads doing rewriting, and one does a throw (say, because time has
-; expired), which puts the two threads temporarily out of sync in their values
-; of *ld-level*.
+; Parallelism blemish: This variable is let-bound in ld-fn (and hence by
+; wormhole).  Perhaps this could present a problem.  For example, we wonder
+; about the case where waterfall-parallelism is enabled and a parent thread
+; gets confused about the value of *ld-level* (or (@ ld-level)) when changed by
+; the child thread.  For a second example, we can imagine (and we may have
+; seen) a case in which there are two threads doing rewriting, and one does a
+; throw (say, because time has expired), which puts the two threads temporarily
+; out of sync in their values of *ld-level*.  Wormholes involve calls of ld and
+; hence also give us concern.  As of this writing we know of no cases where any
+; such problems exist, and there is at least one case, the definition of
+; mt-future, where we explicitly provide bindings to arrange that a child
+; thread receives its *ld-level* and (@ ld-level) from its parent (not from
+; some spurious global values).  Mt-future also has an assertion to check that
+; we keep *ld-level* and (@ ld-level) in sync with each other.
 
   0)
 
@@ -30565,7 +30570,9 @@
                                      (subseq name 1 (1- (length name))))
                         "ACL2")))
     `(defmacro ,macro-symbol (&rest args)
-       (cons 'progn$ args))))
+       (if (and (consp args) (null (cdr args)))
+           (car args)
+         (cons 'progn$ args)))))
 
 (deflock
 

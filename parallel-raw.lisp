@@ -419,15 +419,6 @@
   t ; return t
 )
 
-; Parallelism wart: consider deleting the following comment and commented 
-; code.
-
-; Once upon a time, we reset parallelism variables as a standard part of 
-; compilation to ensure that the code behind declaring variables and resetting
-; variables is consistent and that we are in a stable state.
-
-; (reset-parallelism-variables)
-
 ;---------------------------------------------------------------------
 ; Section:  Work Consumer Code
 
@@ -1273,9 +1264,6 @@
                        ,true-branch)
             (progn (future-abort the-very-obscure-feature)
                    ,false-branch)))))))
-
-; Parallelism wart: should there be a documentation section called performance,
-; with links to sections "Parallelism", "Hons", and "Set-gc-threshold"?
 
 (defun number-of-active-threads-aux (threads acc)
   #-ccl

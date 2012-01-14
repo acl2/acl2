@@ -17619,10 +17619,12 @@
     (cond ((and (nvariablep term)
                 (not (fquotep term))
 
-; Parallelism wart: is the quoting below of
+; Parallelism no-fix: is the quoting below of
 ; "custom-keyword-hint-interpreter@par" a problem (as compared to the serial
 ; case)?  One can issue a tags search for 'custom-keyword-hint-interpreter, and
-; find some changed comparisons.
+; find some changed comparisons.  We believe that Matt K. and David R. began to
+; look into this, and we are not aware of any problems, so we have decided not
+; to try to think it all the way through.
 
                 (serial-first-form-parallel-second-form@par
                  (eq (ffn-symb term) 'custom-keyword-hint-interpreter)

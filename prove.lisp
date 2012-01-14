@@ -1213,8 +1213,8 @@
                  checkpoint-processors)
          (car h))
 
-; Parallelism wart: we haven't thought through how specious entries affect this
-; function.  The following code is left as a hint at what might be needed.
+; Parallelism blemish: we haven't thought through how specious entries affect
+; this function.  The following code is left as a hint at what might be needed.
 
 ;        ((or (and (consp (access history-entry (cadr h) :processor))
 ;                  (equal (access history-entry (cadr h) :processor)
@@ -1340,7 +1340,7 @@
 ; Acl2p-push-clause-printing contains code that handles the case where cl is
 ; nil.
 
-; Parallelism wart: create a :doc topic on key ACL2(p) checkpoints and
+; Parallelism blemish: create a :doc topic on key ACL2(p) checkpoints and
 ; reference it in the above comment.
 
    (parallel-only@par (acl2p-push-clause-printing cl hist pspv wrld state))
@@ -1511,9 +1511,9 @@
            (add-to-tag-tree! 'abort-cause 'maybe-revert nil)
            (change prove-spec-var pspv
 
-; Parallelism wart: there may be a bug in ACL2(p) related to the comment above
-; (in this function's definition) that starts with "Before Version_2.6 we did
-; not modify the tag-tree here."  To fix this (likely) bug, don't reset the
+; Parallelism blemish: there may be a bug in ACL2(p) related to the comment
+; above (in this function's definition) that starts with "Before Version_2.6 we
+; did not modify the tag-tree here."  To fix this (likely) bug, don't reset the
 ; tag-tree here -- just remove the ":tag-tree nil" -- and instead do it when we
 ; convert a maybe-to-be-proved-by-induction to a to-be-proved-by-induction.
 
@@ -2055,9 +2055,9 @@
       (mv-let
        (erp trans-result)
 
-; Parallelism wart: we could consider making an ev@par, which calls ev-w, and
-; tests that the appropriate preconditions for ev-w are upheld (like state not
-; being in the alist).
+; Parallelism blemish: we could consider making an ev@par, which calls ev-w,
+; and tests that the appropriate preconditions for ev-w are upheld (like state
+; not being in the alist).
 
        (ev-w-for-trans-eval cl-term (all-vars cl-term) stobjs-out ctx state
 
@@ -3470,18 +3470,19 @@
 (defmacro waterfall-print-clause-id@par (cl-id)
 
 ; Parallelism wart: wormhole printing isn't reliable.  (When this wart is
-; removed, then remove the reference to it in
-; unsupported-waterfall-parallelism-features.)  We lock wormholes at a very
-; high level, so we thought they might be thread safe.  However, in practice,
-; when we enable printing through wormholes, there are problems symptomatic of
-; race conditions.  We think these problems are related to the ld-special
-; variables.  Specifically, a thread tries to read from the prompt upon
-; entering the wormhole, even if there isn't supposed to be any interaction
-; with the prompt.  A possible solution to this problem might involve
-; implementing all of the ld-specials with global variables (as opposed to
-; propsets), and then rebinding those global variables in each worker thread.
-; Long story short: wormholes might be thread-safe, but we have lots of reasons
-; to believe they aren't.
+; removed, then remove the references to it in
+; unsupported-waterfall-parallelism-features and
+; waterfall1-wrapper@par-before.)  We lock wormholes at a very high level, so
+; we thought they might be thread safe.  However, in practice, when we enable
+; printing through wormholes, there are problems symptomatic of race
+; conditions.  We think these problems are related to the ld-special variables.
+; Specifically, a thread tries to read from the prompt upon entering the
+; wormhole, even if there isn't supposed to be any interaction with the prompt.
+; A possible solution to this problem might involve implementing all of the
+; ld-specials with global variables (as opposed to propsets), and then
+; rebinding those global variables in each worker thread.  Long story short:
+; wormholes might be thread-safe, but we have lots of reasons to believe they
+; aren't.
 
 ; Therefore, we have different versions of the present macro for the
 ; #+acl2-loop-only and #-acl2-loop-only cases.  To see why, first note that
@@ -5247,7 +5248,7 @@
                   ttree) ; a bddnote; see bdd-clause
              (error-in-parallelism-mode@par
               
-; Parallelism wart: we disable the following addition of BDD notes to the 
+; Parallelism blemish: we disable the following addition of BDD notes to the
 ; state.  Until a user requests it, we don't see a need to implement this.
               
               (state-mac@par)
@@ -6276,22 +6277,21 @@
               (access prove-spec-var y :pool)
               debug-pspv))))))
 
-; Parallelism wart: delete this comment and the associated trace$ form once the
-; parallelism project is finished.  Here is a form helpful for tracing
-; waterfall1-lst in an effort to understand how the pspv's :pool is modified.
+; The following form may be helpful for tracing waterfall1-lst in an effort to
+; understand how the pspv's :pool is modified.
 
-;; (trace$
-;;  (waterfall1-lst
-;;   :entry (list 'waterfall1-lst 
-;;                'clauses=
-;;                clauses
-;;                'pspv-pool=
-;;                (access prove-spec-var pspv :pool))
-;;   :exit (list 'waterfall1-lst
-;;               'signal=
-;;               (cadr values)
-;;               'pspv-pool=
-;;               (access prove-spec-var (caddr values) :pool))))
+; (trace$
+;  (waterfall1-lst
+;   :entry (list 'waterfall1-lst 
+;                'clauses=
+;                clauses
+;                'pspv-pool=
+;                (access prove-spec-var pspv :pool))
+;   :exit (list 'waterfall1-lst
+;               'signal=
+;               (cadr values)
+;               'pspv-pool=
+;               (access prove-spec-var (caddr values) :pool))))
 
 #+acl2-par
 (defun speculative-execution-valid (x y)
@@ -6485,9 +6485,11 @@
 
 #+(and acl2-par (not acl2-loop-only))
 (defvar *waterfall-parallelism-timings-ht* nil
-  "Contains the hashtable that associates waterfall-parallelism timings with
-   each clause-id.  This variable should always be nil unless ACL2(p) is in the
-   middle of attempting a proof initiated by the user with a defthm.")
+  "This variable supports the :resource-and-timing-based mode for waterfall
+   parallelism.  It can contain the hashtable that associates
+   waterfall-parallelism timings with each clause-id.  This variable should
+   always be nil unless ACL2(p) is in the middle of attempting a proof
+   initiated by the user with a defthm.")
 
 #+acl2-par
 (defun setup-waterfall-parallelism-ht-for-name (name)
@@ -6496,8 +6498,13 @@
     (cond ((null curr-ht)
            (let ((new-ht (make-hash-table :test 'equal :size (expt 2 13)
 
-; Parallelism wart: we will need to lock these hashtable operations manually in
-; Lispworks and SBCL.
+; Parallelism blemish: CCL locks these hashtable operations automatically
+; because of the argument :shared t below.  However in SBCL and LispWorks, we
+; should really lock these hashtable operations ourselves.  Note that the SBCL
+; documentation at http://www.sbcl.org/manual/Hash-Table-Extensions.html
+; describes a keyword, :synchronized, that is like CCL's :shared but is labeled
+; as "experimental".  At any rate, we are willing to take our chances for now
+; with SBCL and Lispworks.
 
                                           #+ccl :shared #+ccl t)))
              (setf *waterfall-parallelism-timings-ht-alist*
@@ -6558,10 +6565,15 @@
 ; Parallelism wart: Kaufmann suggests that we need to skip printing clause-ids
 ; that have already been printed.  Note that using the printing of clause-ids
 ; to show that the prover is still making progress is no longer the default
-; setting (see :doc set-waterfall-printing).
+; setting (see :doc set-waterfall-printing).  Example:
+;   (set-waterfall-parallelism :pseudo-parallel)
+;   (set-waterfall-printing :limited)
+;   (thm (implies (equal x y) (equal u v)))
 
-; Parallelism wart: here, and at many other ACL2(p)-specific places, consider
-; using observation-cw or printing that can be inhibited, instead of cw.
+; Parallelism blemish: here, and at many other ACL2(p)-specific places, consider
+; using observation-cw or printing that can be inhibited, instead of cw.  We
+; have not tried this so far because observation-cw calls wormhole, which is
+; problematic (see the comment in waterfall-print-clause-id@par).
 
            (cw "At time ~c0, starting: ~x1~%" 
 
@@ -6809,15 +6821,15 @@
 ; A hint generated an error.  The error message has been printed and
 ; we pass the error up.  The other values are all irrelevant.
 
-; Parallelism wart: I leave this assertion here for now, because my version of
-; the waterfall returned Context Message Pairs for such a long time, and this
-; assertion just checks that I sucessfully undid the returning of CMPs as part
-; of the waterfall.  We can remove this assertion once the parallelism project
-; is done.
-
                    #+acl2-par
-                   (assert$ (not pair)
-                            (mv@par step-limit 'error nil nil nil nil state))
+                   (assert$
+
+; At one time, the waterfall returned Context Message Pairs.  This assertion
+; was subsequently added to check that we no longer do so.  Since it's an
+; inexpensive check, we leave it here.
+
+                    (not pair)
+                    (mv@par step-limit 'error nil nil nil nil state))
                    #-acl2-par
                    (mv@par step-limit 'error nil nil nil nil state))
                   (pair

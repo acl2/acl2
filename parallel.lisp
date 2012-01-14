@@ -433,7 +433,7 @@
   state.
 
   Also with regards to interrupting a proof attempt, sometimes the user may
-  need to issue a ~c[:q] and ~c[lp] to properly reset the parallelism
+  need to issue a ~c[:q] and ~c[lp] to reset properly the parallelism
   implementation to a stable state.  The primary symptom that the user is
   experiencing this issue is that threads will continue to compute in the
   background, even though there should be no proof attempt in progress.  The
@@ -455,7 +455,11 @@
   If you are working with LispWorks 6.0 or 6.0.1, then you may see messages
   about misaligned conses.  The state of the system may be corrupted after such
   a message has been printed.  This LispWorks bug is expected to be fixed in
-  later releases of LispWorks.~/~/")
+  later releases of LispWorks.
+
+  The waterfall parallelism mode ~c[:resource-and-timing-based] is not fully
+  supported when the host Lisp is other than CCL.  It may work, but we have not
+  attempted to address a potential race condition.~/~/")
 
 (defdoc waterfall-printing
 
@@ -676,7 +680,8 @@
 ; into a book that can be certified with either ACL2 or ACL2(p).
 
 ; Parallelism wart: document the no-error argument.  Specifically, give an
-; example of using no-error to achieve such a certification.
+; example of using no-error to achieve such a certification.  Also, arrange
+; that in normal ACL2, if no-error is true then we really don't get an error.
 
      #-acl2-par
      (or no-error
@@ -704,13 +709,6 @@
 
 (defmacro set-waterfall-printing (value)
 
-; Parallelism wart: after the checkpoint-like printing is finalized, revisit
-; this topic.  In particular, the explanation under :limited will be outdated,
-; and it could be good to reference a :doc topic that explains ACL2(p)
-; checkpoints (such a topic has yet to be written).
-
-; Parallelism wart: add a link to gag-mode.
-
   ":Doc-Section switches-parameters-and-modes
 
   for ACL2(p): configuring the printing that occurs within the parallelized waterfall~/
@@ -737,13 +735,14 @@
 
   A value of ~c[:limited] omits most of the output that occurs in the serial
   version of the waterfall.  Instead, the proof attempt prints proof
-  checkpoints, similar to (but still distinct from) gag-mode (see
-  ~ilc[set-gag-mode]).  As applies to much of the parallelism extension, the
-  presentation of these checkpoints is still under development, and feedback
-  concerning them is welcome.  The value of ~c[:limited] also prints messages
-  that indicate which subgoal is currently being proved.  (The function
+  checkpoints, similar to (but still distinct from) gag-mode
+  (~pl[set-gag-mode]).  The value of ~c[:limited] also prints messages that
+  indicate which subgoal is currently being proved, along with the wall-clock
+  time elapsed since ACL2(p) was invoked; and if state global
+  ~c['waterfall-printing-when-finished] has a non-~c[nil] value, then such a
+  message will also be printed at the completion of each subgoal.  The function
   ~c[print-clause-id-okp] may receive an attachment to limit such printing;
-  ~pl[set-print-clause-ids].)  Naturally, these subgoal numbers can appear out
+  ~pl[set-print-clause-ids].  Naturally, these subgoal numbers can appear out
   of order, because the subgoals can be proved in parallel.
 
   A value of ~c[:very-limited] is treated the same as ~c[:limited], except that
@@ -849,10 +848,6 @@
 
 (defdoc parallelism-at-the-top-level
 
-; Parallelism wart: add an example that uses top-level to this doc topic.  Also
-; modify the portions of the doc topic that state that forms will never
-; execute in parallel at the top-level.
-
   ":Doc-Section Parallelism
 
   parallel execution in the ACL2 top-level loop~/
@@ -863,7 +858,8 @@
   Calls of parallelism primitives made explicitly in the ACL2 top-level loop,
   as opposed to inside function bodies, will never cause parallel execution.
   Such calls will either execute with serial execution or will cause an error;
-  ~pl[set-parallel-execution].~/
+  ~pl[set-parallel-execution].  For a way around this restriction,
+  ~pl[top-level].~/
 
   Consider for example the following call of ~ilc[pargs] in the ACL2
   top-level loop.  Instead of executing ~c[pargs], ACL2 macroexpands away this
@@ -1332,10 +1328,6 @@
   (set-parallel-execution nil)
   (time$ (length (sets::pmergesort-exec *x* 0)))
   ~ev[]~/~/")
-
-; Parallelism wart: add a section on waterfall-parallelism-performance.  It
-; should be a discussion of the advantages of each argument to
-; set-waterfall-parallelism.
 
 (defdoc early-termination
   ":Doc-Section Parallelism
@@ -2066,10 +2058,18 @@
 ; I think that the solution to this problem might necessitate catching the
 ; errors and re-causing them.  Hitting ctrl+c causes the main thread to abort
 ; waiting on the result from those threads, and allows the interactive session
-; to resume.
-
-; Parallelism wart: interrupting a proof with waterfall-parallelism enabled is
-; currently broken.  See :doc unsupported-waterfall-parallelism-features.
+; to resume.  David says that he may have already fixed this for spec-mv-let,
+; and for the other parallelism primitives, the solution may be for the closure
+; to bind *ld-level* to the value inherited from each thread's parent.  As of
+; this writing (1/13/2012), we can see the unfortunate need for control-c in
+; the following example:
+; (defun f (x) (declare (xargs :guard (integerp x))) (+ x x))
+; (defun g ()
+;   (declare (xargs :guard t :verify-guards nil))
+;   (plet ((a (f (car (make-list 1000000))))
+;          (b (f (car (make-list 1000000)))))
+;         (+ a b)))
+; (g)
 
 (defdoc error-triples-and-parallelism
   ":Doc-Section Parallelism
@@ -2121,6 +2121,10 @@
   implementors know.~/")
 
 (defdoc with-output-lock
+
+; Note: If you're looking for the definition of with-output-lock, you can find
+; it as (deflock <comments> *output-lock*) in axioms.lisp.
+
   ":Doc-Section Parallelism
 
   provides a mutual-exclusion mechanism for performing output in parallel~/

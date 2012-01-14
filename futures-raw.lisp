@@ -37,9 +37,9 @@
 ; Parallelism wart: create an "Essay on Futures" that should act as a guide to
 ; this file.
 
-; Parallelism wart: cleanup this file by removing blank lines that are
-; inconsistent with the ACL2 style guide (and other improvements that strike 
-; the author's fancy).
+; Parallelism wart: clean up this file by removing blank lines that are
+; inconsistent with the ACL2 style guide and making other improvements as
+; appropriate (e.g., clean up comments about pending work).
 
 ;---------------------------------------------------------------------
 ; Section:  Single-threaded Futures
@@ -751,76 +751,67 @@
   future)
 
 (defmacro mt-future (x)
-  `(if #-skip-resource-availability-test (not (futures-resources-available))
+  (let ((ld-level-sym (gensym))
+        (ld-level-state-sym (gensym))
+        (wormholep-sym (gensym))
+        (local-safe-mode-sym (gensym))
+        (local-gc-on-sym (gensym)))
+    `(if #-skip-resource-availability-test (not (futures-resources-available))
        #+skip-resource-availability-test nil
 ; need to return a "single-threaded" future, as in futures-st.lisp
-     (prog2 (incf *futures-resources-unavailable-count*)
-         (st-future ,x))
-     ;;     ,(multiple-value-list x)
-     (prog2 (incf *futures-resources-available-count*)
-         (let* (
+       (prog2 (incf *futures-resources-unavailable-count*)
+           (st-future ,x))
+       ;;     ,(multiple-value-list x)
+       (prog2 (incf *futures-resources-available-count*)
+           (let* ((,ld-level-sym *ld-level*)
+                  (,ld-level-state-sym
 
-; Parallelism wart: if x contains references to any of the following let-bound
-; variables, these bindings will shadow the values in x.  We should consider
-; using a gensym to ensure that this doesn't occur.
+; We have discussed with David Rager whether it is an invariant of ACL2 that
+; *ld-level* and (@ ld-level) have the same value, except perhaps when cleaning
+; up with acl2-unwind-protect.  If it is, then David believes that it's also an
+; invariant of ACL2(p).  We add an assertion here to check that.
+                 
+                   (assert$ (equal *ld-level*
+                                   (f-get-global 'ld-level *the-live-state*))
+                            (f-get-global 'ld-level *the-live-state*)))
 
-                (ld-level *ld-level*)
 ; consider also *ev-shortcut-okp* *raw-guard-warningp*
-                (acl2-unwind-protect-stack *acl2-unwind-protect-stack*)
-                (wormholep *wormholep*)
-                ;; (wormhole-cleanup-form *wormhole-cleanup-form*)
-                (standard-oi  *standard-oi*)
-                (standard-co *standard-co*)
-                (local-safe-mode (f-get-global 'safe-mode *the-live-state*))
-                (local-gc-on (f-get-global 'guard-checking-on
-                                           *the-live-state*)) 
+                  (acl2-unwind-protect-stack *acl2-unwind-protect-stack*)
+                  (,wormholep-sym *wormholep*)
+                  ;; (wormhole-cleanup-form *wormhole-cleanup-form*)
+                  (,local-safe-mode-sym (f-get-global 'safe-mode *the-live-state*))
+                  (,local-gc-on-sym (f-get-global 'guard-checking-on
+                                                  *the-live-state*)) 
 
-; Parallelism wart: consider inheriting ld-specials, as the following comment
-; suggests.
+; Parallelism no-fix: we have considered causing child threads to inherit
+; ld-specials from their parents, as the following comment from David Rager
+; suggests.  But this now seems too difficult to justify that effort.
 
-; At one point, in an effort to fix printing in parallel from within wormholes,
-; I tried rebinding the ld-special.  I now know that my approach at that time
-; was doomed to fail, because these specials aren't implemented as global
-; variables but instead as a setq of a variable in a completely different
-; package.  Now that I understand how state global variables work in ACL2, it
-; may be worth coming back to this code and trying once again to inherit the
-; ld-specials.
+;   At one point, in an effort to fix printing in parallel from within
+;   wormholes, I tried rebinding the ld-specials.  I now know that my approach
+;   at that time was doomed to fail, because these specials aren't implemented
+;   as global variables but instead as a setq of a variable in a completely
+;   different package.  Now that I understand how state global variables work
+;   in ACL2, it may be worth coming back to this code and trying once again to
+;   inherit the ld-specials (listed in *initial-ld-special-bindings*).  We
+;   could also consider binding *deep-gstack*, and it seems that we also should
+;   bind *wormhole-cleanup-form* since we bind *wormholep*, but we haven't done
+;   so.
 
-                ;; *deep-gstack*  ???
-                ;; (proofs-co *standard-co*)
-                ;; (ld-skip-proofsp (f-get-global 'ld-skip-proofsp
-                ;;                                 *the-live-state*)) 
-                ;; (ld-redefinition-action . nil)
-                ;; (ld-prompt . t)
-                ;; (ld-keyword-aliases . nil)
-                ;; (ld-pre-eval-filter . :all)
-                ;; (ld-pre-eval-print . nil)
-                ;; (ld-post-eval-print . :command-conventions)
-                ;; (ld-evisc-tuple . nil)
-                ;; (ld-error-triples . t)
-                ;; (ld-error-action . :continue)
-                ;; (ld-query-control-alist . nil)
-                ;; (ld-verbose 
-    
-                (closure (lambda () 
-                           (let ((*ld-level* ld-level)
-                                 (*acl2-unwind-protect-stack*
-                                  acl2-unwind-protect-stack) 
-                                 (*wormholep* wormholep)
-                                 ;; (*wormhole-cleanup-form*
-                                 ;;  wormhole-cleanup-form)
-                                 (*standard-oi* standard-oi)
-                                 (*standard-co* standard-co)
-                                 ;; (*proofs-co* proofs-co)
-                                 )
-                             (state-free-global-let*
-                              ((safe-mode local-safe-mode)
-                               (guard-checking-on local-gc-on))
-                              ,x)))))
-           (without-interrupts
-            (let ((future (make-future-with-closure closure)))
-              (without-interrupts (add-future-to-queue future))
-              future))))))
+                  (closure (lambda () 
+                             (let ((*ld-level* ,ld-level-sym)
+                                   (*acl2-unwind-protect-stack*
+                                    acl2-unwind-protect-stack) 
+                                   (*wormholep* ,wormholep-sym))
+                               (state-free-global-let*
+                                ((ld-level ,ld-level-state-sym)
+                                 (safe-mode ,local-safe-mode-sym)
+                                 (guard-checking-on ,local-gc-on-sym))
+                                ,x)))))
+             (without-interrupts
+              (let ((future (make-future-with-closure closure)))
+                (without-interrupts (add-future-to-queue future))
+                future)))))))
 
 (defun mt-future-read (future)
   (cond ((st-future-p future)

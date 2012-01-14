@@ -6816,11 +6816,12 @@
 
 ; Keep in sync with error-fms-cw.
 
-  (let ((chan (f-get-global 'standard-co state)))
-    (pprogn (newline chan state)
-            (error-fms-channel hardp ctx str alist chan state)
-            (newline chan state)
-            (newline chan state))))
+  (with-output-lock
+   (let ((chan (f-get-global 'standard-co state)))
+     (pprogn (newline chan state)
+             (error-fms-channel hardp ctx str alist chan state)
+             (newline chan state)
+             (newline chan state)))))
 
 #-acl2-loop-only
 (defvar *accumulated-warnings* nil)
