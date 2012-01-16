@@ -1872,7 +1872,8 @@ class:~%~%" (len ctrexes)))))
                     ;;          (,geval-name ',val env)))
                     ))))
        ((when (and false-succ unk-succ))
-        ;; Both checks succeeded and were UNSAT, so the theorem is proved.
+        ;; Both checks succeeded and were UNSAT, so the theorem is proved
+        ;; (modulo side-goals).
         (value (list ''t))))
     ;; One or both of the SAT checks failed.
     (if abort-unknown

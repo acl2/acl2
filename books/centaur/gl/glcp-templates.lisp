@@ -355,6 +355,7 @@ In ~@0: The conclusion countains the following unbound variables: ~x1~%"
                 "main theorem"
                 abort-unknown abort-ctrex abort-vacuous nexamples hyp-clk concl-clk nil
                 overrides world state)))
+           (cw "GL symbolic simulation OK~%")
            (value (list* hyp-clause concl-clause
                          (append res-clauses
                                  (acl2::interp-defs-alist-clauses
