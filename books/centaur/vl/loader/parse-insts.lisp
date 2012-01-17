@@ -398,6 +398,30 @@
 
 
 
+(defun vl-udp/modinst-pick-error-to-report (m-err u-err)
+  (declare (xargs :guard t))
+  ;; Errors from vl-parse-error-fn have the form (MSG FUNCTION LOC).  This is
+  ;; a godawful hack to try to figure out which error is "better".
+  (b* ((mloc (if (and (tuplep 3 m-err)
+                      (stringp (first m-err))
+                      (vl-location-p (third m-err)))
+                 (third m-err)
+               *vl-fakeloc*))
+       (uloc (if (and (tuplep 3 u-err)
+                      (stringp (first u-err))
+                      (vl-location-p (third u-err)))
+                 (third u-err)
+               *vl-fakeloc*))
+       ((vl-location mloc) mloc)
+       ((vl-location uloc) uloc)
+       (u-greater (or (> uloc.line mloc.line)
+                      (and (= uloc.line mloc.line)
+                           (> uloc.col mloc.col)))))
+    ;; Prefer the m-err if there's any tie...
+    (if u-greater
+        u-err
+      m-err)))
+
 
 ; It is not always possible to distinguish between udp/module instantiations at
 ; parse time, because, e.g., "foo bar(x, 3, 5);" might be valid for either one,
@@ -425,13 +449,8 @@
                     (vl-parse-udp-instantiation atts tokens warnings)
                     (if (not u-err)
                         (mv u-err val explore new-warnings)
-                      (mv (list "Unable to parse module/udp instantiation.~%~
-                                 modinst error: ~x0.~%~
-                                 udpinst error: ~x1.~%"
-                                m-err u-err)
-                          nil
-                          tokens
-                          warnings))))))
+                      (mv (vl-udp/modinst-pick-error-to-report m-err u-err)
+                          nil tokens warnings))))))
 
 
 
