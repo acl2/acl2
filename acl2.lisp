@@ -325,47 +325,10 @@
 ; then consider replacing its definition by placing the following after
 ; state-free-global-let*.  HOWEVER, first think about whether this is right; we
 ; haven't thought through the effect of mixing a stack of let*-bindings of
-; state global variables with the acl2-unwind-protect mechanism.
+; state global variables with the acl2-unwind-protect mechanism.  Also,
+; comments are omitted here; be sure to restore them.
 
 ;;; (defmacro state-global-let*-logical (bindings body)
-;;; 
-;;; ; NOTE: In April 2010 we discussed the possibility that we could simplify the
-;;; ; raw-Lisp code for state-global-let* to avoid acl2-unwind-protect, in favor of
-;;; ; let*-binding the state globals under the hood so that clean-up is done
-;;; ; automatically by Lisp; after all, state globals are special variables.  We
-;;; ; see no reason why this can't work, but we prefer not to mess with this very
-;;; ; stable code unless/until there is a reason.  (Note that we however do not
-;;; ; have in mind any potential change to the logic code for state-global-let*.)
-;;; ; See state-free-global-let* for such a variant that is appropriate to use when
-;;; ; state is not available.
-;;; 
-;;; ; A typical use is (state-global-let* ((<var1> <form1>) ...  (<vark> <formk>))
-;;; ; <body>).  Bindings thus are in the style of let* (but see the discussion of
-;;; ; setters below).  Body must return an error triple.  The meaning of this form
-;;; ; is to smash the global values of the "bound" variables with f-put-global,
-;;; ; execute body, restore the values to their previous values, and return the
-;;; ; triple produced by body (with its state as modified by the restoration).
-;;; ; Because we use acl2-unwind-protect, the restoration is guaranteed even in the
-;;; ; face of aborts.  The "bound" variables may initially be unbound in state and
-;;; ; restoration means to make them unbound again.
-;;; 
-;;; ; However, if any of the <vari> are untouchable then this won't work, because
-;;; ; the generated calls of f-put-global are illegal.  This is sad if there is a
-;;; ; ``setter'' function of the form (set-vari val state), equivalent to
-;;; ; (f-put-global '<vari> val state) except that set-vari is not untouchable (as
-;;; ; a function, of course).  If there is such a function symbol set-vari, then we
-;;; ; can use the ``binding'' (<vari> <formi> set-vari) in place of (<vari>
-;;; ; <formi>), in order to get the behavior described above even if <vari> is
-;;; ; untouchable.
-;;; 
-;;; ; Note: This function is a generalization of the now obsolete
-;;; ; WITH-STATE-GLOBAL-BOUND.
-;;; 
-;;; ; We call warn-about-parallelism-hazard, because use of this macro in a
-;;; ; parallel environment is a terrible idea.  It might work, because maybe no
-;;; ; variables are rebound that are changed inside the waterfall, but we, the
-;;; ; developers, want to know about any such rebinding.
-;;; 
 ;;;   (declare (xargs :guard (and (state-global-let*-bindings-p bindings)
 ;;;                               (no-duplicatesp-equal (strip-cars bindings)))))
 ;;; 

@@ -1848,14 +1848,15 @@
   ~l[rebuild] for a variant of ~c[ld] that skips proofs.
 
   The arguments to ~c[ld], except for ~c[:dir], all happen to be global
-  variables in ~ilc[state].  For example, ~c[']~ilc[current-package] and
-  ~c[']~ilc[ld-verbose] are global variables, which may be accessed via
-  ~c[(@ current-package)] and ~c[(@ ld-verbose)].  When ~c[ld] is called, it
-  ``binds'' these variables.  By ``binds'' we actually mean the variables are
-  globally set but restored to their old values on exit.  Because ~c[ld]
-  provides the illusion of ~il[state] global variables being bound, they are
-  called ``~c[ld] specials'' (after the Lisp convention of calling a variable
-  ``special'' if it is referenced freely after having been bound).
+  variables in ~ilc[state] (~pl[state] and ~pl[programming-with-state]).  For
+  example, ~c[']~ilc[current-package] and ~c[']~ilc[ld-verbose] are global
+  variables, which may be accessed via ~c[(@ current-package)] and
+  ~c[(@ ld-verbose)].  When ~c[ld] is called, it ``binds'' these variables.  By
+  ``binds'' we actually mean the variables are globally set but restored to
+  their old values on exit.  Because ~c[ld] provides the illusion of ~il[state]
+  global variables being bound, they are called ``~c[ld] specials'' (after the
+  Lisp convention of calling a variable ``special'' if it is referenced freely
+  after having been bound).
 
   Note that all arguments but the first are passed via keyword.  Any variable
   not explicitly given a value in a call retains its pre-call value, with the
@@ -3335,7 +3336,7 @@
 
 (deflabel breaks
   :doc
-  ":Doc-Section Miscellaneous
+  ":Doc-Section ACL2::Built-ins
 
   Common Lisp breaks~/
   ~bv[]
@@ -18442,6 +18443,16 @@
   structure and mentions one application: to identify dead code and unused
   theorems.  Thanks to Shilpi Goel for requesting such a feature and for
   helpful feedback.
+
+  A new ~il[documentation] topic provides a guide to programming with state;
+  ~pl[programming-with-state].  Thanks to Sarah Weissman for suggesting that
+  such a guide might be useful.  There also has been some creation of
+  additional documentation (e.g., ~pl[state-global-let*]) and corresponding
+  reorganization.  Now, most built-in functions and macros commonly used in
+  programs (as opposed to ~il[events] like ~ilc[defun], for example) are
+  subtopics of a new topic ~-[] ~pl[built-ins] ~-[] which is a subtopic of
+  ~il[programming], a topic that in turn has considerably fewer direct
+  subtopiics than before.
 
   ~st[HEURISTIC IMPROVEMENTS]
 

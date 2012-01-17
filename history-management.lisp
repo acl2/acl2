@@ -9000,11 +9000,11 @@
   For example, suppose you want to define a theory (using ~ilc[deftheory]).
   You need to prove the lemmas in that theory before executing the
   ~ilc[deftheory] event.  However, it is quite natural to define a
-  ~c[:doc-section] (~pl[doc-string]) whose name is the name of the
+  ~c[:Doc-Section] (~pl[doc-string]) whose name is the name of the
   theory to be defined, and put the ~il[documentation] for that theory's
-  lemmas into that ~c[:doc-section].  ~c[Defdoc] is ideal for this purpose,
-  since it can be used to introduce the ~c[:doc-section], followed by the
-  lemmas referring to that ~c[:doc-section], and finally concluded with a
+  lemmas into that ~c[:Doc-Section].  ~c[Defdoc] is ideal for this purpose,
+  since it can be used to introduce the ~c[:Doc-Section], followed by the
+  lemmas referring to that ~c[:Doc-Section], and finally concluded with a
   ~ilc[deftheory] event of the same name.  If ~ilc[deflabel] were used
   instead of ~c[defdoc], for example, then the ~ilc[deftheory] event would
   be disallowed because the name is already in use by the ~ilc[deflabel]
@@ -9017,7 +9017,7 @@
 
   Any time ~c[defdoc] is used to attach ~il[documentation] to an
   already-documented name, the name must not be attached to a new
-  ~c[:doc-section].  We make this requirement as a way of avoiding
+  ~c[:Doc-Section].  We make this requirement as a way of avoiding
   loops in the ~il[documentation] tree.  When ~il[documentation] is redefined, a
   warning will be printed to the terminal.~/"
 
@@ -11043,7 +11043,7 @@
   string's cited-by list.  We also add ~c[name] to the related names field
   of its section-name.  Observe that the cites list in a string is
   only the initial value of the related names of the names.  Future
-  ~il[documentation] strings may add to it via ~c[:cited-by] or ~c[:doc-section].
+  ~il[documentation] strings may add to it via ~c[:cited-by] or ~c[:Doc-Section].
   Indeed, this is generally the case.  We discuss this further below.
 
   When a brief description of ~c[name] is required (as by ~c[:docs **]), ~c[name]
@@ -16387,7 +16387,7 @@
 
 (defun character-alistp (x)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::Built-ins
 
   recognizer for association lists with characters as keys~/
 

@@ -3058,7 +3058,7 @@
 
 ; See term-order1 for comments.
 
-  ":Doc-Section Miscellaneous
+  ":Doc-Section ACL2::Built-ins
 
   the ordering relation on terms used by ACL2~/
 

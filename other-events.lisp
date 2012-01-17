@@ -6263,7 +6263,7 @@
                           (pbt 't)
                           (show 'nil))
 
-  ":Doc-Section Events
+  ":Doc-Section Other
 
   redo on failure of a ~ilc[progn], ~ilc[encapsulate], or ~ilc[certify-book]~/
 
@@ -9719,7 +9719,7 @@
    :rule-classes :type-prescription))
 
 (defdoc canonical-pathname
-  ":Doc-Section Miscellaneous
+  ":Doc-Section ACL2::Built-ins
 
   the true absolute filename, with soft links resolved~/
 
@@ -21504,7 +21504,7 @@
 
 (deflabel stobj-example-1-implementation
   :doc
-  ":doc-section stobj
+  ":Doc-Section stobj
 
   the implementation of the ~c[counters] stobj~/
 
@@ -21729,7 +21729,7 @@
 
 (deflabel stobj-example-2
   :doc
-  ":doc-section stobj
+  ":Doc-Section stobj
 
   an example of the use of arrays in single-threaded objects~/
   
@@ -26399,7 +26399,7 @@
   (reset-prehistory permanent-p doc-string)
   ~ev[]
   where ~c[permanent-p] is ~c[t] or ~c[nil], and ~c[doc-string] is an optional
-  ~il[documentation] string not beginning with ``~c[:doc-section] ...''.  After
+  ~il[documentation] string not beginning with ``~c[:Doc-Section] ...''.  After
   execution of this command, ACL2 will change the numbering provided by its
   ~il[history] utilities so that this ~c[reset-prehistory] command (or the
   top-level compound ~il[command] containing it, which for example might be an
@@ -30058,7 +30058,7 @@
 
 (defmacro defmacro-last (fn &key raw (top-level-ok 't))
 
-  ":Doc-Section Programming
+  ":Doc-Section Events
 
   define a macro that returns its last argument, but with side effects~/
 
@@ -30081,7 +30081,7 @@
 
 (defdoc printing-to-strings
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section IO
 
   printing to strings instead of files or standard output~/
 
@@ -30357,12 +30357,12 @@
   (declare (xargs :guard (member-eq iprint '(t nil))))
   `(fmt1!-to-string-fn ,str ,alist ,col ,evisc-tuple ,fmt-control-alist ,iprint))
 
-(link-doc-to fms-to-string programming printing-to-strings)
-(link-doc-to fms!-to-string programming printing-to-strings)
-(link-doc-to fmt-to-string programming printing-to-strings)
-(link-doc-to fmt!-to-string programming printing-to-strings)
-(link-doc-to fmt1-to-string programming printing-to-strings)
-(link-doc-to fmt1!-to-string programming printing-to-strings)
+(link-doc-to fms-to-string built-ins printing-to-strings)
+(link-doc-to fms!-to-string built-ins printing-to-strings)
+(link-doc-to fmt-to-string built-ins printing-to-strings)
+(link-doc-to fmt!-to-string built-ins printing-to-strings)
+(link-doc-to fmt1-to-string built-ins printing-to-strings)
+(link-doc-to fmt1!-to-string built-ins printing-to-strings)
 
 (defdoc dead-events
 
