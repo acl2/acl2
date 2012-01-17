@@ -16387,7 +16387,7 @@
 
 (defun character-alistp (x)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for association lists with characters as keys~/
 

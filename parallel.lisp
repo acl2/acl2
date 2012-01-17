@@ -1777,7 +1777,7 @@
 
 (defun cpu-core-count (state)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   the number of cpu cores~/
 

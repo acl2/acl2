@@ -3336,7 +3336,7 @@
 
 (deflabel breaks
   :doc
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   Common Lisp breaks~/
   ~bv[]
@@ -18450,7 +18450,7 @@
   additional documentation (e.g., ~pl[state-global-let*]) and corresponding
   reorganization.  Now, most built-in functions and macros commonly used in
   programs (as opposed to ~il[events] like ~ilc[defun], for example) are
-  subtopics of a new topic ~-[] ~pl[built-ins] ~-[] which is a subtopic of
+  subtopics of a new topic ~-[] ~pl[acl2-built-ins] ~-[] which is a subtopic of
   ~il[programming], a topic that in turn has considerably fewer direct
   subtopiics than before.
 

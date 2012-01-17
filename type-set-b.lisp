@@ -3058,7 +3058,7 @@
 
 ; See term-order1 for comments.
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   the ordering relation on terms used by ACL2~/
 

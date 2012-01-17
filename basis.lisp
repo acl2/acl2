@@ -81,7 +81,7 @@
 
 (defun sys-call (command-string args)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   make a system call to the host operating system~/
   ~bv[]
@@ -178,7 +178,7 @@
 ; Well, except there seems to be no way for anything to go terribly wrong even
 ; if we verify-termination and verify-guards.
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   exit status from the preceding system call~/
 
@@ -2826,7 +2826,7 @@
                               (alistp (cdr args))
                               (null (cdr (member-equal (assoc-eq '& (cdr args))
                                                        (cdr args)))))))
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   pattern matching or destructuring~/
   ~bv[]
@@ -6112,7 +6112,7 @@
 
 ; WARNING:  The master copy of the tilde-directives list is in :DOC fmt.
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~c[:(str alist col co-channel state evisc) => (mv col state)]~/
 
@@ -6140,7 +6140,7 @@
 ; For a discussion of our style of pretty-printing, see
 ; http://www.cs.utexas.edu/~boyer/pretty-print.pdf.
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   formatted printing~/
 
@@ -6557,7 +6557,7 @@
 
 ; WARNING: The master copy of the tilde-directives list is in :DOC fmt.
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~c[:(str alist co-channel state evisc) => state]~/
 
@@ -6575,7 +6575,7 @@
 
 ; WARNING: The master copy of the tilde-directives list is in :DOC fmt.
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~c[:(str alist col channel state evisc) => (mv col state)]~/
 
@@ -6598,7 +6598,7 @@
 
 ; WARNING: The master copy of the tilde-directives list is in :DOC fmt.
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~c[:(str alist co-channel state evisc) => state]~/
 
@@ -6621,7 +6621,7 @@
 
 ; WARNING: The master copy of the tilde-directives list is in :DOC fmt.
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~c[:(str alist co-channel state evisc) => state]~/
 
@@ -8080,7 +8080,7 @@
 
 ; Warning: Keep this in sync with error1-safe and error1@par.
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   print an error message and cause a ``soft error''~/
 
@@ -8373,7 +8373,7 @@
 ; A typical use of this macro might be:
 ; (observation ctx "5 :REWRITE rules are being stored under name ~x0." name).
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   print an observation~/
 
@@ -8835,7 +8835,7 @@
 ; first value returned is a character, that character was not legal.
 ; Otherwise, the first value returned is an integer, the check-sum.
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   assigning ``often unique'' integers to files and objects~/
 
@@ -13407,7 +13407,7 @@
 
 (defun standard-oi (state)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   the standard object input ``channel''~/
 
@@ -13465,7 +13465,7 @@
 
 (defun standard-co (state)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   the character output channel to which ~ilc[ld] prints~/
 
@@ -13501,7 +13501,7 @@
 
 (defun proofs-co (state)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   the proofs character output channel~/
 
@@ -14751,7 +14751,7 @@
 
 (defun allocate-fixnum-range (fixnum-lo fixnum-hi)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   set aside fixnums in GCL~/
 

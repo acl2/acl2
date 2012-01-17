@@ -9719,7 +9719,7 @@
    :rule-classes :type-prescription))
 
 (defdoc canonical-pathname
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   the true absolute filename, with soft links resolved~/
 
@@ -30357,12 +30357,12 @@
   (declare (xargs :guard (member-eq iprint '(t nil))))
   `(fmt1!-to-string-fn ,str ,alist ,col ,evisc-tuple ,fmt-control-alist ,iprint))
 
-(link-doc-to fms-to-string built-ins printing-to-strings)
-(link-doc-to fms!-to-string built-ins printing-to-strings)
-(link-doc-to fmt-to-string built-ins printing-to-strings)
-(link-doc-to fmt!-to-string built-ins printing-to-strings)
-(link-doc-to fmt1-to-string built-ins printing-to-strings)
-(link-doc-to fmt1!-to-string built-ins printing-to-strings)
+(link-doc-to fms-to-string acl2-built-ins printing-to-strings)
+(link-doc-to fms!-to-string acl2-built-ins printing-to-strings)
+(link-doc-to fmt-to-string acl2-built-ins printing-to-strings)
+(link-doc-to fmt!-to-string acl2-built-ins printing-to-strings)
+(link-doc-to fmt1-to-string acl2-built-ins printing-to-strings)
+(link-doc-to fmt1!-to-string acl2-built-ins printing-to-strings)
 
 (defdoc dead-events
 

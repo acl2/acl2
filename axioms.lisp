@@ -2129,12 +2129,12 @@
 
   This ~il[documentation] topic is a parent topic under which we include
   documentation topics for built-in functions, macros, and special forms
-  (~pl[built-ins]) as well as topics for notions important to programming with
-  ACL2.  If you don't find what you're looking for, see the Index or see
+  (~pl[acl2-built-ins]) as well as topics for notions important to programming
+  with ACL2.  If you don't find what you're looking for, see the Index or see
   individual topics that may be more directly appropriate; for example,
   ~pl[events] for top-level event constructorsr like ~ilc[defun].~/~/")
 
-(deflabel built-ins
+(deflabel acl2-built-ins
   :doc
   ":Doc-Section ACL2::Programming
   built-in ACL2 functions~/
@@ -2206,7 +2206,7 @@
 
 (defun iff (p q)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   logical ``if and only if''~/
 
@@ -2221,7 +2221,7 @@
 
 (defun xor (p q)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   logical ``exclusive or''~/
 
@@ -2235,7 +2235,7 @@
 
 (defun booleanp (x)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for booleans~/
 
@@ -2265,7 +2265,7 @@
 
 (defun implies (p q)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   logical implication~/
 
@@ -2291,7 +2291,7 @@
 #+acl2-loop-only
 (defun not (p)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   logical negation~/
 
@@ -2433,7 +2433,7 @@
 
 (defmacro real/rationalp (x)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for rational numbers (including real number in ACL2(r))~/
 
@@ -2451,7 +2451,7 @@
 
 (defmacro complex/complex-rationalp (x)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for complex numbers~/
 
@@ -2475,7 +2475,7 @@
 #+acl2-loop-only
 (defun eq (x y)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   equality of symbols~/
 
@@ -2502,7 +2502,7 @@
 
 (defun true-listp (x)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for proper (null-terminated) lists~/
 
@@ -2527,7 +2527,7 @@
 #+acl2-loop-only
 (defmacro list (&rest args)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   build a list~/
 
@@ -2553,7 +2553,7 @@
 #+acl2-loop-only
 (defmacro and (&rest args)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   conjunction~/
 
@@ -2581,7 +2581,7 @@
 #+acl2-loop-only
 (defmacro or (&rest args)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   disjunction~/
 
@@ -2753,7 +2753,7 @@
 
 (defun len (x)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   length of a list~/
 
@@ -2782,7 +2782,7 @@
 #+acl2-loop-only
 (defun length (x)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   length of a string or proper list~/
 
@@ -2809,7 +2809,7 @@
 
 (defun acl2-count (x)
 
- ":Doc-Section ACL2::Built-ins
+ ":Doc-Section ACL2::ACL2-built-ins
 
   a commonly used measure for justifying recursion~/
 
@@ -2900,7 +2900,7 @@
 #+acl2-loop-only
 (defmacro cond (&rest clauses)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   conditional based on if-then-else~/
 
@@ -2922,7 +2922,7 @@
 
 (defun eqlablep (x)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   the ~il[guard] for the function ~ilc[eql]~/
 
@@ -2955,7 +2955,7 @@
 
 (defun eqlable-listp (l)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for a true list of objects each suitable for ~ilc[eql]~/
 
@@ -2975,7 +2975,7 @@
   (declare (xargs :mode :logic
                   :guard (or (eqlablep x)
                              (eqlablep y))))
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   test equality (of two numbers, symbols, or ~il[characters])~/
 
@@ -2996,7 +2996,7 @@
 #+acl2-loop-only
 (defun atom (x)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for atoms~/
 
@@ -3015,7 +3015,7 @@
 
 (defun make-character-list (x)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~il[coerce] to a list of characters~/
 
@@ -3037,7 +3037,7 @@
 
 (defun eqlable-alistp (x)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for a true list of pairs whose ~ilc[car]s are suitable for ~ilc[eql]~/
 
@@ -3055,7 +3055,7 @@
 
 (defun alistp (l)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for association lists~/
 
@@ -3082,7 +3082,7 @@
 #+acl2-loop-only
 (defun acons (key datum alist)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   constructor for association lists~/
 
@@ -3101,7 +3101,7 @@
 #+acl2-loop-only
 (defun endp (x)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for empty lists~/
 
@@ -3124,7 +3124,7 @@
 
 #+acl2-loop-only
 (defmacro caar (x)
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~ilc[car] of the ~ilc[car]~/
 
@@ -3133,7 +3133,7 @@
 
 #+acl2-loop-only
 (defmacro cadr (x)
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~ilc[car] of the ~ilc[cdr]~/
 
@@ -3142,7 +3142,7 @@
 
 #+acl2-loop-only
 (defmacro cdar (x)
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~ilc[cdr] of the ~ilc[car]~/
 
@@ -3151,7 +3151,7 @@
 
 #+acl2-loop-only
 (defmacro cddr (x)
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~ilc[cdr] of the ~ilc[cdr]~/
 
@@ -3160,7 +3160,7 @@
 
 #+acl2-loop-only
 (defmacro caaar (x)
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~ilc[car] of the ~ilc[caar]~/
 
@@ -3169,7 +3169,7 @@
 
 #+acl2-loop-only
 (defmacro caadr (x)
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~ilc[car] of the ~ilc[cadr]~/
 
@@ -3178,7 +3178,7 @@
 
 #+acl2-loop-only
 (defmacro cadar (x)
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~ilc[car] of the ~ilc[cdar]~/
 
@@ -3187,7 +3187,7 @@
 
 #+acl2-loop-only
 (defmacro caddr (x)
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~ilc[car] of the ~ilc[cddr]~/
 
@@ -3196,7 +3196,7 @@
 
 #+acl2-loop-only
 (defmacro cdaar (x)
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~ilc[cdr] of the ~ilc[caar]~/
 
@@ -3205,7 +3205,7 @@
 
 #+acl2-loop-only
 (defmacro cdadr (x)
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~ilc[cdr] of the ~ilc[cadr]~/
 
@@ -3214,7 +3214,7 @@
 
 #+acl2-loop-only
 (defmacro cddar (x)
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~ilc[cdr] of the ~ilc[cdar]~/
 
@@ -3223,7 +3223,7 @@
 
 #+acl2-loop-only
 (defmacro cdddr (x)
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~ilc[cdr] of the ~ilc[cddr]~/
 
@@ -3232,7 +3232,7 @@
 
 #+acl2-loop-only
 (defmacro caaaar (x)
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~ilc[car] of the ~ilc[caaar]~/
 
@@ -3241,7 +3241,7 @@
 
 #+acl2-loop-only
 (defmacro caaadr (x)
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~ilc[car] of the ~ilc[caadr]~/
 
@@ -3250,7 +3250,7 @@
 
 #+acl2-loop-only
 (defmacro caadar (x)
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~ilc[car] of the ~ilc[cadar]~/
 
@@ -3259,7 +3259,7 @@
 
 #+acl2-loop-only
 (defmacro caaddr (x)
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~ilc[car] of the ~ilc[caddr]~/
 
@@ -3268,7 +3268,7 @@
 
 #+acl2-loop-only
 (defmacro cadaar (x)
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~ilc[car] of the ~ilc[cdaar]~/
 
@@ -3277,7 +3277,7 @@
 
 #+acl2-loop-only
 (defmacro cadadr (x)
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~ilc[car] of the ~ilc[cdadr]~/
 
@@ -3286,7 +3286,7 @@
 
 #+acl2-loop-only
 (defmacro caddar (x)
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~ilc[car] of the ~ilc[cddar]~/
 
@@ -3295,7 +3295,7 @@
 
 #+acl2-loop-only
 (defmacro cadddr (x)
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~ilc[car] of the ~ilc[cdddr]~/
 
@@ -3304,7 +3304,7 @@
 
 #+acl2-loop-only
 (defmacro cdaaar (x)
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~ilc[cdr] of the ~ilc[caaar]~/
 
@@ -3313,7 +3313,7 @@
 
 #+acl2-loop-only
 (defmacro cdaadr (x)
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~ilc[cdr] of the ~ilc[caadr]~/
 
@@ -3322,7 +3322,7 @@
 
 #+acl2-loop-only
 (defmacro cdadar (x)
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~ilc[cdr] of the ~ilc[cadar]~/
 
@@ -3331,7 +3331,7 @@
 
 #+acl2-loop-only
 (defmacro cdaddr (x)
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~ilc[cdr] of the ~ilc[caddr]~/
 
@@ -3340,7 +3340,7 @@
 
 #+acl2-loop-only
 (defmacro cddaar (x)
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~ilc[cdr] of the ~ilc[cdaar]~/
 
@@ -3349,7 +3349,7 @@
 
 #+acl2-loop-only
 (defmacro cddadr (x)
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~ilc[cdr] of the ~ilc[cdadr]~/
 
@@ -3358,7 +3358,7 @@
 
 #+acl2-loop-only
 (defmacro cdddar (x)
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~ilc[cdr] of the ~ilc[cddar]~/
 
@@ -3367,7 +3367,7 @@
 
 #+acl2-loop-only
 (defmacro cddddr (x)
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~ilc[cdr] of the ~ilc[cdddr]~/
 
@@ -3377,7 +3377,7 @@
 #+acl2-loop-only
 (defun null (x)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for the empty list~/
 
@@ -3395,7 +3395,7 @@
 
 (defun symbol-listp (lst)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for a true list of symbols~/
 
@@ -3549,7 +3549,7 @@
 
 (defun strip-cars (x)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   collect up all first components of pairs in a list~/
 
@@ -3580,7 +3580,7 @@
 
 (defun strip-cdrs (x)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   collect up all second components of pairs in a list~/
 
@@ -3636,7 +3636,7 @@
 ;  (foo 3) ; exec
 ;  (bar 3) ; exec
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   return the last argument, perhaps with side effects~/
 
@@ -4195,7 +4195,7 @@
 ; Fortunately, ev-rec will only evaluate the logic code for this return-last
 ; form, as one might expect.
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   attach code for execution~/
 
@@ -4215,7 +4215,7 @@
 ; released Sept., 2010), since must-be-equal has been around since v2-8 (March,
 ; 2004).
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   attach code for execution~/~/
 
@@ -4235,7 +4235,7 @@
 
 (defmacro mbe (&key (exec 'nil exec-p) (logic 'nil logic-p))
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   attach code for execution~/
 
@@ -4387,7 +4387,7 @@
 
 (defmacro mbt (x)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   introduce a test not to be evaluated~/
 
@@ -4823,7 +4823,7 @@
 #+acl2-loop-only
 (defmacro member (x l &key (test ''eql))
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   membership predicate~/
   ~bv[]
@@ -4924,7 +4924,7 @@
 #+acl2-loop-only
 (defmacro subsetp (x y &key (test ''eql))
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   test if every ~ilc[member] of one list is a ~ilc[member] of the other~/
   ~bv[]
@@ -4975,7 +4975,7 @@
 
 (defun symbol-alistp (x)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for association lists with symbols as keys~/
 
@@ -5036,7 +5036,7 @@
 #+acl2-loop-only
 (defmacro assoc (x alist &key (test ''eql))
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   look up key in association list~/
   ~bv[]
@@ -5117,7 +5117,7 @@
 #+acl2-loop-only
 (defmacro <= (x y)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   less-than-or-equal test~/
 
@@ -5132,7 +5132,7 @@
 #+acl2-loop-only
 (defun = (x y)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   test equality of two numbers~/
 
@@ -5157,7 +5157,7 @@
 #+acl2-loop-only
 (defun /= (x y)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   test inequality of two numbers~/
 
@@ -5181,7 +5181,7 @@
 #+acl2-loop-only
 (defmacro > (x y)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   greater-than test~/
 
@@ -5196,7 +5196,7 @@
 #+acl2-loop-only
 (defmacro >= (x y)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   greater-than-or-equal test~/
 
@@ -5379,7 +5379,7 @@
 
 (defmacro int= (i j)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   test equality of two integers~/
 
@@ -5403,7 +5403,7 @@
   (declare (xargs :mode :logic
                   :guard (and (integerp x) (<= 0 x))))
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   testing a ``natural'' against 0~/
 
@@ -5488,7 +5488,7 @@
   (declare (xargs :mode :logic
                   :guard (integerp x)))
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   testing an ``integer'' against 0~/
 
@@ -5546,7 +5546,7 @@
 #+acl2-loop-only
 (defun nth (n l)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   the nth element (zero-based) of a list~/
 
@@ -5573,7 +5573,7 @@
 #+acl2-loop-only
 (defun char (s n)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   the ~il[nth] element (zero-based) of a string~/
 
@@ -5597,7 +5597,7 @@
 
 (defun proper-consp (x)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for proper (null-terminated) non-empty lists~/
 
@@ -5612,7 +5612,7 @@
 
 (defun improper-consp (x)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for improper (non-null-terminated) non-empty lists~/
 
@@ -5629,7 +5629,7 @@
 #+acl2-loop-only
 (defmacro * (&rest rst)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   multiplication macro~/
 
@@ -5658,7 +5658,7 @@
 #+acl2-loop-only
 (defun conjugate (x)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   complex number conjugate~/
 
@@ -5690,7 +5690,7 @@
 ; We have since found other uses for prog2$, which are documented in the doc
 ; string below.
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   execute two forms and return the value of the second one~/
 
@@ -5820,7 +5820,7 @@
 
 (defmacro ec-call (x)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   execute a call in the ACL2 logic instead of raw Lisp~/
 
@@ -5968,7 +5968,7 @@
 #+acl2-loop-only
 (defmacro / (x &optional (y 'nil binary-casep))
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   macro for division and reciprocal~/
 
@@ -6019,7 +6019,7 @@
 
 (defun fix (x)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   coerce to a number~/
 
@@ -8098,7 +8098,7 @@
 
 (defmacro no-duplicatesp (x &key (test ''eql))
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   check for duplicates in a list~/
   ~bv[]
@@ -8152,7 +8152,7 @@
 
 ; For guard to rassoc-eql-exec.
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for a true list of pairs whose ~ilc[cdr]s are suitable for ~ilc[eql]~/
 
@@ -8172,7 +8172,7 @@
 
 ; For guard to rassoc-eq-exec.
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for association lists with symbols as values~/
 
@@ -8226,7 +8226,7 @@
 #+acl2-loop-only
 (defmacro rassoc (x alist &key (test ''eql))
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   look up value in association list~/
   ~bv[]
@@ -8292,7 +8292,7 @@
 #+acl2-loop-only
 (defun standard-char-p (x)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for standard characters~/
 
@@ -8318,7 +8318,7 @@
 
 (defun standard-char-listp (l)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for a true list of standard characters~/
 
@@ -8340,7 +8340,7 @@
 
 (defun character-listp (l)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for a true list of characters~/
 
@@ -8437,7 +8437,7 @@
 #+acl2-loop-only
 (defun string (x)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~il[coerce] to a string~/
 
@@ -8475,7 +8475,7 @@
 #+acl2-loop-only
 (defun alpha-char-p (x)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for alphabetic characters~/
 
@@ -8503,7 +8503,7 @@
 #+acl2-loop-only
 (defun upper-case-p (x)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for upper case characters~/
 
@@ -8532,7 +8532,7 @@
 #+acl2-loop-only
 (defun lower-case-p (x)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for lower case characters~/
 
@@ -8561,7 +8561,7 @@
 #+acl2-loop-only
 (defun char-upcase (x)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   turn lower-case ~il[characters] into upper-case ~il[characters]~/
 
@@ -8616,7 +8616,7 @@
 #+acl2-loop-only
 (defun char-downcase (x)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   turn upper-case ~il[characters] into lower-case ~il[characters]~/
 
@@ -8723,7 +8723,7 @@
 #+acl2-loop-only
 (defun string-downcase (x)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   in a given string, turn upper-case ~il[characters] into lower-case~/
 
@@ -8763,7 +8763,7 @@
 #+acl2-loop-only
 (defun string-upcase (x)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   in a given string, turn lower-case ~il[characters] into upper-case~/
 
@@ -8857,7 +8857,7 @@
 #+acl2-loop-only
 (defmacro digit-char-p (ch &optional (radix '10))
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   the number, if any, corresponding to a given character~/
 
@@ -8880,7 +8880,7 @@
 #+acl2-loop-only
 (defun char-equal (x y)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   character equality without regard to case~/
 
@@ -8904,7 +8904,7 @@
 
 (defun atom-listp (lst)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for a true list of ~il[atom]s~/
 
@@ -8934,7 +8934,7 @@
 
 ; Keep this in sync with bad-atom.
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for a true list of ``good'' ~il[atom]s~/
 
@@ -8967,7 +8967,7 @@
 
 (defun ifix (x)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   coerce to an integer~/
 
@@ -8986,7 +8986,7 @@
 
 (defun rfix (x)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   coerce to a rational number~/
 
@@ -9015,7 +9015,7 @@
 
 (defun realfix (x)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   coerce to a real number~/
 
@@ -9034,7 +9034,7 @@
 
 (defun nfix (x)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   coerce to a natural number~/
 
@@ -9080,7 +9080,7 @@
 #+acl2-loop-only
 (defun string-equal (str1 str2)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   string equality without regard to case~/
 
@@ -9107,7 +9107,7 @@
 
 (defun standard-string-alistp (x)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for association lists with standard strings as keys~/
 
@@ -9133,7 +9133,7 @@
 
 (defun assoc-string-equal (str alist)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   look up key, a string, in association list~/
 
@@ -9168,7 +9168,7 @@
 ;first: we mention the old ordinals:
 
 (defdoc e0-ordinalp
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
    the old recognizer for ACL2 ordinals~/
 
@@ -9185,7 +9185,7 @@
    ~c[books/ordinals/e0-ordinal.lisp].")
 
 (defdoc e0-ord-<
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
    the old ordering function for ACL2 ordinals~/
 
@@ -9203,7 +9203,7 @@
 
 (defun natp (x)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
    a recognizer for the natural numbers~/~/
 
@@ -9227,7 +9227,7 @@
   :rule-classes :compound-recognizer)
 
 (defun posp (x)
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
    a recognizer for the positive integers~/~/
 
@@ -9250,7 +9250,7 @@
   :rule-classes :compound-recognizer)
 
 (defun o-finp (x)
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizes if an ordinal is finite~/~/
 
@@ -9265,7 +9265,7 @@
   (atom x))
 
 (defmacro o-infp (x)
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizes if an ordinal is infinite~/~/
 
@@ -9275,7 +9275,7 @@
   `(not (o-finp ,x)))
 
 (defun o-first-expt (x)
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   the first exponent of an ordinal~/~/
 
@@ -9295,7 +9295,7 @@
     (caar x)))
 
 (defun o-first-coeff (x)
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   returns the first coefficient of an ordinal~/~/
 
@@ -9315,7 +9315,7 @@
     (cdar x)))
 
 (defun o-rst (x)
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   returns the rest of an infinite ordinal~/~/
 
@@ -9345,7 +9345,7 @@
 
 (defun o< (x y)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
    the well-founded less-than relation on ordinals up to ~c[epsilon-0]~/
 
@@ -9419,7 +9419,7 @@
         (t (o< (o-rst x) (o-rst y)))))
 
 (defmacro o> (x y)
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   the greater-than relation for the ordinals~/~/
 
@@ -9428,7 +9428,7 @@
   `(o< ,y ,x))
 
 (defmacro o<= (x y)
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   the less-than-or-equal relation for the ordinals~/~/
 
@@ -9437,7 +9437,7 @@
   `(not (o< ,y ,x)))
 
 (defmacro o>= (x y)
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   the greater-than-or-equal relation for the ordinals~/~/
 
@@ -9447,7 +9447,7 @@
 
 (defun o-p (x)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
    a recognizer for the ordinals up to epsilon-0~/
 
@@ -9638,7 +9638,7 @@
 
 (defun make-ord (fe fco rst)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   a constructor for ordinals.~/
 
@@ -9687,7 +9687,7 @@
 #+acl2-loop-only
 (defmacro list* (&rest args)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   build a list~/
 
@@ -9925,7 +9925,7 @@
 ; See the comment after ILLEGAL (below) for a discussion of an
 ; earlier, inadequate handling of these issues.
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   print an error message and stop execution~/
 
@@ -9995,7 +9995,7 @@
 
 (defun illegal (ctx str alist)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   print an error message and stop execution~/
 
@@ -10069,7 +10069,7 @@
                                                "ACL2-INPUT-CHANNEL"
                                                "ACL2-OUTPUT-CHANNEL"
                                                "KEYWORD")))))
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   create a new symbol in a given package~/
 
@@ -10130,7 +10130,7 @@
 
 (defmacro intern$ (x y)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   create a new symbol in a given package~/
 
@@ -10151,7 +10151,7 @@
 #+acl2-loop-only
 (defun keywordp (x)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for keywords~/
 
@@ -10421,7 +10421,7 @@
      ans)))
 
 (defdoc pkg-imports
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   list of symbols imported into a given package~/
 
@@ -10485,7 +10485,7 @@
           (t (throw-raw-ev-fncall (list 'pkg-imports-er pkg))))))
 
 (defdoc pkg-witness
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   return a specific symbol in the indicated package~/
 
@@ -10521,7 +10521,7 @@
 
 (defun binary-append (x y)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~il[concatenate] two lists~/
 
@@ -10540,7 +10540,7 @@
 #+acl2-loop-only
 (defmacro append (&rest rst)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~il[concatenate] zero or more lists~/
 
@@ -10610,7 +10610,7 @@
 #+acl2-loop-only
 (defmacro concatenate (result-type &rest sequences)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   concatenate lists or strings together~/
   ~bv[]
@@ -10665,7 +10665,7 @@
 
 (defun string-append (str1 str2)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~il[concatenate] two strings~/
 
@@ -10701,7 +10701,7 @@
 
 (defun string-listp (x)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for a true list of strings~/
 
@@ -10733,7 +10733,7 @@
 #+acl2-loop-only
 (defmacro 1+ (x)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   increment by 1~/
 
@@ -10747,7 +10747,7 @@
 #+acl2-loop-only
 (defmacro 1- (x)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   decrement by 1~/
 
@@ -10802,7 +10802,7 @@
 #+acl2-loop-only
 (defmacro remove (x l &key (test ''eql))
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   remove all occurrences~/
   ~bv[]
@@ -10896,7 +10896,7 @@
 
 (defmacro remove1 (x l &key (test ''eql))
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   remove first occurrences, testing using ~ilc[eql]~/
   ~bv[]
@@ -10949,7 +10949,7 @@
 
 (deflabel pairlis
   :doc
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~l[pairlis$]~/
 
@@ -10962,7 +10962,7 @@
 ; CLTL allows its pairlis to construct an alist in any order!  So we
 ; have to give this function a different name.
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   zipper together two lists~/
 
@@ -11027,7 +11027,7 @@
 #+acl2-loop-only
 (defmacro remove-duplicates (x &key (test ''eql))
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   remove duplicates from a string or a list~/
   ~bv[]
@@ -11362,7 +11362,7 @@
 
 #+acl2-loop-only
 (defmacro first (x)
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   first member of the list~/
 
@@ -11371,7 +11371,7 @@
 
 #+acl2-loop-only
 (defmacro second (x)
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   second member of the list~/
 
@@ -11380,7 +11380,7 @@
 
 #+acl2-loop-only
 (defmacro third (x)
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   third member of the list~/
 
@@ -11389,7 +11389,7 @@
 
 #+acl2-loop-only
 (defmacro fourth (x)
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   fourth member of the list~/
 
@@ -11398,7 +11398,7 @@
 
 #+acl2-loop-only
 (defmacro fifth (x)
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   fifth member of the list~/
 
@@ -11407,7 +11407,7 @@
 
 #+acl2-loop-only
 (defmacro sixth (x)
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   sixth member of the list~/
 
@@ -11416,7 +11416,7 @@
 
 #+acl2-loop-only
 (defmacro seventh (x)
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   seventh member of the list~/
 
@@ -11425,7 +11425,7 @@
 
 #+acl2-loop-only
 (defmacro eighth (x)
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   eighth member of the list~/
 
@@ -11434,7 +11434,7 @@
 
 #+acl2-loop-only
 (defmacro ninth (x)
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ninth member of the list~/
 
@@ -11443,7 +11443,7 @@
 
 #+acl2-loop-only
 (defmacro tenth (x)
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   tenth member of the list~/
 
@@ -11453,7 +11453,7 @@
 #+acl2-loop-only
 (defmacro rest (x)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   rest (~ilc[cdr]) of the list~/
 
@@ -11467,7 +11467,7 @@
 #+acl2-loop-only
 (defun identity (x) (declare (xargs :guard t))
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   the identity function~/
 
@@ -11481,7 +11481,7 @@
 #+acl2-loop-only
 (defun revappend (x y)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   concatentate the ~il[reverse] of one list to another~/
 
@@ -11526,7 +11526,7 @@
 #+acl2-loop-only
 (defun reverse (x)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   reverse a list or string~/
 
@@ -11603,7 +11603,7 @@
 
 (defmacro set-difference$ (l1 l2 &key (test ''eql))
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   elements of one list that are not elements of another~/
   ~bv[]
@@ -11661,7 +11661,7 @@
 #+acl2-loop-only
 (defun listp (x)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for (not necessarily proper) lists~/
 
@@ -11845,7 +11845,7 @@
 #+acl2-loop-only
 (defun last (l)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   the last ~ilc[cons] (not element) of a list~/
 
@@ -11882,7 +11882,7 @@
 
 (defun take (n l)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   initial segment of a list~/
 
@@ -11930,7 +11930,7 @@
 #+acl2-loop-only
 (defun butlast (lst n)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   all but a final segment of a list~/
 
@@ -12582,7 +12582,7 @@
 
 (defun pseudo-termp (x)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   a predicate for recognizing term-like s-expressions~/
   ~bv[]
@@ -12742,7 +12742,7 @@
 
 (defmacro add-to-set (x lst &key (test ''eql))
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   add a symbol to a list~/
   ~bv[]
@@ -12805,7 +12805,7 @@
 
 (defun kwote (x)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   quote an arbitrary object~/
 
@@ -12820,7 +12820,7 @@
 
 (defun kwote-lst (lst)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   quote an arbitrary true list of objects~/
 
@@ -13022,7 +13022,7 @@
 
 (defmacro intersectp (x y &key (test ''eql))
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   test whether two lists intersect~/
   ~bv[]
@@ -13147,7 +13147,7 @@
 
 ; Keep in sync with er-progn@par.
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   perform a sequence of state-changing ``error triples''~/
 
@@ -13224,7 +13224,7 @@
 
 ; Keep in sync with er-progn.
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   State-free version of ~ilc[er-progn].~/
 
@@ -13286,7 +13286,7 @@
 #+acl2-loop-only
 (defmacro case (&rest l)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   conditional based on if-then-else using ~ilc[eql]~/
   ~bv[]
@@ -13467,7 +13467,7 @@
 #+acl2-loop-only
 (defmacro position (x seq &key (test ''eql))
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   position of an item in a string or a list~/
   ~bv[]
@@ -13521,7 +13521,7 @@
 
 (defun nonnegative-integer-quotient (i j)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   natural number division function~/
   ~bv[]
@@ -13556,7 +13556,7 @@
 
 (defun true-list-listp (x)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for true (proper) lists of true lists~/
 
@@ -13719,7 +13719,7 @@
 #+acl2-loop-only
 (defmacro let* (&whole form bindings &rest decl-body)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   binding of lexically scoped (local) variables~/
   ~bv[]
@@ -13903,7 +13903,7 @@
 
 (defun floor (i j)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   division returning an integer by truncating toward negative infinity~/
   ~bv[]
@@ -13962,7 +13962,7 @@
 
 (defun ceiling (i j)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   division returning an integer by truncating toward positive infinity~/
   ~bv[]
@@ -14020,7 +14020,7 @@
 
 (defun truncate (i j)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   division returning an integer by truncating toward 0~/
   ~bv[]
@@ -14083,7 +14083,7 @@
 
 (defun round (i j)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   division returning an integer by rounding off~/
   ~bv[]
@@ -14155,7 +14155,7 @@
 
 (defun mod (x y)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   remainder using ~ilc[floor]~/
   ~bv[]
@@ -14189,7 +14189,7 @@
 
 (defun rem (x y)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   remainder using ~ilc[truncate]~/
   ~bv[]
@@ -14223,7 +14223,7 @@
 
 (defun evenp (x)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   test whether an integer is even~/
 
@@ -14243,7 +14243,7 @@
 
 (defun oddp (x)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   test whether an integer is odd~/
 
@@ -14264,7 +14264,7 @@
   (declare (xargs :mode :logic
                   :guard (acl2-numberp x)))
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   test an acl2-number against 0~/
 
@@ -14291,7 +14291,7 @@
 
 (defun plusp (x)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   test whether a number is positive~/
 
@@ -14313,7 +14313,7 @@
 
 (defun minusp (x)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   test whether a number is negative~/
 
@@ -14335,7 +14335,7 @@
 
 (defun min (x y)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   the smaller of two numbers~/
 
@@ -14359,7 +14359,7 @@
 
 (defun max (x y)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   the larger of two numbers~/
 
@@ -14385,7 +14385,7 @@
 
 (defun abs (x)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   the absolute value of a real number~/
 
@@ -14410,7 +14410,7 @@
 
 (defun signum (x)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   indicator for positive, negative, or zero~/
 
@@ -14447,7 +14447,7 @@
 
 (defun lognot (i)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   bitwise not of a two's complement number~/
 
@@ -14668,7 +14668,7 @@
 
 (defun expt (r i)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   exponential function~/
 
@@ -14700,7 +14700,7 @@
 
 (defun logcount (x)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   number of ``on'' bits in a two's complement number~/
 
@@ -14727,7 +14727,7 @@
 
 (defun nthcdr (n l)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   final segment of a list~/
 
@@ -14762,7 +14762,7 @@
 
 (defun logbitp (i j)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   the ~c[i]th bit of an integer~/
 
@@ -14786,7 +14786,7 @@
 
 (defun ash (i c)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   arithmetic shift operation~/
 
@@ -14837,7 +14837,7 @@
 
 (deflabel characters
   :doc
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   characters in ACL2~/
 
@@ -14929,7 +14929,7 @@
 #+acl2-loop-only
 (defun char< (x y)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   less-than test for ~il[characters]~/
 
@@ -14949,7 +14949,7 @@
 #+acl2-loop-only
 (defun char> (x y)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   greater-than test for ~il[characters]~/
 
@@ -14969,7 +14969,7 @@
 #+acl2-loop-only
 (defun char<= (x y)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   less-than-or-equal test for ~il[characters]~/
 
@@ -14989,7 +14989,7 @@
 #+acl2-loop-only
 (defun char>= (x y)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   greater-than-or-equal test for ~il[characters]~/
 
@@ -15022,7 +15022,7 @@
 #+acl2-loop-only
 (defun string< (str1 str2)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   less-than test for strings~/
 
@@ -15059,7 +15059,7 @@
 #+acl2-loop-only
 (defun string> (str1 str2)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   greater-than test for strings~/
 
@@ -15080,7 +15080,7 @@
 #+acl2-loop-only
 (defun string<= (str1 str2)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   less-than-or-equal test for strings~/
 
@@ -15106,7 +15106,7 @@
 #+acl2-loop-only
 (defun string>= (str1 str2)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   less-than-or-equal test for strings~/
 
@@ -15131,7 +15131,7 @@
 
 (defun symbol-< (x y)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   less-than test for symbols~/
 
@@ -15177,7 +15177,7 @@
 #+acl2-loop-only
 (defun substitute (new old seq)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   substitute into a string or a list, using ~ilc[eql] as test~/
 
@@ -15213,7 +15213,7 @@
 #+acl2-loop-only
 (defun sublis (alist tree)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   substitute an alist into a tree~/
 
@@ -15243,7 +15243,7 @@
 #+acl2-loop-only
 (defun subst (new old tree)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   a single substitution into a tree~/
 
@@ -15270,7 +15270,7 @@
 
 ; Keep in sync with pprogn@par.
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   evaluate a sequence of forms that return ~il[state]~/
   ~bv[]
@@ -15331,7 +15331,7 @@
 
 (defmacro progn$ (&rest rst)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   execute a sequence of forms and return the value of the last one~/
 
@@ -21005,7 +21005,7 @@
   :rule-classes :forward-chaining)
 
 (defdoc getprop
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   access fast property lists~/
 
@@ -21022,7 +21022,7 @@
 
 (defun putprop (symb key value world-alist)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   update fast property lists~/
 
@@ -21398,7 +21398,7 @@
 
 (defmacro delete-assoc (key alist &key (test ''eql))
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   modify an association list by associating a value with a key~/
   ~bv[]
@@ -22198,7 +22198,7 @@
 #+acl2-loop-only
 (defmacro the (x y)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   run-time type check~/
 
@@ -22557,7 +22557,7 @@
 
 (defun keyword-value-listp (l)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for true lists whose even-position elements are keywords~/
 
@@ -22580,7 +22580,7 @@
 
 (defun assoc-keyword (key l)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   look up key in a ~ilc[keyword-value-listp]~/
 
@@ -22627,7 +22627,7 @@
 
 (defmacro f-get-global (x st)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   get the value of a global variable in ~ilc[state]~/
   ~bv[]
@@ -24735,7 +24735,7 @@
 
 (defun mv-nth (n l)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   the mv-nth element (zero-based) of a list~/
 
@@ -24790,7 +24790,7 @@
 
 (defmacro mv (&rest l)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   returning a multiple value~/
 
@@ -24978,7 +24978,7 @@
 ; mv? and mv?-let to be used in cases that single-valued returns are to be
 ; allowed (presumably in generated code).
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   returning a single value~/
 
@@ -25012,7 +25012,7 @@
 ; Warning: If the final logical form of a translated mv-let is
 ; changed, be sure to reconsider translated-acl2-unwind-protectp.
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   calling multi-valued ACL2 functions~/
   ~bv[]
@@ -25165,7 +25165,7 @@
 ; See the comment in mv? for reasons why we do not simply extend mv-let to
 ; handle single values.
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   calling possibly multi-valued ACL2 functions~/
 
@@ -25218,7 +25218,7 @@
 #+acl2-loop-only
 (defun mv-list (input-arity x)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   converting multiple-valued result to a single-valued list~/
   ~bv[]
@@ -25805,7 +25805,7 @@
 
 (defun update-nth (key val l)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   modify a list by putting the given value at the given position~/
 
@@ -25876,7 +25876,7 @@
 
 (defun rational-listp (l)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for a true list of rational numbers~/
 
@@ -25925,7 +25925,7 @@
 
 (defun integer-listp (l)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for a true list of integers~/
 
@@ -26516,7 +26516,7 @@
 ; call would expand to the identity; if not, it would bind state to
 ; *the-live-state*.  But we found no way in Common Lisp to do that.
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   allow a reference to ~c[state] in raw Lisp~/
 
@@ -27521,7 +27521,7 @@
 
 (defmacro f-put-global (key value st)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   assign to a global variable in ~ilc[state]~/
   ~bv[]
@@ -27865,7 +27865,7 @@
 ; See state-free-global-let* for such a variant that is appropriate to use when
 ; state is not available.
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   bind ~il[state] global variables~/
 
@@ -28063,7 +28063,7 @@
 #+acl2-loop-only
 (defun zpf (x)
   (declare (type (unsigned-byte 29) x))
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   testing a nonnegative fixnum against 0~/
 
@@ -28312,7 +28312,7 @@
 #+acl2-loop-only
 (defmacro logand (&rest args)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   bitwise logical `and' of zero or more integers~/
 
@@ -28335,7 +28335,7 @@
 #+acl2-loop-only
 (defmacro logeqv (&rest args)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   bitwise logical equivalence of zero or more integers~/
 
@@ -28358,7 +28358,7 @@
 #+acl2-loop-only
 (defmacro logior (&rest args)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   bitwise logical inclusive or of zero or more integers~/
 
@@ -28381,7 +28381,7 @@
 #+acl2-loop-only
 (defmacro logxor (&rest args)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   bitwise logical exclusive or of zero or more integers~/
 
@@ -28408,7 +28408,7 @@
 ; equivalent to one on p. 361 of CLtL2:
 ; (log2 (if (< x 0) (- x) (1+ x))).
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   number of bits in two's complement integer representation~/
 
@@ -28447,7 +28447,7 @@
 #+acl2-loop-only
 (defun lognand (i j)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   bitwise logical `nand' of two integers~/
 
@@ -28472,7 +28472,7 @@
 #+acl2-loop-only
 (defun logorc1 (i j)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   bitwise logical inclusive or of two ints, complementing the first~/
 
@@ -28493,7 +28493,7 @@
 #+acl2-loop-only
 (defun logorc2 (i j)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   bitwise logical inclusive or of two ints, complementing the second~/
 
@@ -28514,7 +28514,7 @@
 #+acl2-loop-only
 (defun logandc1 (i j)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   bitwise logical `and' of two ints, complementing the first~/
 
@@ -28535,7 +28535,7 @@
 #+acl2-loop-only
 (defun logandc2 (i j)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   bitwise logical `and' of two ints, complementing the second~/
 
@@ -28567,7 +28567,7 @@
 #+acl2-loop-only
 (defun lognor (i j)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   bitwise logical `nor' of two integers~/
 
@@ -28590,7 +28590,7 @@
 
 ; p. 360 of CLtL2
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   test if two integers share a `1' bit~/
 
@@ -28629,7 +28629,7 @@
 
 (defun boole$ (op i1 i2)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   perform a bit-wise logical operation on 2 two's complement integers~/
 
@@ -29101,7 +29101,7 @@
 
 (defun digit-to-char (n)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   map a digit to a character~/
   ~bv[]
@@ -29149,7 +29149,7 @@
 
 (defun explode-nonnegative-integer (n print-base ans)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   the list of ~il[characters] in the radix-r form of a number~/
   ~bv[]
@@ -29678,7 +29678,7 @@
 (skip-proofs
 (defun princ$ (x channel state-state)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   print an atom~/
 
@@ -29887,7 +29887,7 @@
 ; implementation uses the former to force a hard error even in contexts where
 ; we would normally return nil.
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   print an error message and ``cause an error''~/
   ~bv[]
@@ -30762,7 +30762,7 @@
 
 (defmacro assert$ (test form)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   cause a hard error if the given test is false~/
 
@@ -30798,7 +30798,7 @@
 ; about ACL2 output, it must be directed to the channels and files in
 ; STATE.
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   print to the comment window~/
 
@@ -30881,7 +30881,7 @@
 ; which has the side-effect of printing to the comment window and
 ; logically returning (mv a b c).
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   print to the comment window~/
 
@@ -30980,7 +30980,7 @@
 
 ; WARNING: Keep this in sync with cw.
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   print to the comment window~/
 
@@ -31008,7 +31008,7 @@
 #+acl2-loop-only
 (defun subseq (seq start end)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   subsequence of a string or list~/
 
@@ -31974,7 +31974,7 @@
 #+acl2-loop-only
 (defmacro make-list (size &key initial-element)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   make a list of a given size~/
 
@@ -32592,7 +32592,7 @@
 
 (defun read-run-time (state-state)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   read elapsed runtime~/
 
@@ -32700,7 +32700,7 @@
 
 (defun getenv$ (str state)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   read an environment variable~/
 
@@ -32729,7 +32729,7 @@
 
 (defun setenv$ (str val)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   set an environment variable~/
 
@@ -32785,7 +32785,7 @@
 
 (defun random$ (limit state)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   obtain a random value~/
 
@@ -33033,7 +33033,7 @@
 
 (defmacro put-assoc (name val alist &key (test ''eql))
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   modify an association list by associating a value with a key~/
   ~bv[]
@@ -34292,7 +34292,7 @@
 
 (defmacro assign (x y)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   assign to a global variable in ~ilc[state]~/
   ~bv[]
@@ -34331,7 +34331,7 @@
            (mv nil (f-get-global ',x state) state)))
 
 (defmacro @ (x)
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   get the value of a global variable in ~ilc[state]~/
   ~bv[]
@@ -34487,7 +34487,7 @@
 
 (defmacro union$ (&whole form &rest x)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   elements of one list that are not elements of another~/
   ~bv[]
@@ -34795,7 +34795,7 @@
 
 (defmacro intersection$ (&whole form &rest x)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   elements of one list that are not elements of another~/
   ~bv[]
@@ -39090,7 +39090,7 @@
 ; the end of this file.
 
 (defdoc complex-rationalp
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizes complex rational numbers~/
   ~bv[]
@@ -39105,7 +39105,7 @@
 
 (deflabel let
   :doc
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   binding of lexically scoped (local) variables~/
   ~bv[]
@@ -39234,7 +39234,7 @@
 ; declarations in the *1* functions.  That point is so low-level that
 ; explaining it in the :doc topic is likely to do more harm than good.
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   local binding of function symbols~/
   ~bv[]
@@ -40397,7 +40397,7 @@
 
 (defun fix-true-list (x)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   coerce to a true list~/
 
@@ -41087,7 +41087,7 @@
 )
 
 (defdoc acl2-numberp
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for numbers~/
 
@@ -41095,7 +41095,7 @@
   rational or complex rational number.~/~/")
 
 (defdoc +
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   addition macro~/
 
@@ -41111,7 +41111,7 @@
   ~l[binary-+].~/~/")
 
 (defdoc binary-+
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   addition function~/
 
@@ -41137,7 +41137,7 @@
   ~pl[+].")
 
 (defdoc binary-*
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   multiplication function~/
 
@@ -41161,7 +41161,7 @@
   ~pl[*].")
 
 (defdoc -
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   macro for subtraction and negation~/
 
@@ -41190,7 +41190,7 @@
   ")
 
 (defdoc unary--
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   arithmetic negation function~/
 
@@ -41212,7 +41212,7 @@
   ~c[unary--]; ~pl[-].")
 
 (defdoc unary-/
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   reciprocal function~/
 
@@ -41236,7 +41236,7 @@
   ~c[unary-/]; ~pl[/].")
 
 (defdoc <
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   less-than~/
 
@@ -41266,7 +41266,7 @@
   then the imaginary parts are compared.")
 
 (defdoc car
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   returns the first element of a non-empty list, else ~c[nil]~/
 
@@ -41285,7 +41285,7 @@
   Notice that in the ACL2 logic, ~c[car] returns ~c[nil] for every ~il[atom].")
 
 (defdoc cdr
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   returns the second element of a ~ilc[cons] pair, else ~c[nil]~/
 
@@ -41304,7 +41304,7 @@
   Notice that in the ACL2 logic, ~c[cdr] returns ~c[nil] for every ~il[atom].")
 
 (defdoc char-code
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   the numeric code for a given character~/
 
@@ -41322,7 +41322,7 @@
   This function maps all non-characters to ~c[0].")
 
 (defdoc characterp
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for ~il[characters]~/
 
@@ -41330,7 +41330,7 @@
   character.~/~/")
 
 (defdoc code-char
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   the character corresponding to a given numeric code~/
 
@@ -41353,7 +41353,7 @@
   are treated as ~c[0].")
 
 (defdoc complex
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   create an ACL2 number~/
   ~bv[]
@@ -41401,7 +41401,7 @@
   ")
 
 (defdoc cons
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   pair and list constructor~/
 
@@ -41410,7 +41410,7 @@
   that has an addtional element ~c[x] on the front.~/~/")
 
 (defdoc consp
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for ~il[cons] pairs~/
 
@@ -41436,7 +41436,7 @@
 ;            (incf (the integer i)))
 ;      str))
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   coerce a character list to a string and a string to a list~/
 
@@ -41467,7 +41467,7 @@
   ~/")
 
 (defdoc denominator
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   divisor of a ratio in lowest terms~/
 
@@ -41485,7 +41485,7 @@
   ~/")
 
 (defdoc equal
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   true equality~/
 
@@ -41496,7 +41496,7 @@
   ~l[zero-test-idioms].~/")
 
 (defdoc if
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   if-then-else function~/
 
@@ -41512,7 +41512,7 @@
   more information.~/")
 
 (defdoc imagpart
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   imaginary part of a complex number~/
 
@@ -41530,14 +41530,14 @@
   ~/")
 
 (defdoc integerp
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for whole numbers~/
 
   ~c[(integerp x)] is true if and only if ~c[x] is an integer.~/~/")
 
 (defdoc intern-in-package-of-symbol
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   create a symbol with a given name~/
 
@@ -41593,7 +41593,7 @@
   ~ev[]")
 
 (defdoc numerator
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   dividend of a ratio in lowest terms~/
 
@@ -41611,7 +41611,7 @@
   ~/")
 
 (defdoc rationalp
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for rational numbers (ratios and integers)~/
 
@@ -41619,7 +41619,7 @@
   number.~/~/")
 
 (defdoc realpart
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   real part of a complex number~/
 
@@ -41637,14 +41637,14 @@
   ~/")
 
 (defdoc stringp
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for strings~/
 
   ~c[(stringp x)] is true if and only if ~c[x] is a string.~/~/")
 
 (defdoc symbol-name
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   the name of a symbol (a string)~/
 
@@ -41662,7 +41662,7 @@
   ~/")
 
 (defdoc symbol-package-name
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   the name of the package of a symbol (a string)~/
 
@@ -41690,14 +41690,14 @@
   main Lisp package in GCL is \"LISP\".~/")
 
 (defdoc symbolp
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for symbols~/
 
   ~c[(symbolp x)] is true if and only if ~c[x] is a symbol.~/~/")
 
 (defdoc quote
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   create a constant~/
 
@@ -42962,7 +42962,7 @@ Lisp definition."
 
 (defun alphorder (x y)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   total order on atoms~/
 
@@ -43038,7 +43038,7 @@ Lisp definition."
 
 (defun lexorder (x y)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   total order on ACL2 objects~/
 
@@ -43605,7 +43605,7 @@ Lisp definition."
 
 (defun mod-expt (base exp mod)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   exponential function~/
 
@@ -44613,7 +44613,7 @@ Lisp definition."
                        (start1 '0) (start2 '0)
                        (end1 'nil end1p) (end2 'nil end2p))
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   search for a string or list in another string or list~/
 
@@ -44728,7 +44728,7 @@ Lisp definition."
 #+acl2-loop-only
 (defmacro count (item sequence &key (start '0) end)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   count the number of occurrences of an item in a string or true-list~/
 
@@ -44908,7 +44908,7 @@ Lisp definition."
                    (real-mintime 'nil real-mintime-p)
                    run-mintime minalloc msg args)
 
-  ":Doc-Section ACL2::Built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   time an evaluation~/
 
@@ -45417,7 +45417,7 @@ Lisp definition."
 
 ; Keep this in sync with break-on-error-fn.
 
-  ":Doc-Section ACL2::built-ins
+  ":Doc-Section ACL2::ACL2-built-ins
 
   cause an immediate Lisp break~/
 
