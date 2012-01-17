@@ -172,10 +172,7 @@ sub get_cert_time {
 # corresponding .time file.  If not found, prints a warning and returns 0.
 # Given an .acl2x file, gets the time recorded in the corresponding
 # .acl2x.time file.
-
-    my $path = shift;
-    my $warnings = shift;
-    my $use_realtime = shift;
+    my ($path, $warnings, $use_realtime) = @_;
 
     $path =~ s/\.cert$/\.time/;
     $path =~ s/\.acl2x$/\.acl2x\.time/;
@@ -228,10 +225,7 @@ sub get_cert_time {
 
 
 sub read_costs {
-    my $deps = shift;
-    my $basecosts = shift;
-    my $warnings = shift;
-    my $use_realtime = shift;
+    my ($deps, $basecosts, $warnings, $use_realtime) = @_;
 
     foreach my $certfile (keys %{$deps}) {
 	if ($certfile =~ /\.(cert|acl2x)$/) {
@@ -242,8 +236,7 @@ sub read_costs {
 }
 
 sub find_most_expensive {
-    my $files = shift;
-    my $costs = shift;
+    my ($files, $costs) = @_;
 
     my $most_expensive_file_total = 0;
     my $most_expensive_file = 0;
@@ -266,11 +259,7 @@ sub find_most_expensive {
 }
 
 sub compute_cost_paths_aux {
-    my $certfile = shift;
-    my $deps = shift;
-    my $basecosts = shift;
-    my $costs = shift;
-    my $warnings = shift;
+    my ($certfile,$deps,$basecosts,$costs,$warnings) = @_;
 
     if (exists $costs->{$certfile} || ! ($certfile =~ /\.(cert|acl2x)$/)) {
 	return $costs->{$certfile};
@@ -309,10 +298,7 @@ sub compute_cost_paths_aux {
 }
 
 sub compute_cost_paths {
-    my $deps = shift;
-    my $basecosts = shift;
-    my $costs = shift;
-    my $warnings = shift;
+    my ($deps,$basecosts,$costs,$warnings) = @_;
     
     foreach my $certfile (keys %{$deps}) {
 	compute_cost_paths_aux($certfile, $deps, $basecosts, $costs, $warnings);
@@ -326,9 +312,7 @@ sub warnings_report {
 # warnings_report(warnings, htmlp) returns a string describing any warnings
 # which were encountered during the generation of the costs table, such as for
 # missing .time files.
-
-    my $warnings = shift;
-    my $htmlp = shift;
+    my ($warnings,$htmlp) = @_;
 
     unless (@$warnings) {
 	return "";
@@ -365,13 +349,7 @@ sub critical_path_report {
 # critical_path_report(costs,htmlp) returns a string describing the
 # critical path for file according to the costs_table, either in TEXT or HTML
 # format per the value of htmlp.
-
-    my $costs = shift;
-    my $basecosts = shift;
-    my $savings = shift;
-    my $topfile = shift;
-    my $htmlp = shift;
-    my $short = shift;
+    my ($costs,$basecosts,$savings,$topfile,$htmlp,$short) = @_;
 
 
     my $ret;
@@ -447,11 +425,7 @@ sub individual_files_report {
 # individual_files_report(costs,htmlp) returns a string describing the
 # self-times of each file in the costs_table, either in either TEXT or HTML
 # format, per the value of htmlp.
-
-    my $costs = shift;
-    my $basecosts = shift;
-    my $htmlp = shift;
-    my $short = shift;
+    my ($costs,$basecosts,$htmlp,$short) = @_;
 
     my @sorted = reverse sort { ($costs->{$a}->{"totaltime"} + 0.0) <=> ($costs->{$b}->{"totaltime"} + 0.0) } keys(%{$costs});
     my $ret;
@@ -593,8 +567,7 @@ my $believe_cache = 0;
 my %dirs = ( );
 
 sub certlib_add_dir {
-    my $name = shift;
-    my $dir = shift;
+    my ($name,$dir) = @_;
     $dirs{$name} = $dir;
 }
 
@@ -625,9 +598,7 @@ my $ld_event = 'ld';
 
 
 sub get_add_dir {
-    my $base = shift;
-    my $the_line = shift;
-    my $events = shift;
+    my ($base,$the_line,$events) = @_;
 
     # Check for ADD-INCLUDE-BOOK-DIR commands
     my $regexp = "^[^;]*\\(add-include-book-dir[\\s]+:([^\\s]*)[\\s]*\"([^\"]*[^\"/])/?\"";
@@ -655,9 +626,7 @@ sub lookup_colon_dir {
 }
 
 sub debug_print_event {
-    my $fname = shift;
-    my $cmd = shift;
-    my $args = shift;
+    my ($fname,$cmd,$args) = @_;
     if ($debugging) {
 	print "$fname: $cmd ";
 	foreach my $arg (@$args) {
@@ -668,9 +637,7 @@ sub debug_print_event {
 }
 
 sub get_include_book {
-    my $base = shift;
-    my $the_line = shift;
-    my $events = shift;
+    my ($base,$the_line,$events) = @_;
 
     my $regexp = "^[^;]*\\(include-book[\\s]*\"([^\"]*)\"(?:.*:dir[\\s]*:([^\\s)]*))?";
     my @res = $the_line =~ m/$regexp/i;
@@ -683,9 +650,7 @@ sub get_include_book {
 }
 
 sub get_depends_on {
-    my $base = shift;
-    my $the_line = shift;
-    my $events = shift;
+    my ($base,$the_line,$events) = @_;
 
     my $regexp = "\\(depends-on[\\s]*\"([^\"]*)\"(?:.*:dir[\\s]*:([^\\s)]*))?";
     my @res = $the_line =~ m/$regexp/i;
@@ -698,9 +663,7 @@ sub get_depends_on {
 }
 
 sub get_loads {
-    my $base = shift;
-    my $the_line = shift;
-    my $events = shift;
+    my ($base,$the_line,$events) = @_;
 
     my $regexp = "\\(loads[\\s]*\"([^\"]*)\"(?:.*:dir[\\s]*:([^\\s)]*))?";
     my @res = $the_line =~ m/$regexp/i;
@@ -714,9 +677,7 @@ sub get_loads {
 
 
 sub get_two_pass {
-    my $base = shift;
-    my $the_line = shift;
-    my $events = shift;
+    my ($base,$the_line,$events) = @_;
 
     my $regexp = ";; two-pass certification";
     my $match = $the_line =~ m/$regexp/;
@@ -741,9 +702,7 @@ sub get_two_pass {
 
 
 sub get_ld {
-    my $base = shift;
-    my $the_line = shift;
-    my $events = shift;
+    my ($base,$the_line,$events) = @_;
 
     # Check for LD commands
     my $regexp = "^[^;]*\\(ld[\\s]*\"([^\"]*)\"(?:.*:dir[\\s]*:([^\\s)]*))?";
@@ -762,8 +721,7 @@ sub ftimestamp {
 }
 
 sub newer_than {
-    my $file1 = shift;
-    my $file2 = shift;
+    my ($file1,$file2) = @_;
     return ftimestamp($file1) > ftimestamp($file2);
 }
 
@@ -816,10 +774,8 @@ sub scan_src {
 # source file.  These may be either already in the cache, or else they
 # are read in using scan_src.
 sub src_events {
-    my $fname = shift;
-    my $evcache = shift;
-    my $checked = shift;
-    my $parent = shift;
+    my ($fname,$evcache,$checked,$parent) = @_;
+
     my $entry = $evcache->{$fname};
     my $entry_ok = 0;
 
@@ -855,12 +811,7 @@ sub src_events {
 }
 
 sub expand_dirname_cmd {
-    my $relname = shift;
-    my $basename = shift;
-    my $dirname = shift;
-    my $local_dirs = shift;
-    my $cmd = shift;
-    my $ext = shift;
+    my ($relname,$basename,$dirname,$local_dirs,$cmd,$ext) = @_;
     my $fullname;
     if ($dirname) {
 	my $dirpath = lookup_colon_dir($dirname, $local_dirs);
@@ -1041,11 +992,7 @@ sub remove_dups {
 # Find dependencies of a cert file, here passed in without extension.
 # Calls src_deps to get the dependencies of the .acl2 and book files.
 sub find_deps {
-    my $base = shift;
-    my $cache = shift;
-    my $book_only = shift;
-    my $tscache = shift;
-    my $parent = shift;
+    my ($base,$cache,$book_only,$tscache,$parent) = @_;
 
     my $lispfile = $base . ".lisp";
 
@@ -1129,12 +1076,7 @@ sub find_deps {
 # If the target has been seen before, then it returns immediately.
 # Otherwise, this calls on find_deps to get those dependencies.
 sub add_deps {
-    my $target = shift;
-    my $cache = shift;
-    my $seen = shift;
-    my $sources = shift;
-    my $tscache = shift;
-    my $parent = shift;
+    my ($target,$cache,$seen,$sources,$tscache,$parent) = @_;
 
     if (exists $seen->{$target}) {
 	# We've already calculated this file's dependencies.
@@ -1233,8 +1175,7 @@ sub add_deps {
 }
 
 sub read_targets {
-    my $fname=shift;
-    my $targets=shift;
+    my ($fname,$targets) = @_;
     if (open (my $tfile, $fname)) {
 	while (my $the_line = <$tfile>) {
 	    chomp($the_line);
@@ -1254,11 +1195,7 @@ sub read_targets {
 
 sub compute_savings
 {
-    my $costs = shift;
-    my $basecosts = shift;
-    my $targets_ref = shift;
-    my $debug = shift;
-    my $deps_ref = shift;
+    my ($costs,$basecosts,$targets_ref,$debug,$deps_ref) = @_;
 
     my @targets = @$targets_ref;
     my %deps = %$deps_ref;
