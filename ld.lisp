@@ -18373,6 +18373,9 @@
   We have eliminated some hypotheses in built-in ~il[rewrite] rules
   ~c[characterp-nth] and ~c[ordered-symbol-alistp-delete-assoc-eq].
 
+  Added the symbols ~ilc[f-get-global], ~ilc[f-put-global], and
+  ~ilc[state-global-let*] to ~c[*acl2-exports*].
+
   ~st[NEW FEATURES]
 
   A new ``tau system'' provides a kind of ``type checker.''  ~l[tau-system].
