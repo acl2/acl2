@@ -1843,7 +1843,8 @@
   called.)  ~c[Ld] is also a general-purpose ACL2 file loader and a
   ~il[command] interpreter.  ~c[Ld] is actually a macro that expands to a
   function call involving ~ilc[state].  ~c[Ld] returns an ``error triple''
-  ~c[(mv erp val state)] as explained below.
+  ~c[(mv erp val state)] as explained below.  (For much more on error triples,
+  ~pl[programming-with-state].)
 
   ~l[rebuild] for a variant of ~c[ld] that skips proofs.
 
@@ -18449,13 +18450,14 @@
 
   A new ~il[documentation] topic provides a guide to programming with state;
   ~pl[programming-with-state].  Thanks to Sarah Weissman for suggesting that
-  such a guide might be useful.  There also has been some creation of
-  additional documentation (e.g., ~pl[state-global-let*]) and corresponding
-  reorganization.  Now, most built-in functions and macros commonly used in
-  programs (as opposed to ~il[events] like ~ilc[defun], for example) are
-  subtopics of a new topic ~-[] ~pl[acl2-built-ins] ~-[] which is a subtopic of
-  ~il[programming], a topic that in turn has considerably fewer direct
-  subtopiics than before.
+  such a guide might be useful, and to David Rager for helpful feedback on a
+  preliminary version.  There also has been some corresponding reorganization
+  of the documentation as well as creation of additional documentation (e.g.,
+  ~pl[state-global-let*]).  Now, most built-in functions and macros commonly
+  used in programs (as opposed to ~il[events] like ~ilc[defun], for example)
+  are subtopics of a new topic ~-[] ~pl[acl2-built-ins] ~-[] which is a
+  subtopic of ~il[programming], a topic that in turn has considerably fewer
+  direct subtopiics than before.
 
   ~st[HEURISTIC IMPROVEMENTS]
 

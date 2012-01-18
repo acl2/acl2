@@ -7642,10 +7642,10 @@
   :ubt! :x-4
   ~ev[]~/
 
-  The keyword ~il[command] ~c[:ubt!] is the same as ~c[:]~ilc[ubt], but with related
-  queries suppressed appropriately, and with a guarantee that it is
-  ``error-free.''  More precisely, the error triple returned by ~c[:ubt!]
-  will always have a first component of ~c[nil].  ~c[:]~ilc[Oops] will undo the last
+  The keyword ~il[command] ~c[:ubt!] is the same as ~c[:]~ilc[ubt], but with
+  related queries suppressed appropriately, and with a guarantee that it is
+  ``error-free.''  More precisely, the value returned by ~c[:ubt!]  will always
+  be of the form ~c[(mv nil val state)].  ~c[:]~ilc[Oops] will undo the last
   ~c[:ubt!].  ~l[ubt], ~pl[ubu], and ~pl[u].~/"
 
   (list 'ubt!-ubu!-fn :ubt cd 'state))
@@ -7694,8 +7694,8 @@
   The keyword ~il[command] ~c[:ubu!] is the same as ~c[:]~ilc[ubu], but with
   related queries suppressed appropriately, and with a guarantee that it is
   ``error-free.''  More precisely, the error triple returned by ~c[:ubu!]  will
-  always have a first component of ~c[nil].  ~c[:]~ilc[Oops] will undo the last
-  ~c[:ubu!].  Also ~pl[ubu], ~pl[ubt], and ~pl[u].~/"
+  always be of the form ~c[(mv nil val state)].  ~c[:]~ilc[Oops] will undo the
+  last ~c[:ubu!].  Also ~pl[ubu], ~pl[ubt], and ~pl[u].~/"
 
   (list 'ubt!-ubu!-fn :ubu cd 'state))
 
@@ -20372,7 +20372,8 @@
   other hand, if a computation returns an error triple in which ~c[erp] is nil,
   then ``value'' of the computation is taken to be the second component,
   ~c[val], of the triple (along with the possibly modified ~ilc[state]), and
-  computation continues.
+  computation continues.  For more information about programming with error
+  triples, ~pl[programming-with-state].
 
   The function symbol cases are treated as abbreviations of the term
   ~c[(fn ID CLAUSE WORLD)],

@@ -13243,16 +13243,16 @@
   To see which ~il[rune]s are ~il[monitor]ed and what their break conditions
   are, evaluate ~c[(monitored-runes)].
 
-  ~c[Monitor], ~c[unmonitor] and ~c[monitored-runes] are macros that expand into
-  expressions involving ~c[state].  While these macros appear to return
+  ~c[Monitor], ~c[unmonitor] and ~c[monitored-runes] are macros that expand
+  into expressions involving ~c[state].  While these macros appear to return
   the list of ~il[monitor]ed ~il[rune]s this is an illusion.  They all print
   ~il[monitor]ed ~il[rune] information to the comment window and then return
-  error triples instructing ~c[ld] to print nothing.  It is impossible to
-  return the list of ~il[monitor]ed ~il[rune]s because it exists only in the
-  ~il[wormhole] ~il[state] with which you interact when a break occurs.  This
-  allows you to change the ~il[monitor]ed ~il[rune]s and their conditions during
-  the course of a proof attempt without changing the ~il[state] in which
-  the the proof is being constructed.
+  values (so-called ``error triples'') instructing ~c[ld] to print nothing.  It
+  is impossible to return the list of ~il[monitor]ed ~il[rune]s because it
+  exists only in the ~il[wormhole] ~il[state] with which you interact when a
+  break occurs.  This allows you to change the ~il[monitor]ed ~il[rune]s and
+  their conditions during the course of a proof attempt without changing the
+  ~il[state] in which the the proof is being constructed.
 
   Unconditional break points are obtained by using the break condition
   ~c[t].  We now discuss conditional break points.  The break condition,
@@ -13479,35 +13479,34 @@
   General Form:
   :ok-if expr
   ~ev[]
-  where ~c[expr] is a term involving no free variables other than ~c[state]
-  and returning one non-~c[state] result which is treated as Boolean.
-  This form is intended to be executed from within ~c[break-rewrite]
+  where ~c[expr] is a term involving no free variables other than ~c[state] and
+  returning one non-~c[state] result which is treated as Boolean.  This form is
+  intended to be executed from within ~c[break-rewrite]
   (~pl[break-rewrite]).
 
-  Consider first the simple situation that the ~c[(ok-if term)] is a
-  command read by ~c[break-rewrite].  Then, if the term is non-~c[nil],
+  Consider first the simple situation that the ~c[(ok-if term)] is a command
+  read by ~c[break-rewrite].  Then, if the term is non-~c[nil],
   ~c[break-rewrite] exits and otherwise it does not.
 
   More generally, ~c[ok-if] returns an ACL2 error triple
-  ~c[(mv erp val state)].  (~l[ld] for more on error triples.)  If
-  any form being evaluated as a command by ~c[break-rewrite] returns
-  the triple returned by ~c[(ok-if term)] then the effect of that form
-  is to exit ~il[break-rewrite] if term is non-~c[nil].  Thus, one
-  might define a function or macro that returns the value of ~c[ok-if]
-  expressions on all outputs and thus create a convenient new way to
+  ~c[(mv erp val state)].  (~l[ld] or ~pl[programming-with-state] for more on
+  error triples.)  If any form being evaluated as a command by
+  ~c[break-rewrite] returns the triple returned by ~c[(ok-if term)] then the
+  effect of that form is to exit ~il[break-rewrite] if term is non-~c[nil].
+  Thus, one might define a function or macro that returns the value of
+  ~c[ok-if] expressions on all outputs and thus create a convenient new way to
   exit ~c[break-rewrite].
 
   The exit test, ~c[term], generally uses ~c[brr@] to access context sensitive
-  information about the attempted rule application.  ~l[brr@].
-  ~c[Ok-if] is useful inside of command sequences produced by break
-  conditions.  ~l[monitor].  ~c[:ok-if] is most useful after an ~c[:eval]
-  command has caused ~c[break-rewrite] to try to apply the rule because in
-  the resulting break environment ~c[expr] can access such things as
-  whether the rule succeeded, if so, what term it produced, and if
-  not, why.  There is no need to use ~c[:ok-if] before ~c[:eval]ing the rule
-  since the same effects could be achieved with the break condition on
-  the rule itself.  Perhaps we should replace this concept with
-  ~c[:eval-and-break-if]?  Time will tell."
+  information about the attempted rule application.  ~l[brr@].  ~c[Ok-if] is
+  useful inside of command sequences produced by break conditions.
+  ~l[monitor].  ~c[:ok-if] is most useful after an ~c[:eval] command has caused
+  ~c[break-rewrite] to try to apply the rule because in the resulting break
+  environment ~c[expr] can access such things as whether the rule succeeded, if
+  so, what term it produced, and if not, why.  There is no need to use
+  ~c[:ok-if] before ~c[:eval]ing the rule since the same effects could be
+  achieved with the break condition on the rule itself.  Perhaps we should
+  replace this concept with ~c[:eval-and-break-if]?  Time will tell."
 
   `(ok-if-fn ,term state))
 

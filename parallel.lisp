@@ -2078,8 +2078,9 @@
   This ~il[documentation] topic relates to the experimental extension of ACL2
   supporting parallel execution and proof; ~pl[parallelism].
 
-  ACL2 supports the use of error triples in many features
-  (e.g., ~ilc[computed-hints]).  However, ACL2(p) does not support the use of
+  ACL2 supports the use of error triples in many features; e.g.,
+  ~ilc[computed-hints].  (For background on error triples,
+  ~pl[programming-with-state].)  However, ACL2(p) does not support the use of
   error triples in some of these features (e.g., ~ilc[computed-hints]) while
   ~il[waterfall-parallelism] is enabled.~/
   
@@ -2102,7 +2103,7 @@
   waterfall in parallel (~pl[unsupported-waterfall-parallelism-features] for
   other related information).
 
-  Often, the only reason a user needs to return state is so they can perform
+  Often, the only reason users need to return state is so they can perform
   some output during the proof process.  In this case, we suggest using one of
   the state-free output functions, like ~ilc[cw] or ~ilc[observation-cw].  If
   the user is concerned about the interleaving of their output with other

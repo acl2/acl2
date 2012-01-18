@@ -1172,21 +1172,21 @@
   The ``first form'' (the ~c[if]) asks whether the ~c[wormhole-input] (i.e.,
   ~c[x]) has an ~c[ABSOLUTE-EVENT-NUMBER] property.  If so, it enters an
   ~ilc[er-progn] to perform a sequence of commands, each of which returns an
-  ACL2 error triple.  The first form uses ~ilc[fmt] to print a greeting.  Since
-  ~c[fmt] returns ~c[(mv col state)] and we must return an error triple, we
-  embed the ~c[fmt] term in an ~c[(mv-let (col state) ... (value nil))].  The
-  macro ~c[value] takes an object and returns a ``normal return'' error
-  triple.  The second form in the ~c[er-progn] uses the ACL2 history macro
-  ~c[pe] (~pl[pe]) to print the defining event for a name.  The third form
-  sets the prompt of this read-eval-print loop to the standard function for
-  printing the wormhole prompt.  We silenced the printing of the prompt when
-  we called ~c[ld], thanks to the ~c[:ld-prompt nil] keyword option.  More on this
-  below.  The fourth form returns the error triple value ~c[:invisible] as
-  the value of the first form.  This prevents ~c[ld] from printing the value of
-  the first form.  Since we have not exited ~c[ld], that function just continues
-  by reading the next form from the comment window.  The user perceives this as
-  entering a read-eval-print loop.  We continue in the loop until the user
-  types ~c[:q].
+  ACL2 error triple (~pl[programming-with-state]).  The first form uses
+  ~ilc[fmt] to print a greeting.  Since ~c[fmt] returns ~c[(mv col state)] and
+  we must return an error triple, we embed the ~c[fmt] term in an
+  ~c[(mv-let (col state) ... (value nil))].  The macro ~c[value] takes an
+  object and returns a ``normal return'' error triple.  The second form in the
+  ~c[er-progn] uses the ACL2 history macro ~c[pe] (~pl[pe]) to print the
+  defining event for a name.  The third form sets the prompt of this
+  read-eval-print loop to the standard function for printing the wormhole
+  prompt.  We silenced the printing of the prompt when we called ~c[ld], thanks
+  to the ~c[:ld-prompt nil] keyword option.  More on this below.  The fourth
+  form returns the error triple value ~c[:invisible] as the value of the first
+  form.  This prevents ~c[ld] from printing the value of the first form.  Since
+  we have not exited ~c[ld], that function just continues by reading the next
+  form from the comment window.  The user perceives this as entering a
+  read-eval-print loop.  We continue in the loop until the user types ~c[:q].
 
   On the other branch of the ~c[if], if the symbol has no
   ~c[ABSOLUTE-EVENT-NUMBER] property, we execute the form ~c[(value :q)], which
@@ -13924,6 +13924,7 @@
   is set to ~c[t], then you would see them producing lists of length 3.  This
   is disconcerting to users accustomed to Common Lisp (where these functions
   produce single results but sometimes cause errors or side-effect ~il[state]).
+  For more information about error triples, ~pl[programming-with-state].
 
   When ~c[ld-post-eval-print] is ~c[:command-conventions] and a form produces
   an error triple ~c[(mv erp val state)] as its value, ~ilc[ld] prints nothing

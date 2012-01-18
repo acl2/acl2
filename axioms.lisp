@@ -18290,11 +18290,11 @@
   table, ~c[key-term] and ~c[value-term], if present, are arbitrary terms
   involving (at most) the single variable ~ilc[world], ~c[op], if present, is
   one of the table operations below, and ~c[term], if present, is a term.
-  ~c[Table] returns an acl2 ``error triple.'' The effect of ~c[table] on ~ilc[state]
-  depends on ~c[op] and how many arguments are presented.  Some
-  invocations actually have no effect on the ACL2 ~il[world] and hence an
-  invocation of ~c[table] is not always an ``event''.  We explain below,
-  after giving some background information.
+  ~c[Table] returns an ACL2 ``error triple'' (~pl[programming-with-state]).
+  The effect of ~c[table] on ~ilc[state] depends on ~c[op] and how many
+  arguments are presented.  Some invocations actually have no effect on the
+  ACL2 ~il[world] and hence an invocation of ~c[table] is not always an
+  ``event''.  We explain below, after giving some background information.
 
   ~b[Important Note:] The ~c[table] forms above are calls of a macro that
   expand to involve the special variable ~ilc[state].  This will prevent you
@@ -25467,19 +25467,20 @@
   variable.
 
   However, there are situations that call for reading or modifying the system
-  state, such as performing input and output, saving information from one
-  computation for use in a later one, or reading and updating system-level or
-  environmental data.  This section provides an introductory guide for writing
-  functions that traffic in state.  We emphasize that this guide is intended as
-  an introduction; more complete documentation may often be found by following
-  links to documentation of individual utilities, and again, more examples may
-  be found by perusing the ACL2 source code.  The rest of this section is
-  organized as follows.
+  state, such as performing input and output, signalling errors, saving
+  information from one computation for use in a later one, or reading and
+  updating system-level or environmental data.  This section provides an
+  introductory guide for writing functions that traffic in state.  We emphasize
+  that this guide is intended as an introduction; more complete documentation
+  may often be found by following links to documentation of individual
+  utilities, and again, more examples may be found by searching the ACL2 source
+  code for uses of the functions and macros mentioned below.  The rest of this
+  section is organized as follows.
   ~bf[]
   ~sc[Enabling programming with state]
   ~sc[State globals]
   ~sc[Errors and error triples]
-  ~sc[Sequencing]
+  ~sc[Sequential programming]
   ~sc[Binding variables using error triples]
   ~sc[Binding state global variables]
   ~sc[Input and output]
@@ -25515,36 +25516,45 @@
   6
   ACL2 !>
   ~ev[]
-  Note that the first result is indented by one space, indicating that
-  ~ilc[assign] returned an error triple as described in the next section:
-  ~c[(mv nil 7 state)].
+  Note that the first result is indented by one space.  This is ACL2's way to
+  indicate that the ~ilc[assign] expression returned an ``error triple'' and
+  that no error was signalled.  We discuss error triples in more detail below.
 
-  As illustrated above, the utilities for assigning to state globals differ
-  from each other as follows: ~ilc[f-put-global] returns ~c[state], but
-  ~ilc[assign] returns an error triple ~c[(mv nil val state)] where ~c[val] is
-  the value assigned to the state global.  The utilities for reading, ~c[@] and
-  ~c[f-get-global], are identical except that the argument of ~c[f-get-global]
-  must be quoted; for example, the form ~c[(f-get-global 'my-var state)] is the
-  single-step macroexpansion of the form ~c[(@ my-var)].
+  As illustrated above, the output signatures of the utilities for assigning to
+  state globals differ from each other as follows: ~ilc[f-put-global] returns
+  ~c[state], but ~ilc[assign] returns an error triple ~c[(mv nil val state)]
+  where ~c[val] is the value assigned to the state global.  The output
+  signatures of the utilities for reading, ~c[@] and ~c[f-get-global], are
+  identical.  In fact, the form ~c[(f-get-global 'my-var state)] is the
+  single-step macroexpansion of the form ~c[(@ my-var)], as can be confirmed
+  using ~ilc[trans1].
+  ~bv[]
+  ACL2 !>:trans1 (@ my-var)
+   (F-GET-GLOBAL 'MY-VAR STATE)
+  ACL2 !>
+  ~ev[]
 
   State globals are useful for conveying persistent state information.
   Consider for example the utility ~ilc[set-inhibit-output-lst].  The form
   ~c[(set-inhibit-output-lst '(prove proof-tree))] is approximately equivalent
-  to (assign inhibit-output-lst '(prove proof-tree)).  The ACL2 system reads
-  the value of state global variable ~c[inhibit-output-lst] when deciding
-  whether to print output.
+  to (assign inhibit-output-lst '(prove proof-tree)).  We say ``approximately''
+  because ~c[set-inhibit-output-lst] additionally does some error checking to
+  insure that all the tokens in the new list are legal.  When deciding whether
+  to print output, the ACL2 system reads the value of state global variable
+  ~c[inhibit-output-lst].
 
   ~sc[Errors and error triples]
 
   When evaluation returns three values, where the first two are ordinary
   objects and the third is the ACL2 state, the result may be called an ``error
-  triple''.  Such a result is often denoted ~c[(mv erp val state)], because as
-  we will see below, some common programming idioms treat the first returned
-  value as an error flag and the second as the actual ``value''.
+  triple''.  (Whether it is treated as an error triple depends on the
+  programmer.)  Error triples are often denoted ~c[(mv erp val state)], and
+  common ACL2 programming idioms treat ~c[erp] as a flag indicating whether an
+  error is being signalled and ~c[val] as the ``value'' computed.
 
   Even ACL2 users who are not programmers encounter error triples, because
   these are the values returned by evaluation of ACL2 ~il[events].  Consider
-  the following log, where the only user type-in is the ~c[defun] form
+  the following log, where the only user input is the ~c[defun] form
   following the ~il[prompt].
   ~bv[]
   ACL2 !>(defun foo (x) x)
@@ -25562,12 +25572,12 @@
   All output above results from explicit calls of output functions, except for
   the next-to-last line, which contains ~c[FOO].  Notice the single-space
   indentation preceding ~c[FOO].  That space indicates that in fact, the value
-  returned by evaluation of the ~c[defun] form is the error triple
-  ~c[(mv nil foo state)].  Why?  By default, ACL2 prints any error triple
-  ~c[(mv nil val state)] by inserting a space before printing ~c[val].  You can
-  change the default by setting state global ~ilc[ld-post-eval-print] to ~c[t];
-  notice that the value returned by the ~ilc[defun] below is
-  ~c[(mv nil foo state)].
+  returned by evaluation of the ~c[defun] form is the error triple whose error
+  flag is ~c[nil] and whose computed value is ~c[FOO].  By default, ACL2 prints
+  any error triple ~c[(mv nil val state)] by inserting a space before printing
+  ~c[val].  You can change the default by setting state global
+  ~ilc[ld-post-eval-print] to ~c[t]; notice how the same result is printed
+  below.
   ~bv[]
   ACL2 !>:u
             0:x(EXIT-BOOT-STRAP-MODE)
@@ -25591,42 +25601,115 @@
   These are examples of ``ld specials''; ~pl[ld], ~pl[ld-post-eval-print], and
   ~pl[ld-error-triples].
 
-  It is common to produce an error triple whose first (error) component is
-  ~c[nil].  ACL2 provides a handy macro, ~c[value], for this purpose.  Thus,
-  ~c[(value <expression>)] is equivalent to ~c[(mv nil <expression> state)].
-  Also ~pl[value-triple] for a similar construct that is a legal event form.
+  It is so common to produce an error triple whose first (error flag) component
+  is ~c[nil] that ACL2 provides a handy macro, ~c[value], for this purpose.
+  Thus, ~c[(value <expression>)] is equivalent to
+  ~c[(mv nil <expression> state)].  Also ~pl[value-triple] for a similar
+  construct that is a legal event form.
 
-  We turn now to the topic of errors.  The macro ~ilc[ER] causes an error, but
-  there are really two types of errors: ``soft'' and ``hard'' errors.  We use
-  the term ``soft error'' to refer to a form that returns an error triple
-  ~c[(mv erp val state)] for which ~c[erp] is non-~c[nil].  A hard error, on
-  the other hand, is logically ~c[nil] but is an error that actually halts
-  evaluation, returning by default to the top-level loop.  Note that the
-  function ~ilc[abort!], which you can invoke by typing ~c[:]~ilc[a!], always
-  returns to the top level.
+  We turn now to the topic of errors.  The macro ~ilc[ER] ``causes'' an error,
+  but there are really two quite different kinds of errors: ``soft'' and
+  ``hard'' errors.  We use the term ``soft error'' to refer to a form that
+  returns an error triple ~c[(mv erp val state)] for which ~c[erp] is
+  non-~c[nil].  Soft errors do not interrupt the normal flow of evaluation: the
+  error triple is returned to the caller which interprets the ~c[erp] flag and
+  ~c[val] as directed by the programmer.  Macros discussed below make it
+  convenient to think about soft errors as short-circuiting the computation.
+  Hard errors, on the other hand, do actually rip control away from the current
+  evaluation and return it to the top-level loop.  Logically speaking,
+  expressions that cause hard errors return ~c[nil] in the error case, but the
+  ~c[nil] is never seen in actual evaluation because control does not return to
+  the caller.
+
+  Note that the function ~ilc[abort!], which you can invoke by typing
+  ~c[:]~ilc[a!], always returns to the top level.  Note that ACL2 can
+  prove that ~c[(abort!)] returns ~c[nil] but that this cannot be confirmed
+  by computation.
+  ~bv[]
+  ACL2 !>(thm (equal (abort!) nil))
+
+  Q.E.D.
+
+  Summary
+  Form:  ( THM ...)
+  Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL)
+          (:TYPE-PRESCRIPTION ABORT!))
+  Time:  0.00 seconds (prove: 0.00, print: 0.00, other: 0.00)
+
+  Proof succeeded.
+  ACL2 !>(equal (abort!) nil)
+  Abort to ACL2 top-level
+  ...
+  ACL2 !>
+  ~ev[]
 
   (What actually happens with a hard error, including non-default cases, is a
   bit subtle; most readers will probably want to skip this paragraph.  The
   read-eval-print loop implemented by ~ilc[ld] is implemented by a call of the
-  ACL2 evaluator function, ~c[trans-eval], on each input form.  If a a hard
+  ACL2 evaluator function, ~c[trans-eval], on each input form.  If a hard
   error occurs during evaluation of an input form, its ~c[trans-eval] call will
   return with a soft error.  ~ilc[Ld], in turn handles that soft error
   appropriately; ~pl[ld-error-action].)
 
-  ~l[er] for further discussion of errors.  If you want to visit other
-  individual topics related to errors, ~pl[assert$], ~pl[break-on-error],
-  ~pl[error1], ~pl[hard-error], ~pl[illegal], and ~pl[ld-error-triples].
+  The most common way to signal errors is the macro ~ilc[er], which prints a
+  formatted error message and returns a soft or hard error as specified by the
+  call.  Note however that soft errors are signalled using ~c[:]~ilc[program]
+  mode functions.
+
+  Since the output signatures of soft and hard errors are different ~-[] hard
+  errors ``return'' a single value while soft errors return a triple ~-[]
+  mixing them in an expression requires embedding the hard error form in (an
+  irrelevant) triple, as illustrated below.  All branches of the expression
+  must produce an error triple if any branch does.
+  ~bv[]
+  ACL2 !>(defun chk-find-or-abort (e x state)
+           (declare (xargs :mode :program))
+           (if (endp x)
+               (value                          ; Note use of VALUE!
+                 (er hard 'chk-find-or-abort
+                     \"Did not find ~~x0!\"
+                      e))
+               (if (not (integerp (car x)))
+                   (er soft 'chk-find-or-abort
+                       \"Non-integer, ~~x0, in list!\"
+                       (car x))
+                   (if (eql (car x) e)
+                       (value x)
+                       (chk-find-or-abort e (cdr x) state)))))
+
+  Summary
+  Form:  ( DEFUN CHK-FIND-OR-ABORT ...)
+  Rules: NIL
+  Time:  0.00 seconds (prove: 0.00, print: 0.00, other: 0.00)
+   CHK-FIND-OR-ABORT
+  ACL2 !>(chk-find-or-abort 3 '(1 2 3 4 5) state)
+   (3 4 5)
+  ACL2 !>(chk-find-or-abort 3 '(1 A 3 4 5) state)
+
+
+  ACL2 Error in CHK-FIND-OR-ABORT:  Non-integer, A, in list!
+
+  ACL2 !>(chk-find-or-abort 3 '(1 2 4 5) state)
+
+  HARD ACL2 ERROR in CHK-FIND-OR-ABORT:  Did not find 3!
+  ...
+  ACL2 !>
+  ~ev[]
+
+  ~l[er] for further discussion of errors.  For some other individual topics
+  related to errors ~pl[assert$], ~pl[break-on-error], ~pl[error1],
+  ~pl[hard-error], ~pl[illegal], and ~pl[ld-error-triples].
 
   In the next section we discuss soft errors further, in the context of
   programming.
 
-  ~sc[Sequencing]
+  ~sc[Sequential programming]
 
   This section describes handy ways to modify state in steps, using macros that
   implement a sequence of ~ilc[let] or ~ilc[mv-let] bindings.  For example,
-  suppose you want to assign three state globals ~c[one-var] and ~c[two-var] to
-  values 1 and 2, respectively.  Because of ACL2's syntactic restrictions on
-  ~ilc[state], it is not legal simply to write
+  suppose you want to assign the values 1 and 2 to two state globals
+  ~c[one-var] and ~c[two-var], respectively.  Because of ACL2's syntactic
+  restrictions on ~ilc[state], it is not legal simply to write
   ~c[(f-put-global 'two-var 2 (f-put-global 'one-var 1 state))].  However,
   ~ilc[let] comes to the rescue as follows.
   ~bv[]
@@ -25648,16 +25731,17 @@
           (f-put-global 'two-var 2 state))
   ~ev[]
   ~l[pprogn].  Note that the last form is allowed to return multiple values;
-  the only requirement on the last form is that it returns ~c[state].
+  the only requirement on the last form is that its value include ~c[state].
 
   It is also common to update the state using a sequence of forms such that
-  each returns an error triple, where the intention is for evaluation to halt
-  immediately if a soft error is encountered.  Suppose ~c[<expr1>] and
-  ~c[<expr2>] are expressions that return error triples, where the ~c[state]
-  components of the error triples might be updated, and one wishes to evaluate
-  ~c[<expr1>] and then ~c[<expr2>], returning the (multiple) values returned by
-  ~c[<expr2>] unless ~c[<expr1>] returns a soft error, in which case that soft
-  error is returned.  One can of course do so as follows.
+  each returns an error triple, where the intention is for evaluation to
+  short-circuit immediately if a soft error is encountered.  Suppose
+  ~c[<expr1>] and ~c[<expr2>] are expressions that return error triples, where
+  the ~c[state] components of the error triples might be updated, and one
+  wishes to evaluate ~c[<expr1>] and then ~c[<expr2>], returning the (multiple)
+  values returned by ~c[<expr2>] unless the error triple returned by
+  ~c[<expr1>] is a soft error, in which case that error triple is returned.
+  One can of course do so as follows.
   ~bv[]
   (mv-let (erp val state)
           <expr1>
@@ -25674,9 +25758,9 @@
   others: an error triple.
 
   Let's consider how to use ~c[pprogn] and ~c[er-progn] together.  In the
-  following example ~c[f1] and ~c[f2] both return ~c[state], while ~c[g1] and
-  ~c[g2] each returns an error triple.  The following code modifies state by
-  executing these in the order ~c[f1], ~c[g1], ~c[f2], and finally ~c[g2],
+  following example ~c[f1] and ~c[f2] both return ~c[state], while each of
+  ~c[g1] and ~c[g2] returns an error triple.  The following code modifies state
+  by executing these in the order ~c[f1], ~c[g1], ~c[f2], and finally ~c[g2],
   returning ~c[(mv nil val state)] where ~c[val] is the value component of the
   error triple returned by ~c[g2] ~-[] except we return a soft error if ~c[g1]
   or ~c[g2] returns a soft error.
@@ -25705,7 +25789,7 @@
   following example.
   ~bv[]
   (er-let* ((x1 (f1 state))
-            (x2 (f1 x1 state)))
+            (x2 (f2 x1 state)))
     (value (cons x1 x2)))
   ~ev[]
   The code just above is essentially equivalent to writing the following.
@@ -25714,7 +25798,7 @@
           (f1 state)
           (cond (erp (mv erp x1 state))
                 (t (mv-let (erp x2 state)
-                           (f1 x1 state)
+                           (f2 x1 state)
                            (cond (erp (mv erp x2 state))
                                  (t (value (cons x1 x2))))))))
   ~ev[]
@@ -25725,9 +25809,15 @@
   used, at least in the error case.  Consider replacing ~c[(cons x1 x2)] by
   ~c[nil] in the example displayed immediately above, and note that ~c[x1] and
   ~c[x2] are still used.)  However, unlike ~c[let*], ~c[er-let*] requires that
-  for each binding ~c[(var expr)], the expression ~c[expr] evaluates to an
+  for each binding ~c[(var expr)], the expression ~c[expr] must evaluate to an
   error triple and, moreover, it requires that the second argument (the
-  ``body'') of ~c[er-let*] must evaluate to an error triple.
+  ``body'') of ~c[er-let*] must evaluate to an error triple.  If one of the
+  variable expressions (e.g., the ~c[f1] and ~c[f2] calls above) signals an
+  error, its error triple is returned as the value of the ~c[er-let*].
+
+  Of course, soft errors can be ``caught'' by using ~ilc[mv-let] instead of
+  ~c[er-let*] and simply ignoring the error flag or, more generally, by
+  returning a non-erroneous error triple even if the error flag was on.
 
   ~sc[Binding state global variables]
 
@@ -25782,7 +25872,7 @@
   called: it may only be called in a context where an event is expected, such
   as the top level, in a book, or as an argument of ~ilc[encapsulate] or
   ~ilc[progn].  The reason is that ACL2 does very subtle and careful tracking
-  of ~ilc[make-event] expansions, and is only able to do this in event
+  of ~ilc[make-event] expansions; and it is only able to do this in event
   contexts, where it is able to carry out such tracking accurately.
 
   ~sc[Advanced topics]
@@ -25801,7 +25891,19 @@
 
   To obtain a random number, ~pl[random$].
 
-  Suggestions for additional advanced topics are welcomed.~/")
+  We invite suggestions for additional advanced topics.~/")
+
+(defdoc error-triples
+  ":Doc-Section state
+
+  a common ACL2 programming idiom~/
+
+  When evaluation returns three values, where the first two are ordinary
+  objects and the third is the ACL2 ~il[state], the result may be called an
+  ``error triple''.  If an error triple is ~c[(mv erp val state)], we think of
+  ~c[erp] as an error flag and ~c[val] as the returned value.
+  ~l[programming-with-state] for a discussion of error triples and how to
+  program with them.~/~/")
 
 (defun update-nth (key val l)
 
@@ -44208,15 +44310,14 @@ Lisp definition."
 
   Custom keyword hints are complicated.  To use them you must understand
   ~ilc[state], multiple values (e.g., ~ilc[mv] and ~ilc[mv-let]), ACL2's notion
-  of error triples (as briefly explained in ~ilc[ld-error-triples] and
-  ~ilc[er-progn]), how to generate ``soft'' errors with ~ilc[er], how to use
-  ~ilc[fmt]-strings to control output, how to use computed hints
-  (~pl[computed-hints]) and some aspects of ACL2's internal event processing.
-  Furthermore, it is possible to implement a custom keyword hint that can make
-  an event non-reproducible!  So we recommend that these hints be developed by
-  ACL2 experts.  Basically the custom keyword feature allows the implementors
-  and other experts to extend the hint facility without modifying the ACL2
-  sources.
+  of error triples (~pl[programming-with-state]), how to generate ``soft''
+  errors with ~ilc[er], how to use ~ilc[fmt]-strings to control output, how to
+  use computed hints (~pl[computed-hints]) and some aspects of ACL2's internal
+  event processing.  Furthermore, it is possible to implement a custom keyword
+  hint that can make an event non-reproducible!  So we recommend that these
+  hints be developed by ACL2 experts.  Basically the custom keyword feature
+  allows the implementors and other experts to extend the hint facility without
+  modifying the ACL2 sources.
 
   ~c[Term1] is called the ``generator'' term and ~c[term2] is called the
   ``checker'' term of the custom keyword hint ~c[:key].  Together they specify
