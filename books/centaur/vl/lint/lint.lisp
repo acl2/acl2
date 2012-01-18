@@ -423,7 +423,14 @@
 (defconst *fussy-size-warnings*
   (list :vl-fussy-size-warning-1
         :vl-fussy-size-warning-2
-        :vl-fussy-size-warning-3))
+        :vl-fussy-size-warning-3
+        :vl-fussy-size-warning-1-const-toobig
+        :vl-fussy-size-warning-2-const-toobig
+        :vl-fussy-size-warning-3-const-toobig
+        :vl-fussy-size-warning-1-complex
+        :vl-fussy-size-warning-2-complex
+        :vl-fussy-size-warning-3-complex
+        ))
 
 (defconst *fussy-size-minor-warnings*
   (list :vl-fussy-size-warning-1-minor

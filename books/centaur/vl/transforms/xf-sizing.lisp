@@ -618,6 +618,117 @@ implementation, we just regard the size of <tt>$random</tt> as 32.</p>"
                (equal (mv-nth 1 ret1) (mv-nth 1 ret2))))))
 
 
+
+(defsection vl-tweak-fussy-warning-type
+
+; This function is called when we've just noticed that A and B have different
+; self-sizes but are used in an expression like A == B, A & B, C ? A : B, or
+; similar, and hence one or the other is going to be implicitly extended.
+; We're going to issue a fussy size warning, and we want to decide what type to
+; give it.  I.e., is this a minor warning, or a normal warning?
+;
+; Here, ASIZE and BSIZE are just the self-sizes of A and B, respectively, and
+; OP is the operator that is relating A and B.  In the case of a ?: operator,
+; note that A and B are the then/else branches.
+;
+; My original approach was just to say, "It's minor if ASIZE or BSIZE is 32."
+; This happens in many very common cases where unsized numbers are used, such
+; as:
+;
+;     foo[3:0] == 7;          //  4 bits == 32 bits
+;     foo[0] ? bar[3:0] : 0;  //  foo[0] ? 4 bits : 32 bits
+;
+; But over time I have added many additional tweaks, described in the comments
+; below.  At any rate, this function is either supposed to return NIL to say,
+; "I don't actually want to issue a warning," or else should return the :type
+; for the warning to be issued, so that one can filter out the probably
+; important and probably minor warnings.
+
+  (defund vl-tweak-fussy-warning-type (type a b asize bsize op)
+    "Returns NIL (meaning, do not warn) or a Warning Type derived from TYPE."
+    (declare (xargs :guard (and (symbolp type)
+                                (vl-expr-p a)
+                                (vl-expr-p b)
+                                (natp asize)
+                                (natp bsize)
+                                (vl-op-p op))))
+    (b* ((a32p (= asize 32))
+         (b32p (= bsize 32))
+
+         ((unless (or a32p b32p))
+          ;; I tried always warning in this case.  But there are many cases
+          ;; where one argument or the other is a sized constant and the size
+          ;; is just not quite right, but not exactly wrong.  For instance, if
+          ;; foo was once a three-bit wire but now is a five-bit wire, we might
+          ;; run into an expression like "foo == 3'b7," which isn't really any
+          ;; kind of problem.  So, now I try to suppress warnings in this
+          ;; common case.
+          (if (and (or (and (vl-expr-resolved-p a)
+                            (< (vl-resolved->val a) (ash 1 bsize)))
+                       (and (vl-expr-resolved-p b)
+                            (< (vl-resolved->val b) (ash 1 asize))))
+                   (member op '(:vl-binary-eq :vl-binary-neq :vl-binary-ceq :vl-binary-cne
+                                :vl-binary-lt :vl-binary-lte :vl-binary-gt :vl-binary-gte
+                                :vl-binary-xnor :vl-qmark)))
+              nil
+            type))
+
+         ;; Figure out which one is 32-bit and which one is not.  We assume they
+         ;; aren't both 32 bits, since otherwise we shouldn't be called.
+         ((mv expr-32 size-other) (if a32p (mv a bsize) (mv b asize)))
+
+         ((when (vl-expr-resolved-p expr-32))
+          (b* ((val-32 (vl-resolved->val expr-32))
+               (max    (ash 1 size-other)))
+            (if (< val-32 max)
+                ;; The value seems to fit in the size of the other argument, so
+                ;; this case seems to be particularly minor.  After glancing through
+                ;; thousands of these warnings, I think we don't want to even issue
+                ;; a minor warning or anything here.
+                nil
+              ;; The value was too large for the other arg, so this is actually a
+              ;; particularly interesting case.  Give it a new type.
+              (intern-in-package-of-symbol (str::cat (symbol-name type) "-CONST-TOOBIG") type))))
+
+; If we get this far, then the 32-bit argument isn't just a plain integer.  A
+; particularly insidious source of extra warnings is when we have an expression
+; like:
+;
+;      case0 ? ans1[3:0]
+;    : case1 ? ans2[3:0]
+;    ...
+;    : caseN ? ansN[3:0]
+;    : 0
+;
+; If we just naively go through this, we'll end up with N warnings, one for the
+; final case, (caseN ? ansN[3:0] : 0), then one for the N-1 case because the
+; whole expression (caseN ? ansN[3:0] : 0) will now be 32-bits and won't be the
+; same size as ans{N-1}[3:0], etc.  So, even though this could possibly cause
+; us to miss some things, if the 32-bit expression is a ?: operator, I don't
+; want to create a warning at all.  We'll get the warning for caseN, but not
+; for the other cases.
+
+         ((when (and (not (vl-fast-atom-p expr-32))
+                     (eq (vl-nonatom->op expr-32) :vl-qmark)))
+          nil)
+
+; Adding and subtracting constant integers always leads to a lot of confusion,
+; let's mark anything with these operations as minor.
+
+         ((when (vl-expr-has-ops '(:vl-binary-plus :vl-binary-minus) expr-32))
+          (intern-in-package-of-symbol (str::cat (symbol-name type) "-MINOR") type)))
+
+      (intern-in-package-of-symbol (str::cat (symbol-name type) "-COMPLEX") type)))
+
+  (local (in-theory (enable vl-tweak-fussy-warning-type)))
+
+  (defthm symbolp-of-vl-tweak-fussy-warning-type
+    (implies (force (symbolp type))
+             (symbolp (vl-tweak-fussy-warning-type type a b asize bsize op)))
+    :rule-classes :type-prescription))
+
+
+
 (defsection vl-op-selfsize
   :parents (vl-expr-selfsize)
   :short "Main function for computing self-determined expression sizes."
@@ -672,15 +783,17 @@ expression-sizing).</p>"
        ;; These were previously part of the above case.  They all also return
        ;; one-bit results.  However, we now add warnings if an implicit size
        ;; extension will occur.
-       (b* ((warnings (if (mbe :logic (equal (nfix (first arg-sizes))
-                                             (nfix (second arg-sizes)))
-                               :exec (= (first arg-sizes) (second arg-sizes)))
+       (b* ((type (and (/= (first arg-sizes) (second arg-sizes))
+                       (vl-tweak-fussy-warning-type :vl-fussy-size-warning-1
+                                                    (first args)
+                                                    (second args)
+                                                    (first arg-sizes)
+                                                    (second arg-sizes)
+                                                    op)))
+            (warnings (if (not type)
                           warnings
                         (cons (make-vl-warning
-                               :type (if (or (= (first arg-sizes) 32)
-                                             (= (second arg-sizes) 32))
-                                         :vl-fussy-size-warning-1-minor
-                                       :vl-fussy-size-warning-1)
+                               :type type
                                :msg "~a0: arguments to a comparison operator ~
                                      have different \"self-sizes\" (~x1 ~
                                      versus ~x2).  The smaller argument will ~
@@ -720,13 +833,17 @@ expression-sizing).</p>"
                                   (nfix (second arg-sizes)))
                       :exec (max (first arg-sizes)
                                  (second arg-sizes))))
-            (warnings (if (= (first arg-sizes) (second arg-sizes))
+            (type (and (/= (first arg-sizes) (second arg-sizes))
+                       (vl-tweak-fussy-warning-type :vl-fussy-size-warning-2
+                                                    (first args)
+                                                    (second args)
+                                                    (first arg-sizes)
+                                                    (second arg-sizes)
+                                                    op)))
+            (warnings (if (not type)
                           warnings
                         (cons (make-vl-warning
-                               :type (if (or (= (first arg-sizes) 32)
-                                             (= (second arg-sizes) 32))
-                                         :vl-fussy-size-warning-2-minor
-                                       :vl-fussy-size-warning-2)
+                               :type type
                                :msg "~a0: arguments to a bitwise operator ~
                                      have different self-sizes (~x1 versus ~
                                      ~x2).  The smaller argument will be ~
@@ -747,13 +864,17 @@ expression-sizing).</p>"
                                   (nfix (third arg-sizes)))
                       :exec (max (second arg-sizes)
                                  (third arg-sizes))))
-            (warnings (if (= (second arg-sizes) (third arg-sizes))
+            (type (and (/= (second arg-sizes) (third arg-sizes))
+                       (vl-tweak-fussy-warning-type :vl-fussy-size-warning-3
+                                                    (second args)
+                                                    (third args)
+                                                    (second arg-sizes)
+                                                    (third arg-sizes)
+                                                    op)))
+            (warnings (if (not type)
                           warnings
                         (cons (make-vl-warning
-                               :type (if (or (= (second arg-sizes) 32)
-                                             (= (third arg-sizes) 32))
-                                         :vl-fussy-size-warning-3-minor
-                                       :vl-fussy-size-warning-3)
+                               :type type
                                :msg "~a0: branches of a ?: operator have ~
                                      different self-sizes (~x1 versus ~x2).  ~
                                      The smaller branch will be implicitly ~
