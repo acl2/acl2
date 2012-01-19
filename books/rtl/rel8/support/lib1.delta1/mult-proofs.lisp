@@ -760,6 +760,14 @@
 
 
 (local-defthm sum-pp4-part2-reduce
+
+; This is an interesting example for the parallel version of ACL2, ACL2(p).  It
+; turns out that in ACL2 (without the "(p)"), the prover reverts after Subgoal
+; 1.2'' to prove the original theorem by induction.  But if we provide :otf-flg
+; t, we find an infinite loop under Subgoal 1.1.  Well, ACL2(p) always behaves
+; as though :otf-flg is t, so it does get to Subgoal 1.1, and we get the
+; infinite loop (even if :otf-flg is not set).
+
   (implies (and (integerp n)
                 (integerp m)
                 (< 0 m)
