@@ -661,7 +661,7 @@
         (typekwd := (vl-match-some-token *vl-pass-switchtype-type-kwds*))
         ;; No strength.
         ;; No delay.
-        (tuples := (vl-parse-pass-enable-switch-instances-list))
+        (tuples := (vl-parse-pass-switch-instances-list))
         (semi := (vl-match-token :vl-semi))
         (return (let ((type (cdr (assoc-eq (vl-token->type typekwd)
                                            *vl-pass-switchtype-alist*))))
