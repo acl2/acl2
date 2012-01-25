@@ -18356,7 +18356,7 @@
 
   Improvements have been made related to the reading of characters.  In
   particular, checks are now done for ASCII encoding and for the expected
-  ~ilc[char-code] values for ~c[Space],~c[Tab],~c[Newline],~c[Page], and
+  ~ilc[char-code] values for ~c[Space], ~c[Tab], ~c[Newline], ~c[Page], and
   ~c[Rubout].  Also, an error no longer occurs with certain uses of
   non-standard characters.  For example, it had caused an error to certify a
   book after a single ~il[portcullis] ~il[command] of

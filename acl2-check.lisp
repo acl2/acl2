@@ -27,6 +27,9 @@
 ; Because of the last form in this file, this file should not be loaded as part
 ; of an executable ACL2 image.
 
+; Warning: This file should not be compiled.  The intention is to load the
+; .lisp file each time we build ACL2, regardless of the host Lisp.
+
 (in-package "ACL2")
 
 ; See section "CHECKS" of acl2.lisp for more checks.

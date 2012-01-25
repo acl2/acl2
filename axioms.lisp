@@ -25775,8 +25775,11 @@
   similar behavior to that of ~ilc[er-progn].  However, ~ilc[progn] and
   ~ilc[progn!] may only be used in event contexts, for example at the top level
   or immediately underneath a call of ~ilc[encapsulate] or ~ilc[progn], while
-  ~ilc[er-progn] has no such restriction.  So when writing definitions, use
-  ~c[er-progn] rather than ~c[progn] or ~c[progn!].
+  ~ilc[er-progn] has no such restriction.  So when writing code, use
+  ~c[er-progn] rather than ~ilc[progn] or ~ilc[progn!].  In particular, the
+  body of a ~ilc[defun] must not have any calls of ~c[progn] (or of ~c[progn!]
+  either), and the same restriction holds for any code to be executed, such as
+  the body of a ~ilc[make-event] form.
 
   ~sc[Binding variables using error triples]
 
