@@ -12506,7 +12506,7 @@
   (For system hackers only.)  The handling of ~il[events] of the form
   ~c[(progn! (state-global-let* ...))] had a bug that was causing bindings to
   be evaluated twice.  Moreover, the use of system function
-  ~c[state-global-let*] is suspect in raw Lisp.  We have eliminated special
+  ~ilc[state-global-let*] is suspect in raw Lisp.  We have eliminated special
   treatment of ~c[state-global-let*] by ~c[progn!] in favor of a new keyword
   argument, ~c[state-global-bindings], that provides the intended
   functionality.  ~l[progn!].  Moreover, special handling that allowed
@@ -17580,8 +17580,8 @@
   ~il[State] globals ~c[fmt-hard-right-margin] and ~c[fmt-soft-right-margin]
   are now untouchable (~pl[set-fmt-hard-right-margin] and
   ~pl[push-untouchable]).  If you bind these ~c[state] globals with
-  ~c[state-global-let*], then you will need to do so with appropriate setteres
-  to restore their values, for example as follows.
+  ~ilc[state-global-let*], then you will need to do so with appropriate
+  setters to restore their values, for example as follows.
   ~bv[]
     (state-global-let*
      ((fmt-hard-right-margin 500 set-fmt-hard-right-margin)

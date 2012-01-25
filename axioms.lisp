@@ -18173,7 +18173,7 @@
       (progn! ,@forms)))
   ~ev[]
   An equivalent version, which however is not recommended since
-  ~c[state-global-let*] may have surprising behavior in raw Lisp, is as
+  ~ilc[state-global-let*] may have surprising behavior in raw Lisp, is as
   follows.
   ~bv[]
   (defmacro with-all-touchable (&rest forms)
@@ -18990,6 +18990,9 @@
   examples, the explanations here should suffice for most users.  If you want
   explanations of subtler details, ~pl[make-event-details].
 
+  Note that ~c[make-event] may only be used at the ``top level'' or where an
+  event is expected.  See the section ``Restriction to Event Contexts'', below.
+
   ~c[Make-event] is related to Lisp macroexpansion in the sense that its
   argument is evaluated to obtain an expansion result, which is evaluated
   again.  Let us elaborate on each of these notions in turn: ``is evaluated,''
@@ -19117,11 +19120,12 @@
   ~c[\"~~@0\"] with ~c[#\\0] bound to that ~c[cons] pair; ~pl[fmt].  Any other
   non-~c[nil] value of ~c[erp] causes a generic error message to be printed.
 
-  ~st[Restriction to the Top Level.]
+  ~st[Restriction to Event Contexts.]
 
-  Every form enclosing a ~c[make-event] call must be an embedded event form
-  (~pl[embedded-event-form]).  This restriction enables ACL2 to track
-  expansions produced by ~c[make-event].  For example:
+  A ~c[make-event] call must occur either at the top level or as an argument of
+  an event constructor, as explained in more detail below.  This restriction is
+  imposed to enable ACL2 to track expansions produced by ~c[make-event].  The
+  following examples illustrate this restriction.
   ~bv[]
   ; Legal:
   (progn (with-output
@@ -19133,9 +19137,48 @@
           (make-event '(defun foo (x) x))
           (mv erp val state))
   ~ev[]
+
+  More precisely: after macroexpansion has taken place, a ~c[make-event] call
+  must be in an ``event context'', defined recursively as follows.  (All but
+  the first two cases below correspond to similar cases for constructing
+  events; ~pl[embedded-event-form].)
+  ~bq[]
+
+  o A form submitted at the top level, or more generally, supplied to a call of
+  ~ilc[ld], is in an event context.
+
+  o A form occurring at the top level of a book is in an event context.
+
+  o If ~c[(]~ilc[LOCAL]~c[ x1)] is in an event context, then so is ~c[x1].
+
+  o If ~c[(]~ilc[SKIP-PROOFS]~c[ x1)] is in an event context, then so is
+  ~c[x1].
+
+  o If ~c[(]~ilc[MAKE-EVENT]~c[ x ...)] is in an event context and its
+  expansion ~c[x1] is an embedded event form, then ~c[x1] is in an event
+  context.
+
+  o If ~c[(]~ilc[WITH-OUTPUT]~c[ ... x1)],
+  ~c[(]~ilc[WITH-PROVER-STEP-LIMIT]~c[ ... x1 ...)], or
+  ~c[(]~ilc[WITH-PROVER-TIME-LIMIT]~c[ ... x1)] is in an event context, then so
+  is ~c[x1].
+
+  o Given a call of ~ilc[PROGN] or ~ilc[PROGN!] in an event context, each of its
+  arguments is in an event context.
+
+  o Given a call of ~ilc[ENCAPSULATE] in an event context, each of its
+  arguments except the first (the signature list) is in an event context.
+
+  o If ~c[(RECORD-EXPANSION x1 x2)] is in an event context, then ~c[x1] and
+  ~c[x2] are in event contexts.  Note: ~c[record-expansion] is intended for use
+  only by the implementation, which imposes the additional restriction that
+  ~c[x1] and its subsidiary ~c[make-event] calls (if any) must specify a
+  ~c[:check-expansion] argument that is a ~il[consp].
+  ~eq[]
+
   Low-level remark, for system implementors.  There is the one exception to
-  this restriction: a single ~c[state-global-let*] form immediately under a
-  ~c[progn!] call.  For example:
+  the above restriction: a single ~ilc[state-global-let*] form immediately
+  under a ~c[progn!] call.  For example:
   ~bv[]
   (progn! (state-global-let* <bindings> (make-event ...)))
   ~ev[]

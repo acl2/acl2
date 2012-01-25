@@ -12858,8 +12858,8 @@
   ~c[progn!] not mentioned above: support for keyword argument
   ~c[:state-global-bindings].  If the first argument of ~c[progn!] is this
   keyword, then the second argument is treated as a list of bindings as
-  expected by ACl2 system function ~c[state-global-let*] (not yet documented).
-  Thus, in the ACL2 loop,
+  expected by ACl2 system function ~ilc[state-global-let*].  Thus, in the ACL2
+  loop,
   ~bv[]
   (progn! :state-global-bindings bindings form1 form2 ... formk)
   ~ev[]

@@ -4327,36 +4327,36 @@
   General Form:
   An embedded event form is a term, x, such that:~ev[]~bq[]
 
-    ~c[x] is a call of an event function other than ~ilc[DEFPKG] (~pl[events] for
-    a listing of the event functions);
+  o ~c[x] is a call of an event function other than ~ilc[DEFPKG] (~pl[events]
+  for a listing of the event functions);
 
-    ~c[x] is of the form ~c[(]~ilc[LOCAL]~c[ x1)] where ~c[x1] is an embedded
-    event form;
+  o ~c[x] is of the form ~c[(]~ilc[LOCAL]~c[ x1)] where ~c[x1] is an embedded
+  event form;
 
-    ~c[x] is of the form ~c[(]~ilc[SKIP-PROOFS]~c[ x1)] where ~c[x1] is an
-    embedded event form;
+  o ~c[x] is of the form ~c[(]~ilc[SKIP-PROOFS]~c[ x1)] where ~c[x1] is an
+  embedded event form;
 
-    ~c[x] is of the form ~c[(]~ilc[MAKE-EVENT]~c[ &)], where ~c[&] is any term
-    whose expansion is an embedded event (~pl[make-event]);
+  o ~c[x] is of the form ~c[(]~ilc[MAKE-EVENT]~c[ &)], where ~c[&] is any term
+  whose expansion is an embedded event (~pl[make-event]);
 
-    ~c[x] is of the form ~c[(]~ilc[WITH-OUTPUT]~c[ ... x1)],
-    ~c[(]~ilc[WITH-PROVER-STEP-LIMIT]~c[ ... x1 ...)], or
-    ~c[(]~ilc[WITH-PROVER-TIME-LIMIT]~c[ ... x1)], where ~c[x1] is an embedded
-    event form;
+  o ~c[x] is of the form ~c[(]~ilc[WITH-OUTPUT]~c[ ... x1)],
+  ~c[(]~ilc[WITH-PROVER-STEP-LIMIT]~c[ ... x1 ...)], or
+  ~c[(]~ilc[WITH-PROVER-TIME-LIMIT]~c[ ... x1)], where ~c[x1] is an embedded
+  event form;
 
-    ~c[x] is a call of ~ilc[ENCAPSULATE], ~ilc[PROGN], ~ilc[PROGN!], or
-    ~ilc[INCLUDE-BOOK];
+  o ~c[x] is a call of ~ilc[ENCAPSULATE], ~ilc[PROGN], ~ilc[PROGN!], or
+  ~ilc[INCLUDE-BOOK];
 
-    ~c[x] macroexpands to one of the forms above; or
+  o ~c[x] macroexpands to one of the forms above; or
 
-    [intended only for the implementation] ~c[x] is
-    ~c[(RECORD-EXPANSION x1 x2)], where ~c[x1] and ~c[x2] are embedded event
-    forms.
+  o [intended only for the implementation] ~c[x] is
+  ~c[(RECORD-EXPANSION x1 x2)], where ~c[x1] and ~c[x2] are embedded event
+  forms.
 
   ~eq[]
   An exception: an embedded event form may not set the
-  ~ilc[acl2-defaults-table] when in the context of ~ilc[local].  Thus for example,
-  the form
+  ~ilc[acl2-defaults-table] when in the context of ~ilc[local].  Thus for
+  example, the form
   ~bv[]
   (local (table acl2-defaults-table :defun-mode :program))
   ~ev[]
@@ -4377,15 +4377,16 @@
   ~ev[]
 
   When an embedded event is executed while ~ilc[ld-skip-proofsp] is
-  ~c[']~ilc[include-book], those parts of it inside ~ilc[local] forms are ignored.
-  Thus,
+  ~c[']~ilc[include-book], those parts of it inside ~ilc[local] forms are
+  ignored.  Thus,
   ~bv[]
      (progn (defun f1 () 1)
             (local (defun f2 () 2))
             (defun f3 () 3))
   ~ev[]
-  will define ~c[f1], ~c[f2], and ~c[f3] when ~ilc[ld-skip-proofsp] is ~c[nil] but will
-  define only ~c[f1] and ~c[f3] when ~ilc[ld-skip-proofsp] is ~c[']~ilc[include-book].
+  will define ~c[f1], ~c[f2], and ~c[f3] when ~ilc[ld-skip-proofsp] is ~c[nil]
+  or ~c[t], but will define only ~c[f1] and ~c[f3] when ~ilc[ld-skip-proofsp]
+  is ~c[']~ilc[include-book].
 
   ~em[Discussion:]
 
@@ -4407,8 +4408,8 @@
   made ~ilc[local] to an ~il[encapsulate] that ``exports'' a desirable theorem
   whose proof requires the ugly lemma.
 
-  To see why we can't allow just anything in as an embedded event,
-  consider allowing the form
+  To see why we can't allow just anything as an embedded event, consider
+  allowing the form
   ~bv[]
   (if (ld-skip-proofsp state)
       (defun foo () 2)
@@ -4418,13 +4419,13 @@
   ~bv[]
   (defthm foo-is-1 (equal (foo) 1)).
   ~ev[]
-  When we process the ~il[events] with ~ilc[ld-skip-proofsp], ~c[nil] the second
-  ~ilc[defun] is executed and the ~ilc[defthm] succeeds.  But when we process the
-  ~il[events] with ~ilc[ld-skip-proofsp] ~c[']~ilc[include-book], the second ~ilc[defun] is
-  executed, so that ~c[foo] no longer has the same definition it did when
-  we proved ~c[foo-is-1].  Thus, an invalid formula is assumed when we
-  process the ~ilc[defthm] while skipping proofs.  Thus, the first form
-  above is not a legal embedded event form.
+  When we process the ~il[events] with ~ilc[ld-skip-proofsp] is ~c[nil], the
+  second ~ilc[defun] is executed and the ~ilc[defthm] succeeds.  But when we
+  process the ~il[events] with ~ilc[ld-skip-proofsp] ~c[']~ilc[include-book],
+  the second ~ilc[defun] is executed, so that ~c[foo] no longer has the same
+  definition it did when we proved ~c[foo-is-1].  Thus, an invalid formula is
+  assumed when we process the ~ilc[defthm] while skipping proofs.  Thus, the
+  first form above is not a legal embedded event form.
 
   If you encounter a situation where these restrictions seem to prevent you
   from doing what you want to do, then you may find ~c[make-event] to be
@@ -4452,14 +4453,14 @@
          0
        (1+ (foo (- x))))))
   ~ev[]
-  ~l[local-incompatibility] for a discussion of how ~ilc[encapsulate]
-  processes event forms.  Briefly, on the first pass through the
-  ~il[events] the definition of ~c[foo] will be accepted in ~ilc[defun] mode
+  ~l[local-incompatibility] for a discussion of how ~ilc[encapsulate] processes
+  event forms.  Briefly, on the first pass through the ~il[events] the
+  definition of ~c[foo] will be accepted in ~ilc[defun] mode
   ~c[:]~ilc[program], and hence accepted.  But on the second pass the form
   ~c[(local (program))] is skipped because it is marked as ~ilc[local], and
-  hence ~c[foo] is accepted in ~ilc[defun] mode ~c[:]~ilc[logic].  Yet, no proof has been
-  performed in order to admit ~c[foo], and in fact, it is not hard to
-  prove a contradiction from this definition!~/")
+  hence ~c[foo] is accepted in ~ilc[defun] mode ~c[:]~ilc[logic].  Yet, no
+  proof has been performed in order to admit ~c[foo], and in fact, it is not
+  hard to prove a contradiction from this definition!~/")
 
 ; One can imagine adding new event forms.  The requirement is that
 ; either they not take state as an argument or else they not be
@@ -5383,8 +5384,8 @@
        (declare (ignore val))
        (cond (erp (er soft ctx
                       "Make-event is only legal in event contexts, where it ~
-                       can be tracked properly; see :DOC embedded-event-form.  ~
-                       The form ~p0 has thus generated an illegal call of ~
+                       can be tracked properly; see :DOC make-event.  The ~
+                       form ~p0 has thus generated an illegal call of ~
                        make-event.  This form's evaluation will have no ~
                        effect on the ACL2 logical world."
                       form))
