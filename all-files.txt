@@ -730,7 +730,6 @@ disconnected.lisp
 lint.lisp
 xf-drop-missing-submodules.lisp
 xf-drop-unresolved-submodules.lisp
-xf-hid-flatten.lisp
 xf-lint-stmt-rewrite.lisp
 xf-remove-toohard.lisp
 xf-undefined-names.lisp
