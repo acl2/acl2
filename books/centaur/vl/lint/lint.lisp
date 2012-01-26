@@ -27,7 +27,6 @@
 (include-book "check-namespace")
 (include-book "disconnected")
 (include-book "xf-drop-missing-submodules")
-(include-book "xf-hid-flatten")
 (include-book "xf-lint-stmt-rewrite")
 (include-book "xf-remove-toohard")
 (include-book "xf-undefined-names")
@@ -53,6 +52,7 @@
 (include-book "../transforms/xf-expr-split")
 (include-book "../transforms/xf-expand-functions")
 (include-book "../transforms/xf-follow-hids")
+(include-book "../transforms/xf-hid-elim")
 (include-book "../transforms/xf-orig")
 (include-book "../transforms/xf-oprewrite")
 (include-book "../transforms/xf-portdecl-sign")
@@ -221,7 +221,7 @@
        (mods (cwtime (vl-modulelist-check-selfassigns mods)))
        (mods (cwtime (vl-modulelist-lint-stmt-rewrite mods)))
        (mods (cwtime (vl-modulelist-stmtrewrite mods 1000)))
-       (mods (cwtime (vl-modulelist-hid-flatten mods)))
+       (mods (cwtime (vl-modulelist-hid-elim mods)))
 
        ;; BOZO it seems sort of legitimate to do this before sizing, which
        ;; might be nice.  Of course, a more rigorous use/set analysis will

@@ -43,11 +43,22 @@
 
 (defxdoc hid-elim
   :parents (transforms)
+  :short "Replace hierarchical identifiers with special wires."
 
-  :short "Box up hierarchical names into \"externals\" modules."
+  :long "<p>This transform replaces all uses of hierarchical identifiers
+throughout a module with new wires.  Intuitively, if we see something
+like:</p>
 
-  :long "<p>This transform confines all uses of hierarchical identifiers to new
-<i>externals</i> modules, which can be translated into E in a special way.</p>
+<code>
+ assign w = foo.bar.baz;
+</code>
+
+<p>We'll rewrite it into:</p>
+
+<code>
+ wire (* special attributes *) \foo.bar.baz ;
+ assign w = \foo.bar.baz ;
+</code>
 
 <p>This transformation has two phases that must occur separately.</p>
 
@@ -156,100 +167,15 @@ value.  This just seems really, really hard.</p>
 assertions, and it seems like a generally good idea for designers to be able to
 add assertions without drastically changing their module interfaces.  So, we
 would like to have some way to support hierarchical identifiers that does not
-require us to actually synthesize them into gate-level modules.  We accomplish
-this using special <b>externals</b> modules.</p>
+require us to actually synthesize them into gate-level modules.</p>
 
-<h3>Externals Modules</h3>
-
-<p>Suppose we want to deal with some module, <tt>Mod</tt>, that reads from the
-hierarchical identifiers <tt>h1</tt>, ..., <tt>hn</tt>.  Further assume that we
-are not dealing with any writes to hierarchical identifiers, since that's still
-crazy.</p>
-
-<p>Let <tt>hi_flat</tt> be a flattened, ordinary identifier that is derived
-from <tt>hi</tt>, but which does not conflict with any other wire in
-<tt>Mod</tt> or with any other <tt>hj_flat</tt>.</p>
-
-<p>The HID elimination transform begins by introducing a new module,
-<tt>Mod$externals</tt>, that \"boxes up\" all of these identifiers.  The
-Verilog definition of <tt>Mod$externals</tt> is as follows:</p>
-
-<code>
-module Mod$externals (h1_flat, h2_flat, ..., hn_flat) ;
-
-  output [... width of h1 ...] h1_flat;
-  output [... width of h2 ...] h2_flat;
-  ...
-  output [... width of hn ...] hn_flat;
-
-  assign h1_flat = h1;
-  assign h2_flat = h2;
-  ...
-  assign hn_flat = hn;
-
-endmodule
-</code>
-
-<p>Given this, it seems sound to rewrite Mod as follows.  First, add an
-instance of <tt>Mod$externals</tt> and all of the appropriate wires, i.e.,</p>
-
-<code>
-module Mod ( ... ) ;
-
-  wire [... width of h1 ...] h1_flat;
-  wire [... width of h2 ...] h2_flat;
-  ...
-  wire [... width of hn ...] hn_flat;
-
-  Mod$externals externals (h1_flat, h2_flat, ..., hn_flat);
-
-  ... rest of mod ...
-
-endmodule
-</code>
-
-<p>Then replace each occurrence of <tt>hi</tt> in <tt>Mod</tt> with
-<tt>hi_flat</tt>.  Assuming that we are careful enough not to introduce any
-name conflicts, I think this is a legitimate transform that will precisely
-preserve the simulation semantics of <tt>Mod</tt>.</p>
-
-<h3>Externals Modules in E</h3>
-
-<p>So, what's the point?  All we have done so far is isolated the uses of
-hierarchical identifiers into this externals module.</p>
-
-<p>The idea is that, in our E conversion, we will eliminate all of these
-assignments and instead suppose that the externals module is outputting the
-value of some registers.  That is, imagine that <tt>Mod$externals</tt> is
-just:</p>
-
-<code>
-module Mod$externals (h1_flat, h2_flat, ..., hn_flat) ;
-
-  output reg [... width of h1 ...] h1_flat;
-  output reg [... width of h2 ...] h2_flat;
-  ...
-  output reg [... width of hn ...] hn_flat;
-
-endmodule
-</code>
-
-<p>In the E world, <tt>Mod$externals</tt> just emits some state bits that need
-to be initialized before each call of Emod.  When proving properties about
-<tt>Mod</tt>, we imagine that we could either</p>
-
-<ul>
-
-<li>initialize all externals to <tt>X</tt>, which would be conservative,
-or</li>
-
-<li>use an extended Emod to actually find the corresponding values out of other
-modules and initialize the state bits appropriately.</li>
-
-</ul>
+<p>This transform is intended to be compatible with various strategies for
+supporting HIDs.  Historically we introduced special <b>externals</b> modules
+that boxed up all the HID assignments into one place.  But in other tools that
+flatten modules, HIDs may be straightforward to support.</p>
 
 
-<h3>Introducing the Externals Modules</h3>
+<h3>Eliminating HIDs</h3>
 
 <p>In principle this is easy.</p>
 
@@ -262,7 +188,7 @@ modules and initialize the state bits appropriately.</li>
 
 <li>Figure out their sizes,</li>
 
-<li>Introduce wire declarations and <tt>Mod$externals</tt>.</li>
+<li>Introduce wire declarations.</li>
 
 </ol>
 
@@ -345,9 +271,7 @@ in unparameterized modules are already resolved, so this nicely handles
 hierarchical references to wires inside of <tt>processor</tt>, etc.</p>")
 
 
-
-
-
+; For part 1, see xf-follow-hids.lisp.
 
 ; PART 2 --- REPLACING HIDS WITH FLATTENED NAMES
 ; BOZO add documentation
@@ -407,6 +331,7 @@ hierarchical references to wires inside of <tt>processor</tt>, etc.</p>")
                         (acons "VL_HID_LOCAL_P" nil decl-atts)
                       (acons "VL_HID_GLOBAL_P" nil decl-atts)))
          (decl-atts (acons "VL_HID_RESOLVED_MODULE_NAME" target-val decl-atts))
+         (decl-atts (acons "HID" x decl-atts))
 
          ((unless (and (or localp globalp)
                        (or (not localp) (not globalp))
@@ -1198,406 +1123,14 @@ hierarchical references to wires inside of <tt>processor</tt>, etc.</p>")
   :element vl-initial-hid-elim)
 
 
-
-
-
-
-
-; From the netdecl list that we produce, we can construct the entire externals
-; module and its instance.  This takes a bit of work but it's all
-; straightforward.
-
-(defsection vl-hid-netdecls-to-output-portdecls
-
-  (defund vl-hid-netdecls-to-output-portdecls (x)
-    (declare (xargs :guard (vl-netdecllist-p x)))
-    (if (atom x)
-        nil
-      (cons (make-vl-portdecl :name (vl-netdecl->name (car x))
-                              :range (vl-netdecl->range (car x))
-                              :signedp (vl-netdecl->signedp (car x))
-                              :dir :vl-output
-                              :loc (vl-netdecl->loc (car x)))
-            (vl-hid-netdecls-to-output-portdecls (cdr x)))))
-
-  (local (in-theory (enable vl-hid-netdecls-to-output-portdecls)))
-
-  (defthm vl-portdecllist-p-of-vl-hid-netdecls-to-output-portdecls
-    (implies (force (vl-netdecllist-p x))
-             (vl-portdecllist-p (vl-hid-netdecls-to-output-portdecls x)))))
-
-
-
-(defsection vl-hid-netdecls-to-ports
-
-  (defund vl-hid-netdecls-to-ports (x)
-    (declare (xargs :guard (vl-netdecllist-p x)))
-    (if (atom x)
-        nil
-      (let* ((name (vl-netdecl->name (car x)))
-             (expr (make-vl-atom :guts (make-vl-id :name name))))
-        (cons (make-vl-port :name name
-                            :expr expr
-                            :loc *vl-fakeloc*)
-              (vl-hid-netdecls-to-ports (cdr x))))))
-
-  (local (in-theory (enable vl-hid-netdecls-to-ports)))
-
-  (defthm vl-portlist-p-of-vl-hid-netdecls-to-ports
-    (implies (force (vl-netdecllist-p x))
-             (vl-portlist-p (vl-hid-netdecls-to-ports x)))))
-
-
-
-(defsection vl-hid-netdecls-to-plainargs
-
-  (defund vl-hid-netdecls-to-plainargs (x)
-    (declare (xargs :guard (vl-netdecllist-p x)))
-    (if (atom x)
-        nil
-      (let* ((name (vl-netdecl->name (car x)))
-             (expr (make-vl-atom :guts (make-vl-id :name name))))
-        (cons (make-vl-plainarg :expr expr
-                                :portname name
-                                :dir :vl-output)
-              (vl-hid-netdecls-to-plainargs (cdr x))))))
-
-  (local (in-theory (enable vl-hid-netdecls-to-plainargs)))
-
-  (defthm vl-plainarglist-p-of-vl-hid-netdecls-to-plainargs
-    (implies (force (vl-netdecllist-p x))
-             (vl-plainarglist-p (vl-hid-netdecls-to-plainargs x)))))
-
-
-(defsection vl-hid-netdecls-to-assigns
-
-  (defund vl-hid-netdecls-to-assigns (x)
-    (declare (xargs :guard (vl-netdecllist-p x)))
-    (if (atom x)
-        nil
-      (b* ((name   (vl-netdecl->name (car x)))
-           (atts   (vl-netdecl->atts (car x)))
-           (lvalue (make-vl-atom :guts (make-vl-id :name name)))
-           (lookup (cdr (assoc-equal "VL_HID_ORIG" atts)))
-           ((when (not lookup))
-            ;; This is a converted register instead of an HID.  Don't
-            ;; make an assignment for it.
-            (vl-hid-netdecls-to-assigns (cdr x)))
-           (assign (make-vl-assign :lvalue lvalue
-                                   :expr lookup
-                                   :loc *vl-fakeloc*)))
-          (cons assign
-                (vl-hid-netdecls-to-assigns (cdr x))))))
-
-  (local (in-theory (enable vl-hid-netdecls-to-assigns)))
-
-  (defthm vl-assignlist-p-of-vl-hid-netdecls-to-assigns
-    (implies (force (vl-netdecllist-p x))
-             (vl-assignlist-p (vl-hid-netdecls-to-assigns x)))))
-
-
-
-(defsection vl-make-hid-occs
-
-  (defund vl-make-hid-occs (x)
-    (declare (xargs :guard (symbol-listp x)))
-    (if (atom x)
-        nil
-      ;; Each name is of an individual wire, w.  We need to generate
-      ;; (:u ext-out :op *ff* :i (out) :o out)
-      (let ((generator-name (intern-in-package-of-symbol
-                             (str::cat "ext-" (symbol-name (car x)))
-                             (car x))))
-        (cons `(:u ,generator-name :op ACL2::*ff* :i (,(car x)) :o ,(car x))
-              (vl-make-hid-occs (cdr x)))))))
-
-
-
-(defsection vl-make-externals-module
-
-  (local (defthm symbol-listp-of-append-domains
-           (implies (vl-wirealist-p x)
-                    (symbol-listp (append-domains x)))))
-
-  (defund vl-make-externals-module (modname netdecls)
-    (declare (xargs :guard (and (stringp modname)
-                                (vl-netdecllist-p netdecls))))
-    (b* ((modname-expr
-          (make-vl-atom :guts (make-vl-id :name modname)))
-
-         (atts nil)
-         ;; NO, don't use hands-off.  We want these wires to get
-         ;; sized and defm now respects the existing defm.
-         ;; (atts (acons "VL_HANDS_OFF" nil atts))
-         (atts (acons "VL_EXTERNALS" modname-expr atts))
-
-         (ports     (vl-hid-netdecls-to-ports netdecls))
-         (portdecls (vl-hid-netdecls-to-output-portdecls netdecls))
-         (assigns   (vl-hid-netdecls-to-assigns netdecls))
-
-         (new-modname (str::cat modname "$externals"))
-         (mod  (make-vl-module :name new-modname
-                               :origname new-modname
-                               :netdecls netdecls
-                               :ports ports
-                               :portdecls portdecls
-                               :assigns assigns
-                               :minloc *vl-fakeloc*
-                               :maxloc *vl-fakeloc*
-                               :atts atts))
-
-; We now generate a custom emod module for this.  The basic idea for the defm
-; is that every bit should be uniquely assigned by a *ff* module that is driven
-; by itself.  These modules will never change state from what the user inputs,
-; but can be configured at the beginning of an emod step.  For instance, a one
-; bit module could look like this:
-;
-; (defm *one-bit-external*
-;   '(:i ()
-;     :o ((out))
-;     :occs ((:u ext-out :op *ff* :i (out) :o out))))
-
-         (starname (vl-starname new-modname))
-
-         ((mv successp warnings walist)
-          (vl-module-wirealist mod nil))
-
-         ((unless successp)
-          (change-vl-module mod :warnings warnings))
-
-         ;; Compute :i and :o fields.
-
-         ((mv successp warnings in out)
-          (vl-portdecls-to-i/o portdecls walist))
-         ((unless successp)
-          (change-vl-module mod :warnings warnings))
-
-         ;; No :c, no :cd.
-
-         (wires (append-domains walist))
-         (occs  (vl-make-hid-occs wires))
-
-         (- (fast-alist-free walist))
-
-         (defm `(ACL2::defm ,starname '(:i ,in :o ,out :occs ,occs)))
-         (mod  (change-vl-module mod :defm defm)))
-
-        mod))
-
-  (local (in-theory (enable vl-make-externals-module)))
-
-  (defthm vl-module-p-of-vl-make-externals-module
-    (implies (and (force (stringp modname))
-                  (force (vl-netdecllist-p netdecls)))
-             (vl-module-p (vl-make-externals-module modname netdecls)))))
-
-
-
-
-
-; One final twist.  We also make any Reset Aliases externals.  We previously
-; tried to handle this by looking at source types, and did this for any
-; registers that were found in //!! or //@@ comments.  But, with the new
-; mp_verror handling, makeTop strips those out and we can't see them anymore.
-; We therefore revived the reset detection code from xf-reset-elim, and are
-; trying to use it now.
-
-;; (defsection vl-regdecls-to-netdecls-for-externals
-
-;;   (defund vl-regdecls-to-netdecls-for-externals (x)
-;;     (declare (xargs :guard (vl-regdecllist-p x)
-;;                     :guard-debug t))
-;;     (if (atom x)
-;;         nil
-;;       (let* ((reg     (car x))
-;;              (atts    (vl-regdecl->atts reg))
-;;              (atts    (acons "VL_RESET_ALIAS" nil atts))
-;;              (netdecl (make-vl-netdecl :name    (vl-regdecl->name reg)
-;;                                        :type    :vl-wire
-;;                                        :signedp (vl-regdecl->signedp reg)
-;;                                        :range   (vl-regdecl->range reg)
-;;                                        :arrdims (vl-regdecl->arrdims reg)
-;;                                        :loc     (vl-regdecl->loc reg)
-;;                                        :atts    atts)))
-;;         (cons netdecl
-;;               (vl-regdecls-to-netdecls-for-externals (cdr x))))))
-
-;;   (local (in-theory (enable vl-regdecls-to-netdecls-for-externals)))
-
-;;   (defthm vl-netdecllist-p-of-vl-regdecls-to-netdecls-for-externals
-;;     (implies (vl-regdecllist-p x)
-;;              (vl-netdecllist-p (vl-regdecls-to-netdecls-for-externals x)))))
-
-
-
-
-;; A transform to rewrite all statements so that writes to converted regdecls
-;; are thrown away.
-
-(defsection vl-atomicstmt-kill-regassigns
-
-  (defund vl-atomicstmt-kill-regassigns (x regnames)
-    ;; A lot like vl-atomicstmt-eliminate-resets, but doesn't try to replace
-    ;; resets with 1 in the rhses.  Just turn any assignments to regnames into
-    ;; no-ops.
-    (declare (xargs :guard (and (vl-atomicstmt-p x)
-                                (string-listp regnames))))
-    (case (tag x)
-      (:vl-assignstmt
-       (let ((lvalue (vl-assignstmt->lvalue x)))
-         (if (and (vl-idexpr-p lvalue)
-                  (member-equal (vl-idexpr->name lvalue) regnames))
-             (make-vl-nullstmt)
-           x)))
-      (otherwise x)))
-
-  (local (in-theory (enable vl-atomicstmt-kill-regassigns)))
-
-  (defthm vl-stmt-p-of-vl-atomicstmt-kill-regassigns
-    (implies (force (vl-atomicstmt-p x))
-             (vl-stmt-p (vl-atomicstmt-kill-regassigns x regnames)))))
-
-(defsection vl-stmt-kill-regassigns
-
-  (mutual-recursion
-
-   (defund vl-stmt-kill-regassigns (x regnames)
-     (declare (xargs :guard (and (vl-stmt-p x)
-                                 (string-listp regnames))
-                     :verify-guards nil
-                     :measure (two-nats-measure (acl2-count x) 1)))
-
-     (cond ((vl-fast-atomicstmt-p x)
-            (vl-atomicstmt-kill-regassigns x regnames))
-
-           ((not (mbt (consp x)))
-            x)
-
-           (t
-            (let* ((stmts       (vl-compoundstmt->stmts x))
-                   (stmts-prime (vl-stmtlist-kill-regassigns stmts regnames)))
-              (change-vl-compoundstmt x :stmts stmts-prime)))))
-
-   (defund vl-stmtlist-kill-regassigns (x regnames)
-     (declare (xargs :guard (and (vl-stmtlist-p x)
-                                 (string-listp regnames))
-                     :measure (two-nats-measure (acl2-count x) 0)))
-     (if (atom x)
-         nil
-       (cons (vl-stmt-kill-regassigns (car x) regnames)
-             (vl-stmtlist-kill-regassigns (cdr x) regnames)))))
-
-  (defthm vl-stmtlist-kill-regassigns-when-not-consp
-    (implies (not (consp x))
-             (equal (vl-stmtlist-kill-regassigns x regnames)
-                    nil))
-    :hints(("Goal" :in-theory (enable vl-stmtlist-kill-regassigns))))
-
-  (defthm vl-stmtlist-kill-regassigns-of-cons
-    (equal (vl-stmtlist-kill-regassigns (cons a x) regnames)
-           (cons (vl-stmt-kill-regassigns a regnames)
-                 (vl-stmtlist-kill-regassigns x regnames)))
-    :hints(("Goal" :in-theory (enable vl-stmtlist-kill-regassigns))))
-
-  (local (in-theory (disable pick-a-point-subsetp-equal-strategy)))
-  (defprojection vl-stmtlist-kill-regassigns (x regnames)
-    (vl-stmt-kill-regassigns x regnames)
-    :already-definedp t)
-
-  (flag::make-flag vl-flag-stmt-kill-regassigns
-                   vl-stmt-kill-regassigns
-                   :flag-mapping ((vl-stmt-kill-regassigns . stmt)
-                                  (vl-stmtlist-kill-regassigns . list)))
-
-  (defthm-vl-flag-stmt-kill-regassigns lemma
-    (stmt (implies (force (vl-stmt-p x))
-                   (vl-stmt-p (vl-stmt-kill-regassigns x regnames)))
-          :name vl-stmt-p-of-vl-stmt-kill-regassigns)
-    (list (implies (force (vl-stmtlist-p x))
-                   (vl-stmtlist-p (vl-stmtlist-kill-regassigns x regnames)))
-          :name vl-stmtlist-p-of-vl-stmtlist-kill-regassigns)
-    :hints(("Goal"
-            :induct (vl-flag-stmt-kill-regassigns flag x regnames)
-            :expand ((vl-stmt-kill-regassigns x regnames)))))
-
-  (verify-guards vl-stmt-kill-regassigns))
-
-
-
-(defsection vl-always-kill-regassigns
-
-  (defund vl-always-kill-regassigns (x regnames)
-    (declare (xargs :guard (and (vl-always-p x)
-                                (string-listp regnames))))
-    (b* ((stmt       (vl-always->stmt x))
-         (stmt-prime (vl-stmt-kill-regassigns stmt regnames))
-         (x-prime    (change-vl-always x :stmt stmt-prime)))
-        x-prime))
-
-  (local (in-theory (enable vl-always-kill-regassigns)))
-
-  (defthm vl-always-p-of-vl-always-kill-regassigns
-    (implies (force (vl-always-p x))
-             (vl-always-p (vl-always-kill-regassigns x regnames)))))
-
-
-(defsection vl-alwayslist-kill-regassigns
-
-  (local (in-theory (disable pick-a-point-subsetp-equal-strategy)))
-  (defprojection vl-alwayslist-kill-regassigns (x regnames)
-    (vl-always-kill-regassigns x regnames)
-    :guard (and (vl-alwayslist-p x)
-                (string-listp regnames)))
-
-  (local (in-theory (enable vl-alwayslist-kill-regassigns)))
-
-  (defthm vl-alwayslist-p-of-vl-alwayslist-kill-regassigns
-    (implies (force (vl-alwayslist-p x))
-             (vl-alwayslist-p (vl-alwayslist-kill-regassigns x regnames)))))
-
-
-
-(defsection vl-initial-kill-regassigns
-
-  (defund vl-initial-kill-regassigns (x regnames)
-    (declare (xargs :guard (and (vl-initial-p x)
-                                (string-listp regnames))))
-    (b* ((stmt       (vl-initial->stmt x))
-         (stmt-prime (vl-stmt-kill-regassigns stmt regnames))
-         (x-prime    (change-vl-initial x :stmt stmt-prime)))
-        x-prime))
-
-  (local (in-theory (enable vl-initial-kill-regassigns)))
-
-  (defthm vl-initial-p-of-vl-initial-kill-regassigns
-    (implies (force (vl-initial-p x))
-             (vl-initial-p (vl-initial-kill-regassigns x regnames)))))
-
-
-(defsection vl-initiallist-kill-regassigns
-  (local (in-theory (disable pick-a-point-subsetp-equal-strategy)))
-  (defprojection vl-initiallist-kill-regassigns (x regnames)
-    (vl-initial-kill-regassigns x regnames)
-    :guard (and (vl-initiallist-p x)
-                (string-listp regnames)))
-
-  (local (in-theory (enable vl-initiallist-kill-regassigns)))
-
-  (defthm vl-initiallist-p-of-vl-initiallist-kill-regassigns
-    (implies (force (vl-initiallist-p x))
-             (vl-initiallist-p (vl-initiallist-kill-regassigns x regnames)))))
-
-
-
 (defsection vl-module-hid-elim
 
   (defund vl-module-hid-elim (x mods modalist)
-    "Returns (MV X-PRIME ADDMODS)"
     (declare (xargs :guard (and (vl-module-p x)
                                 (vl-modulelist-p mods)
                                 (equal modalist (vl-modalist mods)))))
     (b* (((when (vl-module->hands-offp x))
-          (mv x nil))
+          x)
 
          (warnings (vl-module->warnings x))
 
@@ -1615,8 +1148,7 @@ hierarchical references to wires inside of <tt>processor</tt>, etc.</p>")
 
          ((unless new-netdecls)
           ;; Optimization.  If there aren't any hids, don't need to do anything.
-          (mv (change-vl-module x :warnings warnings)
-              nil))
+          (change-vl-module x :warnings warnings))
 
          ;; Now we want to add new-netdecls.  We need to make sure there aren't any
          ;; conflicting names.
@@ -1632,89 +1164,17 @@ hierarchical references to wires inside of <tt>processor</tt>, etc.</p>")
                                       new-netdecls)
                           :fatalp t
                           :fn 'vl-module-hid-elim)))
-            (mv (change-vl-module x :warnings (cons warning warnings)) nil)))
-
-
-
-
-; No, let's not do this reset alias stuff...
-; Instead, just do this:
-
-         (keep-regdecls (vl-module->regdecls x))
-
-; And don't do all of this:
-;
-;         ;; A Twist.  Also add into netdecls any regdecls that are reset aliases.
-;         (regdecls      (vl-module->regdecls x))
-;         (all-regnames  (mergesort (vl-regdecllist->names regdecls)))
-;
-;         (reset-aliases (mergesort (vl-module-find-potential-reset-aliases x)))
-;
-;         ;; Dumb sanity check.
-;         (- (or (subset reset-aliases all-regnames)
-;                (er hard? 'vl-module-hid-elim "Reset aliases are not all regnames?")))
-;
-;         (warnings (if (not reset-aliases)
-;                       warnings
-;                     (cons (make-vl-warning
-;                            :type :vl-reset-aliases
-;                            :msg "The following regs are being treated as reset ~
-;                                  aliases: ~&0.~%"
-;                            :args (list reset-aliases)
-;                            :fn 'vl-module-hid-elim)
-;                           warnings)))
-;
-;         (keep-regdecls (vl-delete-regdecls reset-aliases regdecls))
-;         (keep-regnames (vl-regdecllist->names keep-regdecls))
-;
-;         (kill-regdecls (vl-delete-regdecls keep-regnames regdecls))
-;
-;         (new-netdecls  (append (vl-regdecls-to-netdecls-for-externals kill-regdecls)
-;                                new-netdecls))
-;
-;
-;         ;; Clean up always and initial blocks to eliminate writes to the newly
-;         ;; external regdecls.
-;         (alwayses (vl-alwayslist-kill-regassigns alwayses reset-aliases))
-;         (initials (vl-initiallist-kill-regassigns initials reset-aliases))
-
-
-         ;; No name conflicts.
-         (externals-mod (vl-make-externals-module (vl-module->name x) new-netdecls))
-
-         ;; We're going to instantiate externals-mod.  We want the instance name
-         ;; to be consistent, so we try to use @vl_ext, which would be really
-         ;; hard for a logic designer to come up with unless they use escaped
-         ;; names.  Even so, make sure it's not there.
-         ((when (member-equal "@vl_ext" all-names))
-          (let ((warning (make-vl-warning
-                          :type :vl-hid-name-conflict
-                          :msg "The name @vl_ext is already in use!"
-                          :fatalp t
-                          :fn 'vl-module-hid-elim)))
-            (mv (change-vl-module x :warnings (cons warning warnings)) nil)))
-
-         (ext-args (vl-arguments nil (vl-hid-netdecls-to-plainargs new-netdecls)))
-         (ext-inst (make-vl-modinst :instname "@vl_ext"
-                                    :modname (vl-module->name externals-mod)
-                                    :range nil
-                                    :paramargs (vl-arguments nil nil)
-                                    :portargs ext-args
-                                    :loc *vl-fakeloc*))
+            (change-vl-module x :warnings (cons warning warnings))))
 
          (x-prime (change-vl-module x
                                     :assigns assigns
-                                    :modinsts (cons ext-inst modinsts)
+                                    :modinsts modinsts
                                     :netdecls (append new-netdecls (vl-module->netdecls x))
-                                    :regdecls keep-regdecls
                                     :gateinsts gateinsts
                                     :alwayses alwayses
                                     :initials initials
                                     :warnings warnings)))
-
-        (mv x-prime (list externals-mod))))
-
-  (defmvtypes vl-module-hid-elim (nil true-listp))
+      x-prime))
 
   (local (in-theory (enable vl-module-hid-elim)))
 
@@ -1722,79 +1182,43 @@ hierarchical references to wires inside of <tt>processor</tt>, etc.</p>")
     (implies (and (force (vl-module-p x))
                   (force (vl-modulelist-p mods))
                   (force (equal modalist (vl-modalist mods))))
-             (vl-module-p (mv-nth 0 (vl-module-hid-elim x mods modalist)))))
+             (vl-module-p (vl-module-hid-elim x mods modalist))))
 
   (defthm vl-module->name-of-vl-module-hid-elim
-    (equal (vl-module->name (mv-nth 0 (vl-module-hid-elim x mods modalist)))
-           (vl-module->name x)))
-
-  (defthm vl-modulelist-p-of-vl-module-hid-elim
-    (implies (and (force (vl-module-p x))
-                  (force (vl-modulelist-p mods))
-                  (force (equal modalist (vl-modalist mods))))
-             (vl-modulelist-p (mv-nth 1 (vl-module-hid-elim x mods modalist))))))
-
+    (equal (vl-module->name (vl-module-hid-elim x mods modalist))
+           (vl-module->name x))))
 
 (defsection vl-modulelist-hid-elim-aux
 
-  (defund vl-modulelist-hid-elim-aux (x mods modalist)
-    "Returns (MV X-PRIME ADDMODS)"
-    (declare (xargs :guard (and (vl-modulelist-p x)
-                                (vl-modulelist-p mods)
-                                (equal modalist (vl-modalist mods)))))
-    (if (atom x)
-        (mv nil nil)
-      (b* (((mv car-prime addmods1) (vl-module-hid-elim (car x) mods modalist))
-           ((mv cdr-prime addmods2) (vl-modulelist-hid-elim-aux (cdr x) mods modalist))
-           (x-prime                 (cons car-prime cdr-prime))
-           (addmods                 (append addmods1 addmods2)))
-          (mv x-prime addmods))))
-
-  (defmvtypes vl-modulelist-hid-elim-aux (true-listp true-listp))
-
-  (local (in-theory (enable vl-modulelist-hid-elim-aux)))
-
-  (defthm vl-modulelist-p-of-vl-modulelist-hid-elim-aux-0
-    (implies (and (force (vl-modulelist-p x))
-                  (force (vl-modulelist-p mods))
-                  (force (equal modalist (vl-modalist mods))))
-             (vl-modulelist-p (mv-nth 0 (vl-modulelist-hid-elim-aux x mods modalist)))))
+  (defprojection vl-modulelist-hid-elim-aux (x mods modalist)
+    (vl-module-hid-elim x mods modalist)
+    :guard (and (vl-modulelist-p x)
+                (vl-modulelist-p mods)
+                (equal modalist (vl-modalist mods)))
+    :result-type vl-modulelist-p)
 
   (defthm vl-modulelist->names-of-vl-modulelist-hid-elim-aux
-    (equal (vl-modulelist->names (mv-nth 0 (vl-modulelist-hid-elim-aux x mods modalist)))
-           (vl-modulelist->names x)))
-
-  (defthm vl-modulelist-p-of-vl-modulelist-hid-elim-aux-1
-    (implies (and (force (vl-modulelist-p x))
-                  (force (vl-modulelist-p mods))
-                  (force (equal modalist (vl-modalist mods))))
-             (vl-modulelist-p (mv-nth 1 (vl-modulelist-hid-elim-aux x mods modalist))))))
-
+    (equal (vl-modulelist->names (vl-modulelist-hid-elim-aux x mods modalist))
+           (vl-modulelist->names x))
+    :hints(("Goal" :induct (len x)))))
 
 
 (defsection vl-modulelist-hid-elim
 
   (defund vl-modulelist-hid-elim (x)
     (declare (xargs :guard (vl-modulelist-p x)))
-    (b* ((modalist             (vl-modalist x))
-         ((mv x-prime addmods) (vl-modulelist-hid-elim-aux x x modalist))
-         (-                    (flush-hons-get-hash-table-link modalist))
-         (names                (vl-modulelist->names-exec x-prime nil))
-         (add-names            (vl-modulelist->names-exec addmods names))
-         ((unless (uniquep add-names))
-          (prog2$ (er hard? 'vl-modulelist-hid-elim
-                      "Name conflict!  Duplicated names are ~&0.~%"
-                      (duplicated-members add-names))
-                  x-prime)))
-        (append addmods x-prime)))
+    (b* ((modalist (vl-modalist x))
+         (ret      (vl-modulelist-hid-elim-aux x x modalist)))
+      (fast-alist-free modalist)
+      ret))
 
   (local (in-theory (enable vl-modulelist-hid-elim)))
 
   (defthm vl-modulelist-p-of-vl-modulelist-hid-elim
-    (implies (force (vl-modulelist-p x))
+    (implies (vl-modulelist-p x)
              (vl-modulelist-p (vl-modulelist-hid-elim x))))
 
-  (defthm no-duplicatesp-equal-of-vl-modulelist->names-of-vl-modulelist-hid-elim
-    (implies (force (no-duplicatesp-equal (vl-modulelist->names x)))
-             (no-duplicatesp-equal (vl-modulelist->names (vl-modulelist-hid-elim x))))))
+  (defthm vl-modulelist->names-of-vl-modulelist-hid-elim
+    (equal (vl-modulelist->names (vl-modulelist-hid-elim x))
+           (vl-modulelist->names x))))
 
