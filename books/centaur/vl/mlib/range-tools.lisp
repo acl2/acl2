@@ -137,10 +137,10 @@ for use in any net or reg declaration."
   (defund vl-make-n-bit-range (n)
     "Returns MAYBE-RANGE"
     (declare (xargs :guard (posp n)))
-    (if (= n 1)
-        nil
+    ;;(if (= n 1)
+    ;;    nil
       (make-vl-range :msb (vl-make-index (- n 1))
-                     :lsb (vl-make-index 0))))
+                     :lsb (vl-make-index 0)))
 
   (local (in-theory (enable vl-make-n-bit-range)))
 
