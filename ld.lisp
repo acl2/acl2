@@ -1032,10 +1032,8 @@
 ; logic.  So we restrict this solution to raw mode.  Furthermore, the lisps
 ; listed below do not need this fix, and they all print a newline even with
 ; "~&" when apparently not necessary, so we exclude them from this fix.
-; (Note Jan. 2009: Apparently CCL doesn't need this fix either, but it seems
-; harmless, so we'll leave it in for CCL.)
 
-    #-(or acl2-loop-only gcl cmu sbcl lispworks)
+    #-(or acl2-loop-only gcl cmu sbcl lispworks ccl)
     (when (raw-mode-p state)
       (format (get-output-stream-from-channel output-channel) "~&"))
     (cond

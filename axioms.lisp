@@ -25937,6 +25937,9 @@
 
   To obtain a random number, ~pl[random$].
 
+  If you are programming in raw-mode (~pl[set-raw-mode]) or in raw Lisp, use
+  the variable ~c[*the-live-state*] in place of the variable ~c[state].
+
   We invite suggestions for additional advanced topics.~/")
 
 (defdoc error-triples
