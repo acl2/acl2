@@ -21,7 +21,7 @@
 (in-package "VL")
 (include-book "util/defs")
 (local (include-book "mlib/stmt-tools"))
-(local (include-book "transforms/occform/gen-util"))
+(include-book "mlib/expr-building")
 
 
 ; BOZO consider simplifying the primitives, especially things like
@@ -44,6 +44,59 @@ having a richer set of primitives might somehow be more efficient for our
 symbolic simulator.</p>")
 
 
+(defsection vl-primitive-mkport
+
+; This is similar to vl-occform-mkport, but our primitives are all one-bit
+; things so we leave out the ranges to make them prettier.
+
+  (defund vl-primitive-mkport (name dir)
+    "Returns (MV EXPR PORT PORTDECL NETDECL)"
+    (declare (xargs :guard (and (stringp name)
+                                (vl-direction-p dir))))
+    (b* ((name     (hons-copy name))
+         (expr     (vl-idexpr name 1 :vl-unsigned))
+         (port     (make-vl-port     :name name :expr expr     :loc *vl-fakeloc*))
+         (portdecl (make-vl-portdecl :name name :dir  dir      :loc *vl-fakeloc*))
+         (netdecl  (make-vl-netdecl  :name name :type :vl-wire :loc *vl-fakeloc*)))
+      (mv expr port portdecl netdecl)))
+
+  (local (in-theory (enable vl-primitive-mkport)))
+
+  (defthm vl-primitive-mkport-basics
+    (implies (and (force (stringp name))
+                  (force (vl-direction-p dir)))
+             (let ((ret (vl-primitive-mkport name dir)))
+               (and (vl-expr-p        (mv-nth 0 ret))
+                    (vl-port-p        (mv-nth 1 ret))
+                    (vl-portdecl-p    (mv-nth 2 ret))
+                    (vl-netdecl-p     (mv-nth 3 ret)))))))
+
+
+(defsection vl-primitive-mkwire
+
+; This is similar to vl-occform-mkwire, but our primitives are all one-bit
+; things so we leave out the ranges to make them prettier.
+
+  (defund vl-primitive-mkwire (name)
+    "Returns (MV EXPR NETDECL)"
+    (declare (xargs :guard (stringp name)))
+    (b* ((name     (hons-copy name))
+         (expr     (vl-idexpr name 1 :vl-unsigned))
+         (netdecl  (make-vl-netdecl :name name :type :vl-wire :loc *vl-fakeloc*)))
+      (mv expr netdecl)))
+
+  (local (in-theory (enable vl-primitive-mkwire)))
+
+  (defthm vl-primitive-mkwire-basics
+    (implies (and (force (stringp name))
+                  (force (posp width)))
+             (let ((ret (vl-primitive-mkwire name)))
+               (and (vl-expr-p        (mv-nth 0 ret))
+                    (vl-netdecl-p     (mv-nth 1 ret)))))))
+
+
+
+
 (defxdoc *vl-1-bit-x*
   :parents (primitives)
   :short "Primitive X generator."
@@ -62,7 +115,7 @@ weirdint-elim) to eliminate explicit X values from literals.</p>")
 (defconsts *vl-1-bit-x*
   (b* ((name "VL_1_BIT_X")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output 1))
+       ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
        (out-assign (make-vl-assign :lvalue out-expr :expr |*sized-1'bx*| :loc *vl-fakeloc*)))
     (make-honsed-vl-module :name      name
                            :origname  name
@@ -93,7 +146,7 @@ weirdint-elim) to eliminate explicit Z values from literals.</p>")
 (defconsts *vl-1-bit-z*
   (b* ((name "VL_1_BIT_Z")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output 1))
+       ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
        (out-assign (make-vl-assign :lvalue out-expr :expr |*sized-1'bz*| :loc *vl-fakeloc*)))
     (make-honsed-vl-module :name      name
                            :origname  name
@@ -137,8 +190,8 @@ modules that involve transistors.</p>")
 (defconsts *vl-1-bit-assign*
   (b* ((name "VL_1_BIT_ASSIGN")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output 1))
-       ((mv in-expr  in-port  in-portdecl  in-netdecl)  (vl-occform-mkport "in"  :vl-input  1))
+       ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
+       ((mv in-expr  in-port  in-portdecl  in-netdecl)  (vl-primitive-mkport "in"  :vl-input))
        (assign (make-vl-assign :lvalue out-expr :expr in-expr :loc *vl-fakeloc*)))
     (make-honsed-vl-module :name      name
                            :origname  name
@@ -170,8 +223,8 @@ transform to separate delays from assignment statements.</p>")
 (defconsts *vl-1-bit-delay-1*
   (b* ((name "VL_1_BIT_DELAY_1")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output 1))
-       ((mv in-expr  in-port  in-portdecl  in-netdecl)  (vl-occform-mkport "in"  :vl-input  1))
+       ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
+       ((mv in-expr  in-port  in-portdecl  in-netdecl)  (vl-primitive-mkport "in"  :vl-input))
        (one    (vl-make-index 1))
        (delay  (make-vl-gatedelay :rise one :fall one :high one))
        (assign (make-vl-assign :lvalue out-expr :expr in-expr :delay delay :loc *vl-fakeloc*)))
@@ -206,8 +259,8 @@ but probably not for much else since ordinary assignments are handled with
 (defconsts *vl-1-bit-buf*
   (b* ((name "VL_1_BIT_BUF")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output 1))
-       ((mv in-expr  in-port  in-portdecl  in-netdecl)  (vl-occform-mkport "in"  :vl-input  1))
+       ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
+       ((mv in-expr  in-port  in-portdecl  in-netdecl)  (vl-primitive-mkport "in"  :vl-input))
        (gate (make-vl-gateinst :type :vl-buf
                                :name "gate"
                                :args (list (make-vl-plainarg :expr out-expr :dir :vl-output)
@@ -244,8 +297,8 @@ operators like <tt>+</tt>.</p>")
 (defconsts *vl-1-bit-not*
   (b* ((name "VL_1_BIT_NOT")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output 1))
-       ((mv in-expr  in-port  in-portdecl  in-netdecl)  (vl-occform-mkport "in"  :vl-input  1))
+       ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
+       ((mv in-expr  in-port  in-portdecl  in-netdecl)  (vl-primitive-mkport "in"  :vl-input))
        (gate (make-vl-gateinst :type :vl-not
                                :name "gate"
                                :args (list (make-vl-plainarg :expr out-expr :dir :vl-output)
@@ -283,9 +336,9 @@ operators like <tt>+</tt>.</p>")
 (defconsts *vl-1-bit-and*
   (b* ((name "VL_1_BIT_AND")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output 1))
-       ((mv a-expr   a-port   a-portdecl   a-netdecl)   (vl-occform-mkport "a"   :vl-input  1))
-       ((mv b-expr   b-port   b-portdecl   b-netdecl)   (vl-occform-mkport "b"   :vl-input  1))
+       ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
+       ((mv a-expr   a-port   a-portdecl   a-netdecl)   (vl-primitive-mkport "a"   :vl-input))
+       ((mv b-expr   b-port   b-portdecl   b-netdecl)   (vl-primitive-mkport "b"   :vl-input))
        (gate (make-vl-gateinst :type :vl-and
                                :name "gate"
                                :args (list (make-vl-plainarg :expr out-expr :dir :vl-output)
@@ -324,9 +377,9 @@ like <tt>+</tt>.</p>")
 (defconsts *vl-1-bit-or*
   (b* ((name "VL_1_BIT_OR")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output 1))
-       ((mv a-expr   a-port   a-portdecl   a-netdecl)   (vl-occform-mkport "a"   :vl-input  1))
-       ((mv b-expr   b-port   b-portdecl   b-netdecl)   (vl-occform-mkport "b"   :vl-input  1))
+       ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
+       ((mv a-expr   a-port   a-portdecl   a-netdecl)   (vl-primitive-mkport "a"   :vl-input))
+       ((mv b-expr   b-port   b-portdecl   b-netdecl)   (vl-primitive-mkport "b"   :vl-input))
        (gate (make-vl-gateinst :type :vl-or
                                :name "gate"
                                :args (list (make-vl-plainarg :expr out-expr :dir :vl-output)
@@ -365,9 +418,9 @@ operators like <tt>+</tt>.</p>")
 (defconsts *vl-1-bit-xor*
   (b* ((name "VL_1_BIT_XOR")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output 1))
-       ((mv a-expr   a-port   a-portdecl   a-netdecl)   (vl-occform-mkport "a"   :vl-input  1))
-       ((mv b-expr   b-port   b-portdecl   b-netdecl)   (vl-occform-mkport "b"   :vl-input  1))
+       ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
+       ((mv a-expr   a-port   a-portdecl   a-netdecl)   (vl-primitive-mkport "a"   :vl-input))
+       ((mv b-expr   b-port   b-portdecl   b-netdecl)   (vl-primitive-mkport "b"   :vl-input))
        (gate (make-vl-gateinst :type :vl-xor
                                :name "gate"
                                :args (list (make-vl-plainarg :expr out-expr :dir :vl-output)
@@ -406,9 +459,9 @@ but probably not much else.</p>")
   ;; BOZO this should probably be a non-primitive.
   (b* ((name "VL_1_BIT_NAND")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output 1))
-       ((mv a-expr   a-port   a-portdecl   a-netdecl)   (vl-occform-mkport "a"   :vl-input  1))
-       ((mv b-expr   b-port   b-portdecl   b-netdecl)   (vl-occform-mkport "b"   :vl-input  1))
+       ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
+       ((mv a-expr   a-port   a-portdecl   a-netdecl)   (vl-primitive-mkport "a"   :vl-input))
+       ((mv b-expr   b-port   b-portdecl   b-netdecl)   (vl-primitive-mkport "b"   :vl-input))
        (gate (make-vl-gateinst :type :vl-nand
                                :name "gate"
                                :args (list (make-vl-plainarg :expr out-expr :dir :vl-output)
@@ -447,9 +500,9 @@ but probably not much else.</p>")
   ;; BOZO this should probably be a non-primitive.
   (b* ((name "VL_1_BIT_NOR")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output 1))
-       ((mv a-expr   a-port   a-portdecl   a-netdecl)   (vl-occform-mkport "a"   :vl-input  1))
-       ((mv b-expr   b-port   b-portdecl   b-netdecl)   (vl-occform-mkport "b"   :vl-input  1))
+       ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
+       ((mv a-expr   a-port   a-portdecl   a-netdecl)   (vl-primitive-mkport "a"   :vl-input))
+       ((mv b-expr   b-port   b-portdecl   b-netdecl)   (vl-primitive-mkport "b"   :vl-input))
        (gate (make-vl-gateinst :type :vl-nor
                                :name "gate"
                                :args (list (make-vl-plainarg :expr out-expr :dir :vl-output)
@@ -488,9 +541,9 @@ but probably not much else.</p>")
   ;; BOZO this should probably be a non-primitive.
   (b* ((name "VL_1_BIT_XNOR")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output 1))
-       ((mv a-expr   a-port   a-portdecl   a-netdecl)   (vl-occform-mkport "a"   :vl-input  1))
-       ((mv b-expr   b-port   b-portdecl   b-netdecl)   (vl-occform-mkport "b"   :vl-input  1))
+       ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
+       ((mv a-expr   a-port   a-portdecl   a-netdecl)   (vl-primitive-mkport "a"   :vl-input))
+       ((mv b-expr   b-port   b-portdecl   b-netdecl)   (vl-primitive-mkport "b"   :vl-input))
        (gate (make-vl-gateinst :type :vl-xnor
                                :name "gate"
                                :args (list (make-vl-plainarg :expr out-expr :dir :vl-output)
@@ -531,9 +584,9 @@ used to implement muxes.</p>")
   ;; the Verilog semantics, or conservative to it?
   (b* ((name "VL_1_BIT_ZMUX")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output 1))
-       ((mv sel-expr sel-port sel-portdecl sel-netdecl) (vl-occform-mkport "sel" :vl-input 1))
-       ((mv a-expr a-port a-portdecl a-netdecl)         (vl-occform-mkport "a" :vl-input 1))
+       ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
+       ((mv sel-expr sel-port sel-portdecl sel-netdecl) (vl-primitive-mkport "sel" :vl-input))
+       ((mv a-expr a-port a-portdecl a-netdecl)         (vl-primitive-mkport "a" :vl-input))
        (assign (make-vl-assign :lvalue out-expr
                                :expr (make-vl-nonatom :op :vl-qmark
                                                       :args (list sel-expr a-expr |*sized-1'bz*|)
@@ -578,9 +631,9 @@ might choose to give it a different interpretation.</p>")
   ;; BOZO this should probably be a non-primitive.
   (b* ((name "VL_1_BIT_CEQ")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output 1))
-       ((mv a-expr   a-port   a-portdecl   a-netdecl)   (vl-occform-mkport "a"   :vl-input  1))
-       ((mv b-expr   b-port   b-portdecl   b-netdecl)   (vl-occform-mkport "b"   :vl-input  1))
+       ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
+       ((mv a-expr   a-port   a-portdecl   a-netdecl)   (vl-primitive-mkport "a"   :vl-input))
+       ((mv b-expr   b-port   b-portdecl   b-netdecl)   (vl-primitive-mkport "b"   :vl-input))
        (assign (make-vl-assign :lvalue out-expr
                                :expr (make-vl-nonatom :op :vl-binary-ceq
                                                       :args (list a-expr b-expr)
@@ -623,9 +676,9 @@ certain <tt>always</tt> statements into instances of this module.</p>")
   (b* ((name "VL_1_BIT_FLOP")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
 
-       ((mv q-expr   q-port   q-portdecl   &)           (vl-occform-mkport "q"   :vl-output 1))
-       ((mv clk-expr clk-port clk-portdecl clk-netdecl) (vl-occform-mkport "clk" :vl-input  1))
-       ((mv d-expr   d-port   d-portdecl   d-netdecl)   (vl-occform-mkport "d"   :vl-input  1))
+       ((mv q-expr   q-port   q-portdecl   &)           (vl-primitive-mkport "q"   :vl-output))
+       ((mv clk-expr clk-port clk-portdecl clk-netdecl) (vl-primitive-mkport "clk" :vl-input))
+       ((mv d-expr   d-port   d-portdecl   d-netdecl)   (vl-primitive-mkport "d"   :vl-input))
 
        (q-regdecl    (make-vl-regdecl :name "q" :loc *vl-fakeloc*))
 
@@ -672,9 +725,9 @@ certain <tt>always</tt> statements into instances of this module.</p>")
   (b* ((name (hons-copy "VL_1_BIT_LATCH"))
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
 
-       ((mv q-expr   q-port   q-portdecl   &)           (vl-occform-mkport "q"   :vl-output 1))
-       ((mv clk-expr clk-port clk-portdecl clk-netdecl) (vl-occform-mkport "clk" :vl-input  1))
-       ((mv d-expr   d-port   d-portdecl   d-netdecl)   (vl-occform-mkport "d"   :vl-input  1))
+       ((mv q-expr   q-port   q-portdecl   &)           (vl-primitive-mkport "q"   :vl-output))
+       ((mv clk-expr clk-port clk-portdecl clk-netdecl) (vl-primitive-mkport "clk" :vl-input))
+       ((mv d-expr   d-port   d-portdecl   d-netdecl)   (vl-primitive-mkport "d"   :vl-input))
 
        (q-regdecl     (make-vl-regdecl :name "q" :loc *vl-fakeloc*))
 
@@ -729,9 +782,9 @@ transform to deal with multiply driven wires.</p>")
 (defconsts *vl-1-bit-resolve-wire*
   (b* ((name "VL_1_BIT_RESOLVE_WIRE")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output 1))
-       ((mv a-expr   a-port   a-portdecl   a-netdecl)   (vl-occform-mkport "a"   :vl-input  1))
-       ((mv b-expr   b-port   b-portdecl   b-netdecl)   (vl-occform-mkport "b"   :vl-input  1))
+       ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
+       ((mv a-expr   a-port   a-portdecl   a-netdecl)   (vl-primitive-mkport "a"   :vl-input))
+       ((mv b-expr   b-port   b-portdecl   b-netdecl)   (vl-primitive-mkport "b"   :vl-input))
        (a-assign     (make-vl-assign :lvalue out-expr :expr a-expr :loc *vl-fakeloc*))
        (b-assign     (make-vl-assign :lvalue out-expr :expr b-expr :loc *vl-fakeloc*)))
     (make-honsed-vl-module :name      name
@@ -772,9 +825,9 @@ transform to deal with multiply driven wired ors.</p>")
 (defconsts *vl-1-bit-resolve-wor*
   (b* ((name "VL_1_BIT_RESOLVE_WOR")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output 1))
-       ((mv a-expr   a-port   a-portdecl   a-netdecl)   (vl-occform-mkport "a"   :vl-input  1))
-       ((mv b-expr   b-port   b-portdecl   b-netdecl)   (vl-occform-mkport "b"   :vl-input  1))
+       ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
+       ((mv a-expr   a-port   a-portdecl   a-netdecl)   (vl-primitive-mkport "a"   :vl-input))
+       ((mv b-expr   b-port   b-portdecl   b-netdecl)   (vl-primitive-mkport "b"   :vl-input))
        (out-netdecl  (change-vl-netdecl out-netdecl :type :vl-wor))
        (a-assign     (make-vl-assign :lvalue out-expr :expr a-expr :loc *vl-fakeloc*))
        (b-assign     (make-vl-assign :lvalue out-expr :expr b-expr :loc *vl-fakeloc*)))
@@ -791,23 +844,28 @@ transform to deal with multiply driven wired ors.</p>")
 
 
 
-;; (include-book "mlib/writer")
-;; (vl-pps-module *vl-1-bit-x*)
-;; (vl-pps-module *vl-1-bit-z*)
-;; (vl-pps-module *vl-1-bit-assign*)
-;; (vl-pps-module *vl-1-bit-delay-1*)
-;; (vl-pps-module *vl-1-bit-buf*)
-;; (vl-pps-module *vl-1-bit-not*)
-;; (vl-pps-module *vl-1-bit-and*)
-;; (vl-pps-module *vl-1-bit-or*)
-;; (vl-pps-module *vl-1-bit-xor*)
-;; (vl-pps-module *vl-1-bit-nand*)
-;; (vl-pps-module *vl-1-bit-nor*)
-;; (vl-pps-module *vl-1-bit-xnor*)
-;; (vl-pps-module *vl-1-bit-ceq*)
-;; (vl-pps-module *vl-1-bit-zmux*)
-;; (vl-pps-module *vl-1-bit-flop*)
-;; (vl-pps-module *vl-1-bit-latch*)
-;; (vl-pps-module *vl-1-bit-resolve-wire*)
-;; (vl-pps-module *vl-1-bit-resolve-wor*)
+#||
 
+(include-book ;; fool dependency scanner
+ "mlib/writer")
+
+(vl-pps-module *vl-1-bit-x*)
+(vl-pps-module *vl-1-bit-z*)
+(vl-pps-module *vl-1-bit-assign*)
+(vl-pps-module *vl-1-bit-delay-1*)
+(vl-pps-module *vl-1-bit-buf*)
+(vl-pps-module *vl-1-bit-not*)
+(vl-pps-module *vl-1-bit-and*)
+(vl-pps-module *vl-1-bit-or*)
+(vl-pps-module *vl-1-bit-xor*)
+(vl-pps-module *vl-1-bit-nand*)
+(vl-pps-module *vl-1-bit-nor*)
+(vl-pps-module *vl-1-bit-xnor*)
+(vl-pps-module *vl-1-bit-ceq*)
+(vl-pps-module *vl-1-bit-zmux*)
+(vl-pps-module *vl-1-bit-flop*)
+(vl-pps-module *vl-1-bit-latch*)
+(vl-pps-module *vl-1-bit-resolve-wire*)
+(vl-pps-module *vl-1-bit-resolve-wor*)
+
+||#

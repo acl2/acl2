@@ -20,7 +20,6 @@
 
 (in-package "VL")
 (include-book "gen-util")
-(include-book "../../primitives")
 (local (include-book "../../util/arithmetic"))
 (local (include-book "../../util/osets"))
 
@@ -34,12 +33,13 @@
 ;  - N-bit "Z muxes" (tri-state buffers)
 ;  - N-bit case equality modules (===)
 
+
 (def-vl-modgen vl-make-n-bit-binary-op (type n)
   :short "Generate a wide, pointwise AND, OR, XOR, or XNOR module."
 
   :long "<p>The <tt>type</tt> must be either <tt>:VL-AND</tt>, <tt>:VL-OR</tt>,
 <tt>:VL-XOR</tt>, or <tt>:VL-XNOR</tt>.  Depending on the type, we generate a
-module that is written using gates but is semantically equivalent to:</p>
+module that is written using @(see primitives) but is semantically equivalent to:</p>
 
 <code>
 module VL_N_BIT_POINTWISE_{AND,OR,XOR,XNOR} (out, a, b) ;
@@ -60,16 +60,32 @@ endmodule
 <p>For instance, if <tt>N</tt> is 4 and type is OR, we actually write:</p>
 
 <code>
-  or(out[3], a[3], b[3]);
-  or(out[2], a[2], b[2]);
-  or(out[1], a[1], b[1]);
-  or(out[0], a[0], b[0]);
+  VL_1_BIT_OR bit3 (out[3], a[3], b[3]);
+  VL_1_BIT_OR bit2 (out[2], a[2], b[2]);
+  VL_1_BIT_OR bit1 (out[1], a[1], b[1]);
+  VL_1_BIT_OR bit0 (out[0], a[0], b[0]);
 </code>"
 
   :guard (and (member type '(:vl-and :vl-or :vl-xor :vl-xnor))
               (posp n))
   :body
-  (b* ((name (hons-copy (str::cat "VL_" (str::natstr n) "_BIT_POINTWISE_"
+  (b* ((prim (case type
+               (:vl-and  *vl-1-bit-and*)
+               (:vl-or   *vl-1-bit-or*)
+               (:vl-xor  *vl-1-bit-xor*)
+               (:vl-xnor *vl-1-bit-xnor*)))
+
+; [Jared and Sol]: It's tempting here to just return (list prim) in the special
+; case that n = 1.  But after discussing this, we decided it seems nicer to put
+; the wrapper in anyway, because that way you can see that this came from an
+; pointwise AND.  This probably seems stupid: who is going to expect a
+; VL_1_BIT_POINTWISE_AND and be surprised by a VL_1_BIT_AND?  Well, it is
+; stupid in this case, but for reduction operators things get murkier.  A 1-bit
+; reduction AND is just a BUF.  If you write foo = &bar, you probably don't
+; expect to see a VL_1_BIT_BUF instead of a VL_1_BIT_REDUCTION_AND.  So for
+; consistency we go ahead and try to keep the wrapper in all cases.
+
+       (name (hons-copy (str::cat "VL_" (str::natstr n) "_BIT_POINTWISE_"
                                   (case type
                                     (:vl-and "AND")
                                     (:vl-or "OR")
@@ -79,54 +95,27 @@ endmodule
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output n))
        ((mv a-expr a-port a-portdecl a-netdecl)         (vl-occform-mkport "a" :vl-input n))
        ((mv b-expr b-port b-portdecl b-netdecl)         (vl-occform-mkport "b" :vl-input n))
-
        (out-wires (vl-make-list-of-bitselects out-expr 0 (- n 1)))
-       (a-wires   (vl-make-list-of-bitselects a-expr 0 (- n 1)))
-       (b-wires   (vl-make-list-of-bitselects b-expr 0 (- n 1)))
-       (gates     (vl-make-binary-gateinstlist type out-wires a-wires b-wires nil)))
+       (a-wires   (vl-make-list-of-bitselects a-expr   0 (- n 1)))
+       (b-wires   (vl-make-list-of-bitselects b-expr   0 (- n 1)))
+       (insts     (vl-simple-inst-list prim "bit" out-wires a-wires b-wires)))
 
     (list (make-vl-module :name      name
                           :origname  name
                           :ports     (list out-port a-port b-port)
                           :portdecls (list out-portdecl a-portdecl b-portdecl)
                           :netdecls  (list out-netdecl a-netdecl b-netdecl)
-                          :gateinsts gates
+                          :modinsts  insts
                           :minloc    *vl-fakeloc*
-                          :maxloc    *vl-fakeloc*))))
+                          :maxloc    *vl-fakeloc*)
+          prim)))
 
+#||
+(vl-pps-modulelist (vl-make-n-bit-binary-op :vl-and 1))
+(vl-pps-modulelist (vl-make-n-bit-binary-op :vl-and 2))
+(vl-pps-modulelist (vl-make-n-bit-binary-op :vl-and 17))
+||#
 
-
-
-
-
-(defsection vl-make-n-bit-assign-insts
-  :parents (vl-make-n-bit-assign)
-  :short "Generate a series of @(see *vl-1-bit-assign*) instances."
-
-  (defund vl-make-n-bit-assign-insts (name-index out-bits in-bits)
-    (declare (xargs :guard (and (natp name-index)
-                                (vl-exprlist-p out-bits)
-                                (vl-exprlist-p in-bits)
-                                (same-lengthp out-bits in-bits))))
-    (b* (((when (atom out-bits))
-          nil)
-         (args  (list (make-vl-plainarg :expr (car out-bits) :dir :vl-output :portname (hons-copy "out"))
-                      (make-vl-plainarg :expr (car in-bits)  :dir :vl-input  :portname (hons-copy "in"))))
-         (inst1 (make-vl-modinst :instname  (hons-copy (str::cat "bit_" (str::natstr name-index)))
-                                 :modname   (vl-module->name *vl-1-bit-assign*)
-                                 :portargs  (vl-arguments nil args)
-                                 :paramargs (vl-arguments nil nil)
-                                 :loc       *vl-fakeloc*))
-         (rest  (vl-make-n-bit-assign-insts (+ 1 name-index) (cdr out-bits) (cdr in-bits))))
-      (cons inst1 rest)))
-
-  (defthm vl-modinstlist-p-of-vl-make-n-bit-assign-insts
-    (implies (and (force (natp name-index))
-                  (force (vl-exprlist-p out-bits))
-                  (force (vl-exprlist-p in-bits))
-                  (force (same-lengthp out-bits in-bits)))
-             (vl-modinstlist-p (vl-make-n-bit-assign-insts name-index out-bits in-bits)))
-    :hints(("Goal" :in-theory (enable vl-make-n-bit-assign-insts)))))
 
 
 (def-vl-modgen vl-make-n-bit-assign (n)
@@ -170,7 +159,7 @@ endmodule
 
        (out-wires (vl-make-list-of-bitselects out-expr 0 (- n 1)))
        (in-wires  (vl-make-list-of-bitselects in-expr  0 (- n 1)))
-       (modinsts  (vl-make-n-bit-assign-insts 0 out-wires in-wires)))
+       (modinsts  (vl-simple-inst-list *vl-1-bit-assign* "bit" out-wires in-wires)))
 
     (list (make-vl-module :name      name
                           :origname  name
@@ -181,6 +170,15 @@ endmodule
                           :minloc    *vl-fakeloc*
                           :maxloc    *vl-fakeloc*)
           *vl-1-bit-assign*)))
+
+
+#||
+(vl-pps-modulelist (vl-make-n-bit-assign 1))
+(vl-pps-modulelist (vl-make-n-bit-assign 4))
+||#
+
+
+
 
 
 
@@ -202,10 +200,10 @@ endmodule
 above we would have:</p>
 
 <code>
- not(out[3], in[3]);
- not(out[2], in[2]);
- not(out[1], in[1]);
- not(out[0], in[0]);
+  VL_1_BIT_NOT bit0 (out[0], in[0]) ;
+  VL_1_BIT_NOT bit1 (out[1], in[1]) ;
+  VL_1_BIT_NOT bit2 (out[2], in[2]) ;
+  VL_1_BIT_NOT bit3 (out[3], in[3]) ;
 </code>"
 
   :guard (posp n)
@@ -220,16 +218,23 @@ above we would have:</p>
 
        (out-wires (vl-make-list-of-bitselects out-expr 0 (- n 1)))
        (in-wires  (vl-make-list-of-bitselects in-expr 0 (- n 1)))
-       (gates     (vl-make-unary-gateinstlist :vl-not out-wires in-wires nil)))
+       (insts     (vl-simple-inst-list *vl-1-bit-not* "bit" out-wires in-wires)))
 
     (list (make-vl-module :name      name
                           :origname  name
                           :ports     (list out-port in-port)
                           :portdecls (list out-portdecl in-portdecl)
                           :netdecls  (list out-netdecl in-netdecl)
-                          :gateinsts gates
+                          :modinsts  insts
                           :minloc    *vl-fakeloc*
-                          :maxloc    *vl-fakeloc*))))
+                          :maxloc    *vl-fakeloc*)
+          *vl-1-bit-not*)))
+
+#||
+(vl-pps-modulelist (vl-make-n-bit-not 1))
+(vl-pps-modulelist (vl-make-n-bit-not 4))
+||#
+
 
 
 (def-vl-modgen vl-make-n-bit-reduction-op (type n)
@@ -277,53 +282,62 @@ endmodule
 
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output 1))
        ((mv in-expr in-port in-portdecl in-netdecl)     (vl-occform-mkport "in" :vl-input n))
-
        (ports     (list out-port in-port))
        (portdecls (list out-portdecl in-portdecl))
-       (gtype     (case type
-                    (:vl-unary-bitand :vl-and)
-                    (:vl-unary-bitor :vl-or)
-                    (:vl-unary-xor :vl-xor)))
+       (prim      (case type
+                    (:vl-unary-bitand *vl-1-bit-and*)
+                    (:vl-unary-bitor  *vl-1-bit-or*)
+                    (:vl-unary-xor    *vl-1-bit-xor*)))
 
        ((when (< n 3))
-        ;; Special cases.  See test-redux.v.  Any one-bit reduction op is a
-        ;; buf; any two-bit op is just the op applied to the argument bits.
-        (let* ((gateinst (if (= n 1)
-                             (vl-make-unary-gateinst :vl-buf out-expr in-expr nil *vl-fakeloc*)
-                           (vl-make-binary-gateinst gtype
-                                                    out-expr
-                                                    (vl-make-bitselect in-expr 0)
-                                                    (vl-make-bitselect in-expr 1)
-                                                    nil
-                                                    *vl-fakeloc*))))
+        ;; Special cases.  See test-redux.v.
+        (b* (((mv inst prim)
+              (if (= n 1)
+                  (mv (vl-simple-inst *vl-1-bit-buf* "ans" out-expr in-expr)
+                      *vl-1-bit-buf*)
+                ;; Any two-bit op is just the op applied to the argument bits.
+                (mv (vl-simple-inst prim "ans"
+                                    out-expr
+                                    (vl-make-bitselect in-expr 0)
+                                    (vl-make-bitselect in-expr 1))
+                    prim))))
           (list (make-vl-module :name      name
                                 :origname  name
                                 :ports     ports
                                 :portdecls portdecls
                                 :netdecls  (list in-netdecl out-netdecl)
-                                :gateinsts (list gateinst)
+                                :modinsts  (list inst)
                                 :minloc    *vl-fakeloc*
-                                :maxloc    *vl-fakeloc*))))
+                                :maxloc    *vl-fakeloc*)
+                prim)))
 
        ;; Otherwise, n >= 3 and we use a temporary wire.
 
        ;; wire [n-3:0] temp;
        ((mv temp-expr temp-netdecl) (vl-occform-mkwire "temp" (- n 2)))
 
-       (gate-outs  (append (vl-make-list-of-bitselects temp-expr 0 (- n 3)) (list out-expr)))
-       (gate-lhses (vl-make-list-of-bitselects in-expr 1 (- n 1)))
-       (gate-rhses (cons (vl-make-bitselect in-expr 0) (vl-make-list-of-bitselects temp-expr 0 (- n 3))))
-       (gates      (vl-make-binary-gateinstlist gtype gate-outs gate-lhses gate-rhses nil)))
+       (out-wires  (append (vl-make-list-of-bitselects temp-expr 0 (- n 3)) (list out-expr)))
+       (lhs-wires  (vl-make-list-of-bitselects in-expr 1 (- n 1)))
+       (rhs-wires  (cons (vl-make-bitselect in-expr 0) (vl-make-list-of-bitselects temp-expr 0 (- n 3))))
+       (insts      (vl-simple-inst-list prim "bit" out-wires lhs-wires rhs-wires)))
 
     (list (make-vl-module :name      name
                           :origname  name
                           :ports     ports
                           :portdecls portdecls
                           :netdecls  (list in-netdecl out-netdecl temp-netdecl)
-                          :gateinsts gates
+                          :modinsts  insts
                           :minloc    *vl-fakeloc*
-                          :maxloc    *vl-fakeloc*))))
+                          :maxloc    *vl-fakeloc*)
+          prim)))
 
+
+#||
+(vl-pps-modulelist (vl-make-n-bit-reduction-op :vl-unary-bitand 1))
+(vl-pps-modulelist (vl-make-n-bit-reduction-op :vl-unary-bitand 2))
+(vl-pps-modulelist (vl-make-n-bit-reduction-op :vl-unary-bitand 3))
+(vl-pps-modulelist (vl-make-n-bit-reduction-op :vl-unary-bitand 130))
+||#
 
 
 (def-vl-modgen vl-make-1-bit-mux (approxp)
@@ -331,51 +345,57 @@ endmodule
   :body
   (b* ((name (str::cat "VL_1_BIT_" (if approxp "APPROX_MUX" "MUX")))
 
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output 1))
-       ((mv sel-expr sel-port sel-portdecl sel-netdecl) (vl-occform-mkport "sel" :vl-input  1))
-       ((mv a-expr   a-port   a-portdecl   a-netdecl)   (vl-occform-mkport "a"   :vl-input  1))
-       ((mv b-expr   b-port   b-portdecl   b-netdecl)   (vl-occform-mkport "b"   :vl-input  1))
+       ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
+       ((mv sel-expr sel-port sel-portdecl sel-netdecl) (vl-primitive-mkport "sel" :vl-input))
+       ((mv a-expr   a-port   a-portdecl   a-netdecl)   (vl-primitive-mkport "a"   :vl-input))
+       ((mv b-expr   b-port   b-portdecl   b-netdecl)   (vl-primitive-mkport "b"   :vl-input))
 
-       ((mv sbar-expr   sbar-netdecl)                   (vl-occform-mkwire "sbar"   1))
-       ((mv sa-expr     sa-netdecl)                     (vl-occform-mkwire "s_a"    1))
-       ((mv sbarb-expr  sbarb-netdecl)                  (vl-occform-mkwire "sbarb"  1))
+       ((mv sbar-expr   sbar-netdecl)                   (vl-primitive-mkwire "sbar"))
+       ((mv sa-expr     sa-netdecl)                     (vl-primitive-mkwire "s_a"))
+       ((mv sbarb-expr  sbarb-netdecl)                  (vl-primitive-mkwire "sbarb"))
 
-       (sbar-gate  (vl-make-unary-gateinst  :vl-not sbar-expr  sel-expr  nil        *vl-fakeloc*))
-       (sa-gate    (vl-make-binary-gateinst :vl-and sa-expr    sel-expr  a-expr nil *vl-fakeloc*))
-       (sbarb-gate (vl-make-binary-gateinst :vl-and sbarb-expr sbar-expr b-expr nil *vl-fakeloc*))
+       (sbar-inst   (vl-simple-inst *vl-1-bit-not* "mk_sbar"  sbar-expr  sel-expr))
+       (sa-inst     (vl-simple-inst *vl-1-bit-and* "mk_sa"    sa-expr    sel-expr  a-expr))
+       (sbarb-inst  (vl-simple-inst *vl-1-bit-and* "mk_sbarb" sbarb-expr sbar-expr b-expr))
 
        (ports     (list out-port sel-port a-port b-port))
        (portdecls (list out-portdecl sel-portdecl a-portdecl b-portdecl))
        (nets1     (list out-netdecl sel-netdecl a-netdecl b-netdecl sbar-netdecl sa-netdecl sbarb-netdecl))
-       (gates1    (list sbar-gate sa-gate sbarb-gate))
+       (insts1    (list sbar-inst sa-inst sbarb-inst))
 
        ((when approxp)
         ;; less exact version: out = sa | sbarb
-        (b* ((out-gate (vl-make-binary-gateinst :vl-or out-expr sa-expr sbarb-expr nil *vl-fakeloc*)))
+        (b* ((out-inst (vl-simple-inst *vl-1-bit-or* "mk_out" out-expr sa-expr sbarb-expr)))
           (list (make-honsed-vl-module :name      name
                                        :origname  name
                                        :ports     ports
                                        :portdecls portdecls
                                        :netdecls  nets1
-                                       :gateinsts (cons out-gate gates1)
+                                       :modinsts  (cons out-inst insts1)
                                        :minloc    *vl-fakeloc*
-                                       :maxloc    *vl-fakeloc*))))
+                                       :maxloc    *vl-fakeloc*)
+                *vl-1-bit-not*
+                *vl-1-bit-and*
+                *vl-1-bit-or*)))
 
-       ((mv ab-expr ab-netdecl)     (vl-occform-mkwire "ab" 1))
-       ((mv main-expr main-netdecl) (vl-occform-mkwire "main" 1))
+       ((mv ab-expr ab-netdecl)     (vl-primitive-mkwire "ab"))
+       ((mv main-expr main-netdecl) (vl-primitive-mkwire "main"))
 
-       (ab-gate   (vl-make-binary-gateinst :vl-and ab-expr a-expr b-expr nil *vl-fakeloc*))
-       (main-gate (vl-make-binary-gateinst :vl-or main-expr sa-expr sbarb-expr nil *vl-fakeloc*))
-       (out-gate  (vl-make-binary-gateinst :vl-or out-expr main-expr ab-expr nil *vl-fakeloc*)))
+       (ab-inst   (vl-simple-inst *vl-1-bit-and* "mk_ab"   ab-expr   a-expr    b-expr))
+       (main-inst (vl-simple-inst *vl-1-bit-or*  "mk_main" main-expr sa-expr   sbarb-expr))
+       (out-inst  (vl-simple-inst *vl-1-bit-or*  "mk_out"  out-expr  main-expr ab-expr)))
 
     (list (make-honsed-vl-module :name      name
                                  :origname  name
                                  :ports     ports
                                  :portdecls portdecls
                                  :netdecls  (list* main-netdecl ab-netdecl nets1)
-                                 :gateinsts (list* out-gate main-gate ab-gate gates1)
+                                 :modinsts  (list* out-inst main-inst ab-inst insts1)
                                  :minloc    *vl-fakeloc*
-                                 :maxloc    *vl-fakeloc*))))
+                                 :maxloc    *vl-fakeloc*)
+          *vl-1-bit-not*
+          *vl-1-bit-and*
+          *vl-1-bit-or*)))
 
 (defconsts *vl-1-bit-mux*
   (car (vl-make-1-bit-mux nil)))
@@ -383,68 +403,12 @@ endmodule
 (defconsts *vl-1-bit-approx-mux*
   (car (vl-make-1-bit-mux t)))
 
-(defsection vl-make-n-bit-mux-aux
+#||
+(vl-pps-modulelist (list *vl-1-bit-mux*
+                         *vl-1-bit-approx-mux*))
+||#
 
-  (local (in-theory (disable vl-expr-p-when-vl-maybe-expr-p
-                             vl-expr-p-when-vl-atom-p
-                             vl-expr-p-when-member-equal-of-vl-exprlist-p
-                             vl-namefactory-p-when-wrong-tag
-                             vl-exprlist-p-when-subsetp-equal
-                             consp-under-iff-when-true-listp
-                             double-containment
-                             consp-when-member-equal-of-vl-moditem-alist-p
-                             consp-when-member-equal-of-cons-listp
-                             consp-by-len
-                             acl2::len-when-prefixp)))
-  (defund vl-make-n-bit-mux-aux
-    (outs ; list of output wires
-     sel  ; single select wire
-     as   ; list of A inputs
-     bs   ; list of B inputs
-     approxp ; approx-mux or regular mux
-     nf   ; name factory
-     )
-    "returns (MV MODINSTS NF')"
-    (declare (xargs :guard (and (vl-exprlist-p outs)
-                                (vl-expr-p sel)
-                                (vl-exprlist-p as)
-                                (vl-exprlist-p bs)
-                                (same-lengthp outs as)
-                                (same-lengthp outs bs)
-                                (vl-namefactory-p nf))))
-    (b* (((when (atom outs)) (mv nil nf))
-         ((mv inst1-name nf) (vl-namefactory-indexed-name "bit" nf))
-         (args (list (make-vl-plainarg :expr (car outs) :dir :vl-output :portname (hons-copy "out"))
-                     (make-vl-plainarg :expr sel        :dir :vl-input  :portname (hons-copy "sel"))
-                     (make-vl-plainarg :expr (car as)   :dir :vl-input  :portname (hons-copy "a"))
-                     (make-vl-plainarg :expr (car bs)   :dir :vl-input  :portname (hons-copy "b"))))
-         (inst1 (make-vl-modinst :instname  inst1-name
-                                 :modname   (vl-module->name
-                                             (if approxp
-                                                 *vl-1-bit-approx-mux*
-                                               *vl-1-bit-mux*))
-                                 :paramargs (vl-arguments nil nil)
-                                 :portargs  (vl-arguments nil args)
-                                 :loc       *vl-fakeloc*))
-         ((mv rest nf)
-          (vl-make-n-bit-mux-aux (cdr outs) sel (cdr as) (cdr bs) approxp nf)))
-      (mv (cons inst1 rest) nf)))
 
-  (defthm vl-make-n-bit-mux-aux-basics
-    (implies (and (force (vl-exprlist-p outs))
-                  (force (vl-expr-p sel))
-                  (force (vl-exprlist-p as))
-                  (force (vl-exprlist-p bs))
-                  (force (same-lengthp outs as))
-                  (force (same-lengthp outs bs))
-                  (force (vl-namefactory-p nf)))
-             (let ((ret (vl-make-n-bit-mux-aux outs sel as bs approxp nf)))
-               (and (vl-modinstlist-p (mv-nth 0 ret))
-                    (vl-namefactory-p (mv-nth 1 ret)))))
-    :hints(("Goal" :in-theory (enable (:induction vl-make-n-bit-mux-aux))
-            :induct t)
-           (and stable-under-simplificationp
-                '(:expand (vl-make-n-bit-mux-aux outs sel as bs approxp nf))))))
 
 (def-vl-modgen vl-make-n-bit-mux (n approxp)
   :short "Generate a wide multiplexor module."
@@ -492,84 +456,99 @@ T.</p>"
               (booleanp approxp))
 
   :body
-  (b* (((when (= n 1))
-        (list (if approxp *vl-1-bit-approx-mux* *vl-1-bit-mux*)))
+  (b* ((onebitmux (if approxp *vl-1-bit-approx-mux* *vl-1-bit-mux*))
+
+       ((when (= n 1))
+        (list onebitmux))
 
        (name (str::cat "VL_" (str::natstr n) "_BIT_" (if approxp "APPROX_MUX" "MUX")))
-       (nf (vl-empty-namefactory))
 
-       ((mv out-name nf) (vl-namefactory-plain-name "out" nf))
-       ((mv sel-name nf) (vl-namefactory-plain-name "sel" nf))
-       ((mv a-name   nf) (vl-namefactory-plain-name "a"   nf))
-       ((mv b-name   nf) (vl-namefactory-plain-name "b"   nf))
-
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport out-name :vl-output n))
-       ((mv sel-expr sel-port sel-portdecl sel-netdecl) (vl-occform-mkport sel-name :vl-input 1))
-       ((mv a-expr a-port a-portdecl a-netdecl)         (vl-occform-mkport a-name   :vl-input n))
-       ((mv b-expr b-port b-portdecl b-netdecl)         (vl-occform-mkport b-name   :vl-input n))
+       ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output n))
+       ((mv sel-expr sel-port sel-portdecl sel-netdecl) (vl-primitive-mkport "sel" :vl-input))
+       ((mv a-expr a-port a-portdecl a-netdecl)         (vl-occform-mkport "a"   :vl-input n))
+       ((mv b-expr b-port b-portdecl b-netdecl)         (vl-occform-mkport "b"   :vl-input n))
 
        (out-wires (vl-make-list-of-bitselects out-expr 0 (- n 1)))
        (a-wires   (vl-make-list-of-bitselects a-expr 0 (- n 1)))
        (b-wires   (vl-make-list-of-bitselects b-expr 0 (- n 1)))
 
-       ((mv modinsts nf) (vl-make-n-bit-mux-aux out-wires sel-expr a-wires b-wires approxp nf))
-
-       (- (vl-free-namefactory nf))
+       (insts     (vl-simple-inst-list onebitmux "bit" out-wires (repeat sel-expr n) a-wires b-wires))
 
        (mod  (make-vl-module :name      name
                              :origname  name
                              :ports     (list out-port sel-port a-port b-port)
                              :portdecls (list out-portdecl sel-portdecl a-portdecl b-portdecl)
                              :netdecls  (list out-netdecl sel-netdecl a-netdecl b-netdecl)
-                             :modinsts  modinsts
+                             :modinsts  insts
                              :minloc    *vl-fakeloc*
                              :maxloc    *vl-fakeloc*)))
-    (list mod (if approxp *vl-1-bit-approx-mux* *vl-1-bit-mux*))))
+    (list mod
+          onebitmux
+          *vl-1-bit-and*
+          *vl-1-bit-or*
+          *vl-1-bit-not*)))
+
+#||
+(vl-pps-modulelist (vl-make-n-bit-mux 5 t))
+(vl-pps-modulelist (vl-make-n-bit-mux 5 nil))
+||#
 
 
 
-(defsection vl-make-n-bit-zmux-aux
-  :parents (occform)
-  :short "Make a list of @(see *vl-1-bit-zmux*) instances."
 
-  (defund vl-make-n-bit-zmux-aux
-    (outs ; list of output wires
-     sel  ; single select wire
-     as   ; list of input wires
-     nf   ; name factory for unique-name generation
-     )
-    "Returns (MV MODINSTS NF')"
-    (declare (xargs :guard (and (vl-exprlist-p outs)
-                                (vl-expr-p sel)
-                                (vl-exprlist-p as)
-                                (same-lengthp outs as)
-                                (vl-namefactory-p nf))))
-    (b* (((when (atom outs))
-          (mv nil nf))
-         ((mv inst1-name nf) (vl-namefactory-indexed-name "bit" nf))
-         (args (list (make-vl-plainarg :expr (car outs) :dir :vl-output :portname (hons-copy "out"))
-                     (make-vl-plainarg :expr sel        :dir :vl-input  :portname (hons-copy "sel"))
-                     (make-vl-plainarg :expr (car as)   :dir :vl-input  :portname (hons-copy "a"))))
-         (inst1 (make-vl-modinst :instname  inst1-name
-                                 :modname   (vl-module->name *vl-1-bit-zmux*)
-                                 :paramargs (vl-arguments nil nil)
-                                 :portargs  (vl-arguments nil args)
-                                 :loc       *vl-fakeloc*))
-         ((mv rest nf)
-          (vl-make-n-bit-zmux-aux (cdr outs) sel (cdr as) nf)))
-      (mv (cons inst1 rest) nf)))
+;; (defsection vl-instance-1-bit-zmux
 
-  (defthm vl-make-n-bit-zmux-aux-basics
-    (implies (and (force (vl-exprlist-p outs))
-                  (force (vl-expr-p sel))
-                  (force (vl-exprlist-p as))
-                  (force (same-lengthp outs as))
-                  (force (vl-namefactory-p nf)))
-             (let ((ret (vl-make-n-bit-zmux-aux outs sel as nf)))
-               (and (vl-modinstlist-p (mv-nth 0 ret))
-                    (vl-namefactory-p (mv-nth 1 ret)))))
-    :hints(("Goal" :in-theory (enable vl-make-n-bit-zmux-aux)))))
+;;   (defund vl-instance-1-bit-zmux (instname out sel a)
+;;     (declare (xargs :guard (and (stringp instname)
+;;                                 (vl-expr-p out)
+;;                                 (vl-expr-p sel)
+;;                                 (vl-expr-p a))))
+;;     (make-vl-modinst :modname   (vl-module->name *vl-1-bit-zmux*)
+;;                      :instname  (hons-copy instname)
+;;                      :paramargs (vl-arguments nil nil)
+;;                      :portargs  (vl-arguments nil (list (make-vl-plainarg :expr out :dir :vl-output :portname (hons-copy "out"))
+;;                                                         (make-vl-plainarg :expr sel :dir :vl-input  :portname (hons-copy "sel"))
+;;                                                         (make-vl-plainarg :expr a   :dir :vl-input  :portname (hons-copy "a"))))
+;;                      :loc       *vl-fakeloc*))
 
+;;   (local (in-theory (enable vl-instance-1-bit-zmux)))
+
+;;   (defthm vl-modinst-p-of-vl-instance-1-bit-zmux
+;;     (implies (and (force (stringp instname))
+;;                   (force (vl-expr-p out))
+;;                   (force (vl-expr-p sel))
+;;                   (force (vl-expr-p a)))
+;;              (vl-modinst-p (vl-instance-1-bit-zmux instname out sel a)))))
+
+;; (defsection vl-instance-zmux-list
+
+;;   (defund vl-instance-zmux-list (out-wires sel-wires a-wires prefix n)
+;;     (declare (xargs :guard (and (vl-exprlist-p out-wires)
+;;                                 (vl-exprlist-p sel-wires)
+;;                                 (vl-exprlist-p a-wires)
+;;                                 (same-lengthp out-wires a-wires)
+;;                                 (same-lengthp out-wires sel-wires)
+;;                                 (stringp prefix)
+;;                                 (natp n))))
+;;     (if (atom out-wires)
+;;         nil
+;;       (cons (vl-instance-1-bit-zmux (hons-copy (str::cat prefix (str::natstr n)))
+;;                                     (car out-wires) (car sel-wires) (car a-wires))
+;;             (vl-instance-zmux-list (cdr out-wires) (cdr sel-wires) (cdr a-wires)
+;;                                    prefix (+ 1 n)))))
+
+;;   (local (in-theory (enable vl-instance-zmux-list)))
+
+;;   (defthm vl-modinstlist-p-of-vl-instance-zmux-list
+;;     (implies (and (force (vl-exprlist-p out-wires))
+;;                   (force (vl-exprlist-p sel-wires))
+;;                   (force (vl-exprlist-p a-wires))
+;;                   (force (same-lengthp out-wires a-wires))
+;;                   (force (same-lengthp out-wires sel-wires))
+;;                   (force (stringp prefix))
+;;                   (force (natp n)))
+;;              (vl-modinstlist-p (vl-instance-zmux-list out-wires sel-wires a-wires
+;;                                                       prefix n)))))
 
 (def-vl-modgen vl-make-n-bit-zmux (n)
   :short "Generate a wide tri-state buffer module."
@@ -601,76 +580,36 @@ this actually handles both cases.</p>"
         (list *vl-1-bit-zmux*))
 
        (name (hons-copy (str::cat "VL_" (str::natstr n) "_BIT_ZMUX")))
-       (nf   (vl-empty-namefactory))
 
-       ((mv out-name nf) (vl-namefactory-plain-name "out" nf))
-       ((mv a-name nf)   (vl-namefactory-plain-name "a" nf))
-       ((mv b-name nf)   (vl-namefactory-plain-name "b" nf))
-
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport out-name :vl-output n))
-       ((mv sel-expr sel-port sel-portdecl sel-netdecl) (vl-occform-mkport a-name :vl-input 1))
-       ((mv a-expr a-port a-portdecl a-netdecl)         (vl-occform-mkport b-name :vl-input n))
+       ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output n))
+       ((mv sel-expr sel-port sel-portdecl sel-netdecl) (vl-primitive-mkport "sel" :vl-input))
+       ((mv a-expr a-port a-portdecl a-netdecl)         (vl-occform-mkport "a"   :vl-input n))
 
        (out-wires        (vl-make-list-of-bitselects out-expr 0 (- n 1)))
        (a-wires          (vl-make-list-of-bitselects a-expr 0 (- n 1)))
-       ((mv modinsts nf) (vl-make-n-bit-zmux-aux out-wires sel-expr a-wires nf))
-
-       (- (vl-free-namefactory nf))
+       (insts            (vl-simple-inst-list *vl-1-bit-zmux* "bit" out-wires (repeat sel-expr n) a-wires))
 
        (mod (make-vl-module :name      name
                             :origname  name
                             :ports     (list out-port sel-port a-port)
                             :portdecls (list out-portdecl sel-portdecl a-portdecl)
                             :netdecls  (list out-netdecl sel-netdecl a-netdecl)
-                            :modinsts  modinsts
+                            :modinsts  insts
                             :minloc    *vl-fakeloc*
                             :maxloc    *vl-fakeloc*)))
 
     (list mod *vl-1-bit-zmux*)))
 
 
-
-
-
-(defsection vl-make-n-bit-ceq-insts
-  :parents (vl-make-n-bit-ceq)
-  :short "Generate a series of @(see *vl-1-bit-ceq*) instances."
-
-  (defund vl-make-n-bit-ceq-insts (name-index out-bits a-bits b-bits)
-    (declare (xargs :guard (and (natp name-index)
-                                (vl-exprlist-p out-bits)
-                                (vl-exprlist-p a-bits)
-                                (vl-exprlist-p b-bits)
-                                (same-lengthp out-bits a-bits)
-                                (same-lengthp out-bits b-bits))))
-    (b* (((when (atom out-bits))
-          nil)
-         (args  (list (make-vl-plainarg :expr (car out-bits) :dir :vl-output :portname (hons-copy "out"))
-                      (make-vl-plainarg :expr (car a-bits)   :dir :vl-input  :portname (hons-copy "a"))
-                      (make-vl-plainarg :expr (car b-bits)   :dir :vl-input  :portname (hons-copy "b"))))
-         (inst1 (make-vl-modinst :instname  (hons-copy (str::cat "bit_" (str::natstr name-index)))
-                                 :modname   (vl-module->name *vl-1-bit-ceq*)
-                                 :portargs  (vl-arguments nil args)
-                                 :paramargs (vl-arguments nil nil)
-                                 :loc       *vl-fakeloc*))
-         (rest  (vl-make-n-bit-ceq-insts (+ 1 name-index) (cdr out-bits) (cdr a-bits) (cdr b-bits))))
-      (cons inst1 rest)))
-
-  (defthm vl-modinstlist-p-of-vl-make-n-bit-ceq-insts
-    (implies (and (force (natp name-index))
-                  (force (vl-exprlist-p out-bits))
-                  (force (vl-exprlist-p a-bits))
-                  (force (vl-exprlist-p b-bits))
-                  (force (same-lengthp out-bits a-bits))
-                  (force (same-lengthp out-bits b-bits)))
-             (vl-modinstlist-p (vl-make-n-bit-ceq-insts name-index out-bits a-bits b-bits)))
-    :hints(("Goal" :in-theory (enable vl-make-n-bit-ceq-insts)))))
+#||
+(vl-pps-modulelist (vl-make-n-bit-zmux 5))
+||#
 
 
 
 
 (local (defthm crock
-         ;; BOZO shouldn't need this
+         ;; BOZO sholdn't need this, but DO NEED IT.  >=\
          (first (vl-make-n-bit-reduction-op type n))
          :hints(("Goal" :in-theory (enable vl-make-n-bit-reduction-op)))))
 
@@ -709,18 +648,12 @@ reduction-and the results.</p> "
        (tmp-wires (vl-make-list-of-bitselects tmp-expr 0 (- n 1)))
        (a-wires   (vl-make-list-of-bitselects a-expr 0 (- n 1)))
        (b-wires   (vl-make-list-of-bitselects b-expr 0 (- n 1)))
-       (insts     (vl-make-n-bit-ceq-insts 0 tmp-wires a-wires b-wires))
+       (insts     (vl-simple-inst-list *vl-1-bit-ceq* "bit" tmp-wires a-wires b-wires))
 
        ;; VL_N_BIT_REDUCTION_AND mk_out (out, tmp);
        (and-mods  (vl-make-n-bit-reduction-op :vl-unary-bitand n))
        (and-mod   (car and-mods))
-       (and-args  (list (make-vl-plainarg :expr out-expr :portname "out" :dir :vl-output)
-                        (make-vl-plainarg :expr tmp-expr :portname "in"  :dir :vl-input)))
-       (and-inst  (make-vl-modinst :modname   (vl-module->name and-mod)
-                                   :instname  (hons-copy "mk_out")
-                                   :paramargs (vl-arguments nil nil)
-                                   :portargs  (vl-arguments nil and-args)
-                                   :loc       *vl-fakeloc*)))
+       (and-inst  (vl-simple-inst and-mod "mk_out" out-expr tmp-expr)))
 
     (list* (make-vl-module :name      name
                            :origname  name
@@ -732,4 +665,8 @@ reduction-and the results.</p> "
                            :maxloc    *vl-fakeloc*)
            *vl-1-bit-ceq*
            and-mods)))
+
+#||
+(vl-pps-modulelist (vl-make-n-bit-ceq 5))
+||#
 

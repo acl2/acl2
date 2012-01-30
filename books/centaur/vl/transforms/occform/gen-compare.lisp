@@ -62,48 +62,25 @@ operation.)</p>"
   :body
   (b* ((name (hons-copy (str::cat "VL_" (str::natstr n) "_BIT_UNSIGNED_GTE")))
 
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output 1))
+       ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
        ((mv a-expr a-port a-portdecl a-netdecl)         (vl-occform-mkport "a" :vl-input n))
        ((mv b-expr b-port b-portdecl b-netdecl)         (vl-occform-mkport "b" :vl-input n))
 
        ((mv bnot-expr bnot-netdecl)  (vl-occform-mkwire "bnot" n))
        ((mv sum-expr sum-netdecl)    (vl-occform-mkwire "sum" n))
-       ((mv cout-expr cout-netdecl)  (vl-occform-mkwire "cout" 1))
+       ((mv cout-expr cout-netdecl)  (vl-primitive-mkwire "cout"))
 
        ;; assign bnot = ~b;
        ((cons bnot-mod bnot-support) (vl-make-n-bit-not n))
-       (bnot-args (list (make-vl-plainarg :expr bnot-expr :dir :vl-output :portname (hons-copy "out"))
-                        (make-vl-plainarg :expr b-expr    :dir :vl-input  :portname (hons-copy "in"))))
-       (bnot-inst (make-vl-modinst :modname   (vl-module->name bnot-mod)
-                                   :instname  (hons-copy "mk_bnot")
-                                   :paramargs (vl-arguments nil nil)
-                                   :portargs  (vl-arguments nil bnot-args)
-                                   :loc       *vl-fakeloc*))
+       (bnot-inst (vl-simple-inst bnot-mod "mk_bnot" bnot-expr b-expr))
 
        ;; VL_N_BIT_ADDER_CORE core (sum, cout, a, ~b, 1);
        ((cons core-mod core-support) (vl-make-n-bit-adder-core n))
-       (core-args (list (make-vl-plainarg :expr sum-expr         :dir :vl-output :portname (hons-copy "sum"))
-                        (make-vl-plainarg :expr cout-expr        :dir :vl-output :portname (hons-copy "cout"))
-                        (make-vl-plainarg :expr a-expr           :dir :vl-input  :portname (hons-copy "a"))
-                        (make-vl-plainarg :expr bnot-expr        :dir :vl-input  :portname (hons-copy "b"))
-                        (make-vl-plainarg :expr |*sized-1'b1*|   :dir :vl-input  :portname (hons-copy "cin"))))
-       (core-inst (make-vl-modinst :modname   (vl-module->name core-mod)
-                                   :instname  (hons-copy "core")
-                                   :paramargs (vl-arguments nil nil)
-                                   :portargs  (vl-arguments nil core-args)
-                                   :loc       *vl-fakeloc*))
+       (core-inst (vl-simple-inst core-mod "core" sum-expr cout-expr a-expr bnot-expr |*sized-1'b1*|))
 
        ;; cout is almost right, but we also need to detect xes
        ((cons xprop-mod xprop-support) (vl-make-n-bit-x-propagator n 1))
-       (xprop-args (list (make-vl-plainarg :expr out-expr  :dir :vl-output :portname (hons-copy "out"))
-                         (make-vl-plainarg :expr cout-expr :dir :vl-input  :portname (hons-copy "ans"))
-                         (make-vl-plainarg :expr a-expr    :dir :vl-input  :portname (hons-copy "a"))
-                         (make-vl-plainarg :expr b-expr    :dir :vl-input  :portname (hons-copy "b"))))
-       (xprop-inst (make-vl-modinst :modname   (vl-module->name xprop-mod)
-                                    :instname  (hons-copy "xprop")
-                                    :paramargs (vl-arguments nil nil)
-                                    :portargs  (vl-arguments nil xprop-args)
-                                    :loc       *vl-fakeloc*)))
+       (xprop-inst (vl-simple-inst xprop-mod "xprop" out-expr cout-expr a-expr b-expr)))
 
     (list* (make-vl-module :name      name
                            :origname  name
@@ -115,6 +92,11 @@ operation.)</p>"
                            :maxloc    *vl-fakeloc*)
            bnot-mod core-mod xprop-mod
            (append bnot-support core-support xprop-support))))
+
+#||
+(vl-pps-modulelist (vl-make-n-bit-unsigned-gte 10))
+||#
+
 
 
 
@@ -169,24 +151,24 @@ endmodule
 
     (b* ((name (hons-copy "VL_1_BIT_SIGNED_GTE"))
 
-         ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output 1))
-         ((mv a-expr a-port a-portdecl a-netdecl)         (vl-occform-mkport "a" :vl-input 1))
-         ((mv b-expr b-port b-portdecl b-netdecl)         (vl-occform-mkport "b" :vl-input 1))
+         ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
+         ((mv a-expr a-port a-portdecl a-netdecl)         (vl-primitive-mkport "a" :vl-input))
+         ((mv b-expr b-port b-portdecl b-netdecl)         (vl-primitive-mkport "b" :vl-input))
 
-         ((mv bbar-expr bbar-netdecl)       (vl-occform-mkwire "bbar" 1))
-         ((mv mainbar-expr mainbar-netdecl) (vl-occform-mkwire "mainbar" 1))
-         ((mv main-expr main-netdecl)       (vl-occform-mkwire "main" 1))
-         ((mv xa-expr xa-netdecl)           (vl-occform-mkwire "xa" 1))
-         ((mv xb-expr xb-netdecl)           (vl-occform-mkwire "xb" 1))
-         ((mv xab-expr xab-netdecl)         (vl-occform-mkwire "xab" 1))
+         ((mv bbar-expr bbar-netdecl)       (vl-primitive-mkwire "bbar"))
+         ((mv mainbar-expr mainbar-netdecl) (vl-primitive-mkwire "mainbar"))
+         ((mv main-expr main-netdecl)       (vl-primitive-mkwire "main"))
+         ((mv xa-expr xa-netdecl)           (vl-primitive-mkwire "xa"))
+         ((mv xb-expr xb-netdecl)           (vl-primitive-mkwire "xb"))
+         ((mv xab-expr xab-netdecl)         (vl-primitive-mkwire "xab"))
 
-         (bbar-gate    (vl-make-unary-gateinst  :vl-not bbar-expr    b-expr                 nil nil))
-         (mainbar-gate (vl-make-binary-gateinst :vl-and mainbar-expr a-expr       bbar-expr nil nil))
-         (main-gate    (vl-make-unary-gateinst  :vl-not main-expr    mainbar-expr           nil nil))
-         (xb-gate      (vl-make-binary-gateinst :vl-xor xb-expr      b-expr       b-expr    nil nil))
-         (xa-gate      (vl-make-binary-gateinst :vl-xor xa-expr      a-expr       a-expr    nil nil))
-         (xab-gate     (vl-make-binary-gateinst :vl-xor xab-expr     xa-expr      xb-expr   nil nil))
-         (out-gate     (vl-make-binary-gateinst :vl-xor out-expr     xab-expr     main-expr nil nil)))
+         (bbar-inst    (vl-simple-inst *vl-1-bit-not* "mk_bbar"    bbar-expr    b-expr))
+         (mainbar-inst (vl-simple-inst *vl-1-bit-and* "mk_mainbar" mainbar-expr a-expr       bbar-expr))
+         (main-inst    (vl-simple-inst *vl-1-bit-not* "mk_main"    main-expr    mainbar-expr))
+         (xb-inst      (vl-simple-inst *vl-1-bit-xor* "mk_xb"      xb-expr      b-expr       b-expr))
+         (xa-inst      (vl-simple-inst *vl-1-bit-xor* "mk_xa"      xa-expr      a-expr       a-expr))
+         (xab-inst     (vl-simple-inst *vl-1-bit-xor* "mk_xab"     xab-expr     xa-expr      xb-expr))
+         (out-inst     (vl-simple-inst *vl-1-bit-xor* "mk_out"     out-expr     xab-expr     main-expr)))
 
       (make-vl-module :name      name
                       :origname  name
@@ -195,11 +177,14 @@ endmodule
                       :netdecls  (list out-netdecl a-netdecl b-netdecl
                                        bbar-netdecl mainbar-netdecl main-netdecl
                                        xa-netdecl xb-netdecl xab-netdecl)
-                      :gateinsts (list bbar-gate mainbar-gate main-gate
-                                       xa-gate xb-gate xab-gate out-gate)
+                      :modinsts (list bbar-inst mainbar-inst main-inst
+                                       xa-inst xb-inst xab-inst out-inst)
                       :minloc    *vl-fakeloc*
                       :maxloc    *vl-fakeloc*))))
 
+#||
+(vl-pps-module *vl-1-bit-signed-gte*)
+||#
 
 (def-vl-modgen vl-make-n-bit-signed-gte (n)
   :short "Generate a signed greater-than or equal comparison module."
@@ -237,14 +222,14 @@ ordinary unsigned comparisons work in the other cases.</p>"
 
        (name (hons-copy (str::cat "VL_" (str::natstr n) "_BIT_SIGNED_GTE")))
 
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output 1))
+       ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
        ((mv a-expr a-port a-portdecl a-netdecl)         (vl-occform-mkport "a" :vl-input n))
        ((mv b-expr b-port b-portdecl b-netdecl)         (vl-occform-mkport "b" :vl-input n))
 
-       ((mv sdiff-expr sdiff-netdecl) (vl-occform-mkwire "signs_differ" 1))  ;; do signs differ?
-       ((mv adiff-expr adiff-netdecl) (vl-occform-mkwire "ans_differ" 1))    ;; answer when signs differ
-       ((mv asame-expr asame-netdecl) (vl-occform-mkwire "ans_same" 1))      ;; answer when signs are the same
-       ((mv main-expr main-netdecl)   (vl-occform-mkwire "main" 1))          ;; final answer except for x detection
+       ((mv sdiff-expr sdiff-netdecl) (vl-primitive-mkwire "signs_differ"))  ;; do signs differ?
+       ((mv adiff-expr adiff-netdecl) (vl-primitive-mkwire "ans_differ"))    ;; answer when signs differ
+       ((mv asame-expr asame-netdecl) (vl-primitive-mkwire "ans_same"))      ;; answer when signs are the same
+       ((mv main-expr main-netdecl)   (vl-primitive-mkwire "main"))          ;; final answer except for x detection
 
        (a-msb  (vl-make-bitselect a-expr (- n 1)))
        (b-msb  (vl-make-bitselect b-expr (- n 1)))
@@ -252,53 +237,29 @@ ordinary unsigned comparisons work in the other cases.</p>"
        (b-tail (vl-make-partselect b-expr (- n 2) 0))
 
        ;; xor(signs_differ, a[n-1], b[n-1]);
-       (sdiff-gate (vl-make-binary-gateinst :vl-xor sdiff-expr a-msb b-msb nil nil))
+       (sdiff-inst (vl-simple-inst *vl-1-bit-xor* "mk_sdiff" sdiff-expr a-msb b-msb))
 
        ;; not(ans_differ, a[n-1]);    --- explanation:
        ;;
        ;;      a_msb     b_msb    answer
        ;;        0         1        a positive, b negative, answer is 1
        ;;        1         0        a negative, b positive, answer is 0
-       (adiff-gate (vl-make-unary-gateinst :vl-not adiff-expr a-msb nil nil))
+       (adiff-inst (vl-simple-inst *vl-1-bit-not* "mk_adiff" adiff-expr a-msb))
 
        ;; BOZO would be nice to have a GTE_CORE that doesn't do X detection.  Currently
        ;; this core will do its own X-detection unnecessarily.
 
        ;; VL_{N-1}_BIT_UNSIGNED_GTE core (ans_same, a[n-2:0], b[n-2:0]);
        ((cons ucmp-mod ucmp-support) (vl-make-n-bit-unsigned-gte (- n 1)))
-       (ucmp-args (list (make-vl-plainarg :expr asame-expr :dir :vl-output :portname (hons-copy "out"))
-                        (make-vl-plainarg :expr a-tail     :dir :vl-input  :portname (hons-copy "a"))
-                        (make-vl-plainarg :expr b-tail     :dir :vl-input  :portname (hons-copy "b"))))
-       (ucmp-inst (make-vl-modinst :modname   (vl-module->name ucmp-mod)
-                                   :instname  (hons-copy "core")
-                                   :paramargs (vl-arguments nil nil)
-                                   :portargs  (vl-arguments nil ucmp-args)
-                                   :loc       *vl-fakeloc*))
-
+       (ucmp-inst (vl-simple-inst ucmp-mod "core" asame-expr a-tail b-tail))
 
        ;; VL_1_BIT_MUX mux (main, signs_differ, ans_differ, ans_same);
        ((cons mux-mod mux-support) (vl-make-n-bit-mux 1 t))
-       (mux-args (list (make-vl-plainarg :expr main-expr  :dir :vl-output :portname (hons-copy "out"))
-                       (make-vl-plainarg :expr sdiff-expr :dir :vl-input  :portname (hons-copy "sel"))
-                       (make-vl-plainarg :expr adiff-expr :dir :vl-input  :portname (hons-copy "a"))
-                       (make-vl-plainarg :expr asame-expr :dir :vl-input  :portname (hons-copy "b"))))
-       (mux-inst (make-vl-modinst :modname   (vl-module->name mux-mod)
-                                  :instname  (hons-copy "mux")
-                                  :paramargs (vl-arguments nil nil)
-                                  :portargs  (vl-arguments nil mux-args)
-                                  :loc       *vl-fakeloc*))
+       (mux-inst (vl-simple-inst mux-mod "mux" main-expr sdiff-expr adiff-expr asame-expr))
 
        ;; VL_N_BY_1_XPROP xprop (out, main, a, b);
        ((cons xprop-mod xprop-support) (vl-make-n-bit-x-propagator n 1))
-       (xprop-args (list (make-vl-plainarg :expr out-expr  :dir :vl-output :portname (hons-copy "out"))
-                         (make-vl-plainarg :expr main-expr :dir :vl-input  :portname (hons-copy "ans"))
-                         (make-vl-plainarg :expr a-expr    :dir :vl-input  :portname (hons-copy "a"))
-                         (make-vl-plainarg :expr b-expr    :dir :vl-input  :portname (hons-copy "b"))))
-       (xprop-inst (make-vl-modinst :modname   (vl-module->name xprop-mod)
-                                    :instname  (hons-copy "xprop")
-                                    :paramargs (vl-arguments nil nil)
-                                    :portargs  (vl-arguments nil xprop-args)
-                                    :loc       *vl-fakeloc*)))
+       (xprop-inst (vl-simple-inst xprop-mod "xprop" out-expr main-expr a-expr b-expr)))
 
     (list* (make-vl-module :name      name
                            :origname  name
@@ -306,14 +267,17 @@ ordinary unsigned comparisons work in the other cases.</p>"
                            :portdecls (list out-portdecl a-portdecl b-portdecl)
                            :netdecls  (list out-netdecl a-netdecl b-netdecl
                                             sdiff-netdecl adiff-netdecl asame-netdecl main-netdecl)
-                           :gateinsts (list sdiff-gate adiff-gate)
-                           :modinsts  (list ucmp-inst mux-inst xprop-inst)
+                           :modinsts  (list sdiff-inst adiff-inst ucmp-inst mux-inst xprop-inst)
                            :minloc    *vl-fakeloc*
                            :maxloc    *vl-fakeloc*)
            ucmp-mod
            mux-mod
            xprop-mod
            (append mux-support xprop-support ucmp-support))))
+
+#||
+(vl-pps-modulelist (vl-make-n-bit-signed-gte 10))
+||#
 
 
 

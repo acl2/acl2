@@ -56,25 +56,25 @@ endmodule
   (defconst *vl-1-bit-mult*
     (b* ((name (hons-copy "VL_1_BIT_MULT"))
 
-         ((mv o-expr o-port o-portdecl o-netdecl) (vl-occform-mkport "o" :vl-output 1))
-         ((mv a-expr a-port a-portdecl a-netdecl) (vl-occform-mkport "a" :vl-input 1))
-         ((mv b-expr b-port b-portdecl b-netdecl) (vl-occform-mkport "b" :vl-input 1))
+         ((mv o-expr o-port o-portdecl o-netdecl) (vl-primitive-mkport "o" :vl-output))
+         ((mv a-expr a-port a-portdecl a-netdecl) (vl-primitive-mkport "a" :vl-input))
+         ((mv b-expr b-port b-portdecl b-netdecl) (vl-primitive-mkport "b" :vl-input))
 
-         ((mv p0-expr p0-netdecl) (vl-occform-mkwire "p0" 1))
-         ((mv x0-expr x0-netdecl) (vl-occform-mkwire "x0" 1))
-         ((mv x1-expr x1-netdecl) (vl-occform-mkwire "x1" 1))
+         ((mv p0-expr p0-netdecl) (vl-primitive-mkwire "p0"))
+         ((mv x0-expr x0-netdecl) (vl-primitive-mkwire "x0"))
+         ((mv x1-expr x1-netdecl) (vl-primitive-mkwire "x1"))
 
-         (p0-gate (vl-make-binary-gateinst :vl-and p0-expr a-expr  b-expr  nil nil))
-         (x0-gate (vl-make-binary-gateinst :vl-xor x0-expr a-expr  b-expr  nil nil))
-         (x1-gate (vl-make-binary-gateinst :vl-xor x1-expr x0-expr x0-expr nil nil))
-         (o-gate  (vl-make-binary-gateinst :vl-xor o-expr  p0-expr x1-expr nil nil)))
+         (p0-inst (vl-simple-inst *vl-1-bit-and* "mk_p0" p0-expr a-expr  b-expr))
+         (x0-inst (vl-simple-inst *vl-1-bit-xor* "mk_x0" x0-expr a-expr  b-expr))
+         (x1-inst (vl-simple-inst *vl-1-bit-xor* "mk_x1" x1-expr x0-expr x0-expr))
+         (o-inst  (vl-simple-inst *vl-1-bit-xor* "mk_o"  o-expr  p0-expr x1-expr)))
 
       (make-vl-module :name      name
                       :origname  name
                       :ports     (list o-port a-port b-port)
                       :portdecls (list o-portdecl a-portdecl b-portdecl)
                       :netdecls  (list o-netdecl a-netdecl b-netdecl p0-netdecl x0-netdecl x1-netdecl)
-                      :gateinsts (list p0-gate x0-gate x1-gate o-gate)
+                      :modinsts  (list p0-inst x0-inst x1-inst o-inst)
                       :minloc    *vl-fakeloc*
                       :maxloc    *vl-fakeloc*))))
 
@@ -120,10 +120,10 @@ endmodule
          (posp (- (nfix n) (nfix i))))))
 
 
-(defsection vl-partprod-gates
+(defsection vl-partprod-insts
 
-  (defund vl-partprod-gates-aux (i n)
-    ;; Create gates that drive pi, the i-th, shifted partial product for an
+  (defund vl-partprod-insts-aux (i n)
+    ;; Create instances that drive pi, the i-th, shifted partial product for an
     ;; n-bit multiplier
     (declare (xargs :guard (and (natp i)
                                 (natp n)
@@ -146,12 +146,14 @@ endmodule
          (b-high (take (len p-high) b-bits))
          (b-low  (repeat |*sized-1'b0*| (len p-low)))
 
-         (ands (vl-make-binary-gateinstlist :vl-and p-high a-high b-high nil))
-         (bufs (vl-make-unary-gateinstlist :vl-buf p-low b-low nil)))
+         (ands (vl-simple-inst-list *vl-1-bit-and* (str::cat "mk_" p-name "_high")
+                                    p-high a-high b-high))
+         (bufs (vl-simple-inst-list *vl-1-bit-buf* (str::cat "mk_" p-name "_low")
+                                    p-low b-low nil)))
       (revappend ands (reverse bufs))))
 
-  (defund vl-partprod-gates (i n)
-    ;; Create gates that drive all all pi (0 <= i < n), all partial products
+  (defund vl-partprod-insts (i n)
+    ;; Create instances that drive all all pi (0 <= i < n), all partial products
     ;; for an n-bit multiplier
     (declare (xargs :guard (and (natp i)
                                 (natp n)
@@ -159,83 +161,30 @@ endmodule
                     :measure (nfix (- (nfix n) (nfix i)))))
     (if (zp (- (nfix n) (nfix i)))
         nil
-      (append (vl-partprod-gates-aux i n)
-              (vl-partprod-gates (+ 1 (nfix i)) n))))
+      (append (vl-partprod-insts-aux i n)
+              (vl-partprod-insts (+ 1 (nfix i)) n))))
 
-  (defthm vl-gateinstlist-p-of-vl-partprod-gates-aux
+  (defthm vl-modinstlist-p-of-vl-partprod-insts-aux
     (implies (and (force (natp i))
                   (force (natp n))
                   (force (< i n)))
-             (vl-gateinstlist-p (vl-partprod-gates-aux i n)))
-    :hints(("Goal" :in-theory (enable vl-partprod-gates-aux))))
+             (vl-modinstlist-p (vl-partprod-insts-aux i n)))
+    :hints(("Goal" :in-theory (enable vl-partprod-insts-aux))))
 
-  (defthm vl-gateinstlist-p-of-vl-partprod-gates
+  (defthm vl-modinstlist-p-of-vl-partprod-insts
     (implies (and (force (natp i))
                   (force (natp n))
                   (force (<= i n)))
-             (vl-gateinstlist-p (vl-partprod-gates i n)))
-    :hints(("Goal" :in-theory (enable vl-partprod-gates)))))
+             (vl-modinstlist-p (vl-partprod-insts i n)))
+    :hints(("Goal" :in-theory (enable vl-partprod-insts)))))
 
 
-
-(defsection vl-mult-adders
-
-  (defund vl-mult-adders (i modname sums couts as bs cins)
-    (declare (xargs :guard (and (natp i)
-                                (stringp modname)
-                                (vl-exprlist-p sums)
-                                (vl-exprlist-p couts)
-                                (vl-exprlist-p as)
-                                (vl-exprlist-p bs)
-                                (vl-exprlist-p cins)
-                                (same-lengthp sums couts)
-                                (same-lengthp sums as)
-                                (same-lengthp sums bs)
-                                (same-lengthp sums cins))))
-    (b* (((when (atom sums))
-          nil)
-         (instname (hons-copy (str::cat "add" (str::natstr i))))
-         (args (list (make-vl-plainarg :expr (car sums)  :dir :vl-output :portname (hons-copy "sum"))
-                     (make-vl-plainarg :expr (car couts) :dir :vl-output :portname (hons-copy "cout"))
-                     (make-vl-plainarg :expr (car as)    :dir :vl-input  :portname (hons-copy "a"))
-                     (make-vl-plainarg :expr (car bs)    :dir :vl-input  :portname (hons-copy "b"))
-                     (make-vl-plainarg :expr (car cins)  :dir :vl-input  :portname (hons-copy "cin"))))
-         (inst (make-vl-modinst :modname   modname
-                                :instname  instname
-                                :paramargs (vl-arguments nil nil)
-                                :portargs  (vl-arguments nil args)
-                                :loc       *vl-fakeloc*)))
-      (cons inst
-            (vl-mult-adders (+ i 1) modname (cdr sums) (cdr couts) (cdr as) (cdr bs) (cdr cins)))))
-
-  (defthm vl-modinstlist-p-of-vl-mult-adders
-    (implies (and (force (natp i))
-                  (force (stringp modname))
-                  (force (vl-exprlist-p sums))
-                  (force (vl-exprlist-p couts))
-                  (force (vl-exprlist-p as))
-                  (force (vl-exprlist-p bs))
-                  (force (vl-exprlist-p cins))
-                  (force (same-lengthp sums couts))
-                  (force (same-lengthp sums as))
-                  (force (same-lengthp sums bs))
-                  (force (same-lengthp sums cins)))
-             (vl-modinstlist-p (vl-mult-adders i modname sums couts as bs cins)))
-    :hints(("Goal" :in-theory (enable vl-mult-adders)))))
-
-
-
-(local (defthm len-of-cdr
-           (equal (len (cdr x))
-                  (if (consp x)
-                      (1- (len x))
-                    0))))
 
 (def-vl-modgen vl-make-n-bit-mult (n)
   :short "Generate an multiplier module."
 
   :long "<p>We produce <tt>VL_N_BIT_MULT</tt> for the given <tt>n</tt>, which
-is written using gates but is semantically equal to:</p>
+is written using @(see primitives) but is semantically equal to:</p>
 
 <code>
 module VL_N_BIT_MULT (out, a, b) ;
@@ -278,8 +227,8 @@ circuitry.</p>"
        (s-exprs    (vl-make-idexpr-list (vl-netdecllist->names s-netdecls) n :vl-unsigned))
        (c-exprs    (vl-make-idexpr-list (vl-netdecllist->names c-netdecls) 1 :vl-unsigned))
 
-       ;; gates that generate the partial products
-       (p-gates    (vl-partprod-gates 0 n))
+       ;; instances that generate the partial products
+       (p-insts    (vl-partprod-insts 0 n))
 
        ;; adders that sum up the shifted partial products
        ;; the final result ends up in (car (last s-exprs)).
@@ -288,13 +237,12 @@ circuitry.</p>"
        ;; instead of full VL_N_BIT_ADDER modules.
        (adder-mods (vl-make-n-bit-adder-core n))
        (adder-mod  (car adder-mods))
-       (adders     (vl-mult-adders 0
-                                   (vl-module->name adder-mod)
-                                   s-exprs
-                                   c-exprs
-                                   (cons (car p-exprs) (butlast s-exprs 1))
-                                   (cdr p-exprs)
-                                   (repeat |*sized-1'b0*| (- n 1))))
+       (adders     (vl-simple-inst-list adder-mod "add"
+                                        s-exprs
+                                        c-exprs
+                                        (cons (car p-exprs) (butlast s-exprs 1))
+                                        (cdr p-exprs)
+                                        (repeat |*sized-1'b0*| (- n 1))))
 
        ;; this is the answer except for x-detection
        (ans (car (last s-exprs)))
@@ -302,15 +250,7 @@ circuitry.</p>"
        ;; generate x-detection stuff.
        (xprop-modules (vl-make-n-bit-x-propagator n n))
        (xprop-mod     (car xprop-modules))
-       (xprop-args    (list (make-vl-plainarg :expr o-expr :dir :vl-output :portname (hons-copy "out"))
-                            (make-vl-plainarg :expr ans    :dir :vl-input  :portname (hons-copy "ans"))
-                            (make-vl-plainarg :expr a-expr :dir :vl-input  :portname (hons-copy "a"))
-                            (make-vl-plainarg :expr b-expr :dir :vl-input  :portname (hons-copy "b"))))
-       (xprop-inst (make-vl-modinst :instname  (hons-copy "xprop")
-                                    :modname   (vl-module->name xprop-mod)
-                                    :paramargs (vl-arguments nil nil)
-                                    :portargs  (vl-arguments nil xprop-args)
-                                    :loc       *vl-fakeloc*))
+       (xprop-inst    (vl-simple-inst xprop-mod "xprop" o-expr ans a-expr b-expr))
 
        (mod (make-vl-module :name      name
                             :origname  name
@@ -318,11 +258,14 @@ circuitry.</p>"
                             :portdecls (list o-portdecl a-portdecl b-portdecl)
                             :netdecls  (list* o-netdecl a-netdecl b-netdecl
                                               (append p-netdecls s-netdecls c-netdecls))
-                            :modinsts  (append adders (list xprop-inst))
-                            :gateinsts p-gates
+                            :modinsts  (append p-insts adders (list xprop-inst))
                             :minloc    *vl-fakeloc*
                             :maxloc    *vl-fakeloc*)))
 
     (list* mod (append adder-mods xprop-modules))))
 
 
+#||
+(vl-pps-module *vl-1-bit-mult*)
+(vl-pps-modulelist (vl-make-n-bit-mult 3))
+||#

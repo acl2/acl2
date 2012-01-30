@@ -281,15 +281,9 @@ occurrences."
                    (:vl-binary-xnor   "vl_bxnor")))
        ((mv instname nf) (vl-namefactory-indexed-name basename nf))
        (mods (vl-make-n-bit-binary-op gtype (vl-expr->finalwidth x.lvalue)))
-       (args (list (make-vl-plainarg :expr x.lvalue :dir :vl-output :portname (hons-copy "out"))
-                   (make-vl-plainarg :expr arg1     :dir :vl-input  :portname (hons-copy "a"))
-                   (make-vl-plainarg :expr arg2     :dir :vl-input  :portname (hons-copy "b"))))
-       (modinst (make-vl-modinst :modname   (vl-module->name (car mods))
-                                 :instname  instname
-                                 :paramargs (vl-arguments nil nil)
-                                 :portargs  (vl-arguments nil args)
-                                 :atts      x.atts
-                                 :loc       x.loc)))
+       (modinst (vl-simple-instantiate (car mods) instname
+                                       (list x.lvalue arg1 arg2)
+                                       :loc x.loc)))
     (occform-return :mods mods
                     :modinsts (list modinst))))
 
@@ -321,14 +315,9 @@ occurrences."
 
        ((mv instname nf) (vl-namefactory-indexed-name "vl_unot" nf))
        (mods (vl-make-n-bit-not width))
-       (args (list (make-vl-plainarg :expr x.lvalue :dir :vl-output :portname (hons-copy "out"))
-                   (make-vl-plainarg :expr arg1     :dir :vl-input  :portname (hons-copy "in"))))
-       (modinst (make-vl-modinst :modname   (vl-module->name (car mods))
-                                 :instname  instname
-                                 :paramargs (vl-arguments nil nil)
-                                 :portargs  (vl-arguments nil args)
-                                 :atts      x.atts
-                                 :loc       x.loc)))
+       (modinst (vl-simple-instantiate (car mods) instname
+                                       (list x.lvalue arg1)
+                                       :loc x.loc)))
     (occform-return :mods mods
                     :modinsts (list modinst))))
 
@@ -365,14 +354,9 @@ concatenation of wires.</p>"
        ;; figure out how to do something a little smarter here.
        ((mv instname nf) (vl-namefactory-indexed-name "vl_ass" nf))
        (mods (vl-make-n-bit-assign width))
-       (args (list (make-vl-plainarg :expr x.lvalue :dir :vl-output :portname (hons-copy "out"))
-                   (make-vl-plainarg :expr x.expr   :dir :vl-input  :portname (hons-copy "in"))))
-       (modinst (make-vl-modinst :modname   (vl-module->name (car mods))
-                                 :instname  instname
-                                 :paramargs (vl-arguments nil nil)
-                                 :portargs  (vl-arguments nil args)
-                                 :atts      x.atts
-                                 :loc       x.loc)))
+       (modinst (vl-simple-instantiate (car mods) instname
+                                       (list x.lvalue x.expr)
+                                       :loc x.loc)))
     (occform-return :mods mods
                     :modinsts (list modinst))))
 
@@ -416,14 +400,9 @@ module instance."
                    (:vl-unary-xor    "vl_uxor")))
        ((mv instname nf) (vl-namefactory-indexed-name basename nf))
        (mods (vl-make-n-bit-reduction-op op (vl-expr->finalwidth arg)))
-       (args (list (make-vl-plainarg :expr x.lvalue :dir :vl-output :portname (hons-copy "out"))
-                   (make-vl-plainarg :expr arg      :dir :vl-input  :portname (hons-copy "in"))))
-       (modinst (make-vl-modinst :modname   (vl-module->name (car mods))
-                                 :instname  instname
-                                 :paramargs (vl-arguments nil nil)
-                                 :portargs  (vl-arguments nil args)
-                                 :atts      x.atts
-                                 :loc       x.loc)))
+       (modinst (vl-simple-instantiate (car mods) instname
+                                       (list x.lvalue arg)
+                                       :loc x.loc)))
     (occform-return :mods mods
                     :modinsts (list modinst))))
 
@@ -480,15 +459,9 @@ module instance."
 
        ((mv instname nf) (vl-namefactory-indexed-name basename nf))
        (mods (vl-make-n-bit-plusminus op width))
-       (args (list (make-vl-plainarg :expr x.lvalue :dir :vl-output :portname (hons-copy "sum"))
-                   (make-vl-plainarg :expr arg1     :dir :vl-input  :portname (hons-copy "a"))
-                   (make-vl-plainarg :expr arg2     :dir :vl-input  :portname (hons-copy "b"))))
-       (modinst (make-vl-modinst :modname   (vl-module->name (car mods))
-                                 :instname  instname
-                                 :paramargs (vl-arguments nil nil)
-                                 :portargs  (vl-arguments nil args)
-                                 :atts      x.atts
-                                 :loc       x.loc)))
+       (modinst (vl-simple-instantiate (car mods) instname
+                                       (list x.lvalue arg1 arg2)
+                                       :loc x.loc)))
     (occform-return :mods mods
                     :modinsts (list modinst))))
 
@@ -523,7 +496,7 @@ module instance."
 
        (warnings (if (eq type :vl-unsigned)
                      warnings
-                   (cons (make-vl-warning :type :vl-signed-addition
+                   (cons (make-vl-warning :type :vl-signed-multiplication
                                           :msg "~a0: make sure signed multiplication is right."
                                           :args (list x)
                                           :fatalp nil
@@ -533,15 +506,9 @@ module instance."
        (basename "vl_mult")
        ((mv instname nf) (vl-namefactory-indexed-name basename nf))
        (mods (vl-make-n-bit-mult width))
-       (args (list (make-vl-plainarg :expr x.lvalue :dir :vl-output :portname (hons-copy "o"))
-                   (make-vl-plainarg :expr arg1     :dir :vl-input  :portname (hons-copy "a"))
-                   (make-vl-plainarg :expr arg2     :dir :vl-input  :portname (hons-copy "b"))))
-       (modinst (make-vl-modinst :modname   (vl-module->name (car mods))
-                                 :instname instname
-                                 :paramargs (vl-arguments nil nil)
-                                 :portargs  (vl-arguments nil args)
-                                 :atts      x.atts
-                                 :loc       x.loc)))
+       (modinst (vl-simple-instantiate (car mods) instname
+                                       (list x.lvalue arg1 arg2)
+                                       :loc x.loc)))
     (occform-return :mods mods
                     :modinsts (list modinst))))
 
@@ -598,15 +565,9 @@ module instance."
        (mods (if (eq arg1type :vl-unsigned)
                  (vl-make-n-bit-unsigned-gte arg1width)
                (vl-make-n-bit-signed-gte arg1width)))
-       (args (list (make-vl-plainarg :expr x.lvalue :dir :vl-output :portname (hons-copy "out"))
-                   (make-vl-plainarg :expr arg1     :dir :vl-input  :portname (hons-copy "a"))
-                   (make-vl-plainarg :expr arg2     :dir :vl-input  :portname (hons-copy "b"))))
-       (modinst (make-vl-modinst :modname   (vl-module->name (car mods))
-                                 :instname  instname
-                                 :paramargs (vl-arguments nil nil)
-                                 :portargs  (vl-arguments nil args)
-                                 :atts      x.atts
-                                 :loc       x.loc)))
+       (modinst (vl-simple-instantiate (car mods) instname
+                                       (list x.lvalue arg1 arg2)
+                                       :loc x.loc)))
     (occform-return :mods mods
                     :modinsts (list modinst))))
 
@@ -668,16 +629,10 @@ is <tt>X</tt> or <tt>Z</tt>.</p>"
        ((when (vl-zatom-p b))
         ;; Found "a ? b : z" -- make a zmux.
         (b* (((mv instname nf) (vl-namefactory-indexed-name "vl_zmux" nf))
-             (mods (vl-make-n-bit-zmux width))
-             (args (list (make-vl-plainarg :expr x.lvalue :dir :vl-output :portname (hons-copy "out"))
-                         (make-vl-plainarg :expr sel      :dir :vl-input  :portname (hons-copy "sel"))
-                         (make-vl-plainarg :expr a        :dir :vl-input  :portname (hons-copy "a"))))
-             (modinst (make-vl-modinst :modname   (vl-module->name (car mods))
-                                       :instname  instname
-                                       :paramargs (vl-arguments nil nil)
-                                       :portargs  (vl-arguments nil args)
-                                       :atts      x.atts
-                                       :loc       x.loc)))
+             (mods    (vl-make-n-bit-zmux width))
+             (modinst (vl-simple-instantiate (car mods) instname
+                                             (list x.lvalue sel a)
+                                             :loc x.loc)))
           (occform-return :mods mods
                           :modinsts (list modinst))))
 
@@ -688,16 +643,9 @@ is <tt>X</tt> or <tt>Z</tt>.</p>"
        (approxp (not (hons-assoc-equal "VL_X_SELECT" (vl-nonatom->atts x.expr))))
 
        (mods (vl-make-n-bit-mux width approxp))
-       (args (list (make-vl-plainarg :expr x.lvalue :dir :vl-output :portname (hons-copy "out"))
-                   (make-vl-plainarg :expr sel      :dir :vl-input  :portname (hons-copy "sel"))
-                   (make-vl-plainarg :expr a        :dir :vl-input  :portname (hons-copy "a"))
-                   (make-vl-plainarg :expr b        :dir :vl-input  :portname (hons-copy "b"))))
-       (modinst (make-vl-modinst :modname   (vl-module->name (car mods))
-                                 :instname  instname
-                                 :paramargs (vl-arguments nil nil)
-                                 :portargs  (vl-arguments nil args)
-                                 :atts      x.atts
-                                 :loc       x.loc)))
+       (modinst (vl-simple-instantiate (car mods) instname
+                                       (list x.lvalue sel a b)
+                                       :loc x.loc)))
     (occform-return :mods mods
                     :modinsts (list modinst))))
 
@@ -747,15 +695,9 @@ is <tt>X</tt> or <tt>Z</tt>.</p>"
        (mods (case op
                (:vl-binary-shl (vl-make-n-bit-shl-by-m-bits width (vl-expr->finalwidth arg2)))
                (:vl-binary-shr (vl-make-n-bit-shr-by-m-bits width (vl-expr->finalwidth arg2)))))
-       (args (list (make-vl-plainarg :expr x.lvalue :dir :vl-output :portname (hons-copy "out"))
-                   (make-vl-plainarg :expr arg1     :dir :vl-input  :portname (hons-copy "a"))
-                   (make-vl-plainarg :expr arg2     :dir :vl-input  :portname (hons-copy "b"))))
-       (modinst (make-vl-modinst :modname   (vl-module->name (car mods))
-                                 :instname  iname
-                                 :paramargs (vl-arguments nil nil)
-                                 :portargs  (vl-arguments nil args)
-                                 :atts      x.atts
-                                 :loc       x.loc)))
+       (modinst (vl-simple-instantiate (car mods) iname
+                                       (list x.lvalue arg1 arg2)
+                                       :loc x.loc)))
     (occform-return :mods mods
                     :modinsts (list modinst))))
 
@@ -810,15 +752,9 @@ sliceable.</p>"
        ((mv iname nf) (vl-namefactory-indexed-name "vl_bsel" nf))
 
        (mods (vl-make-n-bit-dynamic-bitselect-m from-width idx-width))
-       (args (list (make-vl-plainarg :expr x.lvalue :dir :vl-output :portname (hons-copy "out"))
-                   (make-vl-plainarg :expr from     :dir :vl-input  :portname (hons-copy "in"))
-                   (make-vl-plainarg :expr idx      :dir :vl-input  :portname (hons-copy "idx"))))
-       (modinst (make-vl-modinst :modname   (vl-module->name (car mods))
-                                 :instname  iname
-                                 :paramargs (vl-arguments nil nil)
-                                 :portargs  (vl-arguments nil args)
-                                 :atts      x.atts
-                                 :loc       x.loc)))
+       (modinst (vl-simple-instantiate (car mods) iname
+                                       (list x.lvalue from idx)
+                                       :loc x.loc)))
     (occform-return :mods mods
                     :modinsts (list modinst))))
 
@@ -858,15 +794,9 @@ sliceable.</p>"
        ;; Make a module and instantiate it.
        ((mv iname nf) (vl-namefactory-indexed-name "vl_ceq" nf))
        (mods          (vl-make-n-bit-ceq arg1width))
-       (args (list (make-vl-plainarg :expr x.lvalue :dir :vl-output :portname (hons-copy "out"))
-                   (make-vl-plainarg :expr arg1     :dir :vl-input  :portname (hons-copy "a"))
-                   (make-vl-plainarg :expr arg2     :dir :vl-input  :portname (hons-copy "b"))))
-       (modinst (make-vl-modinst :modname   (vl-module->name (car mods))
-                                 :instname  iname
-                                 :paramargs (vl-arguments nil nil)
-                                 :portargs  (vl-arguments nil args)
-                                 :atts      x.atts
-                                 :loc       x.loc)))
+       (modinst       (vl-simple-instantiate (car mods) iname
+                                             (list x.lvalue arg1 arg2)
+                                             :loc x.loc)))
     (occform-return :mods mods
                     :modinsts (list modinst))))
 

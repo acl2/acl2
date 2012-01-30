@@ -60,25 +60,25 @@ endmodule
   (defconst *vl-1-bit-dynamic-bitselect*
     (b* ((name (hons-copy "VL_1_BIT_DYNAMIC_BITSELECT"))
 
-         ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output 1))
-         ((mv in-expr in-port in-portdecl in-netdecl)     (vl-occform-mkport "in"  :vl-input 1))
-         ((mv idx-expr idx-port idx-portdecl idx-netdecl) (vl-occform-mkport "idx" :vl-input 1))
+         ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
+         ((mv in-expr in-port in-portdecl in-netdecl)     (vl-primitive-mkport "in"  :vl-input))
+         ((mv idx-expr idx-port idx-portdecl idx-netdecl) (vl-primitive-mkport "idx" :vl-input))
 
-         ((mv ~idx-expr ~idx-netdecl) (vl-occform-mkwire "idx_bar" 1))
-         ((mv a-expr a-netdecl)       (vl-occform-mkwire "a" 1))
-         ((mv b-expr b-netdecl)       (vl-occform-mkwire "b" 1))
+         ((mv ~idx-expr ~idx-netdecl) (vl-primitive-mkwire "idx_bar"))
+         ((mv a-expr a-netdecl)       (vl-primitive-mkwire "a"))
+         ((mv b-expr b-netdecl)       (vl-primitive-mkwire "b"))
 
-         (~idx-gate (vl-make-unary-gateinst  :vl-not ~idx-expr idx-expr                   nil nil))
-         (a-gate    (vl-make-binary-gateinst :vl-and a-expr    ~idx-expr in-expr          nil nil))
-         (b-gate    (vl-make-binary-gateinst :vl-and b-expr    idx-expr  |*sized-1'bx*|   nil nil))
-         (out-gate  (vl-make-binary-gateinst :vl-or  out-expr  a-expr    b-expr           nil nil)))
+         (~idx-inst (vl-simple-inst *vl-1-bit-not* "mk_idx_bar" ~idx-expr idx-expr))
+         (a-inst    (vl-simple-inst *vl-1-bit-and* "mk_a"       a-expr    ~idx-expr in-expr))
+         (b-inst    (vl-simple-inst *vl-1-bit-and* "mk_b"       b-expr    idx-expr  |*sized-1'bx*|))
+         (out-inst  (vl-simple-inst *vl-1-bit-or*  "mk_out"     out-expr  a-expr    b-expr)))
 
       (make-vl-module :name      name
                       :origname  name
                       :ports     (list out-port in-port idx-port)
                       :portdecls (list out-portdecl in-portdecl idx-portdecl)
                       :netdecls  (list out-netdecl in-netdecl idx-netdecl ~idx-netdecl a-netdecl b-netdecl)
-                      :gateinsts (list ~idx-gate a-gate b-gate out-gate)
+                      :modinsts  (list ~idx-inst a-inst b-inst out-inst)
                       :minloc    *vl-fakeloc*
                       :maxloc    *vl-fakeloc*))))
 
@@ -134,15 +134,15 @@ the bit select.</p>"
   (defconst *vl-2-bit-dynamic-bitselect*
     (b* ((name (hons-copy "VL_2_BIT_DYNAMIC_BITSELECT"))
 
-         ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output 1))
-         ((mv in-expr in-port in-portdecl in-netdecl)     (vl-occform-mkport "in" :vl-input 2))
-         ((mv idx-expr idx-port idx-portdecl idx-netdecl) (vl-occform-mkport "idx" :vl-input 1))
+         ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
+         ((mv in-expr in-port in-portdecl in-netdecl)     (vl-occform-mkport   "in"  :vl-input 2))
+         ((mv idx-expr idx-port idx-portdecl idx-netdecl) (vl-primitive-mkport "idx" :vl-input))
 
-         ((mv ~idx-expr ~idx-netdecl)   (vl-occform-mkwire "idx_bar" 1))
-         ((mv idx_x-expr idx_x-netdecl) (vl-occform-mkwire "idx_x" 1))
-         ((mv a-expr a-netdecl)         (vl-occform-mkwire "a" 1))
-         ((mv b-expr b-netdecl)         (vl-occform-mkwire "b" 1))
-         ((mv main-expr main-netdecl)   (vl-occform-mkwire "main" 1))
+         ((mv ~idx-expr ~idx-netdecl)   (vl-primitive-mkwire "idx_bar"))
+         ((mv idx_x-expr idx_x-netdecl) (vl-primitive-mkwire "idx_x"))
+         ((mv a-expr a-netdecl)         (vl-primitive-mkwire "a"))
+         ((mv b-expr b-netdecl)         (vl-primitive-mkwire "b"))
+         ((mv main-expr main-netdecl)   (vl-primitive-mkwire "main"))
 
          (in[0]-expr  (vl-make-bitselect in-expr 0))
          (in[1]-expr  (vl-make-bitselect in-expr 1))
@@ -153,12 +153,12 @@ the bit select.</p>"
          ;; or (main, a, b) ;
          ;; xor (idx_x, idx, idx);
          ;; xor (out, idx_x, main);
-         (~idx-gate  (vl-make-unary-gateinst  :vl-not ~idx-expr  idx-expr              nil nil))
-         (a-gate     (vl-make-binary-gateinst :vl-and a-expr     idx-expr   in[1]-expr nil nil))
-         (b-gate     (vl-make-binary-gateinst :vl-and b-expr     ~idx-expr  in[0]-expr nil nil))
-         (main-gate  (vl-make-binary-gateinst :vl-or  main-expr  a-expr     b-expr     nil nil))
-         (idx_x-gate (vl-make-binary-gateinst :vl-xor idx_x-expr idx-expr   idx-expr   nil nil))
-         (out-gate   (vl-make-binary-gateinst :vl-xor out-expr   idx_x-expr main-expr  nil nil)))
+         (~idx-inst  (vl-simple-inst *vl-1-bit-not* "mk_idx_bar" ~idx-expr  idx-expr))
+         (a-inst     (vl-simple-inst *vl-1-bit-and* "mk_a"       a-expr     idx-expr   in[1]-expr))
+         (b-inst     (vl-simple-inst *vl-1-bit-and* "mk_b"       b-expr     ~idx-expr  in[0]-expr))
+         (main-inst  (vl-simple-inst *vl-1-bit-or*  "mk_main"    main-expr  a-expr     b-expr))
+         (idx_x-inst (vl-simple-inst *vl-1-bit-xor* "mk_idx_x"   idx_x-expr idx-expr   idx-expr))
+         (out-inst   (vl-simple-inst *vl-1-bit-xor* "mk_out"     out-expr   idx_x-expr main-expr)))
 
       (make-vl-module :name      name
                       :origname  name
@@ -167,7 +167,7 @@ the bit select.</p>"
                       :netdecls  (list out-netdecl in-netdecl idx-netdecl
                                        ~idx-netdecl a-netdecl b-netdecl main-netdecl
                                        idx_x-netdecl)
-                      :gateinsts (list ~idx-gate a-gate b-gate main-gate idx_x-gate out-gate)
+                      :modinsts (list ~idx-inst a-inst b-inst main-inst idx_x-inst out-inst)
                       :minloc    *vl-fakeloc*
                       :maxloc    *vl-fakeloc*))))
 
@@ -237,17 +237,17 @@ endmodule
        (submods (vl-make-2^n-bit-dynamic-bitselect (- n 1)))
        (name (hons-copy (str::cat "VL_" (str::natstr m) "_BIT_DYNAMIC_BITSELECT")))
 
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output 1))
+       ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
        ((mv in-expr in-port in-portdecl in-netdecl)     (vl-occform-mkport "in" :vl-input m))
        ((mv idx-expr idx-port idx-portdecl idx-netdecl) (vl-occform-mkport "idx" :vl-input n))
 
-       ((mv high-expr high-netdecl)   (vl-occform-mkwire "high" 1))
-       ((mv low-expr low-netdecl)     (vl-occform-mkwire "low" 1))
-       ((mv ~idx-expr ~idx-netdecl)   (vl-occform-mkwire "idx_bar" 1))
-       ((mv a-expr a-netdecl)         (vl-occform-mkwire "a" 1))
-       ((mv b-expr b-netdecl)         (vl-occform-mkwire "b" 1))
-       ((mv main-expr main-netdecl)   (vl-occform-mkwire "main" 1))
-       ((mv idx_x-expr idx_x-netdecl) (vl-occform-mkwire "idx_x" 1))
+       ((mv high-expr high-netdecl)   (vl-primitive-mkwire "high"))
+       ((mv low-expr low-netdecl)     (vl-primitive-mkwire "low"))
+       ((mv ~idx-expr ~idx-netdecl)   (vl-primitive-mkwire "idx_bar"))
+       ((mv a-expr a-netdecl)         (vl-primitive-mkwire "a"))
+       ((mv b-expr b-netdecl)         (vl-primitive-mkwire "b"))
+       ((mv main-expr main-netdecl)   (vl-primitive-mkwire "main"))
+       ((mv idx_x-expr idx_x-netdecl) (vl-primitive-mkwire "idx_x"))
 
        (|in[m-1]:k|  (vl-make-partselect in-expr (- m 1) k))
        (|in[k-1:0]|  (vl-make-partselect in-expr (- k 1) 0))
@@ -256,24 +256,8 @@ endmodule
 
        ;; VL_K_BIT_DYNAMIC_BITSELECT mk_high (high, in[m-1]:k, idx[N-2:0]);
        ;; VL_K_BIT_DYNAMIC_BITSELECT mk_low (low, in[K-1:0], idx[N-2:0]);
-
-       (high-args    (list (make-vl-plainarg :expr high-expr    :dir :vl-output :portname (hons-copy "out"))
-                           (make-vl-plainarg :expr |in[m-1]:k|  :dir :vl-input  :portname (hons-copy "in"))
-                           (make-vl-plainarg :expr |idx[n-2:0]| :dir :vl-input  :portname (hons-copy "idx"))))
-       (high-inst    (make-vl-modinst :instname  (hons-copy "mk_high")
-                                      :modname   (vl-module->name (car submods))
-                                      :paramargs (vl-arguments nil nil)
-                                      :portargs  (vl-arguments nil high-args)
-                                      :loc       *vl-fakeloc*))
-
-       (low-args    (list (make-vl-plainarg :expr low-expr     :dir :vl-output :portname (hons-copy "out"))
-                          (make-vl-plainarg :expr |in[k-1:0]|  :dir :vl-input  :portname (hons-copy "in"))
-                          (make-vl-plainarg :expr |idx[n-2:0]| :dir :vl-input  :portname (hons-copy "idx"))))
-       (low-inst    (make-vl-modinst :instname  (hons-copy "mk_low")
-                                     :modname   (vl-module->name (car submods))
-                                     :paramargs (vl-arguments nil nil)
-                                     :portargs  (vl-arguments nil low-args)
-                                     :loc       *vl-fakeloc*))
+       (high-inst    (vl-simple-inst (car submods) "mk_high" high-expr |in[m-1]:k| |idx[n-2:0]|))
+       (low-inst     (vl-simple-inst (car submods) "mk_low"  low-expr  |in[k-1:0]| |idx[n-2:0]|))
 
        ;; not (idx_bar, idx[N-1]);
        ;; and (a, idx[N-1], high) ;
@@ -282,31 +266,33 @@ endmodule
        ;; xor (idx_x, idx[N-1], idx[N-1]);
        ;; xor (out, idx_x, main);
 
-       (~idx-gate  (vl-make-unary-gateinst  :vl-not ~idx-expr  idx[n-1]             nil nil))
-       (a-gate     (vl-make-binary-gateinst :vl-and a-expr     idx[n-1]   high-expr nil nil))
-       (b-gate     (vl-make-binary-gateinst :vl-and b-expr     ~idx-expr  low-expr  nil nil))
-       (main-gate  (vl-make-binary-gateinst :vl-or  main-expr  a-expr     b-expr    nil nil))
-       (idx_x-gate (vl-make-binary-gateinst :vl-xor idx_x-expr idx[n-1]   idx[n-1]  nil nil))
-       (out-gate   (vl-make-binary-gateinst :vl-xor out-expr   idx_x-expr main-expr nil nil)))
+       (~idx-inst  (vl-simple-inst *vl-1-bit-not* "mk_idx_bar" ~idx-expr  idx[n-1]))
+       (a-inst     (vl-simple-inst *vl-1-bit-and* "mk_a"       a-expr     idx[n-1]   high-expr))
+       (b-inst     (vl-simple-inst *vl-1-bit-and* "mk_b"       b-expr     ~idx-expr  low-expr))
+       (main-inst  (vl-simple-inst *vl-1-bit-or*  "mk_main"    main-expr  a-expr     b-expr))
+       (idx_x-inst (vl-simple-inst *vl-1-bit-xor* "mk_idx_x"   idx_x-expr idx[n-1]   idx[n-1]))
+       (out-inst   (vl-simple-inst *vl-1-bit-xor* "mk_out"     out-expr   idx_x-expr main-expr)))
 
-    (cons (make-vl-module :name      name
-                          :origname  name
-                          :ports     (list out-port in-port idx-port)
-                          :portdecls (list out-portdecl in-portdecl idx-portdecl)
-                          :netdecls  (list out-netdecl in-netdecl idx-netdecl high-netdecl low-netdecl
-                                           ~idx-netdecl a-netdecl b-netdecl main-netdecl idx_x-netdecl)
-                          :modinsts  (list high-inst low-inst)
-                          :gateinsts (list ~idx-gate a-gate b-gate main-gate idx_x-gate out-gate)
-                          :minloc    *vl-fakeloc*
-                          :maxloc    *vl-fakeloc*)
-          submods)))
+    (list* (make-vl-module :name      name
+                           :origname  name
+                           :ports     (list out-port in-port idx-port)
+                           :portdecls (list out-portdecl in-portdecl idx-portdecl)
+                           :netdecls  (list out-netdecl in-netdecl idx-netdecl high-netdecl low-netdecl
+                                            ~idx-netdecl a-netdecl b-netdecl main-netdecl idx_x-netdecl)
+                           :modinsts  (list high-inst low-inst ~idx-inst a-inst b-inst main-inst idx_x-inst out-inst)
+                           :minloc    *vl-fakeloc*
+                           :maxloc    *vl-fakeloc*)
+           *vl-1-bit-not* *vl-1-bit-and* *vl-1-bit-or* *vl-1-bit-xor*
+           submods)))
 
 (verify-guards vl-make-2^n-bit-dynamic-bitselect)
 
-;(vl-pps-modulelist (vl-make-2^n-bit-dynamic-bitselect 0))
-;(vl-pps-modulelist (vl-make-2^n-bit-dynamic-bitselect 1))
-;(vl-pps-modulelist (vl-make-2^n-bit-dynamic-bitselect 2))
-;(vl-pps-modulelist (vl-make-2^n-bit-dynamic-bitselect 3))
+#||
+(vl-pps-modulelist (vl-make-2^n-bit-dynamic-bitselect 0))
+(vl-pps-modulelist (vl-make-2^n-bit-dynamic-bitselect 1))
+(vl-pps-modulelist (vl-make-2^n-bit-dynamic-bitselect 2))
+(vl-pps-modulelist (vl-make-2^n-bit-dynamic-bitselect 3))
+||#
 
 
 
@@ -360,7 +346,7 @@ endmodule
 
        (name (hons-copy (str::cat "VL_" (str::natstr n) "_BIT_DYNAMIC_BITSELECT")))
 
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output 1))
+       ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
        ((mv in-expr in-port in-portdecl in-netdecl)     (vl-occform-mkport "in" :vl-input n))
        ((mv idx-expr idx-port idx-portdecl idx-netdecl) (vl-occform-mkport "idx" :vl-input bitlength))
 
@@ -376,14 +362,7 @@ endmodule
                                        :finaltype :vl-unsigned))
 
        ;; VL_{2^bitlength}_BIT_DYNAMIC_BITSELECT core(out, pad-expr, idx);
-       (inst-args (list (make-vl-plainarg :expr out-expr :dir :vl-output)
-                        (make-vl-plainarg :expr pad-expr :dir :vl-input)
-                        (make-vl-plainarg :expr idx-expr :dir :vl-input)))
-       (inst (make-vl-modinst :instname  "core"
-                              :modname   (vl-module->name (car coremods))
-                              :paramargs (vl-arguments nil nil)
-                              :portargs  (vl-arguments nil inst-args)
-                              :loc       *vl-fakeloc*)))
+       (inst (vl-simple-inst (car coremods) "core" out-expr pad-expr idx-expr)))
     (cons (make-vl-module :name      name
                           :origname  name
                           :ports     (list out-port in-port idx-port)
@@ -452,7 +431,7 @@ checking.</p>"
         ;; Else, we need a new module.
         (name (str::cat "VL_" (str::natstr n) "_BIT_DYNAMIC_BITSELECT_" (str::natstr m)))
 
-        ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output 1))
+        ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
         ((mv in-expr in-port in-portdecl in-netdecl)     (vl-occform-mkport "in" :vl-input n))
         ((mv idx-expr idx-port idx-portdecl idx-netdecl) (vl-occform-mkport "idx" :vl-input m))
 
@@ -466,26 +445,13 @@ checking.</p>"
 
               ;; wire main = in[lowbits];
               ;; VL_N_BIT_DYNAMIC_BITSELECT core (main, in, lowbits);
-              ((mv main-expr main-netdecl) (vl-occform-mkwire "main" 1))
-              (core-args (list (make-vl-plainarg :expr main-expr :dir :vl-output :portname (hons-copy "out"))
-                               (make-vl-plainarg :expr in-expr   :dir :vl-input  :portname (hons-copy "in"))
-                               (make-vl-plainarg :expr lowbits   :dir :vl-input  :portname (hons-copy "idx"))))
-              (core-inst (make-vl-modinst :modname   (vl-module->name (car coremods))
-                                          :instname  (hons-copy "core")
-                                          :paramargs (vl-arguments nil nil)
-                                          :portargs  (vl-arguments nil core-args)
-                                          :loc       *vl-fakeloc*))
+              ((mv main-expr main-netdecl) (vl-primitive-mkwire "main"))
+              (core-inst (vl-simple-inst (car coremods) "core" main-expr in-expr lowbits))
 
               ;; wire any_extra = |highbits;
               ((cons extra-mod extra-support) (vl-make-n-bit-reduction-op :vl-unary-bitor (- m k)))
-              ((mv extra-expr extra-netdecl) (vl-occform-mkwire "any_extra" 1))
-              (extra-args (list (make-vl-plainarg :expr extra-expr :dir :vl-output :portname (hons-copy "out"))
-                                (make-vl-plainarg :expr highbits   :dir :vl-input  :portname (hons-copy "in"))))
-              (extra-inst (make-vl-modinst :modname   (vl-module->name extra-mod)
-                                           :instname  (hons-copy "mk_any_extra")
-                                           :paramargs (vl-arguments nil nil)
-                                           :portargs  (vl-arguments nil extra-args)
-                                           :loc       *vl-fakeloc*))
+              ((mv extra-expr extra-netdecl)  (vl-primitive-mkwire "any_extra"))
+              (extra-inst (vl-simple-inst extra-mod "mk_any_extra" extra-expr highbits))
 
               ;; this is effectively out = any_extra ? 1'bx : main;
               ;;
@@ -494,13 +460,13 @@ checking.</p>"
               ;; and(a, no_extra, main);
               ;; and(b, any_extra, 1'bx);
               ;; or(out, a, b);
-              ((mv noextra-expr noextra-netdecl) (vl-occform-mkwire "no_extra" 1))
-              ((mv a-expr a-netdecl) (vl-occform-mkwire "a" 1))
-              ((mv b-expr b-netdecl) (vl-occform-mkwire "b" 1))
-              (noextra-gate (vl-make-unary-gateinst  :vl-not noextra-expr extra-expr                   nil nil))
-              (a-gate       (vl-make-binary-gateinst :vl-and a-expr       noextra-expr main-expr       nil nil))
-              (b-gate       (vl-make-binary-gateinst :vl-and b-expr       extra-expr   |*sized-1'bx*|  nil nil))
-              (out-gate     (vl-make-binary-gateinst :vl-or  out-expr     a-expr       b-expr          nil nil))
+              ((mv noextra-expr noextra-netdecl) (vl-primitive-mkwire "no_extra"))
+              ((mv a-expr a-netdecl)             (vl-primitive-mkwire "a"))
+              ((mv b-expr b-netdecl)             (vl-primitive-mkwire "b"))
+              (noextra-inst (vl-simple-inst *vl-1-bit-not* "mk_no_extra" noextra-expr extra-expr))
+              (a-inst       (vl-simple-inst *vl-1-bit-and* "mk_a"        a-expr       noextra-expr main-expr))
+              (b-inst       (vl-simple-inst *vl-1-bit-and* "mk_b"        b-expr       extra-expr   |*sized-1'bx*|))
+              (out-inst     (vl-simple-inst *vl-1-bit-or*  "mk_out"      out-expr     a-expr       b-expr))
 
               (mod (make-vl-module :name      name
                                    :origname  name
@@ -508,8 +474,7 @@ checking.</p>"
                                    :portdecls (list out-portdecl in-portdecl idx-portdecl)
                                    :netdecls  (list out-netdecl in-netdecl idx-netdecl main-netdecl extra-netdecl
                                                     noextra-netdecl a-netdecl b-netdecl)
-                                   :gateinsts (list noextra-gate a-gate b-gate out-gate)
-                                   :modinsts  (list core-inst extra-inst)
+                                   :modinsts  (list core-inst extra-inst noextra-inst a-inst b-inst out-inst)
                                    :minloc    *vl-fakeloc*
                                    :maxloc    *vl-fakeloc*)))
            (list* mod extra-mod (append coremods extra-support))))
@@ -526,16 +491,9 @@ checking.</p>"
                                      :finaltype :vl-unsigned))
 
         ;; VL_N_BIT_DYNAMIC_BITSELECT core (out, in, pad);
-        (core-args    (list (make-vl-plainarg :expr out-expr   :dir :vl-output :portname (hons-copy "out"))
-                            (make-vl-plainarg :expr in-expr    :dir :vl-input  :portname (hons-copy "in"))
-                            (make-vl-plainarg :expr padded-idx :dir :vl-input  :portname (hons-copy "idx"))))
-        (core-inst    (make-vl-modinst :instname  (hons-copy "core")
-                                       :modname   (vl-module->name (car coremods))
-                                       :paramargs (vl-arguments nil nil)
-                                       :portargs  (vl-arguments nil core-args)
-                                       :loc       *vl-fakeloc*)))
+        (core-inst (vl-simple-inst (car coremods) "core" out-expr in-expr padded-idx)))
 
-     (cons (make-vl-module :name      name
+     (list* (make-vl-module :name      name
                            :origname  name
                            :ports     (list out-port in-port idx-port)
                            :portdecls (list out-portdecl in-portdecl idx-portdecl)
@@ -543,6 +501,7 @@ checking.</p>"
                            :modinsts  (list core-inst)
                            :minloc    *vl-fakeloc*
                            :maxloc    *vl-fakeloc*)
+           *vl-1-bit-not* *vl-1-bit-and* *vl-1-bit-or*
            coremods)))
 
 ;; (vl-pps-modulelist (vl-make-n-bit-dynamic-bitselect-m 4 2))

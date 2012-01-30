@@ -63,42 +63,41 @@ original answer.  But if it is X, then the resulting bits are all X.</p>"
 
        ((when (= n 1))
         ;; xor (out, in, in);
-        (let ((out-gate (vl-make-binary-gateinst :vl-xor out-expr in-expr in-expr nil nil)))
+        (let ((out-inst (vl-simple-inst *vl-1-bit-xor* "ans" out-expr in-expr in-expr)))
           (list (make-vl-module :name      name
                                 :origname  name
                                 :ports     (list out-port in-port)
                                 :portdecls (list out-portdecl in-portdecl)
                                 :netdecls  (list out-netdecl in-netdecl)
-                                :gateinsts (list out-gate)
+                                :modinsts  (list out-inst)
                                 :minloc    *vl-fakeloc*
-                                :maxloc    *vl-fakeloc*))))
+                                :maxloc    *vl-fakeloc*)
+                *vl-1-bit-xor*)))
 
        ;; wire temp = ^in;
        ((mv temp-expr temp-netdecl)  (vl-occform-mkwire "temp" 1))
        ((cons temp-mod temp-support) (vl-make-n-bit-reduction-op :vl-unary-xor n))
-       (temp-args (list (make-vl-plainarg :expr temp-expr :dir :vl-output :portname (hons-copy "out"))
-                        (make-vl-plainarg :expr in-expr   :dir :vl-input  :portname (hons-copy "in"))))
-       (temp-inst (make-vl-modinst :modname   (vl-module->name temp-mod)
-                                   :instname  (hons-copy "mk_temp")
-                                   :paramargs (vl-arguments nil nil)
-                                   :portargs  (vl-arguments nil temp-args)
-                                   :loc       *vl-fakeloc*))
+       (temp-inst                    (vl-simple-inst temp-mod "mk_temp" temp-expr in-expr))
 
        ;; xor(out, temp, temp);
-       (out-gate (vl-make-binary-gateinst :vl-xor out-expr temp-expr temp-expr nil nil)))
+       (out-inst (vl-simple-inst *vl-1-bit-xor* "mk_out" out-expr temp-expr temp-expr)))
 
     (list* (make-vl-module :name      name
                            :origname  name
                            :ports     (list out-port in-port)
                            :portdecls (list out-portdecl in-portdecl)
                            :netdecls  (list out-netdecl in-netdecl temp-netdecl)
-                           :gateinsts (list out-gate)
-                           :modinsts  (list temp-inst)
+                           :modinsts  (list temp-inst out-inst)
                            :minloc    *vl-fakeloc*
                            :maxloc    *vl-fakeloc*)
            temp-mod
            temp-support)))
 
+#||
+(vl-pps-modulelist (vl-make-n-bit-xdetect 1))
+(vl-pps-modulelist (vl-make-n-bit-xdetect 2))
+(vl-pps-modulelist (vl-make-n-bit-xdetect 5))
+||#
 
 
 (def-vl-modgen vl-make-n-bit-xor-each (n)
@@ -133,16 +132,21 @@ xor'ed vector.</p>"
        (a-wires   (repeat a-expr n))
        (b-wires   (vl-make-list-of-bitselects b-expr 0 (- n 1)))
        (out-wires (vl-make-list-of-bitselects out-expr 0 (- n 1)))
-       (gates     (vl-make-binary-gateinstlist :vl-xor out-wires a-wires b-wires nil)))
+       (insts     (vl-simple-inst-list *vl-1-bit-xor* "bit" out-wires a-wires b-wires)))
 
     (list (make-vl-module :name      name
                           :origname  name
                           :ports     (list out-port a-port b-port)
                           :portdecls (list out-portdecl a-portdecl b-portdecl)
                           :netdecls  (list out-netdecl a-netdecl b-netdecl)
-                          :gateinsts gates
+                          :modinsts  insts
                           :minloc    *vl-fakeloc*
                           :maxloc    *vl-fakeloc*))))
+
+#||
+(vl-pps-modulelist (vl-make-n-bit-xor-each 1))
+(vl-pps-modulelist (vl-make-n-bit-xor-each 3))
+||#
 
 
 
@@ -183,48 +187,32 @@ endmodule
        ((cons xeach-mod xeach-support) (vl-make-n-bit-xor-each m))
 
        ;; xdet_a is X whenever A has any X/Z bits, or 0 otherwise
-       (xdeta-args (list (make-vl-plainarg :expr xdeta-expr :dir :vl-output :portname (hons-copy "out"))
-                         (make-vl-plainarg :expr a-expr     :dir :vl-input  :portname (hons-copy "in"))))
-       (xdeta-inst (make-vl-modinst :instname  "mk_xdet_a"
-                                    :modname   (vl-module->name xdet-mod)
-                                    :paramargs (vl-arguments nil nil)
-                                    :portargs  (vl-arguments nil xdeta-args)
-                                    :loc       *vl-fakeloc*))
+       (xdeta-inst (vl-simple-inst xdet-mod "mk_xdet_a" xdeta-expr a-expr))
 
        ;; xdet_b is X whenever B has any X/Z bits, or 0 otherwise
-       (xdetb-args (list (make-vl-plainarg :expr xdetb-expr :dir :vl-output :portname (hons-copy "out"))
-                         (make-vl-plainarg :expr b-expr     :dir :vl-input  :portname (hons-copy "in"))))
-       (xdetb-inst (make-vl-modinst :instname  "mk_xdet_b"
-                                    :modname   (vl-module->name xdet-mod)
-                                    :paramargs (vl-arguments nil nil)
-                                    :portargs  (vl-arguments nil xdetb-args)
-                                    :loc       *vl-fakeloc*))
+       (xdetb-inst (vl-simple-inst xdet-mod "mk_xdet_b" xdetb-expr b-expr))
 
        ;; xdet_ab is X whenever either A/B have any X/Z bits, or 0 otherwise
-       (xdet-gate (vl-make-binary-gateinst :vl-xor xdet-expr xdeta-expr xdetb-expr nil *vl-fakeloc*))
+       (xdet-inst (vl-simple-inst *vl-1-bit-xor* "mk_xdet_ab" xdet-expr xdeta-expr xdetb-expr))
 
        ;; now xor xdet_ab with each bit of ans:
        ;;   - out becomes all Xes when xdet_ab is X, i.e., when any bit of A or B is X/Z
        ;;   - out becomes ans otherwise since xdet_ab is 0
-       (xeach-args (list (make-vl-plainarg :expr out-expr  :dir :vl-output :portname (hons-copy "out"))
-                         (make-vl-plainarg :expr xdet-expr :dir :vl-input  :portname (hons-copy "a"))
-                         (make-vl-plainarg :expr ans-expr  :dir :vl-input  :portname (hons-copy "b"))))
-       (xeach-inst   (make-vl-modinst :instname  "mk_out"
-                                      :modname   (vl-module->name xeach-mod)
-                                      :paramargs (vl-arguments nil nil)
-                                      :portargs  (vl-arguments nil xeach-args)
-                                      :loc       *vl-fakeloc*)))
+       (xeach-inst (vl-simple-inst xeach-mod "mk_out" out-expr xdet-expr ans-expr)))
 
       (list* (make-vl-module :name      name
                              :origname  name
                              :ports     (list out-port ans-port a-port b-port)
                              :portdecls (list out-portdecl ans-portdecl a-portdecl b-portdecl)
                              :netdecls  (list out-netdecl ans-netdecl a-netdecl b-netdecl xdeta-netdecl xdetb-netdecl xdet-netdecl)
-                             :gateinsts (list xdet-gate)
-                             :modinsts  (list xdeta-inst xdetb-inst xeach-inst)
+                             :modinsts  (list xdeta-inst xdetb-inst xdet-inst xeach-inst)
                              :minloc    *vl-fakeloc*
                              :maxloc    *vl-fakeloc*)
              xdet-mod
              xeach-mod
              (append xdet-support xeach-support))))
 
+
+#||
+(vl-pps-modulelist (vl-make-n-bit-x-propagator 3 5))
+||#

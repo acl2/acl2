@@ -57,77 +57,31 @@ See @(see vl-make-n-bit-plusminus) for the real module generator.</p>"
 
     (b* ((name (hons-copy "VL_1_BIT_ADDER_CORE"))
 
-         ((mv sum-expr sum-port sum-portdecl sum-netdecl)     (vl-occform-mkport "sum" :vl-output 1))
-         ((mv cout-expr cout-port cout-portdecl cout-netdecl) (vl-occform-mkport "cout" :vl-output 1))
-         ((mv a-expr a-port a-portdecl a-netdecl)             (vl-occform-mkport "a" :vl-input 1))
-         ((mv b-expr b-port b-portdecl b-netdecl)             (vl-occform-mkport "b" :vl-input 1))
-         ((mv cin-expr cin-port cin-portdecl cin-netdecl)     (vl-occform-mkport "cin" :vl-input 1))
+         ((mv sum-expr sum-port sum-portdecl sum-netdecl)     (vl-primitive-mkport "sum" :vl-output))
+         ((mv cout-expr cout-port cout-portdecl cout-netdecl) (vl-primitive-mkport "cout" :vl-output))
+         ((mv a-expr a-port a-portdecl a-netdecl)             (vl-primitive-mkport "a" :vl-input))
+         ((mv b-expr b-port b-portdecl b-netdecl)             (vl-primitive-mkport "b" :vl-input))
+         ((mv cin-expr cin-port cin-portdecl cin-netdecl)     (vl-primitive-mkport "cin" :vl-input))
 
-         ((mv t1-expr t1-netdecl) (vl-occform-mkwire "t1" 1))
-         ((mv t2-expr t2-netdecl) (vl-occform-mkwire "t2" 1))
-         ((mv t3-expr t3-netdecl) (vl-occform-mkwire "t3" 1))
+         ((mv t1-expr t1-netdecl) (vl-primitive-mkwire "t1"))
+         ((mv t2-expr t2-netdecl) (vl-primitive-mkwire "t2"))
+         ((mv t3-expr t3-netdecl) (vl-primitive-mkwire "t3"))
 
-         (t1-gate   (vl-make-binary-gateinst :vl-xor t1-expr   a-expr  b-expr   nil nil))
-         (sum-gate  (vl-make-binary-gateinst :vl-xor sum-expr  t1-expr cin-expr nil nil))
-         (t2-gate   (vl-make-binary-gateinst :vl-and t2-expr   t1-expr cin-expr nil nil))
-         (t3-gate   (vl-make-binary-gateinst :vl-and t3-expr   a-expr  b-expr   nil nil))
-         (cout-gate (vl-make-binary-gateinst :vl-or  cout-expr t2-expr t3-expr  nil nil)))
+         (t1-inst   (vl-simple-inst *vl-1-bit-xor* "mk_t1"   t1-expr   a-expr  b-expr))
+         (sum-inst  (vl-simple-inst *vl-1-bit-xor* "mk_sum"  sum-expr  t1-expr cin-expr))
+         (t2-inst   (vl-simple-inst *vl-1-bit-and* "mk_t2"   t2-expr   t1-expr cin-expr))
+         (t3-inst   (vl-simple-inst *vl-1-bit-and* "mk_t3"   t3-expr   a-expr  b-expr))
+         (cout-inst (vl-simple-inst *vl-1-bit-or*  "mk_cout" cout-expr t2-expr t3-expr)))
 
       (make-vl-module :name      name
                       :origname  name
                       :ports     (list sum-port cout-port a-port b-port cin-port)
                       :portdecls (list sum-portdecl cout-portdecl a-portdecl b-portdecl cin-portdecl)
                       :netdecls  (list sum-netdecl cout-netdecl a-netdecl b-netdecl cin-netdecl t1-netdecl t2-netdecl t3-netdecl)
-                      :gateinsts (list t1-gate sum-gate t2-gate t3-gate cout-gate)
+                      :modinsts (list t1-inst sum-inst t2-inst t3-inst cout-inst)
                       :minloc    *vl-fakeloc*
                       :maxloc    *vl-fakeloc*))))
 
-
-(defsection vl-make-full-adders
-  :parents (occform)
-  :short "Generate a list of @(see *vl-1-bit-adder-core*) instances."
-
-  (defund vl-make-full-adders (name-index sum-bits cout-bits a-bits b-bits cin-bits)
-    ;; Instance a bunch of full-adders
-    (declare (xargs :guard (and (natp name-index)
-                                (vl-exprlist-p sum-bits)
-                                (vl-exprlist-p cout-bits)
-                                (vl-exprlist-p a-bits)
-                                (vl-exprlist-p b-bits)
-                                (vl-exprlist-p cin-bits)
-                                (same-lengthp sum-bits cout-bits)
-                                (same-lengthp sum-bits a-bits)
-                                (same-lengthp sum-bits b-bits)
-                                (same-lengthp sum-bits cin-bits))))
-    (b* (((when (atom sum-bits))
-          nil)
-         (args (list (make-vl-plainarg :expr (car sum-bits)  :dir :vl-output :portname (hons-copy "sum"))
-                     (make-vl-plainarg :expr (car cout-bits) :dir :vl-output :portname (hons-copy "cout"))
-                     (make-vl-plainarg :expr (car a-bits)    :dir :vl-input  :portname (hons-copy "a"))
-                     (make-vl-plainarg :expr (car b-bits)    :dir :vl-input  :portname (hons-copy "b"))
-                     (make-vl-plainarg :expr (car cin-bits)  :dir :vl-input  :portname (hons-copy "cin"))))
-         (inst1 (make-vl-modinst :instname  (hons-copy (str::cat "fa_" (str::natstr name-index)))
-                                 :modname   (vl-module->name *vl-1-bit-adder-core*)
-                                 :portargs  (vl-arguments nil args)
-                                 :paramargs (vl-arguments nil nil)
-                                 :loc       *vl-fakeloc*))
-         (rest  (vl-make-full-adders (+ 1 name-index) (cdr sum-bits) (cdr cout-bits)
-                                     (cdr a-bits) (cdr b-bits) (cdr cin-bits))))
-      (cons inst1 rest)))
-
-  (defthm vl-modinstlist-p-of-vl-make-full-adders
-    (implies (and (force (natp name-index))
-                  (force (vl-exprlist-p sum-bits))
-                  (force (vl-exprlist-p cout-bits))
-                  (force (vl-exprlist-p a-bits))
-                  (force (vl-exprlist-p b-bits))
-                  (force (vl-exprlist-p cin-bits))
-                  (force (same-lengthp sum-bits cout-bits))
-                  (force (same-lengthp sum-bits a-bits))
-                  (force (same-lengthp sum-bits b-bits))
-                  (force (same-lengthp sum-bits cin-bits)))
-             (vl-modinstlist-p (vl-make-full-adders name-index sum-bits cout-bits a-bits b-bits cin-bits)))
-    :hints(("Goal" :in-theory (enable vl-make-full-adders)))))
 
 
 
@@ -168,10 +122,10 @@ the last bit, but we think it's best to keep things simple.</p>"
        (name (hons-copy (str::cat "VL_" (str::natstr n) "_BIT_ADDER_CORE")))
 
        ((mv sum-expr sum-port sum-portdecl sum-netdecl)     (vl-occform-mkport "sum" :vl-output n))
-       ((mv cout-expr cout-port cout-portdecl cout-netdecl) (vl-occform-mkport "cout" :vl-output 1))
+       ((mv cout-expr cout-port cout-portdecl cout-netdecl) (vl-primitive-mkport "cout" :vl-output))
        ((mv a-expr a-port a-portdecl a-netdecl)             (vl-occform-mkport "a" :vl-input n))
        ((mv b-expr b-port b-portdecl b-netdecl)             (vl-occform-mkport "b" :vl-input n))
-       ((mv cin-expr cin-port cin-portdecl cin-netdecl)     (vl-occform-mkport "cin" :vl-input 1))
+       ((mv cin-expr cin-port cin-portdecl cin-netdecl)     (vl-primitive-mkport "cin" :vl-input))
 
        ;; wire [n-2:0] carry;
        ((mv carry-expr carry-netdecl) (vl-occform-mkwire "carry" (- n 1)))
@@ -190,7 +144,7 @@ the last bit, but we think it's best to keep things simple.</p>"
        (a-wires     (vl-make-list-of-bitselects a-expr     0 (- n 1)))
        (b-wires     (vl-make-list-of-bitselects b-expr     0 (- n 1)))
 
-       (fa-insts    (vl-make-full-adders 0
+       (fa-insts    (vl-simple-inst-list *vl-1-bit-adder-core* "fa_"
                                          sum-wires
                                          (append carry-wires (list cout-expr))
                                          a-wires
@@ -206,6 +160,10 @@ the last bit, but we think it's best to keep things simple.</p>"
                           :minloc    *vl-fakeloc*
                           :maxloc    *vl-fakeloc*)
           *vl-1-bit-adder-core*)))
+
+#||
+(vl-pps-modulelist (vl-make-n-bit-adder-core 10))
+||#
 
 
 
@@ -253,7 +211,7 @@ implemented.</p>"
        ((mv b-expr b-port b-portdecl b-netdecl)         (vl-occform-mkport "b" :vl-input n))
 
        ((mv sum-expr sum-netdecl)     (vl-occform-mkwire "sum" n))
-       ((mv carry-expr carry-netdecl) (vl-occform-mkwire "carry" 1))
+       ((mv carry-expr carry-netdecl) (vl-primitive-mkwire "carry"))
 
        ;; For addition, we use a carry-in of zero and do not negate b.  But
        ;; if we are subtracting, we need to use a carry-in of 1 and negate
@@ -266,13 +224,7 @@ implemented.</p>"
           (b* (;; wire [n-1:0] bnot = ~b;
                ((mv bnot-expr bnot-netdecl)  (vl-occform-mkwire "bnot" n))
                ((cons bnot-mod bnot-support) (vl-make-n-bit-not n))
-               (bnot-args (list (make-vl-plainarg :expr bnot-expr :dir :vl-output :portname (hons-copy "out"))
-                                (make-vl-plainarg :expr b-expr    :dir :vl-input  :portname (hons-copy "in"))))
-               (bnot-inst (make-vl-modinst :modname   (vl-module->name bnot-mod)
-                                           :instname  (hons-copy "mk_bnot")
-                                           :paramargs (vl-arguments nil nil)
-                                           :portargs  (vl-arguments nil bnot-args)
-                                           :loc       *vl-fakeloc*)))
+               (bnot-inst (vl-simple-inst bnot-mod "mk_bnot" bnot-expr b-expr)))
             (mv |*sized-1'b1*|
                 bnot-expr
                 (list bnot-netdecl)
@@ -281,28 +233,11 @@ implemented.</p>"
 
        ;; Instantiate a ripple-carry adder to do all the work
        ((cons core-mod core-support) (vl-make-n-bit-adder-core n))
-       (core-args (list (make-vl-plainarg :expr sum-expr   :dir :vl-output :portname (hons-copy "sum"))
-                        (make-vl-plainarg :expr carry-expr :dir :vl-output :portname (hons-copy "cout"))
-                        (make-vl-plainarg :expr a-expr     :dir :vl-input  :portname (hons-copy "a"))
-                        (make-vl-plainarg :expr bin        :dir :vl-input  :portname (hons-copy "b"))
-                        (make-vl-plainarg :expr cin        :dir :vl-input  :portname (hons-copy "cin"))))
-       (core-inst (make-vl-modinst :modname   (vl-module->name core-mod)
-                                   :instname  (hons-copy "core")
-                                   :paramargs (vl-arguments nil nil)
-                                   :portargs  (vl-arguments nil core-args)
-                                   :loc       *vl-fakeloc*))
+       (core-inst (vl-simple-inst core-mod "core" sum-expr carry-expr a-expr bin cin))
 
        ;; Now slap x-detection onto the "sum" to compute the answer
        ((cons xprop-mod xprop-support) (vl-make-n-bit-x-propagator n n))
-       (xprop-args (list (make-vl-plainarg :expr out-expr :dir :vl-output :portname (hons-copy "out"))
-                         (make-vl-plainarg :expr sum-expr :dir :vl-input  :portname (hons-copy "ans"))
-                         (make-vl-plainarg :expr a-expr   :dir :vl-input  :portname (hons-copy "a"))
-                         (make-vl-plainarg :expr b-expr   :dir :vl-input  :portname (hons-copy "b"))))
-       (xprop-inst (make-vl-modinst :modname   (vl-module->name xprop-mod)
-                                    :instname  (hons-copy "xprop")
-                                    :paramargs (vl-arguments nil nil)
-                                    :portargs  (vl-arguments nil xprop-args)
-                                    :loc       *vl-fakeloc*)))
+       (xprop-inst (vl-simple-inst xprop-mod "xprop" out-expr sum-expr a-expr b-expr)))
 
     (list* (make-vl-module :name      name
                            :origname  name
@@ -315,5 +250,11 @@ implemented.</p>"
            core-mod
            xprop-mod
            (append sub-support core-support xprop-support))))
+
+#||
+(vl-pps-modulelist (vl-make-n-bit-plusminus :vl-binary-plus 10))
+(vl-pps-modulelist (vl-make-n-bit-plusminus :vl-binary-minus 10))
+||#
+
 
 

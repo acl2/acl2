@@ -79,7 +79,7 @@ operates on O(log_2 n) muxes.</p>"
 
        ((mv out-expr out-port out-portdecl out-netdecl)             (vl-occform-mkport "out" :vl-output n))
        ((mv in-expr in-port in-portdecl in-netdecl)                 (vl-occform-mkport "in" :vl-input n))
-       ((mv shiftp-expr shiftp-port shiftp-portdecl shiftp-netdecl) (vl-occform-mkport "shiftp" :vl-input 1))
+       ((mv shiftp-expr shiftp-port shiftp-portdecl shiftp-netdecl) (vl-primitive-mkport "shiftp" :vl-input))
 
        ;; we can only shift as many places as there are bits in n.
        (places      (min n shift-amount))
@@ -105,15 +105,7 @@ operates on O(log_2 n) muxes.</p>"
 
        ;; VL_N_BIT_APPROX_MUX mux(out, shiftp, shifted-expr, in);
        ((cons mux-mod mux-support) (vl-make-n-bit-mux n t))
-       (mux-args (list (make-vl-plainarg :expr out-expr     :dir :vl-output :portname (hons-copy "out"))
-                       (make-vl-plainarg :expr shiftp-expr  :dir :vl-input  :portname (hons-copy "sel"))
-                       (make-vl-plainarg :expr shifted-expr :dir :vl-input  :portname (hons-copy "a"))
-                       (make-vl-plainarg :expr in-expr      :dir :vl-input  :portname (hons-copy "b"))))
-       (mux-inst (make-vl-modinst :modname   (vl-module->name mux-mod)
-                                  :instname  (hons-copy "mux")
-                                  :paramargs (vl-arguments nil nil)
-                                  :portargs  (vl-arguments nil mux-args)
-                                  :loc       *vl-fakeloc*)))
+       (mux-inst (vl-simple-inst mux-mod "mux" out-expr shiftp-expr shifted-expr in-expr)))
 
     (list* (make-vl-module :name      name
                            :origname  name
@@ -125,6 +117,11 @@ operates on O(log_2 n) muxes.</p>"
                            :maxloc    *vl-fakeloc*)
            mux-mod
            mux-support)))
+
+#||
+(vl-pps-modulelist (vl-make-n-bit-shl-place-p 10 3))
+||#
+
 
 
 (defsection vl-make-n-bit-shl-place-ps
@@ -196,6 +193,10 @@ generated net declaration.</p>"
     (equal (len (vl-make-list-of-netdecls n basename range))
            (nfix n)))
 
+  (defthm consp-of-vl-make-list-of-netdecls
+    (iff (vl-make-list-of-netdecls n basename range)
+         (posp n)))
+
   (defthm vl-netdecllist-p-of-vl-make-list-of-netdecls
     (implies (force (vl-maybe-range-p range))
              (vl-netdecllist-p (vl-make-list-of-netdecls n basename range)))))
@@ -214,14 +215,8 @@ generated net declaration.</p>"
                                 (same-lengthp mods bs))))
     (b* (((when (atom mods))
           nil)
-         (args (list (make-vl-plainarg :expr (car outs) :dir :vl-output :portname (hons-copy "out"))
-                     (make-vl-plainarg :expr (car as)   :dir :vl-input  :portname (hons-copy "in"))
-                     (make-vl-plainarg :expr (car bs)   :dir :vl-input  :portname (hons-copy "shiftp"))))
-         (modinst (make-vl-modinst :modname   (vl-module->name (car mods))
-                                   :instname  (str::cat "shift_" (str::natstr name-index))
-                                   :paramargs (vl-arguments nil nil)
-                                   :portargs  (vl-arguments nil args)
-                                   :loc       *vl-fakeloc*)))
+         (modinst (vl-simple-inst (car mods) (str::cat "shift_" (str::natstr name-index))
+                                  (car outs) (car as) (car bs))))
       (cons modinst
             (vl-make-modinsts-for-shl (+ 1 name-index) (cdr mods) (cdr outs) (cdr as) (cdr bs)))))
 
@@ -302,22 +297,8 @@ endmodule
        (supporting-mods (list* xdet-mod xeach-mod (append xdet-support xeach-support pshift-mods pshift-support)))
 
        ((mv bx-expr bx-netdecl) (vl-occform-mkwire "bx" 1))
-       (bx-args (list (make-vl-plainarg :expr bx-expr :dir :vl-output :portname (hons-copy "out"))
-                      (make-vl-plainarg :expr b-expr  :dir :vl-input  :portname (hons-copy "in"))))
-       (bx-modinst (make-vl-modinst :modname   (vl-module->name xdet-mod)
-                                    :instname  (hons-copy "mk_bx")
-                                    :paramargs (vl-arguments nil nil)
-                                    :portargs  (vl-arguments nil bx-args)
-                                    :loc       *vl-fakeloc*))
-
-       (out-args (list (make-vl-plainarg :expr out-expr  :dir :vl-output :portname (hons-copy "out"))
-                       (make-vl-plainarg :expr bx-expr   :dir :vl-input  :portname (hons-copy "a"))
-                       (make-vl-plainarg :expr last-temp :dir :vl-input  :portname (hons-copy "b"))))
-       (out-modinst (make-vl-modinst :modname   (vl-module->name xeach-mod)
-                                     :instname  (hons-copy "mk_out")
-                                     :paramargs (vl-arguments nil nil)
-                                     :portargs  (vl-arguments nil out-args)
-                                     :loc       *vl-fakeloc*))
+       (bx-modinst  (vl-simple-inst xdet-mod  "mk_bx"  bx-expr  b-expr))
+       (out-modinst (vl-simple-inst xeach-mod "mk_out" out-expr bx-expr last-temp))
 
        ;; The right-hand sides depend on how many bits we have in B.  But
        ;; in either case, much is the same:
@@ -346,7 +327,7 @@ endmodule
        ;; wire merged_high = |(b[m-1:k-1]);
        (diff (+ 1 (- m k)))
        ((cons merged-mod merged-support) (vl-make-n-bit-reduction-op :vl-unary-bitor diff))
-       ((mv merged-expr merged-netdecl)  (vl-occform-mkwire "merged_high" 1))
+       ((mv merged-expr merged-netdecl)  (vl-primitive-mkwire "merged_high"))
 
        (high-bits (make-vl-nonatom :op :vl-partselect-colon
                                    :args (list b-expr
@@ -354,14 +335,7 @@ endmodule
                                                (vl-make-index (- k 1)))
                                    :finalwidth diff
                                    :finaltype :vl-unsigned))
-       (merged-args (list (make-vl-plainarg :expr merged-expr :dir :vl-output :portname (hons-copy "out"))
-                          (make-vl-plainarg :expr high-bits   :dir :vl-input  :portname (hons-copy "in"))))
-       (merged-inst (make-vl-modinst :modname   (vl-module->name merged-mod)
-                                     :instname  (hons-copy "merge_high")
-                                     :paramargs (vl-arguments nil nil)
-                                     :portargs  (vl-arguments nil merged-args)
-                                     :loc       *vl-fakeloc*))
-
+       (merged-inst (vl-simple-inst merged-mod "merge_high" merged-expr high-bits))
 
        ;; Okay, now we're ready to build the rhses.  We just use merged-expr
        ;; as the arg to the final shifter.
