@@ -459,7 +459,10 @@ T.</p>"
   (b* ((onebitmux (if approxp *vl-1-bit-approx-mux* *vl-1-bit-mux*))
 
        ((when (= n 1))
-        (list onebitmux))
+        (list onebitmux
+              *vl-1-bit-or*
+              *vl-1-bit-not*
+              *vl-1-bit-and*))
 
        (name (str::cat "VL_" (str::natstr n) "_BIT_" (if approxp "APPROX_MUX" "MUX")))
 
