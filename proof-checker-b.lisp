@@ -5562,27 +5562,6 @@
 ;; issue of how to deal with guards.  So I'll keep :definition rules
 ;; separate from :rewrite rules.
 
-(defun remove-trivial-lits-raw (lst type-alist alist wrld ens ttree)
-  ;; Removes trivially true lits from lst.  However, we don't touch elements
-  ;; of lst that contain free variables (elements of free).
-  ;; We apply the substitution at this point because we need to
-  ;; know whether a lit contains a free variable (one not bound
-  ;; by alist) that might get bound later, thus changing its truth
-  ;; value.
-  (if (consp lst)
-      (mv-let (rest-list ttree)
-              (remove-trivial-lits-raw (cdr lst) type-alist alist wrld ens ttree)
-              (let ((new-lit (sublis-var alist (car lst))))
-                (if (free-varsp (car lst) alist)
-                    (mv (cons (car lst) rest-list) ttree)
-                  (mv-let (knownp nilp nilp-ttree)
-                          (known-whether-nil new-lit type-alist
-                                             ens (ok-to-force-ens ens) wrld ttree)
-                          (if (and knownp (not nilp))
-                              (mv rest-list nilp-ttree)
-                            (mv (cons (car lst) rest-list) ttree))))))
-    (mv nil ttree)))
-
 (define-pc-primitive expand (&optional
                              ;; nil means eliminate the lambda:
                              do-not-expand-lambda-flg)

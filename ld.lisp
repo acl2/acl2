@@ -18481,6 +18481,10 @@
   including an example of a loop that no longer occurs, may be found in source
   function ~c[expand-permission-result].
 
+  Slightly strengthened ~il[type-set] reasoning.  See the comment in ACL2
+  source function ~c[rewrite-atm] about the ``use of dwp = t'' for an example
+  of a theorem provable only after this change.
+
   ~st[BUG FIXES]
 
   Fixed a class of soundness bugs involving each of the following functions:

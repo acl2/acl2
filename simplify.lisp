@@ -81,7 +81,9 @@
 ; necessary case splits done.
 
   (mv-let (knownp nilp ttree)
-          (known-whether-nil term type-alist ens force-flg wrld nil)
+          (known-whether-nil term type-alist ens force-flg
+                             nil ; dwp
+                             wrld nil)
           (cond (knownp
                  (cond (nilp (mv *t* ttree))
                        (t (mv *nil* ttree))))
@@ -98,7 +100,9 @@
 ; necessary case splits done.
 
   (mv-let (knownp nilp ttree)
-          (known-whether-nil term type-alist ens force-flg wrld nil)
+          (known-whether-nil term type-alist ens force-flg
+                             nil ; dwp
+                             wrld nil)
           (cond (knownp
                  (cond (nilp (mv *nil* ttree))
                        (t (mv *t* ttree))))
@@ -4880,6 +4884,27 @@
                              (access rewrite-constant rcnst
                                      :current-enabled-structure)
                              (ok-to-force rcnst)
+
+; The use of dwp = t here, together with the passing of dwp down to
+; the calls of type-set-with-rules in type-set-rec, enables the proof of the
+; thm below to go through.  This example is a distillation of an example that
+; arose during a proof attempt by Matt Kaufmann.
+
+;   (defstub f1 (x) t)
+;   (defstub f2 (x) t)
+;   (defstub f3 (x) t)
+;   (defaxiom ax1
+;     (implies (f1 x)
+;              (f2 x)))
+;   (defaxiom ax2
+;     (implies (force (f2 x))
+;              (natp (f3 x)))
+;     :rule-classes :type-prescription)
+;   (thm (implies (and (f1 x)
+;                      (f3 x))
+;                 (<= 0 (f3 x))))
+
+                             t ; dwp
                              wrld
                              ttree0)
           (cond

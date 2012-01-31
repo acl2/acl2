@@ -8018,7 +8018,7 @@
                       (type-set-with-rules
                        (getprop fn 'type-prescriptions nil 'current-acl2-world w)
                        x force-flg
-                       nil ; dwp
+                       dwp ; see comment in rewrite-atm about "use of dwp"
                        type-alist ancestors ens w
                        *ts-unknown* ttree pot-lst pt backchain-limit)
                       (mv (ts-intersection ts ts2) ttree2))))))))
@@ -8140,7 +8140,7 @@
                  (type-set-with-rules
                   (getprop fn 'type-prescriptions nil 'current-acl2-world w)
                   x force-flg
-                  nil ; dwp
+                  dwp ; see comment in rewrite-atm about "use of dwp"
                   type-alist ancestors ens w
                   *ts-unknown* ttree
                   pot-lst pt backchain-limit)
@@ -8680,6 +8680,7 @@
 ; we don't put ttree into the type-alist, but instead we assume that our caller
 ; will compensate appropriately.
 
+  (declare (ignore dwp))
   (cond
    ((enabled-numep (access type-prescription tp :nume) ens)
     (mv-let
@@ -8698,7 +8699,7 @@
                  ((null hyps) type-alist)
                  (t (extend-type-alist-with-bindings unify-subst
                                                      force-flg
-                                                     dwp
+                                                     nil ; dwp
                                                      type-alist
                                                      ancestors
                                                      ens w
@@ -8718,7 +8719,8 @@
                                   hyps
                                   (access type-prescription tp
                                           :backchain-limit-lst)
-                                  force-flg dwp
+                                  force-flg
+                                  nil ; dwp
                                   unify-subst
                                   type-alist
                                   ancestors
@@ -8739,7 +8741,7 @@
               (type-set-with-rule1 unify-subst
                                    (access type-prescription tp :vars)
                                    force-flg
-                                   dwp
+                                   nil ; dwp
                                    type-alist ancestors ens w
                                    (access type-prescription tp :basic-ts)
                                    (push-lemma
@@ -11719,7 +11721,7 @@
                  type-alist0 ens wrld
                  *type-alist-equality-loop-max-depth*))))))
 
-(defun known-whether-nil (x type-alist ens force-flg wrld ttree)
+(defun known-whether-nil (x type-alist ens force-flg dwp wrld ttree)
 
 ; This function determines whether we know, from type-set reasoning,
 ; whether x is nil or not.  It returns three values.  The first is the
@@ -11744,7 +11746,7 @@
   (cond ((quotep x)
          (mv t (equal x *nil*) ttree))
         (t (mv-let (ts ttree)
-                   (type-set x force-flg nil type-alist ens wrld ttree nil nil)
+                   (type-set x force-flg dwp type-alist ens wrld ttree nil nil)
                    (cond ((ts= ts *ts-nil*)
                           (mv t t ttree))
                          ((ts-intersectp ts *ts-nil*)

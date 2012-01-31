@@ -25338,7 +25338,9 @@
                      (mv-let
                       (knownp nilp nilp-ttree)
                       (known-whether-nil inst-hyp type-alist ens
-                                         (ok-to-force-ens ens) wrld ttree)
+                                         (ok-to-force-ens ens)
+                                         nil ; dwp
+                                         wrld ttree)
                       (cond
                        (knownp
                         (mv (not nilp) unify-subst nilp-ttree))
@@ -25427,7 +25429,9 @@
               (mv (cons new-lit rest-list) ttree)
             (mv-let (knownp nilp nilp-ttree)
               (known-whether-nil new-lit type-alist
-                                 ens (ok-to-force-ens ens) wrld ttree)
+                                 ens (ok-to-force-ens ens)
+                                 nil ; dwp
+                                 wrld ttree)
               (if (and knownp (not nilp))
                   (mv rest-list nilp-ttree)
                 (mv (cons new-lit rest-list) ttree))))))

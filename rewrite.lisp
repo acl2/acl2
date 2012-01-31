@@ -3792,6 +3792,7 @@
                              type-alist
                              ens
                              force-flg
+                             nil ; dwp
                              wrld
                              ttree)
 
@@ -14711,6 +14712,7 @@
                                     (access rewrite-constant rcnst
                                             :current-enabled-structure)
                                     force-flg
+                                    nil ; dwp
                                     wrld
                                     ttree)
                                    (cond
