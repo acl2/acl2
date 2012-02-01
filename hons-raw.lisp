@@ -1367,33 +1367,34 @@
     (hl-make-addr-limit-current hs)
     (return-from hl-addr-limit-action nil))
 
-  ;; We might eventually take this message out, but it seems nice to be able to
-  ;; know that the ADDR-HT is about to be resized.
-  (format t "; Hons-Note: ADDR-LIMIT reached, ~:D used of ~:D slots.~%"
-          (hash-table-count (hl-hspace-addr-ht hs))
-          (hash-table-size (hl-hspace-addr-ht hs)))
+  (let ((note-stream (get-output-stream-from-channel *standard-co*)))
+    ;; We might eventually take this message out, but it seems nice to be able to
+    ;; know that the ADDR-HT is about to be resized.
+    (format note-stream "; Hons-Note: ADDR-LIMIT reached, ~:D used of ~:D slots.~%"
+            (hash-table-count (hl-hspace-addr-ht hs))
+            (hash-table-size (hl-hspace-addr-ht hs)))
 
-  (unless (> (hash-table-size (hl-hspace-addr-ht hs)) *hl-addr-limit-minimum*)
-    ;; The table is small so it's not worth doing anything.  So, just bump up
-    ;; the ADDR-LIMIT so we won't look at it again until the next resize.
-    (hl-make-addr-limit-next hs)
-    (return-from hl-addr-limit-action nil))
+    (unless (> (hash-table-size (hl-hspace-addr-ht hs)) *hl-addr-limit-minimum*)
+      ;; The table is small so it's not worth doing anything.  So, just bump up
+      ;; the ADDR-LIMIT so we won't look at it again until the next resize.
+      (hl-make-addr-limit-next hs)
+      (return-from hl-addr-limit-action nil))
 
-  ;; 99% full and the table is huge.  Do something drastic.
-  (format t "; Hons Note: Trying to reclaim space to avoid ADDR-HT resizing...~%")
-  (force-output)
+    ;; 99% full and the table is huge.  Do something drastic.
+    (format note-stream "; Hons Note: Trying to reclaim space to avoid ADDR-HT resizing...~%")
+    (force-output note-stream)
 
-  (when *hl-addr-limit-should-clear-memo-tables*
-    (clear-memoize-tables))
+    (when *hl-addr-limit-should-clear-memo-tables*
+      (clear-memoize-tables))
 
-  (hl-hspace-hons-wash hs)
+    (hl-hspace-hons-wash hs)
 
-  (format t "; Hons-Note: After ADDR-LIMIT actions, ~:D used of ~:D slots.~%"
-          (hash-table-count (hl-hspace-addr-ht hs))
-          (hash-table-size (hl-hspace-addr-ht hs)))
-  (force-output)
+    (format note-stream "; Hons-Note: After ADDR-LIMIT actions, ~:D used of ~:D slots.~%"
+            (hash-table-count (hl-hspace-addr-ht hs))
+            (hash-table-size (hl-hspace-addr-ht hs)))
+    (force-output note-stream)
 
-  nil)
+    nil))
 
 
 
@@ -2372,7 +2373,8 @@ To avoid the following break and get only the above warning:~%  ~a~%"
           (progn
             (when (> (ccl::full-gccount) current-gcs)
               (loop-finish))
-            (format t "; Hons Note: Waiting for GC to finish.~%")
+            (format (get-output-stream-from-channel *standard-co*)
+                    "; Hons Note: Waiting for GC to finish.~%")
             (finish-output)
             (sleep 1))))
   #-Clozure
@@ -2453,7 +2455,8 @@ To avoid the following break and get only the above warning:~%  ~a~%"
                                            :cdr-ht-eql temp-cdr-ht-eql))
          (temp-faltable   (hl-faltable-init))
          (temp-persist-ht (hl-mht :test #'eq))
-         (seen-ht         (hl-mht :test #'eq :size 10000)))
+         (seen-ht         (hl-mht :test #'eq :size 10000))
+         (note-stream (get-output-stream-from-channel *standard-co*)))
 
     ;; Very subtle.  We're about to violate invariants, so we need to clear out
     ;; the hons space while we work.  Because we aggregated the ctables into a
@@ -2471,7 +2474,7 @@ To avoid the following break and get only the above warning:~%  ~a~%"
     (setf (hl-hspace-persist-ht hs) temp-persist-ht)
     (setf (hl-hspace-ctables hs) temp-ctables)
 
-    (format t "; Hons Note: clearing normed objects.~%")
+    (format note-stream "; Hons Note: clearing normed objects.~%")
 
     (clrhash nil-ht)
     (clrhash cdr-ht)
@@ -2480,14 +2483,14 @@ To avoid the following break and get only the above warning:~%  ~a~%"
     (when gc
       (hl-system-gc))
 
-    (format t "; Hons Note: re-norming persistently normed objects.~%")
+    (format note-stream "; Hons Note: re-norming persistently normed objects.~%")
 
     (maphash (lambda (key val)
                (declare (ignore val))
                (hl-hspace-classic-restore key nil-ht cdr-ht cdr-ht-eql seen-ht))
              persist-ht)
 
-    (format t "; Hons Note: re-norming fast alist keys.~%")
+    (format note-stream "; Hons Note: re-norming fast alist keys.~%")
 
     ;; BOZO we probably want to loop over the alist, rather than the associated
     ;; hash table, to avoid the maphash overhead
@@ -2501,7 +2504,7 @@ To avoid the following break and get only the above warning:~%  ~a~%"
                 associated-hash-table))
      faltable)
 
-    (format t "; Hons Note: finished re-norming ~a conses.~%"
+    (format note-stream "; Hons Note: finished re-norming ~a conses.~%"
             (hash-table-count seen-ht))
 
     ;; Again order is critical.  Ctables must be installed before fal-ht or
@@ -2570,7 +2573,8 @@ To avoid the following break and get only the above warning:~%  ~a~%"
          (temp-faltable   (hl-faltable-init))
          (temp-persist-ht (hl-mht :test #'eq))
          (temp-addr-ht    (hl-mht :test #'eql))
-         (temp-sbits      (make-array 1 :element-type 'bit :initial-element 0)))
+         (temp-sbits      (make-array 1 :element-type 'bit :initial-element 0))
+         (note-stream     (get-output-stream-from-channel *standard-co*)))
 
     ;; Very subtle.  We're about to violate invariants, so we need to clear out
     ;; the hons space while we work.
@@ -2584,7 +2588,7 @@ To avoid the following break and get only the above warning:~%  ~a~%"
      (setf (hl-hspace-addr-ht hs) temp-addr-ht)
      (setf (hl-hspace-sbits hs) temp-sbits))
 
-    (format t "; Hons Note: clearing normed objects.~%")
+    (format note-stream "; Hons Note: clearing normed objects.~%")
 
     (clrhash addr-ht)
     (loop for i fixnum below sbits-len do
@@ -2612,7 +2616,7 @@ To avoid the following break and get only the above warning:~%  ~a~%"
             faltable)
            :msg "; Hons Note: re-norm fal keys: ~st seconds, ~sa bytes.~%")
 
-    (format t "; Hons Note: finished re-norming ~:D conses.~%"
+    (format note-stream "; Hons Note: finished re-norming ~:D conses.~%"
             (hash-table-count addr-ht))
 
     ;; Order matters, reinstall addr-ht and sbits before fal-ht and persist-ht!
@@ -2785,11 +2789,12 @@ To avoid the following break and get only the above warning:~%  ~a~%"
          (temp-faltable   (hl-faltable-init))
          (temp-addr-ht    (hl-mht :test #'eql))
          (temp-sbits      (make-array 1 :element-type 'bit :initial-element 0))
-         (temp-persist-ht (hl-mht :test #'eq)))
+         (temp-persist-ht (hl-mht :test #'eq))
+         (note-stream     (get-output-stream-from-channel *standard-co*)))
 
-    (format t "; Hons Note: washing ADDR-HT, ~:D used of ~:D slots.~%"
+    (format note-stream "; Hons Note: washing ADDR-HT, ~:D used of ~:D slots.~%"
             addr-ht-count addr-ht-size)
-    (force-output)
+    (force-output note-stream)
 
     ;; Clear the memo table since it might prevent conses from being garbage
     ;; collected and it's unsound to leave it as the sbits/addr-ht are cleared.
@@ -2836,8 +2841,8 @@ To avoid the following break and get only the above warning:~%  ~a~%"
       (when (> pct-full *hl-addr-ht-resize-cutoff*)
         (setq addr-ht-size (floor (* addr-ht-size addr-ht-rehash-size))))
 
-      (format t "; Hons Note: Making new ADDR-HT with size ~:D~%" addr-ht-size)
-      (force-output)
+      (format note-stream "; Hons Note: Making new ADDR-HT with size ~:D~%" addr-ht-size)
+      (force-output note-stream)
 
       ;; This can take several seconds...
       (setq addr-ht (hl-mht :test #'eql
@@ -2845,13 +2850,13 @@ To avoid the following break and get only the above warning:~%  ~a~%"
                             :rehash-size      addr-ht-rehash-size
                             :rehash-threshold addr-ht-rehash-threshold))
 
-      (format t "; Hons Note: Restoring ~:D conses~%" num-survivors)
-      (force-output)
+      (format note-stream "; Hons Note: Restoring ~:D conses~%" num-survivors)
+      (force-output note-stream)
 
       ;; This can take hundreds of seconds...
       (hl-rebuild-addr-ht sbits addr-ht str-ht other-ht)
-      (format t "; Hons Note: Done restoring~%")
-      (force-output)
+      (format note-stream "; Hons Note: Done restoring~%")
+      (force-output note-stream)
 
       ;; All objects restored.  The hons space should now be in a fine state
       ;; once again.  Restore it.
