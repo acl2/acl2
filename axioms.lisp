@@ -14766,9 +14766,9 @@
 
   the ~c[i]th bit of an integer~/
 
-  For a nonnegative integer ~c[i] and an integer ~c[j], ~c[(logbitp i j)]
-  is the value of the ~c[i]th bit in the two's complement
-  representation of ~c[j].~/
+  For a nonnegative integer ~c[i] and an integer ~c[j], ~c[(logbitp i j)] is a
+  Boolean, which is ~c[t] if and only if the value of the ~c[i]th bit is ~c[1]
+  in the two's complement representation of ~c[j].~/
 
   ~c[(Logbitp i j)] has a ~il[guard] that ~c[i] is a nonnegative integer and
   ~c[j] is an integer.
@@ -35281,13 +35281,13 @@
         ((eq key :defun-mode)
          (member-eq val '(:logic :program)))
         ((eq key :verify-guards-eagerness)
-         (member-equal val '(0 1 2)))
+         (member val '(0 1 2)))
         ((eq key :enforce-redundancy)
          (member-eq val '(t nil :warn)))
         ((eq key :ignore-doc-string-error)
          (member-eq val '(t nil :warn)))
         ((eq key :compile-fns)
-         (member-equal val '(t nil)))
+         (member-eq val '(t nil)))
         ((eq key :measure-function)
          (and (symbolp val)
               (function-symbolp val world)

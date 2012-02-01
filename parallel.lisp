@@ -445,9 +445,8 @@
             "Parallelizing the proof of every subgoal, as long as CPU core ~
              resources are available."))))
     (observation nil
-                 "~@0  Setting waterfall-parallelism printing to ~s1.  ~
-                  Setting waterfall-printing to ~s2 (see :DOC ~
-                  set-waterfall-printing)."
+                 "~@0  Setting waterfall-parallelism to ~s1.  Setting ~
+                  waterfall-printing to ~s2 (see :DOC set-waterfall-printing)."
                  str
                  (symbol-name val)
                  (symbol-name print-val))))
@@ -506,7 +505,7 @@
                         SBCL, or Lispworks.  Additionally, the feature ~
                         :ACL2-PAR must be set when compiling ACL2 (for ~
                         example, by using `make' with argument `ACL2_PAR=t'). ~
-                         Either the current Lisp is neither CCL nor threaded ~
+                        ~ Either the current Lisp is neither CCL nor threaded ~
                         SBCL nor Lispworks, or this feature is missing.  ~
                         Consequently, this attempt to set ~
                         waterfall-parallelism to ~x0 will be ignored.~%~%"
@@ -2277,8 +2276,8 @@
   ~ev[]
 
   For example, suppose that the value of ~c[total-parallelism-work-limit] was
-  originally 10,000.  Then evaluation of the following form increase that limit
-  to 13,000.
+  originally 10,000.  Then evaluation of the following form increases that
+  limit to 13,000.
   ~bv[]
   (set-total-parallelism-work-limit 13000 state)
   ~ev[]
