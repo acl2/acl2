@@ -21,6 +21,8 @@
 (in-package "VL")
 (include-book "lexer-tokens")
 (include-book "lexer-utils")
+(include-book "../util/warnings")
+(include-book "../util/commentmap")
 (local (include-book "../util/arithmetic"))
 
 
