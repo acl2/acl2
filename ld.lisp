@@ -18642,6 +18642,15 @@
   For ACL2(p): The macro ~c[set-parallel-evaluation] has been renamed
   ~ilc[set-parallel-execution].
 
+  For ACL2(p): The macros ~ilc[set-waterfall-parallelism] and
+  ~ilc[set-waterfall-printing] are no longer ~il[events], so may not be placed
+  at the top level of ~il[books].  However, it is easy to create events that
+  have these effects; ~pl[set-waterfall-parallelism] and
+  ~pl[set-waterfall-printing].  These changes were made so that ~c[:]~ilc[ubt]
+  and similar commands do not change the settings for waterfall-parallelism or
+  waterfall-printing.  Thanks to David Rager for contributing an initial
+  implementation of these changes.
+
   Among the enchancements for the HONS version (~pl[hons-and-memoization]) are
   the following.~bq[]
 

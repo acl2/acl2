@@ -353,14 +353,14 @@
 
 (defparameter *reset-parallelism-variables* nil)
 
-(defparameter *reset-core-count-too* 
+(defparameter *reset-core-count-too*
 
 ; This variable has a relatively unsophisticated use: When Rager runs his
 ; dissertation performance test scripts, sometimes he adjusts the number of
 ; cpu-cores to be a factor of the actual cpu-core count.  In this case we are
 ; just testing, and we don't want to override 
   
- t)
+  t)
 
 (defun reset-parallelism-variables ()
 
@@ -387,12 +387,12 @@
 ; reinstated once I stop playing around with the number of active threads.
 
   (when *reset-core-count-too*
-    (setf *core-count*
-          
-; We reset *core-count* so that it gets the appropriate value for the machine
-; upon which the Lisp is currently running.
-          
-          (core-count-raw)))
+
+; We reset *core-count* and related variable(s) in case the current platform
+; has a different number of CPU cores than the compilation platform had.
+
+    (setf *core-count* (core-count-raw))
+    (setf *unassigned-and-active-work-count-limit* (* 4 *core-count*)))
 
   (setf *idle-thread-count* (make-atomically-modifiable-counter 0))
 
@@ -661,7 +661,7 @@
 ; CPU cores busy, while limiting the total amount of work so that the number of
 ; threads necessary to evaluate that work does not execede the number of
 ; threads that the underlying Lisp supports creating.  (See also comments in
-; *total-work-limit*.)
+; default-total-parallelism-work-limit.)
 
 (defun add-work-list-to-queue (work-list)
 
@@ -801,6 +801,21 @@
           result-array
           children-done-semaphore))))
 
+(defun pargs-parallelism-buffer-has-space-available ()
+  (< (atomically-modifiable-counter-read *unassigned-and-active-work-count*)
+     *unassigned-and-active-work-count-limit*))
+
+(defun not-too-many-pieces-of-parallelism-work-already-in-existence ()
+
+; Parallelism no-fix: we could fix the plet, pargs, pand, and por parallel
+; execution system to cause an error when this limit is exceeded.  However,
+; since there is no notion of ":full" parallel execution (like in the ACL2
+; waterfall) for these primitives (because these primitives only parallelize
+; when resources are avaiable), such an error would be meaningless.
+
+  (< (atomically-modifiable-counter-read *total-work-count*)
+     (f-get-global 'total-parallelism-work-limit *the-live-state*)))
+
 (defun parallelism-resources-available ()
 
 ; This function is our attempt to guess when resources are available.  When
@@ -816,10 +831,8 @@
 ; if we miss a few chances to parallelize, or parallelize a few extra times.
 
   (and (f-get-global 'parallel-execution-enabled *the-live-state*)
-       (< (atomically-modifiable-counter-read *unassigned-and-active-work-count*)
-          *unassigned-and-active-work-count-limit*)
-       (< (atomically-modifiable-counter-read *total-work-count*)
-          *total-work-limit*)))
+       (pargs-parallelism-buffer-has-space-available)
+       (not-too-many-pieces-of-parallelism-work-already-in-existence)))
 
 (defun throw-threads-in-array (thread-array current-position)
 
@@ -1296,7 +1309,16 @@
   (number-of-threads-waiting-on-a-child-aux (all-threads) 0))
 
 (defun future-queue-length ()
-  (- *last-slot-saved* *last-slot-taken*))
+
+; At one point this was simply the difference between the *last-slot-saved* and
+; the *last-slot-taken*.  However, since we grab work from the work queue
+; before actually processing it with an idle cpu core, it is also necessary to
+; add the difference of *unassigned-and-active-future-count* and *core-count*.
+; Parallelism wart: The comment above says *core-count* but the corresopnding
+; code below says (number-of-active-threads).
+
+  (+ (- *last-slot-saved* *last-slot-taken*)
+     (max 0 (- *unassigned-and-active-future-count* (number-of-active-threads)))))
 
 (defvar *refresh-rate-indicator* 0)
 
@@ -1308,11 +1330,39 @@
          `(format nil " Constant ~s is ~s~% " ,(symbol-name var) ,var))
         ((fboundp var)
          `(format nil " Stat     ~s is ~s~% " ,(symbol-name var) (,var)))
+        ((boundp-global var *the-live-state*)
+         `(format nil " Stat     ~s is ~s~% " ,(symbol-name var) 
+                  ,(f-get-global var *the-live-state*)))
         (t
          `(format nil " Variable ~s is ~s~% " ,(symbol-name var) ,var))))
 
-(defun print-interesting-parallelism-variables-str()
+(defun acl2p-sum-list1 (lst acc)
+  (cond ((endp lst)
+         acc)
+        (t (acl2p-sum-list1 (cdr lst)
+                            (+ (car lst) acc)))))
+
+(defun acl2p-sum-list (lst)
+
+; An arcane name is chosen so that we don't conflict with other implementations
+; of "sum-list".
+
+  (acl2p-sum-list1 lst 0))
+
+(defun average-future-queue-size ()
+  (* 1.0 (/ (acl2p-sum-list *future-queue-length-history*)
+            (length *future-queue-length-history*))))
+
+(defun print-interesting-parallelism-variables-str ()
   (incf *refresh-rate-indicator*)
+  (setf *future-queue-length-history* 
+
+; Note that this setf isn't thread safe, but if we lose one entry in the
+; history, we don't really care.
+
+        (cons (future-queue-length)
+              *future-queue-length-history*))
+
   (concatenate 
    'string
    (format nil "  Printing stats related to executing in parallel.~% ")
@@ -1325,7 +1375,7 @@
    (value-of-symbol *unassigned-and-active-work-count-limit*)
 
    (value-of-symbol *total-future-count*)
-   (value-of-symbol *total-work-limit*)
+   (value-of-symbol total-parallelism-work-limit)
 
    (format nil "~% ")
    (value-of-symbol number-of-active-threads)
@@ -1335,6 +1385,7 @@
    (value-of-symbol *last-slot-taken*)
    (value-of-symbol *last-slot-saved*)
    (value-of-symbol future-queue-length)
+   (value-of-symbol average-future-queue-size)
 
 
    (format nil "~% ")

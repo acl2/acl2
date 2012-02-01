@@ -52,64 +52,6 @@
 
 ; End of Section "To Consider".
 
-(defdoc parallelism
-
-  ":Doc-Section Parallelism
-
-  experimental extension for parallel execution and proofs~/
-
-  This documentation topic relates to an experimental extension of ACL2,
-  ACL2(p), created initially by David L. Rager.  ~l[compiling-acl2p] for how to
-  build an executable image that supports parallel execution.  Also see
-  ~c[books/parallel] for examples.  For a completely different sort of
-  parallelism, at the system level, ~pl[provisional-certification].
-
-  IMPORTANT NOTE.  We hope and expect that every evaluation result is correctly
-  computed by ACL2(p), and that every formula proved using ACL2(p) is a theorem
-  of the ACL2 logic (and in fact is provable using ACL2).  However, we do not
-  guarantee these properties.  Since ACL2(p) is intended to be an aid in
-  efficient evaluation and proof development, we focus less on ironclad
-  soundness and more on providing an efficient and working implementation.
-  Nevertheless, if you encounter a case where ACL2(p) computes an incorrect
-  result, or produces a proof where ACL2 fails to do so (and this failure is
-  not discussed in ~il[unsupported-waterfall-parallelism-features]), please
-  notify the implementors.
-
-  One of ACL2's strengths lies in its ability to execute industrial models
-  efficiently.  The ACL2 source code provides an experimental parallel
-  execution capability that can increase the speed of explicit evaluation,
-  including simulator runs using such models, and it can also decrease the time
-  required for proofs that make heavy use of the evaluation of ground terms.
-
-  The parallelism primitives are ~ilc[plet], ~ilc[pargs], ~ilc[pand],
-  ~ilc[por], and ~ilc[spec-mv-let].  ~ilc[Pand] and ~ilc[por] terminate early
-  when an argument is found to evaluate to ~c[nil] or non-~c[nil],
-  respectively, thus potentially improving on the efficiency of lazy
-  evaluation.  ~ilc[Spec-mv-let] is a modification of ~ilc[mv-let] that
-  supports speculative and parallel execution.~/
-
-  Of the above five parallelism primitives, all but ~ilc[spec-mv-let] allow for
-  limiting parallel execution (spawning of so-called ``threads'') depending on
-  resource availability.  Specifically, the primitives allow specification of a
-  size condition to control the ~il[granularity] under which threads are
-  allowed to spawn.  You can use such ~il[granularity] declarations in
-  recursively-defined functions to implement data-dependent parallelism in
-  their execution.
-
-  We recommend that in order to learn to use the parallelism primitives, you
-  begin by reading examples: ~pl[parallelism-tutorial].  That section will
-  direct you to further documentation topics.
-
-  In addition to providing parallel programming primitives, ACL2(p) also
-  provides the ability to execute the main ACL2 proof process in parallel.
-  ~l[set-waterfall-parallelism] for further details.
-
-  While we aim to support Clozure Common Lisp (CCL), Steel Bank Common
-  Lisp (SBCL), and Lispworks, SBCL and Lispworks both currently sometimes
-  experience problems when evaluating the ACL2 proof process (the
-  ``waterfall'') in parallel.  Therefore, CCL is the recommend Lisp for anyone
-  that wants to use parallelism and isn't working on fixing those problems.")
-
 (defdoc deflock
 
   ":Doc-Section ACL2::Parallelism
@@ -477,89 +419,54 @@
 
   ~l[set-waterfall-parallelism].~/~/")
 
-; Here are the two functions we need now from
-; make-waterfall-parallelism-constants and make-waterfall-printing-constants
-; (see boot-strap-pass-2.lisp).
-
-(defun waterfall-parallelism-nil ()
-  (declare (xargs :guard t :mode :logic))
-  nil)
-
-(defun waterfall-printing-full ()
-  (declare (xargs :guard t :mode :logic))
-  :FULL)
-
-(defproxy waterfall-parallelism () => *)
-(defproxy waterfall-printing () => *)
-
-(defun check-set-waterfall-parallelism (val print-val)
-
-; Parallelism wart: perhaps change the wording to make it more obvious that
-; there are two settings involved here, waterfall-parallelism and
-; waterfall-printing.
+(defun print-set-waterfall-parallelism-notice (val print-val state)
 
 ; Warning: This function should only be called inside the ACL2 loop, because of
 ; the calls of observation-cw.
 
   (declare (xargs :guard (and (member-eq val *waterfall-parallelism-values*)
                               (keywordp print-val))))
-  (cond
-   ((and (eq (waterfall-parallelism) val)
-         (eq (waterfall-printing) print-val))
-    (observation-cw
-     nil
-     "No change in waterfall parallelism or waterfall printing (but the ~
-      set-waterfall-parallelism event is not redundant)."))
-   (t
-    (let ((observation-string
+  (let ((str
+         (case val
+           ((nil)
+            "Disabling parallel execution of the waterfall.")
+           (:full
+            "Parallelizing the proof of every subgoal.")
+           (:top-level
+            "Parallelizing the proof of top-level subgoals only.")
+           (:pseudo-parallel
+            "Running the version of the waterfall prepared for parallel ~
+             execution (stateless).  However, we will execute this version of ~
+             the waterfall serially.")
+           (:resource-and-timing-based
+            "Parallelizing the proof of every subgoal that was determined to ~
+             take a non-trivial amount of time in a previous proof attempt.")
+           (otherwise ; :resource-based
+            "Parallelizing the proof of every subgoal, as long as CPU core ~
+             resources are available."))))
+    (observation nil
+                 "~@0  Setting waterfall-parallelism printing to ~s1.  ~
+                  Setting waterfall-printing to ~s2 (see :DOC ~
+                  set-waterfall-printing)."
+                 str
+                 (symbol-name val)
+                 (symbol-name print-val))))
 
-; The strange use of concatenate below, rather than creating a formatted string
-; to pass to observation-cw below, is due to the use of wormholes in the
-; implementation of observation-cw.  An initial implementation produced an
-; error because the wormhole call resulted in a call of the *1* function for
-; flpr, which was illegal because that function is program-only.
+(defun check-for-no-override-hints (ctx state)
 
-           (concatenate
-            'string
-            (case val
-              ((nil)
-               "Disabling parallel execution of the waterfall.  Setting ~
-               waterfall-printing to :")
-              (:full
-               "Parallelizing the proof of every subgoal.  Setting ~
-               waterfall-printing to :")
-              (:top-level
-               "Parallelizing the proof of top-level subgoals only.  Setting ~
-               waterfall-printing to :")
-              (:pseudo-parallel
-               "Running the version of the waterfall prepared for parallel ~
-               execution (stateless).  However, we will execute this version ~
-               of the waterfall serially.  Setting waterfall-printing to :")
-              (:resource-and-timing-based
-               "Parallelizing the proof of every subgoal that was determined ~
-                to take a non-trivial amount of time in a previous proof ~
-                attempt.  Setting waterfall-printing to :")
-              (otherwise ; :resource-based
-               "Parallelizing the proof of every subgoal, as long as CPU core ~
-                resources are available.  Setting waterfall-printing to :"))
-            (symbol-name print-val)
-            " (see :DOC set-waterfall-printing).")))
-      (observation-cw nil observation-string)))))
+; Although this macro is intended for #+acl2-par, we need it unconditionally
+; because it is called in set-waterfall-parallelism, which might be called
+; outside ACL2(p); see the note about a call of observation in
+; set-waterfall-parallelism-fn.
 
-; #+acl2-par -- This readtime conditional might be added later.
-(defmacro check-for-no-override-hints (ctx value)
-  (declare (ignorable value))
-  `(with-output
-    (make-event
-     (cond
-      ((and (not (cdr (assoc-eq 'hacks-enabled
-                                (table-alist 'waterfall-parallelism-table
-                                             (w state)))))
-            (cdr (assoc-eq :override (table-alist 'default-hints-table
-                                                  (w state)))))
-       (with-output
-        :stack :pop
-        (er soft ,ctx
+  (let ((wrld (w state)))
+    (cond
+     ((and (not (cdr (assoc-eq 'hacks-enabled
+                               (table-alist 'waterfall-parallelism-table
+                                            wrld))))
+           (cdr (assoc-eq :override (table-alist 'default-hints-table
+                                                 wrld))))
+      (er soft ctx
 
 ; Override hints must be removed because set-waterfall-parallelism performs a
 ; defattach, which spawns some proof effort.  If there are override-hints
@@ -567,17 +474,50 @@
 ; attempt to use them.  Since override-hints are not permitted without enabling
 ; waterfall-parallelism-hacks, in this case, we must cause an error.
             
-            "Before changing the status of waterfall-parallelism, either (1) ~
-             override hints must be removed from the default-hints-table or ~
-             (2) waterfall-parallelism hacks must be enabled.  (1) can be ~
-             achieved by calling ~x0.  (2) can be achived by calling ~x1."
-            '(set-override-hints nil)
-            '(set-waterfall-parallelism-hacks-enabled t))))
-      (t (value '(value-triple nil)))))))
+          "Before changing the status of waterfall-parallelism, either (1) ~
+           override hints must be removed from the default-hints-table or (2) ~
+           waterfall-parallelism hacks must be enabled.  (1) can be achieved ~
+           by calling ~x0.  (2) can be achived by calling ~x1."
+          '(set-override-hints nil)
+          '(set-waterfall-parallelism-hacks-enabled t)))
+     (t (value nil)))))
 
-(defmacro set-waterfall-parallelism (value &optional no-error)
+(defun set-waterfall-parallelism-fn (val ctx state)
+  (cond ((member-eq val *waterfall-parallelism-values*)
+         #+acl2-par
+         (pprogn (f-put-global 'waterfall-parallelism val state)
+                 (value val))
+         #-acl2-par
 
-; Parallelism wart: add a link to set-waterfall-printing with explanation.
+; Once upon a time we issued an error here instead of an observation.  In
+; response to feedback from Dave Greve, we have changed it to an observation so
+; that users can call set-waterfall-parallelism inside books (presumably via
+; make-event) without causing their certification to stop when using #-acl2-par
+; builds of ACL2.
+
+         (pprogn
+          (observation ctx
+      
+; We make this an observation instead of a warning, because it's probably
+; pretty obvious to the user whether they're using an image that was built with
+; the acl2-par feature.
+                     
+                       "Parallelism can only be enabled in CCL, threaded ~
+                        SBCL, or Lispworks.  Additionally, the feature ~
+                        :ACL2-PAR must be set when compiling ACL2 (for ~
+                        example, by using `make' with argument `ACL2_PAR=t'). ~
+                         Either the current Lisp is neither CCL nor threaded ~
+                        SBCL nor Lispworks, or this feature is missing.  ~
+                        Consequently, this attempt to set ~
+                        waterfall-parallelism to ~x0 will be ignored.~%~%"
+                       val)
+          (value :ignored)))
+        (t (er soft ctx
+               "Illegal value for set-waterfall-parallelism: ~x0.  The legal ~
+                values are ~&1."
+               val *waterfall-parallelism-values*))))
+
+(defmacro set-waterfall-parallelism (val)
 
   ":Doc-Section switches-parameters-and-modes
 
@@ -590,9 +530,10 @@
   General Forms:
   (set-waterfall-parallelism nil)        ; never parallelize (serial execution)
   (set-waterfall-parallelism :full)      ; always parallelize
+                                         ;   (recommended setting)
   (set-waterfall-parallelism :top-level) ; parallelize top-level subgoals
   (set-waterfall-parallelism             ; parallelize if sufficient resources
-    :resource-based)                     ;   (recommended setting)
+    :resource-based)
   (set-waterfall-parallelism             ; parallelize if sufficient resources
     :resource-and-timing-based           ;   and suggested by prior attempts
   (set-waterfall-parallelism             ; never parallelize but use parallel
@@ -609,6 +550,9 @@
 
   Note that not all ACL2 features are supported when waterfall-parallelism is
   set to non-nil (~pl[unsupported-waterfall-parallelism-features]).
+
+  ~c[:Full] waterfall parallelism typically achieves the best performance in
+  ACL2(p), so ~c[:full] is the recommended setting.
 
   A value of ~c[nil] indicates that ACL2(p) should never prove subgoals in
   parallel.
@@ -631,7 +575,7 @@
   amount of parallelism based on the number of CPU cores in the system.  (Note
   that ACL2(p) knows how to obtain the number of CPU cores from the operating
   system in CCL, but that, in SBCL and in Lispworks, a constant is used
-  instead).  ~c[:Resource-based] is the recommended setting for ACL2(p).
+  instead).
 
   During the first proof attempt of a given conjecture, a value of
   ~c[:resource-and-timing-based] results in the same behavior as with
@@ -652,62 +596,70 @@
   comprehensible output from tracing (~pl[trace$]) the ~c[@par] versions of the
   waterfall functions.
 
-  Note: This is an event!  It does not print the usual event summary but
-  nevertheless changes the ACL2 logical world and is so recorded.  Moreover,
-  ~c[set-waterfall-parallelism] ~il[events] are never redundant
-  (~pl[redundant-events]).~/
+  Note that this form cannot be used at the top level of a book, or of a
+  ~ilc[progn] or ~ilc[encapsulate] event.  Here is a workaround for use in such
+  contexts; of course, you may replace ~c[:full] with any other legal argument
+  for ~c[set-waterfall-parallelism].  Note that this form will not affect
+  waterfall-parallelism when including a certified book that contains it.
+  ~bv[]
+  (make-event (er-progn (set-waterfall-parallelism :full)
+                        (value '(value-triple nil))))
+  ~ev[]
+  (For more about event contexts and the use of ~c[make-event],
+  ~pl[make-event], in particular the section ``Restriction to Event
+  Contexts.'')
+
+  The following form has the effect described above, except that it will affect
+  waterfall-parallelism even when including a certified book that contains it.
+  ~bv[]
+  (make-event (er-progn (set-waterfall-parallelism :full)
+                        (value '(value-triple nil)))
+              :check-expansion t)
+  ~ev[]
+  ~/
 
   :cited-by parallelism"
 
-  (declare (xargs :guard
-                  (or (member-eq value *waterfall-parallelism-values*)
-                      (member-equal value (kwote-lst
-                                           *waterfall-parallelism-values*))))
-           #+acl2-par (ignore no-error))
-  (let* ((val (if (consp value) (cadr value) value))
-         (print-val (waterfall-printing-value-for-parallelism-value val)))
-    (prog2$
-     #+(and acl2-par acl2-loop-only)
-     (check-set-waterfall-parallelism val print-val)
-     #+(and acl2-par (not acl2-loop-only))
-     nil ; avoid observation-cw call in raw Lisp
+  `(let* ((val ,val)
+          (ctx 'set-waterfall-parallelism))
+     (er-progn
+      (check-for-no-override-hints ctx state)
+      (er-let* ((val (set-waterfall-parallelism-fn val ctx state)))
+               (cond ((eq val :ignored)
+                      (value val))
+                     (t (let ((print-val
+                               (waterfall-printing-value-for-parallelism-value
+                                val)))
+                          (pprogn
+                           (print-set-waterfall-parallelism-notice
+                            val print-val state)
+                           (er-progn
+                            (set-waterfall-printing-fn print-val ctx state)
+                            (value (list val print-val)))))))))))
 
-; Note that one can submit defattach forms directly, rather than in place of
-; this macro, in order to set waterfall-parallelism and waterfall-printing,
-; even when #-acl2-par.  However, these settings will be ignored.  The error
-; message below is therefore simply a courtesy to the user.  We include the
-; no-error argument in case one wants to put a set-waterfall-parallelism event
-; into a book that can be certified with either ACL2 or ACL2(p).
+(defun set-waterfall-printing-fn (val ctx state)
+  (cond ((member-eq val *waterfall-printing-values*)
+         #+acl2-par
+         (pprogn (f-put-global 'waterfall-printing val state)
+                 (value val))
+         #-acl2-par
 
-; Parallelism wart: document the no-error argument.  Specifically, give an
-; example of using no-error to achieve such a certification.  Also, arrange
-; that in normal ACL2, if no-error is true then we really don't get an error.
+; See note about making this an observation instead of an error inside
+; set-waterfall-parallelism.
 
-     #-acl2-par
-     (or no-error
-         (er hard 'set-waterfall-parallelism
-             "Parallelism can only be enabled in CCL, threaded SBCL, or ~
-              Lispworks. ~ Additionally, the feature :ACL2-PAR must be set ~
-              when compiling ACL2 (for example, by using `make' with argument ~
-              `ACL2_PAR=t').  Either the current Lisp is neither CCL nor ~
-              threaded SBCL nor Lispworks, or this feature is missing.  ~
-              Consequently, parallel execution of the waterfall will remain ~
-              disabled."))
-     (let ((val-fn (symbol-constant-fn 'waterfall-parallelism val)))
-       `(with-output
-         :off (event observation proof-tree prove summary warning)
-         (progn
-           (check-for-no-override-hints 'set-waterfall-parallelism ,val)
-           (defattach (waterfall-parallelism
-                       ,val-fn
-                       :hints
-                       (("Goal"
-                         :in-theory
-                         '(return-last (member-equal) (,val-fn))))))
-           (set-waterfall-printing ,print-val)
-           (value-triple ,val)))))))
-
-(defmacro set-waterfall-printing (value)
+         (pprogn (observation ctx
+                              "Customizing waterfall printing only makes ~
+                               sense in the #+acl2-par builds of ACL2.  ~
+                               Consequently, this attempt to set ~
+                               waterfall-printing to ~x0 will be ignored.~%~%"
+                              val)
+                 (value :invisible)))
+        (t (er soft ctx
+               "Illegal value for set-waterfall-printing: ~x0.  The legal ~
+                values are ~&1."
+               val *waterfall-printing-values*))))
+               
+(defmacro set-waterfall-printing (val)
 
   ":Doc-Section switches-parameters-and-modes
 
@@ -749,43 +701,56 @@
   instead of printing subgoal numbers, the proof attempt prints a
   period (`~c[.]') each time it starts a new subgoal.
 
-  Note: This is an event!  It does not print the usual event summary but
-  nevertheless changes the ACL2 logical world and is so recorded.  Moreover,
-  ~c[set-waterfall-printing] ~il[events] are never redundant
-  (~pl[redundant-events]).~/
+  Note that this form cannot be used at the top level of a book, or of a
+  ~ilc[progn] or ~ilc[encapsulate] event.  Here is a workaround for use in such
+  contexts; of course, you may replace ~c[:very-limited] with any other legal
+  argument for ~c[set-waterfall-printing].
+  ~bv[]
+  (make-event (er-progn (set-waterfall-printing :very-limited)
+                        (value '(value-triple nil))))
+  ~ev[]
+  (For more about event contexts and the use of ~c[make-event],
+  ~pl[make-event], in particular the section ``Restriction to Event
+  Contexts.'')
+
+  The following form has the effect described above, except that it will affect
+  waterfall-printing even when including a certified book that contains it.
+  ~bv[]
+  (make-event (er-progn (set-waterfall-printing :very-limited)
+                        (value '(value-triple nil)))
+              :check-expansion t)
+  ~ev[]
+
+  Note that ~c[set-waterfall-printing] is automatically called by
+  ~ilc[set-waterfall-parallelism].
+
+  To enable the printing of information when a subgoal is finished, assign a
+  non-~c[nil] value to global ~c[waterfall-printing-when-finished].  This can
+  be accomplished by entering the following at the top level:
+  ~bv[]
+  (f-put-global 'waterfall-printing-when-finished t state)
+  ~ev[]
+  ~/
 
   :cited-by parallelism"
 
-  (declare (xargs
-            :guard
-            (or (member-eq value *waterfall-printing-values*)
-                (member-equal value (kwote-lst *waterfall-printing-values*)))))
-  #-acl2-par
-  (er hard 'set-waterfall-printing
-      "Customizing waterfall printing only makes sense in the #+acl2-par ~
-       builds of ACL2.  Consequently, the attempt to set waterfall-printing ~
-       to ~x0 will be ignored."
-      value)
-  #+acl2-par
-  (let* ((val (if (consp value) (cadr value) value))
-         (val-fn (symbol-constant-fn 'waterfall-printing val)))
-    `(with-output
-      :off (event observation proof-tree prove summary warning)
-      (progn (defattach (waterfall-printing
-                         ,val-fn
-                         :hints
-                         (("Goal"
-                           :in-theory
-                           '(return-last (member-equal) (,val-fn))))))
-             (value-triple ,val)))))
+  `(set-waterfall-printing-fn ,val 'set-waterfall-printing state))
 
-; (set-waterfall-parallelism nil) ; see boot-strap-pass-2.lisp
-(defattach (waterfall-parallelism waterfall-parallelism-nil)
-  :skip-checks t)
-(defattach (waterfall-printing waterfall-printing-full)
-  :skip-checks t)
+(defun set-waterfall-parallelism-hacks-enabled-guard (wrld)
+  (or (ttag wrld)
+      (er hard nil
+          "Using waterfall parallelism hacks requires an active trust-tag. ~
+           Consider using (set-waterfall-parallelism-hacks-enabled! t).  See ~
+           :DOC set-waterfall-parallelism-hacks-enabled for~ more~ ~
+           information.")))
 
-(table waterfall-parallelism-table nil nil :guard (ttag world))
+(table waterfall-parallelism-table
+
+; Parallelism wart: now that we've changed the way set-waterfall-parallelism
+; works, should this be a state-global-based instead of table-based?  We should
+; document why this is table-based.
+
+       nil nil :guard (set-waterfall-parallelism-hacks-enabled-guard world))
 
 (defmacro set-waterfall-parallelism-hacks-enabled (val)
 
@@ -817,20 +782,7 @@
   ~l[error-triples-and-parallelism] for further related discussion.~/"
 
   (declare (xargs :guard (or (equal val t) (null val))))
-  `(with-output
-    :stack :push :off (error)
-    (make-event
-     (cond ((not (ttag (w state)))
-            (with-output
-             :stack :pop     
-             (er soft 'set-waterfall-parallelism-hacks-enabled
-                 "Using waterfall parallelism hacks requires an active ~
-                  trust-tag. Consider using ~
-                  (set-waterfall-parallelism-hacks-enabled! t).  See :DOC ~
-                  set-waterfall-parallelism-hacks-enabled for more ~
-                  information.")))
-            (t (value '(table waterfall-parallelism-table 'hacks-enabled
-                              ,val)))))))
+  `(table waterfall-parallelism-table 'hacks-enabled ,val))
 
 (defmacro set-waterfall-parallelism-hacks-enabled! (val)
 
@@ -840,11 +792,10 @@
 
   ~l[set-waterfall-parallelism-hacks-enabled].~/~/"
 
-  `(make-event
-    (cond ((not (ttag (w state)))
-           (value '(progn (defttag :waterfall-parallelism-hacks)
-                          (set-waterfall-parallelism-hacks-enabled ,val))))
-          (t (value '(set-waterfall-parallelism-hacks-enabled ,val))))))
+  `(encapsulate
+    ()
+    (defttag :waterfall-parallelism-hacks)
+    (set-waterfall-parallelism-hacks-enabled ,val)))
 
 (defdoc parallelism-at-the-top-level
 
@@ -1045,7 +996,8 @@
   Possible solutions may include reworking of algorithms (for example to be
   tree-based rather than list-based) or using appropriate granularity forms.
   We hope that future implementations will allow thread ``re-deployment'' in
-  order to mitigate this problem.
+  order to mitigate this problem.  This problem applies to ~ilc[plet],
+  ~ilc[pargs], ~ilc[pand], ~ilc[por], and ~ilc[spec-mv-let].
 
   ~b[Introducing] ~ilc[Plet]
 
@@ -1781,6 +1733,9 @@
 
   the number of cpu cores~/
 
+  This ~il[documentation] topic relates to the experimental extension of ACL2
+  supporting parallel execution and proof; ~pl[parallelism].
+
   Unless the ACL2 executable supports parallel execution (~pl[parallelism]),
   this function returns ~c[(mv 1 state)].  Otherwise:
 
@@ -2222,3 +2177,113 @@
   ACL2 !>
   ~ev[]
   ~/")
+
+(defun set-total-parallelism-work-limit (val state)
+
+  ":Doc-Section Parallelism
+
+  set thread limit beyond which parallelism primitives execute serially~/
+
+  This ~il[documentation] topic relates to the experimental extension of ACL2
+  supporting parallel execution and proof; ~pl[parallelism].
+
+  ~bv[]
+  General Forms:
+  (set-total-parallelism-work-limit :none state)     ; disable the limit
+  (set-total-parallelism-work-limit <integer> state) ; set limit to <integer>
+  ~ev[]
+
+  ~l[parallelism-tutorial], Section ``Another Granularity Issue Related to
+  Thread Limitations'', for an explanation of how the host Lisp can run out of
+  threads.  Also ~pl[set-total-parallelism-work-limit-error].~/
+
+  If the underlying runtime system (the Operating System, the host Lisp, etc.)
+  is unable to provide enough threads to finish executing the parallelism work
+  given to it, the runtime system can crash in a very unpleasant
+  manner (ranging from a Lisp error to completely freezing the machine).  To
+  avoid this unpleasantness, ACL2(p) will attempt to avoid creating so much
+  parallelism that the runtime system crashes.
+
+  ACL2 initially uses a conservative estimate to limit the number of threads.
+  To tell ACL2(p) to use a different limit, call
+  ~c[set-total-parallelism-work-limit] with the new limit.  For example, if the
+  current default limit is 10,000, then to allow 13,000 threads to exist, issue
+  the following form at the top level.
+  ~bv[]
+  (set-total-parallelism-work-limit 13000 state)
+  ~ev[]
+
+  To disable this limit altogether, evaluate the following form:
+  ~bv[]
+  (set-total-parallelism-work-limit :none state)
+  ~ev[]
+
+  The default value of total-parallelism-work-limit can be found by calling
+  function ~c[default-total-parallelism-work-limit].  If the default value is
+  too high for your system please notify the ACL2 maintainers with a limit that
+  does work for your system, as they might then lower the default limit.~/"
+
+  (declare (xargs :guard (or (equal val :none)
+                             (integerp val))))
+  (f-put-global 'total-parallelism-work-limit val state))
+
+(defun set-total-parallelism-work-limit-error (val state)
+
+  ":Doc-Section Parallelism
+
+  control the action taken when the thread limit is exceeded~/
+
+  This ~il[documentation] topic relates to the experimental extension of ACL2
+  supporting parallel execution and proof; ~pl[parallelism].
+
+  ~bv[]
+  General Forms:
+  (set-total-parallelism-work-limit-error t state)   ; cause error (default)
+  (set-total-parallelism-work-limit-error nil state) ; disable error and
+                                                     ; continue serially
+  ~ev[]
+
+  ~l[parallelism-tutorial], Section ``Another Granularity Issue Related to
+  Thread Limitations'', for an explanation of how the host Lisp can run out of
+  threads.  ~l[set-total-parallelism-work-limit] for further details, including
+  an explanation of how to manage the limit that triggers this error.~/
+
+  The value of state global ~c[total-parallelism-work-limit-error] dictates
+  what occurs when the underlying runtime system runs reaches a limit on the
+  number of threads for parallel computation.  By default, the ACL2(p) user
+  will receive an error and computation will halt.  At this point, the ACL2(p)
+  user has the following options.
+
+  (1) Remove the limit by evaluating the following form.
+  ~bv[]
+  (set-total-parallelism-work-limit :none state)
+  ~ev[]
+
+  (2) Disable the error so that execution continues serially once the available
+  thread resources have been exhausted.
+  ~bv[]
+  (set-total-parallelism-work-limit-error nil state)
+  ~ev[]
+
+  (3) Increase the limit on number of threads that ACL2(p) is willing to
+  create, in spite of potential risk (~pl[set-total-parallelism-work-limit]).
+  In this case, the following query returns the current limit.
+  ~bv[]
+  (f-get-global 'total-parallelism-work-limit state)
+  ~ev[]
+  Then to increase that limit, evaluate the following form:
+  ~bv[]
+  (set-total-parallelism-work-limit <new-integer-value> state)
+  ~ev[]
+
+  For example, suppose that the value of ~c[total-parallelism-work-limit] was
+  originally 10,000.  Then evaluation of the following form increase that limit
+  to 13,000.
+  ~bv[]
+  (set-total-parallelism-work-limit 13000 state)
+  ~ev[]
+  ~/"
+
+  (declare (xargs :guard (or (equal val t)
+                             (null val))))
+  (f-put-global 'total-parallelism-work-limit-error val state))

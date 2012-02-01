@@ -16969,6 +16969,10 @@
             fmt-soft-right-margin      ;;; allow user to modify this in a book
             fmt-hard-right-margin      ;;; allow user to modify this in a book
             parallel-execution-enabled ;;; allow user to modify this in a book
+            waterfall-parallelism      ;;; allow user to modify this in a book
+            waterfall-parallelism-timing-threshold ;;; see just above
+            waterfall-printing         ;;; allow user to modify this in a book
+            waterfall-printing-when-finished ;;; see just above
             saved-output-reversed      ;;; for feedback after expansion failure
             saved-output-p             ;;; for feedback after expansion failure
             ttags-allowed              ;;; propagate changes outside expansion
@@ -18791,7 +18795,7 @@
   #-acl2-par
   (translate-hints+1 name-tree lst default-hints ctx wrld state)
   #+acl2-par
-  (if (waterfall-parallelism)
+  (if (f-get-global 'waterfall-parallelism state)
       (cmp-to-error-triple
        (translate-hints+1@par name-tree lst default-hints ctx wrld state))
       (translate-hints+1 name-tree lst default-hints ctx wrld state)))
@@ -18802,7 +18806,7 @@
                     nil ; no override-hints are applied
                     ctx wrld state)
   #+acl2-par
-  (if (waterfall-parallelism)
+  (if (f-get-global 'waterfall-parallelism state)
       (cmp-to-error-triple
        (translate-hints2@par name-tree lst 'override
                              nil ; no override-hints are applied
@@ -18933,7 +18937,7 @@
                         stable-under-simplificationp clause-list processor
                         keyword-alist state)
   #+acl2-par
-  (cond ((and (waterfall-parallelism)
+  (cond ((and (f-get-global 'waterfall-parallelism state)
               (not (cdr (assoc-eq 'hacks-enabled
                                   (table-alist 'waterfall-parallelism-table
                                                (w state))))))

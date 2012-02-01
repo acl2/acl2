@@ -2037,7 +2037,9 @@
 ; Keep in sync with eval-clause-processor.
 
   (cond 
-   ((and ; (waterfall-parallelism) ; not needed since in @par
+   ((and
+; Note that potential conjunct (f-get-global 'waterfall-parallelism state) is
+; not needed, since we are in an @par definition.
      (not (equal stobjs-out '(nil)))
      (not (cdr (assoc-eq 'hacks-enabled
                          (table-alist 'waterfall-parallelism-table 
@@ -3248,10 +3250,12 @@
            (t (mv pspv state))))
    (mv@par pspv state)))
 
-(defun remove-pool-lst-from-gag-state (pool-lst gag-state)
+(defun remove-pool-lst-from-gag-state (pool-lst gag-state state)
+  #-acl2-par
+  (declare (ignore state))
   (cond
    #+acl2-par
-   ((waterfall-parallelism)
+   ((f-get-global 'waterfall-parallelism state)
 
 ; This function contains an assertion that fails when executing the waterfall
 ; in parallel.  The assertion fails because parallelism mode doesn't save the
@@ -3300,7 +3304,7 @@
                         (and pop-car-p
                              (access gag-info ci :clause-id)))))))))))
 
-(defun pop-clause-update-gag-state-pop (pool-lsts gag-state msgs msg-p)
+(defun pop-clause-update-gag-state-pop (pool-lsts gag-state msgs msg-p state)
 
 ; Pool-lsts is in reverse chronological order.
 
@@ -3310,10 +3314,10 @@
    (t
     (mv-let
      (gag-state msgs)
-     (pop-clause-update-gag-state-pop (cdr pool-lsts) gag-state msgs msg-p)
+     (pop-clause-update-gag-state-pop (cdr pool-lsts) gag-state msgs msg-p
+                                      state)
      (mv-let (gagst cl-id)
-             (remove-pool-lst-from-gag-state
-              (car pool-lsts) gag-state)
+             (remove-pool-lst-from-gag-state (car pool-lsts) gag-state state)
              (mv gagst
                  (if (and msg-p cl-id)
                      (cons (msg "~@0"
@@ -3622,7 +3626,7 @@
             (pspv ttree new-hist clauses signal cl-id processor msg)
             (waterfall-msg1 processor cl-id signal clauses new-hist msg ttree
                             pspv state))
-       (cond ((equal (waterfall-printing) :full)
+       (cond ((equal (f-get-global 'waterfall-printing state) :full)
               (io? prove t
                    state
                    (pspv ttree new-hist clauses signal cl-id processor msg)
@@ -5533,7 +5537,7 @@
           (cond
            ((serial-first-form-parallel-second-form@par 
              nil
-             (member-equal (waterfall-printing)
+             (member-equal (f-get-global 'waterfall-printing state)
                            '(:limited :very-limited)))
             (state-mac@par))
            (t
@@ -6555,9 +6559,12 @@
 
   form)
 
+#+(and acl2-par (not acl2-loop-only))
+(defparameter *acl2p-starting-proof-time* 0.0d0)
+
 #+acl2-par
-(defun waterfall1-wrapper@par-before (cl-id)
-  (case (waterfall-printing)
+(defun waterfall1-wrapper@par-before (cl-id state)
+  (case (f-get-global 'waterfall-printing state)
     (:limited
      (and (print-clause-id-okp cl-id)
           (with-output-lock
@@ -6575,14 +6582,14 @@
 ; have not tried this so far because observation-cw calls wormhole, which is
 ; problematic (see the comment in waterfall-print-clause-id@par).
 
-           (cw "At time ~c0, starting: ~x1~%" 
-
-; By limiting the width to 15, we assume that no ACL2 session will run for more
-; than a year.
-
-               #+acl2-loop-only (cons nil 15)
-               #-acl2-loop-only (cons (get-internal-real-time) 15)
-               (string-for-tilde-@-clause-id-phrase cl-id)))))
+           #+acl2-loop-only
+           nil
+           #-acl2-loop-only
+           (format t "At time ~,6f sec, starting: ~a~%"
+                   (/ (- (get-internal-real-time)
+                         *acl2p-starting-proof-time*)
+                      1000000.0)
+                   (string-for-tilde-@-clause-id-phrase cl-id)))))
     (:very-limited
      (with-output-lock
       (cw ".")))
@@ -6591,21 +6598,25 @@
 #+acl2-par
 (defun waterfall1-wrapper@par-after (cl-id start-time state)
   #+acl2-loop-only
-  (declare (ignore start-time))
+  (declare (ignore start-time cl-id))
   #-acl2-loop-only 
   (save-waterfall-timings-for-cl-id 
    cl-id 
    (- (get-internal-real-time) ; end time
       start-time))
   (cond ((f-get-global 'waterfall-printing-when-finished state)
-         (cond ((equal (waterfall-printing) :very-limited)
+         (cond ((equal (f-get-global 'waterfall-printing state) :very-limited)
                 (with-output-lock (cw ",")))
-               ((equal (waterfall-printing) :limited)
-                (with-output-lock 
-                 (cw "At time ~c0, finished: ~x1~%"
-                     #+acl2-loop-only (cons nil 15)
-                     #-acl2-loop-only (cons (get-internal-real-time) 15)
-                     (string-for-tilde-@-clause-id-phrase cl-id))))
+               ((equal (f-get-global 'waterfall-printing state) :limited)
+                (with-output-lock
+                 #+acl2-loop-only
+                 nil
+                 #-acl2-loop-only
+                 (format t "At time ~,6f sec, finished: ~a~%"
+                         (/ (- (get-internal-real-time)
+                               *acl2p-starting-proof-time*)
+                            1000000.0)
+                         (string-for-tilde-@-clause-id-phrase cl-id))))
                (t nil)))
          (t nil)))
 
@@ -6615,7 +6626,7 @@
           #+acl2-loop-only 'ignored-value
           #-acl2-loop-only (get-internal-real-time)))
      (prog2$
-      (waterfall1-wrapper@par-before cl-id)
+      (waterfall1-wrapper@par-before cl-id state)
       (mv-let@par
        (step-limit signal pspv jppl-flg state)
        ,@form
@@ -6707,13 +6718,13 @@
          ((null pair) ; There was no hint.
           (pprogn@par
 
-; In the #+acl2-par version of the waterfall, with (waterfall-printing) set to
-; :limited, the need to print the clause on a checkpoint is taken care of
-; inside waterfall-msg@par.
+; In the #+acl2-par version of the waterfall, with global waterfall-printing
+; set to :limited, the need to print the clause on a checkpoint is taken care
+; of inside waterfall-msg@par.
            
            (cond ((serial-first-form-parallel-second-form@par
                    nil
-                   (member-equal (waterfall-printing)
+                   (member-equal (f-get-global 'waterfall-printing state)
                                  '(:limited :very-limited)))
                   (state-mac@par))
                  (t (waterfall-print-clause@par suppress-print cl-id clause
@@ -7710,9 +7721,9 @@
 ; prover; consider searching for with-output-lock to find those.
 
 ; Parallelism wart: due to the definition of speculative-execution-valid, this
-; code should no longer be reachable.  It should be deleted by the time the
-; parallelism project is finished.  I leave it now because it is an example of
-; use of 'inhitibt-output-lst (also see parallelism wart immediately above).
+; code should no longer be reachable.  We leave it for now because it is an
+; example use of 'inhibit-output-lst (also see parallelism wart immediately
+; above).
 
                (cond ((member-eq 'prove
                                  (f-get-global 'inhibit-output-lst state))
@@ -7779,11 +7790,14 @@
             (primes-subproof
              'serial)
             (t
-             (case (waterfall-parallelism)
+             (case (f-get-global 'waterfall-parallelism state)
                ((nil)
                 'serial)
                ((:full)
-                'parallel)
+                (cond #-acl2-loop-only
+                      ((not-too-many-futures-already-in-existence)
+                       'parallel)
+                      (t 'serial)))
                ((:pseudo-parallel)
                 'pseudo-parallel)
                ((:top-level)
@@ -7891,7 +7905,7 @@
            (t (initialize-proof-tree parent-clause-id x ctx state)))
      (sl-let (signal new-pspv new-jppl-flg state)
              #+acl2-par
-             (if (waterfall-parallelism)
+             (if (f-get-global 'waterfall-parallelism state)
                  (with-parallelism-hazard-warnings
                   (mv-let (step-limit signal new-pspv new-jppl-flg)
                           (waterfall1-lst@par (cond ((null clauses) 0)
@@ -8125,7 +8139,8 @@
          (('pop . pool-lsts)
           (mv-let
            (gagst msgs)
-           (pop-clause-update-gag-state-pop pool-lsts gag-state nil msg-p)
+           (pop-clause-update-gag-state-pop pool-lsts gag-state nil msg-p
+                                            state)
            (pprogn
             (io? prove nil state
                  (prev-action pool-lsts forcing-round msgs)
@@ -8178,7 +8193,8 @@
              (gagst cl-id)
              (cond ((eq (car entry) 'consider)
                     (mv gag-state nil))
-                   (t (remove-pool-lst-from-gag-state pool-lst gag-state)))
+                   (t (remove-pool-lst-from-gag-state pool-lst gag-state
+                                                      state)))
              (pprogn
               (io? prove nil state
                    (prev-action forcing-round pool-lst entry cl-id jppl-flg

@@ -26447,6 +26447,7 @@
     flush-compress ; SETF [may be critical for correctness]
     alphorder ; [bad atoms]
     extend-world ; EXTEND-WORLD1
+    default-total-parallelism-work-limit ; for #+acl2-par (raw Lisp error)
 
 ; The following have arguments of state-state, and hence some may not be of
 ; concern since presumably users cannot define these redundantly anyhow.  But
@@ -26745,6 +26746,137 @@
 (defconst *iprint-soft-bound-default* 1000)
 (defconst *iprint-hard-bound-default* 10000)
 
+(defdoc parallelism
+
+; This is in axioms.lisp instead of parallel.lisp in order to support the :doc
+; string for default-total-parallelism-work-limit.
+
+  ":Doc-Section Parallelism
+
+  experimental extension for parallel execution and proofs~/
+
+  This documentation topic relates to an experimental extension of ACL2,
+  ACL2(p), created initially by David L. Rager.  ~l[compiling-acl2p] for how to
+  build an executable image that supports parallel execution.  Also see
+  ~c[books/parallel] for examples.  For a completely different sort of
+  parallelism, at the system level, ~pl[provisional-certification].
+
+  IMPORTANT NOTE.  We hope and expect that every evaluation result is correctly
+  computed by ACL2(p), and that every formula proved using ACL2(p) is a theorem
+  of the ACL2 logic (and in fact is provable using ACL2).  However, we do not
+  guarantee these properties.  Since ACL2(p) is intended to be an aid in
+  efficient evaluation and proof development, we focus less on ironclad
+  soundness and more on providing an efficient and working implementation.
+  Nevertheless, if you encounter a case where ACL2(p) computes an incorrect
+  result, or produces a proof where ACL2 fails to do so (and this failure is
+  not discussed in ~il[unsupported-waterfall-parallelism-features]), please
+  notify the implementors.
+
+  One of ACL2's strengths lies in its ability to execute industrial models
+  efficiently.  The ACL2 source code provides an experimental parallel
+  execution capability that can increase the speed of explicit evaluation,
+  including simulator runs using such models, and it can also decrease the time
+  required for proofs that make heavy use of the evaluation of ground terms.
+
+  The parallelism primitives are ~ilc[plet], ~ilc[pargs], ~ilc[pand],
+  ~ilc[por], and ~ilc[spec-mv-let].  ~ilc[Pand] and ~ilc[por] terminate early
+  when an argument is found to evaluate to ~c[nil] or non-~c[nil],
+  respectively, thus potentially improving on the efficiency of lazy
+  evaluation.  ~ilc[Spec-mv-let] is a modification of ~ilc[mv-let] that
+  supports speculative and parallel execution.~/
+
+  Of the above five parallelism primitives, all but ~ilc[spec-mv-let] allow for
+  limiting parallel execution (spawning of so-called ``threads'') depending on
+  resource availability.  Specifically, the primitives allow specification of a
+  size condition to control the ~il[granularity] under which threads are
+  allowed to spawn.  You can use such ~il[granularity] declarations in
+  recursively-defined functions to implement data-dependent parallelism in
+  their execution.
+
+  We recommend that in order to learn to use the parallelism primitives, you
+  begin by reading examples: ~pl[parallelism-tutorial].  That section will
+  direct you to further documentation topics.
+
+  In addition to providing parallel programming primitives, ACL2(p) also
+  provides the ability to execute the main ACL2 proof process in parallel.
+  ~l[set-waterfall-parallelism] for further details.
+
+  While we aim to support Clozure Common Lisp (CCL), Steel Bank Common
+  Lisp (SBCL), and Lispworks, SBCL and Lispworks both currently sometimes
+  experience problems when evaluating the ACL2 proof process (the
+  ``waterfall'') in parallel.  Therefore, CCL is the recommend Lisp for anyone
+  that wants to use parallelism and isn't working on fixing those problems.")
+
+(defun default-total-parallelism-work-limit ()
+
+; The number of pieces of work in the system, *total-work-count* and
+; *total-future-count* (depending upon whether one is using the
+; plet/pargs/pand/por system or the spec-mv-let system [which is based upon
+; futures]), must be less than the ACL2 global total-parallelism-work-limit in
+; order to enable creation of new pieces of work or futures.  (However, if
+; total-parallelism-work-limit were set to 50, we could go from 49 to 69 pieces
+; of work when encountering a pand; just not from 50 to 52.)
+
+; Why limit the amount of work in the system?  :Doc parallelism-how-to
+; (subtopic "Another Granularity Issue Related to Thread Limitations") provides
+; an example showing how cdr recursion can rapidly create threads.  That
+; example shows that if there is no limit on the amount of work we may create,
+; then eventually, many successive cdrs starting at the top will correspond to
+; waiting threads.  If we do not limit the amount of work that can be created,
+; this can exhaust the supply of Lisp threads available to process the elements
+; of the list.
+
+  ":Doc-Section Parallelism
+  
+  for ACL2(p): returns the default value for global ~c[total-parallelism-work-limit]~/
+
+  ~l[set-total-parallelism-work-limit].~/~/"
+
+  (declare (xargs :guard t))
+  (let ((val
+
+; Warning: It is possible, in principle to create (+ val
+; *max-idle-thread-count*) threads.  You'll receive either a hard Lisp error,
+; segfault, or complete machine crash if your Lisp cannot create that many
+; threads.
+
+; We picked a new value of 400 on September 2011 to support Robert Krug's proof
+; that took ~9000 seconds in serial mode.  Initially, when
+; default-total-parallelism-work-limit returned 50, the parallelized proof only
+; saw an improvement to ~2200 seconds, but after changing the return value to
+; 400, the parallelized proof now takes ~1300 seconds.
+
+; After doing even more tests, we determined that a limit of 400 is still too
+; low (another one of Robert's proofs showed us this).  So, now that we have
+; the use-case for setting this to the largest number that we think the
+; underlying runtime system will support, we do exactly that.  As of Jan 26,
+; 2012, we think a safe-enough limit is 10,000.  So, we use that number.  As
+; multi-threading becomes more prevalent and the underlying runtime systems
+; increase their support for massive numbers of threads, we should continue to
+; increase this number.
+
+         10000))
+    #+(and acl2-par (not acl2-loop-only))
+    (let ((bound (* 4 *core-count*)))
+      (when (< val bound)
+
+; Since this check is cheap and not performed while we're doing proofs, we
+; leave it.  That being said, we do not realistically expect to receive this
+; error for a very long time, because it will be a very long time until the
+; number of CPU cores is within a factor of 4 of 10,000.  David Rager actually
+; found this check useful once upon a time (back when the limit was 50),
+; because he was testing ACL2(p) on one of the IBM 64-core machines and forgot
+; that this limit needed to be increased.
+
+        (error "The value returned by function ~
+                default-total-parallelism-work-limit needs to be at ~%least ~
+                ~s, i.e., at least four times the *core-count*.  ~%Please ~
+                redefine function default-total-parallelism-work-limit so ~
+                that it ~%is not ~s."
+               bound
+               val)))
+    val))
+
 (defconst *initial-global-table*
 
 ; Warning: Keep this list in alphabetic order as per ordered-symbol-alistp.  It
@@ -26825,7 +26957,8 @@
 ; in December 2011 that he hasn't used this variable in some time, but that it
 ; still works as far as he knows.  It should be harmless to remove it if there
 ; is a reason to do so, but of course there would be fallout from doing so
-; (e.g., argument lists of various functions that take a debug-pspv argument).
+; (e.g., argument lists of various functions that take a debug-pspv argument
+; would need to change).
 
                 nil)
     (debugger-enable . nil) ; keep in sync with :doc set-debugger-enable
@@ -26936,6 +27069,9 @@
     (term-evisc-tuple . :default)
     (timer-alist . nil)
     (tmp-dir . nil) ; set by lp; user-settable but not much advertised.
+    (total-parallelism-work-limit ; for #+acl2-par
+     . ,(default-total-parallelism-work-limit))
+    (total-parallelism-work-limit-error . t) ; for #+acl2-par
     (trace-co . acl2-output-channel::standard-character-output-0)
     (trace-level . 0)
     (trace-specs . nil)
@@ -26950,7 +27086,10 @@
     (user-home-dir . nil) ; set first time entering lp
     (verbose-theory-warning . t)
     (walkabout-alist . nil)
-    (waterfall-parallelism-timing-threshold . 10000) ; for #+acl2-par
+    (waterfall-parallelism . nil) ; for #+acl2-par
+    (waterfall-parallelism-timing-threshold
+     . 10000) ; #+acl2-par -- microsec limit for resource-and-timing-based mode
+    (waterfall-printing . :full) ; for #+acl2-par
     (waterfall-printing-when-finished . nil) ; for #+acl2-par
     (window-interface-postlude
      . "#>\\>#<\\<e(acl2-window-postlude ?~sw ~xt ~xp)#>\\>")
@@ -27984,8 +28123,18 @@
   #+(and acl2-par (not acl2-loop-only))
   `(progn
      (when (and *possible-parallelism-hazards*
-                (waterfall-parallelism)
+                (f-get-global 'waterfall-parallelism state)
                 (f-get-global 'parallelism-hazards-action *the-live-state*))
+
+; If a user sends an "offending call" as requested in the email below, consider
+; adding a parallelism wart in the definition of the function being called,
+; documenting that a user has actually encountered an execution of ACL2(p) that
+; ran a function that we have indentified as not thread-safe (via
+; warn-about-parallelism-hazard) inside a context that we have identified as
+; eligible for parallel execution (via with-parallelism-hazard-warnings).  (Or
+; better yet, make a fix.)  See the comments at the top of this function for
+; more explanation.
+
        (format t
                "~%WARNING: A macro or function has been called that is not~%~
                 thread-safe.  Please email this message, including the~%~
@@ -34042,6 +34191,10 @@
     trace-specs
     retrace-p
     parallel-execution-enabled
+    total-parallelism-work-limit ; for #+acl2p-par
+    total-parallelism-work-limit-error ; for #+acl2p-par
+    waterfall-parallelism ; for #+acl2p-par
+    waterfall-printing ; for #+acl2p-par
     redundant-with-raw-code-okp
 
 ; print control variables

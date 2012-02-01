@@ -13779,9 +13779,11 @@
 #+(and acl2-par (not acl2-loop-only))
 (defmacro with-waterfall-parallelism-timings (name form)
   `(unwind-protect-disable-interrupts-during-cleanup
-    (prog2$
-      (setup-waterfall-parallelism-ht-for-name ,name)
-      ,form)
+    (progn (setup-waterfall-parallelism-ht-for-name ,name)
+           (reset-future-queue-length-history)
+           (setf *acl2p-starting-proof-time*
+                 (get-internal-real-time))
+           ,form)
     (clear-current-waterfall-parallelism-ht)))
 
 #-(and acl2-par (not acl2-loop-only))

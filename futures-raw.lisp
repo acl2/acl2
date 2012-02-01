@@ -183,13 +183,6 @@
 
 (push :skip-resource-availability-test *features*)
 
-; Parallelism wart: I leave the pushing of feature :studless-waterfall as
-; reference for the dead code (which I should delete) that references this
-; feature.
-
-; (push :studless-waterfall *features*)
-
-
 (defstruct atomic-notification
   (value nil))
 
@@ -260,17 +253,38 @@
 (defvar *future-array*)
 (defvar *future-dependencies*)
 
+(defparameter *future-queue-length-history* nil)
+
 (defvar *current-thread-index* 0) ; set to 0 for the main thread
 (defconstant *starting-core* 'start)
 (defconstant *resumptive-core* 'resumptive)
 
-(defvar *allocated-core* *starting-core*)
+(defvar *allocated-core*
+
+; We now document a rather strange behavior that resulted in a bug in the
+; parallelism system for a good while.  This strange behavior justifies giving
+; *allocated-core* an initial value of *resumptive-core* instead of
+; *starting-core*.  To understand why, suppose we instead gave *allocated-core*
+; the initial value of *starting-core*.  Then, when the main thread encountered
+; its first parallelism primitive, it would set *allocated-core* to nil and
+; then, when it resumed execution after the parallelized portion was done, it
+; would claim a resumptive core, and the main thread would then have
+; *resumptive-core* for its value of *allocated-core*.  This would be fine,
+; except that we'll never reclaim the original *starting-core* for the main
+; thread.  So, rather than worry about this problem, we side-step it entirely
+; and start the main thread as a "resumptive" core.
+
+; Parallelism blemish: the above correction may also need to be made for the
+; other parallelism implementation that supports plet/pargs/pand/por.
+
+  *resumptive-core*)
+
 (defvar *decremented-idle-future-thread-count* nil)
 
 (defvar *idle-future-core-count* 
-  (make-atomically-modifiable-counter (1- *core-count*)))
-(defvar *idle-future-resumptive-core-count* 
   (make-atomically-modifiable-counter *core-count*))
+(defvar *idle-future-resumptive-core-count* 
+  (make-atomically-modifiable-counter (1- *core-count*)))
 (defvar *idle-core* (make-semaphore))
 
 (define-atomically-modifiable-counter *idle-future-thread-count* 0)
@@ -281,7 +295,11 @@
 (defvar *threads-spawned* 0)
 
 
-(define-atomically-modifiable-counter *unassigned-and-active-future-count* 0)
+(define-atomically-modifiable-counter *unassigned-and-active-future-count*
+
+; We treat the initial thread as an active future.
+  
+  1)
 
 (define-atomically-modifiable-counter *total-future-count* 0)
 
@@ -314,12 +332,15 @@
   "Tracks the number of times that we do not parallize execution when
   waterfall-parallelism is set to :resource-based")
 
+(defun reset-future-queue-length-history ()
+  (setf *future-queue-length-history* nil))
+
 (defun reset-future-parallelism-variables ()
 
 ; Parallelism wart: some relevant variables may be unintentionally omitted from
 ; this reset.
 
-  ;(sleep 30)
+; (sleep 30)
 
   (setf *thread-array* 
         (make-array *future-array-size* :initial-element nil))
@@ -331,15 +352,15 @@
   (setf *future-added* (make-semaphore))
 
   (setf *idle-future-core-count*
-        (make-atomically-modifiable-counter (1- *core-count*)))
+        (make-atomically-modifiable-counter *core-count*))
 
   (setf *idle-future-resumptive-core-count* 
-        (make-atomically-modifiable-counter *core-count*))
+        (make-atomically-modifiable-counter (1- *core-count*)))
 
   (setf *idle-core* (make-semaphore))
   (setf *idle-resumptive-core* (make-semaphore))
 
-  (dotimes (i (1- *core-count*)) (signal-semaphore *idle-core*))
+  (dotimes (i *core-count*) (signal-semaphore *idle-core*))
   (dotimes (i (1- *core-count*)) (signal-semaphore *idle-resumptive-core*))
   
 ; The last slot taken and saved starts at zero, because slot zero is always
@@ -351,7 +372,7 @@
 
   (setf *total-future-count* (make-atomically-modifiable-counter 0))
   (setf *unassigned-and-active-future-count*
-        (make-atomically-modifiable-counter 0))
+        (make-atomically-modifiable-counter 1))
 
 ; If we let the threads expire naturally instead of calling the above
 ; send-die-to-all-except-initial-threads, then this setting is unnecessary.
@@ -367,6 +388,9 @@
   (setf *resource-based-parallelizations* 0)
   (setf *resource-based-serializations* 0)
 ;  (setf *aborted-futures-total* 0)
+
+  (reset-future-queue-length-history)
+
   t ; return t
 )
 
@@ -379,6 +403,65 @@
   (reset-parallelism-variables)
   (reset-future-parallelism-variables)
   (format t "Done resetting parallelism and futures variables.~%"))
+
+(defun futures-parallelism-buffer-has-space-available ()
+  (< (atomically-modifiable-counter-read *unassigned-and-active-future-count*)
+     *unassigned-and-active-work-count-limit*))
+
+(defun not-too-many-futures-already-in-existence ()
+
+; See :DOC topic set-total-parallelism-work-limit and :DOC topic
+; set-total-parallelism-work-limit-error for more details.
+
+  (let ((total-parallelism-work-limit 
+         (f-get-global 'total-parallelism-work-limit *the-live-state*)))
+    (cond ((equal total-parallelism-work-limit :none)
+
+; If the value is :none, then there is no limit.
+
+           t)
+          ((< (atomically-modifiable-counter-read *total-future-count*)
+              total-parallelism-work-limit)
+           t)
+          (t 
+
+; We are above the total-parallelism-work-limit.  Now the question is whether we
+; notify the user with an error.
+
+           (let ((total-parallelism-work-limit-error
+                  (f-get-global 'total-parallelism-work-limit-error
+                                *the-live-state*))) 
+             (cond ((equal total-parallelism-work-limit-error t) 
+
+; Cause an error to notify the user that they need to either increase the limit
+; or disable the error by setting the global variable
+; total-parallelism-work-limit to nil.  This is the default behavior.
+
+                    (er hard 'not-too-many-futures-already-in-existence
+                        "In order to allow the surprising behavior that ~
+                         serializes computation for the :full waterfall ~
+                         parallelism mode once a risky number of threads are ~
+                         required to continue executing, you must set ~
+                         total-parallelism-work-limit-error to nil. ~
+                         Alternatively, you may increase the threshold for ~
+                         the number of threads allowed into the system by ~
+                         setting total-parallelism-work-limit to a higher ~
+                         number. Also, you may set ~
+                         total-parallelism-work-limit to :none, which will ~
+                         always parallelize computation.  This setting will ~
+                         allow your machine to blow up.  The default setting ~
+                         for total-parallelism-work-limit-error is t, which ~
+                         will result in this error.  See :DOC ~
+                         set-total-parallelism-work-limit and :DOC ~
+                         set-total-parallelism-work-limit-error for more ~
+                         information."))
+                   ((null total-parallelism-work-limit-error)
+                    nil)
+                   (t (er hard 'not-too-many-futures-already-in-existence
+                          "The value for global variable ~
+                           total-parallelism-work-limit-error must be one of ~
+                           t or nil.  Please change the value of this global ~
+                           variable to either of those values."))))))))
 
 (defun futures-resources-available ()
 
@@ -395,10 +478,8 @@
 ; if we miss a few chances to parallelize, or parallelize a few extra times.
 
   (and (f-get-global 'parallel-execution-enabled *the-live-state*)
-       (< (atomically-modifiable-counter-read *unassigned-and-active-future-count*)
-          *unassigned-and-active-work-count-limit*)
-       (< (atomically-modifiable-counter-read *total-future-count*)
-          *total-work-limit*)))
+       (futures-parallelism-buffer-has-space-available)
+       (not-too-many-futures-already-in-existence)))
 
 (defmacro unwind-protect-disable-interrupts-during-cleanup
   (body-form &rest cleanup-forms)
@@ -407,6 +488,9 @@
 ; cleanup-form cannot be interrupted.  Note that CCL's implementation already
 ; disables interrupts during cleanup.
 
+; Parallelism wart: we should specify a Lispworks compile-time definition (as
+; we did for CCL and SBCL).
+
   #+ccl
   `(unwind-protect ,body-form ,@cleanup-forms)
   #+sb-thread
@@ -414,6 +498,8 @@
   #-(or ccl sb-thread)
   `(unwind-protect ,body-form ,@cleanup-forms))
 
+; Parallelism wart: Label the following comment as a wart, blemish, etc.,
+; and/or maybe give a bit more explanation.
 ; Idea: have a queue for both the evaluation of closures and the abortion of
 ; futures.  Give the abortion queue higher priority.
 
@@ -424,18 +510,49 @@
      (when (semaphore-notification-status notification)
        (setf *allocated-core* *starting-core*)
        (atomic-decf *idle-future-core-count*)
+; Parallelism wart: Label the following comment as a wart, blemish, etc.
 ; Is this really the right place to do this?
        (setf *decremented-idle-future-thread-count* t)
        (atomic-decf *idle-future-thread-count*)))))
 
 (defun claim-resumptive-core ()
+
+; Parallelism blemish: the following script showcases a bug where the
+; *idle-resumptive-core* semaphore signal isn't being appropriately
+; received... most likely because it's not being signaled (otherwise it would
+; be a CCL issue).
+
+;; (defun make-and-read-future ()
+;;   (future-read (future 3)))
+
+;; (time$ (dotimes (i 100000)
+;;          (make-and-read-future)))
+
+;; (defvar *making-and-reading-done*
+;;   (make-semaphore))
+
+;; (defun make-and-read-future-100000-times ()
+;;   (time$ (dotimes (i 100000)
+;;            (make-and-read-future)))
+;;   (signal-semaphore *making-and-reading-done*))
+
+;; (defun make-and-read-future-in-multiple-threads (thread-count)
+;;   (time
+;;    (dotimes (i thread-count)
+;;      (run-thread "making and reading futures"
+;;                  #'make-and-read-future-100000-times))
+;;    (dotimes (i thread-count)
+;;      (wait-on-semaphore *making-and-reading-done*))))
+
+;; (make-and-read-future-in-multiple-threads 2)
+
   (let ((notification (make-semaphore-notification)))
     (unwind-protect-disable-interrupts-during-cleanup
      (wait-on-semaphore *idle-resumptive-core* :notification notification)
      (when (semaphore-notification-status notification)
        (setf *allocated-core* *resumptive-core*)
        (atomic-decf *idle-future-resumptive-core-count*)))))
-    
+
 (defun free-allocated-core ()
   (without-interrupts
    (cond ((equal *allocated-core* *starting-core*)
@@ -522,8 +639,8 @@
 ; *Throwable-future-worker-thread* is unrelated to tag
 ; *:worker-thread-no-longer-needed.
 
-; Parallelism wart: pick a name that makes it more obvious that this variable
-; is unrelated to variable *throwable-worker-thread*.
+; Parallelism blemish: pick a name that makes it more obvious that this
+; variable is unrelated to variable *throwable-worker-thread*.
 
  nil)
 
@@ -842,7 +959,7 @@
 ; unwind-protect.  It's unnecessary because if we're terminating early, we
 ; don't really care whether we "claim" the core.  In fact, we actually prefer
 ; to leave the core unclaimed, because claiming the core would require
-; receiving a semaphore signal.
+; blocking until we temporarily receive a semaphore signal.
 
                   (claim-resumptive-core))
                 
