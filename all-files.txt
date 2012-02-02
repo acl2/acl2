@@ -901,9 +901,11 @@ occform-top.lisp
 books/centaur/vl/util:
 acl2-customization.lsp
 arithmetic.lisp
+bits.lisp
 cert.acl2
 character-list-listp.lisp
 clean-alist.lisp
+commentmap.lisp
 cwtime.lisp
 cw-unformatted.lisp
 defs.lisp
