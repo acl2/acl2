@@ -18432,7 +18432,9 @@
   parallelism.  ~l[provisional-certification].  Thanks to Jared Davis for
   requesting this feature and for helpful discussions, based in part on
   rudimentary provisional certification schemes that he developed first at
-  Rockwell Collins and later for his `Milawa' project.
+  Rockwell Collins and later for his `Milawa' project.  Also thanks to Jared
+  and to Sol Swords for testing this feature and for providing a fix for a bug
+  in a preliminary implementation.
 
   Event summaries now show the names of events that were mentioned in
   ~il[hints] of type ~c[:use], ~c[:by], or ~c[:clause-processor].

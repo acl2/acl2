@@ -13247,7 +13247,8 @@
                       (cond (behalf-of-certify-flg (value expansion-alist))
                             (certified-p (value (access cert-obj cert-obj
                                                         :expansion-alist)))
-                            ((eq (cert-op state) :create-pcert)
+                            ((member-eq (cert-op state)
+                                        '(:create-pcert :write-acl2xu))
                              (read-acl2x-file
                               acl2x-file full-book-name
                               (length ev-lst) ; includes in-package
