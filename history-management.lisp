@@ -17094,7 +17094,7 @@
 ; use.
 
            (equal stobjs-out *cmp-sig*) 
-           (equal (car uform) 'custom-keyword-hint-interpreter@par)))
+           (eq (car uform) 'custom-keyword-hint-interpreter@par)))
          (value@par term))
         (t (serial-first-form-parallel-second-form@par
             (er soft ctx

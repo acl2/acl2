@@ -6867,6 +6867,28 @@
    (translate-cmp x stobjs-out logic-modep known-stobjs ctx w
                   (default-state-vars t))))
 
+(defun translatable-p (form stobjs-out bindings known-stobjs ctx wrld)
+  (mv-let (erp val bindings)
+          (translate1-cmp form stobjs-out bindings known-stobjs ctx wrld
+                          (default-state-vars nil))
+          (declare (ignore val bindings))
+          (null erp)))
+
+(defmacro chk-translatable (form shape)
+  `(translate-and-test
+    (lambda (qform)
+      (cond ((translatable-p (cadr qform)
+                             ',(cond ((eq shape 'state)
+                                      '(state))
+                                     (t (cdr shape)))
+                             nil t 'chk-translatable
+                             world)
+             t)
+            (t (msg "IO? was given the following body, which fails to ~
+                     translate for the expected shape, STATE:~|~  ~y0"
+                    ',form))))
+    ',form))
+
 ; We now move on to the definition of the function trans-eval, which
 ; evaluates a form containing references to the free variable STATE,
 ; and possibly to other stobj names, by binding 'STATE to the given

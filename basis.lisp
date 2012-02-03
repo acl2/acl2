@@ -7902,7 +7902,8 @@
                      (clear 'nil clear-argp)
                      (cursor-at-top 'nil cursor-at-top-argp)
                      (pop-up 'nil pop-up-argp)
-                     (default-bindings 'nil))
+                     (default-bindings 'nil)
+                     (chk-translatable 't))
 
 ; Typical use (io? error nil (mv col state) (x y) (fmt ...)), meaning execute
 ; the fmt statement unless 'error is on 'inhibit-output-lst.  The mv expression
@@ -7927,6 +7928,11 @@
 ; replace 0 with (- 4 4), for example.
 
 ; Keep argument list in sync with io?@par.
+
+; Chk-translatable is only used when commentp is not nil, to check at translate
+; time that the body passes translation relative to the given shape.
+; (Otherwise such a check is only made when the wormhole call below is actually
+; evaluated.)
 
   (declare (xargs :guard (and (symbolp token)
                               (symbol-listp vars)
@@ -8003,23 +8009,29 @@
                                 ,postlude)))))))))
     (cond
      (commentp
-      `(wormhole 'comment-window-io
-                 '(lambda (whs)
-                    (set-wormhole-entry-code whs :ENTER))
-                 (list ,@vars)
-                 ',(cond
-                    ((eq shape 'state)
-                     `(pprogn ,expansion (value :q)))
-                    (t
-                     `(mv-let ,(cdr shape)
-                              ,expansion
-                              (declare
-                               (ignore ,@(remove1-eq 'state (cdr shape))))
-                              (value :q))))
-                 :ld-error-action :return!
-                 :ld-verbose nil
-                 :ld-pre-eval-print nil
-                 :ld-prompt nil))
+      (let ((form
+             (cond
+              ((eq shape 'state)
+               `(pprogn ,expansion (value :q)))
+              (t
+               `(mv-let ,(cdr shape)
+                        ,expansion
+                        (declare
+                         (ignore ,@(remove1-eq 'state (cdr shape))))
+                        (value :q))))))
+        `(prog2$
+          ,(if chk-translatable
+               `(chk-translatable ,body ,shape)
+             nil)
+          (wormhole 'comment-window-io
+                    '(lambda (whs)
+                       (set-wormhole-entry-code whs :ENTER))
+                    (list ,@vars)
+                    ',form
+                    :ld-error-action :return!
+                    :ld-verbose nil
+                    :ld-pre-eval-print nil
+                    :ld-prompt nil))))
      (t `(pprogn
           (cond ((saved-output-token-p ',token state)
                  (push-io-record nil ; io-marker
@@ -8125,7 +8137,8 @@
   (declare (ignore state))
   (prog2$
    (io? error t state (alist str ctx)
-        (error-fms nil ctx str alist state))
+        (error-fms nil ctx str alist state)
+        :chk-translatable nil)
    (mv@par t nil state)))
 
 (defun error1-safe (ctx str alist state)
@@ -8281,10 +8294,12 @@
            (member-string-equal summary *uninhibited-warning-summaries*))
       (io? WARNING! ,commentp state
            (summary ctx alist str)
-           (warning1-body ctx summary str alist state)))
+           (warning1-body ctx summary str alist state)
+           :chk-translatable nil))
      (t (io? WARNING ,commentp state
              (summary ctx alist str)
-             (warning1-body ctx summary str alist state))))))
+             (warning1-body ctx summary str alist state)
+             :chk-translatable nil)))))
 
 (defun warning1 (ctx summary str alist state)
 
@@ -8355,7 +8370,8 @@
                                        observation1 must be t or nil, so the ~
                                        value ~x0 is illegal."
                                       abbrev-p)
-                                  state))))))))
+                                  state))))))
+        :chk-translatable nil))
 
 (defun observation1 (ctx str alist abbrev-p state)
 
@@ -8458,16 +8474,30 @@
 
 (defmacro observation-cw (&rest args)
 
+; See observation.  In #-acl2-par, this macro uses wormholes to avoid modifying
+; state, and prints even when including books.  In #+acl2-par, to avoid
+; wormholes, which are known not to be thread-safe, we simply call cw.
+
 ; See observation.  This macro uses wormholes to avoid accessing state, and
 ; prints even when including books.
-
+  
+  #-acl2-par
   `(observation1-cw
     ,(car args)
     ,(cadr args)
     ,(make-fmt-bindings '(#\0 #\1 #\2 #\3 #\4
                           #\5 #\6 #\7 #\8 #\9)
                         (cddr args))
-    t))
+    t)
+  #+acl2-par
+
+; Parallelism blemish: consider using *the-live-state* to disable
+; observation-cw, i.e., to avoid the cw call below, when observations are
+; turned off.  But note that if we have such #-acl2-loop-only code, users might
+; be surprised when their own use of observation-cw doesn't benefit from such
+; restrictions.
+
+  `(cw ,(cadr args) ,@(cddr args)))
 
 (defun skip-when-logic (str state)
   (pprogn

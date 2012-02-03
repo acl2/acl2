@@ -7118,6 +7118,8 @@
 ; disjunctive subgoal (the first one, in fact) and pspv is the corresponding
 ; pspv returned for that subgoal.
 
+  #+acl2-par
+  (declare (ignorable branch-cnt)) ; irrelevant in @par definition
   (cond
    ((endp uhs-lst)
     
@@ -7135,10 +7137,11 @@
 ; namely one with a clause-id of revert-d-cl-id.
 
       (pprogn@par
-       (io?@par prove nil state
-                (cl-id revert-info)
-                (waterfall-or-hit-msg-c cl-id nil (car revert-info) nil nil
-                                        state))
+       (serial-only@par
+        (io? prove nil state
+             (cl-id revert-info)
+             (waterfall-or-hit-msg-c cl-id nil (car revert-info) nil nil
+                                     state)))
 
        (mv@par step-limit
                'abort
@@ -7166,21 +7169,25 @@
                state)))
      (t (mv-let (choice summary)
                 (pick-best-pspv-for-waterfall0-or-hit results pspv wrld)
+                #+acl2-par
+                (declare (ignorable summary))
                 (pprogn@par
-                 (io?@par proof-tree nil state
-                          (choice cl-id)
-                          (pprogn@par
-                           (increment-timer@par 'prove-time state)
-                           (install-disjunct-into-proof-tree cl-id (car choice) state)
-                           (increment-timer@par 'proof-tree-time state)))
-                 (io?@par prove nil state
-                          (cl-id results choice summary)
-                          (waterfall-or-hit-msg-c cl-id ; parent-cl-id
-                                                  results
-                                                  nil
-                                                  (car choice) ; new goal cl-id
-                                                  summary
-                                                  state))
+                 (serial-only@par
+                  (io? proof-tree nil state
+                       (choice cl-id)
+                       (pprogn
+                        (increment-timer 'prove-time state)
+                        (install-disjunct-into-proof-tree cl-id (car choice) state)
+                        (increment-timer 'proof-tree-time state))))
+                 (serial-only@par
+                  (io? prove nil state
+                       (cl-id results choice summary)
+                       (waterfall-or-hit-msg-c cl-id ; parent-cl-id
+                                               results
+                                               nil
+                                               (car choice) ; new goal cl-id
+                                               summary
+                                               state)))
                  (mv@par step-limit
                          'continue
                          (cdr choice) ; chosen pspv
@@ -7198,14 +7205,24 @@
            (hint-settingsi (cdr (car uhs-lst)))
            (d-cl-id (make-disjunctive-clause-id cl-id (length uhs-lst)
                                                 (current-package state))))
+      #+acl2-par
+      (declare (ignorable user-hinti))
       (pprogn@par
-       (io?@par prove nil state
-                (cl-id user-hinti d-cl-id i branch-cnt)
-                (pprogn@par
-                 (increment-timer@par 'prove-time state)
-                 (waterfall-or-hit-msg-a cl-id user-hinti d-cl-id i branch-cnt
-                                         state)
-                 (increment-timer@par 'print-time state)))
+       (serial-only@par
+
+; Wormholes are known to be a problem in the @par version of the waterfall.  As
+; such, we skip the following call of waterfall-or-hit-msg-a (also for some
+; similar calls further down), which we have determined through runs of the
+; regression suite (specifically with book
+; arithmetic-5/lib/floor-mod/floor-mod-basic.lisp) to cause problems.
+
+        (io? prove nil state
+             (cl-id user-hinti d-cl-id i branch-cnt)
+             (pprogn
+              (increment-timer 'prove-time state)
+              (waterfall-or-hit-msg-a cl-id user-hinti d-cl-id i branch-cnt
+                                      state)
+              (increment-timer 'print-time state))))
        (sl-let@par
         (d-signal d-new-pspv d-new-jppl-flg state)
         (waterfall1-wrapper@par
@@ -7260,18 +7277,20 @@
 ; 'NIL '(PPROGN (PRINC$ 17 *STANDARD-CO* STATE) 17) 'NIL)
 
           (pprogn@par
-           (io?@par proof-tree nil state
-                    (d-cl-id cl-id)
-                    (pprogn@par
-                     (increment-timer@par 'prove-time state)
-                     (install-disjunct-into-proof-tree cl-id d-cl-id state)
-                     (increment-timer@par 'proof-tree-time state)))
-           (io?@par prove nil state
-                    (cl-id d-cl-id branch-cnt)
-                    (pprogn@par
-                     (increment-timer@par 'prove-time state)
-                     (waterfall-or-hit-msg-b cl-id d-cl-id branch-cnt state)
-                     (increment-timer@par 'print-time state)))
+           (serial-only@par
+            (io? proof-tree nil state
+                 (d-cl-id cl-id)
+                 (pprogn
+                  (increment-timer 'prove-time state)
+                  (install-disjunct-into-proof-tree cl-id d-cl-id state)
+                  (increment-timer 'proof-tree-time state))))
+           (serial-only@par
+            (io? prove nil state
+                 (cl-id d-cl-id branch-cnt)
+                 (pprogn
+                  (increment-timer 'prove-time state)
+                  (waterfall-or-hit-msg-b cl-id d-cl-id branch-cnt state)
+                  (increment-timer 'print-time state))))
            (mv@par step-limit
                    'continue
                    d-new-pspv
