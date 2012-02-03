@@ -217,7 +217,7 @@ if (! $OPTIONS{"html"}) {
 }
 
 
-print "\n\nBasecosts:\n";
-while ((my $key, my $val) = each %$basecosts) {
-    print "$key: $val\n";
-}
+# print "\n\nBasecosts:\n";
+# while ((my $key, my $val) = each %$basecosts) {
+#     print "$key: $val\n";
+# }
