@@ -282,7 +282,7 @@ sub scan_for_set_max_time
     while(<$fd>) {
 	my $line = $_;
 	chomp($line);
-	if ($line =~ m/^[^;]*\((acl2::)?set-max-time (.*)\)/)
+	if ($line =~ m/^[^;]*\((acl2::)?set-max-time ([0-9]*)\)/)
 	{
 	    my $minutes = $2;
 	    return $minutes;
