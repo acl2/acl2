@@ -19,3 +19,4 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (include-book "finite-set-theory/osets/portcullis" :dir :system)
+(include-book "cutil/portcullis" :dir :system)

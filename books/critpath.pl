@@ -33,22 +33,6 @@ use Storable;
 # Note: Trying out FindBin::$RealBin.  If breaks, we can go back to
 # the system below.
 
-# Perl's include mechanism seems horribly broken.  FindBin doesn't understand
-# what to do if the script is invoked through a symlink.  The following is
-# ugly, but seems to work through symlinks, or through "perl filename", or
-# through ./filename, without requiring extra modules from CPAN.
-
-# sub fully_resolve_symlink {
-#     my $path = shift;
-#     while (-l $path) {
-# 	$path = readlink $path;
-#     }
-#     return $path;
-# }
-	
-# my $script_file = fully_resolve_symlink($0);
-# my $script_dir = File::Spec->catpath( (File::Spec->splitpath($script_file))[0,1] );
-
 (do "$RealBin/certlib.pl") or die("Error loading $RealBin/certlib.pl:\n $!");
 
 
@@ -108,7 +92,8 @@ my %OPTIONS = (
   'nopath'  => '',
   'nolist'  => '',
   'short'   => 1,
-  'real'    => 0
+  'real'    => 0,
+  'pcert'   => $ENV{'ACL2_PCERT'}
 );
 
 my @user_targets = ();
@@ -191,17 +176,17 @@ foreach my $target (@targets) {
 $cache_file && store($cache, $cache_file);
 
 my $basecosts = {};
-read_costs(\%deps, $basecosts, $warnings, $OPTIONS{'real'});
+read_costs(\%deps, $basecosts, $warnings, $OPTIONS{'real'}, $OPTIONS{'pcert'});
 print "done read_costs\n" if $debug;
 
-compute_cost_paths(\%deps, $basecosts, $costs, $warnings);
+compute_cost_paths(\%deps, $basecosts, $costs, $warnings, $OPTIONS{'pcert'});
 print "done compute_cost_paths\n" if $debug;
 
 print "costs: " .  $costs . "\n" if $debug;
 
 (my $topbook, my $topbook_cost) = find_most_expensive(\@targets, $costs);
 
-my %savings = %{compute_savings($costs, $basecosts, \@targets, $debug, \%deps)}; 
+my $savings = compute_savings($costs, $basecosts, \@targets, $debug, \%deps, $OPTIONS{'pcert'}); 
 
 
 	# ($costs, $warnings) = make_costs_table($target, \%deps, $costs, $warnings, $OPTIONS{"short"});
@@ -213,7 +198,7 @@ unless ($OPTIONS{'nowarn'}) {
 }
 
 unless ($OPTIONS{'nopath'}) {
-    print critical_path_report($costs, $basecosts, \%savings, $topbook, $OPTIONS{"html"}, $OPTIONS{"short"});
+    print critical_path_report($costs, $basecosts, $savings, $topbook, $OPTIONS{"html"}, $OPTIONS{"short"});
 }
 
 unless ($OPTIONS{'nolist'}) {
@@ -229,4 +214,10 @@ if (! $OPTIONS{"html"}) {
     print "Maximum parallelism: $max_parallel processes, from time $max_start_time to $max_end_time\n";
     print "Average level of parallelism: $avg_parallel.\n";
     print "Total time for all files: " . human_time($sum_parallel,0) . ".\n";
+}
+
+
+print "\n\nBasecosts:\n";
+while ((my $key, my $val) = each %$basecosts) {
+    print "$key: $val\n";
 }

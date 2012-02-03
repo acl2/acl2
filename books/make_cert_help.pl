@@ -43,10 +43,9 @@
 # by make_cert.  See make_cert for the defaults and meanings of ACL2,
 # COMPILE_FLG, and other variables used in this script.
 
-# Usage: make_cert_help.pl TARGET TARGETEXT PASSES
+# Usage: make_cert_help.pl TARGET STEP
 #   - TARGET is like "foo" for "foo.lisp"
-#   - TARGETEXT is "cert" or "acl2x"
-#   - PASSES is 1 or 2
+#   - STEP is "cert", "acl2x", "acl2xcert", "pcert", or "convert"
 
 
 use warnings;
@@ -54,6 +53,7 @@ use strict;
 use File::Spec;
 use FindBin qw($RealBin);
 use POSIX qw(strftime);
+use Cwd;
 
 sub trim
 {
@@ -78,6 +78,79 @@ sub read_whole_file_if_exists
     my $filename = shift;
     return "" if (! -f $filename);
     return read_whole_file($filename);
+}
+
+
+# Takes a string, a nesting depth, and a starting index.  Scans the
+# string for parens and keeps track of the depth.  Stops when the
+# depth reaches 0.  If it reaches the end of the string, returns the
+# current depth.  Returns three results: a flag which is 1 if it
+# reached the end before depth 0 and 0 otherwise, the nesting depth at
+# the end (only valid if it reached the end), and the index after the
+# closing paren.  BOZO doesn't care about string quotes etc.
+sub find_matching_parens {
+    my ($str, $depth, $pos) = @_;
+    while (1) {
+	my $next_open = index($str, "(", $pos);
+	my $next_close = index($str, ")", $pos);
+	my $open_next = ($next_open != -1)
+	    && (($next_close == -1) || $next_open < $next_close);
+	my $close_next = ($next_close != -1)
+	    && (($next_open == -1) || $next_close < $next_open);
+	if ($open_next) {
+	    $pos = $next_open+1;
+	    $depth = $depth+1;
+	} elsif ($close_next) {
+	    $pos = $next_close+1;
+	    $depth = $depth-1;
+	    if ($depth == 0) {
+		return (0, -1, $pos);
+	    }
+	} else {
+	    # reached end of string with no more parens
+	    return (1, $depth, -1);
+	}
+    }
+}
+
+   
+sub skip_certify_books {
+    my $str = shift;
+    my $pos = 0;
+    my @strs = ();
+    while (1) {
+	my $next = index($str, "(certify-book", $pos);
+	if ($next == -1) {
+	    push(@strs, substr($str,$pos));
+	    return join("", @strs);
+	}
+	push (@strs, substr($str,$pos,$next-$pos));
+	my ($done, $depth, $newpos) = find_matching_parens($str, 1, $next+1);
+	if ($done) {
+	    return join("", @strs);
+	}
+	$pos = $newpos;
+    }
+}
+
+
+sub read_file_except_certify {
+    my $filename = shift;
+    my $str = read_whole_file($filename);
+    return skip_certify_books($str);
+    # my @lines = ();
+    # open (my $fh, "<", $filename) or die("Can't open $filename: $!\n");
+    # my $line;
+    # my $parens_deep = -1;
+    # while (my $line = <$fh>) {
+    # 	chomp($line);
+    # 	if ($parens_deep == -1) {
+    # 	    my $start = index($line, "(certify-book"
+    # 			      $line =~ s/\(certify-book [^)]*\)//;
+    # 	push (@lines, $line);
+    # }
+    # my $ret = join("\n", @lines);
+    # return $ret;
 }
 
 sub remove_file_if_exists
@@ -218,16 +291,60 @@ sub scan_for_set_max_time
     return 0;
 }
 
-(my $TARGET, my $TARGETEXT, my $PASSES) = @ARGV;
+sub collect_ls_dirs {
+# Hi.  This is a horrible hack to compensate for NFS lag.  In our
+# setup, it seems to help to run "ls" on the directories containing
+# our dependencies (otherwise they often are not there yet when we try
+# to load them.)  To minimize the impact of this atrocity, we collect
+# the full set of these directories and uniqify them so that our
+# remote job doesn't do lots of redundant work.
+    my ($prereqs, $startdir) = @_;
+    my %dirs = ();
+
+    foreach my $prereq (@$prereqs) {
+	(my $vol, my $dir, my $file) = File::Spec->splitpath("$startdir/$prereq");
+	my $fulldir = File::Spec->canonpath(File::Spec->catpath($vol, $dir, ""));
+
+	$dirs{$fulldir} = 1;
+    }
+
+    my @dirnames = keys %dirs;
+
+    return \@dirnames;
+}
+
+my $TARGET = shift;
+my $STEP = shift;
+my $PREREQS = \@ARGV;
+
+# print "Prereqs for $TARGET $STEP: \n";
+# foreach my $prereq (@$PREREQS) {
+#     print "$prereq\n";
+# }
+
+my $startdir = getcwd;
+# my $prereq_dirs = collect_ls_dirs($PREREQS, $startdir);
+
+my $TARGETEXT;
+if ($STEP eq "convert" || $STEP eq "cert" || $STEP eq "acl2xcert") {
+    $TARGETEXT = "cert";
+} elsif ($STEP eq "pcert") {
+    $TARGETEXT = "pcert";
+} elsif ($STEP eq "acl2x") {
+    $TARGETEXT = "acl2x";
+} else {
+    die("Unrecognized step type: $STEP");
+}
+
 my $INHIBIT     = $ENV{"INHIBIT"} || "";
 my $HEADER      = $ENV{"OUTFILE_HEADER"} || "";
 my $MAX_NFS_LAG = $ENV{"MAX_NFS_LAG"} || 100;
 my $DEBUG       = $ENV{"ACL2_BOOKS_DEBUG"} ? 1 : 0;
-my $FLAGS       = ($PASSES == "2") ? $ENV{"COMPILE_FLG_TWOPASS"} : $ENV{"COMPILE_FLG"};
+my $FLAGS       = ($STEP eq "cert") ? $ENV{"COMPILE_FLG"} : $ENV{"COMPILE_FLG_TWOPASS"};
 my $TIME_CERT   = $ENV{"TIME_CERT"} ? 1 : 0;
 my $STARTJOB    = $ENV{"STARTJOB"} || "";
 my $ON_FAILURE_CMD = $ENV{"ON_FAILURE_CMD"} || "";
-my $ACL2           = $ENV{"ACL2"};
+my $ACL2           = $ENV{"ACL2"} || "acl2";
 # Figure out what ACL2 points to before we switch directories.
 
 my $default_acl2 = `which $ACL2 2>/dev/null`;
@@ -240,8 +357,8 @@ if ($DEBUG)
 {
     print "-- Starting up make_cert_help.pl in debug mode.\n";
     print "-- TARGET       = $TARGET\n";
+    print "-- STEP         = $STEP\n";
     print "-- TARGETEXT    = $TARGETEXT\n";
-    print "-- PASSES       = $PASSES\n";
     print "-- INHIBIT      = $INHIBIT\n";
     print "-- MAX_NFS_LAG  = $MAX_NFS_LAG\n";
     print "-- FLAGS        = $FLAGS\n";
@@ -253,7 +370,7 @@ my $full_file = File::Spec->rel2abs($TARGET);
 (my $vol, my $dir, my $file) = File::Spec->splitpath($full_file);
 my $goal = "$file.$TARGETEXT";
 
-print "Making $goal on " . strftime('%d-%b-%Y %H:%M',localtime) . "\n";
+print "Making $dir$goal on " . strftime('%d-%b-%Y %H:%M',localtime) . "\n";
 
 my $fulldir = File::Spec->canonpath(File::Spec->catpath($vol, $dir, ""));
 print "-- Entering directory $fulldir\n" if $DEBUG;
@@ -269,13 +386,14 @@ print "-- Image to use = $acl2\n" if $DEBUG;
 die("Can't determine which ACL2 to use.") if !$acl2;
 
 
-
-my $timefile = "$file.time";
-my $outfile = "$file.out";
-if ($TARGETEXT eq "acl2x")
-{
-    $timefile = "$file.acl2x.time";
-    $outfile = "$file.acl2x.out";
+my $timefile;
+my $outfile;
+if ($STEP eq "cert") {
+    $timefile = "$file.time";
+    $outfile = "$file.out";
+} else {
+    $timefile = "$file.$STEP.time";
+    $outfile = "$file.$STEP.out";
 }
 
 print "-- Removing files to be generated.\n" if $DEBUG;
@@ -301,38 +419,39 @@ $instrs .= "(acl2::value :q)\n";
 $instrs .= "(in-package \"ACL2\")\n";
 $instrs .= "(acl2::lp)\n\n";
 
-$instrs .= "(set-write-acl2x t state)\n" if ($TARGETEXT eq "acl2x");
+$instrs .= "(set-write-acl2x '(t) state)\n" if ($STEP eq "acl2x");
 $instrs .= "$INHIBIT\n" if ($INHIBIT);
 
 $instrs .= "\n";
 
+my $PCERT = "";
+if ($STEP eq "pcert") {
+    $PCERT = ":pcert :create";
+} elsif ($STEP eq "convert") {
+    $PCERT = ":pcert :convert";
+}
+
+my $cert_cmd = "#!ACL2 (er-progn (time\$ (certify-book \"$file\" ? $FLAGS $PCERT))
+                                 (value (exit 43)))";
+
 # Get the certification instructions from foo.acl2 or cert.acl2, if either
 # exists, or make a generic certify-book command.
 if (-f "$file.acl2") {
-    $instrs .= "; instructions from $file.acl2:\n";
-    $instrs .= read_whole_file("$file.acl2");
-    $instrs .= "\n";
+    $instrs .= "; instructions from $file.acl2\n";
+    $instrs .= "; (omitting any certify-book line):\n";    
+    $instrs .= read_file_except_certify("$file.acl2");
+    $instrs .= "\n; certify-book command added automatically:\n";
+    $instrs .= "$cert_cmd\n\n";
 }
 elsif (-f "cert.acl2") {
     $instrs .= "; instructions from cert.acl2:\n";
     $instrs .= read_whole_file("cert.acl2");
     $instrs .= "\n; certify-book command added automatically:\n";
-    $instrs .= "(time\$ #!ACL2 (certify-book \"$file\" ? $FLAGS))\n\n";
+    $instrs .= "$cert_cmd\n\n";
 }
 else {
     $instrs .= "; certify-book generated automatically:\n";
-    $instrs .= "(time\$ #!ACL2 (certify-book \"$file\" ? $FLAGS))\n\n";
-}
-
-
-# Special hack so that ACL2 exits with 43 on success, or 0 on failure, so we
-# can avoid looking at the file system in case of NFS lag.  See make_cert.lsp
-# for details.  BOZO right now we're not doing any exit code magic for .acl2x
-# files.  It'd be nice to fix that.
-if ($TARGETEXT ne "acl2x") {
-    $instrs .= "; exit code hack\n";
-    $instrs .= "(acl2::ld \"make_cert.lsp\" :dir :system)\n";
-    $instrs .= "(acl2::horrible-include-book-exit \"$file\" acl2::state)\n";
+    $instrs .= "$cert_cmd\n\n";
 }
 
 if ($DEBUG) {
@@ -364,6 +483,14 @@ print "-- Resource limits: $max_mem gigabytes, $max_time minutes.\n\n" if $DEBUG
 
 $shinsts .= "#PBS -l pmem=${max_mem}gb\n";
 $shinsts .= "#PBS -l walltime=${max_time}:00\n\n";
+
+$shinsts .= "pwd >> $outfile\n";
+# $shinsts .= "echo List directories of prereqs >> $outfile\n";
+# $shinsts .= "time ( ls @$prereq_dirs > /dev/null ) 2> $outfile\n";
+# foreach my $prereq (@$PREREQS) {
+#     $shinsts .= "echo prereq: $prereq >> $outfile\n";
+#     $shinsts .= "ls -l $startdir/$prereq >> $outfile 2>&1 \n";
+# }
 
 $shinsts .= "echo >> $outfile\n";
 $shinsts .= "hostname >> $outfile\n";
@@ -411,23 +538,35 @@ unlink($shtmp) if !$DEBUG;
 
 # Success or Failure Detection -------------------------------
 
+# We should know immediately whether we've succeeded or failed,
+# because we should exit 43 if we succeeded and not if we don't.
+# But we still want to wait for the target file to show up.
 my $success = 0;
 
-if (-f $goal) {
-    $success = 1;
-    print "-- Immediate success detected\n" if $DEBUG;
-}
-elsif ($TARGETEXT ne "acl2x" && $status == 43) {
+if ($status == 43) {
+    if (-f $goal) {
+	$success = 1;
+	print "-- Immediate success detected\n" if $DEBUG;
+    } else {
+# if ($STEP eq "cert" && $status == 43) {
     # The exit code indicates that the file certified successfully, so why
     # doesn't it exist?  Maybe there's NFS lag.  Let's try waiting to see if
     # the file will show up.
-    $success = wait_for_nfs($goal, $MAX_NFS_LAG);
-    print "-- After waiting for NFS, success is $success\n" if $DEBUG;
+	$success = wait_for_nfs($goal, $MAX_NFS_LAG);
+	print "-- After waiting for NFS, success is $success\n" if $DEBUG;
+    }
 }
 
-if (!$success) {
-    my $taskname = ($TARGETEXT eq "acl2x") ? "ACL2X GENERATION" : "CERTIFICATION";
-    print "**$taskname FAILED** for $dir/$file.lisp\n\n";
+if ($success) {
+    print "Successfully built $dir$goal\n";
+} else {
+    my $taskname = ($STEP eq "acl2x") ? "ACL2X GENERATION" :
+	($STEP eq "cert")  ? "CERTIFICATION" :
+	($STEP eq "acl2xcert") ? "2ND PASS CERTIFICATION" :
+	($STEP eq "pcert")     ? "PROVISIONAL CERTIFICATION" :
+	# ($STEP eq "convert")
+	"PCERT->CERT CONVERSION";
+    print "**$taskname FAILED** for $dir$file.lisp\n\n";
     system("tail -300 $outfile | sed 's/^/   | /'");
     print "\n\n";
 
@@ -435,7 +574,7 @@ if (!$success) {
 	system($ON_FAILURE_CMD);
     }
 
-    print "**CERTIFICATION FAILED** for $dir/$file.lisp\n\n";
+    print "**$taskname FAILED** for $dir$file.lisp\n\n";
     exit(1);
 }
 

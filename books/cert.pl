@@ -63,8 +63,6 @@ push (@orig_cmd_line_args, @ARGV);
 my $base_path = 0;
 
 my @user_targets = ();
-my @targets = ();
-my @deps_of = ();
 my $jobs = 1;
 my $no_build = 0;
 my $no_makefile = 0;
@@ -155,6 +153,19 @@ cert file.
 See files make-targets and regression-targets for example uses of
 cert.pl.
 
+An advanced feature of cert.pl is the ability to set up Make variables
+that contain the recursive dependencies of certain sources.  For example,
+
+ cert.pl -s my_mkfile  AB: a.cert b.cert CDE: c.cert e.cert d.cert
+
+creates a makefile, my_mkfile, that (in addition to containing the
+usual dependency graph, defines variables AB_SOURCES, AB_CERTS,
+CDE_SOURCES, and CDE_CERTS.  AB_SOURCES contains all non-cert files
+that a.cert and b.cert recursively depend on, AB_CERTS contains all
+cert files they depend on, and similarly for CDE_SOURCES and
+CDE_CERTS.  This is sometimes useful in case you wish to set up a
+makefile with several distinct targets that depend on overlapping sets
+of books.
 
 OPTIONS:
 
@@ -357,19 +368,23 @@ GetOptions ("help|h"               => sub { print $summary_str;
 	    "targets|t=s"          => sub { shift;
 					    read_targets(shift, \@user_targets);
 					},
-	    "deps-of|p=s"          => \@deps_of,
 	    "debug"                => \$certlib_opts{"debugging"},
 	    # Note: this doesn't do anything yet.
 	    "cache|h=s"            => \$cache_file,
-	    "accept-cache"         => \$certlib_opts{"believe_cache"}
+	    "accept-cache"         => \$certlib_opts{"believe_cache"},
+	    "deps-of|p=s"          => sub { shift; push(@user_targets, "-p " . shift); },
+	    "<>"                   => sub { push(@user_targets, shift); }
 	    );
 
 certlib_set_opts(\%certlib_opts);
 
-my $cache = {};
+my $cache;
 if ($cache_file && -e $cache_file) {
     $cache = retrieve($cache_file);
+} else {
+    $cache = {};
 }
+
 # If $acl2_books is still not set, then:
 # - set it based on the location of acl2 in the path, if available
 # - otherwise set it to the directory containing this script.
@@ -411,21 +426,15 @@ certlib_add_dir("SYSTEM", $acl2_books);
 # and ACL2 environment variables to match our assumption.
 $ENV{"ACL2_SYSTEM_BOOKS"} = $acl2_books;
 
-push(@user_targets, @ARGV);
-
-my %seen = ( );
-my @sources = ( );
-
-foreach my $target (@user_targets) {
-    push (@targets, to_basename($target) . ".cert");
-}
 
 my %tscache = ();
 
-foreach my $top (@deps_of) {
-    (my $deps, my $two_pass) = find_deps(to_basename($top), $cache, 1, \%tscache, 0);
-    push (@targets, @{$deps});
-}
+my ($targets_ref, $labels_ref) = process_labels_and_targets(\@user_targets, $cache, \%tscache);
+my @targets = @$targets_ref;
+my %labels = %$labels_ref;
+
+my %seen = ( );
+my @sources = ( );
 
 
 unless (@targets) {
@@ -485,7 +494,7 @@ unless ($no_makefile) {
     print $mf "# Depends on all certificate files.\n";
     print $mf "all-cert-pl-certs:\n\n";
     
-    # declare $var_preifx_CERTS to be the list of certificates
+    # declare $var_prefix_CERTS to be the list of certificates
     print $mf $var_prefix . "_CERTS :=";
     my @certs = ();
     while ((my $key, my $value) = each %seen) {
@@ -502,6 +511,19 @@ unless ($no_makefile) {
 
     print $mf "\n\n";
 
+    print $mf "ifneq (\$(ACL2_PCERT),)\n\n";
+    print $mf "${var_prefix}_CERTS := \$(${var_prefix}_CERTS)";
+    foreach my $cert (@certs) {
+	if ($cert =~ /\.cert$/) {
+	    my $base = $cert;
+	    $base =~ s/\.cert$//;
+	    print $mf " \\\n     $base.pcert";
+	    print $mf " \\\n     $base.acl2x";
+	}
+    }
+    print $mf "\n\nendif\n";
+	
+
     print $mf "all-cert-pl-certs: \$(" . $var_prefix . "_CERTS)\n\n";
 
     # declare $var_prefix_SOURCES to be the list of sources
@@ -510,6 +532,43 @@ unless ($no_makefile) {
 	print $mf " \\\n     $source ";
     }
     print $mf "\n\n";
+
+    # If there are labels, write out the sources and certs for those
+    foreach my $label (sort(keys %labels)) {
+	my @topcerts = @{$labels{$label}};
+	my @labelcerts = ();
+	my @labelsources = ();
+	my %visited = ();
+	# print "Processing label: $label\n";
+	foreach my $topcert (@topcerts) {
+	    # print "Visiting $topcert\n";
+	    deps_dfs($topcert, \%seen, \%visited, \@labelsources, \@labelcerts);
+	}
+	@labelcerts = sort(@labelcerts);
+	@labelsources = sort(@labelsources);
+	print $mf "${label}_CERTS :=";
+	foreach my $cert (@labelcerts) {
+	    print $mf " \\\n     $cert";
+	}
+	print $mf "\n\n";
+	print $mf "ifneq (\$(ACL2_PCERT),)\n\n";
+	print $mf "${label}_CERTS := \$(${label}_CERTS)";
+	foreach my $cert (@labelcerts) {
+	    if ($cert =~ /\.cert$/) {
+		my $base = $cert;
+		$base =~ s/\.cert$//;
+		print $mf " \\\n     $base.pcert";
+		print $mf " \\\n     $base.acl2x";
+	    }
+	}
+	print $mf "\n\nendif\n";
+
+	print $mf "${label}_SOURCES :=";
+	foreach my $source (@labelsources) {
+	    print $mf " \\\n     $source";
+	}
+	print $mf "\n\n";
+    }
 
     # write out the dependencies
     foreach my $cert (@certs) {
@@ -523,6 +582,52 @@ unless ($no_makefile) {
 	    print $mf "\n\n";
 	}
     }
+
+    # Write dependencies for pcert mode.
+    print $mf "ifneq (\$(ACL2_PCERT),)\n\n";
+    print $mf "# Dependencies for .pcert files:\n";
+    print $mf "# (each .pcert depends on its corresponding .acl2x)\n\n";
+    
+    foreach my $cert (@certs) {
+	if ($cert =~ /\.cert$/) {
+	    my $base = $cert;
+	    $base =~ s/\.cert$//;
+	    print $mf "$base.pcert : $base.acl2x\n";
+	}
+    }
+
+    print $mf "\n# Dependencies for .acl2x files:\n";
+    print $mf "# (similar to those for .cert files)\n";
+
+    foreach my $cert (@certs) {
+	if ($cert =~ /\.cert$/) {
+	    my $val = $seen{$cert};
+	    if ($val) {
+		my $base = $cert;
+		$base =~ s/\.cert$//;
+		my @the_deps = @{$val};
+		print $mf "$base.acl2x :";
+		foreach my $dep (@the_deps) {
+		    $dep =~ s/\.cert$/.acl2x/;
+		    print $mf " \\\n     $dep";
+		}
+		print $mf "\n\n";
+	    }
+	}
+    }
+
+    print $mf "# Dependencies for converting .pcert to .cert files:\n";
+    print $mf "# (Each cert file depends on its pcert.)\n";
+    
+    foreach my $cert (@certs) {
+	if ($cert =~ /\.cert$/) {
+	    my $base = $cert;
+	    $base =~ s/\.cert$//;
+	    print $mf "$cert : $base.pcert\n";
+	}
+    }
+    print $mf "\nendif\n\n";
+
 
     foreach my $incl (@include_afters) {
 	print $mf "\ninclude $incl\n";

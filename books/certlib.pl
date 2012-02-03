@@ -172,11 +172,17 @@ sub get_cert_time {
 # corresponding .time file.  If not found, prints a warning and returns 0.
 # Given an .acl2x file, gets the time recorded in the corresponding
 # .acl2x.time file.
-    my ($path, $warnings, $use_realtime) = @_;
+    my ($path, $warnings, $use_realtime, $pcert) = @_;
 
-    $path =~ s/\.cert$/\.time/;
-    $path =~ s/\.acl2x$/\.acl2x\.time/;
-    
+    if ($pcert) {
+	$path =~ s/\.cert$/\.convert\.time/;
+	$path =~ s/\.pcert$/\.pcert\.time/;
+	$path =~ s/\.acl2x$/\.acl2x\.time/;
+    } else {
+	$path =~ s/\.cert$/\.time/;
+	$path =~ s/\.acl2x$/\.acl2x\.time/;
+    }
+
     if (open (my $timefile, "<", $path)) {
 
 	# The following while loop works for GNU time, but 
@@ -225,12 +231,17 @@ sub get_cert_time {
 
 
 sub read_costs {
-    my ($deps, $basecosts, $warnings, $use_realtime) = @_;
+    my ($deps, $basecosts, $warnings, $use_realtime, $pcert) = @_;
 
     foreach my $certfile (keys %{$deps}) {
-	if ($certfile =~ /\.(cert|acl2x)$/) {
-	    my $cost = get_cert_time($certfile, $warnings, $use_realtime);
-	    $basecosts->{$certfile} = $cost;
+	if ($pcert && $certfile =~ /\.cert$/) {
+	    (my $pcertfile = $certfile) =~ s/\.cert$/\.pcert/;
+	    (my $acl2xfile = $certfile) =~ s/\.cert$/\.acl2x/;
+	    $basecosts->{$certfile} = get_cert_time($certfile, $warnings, $use_realtime, $pcert);
+	    $basecosts->{$pcertfile} = get_cert_time($pcertfile, $warnings, $use_realtime, $pcert);
+	    $basecosts->{$acl2xfile} = get_cert_time($acl2xfile, $warnings, $use_realtime, $pcert);
+	} elsif ($certfile =~ /\.(cert|acl2x)$/) {
+	    $basecosts->{$certfile} = get_cert_time($certfile, $warnings, $use_realtime, $pcert);
 	}
     }
 }
@@ -259,49 +270,77 @@ sub find_most_expensive {
 }
 
 sub compute_cost_paths_aux {
-    my ($certfile,$deps,$basecosts,$costs,$warnings) = @_;
+    my ($target,$deps,$basecosts,$costs,$warnings,$pcert) = @_;
 
-    if (exists $costs->{$certfile} || ! ($certfile =~ /\.(cert|acl2x)$/)) {
-	return $costs->{$certfile};
+    if (exists $costs->{$target} || ! ($target =~ /\.(cert|acl2x|pcert)$/)) {
+	return $costs->{$target};
     }
 
-    # put something in $costs->{$certfile} so that we don't loop
-    $costs->{$certfile} = 0;
+    # put something in $costs->{$target} so that we don't loop
+    $costs->{$target} = 0;
 
-    my $certtime = $basecosts->{$certfile};
-    my $certdeps = $deps->{$certfile};
+    my $certtime = $basecosts->{$target};
+    
+    my $targetdeps;
+    if ($pcert) {
+	$targetdeps = [];
+	if ($target =~ /\.pcert$/) {
+	    ## The only dependency is the corresponding .acl2x.
+	    (my $acl2xfile = $target) =~ s/\.pcert$/\.acl2x/;
+	    push (@$targetdeps, $acl2xfile);
+	} elsif ($target =~ /\.acl2x$/) {
+	    ## The dependencies are the dependencies of the cert file, but
+	    ## with each .cert replaced with the corresponding .acl2x.
+	    (my $certfile = $target) =~ s/\.acl2x$/\.cert/;
+	    my $certdeps = $deps->{$certfile};
+	    if ($certdeps) {
+		foreach my $dep ($certdeps) {
+		    (my $depacl2x = $dep) =~ s/\.cert$/\.acl2x/;
+		    push(@$certdeps, $depacl2x);
+		}
+	    }
+	} else { # $target =~ /\.cert$/
+	    # The dependencies are the ones saved in $deps, plus the corresponding pcert.
+	    my $certdeps = $deps->{$target};
+	    push (@$targetdeps, @$certdeps);
+	    (my $pcertfile = $target) =~ s/\.cert$/\.pcert/;
+	    push (@$targetdeps, $pcertfile);
+	}
+    } else {
+	$targetdeps = $deps->{$target};
+    }
 
     my $most_expensive_dep = 0;
     my $most_expensive_dep_total = 0;
 
-    if ($certdeps) {
-	foreach my $dep (@{$certdeps}) {
-	    if ($dep =~ /\.(cert|acl2x)$/) {
-		my $this_dep_costs = compute_cost_paths_aux($dep, $deps, $basecosts, $costs, $warnings);
+    if ($targetdeps) {
+	foreach my $dep (@{$targetdeps}) {
+	    if ($dep =~ /\.(cert|acl2x|pcert)$/) {
+		my $this_dep_costs = compute_cost_paths_aux($dep, $deps, $basecosts, $costs, $warnings, $pcert);
 		if (! $this_dep_costs) {
-		    if ($dep eq $certfile) {
+		    if ($dep eq $target) {
 			push(@{$warnings}, "Self-dependency in $dep");
 		    } else {
-			push(@{$warnings}, "Dependency loop involving $dep and $certfile");
+			push(@{$warnings}, "Dependency loop involving $dep and $target");
 		    }
 		}
 	    }
 	}
 
-	($most_expensive_dep, $most_expensive_dep_total) = find_most_expensive($certdeps, $costs);
+	($most_expensive_dep, $most_expensive_dep_total) = find_most_expensive($targetdeps, $costs);
     }
     my %entry = ( "totaltime" => $most_expensive_dep_total + $certtime, 
 		  "maxpath" => $most_expensive_dep );
 
-    $costs->{$certfile} = \%entry;
-    return $costs->{$certfile};
+    $costs->{$target} = \%entry;
+    return $costs->{$target};
 }
 
 sub compute_cost_paths {
-    my ($deps,$basecosts,$costs,$warnings) = @_;
+    my ($deps,$basecosts,$costs,$warnings,$pcert) = @_;
     
     foreach my $certfile (keys %{$deps}) {
-	compute_cost_paths_aux($certfile, $deps, $basecosts, $costs, $warnings);
+	compute_cost_paths_aux($certfile, $deps, $basecosts, $costs, $warnings,$pcert);
     }
 }
 
@@ -1069,7 +1108,35 @@ sub find_deps {
 
 }
 
+# Given that the dependency map $seen is already built, this collects
+# the full set of sources and targets needed for a given file.
+sub deps_dfs {
+    my ($target, $seen, $visited, $sources, $certs) = @_;
 
+    if (exists $visited->{$target}) {
+	return;
+    }
+
+    $visited->{$target} = 1;
+
+    if ($target !~ /\.(cert|acl2x)$/) {
+	push(@{$sources}, $target);
+	return;
+    }
+
+    if (excludep($target)) {
+	return;
+    }
+
+    push (@$certs, $target);
+
+    my $deps = $seen->{$target};
+    foreach my $dep (@$deps) {
+	deps_dfs($dep, $seen, $visited, $sources, $certs);
+    }
+}
+
+    
 
 # During a dependency search, this is run with $target set to each
 # cert and source file in the dependencies of the top-level targets.
@@ -1191,16 +1258,59 @@ sub read_targets {
     }
 }
 
+# Takes a list of inputs containing some filenames and some labels
+# (ending with a colon.)  Sorts out the filenames into a list of
+# targets (changing them to .cert extensions if necessary) and returns
+# the list of targets and a hash associating each label with its list
+# of targets.
+sub process_labels_and_targets {
+    my ($input, $cache, $tscache) = @_;
+    my %labels = ();
+    my @targets = ();
+    my $label_started = 0;
+    my $label_targets;
+    foreach my $str (@$input) {
+	if (substr($str, 0, 3) eq '-p ') {
+	    # Deps-of.
+	    my $name = to_basename(substr($str,3));
+	    (my $deps, my $two_pass) = find_deps($name, $cache, 1, $tscache, 0);
+	    push (@targets, @$deps);
+	    push (@$label_targets, @$deps) if $label_started;
+	} elsif (substr($str, -1, 1) eq ':') {
+	    # label.
+	    my $label = substr($str,0,-1); # everything but the :
+	    $label_started = 1;
+	    if (! exists($labels{$label})) {
+		$label_targets = [];
+		$labels{$label} = $label_targets;
+	    } else {
+		$label_targets = $labels{$label};
+	    }
+	} else {
+	    # filename.
+	    my $target = to_basename($str) . ".cert";
+	    push(@targets, $target);
+	    push(@$label_targets, $target) if $label_started;
+	}
+    }
+    # print "Labels:\n";
+    # while ((my $key, my $value) = each %labels) {
+    # 	print "${key}:\n";
+    # 	foreach my $target (@$value) {
+    # 	    print "$target\n";
+    # 	}
+    # }
+
+    return (\@targets, \%labels);
+}
+
 
 
 sub compute_savings
 {
-    my ($costs,$basecosts,$targets_ref,$debug,$deps_ref) = @_;
+    my ($costs,$basecosts,$targets,$debug,$deps, $pcert) = @_;
 
-    my @targets = @$targets_ref;
-    my %deps = %$deps_ref;
-
-    (my $topbook, my $topbook_cost) = find_most_expensive(\@targets, $costs);
+    (my $topbook, my $topbook_cost) = find_most_expensive($targets, $costs);
 
     print "done topbook\n" if $debug;
 
@@ -1221,8 +1331,8 @@ sub compute_savings
 	my %tmpcosts = ();
 	my @tmpwarns = ();
 	$basecosts->{$critfile} = 0.0;
-	compute_cost_paths(\%deps, $basecosts, \%tmpcosts, \@tmpwarns);
-	(my $tmptop, my $tmptopcost) = find_most_expensive(\@targets, \%tmpcosts);
+	compute_cost_paths($deps, $basecosts, \%tmpcosts, \@tmpwarns, $pcert);
+	(my $tmptop, my $tmptopcost) = find_most_expensive($targets, \%tmpcosts);
 	my $speedup_savings = $topbook_cost - $tmptopcost;
 	$speedup_savings = $speedup_savings || 0.000001;
 
@@ -1230,8 +1340,8 @@ sub compute_savings
 	# set the file total cost to 0 and recompute crit path.
 	%tmpcosts = ();
 	$tmpcosts{$critfile} = 0;
-	compute_cost_paths(\%deps, $basecosts, \%tmpcosts, \@tmpwarns);
-	($tmptop, $tmptopcost) = find_most_expensive(\@targets, \%tmpcosts);
+	compute_cost_paths($deps, $basecosts, \%tmpcosts, \@tmpwarns, $pcert);
+	($tmptop, $tmptopcost) = find_most_expensive($targets, \%tmpcosts);
 	my $remove_savings = $topbook_cost - $tmptopcost;
 	$remove_savings = $remove_savings || 0.000001;
 
