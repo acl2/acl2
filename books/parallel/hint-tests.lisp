@@ -24,7 +24,8 @@
 
 (set-default-hints '(("Goal" :do-not-induct t)))
 
-(set-waterfall-parallelism nil)
+(make-event (er-progn (set-waterfall-parallelism nil)
+                      (value '(value-triple nil))))
 
 (defun my-non-modifying-computed-hint (id state)
   (declare (xargs :mode :program :stobjs state))
@@ -49,7 +50,8 @@
              (append x (append y z)))
       :hints ((my-non-modifying-computed-hint id state))))
 
-(set-waterfall-parallelism :full)
+(make-event (er-progn (set-waterfall-parallelism :full)
+                      (value '(value-triple nil))))
 
 (must-succeed
 
@@ -64,7 +66,8 @@
 ; Computed hint test 2 ;
 ;;;;;;;;;;;;;;;;;;;;;;;;
 
-(set-waterfall-parallelism nil)
+(make-event (er-progn (set-waterfall-parallelism nil)
+                      (value '(value-triple nil))))
 
 (defun my-state-modifying-computed-hint (id state)
   (declare (xargs :mode :program :stobjs state))
@@ -79,7 +82,8 @@
              (append x (append y z)))
       :hints ((my-state-modifying-computed-hint id state))))
 
-(set-waterfall-parallelism :full)
+(make-event (er-progn (set-waterfall-parallelism :full)
+                      (value '(value-triple nil))))
 
 ; The following commented form only works on development versions that occur
 ; after the release of ACL2 4.3.  As such, it is commented out for now, since
@@ -109,7 +113,8 @@
       '(:induct t)
     nil))
 
-(set-waterfall-parallelism nil)
+(make-event (er-progn (set-waterfall-parallelism nil)
+                      (value '(value-triple nil))))
 
 (must-succeed
 
@@ -119,7 +124,8 @@
              (append x (append y z)))
       :hints ((my-non-modifying-computed-hint2 id state))))
 
-(set-waterfall-parallelism :full)
+(make-event (er-progn (set-waterfall-parallelism :full)
+                      (value '(value-triple nil))))
 
 (must-succeed
 
@@ -143,28 +149,32 @@
 ; Test our ability to toggle waterfall-parallelism when an override-hint is
 ; present.
 
-(set-waterfall-parallelism nil)
+(make-event (er-progn (set-waterfall-parallelism nil)
+                      (value '(value-triple nil))))
 
 (set-override-hints
  '((append '(:no-thanks t) keyword-alist)))
 
 (must-fail 
- (set-waterfall-parallelism :full))
+ (make-event (er-progn (set-waterfall-parallelism :full)
+                       (value '(value-triple nil)))))
 
 (set-override-hints nil)
 
-(set-waterfall-parallelism :full)
+(make-event (er-progn (set-waterfall-parallelism :full)
+                      (value '(value-triple nil))))
 
 (set-override-hints
  '((append '(:no-thanks t) keyword-alist)))
 
 (must-fail 
- (set-waterfall-parallelism nil))
+ (make-event (er-progn (set-waterfall-parallelism nil)
+                       (value '(value-triple nil)))))
 
 (set-override-hints nil)
 
-(set-waterfall-parallelism nil)
-
+(make-event (er-progn (set-waterfall-parallelism nil)
+                      (value '(value-triple nil))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;
 ; Override hint test 2 ;
@@ -173,7 +183,8 @@
 ; Test our ability to add override-hints that do not modify state and our
 ; ability to add override-hints that do modify state.
 
-(set-waterfall-parallelism nil)
+(make-event (er-progn (set-waterfall-parallelism nil)
+                      (value '(value-triple nil))))
 
 (must-succeed
  (set-override-hints
@@ -199,7 +210,8 @@
 
 (set-override-hints nil)
 
-(set-waterfall-parallelism :full)
+(make-event (er-progn (set-waterfall-parallelism :full)
+                      (value '(value-triple nil))))
 
 (must-succeed
  (set-override-hints
@@ -212,7 +224,13 @@
             (declare (ignore col))
             (value (append '(:no-thanks t) keyword-alist))))))
 
-(set-waterfall-printing :full) ; so we see "Thanks for the hint" messages
+
+(make-event (er-progn (set-waterfall-parallelism 
+
+; so we see "Thanks for the hint" messages
+                       
+                       :full)
+                      (value '(value-triple nil))))
 
 (must-succeed
  (thm (equal (append (append x y) z) 
@@ -233,7 +251,9 @@
              (append x (append y z)))
       :hints (("Goal" :induct t))))
 
-(set-waterfall-parallelism-hacks-enabled! t)
+(defttag :waterfall-parallelism-hacks)
+
+(set-waterfall-parallelism-hacks-enabled t)
 
 (must-succeed
 
@@ -246,7 +266,8 @@
 
 (set-override-hints nil)
 
-(set-waterfall-parallelism nil)
+(make-event (er-progn (set-waterfall-parallelism nil)
+                      (value '(value-triple nil))))
 
 (set-waterfall-parallelism-hacks-enabled nil)
 
@@ -260,7 +281,8 @@
 ; Custom-keyword-hint test 1 ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(set-waterfall-parallelism nil)
+(make-event (er-progn (set-waterfall-parallelism nil)
+                      (value '(value-triple nil))))
 
 ; Install some custom-keyword-hints
 
@@ -363,7 +385,8 @@
          (append a (append b c)))
   :hints (("Goal" :induct t :no-thanks-default-checker2 nil))))
 
-(set-waterfall-parallelism :full)
+(make-event (er-progn (set-waterfall-parallelism :full)
+                      (value '(value-triple nil))))
 
 (must-fail
   (thm
@@ -398,7 +421,8 @@
 ; Clause processor test 1 ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(set-waterfall-parallelism nil)
+(make-event (er-progn (set-waterfall-parallelism nil)
+                      (value '(value-triple nil))))
 
 ; A simple example taken from :DOC clause-processor
 
@@ -428,7 +452,9 @@
         :clause-processor
         (note-fact-clause-processor clause '(equal a a))))))
 
-(set-waterfall-parallelism :full)
+(make-event (er-progn (set-waterfall-parallelism :full)
+                      (value '(value-triple nil))))
+
 
 (must-succeed
  (thm (equal (car (cons x y))
@@ -464,7 +490,8 @@
            (evl1 (disjoin cl) a))
   :rule-classes :clause-processor )
 
-(set-waterfall-parallelism nil)
+(make-event (er-progn (set-waterfall-parallelism nil)
+                      (value '(value-triple nil))))
 
 (must-succeed
  (thm (equal (car (cons x y))
@@ -474,7 +501,8 @@
         :clause-processor
         (note-fact-clause-processor-modifies-state clause '(equal a a) state)))))
 
-(set-waterfall-parallelism :full)
+(make-event (er-progn (set-waterfall-parallelism :full)
+                      (value '(value-triple nil))))
 
 (must-fail
  (thm (equal (car (cons x y))
@@ -488,7 +516,8 @@
 ; Clause processor test 3 ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(set-waterfall-parallelism nil)
+(make-event (er-progn (set-waterfall-parallelism nil)
+                      (value '(value-triple nil))))
 
 (defun note-fact-clause-processor-modifies-state2 (cl term state)
   (declare (xargs :guard (state-p state) :stobjs state)) ; optional, for better efficiency
@@ -518,7 +547,8 @@
         (note-fact-clause-processor-modifies-state2 clause '(equal a a)
                                                     state)))))
 
-(set-waterfall-parallelism :full)
+(make-event (er-progn (set-waterfall-parallelism :full)
+                      (value '(value-triple nil))))
 
 (must-fail
  (thm (equal (car (cons x y))
@@ -533,7 +563,8 @@
 ; Clause processor test 4 ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(set-waterfall-parallelism nil)
+(make-event (er-progn (set-waterfall-parallelism nil)
+                      (value '(value-triple nil))))
 
 (defun note-fact-clause-processor-modifies-state3 (cl term state)
   (declare (xargs :guard (state-p state) :stobjs state)) ; optional, for better efficiency
@@ -564,7 +595,8 @@
         :clause-processor
         (note-fact-clause-processor-modifies-state3 clause '(equal a a) state)))))
 
-(set-waterfall-parallelism :full)
+(make-event (er-progn (set-waterfall-parallelism :full)
+                      (value '(value-triple nil))))
 
 (must-fail
  (thm (equal (car (cons x y))
@@ -579,7 +611,9 @@
 ; Clause processor test 5 ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(set-waterfall-parallelism-hacks-enabled! t)
+(defttag :waterfall-parallelism-hacks)
+
+(set-waterfall-parallelism-hacks-enabled t)
 
 ; Here we reuse a definition from clause processor test 2
 
@@ -615,7 +649,8 @@
            (evl1 (disjoin cl) a))
   :rule-classes :clause-processor )
 
-(set-waterfall-parallelism nil)
+(make-event (er-progn (set-waterfall-parallelism nil)
+                      (value '(value-triple nil))))
 
 (must-fail
  (thm (equal (car (cons x y))
@@ -625,7 +660,8 @@
         :clause-processor
         (note-fact-clause-processor-modifies-state6 clause '(equal a a))))))
 
-(set-waterfall-parallelism :full)
+(make-event (er-progn (set-waterfall-parallelism :full)
+                      (value '(value-triple nil))))
 
 (must-fail
  (thm (equal (car (cons x y))
@@ -656,7 +692,8 @@
            (evl1 (disjoin cl) a))
   :rule-classes :clause-processor )
 
-(set-waterfall-parallelism nil)
+(make-event (er-progn (set-waterfall-parallelism nil)
+                      (value '(value-triple nil))))
 
 (must-fail
  (thm (equal (car (cons x y))
@@ -666,7 +703,8 @@
         :clause-processor
         (note-fact-clause-processor-modifies-state7 clause '(equal a a))))))
 
-(set-waterfall-parallelism :full)
+(make-event (er-progn (set-waterfall-parallelism :full)
+                      (value '(value-triple nil))))
 
 (must-fail
  (thm (equal (car (cons x y))
@@ -681,8 +719,8 @@
 #|
 
 ; Here I include some notes that I had once written concerning the hints this
-; book tests.  At some point I will delete these notes, but I want them saved
-; for now as evidence that clearing up our story was a good thing to do.
+; book tests.  I leave these notes as evidence that clearing up our story was a
+; good thing to do.
 
 
   At this time, such an attempt to modify ~il[state] may result in
