@@ -256,7 +256,7 @@ suitable for flop inference, with extra checks for soundness."
 <p><tt>x</tt> is an always statement (see @(see vl-always-p)).  We first
 determine whether it has the correct form for a flop; see @(see
 vl-pattern-match-flop).  Then we check whether the <tt>clk</tt> and
-<tt>lhs</tt> expressions are simple identifiers, and fail if not."
+<tt>lhs</tt> expressions are simple identifiers, and fail if not.</p>"
 
   (defund vl-match/check-flop (x)
     "Returns (mv successp clk-expr lhs-expr rhs-expr delay)"
