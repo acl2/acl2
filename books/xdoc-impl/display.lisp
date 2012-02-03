@@ -66,7 +66,7 @@
 ; nodes.
 
 (defconst *throwaway-tags*
-  (list "b" "i" "u" "tt" "color" "sf" "a" "box"
+  (list "b" "i" "u" "tt" "color" "sf" "a" "box" "img"
         "page" "long"))
 
 (defun merge-text (x acc codes)

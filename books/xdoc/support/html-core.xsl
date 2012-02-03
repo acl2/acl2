@@ -118,6 +118,10 @@
   </a>
 </xsl:template>
 
+<xsl:template match="img">
+  <img src="{@src}"/>
+</xsl:template>
+
 <xsl:template match="b">
   <b><xsl:apply-templates/></b>
 </xsl:template>
@@ -185,6 +189,7 @@
 <xsl:template match="h5">
   <h5><xsl:apply-templates/></h5>
 </xsl:template>
+
 
 
 <!-- Extra stuff for Symbolic Test Vectors at Centaur -->
