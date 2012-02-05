@@ -6069,7 +6069,7 @@
                 #+acl2-par cl-id)
           (cdr hist))))
 
-(defun pair-cl-id-with-hint-setting (cl-id hint-settings)
+(defun@par pair-cl-id-with-hint-setting (cl-id hint-settings)
 
 ; Background: An :OR hint takes a list of n translated hint settings,
 ; at a clause with a clause id.  It essentially copies the clause n
@@ -6097,7 +6097,7 @@
    ((eq (car hint-settings) 'eval-and-translate-hint-expression)
     (cond
      ((custom-keyword-hint-in-computed-hint-form hint-settings)
-      (put-cl-id-of-custom-keyword-hint-in-computed-hint-form
+      (put-cl-id-of-custom-keyword-hint-in-computed-hint-form@par
        hint-settings cl-id))
      (t hint-settings)))
    (t (cons cl-id hint-settings))))
@@ -7231,8 +7231,8 @@
                          clause
                          (change-or-hit-history-entry i hist #+acl2-par cl-id)
                          pspv
-                         (cons (pair-cl-id-with-hint-setting d-cl-id
-                                                             hint-settingsi)
+                         (cons (pair-cl-id-with-hint-setting@par d-cl-id
+                                                                 hint-settingsi)
                                hints)
                          t ;;; suppress-print
                          ens

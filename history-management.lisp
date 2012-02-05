@@ -17093,6 +17093,13 @@
 ; custom hint, we must not cause an error when we encounter this legitimate
 ; use.
 
+; Parallelism wart: consider eliminating the special case below, given the spec
+; for translate-simple-or-error-triple[@par] in the comment at the top of this
+; function.  This could be achieved by doing the test below before calling
+; translate-simple-or-error-triple@par, either inline where we now call
+; translate-simple-or-error-triple@par or else with a wrapper that handles this
+; special case before calling translate-simple-or-error-triple@par.
+
            (equal stobjs-out *cmp-sig*) 
            (eq (car uform) 'custom-keyword-hint-interpreter@par)))
          (value@par term))
@@ -17451,12 +17458,14 @@
          (er-progn@par
           (xtrans-eval@par #-acl2-par uterm2
 
-; #+ACL2-PAR note: the following change doesn't seem to matter when we run our
-; tests.  However, we include it, because from looking at the code, David Rager
-; perceives that it can't hurt and that it might help.  It may turn out that
-; the change to translate-custom-keyword-hint (which performs a similar
-; replacement), supercedes this change, because that occurs earlier in the call
-; stack (before the waterfall).  David Rager suspects that the call to
+; Parallelism wart: Deal with the following comment, which appears out of date
+; as of 2/4/2012.
+; The following change doesn't seem to matter when we run our tests.  However,
+; we include it, because from looking at the code, David Rager perceives that
+; it can't hurt and that it might help.  It may turn out that the change to
+; translate-custom-keyword-hint (which performs a similar replacement),
+; supercedes this change, because that occurs earlier in the call stack (before
+; the waterfall).  David Rager suspects that the call to
 ; custom-keyword-hint-interpreter1@par is used inside the waterfall (perhaps
 ; when the custom keyword hint process it told to 'wait and deal with the hint
 ; later).  If that is the case, then this replacement is indeed necessary!
@@ -17623,12 +17632,13 @@
     (cond ((and (nvariablep term)
                 (not (fquotep term))
 
-; Parallelism no-fix: is the quoting below of
+; Parallelism wart: is the quoting below of
 ; "custom-keyword-hint-interpreter@par" a problem (as compared to the serial
 ; case)?  One can issue a tags search for 'custom-keyword-hint-interpreter, and
 ; find some changed comparisons.  We believe that Matt K. and David R. began to
-; look into this, and we are not aware of any problems, so we have decided not
-; to try to think it all the way through.
+; look into this, and we were not aware of any problems, so we have decided not
+; to try to think it all the way through.  David is in the process of fixing a
+; problem that may be related to this question (2/4/2012).
 
                 (serial-first-form-parallel-second-form@par
                  (eq (ffn-symb term) 'custom-keyword-hint-interpreter)
@@ -17639,7 +17649,7 @@
            (cadr (fargn term 1)))
           (t nil))))
 
-(defun put-cl-id-of-custom-keyword-hint-in-computed-hint-form
+(defun@par put-cl-id-of-custom-keyword-hint-in-computed-hint-form
   (computed-hint-tuple cl-id)
 
 ; We assume the computed-hint-tuple is a computed hint tuple and has
@@ -17652,7 +17662,9 @@
     (list 'eval-and-translate-hint-expression
           (nth 1 computed-hint-tuple)
           (nth 2 computed-hint-tuple)
-          (fcons-term* 'custom-keyword-hint-interpreter
+          (fcons-term* (serial-first-form-parallel-second-form@par
+                        'custom-keyword-hint-interpreter
+                        'custom-keyword-hint-interpreter@par)
                        (fargn term 1)
                        (kwote cl-id)
                        (fargn term 3)

@@ -46137,8 +46137,10 @@ Lisp definition."
      maybe-warn-about-theory-from-rcnsts
      maybe-warn-about-theory-simple
      maybe-warn-for-use-hint
+     pair-cl-id-with-hint-setting
      process-backtrack-hint
      push-clause
+     put-cl-id-of-custom-keyword-hint-in-computed-hint-form
      record-gag-state
      thanks-for-the-hint
      translate
