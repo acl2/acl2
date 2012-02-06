@@ -81,7 +81,7 @@
 
 (defun sys-call (command-string args)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   make a system call to the host operating system~/
   ~bv[]
@@ -178,7 +178,7 @@
 ; Well, except there seems to be no way for anything to go terribly wrong even
 ; if we verify-termination and verify-guards.
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   exit status from the preceding system call~/
 
@@ -1172,21 +1172,21 @@
   The ``first form'' (the ~c[if]) asks whether the ~c[wormhole-input] (i.e.,
   ~c[x]) has an ~c[ABSOLUTE-EVENT-NUMBER] property.  If so, it enters an
   ~ilc[er-progn] to perform a sequence of commands, each of which returns an
-  ACL2 error triple.  The first form uses ~ilc[fmt] to print a greeting.  Since
-  ~c[fmt] returns ~c[(mv col state)] and we must return an error triple, we
-  embed the ~c[fmt] term in an ~c[(mv-let (col state) ... (value nil))].  The
-  macro ~c[value] takes an object and returns a ``normal return'' error
-  triple.  The second form in the ~c[er-progn] uses the ACL2 history macro
-  ~c[pe] (~pl[pe]) to print the defining event for a name.  The third form
-  sets the prompt of this read-eval-print loop to the standard function for
-  printing the wormhole prompt.  We silenced the printing of the prompt when
-  we called ~c[ld], thanks to the ~c[:ld-prompt nil] keyword option.  More on this
-  below.  The fourth form returns the error triple value ~c[:invisible] as
-  the value of the first form.  This prevents ~c[ld] from printing the value of
-  the first form.  Since we have not exited ~c[ld], that function just continues
-  by reading the next form from the comment window.  The user perceives this as
-  entering a read-eval-print loop.  We continue in the loop until the user
-  types ~c[:q].
+  ACL2 error triple (~pl[programming-with-state]).  The first form uses
+  ~ilc[fmt] to print a greeting.  Since ~c[fmt] returns ~c[(mv col state)] and
+  we must return an error triple, we embed the ~c[fmt] term in an
+  ~c[(mv-let (col state) ... (value nil))].  The macro ~c[value] takes an
+  object and returns a ``normal return'' error triple.  The second form in the
+  ~c[er-progn] uses the ACL2 history macro ~c[pe] (~pl[pe]) to print the
+  defining event for a name.  The third form sets the prompt of this
+  read-eval-print loop to the standard function for printing the wormhole
+  prompt.  We silenced the printing of the prompt when we called ~c[ld], thanks
+  to the ~c[:ld-prompt nil] keyword option.  More on this below.  The fourth
+  form returns the error triple value ~c[:invisible] as the value of the first
+  form.  This prevents ~c[ld] from printing the value of the first form.  Since
+  we have not exited ~c[ld], that function just continues by reading the next
+  form from the comment window.  The user perceives this as entering a
+  read-eval-print loop.  We continue in the loop until the user types ~c[:q].
 
   On the other branch of the ~c[if], if the symbol has no
   ~c[ABSOLUTE-EVENT-NUMBER] property, we execute the form ~c[(value :q)], which
@@ -2498,6 +2498,8 @@
   '(acl2-numberp
     characterp
     complex-rationalp
+    #+:non-standard-analysis
+    complexp
     consp
     integerp
     rationalp
@@ -2824,7 +2826,7 @@
                               (alistp (cdr args))
                               (null (cdr (member-equal (assoc-eq '& (cdr args))
                                                        (cdr args)))))))
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   pattern matching or destructuring~/
   ~bv[]
@@ -6110,7 +6112,7 @@
 
 ; WARNING:  The master copy of the tilde-directives list is in :DOC fmt.
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~c[:(str alist col co-channel state evisc) => (mv col state)]~/
 
@@ -6138,7 +6140,7 @@
 ; For a discussion of our style of pretty-printing, see
 ; http://www.cs.utexas.edu/~boyer/pretty-print.pdf.
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   formatted printing~/
 
@@ -6555,7 +6557,7 @@
 
 ; WARNING: The master copy of the tilde-directives list is in :DOC fmt.
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~c[:(str alist co-channel state evisc) => state]~/
 
@@ -6573,7 +6575,7 @@
 
 ; WARNING: The master copy of the tilde-directives list is in :DOC fmt.
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~c[:(str alist col channel state evisc) => (mv col state)]~/
 
@@ -6596,7 +6598,7 @@
 
 ; WARNING: The master copy of the tilde-directives list is in :DOC fmt.
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~c[:(str alist co-channel state evisc) => state]~/
 
@@ -6619,7 +6621,7 @@
 
 ; WARNING: The master copy of the tilde-directives list is in :DOC fmt.
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~c[:(str alist co-channel state evisc) => state]~/
 
@@ -6814,11 +6816,12 @@
 
 ; Keep in sync with error-fms-cw.
 
-  (let ((chan (f-get-global 'standard-co state)))
-    (pprogn (newline chan state)
-            (error-fms-channel hardp ctx str alist chan state)
-            (newline chan state)
-            (newline chan state))))
+  (with-output-lock
+   (let ((chan (f-get-global 'standard-co state)))
+     (pprogn (newline chan state)
+             (error-fms-channel hardp ctx str alist chan state)
+             (newline chan state)
+             (newline chan state)))))
 
 #-acl2-loop-only
 (defvar *accumulated-warnings* nil)
@@ -7899,7 +7902,8 @@
                      (clear 'nil clear-argp)
                      (cursor-at-top 'nil cursor-at-top-argp)
                      (pop-up 'nil pop-up-argp)
-                     (default-bindings 'nil))
+                     (default-bindings 'nil)
+                     (chk-translatable 't))
 
 ; Typical use (io? error nil (mv col state) (x y) (fmt ...)), meaning execute
 ; the fmt statement unless 'error is on 'inhibit-output-lst.  The mv expression
@@ -7924,6 +7928,11 @@
 ; replace 0 with (- 4 4), for example.
 
 ; Keep argument list in sync with io?@par.
+
+; Chk-translatable is only used when commentp is not nil, to check at translate
+; time that the body passes translation relative to the given shape.
+; (Otherwise such a check is only made when the wormhole call below is actually
+; evaluated.)
 
   (declare (xargs :guard (and (symbolp token)
                               (symbol-listp vars)
@@ -8000,23 +8009,29 @@
                                 ,postlude)))))))))
     (cond
      (commentp
-      `(wormhole 'comment-window-io
-                 '(lambda (whs)
-                    (set-wormhole-entry-code whs :ENTER))
-                 (list ,@vars)
-                 ',(cond
-                    ((eq shape 'state)
-                     `(pprogn ,expansion (value :q)))
-                    (t
-                     `(mv-let ,(cdr shape)
-                              ,expansion
-                              (declare
-                               (ignore ,@(remove1-eq 'state (cdr shape))))
-                              (value :q))))
-                 :ld-error-action :return!
-                 :ld-verbose nil
-                 :ld-pre-eval-print nil
-                 :ld-prompt nil))
+      (let ((form
+             (cond
+              ((eq shape 'state)
+               `(pprogn ,expansion (value :q)))
+              (t
+               `(mv-let ,(cdr shape)
+                        ,expansion
+                        (declare
+                         (ignore ,@(remove1-eq 'state (cdr shape))))
+                        (value :q))))))
+        `(prog2$
+          ,(if chk-translatable
+               `(chk-translatable ,body ,shape)
+             nil)
+          (wormhole 'comment-window-io
+                    '(lambda (whs)
+                       (set-wormhole-entry-code whs :ENTER))
+                    (list ,@vars)
+                    ',form
+                    :ld-error-action :return!
+                    :ld-verbose nil
+                    :ld-pre-eval-print nil
+                    :ld-prompt nil))))
      (t `(pprogn
           (cond ((saved-output-token-p ',token state)
                  (push-io-record nil ; io-marker
@@ -8077,7 +8092,7 @@
 
 ; Warning: Keep this in sync with error1-safe and error1@par.
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   print an error message and cause a ``soft error''~/
 
@@ -8122,7 +8137,8 @@
   (declare (ignore state))
   (prog2$
    (io? error t state (alist str ctx)
-        (error-fms nil ctx str alist state))
+        (error-fms nil ctx str alist state)
+        :chk-translatable nil)
    (mv@par t nil state)))
 
 (defun error1-safe (ctx str alist state)
@@ -8278,10 +8294,12 @@
            (member-string-equal summary *uninhibited-warning-summaries*))
       (io? WARNING! ,commentp state
            (summary ctx alist str)
-           (warning1-body ctx summary str alist state)))
+           (warning1-body ctx summary str alist state)
+           :chk-translatable nil))
      (t (io? WARNING ,commentp state
              (summary ctx alist str)
-             (warning1-body ctx summary str alist state))))))
+             (warning1-body ctx summary str alist state)
+             :chk-translatable nil)))))
 
 (defun warning1 (ctx summary str alist state)
 
@@ -8352,7 +8370,8 @@
                                        observation1 must be t or nil, so the ~
                                        value ~x0 is illegal."
                                       abbrev-p)
-                                  state))))))))
+                                  state))))))
+        :chk-translatable nil))
 
 (defun observation1 (ctx str alist abbrev-p state)
 
@@ -8370,7 +8389,7 @@
 ; A typical use of this macro might be:
 ; (observation ctx "5 :REWRITE rules are being stored under name ~x0." name).
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   print an observation~/
 
@@ -8455,16 +8474,30 @@
 
 (defmacro observation-cw (&rest args)
 
+; See observation.  In #-acl2-par, this macro uses wormholes to avoid modifying
+; state, and prints even when including books.  In #+acl2-par, to avoid
+; wormholes, which are known not to be thread-safe, we simply call cw.
+
 ; See observation.  This macro uses wormholes to avoid accessing state, and
 ; prints even when including books.
-
+  
+  #-acl2-par
   `(observation1-cw
     ,(car args)
     ,(cadr args)
     ,(make-fmt-bindings '(#\0 #\1 #\2 #\3 #\4
                           #\5 #\6 #\7 #\8 #\9)
                         (cddr args))
-    t))
+    t)
+  #+acl2-par
+
+; Parallelism blemish: consider using *the-live-state* to disable
+; observation-cw, i.e., to avoid the cw call below, when observations are
+; turned off.  But note that if we have such #-acl2-loop-only code, users might
+; be surprised when their own use of observation-cw doesn't benefit from such
+; restrictions.
+
+  `(cw ,(cadr args) ,@(cddr args)))
 
 (defun skip-when-logic (str state)
   (pprogn
@@ -8832,7 +8865,7 @@
 ; first value returned is a character, that character was not legal.
 ; Otherwise, the first value returned is an integer, the check-sum.
 
-  ":Doc-Section Miscellaneous
+  ":Doc-Section ACL2::ACL2-built-ins
 
   assigning ``often unique'' integers to files and objects~/
 
@@ -12855,8 +12888,8 @@
   ~c[progn!] not mentioned above: support for keyword argument
   ~c[:state-global-bindings].  If the first argument of ~c[progn!] is this
   keyword, then the second argument is treated as a list of bindings as
-  expected by ACl2 system function ~c[state-global-let*] (not yet documented).
-  Thus, in the ACL2 loop,
+  expected by ACl2 system function ~ilc[state-global-let*].  Thus, in the ACL2
+  loop,
   ~bv[]
   (progn! :state-global-bindings bindings form1 form2 ... formk)
   ~ev[]
@@ -13404,7 +13437,7 @@
 
 (defun standard-oi (state)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   the standard object input ``channel''~/
 
@@ -13462,7 +13495,7 @@
 
 (defun standard-co (state)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   the character output channel to which ~ilc[ld] prints~/
 
@@ -13498,7 +13531,7 @@
 
 (defun proofs-co (state)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   the proofs character output channel~/
 
@@ -13921,6 +13954,7 @@
   is set to ~c[t], then you would see them producing lists of length 3.  This
   is disconcerting to users accustomed to Common Lisp (where these functions
   produce single results but sometimes cause errors or side-effect ~il[state]).
+  For more information about error triples, ~pl[programming-with-state].
 
   When ~c[ld-post-eval-print] is ~c[:command-conventions] and a form produces
   an error triple ~c[(mv erp val state)] as its value, ~ilc[ld] prints nothing
@@ -14748,7 +14782,7 @@
 
 (defun allocate-fixnum-range (fixnum-lo fixnum-hi)
 
-  ":Doc-Section Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   set aside fixnums in GCL~/
 

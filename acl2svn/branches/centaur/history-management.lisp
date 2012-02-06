@@ -7642,10 +7642,10 @@
   :ubt! :x-4
   ~ev[]~/
 
-  The keyword ~il[command] ~c[:ubt!] is the same as ~c[:]~ilc[ubt], but with related
-  queries suppressed appropriately, and with a guarantee that it is
-  ``error-free.''  More precisely, the error triple returned by ~c[:ubt!]
-  will always have a first component of ~c[nil].  ~c[:]~ilc[Oops] will undo the last
+  The keyword ~il[command] ~c[:ubt!] is the same as ~c[:]~ilc[ubt], but with
+  related queries suppressed appropriately, and with a guarantee that it is
+  ``error-free.''  More precisely, the value returned by ~c[:ubt!]  will always
+  be of the form ~c[(mv nil val state)].  ~c[:]~ilc[Oops] will undo the last
   ~c[:ubt!].  ~l[ubt], ~pl[ubu], and ~pl[u].~/"
 
   (list 'ubt!-ubu!-fn :ubt cd 'state))
@@ -7694,8 +7694,8 @@
   The keyword ~il[command] ~c[:ubu!] is the same as ~c[:]~ilc[ubu], but with
   related queries suppressed appropriately, and with a guarantee that it is
   ``error-free.''  More precisely, the error triple returned by ~c[:ubu!]  will
-  always have a first component of ~c[nil].  ~c[:]~ilc[Oops] will undo the last
-  ~c[:ubu!].  Also ~pl[ubu], ~pl[ubt], and ~pl[u].~/"
+  always be of the form ~c[(mv nil val state)].  ~c[:]~ilc[Oops] will undo the
+  last ~c[:ubu!].  Also ~pl[ubu], ~pl[ubt], and ~pl[u].~/"
 
   (list 'ubt!-ubu!-fn :ubu cd 'state))
 
@@ -9000,11 +9000,11 @@
   For example, suppose you want to define a theory (using ~ilc[deftheory]).
   You need to prove the lemmas in that theory before executing the
   ~ilc[deftheory] event.  However, it is quite natural to define a
-  ~c[:doc-section] (~pl[doc-string]) whose name is the name of the
+  ~c[:Doc-Section] (~pl[doc-string]) whose name is the name of the
   theory to be defined, and put the ~il[documentation] for that theory's
-  lemmas into that ~c[:doc-section].  ~c[Defdoc] is ideal for this purpose,
-  since it can be used to introduce the ~c[:doc-section], followed by the
-  lemmas referring to that ~c[:doc-section], and finally concluded with a
+  lemmas into that ~c[:Doc-Section].  ~c[Defdoc] is ideal for this purpose,
+  since it can be used to introduce the ~c[:Doc-Section], followed by the
+  lemmas referring to that ~c[:Doc-Section], and finally concluded with a
   ~ilc[deftheory] event of the same name.  If ~ilc[deflabel] were used
   instead of ~c[defdoc], for example, then the ~ilc[deftheory] event would
   be disallowed because the name is already in use by the ~ilc[deflabel]
@@ -9017,7 +9017,7 @@
 
   Any time ~c[defdoc] is used to attach ~il[documentation] to an
   already-documented name, the name must not be attached to a new
-  ~c[:doc-section].  We make this requirement as a way of avoiding
+  ~c[:Doc-Section].  We make this requirement as a way of avoiding
   loops in the ~il[documentation] tree.  When ~il[documentation] is redefined, a
   warning will be printed to the terminal.~/"
 
@@ -11043,7 +11043,7 @@
   string's cited-by list.  We also add ~c[name] to the related names field
   of its section-name.  Observe that the cites list in a string is
   only the initial value of the related names of the names.  Future
-  ~il[documentation] strings may add to it via ~c[:cited-by] or ~c[:doc-section].
+  ~il[documentation] strings may add to it via ~c[:cited-by] or ~c[:Doc-Section].
   Indeed, this is generally the case.  We discuss this further below.
 
   When a brief description of ~c[name] is required (as by ~c[:docs **]), ~c[name]
@@ -16387,7 +16387,7 @@
 
 (defun character-alistp (x)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for association lists with characters as keys~/
 
@@ -16969,6 +16969,10 @@
             fmt-soft-right-margin      ;;; allow user to modify this in a book
             fmt-hard-right-margin      ;;; allow user to modify this in a book
             parallel-execution-enabled ;;; allow user to modify this in a book
+            waterfall-parallelism      ;;; allow user to modify this in a book
+            waterfall-parallelism-timing-threshold ;;; see just above
+            waterfall-printing         ;;; allow user to modify this in a book
+            waterfall-printing-when-finished ;;; see just above
             saved-output-reversed      ;;; for feedback after expansion failure
             saved-output-p             ;;; for feedback after expansion failure
             ttags-allowed              ;;; propagate changes outside expansion
@@ -17089,8 +17093,15 @@
 ; custom hint, we must not cause an error when we encounter this legitimate
 ; use.
 
+; Parallelism wart: consider eliminating the special case below, given the spec
+; for translate-simple-or-error-triple[@par] in the comment at the top of this
+; function.  This could be achieved by doing the test below before calling
+; translate-simple-or-error-triple@par, either inline where we now call
+; translate-simple-or-error-triple@par or else with a wrapper that handles this
+; special case before calling translate-simple-or-error-triple@par.
+
            (equal stobjs-out *cmp-sig*) 
-           (equal (car uform) 'custom-keyword-hint-interpreter@par)))
+           (eq (car uform) 'custom-keyword-hint-interpreter@par)))
          (value@par term))
         (t (serial-first-form-parallel-second-form@par
             (er soft ctx
@@ -17447,12 +17458,14 @@
          (er-progn@par
           (xtrans-eval@par #-acl2-par uterm2
 
-; #+ACL2-PAR note: the following change doesn't seem to matter when we run our
-; tests.  However, we include it, because from looking at the code, David Rager
-; perceives that it can't hurt and that it might help.  It may turn out that
-; the change to translate-custom-keyword-hint (which performs a similar
-; replacement), supercedes this change, because that occurs earlier in the call
-; stack (before the waterfall).  David Rager suspects that the call to
+; Parallelism wart: Deal with the following comment, which appears out of date
+; as of 2/4/2012.
+; The following change doesn't seem to matter when we run our tests.  However,
+; we include it, because from looking at the code, David Rager perceives that
+; it can't hurt and that it might help.  It may turn out that the change to
+; translate-custom-keyword-hint (which performs a similar replacement),
+; supercedes this change, because that occurs earlier in the call stack (before
+; the waterfall).  David Rager suspects that the call to
 ; custom-keyword-hint-interpreter1@par is used inside the waterfall (perhaps
 ; when the custom keyword hint process it told to 'wait and deal with the hint
 ; later).  If that is the case, then this replacement is indeed necessary!
@@ -17622,7 +17635,10 @@
 ; Parallelism wart: is the quoting below of
 ; "custom-keyword-hint-interpreter@par" a problem (as compared to the serial
 ; case)?  One can issue a tags search for 'custom-keyword-hint-interpreter, and
-; find some changed comparisons.
+; find some changed comparisons.  We believe that Matt K. and David R. began to
+; look into this, and we were not aware of any problems, so we have decided not
+; to try to think it all the way through.  David is in the process of fixing a
+; problem that may be related to this question (2/4/2012).
 
                 (serial-first-form-parallel-second-form@par
                  (eq (ffn-symb term) 'custom-keyword-hint-interpreter)
@@ -17633,7 +17649,7 @@
            (cadr (fargn term 1)))
           (t nil))))
 
-(defun put-cl-id-of-custom-keyword-hint-in-computed-hint-form
+(defun@par put-cl-id-of-custom-keyword-hint-in-computed-hint-form
   (computed-hint-tuple cl-id)
 
 ; We assume the computed-hint-tuple is a computed hint tuple and has
@@ -17646,7 +17662,9 @@
     (list 'eval-and-translate-hint-expression
           (nth 1 computed-hint-tuple)
           (nth 2 computed-hint-tuple)
-          (fcons-term* 'custom-keyword-hint-interpreter
+          (fcons-term* (serial-first-form-parallel-second-form@par
+                        'custom-keyword-hint-interpreter
+                        'custom-keyword-hint-interpreter@par)
                        (fargn term 1)
                        (kwote cl-id)
                        (fargn term 3)
@@ -18789,7 +18807,7 @@
   #-acl2-par
   (translate-hints+1 name-tree lst default-hints ctx wrld state)
   #+acl2-par
-  (if (waterfall-parallelism)
+  (if (f-get-global 'waterfall-parallelism state)
       (cmp-to-error-triple
        (translate-hints+1@par name-tree lst default-hints ctx wrld state))
       (translate-hints+1 name-tree lst default-hints ctx wrld state)))
@@ -18800,7 +18818,7 @@
                     nil ; no override-hints are applied
                     ctx wrld state)
   #+acl2-par
-  (if (waterfall-parallelism)
+  (if (f-get-global 'waterfall-parallelism state)
       (cmp-to-error-triple
        (translate-hints2@par name-tree lst 'override
                              nil ; no override-hints are applied
@@ -18931,7 +18949,7 @@
                         stable-under-simplificationp clause-list processor
                         keyword-alist state)
   #+acl2-par
-  (cond ((and (waterfall-parallelism)
+  (cond ((and (f-get-global 'waterfall-parallelism state)
               (not (cdr (assoc-eq 'hacks-enabled
                                   (table-alist 'waterfall-parallelism-table
                                                (w state))))))
@@ -20370,7 +20388,8 @@
   other hand, if a computation returns an error triple in which ~c[erp] is nil,
   then ``value'' of the computation is taken to be the second component,
   ~c[val], of the triple (along with the possibly modified ~ilc[state]), and
-  computation continues.
+  computation continues.  For more information about programming with error
+  triples, ~pl[programming-with-state].
 
   The function symbol cases are treated as abbreviations of the term
   ~c[(fn ID CLAUSE WORLD)],

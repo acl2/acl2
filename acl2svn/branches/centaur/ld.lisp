@@ -1032,10 +1032,8 @@
 ; logic.  So we restrict this solution to raw mode.  Furthermore, the lisps
 ; listed below do not need this fix, and they all print a newline even with
 ; "~&" when apparently not necessary, so we exclude them from this fix.
-; (Note Jan. 2009: Apparently CCL doesn't need this fix either, but it seems
-; harmless, so we'll leave it in for CCL.)
 
-    #-(or acl2-loop-only gcl cmu sbcl lispworks)
+    #-(or acl2-loop-only gcl cmu sbcl lispworks ccl)
     (when (raw-mode-p state)
       (format (get-output-stream-from-channel output-channel) "~&"))
     (cond
@@ -1843,19 +1841,21 @@
   called.)  ~c[Ld] is also a general-purpose ACL2 file loader and a
   ~il[command] interpreter.  ~c[Ld] is actually a macro that expands to a
   function call involving ~ilc[state].  ~c[Ld] returns an ``error triple''
-  ~c[(mv erp val state)] as explained below.
+  ~c[(mv erp val state)] as explained below.  (For much more on error triples,
+  ~pl[programming-with-state].)
 
   ~l[rebuild] for a variant of ~c[ld] that skips proofs.
 
   The arguments to ~c[ld], except for ~c[:dir], all happen to be global
-  variables in ~ilc[state].  For example, ~c[']~ilc[current-package] and
-  ~c[']~ilc[ld-verbose] are global variables, which may be accessed via
-  ~c[(@ current-package)] and ~c[(@ ld-verbose)].  When ~c[ld] is called, it
-  ``binds'' these variables.  By ``binds'' we actually mean the variables are
-  globally set but restored to their old values on exit.  Because ~c[ld]
-  provides the illusion of ~il[state] global variables being bound, they are
-  called ``~c[ld] specials'' (after the Lisp convention of calling a variable
-  ``special'' if it is referenced freely after having been bound).
+  variables in ~ilc[state] (~pl[state] and ~pl[programming-with-state]).  For
+  example, ~c[']~ilc[current-package] and ~c[']~ilc[ld-verbose] are global
+  variables, which may be accessed via ~c[(@ current-package)] and
+  ~c[(@ ld-verbose)].  When ~c[ld] is called, it ``binds'' these variables.  By
+  ``binds'' we actually mean the variables are globally set but restored to
+  their old values on exit.  Because ~c[ld] provides the illusion of ~il[state]
+  global variables being bound, they are called ``~c[ld] specials'' (after the
+  Lisp convention of calling a variable ``special'' if it is referenced freely
+  after having been bound).
 
   Note that all arguments but the first are passed via keyword.  Any variable
   not explicitly given a value in a call retains its pre-call value, with the
@@ -3335,7 +3335,7 @@
 
 (deflabel breaks
   :doc
-  ":Doc-Section Miscellaneous
+  ":Doc-Section ACL2::ACL2-built-ins
 
   Common Lisp breaks~/
   ~bv[]
@@ -12504,7 +12504,7 @@
   (For system hackers only.)  The handling of ~il[events] of the form
   ~c[(progn! (state-global-let* ...))] had a bug that was causing bindings to
   be evaluated twice.  Moreover, the use of system function
-  ~c[state-global-let*] is suspect in raw Lisp.  We have eliminated special
+  ~ilc[state-global-let*] is suspect in raw Lisp.  We have eliminated special
   treatment of ~c[state-global-let*] by ~c[progn!] in favor of a new keyword
   argument, ~c[state-global-bindings], that provides the intended
   functionality.  ~l[progn!].  Moreover, special handling that allowed
@@ -17578,8 +17578,8 @@
   ~il[State] globals ~c[fmt-hard-right-margin] and ~c[fmt-soft-right-margin]
   are now untouchable (~pl[set-fmt-hard-right-margin] and
   ~pl[push-untouchable]).  If you bind these ~c[state] globals with
-  ~c[state-global-let*], then you will need to do so with appropriate setteres
-  to restore their values, for example as follows.
+  ~ilc[state-global-let*], then you will need to do so with appropriate
+  setters to restore their values, for example as follows.
   ~bv[]
     (state-global-let*
      ((fmt-hard-right-margin 500 set-fmt-hard-right-margin)
@@ -18222,6 +18222,11 @@
 ; a hard error.  For this purpose, we moved set-ld-skip-proofsp and replaced
 ; its use in axioms.lisp with an f-put-global,
 
+; Modified observation-cw for ACL2(p).  Also, in support of ACL2(p) but also of
+; general applicability, we modified io? in the commentp=t case to check that
+; the form can be translated, at least by default (see new argument
+; chk-translatable).
+
   :doc
   ":Doc-Section release-notes
 
@@ -18354,7 +18359,7 @@
 
   Improvements have been made related to the reading of characters.  In
   particular, checks are now done for ASCII encoding and for the expected
-  ~ilc[char-code] values for ~c[Space],~c[Tab],~c[Newline],~c[Page], and
+  ~ilc[char-code] values for ~c[Space], ~c[Tab], ~c[Newline], ~c[Page], and
   ~c[Rubout].  Also, an error no longer occurs with certain uses of
   non-standard characters.  For example, it had caused an error to certify a
   book after a single ~il[portcullis] ~il[command] of
@@ -18371,6 +18376,9 @@
 
   We have eliminated some hypotheses in built-in ~il[rewrite] rules
   ~c[characterp-nth] and ~c[ordered-symbol-alistp-delete-assoc-eq].
+
+  Added the symbols ~ilc[f-get-global], ~ilc[f-put-global], and
+  ~ilc[state-global-let*] to ~c[*acl2-exports*].
 
   ~st[NEW FEATURES]
 
@@ -18429,7 +18437,9 @@
   parallelism.  ~l[provisional-certification].  Thanks to Jared Davis for
   requesting this feature and for helpful discussions, based in part on
   rudimentary provisional certification schemes that he developed first at
-  Rockwell Collins and later for his `Milawa' project.
+  Rockwell Collins and later for his `Milawa' project.  Also thanks to Jared
+  and to Sol Swords for testing this feature and for providing a fix for a bug
+  in a preliminary implementation.
 
   Event summaries now show the names of events that were mentioned in
   ~il[hints] of type ~c[:use], ~c[:by], or ~c[:clause-processor].
@@ -18442,6 +18452,17 @@
   structure and mentions one application: to identify dead code and unused
   theorems.  Thanks to Shilpi Goel for requesting such a feature and for
   helpful feedback.
+
+  A new ~il[documentation] topic provides a guide to programming with state;
+  ~pl[programming-with-state].  Thanks to Sarah Weissman for suggesting that
+  such a guide might be useful, and to David Rager for helpful feedback on a
+  preliminary version.  There also has been some corresponding reorganization
+  of the documentation as well as creation of additional documentation (e.g.,
+  ~pl[state-global-let*]).  Now, most built-in functions and macros commonly
+  used in programs (as opposed to ~il[events] like ~ilc[defun], for example)
+  are subtopics of a new topic ~-[] ~pl[acl2-built-ins] ~-[] which is a
+  subtopic of ~il[programming], a topic that in turn has considerably fewer
+  direct subtopiics than before.
 
   ~st[HEURISTIC IMPROVEMENTS]
 
@@ -18466,6 +18487,10 @@
   We now avoid certain rewriting loops.  A long comment about this change,
   including an example of a loop that no longer occurs, may be found in source
   function ~c[expand-permission-result].
+
+  Slightly strengthened ~il[type-set] reasoning.  See the comment in ACL2
+  source function ~c[rewrite-atm] about the ``use of dwp = t'' for an example
+  of a theorem provable only after this change.
 
   ~st[BUG FIXES]
 
@@ -18621,8 +18646,20 @@
 
   ~st[EXPERIMENTAL VERSIONS]
 
-  For ACL2(p): The macro ~c[set-parallel-evaluation] has been renamed
+  Among the enchancements for the parallel version, ACL2(p) (~pl[parallelism]),
+  are the following.~bq[]
+
+  The macro ~c[set-parallel-evaluation] has been renamed
   ~ilc[set-parallel-execution].
+
+  The macros ~ilc[set-waterfall-parallelism] and ~ilc[set-waterfall-printing]
+  are no longer ~il[events], so may not be placed at the top level of
+  ~il[books].  However, it is easy to create events that have these effects;
+  ~pl[set-waterfall-parallelism] and ~pl[set-waterfall-printing].  These
+  changes were made so that ~c[:]~ilc[ubt] and similar commands do not change
+  the settings for waterfall-parallelism or waterfall-printing.  Thanks to
+  David Rager for contributing an initial implementation of these changes.
+  ~eq[]
 
   Among the enchancements for the HONS version (~pl[hons-and-memoization]) are
   the following.~bq[]

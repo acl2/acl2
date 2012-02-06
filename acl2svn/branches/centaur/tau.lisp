@@ -3252,12 +3252,9 @@
                                 (reprettyify hyps concl wrld)))
                            (t (set-tau-runes nil rune wrld)))))))
 
-(defun convert-tau-like-terms-to-tau (terms hyps concl wrld)
+(defun convert-tau-like-terms-to-tau (terms wrld)
 
-; We convert a list of tau-like terms, terms, to a tau.  The second and third
-; arguments, hyps and concl, are the components of the original unprettyified
-; theorem upon whose behalf we are doing this conversion and are only used
-; during error reporting.
+; We convert a list of tau-like terms, terms, to a tau.
 
   (cond
    ((endp terms) *tau-empty*)
@@ -3267,20 +3264,21 @@
        (declare (ignore e criterion))
        (mv-let (changedp tau)
                (add-to-tau1 sign recog
-                          (convert-tau-like-terms-to-tau (cdr terms)
-                                                         hyps concl wrld)
-                          wrld)
+                            (convert-tau-like-terms-to-tau (cdr terms) wrld)
+                            wrld)
 
 ; Note: We use add-to-tau1 because we are not interested in the implicants of the
 ; terms, just the terms themselves.
 
                (declare (ignore changedp))
                (cond ((eq tau *tau-contradiction*)
-                      (er hard 'convert-tau-like-terms-to-tau
-                          "It was thought impossible for a Conjunctive tau ~
-                           rule to yield a contradiction, but it happened ~
-                           when we tried to turn ~x0 into a rule."
-                          (reprettyify hyps concl wrld)))
+
+; If we get a contradiction from assuming all the terms in terms it is because
+; it is a propositional impossibility, e.g., (p & q & -p).  This happens if we
+; try to produce a conjunctive rule from a tautology like (p & q) -> p.  We
+; just ignore these.
+
+                      *tau-empty*)
                      (t tau)))))))
 
 (defun add-tau-conjunctive-rule (rune hyps concl wrld)
@@ -3302,12 +3300,14 @@
 ; that is converted to a tau.  I avoid dumb-negate-lit simply because it does
 ; more than just add or strip a NOT.
 
-              hyps concl wrld)))
-    (set-tau-runes nil rune
-                   (global-set 'tau-conjunctive-rules
-                               (cons tau
-                                     (global-val 'tau-conjunctive-rules wrld))
-                               wrld))))
+              wrld)))
+    (if (equal tau *tau-empty*)
+        wrld
+        (set-tau-runes nil rune
+                       (global-set 'tau-conjunctive-rules
+                                   (cons tau
+                                         (global-val 'tau-conjunctive-rules wrld))
+                                   wrld)))))
 
 (defun tau-signature-formp (hyps concl wrld)
 

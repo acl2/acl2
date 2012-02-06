@@ -77,7 +77,7 @@ Here is an easy way to obtain and build the latest version (generally
 recommended) for Linux on running on x86 or x86-64.  First execute the
 following shell command to create a <code>ccl</code> directory, but
 substituting for <code>linuxx86</code>, if appropriate, any of
-<code>darwinx86</code>, <code>freebsdx86</code>,
+<code>darwinx86</code> (which we use for modern Macs), <code>freebsdx86</code>,
 <code>solarisx86</code>, <code>windows</code>, <code>darwinppc</code>,
 or <code>linuxppc</code>.
 
@@ -110,6 +110,14 @@ fi
 </pre>
 <hr>
 
+Be sure to make your script executable.  For example, if your script
+filename is <code>my-script</code> then on linux you might want to
+execute the following shell command.
+
+<pre>
+chmod +x my-script
+</pre>
+
 Now rebuild the CCL lisp image by invoking the above script and then
 executing the following commands.
 
@@ -118,7 +126,9 @@ executing the following commands.
 (quit)
 </pre>
 
-Your script will now start the updated CCL lisp image.
+Your script (invoked with a suitable pathname, or just the filename if
+the directory is on your path) will now start the updated CCL lisp
+image.
 
 <p>
 

@@ -348,7 +348,9 @@
    (t (mv-let
        (knownp nilp ttree)
        (known-whether-nil
-        (car hyps) type-alist ens (ok-to-force-ens ens) wrld nil)
+        (car hyps) type-alist ens (ok-to-force-ens ens)
+        nil ; dwp
+        wrld nil)
        (declare (ignore ttree))
        (cond ((and knownp nilp) t)
              (t (some-hyp-probably-nilp (cdr hyps) type-alist ens wrld)))))))

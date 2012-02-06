@@ -37,7 +37,7 @@
 
 (defmacro defn (f a &rest r)
 
-  ":Doc-Section Programming
+  ":Doc-Section Events
    definition with ~il[guard] ~c[t]~/
 
    ~c[Defn] is ~ilc[defun] with ~il[guard] ~c[t].~/~/"

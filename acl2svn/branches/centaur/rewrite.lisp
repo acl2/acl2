@@ -3792,6 +3792,7 @@
                              type-alist
                              ens
                              force-flg
+                             nil ; dwp
                              wrld
                              ttree)
 
@@ -8334,7 +8335,7 @@
 
   (cond
    #+acl2-par ; test is always false anyhow when #-acl2-par
-   ((waterfall-parallelism)
+   ((f-get-global 'waterfall-parallelism state)
     nil)
    (t
     (brr-wormhole
@@ -8556,7 +8557,7 @@
 
   (cond
    #+acl2-par ; test is always false anyhow when #-acl2-par
-   ((waterfall-parallelism)
+   ((f-get-global 'waterfall-parallelism state)
     nil)
    (t
     (brr-wormhole
@@ -14711,6 +14712,7 @@
                                     (access rewrite-constant rcnst
                                             :current-enabled-structure)
                                     force-flg
+                                    nil ; dwp
                                     wrld
                                     ttree)
                                    (cond

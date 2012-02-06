@@ -1213,8 +1213,8 @@
                  checkpoint-processors)
          (car h))
 
-; Parallelism wart: we haven't thought through how specious entries affect this
-; function.  The following code is left as a hint at what might be needed.
+; Parallelism blemish: we haven't thought through how specious entries affect
+; this function.  The following code is left as a hint at what might be needed.
 
 ;        ((or (and (consp (access history-entry (cadr h) :processor))
 ;                  (equal (access history-entry (cadr h) :processor)
@@ -1340,7 +1340,7 @@
 ; Acl2p-push-clause-printing contains code that handles the case where cl is
 ; nil.
 
-; Parallelism wart: create a :doc topic on key ACL2(p) checkpoints and
+; Parallelism blemish: create a :doc topic on key ACL2(p) checkpoints and
 ; reference it in the above comment.
 
    (parallel-only@par (acl2p-push-clause-printing cl hist pspv wrld state))
@@ -1511,9 +1511,9 @@
            (add-to-tag-tree! 'abort-cause 'maybe-revert nil)
            (change prove-spec-var pspv
 
-; Parallelism wart: there may be a bug in ACL2(p) related to the comment above
-; (in this function's definition) that starts with "Before Version_2.6 we did
-; not modify the tag-tree here."  To fix this (likely) bug, don't reset the
+; Parallelism blemish: there may be a bug in ACL2(p) related to the comment
+; above (in this function's definition) that starts with "Before Version_2.6 we
+; did not modify the tag-tree here."  To fix this (likely) bug, don't reset the
 ; tag-tree here -- just remove the ":tag-tree nil" -- and instead do it when we
 ; convert a maybe-to-be-proved-by-induction to a to-be-proved-by-induction.
 
@@ -2037,7 +2037,9 @@
 ; Keep in sync with eval-clause-processor.
 
   (cond 
-   ((and ; (waterfall-parallelism) ; not needed since in @par
+   ((and
+; Note that potential conjunct (f-get-global 'waterfall-parallelism state) is
+; not needed, since we are in an @par definition.
      (not (equal stobjs-out '(nil)))
      (not (cdr (assoc-eq 'hacks-enabled
                          (table-alist 'waterfall-parallelism-table 
@@ -2055,9 +2057,9 @@
       (mv-let
        (erp trans-result)
 
-; Parallelism wart: we could consider making an ev@par, which calls ev-w, and
-; tests that the appropriate preconditions for ev-w are upheld (like state not
-; being in the alist).
+; Parallelism blemish: we could consider making an ev@par, which calls ev-w,
+; and tests that the appropriate preconditions for ev-w are upheld (like state
+; not being in the alist).
 
        (ev-w-for-trans-eval cl-term (all-vars cl-term) stobjs-out ctx state
 
@@ -3248,10 +3250,12 @@
            (t (mv pspv state))))
    (mv@par pspv state)))
 
-(defun remove-pool-lst-from-gag-state (pool-lst gag-state)
+(defun remove-pool-lst-from-gag-state (pool-lst gag-state state)
+  #-acl2-par
+  (declare (ignore state))
   (cond
    #+acl2-par
-   ((waterfall-parallelism)
+   ((f-get-global 'waterfall-parallelism state)
 
 ; This function contains an assertion that fails when executing the waterfall
 ; in parallel.  The assertion fails because parallelism mode doesn't save the
@@ -3300,7 +3304,7 @@
                         (and pop-car-p
                              (access gag-info ci :clause-id)))))))))))
 
-(defun pop-clause-update-gag-state-pop (pool-lsts gag-state msgs msg-p)
+(defun pop-clause-update-gag-state-pop (pool-lsts gag-state msgs msg-p state)
 
 ; Pool-lsts is in reverse chronological order.
 
@@ -3310,10 +3314,10 @@
    (t
     (mv-let
      (gag-state msgs)
-     (pop-clause-update-gag-state-pop (cdr pool-lsts) gag-state msgs msg-p)
+     (pop-clause-update-gag-state-pop (cdr pool-lsts) gag-state msgs msg-p
+                                      state)
      (mv-let (gagst cl-id)
-             (remove-pool-lst-from-gag-state
-              (car pool-lsts) gag-state)
+             (remove-pool-lst-from-gag-state (car pool-lsts) gag-state state)
              (mv gagst
                  (if (and msg-p cl-id)
                      (cons (msg "~@0"
@@ -3470,18 +3474,19 @@
 (defmacro waterfall-print-clause-id@par (cl-id)
 
 ; Parallelism wart: wormhole printing isn't reliable.  (When this wart is
-; removed, then remove the reference to it in
-; unsupported-waterfall-parallelism-features.)  We lock wormholes at a very
-; high level, so we thought they might be thread safe.  However, in practice,
-; when we enable printing through wormholes, there are problems symptomatic of
-; race conditions.  We think these problems are related to the ld-special
-; variables.  Specifically, a thread tries to read from the prompt upon
-; entering the wormhole, even if there isn't supposed to be any interaction
-; with the prompt.  A possible solution to this problem might involve
-; implementing all of the ld-specials with global variables (as opposed to
-; propsets), and then rebinding those global variables in each worker thread.
-; Long story short: wormholes might be thread-safe, but we have lots of reasons
-; to believe they aren't.
+; removed, then remove the references to it in
+; unsupported-waterfall-parallelism-features and
+; waterfall1-wrapper@par-before.)  We lock wormholes at a very high level, so
+; we thought they might be thread safe.  However, in practice, when we enable
+; printing through wormholes, there are problems symptomatic of race
+; conditions.  We think these problems are related to the ld-special variables.
+; Specifically, a thread tries to read from the prompt upon entering the
+; wormhole, even if there isn't supposed to be any interaction with the prompt.
+; A possible solution to this problem might involve implementing all of the
+; ld-specials with global variables (as opposed to propsets), and then
+; rebinding those global variables in each worker thread.  Long story short:
+; wormholes might be thread-safe, but we have lots of reasons to believe they
+; aren't.
 
 ; Therefore, we have different versions of the present macro for the
 ; #+acl2-loop-only and #-acl2-loop-only cases.  To see why, first note that
@@ -3621,7 +3626,7 @@
             (pspv ttree new-hist clauses signal cl-id processor msg)
             (waterfall-msg1 processor cl-id signal clauses new-hist msg ttree
                             pspv state))
-       (cond ((equal (waterfall-printing) :full)
+       (cond ((equal (f-get-global 'waterfall-printing state) :full)
               (io? prove t
                    state
                    (pspv ttree new-hist clauses signal cl-id processor msg)
@@ -5247,7 +5252,7 @@
                   ttree) ; a bddnote; see bdd-clause
              (error-in-parallelism-mode@par
               
-; Parallelism wart: we disable the following addition of BDD notes to the 
+; Parallelism blemish: we disable the following addition of BDD notes to the
 ; state.  Until a user requests it, we don't see a need to implement this.
               
               (state-mac@par)
@@ -5532,7 +5537,7 @@
           (cond
            ((serial-first-form-parallel-second-form@par 
              nil
-             (member-equal (waterfall-printing)
+             (member-equal (f-get-global 'waterfall-printing state)
                            '(:limited :very-limited)))
             (state-mac@par))
            (t
@@ -6064,7 +6069,7 @@
                 #+acl2-par cl-id)
           (cdr hist))))
 
-(defun pair-cl-id-with-hint-setting (cl-id hint-settings)
+(defun@par pair-cl-id-with-hint-setting (cl-id hint-settings)
 
 ; Background: An :OR hint takes a list of n translated hint settings,
 ; at a clause with a clause id.  It essentially copies the clause n
@@ -6092,7 +6097,7 @@
    ((eq (car hint-settings) 'eval-and-translate-hint-expression)
     (cond
      ((custom-keyword-hint-in-computed-hint-form hint-settings)
-      (put-cl-id-of-custom-keyword-hint-in-computed-hint-form
+      (put-cl-id-of-custom-keyword-hint-in-computed-hint-form@par
        hint-settings cl-id))
      (t hint-settings)))
    (t (cons cl-id hint-settings))))
@@ -6276,22 +6281,21 @@
               (access prove-spec-var y :pool)
               debug-pspv))))))
 
-; Parallelism wart: delete this comment and the associated trace$ form once the
-; parallelism project is finished.  Here is a form helpful for tracing
-; waterfall1-lst in an effort to understand how the pspv's :pool is modified.
+; The following form may be helpful for tracing waterfall1-lst in an effort to
+; understand how the pspv's :pool is modified.
 
-;; (trace$
-;;  (waterfall1-lst
-;;   :entry (list 'waterfall1-lst 
-;;                'clauses=
-;;                clauses
-;;                'pspv-pool=
-;;                (access prove-spec-var pspv :pool))
-;;   :exit (list 'waterfall1-lst
-;;               'signal=
-;;               (cadr values)
-;;               'pspv-pool=
-;;               (access prove-spec-var (caddr values) :pool))))
+; (trace$
+;  (waterfall1-lst
+;   :entry (list 'waterfall1-lst 
+;                'clauses=
+;                clauses
+;                'pspv-pool=
+;                (access prove-spec-var pspv :pool))
+;   :exit (list 'waterfall1-lst
+;               'signal=
+;               (cadr values)
+;               'pspv-pool=
+;               (access prove-spec-var (caddr values) :pool))))
 
 #+acl2-par
 (defun speculative-execution-valid (x y)
@@ -6485,9 +6489,11 @@
 
 #+(and acl2-par (not acl2-loop-only))
 (defvar *waterfall-parallelism-timings-ht* nil
-  "Contains the hashtable that associates waterfall-parallelism timings with
-   each clause-id.  This variable should always be nil unless ACL2(p) is in the
-   middle of attempting a proof initiated by the user with a defthm.")
+  "This variable supports the :resource-and-timing-based mode for waterfall
+   parallelism.  It can contain the hashtable that associates
+   waterfall-parallelism timings with each clause-id.  This variable should
+   always be nil unless ACL2(p) is in the middle of attempting a proof
+   initiated by the user with a defthm.")
 
 #+acl2-par
 (defun setup-waterfall-parallelism-ht-for-name (name)
@@ -6496,8 +6502,13 @@
     (cond ((null curr-ht)
            (let ((new-ht (make-hash-table :test 'equal :size (expt 2 13)
 
-; Parallelism wart: we will need to lock these hashtable operations manually in
-; Lispworks and SBCL.
+; Parallelism blemish: CCL locks these hashtable operations automatically
+; because of the argument :shared t below.  However in SBCL and LispWorks, we
+; should really lock these hashtable operations ourselves.  Note that the SBCL
+; documentation at http://www.sbcl.org/manual/Hash-Table-Extensions.html
+; describes a keyword, :synchronized, that is like CCL's :shared but is labeled
+; as "experimental".  At any rate, we are willing to take our chances for now
+; with SBCL and Lispworks.
 
                                           #+ccl :shared #+ccl t)))
              (setf *waterfall-parallelism-timings-ht-alist*
@@ -6548,9 +6559,12 @@
 
   form)
 
+#+(and acl2-par (not acl2-loop-only))
+(defparameter *acl2p-starting-proof-time* 0.0d0)
+
 #+acl2-par
-(defun waterfall1-wrapper@par-before (cl-id)
-  (case (waterfall-printing)
+(defun waterfall1-wrapper@par-before (cl-id state)
+  (case (f-get-global 'waterfall-printing state)
     (:limited
      (and (print-clause-id-okp cl-id)
           (with-output-lock
@@ -6558,19 +6572,24 @@
 ; Parallelism wart: Kaufmann suggests that we need to skip printing clause-ids
 ; that have already been printed.  Note that using the printing of clause-ids
 ; to show that the prover is still making progress is no longer the default
-; setting (see :doc set-waterfall-printing).
+; setting (see :doc set-waterfall-printing).  Example:
+;   (set-waterfall-parallelism :pseudo-parallel)
+;   (set-waterfall-printing :limited)
+;   (thm (implies (equal x y) (equal u v)))
 
-; Parallelism wart: here, and at many other ACL2(p)-specific places, consider
-; using observation-cw or printing that can be inhibited, instead of cw.
+; Parallelism blemish: here, and at many other ACL2(p)-specific places, consider
+; using observation-cw or printing that can be inhibited, instead of cw.  We
+; have not tried this so far because observation-cw calls wormhole, which is
+; problematic (see the comment in waterfall-print-clause-id@par).
 
-           (cw "At time ~c0, starting: ~x1~%" 
-
-; By limiting the width to 15, we assume that no ACL2 session will run for more
-; than a year.
-
-               #+acl2-loop-only (cons nil 15)
-               #-acl2-loop-only (cons (get-internal-real-time) 15)
-               (string-for-tilde-@-clause-id-phrase cl-id)))))
+           #+acl2-loop-only
+           nil
+           #-acl2-loop-only
+           (format t "At time ~,6f sec, starting: ~a~%"
+                   (/ (- (get-internal-real-time)
+                         *acl2p-starting-proof-time*)
+                      1000000.0)
+                   (string-for-tilde-@-clause-id-phrase cl-id)))))
     (:very-limited
      (with-output-lock
       (cw ".")))
@@ -6579,21 +6598,25 @@
 #+acl2-par
 (defun waterfall1-wrapper@par-after (cl-id start-time state)
   #+acl2-loop-only
-  (declare (ignore start-time))
+  (declare (ignore start-time cl-id))
   #-acl2-loop-only 
   (save-waterfall-timings-for-cl-id 
    cl-id 
    (- (get-internal-real-time) ; end time
       start-time))
   (cond ((f-get-global 'waterfall-printing-when-finished state)
-         (cond ((equal (waterfall-printing) :very-limited)
+         (cond ((equal (f-get-global 'waterfall-printing state) :very-limited)
                 (with-output-lock (cw ",")))
-               ((equal (waterfall-printing) :limited)
-                (with-output-lock 
-                 (cw "At time ~c0, finished: ~x1~%"
-                     #+acl2-loop-only (cons nil 15)
-                     #-acl2-loop-only (cons (get-internal-real-time) 15)
-                     (string-for-tilde-@-clause-id-phrase cl-id))))
+               ((equal (f-get-global 'waterfall-printing state) :limited)
+                (with-output-lock
+                 #+acl2-loop-only
+                 nil
+                 #-acl2-loop-only
+                 (format t "At time ~,6f sec, finished: ~a~%"
+                         (/ (- (get-internal-real-time)
+                               *acl2p-starting-proof-time*)
+                            1000000.0)
+                         (string-for-tilde-@-clause-id-phrase cl-id))))
                (t nil)))
          (t nil)))
 
@@ -6603,7 +6626,7 @@
           #+acl2-loop-only 'ignored-value
           #-acl2-loop-only (get-internal-real-time)))
      (prog2$
-      (waterfall1-wrapper@par-before cl-id)
+      (waterfall1-wrapper@par-before cl-id state)
       (mv-let@par
        (step-limit signal pspv jppl-flg state)
        ,@form
@@ -6695,13 +6718,13 @@
          ((null pair) ; There was no hint.
           (pprogn@par
 
-; In the #+acl2-par version of the waterfall, with (waterfall-printing) set to
-; :limited, the need to print the clause on a checkpoint is taken care of
-; inside waterfall-msg@par.
+; In the #+acl2-par version of the waterfall, with global waterfall-printing
+; set to :limited, the need to print the clause on a checkpoint is taken care
+; of inside waterfall-msg@par.
            
            (cond ((serial-first-form-parallel-second-form@par
                    nil
-                   (member-equal (waterfall-printing)
+                   (member-equal (f-get-global 'waterfall-printing state)
                                  '(:limited :very-limited)))
                   (state-mac@par))
                  (t (waterfall-print-clause@par suppress-print cl-id clause
@@ -6809,15 +6832,15 @@
 ; A hint generated an error.  The error message has been printed and
 ; we pass the error up.  The other values are all irrelevant.
 
-; Parallelism wart: I leave this assertion here for now, because my version of
-; the waterfall returned Context Message Pairs for such a long time, and this
-; assertion just checks that I sucessfully undid the returning of CMPs as part
-; of the waterfall.  We can remove this assertion once the parallelism project
-; is done.
-
                    #+acl2-par
-                   (assert$ (not pair)
-                            (mv@par step-limit 'error nil nil nil nil state))
+                   (assert$
+
+; At one time, the waterfall returned Context Message Pairs.  This assertion
+; was subsequently added to check that we no longer do so.  Since it's an
+; inexpensive check, we leave it here.
+
+                    (not pair)
+                    (mv@par step-limit 'error nil nil nil nil state))
                    #-acl2-par
                    (mv@par step-limit 'error nil nil nil nil state))
                   (pair
@@ -7095,6 +7118,8 @@
 ; disjunctive subgoal (the first one, in fact) and pspv is the corresponding
 ; pspv returned for that subgoal.
 
+  #+acl2-par
+  (declare (ignorable branch-cnt)) ; irrelevant in @par definition
   (cond
    ((endp uhs-lst)
     
@@ -7112,10 +7137,11 @@
 ; namely one with a clause-id of revert-d-cl-id.
 
       (pprogn@par
-       (io?@par prove nil state
-                (cl-id revert-info)
-                (waterfall-or-hit-msg-c cl-id nil (car revert-info) nil nil
-                                        state))
+       (serial-only@par
+        (io? prove nil state
+             (cl-id revert-info)
+             (waterfall-or-hit-msg-c cl-id nil (car revert-info) nil nil
+                                     state)))
 
        (mv@par step-limit
                'abort
@@ -7143,21 +7169,25 @@
                state)))
      (t (mv-let (choice summary)
                 (pick-best-pspv-for-waterfall0-or-hit results pspv wrld)
+                #+acl2-par
+                (declare (ignorable summary))
                 (pprogn@par
-                 (io?@par proof-tree nil state
-                          (choice cl-id)
-                          (pprogn@par
-                           (increment-timer@par 'prove-time state)
-                           (install-disjunct-into-proof-tree cl-id (car choice) state)
-                           (increment-timer@par 'proof-tree-time state)))
-                 (io?@par prove nil state
-                          (cl-id results choice summary)
-                          (waterfall-or-hit-msg-c cl-id ; parent-cl-id
-                                                  results
-                                                  nil
-                                                  (car choice) ; new goal cl-id
-                                                  summary
-                                                  state))
+                 (serial-only@par
+                  (io? proof-tree nil state
+                       (choice cl-id)
+                       (pprogn
+                        (increment-timer 'prove-time state)
+                        (install-disjunct-into-proof-tree cl-id (car choice) state)
+                        (increment-timer 'proof-tree-time state))))
+                 (serial-only@par
+                  (io? prove nil state
+                       (cl-id results choice summary)
+                       (waterfall-or-hit-msg-c cl-id ; parent-cl-id
+                                               results
+                                               nil
+                                               (car choice) ; new goal cl-id
+                                               summary
+                                               state)))
                  (mv@par step-limit
                          'continue
                          (cdr choice) ; chosen pspv
@@ -7175,14 +7205,24 @@
            (hint-settingsi (cdr (car uhs-lst)))
            (d-cl-id (make-disjunctive-clause-id cl-id (length uhs-lst)
                                                 (current-package state))))
+      #+acl2-par
+      (declare (ignorable user-hinti))
       (pprogn@par
-       (io?@par prove nil state
-                (cl-id user-hinti d-cl-id i branch-cnt)
-                (pprogn@par
-                 (increment-timer@par 'prove-time state)
-                 (waterfall-or-hit-msg-a cl-id user-hinti d-cl-id i branch-cnt
-                                         state)
-                 (increment-timer@par 'print-time state)))
+       (serial-only@par
+
+; Wormholes are known to be a problem in the @par version of the waterfall.  As
+; such, we skip the following call of waterfall-or-hit-msg-a (also for some
+; similar calls further down), which we have determined through runs of the
+; regression suite (specifically with book
+; arithmetic-5/lib/floor-mod/floor-mod-basic.lisp) to cause problems.
+
+        (io? prove nil state
+             (cl-id user-hinti d-cl-id i branch-cnt)
+             (pprogn
+              (increment-timer 'prove-time state)
+              (waterfall-or-hit-msg-a cl-id user-hinti d-cl-id i branch-cnt
+                                      state)
+              (increment-timer 'print-time state))))
        (sl-let@par
         (d-signal d-new-pspv d-new-jppl-flg state)
         (waterfall1-wrapper@par
@@ -7191,8 +7231,8 @@
                          clause
                          (change-or-hit-history-entry i hist #+acl2-par cl-id)
                          pspv
-                         (cons (pair-cl-id-with-hint-setting d-cl-id
-                                                             hint-settingsi)
+                         (cons (pair-cl-id-with-hint-setting@par d-cl-id
+                                                                 hint-settingsi)
                                hints)
                          t ;;; suppress-print
                          ens
@@ -7237,18 +7277,20 @@
 ; 'NIL '(PPROGN (PRINC$ 17 *STANDARD-CO* STATE) 17) 'NIL)
 
           (pprogn@par
-           (io?@par proof-tree nil state
-                    (d-cl-id cl-id)
-                    (pprogn@par
-                     (increment-timer@par 'prove-time state)
-                     (install-disjunct-into-proof-tree cl-id d-cl-id state)
-                     (increment-timer@par 'proof-tree-time state)))
-           (io?@par prove nil state
-                    (cl-id d-cl-id branch-cnt)
-                    (pprogn@par
-                     (increment-timer@par 'prove-time state)
-                     (waterfall-or-hit-msg-b cl-id d-cl-id branch-cnt state)
-                     (increment-timer@par 'print-time state)))
+           (serial-only@par
+            (io? proof-tree nil state
+                 (d-cl-id cl-id)
+                 (pprogn
+                  (increment-timer 'prove-time state)
+                  (install-disjunct-into-proof-tree cl-id d-cl-id state)
+                  (increment-timer 'proof-tree-time state))))
+           (serial-only@par
+            (io? prove nil state
+                 (cl-id d-cl-id branch-cnt)
+                 (pprogn
+                  (increment-timer 'prove-time state)
+                  (waterfall-or-hit-msg-b cl-id d-cl-id branch-cnt state)
+                  (increment-timer 'print-time state))))
            (mv@par step-limit
                    'continue
                    d-new-pspv
@@ -7698,9 +7740,9 @@
 ; prover; consider searching for with-output-lock to find those.
 
 ; Parallelism wart: due to the definition of speculative-execution-valid, this
-; code should no longer be reachable.  It should be deleted by the time the
-; parallelism project is finished.  I leave it now because it is an example of
-; use of 'inhitibt-output-lst (also see parallelism wart immediately above).
+; code should no longer be reachable.  We leave it for now because it is an
+; example use of 'inhibit-output-lst (also see parallelism wart immediately
+; above).
 
                (cond ((member-eq 'prove
                                  (f-get-global 'inhibit-output-lst state))
@@ -7767,11 +7809,14 @@
             (primes-subproof
              'serial)
             (t
-             (case (waterfall-parallelism)
+             (case (f-get-global 'waterfall-parallelism state)
                ((nil)
                 'serial)
                ((:full)
-                'parallel)
+                (cond #-acl2-loop-only
+                      ((not-too-many-futures-already-in-existence)
+                       'parallel)
+                      (t 'serial)))
                ((:pseudo-parallel)
                 'pseudo-parallel)
                ((:top-level)
@@ -7879,7 +7924,7 @@
            (t (initialize-proof-tree parent-clause-id x ctx state)))
      (sl-let (signal new-pspv new-jppl-flg state)
              #+acl2-par
-             (if (waterfall-parallelism)
+             (if (f-get-global 'waterfall-parallelism state)
                  (with-parallelism-hazard-warnings
                   (mv-let (step-limit signal new-pspv new-jppl-flg)
                           (waterfall1-lst@par (cond ((null clauses) 0)
@@ -8113,7 +8158,8 @@
          (('pop . pool-lsts)
           (mv-let
            (gagst msgs)
-           (pop-clause-update-gag-state-pop pool-lsts gag-state nil msg-p)
+           (pop-clause-update-gag-state-pop pool-lsts gag-state nil msg-p
+                                            state)
            (pprogn
             (io? prove nil state
                  (prev-action pool-lsts forcing-round msgs)
@@ -8166,7 +8212,8 @@
              (gagst cl-id)
              (cond ((eq (car entry) 'consider)
                     (mv gag-state nil))
-                   (t (remove-pool-lst-from-gag-state pool-lst gag-state)))
+                   (t (remove-pool-lst-from-gag-state pool-lst gag-state
+                                                      state)))
              (pprogn
               (io? prove nil state
                    (prev-action forcing-round pool-lst entry cl-id jppl-flg

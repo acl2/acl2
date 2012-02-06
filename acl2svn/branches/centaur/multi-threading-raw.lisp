@@ -42,6 +42,22 @@
 #+(and (not sbcl) sb-thread)
 (error "Feature sb-thread not supported on Lisps other than SBCL")
 
+; We would like to use the semaphore notification objects supported in SBCL
+; 1.0.54+, but version 1.0.54 has a heap exhaustion error that we wish to
+; avoid.  As such, for now, we remain compatible with 1.0.53 and below.  While
+; we can consider uncommenting the following feature push once SBCL's support
+; for semaphore notification objects is stable, the following questions seem
+; difficult to answer: How can we determine when that is the case, and how
+; confident are we that Rager's implementation using semaphore notification
+; objects is correct?  Rager determined that 1.0.54 was unstable by making all
+; of the books with parallelism enabled (and experiencing the "heap exhausted"
+; error in one of the ordinal books [at the moment of this writing, he does not
+; recall which one]).  Thus, Rager's code has not been completely tested using
+; semaphore notification objects.
+
+; #+sbcl
+; (push :sbcl-sno-patch *features*)
+
 ;---------------------------------------------------------------------
 ; Section:  Enabling and Disabling Interrupts
 
@@ -659,8 +675,10 @@
   (declare (ignore name))
   #+ccl
   (ccl:make-semaphore)
-  #+(or sb-thread lispworks)
+  #+(or (and sb-thread (not sbcl-sno-patch)) lispworks)
   (make-acl2-semaphore)
+  #+(and sb-thread sbcl-sno-patch)
+  (sb-thread:make-semaphore)
   #-(or ccl sb-thread lispworks)
 
 ; We return nil in the uni-threaded case in order to stay in sync with
@@ -703,8 +721,10 @@
 
   #+ccl
   (ccl:make-semaphore-notification)
-  #+(or sb-thread lispworks)
+  #+(or (and sb-thread (not sbcl-sno-patch)) lispworks)
   (make-array 1 :initial-element nil)
+  #+(and sb-thread sbcl-sno-patch)
+  (sb-thread:make-semaphore-notification)
   #-(or ccl sb-thread lispworks)
   nil)
 
@@ -713,8 +733,10 @@
   (declare (ignore semaphore-notification-object))
   #+ccl
   (ccl:semaphore-notification-status semaphore-notification-object)
-  #+(or sb-thread lispworks)
+  #+(or (and sb-thread (not sbcl-sno-patch)) lispworks)
   (aref semaphore-notification-object 0)
+  #+(and sb-thread sbcl-sno-patch)
+  (sb-thread:semaphore-notification-status semaphore-notification-object)
   #-(or ccl sb-thread lispworks)
 
 ; t may be the wrong default, but we don't have a use case for this return
@@ -728,8 +750,10 @@
   (declare (ignore semaphore-notification-object))
   #+ccl
   (ccl:clear-semaphore-notification-status semaphore-notification-object)
-  #+(or sb-thread lispworks)
+  #+(or (and sb-thread (not sbcl-sno-patch)) lispworks)
   (setf (aref semaphore-notification-object 0) nil)
+  #+(and sb-thread sbcl-sno-patch)
+  (sb-thread:clear-semaphore-notification semaphore-notification-object)
   #-(or ccl sb-thread lispworks)
   nil)
 
@@ -758,12 +782,14 @@
   (declare (ignore semaphore))
   #+ccl
   (ccl:signal-semaphore semaphore)
-  #+(or sb-thread lispworks)
+  #+(or (and sb-thread (not sbcl-sno-patch)) lispworks)
   (with-lock
    (acl2-semaphore-lock semaphore)
    (without-interrupts
     (incf (acl2-semaphore-count semaphore))
     (signal-condition-variable (acl2-semaphore-cv semaphore))))
+  #+(and sb-thread sbcl-sno-patch)
+  (sb-thread:signal-semaphore semaphore)  
   #-(or ccl sb-thread lispworks)
   nil)
 
@@ -802,7 +828,7 @@
       (ccl:timed-wait-on-semaphore semaphore timeout notification)
     (ccl:wait-on-semaphore semaphore notification))
 
-  #+(or sb-thread lispworks)
+  #+(or (and sb-thread (not sbcl-sno-patch)) lispworks)
   (let ((received-signal nil))
 
 ; If we did not use a variable like "received-signal", we could have the
@@ -867,6 +893,10 @@
 ; is the cost of a "live" implementation ("live" loosely means "makes progress").
 
           (signal-condition-variable (acl2-semaphore-cv semaphore))))))
+  #+(and sb-thread sbcl-sno-patch)
+  (sb-thread:wait-on-semaphore semaphore 
+                               :timeout timeout
+                               :notification notification) 
   #-(or ccl sb-thread lispworks)
   t) ; default is to receive a semaphore/lock
 
@@ -995,6 +1025,7 @@
   #-sbcl
   (null (set-difference (all-threads) (initial-threads))))
 
+#+ccl
 (defun all-given-threads-are-reset (threads)
   (if (endp threads)
       t
@@ -1097,7 +1128,7 @@
   (core-count-raw)
   "The total number of CPU cores in the system.")
 
-(defconstant *unassigned-and-active-work-count-limit*
+(defvar *unassigned-and-active-work-count-limit*
 
 ; The *unassigned-and-active-work-count-limit* limits work on the *work-queue*
 ; to what we think the system will be able to process in a reasonable amount of
@@ -1114,45 +1145,6 @@
 ; otherwise parallelized computations in favor of their serial equivalents.
 
   (* 4 *core-count*))
-
-(defconstant *total-work-limit* ; unassigned, started, resumed AND pending
-
-; The number of pieces of work in the system, *parallelism-work-count*, must be
-; less than *total-work-limit* in order to enable creation of new pieces of
-; work.  (However, if *total-work-limit* were set to 50, we could go from 49 to
-; 69 pieces of work when encountering a pand; just not from 50 to 52.)
-
-; Why limit the amount of work in the system?  :Doc parallelism-how-to
-; (subtopic "Another Granularity Issue Related to Thread Limitations") provides
-; an example showing how cdr recursion can rapidly create threads.  That
-; example shows that if there is no limit on the amount of work we may create,
-; then eventually, many successive cdrs starting at the top will correspond to
-; waiting threads.  If we do not limit the amount of work that can be created,
-; this can exhaust the supply of Lisp threads available to process the elements
-; of the list.
-
-  (let ((val
-
-; Warning: It is possible, in principle to create (+ val
-; *max-idle-thread-count*) threads.  Presumably you'll get a hard Lisp error
-; (or seg fault!) if your Lisp cannot create that many threads.
-
-; We picked a new value of 400 on September 2011 to support Robert Krug's
-; proof that took ~9000 seconds in serial mode.  Initially, when
-; *total-work-limit* was set to 50, the parallelized proof only saw an
-; improvement to ~2200 seconds, but after changing *total-work-limit* to 200,
-; the parallelized proof now takes ~1300 seconds.
-
-         400)
-
-        (bound (* 2 *core-count*)))
-    (when (< val bound)
-      (error "The variable *total-work-limit* needs to be at least ~s, ~%~
-              i.e., at least double the *core-count*.  Please redefine ~%~
-              *total-work-limit* so that it is not ~s."
-             bound
-             val))
-    val))
 
 (defconstant *max-idle-thread-count* 
 

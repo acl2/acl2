@@ -2117,8 +2117,6 @@
              ',event-form))))
 )
 
-;                          STANDARD CHANNELS
-
 (deflabel programming
 
 ; Be sure to include documentation for all functions in
@@ -2127,12 +2125,27 @@
   :doc
   ":Doc-Section Programming
 
+  programming in ACL2~/
+
+  This ~il[documentation] topic is a parent topic under which we include
+  documentation topics for built-in functions, macros, and special forms
+  (~pl[acl2-built-ins]) as well as topics for notions important to programming
+  with ACL2.  If you don't find what you're looking for, see the Index or see
+  individual topics that may be more directly appropriate; for example,
+  ~pl[events] for top-level event constructorsr like ~ilc[defun].~/~/")
+
+(deflabel acl2-built-ins
+  :doc
+  ":Doc-Section ACL2::Programming
   built-in ACL2 functions~/
 
-  The built-in ACL2 functions that one typically uses in writing programs are
-  listed below.  See their individual ~il[documentation]s.  We do not bother to
-  document some of the more obscure functions provided by ACL2 that do not
-  correspond to functions of Common Lisp.~/
+  This ~il[documentation] topic is a parent topic under which we include
+  documentation for built-in functions, macros, and special forms that are
+  typically used in programming.  For others, including those typically used as
+  top-level commands or those that create ~il[events] (~ilc[defun],
+  ~ilc[defthm], and so on), documentation may be found as a subtopic of some
+  other parent topic.  We do not document some of the more obscure functions
+  provided by ACL2 that do not correspond to functions of Common Lisp.~/
 
   See any documentation for Common Lisp for more details on many of these
   functions.~/")
@@ -2147,75 +2160,15 @@
   Perhaps as the system matures this section will become more
   structured.~/")
 
-(defconst *standard-co* 'acl2-output-channel::standard-character-output-0
-  ":Doc-Section ACL2::Programming
+;                          STANDARD CHANNELS
 
-  the ACL2 analogue of CLTL's ~c[*standard-output*]~/
+; Documentation is deferred until after (deflabel IO ...).
 
-  The value of the ACL2 constant ~c[*standard-co*] is an open character
-  output channel that is synonymous to Common Lisp's
-  ~c[*standard-output*].~/
+(defconst *standard-co* 'acl2-output-channel::standard-character-output-0)
 
-  ACL2 character output to ~c[*standard-co*] will go to the stream named
-  by Common Lisp's ~c[*standard-output*].  That is, by changing the
-  setting of ~c[*standard-output*] in raw Common Lisp you can change the
-  actual destination of ACL2 output on the channel named by
-  ~c[*standard-co*].  Observe that this happens without changing the
-  logical value of ~c[*standard-co*] (which is some channel symbol).
-  Changing the setting of ~c[*standard-output*] in raw Common Lisp
-  essentially just changes the map that relates ACL2 to the physical
-  world of terminals, files, etc.
+(defconst *standard-oi* 'acl2-input-channel::standard-object-input-0)
 
-  To see the value of this observation, consider the following.
-  Suppose you write an ACL2 function which does character output to
-  the constant channel ~c[*standard-co*].  During testing you see that the
-  output actually goes to your terminal.  Can you use the function to
-  output to a file?  Yes, if you are willing to do a little work in
-  raw Common Lisp: open a stream to the file in question, set
-  ~c[*standard-output*] to that stream, call your ACL2 function, and then
-  close the stream and restore ~c[*standard-output*] to its nominal value.
-  Similar observations can be made about the two ACL2 input channels,
-  ~ilc[*standard-oi*] and ~ilc[*standard-ci*], which are analogues of
-  ~c[*standard-input*].
-
-  Another reason you might have for wanting to change the actual
-  streams associated with ~ilc[*standard-oi*] and ~c[*standard-co*] is to drive
-  the ACL2 top-level loop, ~ilc[ld], on alternative input and output
-  streams.  This end can be accomplished easily within ACL2 by either
-  calling ~ilc[ld] on the desired channels or file names or by resetting the
-  ACL2 ~ilc[state] global variables ~c[']~ilc[standard-oi] and ~c[']~ilc[standard-co] which are
-  used by ~ilc[ld].  ~l[standard-oi] and ~pl[standard-co].")
-
-(defconst *standard-oi* 'acl2-input-channel::standard-object-input-0
-  ":Doc-Section ACL2::Programming
-
-  an ACL2 object-based analogue of CLTL's ~c[*standard-input*]~/
-
-  The value of the ACL2 constant ~c[*standard-oi*] is an open object input
-  channel that is synonymous to Common Lisp's ~c[*standard-input*].~/
-
-  ACL2 object input from ~c[*standard-oi*] is actually obtained by reading
-  from the stream named by Common Lisp's ~c[*standard-input*].  That is,
-  by changing the setting of ~c[*standard-input*] in raw Common Lisp you
-  can change the source from which ACL2 reads on the channel
-  ~c[*standard-oi*].  ~l[*standard-co*].")
-
-(defconst *standard-ci* 'acl2-input-channel::standard-character-input-0
-  ":Doc-Section ACL2::Programming
-
-  an ACL2 character-based analogue of CLTL's ~c[*standard-input*]~/
-
-  The value of the ACL2 constant ~c[*standard-ci*] is an open character
-  input channel that is synonymous to Common Lisp's
-  ~c[*standard-input*].~/
-
-  ACL2 character input from ~c[*standard-ci*] is actually obtained by
-  reading ~il[characters] from the stream named by Common Lisp's
-  ~c[*standard-input*].  That is, by changing the setting of
-  ~c[*standard-input*] in raw Common Lisp you can change the source from
-  which ACL2 reads on the channel ~c[*standard-ci*].
-  ~l[*standard-co*].")
-
+(defconst *standard-ci* 'acl2-input-channel::standard-character-input-0)
 
 ;                            IF and EQUAL
 
@@ -2253,7 +2206,7 @@
 
 (defun iff (p q)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   logical ``if and only if''~/
 
@@ -2268,7 +2221,7 @@
 
 (defun xor (p q)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   logical ``exclusive or''~/
 
@@ -2282,7 +2235,7 @@
 
 (defun booleanp (x)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for booleans~/
 
@@ -2312,7 +2265,7 @@
 
 (defun implies (p q)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   logical implication~/
 
@@ -2338,7 +2291,7 @@
 #+acl2-loop-only
 (defun not (p)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   logical negation~/
 
@@ -2480,7 +2433,7 @@
 
 (defmacro real/rationalp (x)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for rational numbers (including real number in ACL2(r))~/
 
@@ -2498,7 +2451,7 @@
 
 (defmacro complex/complex-rationalp (x)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for complex numbers~/
 
@@ -2522,7 +2475,7 @@
 #+acl2-loop-only
 (defun eq (x y)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   equality of symbols~/
 
@@ -2549,7 +2502,7 @@
 
 (defun true-listp (x)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for proper (null-terminated) lists~/
 
@@ -2574,7 +2527,7 @@
 #+acl2-loop-only
 (defmacro list (&rest args)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   build a list~/
 
@@ -2600,7 +2553,7 @@
 #+acl2-loop-only
 (defmacro and (&rest args)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   conjunction~/
 
@@ -2628,7 +2581,7 @@
 #+acl2-loop-only
 (defmacro or (&rest args)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   disjunction~/
 
@@ -2800,7 +2753,7 @@
 
 (defun len (x)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   length of a list~/
 
@@ -2829,7 +2782,7 @@
 #+acl2-loop-only
 (defun length (x)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   length of a string or proper list~/
 
@@ -2856,7 +2809,7 @@
 
 (defun acl2-count (x)
 
- ":Doc-Section Miscellaneous
+ ":Doc-Section ACL2::ACL2-built-ins
 
   a commonly used measure for justifying recursion~/
 
@@ -2947,7 +2900,7 @@
 #+acl2-loop-only
 (defmacro cond (&rest clauses)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   conditional based on if-then-else~/
 
@@ -2969,7 +2922,7 @@
 
 (defun eqlablep (x)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   the ~il[guard] for the function ~ilc[eql]~/
 
@@ -3002,7 +2955,7 @@
 
 (defun eqlable-listp (l)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for a true list of objects each suitable for ~ilc[eql]~/
 
@@ -3022,7 +2975,7 @@
   (declare (xargs :mode :logic
                   :guard (or (eqlablep x)
                              (eqlablep y))))
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   test equality (of two numbers, symbols, or ~il[characters])~/
 
@@ -3043,7 +2996,7 @@
 #+acl2-loop-only
 (defun atom (x)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for atoms~/
 
@@ -3062,7 +3015,7 @@
 
 (defun make-character-list (x)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~il[coerce] to a list of characters~/
 
@@ -3084,7 +3037,7 @@
 
 (defun eqlable-alistp (x)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for a true list of pairs whose ~ilc[car]s are suitable for ~ilc[eql]~/
 
@@ -3102,7 +3055,7 @@
 
 (defun alistp (l)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for association lists~/
 
@@ -3129,7 +3082,7 @@
 #+acl2-loop-only
 (defun acons (key datum alist)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   constructor for association lists~/
 
@@ -3148,7 +3101,7 @@
 #+acl2-loop-only
 (defun endp (x)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for empty lists~/
 
@@ -3171,7 +3124,7 @@
 
 #+acl2-loop-only
 (defmacro caar (x)
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~ilc[car] of the ~ilc[car]~/
 
@@ -3180,7 +3133,7 @@
 
 #+acl2-loop-only
 (defmacro cadr (x)
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~ilc[car] of the ~ilc[cdr]~/
 
@@ -3189,7 +3142,7 @@
 
 #+acl2-loop-only
 (defmacro cdar (x)
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~ilc[cdr] of the ~ilc[car]~/
 
@@ -3198,7 +3151,7 @@
 
 #+acl2-loop-only
 (defmacro cddr (x)
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~ilc[cdr] of the ~ilc[cdr]~/
 
@@ -3207,7 +3160,7 @@
 
 #+acl2-loop-only
 (defmacro caaar (x)
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~ilc[car] of the ~ilc[caar]~/
 
@@ -3216,7 +3169,7 @@
 
 #+acl2-loop-only
 (defmacro caadr (x)
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~ilc[car] of the ~ilc[cadr]~/
 
@@ -3225,7 +3178,7 @@
 
 #+acl2-loop-only
 (defmacro cadar (x)
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~ilc[car] of the ~ilc[cdar]~/
 
@@ -3234,7 +3187,7 @@
 
 #+acl2-loop-only
 (defmacro caddr (x)
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~ilc[car] of the ~ilc[cddr]~/
 
@@ -3243,7 +3196,7 @@
 
 #+acl2-loop-only
 (defmacro cdaar (x)
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~ilc[cdr] of the ~ilc[caar]~/
 
@@ -3252,7 +3205,7 @@
 
 #+acl2-loop-only
 (defmacro cdadr (x)
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~ilc[cdr] of the ~ilc[cadr]~/
 
@@ -3261,7 +3214,7 @@
 
 #+acl2-loop-only
 (defmacro cddar (x)
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~ilc[cdr] of the ~ilc[cdar]~/
 
@@ -3270,7 +3223,7 @@
 
 #+acl2-loop-only
 (defmacro cdddr (x)
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~ilc[cdr] of the ~ilc[cddr]~/
 
@@ -3279,7 +3232,7 @@
 
 #+acl2-loop-only
 (defmacro caaaar (x)
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~ilc[car] of the ~ilc[caaar]~/
 
@@ -3288,7 +3241,7 @@
 
 #+acl2-loop-only
 (defmacro caaadr (x)
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~ilc[car] of the ~ilc[caadr]~/
 
@@ -3297,7 +3250,7 @@
 
 #+acl2-loop-only
 (defmacro caadar (x)
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~ilc[car] of the ~ilc[cadar]~/
 
@@ -3306,7 +3259,7 @@
 
 #+acl2-loop-only
 (defmacro caaddr (x)
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~ilc[car] of the ~ilc[caddr]~/
 
@@ -3315,7 +3268,7 @@
 
 #+acl2-loop-only
 (defmacro cadaar (x)
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~ilc[car] of the ~ilc[cdaar]~/
 
@@ -3324,7 +3277,7 @@
 
 #+acl2-loop-only
 (defmacro cadadr (x)
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~ilc[car] of the ~ilc[cdadr]~/
 
@@ -3333,7 +3286,7 @@
 
 #+acl2-loop-only
 (defmacro caddar (x)
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~ilc[car] of the ~ilc[cddar]~/
 
@@ -3342,7 +3295,7 @@
 
 #+acl2-loop-only
 (defmacro cadddr (x)
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~ilc[car] of the ~ilc[cdddr]~/
 
@@ -3351,7 +3304,7 @@
 
 #+acl2-loop-only
 (defmacro cdaaar (x)
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~ilc[cdr] of the ~ilc[caaar]~/
 
@@ -3360,7 +3313,7 @@
 
 #+acl2-loop-only
 (defmacro cdaadr (x)
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~ilc[cdr] of the ~ilc[caadr]~/
 
@@ -3369,7 +3322,7 @@
 
 #+acl2-loop-only
 (defmacro cdadar (x)
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~ilc[cdr] of the ~ilc[cadar]~/
 
@@ -3378,7 +3331,7 @@
 
 #+acl2-loop-only
 (defmacro cdaddr (x)
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~ilc[cdr] of the ~ilc[caddr]~/
 
@@ -3387,7 +3340,7 @@
 
 #+acl2-loop-only
 (defmacro cddaar (x)
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~ilc[cdr] of the ~ilc[cdaar]~/
 
@@ -3396,7 +3349,7 @@
 
 #+acl2-loop-only
 (defmacro cddadr (x)
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~ilc[cdr] of the ~ilc[cdadr]~/
 
@@ -3405,7 +3358,7 @@
 
 #+acl2-loop-only
 (defmacro cdddar (x)
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~ilc[cdr] of the ~ilc[cddar]~/
 
@@ -3414,7 +3367,7 @@
 
 #+acl2-loop-only
 (defmacro cddddr (x)
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~ilc[cdr] of the ~ilc[cdddr]~/
 
@@ -3424,7 +3377,7 @@
 #+acl2-loop-only
 (defun null (x)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for the empty list~/
 
@@ -3442,7 +3395,7 @@
 
 (defun symbol-listp (lst)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for a true list of symbols~/
 
@@ -3596,7 +3549,7 @@
 
 (defun strip-cars (x)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   collect up all first components of pairs in a list~/
 
@@ -3627,7 +3580,7 @@
 
 (defun strip-cdrs (x)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   collect up all second components of pairs in a list~/
 
@@ -3683,7 +3636,7 @@
 ;  (foo 3) ; exec
 ;  (bar 3) ; exec
 
-  ":Doc-Section Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   return the last argument, perhaps with side effects~/
 
@@ -4242,7 +4195,7 @@
 ; Fortunately, ev-rec will only evaluate the logic code for this return-last
 ; form, as one might expect.
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   attach code for execution~/
 
@@ -4262,7 +4215,7 @@
 ; released Sept., 2010), since must-be-equal has been around since v2-8 (March,
 ; 2004).
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   attach code for execution~/~/
 
@@ -4282,7 +4235,7 @@
 
 (defmacro mbe (&key (exec 'nil exec-p) (logic 'nil logic-p))
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   attach code for execution~/
 
@@ -4434,7 +4387,7 @@
 
 (defmacro mbt (x)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   introduce a test not to be evaluated~/
 
@@ -4870,7 +4823,7 @@
 #+acl2-loop-only
 (defmacro member (x l &key (test ''eql))
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   membership predicate~/
   ~bv[]
@@ -4971,7 +4924,7 @@
 #+acl2-loop-only
 (defmacro subsetp (x y &key (test ''eql))
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   test if every ~ilc[member] of one list is a ~ilc[member] of the other~/
   ~bv[]
@@ -5022,7 +4975,7 @@
 
 (defun symbol-alistp (x)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for association lists with symbols as keys~/
 
@@ -5083,7 +5036,7 @@
 #+acl2-loop-only
 (defmacro assoc (x alist &key (test ''eql))
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   look up key in association list~/
   ~bv[]
@@ -5164,7 +5117,7 @@
 #+acl2-loop-only
 (defmacro <= (x y)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   less-than-or-equal test~/
 
@@ -5179,7 +5132,7 @@
 #+acl2-loop-only
 (defun = (x y)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   test equality of two numbers~/
 
@@ -5204,7 +5157,7 @@
 #+acl2-loop-only
 (defun /= (x y)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   test inequality of two numbers~/
 
@@ -5228,7 +5181,7 @@
 #+acl2-loop-only
 (defmacro > (x y)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   greater-than test~/
 
@@ -5243,7 +5196,7 @@
 #+acl2-loop-only
 (defmacro >= (x y)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   greater-than-or-equal test~/
 
@@ -5426,7 +5379,7 @@
 
 (defmacro int= (i j)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   test equality of two integers~/
 
@@ -5450,7 +5403,7 @@
   (declare (xargs :mode :logic
                   :guard (and (integerp x) (<= 0 x))))
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   testing a ``natural'' against 0~/
 
@@ -5535,7 +5488,7 @@
   (declare (xargs :mode :logic
                   :guard (integerp x)))
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   testing an ``integer'' against 0~/
 
@@ -5593,7 +5546,7 @@
 #+acl2-loop-only
 (defun nth (n l)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   the nth element (zero-based) of a list~/
 
@@ -5620,7 +5573,7 @@
 #+acl2-loop-only
 (defun char (s n)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   the ~il[nth] element (zero-based) of a string~/
 
@@ -5644,7 +5597,7 @@
 
 (defun proper-consp (x)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for proper (null-terminated) non-empty lists~/
 
@@ -5659,7 +5612,7 @@
 
 (defun improper-consp (x)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for improper (non-null-terminated) non-empty lists~/
 
@@ -5676,7 +5629,7 @@
 #+acl2-loop-only
 (defmacro * (&rest rst)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   multiplication macro~/
 
@@ -5705,7 +5658,7 @@
 #+acl2-loop-only
 (defun conjugate (x)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   complex number conjugate~/
 
@@ -5737,7 +5690,7 @@
 ; We have since found other uses for prog2$, which are documented in the doc
 ; string below.
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   execute two forms and return the value of the second one~/
 
@@ -5867,7 +5820,7 @@
 
 (defmacro ec-call (x)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   execute a call in the ACL2 logic instead of raw Lisp~/
 
@@ -6015,7 +5968,7 @@
 #+acl2-loop-only
 (defmacro / (x &optional (y 'nil binary-casep))
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   macro for division and reciprocal~/
 
@@ -6066,7 +6019,7 @@
 
 (defun fix (x)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   coerce to a number~/
 
@@ -8145,7 +8098,7 @@
 
 (defmacro no-duplicatesp (x &key (test ''eql))
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   check for duplicates in a list~/
   ~bv[]
@@ -8199,7 +8152,7 @@
 
 ; For guard to rassoc-eql-exec.
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for a true list of pairs whose ~ilc[cdr]s are suitable for ~ilc[eql]~/
 
@@ -8219,7 +8172,7 @@
 
 ; For guard to rassoc-eq-exec.
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for association lists with symbols as values~/
 
@@ -8273,7 +8226,7 @@
 #+acl2-loop-only
 (defmacro rassoc (x alist &key (test ''eql))
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   look up value in association list~/
   ~bv[]
@@ -8339,7 +8292,7 @@
 #+acl2-loop-only
 (defun standard-char-p (x)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for standard characters~/
 
@@ -8365,7 +8318,7 @@
 
 (defun standard-char-listp (l)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for a true list of standard characters~/
 
@@ -8387,7 +8340,7 @@
 
 (defun character-listp (l)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for a true list of characters~/
 
@@ -8484,7 +8437,7 @@
 #+acl2-loop-only
 (defun string (x)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~il[coerce] to a string~/
 
@@ -8522,7 +8475,7 @@
 #+acl2-loop-only
 (defun alpha-char-p (x)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for alphabetic characters~/
 
@@ -8550,7 +8503,7 @@
 #+acl2-loop-only
 (defun upper-case-p (x)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for upper case characters~/
 
@@ -8579,7 +8532,7 @@
 #+acl2-loop-only
 (defun lower-case-p (x)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for lower case characters~/
 
@@ -8608,7 +8561,7 @@
 #+acl2-loop-only
 (defun char-upcase (x)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   turn lower-case ~il[characters] into upper-case ~il[characters]~/
 
@@ -8663,7 +8616,7 @@
 #+acl2-loop-only
 (defun char-downcase (x)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   turn upper-case ~il[characters] into lower-case ~il[characters]~/
 
@@ -8770,7 +8723,7 @@
 #+acl2-loop-only
 (defun string-downcase (x)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   in a given string, turn upper-case ~il[characters] into lower-case~/
 
@@ -8810,7 +8763,7 @@
 #+acl2-loop-only
 (defun string-upcase (x)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   in a given string, turn lower-case ~il[characters] into upper-case~/
 
@@ -8904,7 +8857,7 @@
 #+acl2-loop-only
 (defmacro digit-char-p (ch &optional (radix '10))
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   the number, if any, corresponding to a given character~/
 
@@ -8927,7 +8880,7 @@
 #+acl2-loop-only
 (defun char-equal (x y)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   character equality without regard to case~/
 
@@ -8951,7 +8904,7 @@
 
 (defun atom-listp (lst)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for a true list of ~il[atom]s~/
 
@@ -8981,7 +8934,7 @@
 
 ; Keep this in sync with bad-atom.
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for a true list of ``good'' ~il[atom]s~/
 
@@ -9014,7 +8967,7 @@
 
 (defun ifix (x)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   coerce to an integer~/
 
@@ -9033,7 +8986,7 @@
 
 (defun rfix (x)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   coerce to a rational number~/
 
@@ -9062,7 +9015,7 @@
 
 (defun realfix (x)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   coerce to a real number~/
 
@@ -9081,7 +9034,7 @@
 
 (defun nfix (x)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   coerce to a natural number~/
 
@@ -9127,7 +9080,7 @@
 #+acl2-loop-only
 (defun string-equal (str1 str2)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   string equality without regard to case~/
 
@@ -9154,7 +9107,7 @@
 
 (defun standard-string-alistp (x)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for association lists with standard strings as keys~/
 
@@ -9180,7 +9133,7 @@
 
 (defun assoc-string-equal (str alist)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   look up key, a string, in association list~/
 
@@ -9215,7 +9168,7 @@
 ;first: we mention the old ordinals:
 
 (defdoc e0-ordinalp
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
    the old recognizer for ACL2 ordinals~/
 
@@ -9232,7 +9185,7 @@
    ~c[books/ordinals/e0-ordinal.lisp].")
 
 (defdoc e0-ord-<
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
    the old ordering function for ACL2 ordinals~/
 
@@ -9250,7 +9203,7 @@
 
 (defun natp (x)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
    a recognizer for the natural numbers~/~/
 
@@ -9274,7 +9227,7 @@
   :rule-classes :compound-recognizer)
 
 (defun posp (x)
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
    a recognizer for the positive integers~/~/
 
@@ -9297,7 +9250,7 @@
   :rule-classes :compound-recognizer)
 
 (defun o-finp (x)
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizes if an ordinal is finite~/~/
 
@@ -9312,7 +9265,7 @@
   (atom x))
 
 (defmacro o-infp (x)
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizes if an ordinal is infinite~/~/
 
@@ -9322,7 +9275,7 @@
   `(not (o-finp ,x)))
 
 (defun o-first-expt (x)
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   the first exponent of an ordinal~/~/
 
@@ -9342,7 +9295,7 @@
     (caar x)))
 
 (defun o-first-coeff (x)
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   returns the first coefficient of an ordinal~/~/
 
@@ -9362,7 +9315,7 @@
     (cdar x)))
 
 (defun o-rst (x)
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   returns the rest of an infinite ordinal~/~/
 
@@ -9392,7 +9345,7 @@
 
 (defun o< (x y)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
    the well-founded less-than relation on ordinals up to ~c[epsilon-0]~/
 
@@ -9466,7 +9419,7 @@
         (t (o< (o-rst x) (o-rst y)))))
 
 (defmacro o> (x y)
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   the greater-than relation for the ordinals~/~/
 
@@ -9475,7 +9428,7 @@
   `(o< ,y ,x))
 
 (defmacro o<= (x y)
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   the less-than-or-equal relation for the ordinals~/~/
 
@@ -9484,7 +9437,7 @@
   `(not (o< ,y ,x)))
 
 (defmacro o>= (x y)
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   the greater-than-or-equal relation for the ordinals~/~/
 
@@ -9494,7 +9447,7 @@
 
 (defun o-p (x)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
    a recognizer for the ordinals up to epsilon-0~/
 
@@ -9685,7 +9638,7 @@
 
 (defun make-ord (fe fco rst)
 
-  ":Doc-Section Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   a constructor for ordinals.~/
 
@@ -9734,7 +9687,7 @@
 #+acl2-loop-only
 (defmacro list* (&rest args)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   build a list~/
 
@@ -9880,15 +9833,20 @@
 ; that indicates that the stack must be unwound some (to cleanup after an
 ; aborted inferior).
 
-; Parallelism wart: Deal with the following comment.  David Rager suspects that
-; we might want to replace it with a pointer to elsewhere where we handle the
-; issue.
-; Warning: This variable is let-bound in ld-fn.  This could present a problem
-; if parallelism is enabled and the theorem prover uses parallelism
-; primitives.  We can imagine (and we may have seen) a case in which there are
-; two threads doing rewriting, and one does a throw (say, because time has
-; expired), which puts the two threads temporarily out of sync in their values
-; of *ld-level*.
+; Parallelism blemish: This variable is let-bound in ld-fn (and hence by
+; wormhole).  Perhaps this could present a problem.  For example, we wonder
+; about the case where waterfall-parallelism is enabled and a parent thread
+; gets confused about the value of *ld-level* (or (@ ld-level)) when changed by
+; the child thread.  For a second example, we can imagine (and we may have
+; seen) a case in which there are two threads doing rewriting, and one does a
+; throw (say, because time has expired), which puts the two threads temporarily
+; out of sync in their values of *ld-level*.  Wormholes involve calls of ld and
+; hence also give us concern.  As of this writing we know of no cases where any
+; such problems exist, and there is at least one case, the definition of
+; mt-future, where we explicitly provide bindings to arrange that a child
+; thread receives its *ld-level* and (@ ld-level) from its parent (not from
+; some spurious global values).  Mt-future also has an assertion to check that
+; we keep *ld-level* and (@ ld-level) in sync with each other.
 
   0)
 
@@ -9967,7 +9925,7 @@
 ; See the comment after ILLEGAL (below) for a discussion of an
 ; earlier, inadequate handling of these issues.
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   print an error message and stop execution~/
 
@@ -10037,7 +9995,7 @@
 
 (defun illegal (ctx str alist)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   print an error message and stop execution~/
 
@@ -10111,7 +10069,7 @@
                                                "ACL2-INPUT-CHANNEL"
                                                "ACL2-OUTPUT-CHANNEL"
                                                "KEYWORD")))))
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   create a new symbol in a given package~/
 
@@ -10172,7 +10130,7 @@
 
 (defmacro intern$ (x y)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   create a new symbol in a given package~/
 
@@ -10193,7 +10151,7 @@
 #+acl2-loop-only
 (defun keywordp (x)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for keywords~/
 
@@ -10463,7 +10421,7 @@
      ans)))
 
 (defdoc pkg-imports
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   list of symbols imported into a given package~/
 
@@ -10527,7 +10485,7 @@
           (t (throw-raw-ev-fncall (list 'pkg-imports-er pkg))))))
 
 (defdoc pkg-witness
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   return a specific symbol in the indicated package~/
 
@@ -10563,7 +10521,7 @@
 
 (defun binary-append (x y)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~il[concatenate] two lists~/
 
@@ -10582,7 +10540,7 @@
 #+acl2-loop-only
 (defmacro append (&rest rst)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~il[concatenate] zero or more lists~/
 
@@ -10652,7 +10610,7 @@
 #+acl2-loop-only
 (defmacro concatenate (result-type &rest sequences)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   concatenate lists or strings together~/
   ~bv[]
@@ -10707,7 +10665,7 @@
 
 (defun string-append (str1 str2)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~il[concatenate] two strings~/
 
@@ -10743,7 +10701,7 @@
 
 (defun string-listp (x)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for a true list of strings~/
 
@@ -10775,7 +10733,7 @@
 #+acl2-loop-only
 (defmacro 1+ (x)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   increment by 1~/
 
@@ -10789,7 +10747,7 @@
 #+acl2-loop-only
 (defmacro 1- (x)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   decrement by 1~/
 
@@ -10844,7 +10802,7 @@
 #+acl2-loop-only
 (defmacro remove (x l &key (test ''eql))
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   remove all occurrences~/
   ~bv[]
@@ -10938,7 +10896,7 @@
 
 (defmacro remove1 (x l &key (test ''eql))
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   remove first occurrences, testing using ~ilc[eql]~/
   ~bv[]
@@ -10991,7 +10949,7 @@
 
 (deflabel pairlis
   :doc
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ~l[pairlis$]~/
 
@@ -11004,7 +10962,7 @@
 ; CLTL allows its pairlis to construct an alist in any order!  So we
 ; have to give this function a different name.
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   zipper together two lists~/
 
@@ -11069,7 +11027,7 @@
 #+acl2-loop-only
 (defmacro remove-duplicates (x &key (test ''eql))
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   remove duplicates from a string or a list~/
   ~bv[]
@@ -11350,7 +11308,7 @@
   documentation string to be attached to any defined concept, Common
   Lisp assigns no interpretation to these strings.  ACL2 attaches
   special significance to documentation strings that begin with the
-  characters ``~c[:doc-section]''.  When such a documentation string is
+  characters ``~c[:Doc-Section]''.  When such a documentation string is
   seen, it is stored in the data base and may be displayed via ~c[:]~ilc[doc],
   ~c[:]~ilc[more], ~c[:]~ilc[docs], etc.  Such documentation strings must follow rigid
   syntactic rules to permit their processing by our commands.  These
@@ -11404,7 +11362,7 @@
 
 #+acl2-loop-only
 (defmacro first (x)
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   first member of the list~/
 
@@ -11413,7 +11371,7 @@
 
 #+acl2-loop-only
 (defmacro second (x)
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   second member of the list~/
 
@@ -11422,7 +11380,7 @@
 
 #+acl2-loop-only
 (defmacro third (x)
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   third member of the list~/
 
@@ -11431,7 +11389,7 @@
 
 #+acl2-loop-only
 (defmacro fourth (x)
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   fourth member of the list~/
 
@@ -11440,7 +11398,7 @@
 
 #+acl2-loop-only
 (defmacro fifth (x)
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   fifth member of the list~/
 
@@ -11449,7 +11407,7 @@
 
 #+acl2-loop-only
 (defmacro sixth (x)
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   sixth member of the list~/
 
@@ -11458,7 +11416,7 @@
 
 #+acl2-loop-only
 (defmacro seventh (x)
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   seventh member of the list~/
 
@@ -11467,7 +11425,7 @@
 
 #+acl2-loop-only
 (defmacro eighth (x)
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   eighth member of the list~/
 
@@ -11476,7 +11434,7 @@
 
 #+acl2-loop-only
 (defmacro ninth (x)
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   ninth member of the list~/
 
@@ -11485,7 +11443,7 @@
 
 #+acl2-loop-only
 (defmacro tenth (x)
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   tenth member of the list~/
 
@@ -11495,7 +11453,7 @@
 #+acl2-loop-only
 (defmacro rest (x)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   rest (~ilc[cdr]) of the list~/
 
@@ -11509,7 +11467,7 @@
 #+acl2-loop-only
 (defun identity (x) (declare (xargs :guard t))
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   the identity function~/
 
@@ -11523,7 +11481,7 @@
 #+acl2-loop-only
 (defun revappend (x y)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   concatentate the ~il[reverse] of one list to another~/
 
@@ -11568,7 +11526,7 @@
 #+acl2-loop-only
 (defun reverse (x)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   reverse a list or string~/
 
@@ -11645,7 +11603,7 @@
 
 (defmacro set-difference$ (l1 l2 &key (test ''eql))
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   elements of one list that are not elements of another~/
   ~bv[]
@@ -11703,7 +11661,7 @@
 #+acl2-loop-only
 (defun listp (x)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for (not necessarily proper) lists~/
 
@@ -11887,7 +11845,7 @@
 #+acl2-loop-only
 (defun last (l)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   the last ~ilc[cons] (not element) of a list~/
 
@@ -11924,7 +11882,7 @@
 
 (defun take (n l)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   initial segment of a list~/
 
@@ -11972,7 +11930,7 @@
 #+acl2-loop-only
 (defun butlast (lst n)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   all but a final segment of a list~/
 
@@ -12624,7 +12582,7 @@
 
 (defun pseudo-termp (x)
 
-  ":Doc-Section Miscellaneous
+  ":Doc-Section ACL2::ACL2-built-ins
 
   a predicate for recognizing term-like s-expressions~/
   ~bv[]
@@ -12784,7 +12742,7 @@
 
 (defmacro add-to-set (x lst &key (test ''eql))
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   add a symbol to a list~/
   ~bv[]
@@ -12847,7 +12805,7 @@
 
 (defun kwote (x)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   quote an arbitrary object~/
 
@@ -12862,7 +12820,7 @@
 
 (defun kwote-lst (lst)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   quote an arbitrary true list of objects~/
 
@@ -13064,7 +13022,7 @@
 
 (defmacro intersectp (x y &key (test ''eql))
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   test whether two lists intersect~/
   ~bv[]
@@ -13189,7 +13147,7 @@
 
 ; Keep in sync with er-progn@par.
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   perform a sequence of state-changing ``error triples''~/
 
@@ -13212,8 +13170,27 @@
   there is no such form, then the last form returns the value of the
   ~c[er-progn] form.
 
-  We intend to write more about this topic, especially if there are
-  requests to do so.~/"
+  ~bv[]
+  General Form:
+  (er-progn <expr1> ... <exprk>)
+  ~ev[]
+  where each ~c[<expri>] is an expression that evaluates to an error triple
+  (~pl[programming-with-state]).  The above form is essentially equivalent to
+  the following (``essentially'' because in fact, care is taken to avoid
+  variable capture).
+  ~bv[]
+  (mv-let (erp val state)
+          <expr1>
+          (cond (erp (mv erp val state))
+                (t (mv-let (erp val state)
+                           <expr2>
+                           (cond (erp (mv erp val state))
+                                 (t ...
+                                        (mv-let (erp val state)
+                                                <expr{k-1}>
+                                                (cond (erp (mv erp val state))
+                                                      (t <exprk>)))))))))
+  ~ev[]~/"
 
   (declare (xargs :guard (and (true-listp lst)
                               lst)))
@@ -13247,7 +13224,7 @@
 
 ; Keep in sync with er-progn.
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   State-free version of ~ilc[er-progn].~/
 
@@ -13309,7 +13286,7 @@
 #+acl2-loop-only
 (defmacro case (&rest l)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   conditional based on if-then-else using ~ilc[eql]~/
   ~bv[]
@@ -13490,7 +13467,7 @@
 #+acl2-loop-only
 (defmacro position (x seq &key (test ''eql))
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   position of an item in a string or a list~/
   ~bv[]
@@ -13544,7 +13521,7 @@
 
 (defun nonnegative-integer-quotient (i j)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   natural number division function~/
   ~bv[]
@@ -13579,7 +13556,7 @@
 
 (defun true-list-listp (x)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for true (proper) lists of true lists~/
 
@@ -13742,7 +13719,7 @@
 #+acl2-loop-only
 (defmacro let* (&whole form bindings &rest decl-body)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   binding of lexically scoped (local) variables~/
   ~bv[]
@@ -13926,7 +13903,7 @@
 
 (defun floor (i j)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   division returning an integer by truncating toward negative infinity~/
   ~bv[]
@@ -13985,7 +13962,7 @@
 
 (defun ceiling (i j)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   division returning an integer by truncating toward positive infinity~/
   ~bv[]
@@ -14043,7 +14020,7 @@
 
 (defun truncate (i j)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   division returning an integer by truncating toward 0~/
   ~bv[]
@@ -14106,7 +14083,7 @@
 
 (defun round (i j)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   division returning an integer by rounding off~/
   ~bv[]
@@ -14178,7 +14155,7 @@
 
 (defun mod (x y)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   remainder using ~ilc[floor]~/
   ~bv[]
@@ -14212,7 +14189,7 @@
 
 (defun rem (x y)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   remainder using ~ilc[truncate]~/
   ~bv[]
@@ -14246,7 +14223,7 @@
 
 (defun evenp (x)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   test whether an integer is even~/
 
@@ -14266,7 +14243,7 @@
 
 (defun oddp (x)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   test whether an integer is odd~/
 
@@ -14287,7 +14264,7 @@
   (declare (xargs :mode :logic
                   :guard (acl2-numberp x)))
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   test an acl2-number against 0~/
 
@@ -14314,7 +14291,7 @@
 
 (defun plusp (x)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   test whether a number is positive~/
 
@@ -14336,7 +14313,7 @@
 
 (defun minusp (x)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   test whether a number is negative~/
 
@@ -14358,7 +14335,7 @@
 
 (defun min (x y)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   the smaller of two numbers~/
 
@@ -14382,7 +14359,7 @@
 
 (defun max (x y)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   the larger of two numbers~/
 
@@ -14408,7 +14385,7 @@
 
 (defun abs (x)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   the absolute value of a real number~/
 
@@ -14433,7 +14410,7 @@
 
 (defun signum (x)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   indicator for positive, negative, or zero~/
 
@@ -14470,7 +14447,7 @@
 
 (defun lognot (i)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   bitwise not of a two's complement number~/
 
@@ -14691,7 +14668,7 @@
 
 (defun expt (r i)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   exponential function~/
 
@@ -14723,7 +14700,7 @@
 
 (defun logcount (x)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   number of ``on'' bits in a two's complement number~/
 
@@ -14750,7 +14727,7 @@
 
 (defun nthcdr (n l)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   final segment of a list~/
 
@@ -14785,13 +14762,13 @@
 
 (defun logbitp (i j)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   the ~c[i]th bit of an integer~/
 
-  For a nonnegative integer ~c[i] and an integer ~c[j], ~c[(logbitp i j)]
-  is the value of the ~c[i]th bit in the two's complement
-  representation of ~c[j].~/
+  For a nonnegative integer ~c[i] and an integer ~c[j], ~c[(logbitp i j)] is a
+  Boolean, which is ~c[t] if and only if the value of the ~c[i]th bit is ~c[1]
+  in the two's complement representation of ~c[j].~/
 
   ~c[(Logbitp i j)] has a ~il[guard] that ~c[i] is a nonnegative integer and
   ~c[j] is an integer.
@@ -14809,7 +14786,7 @@
 
 (defun ash (i c)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   arithmetic shift operation~/
 
@@ -14860,7 +14837,7 @@
 
 (deflabel characters
   :doc
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   characters in ACL2~/
 
@@ -14952,7 +14929,7 @@
 #+acl2-loop-only
 (defun char< (x y)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   less-than test for ~il[characters]~/
 
@@ -14972,7 +14949,7 @@
 #+acl2-loop-only
 (defun char> (x y)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   greater-than test for ~il[characters]~/
 
@@ -14992,7 +14969,7 @@
 #+acl2-loop-only
 (defun char<= (x y)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   less-than-or-equal test for ~il[characters]~/
 
@@ -15012,7 +14989,7 @@
 #+acl2-loop-only
 (defun char>= (x y)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   greater-than-or-equal test for ~il[characters]~/
 
@@ -15045,7 +15022,7 @@
 #+acl2-loop-only
 (defun string< (str1 str2)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   less-than test for strings~/
 
@@ -15082,7 +15059,7 @@
 #+acl2-loop-only
 (defun string> (str1 str2)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   greater-than test for strings~/
 
@@ -15103,7 +15080,7 @@
 #+acl2-loop-only
 (defun string<= (str1 str2)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   less-than-or-equal test for strings~/
 
@@ -15129,7 +15106,7 @@
 #+acl2-loop-only
 (defun string>= (str1 str2)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   less-than-or-equal test for strings~/
 
@@ -15154,7 +15131,7 @@
 
 (defun symbol-< (x y)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   less-than test for symbols~/
 
@@ -15200,7 +15177,7 @@
 #+acl2-loop-only
 (defun substitute (new old seq)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   substitute into a string or a list, using ~ilc[eql] as test~/
 
@@ -15236,7 +15213,7 @@
 #+acl2-loop-only
 (defun sublis (alist tree)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   substitute an alist into a tree~/
 
@@ -15266,7 +15243,7 @@
 #+acl2-loop-only
 (defun subst (new old tree)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   a single substitution into a tree~/
 
@@ -15293,7 +15270,7 @@
 
 ; Keep in sync with pprogn@par.
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   evaluate a sequence of forms that return ~il[state]~/
   ~bv[]
@@ -15354,7 +15331,7 @@
 
 (defmacro progn$ (&rest rst)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   execute a sequence of forms and return the value of the last one~/
 
@@ -17955,7 +17932,7 @@
   ~ev[]
   where ~c[term] is a term that when evaluated will produce a theory
   (~pl[theories]), and ~ilc[doc-string] is an optional ~il[documentation]
-  string not beginning with ``~c[:doc-section] ...''.  Except for the
+  string not beginning with ``~c[:Doc-Section] ...''.  Except for the
   variable ~ilc[world], ~c[term] must contain no free variables.  ~c[Term] is
   evaluated with the variable ~ilc[world] bound to the current ~il[world] to
   obtain a theory and the corresponding runic theory
@@ -18013,7 +17990,7 @@
   ~ev[]
   where ~c[term] is a term that when evaluated will produce a theory
   (~pl[theories]), and ~ilc[doc-string] is an optional ~il[documentation]
-  string not beginning with ``~c[:doc-section] ...''.  Except for the
+  string not beginning with ``~c[:Doc-Section] ...''.  Except for the
   variable ~ilc[world], ~c[term] must contain no free variables.  ~c[Term] is
   evaluated with the variable ~ilc[world] bound to the current ~il[world] to
   obtain a theory and the corresponding runic theory
@@ -18067,7 +18044,7 @@
   (regenerate-tau-data-base :doc doc-string)
   ~ev[]
   where ~ilc[doc-string] is an optional ~il[documentation] string not beginning
-  with ``~c[:doc-section] ...''.
+  with ``~c[:Doc-Section] ...''.
 
   The tau data base is regenerated by scanning the current logical world and
   re-processing every event in it relative to the current enabled theory and
@@ -18111,7 +18088,7 @@
   where ~c[name{s}] is a non-~c[nil] symbol or a non-~c[nil] true list of
   symbols, ~c[fn-p] is any value (but generally ~c[nil] or ~c[t]), and
   ~ilc[doc-string] is an optional ~il[documentation] string not
-  beginning with ``~c[:doc-section] ...''.  If ~c[name{s}] is a symbol it
+  beginning with ``~c[:Doc-Section] ...''.  If ~c[name{s}] is a symbol it
   is treated as the singleton list containing that symbol.  The effect
   of this event is to union the given symbols into the list of
   ``untouchable variables'' in the current world if ~c[fn-p] is
@@ -18196,7 +18173,7 @@
       (progn! ,@forms)))
   ~ev[]
   An equivalent version, which however is not recommended since
-  ~c[state-global-let*] may have surprising behavior in raw Lisp, is as
+  ~ilc[state-global-let*] may have surprising behavior in raw Lisp, is as
   follows.
   ~bv[]
   (defmacro with-all-touchable (&rest forms)
@@ -18222,7 +18199,7 @@
   where ~c[name{s}] is a non-~c[nil] symbol or a non-~c[nil] true list of symbols,
   ~c[fn-p] is any value (but generally ~c[nil] or ~c[t]), and ~ilc[doc-string]
   is an optional ~il[documentation] string not beginning with
-  ``~c[:doc-section] ...''.  If ~c[name{s}] is a symbol it is treated as the
+  ``~c[:Doc-Section] ...''.  If ~c[name{s}] is a symbol it is treated as the
   singleton list containing that symbol.  The effect of this event is to remove
   the given symbols from the list of ``untouchable variables'' in the current
   world if ~c[fn-p] is ~c[nil], else to remove the symbols into the list of
@@ -18313,11 +18290,11 @@
   table, ~c[key-term] and ~c[value-term], if present, are arbitrary terms
   involving (at most) the single variable ~ilc[world], ~c[op], if present, is
   one of the table operations below, and ~c[term], if present, is a term.
-  ~c[Table] returns an acl2 ``error triple.'' The effect of ~c[table] on ~ilc[state]
-  depends on ~c[op] and how many arguments are presented.  Some
-  invocations actually have no effect on the ACL2 ~il[world] and hence an
-  invocation of ~c[table] is not always an ``event''.  We explain below,
-  after giving some background information.
+  ~c[Table] returns an ACL2 ``error triple'' (~pl[programming-with-state]).
+  The effect of ~c[table] on ~ilc[state] depends on ~c[op] and how many
+  arguments are presented.  Some invocations actually have no effect on the
+  ACL2 ~il[world] and hence an invocation of ~c[table] is not always an
+  ``event''.  We explain below, after giving some background information.
 
   ~b[Important Note:] The ~c[table] forms above are calls of a macro that
   expand to involve the special variable ~ilc[state].  This will prevent you
@@ -19013,6 +18990,9 @@
   examples, the explanations here should suffice for most users.  If you want
   explanations of subtler details, ~pl[make-event-details].
 
+  Note that ~c[make-event] may only be used at the ``top level'' or where an
+  event is expected.  See the section ``Restriction to Event Contexts'', below.
+
   ~c[Make-event] is related to Lisp macroexpansion in the sense that its
   argument is evaluated to obtain an expansion result, which is evaluated
   again.  Let us elaborate on each of these notions in turn: ``is evaluated,''
@@ -19140,11 +19120,12 @@
   ~c[\"~~@0\"] with ~c[#\\0] bound to that ~c[cons] pair; ~pl[fmt].  Any other
   non-~c[nil] value of ~c[erp] causes a generic error message to be printed.
 
-  ~st[Restriction to the Top Level.]
+  ~st[Restriction to Event Contexts.]
 
-  Every form enclosing a ~c[make-event] call must be an embedded event form
-  (~pl[embedded-event-form]).  This restriction enables ACL2 to track
-  expansions produced by ~c[make-event].  For example:
+  A ~c[make-event] call must occur either at the top level or as an argument of
+  an event constructor, as explained in more detail below.  This restriction is
+  imposed to enable ACL2 to track expansions produced by ~c[make-event].  The
+  following examples illustrate this restriction.
   ~bv[]
   ; Legal:
   (progn (with-output
@@ -19156,9 +19137,48 @@
           (make-event '(defun foo (x) x))
           (mv erp val state))
   ~ev[]
+
+  More precisely: after macroexpansion has taken place, a ~c[make-event] call
+  must be in an ``event context'', defined recursively as follows.  (All but
+  the first two cases below correspond to similar cases for constructing
+  events; ~pl[embedded-event-form].)
+  ~bq[]
+
+  o A form submitted at the top level, or more generally, supplied to a call of
+  ~ilc[ld], is in an event context.
+
+  o A form occurring at the top level of a book is in an event context.
+
+  o If ~c[(]~ilc[LOCAL]~c[ x1)] is in an event context, then so is ~c[x1].
+
+  o If ~c[(]~ilc[SKIP-PROOFS]~c[ x1)] is in an event context, then so is
+  ~c[x1].
+
+  o If ~c[(]~ilc[MAKE-EVENT]~c[ x ...)] is in an event context and its
+  expansion ~c[x1] is an embedded event form, then ~c[x1] is in an event
+  context.
+
+  o If ~c[(]~ilc[WITH-OUTPUT]~c[ ... x1)],
+  ~c[(]~ilc[WITH-PROVER-STEP-LIMIT]~c[ ... x1 ...)], or
+  ~c[(]~ilc[WITH-PROVER-TIME-LIMIT]~c[ ... x1)] is in an event context, then so
+  is ~c[x1].
+
+  o Given a call of ~ilc[PROGN] or ~ilc[PROGN!] in an event context, each of its
+  arguments is in an event context.
+
+  o Given a call of ~ilc[ENCAPSULATE] in an event context, each of its
+  arguments except the first (the signature list) is in an event context.
+
+  o If ~c[(RECORD-EXPANSION x1 x2)] is in an event context, then ~c[x1] and
+  ~c[x2] are in event contexts.  Note: ~c[record-expansion] is intended for use
+  only by the implementation, which imposes the additional restriction that
+  ~c[x1] and its subsidiary ~c[make-event] calls (if any) must specify a
+  ~c[:check-expansion] argument that is a ~il[consp].
+  ~eq[]
+
   Low-level remark, for system implementors.  There is the one exception to
-  this restriction: a single ~c[state-global-let*] form immediately under a
-  ~c[progn!] call.  For example:
+  the above restriction: a single ~ilc[state-global-let*] form immediately
+  under a ~c[progn!] call.  For example:
   ~bv[]
   (progn! (state-global-let* <bindings> (make-event ...)))
   ~ev[]
@@ -19467,7 +19487,7 @@
   provided, that certification will fail.~/")
 
 (defdoc using-tables-efficiently
- ":doc-section Table
+ ":Doc-Section Table
 
   Notes on how to use tables efficiently~/
 
@@ -21028,7 +21048,7 @@
   :rule-classes :forward-chaining)
 
 (defdoc getprop
-  ":Doc-Section Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   access fast property lists~/
 
@@ -21045,7 +21065,7 @@
 
 (defun putprop (symb key value world-alist)
 
-  ":Doc-Section Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   update fast property lists~/
 
@@ -21421,7 +21441,7 @@
 
 (defmacro delete-assoc (key alist &key (test ''eql))
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   modify an association list by associating a value with a key~/
   ~bv[]
@@ -22085,7 +22105,7 @@
 
 (deflabel type-spec
   :doc
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section declare
 
   type specifiers in declarations~/
   ~bv[]
@@ -22221,7 +22241,7 @@
 #+acl2-loop-only
 (defmacro the (x y)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   run-time type check~/
 
@@ -22580,7 +22600,7 @@
 
 (defun keyword-value-listp (l)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for true lists whose even-position elements are keywords~/
 
@@ -22603,7 +22623,7 @@
 
 (defun assoc-keyword (key l)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   look up key in a ~ilc[keyword-value-listp]~/
 
@@ -22649,6 +22669,35 @@
                  (:forward-chaining :trigger-terms ((assoc-equal name l)))))
 
 (defmacro f-get-global (x st)
+
+  ":Doc-Section ACL2::ACL2-built-ins
+
+  get the value of a global variable in ~ilc[state]~/
+  ~bv[]
+  Examples:
+  (+ (f-get-global 'y state) 1)
+  (f-put-global 'a
+                (aset1 'ascii-map-array
+                       (f-get-global 'a state) 
+                       66
+                       'Upper-case-B)
+                state)~/
+
+  General Form:
+  (f-get-global 'symbol state)
+  ~ev[]
+  where ~c[symbol] is any symbol to which you have ~ilc[assign]ed a global
+  value.
+
+  The macro ~ilc[@] is closely related to ~c[f-get-global]: ~c[(@ var)]
+  macroexpands to ~c[(f-get-global 'var state)].
+
+  The macro ~ilc[f-get-global] makes it convenient to set the value of a
+  symbol.  The ~c[:]~ilc[ubt] operation has no effect on the ~c[global-table]
+  of ~ilc[state].  Thus, you may use these globals to hang onto useful data
+  structures even though you may undo back past where you computed and saved
+  them.~/"
+
   #-acl2-loop-only
   (cond ((and (consp x)
               (eq 'quote (car x))
@@ -22694,7 +22743,7 @@
 
 (deflabel arrays
   :doc
-  ":Doc-Section Miscellaneous
+  ":Doc-Section ACL2::Programming
 
   an introduction to ACL2 arrays~/
 
@@ -24729,7 +24778,7 @@
 
 (defun mv-nth (n l)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   the mv-nth element (zero-based) of a list~/
 
@@ -24784,7 +24833,7 @@
 
 (defmacro mv (&rest l)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   returning a multiple value~/
 
@@ -24972,7 +25021,7 @@
 ; mv? and mv?-let to be used in cases that single-valued returns are to be
 ; allowed (presumably in generated code).
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   returning a single value~/
 
@@ -25006,7 +25055,7 @@
 ; Warning: If the final logical form of a translated mv-let is
 ; changed, be sure to reconsider translated-acl2-unwind-protectp.
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   calling multi-valued ACL2 functions~/
   ~bv[]
@@ -25159,7 +25208,7 @@
 ; See the comment in mv? for reasons why we do not simply extend mv-let to
 ; handle single values.
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   calling possibly multi-valued ACL2 functions~/
 
@@ -25212,7 +25261,7 @@
 #+acl2-loop-only
 (defun mv-list (input-arity x)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   converting multiple-valued result to a single-valued list~/
   ~bv[]
@@ -25265,9 +25314,12 @@
 
 (deflabel state
   :doc
-  ":Doc-Section Miscellaneous
+  ":Doc-Section ACL2::Programming
 
   the von Neumannesque ACL2 state object~/
+
+  Note: If you are interested in programming with state,
+  ~pl[programming-with-state] after reading the information below.~/
 
   The ACL2 state object is used extensively in programming the ACL2
   system, and has been used in other ACL2 programs as well.  However,
@@ -25296,7 +25348,7 @@
   object.  Using the interface functions ~c[@] and ~c[assign], a user
   may bind global variables to the results of function evaluations
   (much as an Nqthm user exploits the Nqthm utility ~c[r-loop]).
-  ~l[@], and ~pl[assign].~/
+  ~l[@], and ~pl[assign].
 
   ACL2 supports several facilities of a truly von Neumannesque state
   machine character, including file ~il[io] and global variables.
@@ -25427,11 +25479,484 @@
   Third, the documentation about state is not as complete as one might wish.
 
   User-defined single-threaded objects offer the speed of ~c[state] while
-  giving the user complete access to all the fields.  ~l[stobj].~/")
+  giving the user complete access to all the fields.  ~l[stobj].
+
+  Again, if you are interested in programming with state
+  ~pl[programming-with-state].~/
+
+  :cited-by Other")
+
+(defdoc programming-with-state
+  ":Doc-Section state
+
+  programming using the von Neumannesque ACL2 ~il[state] object~/
+
+  This ~il[documentation] section introduces some common techniques for
+  programming using the ACL2 state object.  A prerequisite is thus a basic
+  understanding of that object; ~pl[state].  We hope this section is useful,
+  and we invite suggestions for improvements and additions.
+
+  A supplement to this section is the ACL2 source code, which uses most (and
+  probably all) of the techniques discussed here.  That code is thus a source
+  of many examples, which can serve as ``templates'' to guide one's own
+  programming with state.
+
+  Recall that ``ACL2'' stands for ``A Computational Logic for Applicative
+  Common Lisp''.  In particular, the language is applicative: there are no
+  global variables or side effects.  For many purposes this does not feel
+  restrictive; for example, an ACL2 user who is programming in raw Lisp may
+  well be more comfortable coding a factorial function applicatively, using
+  recursion, rather than using iteration with repeated assignment to the same
+  variable.
+
+  However, there are situations that call for reading or modifying the system
+  state, such as performing input and output, signalling errors, saving
+  information from one computation for use in a later one, or reading and
+  updating system-level or environmental data.  This section provides an
+  introductory guide for writing functions that traffic in state.  We emphasize
+  that this guide is intended as an introduction; more complete documentation
+  may often be found by following links to documentation of individual
+  utilities, and again, more examples may be found by searching the ACL2 source
+  code for uses of the functions and macros mentioned below.  The rest of this
+  section is organized as follows.
+  ~bf[]
+  ~sc[Enabling programming with state]
+  ~sc[State globals]
+  ~sc[Errors and error triples]
+  ~sc[Sequential programming]
+  ~sc[Binding variables using error triples]
+  ~sc[Binding state global variables]
+  ~sc[Input and output]
+  ~sc[Timings]
+  ~sc[Environment and system]
+  ~sc[Remarks on events and LD]
+  ~sc[Advanced topics]
+  ~ef[]~/
+
+  ~sc[Enabling programming with state]
+
+  In order to submit a definition that takes ~ilc[state] as a formal parameter,
+  you must either declare ~c[state] as a ~c[:]~ilc[stobj] (~pl[xargs]) or first
+  evaluate the following form at the top level: ~c[(set-state-ok t)].
+
+  ~sc[State globals]
+
+  Recall (~pl[state]) that one of the fields of the ACL2 state object is the
+  global-table, which logically is an alist associating symbols, known as
+  ``state globals'' or ``state global variables'', with values.  But no such
+  alist actually exists in the implementation.  Instead, ACL2 provides
+  utilities for reading state globals ~-[] ~pl[@] and ~pl[f-get-global] ~-[]
+  and utilities for writing them ~-[] ~pl[assign] and ~pl[f-put-global].  The
+  following log shows how they work; further explanation follows below.
+  ~bv[]
+  ACL2 !>(assign my-var (+ 3 4))
+   7
+  ACL2 !>(@ my-var)
+  7
+  ACL2 !>(f-put-global 'my-var (+ 1 5) state)
+  <state>
+  ACL2 !>(f-get-global 'my-var state)
+  6
+  ACL2 !>
+  ~ev[]
+  Note that the first result is indented by one space.  This is ACL2's way to
+  indicate that the ~ilc[assign] expression returned an ``error triple'' and
+  that no error was signalled.  We discuss error triples in more detail below.
+
+  As illustrated above, the output signatures of the utilities for assigning to
+  state globals differ from each other as follows: ~ilc[f-put-global] returns
+  ~c[state], but ~ilc[assign] returns an error triple ~c[(mv nil val state)]
+  where ~c[val] is the value assigned to the state global.  The output
+  signatures of the utilities for reading, ~c[@] and ~c[f-get-global], are
+  identical.  In fact, the form ~c[(f-get-global 'my-var state)] is the
+  single-step macroexpansion of the form ~c[(@ my-var)], as can be confirmed
+  using ~ilc[trans1].
+  ~bv[]
+  ACL2 !>:trans1 (@ my-var)
+   (F-GET-GLOBAL 'MY-VAR STATE)
+  ACL2 !>
+  ~ev[]
+
+  State globals are useful for conveying persistent state information.
+  Consider for example the utility ~ilc[set-inhibit-output-lst].  The form
+  ~c[(set-inhibit-output-lst '(prove proof-tree))] is approximately equivalent
+  to (assign inhibit-output-lst '(prove proof-tree)).  We say ``approximately''
+  because ~c[set-inhibit-output-lst] additionally does some error checking to
+  insure that all the tokens in the new list are legal.  When deciding whether
+  to print output, the ACL2 system reads the value of state global variable
+  ~c[inhibit-output-lst].
+
+  ~sc[Errors and error triples]
+
+  When evaluation returns three values, where the first two are ordinary
+  objects and the third is the ACL2 state, the result may be called an ``error
+  triple''.  (Whether it is treated as an error triple depends on the
+  programmer.)  Error triples are often denoted ~c[(mv erp val state)], and
+  common ACL2 programming idioms treat ~c[erp] as a flag indicating whether an
+  error is being signalled and ~c[val] as the ``value'' computed.
+
+  Even ACL2 users who are not programmers encounter error triples, because
+  these are the values returned by evaluation of ACL2 ~il[events].  Consider
+  the following log, where the only user input is the ~c[defun] form
+  following the ~il[prompt].
+  ~bv[]
+  ACL2 !>(defun foo (x) x)
+
+  Since FOO is non-recursive, its admission is trivial.  We observe that
+  the type of FOO is described by the theorem (EQUAL (FOO X) X).  
+
+  Summary
+  Form:  ( DEFUN FOO ...)
+  Rules: NIL
+  Time:  0.00 seconds (prove: 0.00, print: 0.00, other: 0.00)
+   FOO
+  ACL2 !>
+  ~ev[]
+  All output above results from explicit calls of output functions, except for
+  the next-to-last line, which contains ~c[FOO].  Notice the single-space
+  indentation preceding ~c[FOO].  That space indicates that in fact, the value
+  returned by evaluation of the ~c[defun] form is the error triple whose error
+  flag is ~c[nil] and whose computed value is ~c[FOO].  By default, ACL2 prints
+  any error triple ~c[(mv nil val state)] by inserting a space before printing
+  ~c[val].  You can change the default by setting state global
+  ~ilc[ld-post-eval-print] to ~c[t]; notice how the same result is printed
+  below.
+  ~bv[]
+  ACL2 !>:u
+            0:x(EXIT-BOOT-STRAP-MODE)
+  ACL2 !>(set-ld-post-eval-print t state)
+  (NIL T <state>)
+  ACL2 !>(defun foo (x) x)
+
+  Since FOO is non-recursive, its admission is trivial.  We observe that
+  the type of FOO is described by the theorem (EQUAL (FOO X) X).  
+
+  Summary
+  Form:  ( DEFUN FOO ...)
+  Rules: NIL
+  Time:  0.00 seconds (prove: 0.00, print: 0.00, other: 0.00)
+  (NIL FOO <state>)
+  ACL2 !>
+  ~ev[]
+
+  The way error triples are printed by ~c[ld] is controlled not only by state
+  global ~c[ld-post-eval-print], but also by state global ~c[ld-error-triples].
+  These are examples of ``ld specials''; ~pl[ld], ~pl[ld-post-eval-print], and
+  ~pl[ld-error-triples].
+
+  It is so common to produce an error triple whose first (error flag) component
+  is ~c[nil] that ACL2 provides a handy macro, ~c[value], for this purpose.
+  Thus, ~c[(value <expression>)] is equivalent to
+  ~c[(mv nil <expression> state)].  Also ~pl[value-triple] for a similar
+  construct that is a legal event form.
+
+  We turn now to the topic of errors.  The macro ~ilc[ER] ``causes'' an error,
+  but there are really two quite different kinds of errors: ``soft'' and
+  ``hard'' errors.  We use the term ``soft error'' to refer to a form that
+  returns an error triple ~c[(mv erp val state)] for which ~c[erp] is
+  non-~c[nil].  Soft errors do not interrupt the normal flow of evaluation: the
+  error triple is returned to the caller which interprets the ~c[erp] flag and
+  ~c[val] as directed by the programmer.  Macros discussed below make it
+  convenient to think about soft errors as short-circuiting the computation.
+  Hard errors, on the other hand, do actually rip control away from the current
+  evaluation and return it to the top-level loop.  Logically speaking,
+  expressions that cause hard errors return ~c[nil] in the error case, but the
+  ~c[nil] is never seen in actual evaluation because control does not return to
+  the caller.
+
+  Note that the function ~ilc[abort!], which you can invoke by typing
+  ~c[:]~ilc[a!], always returns to the top level.  Note that ACL2 can
+  prove that ~c[(abort!)] returns ~c[nil] but that this cannot be confirmed
+  by computation.
+  ~bv[]
+  ACL2 !>(thm (equal (abort!) nil))
+
+  Q.E.D.
+
+  Summary
+  Form:  ( THM ...)
+  Rules: ((:FAKE-RUNE-FOR-TYPE-SET NIL)
+          (:TYPE-PRESCRIPTION ABORT!))
+  Time:  0.00 seconds (prove: 0.00, print: 0.00, other: 0.00)
+
+  Proof succeeded.
+  ACL2 !>(equal (abort!) nil)
+  Abort to ACL2 top-level
+  ...
+  ACL2 !>
+  ~ev[]
+
+  (What actually happens with a hard error, including non-default cases, is a
+  bit subtle; most readers will probably want to skip this paragraph.  The
+  read-eval-print loop implemented by ~ilc[ld] is implemented by a call of the
+  ACL2 evaluator function, ~c[trans-eval], on each input form.  If a hard
+  error occurs during evaluation of an input form, its ~c[trans-eval] call will
+  return with a soft error.  ~ilc[Ld], in turn handles that soft error
+  appropriately; ~pl[ld-error-action].)
+
+  The most common way to signal errors is the macro ~ilc[er], which prints a
+  formatted error message and returns a soft or hard error as specified by the
+  call.  Note however that soft errors are signalled using ~c[:]~ilc[program]
+  mode functions.
+
+  Since the output signatures of soft and hard errors are different ~-[] hard
+  errors ``return'' a single value while soft errors return a triple ~-[]
+  mixing them in an expression requires embedding the hard error form in (an
+  irrelevant) triple, as illustrated below.  All branches of the expression
+  must produce an error triple if any branch does.
+  ~bv[]
+  ACL2 !>(defun chk-find-or-abort (e x state)
+           (declare (xargs :mode :program))
+           (if (endp x)
+               (value                          ; Note use of VALUE!
+                 (er hard 'chk-find-or-abort
+                     \"Did not find ~~x0!\"
+                      e))
+               (if (not (integerp (car x)))
+                   (er soft 'chk-find-or-abort
+                       \"Non-integer, ~~x0, in list!\"
+                       (car x))
+                   (if (eql (car x) e)
+                       (value x)
+                       (chk-find-or-abort e (cdr x) state)))))
+
+  Summary
+  Form:  ( DEFUN CHK-FIND-OR-ABORT ...)
+  Rules: NIL
+  Time:  0.00 seconds (prove: 0.00, print: 0.00, other: 0.00)
+   CHK-FIND-OR-ABORT
+  ACL2 !>(chk-find-or-abort 3 '(1 2 3 4 5) state)
+   (3 4 5)
+  ACL2 !>(chk-find-or-abort 3 '(1 A 3 4 5) state)
+
+
+  ACL2 Error in CHK-FIND-OR-ABORT:  Non-integer, A, in list!
+
+  ACL2 !>(chk-find-or-abort 3 '(1 2 4 5) state)
+
+  HARD ACL2 ERROR in CHK-FIND-OR-ABORT:  Did not find 3!
+  ...
+  ACL2 !>
+  ~ev[]
+
+  ~l[er] for further discussion of errors.  For some other individual topics
+  related to errors ~pl[assert$], ~pl[break-on-error], ~pl[error1],
+  ~pl[hard-error], ~pl[illegal], and ~pl[ld-error-triples].
+
+  In the next section we discuss soft errors further, in the context of
+  programming.
+
+  ~sc[Sequential programming]
+
+  This section describes handy ways to modify state in steps, using macros that
+  implement a sequence of ~ilc[let] or ~ilc[mv-let] bindings.  For example,
+  suppose you want to assign the values 1 and 2 to two state globals
+  ~c[one-var] and ~c[two-var], respectively.  Because of ACL2's syntactic
+  restrictions on ~ilc[state], it is not legal simply to write
+  ~c[(f-put-global 'two-var 2 (f-put-global 'one-var 1 state))].  However,
+  ~ilc[let] comes to the rescue as follows.
+  ~bv[]
+  (let ((state (f-put-global 'one-var 1 state)))
+    (let ((state (f-put-global 'two-var 2 state)))
+      state))
+  ~ev[]
+  It is so common to bind state successively in such a manner that ACL2
+  provides a macro, ~ilc[pprogn], for this purpose.  Thus, an equivalent
+  solution to the problem above is
+  ~bv[]
+  (pprogn (f-put-global 'one-var 1 state)
+          (f-put-global 'two-var 2 state)
+          state)
+  ~ev[]
+  or, more simply, as follows.
+  ~bv[]
+  (pprogn (f-put-global 'one-var 1 state)
+          (f-put-global 'two-var 2 state))
+  ~ev[]
+  ~l[pprogn].  Note that the last form is allowed to return multiple values;
+  the only requirement on the last form is that its value include ~c[state].
+
+  It is also common to update the state using a sequence of forms such that
+  each returns an error triple, where the intention is for evaluation to
+  short-circuit immediately if a soft error is encountered.  Suppose
+  ~c[<expr1>] and ~c[<expr2>] are expressions that return error triples, where
+  the ~c[state] components of the error triples might be updated, and one
+  wishes to evaluate ~c[<expr1>] and then ~c[<expr2>], returning the (multiple)
+  values returned by ~c[<expr2>] unless the error triple returned by
+  ~c[<expr1>] is a soft error, in which case that error triple is returned.
+  One can of course do so as follows.
+  ~bv[]
+  (mv-let (erp val state)
+          <expr1>
+          (cond (erp (mv erp val state))
+                (t <expr2>)))
+  ~ev[]
+  But ACL2 provides a handy macro, ~ilc[er-progn], for this purpose.  The
+  following code is equivalent to the code just above.
+  ~bv[]
+  (er-progn <expr1> <expr2>)
+  ~ev[]
+  ~l[er-progn] for more details.  Note that unlike ~ilc[pprogn], the return
+  ~il[signature] for the last expression must be the same as that of the
+  others: an error triple.
+
+  Let's consider how to use ~c[pprogn] and ~c[er-progn] together.  In the
+  following example ~c[f1] and ~c[f2] both return ~c[state], while each of
+  ~c[g1] and ~c[g2] returns an error triple.  The following code modifies state
+  by executing these in the order ~c[f1], ~c[g1], ~c[f2], and finally ~c[g2],
+  returning ~c[(mv nil val state)] where ~c[val] is the value component of the
+  error triple returned by ~c[g2] ~-[] except we return a soft error if ~c[g1]
+  or ~c[g2] returns a soft error.
+  ~bv[]
+  (pprogn (f1 x state)
+          (er-progn (g1 x state)
+                    (pprogn (f2 x state)
+                            (g2 x state))))
+  ~ev[]
+
+  Finally, consider the ~il[events] ~ilc[progn] and ~ilc[progn!].  These have
+  similar behavior to that of ~ilc[er-progn].  However, ~ilc[progn] and
+  ~ilc[progn!] may only be used in event contexts, for example at the top level
+  or immediately underneath a call of ~ilc[encapsulate] or ~ilc[progn], while
+  ~ilc[er-progn] has no such restriction.  So when writing code, use
+  ~c[er-progn] rather than ~ilc[progn] or ~ilc[progn!].  In particular, the
+  body of a ~ilc[defun] must not have any calls of ~c[progn] (or of ~c[progn!]
+  either), and the same restriction holds for any code to be executed, such as
+  the body of a ~ilc[make-event] form.
+
+  ~sc[Binding variables using error triples]
+
+  In this section we discuss the macro ~c[er-let*], which is a variant of the
+  special form, ~ilc[let*], that is useful when programming with state.
+
+  The macro ~c[er-let*] is useful when binding variables to the value
+  components of error triples.  It is actually quite similar to ~c[er-progn],
+  described above, except that ~c[er-let*] binds variables.  First consider the
+  following example.
+  ~bv[]
+  (er-let* ((x1 (f1 state))
+            (x2 (f2 x1 state)))
+    (value (cons x1 x2)))
+  ~ev[]
+  The code just above is essentially equivalent to writing the following.
+  ~bv[]
+  (mv-let (erp x1 state)
+          (f1 state)
+          (cond (erp (mv erp x1 state))
+                (t (mv-let (erp x2 state)
+                           (f2 x1 state)
+                           (cond (erp (mv erp x2 state))
+                                 (t (value (cons x1 x2))))))))
+  ~ev[]
+
+  As suggested by the example above, ~c[er-let*] has the same syntax as
+  ~c[let*], except that declarations are not supported.  (But note that
+  ~c[ignore] declarations are not needed; all variables that are bound are also
+  used, at least in the error case.  Consider replacing ~c[(cons x1 x2)] by
+  ~c[nil] in the example displayed immediately above, and note that ~c[x1] and
+  ~c[x2] are still used.)  However, unlike ~c[let*], ~c[er-let*] requires that
+  for each binding ~c[(var expr)], the expression ~c[expr] must evaluate to an
+  error triple and, moreover, it requires that the second argument (the
+  ``body'') of ~c[er-let*] must evaluate to an error triple.  If one of the
+  variable expressions (e.g., the ~c[f1] and ~c[f2] calls above) signals an
+  error, its error triple is returned as the value of the ~c[er-let*].
+
+  Of course, soft errors can be ``caught'' by using ~ilc[mv-let] instead of
+  ~c[er-let*] and simply ignoring the error flag or, more generally, by
+  returning a non-erroneous error triple even if the error flag was on.
+
+  ~sc[Binding state global variables]
+
+  In this section we introduce a utility, ~ilc[state-global-let*], that is an
+  analogue of ~c[let*] for state global variables.  Consider the following
+  example.
+  ~bv[]
+  (state-global-let*
+   ((inhibit-output-lst (add-to-set-eq 'summary (@ inhibit-output-lst))))
+   (thm (equal x x)))
+  ~ev[]
+  This form binds state global variable ~c[inhibit-output-lst] to the result of
+  adding the symbol, ~c[summary], to the current value of that state global.
+  Thus (~pl[set-inhibit-output-lst]), the usual summary is not printed when
+  evaluating this call of ~ilc[thm].
+
+  ~l[state-global-let*] for more complete ~il[documentation].
+
+  ~sc[Input and output]
+
+  In ACL2, most input and output involves the ACL2 state.  ~l[io].
+
+  ~sc[Timings]
+
+  For how to obtain the runtime elapsed since the start of the ACL2 session,
+  ~pl[read-run-time].
+
+  For a utility for saving times into the ACL2 state and for printing those
+  saved times, see the distributed book ~c[misc/save-time.lisp].
+
+  To time an evaluation (though this really isn't about state), ~pl[time$].
+
+  ~sc[Environment and system]
+
+  Next, we mention briefly some ways in which ACL2 interacts with its
+  environment using the ACL2 state.
+
+  For how to read and write environment variables, ~pl[getenv$] and
+  ~pl[setenv$].
+
+  For how to run a command in the host operating system, ~pl[sys-call].
+
+  ~sc[Remarks on events and LD]
+
+  In general, undefined or surprising behavior may occur when using ACL2
+  ~il[events] or calling ~il[ld] in your programs.  In some cases ACL2 enforces
+  restrictions against these uses.  We strongly discourage using ~ilc[ld] in
+  programs, as it has been designed to be called only at the top level of a
+  read-eval-print loop.
+
+  There is also a restriction on contexts in which ~ilc[make-event] may be
+  called: it may only be called in a context where an event is expected, such
+  as the top level, in a book, or as an argument of ~ilc[encapsulate] or
+  ~ilc[progn].  The reason is that ACL2 does very subtle and careful tracking
+  of ~ilc[make-event] expansions; and it is only able to do this in event
+  contexts, where it is able to carry out such tracking accurately.
+
+  ~sc[Advanced topics]
+
+  ACL2 provides the function ~c[trans-eval] to evaluate an arbitrary form
+  (after translating it to a ~il[term], i.e., into internal form).  For more
+  information, we refer to reader to comments in the definition of
+  ~c[trans-eval] in the ACL2 source code.  There are also many examples of its
+  use in the ACL2 sources.
+
+  For a function that provides the true absolute filename, with soft links
+  resolved, ~pl[canonical-pathname].
+
+  For a function that returns a check-sum on the characters in a channel,
+  ~pl[check-sum].
+
+  To obtain a random number, ~pl[random$].
+
+  If you are programming in raw-mode (~pl[set-raw-mode]) or in raw Lisp, use
+  the variable ~c[*the-live-state*] in place of the variable ~c[state].
+
+  We invite suggestions for additional advanced topics.~/")
+
+(defdoc error-triples
+  ":Doc-Section state
+
+  a common ACL2 programming idiom~/
+
+  When evaluation returns three values, where the first two are ordinary
+  objects and the third is the ACL2 ~il[state], the result may be called an
+  ``error triple''.  If an error triple is ~c[(mv erp val state)], we think of
+  ~c[erp] as an error flag and ~c[val] as the returned value.
+  ~l[programming-with-state] for a discussion of error triples and how to
+  program with them.~/~/")
 
 (defun update-nth (key val l)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   modify a list by putting the given value at the given position~/
 
@@ -25502,7 +26027,7 @@
 
 (defun rational-listp (l)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for a true list of rational numbers~/
 
@@ -25551,7 +26076,7 @@
 
 (defun integer-listp (l)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for a true list of integers~/
 
@@ -25922,6 +26447,7 @@
     flush-compress ; SETF [may be critical for correctness]
     alphorder ; [bad atoms]
     extend-world ; EXTEND-WORLD1
+    default-total-parallelism-work-limit ; for #+acl2-par (raw Lisp error)
 
 ; The following have arguments of state-state, and hence some may not be of
 ; concern since presumably users cannot define these redundantly anyhow.  But
@@ -26142,7 +26668,7 @@
 ; call would expand to the identity; if not, it would bind state to
 ; *the-live-state*.  But we found no way in Common Lisp to do that.
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   allow a reference to ~c[state] in raw Lisp~/
 
@@ -26219,6 +26745,137 @@
 ; bounds using set-iprint.
 (defconst *iprint-soft-bound-default* 1000)
 (defconst *iprint-hard-bound-default* 10000)
+
+(defdoc parallelism
+
+; This is in axioms.lisp instead of parallel.lisp in order to support the :doc
+; string for default-total-parallelism-work-limit.
+
+  ":Doc-Section Parallelism
+
+  experimental extension for parallel execution and proofs~/
+
+  This documentation topic relates to an experimental extension of ACL2,
+  ACL2(p), created initially by David L. Rager.  ~l[compiling-acl2p] for how to
+  build an executable image that supports parallel execution.  Also see
+  ~c[books/parallel] for examples.  For a completely different sort of
+  parallelism, at the system level, ~pl[provisional-certification].
+
+  IMPORTANT NOTE.  We hope and expect that every evaluation result is correctly
+  computed by ACL2(p), and that every formula proved using ACL2(p) is a theorem
+  of the ACL2 logic (and in fact is provable using ACL2).  However, we do not
+  guarantee these properties.  Since ACL2(p) is intended to be an aid in
+  efficient evaluation and proof development, we focus less on ironclad
+  soundness and more on providing an efficient and working implementation.
+  Nevertheless, if you encounter a case where ACL2(p) computes an incorrect
+  result, or produces a proof where ACL2 fails to do so (and this failure is
+  not discussed in ~il[unsupported-waterfall-parallelism-features]), please
+  notify the implementors.
+
+  One of ACL2's strengths lies in its ability to execute industrial models
+  efficiently.  The ACL2 source code provides an experimental parallel
+  execution capability that can increase the speed of explicit evaluation,
+  including simulator runs using such models, and it can also decrease the time
+  required for proofs that make heavy use of the evaluation of ground terms.
+
+  The parallelism primitives are ~ilc[plet], ~ilc[pargs], ~ilc[pand],
+  ~ilc[por], and ~ilc[spec-mv-let].  ~ilc[Pand] and ~ilc[por] terminate early
+  when an argument is found to evaluate to ~c[nil] or non-~c[nil],
+  respectively, thus potentially improving on the efficiency of lazy
+  evaluation.  ~ilc[Spec-mv-let] is a modification of ~ilc[mv-let] that
+  supports speculative and parallel execution.~/
+
+  Of the above five parallelism primitives, all but ~ilc[spec-mv-let] allow for
+  limiting parallel execution (spawning of so-called ``threads'') depending on
+  resource availability.  Specifically, the primitives allow specification of a
+  size condition to control the ~il[granularity] under which threads are
+  allowed to spawn.  You can use such ~il[granularity] declarations in
+  recursively-defined functions to implement data-dependent parallelism in
+  their execution.
+
+  We recommend that in order to learn to use the parallelism primitives, you
+  begin by reading examples: ~pl[parallelism-tutorial].  That section will
+  direct you to further documentation topics.
+
+  In addition to providing parallel programming primitives, ACL2(p) also
+  provides the ability to execute the main ACL2 proof process in parallel.
+  ~l[set-waterfall-parallelism] for further details.
+
+  While we aim to support Clozure Common Lisp (CCL), Steel Bank Common
+  Lisp (SBCL), and Lispworks, SBCL and Lispworks both currently sometimes
+  experience problems when evaluating the ACL2 proof process (the
+  ``waterfall'') in parallel.  Therefore, CCL is the recommend Lisp for anyone
+  that wants to use parallelism and isn't working on fixing those problems.")
+
+(defun default-total-parallelism-work-limit ()
+
+; The number of pieces of work in the system, *total-work-count* and
+; *total-future-count* (depending upon whether one is using the
+; plet/pargs/pand/por system or the spec-mv-let system [which is based upon
+; futures]), must be less than the ACL2 global total-parallelism-work-limit in
+; order to enable creation of new pieces of work or futures.  (However, if
+; total-parallelism-work-limit were set to 50, we could go from 49 to 69 pieces
+; of work when encountering a pand; just not from 50 to 52.)
+
+; Why limit the amount of work in the system?  :Doc parallelism-how-to
+; (subtopic "Another Granularity Issue Related to Thread Limitations") provides
+; an example showing how cdr recursion can rapidly create threads.  That
+; example shows that if there is no limit on the amount of work we may create,
+; then eventually, many successive cdrs starting at the top will correspond to
+; waiting threads.  If we do not limit the amount of work that can be created,
+; this can exhaust the supply of Lisp threads available to process the elements
+; of the list.
+
+  ":Doc-Section Parallelism
+  
+  for ACL2(p): returns the default value for global ~c[total-parallelism-work-limit]~/
+
+  ~l[set-total-parallelism-work-limit].~/~/"
+
+  (declare (xargs :guard t))
+  (let ((val
+
+; Warning: It is possible, in principle to create (+ val
+; *max-idle-thread-count*) threads.  You'll receive either a hard Lisp error,
+; segfault, or complete machine crash if your Lisp cannot create that many
+; threads.
+
+; We picked a new value of 400 on September 2011 to support Robert Krug's proof
+; that took ~9000 seconds in serial mode.  Initially, when
+; default-total-parallelism-work-limit returned 50, the parallelized proof only
+; saw an improvement to ~2200 seconds, but after changing the return value to
+; 400, the parallelized proof now takes ~1300 seconds.
+
+; After doing even more tests, we determined that a limit of 400 is still too
+; low (another one of Robert's proofs showed us this).  So, now that we have
+; the use-case for setting this to the largest number that we think the
+; underlying runtime system will support, we do exactly that.  As of Jan 26,
+; 2012, we think a safe-enough limit is 10,000.  So, we use that number.  As
+; multi-threading becomes more prevalent and the underlying runtime systems
+; increase their support for massive numbers of threads, we should continue to
+; increase this number.
+
+         10000))
+    #+(and acl2-par (not acl2-loop-only))
+    (let ((bound (* 4 *core-count*)))
+      (when (< val bound)
+
+; Since this check is cheap and not performed while we're doing proofs, we
+; leave it.  That being said, we do not realistically expect to receive this
+; error for a very long time, because it will be a very long time until the
+; number of CPU cores is within a factor of 4 of 10,000.  David Rager actually
+; found this check useful once upon a time (back when the limit was 50),
+; because he was testing ACL2(p) on one of the IBM 64-core machines and forgot
+; that this limit needed to be increased.
+
+        (error "The value returned by function ~
+                default-total-parallelism-work-limit needs to be at ~%least ~
+                ~s, i.e., at least four times the *core-count*.  ~%Please ~
+                redefine function default-total-parallelism-work-limit so ~
+                that it ~%is not ~s."
+               bound
+               val)))
+    val))
 
 (defconst *initial-global-table*
 
@@ -26300,7 +26957,8 @@
 ; in December 2011 that he hasn't used this variable in some time, but that it
 ; still works as far as he knows.  It should be harmless to remove it if there
 ; is a reason to do so, but of course there would be fallout from doing so
-; (e.g., argument lists of various functions that take a debug-pspv argument).
+; (e.g., argument lists of various functions that take a debug-pspv argument
+; would need to change).
 
                 nil)
     (debugger-enable . nil) ; keep in sync with :doc set-debugger-enable
@@ -26411,6 +27069,9 @@
     (term-evisc-tuple . :default)
     (timer-alist . nil)
     (tmp-dir . nil) ; set by lp; user-settable but not much advertised.
+    (total-parallelism-work-limit ; for #+acl2-par
+     . ,(default-total-parallelism-work-limit))
+    (total-parallelism-work-limit-error . t) ; for #+acl2-par
     (trace-co . acl2-output-channel::standard-character-output-0)
     (trace-level . 0)
     (trace-specs . nil)
@@ -26425,7 +27086,10 @@
     (user-home-dir . nil) ; set first time entering lp
     (verbose-theory-warning . t)
     (walkabout-alist . nil)
-    (waterfall-parallelism-timing-threshold . 10000) ; for #+acl2-par
+    (waterfall-parallelism . nil) ; for #+acl2-par
+    (waterfall-parallelism-timing-threshold
+     . 10000) ; #+acl2-par -- microsec limit for resource-and-timing-based mode
+    (waterfall-printing . :full) ; for #+acl2-par
     (waterfall-printing-when-finished . nil) ; for #+acl2-par
     (window-interface-postlude
      . "#>\\>#<\\<e(acl2-window-postlude ?~sw ~xt ~xp)#>\\>")
@@ -27146,6 +27810,35 @@
    state-state))
 
 (defmacro f-put-global (key value st)
+
+  ":Doc-Section ACL2::ACL2-built-ins
+
+  assign to a global variable in ~ilc[state]~/
+  ~bv[]
+  Examples:
+  (f-put-global 'x (expt 2 10) state)
+  (f-put-global 'a (aset1 'ascii-map-array (@ a) 66 'Upper-case-B) state)~/
+
+  General Form:
+  (f-put-global (quote symbol) term state)
+  ~ev[]
+  where ~c[symbol] is any symbol (with certain enforced exclusions to
+  avoid overwriting ACL2 system ``globals'') and ~c[term] is any ACL2
+  term that could be evaluated at the top-level.  ~c[F-put-global] evaluates
+  the term, stores the result as the value of the given symbol in the
+  ~c[global-table] of ~ilc[state], and returns the new ~c[state].  (Note:  the
+  actual implementation of the storage of this value is much more
+  efficient than this discussion of the logic might suggest.)
+
+  The macro ~ilc[assign] is closely related to ~c[f-put-global]:
+  ~c[(assign var val)] macroexpands to ~c[(f-put-global 'var val state)].
+
+  The macros ~ilc[@] and ~ilc[f-get-global] give convenient access to the value
+  of such globals.  The ~c[:]~ilc[ubt] operation has no effect on the
+  ~c[global-table] of ~ilc[state].  Thus, you may use these globals to hang
+  onto useful data structures even though you may undo back past where you
+  computed and saved them.~/"
+
   #-acl2-loop-only
   (cond ((and (consp key)
               (eq 'quote (car key))
@@ -27430,8 +28123,18 @@
   #+(and acl2-par (not acl2-loop-only))
   `(progn
      (when (and *possible-parallelism-hazards*
-                (waterfall-parallelism)
+                (f-get-global 'waterfall-parallelism state)
                 (f-get-global 'parallelism-hazards-action *the-live-state*))
+
+; If a user sends an "offending call" as requested in the email below, consider
+; adding a parallelism wart in the definition of the function being called,
+; documenting that a user has actually encountered an execution of ACL2(p) that
+; ran a function that we have indentified as not thread-safe (via
+; warn-about-parallelism-hazard) inside a context that we have identified as
+; eligible for parallel execution (via with-parallelism-hazard-warnings).  (Or
+; better yet, make a fix.)  See the comments at the top of this function for
+; more explanation.
+
        (format t
                "~%WARNING: A macro or function has been called that is not~%~
                 thread-safe.  Please email this message, including the~%~
@@ -27462,37 +28165,68 @@
 ; See state-free-global-let* for such a variant that is appropriate to use when
 ; state is not available.
 
-; A typical use is (state-global-let* ((<var1> <form1>) ...  (<vark> <formk>))
-; <body>).  Bindings thus are in the style of let* (but see the discussion of
-; setters below).  Body must return an error triple.  The meaning of this form
-; is to smash the global values of the "bound" variables with f-put-global,
-; execute body, restore the values to their previous values, and return the
-; triple produced by body (with its state as modified by the restoration).
-; Because we use acl2-unwind-protect, the restoration is guaranteed even in the
-; face of aborts.  The "bound" variables may initially be unbound in state and
-; restoration means to make them unbound again.
+  ":Doc-Section ACL2::ACL2-built-ins
 
-; However, if any of the <vari> are untouchable then this won't work, because
-; the generated calls of f-put-global are illegal.  This is sad if there is a
-; ``setter'' function of the form (set-vari val state), equivalent to
-; (f-put-global '<vari> val state) except that set-vari is not untouchable (as
-; a function, of course).  If there is such a function symbol set-vari, then we
-; can use the ``binding'' (<vari> <formi> set-vari) in place of (<vari>
-; <formi>), in order to get the behavior described above even if <vari> is
-; untouchable.
+  bind ~il[state] global variables~/
 
-; Note: This function is a generalization of the now obsolete
-; WITH-STATE-GLOBAL-BOUND.
+  ~l[programming-with-state] for requisite background on programming with the
+  ACL2 ~il[state].
+
+  ~bv[]
+  Example Forms:
+  (state-global-let*
+   ((inhibit-output-lst *valid-output-names*))
+   (thm (equal x x)))
+
+  (state-global-let*
+   ((fmt-hard-right-margin 1000 set-fmt-hard-right-margin)
+    (fmt-soft-right-margin 1000 set-fmt-soft-right-margin))
+   (mini-proveall))~/
+
+  General Form:
+  (state-global-let* ((var1 form1) ; or (var1 form1 set-var1)
+                      ...
+                      (vark formk) ; or (vark formk set-vark)
+                     )
+                     body)
+  ~ev[]
+  where: each ~c[vari] is a variable; each ~c[formi] is an expression whose
+  value is a single ordinary object (i.e. not multiple values, and not
+  ~il[state] or any other ~il[stobj]); ~c[set-vari], if supplied, is a function
+  with ~il[signature] ~c[((set-vari * state) => state)]; and ~c[body] is an
+  expression that evaluates to an error triple.  Each ~c[formi] is evaluated in
+  order, starting with ~c[form1], and with each such binding the state global
+  variable ~c[vari] is bound to the value of ~c[formi], sequentially in the
+  style of let*.  More precisely, then meaning of this form is to set (in
+  order) the global values of the indicated ~il[state] global variables
+  ~c[vari] to the values of ~c[formi] using ~ilc[f-put-global], execute
+  ~c[body], restore the ~c[vari] to their previous values (but see the
+  discussion of setters below), and return the triple produced by body (with
+  its state as modified by the restoration).  The restoration is guaranteed
+  even in the face of aborts.  The ``bound'' variables may initially be unbound
+  in state and restoration means to make them unbound again.
+
+  Still referring to the General Form above, let ~c[old-vali] be the value of
+  state global variable ~c[vari] at the time ~c[vari] is about to be assigned
+  the value of ~c[formi].  If ~c[set-vari] is not supplied, then as suggested
+  above, the following form is evaluated at the conclusion of the evaluation of
+  the ~c[state-global-let*] form, whether or not an error has occurred:
+  ~c[(f-put-global 'vari 'old-vali state)].  However, if ~c[set-vari] is
+  supplied, then instead the form evaluated will be
+  ~c[(set-vari 'old-vali state)].  This capability is particularly useful if
+  ~c[vari] is untouchable (~pl[push-untouchable]), since the above call of
+  ~ilc[f-put-global] is illegal.~/"
+
+  (declare (xargs :guard (and (state-global-let*-bindings-p bindings)
+                              (no-duplicatesp-equal (strip-cars bindings)))))
+
+  `(warn-about-parallelism-hazard
 
 ; We call warn-about-parallelism-hazard, because use of this macro in a
 ; parallel environment is potentially dangerous.  It might work, because maybe
 ; no variables are rebound that are changed inside the waterfall, but we, the
 ; developers, want to know about any such rebinding.
 
-  (declare (xargs :guard (and (state-global-let*-bindings-p bindings)
-                              (no-duplicatesp-equal (strip-cars bindings)))))
-
-  `(warn-about-parallelism-hazard
     '(state-global-let* ,bindings ,body)
     (let ((state-global-let*-cleanup-lst
            (list ,@(state-global-let*-get-globals bindings))))
@@ -27629,7 +28363,7 @@
 #+acl2-loop-only
 (defun zpf (x)
   (declare (type (unsigned-byte 29) x))
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   testing a nonnegative fixnum against 0~/
 
@@ -27878,7 +28612,7 @@
 #+acl2-loop-only
 (defmacro logand (&rest args)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   bitwise logical `and' of zero or more integers~/
 
@@ -27901,7 +28635,7 @@
 #+acl2-loop-only
 (defmacro logeqv (&rest args)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   bitwise logical equivalence of zero or more integers~/
 
@@ -27924,7 +28658,7 @@
 #+acl2-loop-only
 (defmacro logior (&rest args)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   bitwise logical inclusive or of zero or more integers~/
 
@@ -27947,7 +28681,7 @@
 #+acl2-loop-only
 (defmacro logxor (&rest args)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   bitwise logical exclusive or of zero or more integers~/
 
@@ -27974,7 +28708,7 @@
 ; equivalent to one on p. 361 of CLtL2:
 ; (log2 (if (< x 0) (- x) (1+ x))).
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   number of bits in two's complement integer representation~/
 
@@ -28013,7 +28747,7 @@
 #+acl2-loop-only
 (defun lognand (i j)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   bitwise logical `nand' of two integers~/
 
@@ -28038,7 +28772,7 @@
 #+acl2-loop-only
 (defun logorc1 (i j)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   bitwise logical inclusive or of two ints, complementing the first~/
 
@@ -28059,7 +28793,7 @@
 #+acl2-loop-only
 (defun logorc2 (i j)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   bitwise logical inclusive or of two ints, complementing the second~/
 
@@ -28080,7 +28814,7 @@
 #+acl2-loop-only
 (defun logandc1 (i j)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   bitwise logical `and' of two ints, complementing the first~/
 
@@ -28101,7 +28835,7 @@
 #+acl2-loop-only
 (defun logandc2 (i j)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   bitwise logical `and' of two ints, complementing the second~/
 
@@ -28133,7 +28867,7 @@
 #+acl2-loop-only
 (defun lognor (i j)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   bitwise logical `nor' of two integers~/
 
@@ -28156,7 +28890,7 @@
 
 ; p. 360 of CLtL2
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   test if two integers share a `1' bit~/
 
@@ -28195,7 +28929,7 @@
 
 (defun boole$ (op i1 i2)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   perform a bit-wise logical operation on 2 two's complement integers~/
 
@@ -28436,6 +29170,75 @@
   contains useful file io functions whose definitions illustrate some of the
   features described above.~/")
 
+(defdoc *standard-co*
+  ":Doc-Section IO
+
+  the ACL2 analogue of CLTL's ~c[*standard-output*]~/
+
+  The value of the ACL2 constant ~c[*standard-co*] is an open character
+  output channel that is synonymous to Common Lisp's
+  ~c[*standard-output*].~/
+
+  ACL2 character output to ~c[*standard-co*] will go to the stream named
+  by Common Lisp's ~c[*standard-output*].  That is, by changing the
+  setting of ~c[*standard-output*] in raw Common Lisp you can change the
+  actual destination of ACL2 output on the channel named by
+  ~c[*standard-co*].  Observe that this happens without changing the
+  logical value of ~c[*standard-co*] (which is some channel symbol).
+  Changing the setting of ~c[*standard-output*] in raw Common Lisp
+  essentially just changes the map that relates ACL2 to the physical
+  world of terminals, files, etc.
+
+  To see the value of this observation, consider the following.
+  Suppose you write an ACL2 function which does character output to
+  the constant channel ~c[*standard-co*].  During testing you see that the
+  output actually goes to your terminal.  Can you use the function to
+  output to a file?  Yes, if you are willing to do a little work in
+  raw Common Lisp: open a stream to the file in question, set
+  ~c[*standard-output*] to that stream, call your ACL2 function, and then
+  close the stream and restore ~c[*standard-output*] to its nominal value.
+  Similar observations can be made about the two ACL2 input channels,
+  ~ilc[*standard-oi*] and ~ilc[*standard-ci*], which are analogues of
+  ~c[*standard-input*].
+
+  Another reason you might have for wanting to change the actual
+  streams associated with ~ilc[*standard-oi*] and ~c[*standard-co*] is to drive
+  the ACL2 top-level loop, ~ilc[ld], on alternative input and output
+  streams.  This end can be accomplished easily within ACL2 by either
+  calling ~ilc[ld] on the desired channels or file names or by resetting the
+  ACL2 ~ilc[state] global variables ~c[']~ilc[standard-oi] and ~c[']~ilc[standard-co] which are
+  used by ~ilc[ld].  ~l[standard-oi] and ~pl[standard-co].")
+
+(defdoc *standard-oi*
+  ":Doc-Section IO
+
+  an ACL2 object-based analogue of CLTL's ~c[*standard-input*]~/
+
+  The value of the ACL2 constant ~c[*standard-oi*] is an open object input
+  channel that is synonymous to Common Lisp's ~c[*standard-input*].~/
+
+  ACL2 object input from ~c[*standard-oi*] is actually obtained by reading
+  from the stream named by Common Lisp's ~c[*standard-input*].  That is,
+  by changing the setting of ~c[*standard-input*] in raw Common Lisp you
+  can change the source from which ACL2 reads on the channel
+  ~c[*standard-oi*].  ~l[*standard-co*].")
+
+(defdoc *standard-ci*
+  ":Doc-Section IO
+
+  an ACL2 character-based analogue of CLTL's ~c[*standard-input*]~/
+
+  The value of the ACL2 constant ~c[*standard-ci*] is an open character
+  input channel that is synonymous to Common Lisp's
+  ~c[*standard-input*].~/
+
+  ACL2 character input from ~c[*standard-ci*] is actually obtained by
+  reading ~il[characters] from the stream named by Common Lisp's
+  ~c[*standard-input*].  That is, by changing the setting of
+  ~c[*standard-input*] in raw Common Lisp you can change the source from
+  which ACL2 reads on the channel ~c[*standard-ci*].
+  ~l[*standard-co*].")
+
 (defdoc print-control
 
   ":Doc-Section IO
@@ -28598,7 +29401,7 @@
 
 (defun digit-to-char (n)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   map a digit to a character~/
   ~bv[]
@@ -28646,7 +29449,7 @@
 
 (defun explode-nonnegative-integer (n print-base ans)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   the list of ~il[characters] in the radix-r form of a number~/
   ~bv[]
@@ -29175,9 +29978,9 @@
 (skip-proofs
 (defun princ$ (x channel state-state)
 
-  ":Doc-Section IO
+  ":Doc-Section ACL2::ACL2-built-ins
 
-  print a string~/
+  print an atom~/
 
   Use ~c[princ$] to do basic printing of atoms (i.e., other than ~c[cons]
   pairs).  In particular, ~c[princ$] prints a string without the surrounding
@@ -29212,7 +30015,9 @@
   ~ev[]~/
 
   ~l[fmt] for more sophisticated printing routines, and ~pl[IO] for general
-  information about input and output.~/"
+  information about input and output.~/
+
+  :cited-by IO"
 
 ; Wart: We use state-state instead of state because of a bootstrap problem.
 
@@ -29382,7 +30187,7 @@
 ; implementation uses the former to force a hard error even in contexts where
 ; we would normally return nil.
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   print an error message and ``cause an error''~/
   ~bv[]
@@ -29393,11 +30198,15 @@
   ~ev[]
   The examples above all print an error message to standard output saying that
   ~c[a] and ~c[b] are illegal inputs.  However, the first two abort evaluation
-  after printing an error message, while the third returns ~c[(mv t nil state)]
-  after printing an error message.  The result in the third case can be
-  interpreted as an ``error'' when programming with the ACL2 ~ilc[state],
-  something most ACL2 users will probably not want to do;
-  ~pl[ld-error-triples] and ~pl[er-progn].
+  after printing an error message (while logically returning ~c[nil], though in
+  ordinary evaluation the return value is never seen); while the third returns
+  ~c[(mv t nil state)] after printing an error message.  The result in the
+  third case can be interpreted as an ``error'' when programming with the ACL2
+  ~ilc[state], something most ACL2 users will probably not want to do unless
+  they are building systems of some sort; ~pl[programming-with-state].  If
+  state is not available in the current context then you will probably want to
+  use ~c[(er hard ...)] or ~c[(er hard? ...)] to cause an error; for example,
+  if you are returning two values, you may write ~c[(mv (er hard ...) nil)].
 
   The difference between the ~c[hard] and ~c[hard?] forms is one of guards.
   Use ~c[hard] if you want the call to generate a (clearly impossible) guard
@@ -30253,7 +31062,7 @@
 
 (defmacro assert$ (test form)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   cause a hard error if the given test is false~/
 
@@ -30289,7 +31098,7 @@
 ; about ACL2 output, it must be directed to the channels and files in
 ; STATE.
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   print to the comment window~/
 
@@ -30372,7 +31181,7 @@
 ; which has the side-effect of printing to the comment window and
 ; logically returning (mv a b c).
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   print to the comment window~/
 
@@ -30471,7 +31280,7 @@
 
 ; WARNING: Keep this in sync with cw.
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   print to the comment window~/
 
@@ -30499,7 +31308,7 @@
 #+acl2-loop-only
 (defun subseq (seq start end)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   subsequence of a string or list~/
 
@@ -30565,7 +31374,9 @@
                                      (subseq name 1 (1- (length name))))
                         "ACL2")))
     `(defmacro ,macro-symbol (&rest args)
-       (cons 'progn$ args))))
+       (if (and (consp args) (null (cdr args)))
+           (car args)
+         (cons 'progn$ args)))))
 
 (deflock
 
@@ -31463,7 +32274,7 @@
 #+acl2-loop-only
 (defmacro make-list (size &key initial-element)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   make a list of a given size~/
 
@@ -32080,6 +32891,20 @@
       (update-idates (cdr (idates state-state)) state-state)))
 
 (defun read-run-time (state-state)
+
+  ":Doc-Section ACL2::ACL2-built-ins
+
+  read elapsed runtime~/
+
+  ~c[(Read-run-time state)] returns ~c[(mv runtime state)], where runtime is
+  the elapsed runtime since the start of the current ACL2 session and ~c[state]
+  is the resulting ACL2 ~il[state].~/
+
+  The logical definition probably won't concern many users, but for
+  completeness, we say a word about it here.  That definition uses the function
+  ~c[read-acl2-oracle], which modifies state by popping the returned
+  ~c[runtime] value from its acl2-oracle field.~/"
+
   (declare (xargs :guard (state-p1 state-state)))
 
 ;   Wart: We use state-state instead of state because of a bootstrap problem.
@@ -32175,18 +33000,18 @@
 
 (defun getenv$ (str state)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   read an environment variable~/
 
   ~c[(Getenv$ str state)], where ~c[str] is a string, reads the value of
-  environment variable ~c[str], returning ~c[nil] if none is found or if the
-  read fails.  The formal story is that ~c[getenv$] reads its value from the
-  ~c[oracle] field of the ACL2 ~ilc[state].  The return value is thus a triple
-  of the form ~c[(mv erp val state)], where ~c[erp] will always be ~c[nil] in
-  practice, ~c[val] is the value that has been read, and ~c[state] is the new
-  state, which is obtained by popping ~c[val] from the top of the state's
-  oracle.
+  environment variable ~c[str], returning a value of ~c[nil] if none is found
+  or if the read fails.  The logical story is that ~c[getenv$] reads its value
+  from the ~c[oracle] field of the ACL2 ~ilc[state].  The return value is thus
+  a triple of the form ~c[(mv erp val state)], where ~c[erp] will always be
+  ~c[nil] in practice, and logically, ~c[val] is the top of the acl2-oracle
+  field of the state and the returned state has the updated (popped)
+  acl2-oracle.
   ~bv[]
   Example:
   (getenv$ \"PWD\" state) ==> (mv nil \"/u/joe/work\" state)
@@ -32204,7 +33029,7 @@
 
 (defun setenv$ (str val)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   set an environment variable~/
 
@@ -32215,7 +33040,13 @@
   ~bv[]
   Example:
   (setenv$ \"FOO\" \"BAR\")
-  ~ev[]~/~/"
+  ~ev[]~/
+  It may be surprising that ~c[setenv$] returns ~c[nil]; indeed, it neither
+  takes nor returns the ACL2 ~il[state].  The reason is that ~ilc[getenv$]
+  takes responsibility for trafficking in ~il[state]; it is defined in the
+  logic using the function ~c[read-acl2-oracle], which (again, in the logic)
+  does modify state, by popping an entry from its acl2-oracle field.
+  ~il[getenv$].~/"
 
   (declare (xargs :guard (and (stringp str)
                               (stringp val))))
@@ -32254,7 +33085,7 @@
 
 (defun random$ (limit state)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   obtain a random value~/
 
@@ -32502,7 +33333,7 @@
 
 (defmacro put-assoc (name val alist &key (test ''eql))
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   modify an association list by associating a value with a key~/
   ~bv[]
@@ -33360,6 +34191,10 @@
     trace-specs
     retrace-p
     parallel-execution-enabled
+    total-parallelism-work-limit ; for #+acl2p-par
+    total-parallelism-work-limit-error ; for #+acl2p-par
+    waterfall-parallelism ; for #+acl2p-par
+    waterfall-printing ; for #+acl2p-par
     redundant-with-raw-code-okp
 
 ; print control variables
@@ -33761,7 +34596,7 @@
 
 (defmacro assign (x y)
 
-  ":Doc-Section Other
+  ":Doc-Section ACL2::ACL2-built-ins
 
   assign to a global variable in ~ilc[state]~/
   ~bv[]
@@ -33785,6 +34620,10 @@
   (pprogn (f-put-global 'symbol term state)
           (mv nil (f-get-global 'symbol state) state)).
   ~ev[]
+
+  The macro ~c[f-put-global] is closely related to ~ilc[assign]:
+  ~c[(assign var val)] macroexpands to ~c[(f-put-global 'var val state)].
+
   The macro ~ilc[@] gives convenient access to the value of such globals.
   The ~c[:]~ilc[ubt] operation has no effect on the ~c[global-table] of ~ilc[state].
   Thus, you may use these globals to hang onto useful data structures
@@ -33796,7 +34635,7 @@
            (mv nil (f-get-global ',x state) state)))
 
 (defmacro @ (x)
-  ":Doc-Section Other
+  ":Doc-Section ACL2::ACL2-built-ins
 
   get the value of a global variable in ~ilc[state]~/
   ~bv[]
@@ -33810,6 +34649,9 @@
   where ~c[symbol] is any symbol to which you have ~ilc[assign]ed a global
   value.  This macro expands into ~c[(f-get-global 'symbol state)], which
   retrieves the stored value of the symbol.
+
+  The macro ~c[f-get-global] is closely related to ~ilc[@]: ~c[(@ var)]
+  macroexpands to ~c[(f-get-global 'var state)].
 
   The macro ~ilc[assign] makes it convenient to set the value of a symbol.
   The ~c[:]~ilc[ubt] operation has no effect on the ~c[global-table] of ~ilc[state].
@@ -33949,7 +34791,7 @@
 
 (defmacro union$ (&whole form &rest x)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   elements of one list that are not elements of another~/
   ~bv[]
@@ -34257,7 +35099,7 @@
 
 (defmacro intersection$ (&whole form &rest x)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   elements of one list that are not elements of another~/
   ~bv[]
@@ -34439,13 +35281,13 @@
         ((eq key :defun-mode)
          (member-eq val '(:logic :program)))
         ((eq key :verify-guards-eagerness)
-         (member-equal val '(0 1 2)))
+         (member val '(0 1 2)))
         ((eq key :enforce-redundancy)
          (member-eq val '(t nil :warn)))
         ((eq key :ignore-doc-string-error)
          (member-eq val '(t nil :warn)))
         ((eq key :compile-fns)
-         (member-equal val '(t nil)))
+         (member-eq val '(t nil)))
         ((eq key :measure-function)
          (and (symbolp val)
               (function-symbolp val world)
@@ -38552,7 +39394,7 @@
 ; the end of this file.
 
 (defdoc complex-rationalp
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizes complex rational numbers~/
   ~bv[]
@@ -38567,7 +39409,7 @@
 
 (deflabel let
   :doc
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   binding of lexically scoped (local) variables~/
   ~bv[]
@@ -38696,7 +39538,7 @@
 ; declarations in the *1* functions.  That point is so low-level that
 ; explaining it in the :doc topic is likely to do more harm than good.
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   local binding of function symbols~/
   ~bv[]
@@ -39859,7 +40701,7 @@
 
 (defun fix-true-list (x)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   coerce to a true list~/
 
@@ -40549,7 +41391,7 @@
 )
 
 (defdoc acl2-numberp
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for numbers~/
 
@@ -40557,7 +41399,7 @@
   rational or complex rational number.~/~/")
 
 (defdoc +
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   addition macro~/
 
@@ -40573,7 +41415,7 @@
   ~l[binary-+].~/~/")
 
 (defdoc binary-+
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   addition function~/
 
@@ -40599,7 +41441,7 @@
   ~pl[+].")
 
 (defdoc binary-*
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   multiplication function~/
 
@@ -40623,7 +41465,7 @@
   ~pl[*].")
 
 (defdoc -
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   macro for subtraction and negation~/
 
@@ -40652,7 +41494,7 @@
   ")
 
 (defdoc unary--
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   arithmetic negation function~/
 
@@ -40674,7 +41516,7 @@
   ~c[unary--]; ~pl[-].")
 
 (defdoc unary-/
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   reciprocal function~/
 
@@ -40698,7 +41540,7 @@
   ~c[unary-/]; ~pl[/].")
 
 (defdoc <
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   less-than~/
 
@@ -40728,7 +41570,7 @@
   then the imaginary parts are compared.")
 
 (defdoc car
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   returns the first element of a non-empty list, else ~c[nil]~/
 
@@ -40747,7 +41589,7 @@
   Notice that in the ACL2 logic, ~c[car] returns ~c[nil] for every ~il[atom].")
 
 (defdoc cdr
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   returns the second element of a ~ilc[cons] pair, else ~c[nil]~/
 
@@ -40766,7 +41608,7 @@
   Notice that in the ACL2 logic, ~c[cdr] returns ~c[nil] for every ~il[atom].")
 
 (defdoc char-code
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   the numeric code for a given character~/
 
@@ -40784,7 +41626,7 @@
   This function maps all non-characters to ~c[0].")
 
 (defdoc characterp
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for ~il[characters]~/
 
@@ -40792,7 +41634,7 @@
   character.~/~/")
 
 (defdoc code-char
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   the character corresponding to a given numeric code~/
 
@@ -40815,7 +41657,7 @@
   are treated as ~c[0].")
 
 (defdoc complex
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   create an ACL2 number~/
   ~bv[]
@@ -40863,7 +41705,7 @@
   ")
 
 (defdoc cons
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   pair and list constructor~/
 
@@ -40872,7 +41714,7 @@
   that has an addtional element ~c[x] on the front.~/~/")
 
 (defdoc consp
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for ~il[cons] pairs~/
 
@@ -40898,7 +41740,7 @@
 ;            (incf (the integer i)))
 ;      str))
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   coerce a character list to a string and a string to a list~/
 
@@ -40929,7 +41771,7 @@
   ~/")
 
 (defdoc denominator
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   divisor of a ratio in lowest terms~/
 
@@ -40947,7 +41789,7 @@
   ~/")
 
 (defdoc equal
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   true equality~/
 
@@ -40958,7 +41800,7 @@
   ~l[zero-test-idioms].~/")
 
 (defdoc if
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   if-then-else function~/
 
@@ -40974,7 +41816,7 @@
   more information.~/")
 
 (defdoc imagpart
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   imaginary part of a complex number~/
 
@@ -40992,14 +41834,14 @@
   ~/")
 
 (defdoc integerp
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for whole numbers~/
 
   ~c[(integerp x)] is true if and only if ~c[x] is an integer.~/~/")
 
 (defdoc intern-in-package-of-symbol
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   create a symbol with a given name~/
 
@@ -41055,7 +41897,7 @@
   ~ev[]")
 
 (defdoc numerator
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   dividend of a ratio in lowest terms~/
 
@@ -41073,7 +41915,7 @@
   ~/")
 
 (defdoc rationalp
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for rational numbers (ratios and integers)~/
 
@@ -41081,7 +41923,7 @@
   number.~/~/")
 
 (defdoc realpart
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   real part of a complex number~/
 
@@ -41099,14 +41941,14 @@
   ~/")
 
 (defdoc stringp
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for strings~/
 
   ~c[(stringp x)] is true if and only if ~c[x] is a string.~/~/")
 
 (defdoc symbol-name
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   the name of a symbol (a string)~/
 
@@ -41124,7 +41966,7 @@
   ~/")
 
 (defdoc symbol-package-name
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   the name of the package of a symbol (a string)~/
 
@@ -41152,14 +41994,14 @@
   main Lisp package in GCL is \"LISP\".~/")
 
 (defdoc symbolp
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for symbols~/
 
   ~c[(symbolp x)] is true if and only if ~c[x] is a symbol.~/~/")
 
 (defdoc quote
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   create a constant~/
 
@@ -42424,7 +43266,7 @@ Lisp definition."
 
 (defun alphorder (x y)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   total order on atoms~/
 
@@ -42500,7 +43342,7 @@ Lisp definition."
 
 (defun lexorder (x y)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   total order on ACL2 objects~/
 
@@ -42927,7 +43769,7 @@ Lisp definition."
 (defun resize-list (lst n default-value)
 
 ; This function supports stobjs.  The documentation is found later, since
-; :doc-section stobj is not yet defined.
+; :Doc-Section stobj is not yet defined.
 
   (declare (xargs :guard t))
   (if (and (integerp n) (> n 0))
@@ -43067,7 +43909,7 @@ Lisp definition."
 
 (defun mod-expt (base exp mod)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   exponential function~/
 
@@ -43670,15 +44512,14 @@ Lisp definition."
 
   Custom keyword hints are complicated.  To use them you must understand
   ~ilc[state], multiple values (e.g., ~ilc[mv] and ~ilc[mv-let]), ACL2's notion
-  of error triples (as briefly explained in ~ilc[ld-error-triples] and
-  ~ilc[er-progn]), how to generate ``soft'' errors with ~ilc[er], how to use
-  ~ilc[fmt]-strings to control output, how to use computed hints
-  (~pl[computed-hints]) and some aspects of ACL2's internal event processing.
-  Furthermore, it is possible to implement a custom keyword hint that can make
-  an event non-reproducible!  So we recommend that these hints be developed by
-  ACL2 experts.  Basically the custom keyword feature allows the implementors
-  and other experts to extend the hint facility without modifying the ACL2
-  sources.
+  of error triples (~pl[programming-with-state]), how to generate ``soft''
+  errors with ~ilc[er], how to use ~ilc[fmt]-strings to control output, how to
+  use computed hints (~pl[computed-hints]) and some aspects of ACL2's internal
+  event processing.  Furthermore, it is possible to implement a custom keyword
+  hint that can make an event non-reproducible!  So we recommend that these
+  hints be developed by ACL2 experts.  Basically the custom keyword feature
+  allows the implementors and other experts to extend the hint facility without
+  modifying the ACL2 sources.
 
   ~c[Term1] is called the ``generator'' term and ~c[term2] is called the
   ``checker'' term of the custom keyword hint ~c[:key].  Together they specify
@@ -44075,7 +44916,7 @@ Lisp definition."
                        (start1 '0) (start2 '0)
                        (end1 'nil end1p) (end2 'nil end2p))
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   search for a string or list in another string or list~/
 
@@ -44190,7 +45031,7 @@ Lisp definition."
 #+acl2-loop-only
 (defmacro count (item sequence &key (start '0) end)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   count the number of occurrences of an item in a string or true-list~/
 
@@ -44370,7 +45211,7 @@ Lisp definition."
                    (real-mintime 'nil real-mintime-p)
                    run-mintime minalloc msg args)
 
-  ":Doc-Section Other
+  ":Doc-Section ACL2::ACL2-built-ins
 
   time an evaluation~/
 
@@ -44529,7 +45370,8 @@ Lisp definition."
   ACL2 evaluator function ~c[ev-rec].  This is normal; the curious are invited,
   at their own risk, to ~pl[return-last] for an explanation.~/
 
-  :cited-by ACL2::Programming"
+  :cited-by ACL2::Programming
+  :cited-by other"
 
   (declare (xargs :guard t))
   (cond
@@ -44878,14 +45720,16 @@ Lisp definition."
 
 ; Keep this in sync with break-on-error-fn.
 
-  ":Doc-Section Other
+  ":Doc-Section ACL2::ACL2-built-ins
 
   cause an immediate Lisp break~/
 
   ACL2 users are generally advised to avoid breaking into raw Lisp.  Advanced
   users may, on occasion, see the need to do so.  Evaluating ~c[(break$)] will
   have that effect.  (Exception: ~c[break$] is disabled after evaluation of
-  ~c[(set-debugger-enable :never)]; ~pl[set-debugger-enable].)~/~/"
+  ~c[(set-debugger-enable :never)]; ~pl[set-debugger-enable].)~/~/
+
+  :cited-by other"
 
   (declare (xargs :guard t))
   #-acl2-loop-only
@@ -45293,8 +46137,10 @@ Lisp definition."
      maybe-warn-about-theory-from-rcnsts
      maybe-warn-about-theory-simple
      maybe-warn-for-use-hint
+     pair-cl-id-with-hint-setting
      process-backtrack-hint
      push-clause
+     put-cl-id-of-custom-keyword-hint-in-computed-hint-form
      record-gag-state
      thanks-for-the-hint
      translate

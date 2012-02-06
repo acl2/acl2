@@ -631,6 +631,7 @@ f-put-global.lisp
 hons-analyze-memory-raw.lsp
 hons-extra.lisp
 hons-extra-raw.lsp
+hons-remove-dups.lisp
 hons-sets.lisp
 interp-function-lookup.lisp
 ls.lisp
@@ -729,7 +730,6 @@ disconnected.lisp
 lint.lisp
 xf-drop-missing-submodules.lisp
 xf-drop-unresolved-submodules.lisp
-xf-hid-flatten.lisp
 xf-lint-stmt-rewrite.lisp
 xf-remove-toohard.lisp
 xf-undefined-names.lisp
@@ -855,6 +855,7 @@ xf-array-indexing.lisp
 xf-assigndelays.lisp
 xf-assign-trunc.lisp
 xf-blankargs.lisp
+xf-careless-infer-flops.lisp
 xf-clean-params.lisp
 xf-designregs.lisp
 xf-designwires.lisp
@@ -900,9 +901,11 @@ occform-top.lisp
 books/centaur/vl/util:
 acl2-customization.lsp
 arithmetic.lisp
+bits.lisp
 cert.acl2
 character-list-listp.lisp
 clean-alist.lisp
+commentmap.lisp
 cwtime.lisp
 cw-unformatted.lisp
 defs.lisp
@@ -2093,6 +2096,7 @@ records0.lisp
 redef-pkg.acl2
 redef-pkg.lisp
 rtl-untranslate.lisp
+save-time.lisp
 seq-examples.lsp
 seq.lisp
 seqw-examples.lsp
