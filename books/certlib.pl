@@ -229,19 +229,47 @@ sub get_cert_time {
     }
 }
 
+sub cert_to_acl2x {
+    my $cert = shift;
+    (my $acl2x = $cert) =~ s/\.cert$/\.acl2x/;
+    return $acl2x;
+}
+
+sub cert_to_pcert {
+    my $cert = shift;
+    (my $pcert = $cert) =~ s/\.cert$/\.pcert/;
+    return $pcert;
+}
+
+sub cert_is_two_pass {
+    my ($cert, $depmap) = @_;
+    my $entry = $depmap->{$cert};
+    return $entry && $entry->[1];
+}
+
+sub cert_deps {
+    my ($cert, $depmap) = @_;
+    my $entry = $depmap->{$cert};
+    return $entry && $entry->[0];
+}
+
 
 sub read_costs {
     my ($deps, $basecosts, $warnings, $use_realtime, $pcert) = @_;
 
     foreach my $certfile (keys %{$deps}) {
-	if ($pcert && $certfile =~ /\.cert$/) {
-	    (my $pcertfile = $certfile) =~ s/\.cert$/\.pcert/;
-	    (my $acl2xfile = $certfile) =~ s/\.cert$/\.acl2x/;
+	if ($pcert) {
+	    my $pcertfile = cert_to_pcert($certfile);
+	    my $acl2xfile = cert_to_acl2x($certfile);
 	    $basecosts->{$certfile} = get_cert_time($certfile, $warnings, $use_realtime, $pcert);
 	    $basecosts->{$pcertfile} = get_cert_time($pcertfile, $warnings, $use_realtime, $pcert);
 	    $basecosts->{$acl2xfile} = get_cert_time($acl2xfile, $warnings, $use_realtime, $pcert);
-	} elsif ($certfile =~ /\.(cert|acl2x)$/) {
+	} else {
 	    $basecosts->{$certfile} = get_cert_time($certfile, $warnings, $use_realtime, $pcert);
+	    if (cert_is_two_pass($certfile, $deps)) {
+		my $acl2xfile = cert_to_acl2x($certfile);
+		$basecosts->{$acl2xfile} = get_cert_time($acl2xfile, $warnings, $use_realtime, $pcert);
+	    }
 	}
     }
 }
@@ -253,7 +281,7 @@ sub find_most_expensive {
     my $most_expensive_file = 0;
 
     foreach my $file (@{$files}) {
-	if ($file =~ /\.(cert|acl2x)$/) {
+	if ($file =~ /\.(cert|acl2x|pcert)$/) {
 
 	    my $file_costs = $costs->{$file};
 	    if ($file_costs) {
@@ -292,29 +320,43 @@ sub compute_cost_paths_aux {
 	    ## The dependencies are the dependencies of the cert file, but
 	    ## with each .cert replaced with the corresponding .acl2x.
 	    (my $certfile = $target) =~ s/\.acl2x$/\.cert/;
-	    my $certdeps = $deps->{$certfile};
-	    if ($certdeps) {
-		foreach my $dep ($certdeps) {
-		    (my $depacl2x = $dep) =~ s/\.cert$/\.acl2x/;
-		    push(@$certdeps, $depacl2x);
-		}
+	    my $certdeps = cert_deps($certfile, $deps);
+	    foreach my $dep (@$certdeps) {
+		my $depacl2x = cert_to_acl2x($dep);
+		push(@$targetdeps, $depacl2x);
 	    }
 	} else { # $target =~ /\.cert$/
 	    # The dependencies are the ones saved in $deps, plus the corresponding pcert.
-	    my $certdeps = $deps->{$target};
+	    my $certdeps = cert_deps($target, $deps);
 	    push (@$targetdeps, @$certdeps);
-	    (my $pcertfile = $target) =~ s/\.cert$/\.pcert/;
+	    my $pcertfile = cert_to_pcert($target);
 	    push (@$targetdeps, $pcertfile);
 	}
     } else {
-	$targetdeps = $deps->{$target};
+	if ($target =~ /\.acl2x$/) {
+	    (my $certfile = $target) =~ s/\.acl2x$/\.cert/;
+	    $targetdeps = cert_deps($certfile, $deps);
+	} elsif ($target =~ /\.cert$/) {
+	    if (cert_is_two_pass($target, $deps)) {
+		my $acl2xfile = cert_to_acl2x($target);
+		$targetdeps = [ $acl2xfile ];
+	    } else {
+		$targetdeps = cert_deps($target, $deps);
+	    }
+	} else {
+	    print "Warning: pcert file out of pcert context: $target\n";
+	    $targetdeps = [];
+	}
     }
 
     my $most_expensive_dep = 0;
     my $most_expensive_dep_total = 0;
 
-    if ($targetdeps) {
-	foreach my $dep (@{$targetdeps}) {
+
+#    print "$target depends on @$targetdeps\n";
+
+    if (@$targetdeps) {
+	foreach my $dep (@$targetdeps) {
 	    if ($dep =~ /\.(cert|acl2x|pcert)$/) {
 		my $this_dep_costs = compute_cost_paths_aux($dep, $deps, $basecosts, $costs, $warnings, $pcert);
 		if (! $this_dep_costs) {
@@ -331,7 +373,6 @@ sub compute_cost_paths_aux {
     }
     my %entry = ( "totaltime" => $most_expensive_dep_total + $certtime, 
 		  "maxpath" => $most_expensive_dep );
-
     $costs->{$target} = \%entry;
     return $costs->{$target};
 }
@@ -588,7 +629,6 @@ sub to_basename {
 my $debugging = 0;
 my $clean_certs = 0;
 my $print_deps = 0;
-my $all_deps = 0;
 my $believe_cache = 0;
 
 #  However, now it makes sense to do it in two
@@ -615,7 +655,6 @@ sub certlib_set_opts {
     $debugging = $opts->{"debugging"};
     $clean_certs = $opts->{"clean_certs"};
     $print_deps = $opts->{"print_deps"};
-    $all_deps = $opts->{"all_deps"};
     $believe_cache = $opts->{"believe_cache"};
 }
 
@@ -1108,31 +1147,29 @@ sub find_deps {
 
 }
 
-# Given that the dependency map $seen is already built, this collects
+
+
+# Given that the dependency map $depmap is already built, this collects
 # the full set of sources and targets needed for a given file.
 sub deps_dfs {
-    my ($target, $seen, $visited, $sources, $certs) = @_;
+    my ($target, $depmap, $visited, $sources, $certs) = @_;
 
-    if (exists $visited->{$target}) {
+    if ($visited->{$target}) {
 	return;
     }
 
     $visited->{$target} = 1;
 
-    if ($target !~ /\.(cert|acl2x)$/) {
+    if ($target !~ /\.(cert|acl2x|pcert)$/) {
 	push(@{$sources}, $target);
 	return;
     }
 
-    if (excludep($target)) {
-	return;
-    }
-
     push (@$certs, $target);
+    my $deps = cert_deps($target, $depmap);
 
-    my $deps = $seen->{$target};
     foreach my $dep (@$deps) {
-	deps_dfs($dep, $seen, $visited, $sources, $certs);
+	deps_dfs($dep, $depmap, $visited, $sources, $certs);
     }
 }
 
@@ -1143,21 +1180,20 @@ sub deps_dfs {
 # If the target has been seen before, then it returns immediately.
 # Otherwise, this calls on find_deps to get those dependencies.
 sub add_deps {
-    my ($target,$cache,$seen,$sources,$tscache,$parent) = @_;
+    my ($target,$cache,$depmap,$sources,$tscache,$parent) = @_;
 
-    if (exists $seen->{$target}) {
+    if ($target !~ /\.cert$/) {
+	$sources->{$target} = 1;
+	return;
+    }
+
+    if (exists $depmap->{$target}) {
 	# We've already calculated this file's dependencies.
 	return;
     }
 
-    if ($target !~ /\.cert$/) {
-	push(@{$sources}, $target);
-	$seen->{$target} = 0;
-	return;
-    }
-
     if (excludep($target)) {
-    	$seen->{$target} = 0;
+    	$depmap->{$target} = [];
     	return;
     }
 
@@ -1192,13 +1228,7 @@ sub add_deps {
     my ($deps, $two_pass) = find_deps($base, $cache, 0, $tscache, $parent);
 
 
-    my $acl2xfile = $base . ".acl2x";
-    if ($two_pass) {
-	$seen->{$target} = [ $acl2xfile ];
-	$seen->{$acl2xfile} = $deps;
-    } else {
-	$seen->{$target} = $deps;
-    }
+    $depmap->{$target} = [ $deps, $two_pass ] ;
 
     if ($print_deps) {
 	print "Dependencies for $target:\n";
@@ -1210,33 +1240,7 @@ sub add_deps {
 
     # Run the recursive add_deps on each dependency.
     foreach my $dep  (@{$deps}) {
-	add_deps($dep, $cache, $seen, $sources, $tscache, $target);
-    }
-    
-
-    # If this target needs an update or we're in all_deps mode, we're
-    # done, otherwise we'll delete its entry in the dependency table.
-    unless ($all_deps) {
-	# To fix this for two-pass files, 
-	my $update_target = $two_pass ? $acl2xfile : $target;
-	my $needs_update = (! -e $update_target);
-	if (! $needs_update) {
-	    foreach my $dep (@{$deps}) {
-		if ($seen->{$dep} || (! -e $dep) || newer_than($dep, $update_target)) {
-		    $needs_update = 1;
-		    last;
-		}
-	    }
-	}
-	if (! $needs_update) {
-	    $seen->{$update_target} = 0;
-	}
-	if ($two_pass &&
-	    (! $seen->{$acl2xfile}) &&
-	    (-e $target) &&
-	    (! newer_than($acl2xfile, $target))) {
-	    $seen->{$target} = 0;
-	}
+	add_deps($dep, $cache, $depmap, $sources, $tscache, $target);
     }
 
 }

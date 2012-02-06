@@ -137,7 +137,6 @@ if (!$options_okp || $OPTIONS{"help"})
 }
 
 my %deps = ();
-my @sources = ();
 my $costs = {};
 my $warnings = [];
 
@@ -167,9 +166,10 @@ unless (@targets) {
     exit 1;
 }
 
+my %sourcehash = ();
 foreach my $target (@targets) {
     if ($target =~ /\.cert/) {
-	add_deps($target, $cache, \%deps, \@sources, \%tscache, 0);
+	add_deps($target, $cache, \%deps, \%sourcehash, \%tscache, 0);
     }
 }
 
@@ -178,6 +178,13 @@ $cache_file && store($cache, $cache_file);
 my $basecosts = {};
 read_costs(\%deps, $basecosts, $warnings, $OPTIONS{'real'}, $OPTIONS{'pcert'});
 print "done read_costs\n" if $debug;
+
+# foreach my $file (keys %$basecosts) {
+#     if ($file =~ /\.cert$/) {
+# 	$basecosts->{$file} = 0.00001;
+#     }
+# }
+
 
 compute_cost_paths(\%deps, $basecosts, $costs, $warnings, $OPTIONS{'pcert'});
 print "done compute_cost_paths\n" if $debug;

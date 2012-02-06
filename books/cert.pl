@@ -433,8 +433,8 @@ my ($targets_ref, $labels_ref) = process_labels_and_targets(\@user_targets, $cac
 my @targets = @$targets_ref;
 my %labels = %$labels_ref;
 
-my %seen = ( );
-my @sources = ( );
+my %depmap = ( );
+
 
 
 unless (@targets) {
@@ -443,14 +443,15 @@ unless (@targets) {
     exit 1;
 }
 
+my %sourcehash = ( );
 
 foreach my $target (@targets) {
-    add_deps($target, $cache, \%seen, \@sources, \%tscache, 0);
+    add_deps($target, $cache, \%depmap, \%sourcehash, \%tscache, 0);
 }
 
 $cache_file && store($cache, $cache_file);
 
-@sources = sort(@sources);
+my @sources = sort(keys %sourcehash);
 
 # Is this how we want to nest these?  Pick a command, run it on
 # every source file, versus pick a source file, run every command?
@@ -496,17 +497,16 @@ unless ($no_makefile) {
     
     # declare $var_prefix_CERTS to be the list of certificates
     print $mf $var_prefix . "_CERTS :=";
-    my @certs = ();
-    while ((my $key, my $value) = each %seen) {
-	if ($value) { 
-	    push (@certs, $key);
-	}
-    }
 
+    my @certs = keys %depmap;
     @certs = sort(@certs);
 
     foreach my $cert (@certs) {
 	print $mf " \\\n     $cert";
+	if (cert_is_two_pass($cert, \%depmap)) {
+	    my $acl2xfile = cert_to_acl2x($cert);
+	    print $mf " \\\n     $acl2xfile";	    
+	}
     }
 
     print $mf "\n\n";
@@ -542,24 +542,26 @@ unless ($no_makefile) {
 	# print "Processing label: $label\n";
 	foreach my $topcert (@topcerts) {
 	    # print "Visiting $topcert\n";
-	    deps_dfs($topcert, \%seen, \%visited, \@labelsources, \@labelcerts);
+	    deps_dfs($topcert, \%depmap, \%visited, \@labelsources, \@labelcerts);
 	}
 	@labelcerts = sort(@labelcerts);
 	@labelsources = sort(@labelsources);
 	print $mf "${label}_CERTS :=";
 	foreach my $cert (@labelcerts) {
 	    print $mf " \\\n     $cert";
+	    if (cert_is_two_pass($cert, \%depmap)) {
+		my $acl2x = cert_to_acl2x($cert);
+		print $mf " \\\n     $acl2x";
+	    }
 	}
 	print $mf "\n\n";
 	print $mf "ifneq (\$(ACL2_PCERT),)\n\n";
 	print $mf "${label}_CERTS := \$(${label}_CERTS)";
 	foreach my $cert (@labelcerts) {
-	    if ($cert =~ /\.cert$/) {
-		my $base = $cert;
-		$base =~ s/\.cert$//;
-		print $mf " \\\n     $base.pcert";
-		print $mf " \\\n     $base.acl2x";
-	    }
+	    my $base = $cert;
+	    $base =~ s/\.cert$//;
+	    print $mf " \\\n     $base.pcert";
+	    print $mf " \\\n     $base.acl2x";
 	}
 	print $mf "\n\nendif\n";
 
@@ -572,11 +574,20 @@ unless ($no_makefile) {
 
     # write out the dependencies
     foreach my $cert (@certs) {
-	my $val = $seen{$cert};
-	if ($val) {
-	    my @the_deps = @{$val};
+	my $deps = cert_deps($cert, \%depmap);
+	if (cert_is_two_pass($cert, \%depmap)) {
+	    my $acl2xfile = cert_to_acl2x($cert);
 	    print $mf "$cert :";
-	    foreach my $dep (@the_deps) {
+	    print $mf " \\\n     $acl2xfile";
+	    print $mf "\n\n";
+	    print $mf "$acl2xfile :";
+	    foreach my $dep (@$deps) {
+		print $mf " \\\n     $dep";
+	    }
+	    print $mf "\n\n";
+	} else {
+	    print $mf "$cert :";
+	    foreach my $dep (@$deps) {
 		print $mf " \\\n     $dep";
 	    }
 	    print $mf "\n\n";
@@ -589,42 +600,32 @@ unless ($no_makefile) {
     print $mf "# (each .pcert depends on its corresponding .acl2x)\n\n";
     
     foreach my $cert (@certs) {
-	if ($cert =~ /\.cert$/) {
-	    my $base = $cert;
-	    $base =~ s/\.cert$//;
-	    print $mf "$base.pcert : $base.acl2x\n";
-	}
+	my $base = $cert;
+	$base =~ s/\.cert$//;
+	print $mf "$base.pcert : $base.acl2x\n";
     }
 
     print $mf "\n# Dependencies for .acl2x files:\n";
     print $mf "# (similar to those for .cert files)\n";
 
     foreach my $cert (@certs) {
-	if ($cert =~ /\.cert$/) {
-	    my $val = $seen{$cert};
-	    if ($val) {
-		my $base = $cert;
-		$base =~ s/\.cert$//;
-		my @the_deps = @{$val};
-		print $mf "$base.acl2x :";
-		foreach my $dep (@the_deps) {
-		    $dep =~ s/\.cert$/.acl2x/;
-		    print $mf " \\\n     $dep";
-		}
-		print $mf "\n\n";
-	    }
+	my $deps = cert_deps($cert, \%depmap);
+	(my $base = $cert) =~ s/\.cert$//;
+	print $mf "$base.acl2x :";
+	foreach my $dep (@$deps) {
+	    my $acl2x = cert_to_acl2x($dep);
+	    print $mf " \\\n     $acl2x";
 	}
+	print $mf "\n\n";
     }
 
     print $mf "# Dependencies for converting .pcert to .cert files:\n";
     print $mf "# (Each cert file depends on its pcert.)\n";
     
     foreach my $cert (@certs) {
-	if ($cert =~ /\.cert$/) {
-	    my $base = $cert;
-	    $base =~ s/\.cert$//;
-	    print $mf "$cert : $base.pcert\n";
-	}
+	my $base = $cert;
+	$base =~ s/\.cert$//;
+	print $mf "$cert : $base.pcert\n";
     }
     print $mf "\nendif\n\n";
 
