@@ -83,8 +83,8 @@ my %certlib_opts = ( "debugging" => 0,
 		     "clean_certs" => 0,
 		     "print_deps" => 0,
 		     "all_deps" => 0,
-                     "believe_cache" => 0);
-
+                     "believe_cache" => 0,
+		     "bin_dir" => "");
 my $cache_file = 0;
 
 $base_path = abs_canonical_path(".");
@@ -316,6 +316,22 @@ OPTIONS:
            Passes the -k/--keep-going flag to make, which causes it to
            build as many targets as possible even after an error. Same
            as "--make-args -k".
+
+   --bin <directory>
+
+          Sets the location for ACL2 image files.  Cert.pl supports
+          the use of different ACL2 images to certify different books.
+          If for a book named foo.lisp either a file foo.image or
+          cert.image exists in the same directory, then cert.pl reads
+          a line from that file and takes that line to be the name of
+          the image to use.  The default is \"acl2\".  If the image
+          name is not \"acl2\" and a --bin directory is set, then
+          cert.pl adds a foo.cert dependency on
+          <bin_dir>/<image_name>, and uses <bin_dir>/<image_name> to
+          certify the book.  Otherwise, no additional dependency is
+          set, and at certification time we look for the image in the
+          user\'s PATH.
+
 ';
 
 GetOptions ("help|h"               => sub { print $summary_str;
@@ -338,6 +354,7 @@ GetOptions ("help|h"               => sub { print $summary_str;
 					   $no_build = 1;},
 	    "acl2|a=s"             => \$acl2,
 	    "acl2-books|b=s"       => \$acl2_books,
+	    "bin=s"                => \$certlib_opts{'bin_dir'},
 	    "include|i=s"          => sub {shift;
 					   push(@includes, shift);},
 	    "include-after|ia=s"     => sub {shift;
@@ -375,6 +392,14 @@ GetOptions ("help|h"               => sub { print $summary_str;
 	    "deps-of|p=s"          => sub { shift; push(@user_targets, "-p " . shift); },
 	    "<>"                   => sub { push(@user_targets, shift); }
 	    );
+
+sub remove_trailing_slash {
+    my $dir = shift;
+    return ( substr($dir,-1) eq "/" && $dir ne "/" )
+	? substr($dir,0,-1) : $dir;
+}
+# Remove trailing slash from bin_dir, if any, and add it to certlib_opts
+$certlib_opts{'bin_dir'} = $certlib_opts{'bin_dir'} && remove_trailing_slash($certlib_opts{'bin_dir'});
 
 certlib_set_opts(\%certlib_opts);
 
@@ -484,6 +509,9 @@ unless ($no_makefile) {
 
     unless ($no_boilerplate) {
 	print $mf "ACL2_SYSTEM_BOOKS ?= " . canonical_path($RealBin) . "\n";
+	if ($certlib_opts{'bin_dir'}) {
+	    print $mf "export ACL2_BIN_DIR := $certlib_opts{'bin_dir'}\n";
+	}
 	print $mf "include \$(ACL2_SYSTEM_BOOKS)/make_cert\n\n";
     }
 
@@ -577,6 +605,13 @@ unless ($no_makefile) {
 	my $deps = cert_deps($cert, \%depmap);
 	if (cert_is_two_pass($cert, \%depmap)) {
 	    my $acl2xfile = cert_to_acl2x($cert);
+#     This would be a nice way to do things, but unfortunately the "private"
+#     keyword for target-specific variables was introduced in GNU Make 3.82,
+#     which isn't widely used yet --
+#	    print $mf "$cert : private TWO_PASS := 1\n";
+#     Instead, sadly, we'll individually set the TWO_PASS variable for
+#     each target instead.  (Note the ELSE case below.)
+	    print $mf "$cert : TWO_PASS = 1\n";
 	    print $mf "$cert :";
 	    print $mf " \\\n     $acl2xfile";
 	    print $mf "\n\n";
@@ -586,6 +621,7 @@ unless ($no_makefile) {
 	    }
 	    print $mf "\n\n";
 	} else {
+	    print $mf "$cert : TWO_PASS = \n";
 	    print $mf "$cert :";
 	    foreach my $dep (@$deps) {
 		print $mf " \\\n     $dep";
@@ -611,6 +647,11 @@ unless ($no_makefile) {
     foreach my $cert (@certs) {
 	my $deps = cert_deps($cert, \%depmap);
 	(my $base = $cert) =~ s/\.cert$//;
+	if (cert_is_two_pass($cert, \%depmap)) {
+	    print $mf "$base.acl2x : TWO_PASS = 1\n";
+	} else {
+	    print $mf "$base.acl2x : TWO_PASS = \n";
+	}
 	print $mf "$base.acl2x :";
 	foreach my $dep (@$deps) {
 	    my $acl2x = cert_to_acl2x($dep);

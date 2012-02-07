@@ -630,6 +630,7 @@ my $debugging = 0;
 my $clean_certs = 0;
 my $print_deps = 0;
 my $believe_cache = 0;
+my $bin_dir = "";
 
 #  However, now it makes sense to do it in two
 # passes:
@@ -656,6 +657,7 @@ sub certlib_set_opts {
     $clean_certs = $opts->{"clean_certs"};
     $print_deps = $opts->{"print_deps"};
     $believe_cache = $opts->{"believe_cache"};
+    $bin_dir = $opts->{"bin_dir"};
 }
 
 sub certlib_set_base_path {
@@ -1124,21 +1126,18 @@ sub find_deps {
 
 	if ($imagefile) {
 	    push(@{$deps}, canonical_path($imagefile));
-	    if (open(my $im, "<", $imagefile)) {
-		my $line = <$im>;
-		chomp $line;
-		if ($line && ($line ne "acl2")) {
-		    my $image = canonical_path(rel_path(dirname($base), $line));
-		    if (! -e $image) {
-			$image = which($line);
+	    if ($bin_dir) {
+		if (open(my $im, "<", $imagefile)) {
+		    my $line = <$im>;
+		    close $im;
+		    chomp $line;
+		    if ($line && ($line ne "acl2")) {
+			my $image = canonical_path(rel_path($bin_dir, $line));
+			push(@{$deps}, $image);
 		    }
-		    if (-e $image) {
-			push(@{$deps}, canonical_path($image));
-		    }
+		} else {
+		    print "Warning: find_deps: Could not open image file $imagefile: $!\n";
 		}
-		close $im;
-	    } else {
-		print "Warning: find_deps: Could not open image file $imagefile: $!\n";
 	    }
 	}
     }

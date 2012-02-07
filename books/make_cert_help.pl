@@ -45,7 +45,14 @@
 
 # Usage: make_cert_help.pl TARGET STEP
 #   - TARGET is like "foo" for "foo.lisp"
-#   - STEP is "cert", "acl2x", "acl2xcert", "pcert", or "convert"
+#   - STEP is "cert", "acl2x", "acl2xskip", "acl2xcert", "pcert", or "convert"
+
+# The meaning of the steps is as follows:
+# "cert"      -- conventional single-pass certification
+# "acl2x"     -- first pass of a two-pass certification, not skipping proofs
+# "acl2xskip" -- first pass of a two-pass or provisional certification, skipping proofs
+# "pcert"     -- second pass of a provisional certification
+# "convert"   -- third pass of a provisional certification
 
 
 use warnings;
@@ -330,7 +337,7 @@ if ($STEP eq "convert" || $STEP eq "cert" || $STEP eq "acl2xcert") {
     $TARGETEXT = "cert";
 } elsif ($STEP eq "pcert") {
     $TARGETEXT = "pcert";
-} elsif ($STEP eq "acl2x") {
+} elsif ($STEP eq "acl2x" || $STEP eq "acl2xskip") {
     $TARGETEXT = "acl2x";
 } else {
     die("Unrecognized step type: $STEP");
@@ -346,6 +353,13 @@ my $STARTJOB    = $ENV{"STARTJOB"} || "";
 my $ON_FAILURE_CMD = $ENV{"ON_FAILURE_CMD"} || "";
 my $ACL2           = $ENV{"ACL2"} || "acl2";
 # Figure out what ACL2 points to before we switch directories.
+
+if ($ENV{"ACL2_BIN_DIR"}) {
+    (my $vol, my $dir, my $file) = File::Spec->splitpath($ENV{"ACL2_BIN_DIR"});
+    my $canon_bin_dir = File::Spec->canonpath(File::Spec->catpath($vol, $dir, $file));
+    print "canonical bin dir: $canon_bin_dir\n" if $DEBUG;
+    $ENV{"PATH"} = $ENV{"PATH"} ? "$canon_bin_dir:$ENV{'PATH'}" : $canon_bin_dir;
+}
 
 my $default_acl2 = `which $ACL2 2>/dev/null`;
 if (($? >> 8) != 0) {
@@ -419,7 +433,8 @@ $instrs .= "(acl2::value :q)\n";
 $instrs .= "(in-package \"ACL2\")\n";
 $instrs .= "(acl2::lp)\n\n";
 
-$instrs .= "(set-write-acl2x '(t) state)\n" if ($STEP eq "acl2x");
+$instrs .= "(set-write-acl2x t state)\n" if ($STEP eq "acl2x");
+$instrs .= "(set-write-acl2x '(t) state)\n" if ($STEP eq "acl2xskip");
 $instrs .= "$INHIBIT\n" if ($INHIBIT);
 
 $instrs .= "\n";

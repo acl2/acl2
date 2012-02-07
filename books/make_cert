@@ -104,12 +104,12 @@ ifneq ($(ACL2_PCERT),)
 	@$(MAKE_CERT_PL) "$*" "pcert" $^
 
 %.acl2x : %.lisp
-	@$(MAKE_CERT_PL) "$*" "acl2x" $^
+	@$(MAKE_CERT_PL) "$*" $(if $(TWO_PASS),"acl2x","acl2xskip") $^
 
 else
 
 %.cert : %.lisp
-	@$(MAKE_CERT_PL) "$*" $(if $(filter $*.acl2x, $^),"acl2xcert","cert") $^
+	@$(MAKE_CERT_PL) "$*" $(if $(TWO_PASS),"acl2xcert","cert") $^
 
 %.acl2x : %.lisp
 	@$(MAKE_CERT_PL) "$*" "acl2x" $^
