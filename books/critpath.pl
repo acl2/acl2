@@ -223,6 +223,26 @@ if (! $OPTIONS{"html"}) {
     print "Total time for all files: " . human_time($sum_parallel,0) . ".\n";
 }
 
+if ((! $OPTIONS{"html"}) && $OPTIONS{"pcert"}) {
+    my $acl2xtime = 0.0;
+    my $pcerttime = 0.0;
+    my $certtime = 0.0;
+    foreach my $key (keys %$basecosts) {
+	my $selfcost = $basecosts->{$key};
+	if ($key =~ /\.cert$/) {
+	    $certtime = $certtime + $selfcost;
+	} elsif ($key =~ /\.acl2x$/) {
+	    $acl2xtime = $acl2xtime + $selfcost;
+	} elsif ($key =~ /\.pcert$/) {
+	    $pcerttime = $pcerttime + $selfcost;
+	}
+    }
+
+    print "\n";
+    print "Total acl2x build time: " . human_time($acl2xtime) . "\n";
+    print "Total pcert build time: " . human_time($pcerttime) . "\n";
+    print "Total cert build time: " . human_time($certtime) . "\n";
+}
 
 # print "\n\nBasecosts:\n";
 # while ((my $key, my $val) = each %$basecosts) {
