@@ -1126,17 +1126,21 @@ sub find_deps {
 
 	if ($imagefile) {
 	    push(@{$deps}, canonical_path($imagefile));
-	    if ($bin_dir) {
-		if (open(my $im, "<", $imagefile)) {
-		    my $line = <$im>;
-		    close $im;
-		    chomp $line;
-		    if ($line && ($line ne "acl2")) {
-			my $image = canonical_path(rel_path($bin_dir, $line));
-			push(@{$deps}, $image);
-		    }
+	    my $line;
+	    if (open(my $im, "<", $imagefile)) {
+		$line = <$im>;
+		close $im;
+		chomp $line;
+	    } else {
+		print "Warning: find_deps: Could not open image file $imagefile: $!\n";
+	    }
+	    if ($line && ($line ne "acl2")) {
+		if ($bin_dir) {
+		    my $image = canonical_path(rel_path($bin_dir, $line));
+		    push(@{$deps}, $image);
 		} else {
-		    print "Warning: find_deps: Could not open image file $imagefile: $!\n";
+		    print "Warning: no --bin set, so not adding image dependencies,\n";
+		    print " e.g.   $base.cert : $line\n";
 		}
 	    }
 	}
