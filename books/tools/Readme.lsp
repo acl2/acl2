@@ -89,6 +89,9 @@ include-raw.lisp provides a tool to load raw Lisp files inside books,
 compiling them on book certification, handling errors, etc.  A TTAG is
 required.
 
+in-raw-mode.lisp provides a wrapper for running raw Lisp events. A TTAG is
+required.
+
 progndollar.lisp defines PROGN$, which evaluates several forms in
 sequence for side effects.
 
