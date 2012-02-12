@@ -316,7 +316,7 @@
 
   Below we list proof features of ACL2 that are not yet supported when parallel
   execution is enabled for the primary ACL2 proof process, generally known as
-  ``the Waterfall'', typically by calling ~ilc[set-waterfall-parallelism].
+  ``the waterfall'', typically by calling ~ilc[set-waterfall-parallelism].
 
   Please note that this topic is limited to the case that such waterfall
   parallelism is enabled.  We believe that all ACL2 proof procedures are

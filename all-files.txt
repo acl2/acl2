@@ -3900,6 +3900,8 @@ fake-event.lisp
 flag-package.lsp
 flag.acl2
 flag.lisp
+in-raw-mode.acl2
+in-raw-mode.lisp
 include-raw.acl2
 include-raw.lisp
 index.html
