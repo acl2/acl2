@@ -156,9 +156,9 @@ foreach my $target (@user_targets) {
 }
 
 foreach my $top (@deps_of) {
-    (my $deps, my $two_pass) =
+    my ($certdeps) =
 	find_deps(canonical_path(to_source_name($top)), $cache, 1, \%tscache);
-    push (@targets, @{$deps});
+    push (@targets, @{$certdeps});
 }
 
 unless (@targets) {

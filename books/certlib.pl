@@ -241,16 +241,28 @@ sub cert_to_pcert {
     return $pcert;
 }
 
-sub cert_is_two_pass {
+sub cert_deps {
+    my ($cert, $depmap) = @_;
+    my $entry = $depmap->{$cert};
+    return $entry && $entry->[0];
+}
+
+sub cert_srcdeps {
     my ($cert, $depmap) = @_;
     my $entry = $depmap->{$cert};
     return $entry && $entry->[1];
 }
 
-sub cert_deps {
+sub cert_image {
     my ($cert, $depmap) = @_;
     my $entry = $depmap->{$cert};
-    return $entry && $entry->[0];
+    return $entry && $entry->[2];
+}
+
+sub cert_is_two_pass {
+    my ($cert, $depmap) = @_;
+    my $entry = $depmap->{$cert};
+    return $entry && $entry->[3];
 }
 
 
@@ -630,7 +642,6 @@ my $debugging = 0;
 my $clean_certs = 0;
 my $print_deps = 0;
 my $believe_cache = 0;
-my $bin_dir = "";
 
 #  However, now it makes sense to do it in two
 # passes:
@@ -657,7 +668,6 @@ sub certlib_set_opts {
     $clean_certs = $opts->{"clean_certs"};
     $print_deps = $opts->{"print_deps"};
     $believe_cache = $opts->{"believe_cache"};
-    $bin_dir = $opts->{"bin_dir"};
 }
 
 sub certlib_set_base_path {
@@ -943,7 +953,8 @@ sub src_deps {
     my ($fname,             # file to scan for dependencies
 	$cache,             # file event cache
 	$local_dirs,        # :dir name table
-	$deps,              # file dependency list (accumulator)
+	$certdeps,         # certificate dependency list (accumulator)
+	$srcdeps,       # source file dependency list (accumulator)
 	$book_only,         # Only record include-book dependencies
 	$tscache,           # timestamp cache
 	$ld_ok,             # Allow following LD commands
@@ -987,23 +998,25 @@ sub src_deps {
 					      "include-book",
 					      ".cert");
 	    print "include-book fullname: $fullname\n" if $debugging;
-	    $fullname && push(@$deps, $fullname);
+	    $fullname && push(@$certdeps, $fullname);
 	} elsif ($type eq $depends_on_event && !$book_only) {
 	    my $depname = $event->[1];
 	    my $dir = $event->[2];
 	    my $fullname = expand_dirname_cmd($depname, $fname, $dir,
 					      $local_dirs,
 					      "depends-on", "");
-	    $fullname && push(@$deps, $fullname);
+	    $fullname && push(@$srcdeps, $fullname);
 	} elsif ($type eq $loads_event) {
 	    my $srcname = $event->[1];
 	    my $dir = $event->[2];
 	    my $fullname = expand_dirname_cmd($srcname, $fname, $dir,
 					      $local_dirs, "loads", "");
 	    if ($fullname) {
-		push(@$deps, $fullname) unless $book_only;
+		push(@$srcdeps, $fullname) unless $book_only;
 		my $local_two_pass = src_deps($fullname, $cache,
-					      $local_dirs, $deps,
+					      $local_dirs,
+					      $certdeps,
+					      $srcdeps,
 					      $book_only,
 					      $tscache,
 					      $ld_ok,
@@ -1020,9 +1033,11 @@ sub src_deps {
 		my $fullname = expand_dirname_cmd($srcname, $fname, $dir,
 						  $local_dirs, "ld", "");
 		if ($fullname) {
-		    push(@$deps, $fullname) unless $book_only;
+		    push(@$srcdeps, $fullname) unless $book_only;
 		    my $local_two_pass = src_deps($fullname, $cache,
-						  $local_dirs, $deps,
+						  $local_dirs,
+						  $certdeps,
+						  $srcdeps,
 						  $book_only,
 						  $tscache,
 						  $ld_ok,
@@ -1075,7 +1090,8 @@ sub remove_dups {
 sub find_deps {
     my ($lispfile,$cache,$book_only,$tscache,$parent) = @_;
 
-    my $deps = $book_only ? [] : [ $lispfile ];
+    my $certdeps = [];
+    my $srcdeps = $book_only ? [] : [ $lispfile ];
     my $local_dirs = {};
     my $book_two_pass = 0;
     my $acl2_two_pass = 0;
@@ -1100,10 +1116,11 @@ sub find_deps {
 	# Scan the .acl2 file first so that we get the add-include-book-dir
 	# commands before the include-book commands.
 	if ($acl2file) {
-	    push(@$deps, $acl2file) unless $book_only;
+	    push(@$srcdeps, $acl2file) unless $book_only;
 	    $acl2_two_pass = src_deps($acl2file, $cache,
 				      $local_dirs, 
-				      $deps, 
+				      $certdeps,
+				      $srcdeps,
 				      $book_only, 
 				      $tscache,
 				      1,
@@ -1112,14 +1129,19 @@ sub find_deps {
     }
 
     # Scan the lisp file for include-books.
-    $book_two_pass = src_deps($lispfile, $cache, $local_dirs, $deps,
-			      $book_only, $tscache, !$certifiable, {}, $parent);
+    $book_two_pass = src_deps($lispfile, $cache, $local_dirs,
+			      $certdeps, $srcdeps, $book_only,
+			      $tscache, !$certifiable, {}, $parent);
 
     if ($debugging) {
-	print "find_deps $lispfile: \n";
-	print_lst($deps);
+	print "find_deps $lispfile: certs:\n";
+	print_lst($certdeps);
+	print "sources:\n";
+	print_lst($srcdeps);
     }
     
+    my $image;
+
     if (!$book_only && $certifiable) {
 	# If there is an .image file corresponding to this file or a
 	# cert.image in this file's directory, add a dependency on the
@@ -1133,7 +1155,7 @@ sub find_deps {
 	}
 
 	if ($imagefile) {
-	    push(@{$deps}, canonical_path($imagefile));
+	    push(@{$srcdeps}, canonical_path($imagefile));
 	    my $line;
 	    if (open(my $im, "<", $imagefile)) {
 		$line = <$im>;
@@ -1142,19 +1164,11 @@ sub find_deps {
 	    } else {
 		print "Warning: find_deps: Could not open image file $imagefile: $!\n";
 	    }
-	    if ($line && ($line ne "acl2")) {
-		if ($bin_dir) {
-		    my $image = canonical_path(rel_path($bin_dir, $line));
-		    push(@{$deps}, $image);
-		} else {
-		    print "Warning: no --bin set, so not adding image dependencies,\n";
-		    print " e.g.   $base.cert : $line\n";
-		}
-	    }
+	    $image = $line;
 	}
     }
 
-    return ($deps, $acl2_two_pass || $book_two_pass);
+    return ($certdeps, $srcdeps, $image, $acl2_two_pass || $book_two_pass);
 
 }
 
@@ -1171,15 +1185,18 @@ sub deps_dfs {
 
     $visited->{$target} = 1;
 
-    if ($target !~ /\.(cert|acl2x|pcert)$/) {
-	push(@{$sources}, $target);
-	return;
+    push (@$certs, $target);
+    my $certdeps = cert_deps($target, $depmap);
+    my $srcdeps = cert_srcdeps($target, $depmap);
+
+    foreach my $dep (@$srcdeps) {
+	if (! $visited->{$dep}) {
+	    push(@$sources, $dep);
+	    $visited->{$dep} = 1;
+	}
     }
 
-    push (@$certs, $target);
-    my $deps = cert_deps($target, $depmap);
-
-    foreach my $dep (@$deps) {
+    foreach my $dep (@$certdeps) {
 	deps_dfs($dep, $depmap, $visited, $sources, $certs);
     }
 }
@@ -1194,7 +1211,6 @@ sub add_deps {
     my ($target,$cache,$depmap,$sources,$tscache,$parent) = @_;
 
     if ($target !~ /\.cert$/) {
-	$sources->{$target} = 1;
 	return;
     }
 
@@ -1236,21 +1252,33 @@ sub add_deps {
 	return;
     }
 
-    my ($deps, $two_pass) = find_deps($lispfile, $cache, 0, $tscache, $parent);
+    my ($certdeps, $srcdeps, $image, $two_pass)
+	= find_deps($lispfile, $cache, 0, $tscache, $parent);
 
 
-    $depmap->{$target} = [ $deps, $two_pass ] ;
+    $depmap->{$target} = [ $certdeps, $srcdeps, $image, $two_pass ] ;
 
     if ($print_deps) {
 	print "Dependencies for $target:\n";
-	foreach my $dep (@{$deps}) {
+	print "cert:\n";
+	foreach my $dep (@{$certdeps}) {
 	    print "$dep\n";
 	}
+	print "src:\n";
+	foreach my $dep (@{$srcdeps}) {
+	    print "$dep\n";
+	}
+	print "image: $image\n" if $image;
 	print "\n";
     }
 
+    # Accumulate the set of sources.
+    foreach my $dep (@$srcdeps) {
+	$sources->{$dep} = 1;
+    }
+
     # Run the recursive add_deps on each dependency.
-    foreach my $dep  (@{$deps}) {
+    foreach my $dep  (@{$certdeps}) {
 	add_deps($dep, $cache, $depmap, $sources, $tscache, $target);
     }
 
@@ -1334,7 +1362,7 @@ sub process_labels_and_targets {
 	if (substr($str, 0, 3) eq '-p ') {
 	    # Deps-of.
 	    my $name = canonical_path(to_source_name(substr($str,3)));
-	    (my $deps, my $two_pass) = find_deps($name, $cache, 1, $tscache, 0);
+	    my ($deps) = find_deps($name, $cache, 1, $tscache, 0);
 	    push (@targets, @$deps);
 	    push (@$label_targets, @$deps) if $label_started;
 	} elsif (substr($str, -1, 1) eq ':') {

@@ -83,9 +83,9 @@ my %certlib_opts = ( "debugging" => 0,
 		     "clean_certs" => 0,
 		     "print_deps" => 0,
 		     "all_deps" => 0,
-                     "believe_cache" => 0,
-		     "bin_dir" => "");
+                     "believe_cache" => 0 );
 my $cache_file = 0;
+my $bin_dir;
 
 $base_path = abs_canonical_path(".");
 
@@ -354,7 +354,7 @@ GetOptions ("help|h"               => sub { print $summary_str;
 					   $no_build = 1;},
 	    "acl2|a=s"             => \$acl2,
 	    "acl2-books|b=s"       => \$acl2_books,
-	    "bin=s"                => \$certlib_opts{'bin_dir'},
+	    "bin=s"                => \$bin_dir,
 	    "include|i=s"          => sub {shift;
 					   push(@includes, shift);},
 	    "include-after|ia=s"     => sub {shift;
@@ -398,8 +398,8 @@ sub remove_trailing_slash {
     return ( substr($dir,-1) eq "/" && $dir ne "/" )
 	? substr($dir,0,-1) : $dir;
 }
-# Remove trailing slash from bin_dir, if any, and add it to certlib_opts
-$certlib_opts{'bin_dir'} = $certlib_opts{'bin_dir'} && remove_trailing_slash($certlib_opts{'bin_dir'});
+# Remove trailing slash from bin_dir, if any
+$bin_dir = $bin_dir && canonical_path(remove_trailing_slash($bin_dir));
 
 certlib_set_opts(\%certlib_opts);
 
@@ -509,8 +509,8 @@ unless ($no_makefile) {
 
     unless ($no_boilerplate) {
 	print $mf "ACL2_SYSTEM_BOOKS ?= " . canonical_path($RealBin) . "\n";
-	if ($certlib_opts{'bin_dir'}) {
-	    print $mf "export ACL2_BIN_DIR := $certlib_opts{'bin_dir'}\n";
+	if ($bin_dir) {
+	    print $mf "export ACL2_BIN_DIR := ${bin_dir}\n";
 	}
 	print $mf "include \$(ACL2_SYSTEM_BOOKS)/make_cert\n\n";
     }
@@ -602,7 +602,9 @@ unless ($no_makefile) {
 
     # write out the dependencies
     foreach my $cert (@certs) {
-	my $deps = cert_deps($cert, \%depmap);
+	my $certdeps = cert_deps($cert, \%depmap);
+	my $srcdeps = cert_srcdeps($cert, \%depmap);
+	my $image = cert_image($cert, \%depmap);
 	if (cert_is_two_pass($cert, \%depmap)) {
 	    my $acl2xfile = cert_to_acl2x($cert);
 #     This would be a nice way to do things, but unfortunately the "private"
@@ -616,18 +618,24 @@ unless ($no_makefile) {
 	    print $mf " \\\n     $acl2xfile";
 	    print $mf "\n\n";
 	    print $mf "$acl2xfile :";
-	    foreach my $dep (@$deps) {
-		print $mf " \\\n     $dep";
-	    }
-	    print $mf "\n\n";
 	} else {
 	    print $mf "$cert : TWO_PASS = \n";
 	    print $mf "$cert :";
-	    foreach my $dep (@$deps) {
-		print $mf " \\\n     $dep";
-	    }
-	    print $mf "\n\n";
 	}
+	foreach my $dep (@$certdeps, @$srcdeps) {
+	    print $mf " \\\n     $dep";
+	}
+	if ($image && ($image ne "acl2")) {
+	    if ($bin_dir) {
+		$image = rel_path($bin_dir, $image);
+		print $mf " \\\n     $image";
+	    } else {
+		print "Warning: no --bin set, so not adding image dependencies,\n";
+		print " e.g.   $cert : $image\n";
+	    }
+	}
+
+	print $mf "\n\n";
     }
 
     # Write dependencies for pcert mode.
@@ -645,7 +653,9 @@ unless ($no_makefile) {
     print $mf "# (similar to those for .cert files)\n";
 
     foreach my $cert (@certs) {
-	my $deps = cert_deps($cert, \%depmap);
+	my $certdeps = cert_deps($cert, \%depmap);
+	my $srcdeps = cert_srcdeps($cert, \%depmap);
+	my $image = cert_image($cert, \%depmap);
 	(my $base = $cert) =~ s/\.cert$//;
 	if (cert_is_two_pass($cert, \%depmap)) {
 	    print $mf "$base.acl2x : TWO_PASS = 1\n";
@@ -653,9 +663,21 @@ unless ($no_makefile) {
 	    print $mf "$base.acl2x : TWO_PASS = \n";
 	}
 	print $mf "$base.acl2x :";
-	foreach my $dep (@$deps) {
+	foreach my $dep (@$certdeps) {
 	    my $acl2x = cert_to_acl2x($dep);
 	    print $mf " \\\n     $acl2x";
+	}
+	foreach my $dep (@$srcdeps) {
+	    print $mf " \\\n     $dep";
+	}
+	if ($image && ($image ne "acl2")) {
+	    if ($bin_dir) {
+		$image = rel_path($bin_dir, $image);
+		print $mf " \\\n     $image";
+	    } else {
+		print "Warning: no --bin set, so not adding image dependencies,\n";
+		print " e.g.   $cert : $image\n";
+	    }
 	}
 	print $mf "\n\n";
     }
