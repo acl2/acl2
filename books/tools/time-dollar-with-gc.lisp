@@ -2,6 +2,8 @@
 ; information related to garbage collection.  Anyone should feel free to add to
 ; the information that this macro reports.
 
+; Original author: David Rager <ragerdl@cs.utexas.edu>
+
 (in-package "ACL2")
 
 (defttag :profiling)

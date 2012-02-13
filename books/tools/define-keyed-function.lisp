@@ -1,5 +1,7 @@
 (in-package "ACL2")
 
+; Original author: David Rager <ragerdl@cs.utexas.edu>
+
 (defun parse-keyed-arguments (args)
   (cond ((atom args)
          (mv nil nil))
