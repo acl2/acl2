@@ -106,7 +106,7 @@ rtl: arithmetic meta top-with-meta-cert ordinals ihs misc arithmetic-2
 arithmetic-3/extra: arithmetic-3 ihs rtl arithmetic-2 arithmetic-3
 # arithmetic-5 has no dependencies
 finite-set-theory: arithmetic ordinals
-finite-set-theory/osets: unicode
+finite-set-theory/osets: unicode tools
 powerlists: arithmetic ordinals data-structures
 textbook: arithmetic top-with-meta-cert ordinals ihs
 defexec: arithmetic misc ordinals

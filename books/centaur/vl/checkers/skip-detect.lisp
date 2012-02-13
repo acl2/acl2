@@ -23,7 +23,6 @@
 (include-book "../util/cwtime")
 (local (include-book "../util/arithmetic"))
 (local (include-book "../util/osets"))
-(local (include-book "finite-set-theory/osets/set-order" :dir :system))
 
 
 

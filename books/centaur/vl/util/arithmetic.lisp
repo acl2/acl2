@@ -796,13 +796,11 @@
     (implies (alistp alist)
              (alistp (cdr alist))))
 
-  (local (include-book "finite-set-theory/osets/set-order" :dir :system))
-
   (defthm alistp-of-insert
     (implies (and (alistp x)
                   (consp a))
              (alistp (sets::insert a x)))
-    :hints(("Goal" :in-theory (enable sets::primitive-reasoning))))
+    :hints(("Goal" :in-theory (enable (:ruleset sets::primitive-rules)))))
 
   (defthm alistp-of-mergesort
     (implies (alistp x)

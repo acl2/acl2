@@ -20,7 +20,6 @@
 
 (in-package "VL")
 (include-book "fmt")
-(local (include-book "finite-set-theory/osets/set-order" :dir :system))
 (local (include-book "../util/arithmetic"))
 (local (include-book "../util/osets"))
 
@@ -185,7 +184,7 @@ either the orignames or names of the modules to their related warnings.</p>"
                   (vl-warninglist-p (cdr a))
                   (vl-modwarningalist-p x))
              (vl-modwarningalist-p (insert a x)))
-    :hints(("Goal" :in-theory (enable sets::primitive-reasoning insert))))
+    :hints(("Goal" :in-theory (enable (:ruleset sets::primitive-rules)))))
 
   (defthm vl-modwarningalist-p-of-mergesort
     (implies (force (vl-modwarningalist-p x))

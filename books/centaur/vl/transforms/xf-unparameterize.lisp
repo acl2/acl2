@@ -464,23 +464,23 @@ that this mapping is being carried out for.</p>"
   (defthm alistp-of-vl-match-namedargs-with-paramdecls
     (alistp (mv-nth 2 (vl-match-namedargs-with-paramdecls args decls warnings inst))))
 
-  (defthm strip-cars-of-vl-match-namedargs-with-paramdecls
+  (defthm alist-keys-of-vl-match-namedargs-with-paramdecls
     (implies (mv-nth 0 (vl-match-namedargs-with-paramdecls args decls warnings inst))
-             (equal (strip-cars (mv-nth 2 (vl-match-namedargs-with-paramdecls args decls warnings inst)))
+             (equal (alist-keys (mv-nth 2 (vl-match-namedargs-with-paramdecls args decls warnings inst)))
                     (vl-paramdecllist->names decls))))
 
-  (defthm vl-exprlist-p-of-strip-cdrs-of-vl-match-namedargs-with-paramdecls
+  (defthm vl-exprlist-p-of-alist-vals-of-vl-match-namedargs-with-paramdecls
     (implies (and (force (vl-namedarglist-p args))
                   (force (vl-paramdecllist-p decls)))
-             (vl-exprlist-p (strip-cdrs (mv-nth 2 (vl-match-namedargs-with-paramdecls args decls warnings inst))))))
+             (vl-exprlist-p (alist-vals (mv-nth 2 (vl-match-namedargs-with-paramdecls args decls warnings inst))))))
 
-  (defthm vl-exprlist-resolved-p-of-strip-cdrs-of-vl-match-namedargs-with-paramdecls
+  (defthm vl-exprlist-resolved-p-of-alist-vals-of-vl-match-namedargs-with-paramdecls
     (implies (and (force (vl-namedarglist-p args))
                   (force (vl-paramdecllist-p decls))
                   (force (vl-namedarglist-resolved-p args))
                   (force (vl-good-paramdecllist-p decls)))
              (vl-exprlist-resolved-p
-              (strip-cdrs
+              (alist-vals
                (mv-nth 2
                 (vl-match-namedargs-with-paramdecls args decls warnings inst)))))
     :hints(("Goal" :in-theory (enable vl-good-paramdecllist-p
@@ -546,28 +546,28 @@ argument is provided to it, then the other two get the default values.</p>"
   (defthm alistp-of-vl-match-plainargs-with-paramdecls
     (alistp (mv-nth 2 (vl-match-plainargs-with-paramdecls args decls warnings inst))))
 
-  (defthm strip-cars-of-vl-match-plainargs-with-paramdecls
+  (defthm alist-keys-of-vl-match-plainargs-with-paramdecls
     (implies (mv-nth 0 (vl-match-plainargs-with-paramdecls args decls warnings inst))
-             (equal (strip-cars (mv-nth 2 (vl-match-plainargs-with-paramdecls args decls warnings inst)))
+             (equal (alist-keys (mv-nth 2 (vl-match-plainargs-with-paramdecls args decls warnings inst)))
                     (vl-paramdecllist->names decls))))
 
-  (defthm vl-exprlist-p-of-strip-cdrs-of-vl-match-plainargs-with-paramdecls
+  (defthm vl-exprlist-p-of-alist-vals-of-vl-match-plainargs-with-paramdecls
     (implies (and (force (vl-plainarglist-p args))
                   (force (vl-paramdecllist-p decls))
                   (force (<= (len args) (len decls))))
              (vl-exprlist-p
-              (strip-cdrs
+              (alist-vals
                (mv-nth 2
                 (vl-match-plainargs-with-paramdecls args decls warnings inst))))))
 
-  (defthm vl-exprlist-resolved-p-of-strip-cdrs-of-vl-match-plainargs-with-paramdecls
+  (defthm vl-exprlist-resolved-p-of-alist-vals-of-vl-match-plainargs-with-paramdecls
     (implies (and (force (vl-plainarglist-p args))
                   (force (vl-paramdecllist-p decls))
                   (force (vl-good-paramdecllist-p decls))
                   (force (vl-plainarglist-resolved-p args))
                   (force (<= (len args) (len decls))))
              (vl-exprlist-resolved-p
-              (strip-cdrs
+              (alist-vals
                (mv-nth 2
                 (vl-match-plainargs-with-paramdecls args decls warnings inst)))))
     :hints(("Goal" :in-theory (enable vl-good-paramdecllist-p
@@ -649,9 +649,9 @@ these cases.</p>"
   (defthm alistp-of-vl-match-paramargs-with-decls
     (alistp (mv-nth 2 (vl-match-paramargs-with-decls inst mod warnings))))
 
-  (defthm strip-cars-of-vl-match-paramargs-with-decls
+  (defthm alist-keys-of-vl-match-paramargs-with-decls
     (implies (mv-nth 0 (vl-match-paramargs-with-decls inst mod warnings))
-             (equal (strip-cars (mv-nth 2 (vl-match-paramargs-with-decls inst mod warnings)))
+             (equal (alist-keys (mv-nth 2 (vl-match-paramargs-with-decls inst mod warnings)))
                     (vl-paramdecllist->names (vl-module->paramdecls mod)))))
 
   (defthm vl-exprlist-p-of-vl-match-paramargs-with-decls
@@ -659,7 +659,7 @@ these cases.</p>"
                   (force (vl-module-p mod))
                   (force (vl-modinst-p inst)))
              (vl-exprlist-p
-              (strip-cdrs
+              (alist-vals
                (mv-nth 2
                 (vl-match-paramargs-with-decls inst mod warnings))))))
 
@@ -670,7 +670,7 @@ these cases.</p>"
                   (force (vl-module-p mod))
                   (force (vl-modinst-p inst)))
              (vl-exprlist-resolved-p
-              (strip-cdrs
+              (alist-vals
                (mv-nth 2
                 (vl-match-paramargs-with-decls inst mod warnings)))))
     :hints(("Goal" :in-theory (enable vl-arguments-resolved-p))))
@@ -680,8 +680,8 @@ these cases.</p>"
   (local (defthm lemma
            (implies (alistp x)
                     (equal (vl-sigma-p x)
-                           (and (string-listp (strip-cars x))
-                                (vl-exprlist-p (strip-cdrs x)))))
+                           (and (string-listp (alist-keys x))
+                                (vl-exprlist-p (alist-vals x)))))
            :hints(("Goal" :in-theory (enable alistp vl-sigma-p)))))
 
   (defthm vl-sigma-p-of-vl-match-paramargs-with-decls
@@ -713,7 +713,7 @@ unparameterization code that no conflicts are introduced.</p>"
   (defund vl-unparam-newname-aux (origname sigma)
     (declare (xargs :guard (and (stringp origname)
                                 (vl-sigma-p sigma)
-                                (vl-exprlist-resolved-p (strip-cdrs sigma)))
+                                (vl-exprlist-resolved-p (alist-vals sigma)))
                     :verify-guards nil))
     (cond ((atom sigma)
            (mbe :logic (string-fix origname)
@@ -729,7 +729,8 @@ unparameterization code that no conflicts are introduced.</p>"
   (local (in-theory (enable vl-unparam-newname-aux)))
 
   (local (defthm lemma
-           (implies (vl-exprlist-resolved-p (strip-cdrs sigma))
+           (implies (and (vl-sigma-p sigma)
+                         (vl-exprlist-resolved-p (alist-vals sigma)))
                     (and (equal (vl-constint-p (vl-atom->guts (cdar sigma)))
                                 (consp sigma))
                          (equal (vl-atom-p (cdar sigma))
@@ -743,61 +744,54 @@ unparameterization code that no conflicts are introduced.</p>"
     (stringp (vl-unparam-newname-aux origname sigma))
     :rule-classes :type-prescription)
 
-  (local (defthm vl-sigma-p-of-hons-shrink-alist
-           (implies (and (vl-sigma-p x)
-                         (vl-sigma-p acc))
-                    (vl-sigma-p (hons-shrink-alist x acc)))
+  (local (defthm vl-exprlist-resolved-p-of-alist-vals-of-hons-shrink-alist
+           (implies (and (vl-exprlist-resolved-p (alist-vals x))
+                         (vl-exprlist-resolved-p (alist-vals acc)))
+                    (vl-exprlist-resolved-p (alist-vals (hons-shrink-alist x acc))))
            :hints(("Goal" :in-theory (enable (:induction hons-shrink-alist))))))
 
-  (local (defthm vl-exprlist-resolved-p-of-strip-cdrs-of-hons-shrink-alist
-           (implies (and (vl-exprlist-resolved-p (strip-cdrs x))
-                         (vl-exprlist-resolved-p (strip-cdrs acc)))
-                    (vl-exprlist-resolved-p (strip-cdrs (hons-shrink-alist x acc))))
-           :hints(("Goal" :in-theory (enable (:induction hons-shrink-alist))))))
+  ;; (local (defthm vl-sigma-p-of-insert
+  ;;          ;; BOZO add to defalist?
+  ;;            (implies (and (vl-sigma-p x)
+  ;;                          (consp a)
+  ;;                          (stringp (car a))
+  ;;                          (vl-expr-p (cdr a)))
+  ;;                     (vl-sigma-p (insert a x)))
+  ;;            :hints(("Goal" :in-theory (enable (:ruleset sets::primitive-rules))))))
 
-  (local (include-book "finite-set-theory/osets/set-order" :dir :system))
+  ;;   (local (defthm vl-sigma-p-of-mergesort
+  ;;            (implies (vl-sigma-p x)
+  ;;                     (vl-sigma-p (mergesort x)))))
 
-  (local (defthm vl-sigma-p-of-insert
-           (implies (and (vl-sigma-p x)
-                         (consp a)
-                         (stringp (car a))
-                         (vl-expr-p (cdr a)))
-                    (vl-sigma-p (insert a x)))
-           :hints(("Goal" :in-theory (enable sets::insert sets::primitive-reasoning)))))
-
-  (local (defthm vl-sigma-p-of-mergesort
-           (implies (vl-sigma-p x)
-                    (vl-sigma-p (mergesort x)))))
-
-  (local (defthm vl-exprlist-resolved-p-of-strip-cdrs-of-insert
-           (implies (and (vl-exprlist-resolved-p (strip-cdrs x))
+  (local (defthm vl-exprlist-resolved-p-of-alist-vals-of-insert
+           (implies (and (vl-exprlist-resolved-p (alist-vals x))
                          (vl-expr-resolved-p (cdr a)))
-                    (vl-exprlist-resolved-p (strip-cdrs (insert a x))))
-           :hints(("Goal" :in-theory (enable sets::insert sets::primitive-reasoning)))))
+                    (vl-exprlist-resolved-p (alist-vals (insert a x))))
+           :hints(("Goal" :in-theory (enable (:ruleset sets::primitive-rules))))))
 
-  (local (defthm vl-exprlist-resolved-p-of-strip-cdrs-of-mergesort
-           (implies (vl-exprlist-resolved-p (strip-cdrs x))
-                    (vl-exprlist-resolved-p (strip-cdrs (mergesort x))))
-           :hints(("Goal" :in-theory (enable sets::insert sets::primitive-reasoning)))))
+  (local (defthm vl-exprlist-resolved-p-of-alist-vals-of-mergesort
+           (implies (vl-exprlist-resolved-p (alist-vals x))
+                    (vl-exprlist-resolved-p (alist-vals (mergesort x))))
+           :hints(("Goal" :in-theory (enable (:ruleset sets::primitive-rules))))))
 
   (defund vl-unparam-newname (origname sigma)
     (declare (xargs :guard (and (stringp origname)
                                 (vl-sigma-p sigma)
-                                (vl-exprlist-resolved-p (strip-cdrs sigma)))))
+                                (vl-exprlist-resolved-p (alist-vals sigma)))))
     (progn$
      ;; Extralogical check: there really shouldn't be duplicates.
-     (or (uniquep (strip-cars sigma))
+     (or (uniquep (alist-keys sigma))
          (er hard? 'vl-unparam-newname
              "Programming error: duplicate keys in sigma.  Origname is ~s0,
               duplicated keys are ~&1, sigma is ~x2."
-             origname (duplicated-members (strip-cars sigma)) sigma))
+             origname (duplicated-members (alist-keys sigma)) sigma))
 
      ;; We just standardize the sigma a little bit: we eliminate any duplicates
      ;; and sort all of the parameters.
      (b* ((shrink (hons-shrink-alist sigma nil))
           (-      (flush-hons-get-hash-table-link shrink))
           (sorted (mergesort shrink)))
-         (hons-copy (vl-unparam-newname-aux origname sorted)))))
+       (hons-copy (vl-unparam-newname-aux origname sorted)))))
 
   (defthm stringp-of-vl-unparam-newname
     (stringp (vl-unparam-newname origname sigma))
@@ -1338,7 +1332,7 @@ somewhat involved, so we have not yet attempted it.</p>"
                                     :name determine-safe-modules))
          ;(-                 (cw "; ~x0 modules are not safe to unparameterize yet: ~&1.~%"
          ;                       (len unsafe)
-         ;                       (strip-cars unsafe)))
+         ;                       (alist-keys unsafe)))
          ((mv good bad new) (vl-unparameterize-pass-aux mods unsafe mods modalist))
          (-                 (flush-hons-get-hash-table-link unsafe))
          (-                 (flush-hons-get-hash-table-link modalist))

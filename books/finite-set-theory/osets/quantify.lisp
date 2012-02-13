@@ -1,154 +1,140 @@
-#| 
-
-   Fully Ordered Finite Sets, Version 0.91
-   Copyright (C) 2003-2006 by Jared Davis <jared@cs.utexas.edu>
-
-   This program is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public License as
-   published by the Free Software Foundation; either version 2 of
-   the License, or (at your option) any later version.
-
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public Lic-
-   ense along with this program; if not, write to the Free Soft-
-   ware Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
-   02111-1307, USA.
+; Fully Ordered Finite Sets
+; Copyright (C) 2003-2012 by Jared Davis <jared@cs.utexas.edu>
+;
+; This program is free software; you can redistribute it and/or modify it under
+; the terms of the GNU General Public License as published by the Free Software
+; Foundation; either version 2 of the License, or (at your option) any later
+; version.  This program is distributed in the hope that it will be useful but
+; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+; more details.  You should have received a copy of the GNU General Public Lic-
+; ense along with this program; if not, write to the Free Soft- ware
+; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 
-
- quantify.lisp
-
-   This is an optional extension of the sets library, and is not 
-   included by default when you run (include-book "sets").  
-
-
-   Constructive Quantification over Sets and Lists.
-
-   We create the macro, quantify-predicate, which introduces the
-   following functions for any arbitrary predicate.
-
-     all<predicate>           all<not-predicate>
-     exists<predicate>        exists<not-predicate>
-     find<predicate>          find<not-predicate>
-     filter<predicate>        filter<not-predicate>
-
-     all-list<predicate>      all-list<not-predicate>
-     exists-list<predicate>   exists-list<not-predicate>
-     find-list<predicate>     find-list<not-predicate>
-     filter-list<predicate>   filter-list<not-predicate>
-    
-   In addition to introducing these functions, an entire rewriting
-   strategy is introduced for reasoning about these functions with 
-   respect to sets and lists.
-
-
-
-   Introductory Examples.
-
-   Here are some of the most simple examples.  All of these predicates
-   have only a single argument, and their guard is "t".
-
-     (SETS::quantify-predicate (integerp x))
-     (SETS::quantify-predicate (symbolp x))
-     (SETS::quantify-predicate (rationalp x))
-     (SETS::quantify-predicate (natp x))
-
-   Notice that you cannot use macros here.  For example, the following
-   is an error: (quantify-predicate (real/rationalp x)).  Once you 
-   have done the above, you can now run these functions, e.g.,
-
-     (SETS::all<integerp> '(1 2 3)) = t
-     (SETS::all<not-integerp> '(a b c)) = t
-     (SETS::find<symbolp> '(1 2 3 a b c)) = a
-
-
-   Controlling Packages.
-
-   As you can see, all of these functions are introduced in the SETS 
-   package by default.  If you'd like them to be in a different place
-   instead, you can specify the :in-package-of argument and provide
-   a symbol from some other package.  For example, since defthm is in
-   the ACL2 package, we might write:
-
-     (SETS::quantify-predicate (eqlablep x) 
-       :in-package-of defthm)
-
-   And then the functions all<integerp>, all<not-integerp>, and so 
-   forth will be in the ACL2 package instead of the LISTS package.  
-
-
-   Multi-Argument Predicates.
-
-   You can also quantify over predicates with many arguments.  As an 
-   example, we introduce the function lessp as follows:
-
-     (defun lessp (a b) 
-       (declare (xargs :guard t))
-       (< (rfix a) (rfix b)))
-  
-     (quantify-predicate (lessp a b))
-
-   We could now ask, is every element in a set less than some maximum
-   value?  For example:
-
-     (all<lessp> '(1 2 3) 6) = t
-     (all<lessp> '(1 2 3) 2) = nil
-
-
-
-   Supporting Guards.
-
-   If efficiency is important, our predicate may have guards and we 
-   may want to put guards on the introduced functions.  For example,
-   we might write fast-lessp below:
-  
-     (defun fast-lessp (a b)
-       (declare (xargs :guard (and (rationalp a)
-                                   (rationalp b))))
-       (< a b))
-
-   Now we need to supply an extra :guard argument so that the guards 
-   of all<fast-lessp>, exists<fast-lessp>, and so forth can be 
-   verified.  
-
-   When writing this guard, the list which all-list<fast-lessp> and so
-   forth are iterating over will be called ?list, and the set that 
-   all<fast-lessp> and so forth are iterating over will be called ?set.
-   The other arguments will all be named with whatever names you gave
-   them when you called quantify-predicate.  For example, below we name
-   fast-lessp's second argument "max", so it will be named "max" in our 
-   guards as well.
-
-   Here's an example:
-
-     (in-package "ACL2")
-
-     (SETS::quantify-predicate (rationalp x) 
-       :in-package-of defthm)
-
-     (SETS::quantify-predicate (fast-lessp x max)
-       :set-guard  ((all<rationalp> ?set))
-       :list-guard ((all-list<rationalp> ?list))
-       :arg-guard  ((rationalp max))
-       :in-package-of defthm)
-
-  
- 
-   Disabling the theory.  
-
-   Calling quantify-predicate will result in a lot of theorems being
-   introduced.  You can disable all of these theorems by using the 
-   deftheory event theory<predicate>.  For example, 
-
-     (in-theory (disable theory<integerp>))
-     (in-theory (disable theory<fast-lessp>))
-
-   And so forth. 
-|#
+; quantify.lisp
+;
+; This is an optional extension of the sets library, and is not included by
+; default when you run (include-book "sets").
+;
+;
+; Constructive Quantification over Sets and Lists.
+;
+; We create the macro, quantify-predicate, which introduces the following
+; functions for any arbitrary predicate.
+;
+;     all<predicate>           all<not-predicate>
+;     exists<predicate>        exists<not-predicate>
+;     find<predicate>          find<not-predicate>
+;     filter<predicate>        filter<not-predicate>
+;
+;     all-list<predicate>      all-list<not-predicate>
+;     exists-list<predicate>   exists-list<not-predicate>
+;     find-list<predicate>     find-list<not-predicate>
+;     filter-list<predicate>   filter-list<not-predicate>
+;
+; In addition to introducing these functions, an entire rewriting strategy is
+; introduced for reasoning about these functions with respect to sets and
+; lists.
+;
+;
+; Introductory Examples.
+;
+; Here are some of the most simple examples.  All of these predicates have only
+; a single argument, and their guard is "t".
+;
+;     (SETS::quantify-predicate (integerp x))
+;     (SETS::quantify-predicate (symbolp x))
+;     (SETS::quantify-predicate (rationalp x))
+;     (SETS::quantify-predicate (natp x))
+;
+; Notice that you cannot use macros here.  For example, the following is an
+; error: (quantify-predicate (real/rationalp x)).  Once you have done the
+; above, you can now run these functions, e.g.,
+;
+;     (SETS::all<integerp> '(1 2 3)) = t
+;     (SETS::all<not-integerp> '(a b c)) = t
+;     (SETS::find<symbolp> '(1 2 3 a b c)) = a
+;
+;
+; Controlling Packages.
+;
+; As you can see, all of these functions are introduced in the SETS package by
+; default.  If you'd like them to be in a different place instead, you can
+; specify the :in-package-of argument and provide a symbol from some other
+; package.  For example, since defthm is in the ACL2 package, we might write:
+;
+;     (SETS::quantify-predicate (eqlablep x)
+;       :in-package-of defthm)
+;
+; And then the functions all<integerp>, all<not-integerp>, and so forth will be
+; in the ACL2 package instead of the LISTS package.
+;
+;
+; Multi-Argument Predicates.
+;
+; You can also quantify over predicates with many arguments.  As an example, we
+; introduce the function lessp as follows:
+;
+;     (defun lessp (a b)
+;       (declare (xargs :guard t))
+;       (< (rfix a) (rfix b)))
+;
+;     (quantify-predicate (lessp a b))
+;
+; We could now ask, is every element in a set less than some maximum value?
+; For example:
+;
+;     (all<lessp> '(1 2 3) 6) = t
+;     (all<lessp> '(1 2 3) 2) = nil
+;
+;
+; Supporting Guards.
+;
+; If efficiency is important, our predicate may have guards and we may want to
+; put guards on the introduced functions.  For example, we might write
+; fast-lessp below:
+;
+;     (defun fast-lessp (a b)
+;       (declare (xargs :guard (and (rationalp a)
+;                                   (rationalp b))))
+;       (< a b))
+;
+; Now we need to supply an extra :guard argument so that the guards of
+; all<fast-lessp>, exists<fast-lessp>, and so forth can be verified.
+;
+; When writing this guard, the list which all-list<fast-lessp> and so forth are
+; iterating over will be called ?list, and the set that all<fast-lessp> and so
+; forth are iterating over will be called ?set.  The other arguments will all
+; be named with whatever names you gave them when you ran quantify-predicate.
+; For example, below we name fast-lessp's second argument "max", so it will be
+; named "max" in our guards as well.
+;
+; Here's an example:
+;
+;     (in-package "ACL2")
+;
+;     (SETS::quantify-predicate (rationalp x)
+;       :in-package-of defthm)
+;
+;     (SETS::quantify-predicate (fast-lessp x max)
+;       :set-guard  ((all<rationalp> ?set))
+;       :list-guard ((all-list<rationalp> ?list))
+;       :arg-guard  ((rationalp max))
+;       :in-package-of defthm)
+;
+;
+;
+; Disabling the theory.
+;
+; Calling quantify-predicate will result in a lot of theorems being introduced.
+; You can disable all of these theorems by using the deftheory event
+; theory<predicate>.  For example,
+;
+;     (in-theory (disable theory<integerp>))
+;     (in-theory (disable theory<fast-lessp>))
+;
+; And so forth.
 
 (in-package "SETS")
 (include-book "sets")
@@ -156,15 +142,15 @@
 
 
 
-; We introduce our theory as a constant so that we can derive
-; new instances of it for concrete predicates
+; We introduce our theory as a constant so that we can derive new instances of
+; it for concrete predicates
 
 (defconst *positive-functions* '(
 
-;; We introduce "list versions" of the functions so that we can reason
-;; through mergesorts.
+; We introduce "list versions" of the functions so that we can reason through
+; mergesorts.
 
-  (defun all-list (list-for-all-reduction) 
+  (defun all-list (list-for-all-reduction)
     (declare (xargs :guard (true-listp list-for-all-reduction)))
     (if (endp list-for-all-reduction)
 	t
@@ -182,19 +168,19 @@
     (cond ((endp x) nil)
 	  ((predicate (car x)) (car x))
 	  (t (find-list (cdr x)))))
- 
+
   (defun filter-list (x)
     (declare (xargs :guard (true-listp x)))
     (cond ((endp x) nil)
-	  ((predicate (car x)) 
+	  ((predicate (car x))
 	   (cons (car x) (filter-list (cdr x))))
 	  (t (filter-list (cdr x)))))
 
 
-;; We also introduce "set versions" of the functions, so that we can
-;; reason about sets.
+; We also introduce "set versions" of the functions, so that we can reason
+; about sets.
 
-  (defun all (set-for-all-reduction) 
+  (defun all (set-for-all-reduction)
     (declare (xargs :guard (setp set-for-all-reduction)))
     (if (empty set-for-all-reduction)
 	t
@@ -223,11 +209,11 @@
 
   ))
 
-; We then create "negative" versions of the above functions by 
-; performing a set of substitutions on the constants.
+; We then create "negative" versions of the above functions by performing a set
+; of substitutions on the constants.
 
-(defconst *negative-functions* 
-  (INSTANCE::instance-defuns *positive-functions* 
+(defconst *negative-functions*
+  (INSTANCE::instance-defuns *positive-functions*
      '(((predicate ?x)   (not (predicate ?x)))
        ((all ?x)         (all<not> ?x))
        ((exists ?x)      (exists<not> ?x))
@@ -239,22 +225,21 @@
        ((filter-list ?x) (filter-list<not> ?x)))))
 
 
-; And then we smash together the positive and negative functions to
-; create a single function list which can be instantiated later.
+; And then we smash together the positive and negative functions to create a
+; single function list which can be instantiated later.
 
 (defconst *functions*
   (append *positive-functions* *negative-functions*))
 
 
-; Now we create the instance-*functions* macro which will allow us
-; to actually derive an instance of all of the functions
+; Now we create the instance-*functions* macro which will allow us to actually
+; derive an instance of all of the functions
 
 (INSTANCE::instance *functions*)
 
 
-; And we call the macro with no arguments, to introduce a verbatim
-; copy of the theory.  In other words, we introduce the generic 
-; theory itself here.
+; And we call the macro with no arguments, to introduce a verbatim copy of the
+; theory.  In other words, we introduce the generic theory itself here.
 
 (instance-*functions*)
 
@@ -263,8 +248,8 @@
 
 ; List Theory Reasoning
 ;
-; We begin with several theorems about the "list versions" of the 
-; above functions.
+; We begin with several theorems about the "list versions" of the above
+; functions.
 
   (defthm all-list-type
     (or (equal (all-list x) t)
@@ -274,27 +259,27 @@
   (defthm all-list-cdr
     (implies (all-list x)
 	     (all-list (cdr x))))
-  
+
   (defthm all-list-endp
     (implies (endp x)
 	     (all-list x)))
-  
-  (defthm all-list-in
+
+  (defthm all-list-member
     (implies (and (all-list x)
-		  (in-list a x))
+		  (member a x))
 	     (predicate a)))
 
   (defthm all-list-in-2
     (implies (and (all-list x)
 		  (not (predicate a)))
-	     (not (in-list a x))))
+	     (not (member a x))))
 
   (defthm all-list-cons
     (equal (all-list (cons a x))
 	   (and (predicate a)
 		(all-list x))))
 
-  (defthm all-list-append 
+  (defthm all-list-append
     (equal (all-list (append x y))
 	   (and (all-list x)
 		(all-list y))))
@@ -311,11 +296,11 @@
 	     (implies (and (all-list acc)
 			   (all-list x))
 		      (all-list (revappend x acc)))))
-  
+
     (local (defthm lemma2
 	     (implies (not (all-list acc))
 		      (not (all-list (revappend x acc))))))
-  
+
     (local (defthm lemma3
 	     (implies (and (all-list acc)
 			   (not (all-list x)))
@@ -340,9 +325,9 @@
     :rule-classes :type-prescription)
 
   (defthm filter-list-membership
-    (equal (in-list a (filter-list x))
-  	   (and (predicate a)
-	        (in-list a x))))
+    (iff (member a (filter-list x))
+         (and (predicate a)
+              (member a x))))
 
   (defthm filter-list-all-list
     (all-list (filter-list x)))
@@ -354,8 +339,8 @@
 
 ; Set Theory Reasoning
 ;
-; Of course, really we are more interested in reasoning about sets 
-; than lists.  We write several theorems about our set functions.
+; Of course, really we are more interested in reasoning about sets than lists.
+; We write several theorems about our set functions.
 
   (defthm all-type
     (or (equal (all X) t)
@@ -452,7 +437,7 @@
 	   (and (predicate a)
 		(in a X)))
     :hints(("Goal" :induct (filter X))))
-         
+
   (defthm filter-subset
     (subset (filter X) X))
 
@@ -467,9 +452,8 @@
 
 
 
-; In order to reason past a mergesort, we need to provide some 
-; theorems that tie together our list and set theories.  We begin
-; this here.
+; In order to reason past a mergesort, we need to provide some theorems that
+; tie together our list and set theories.  We begin this here.
 
   (defthm all-mergesort
     (equal (all (mergesort X))
@@ -485,72 +469,72 @@
 
 
 
-; Notice that the positive functions and the negative functions are
-; symmetric.  We now invert the above theorem to create the
-; corresponding theorems for the negative functions.
+; Notice that the positive functions and the negative functions are symmetric.
+; We now invert the above theorem to create the corresponding theorems for the
+; negative functions.
 
-(defconst *negative-theorems* 
+(defconst *negative-theorems*
   (INSTANCE::instance-rewrite *positive-theorems*
 
-    ;; we first replace calls to "positive" functions with calls to 
-    ;; temporary symbols, which simply acts as placeholders.
+    ;; we first replace calls to "positive" functions with calls to temporary
+    ;; symbols, which simply acts as placeholders.
 
-   '(((predicate ?x)   (predicate-temp ?x))   
-     ((all ?x)         (all-temp ?x))         
-     ((exists ?x)      (exists-temp ?x))      
+   '(((predicate ?x)   (predicate-temp ?x))
+     ((all ?x)         (all-temp ?x))
+     ((exists ?x)      (exists-temp ?x))
      ((find ?x)        (find-temp ?x))
      ((filter ?x)      (filter-temp ?x))
-     ((all-list ?x)    (all-list-temp ?x))         
-     ((exists-list ?x) (exists-list-temp ?x))      
+     ((all-list ?x)    (all-list-temp ?x))
+     ((exists-list ?x) (exists-list-temp ?x))
      ((find-list ?x)   (find-list-temp ?x))
      ((filter-list ?x) (filter-list-temp ?x))
-     
-     ;; now we replace calls to "negative" functions with calls to 
-     ;; positive functions.
-     
+
+     ;; now we replace calls to "negative" functions with calls to positive
+     ;; functions.
+
      ((not (predicate ?x))  (predicate ?x))
-     ((all<not> ?x)         (all ?x))      
-     ((exists<not> ?x)      (exists ?x))   
+     ((all<not> ?x)         (all ?x))
+     ((exists<not> ?x)      (exists ?x))
      ((find<not> ?x)        (find ?x))
      ((filter<not> ?x)      (filter ?x))
      ((all-list<not> ?x)    (all-list ?x))
      ((exists-list<not> ?x) (exists-list ?x))
      ((find-list<not> ?x)   (find-list ?x))
      ((filter-list<not> ?x) (filter-list ?x))
-     
-     ;; and finally we replace our temporary placeholder symbols with 
-     ;; calls to the actual negative functions.
 
-     ((predicate-temp ?x)   (not (predicate ?x))) 
-     ((all-temp ?x)         (all<not> ?x))        
+     ;; and finally we replace our temporary placeholder symbols with calls to
+     ;; the actual negative functions.
+
+     ((predicate-temp ?x)   (not (predicate ?x)))
+     ((all-temp ?x)         (all<not> ?x))
      ((exists-temp ?x)      (exists<not> ?x))
      ((find-temp ?x)        (find<not> ?x))
      ((filter-temp ?x)      (filter<not> ?x))
-     ((all-list-temp ?x)    (all-list<not> ?x))        
+     ((all-list-temp ?x)    (all-list<not> ?x))
      ((exists-list-temp ?x) (exists-list<not> ?x))
      ((find-list-temp ?x)   (find-list<not> ?x))
      ((filter-list-temp ?x) (filter-list<not> ?x))
 )))
 
 
-; We now smash together the positive and negative theorems to form a
-; single, complete theory.  Note that we have to rename all of the
-; defthms in *negative-theorems* so that their names will not collide
-; with the theorems in *theorems*.
+; We now smash together the positive and negative theorems to form a single,
+; complete theory.  Note that we have to rename all of the defthms in
+; *negative-theorems* so that their names will not collide with the theorems in
+; *theorems*.
 
-(defconst *theorems* 
+(defconst *theorems*
   (append *positive-theorems*
 	  (INSTANCE::rename-defthms *negative-theorems* '-not)))
 
 
-; As with the functions, we create a new macro which will allow us to
-; derive new instances of our theorems. 
+; As with the functions, we create a new macro which will allow us to derive
+; new instances of our theorems.
 
-(INSTANCE::instance *theorems*) 
+(INSTANCE::instance *theorems*)
 
 
-; And as before, we call the resulting macro with no arguments, which
-; gives us a verbatim copy of the positive and negative theorems.
+; And as before, we call the resulting macro with no arguments, which gives us
+; a verbatim copy of the positive and negative theorems.
 
 (instance-*theorems*)
 
@@ -560,11 +544,10 @@
 
 
 
-; We already have an all-by-membership theorem set up for sets.  But,
-; we would like to have a corresponding theorem to use with lists.  We
-; create that here.
+; We already have an all-by-membership theorem set up for sets.  But, we would
+; like to have a corresponding theorem to use with lists.  We create that here.
 
-(encapsulate 
+(encapsulate
  (((all-list-hyps) => *)
   ((all-list-list) => *))
 
@@ -573,7 +556,7 @@
 
  (defthmd list-membership-constraint
    (implies (all-list-hyps)
-	    (implies (in-list arbitrary-element (all-list-list))
+	    (implies (member arbitrary-element (all-list-list))
 		     (predicate arbitrary-element))))
 )
 
@@ -581,14 +564,14 @@
 
   (local (defthm witness-lemma
 	   (implies (not (all-list x))
-		    (and (in-list (find-list<not> x) x)
+		    (and (member (find-list<not> x) x)
 			 (not (predicate (find-list<not> x)))))))
 
   (defthmd all-list-by-membership
     (implies (all-list-hyps)
 	     (all-list (all-list-list)))
-    :hints(("Goal" 
-	    :use (:instance list-membership-constraint 
+    :hints(("Goal"
+	    :use (:instance list-membership-constraint
 		  (arbitrary-element (find-list<not> (all-list-list)))))))
 )
 
@@ -601,12 +584,12 @@
 	   (+ (cardinality (filter X))
 	      (cardinality (filter<not> X))))
     :rule-classes :linear)
-  
+
   (defthm all-subset
     (implies (and (all Y)
 		  (subset X Y))
 	     (all X))
-    :hints(("Goal" 
+    :hints(("Goal"
 	    :use (:functional-instance all-by-membership
 		  (all-hyps (lambda () (and (all Y)
 					    (subset X Y))))
@@ -616,14 +599,14 @@
     (implies (and (all<not> Y)
 		  (subset X Y))
 	     (all<not> X))
-    :hints(("Goal" 
+    :hints(("Goal"
 	    :use (:functional-instance all-by-membership
 		  (all-hyps  (lambda () (and (all<not> Y)
 				 	     (subset X Y))))
 		  (all-set   (lambda () X))
 		  (predicate (lambda (x) (not (predicate x))))
 		  (all       (lambda (x) (all<not> x)))))))
-  
+
 ))
 
 (INSTANCE::instance *final-theorems*)
@@ -641,12 +624,11 @@
 ;
 ; -------------------------------------------------------------------
 
-; Each concrete theory we instantiate will require the introduction of
-; 16 new functions and a wealth of theorems.  We don't want to
-; overburden the user with having to instantiate all of these and give
-; them names, so we adopt a naming convention where the predicate's
-; name is used to generate the names of the new functions.  Of course,
-; we still have to generate the new names.
+; Each concrete theory we instantiate will require the introduction of 16 new
+; functions and a wealth of theorems.  We don't want to overburden the user
+; with having to instantiate all of these and give them names, so we adopt a
+; naming convention where the predicate's name is used to generate the names of
+; the new functions.  Of course, we still have to generate the new names.
 
 (defun mksym (name sym)
   (declare (xargs :mode :program))
@@ -673,9 +655,9 @@
 	term)
     (cons (standardize-to-package symbol-name replacement (car term))
 	  (standardize-to-package symbol-name replacement (cdr term)))))
-	
 
-(defun quantify-simple-predicate (predicate in-package 
+
+(defun quantify-simple-predicate (predicate in-package
 			          set-guard list-guard arg-guard)
   (declare (xargs :guard (symbolp in-package)
 		  :mode :program))
@@ -703,8 +685,8 @@
 	 (find-list<not-p>   (mksym (app "find-list" not-wrap) in-package))
 	 (filter-list<not-p> (mksym (app "filter-list" not-wrap) in-package))
 
-	 ;; And we create a substitution list, to instantiate the
-	 ;; generic theory/functions with their new, concrete values.
+	 ;; And we create a substitution list, to instantiate the generic
+	 ;; theory/functions with their new, concrete values.
 
 	 (subs `(((predicate ?x)        (,name ,@args))
 		 ((all ?x)              (,all<p> ,@args))
@@ -724,31 +706,31 @@
 		 ((find-list<not> ?x)   (,find-list<not-p> ,@args))
 		 ((filter-list<not> ?x) (,filter-list<not-p> ,@args))))
 
-	 ;; We use this hack to support alternate guards.  We
-	 ;; basically use our rewriter to inject the extra guards into
-	 ;; the function's existing guards.
+	 ;; We use this hack to support alternate guards.  We basically use our
+	 ;; rewriter to inject the extra guards into the function's existing
+	 ;; guards.
 
-	 (fn-subs 
+	 (fn-subs
 	  (list* `((declare (xargs :guard (true-listp ?list)))
-		   (declare (xargs :guard (and (true-listp ?list) 
+		   (declare (xargs :guard (and (true-listp ?list)
 					       ,@list-guard
 					       ,@arg-guard))))
 		 `((declare (xargs :guard (setp ?set)))
-		   (declare (xargs :guard (and (setp ?set) 
+		   (declare (xargs :guard (and (setp ?set)
 					       ,@set-guard
 					       ,@arg-guard))))
 		 subs))
 
-	 
-	 ;; And we make some symbols for use in automating the all-by-membership
-	 ;; strategy with computed hints.
+
+	 ;; And we make some symbols for use in automating the
+	 ;; all-by-membership strategy with computed hints.
 
 	 (all-trigger<p>           (mksym (app "all-trigger" wrap) in-package))
-	 (all-trigger<not-p>       (mksym (app "all-trigger" not-wrap) in-package))	 
+	 (all-trigger<not-p>       (mksym (app "all-trigger" not-wrap) in-package))
 	 (all-strategy<p>          (mksym (app "all-strategy" wrap) in-package))
 	 (all-strategy<not-p>      (mksym (app "all-strategy" not-wrap) in-package))
 	 (all-list-trigger<p>      (mksym (app "all-list-trigger" wrap) in-package))
-	 (all-list-trigger<not-p>  (mksym (app "all-list-trigger" not-wrap) in-package))	 
+	 (all-list-trigger<not-p>  (mksym (app "all-list-trigger" not-wrap) in-package))
 	 (all-list-strategy<p>     (mksym (app "all-list-strategy" wrap) in-package))
 	 (all-list-strategy<not-p> (mksym (app "all-list-strategy" not-wrap) in-package))
 
@@ -768,14 +750,14 @@
 
 	;; It's now quite easy to instantiate all of our functions.
 
-	(instance-*functions* 
-	 :subs ,fn-subs 
+	(instance-*functions*
+	 :subs ,fn-subs
 	 :suffix ,name)
 
 	;; And similarly we can instantiate all of the theorems.
 
-	(instance-*theorems* 
-	 :subs ,subs 
+	(instance-*theorems*
+	 :subs ,subs
 	 :suffix ,(mksym wrap in-package))
 	 ;:extra-defs (empty))
 
@@ -799,7 +781,7 @@
 	  (declare (xargs :verify-guards nil))
 	  (,all-list<not-p> ,@args))
 
-	
+
 	;; Now we need "tagging theorems" that instruct the rewriter
 	;; to tag the appropriate terms.
 
@@ -809,8 +791,8 @@
 				  mfc state)))
 		   (equal (,all<p> ,@args)
 			  (,all-trigger<p> ,@args)))
-	  :hints(("Goal" 
-		  :in-theory (union-theories 
+	  :hints(("Goal"
+		  :in-theory (union-theories
 			      (theory 'minimal-theory)
 			      '((:definition ,all-trigger<p>))))))
 
@@ -820,8 +802,8 @@
 				  mfc state)))
 		   (equal (,all<not-p> ,@args)
 			  (,all-trigger<not-p> ,@args)))
-	  :hints(("Goal" 
-		  :in-theory (union-theories 
+	  :hints(("Goal"
+		  :in-theory (union-theories
 			      (theory 'minimal-theory)
 			      '((:definition ,all-trigger<not-p>))))))
 
@@ -831,8 +813,8 @@
 				  mfc state)))
 		   (equal (,all-list<p> ,@args)
 			  (,all-list-trigger<p> ,@args)))
-	  :hints(("Goal" 
-		  :in-theory (union-theories 
+	  :hints(("Goal"
+		  :in-theory (union-theories
 			      (theory 'minimal-theory)
 			      '((:definition ,all-list-trigger<p>))))))
 
@@ -842,16 +824,16 @@
 				  mfc state)))
 		   (equal (,all-list<not-p> ,@args)
 			  (,all-list-trigger<not-p> ,@args)))
-	  :hints(("Goal" 
-		  :in-theory (union-theories 
+	  :hints(("Goal"
+		  :in-theory (union-theories
 			      (theory 'minimal-theory)
 			      '((:definition ,all-list-trigger<not-p>))))))
 
 
-	;; And then we call upon our computed hints routines to generate a 
+	;; And then we call upon our computed hints routines to generate a
 	;; computed hint for us to use, and add it to the default hints.
 
-	(COMPUTED-HINTS::automate-instantiation 
+	(COMPUTED-HINTS::automate-instantiation
 	  :new-hint-name ,(mksym (app "all-by-membership-hint" wrap) in-package)
 	  :generic-theorem all-by-membership
 	  :generic-predicate predicate
@@ -865,7 +847,7 @@
 	  :tagging-theorem ,all-strategy<p>
 	)
 
-	(COMPUTED-HINTS::automate-instantiation 
+	(COMPUTED-HINTS::automate-instantiation
 	  :new-hint-name ,(mksym (app "all-by-membership-hint" not-wrap) in-package)
 	  :generic-theorem all-by-membership
 	  :generic-predicate predicate
@@ -879,7 +861,7 @@
 	  :tagging-theorem ,all-strategy<not-p>
 	)
 
-	(COMPUTED-HINTS::automate-instantiation 
+	(COMPUTED-HINTS::automate-instantiation
 	  :new-hint-name ,(mksym (app "all-list-by-membership-hint" wrap) in-package)
 	  :generic-theorem all-list-by-membership
 	  :generic-predicate predicate
@@ -893,7 +875,7 @@
 	  :tagging-theorem ,all-list-strategy<p>
 	)
 
-	(COMPUTED-HINTS::automate-instantiation 
+	(COMPUTED-HINTS::automate-instantiation
 	  :new-hint-name ,(mksym (app "all-list-by-membership-hint" not-wrap) in-package)
 	  :generic-theorem all-list-by-membership
 	  :generic-predicate predicate
@@ -908,8 +890,8 @@
 	)
 
 
-	(instance-*final-theorems* 
-	 :subs ,subs 
+	(instance-*final-theorems*
+	 :subs ,subs
 	 :suffix ,(mksym wrap in-package))
 	 ;:extra-defs (empty))
 
@@ -918,8 +900,8 @@
 	(verify-guards ,filter<not-p>)
 
 	;; In the end, we want to create a deftheory event so that you can
-	;; easily turn off the reasoning about these functions when you 
-	;; don't need it.  We do that with the following event:
+	;; easily turn off the reasoning about these functions when you don't
+	;; need it.  We do that with the following event:
 
 	(deftheory ,theory<p> '(,@theory<p>-defthms
 				,all<p>              ,all-list<p>
@@ -937,11 +919,11 @@
 				))
 	)))
 
-					     
-(defmacro quantify-predicate (predicate 
-			      &key in-package-of 
+
+(defmacro quantify-predicate (predicate
+			      &key in-package-of
 			           set-guard list-guard arg-guard)
-  (quantify-simple-predicate predicate 
+  (quantify-simple-predicate predicate
 			     (if in-package-of in-package-of 'in)
 			     (standardize-to-package "?SET" '?set set-guard)
 			     (standardize-to-package "?LIST" '?list list-guard)
@@ -949,16 +931,15 @@
 
 
 
-; We don't want to keep all these generic theorems around, because
-; many of them are rewrite rules with targets that are actual
-; functions.  For example, if a rule concludes with (in a X), we don't
-; want to start backchaining on it if its hypothese include generic
-; rules.
+; We don't want to keep all these generic theorems around, because many of them
+; are rewrite rules with targets that are actual functions.  For example, if a
+; rule concludes with (in a X), we don't want to start backchaining on it if
+; its hypothese include generic rules.
 
-(deftheory generic-quantification-theory 
+(deftheory generic-quantification-theory
   `(,@(INSTANCE::defthm-names *theorems*)
     ,@(INSTANCE::defthm-names *final-theorems*)
-    all exists find filter 
+    all exists find filter
     all-list exists-list find-list filter-list
     all<not> exists<not> find<not> filter<not>
     all-list<not> exists-list<not> find-list<not> filter-list<not>))

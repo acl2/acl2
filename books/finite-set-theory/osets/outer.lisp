@@ -1,39 +1,28 @@
-#|
-
-   Fully Ordered Finite Sets, Version 0.91
-   Copyright (C) 2003-2006 by Jared Davis <jared@cs.utexas.edu>
-
-   This program is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public License as
-   published by the Free Software Foundation; either version 2 of
-   the License, or (at your option) any later version.
-
-   This program is distributed in the hope that it will be useful
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public Lic-
-   ense along with this program; if not, write to the Free Soft-
-   ware Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
-   02111-1307, USA.
+; Fully Ordered Finite Sets
+; Copyright (C) 2003-2012 by Jared Davis <jared@cs.utexas.edu>
+;
+; This program is free software; you can redistribute it and/or modify it under
+; the terms of the GNU General Public License as published by the Free Software
+; Foundation; either version 2 of the License, or (at your option) any later
+; version.  This program is distributed in the hope that it will be useful but
+; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+; more details.  You should have received a copy of the GNU General Public Lic-
+; ense along with this program; if not, write to the Free Soft- ware
+; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 
-
- outer.lisp
-
-  This file is the outermost layer of the set theory library.  We
-  have already built up a framework for doing pick-a-point and double
-  containment proofs in membership.lisp, but we have not even intro-
-  duced a number of set functions -- deletion, union, intersect,
-  difference, and so forth.
-
-  Here, we introduce these functions and prove many important facts
-  about them.  Taking a quick look through here, it should be obvious
-  that our automatic strategies are doing a very good job at keeping
-  saving us from having to provide hints.
-
-|#
+; outer.lisp
+;
+; This file is the outermost layer of the set theory library.  We have already
+; built up a framework for doing pick-a-point and double containment proofs in
+; membership.lisp, but we have not even introduced a number of set functions --
+; deletion, union, intersect, difference, and so forth.
+;
+; Here, we introduce these functions and prove many important facts about them.
+; Taking a quick look through here, it should be obvious that our automatic
+; strategies are doing a very good job at keeping saving us from having to
+; provide hints.
 
 (in-package "SETS")
 (include-book "fast")
@@ -47,14 +36,20 @@
 (defun delete (a X)
   (declare (xargs :guard (setp X)
                   :verify-guards nil))
-  (cond ((empty X) nil)
-        ((equal a (head X)) (tail X))
-        (t (insert (head X) (delete a (tail X))))))
+  (mbe :logic
+       (cond ((empty X) nil)
+             ((equal a (head X)) (tail X))
+             (t (insert (head X) (delete a (tail X)))))
+       :exec
+       (cond ((endp X) nil)
+             ((equal a (car X)) (cdr X))
+             (t (insert (car X) (delete a (cdr X)))))))
 
 (defthm delete-set
   (setp (delete a X)))
 
-(verify-guards delete)
+(verify-guards delete
+  :hints(("Goal" :in-theory (enable (:ruleset primitive-rules)))))
 
 (defthm delete-preserves-empty
   (implies (empty X)
@@ -131,7 +126,8 @@
          (or (in a X) (in a Y))))
 
 (verify-guards union
-  :hints(("Goal" :in-theory (enable fast-union-theory))))
+  :hints(("Goal" :in-theory (enable fast-union-set
+                                    fast-union-membership))))
 
 
 (defthm union-symmetric
@@ -229,7 +225,8 @@
                 (setp Y))
            (equal (fast-intersect X Y nil)
                   (intersect X Y)))
-  :hints(("Goal" :in-theory (enable fast-intersect-theory))))
+  :hints(("Goal" :in-theory (enable fast-intersect-set
+                                    fast-intersect-membership))))
 
 (verify-guards intersect)
 
@@ -291,7 +288,8 @@
 ; the intersect.
 
 (defun intersectp (X Y)
-  (declare (xargs :guard (and (setp X) (setp Y))))
+  (declare (xargs :guard (and (setp X) (setp Y))
+                  :guard-hints(("Goal" :in-theory (enable fast-intersectp-correct)))))
   (mbe :logic (not (empty (intersect X Y)))
        :exec (fast-intersectp X Y)))
 
@@ -341,8 +339,19 @@
                 (not (in a Y)))))
 )
 
-(verify-guards difference
-  :hints(("Goal" :in-theory (enable fast-difference-theory))))
+
+(encapsulate
+  ()
+  ;; bozo shouldn't really need this
+  (local (defthm l0
+           (implies (and (setp y) (setp x) (empty x))
+                    (empty (fast-difference x y nil)))
+           :hints(("Goal" :in-theory (enable fast-difference
+                                             (:ruleset low-level-rules))))))
+
+  (verify-guards difference
+    :hints(("Goal" :in-theory (enable fast-difference-set
+                                      fast-difference-membership)))))
 
 (defthm difference-subset-X
   (subset (difference X Y) X))
@@ -397,11 +406,11 @@
        :exec  (length (the list X))))
 
 (verify-guards cardinality
-  ;; Normally we would never want to enable the primitives theory.
-  ;; However, here we need to show that cardinality is equal to
-  ;; len, and for this we need to be able to reason about tail and
-  ;; empty.  Think of this as a tiny extension of "fast.lisp"
-  :hints(("Goal" :in-theory (enable primitives-theory))))
+  ;; Normally we would never want to enable the primitives theory.  However,
+  ;; here we need to show that cardinality is equal to length, and for this we
+  ;; need to be able to reason about tail and empty.  Think of this as a tiny
+  ;; extension of "fast.lisp"
+  :hints(("Goal" :in-theory (enable (:ruleset primitive-rules)))))
 
 (defthm cardinality-type
   (and (integerp (cardinality X))
@@ -420,7 +429,7 @@
   (local (defthm cardinality-insert-empty
     (implies (empty X)
              (equal (cardinality (insert a X)) 1))
-    :hints(("Goal" :use (:instance cardinality (x (insert a X)))))))
+    :hints(("Goal" :use (:instance cardinality (x (insert a nil)))))))
 
   (defthm insert-cardinality
     (equal (cardinality (insert a X))

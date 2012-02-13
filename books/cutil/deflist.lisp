@@ -142,20 +142,11 @@ it.</p>
 
 (encapsulate
   ()
-  (local (include-book "finite-set-theory/osets/set-order" :dir :system))
-
-  (local (defthm sets-in-list-as-member-equal
-           (equal (sets::in-list a x)
-                  (if (member-equal a x)
-                      t
-                    nil))
-           :hints(("Goal" :in-theory (enable sets::in-list)))))
-
-  (local (defthm member-equal-is-in
+  (local (defthm member-to-in
            (implies (setp x)
-                    (iff (member-equal a x)
+                    (iff (member a x)
                          (in a x)))
-           :hints(("Goal" :in-theory (enable sets::primitive-reasoning)))))
+           :hints(("Goal" :in-theory (enable sets::in-to-member)))))
 
   (local (defthm member-equal-of-append
            (iff (member-equal a (append x y))
@@ -171,9 +162,7 @@ it.</p>
 
   (defthmd deflist-lemma-4
     (and (subsetp-equal (intersect x y) x)
-         (subsetp-equal (intersect x y) y))
-    :hints(("Goal" :in-theory (enable sets::primitive-reasoning
-                                      subsetp-equal))))
+         (subsetp-equal (intersect x y) y)))
 
   (defthmd deflist-lemma-5
     (subsetp-equal (union x y) (append x y)))

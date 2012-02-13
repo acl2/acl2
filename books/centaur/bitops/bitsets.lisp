@@ -25,7 +25,6 @@
 (include-book "../misc/witness-cp")
 (local (include-book "ihs-extensions"))
 (local (include-book "arithmetic-3/extra/top-ext" :dir :system))
-(local (include-book "finite-set-theory/osets/set-order" :dir :system))
 
 
 (defxdoc bitsets
@@ -1266,8 +1265,8 @@ X))</tt>.  We could have used this as the <tt>:logic</tt> definition, but the
 
   (local (defthm setp-of-lsb-bits
            (sets::setp (lsb-bits n x))
-           :hints(("Goal" :in-theory (enable lsb-bits
-                                             sets::primitive-reasoning)))))
+           :hints(("Goal" :in-theory (enable* lsb-bits
+                                              (:ruleset sets::primitive-rules))))))
 
   (local (in-theory (disable l0 l1 l2)))
 
@@ -1277,7 +1276,7 @@ X))</tt>.  We could have used this as the <tt>:logic</tt> definition, but the
                     (iff (member-equal a x)
                          (sets::in a x)))
            :hints(("Goal"
-                   :in-theory (enable sets::primitive-reasoning)))))
+                   :in-theory (enable* (:ruleset sets::primitive-rules))))))
 
   (local (defthm in-lsb-bits
            (equal (sets::in a (lsb-bits n x))
@@ -1307,7 +1306,7 @@ X))</tt>.  We could have used this as the <tt>:logic</tt> definition, but the
            (implies (sets::setp x)
                     (equal (sets::cardinality x)
                            (len x)))
-           :hints(("Goal" :in-theory (enable sets::primitive-reasoning)))))
+           :hints(("Goal" :in-theory (enable* (:ruleset sets::primitive-rules))))))
 
   (local (defthm logcount-is-cardinality-of-bitset-members
            (implies (natp x)

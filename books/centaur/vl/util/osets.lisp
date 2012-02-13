@@ -25,39 +25,29 @@
 
 (include-book "subsetp-equal")
 (include-book "arithmetic")
-(local (include-book "finite-set-theory/osets/set-order" :dir :system))
 
 
 (defthm setp-of-cdr
   (implies (setp x)
            (setp (cdr x)))
-  :hints(("Goal" :in-theory (enable sets::primitive-reasoning))))
+  :hints(("Goal" :in-theory (enable (:ruleset sets::primitive-rules)))))
 
 
 ;; We sometimes want to use set-theory routines just for their efficiency,
 ;; while treating the resulting output sets as if they were just regular lists.
 ;; Here, we introduce a few theorems for accomodating this.
 
-(defthm sets-in-list-as-member-equal
-  (equal (sets::in-list a x)
-         (if (member-equal a x)
-             t
-           nil))
-  :hints(("Goal" :in-theory (enable sets::in-list))))
-
-
-
 (defthm string-listp-of-insert
   (implies (and (stringp a)
                 (string-listp x))
            (string-listp (insert a x)))
-  :hints(("Goal" :in-theory (enable sets::primitive-reasoning
+  :hints(("Goal" :in-theory (enable (:ruleset sets::primitive-rules)
                                     insert))))
 
 (defthm string-listp-of-intersect-1
   (implies (string-listp x)
            (string-listp (intersect x y)))
-  :hints(("Goal" :in-theory (enable sets::primitive-reasoning
+  :hints(("Goal" :in-theory (enable (:ruleset sets::primitive-rules)
                                     intersect))))
 
 (defthm string-listp-of-intersect-2
@@ -76,14 +66,14 @@
 (defthm string-listp-of-difference
   (implies (string-listp x)
            (string-listp (difference x y)))
-  :hints(("Goal" :in-theory (enable sets::primitive-reasoning
+  :hints(("Goal" :in-theory (enable (:ruleset sets::primitive-rules)
                                     difference))))
 
 (defthm string-listp-of-union
   (implies (and (string-listp x)
                 (string-listp y))
            (string-listp (union x y)))
-  :hints(("Goal" :in-theory (enable sets::primitive-reasoning
+  :hints(("Goal" :in-theory (enable (:ruleset sets::primitive-rules)
                                     union))))
 
 (defthm string-listp-of-mergesort
@@ -97,13 +87,13 @@
   (implies (and (symbolp a)
                 (symbol-listp x))
            (symbol-listp (insert a x)))
-  :hints(("Goal" :in-theory (enable sets::primitive-reasoning
+  :hints(("Goal" :in-theory (enable (:ruleset sets::primitive-rules)
                                     insert))))
 
 (defthm symbol-listp-of-intersect-1
   (implies (symbol-listp x)
            (symbol-listp (intersect x y)))
-  :hints(("Goal" :in-theory (enable sets::primitive-reasoning
+  :hints(("Goal" :in-theory (enable (:ruleset sets::primitive-rules)
                                     intersect))))
 
 (defthm symbol-listp-of-intersect-2
@@ -122,14 +112,14 @@
 (defthm symbol-listp-of-difference
   (implies (symbol-listp x)
            (symbol-listp (difference x y)))
-  :hints(("Goal" :in-theory (enable sets::primitive-reasoning
+  :hints(("Goal" :in-theory (enable (:ruleset sets::primitive-rules)
                                     difference))))
 
 (defthm symbol-listp-of-union
   (implies (and (symbol-listp x)
                 (symbol-listp y))
            (symbol-listp (union x y)))
-  :hints(("Goal" :in-theory (enable sets::primitive-reasoning
+  :hints(("Goal" :in-theory (enable (:ruleset sets::primitive-rules)
                                     union))))
 
 (defthm symbol-listp-of-mergesort
@@ -143,7 +133,7 @@
                 (syntaxp (not (quotep x))))
            (iff (member-equal a x)
                 (in a x)))
-  :hints(("Goal" :in-theory (enable sets::primitive-reasoning))))
+  :hints(("Goal" :in-theory (enable sets::in-to-member))))
 
 (defthm member-equal-of-intersect
   (iff (member-equal a (intersect x y))
@@ -214,7 +204,7 @@
               (subsetp-equal (sfix x) y)))
   :hints(("Goal"
           :induct (insert a x)
-          :in-theory (enable insert sets::primitive-reasoning))))
+          :in-theory (enable insert (:ruleset sets::primitive-rules)))))
 
 (defthm subsetp-equal-when-first-two-same-yada-yada
   (implies (and (equal (second x) (first x))
@@ -228,7 +218,7 @@
               (subsetp-equal (sfix y) z)))
   :hints(("Goal"
           :induct (union x y)
-          :in-theory (enable union sets::primitive-reasoning))))
+          :in-theory (enable union (:ruleset sets::primitive-rules)))))
 
 
 
@@ -260,7 +250,7 @@
                   (equal (len x)
                          (cardinality x)))
          :hints(("Goal"
-                 :in-theory (enable sets::primitive-reasoning
+                 :in-theory (enable (:ruleset sets::primitive-rules)
                                     cardinality)))))
 
 (defthm no-duplicatesp-equal-by-mergesort
@@ -309,26 +299,11 @@
          (and (subset x z)
               (subset y z))))
 
-(local (include-book "finite-set-theory/osets/set-order" :dir :system))
-
-
-(defthm alistp-of-insert
-  (implies (and (alistp x)
-                (consp a))
-           (alistp (insert a x)))
-  :hints(("Goal" :in-theory (enable sets::primitive-reasoning))))
-
-
-(defthm alistp-of-mergesort
-  (implies (alistp x)
-           (alistp (mergesort x)))
-  :hints(("Goal" :induct (len x))))
-
 (defthm string-listp-of-strip-cdrs-of-insert
   (implies (and (string-listp (strip-cdrs x))
                 (stringp (cdr a)))
            (string-listp (strip-cdrs (insert a x))))
-  :hints(("Goal" :in-theory (enable sets::primitive-reasoning))))
+  :hints(("Goal" :in-theory (enable (:ruleset sets::primitive-rules)))))
 
 (defthm string-listp-of-strip-cdrs-of-mergesort
   (implies (string-listp (strip-cdrs x))
@@ -342,7 +317,7 @@
            (string-listp x))
   :hints(("Goal"
           :induct (len x)
-          :in-theory (enable sets::primitive-reasoning))))
+          :in-theory (enable (:ruleset sets::primitive-rules)))))
 
 (defthm subset-of-intersect-one
   (implies (or (subset a x)

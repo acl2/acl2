@@ -26,7 +26,6 @@
 (local (include-book "modname-sets"))
 (local (include-book "../util/arithmetic"))
 (local (include-book "../util/osets"))
-(local (include-book "finite-set-theory/osets/set-order" :dir :system))
 
 
 (defxdoc hierarchy
@@ -1519,7 +1518,7 @@ run.  See @(see vl-fast-necessary-modules) for a faster alternative which use a
            (implies (and (in a (vl-modulelist->names x))
                          (force (vl-modulelist-p x)))
                     (stringp a))
-           :hints(("Goal" :in-theory (enable sets::primitive-reasoning
+           :hints(("Goal" :in-theory (enable (:ruleset sets::primitive-rules)
                                              vl-modulelist->names)))))
 
   (verify-guards vl-necessary-modules-direct-slow)

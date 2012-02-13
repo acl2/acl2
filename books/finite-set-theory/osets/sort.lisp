@@ -1,59 +1,47 @@
-#|
-
-   Fully Ordered Finite Sets, Version 0.91
-   Copyright (C) 2003-2006 by Jared Davis <jared@cs.utexas.edu>
-
-   This program is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public License as
-   published by the Free Software Foundation; either version 2 of
-   the License, or (at your option) any later version.
-
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public Lic-
-   ense along with this program; if not, write to the Free Soft-
-   ware Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
-   02111-1307, USA.
+; Fully Ordered Finite Sets
+; Copyright (C) 2003-2012 by Jared Davis <jared@cs.utexas.edu>
+;
+; This program is free software; you can redistribute it and/or modify it under
+; the terms of the GNU General Public License as published by the Free Software
+; Foundation; either version 2 of the License, or (at your option) any later
+; version.  This program is distributed in the hope that it will be useful but
+; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+; more details.  You should have received a copy of the GNU General Public Lic-
+; ense along with this program; if not, write to the Free Soft- ware
+; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 
-
- sort.lisp
-
-   We implement a mergesort which can convert lists into sets more
-   efficiencly than repeated insertion.  Logically, (mergesort x)
-   is exactly the same as repeated insertion, so it is fairly easy
-   to reason about.  But, under the hood, mergesort is implemented
-   fairly efficiently using MBE.
-
-   The sort we implement is probably not "blisteringly fast".  Most
-   of the literature on the subject suggests using a bubblesort when
-   we get down to some threshold, say 40 elements.  I'm not going to
-   bother with any of that.  If you find that the mergesort's perfor-
-   mance is inadequate, which is unlikely, you can work on making it
-   faster.
-
-   There are a few points of interest.  If you look at the actual
-   sort code (mergesort-exec), you will see that it is actually using
-   the set library's own union function to perform the union.  This
-   is pretty slick because union is linear complexity, and yet is
-   easy to reason about since we have already got a lot of theory in
-   place about it.
-
-   In any case, our strategy for proving the equality of this merge-
-   sort with a simple insert-sort is the exact same trick we use
-   everywhere else in the sets library.  We begin by showing that
-   both produce sets, and then show that membership in either is
-   true exactly when an element is member-equal in the original list.
-
-|#
+; sort.lisp
+;
+; We implement a mergesort which can convert lists into sets more efficiencly
+; than repeated insertion.  Logically, (mergesort x) is exactly the same as
+; repeated insertion, so it is fairly easy to reason about.  But, under the
+; hood, mergesort is implemented fairly efficiently using MBE.
+;
+; The sort we implement is probably not "blisteringly fast".  Folklore says we
+; should switch to using a bubblesort when we get down to some threshold, say
+; 40 elements.  I'm not going to bother with any of that.  If you find that the
+; mergesort's performance is inadequate, which is unlikely, you can work on
+; making it faster.
+;
+; There are a few points of interest.  If you look at the actual sort code
+; (mergesort-exec), you will see that it is actually using the set library's
+; own union function to perform the union.  This is pretty slick because union
+; is linear complexity, and yet is easy to reason about since we have already
+; got a lot of theory in place about it.
+;
+; In any case, our strategy for proving the equality of this mergesort with a
+; simple insertion sort is the exact same trick we use everywhere else in the
+; sets library.  We begin by showing that both produce sets, and then show that
+; membership in either is true exactly when an element is member-equal in the
+; original list.
 
 (in-package "SETS")
 (include-book "outer")
 (local (include-book "unicode/app" :dir :system))
 (local (include-book "unicode/rev" :dir :system))
+(local (include-book "tools/mv-nth" :dir :system))
 (set-verify-guards-eagerness 2)
 
 
@@ -63,75 +51,18 @@
                 (acl2::app x (cons a y)))
          :hints(("Goal" :induct (len x)))))
 
+(local (defthm member-of-list-fix
+         (iff (member a (acl2::list-fix x))
+              (member a x))))
 
+(local (defthm member-of-app
+         (iff (member a (acl2::app x y))
+              (or (member a x)
+                  (member a y)))))
 
-; A List Membership Function
-;
-; The current member-equal function has weird semantics, returning a
-; list rather than a boolean value.  We provide a convenient
-; alternative which always returns t or nil instead.
-;
-; We don't try to develop a complete theory for this function here,
-; but we will provide several useful utility theorems for relating in
-; with the common list functions such as cons, append, and reverse.
-; In the future we might want to expand this section to include more
-; theorems.
-
-;;; BOZO this is really gross.  We should get rid of in-list and just
-;;; use member-equal, or memberp from somewhere else.
-
-(defun in-list (a x)
-  (declare (xargs :guard (true-listp x)))
-  (if (endp x)
-      nil
-    (or (equal a (car x))
-	(in-list a (cdr x)))))
-
-(defthm in-list-cons
-  (equal (in-list a (cons b x))
-	 (or (equal a b)
-	     (in-list a x))))
-
-(defthm in-list-append
-  (equal (in-list a (append x y))
-	 (or (in-list a x)
-	     (in-list a y))))
-
-(local (defthm in-list-list-fix
-         (equal (in-list a (acl2::list-fix x))
-                (in-list a x))))
-
-(local (defthm in-list-app
-         (equal (in-list a (acl2::app x y))
-                (or (in-list a x)
-                    (in-list a y)))))
-
-(local (defthm in-list-rev
-         (equal (in-list a (acl2::rev x))
-                (in-list a x))))
-
-(encapsulate nil
-
-  (local (defthm lemma
-	   (implies (in-list a acc)
-		    (in-list a (revappend x acc)))))
-
-  (defthm in-list-revappend
-    (equal (in-list a (revappend x y))
-	   (or (in-list a x)
-	       (in-list a y))))
-)
-
-(defthm in-list-reverse
-  (equal (in-list a (reverse x))
-	 (in-list a x)))
-
-(defthm in-list-on-set
-  (implies (setp X)
-	   (equal (in-list a X)
-		  (in a X)))
-  :hints(("Goal" :in-theory (enable sfix head tail empty setp))))
-
+(local (defthm member-of-rev
+         (iff (member a (acl2::rev x))
+              (member a x))))
 
 
 
@@ -171,6 +102,9 @@
 ; mergesort for Milawa, where arithmetic is expensive.  Here, I implemented
 ; split-list by walking down "one cdr" and "two cdrs" at a time.  Below is a
 ; reimplementation of this strategy for osets.
+;
+; BOZO this strategy is still stupidly re-consing up half the list, when really
+; we could avoid that by just being a bit smarter.
 
 (defund halve-list-aux (mid x acc)
   (declare (xargs :guard (<= (len x) (len mid))))
@@ -197,80 +131,77 @@
   (declare (xargs :guard t))
   (halve-list-aux x x nil))
 
+(local (in-theory (enable halve-list-aux)))
+
 (defthm halve-list-aux-when-not-consp
   (implies (not (consp x))
            (equal (halve-list-aux mid x acc)
-                  (list acc mid)))
-  :hints(("Goal" :in-theory (enable halve-list-aux))))
+                  (list acc mid))))
 
 (defthm halve-list-aux-when-not-consp-of-cdr
-  (implies (not (consp (cdr x)))
-           (equal (halve-list-aux mid x acc)
-                  (list acc mid)))
-  :hints(("Goal" :in-theory (enable halve-list-aux))))
+    (implies (not (consp (cdr x)))
+             (equal (halve-list-aux mid x acc)
+                    (list acc mid))))
 
 (defthm halve-list-aux-len-1
-  (implies (and (<= (len x) (len mid))
-                (consp x)
-                (consp (cdr x)))
-           (< (len (car (halve-list-aux mid x acc)))
-              (+ (len mid) (len acc))))
-  :rule-classes ((:rewrite) (:linear))
-  :hints(("Goal" :in-theory (enable halve-list-aux))))
+    (implies (and (<= (len x) (len mid))
+                  (consp x)
+                  (consp (cdr x)))
+             (< (len (mv-nth 0 (halve-list-aux mid x acc)))
+                (+ (len mid) (len acc))))
+    :rule-classes ((:rewrite) (:linear)))
 
 (defthm halve-list-aux-len-2
-  (implies (and (<= (len x) (len mid))
-                (consp x)
-                (consp (cdr x)))
-           (< (len (second (halve-list-aux mid x acc)))
-              (len mid)))
-  :rule-classes ((:rewrite) (:linear))
-  :hints(("Goal" :in-theory (enable halve-list-aux))))
+    (implies (and (<= (len x) (len mid))
+                  (consp x)
+                  (consp (cdr x)))
+             (< (len (mv-nth 1 (halve-list-aux mid x acc)))
+                (len mid)))
+    :rule-classes ((:rewrite) (:linear)))
 
 (local (defthm halve-list-aux-append-property
-         (implies (<= (len x) (len mid))
-                  (equal (acl2::app (acl2::rev (first (halve-list-aux mid x acc)))
-                                    (second (halve-list-aux mid x acc)))
-                         (acl2::app (acl2::rev acc)
-                                    mid)))
-         :hints(("Goal"
-                 :in-theory (enable halve-list-aux)
-                 :do-not '(generalize fertilize)))))
+           (implies (<= (len x) (len mid))
+                    (equal (acl2::app (acl2::rev (mv-nth 0 (halve-list-aux mid x acc)))
+                                      (mv-nth 1 (halve-list-aux mid x acc)))
+                           (acl2::app (acl2::rev acc)
+                                      mid)))
+           :hints(("Goal" :do-not '(generalize fertilize)))))
 
 (local (defthm halve-list-correct
-         (equal (acl2::app (acl2::rev (first (halve-list x)))
-                           (second (halve-list x)))
-                (acl2::list-fix x))
-         :hints(("Goal" :in-theory (enable halve-list)))))
+           (equal (acl2::app (acl2::rev (mv-nth 0 (halve-list x)))
+                             (mv-nth 1 (halve-list x)))
+                  (acl2::list-fix x))
+           :hints(("Goal" :in-theory (enable halve-list)))))
 
 (defthm halve-list-len-1
-  (implies (and (consp x)
-                (consp (cdr x)))
-           (< (len (first (halve-list x)))
-              (len x)))
-  :hints(("Goal"
-          :in-theory (e/d (halve-list)
-                          (halve-list-aux-len-1))
-          :use ((:instance halve-list-aux-len-1
-                           (mid x) (x x) (acc nil))))))
+    (implies (and (consp x)
+                  (consp (cdr x)))
+             (< (len (mv-nth 0 (halve-list x)))
+                (len x)))
+    :hints(("Goal"
+            :in-theory (e/d (halve-list)
+                            (halve-list-aux-len-1))
+            :use ((:instance halve-list-aux-len-1
+                             (mid x) (x x) (acc nil))))))
 
 (defthm halve-list-len-2
-  (implies (and (consp x)
-                (consp (cdr x)))
-           (< (len (second (halve-list x)))
-              (len x)))
-  :hints(("Goal" :in-theory (enable halve-list))))
+    (implies (and (consp x)
+                  (consp (cdr x)))
+             (< (len (mv-nth 1 (halve-list x)))
+                (len x)))
+    :hints(("Goal" :in-theory (enable halve-list))))
 
 (defthm halve-list-membership-property
-  (equal (in-list a x)
-         (or (in-list a (first (halve-list x)))
-             (in-list a (second (halve-list x)))))
-  :rule-classes nil
-  :hints(("Goal"
-          :in-theory (disable in-list-app)
-          :use ((:instance in-list-app
-                           (x (acl2::rev (first (halve-list x))))
-                           (y (second (halve-list x))))))))
+    (iff (member a x)
+         (or (member a (mv-nth 0 (halve-list x)))
+             (member a (mv-nth 1 (halve-list x)))))
+    :rule-classes nil
+    :hints(("Goal"
+            :do-not-induct t
+            :in-theory (disable member-of-app)
+            :use ((:instance member-of-app
+                             (x (acl2::rev (mv-nth 0 (halve-list x))))
+                             (y (mv-nth 1 (halve-list x))))))))
 
 (defun mergesort-exec (x)
   (declare (xargs :guard t
@@ -294,29 +225,30 @@
                        (setp y))
                   (equal (fast-union x y nil)
                          (union x y)))
-         :hints(("Goal" :in-theory (enable fast-union-theory)))))
+         :hints(("Goal" :in-theory (enable fast-union-set
+                                           fast-union-membership)))))
 
 (local (defthm mergesort-exec-set
          (setp (mergesort-exec x))))
 
 (local (defthm mergesort-membership-2
-         (implies (in-list a x)
+         (implies (member a x)
                   (in a (mergesort-exec x)))
          :hints(("Subgoal *1/3" :use (:instance halve-list-membership-property)))))
 
 (local (defthm mergesort-membership-1
          (implies (in a (mergesort-exec x))
-                  (in-list a x))
+                  (member a x))
          :hints(("Subgoal *1/6" :use (:instance halve-list-membership-property))
                 ("Subgoal *1/5" :use (:instance halve-list-membership-property))
                 ("Subgoal *1/4" :use (:instance halve-list-membership-property)))))
 
 (local (defthm mergesort-membership
          (iff (in a (mergesort-exec x))
-              (in-list a x))))
+              (member a x))))
 
 (verify-guards mergesort-exec
-               :hints(("Goal" :in-theory (e/d (primitives-theory)
+               :hints(("Goal" :in-theory (e/d ((:ruleset primitive-rules))
                                               (mv-nth)))))
 
 
@@ -334,11 +266,13 @@
 
 (defthm in-mergesort
   (equal (in a (mergesort x))
-	 (in-list a x)))
+	 (if (member a x)
+             t
+           nil)))
 
 (verify-guards mergesort)
 
 (defthm mergesort-set-identity
   (implies (setp X)
 	   (equal (mergesort X) X))
-  :hints(("Goal" :in-theory (enable setp sfix head tail empty))))
+  :hints(("Goal" :in-theory (enable (:ruleset primitive-rules)))))

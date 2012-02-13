@@ -28,7 +28,6 @@
 (local (include-book "unicode/rev" :dir :system))
 (local (include-book "unicode/append" :dir :system))
 (local (include-book "arithmetic-3/extra/top-ext" :dir :system))
-(local (include-book "finite-set-theory/osets/set-order" :dir :system))
 
 (local (in-theory (disable cancel-mod-+)))
 
@@ -199,7 +198,7 @@ optimized version of @(see sbitset-pair-members).</p>"
          (implies (sets::setp x)
                   (iff (member-equal a x)
                        (sets::in a x)))
-         :hints(("Goal" :in-theory (enable sets::primitive-reasoning)))))
+         :hints(("Goal" :in-theory (enable sets::in-to-member)))))
 
 (local
  (make-event
@@ -257,7 +256,8 @@ optimized version of @(see sbitset-pair-members).</p>"
                    (integer-listp x)
                    (sets::setp x))
               (sets::setp (add-to-each offset x)))
-     :hints(("Goal" :in-theory (enable sets::primitive-reasoning add-to-each))))))
+     :hints(("Goal" :in-theory (enable* (:ruleset sets::primitive-rules)
+                                        add-to-each))))))
 
 
 
@@ -270,13 +270,13 @@ optimized version of @(see sbitset-pair-members).</p>"
                      (not (sets::setp x)))
             :hints(("Goal"
                     :induct (len x)
-                    :in-theory (enable sets::primitive-reasoning
-                                       sets::order-reasoning)))))
+                    :in-theory (enable* (:ruleset sets::primitive-rules)
+                                        (:ruleset sets::order-rules))))))
 
    (defthm no-duplicatesp-equal-when-setp
      (implies (sets::setp x)
               (no-duplicatesp-equal x))
-     :hints(("Goal" :in-theory (enable sets::primitive-reasoning))))))
+     :hints(("Goal" :in-theory (enable* (:ruleset sets::primitive-rules)))))))
 
 
 (local
@@ -314,7 +314,7 @@ optimized version of @(see sbitset-pair-members).</p>"
                             (if (consp x)
                                 (car x)
                               nil)))
-            :hints(("Goal" :in-theory (enable sets::primitive-reasoning)))))
+            :hints(("Goal" :in-theory (enable* (:ruleset sets::primitive-rules))))))
 
    (defthmd setp-of-append
      (implies (and (force (or (< (max-int x) (min-int y))
@@ -325,7 +325,7 @@ optimized version of @(see sbitset-pair-members).</p>"
                    (force (sets::setp x))
                    (force (sets::setp y)))
               (sets::setp (append x y)))
-     :hints(("Goal" :in-theory (enable sets::primitive-reasoning))))
+     :hints(("Goal" :in-theory (enable* (:ruleset sets::primitive-rules)))))
 
    (local (in-theory (enable setp-of-append)))
 
@@ -595,8 +595,8 @@ your block size.</p>"
   (defthm empty-of-sbitset-pair-members
     (implies (force (sbitset-pairp x))
              (not (sets::empty (sbitset-pair-members x))))
-    :hints(("Goal" :in-theory (e/d (sets::primitive-reasoning)
-                                   (sbitset-pair-members))))))
+    :hints(("Goal" :in-theory (e/d* ((:ruleset sets::primitive-rules))
+                                    (sbitset-pair-members))))))
 
 (local
  (defsection sbitset-pair-members-bounds
@@ -839,7 +839,7 @@ is not performed for other block sizes.</p>"
              (implies (sets::setp (append x y))
                       (and (sets::setp (list-fix x))
                            (sets::setp y)))
-             :hints(("Goal" :in-theory (enable sets::primitive-reasoning)))))
+             :hints(("Goal" :in-theory (enable* (:ruleset sets::primitive-rules))))))
 
     (local (defthm l3
              (equal (min-int (append x y))
@@ -873,6 +873,7 @@ is not performed for other block sizes.</p>"
 
     (verify-guards sbitset-members))
 
+
   (defthm sbitset-members-default
     (implies (not (sbitsetp a))
              (equal (sbitset-members a)
@@ -893,7 +894,7 @@ is not performed for other block sizes.</p>"
            (iff (sets::union x y)
                 (or (not (sets::empty x))
                     (not (sets::empty y))))
-           :hints(("Goal" :in-theory (enable sets::primitive-reasoning)))))
+           :hints(("Goal" :in-theory (enable* (:ruleset sets::primitive-rules))))))
 
   (defthm sbitset-members-of-cons
     (implies (force (sbitsetp (cons a x)))

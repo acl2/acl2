@@ -19,8 +19,8 @@ Finite Set Theory based on Fully Ordered Lists<br/>
 
 <h4>Changes Since 0.91</h4>
 
-<p><em>Added intersectp function</em>.  This is like intersect, but does 
-   not bother to construct the list.  As a result, it may allow you to avoid 
+<p><em>Added intersectp function</em>.  This is like intersect, but does not
+   bother to construct the list.  As a result, it may allow you to avoid
    consing when you are only concerned with whether sets intersect.</p>
 
 <p><em>Redesigned split-list</em>.  The mergesort now uses a new split-list
@@ -28,6 +28,30 @@ Finite Set Theory based on Fully Ordered Lists<br/>
 
 <p><em>Mergesort's guard is improved.</em>  Mergesort no longer requires your
    input to be a true-listp.</p>
+
+<p><em>Various efficiency tweaks.</em>  Mostly inlining of set primtiives with
+  MBE to avoid function call overhead.  This is actually fairly significant in
+  some cases.</p>
+
+<p><em>Changed the set order.</em>  I now use <tt>&lt;&lt;</tt> directly from
+  the <tt>misc/total-order</tt> book instead of
+  defining <tt>sets::&lt;&lt;</tt> as a distinct function.</p>
+
+<p><em>Slightly changed empty-set handling.</em>  In some cases I now expose
+  the fact that <tt>nil</tt> is the empty set.</p>
+
+<p><em>Eliminated in-list function.</em>  I now just use ACL2's built in member
+  stuff, which seems better than introducing yet another member function.</p>
+
+<p><em>Revamped the strategy for doing fast functions.</em>  I now try to push
+  everything down to list primitives instead of pushing some things up to set
+  primitives.  This simplifies fast.lisp, removing lots of ugly use hints.</p>
+
+<p><em>Cleaned up set-order theories.</em>  I now use
+  the <tt>tools/rulesets</tt> book to handle set-order theories, and put these
+  rulesets right into <tt>sets.lisp</tt> instead of in a separate book.</p>
+
+
 
 <h4>Version 0.91, January 28, 2006</h4>
 
@@ -53,10 +77,10 @@ tweaks to the reasoning strategy.</p>
    </p>
 
 <p><em>Added <tt>:built-in-clause</tt> rules about the <tt>acl2-count</tt> of
-   <tt>head</tt> and <tt>tail</tt>.</p>
+   <tt>head</tt> and <tt>tail</tt>.</em></p>
 
 <p><em>Added the rule <tt>in-head</tt>, rewriting <tt>(in (head X) X)</tt> to 
-   <tt>(not (empty X))</tt>.</p>
+   <tt>(not (empty X))</tt>.</em></p>
 
 
 <h4>Version 0.9, October 22, 2004</h4>

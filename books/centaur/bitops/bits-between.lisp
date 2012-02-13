@@ -26,7 +26,6 @@
 (local (include-book "unicode/rev" :dir :system))
 (local (include-book "unicode/append" :dir :system))
 (local (include-book "arithmetic-3/extra/top-ext" :dir :system))
-(local (include-book "finite-set-theory/osets/set-order" :dir :system))
 
 
 
@@ -261,8 +260,8 @@ bitset-members).</p>"
 
     (defthm setp-of-bits-between
       (sets::setp (bits-between n m x))
-      :hints(("Goal" :in-theory (enable bits-between
-                                        sets::primitive-reasoning)))))
+      :hints(("Goal" :in-theory (enable* bits-between
+                                         (:ruleset sets::primitive-rules))))))
 
   (encapsulate
     ()
@@ -272,7 +271,7 @@ bitset-members).</p>"
                       (iff (member-equal a x)
                            (sets::in a x)))
              :hints(("Goal"
-                     :in-theory (enable sets::primitive-reasoning)))))
+                     :in-theory (enable sets::in-to-member)))))
 
     (defthm in-of-bits-between
       (equal (sets::in a (bits-between n m x))

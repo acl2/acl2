@@ -20,7 +20,6 @@
 
 (in-package "VL")
 (include-book "../parsetree")
-(local (include-book "finite-set-theory/osets/set-order" :dir :system))
 (local (include-book "../util/osets"))
 (local (include-book "../util/arithmetic"))
 
@@ -60,7 +59,7 @@
    :hints(("Goal"
            :induct (len x)
            :do-not '(generalize fertilize)
-           :in-theory (enable no-duplicatesp-equal sets::primitive-reasoning))))
+           :in-theory (enable no-duplicatesp-equal (:ruleset sets::primitive-rules)))))
 
 (local (defthm vl-modulelist->names-of-insert
          (implies (and (not (in (vl-module->name a) (vl-modulelist->names x)))
@@ -75,7 +74,7 @@
                  :induct (insert a x)
                  :do-not-induct t
                  :do-not '(generalize fertilize)
-                 :in-theory (e/d (sets::primitive-reasoning) ((force)))))))
+                 :in-theory (e/d ((:ruleset sets::primitive-rules)) ((force)))))))
 
 (defthm vl-modulelist->names-of-mergesort
   (implies (and (case-split (no-duplicatesp-equal (vl-modulelist->names x)))

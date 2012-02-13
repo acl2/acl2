@@ -1,54 +1,45 @@
-#|
-
-   Fully Ordered Finite Sets, Version 0.91
-   Copyright (C) 2003-2006 by Jared Davis <jared@cs.utexas.edu>
-
-   This program is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public License as
-   published by the Free Software Foundation; either version 2 of
-   the License, or (at your option) any later version.
-
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public Lic-
-   ense along with this program; if not, write to the Free Soft-
-   ware Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
-   02111-1307, USA.
+; Fully Ordered Finite Sets
+; Copyright (C) 2003-2012 by Jared Davis <jared@cs.utexas.edu>
+;
+; This program is free software; you can redistribute it and/or modify it under
+; the terms of the GNU General Public License as published by the Free Software
+; Foundation; either version 2 of the License, or (at your option) any later
+; version.  This program is distributed in the hope that it will be useful but
+; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+; more details.  You should have received a copy of the GNU General Public Lic-
+; ense along with this program; if not, write to the Free Soft- ware
+; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 
-
- sets.lisp
-
-   This is the top level file, which you should include to use the
-   ordered set theory library.
-
-|#
+; sets.lisp
+;
+; This is the top level file, which you should include to use the ordered set
+; theory library.  Note that it does NOT include the quantification extension
+; for quantifying predicates over sets (i.e., for defining "typed" sets); see
+; quantify.lisp instead.
+;
+; The definitions in this file are redundant from the local include books.
+; This approach has several advantages.
+;
+;  - it gives a better event order than simply including the books one by one
+;
+;  - this file is also faster to include than all of the local books below, and
+;    allows the "ugliness" of auxilliary lemmas to be hidden away
+;
+;  - it makes clear that these theorems are public, and entirely prevents the
+;    use of "internal" lemmas and theorems.
 
 (in-package "SETS")
 (set-verify-guards-eagerness 2)
 
+; We now directly use the total order from misc/total-order.
+(include-book "misc/total-order" :dir :system)
+(include-book "tools/rulesets" :dir :system)
 
-; We need some program-mode definitions which are used in order to
-; automate the pick-a-point strategies.
-
+; We need some program-mode definitions which are used in order to automate the
+; pick-a-point strategies.
 (include-book "computed-hints")
-
-
-; The definitions in this file are redundant from the local include
-; books.  This approach has several advantages.
-;
-;  - it gives a better event order than simply including the books
-;    one by one
-;
-;  - this file is also faster to include than all of the local books
-;    below, and allows the "ugliness" of auxilliary lemmas to be
-;    hidden away
-;
-;  - it makes clear that these theorems are public, and entirely
-;    prevents the use of "internal" lemmas and theorems.
 
 (local (include-book "primitives"))
 (local (include-book "membership"))
@@ -57,13 +48,8 @@
 (local (include-book "sort"))
 
 
-; We begin with the definitions of the set theory functions and a
-; few trivial type prescriptions.
-
-(defund << (a b)
-  (declare (xargs :guard t))
-  (and (lexorder a b)
-       (not (equal a b))))
+; We begin with the definitions of the set theory functions and a few trivial
+; type prescriptions.
 
 (defund setp (X)
   (declare (xargs :guard t))
@@ -126,8 +112,8 @@
   (declare (xargs :guard (setp X)))
   (mbe :logic
        (and (not (empty X))
-                   (or (equal a (head X))
-                       (in a (tail X))))
+            (or (equal a (head X))
+                (in a (tail X))))
        :exec
        (and x
             (or (equal a (car x))
@@ -178,95 +164,70 @@
                   :guard (and (setp x)
                               (setp y)
                               (true-listp acc))))
-  (mbe :logic
-       (cond ((empty x) (revappend acc y))
-             ((empty y) (revappend acc x))
-             ((equal (head x) (head y))
-              (fast-union (tail x) (tail y) (cons (head x) acc)))
-             ((<< (head x) (head y))
-              (fast-union (tail x) y (cons (head x) acc)))
-             (t
-              (fast-union x (tail y) (cons (head y) acc))))
-       :exec
-       (cond ((null x) (revappend acc y))
-             ((null y) (revappend acc x))
-             ((equal (car x) (car y))
-              (fast-union (cdr x) (cdr y) (cons (car x) acc)))
-             ((lexorder (car x) (car y))
-              (fast-union (cdr x) y (cons (car x) acc)))
-             (t
-              (fast-union x (cdr y) (cons (car y) acc))))))
+  (cond ((endp x) (revappend acc y))
+        ((endp y) (revappend acc x))
+        ((equal (car x) (car y))
+         (fast-union (cdr x) (cdr y) (cons (car x) acc)))
+        ((mbe :logic (<< (car x) (car y))
+              :exec (lexorder (car x) (car y)))
+         (fast-union (cdr x) y (cons (car x) acc)))
+        (t
+         (fast-union x (cdr y) (cons (car y) acc)))))
 
 (defun fast-intersect (X Y acc)
   (declare (xargs :measure (fast-measure X Y)
                   :guard (and (setp X)
                               (setp Y)
                               (true-listp acc))))
-  (mbe :logic (cond ((empty X) (reverse acc))
-                    ((empty Y) (reverse acc))
-                    ((equal (head X) (head Y))
-                     (fast-intersect (tail X)
-                                     (tail Y)
-                                     (cons (head X) acc)))
-                    ((<< (head X) (head Y))
-                     (fast-intersect (tail X) Y acc))
-                    (t (fast-intersect X (tail Y) acc)))
-       :exec (cond ((null X) (revappend acc nil))
-                   ((null Y) (revappend acc nil))
-                   ((equal (car X) (car Y))
-                    (fast-intersect (cdr X)
-                                    (cdr Y)
-                                    (cons (car X) acc)))
-                   ((lexorder (car X) (car Y))
-                    (fast-intersect (cdr X) Y acc))
-                   (t (fast-intersect X (cdr Y) acc)))))
+  (cond ((endp X) (revappend acc nil))
+        ((endp Y) (revappend acc nil))
+        ((equal (car X) (car Y))
+         (fast-intersect (cdr X) (cdr Y) (cons (car X) acc)))
+        ((mbe :logic (<< (car X) (car Y))
+              :exec (lexorder (car X) (car Y)))
+         (fast-intersect (cdr X) Y acc))
+        (t
+         (fast-intersect X (cdr Y) acc))))
 
 (defun fast-intersectp (X Y)
   (declare (xargs :guard (and (setp X)
                               (setp Y))
                   :measure (fast-measure X Y)))
-  (mbe :logic (cond ((empty X) nil)
-                    ((empty Y) nil)
-                    ((equal (head X) (head Y))
-                     t)
-                    ((<< (head X) (head Y))
-                     (fast-intersectp (tail X) Y))
-                    (t
-                     (fast-intersectp X (tail Y))))
-       :exec (cond ((null X) nil)
-                   ((null Y) nil)
-                   ((equal (car X) (car Y))
-                    t)
-                   ((lexorder (car X) (car Y))
-                    (fast-intersectp (cdr X) Y))
-                   (t
-                    (fast-intersectp X (cdr Y))))))
+  (cond ((endp X) nil)
+        ((endp Y) nil)
+        ((equal (car X) (car Y))
+         t)
+        ((mbe :logic (<< (car X) (car y))
+              :exec (lexorder (car X) (car Y)))
+         (fast-intersectp (cdr X) Y))
+        (t
+         (fast-intersectp X (cdr Y)))))
 
 (defun fast-difference (X Y acc)
   (declare (xargs :measure (fast-measure X Y)
                   :guard (and (setp X)
                               (setp Y)
                               (true-listp acc))))
-  (mbe :logic (cond ((empty X) (reverse acc))
-                    ((empty Y) (revappend acc X))
-                    ((equal (head X) (head Y))
-                     (fast-difference (tail X) (tail Y) acc))
-                    ((<< (head X) (head Y))
-                     (fast-difference (tail X) Y (cons (head X) acc)))
-                    (t (fast-difference X (tail Y) acc)))
-       :exec (cond ((null X) (revappend acc nil))
-                   ((null Y) (revappend acc X))
-                   ((equal (car X) (car Y))
-                    (fast-difference (cdr X) (cdr Y) acc))
-                   ((lexorder (car X) (car Y))
-                    (fast-difference (cdr X) Y (cons (car X) acc)))
-                   (t (fast-difference X (cdr Y) acc)))))
+  (cond ((endp X) (revappend acc nil))
+        ((endp Y) (revappend acc X))
+        ((equal (car X) (car Y))
+         (fast-difference (cdr X) (cdr Y) acc))
+        ((mbe :logic (<< (car X) (car Y))
+              :exec (lexorder (car X) (car Y)))
+         (fast-difference (cdr X) Y (cons (car X) acc)))
+        (t
+         (fast-difference X (cdr Y) acc))))
 
 (defun delete (a X)
   (declare (xargs :guard (setp X)))
-  (cond ((empty X) nil)
-        ((equal a (head X)) (tail X))
-        (t (insert (head X) (delete a (tail X))))))
+  (mbe :logic
+       (cond ((empty X) nil)
+             ((equal a (head X)) (tail X))
+             (t (insert (head X) (delete a (tail X)))))
+       :exec
+       (cond ((endp X) nil)
+             ((equal a (car X)) (cdr X))
+             (t (insert (car X) (delete a (cdr X)))))))
 
 (defun union (X Y)
   (declare (xargs :guard (and (setp X) (setp Y))))
@@ -314,13 +275,6 @@
 (defund halve-list (x)
   (declare (xargs :guard t))
   (halve-list-aux x x nil))
-
-(defun in-list (a x)
-  (declare (xargs :guard (true-listp x)))
-  (if (endp x)
-      nil
-    (or (equal a (car x))
-	(in-list a (cdr x)))))
 
 (defun mergesort-exec (x)
   (declare (xargs :guard t
@@ -415,17 +369,18 @@
 
 (defthm sets-are-true-lists
   (implies (setp X)
-	   (true-listp X)))
+	   (true-listp X))
+  :rule-classes ((:rewrite) (:compound-recognizer)))
 
 (defthm tail-count
   (implies (not (empty X))
            (< (acl2-count (tail X)) (acl2-count X)))
-  :rule-classes :linear)
+  :rule-classes ((:rewrite) (:linear)))
 
 (defthm head-count
   (implies (not (empty X))
            (< (acl2-count (head X)) (acl2-count X)))
-  :rule-classes :linear)
+  :rule-classes ((:rewrite) (:linear)))
 
 (defthm tail-count-built-in
   (implies (not (empty X))
@@ -454,45 +409,68 @@
 (defthm insert-never-empty
   (not (empty (insert a X))))
 
-(defthm tail-preserves-empty
-  (implies (empty X)
-           (empty (tail X))))
-
 (defthm nonempty-means-set
-  (implies (not (empty X)) (setp X)))
+  (implies (not (empty X))
+           (setp X)))
 
 (defthm sfix-set-identity
-  (implies (setp X) (equal (sfix X) X)))
+  (implies (setp X)
+           (equal (sfix X)
+                  X)))
 
 (defthm empty-sfix-cancel
-  (equal (empty (sfix X)) (empty X)))
+  (equal (empty (sfix X))
+         (empty X)))
 
 (defthm head-sfix-cancel
-  (equal (head (sfix X)) (head X)))
+  (equal (head (sfix X))
+         (head X)))
 
 (defthm tail-sfix-cancel
-  (equal (tail (sfix X)) (tail X)))
+  (equal (tail (sfix X))
+         (tail X)))
 
 (defthm insert-head-tail
   (implies (not (empty X))
-           (equal (insert (head X) (tail X)) X)))
+           (equal (insert (head X) (tail X))
+                  X)))
 
 (defthm repeated-insert
   (equal (insert a (insert a X))
          (insert a X)))
 
 (defthm insert-sfix-cancel
-  (equal (insert a (sfix X)) (insert a X)))
+  (equal (insert a (sfix X))
+         (insert a X)))
 
-(defthm head-insert-empty
+(defthm head-when-empty
   (implies (empty X)
-           (equal (head (insert a X)) a)))
+           (equal (head X)
+                  nil)))
 
-(defthm tail-insert-empty
+(defthm tail-when-empty
   (implies (empty X)
-           (empty (tail (insert a X)))))
+           (equal (tail X)
+                  nil)))
 
+(defthm insert-when-empty
+  (implies (and (syntaxp (not (equal X ''nil)))
+                (empty X))
+           (equal (insert a X)
+                  (insert a nil))))
 
+(defthm head-of-insert-a-nil
+  (equal (head (insert a nil))
+         a))
+
+(defthm tail-of-insert-a-nil
+  (equal (tail (insert a nil))
+         nil))
+
+(defthm sfix-when-empty
+  (implies (empty X)
+           (equal (sfix X)
+                  nil)))
 
 
 ; -------------------------------------------------------------------
@@ -502,20 +480,26 @@
   (not (in x x)))
 
 (defthm in-sfix-cancel
-  (equal (in a (sfix X)) (in a X)))
+  (equal (in a (sfix X))
+         (in a X)))
 
 (defthm never-in-empty
-  (implies (empty X) (not (in a X))))
+  (implies (empty X)
+           (not (in a X))))
 
 (defthm in-set
-  (implies (in a X) (setp X)))
+  (implies (in a X)
+           (setp X)))
 
 (defthm in-tail
-  (implies (in a (tail X)) (in a X)))
+  (implies (in a (tail X))
+           (in a X)))
 
 (defthm in-tail-or-head
-  (implies (and (in a X) (not (in a (tail X))))
-           (equal (head X) a)))
+  (implies (and (in a X)
+                (not (in a (tail X))))
+           (equal (head X)
+                  a)))
 
 (defthm in-head
   (equal (in (head X) X)
@@ -525,7 +509,9 @@
   (not (in (head X) (tail X))))
 
 (defthm insert-identity
-  (implies (in a X) (equal (insert a X) X)))
+  (implies (in a X)
+           (equal (insert a X)
+                  X)))
 
 (defthm in-insert
   (equal (in a (insert b X))
@@ -533,7 +519,8 @@
              (equal a b))))
 
 (defthm subset-transitive
-  (implies (and (subset X Y) (subset Y Z))
+  (implies (and (subset X Y)
+                (subset Y Z))
            (subset X Z)))
 
 (defthm subset-insert-X
@@ -542,25 +529,37 @@
               (in a Y))))
 
 (defthm subset-sfix-cancel-X
-  (equal (subset (sfix X) Y) (subset X Y)))
+  (equal (subset (sfix X) Y)
+         (subset X Y)))
 
 (defthm subset-sfix-cancel-Y
-  (equal (subset X (sfix Y)) (subset X Y)))
+  (equal (subset X (sfix Y))
+         (subset X Y)))
 
 (defthm subset-in
-  (implies (and (subset X Y) (in a X))
-           (in a Y)))
+  (and (implies (and (subset X Y)
+                     (in a X))
+                (in a Y))
+       (implies (and (in a X)
+                     (subset X Y))
+                (in a Y))))
 
 (defthm subset-in-2
-  (implies (and (subset X Y) (not (in a Y)))
-           (not (in a X))))
+  (and (implies (and (subset X Y)
+                     (not (in a Y)))
+                (not (in a X)))
+       (implies (and (not (in a Y))
+                     (subset X Y))
+                (not (in a X)))))
 
 (defthm empty-subset
-  (implies (empty X) (subset X Y)))
+  (implies (empty X)
+           (subset X Y)))
 
 (defthm empty-subset-2
   (implies (empty Y)
-	   (equal (subset X Y) (empty X))))
+	   (equal (subset X Y)
+                  (empty X))))
 
 (defthm subset-reflexive
   (subset X X))
@@ -952,39 +951,94 @@
 ; -------------------------------------------------------------------
 ; Mergesort Theorems
 
-(defthm in-list-cons
-  (equal (in-list a (cons b x))
-	 (or (equal a b)
-	     (in-list a x))))
-
-(defthm in-list-append
-  (equal (in-list a (append x y))
-	 (or (in-list a x)
-	     (in-list a y))))
-
-(defthm in-list-revappend
-  (equal (in-list a (revappend x y))
-	 (or (in-list a x)
-	     (in-list a y))))
-
-(defthm in-list-reverse
-  (equal (in-list a (reverse x))
-	 (in-list a x)))
-
-(defthm in-list-on-set
-  (implies (setp X)
-	   (equal (in-list a X)
-		  (in a X))))
-
 (defthm mergesort-set
   (setp (mergesort x)))
 
 (defthm in-mergesort
   (equal (in a (mergesort x))
-	 (in-list a x)))
+         (if (member a x)
+             t
+           nil)))
 
 (defthm mergesort-set-identity
   (implies (setp X)
 	   (equal (mergesort X) X)))
 
 
+
+; -------------------------------------------------------------------
+; Rulesets for low level reasoning, generally not needed
+
+(defthmd insert-induction-case
+  (implies (and (not (<< a (head X)))
+                (not (equal a (head X)))
+                (not (empty X)))
+           (equal (insert (head X) (insert a (tail X)))
+                  (insert a X))))
+
+(defthmd head-insert
+  (equal (head (insert a X))
+	 (cond ((empty X) a)
+	       ((<< a (head X)) a)
+	       (t (head X)))))
+
+(defthmd tail-insert
+  (equal (tail (insert a X))
+	 (cond ((empty X) (sfix X))
+	       ((<< a (head X)) (sfix X))
+               ((equal a (head X)) (tail X))
+               (t (insert a (tail X))))))
+
+(defthmd head-tail-order
+  (implies (not (empty (tail X)))
+           (<< (head X) (head (tail X)))))
+
+(defthmd head-tail-order-contrapositive
+  (implies (not (<< (head X) (head (tail X))))
+           (empty (tail X))))
+
+(defthmd head-minimal
+  (implies (<< a (head X))
+           (not (in a X))))
+
+(defthmd head-minimal-2
+  (implies (in a X)
+           (not (<< a (head X)))))
+
+(defthmd setp-of-cons
+  (equal (setp (cons a X))
+         (and (setp X)
+              (or (<< a (head X))
+                  (empty X)))))
+
+(defthmd in-to-member
+  (implies (setp X)
+           (equal (in a X)
+                  (if (member a x)
+                      t
+                    nil))))
+
+(defthmd not-member-when-smaller
+  (implies (and (<< a (car x))
+                (setp x))
+           (not (member a x))))
+
+(defthmd subset-to-subsetp
+  (implies (and (setp x)
+                (setp y))
+           (equal (subset x y)
+                  (subsetp x y))))
+
+(defthmd lexorder-<<-equiv
+  (implies (not (equal a b))
+           (equal (equal (<< a b) (lexorder a b))
+                  t)))
+
+(make-event
+ (let* ((primitive-rules (acl2::get-ruleset 'primitive-rules (w state)))
+        (order-rules     (acl2::get-ruleset 'order-rules (w state)))
+        (low-level-rules (acl2::get-ruleset 'low-level-rules (w state))))
+   (acl2::value `(progn
+                   (def-ruleset! primitive-rules ',primitive-rules)
+                   (def-ruleset! order-rules ',order-rules)
+                   (def-ruleset! low-level-rules ',low-level-rules)))))

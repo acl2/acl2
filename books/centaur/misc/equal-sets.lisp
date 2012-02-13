@@ -472,7 +472,6 @@
 
 
 (include-book "finite-set-theory/osets/sets" :dir :system)
-(local (include-book "finite-set-theory/osets/set-order" :dir :system))
 
 
 ;; BOZO talk to sol about whether these should become defwitness nonsense
@@ -481,7 +480,7 @@
          (implies (sets::setp x)
                   (iff (member-equal a x)
                        (sets::in a x)))
-         :hints(("Goal" :in-theory (enable sets::primitive-reasoning)))))
+         :hints(("Goal" :in-theory (enable sets::in-to-member)))))
 
 (defthm sets::insert-under-set-equivp
   (implies (sets::setp x)
@@ -523,12 +522,6 @@
                        (set-difference-equal (double-rewrite x)
                                              (double-rewrite y))))
   :hints((set-reasoning)))
-
-(local (defthm sets::in-list-removal
-         (equal (sets::in-list a x)
-                (if (member-equal a x)
-                    t
-                  nil))))
 
 (defthm sets::mergesort-under-set-equiv
   (set-equivp (sets::mergesort x)

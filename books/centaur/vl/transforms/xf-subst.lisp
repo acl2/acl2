@@ -40,61 +40,17 @@ rather than @(see hons-get).</p>")
 
 
 
-(defxdoc vl-sigma-p
+(defalist vl-sigma-p (x)
   :parents (substitution)
-  :short "An alist mapping strings to expressions, used in @(see substitution).")
+  :short "An alist mapping strings to expressions, used in @(see substitution)."
+  :key (stringp x)
+  :val (vl-expr-p x)
+  :keyp-of-nil nil
+  :valp-of-nil nil)
 
-(defund vl-sigma-p (x)
-
-; BOZO consider implementing some kind of defalist instead.
-
-  (declare (xargs :guard t))
-  (if (consp x)
-      (and (consp (car x))
-           (stringp (caar x))
-           (vl-expr-p (cdar x))
-           (vl-sigma-p (cdr x)))
-    (eq x nil)))
-
-(defthm vl-sigma-p-when-not-consp
-  (implies (not (consp x))
-           (equal (vl-sigma-p x)
-                  (not (double-rewrite x))))
-  :hints(("Goal" :in-theory (enable vl-sigma-p))))
-
-(defthm vl-sigma-p-of-cons
-  (equal (vl-sigma-p (cons a x))
-         (and (consp a)
-              (stringp (car a))
-              (vl-expr-p (cdr a))
-              (vl-sigma-p x)))
-  :hints(("Goal" :in-theory (enable vl-sigma-p))))
-
-(defthm vl-exprlist-p-of-strip-cdrs-when-vl-sigma-p
+(defthm vl-exprlist-p-of-alist-vals-when-vl-sigma-p
   (implies (vl-sigma-p x)
-           (vl-exprlist-p (strip-cdrs x)))
-  :hints(("Goal" :induct (len x))))
-
-(defthm alistp-when-vl-sigma-p
-  (implies (vl-sigma-p x)
-           (alistp x))
-  :hints(("Goal" :in-theory (enable vl-sigma-p))))
-
-(defthm vl-expr-p-of-cdr-hons-assoc-equal-when-vl-sigma-p
-  (implies (and (vl-sigma-p sigma)
-                (hons-assoc-equal x sigma))
-           (vl-expr-p (cdr (hons-assoc-equal x sigma))))
-  :hints(("Goal" :in-theory (enable vl-sigma-p))))
-
-(defthm vl-sigma-p-of-append
-  (implies (and (force (vl-sigma-p x))
-                (force (vl-sigma-p y)))
-           (vl-sigma-p (append x y)))
-  :hints(("Goal" :induct (len x))))
-
-(defthm vl-sigma-p-of-rev
-  (implies (force (vl-sigma-p x))
-           (vl-sigma-p (rev x)))
+           (vl-exprlist-p (alist-vals x)))
   :hints(("Goal" :induct (len x))))
 
 (defthm vl-sigma-p-of-pairlis$
@@ -105,9 +61,11 @@ rather than @(see hons-get).</p>")
   :hints(("Goal" :in-theory (enable (:induction pairlis$)))))
 
 
-(defxdoc vl-expr-subst
+
+(defsection vl-expr-subst
   :parents (substitution)
   :short "Substitute into a @(see vl-expr-p)."
+
   :long "<p>@(call vl-expr-subst) is given <tt>sigma</tt>, @(see vl-sigma-p),
 and <tt>x</tt>, a @(see vl-expr-p), and produces a new expression by replacing
 any simple identifiers (i.e., atoms which are @(see vl-id-p)'s) that are bound
@@ -115,75 +73,72 @@ in <tt>sigma</tt> with their values.</p>
 
 <p>Note that this function does not descend into attributes.  It is not clear
 whether that is the right behavior, but it seems that the handling of
-attributes is left up to the implementation.</p>")
+attributes is left up to the implementation.</p>"
 
-(defxdoc vl-exprlist-subst
-  :parents (substitution)
-  :short "Substitute into a @(see vl-exprlist-p)."
-  :long "@(def vl-exprlist-subst)")
+  (mutual-recursion
+   (defund vl-expr-subst (x sigma)
+     (declare (xargs :guard (and (vl-expr-p x)
+                                 (vl-sigma-p sigma))
+                     :verify-guards nil
+                     :measure (two-nats-measure (acl2-count x) 1)))
+     (if (vl-fast-atom-p x)
+         (let ((guts (vl-atom->guts x)))
+           (if (vl-fast-id-p guts)
+               (or (cdr (hons-assoc-equal (vl-id->name guts) sigma))
+                   x)
+             x))
+       (let ((args-prime (vl-exprlist-subst (vl-nonatom->args x) sigma)))
+         (change-vl-nonatom x :args args-prime))))
 
-(mutual-recursion
- (defund vl-expr-subst (x sigma)
-   (declare (xargs :guard (and (vl-expr-p x)
-                               (vl-sigma-p sigma))
-                   :verify-guards nil
-                   :measure (two-nats-measure (acl2-count x) 1)))
-   (if (vl-fast-atom-p x)
-       (let ((guts (vl-atom->guts x)))
-         (if (vl-fast-id-p guts)
-             (or (cdr (hons-assoc-equal (vl-id->name guts) sigma))
-                 x)
-           x))
-     (let ((args-prime (vl-exprlist-subst (vl-nonatom->args x) sigma)))
-       (change-vl-nonatom x :args args-prime))))
-
- (defund vl-exprlist-subst (x sigma)
-   (declare (xargs :guard (and (vl-exprlist-p x)
-                               (vl-sigma-p sigma))
-                   :measure (two-nats-measure (acl2-count x) 0)))
-   (if (consp x)
-       (cons (vl-expr-subst (car x) sigma)
-             (vl-exprlist-subst (cdr x) sigma))
-     nil)))
+   (defund vl-exprlist-subst (x sigma)
+     (declare (xargs :guard (and (vl-exprlist-p x)
+                                 (vl-sigma-p sigma))
+                     :measure (two-nats-measure (acl2-count x) 0)))
+     (if (consp x)
+         (cons (vl-expr-subst (car x) sigma)
+               (vl-exprlist-subst (cdr x) sigma))
+       nil))))
 
 (defprojection vl-exprlist-subst (x sigma)
   (vl-expr-subst x sigma)
   :already-definedp t
+  :parents (substitution)
   :nil-preservingp nil)
 
-(encapsulate
- ()
- (local (defthm lemma
-          (cond ((eq flag 'expr)
-                 (implies (and (vl-expr-p x)
-                               (vl-sigma-p sigma))
-                          (vl-expr-p (vl-expr-subst x sigma))))
-                ((eq flag 'atts)
-                 t)
-                (t
-                 (implies (and (vl-exprlist-p x)
-                               (vl-sigma-p sigma))
-                          (vl-exprlist-p (vl-exprlist-subst x sigma)))))
-          :rule-classes nil
-          :hints(("Goal"
-                  :induct (vl-expr-induct flag x)
-                  :in-theory (enable vl-expr-subst
-                                     vl-exprlist-subst)))))
+(defsection vl-expr-subst-lemmas
+  :extension vl-expr-subst
 
- (defthm vl-expr-p-of-vl-expr-subst
-   (implies (and (force (vl-expr-p x))
-                 (force (vl-sigma-p sigma)))
-            (vl-expr-p (vl-expr-subst x sigma)))
-   :hints(("Goal" :use ((:instance lemma (flag 'expr))))))
+  (local (defthm lemma
+           (cond ((eq flag 'expr)
+                  (implies (and (vl-expr-p x)
+                                (vl-sigma-p sigma))
+                           (vl-expr-p (vl-expr-subst x sigma))))
+                 ((eq flag 'atts)
+                  t)
+                 (t
+                  (implies (and (vl-exprlist-p x)
+                                (vl-sigma-p sigma))
+                           (vl-exprlist-p (vl-exprlist-subst x sigma)))))
+           :rule-classes nil
+           :hints(("Goal"
+                   :induct (vl-expr-induct flag x)
+                   :in-theory (enable vl-expr-subst
+                                      vl-exprlist-subst)))))
 
- (defthm vl-exprlist-p-of-vl-exprlist-subst
-   (implies (and (force (vl-exprlist-p x))
-                 (force (vl-sigma-p sigma)))
-            (vl-exprlist-p (vl-exprlist-subst x sigma)))
-   :hints(("Goal" :use ((:instance lemma (flag 'list)))))))
+  (defthm vl-expr-p-of-vl-expr-subst
+    (implies (and (force (vl-expr-p x))
+                  (force (vl-sigma-p sigma)))
+             (vl-expr-p (vl-expr-subst x sigma)))
+    :hints(("Goal" :use ((:instance lemma (flag 'expr))))))
 
-(verify-guards vl-expr-subst
-  :hints(("Goal" :in-theory (enable vl-expr-subst))))
+  (defthm vl-exprlist-p-of-vl-exprlist-subst
+    (implies (and (force (vl-exprlist-p x))
+                  (force (vl-sigma-p sigma)))
+             (vl-exprlist-p (vl-exprlist-subst x sigma)))
+    :hints(("Goal" :use ((:instance lemma (flag 'list))))))
+
+  (verify-guards vl-expr-subst
+    :hints(("Goal" :in-theory (enable vl-expr-subst)))))
 
 
 

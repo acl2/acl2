@@ -21,7 +21,6 @@
 (in-package "VL")
 (include-book "defs")
 (include-book "defsort/remove-dups" :dir :system)
-(local (include-book "finite-set-theory/osets/set-order" :dir :system))
 (local (include-book "arithmetic"))
 
 
@@ -225,8 +224,7 @@ at the moment.</p>")
                   (force (vl-warning-p z)))
              (vl-warning-< x z))
     :hints(("Goal" :in-theory (enable vl-warning-<
-                                      string<
-                                      sets::<<-transitive)))))
+                                      string<)))))
 
 
 (defsection vl-warning-sort

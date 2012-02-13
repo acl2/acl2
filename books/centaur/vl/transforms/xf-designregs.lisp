@@ -461,8 +461,7 @@ met.</p>"
             (and (equal flat-x flat-y)
                  (<< x y)))))
 
-  (local (include-book "finite-set-theory/osets/set-order" :dir :system))
-  (local (in-theory (enable vl-dreg< sets::order-reasoning)))
+  (local (in-theory (enable vl-dreg<)))
 
   (defthm vl-dreg<-irreflexive
     (not (vl-dreg< x x)))
