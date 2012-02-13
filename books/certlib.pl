@@ -1069,50 +1069,58 @@ sub remove_dups {
 }
 
 
-# Find dependencies of a cert file, here passed in without extension.
-# Calls src_deps to get the dependencies of the .acl2 and book files.
+# Find dependencies of a lisp file.  If it has a .lisp extension, we
+# assume it's supposed to be a certifiable book, so we look for .acl2
+# and image files as well.  Calls src_deps to get the dependencies.
 sub find_deps {
-    my ($base,$cache,$book_only,$tscache,$parent) = @_;
-
-    my $lispfile = $base . ".lisp";
+    my ($lispfile,$cache,$book_only,$tscache,$parent) = @_;
 
     my $deps = $book_only ? [] : [ $lispfile ];
     my $local_dirs = {};
     my $book_two_pass = 0;
     my $acl2_two_pass = 0;
-    # If a corresponding .acl2 file exists or otherwise if a
-    # cert.acl2 file exists in the directory, we need to scan that for dependencies as well.
-    my $acl2file = $base . ".acl2";
-    if (! -e $acl2file) {
-	$acl2file = rel_path(dirname($base), "cert.acl2");
+
+    # If this source file has a .lisp extension, we assume it's a
+    # certifiable book and look for an .acl2 file.
+    my $certifiable = $lispfile =~ /\.lisp$/;
+
+    my $base;
+    if ($certifiable) {
+	# If a corresponding .acl2 file exists or otherwise if a
+	# cert.acl2 file exists in the directory, we need to scan that for dependencies as well.
+	( $base = $lispfile ) =~ s/\.lisp$//;
+	my $acl2file = $base . ".acl2";
 	if (! -e $acl2file) {
-	    $acl2file = 0;
+	    $acl2file = rel_path(dirname($base), "cert.acl2");
+	    if (! -e $acl2file) {
+		$acl2file = 0;
+	    }
+	}
+
+	# Scan the .acl2 file first so that we get the add-include-book-dir
+	# commands before the include-book commands.
+	if ($acl2file) {
+	    push(@$deps, $acl2file) unless $book_only;
+	    $acl2_two_pass = src_deps($acl2file, $cache,
+				      $local_dirs, 
+				      $deps, 
+				      $book_only, 
+				      $tscache,
+				      1,
+				      {}, $lispfile);
 	}
     }
 
-    # Scan the .acl2 file first so that we get the add-include-book-dir
-    # commands before the include-book commands.
-    if ($acl2file) {
-	push(@$deps, $acl2file) unless $book_only;
-	$acl2_two_pass = src_deps($acl2file, $cache,
-				  $local_dirs, 
-				  $deps, 
-				  $book_only, 
-				  $tscache,
-				  1,
-				  {}, $lispfile);
-    }
-    
     # Scan the lisp file for include-books.
     $book_two_pass = src_deps($lispfile, $cache, $local_dirs, $deps,
-			      $book_only, $tscache, 0, {}, $parent);
+			      $book_only, $tscache, !$certifiable, {}, $parent);
 
     if ($debugging) {
 	print "find_deps $lispfile: \n";
 	print_lst($deps);
     }
     
-    if (!$book_only) {
+    if (!$book_only && $certifiable) {
 	# If there is an .image file corresponding to this file or a
 	# cert.image in this file's directory, add a dependency on the
 	# ACL2 image specified in that file and the .image file itself.
@@ -1228,7 +1236,7 @@ sub add_deps {
 	return;
     }
 
-    my ($deps, $two_pass) = find_deps($base, $cache, 0, $tscache, $parent);
+    my ($deps, $two_pass) = find_deps($lispfile, $cache, 0, $tscache, $parent);
 
 
     $depmap->{$target} = [ $deps, $two_pass ] ;
@@ -1265,6 +1273,52 @@ sub read_targets {
     }
 }
 
+# Heuristically take some user-input filename and produce the source
+# file we actually want to read.  For now, if it doesn't have a dot,
+# tack a .lisp onto it; if it has a .cert/.pcert/.acl2x extension
+# change it to .lisp, and otherwise leave it alone.
+# examples:
+# foo.lisp  -> foo.lisp
+# foo       -> foo.lisp
+# foo.cert  -> foo.lisp
+# foo.acl2x -> foo.lisp
+# foo.pcert -> foo.lisp
+# foo.lsp   -> foo.lsp
+# foo.acl2  -> foo.acl2
+sub to_source_name {
+    my $fname = shift;
+    if ($fname =~ /\./) {
+	$fname =~ s/\.(cert|acl2x|pcert)$/\.lisp/;
+	return $fname;
+    } else {
+	return "$fname.lisp";
+    }
+}
+
+# Heuristically take some user-input filename and produce the cert
+# file we want to target.  For now, if it has a .lisp extension change
+# it to .cert, if it has a .acl2x/.pcert/.cert extension leave it
+# alone, and otherwise tack on a .cert.  NOTE: This heuristic doesn't
+# at all match the one in to_source_name; they're used for different
+# purposes.
+# foo.lisp  -> foo.cert
+# foo       -> foo.cert
+# foo.cert  -> foo.cert
+# foo.acl2x -> foo.acl2x
+# foo.pcert -> foo.pcert
+# foo.lsp   -> foo.lsp.cert
+# foo.acl2  -> foo.acl2.cert
+sub to_cert_name {
+    my $fname = shift;
+    $fname =~ s/\.lisp$/\.cert/;
+    if ($fname =~ /\.(cert|acl2x|pcert)$/) {
+	return $fname;
+    } else {
+	return "$fname.cert";
+    }
+}
+
+
 # Takes a list of inputs containing some filenames and some labels
 # (ending with a colon.)  Sorts out the filenames into a list of
 # targets (changing them to .cert extensions if necessary) and returns
@@ -1279,7 +1333,7 @@ sub process_labels_and_targets {
     foreach my $str (@$input) {
 	if (substr($str, 0, 3) eq '-p ') {
 	    # Deps-of.
-	    my $name = to_basename(substr($str,3));
+	    my $name = canonical_path(to_source_name(substr($str,3)));
 	    (my $deps, my $two_pass) = find_deps($name, $cache, 1, $tscache, 0);
 	    push (@targets, @$deps);
 	    push (@$label_targets, @$deps) if $label_started;
@@ -1295,7 +1349,7 @@ sub process_labels_and_targets {
 	    }
 	} else {
 	    # filename.
-	    my $target = to_basename($str) . ".cert";
+	    my $target = canonical_path(to_cert_name($str));
 	    push(@targets, $target);
 	    push(@$label_targets, $target) if $label_started;
 	}

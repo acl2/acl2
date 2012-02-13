@@ -152,11 +152,12 @@ certlib_add_dir("SYSTEM", $RealBin);
 
 
 foreach my $target (@user_targets) {
-    push (@targets, to_basename($target) . ".cert");
+    push (@targets, canonical_path(to_cert_name($target)));
 }
 
 foreach my $top (@deps_of) {
-    (my $deps, my $two_pass) = find_deps(to_basename($top), $cache, 1, \%tscache);
+    (my $deps, my $two_pass) =
+	find_deps(canonical_path(to_source_name($top)), $cache, 1, \%tscache);
     push (@targets, @{$deps});
 }
 
