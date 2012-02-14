@@ -15,9 +15,13 @@
 ; sets.lisp
 ;
 ; This is the top level file, which you should include to use the ordered set
-; theory library.  Note that it does NOT include the quantification extension
-; for quantifying predicates over sets (i.e., for defining "typed" sets); see
-; quantify.lisp instead.
+; theory library.  Note that it does NOT include:
+;
+;   - The quantification extension for quantifying predicates over sets (i.e.,
+;     for defining "typed" sets); see quantify.lisp instead, or
+;
+;   - The map extension for mapping/projecting a function across a set; see
+;     map.lisp instead.
 ;
 ; The definitions in this file are redundant from the local include books.
 ; This approach has several advantages.

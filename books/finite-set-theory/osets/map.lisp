@@ -1,155 +1,139 @@
-#| 
-
-   Fully Ordered Finite Sets, Version 0.91
-   Copyright (C) 2003-2006 by Jared Davis <jared@cs.utexas.edu>
-
-   This program is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public License as
-   published by the Free Software Foundation; either version 2 of
-   the License, or (at your option) any later version.
-
-   This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public Lic-
-   ense along with this program; if not, write to the Free Soft-
-   ware Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
-   02111-1307, USA.
+; Fully Ordered Finite Sets
+; Copyright (C) 2003-2012 by Jared Davis <jared@cs.utexas.edu>
+;
+; This program is free software; you can redistribute it and/or modify it under
+; the terms of the GNU General Public License as published by the Free Software
+; Foundation; either version 2 of the License, or (at your option) any later
+; version.  This program is distributed in the hope that it will be useful but
+; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+; more details.  You should have received a copy of the GNU General Public Lic-
+; ense along with this program; if not, write to the Free Soft- ware
+; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 
+; map.lisp
+;
+; This is an optional extension of the sets library, and is not included by
+; default when you run (include-book "sets").
+;
+; We introduce a macro map-function, which is somewhat like the higher-order
+; function "map" in other functional languages.  Given a particular
+; transformation function, this macro produces:
+;
+;      map<function>
+;      map-list<function>
+;
+; In addition to introducing these functions, a large rewriting strategy is
+; developed for reasoning about the new mapping functions.
+;
+;
+; Introductory Examples.
+;
+; Here are some simple examples.  These transformation functions have only a
+; single argument, and are guarded to operate on any inputs.
+;
+;     (SETS::map-function (integerp x))
+;       - (SETS::map<integerp> '(1 2 3)) = (t)
+;       - (SETS::map-list<integerp> '(1 a 2 b)) = (t nil t nil)
+;
+;     (defun square (x)
+;       (declare (xargs :guard t))
+;       (* (rfix x) (rfix x)))
+;
+;     (SETS::map-function (square x))
+;       - (SETS::map<square> '(1 2 3)) = (1 4 9)
+;       - (SETS::map<square> '(a b c)) = (0)
+;
+; Note that you can't use macros, e.g., real/rationalp cannot be used since it
+; is not a function.
+;
+;
+; Controlling Packages.
+;
+; As you can see, the new map<f> functions are added to the SETS package by
+; default.  If you would like them to be in a new place, you can use the
+; :in-package-of argument to map-function.  For example, since defthm is in the
+; ACL2 package, we can run:
+;
+;     (SETS::map-function (square x)
+;       :in-package-of defthm)
+;
+; And map<square> will be created in the ACL2 package instead of the sets
+; package.
+;
+;
+; Multi-Argument Transformation Functions.
+;
+; You can also introduce transformations with multiple arguments.  As an
+; example, we introduce the function square-then-add, which first squares its
+; input and then adds some offset to it.
+;
+;     (defun square-then-add (input offset)
+;       (declare (xargs :guard t))
+;       (+ (* (rfix input) (rfix input))
+;          (rfix offset)))
+;
+;     (SETS::map-function (square-then-add input offset)
+;        :in-package-of defthm)
+;
+;     (map<square-then-add> '(1 2 3) 5) => (6 9 14)
+;
+;
+; Supporting Guards.
+;
+; We can support transformation functions that require guards by sending extra
+; arguments to the map-function macro.  As an example, we consider what it
+; would require to write a mapping function for the function below.
+;
+;   (defun plus (x y)
+;     (declare (xargs :guard (and (integerp x) (rationalp y))))
+;     (+ x y))
+;
+;   (quantify-predicate (integerp x))   ; see quantify.lisp for explanation
+;
+;   (map-function (plus arg1 arg2)
+;     :set-guard ((all<integerp> ?set))        ; set's name must be ?set
+;     :list-guard ((all-list<integerp> ?list)) ; list's name must be ?list
+;     :element-guard ((integerp a))            ; element's name must be a
+;     :arg-guard ((rationalp arg2)))           ; extra arg names specified above
+;
+;
+; These examples can be found and run in map-tests.lisp.
 
- map.lisp
-
-   This is an optional extension of the sets library, and is not 
-   included by default when you run (include-book "sets").
-
-
-   Mappings Between Sets.
-
-   We create the macro map-function, which introduces the following
-   functions for any arbitrary transformation function.
-
-      map<function>
-      map-list<function>
-
-   In addition to introducing these functions, a large rewriting
-   strategy is developed for reasoning about the new mapping 
-   functions.
-
-
-   Introductory Examples.
-
-   Here are some simple examples.  These transformation functions have
-   only a single argument, and are guarded to operate on any inputs.
-
-     (SETS::map-function (integerp x))
-       - (SETS::map<integerp> '(1 2 3)) = (t)
-       - (SETS::map-list<integerp> '(1 a 2 b)) = (t nil t nil)
-
-     (defun square (x)
-       (declare (xargs :guard t))
-       (* (rfix x) (rfix x)))
-
-     (SETS::map-function (square x))
-       - (SETS::map<square> '(1 2 3)) = (1 4 9)
-       - (SETS::map<square> '(a b c)) = (0)
-    
-   Note that you cannot use macros here.  For example, you cannot map
-   real/rationalp, because it is not a function.  
-
-  
-   Controlling Packages.  
-
-   As you can see, the new map<f> functions are added to the SETS 
-   package by default.  If you would like them to be in a new place,
-   you can use the :in-package-of argument to map-function.  For 
-   example, since defthm is in the ACL2 package, we can run:
-
-     (SETS::map-function (square x)
-       :in-package-of defthm)
-
-   And map<square> will be created in the ACL2 package instead of 
-   the sets package.
-  
-   
-   Multi-Argument Transformation Functions.
-
-   You can also introduce transformations with multiple arguments.
-   As an example, we introduce the function square-then-add, which
-   first squares its input and then adds some offset to it.
-
-     (defun square-then-add (input offset)
-       (declare (xargs :guard t))
-       (+ (* (rfix input) (rfix input))
-          (rfix offset)))
-
-     (SETS::map-function (square-then-add input offset)
-        :in-package-of defthm)
-   
-     (map<square-then-add> '(1 2 3) 5) => (6 9 14)
-
-   
-   Supporting Guards.
-
-   We can support transformation functions that require guards by
-   sending extra arguments to the map-function macro.  As an example,
-   we consider what it would require to write a mapping function for
-   the function below.
-
-   (defun plus (x y)
-     (declare (xargs :guard (and (integerp x) (rationalp y))))
-     (+ x y))
-
-   (quantify-predicate (integerp x))   ; see quantify.lisp for explanation
-
-   (map-function (plus arg1 arg2)
-     :set-guard ((all<integerp> ?set))        ; set's name must be ?set
-     :list-guard ((all-list<integerp> ?list)) ; list's name must be ?list
-     :element-guard ((integerp a))            ; element's name must be a
-     :arg-guard ((rationalp arg2)))           ; extra arg names specified above
-
-|#
-
-(in-package "SETS") 
+(in-package "SETS")
 (include-book "quantify")
 (set-verify-guards-eagerness 2)
 
 
-; The need for the following theorems is depressing and distressing.
-; I haven't figured out a way around them yet.  Maybe they need to be
-; added into the main sets books, but they seem to only be an issue
-; here.
+; BOZO ugly extra theorems we probably shouldn't need
 
 (defthm map-subset-helper
-  (implies (and (not (empty x))
-		(in (head x) y))
-	   (equal (subset (tail x) y)
-		  (subset x y)))
-  :hints(("Goal" :expand (subset x y))))
+  (implies (in (head X) Y)
+	   (equal (subset (tail X) Y)
+		  (subset X Y)))
+  :hints(("Goal" :expand (subset X Y))))
 
 (defthm map-subset-helper-2
-  (implies (and (not (empty x))
-		(not (in (head x) y)))
-	   (not (subset x y))))
+  (implies (not (in (head X) Y))
+           (equal (subset X Y)
+                  (empty X))))
 
 
-; We will map an arbitrary transformation function across the set.  We
-; don't assume anything about transform.
+; We will map an arbitrary transformation function across the set.  We don't
+; assume anything about transform.
 
-(encapsulate 
+(encapsulate
   (((transform *) => *))
   (local (defun transform (x) x)))
 
 
-; Now we introduce our mapping functions.  We allow the transform to
-; be mapped across a list or a set.  Under the hood, we use MBE to
-; ensure that we first transform every element of the set, and then
-; mergesort the results.  This gives O(n) + O(n log n) performance
-; intead of the O(n^2) required for repeated insertion.  We introduce
-; these functions as a constant, so we can rewrite it later to 
-; actually create maps.
+; Now we introduce our mapping functions.  We allow the transform to be mapped
+; across a list or a set.  Under the hood, we use MBE to ensure that we first
+; transform every element of the set, and then mergesort the results.  This
+; gives O(n) + O(n log n) performance intead of the O(n^2) required for
+; repeated insertion.  We introduce these functions as a constant, so we can
+; rewrite it later to actually create maps.
 
 (defconst *map-functions* '(
 
@@ -169,22 +153,20 @@
 			  (map (tail X))))
 	 :exec (mergesort (map-list X))))
 
-; A crucial component of our reasoning is the notion of the inverse of
-; the transform.  We define the relation (inversep a b), which is true
-; if and only if a is an inverse of b under transform -- that is,
-; (inversep a b) is true when (transform a) = b.
+; A crucial component of our reasoning is the notion of the inverse of the
+; transform.  We define the relation (inversep a b), which is true if and only
+; if a is an inverse of b under transform -- that is, (inversep a b) is true
+; when (transform a) = b.
 
   (defun inversep (a b)
     (declare (xargs :guard t))
-    (equal (transform a) b))
-
-))
+    (equal (transform a) b))))
 
 (INSTANCE::instance *map-functions*)
 (instance-*map-functions*)
 
 
-; We now quantify over the predicate inversep, allowing us to talk 
+; We now quantify over the predicate inversep, allowing us to talk
 ; about the existence of inverses in sets.
 
 (quantify-predicate (inversep a b))
@@ -258,9 +240,9 @@
 ; To begin, we prove the characteristic list membership theorem for
 ; mapping over lists.
 
-  (defthm map-list-in-list
-    (equal (in-list a (map-list X))
-	   (exists-list<inversep> X a)))
+  (defthm member-of-map-list
+    (iff (member a (map-list X))
+         (exists-list<inversep> X a)))
 
   (defthm map-mergesort
     (equal (map (mergesort X))
@@ -268,7 +250,7 @@
 
 
 
-; And finally we prove this theorem, which will be useful for 
+; And finally we prove this theorem, which will be useful for
 ; verifying the guards of map.
 
   (defthm map-mbe-equivalence
@@ -320,10 +302,10 @@
 ; the following function, for which we introduce a corresponding
 ; macro.
 
-(defun map-function-fn (function in-package 
-				 set-guard 
-				 list-guard 
-				 element-guard 
+(defun map-function-fn (function in-package
+				 set-guard
+				 list-guard
+				 element-guard
 				 arg-guard)
 
   (declare (xargs :mode :program))
@@ -423,7 +405,7 @@
 		(verify-guards ,map<f>)
 
 		(deftheory ,theory<f>
-		  (union-theories 
+		  (union-theories
 		   (theory ',(mksym (app "theory" ipw) in-package))
 		   '(,map<f> ,map-list<f> ,inversep<f>
 	             ,@theory<f>-defthms)))
@@ -431,12 +413,12 @@
 		)))
 
 
-(defmacro map-function (function &key in-package-of 
-				      set-guard 
-				      list-guard 
-				      element-guard 
+(defmacro map-function (function &key in-package-of
+				      set-guard
+				      list-guard
+				      element-guard
 				      arg-guard)
-  (map-function-fn function 
+  (map-function-fn function
 		   (if in-package-of in-package-of 'in)
 		   (standardize-to-package "?SET" '?set set-guard)
 		   (standardize-to-package "?LIST" '?list list-guard)
@@ -445,13 +427,13 @@
 		   ))
 
 
-(deftheory generic-map-theory 
+(deftheory generic-map-theory
   (union-theories (theory 'theory<inversep>)
 		  `(,@(INSTANCE::defthm-names *map-theorems*)
-		      map 
+		      map
 		      map-list
 		      inversep)))
 
 (in-theory (disable generic-map-theory))
-                     
+
 
