@@ -890,7 +890,10 @@
 ; ----------------------------------------------------------------------
 
 #+static-hons
-(defabbrev hl-hspace-truly-static-honsp (x hs)
+(declaim (inline hl-hspace-truly-static-honsp))
+
+#+static-hons
+(defun hl-hspace-truly-static-honsp (x hs)
 
 ; (HL-HSPACE-TRULY-STATIC-HONSP X HS) --> BOOL
 ;
@@ -924,7 +927,8 @@
         (t
          (gethash b (hl-ctables-cdr-ht-eql ctables)))))
 
-(defabbrev hl-hspace-honsp (x hs)
+(declaim (inline hl-hspace-honsp))
+(defun hl-hspace-honsp (x hs)
 
 ; (HL-HSPACE-HONSP X HS) --> BOOL
 ;
@@ -1684,7 +1688,8 @@
                 val
               (hl-hspace-norm-aux x cache hs)))))
 
-(defabbrev hl-hspace-norm (x hs)
+(declaim (inline hl-hspace-norm))
+(defun hl-hspace-norm (x hs)
   ;; See the essay on HL-HSPACE-NORM.
   (cond ((atom x)
          (hl-hspace-norm-atom x hs))
@@ -3135,7 +3140,9 @@ To avoid the following break and get only the above warning:~%  ~a~%"
  #+acl2-par
  (type (or hl-hspace null) *default-hs*))
 
-(defmacro hl-maybe-initialize-default-hs ()
+(declaim (inline hl-maybe-initialize-default-hs))
+
+(defun hl-maybe-initialize-default-hs ()
   #-acl2-par
   nil
   #+acl2-par

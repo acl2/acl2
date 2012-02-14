@@ -850,6 +850,7 @@ cert.acl2
 cn-hooks.lisp
 occform
 xf-addinstnames.lisp
+xf-annotate-mods.lisp
 xf-argresolve.lisp
 xf-array-indexing.lisp
 xf-assigndelays.lisp
@@ -1327,6 +1328,7 @@ instance-defpkg.lsp
 instance.lisp
 listsets.lisp
 map.lisp
+map-tests.lisp
 membership.lisp
 multiappend.lisp
 multicons.lisp
@@ -1831,7 +1833,6 @@ portcullis.acl2
 portcullis.lisp
 primitives.lisp
 quantify.lisp
-set-order.lisp
 sets.defpkg
 sets.lisp
 sort.lisp
@@ -3915,7 +3916,6 @@ plev-ccl-raw.lsp
 plev-ccl.acl2
 plev-ccl.lisp
 plev.lisp
-progndollar.lisp
 rulesets.lisp
 safe-case.lisp
 saved-errors.lisp

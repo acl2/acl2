@@ -731,7 +731,7 @@
 (defmacro oftr (&rest r) ; For writing to *trace-output*.
   `(progn (format *trace-output* ,@r) (force-output *trace-output*)))
 
-(defn1 suffix (str sym)
+(defn1 memoize-fn-suffix (str sym)
   (check-type str string)
   (check-type sym symbol)
   (let ((spkn (package-name (symbol-package sym)))
@@ -2499,7 +2499,7 @@ the calls took.")
             sublis-var-lst
             subsetp-eq
             subsumption-replacement-loop
-            suffix
+            memoize-fn-suffix
             sweep-clauses
             sweep-clauses1
             symbol-<
@@ -3861,18 +3861,18 @@ the calls took.")
 
          (dcls (dcls (cdddr (butlast cl-defun))))
          (start-time (let ((v (hons-gentemp
-                               (suffix "START-TIME-" fn))))
+                               (memoize-fn-suffix "START-TIME-" fn))))
                        (eval `(prog1 (defg ,v -1)
                                 (declaim (type integer ,v))))))
          (tablename
           ;; Submits the defg form and returns the crazy name that gets generated.
           (eval `(defg
-                   ,(hons-gentemp (suffix "MEMOIZE-HT-FOR-" fn))
+                   ,(hons-gentemp (memoize-fn-suffix "MEMOIZE-HT-FOR-" fn))
                    nil)))
          (ponstablename
           ;; Submits the defg form and returns the crazy name that gets generated.
           (eval `(defg
-                   ,(hons-gentemp (suffix "PONS-HT-FOR-" fn))
+                   ,(hons-gentemp (memoize-fn-suffix "PONS-HT-FOR-" fn))
                    nil)))
 
          (localtablename (make-symbol "TABLENAME"))
