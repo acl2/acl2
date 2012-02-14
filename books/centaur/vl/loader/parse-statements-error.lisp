@@ -83,8 +83,10 @@
      ,(vl-val-when-error-claim vl-parse-statement-or-null-fn)
      ,(vl-val-when-error-claim vl-parse-statements-until-end-fn)
      :hints(("Goal" :induct (vl-flag-parse-statement flag atts tokens warnings))
-            (and acl2::stable-under-simplificationp
-                 (flag::expand-calls-computed-hint
-                  acl2::clause
-                  ',(flag::get-clique-members 'vl-parse-statement-fn
-                                              (w state))))))))
+            '(:do-not '(simplify))
+            (flag::expand-calls-computed-hint
+             acl2::clause
+             ',(flag::get-clique-members 'vl-parse-statement-fn
+                                         (w state)))
+            (and stable-under-simplificationp
+                 '(:do-not nil))))))
