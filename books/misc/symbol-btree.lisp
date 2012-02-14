@@ -1,4 +1,4 @@
-;; Original author: ???
+;; Original author: Matt Kaufmann
 ;; Updated June 29, 2008 by Jared Davis to bring everything into logic mode.
 
 ;; A symbol-btree is a data structure of the form (symbol value left . right)

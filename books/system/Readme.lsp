@@ -13,12 +13,14 @@ worldp-check.lisp
 "
  )
  (:TITLE "System Books")
- (:AUTHOR/S "Matt Kaufmann and J Moore")
+ (:AUTHOR/S
+  "Jared Davis for hl-addr-combine.lisp; Matt Kaufmann and J Moore for the rest")
  (:Keywords "Logical World")
  (:ABSTRACT
 
-"These books check invariants on the ACL2 logical world and verify termination
-and guards of some system functions.  The scope may broaden in the future.
+"These books are about system-level properties, for example checking invariants
+on the ACL2 logical world and verifying termination and guards of some system
+functions.  The scope may broaden in the future.
 
 The book top.lisp includes books verifying termination and guards of system
 functions.  Add an include-book to top.lisp for each new such book."

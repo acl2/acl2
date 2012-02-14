@@ -1,3 +1,5 @@
+; Matt Kaufmann
+
 ; This book provides a test for the correct implementation of step-limits.
 
 (in-package "ACL2")

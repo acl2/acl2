@@ -82,7 +82,7 @@ else
 endif
 
 # Since we have specified that ACL2_BOOK_DIRS is to be a subset of
-# DIRS2, we do need to add it explicitly on the next line.
+# DIRS2, we don't need to add it explicitly on the next line.
 .PHONY: $(DIRS1) $(DIRS2)
 
 # Same as all-plus below, using DIRS2_EXCEPT_WK instead of DIRS2.  Much faster!!  Omits

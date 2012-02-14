@@ -2,8 +2,6 @@
 
 (in-package "ACL2")
 
-(include-book "progndollar")
-
 ;; Utility that prints one or more expressions and their values,
 ;; returning the value of the last expression.
 ;; For example:

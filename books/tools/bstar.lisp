@@ -239,7 +239,6 @@ examples, and additionally PATBIND-NTHS, PATBIND-ER, and so forth.
 
 
 (include-book "pack")
-(include-book "progndollar")
 
 (defun macro-name-for-patbind (binder)
   (intern-in-package-of-symbol

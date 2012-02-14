@@ -1,3 +1,5 @@
+; Matt Kaufmann
+
 ; This file contains various rather ad-hoc tests of the ruler-extenders
 ; mechanism, mostly written during development of that capability.
 

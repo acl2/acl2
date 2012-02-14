@@ -28,7 +28,6 @@ pack.lisp
 plev.lisp
 plev-ccl.lisp
 plev-ccl-raw.lsp
-progndollar.lisp
 rulesets.lisp
 safe-case.lisp
 saved-errors.lisp
@@ -92,9 +91,6 @@ required.
 in-raw-mode.lisp provides a wrapper for running raw Lisp events. A TTAG is
 required.
 
-progndollar.lisp defines PROGN$, which evaluates several forms in
-sequence for side effects.
-
 plev.lisp (and plev-ccl.lisp/plev-ccl-raw.lsp) provide PLEV, PLEV-MIN,
 and PLEV-MAX for controlling printing.
 
@@ -133,7 +129,7 @@ computing complicated :USE hints where the terms used in the
 substitutions result from deeply nested variable bindings.
 ")
  (:PERMISSION
-  "{bstar,cws,defined-const,defsum,deftuple,pack,progndollar,theory-tools,types-misc}.lisp
+  "{bstar,cws,defined-const,defsum,deftuple,pack,theory-tools,types-misc}.lisp
  copyright (C) 2009 by Sol Swords <sswords@cs.utexas.edu>.
 
 {define-keyed-function,time-dollar-with-gc}.lisp copyright (C) 2010, 2011 by

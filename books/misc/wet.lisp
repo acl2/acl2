@@ -1,3 +1,5 @@
+; Matt Kaufmann
+
 ; Replacement for WET, from before Version 3.4.
 
 ; WARNING: Keep the functionality of this book in sync with :doc wet,

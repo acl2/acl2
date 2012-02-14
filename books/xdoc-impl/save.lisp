@@ -30,7 +30,6 @@
 (include-book "../xdoc/base")
 (include-book "preprocess")
 (include-book "parse-xml")
-(include-book "tools/progndollar" :dir :system)
 (include-book "sort")
 (set-state-ok t)
 
