@@ -601,8 +601,11 @@
                    (t
                     (mv-let (erp rest tokens warnings)
                             (vl-parse-0+-bracketed-expressions explore new-warnings)
-                            (declare (ignore erp))
-                            (mv nil (cons first rest) tokens warnings)))))))
+                            ;;(declare (ignore erp))
+                            ;;(mv nil (cons first rest) tokens warnings)
+                            (if erp
+                                (mv erp rest tokens warnings)
+                              (mv nil (cons first rest) tokens warnings))))))))
 
  (defparser vl-parse-indexed-id (tokens warnings)
    (declare (xargs :measure (two-nats-measure (acl2-count tokens) 1)))

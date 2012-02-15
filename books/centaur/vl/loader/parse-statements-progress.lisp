@@ -20,7 +20,7 @@
 
 (in-package "VL")
 (include-book "parse-statements-def")
-(include-book "parse-statements-error")
+;; (include-book "parse-statements-error")
 (local (include-book "../util/arithmetic"))
 
 
@@ -82,7 +82,9 @@
      (vl-parse-statements-until-end-fn
       (and (<= (acl2-count (mv-nth 2 (vl-parse-statements-until-end-fn tokens warnings)))
                (acl2-count tokens))
-           (implies (mv-nth 1 (vl-parse-statements-until-end-fn tokens warnings))
+           (implies (and (not (mv-nth 0 (vl-parse-statements-until-end-fn
+                                         tokens warnings)))
+                         (mv-nth 1 (vl-parse-statements-until-end-fn tokens warnings)))
                     (< (acl2-count (mv-nth 2 (vl-parse-statements-until-end-fn tokens warnings)))
                        (acl2-count tokens))))
       :rule-classes ((:rewrite) (:linear)))
@@ -90,6 +92,7 @@
             '(:do-not '(simplify))
             (flag::expand-calls-computed-hint
              acl2::clause
-             ',(flag::get-clique-members 'vl-parse-statement-fn (w state)))
+             ',(flag::get-clique-members 'vl-parse-statement-fn
+                                         (w state)))
             (and stable-under-simplificationp
                  '(:do-not nil))))))

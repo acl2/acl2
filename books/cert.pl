@@ -85,7 +85,7 @@ my %certlib_opts = ( "debugging" => 0,
 		     "all_deps" => 0,
                      "believe_cache" => 0 );
 my $cache_file = 0;
-my $bin_dir;
+my $bin_dir = $ENV{'CERT_PL_BIN_DIR'};
 
 $base_path = abs_canonical_path(".");
 

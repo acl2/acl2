@@ -21,7 +21,7 @@
 (in-package "VL")
 (include-book "parse-expressions-def")
 (include-book "parse-expressions-tokenlist") ;; sucky
-(include-book "parse-expressions-error")     ;; sucky
+;; (include-book "parse-expressions-error")     ;; sucky
 (local (include-book "../util/arithmetic"))
 
 
@@ -59,6 +59,7 @@
                            ;tag-when-vl-ifstmt-p
                            ;tag-when-vl-seqblockstmt-p
                            )))
+
 
 (with-output
  :off prove :gag-mode :goals
