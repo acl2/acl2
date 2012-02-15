@@ -281,14 +281,19 @@ it.</p>
 
        (last-ditch-hint
         `(and stable-under-simplificationp
-              '(:in-theory (enable ,(mksym name '-last-ditch-rules)))))
+              (prog2$ (cw "Last-ditchin' it~%~x0~%" clause)
+                      '(:in-theory (enable ,(mksym name '-last-ditch-rules))))))
 
        ((when (eq mode :program))
         `(encapsulate
            ()
            (program)
            ,@doc
-           ,@def)))
+           ,@def))
+
+       (elementp-of-nil-rewritep
+        (and (not (eq elementp-of-nil :unknown))
+             (not (assoc elementp acl2::*cons-term1-alist*)))))
 
     `(encapsulate
        ()
@@ -297,6 +302,31 @@ it.</p>
        (set-inhibit-warnings "theory" "free" "non-rec") ;; Note: implicitly local
 
        ,@doc
+
+       (local (defthm deflist-local-booleanp-element-thm
+                (booleanp ,element)
+                :rule-classes :type-prescription))
+
+       ,@(and elementp-of-nil-rewritep
+              ;; Note: It'd be nice to make this a rewrite rule, but
+              ;; some functions are automatically reduced to their value
+              ;; when applied to NIL.  See chk-acceptable-rewrite-rule,
+              ;; unprettyify, subcor-var, and cons-term.  For example, (cons-term 'consp '('nil))
+              ;; is 'nil.  We check here that this isn't one of those
+              ;; functions.  Unprettyify is to deal with the lambda; the real
+              ;; crux here is what cons-term returns.
+              ;; If this stops working, take a look at 
+              ;; chk-acceptable-rewrite-rule, which at this writing contained
+              ;; (unprettyify (remove-guard-holders term)).
+              ;;(let ((lst (unprettyify
+              ;;            (remove-guard-holders
+              ;;             `((lambda (,x) ,element) 'nil)))))
+              ;;  ;; This is the form that gets returned when the element is 
+              ;;  ;; a simple function call without IFs that doesn't get
+              ;;  (and (
+              `((local (defthm deflist-local-elementp-of-nil-thm
+                         (let ((,x nil))
+                           (equal ,element ,elementp-of-nil))))))
        ,@def
 
        (local (in-theory (theory 'minimal-theory)))
@@ -309,6 +339,8 @@ it.</p>
                                  deflist-lemma-4
                                  ;; not 5.
                                  deflist-lemma-6
+                                 ,name
+                                 (:type-prescription ,name)
                                  )))
 
        (local (deftheory ,(mksym name '-last-ditch-rules)
@@ -395,13 +427,95 @@ it.</p>
                                  `(if (consp ,x)
                                       ,(not negatedp)
                                     (,elementp ,@(subst nil x elem-formals)))))))
-         :hints(,last-ditch-hint))
+         :hints(("Goal" :in-theory
+                 (enable default-car
+                         deflist-local-booleanp-element-thm
+                         . ,(and elementp-of-nil-rewritep
+                                 '( deflist-local-elementp-of-nil-thm)))
+                 ;;,@ (and (not (eq elementp-of-nil :unknown))
+                 ;;        '(:use deflist-local-elementp-of-nil-thm))
+                 . ,(and (eq elementp-of-nil nil)
+                         `(:expand ((,name . ,formals)))))
+                ,last-ditch-hint))
 
        (defthm ,(mksym name '-of-cdr-when- name)
          (implies (,name ,@formals)
                   (equal (,name ,@(subst `(cdr ,x) x formals))
                          t))
          :hints(,last-ditch-hint))
+
+       (local (in-theory (disable ,name)))
+
+       (defthm ,(mksym name '-of-nthcdr)
+         (implies (force (,name ,@formals))
+                  (equal (,name ,@(subst `(nthcdr ,n ,x) x formals))
+                         t))
+         :hints(("Goal"
+                 :induct (nthcdr ,n ,x)
+                 :in-theory (enable nthcdr))
+                ,last-ditch-hint))
+
+       (defthm ,(mksym name '-of-simpler-take)
+         ,(cond ( ;; Careful if you edit this, elementp-of-nil might be :unknown, too.
+                 (or (and (equal elementp-of-nil t)
+                          (not negatedp))
+                     (and (equal elementp-of-nil nil)
+                          negatedp))
+                 `(implies (force (,name ,@formals))
+                           (equal (,name ,@(subst `(simpler-take ,n ,x) x formals))
+                                  t)))
+                (t
+                 `(implies (and (force (,name ,@formals))
+                                (force (<= ,n (len ,x))))
+                           (equal (,name ,@(subst `(simpler-take ,n ,x) x formals))
+                                  t))))
+         :hints(("Goal"
+                 :in-theory (enable simpler-take)
+                 :induct (simpler-take ,n ,x)
+                 :expand ((,name ,@formals)
+                          (:free (,x ,y)
+                           (,name ,@(subst `(cons ,x ,y) x formals)))))
+                ,last-ditch-hint))
+
+       (defthm ,(mksym name '-of-repeat)
+         (equal (,name ,@(subst `(repeat ,x ,n) x formals))
+                (or ,(cond (negatedp
+                            `(not (,elementp ,@formals)))
+                           (t
+                            `(,elementp ,@formals)))
+                    (zp ,n)))
+         :hints(("Goal"
+                 :induct (repeat ,x ,n)
+                 :in-theory (enable repeat deflist-local-booleanp-element-thm)
+                 :expand ((,name ,@formals)
+                          (:free (,x ,y)
+                           (,name ,@(subst `(cons ,x ,y) x formals)))))
+                ,last-ditch-hint))
+
+       (defthm ,(mksym name '-of-last)
+         (implies (force (,name ,@formals))
+                  (equal (,name ,@(subst `(last ,x) x formals))
+                         t))
+         :hints(("Goal"
+                 :induct (last ,x)
+                 :in-theory (enable last))
+                ,last-ditch-hint))
+
+       (defthm ,(mksym name '-of-butlast)
+         ,(cond ((or (and (equal elementp-of-nil t)
+                          (not negatedp))
+                     (and (equal elementp-of-nil nil)
+                          negatedp))
+                 `(implies (force (,name ,@formals))
+                           (equal (,name ,@(subst `(butlast ,x ,n) x formals))
+                                  t)))
+                (t
+                 `(implies (and (force (,name ,@formals))
+                                (force (natp ,n)))
+                           (equal (,name ,@(subst `(butlast ,x ,n) x formals))
+                                  t))))
+         :hints(("Goal" :in-theory (enable butlast))
+                ,last-ditch-hint))
 
        (defthm ,(mksym elementp '-when-member-equal-of- name)
          (implies (and (,name ,@formals)
@@ -434,47 +548,7 @@ it.</p>
                                                   t))))
          :hints(("Goal"
                  :induct (len ,x)
-                 :in-theory (enable subsetp-equal))
-                ,last-ditch-hint))
-
-       (defthm ,(mksym name '-of-nthcdr)
-         (implies (force (,name ,@formals))
-                  (equal (,name ,@(subst `(nthcdr ,n ,x) x formals))
-                         t))
-         :hints(("Goal"
-                 :induct (nthcdr ,n ,x)
-                 :in-theory (enable nthcdr))
-                ,last-ditch-hint))
-
-       (defthm ,(mksym name '-of-simpler-take)
-         ,(cond ( ;; Careful if you edit this, elementp-of-nil might be :unknown, too.
-                 (or (and (equal elementp-of-nil t)
-                          (not negatedp))
-                     (and (equal elementp-of-nil nil)
-                          negatedp))
-                 `(implies (force (,name ,@formals))
-                           (equal (,name ,@(subst `(simpler-take ,n ,x) x formals))
-                                  t)))
-                (t
-                 `(implies (and (force (,name ,@formals))
-                                (force (<= ,n (len ,x))))
-                           (equal (,name ,@(subst `(simpler-take ,n ,x) x formals))
-                                  t))))
-         :hints(("Goal"
-                 :in-theory (enable simpler-take)
-                 :induct (simpler-take ,n ,x))
-                ,last-ditch-hint))
-
-       (defthm ,(mksym name '-of-repeat)
-         (equal (,name ,@(subst `(repeat ,x ,n) x formals))
-                (or ,(cond (negatedp
-                            `(not (,elementp ,@formals)))
-                           (t
-                            `(,elementp ,@formals)))
-                    (zp ,n)))
-         :hints(("Goal"
-                 :induct (repeat ,x ,n)
-                 :in-theory (enable repeat))
+                 :in-theory (enable subsetp-equal ,name))
                 ,last-ditch-hint))
 
        (defthm ,(mksym name '-of-mergesort)
@@ -483,30 +557,6 @@ it.</p>
          :hints(("Goal" :cases ((,name ,@formals)))
                 ,last-ditch-hint))
 
-       (defthm ,(mksym name '-of-last)
-         (implies (force (,name ,@formals))
-                  (equal (,name ,@(subst `(last ,x) x formals))
-                         t))
-         :hints(("Goal"
-                 :induct (last ,x)
-                 :in-theory (enable last))
-                ,last-ditch-hint))
-
-       (defthm ,(mksym name '-of-butlast)
-         ,(cond ((or (and (equal elementp-of-nil t)
-                          (not negatedp))
-                     (and (equal elementp-of-nil nil)
-                          negatedp))
-                 `(implies (force (,name ,@formals))
-                           (equal (,name ,@(subst `(butlast ,x ,n) x formals))
-                                  t)))
-                (t
-                 `(implies (and (force (,name ,@formals))
-                                (force (natp ,n)))
-                           (equal (,name ,@(subst `(butlast ,x ,n) x formals))
-                                  t))))
-         :hints(("Goal" :in-theory (enable butlast))
-                ,last-ditch-hint))
 
        (defthm ,(mksym name '-of-set-difference-equal)
          (implies (force (,name ,@formals))
@@ -514,7 +564,10 @@ it.</p>
                          t))
          :hints(("Goal"
                  :induct (len ,x)
-                 :in-theory (enable set-difference-equal))
+                 :in-theory (enable set-difference-equal)
+                 :expand ((,name ,@formals)
+                          (:free (,x ,y)
+                           (,name ,@(subst `(cons ,x ,y) x formals)))))
                 ,last-ditch-hint))
 
        (defthm ,(mksym name '-of-union-equal)
@@ -524,7 +577,10 @@ it.</p>
                          t))
          :hints(("Goal"
                  :induct (len ,x)
-                 :in-theory (enable union-equal))
+                 :in-theory (enable union-equal)
+                 :expand ((,name ,@formals)
+                          (:free (,x ,y)
+                           (,name ,@(subst `(cons ,x ,y) x formals)))))
                 ,last-ditch-hint))
 
        (defthm ,(mksym name '-of-difference)
