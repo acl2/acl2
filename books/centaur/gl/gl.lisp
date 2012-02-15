@@ -36,6 +36,7 @@
 (include-book "def-gl-clause-proc")
 (include-book "gify-thms")
 (include-book "gl-misc-doc")
+(include-book "auto-bindings")
 
 (local (include-book "general-object-thms"))
 (local (include-book "eval-g-base-help"))

@@ -4,12 +4,12 @@
 (defpkg "GL"
  (set-difference-eq
   (union-eq
-   (union-eq *acl2-exports*
-    *common-lisp-symbols-from-main-lisp-package*)
+   *acl2-exports*
+   *common-lisp-symbols-from-main-lisp-package*
    '(pkg-witness bad-atom<= b* quit exit
      hons-acons hons-get hut het hqual hons-equal
      hons-assoc-equal make-fal
-     
+
      qv bfr-and bfr-not bfr-and
      bfr-p bfr-or bfr-xor bfr-iff bfr-ite bfr-eval bfr-eval-list
      q-implies add-bfr-fn add-bfr-pat add-bfr-fn-pat max-depth
@@ -19,7 +19,7 @@
      |(bfr-ite non-nil y z)|
      bfr-eval-when-not-consp
      bfr-eval-of-non-consp-cheap
-     
+
      bfr-eval-cp-default-hint
      bfr-eval-list-when-not-consp
      bfr-p-of-bfr-and
@@ -42,7 +42,7 @@
      arith5-disable-ruleset
 
      prove-guard-invariants
-        
+
      add-untranslate-pattern
      def-pattern-match-constructor
      defn getprop body
@@ -68,10 +68,10 @@
      default-<-2
      default-*-1 default-*-2
      default-unary-/
-        
+
      parse-clause-id
      is-prefix subgoal-of
-        
+
      bfr-eval-of-bfr-and
      bfr-eval-of-bfr-or
      bfr-eval-of-bfr-not
@@ -134,6 +134,7 @@
      xor
      gl-bdd-mode gl-aig-mode gl-mbe
 
+     numlist
      defsection))
   '()))
 
