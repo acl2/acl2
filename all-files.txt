@@ -545,6 +545,7 @@ top.lisp
 
 books/centaur/gl:
 always-equal-prep.lisp
+auto-bindings.lisp
 bfr-aig-bddify.lisp
 bfr.lisp
 bfr-sat.lisp
@@ -637,6 +638,7 @@ interp-function-lookup.lisp
 ls.lisp
 memory-mgmt-logic.lisp
 memory-mgmt-raw.lisp
+numlist.lisp
 sneaky-load.lisp
 suffixp.lisp
 universal-equiv.lisp
