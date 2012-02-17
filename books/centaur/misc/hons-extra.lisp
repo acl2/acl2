@@ -117,7 +117,11 @@ That is, you may write something like this:
 ~ev[]
 
 which causes ~c[a], ~c[b], and ~c[c] to become fast alists until the completion
-of the ~c[b*] form.~/~/")
+of the ~c[b*] form.
+
+Note that with-fast-alist will cause logically tail-recursive functions not to
+execute tail-recursively if its cleanup phase happens after the tail-recursive
+call returns.~/~/")
 
 (defmacro-last with-fast-alist)
 
@@ -186,6 +190,106 @@ is just shorthand for:
 (fast-alist-summary)
 
 ||#
+
+
+
+
+
+(defdoc with-stolen-alist
+  ":Doc-Section Hons-and-Memoization
+
+~c[(with-stolen-alist name form)] ensures that ~c[name] is a fast alist at the
+start of the execution of ~c[form].  At the end of execution, it ensures that
+~c[name] is a fast alist if and only if it was originally.  That is, if
+~c[name] was not a fast alist originally, its hash table link is freed, and if
+it was a fast alist originally but its table was modified during the execution
+of ~c[form], that table is restored.  Note that any extended table created from
+the original fast alist during ~c[form] must be manually freed.~/
+
+Logically, ~c[with-stolen-alist] just returns ~c[form].
+
+Under the hood, we cause ~c[alist] to become a fast alist before executing
+~c[form], and we check the various conditions outlined above before returning
+the final value.
+
+Note that with-stolen-alist will cause logically tail-recursive functions not to
+execute tail-recursively if its cleanup phase happens after the tail-recursive
+call returns.~/~/")
+
+(defmacro-last with-stolen-alist)
+
+(defun with-stolen-alists-fn (alists form)
+  (if (atom alists)
+      form
+    `(with-stolen-alist ,(car alists)
+                      ,(with-stolen-alists-fn (cdr alists) form))))
+
+(defmacro with-stolen-alists (alists form)
+  ":Doc-Section Hons-and-Memoization
+
+Concisely call ~ilc[with-stolen-alist] on multiple alists.~/~/
+
+Example:
+~bv[]
+ (with-stolen-alists (a b c) form)
+~ev[]
+is just shorthand for:
+~bv[]
+ (with-stolen-alist a
+  (with-stolen-alist b
+   (with-stolen-alist c
+    form)))
+~ev[]"
+
+  (with-stolen-alists-fn alists form))
+
+(def-b*-binder with-stolen
+  (declare (xargs :guard (not forms))
+           (ignorable forms))
+  `(with-stolen-alists ,args ,rest-expr))
+
+
+
+#||
+
+(b* ((a '((1 . a) (2 . b) (3 . c)))
+     (b '((1 . a) (2 . b) (3 . d)))
+     (- (cw "Before with-stolen-alists:~%"))
+     (- (fast-alist-summary))
+     (res (with-stolen-alists
+            (a b)
+            (b* ((- (cw "Inside with-stolen-alists:~%"))
+                 (- (fast-alist-summary))
+                 (x (hons-get 2 a))
+                 (a ())
+                 (y (hons-get 3 b)))
+              (list (cdr x) (cdr y) a)))))
+  (cw "After with-stolen-alists:~%")
+  (fast-alist-summary)
+  res)
+
+(b* ((a '((1 . a) (2 . b) (3 . c)))
+     (b (make-fast-alist '((1 . a) (2 . b) (3 . d))))
+     (- (cw "Before with-stolen-alists:~%"))
+     (- (fast-alist-summary))
+     (res (with-stolen-alists
+            (a b)
+            (b* ((- (cw "Inside with-stolen-alists:~%"))
+                 (- (fast-alist-summary))
+                 (x (hons-get 2 a))
+                 (a ())
+                 (b (hons-acons 5 'f b))
+                 (y (hons-get 5 b)))
+              (fast-alist-free b)
+              (list (cdr x) (cdr y) a))))
+     (b (hons-acons 4 'e b)))
+  (cw "After with-stolen-alists:~%")
+  (fast-alist-summary)
+  (fast-alist-free b)
+  res)
+
+||#
+
 
 
 
@@ -297,6 +401,5 @@ is just shorthand for:
      (cdr (hons-get 'b b))))
 
 (fast-alist-summary) ;; all alists freed
-
 
 |#

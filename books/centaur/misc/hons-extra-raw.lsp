@@ -165,3 +165,29 @@
             nil
           (fast-alist-free ,alist-var))))))
 
+(defmacro with-stolen-alist-raw (alist form)
+  (let ((alist-was-fast-p (gensym))
+        (alist-var (if (legal-variablep alist)
+                       alist
+                     (gensym))))
+    `(b* ((- (hl-maybe-initialize-default-hs))
+          ;; If alist isn't a variable, then depend on it being a computation
+          ;; that returns the same (eq) object each time, and that object can
+          ;; be turned into an (eq) fast alist, i.e. its keys are normed.  If
+          ;; not, then the user may not find their alist to be fast during the
+          ;; execution of form, but we'll still correctly free it.
+          (,alist-var ,alist)
+          (,alist-was-fast-p
+           (let ((slot (hl-faltable-general-lookup ,alist-var (hl-hspace-faltable *default-hs*))))
+             (if (hl-falslot-key slot)
+                 t
+               nil)))
+          (,alist-var (if ,alist-was-fast-p
+                          ,alist-var
+                        (make-fast-alist ,alist-var))))
+       (our-multiple-value-prog1
+        ,form
+        (if ,alist-was-fast-p
+            (make-fast-alist ,alist-var)
+          (fast-alist-free ,alist-var))))))
+
