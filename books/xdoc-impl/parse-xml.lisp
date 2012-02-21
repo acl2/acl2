@@ -354,9 +354,10 @@
        ((when err)
         (b* (((when (not loc))
               (mv err nil))
-             (back-one (max 0 (- loc 2)))
-             (context  (take 4 (nthcdr back-one tokens)))
-             (nearby   (flatten-tokens-for-errormsg context)))
+             (back-one  (max 0 (- loc 2)))
+             (start-ctx (nthcdr back-one tokens))
+             (context   (take (min 4 (len start-ctx)) start-ctx))
+             (nearby    (flatten-tokens-for-errormsg context)))
           (mv (str::cat err "
 Nearby text: {" nearby "}" *nls*)
               nil))))
