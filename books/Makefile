@@ -135,7 +135,7 @@ tools: arithmetic-5 misc
 regex: tools cutil
 defsort: misc unicode tools
 hons-archive: defsort unicode tools arithmetic-3
-str: arithmetic unicode defsort tools
+str: arithmetic unicode defsort tools xdoc
 coi: arithmetic arithmetic-2 arithmetic-3 data-structures ihs make-event \
 	misc ordinals rtl
 wp-gen: ordinals
