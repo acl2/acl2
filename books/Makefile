@@ -54,7 +54,7 @@ export ACL2_CUSTOMIZATION ?= NONE
 
 # Note: arithmetic-4 could be added in analogy to arithmetic-5.
 
-DIRS1 = cowles arithmetic meta
+DIRS1 = cowles arithmetic meta xdoc
 DIRS2_EXCEPT_WK_COI = ordinals data-structures bdd ihs arithmetic-2 arithmetic-3 arithmetic-5 \
 	misc models/jvm/m1 models/jvm/m5 proofstyles rtl arithmetic-3/extra sorting make-event parallel hints \
 	fix-cert finite-set-theory finite-set-theory/osets powerlists textbook \
@@ -62,7 +62,7 @@ DIRS2_EXCEPT_WK_COI = ordinals data-structures bdd ihs arithmetic-2 arithmetic-3
 	data-structures/memories unicode str concurrent-programs/bakery \
 	concurrent-programs/german-protocol deduction/passmore clause-processors \
 	quadratic-reciprocity tools paco hacking security regex \
-        defsort hons-archive serialize wp-gen xdoc xdoc-impl system tutorial-problems cutil
+        defsort hons-archive serialize wp-gen xdoc-impl system tutorial-problems cutil
 DIRS2_EXCEPT_WK = $(DIRS2_EXCEPT_WK_COI) coi misc/misc2
 DIRS2 = $(DIRS2_EXCEPT_WK) workshops
 SHORTDIRS2 = ordinals data-structures bdd
@@ -139,7 +139,7 @@ str: arithmetic unicode defsort tools xdoc
 coi: arithmetic arithmetic-2 arithmetic-3 data-structures ihs make-event \
 	misc ordinals rtl
 wp-gen: ordinals
-xdoc: arithmetic
+# xdoc has no dependencies
 xdoc-impl: xdoc str tools
 system: tools arithmetic arithmetic-5
 cutil: xdoc tools str misc finite-set-theory/osets defsort unicode

@@ -20,18 +20,18 @@
         (defthm foo
           (equal (car (cons x y)) x))
         (defun f1 (x y) (<= x y))
-        (local (include-book "arithmetic/top" :dir :system))
         (defthm bar
           (< (acl2-count x) (acl2-count (cons x y))))
         (defun-sk exists-x-f1 (y)
           (exists x (f1 x y)))
+
         (encapsulate ((f (x) t)
                       (h (x) t))
-                     (local (defun f (x) x))
-                     (defun g (x) (f x))
-                     (local (defun h (x) x))
-                     (defthm my-thm
-                       (equal (f x) (h (g x)))))
+          (local (defun f (x) x))
+          (defun g (x) (f x))
+          (local (defun h (x) x))
+          (defthm my-thm
+            (equal (f x) (h (g x)))))
         (defchoose my-ch (x) (y)
           (f1 x (cons 0 y)))
         ))
