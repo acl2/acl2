@@ -10238,7 +10238,7 @@
   ~c[(equal var term)] can bind the variable ~c[var].
 
   A small change has been made for ~c[:]~ilc[type-prescription] rules for
-  hypotheses of the form ~c[(equal var term)], where c[var] is a free variable
+  hypotheses of the form ~c[(equal var term)], where ~c[var] is a free variable
   and no variable of ~c[term] is free (~pl[free-variables]).  As with
   ~c[:]~ilc[rewrite] and ~c[:]~ilc[linear] rules, we now bind ~c[var] to
   ~c[term] even if ~c[(equal u term)] happens to be known in the current
@@ -12144,9 +12144,9 @@
 
   A new ~il[table], ~ilc[evisc-table], allows you to introduce print
   abbreviations, for example for large constants.  Moreover, a new reader macro
-  ~-[]~c[#,] ~-[] makes it convenient to reference constants even inside a quote.
-  ~l[evisc-table].  Thanks to Bob Boyer and Warren Hunt for useful discussions
-  leading to this feature.
+  ~-[] ~c[#,] ~-[] makes it convenient to reference constants even inside a
+  quote.  ~l[evisc-table].  Thanks to Bob Boyer and Warren Hunt for useful
+  discussions leading to this feature.
 
   The macros in ~c[books/misc/expander.lisp] now have a new keyword argument,
   ~c[:simplify-hyps-p].  The default behavior is as before, but now case
@@ -14675,7 +14675,7 @@
   Fixed a bug evidenced by error message ``Unexpected form in certification
   world'', which could result from attempting to certify a book after
   evaluating an ~ilc[encapsulate] form with a local ~ilc[defmacro].  Thanks to
-  Jared Davis for pointing out ths bug and sending the example:
+  Jared Davis for pointing out this bug and sending the example:
   ~bv[]
   (encapsulate
    ()
@@ -16873,7 +16873,7 @@
 
   Improved the built-in `~c[untranslate]' functions to produce ~c[let*]
   expressions when appropriate (more to help with tools that call
-  ~c[untranslate] and the like, than to help with proof output).'
+  ~c[untranslate] and the like, than to help with proof output).
 
   The utility ~ilc[redo-flat] now works for ~ilc[certify-book] failures, just
   as it continues to work for failures of ~ilc[encapsulate] and ~ilc[progn].
@@ -18618,6 +18618,10 @@
   Fixed a bug in the ~c[mini-proveall] target in ~c[GNUmakefile].  The fix
   includes a slight change to the ~c[:mini-proveall] ~il[command] (an extra
   event at the end).  Thanks to Camm Maguire for reporting this bug.
+
+  Fixed a bug that occurred when ~ilc[certify-book] was called after using
+  ~ilc[set-fmt-soft-right-margin] or ~ilc[set-fmt-hard-right-margin] to set a
+  small right margin.
 
   ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]
 

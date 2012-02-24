@@ -14115,11 +14115,20 @@
 ; non-hons version, but it seems simplest to do this the same way for both the
 ; hons and non-hons versions.
 
-       (fms ";;; Printing ~x0 portcullis command~#1~[~/s~] followed by book ~
-             contents,~%;;; with make-event expansions."
-             (list (cons #\0 (length portcullis-cmds))
-                   (cons #\1 portcullis-cmds))
-             ch state nil)
+       (mv-let
+        (erp val state)
+        (state-global-let*
+         ((fmt-hard-right-margin 10000 set-fmt-hard-right-margin)
+          (fmt-soft-right-margin 10000 set-fmt-soft-right-margin))
+         (pprogn
+          (fms ";;; Printing ~x0 portcullis command~#1~[~/s~] followed by ~
+                book contents,~%;;; with make-event expansions."
+               (list (cons #\0 (length portcullis-cmds))
+                     (cons #\1 portcullis-cmds))
+               ch state nil)
+          (value nil)))
+        (declare (ignore erp val))
+        state)
        (print-object$ (cons 'progn
                             (append portcullis-cmds
                                     (subst-by-position expansion-alist
