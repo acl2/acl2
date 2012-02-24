@@ -389,7 +389,8 @@ First, load this book
    ...
    
    Summary
-   Form:  ( INCLUDE-BOOK "run-fpst" ...)
+   Form:  ( INCLUDE-BOOK ; manual editing by Matt K. to avoid Makefile-deps dependency
+            "run-fpst" ...)
    Rules: NIL
    Warnings:  None
    Time:  1.49 seconds (prove: 0.00, print: 0.00, other: 1.49)

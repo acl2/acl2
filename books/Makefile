@@ -139,7 +139,7 @@ str: arithmetic unicode defsort tools xdoc
 coi: arithmetic arithmetic-2 arithmetic-3 data-structures ihs make-event \
 	misc ordinals rtl
 wp-gen: ordinals
-# xdoc has no dependencies
+xdoc: arithmetic
 xdoc-impl: xdoc str tools
 system: tools arithmetic arithmetic-5
 cutil: xdoc tools str misc finite-set-theory/osets defsort unicode
