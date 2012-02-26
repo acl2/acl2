@@ -1787,7 +1787,7 @@ the calls took.")
             cons-make-list
             cons-ppr1
             cons-term
-            cons-term2
+            cons-term1
             const-list-acc
             constant-controller-pocketp
             constant-controller-pocketp1

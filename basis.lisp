@@ -2625,31 +2625,15 @@
     (standard-part (kwote x))
     (not (kwote (not x)))))
 
-(defmacro cons-term2-body ()
+(defmacro cons-term1-body ()
   `(let ((x (cadr (car args)))
          (y (cadr (cadr args))))
      (case fn
        ,@*cons-term1-alist*
        (otherwise (cons fn args)))))
 
-(defun cons-term2 (fn args)
-  (cons-term2-body))
-
-(defmacro cons-term1 (fn args)
-  (or (and (consp fn)
-           (eq (car fn) 'quote)
-           (symbolp (cadr fn))
-           (let ((expr (cadr (assoc-eq (cadr fn) *cons-term1-alist*))))
-             (if expr
-                 `(let* ((args ,args)
-                         (x (cadr (car args)))
-                         ,@(and (cdr (cadr (assoc-eq
-                                            (cadr fn)
-                                            *primitive-formals-and-guards*)))
-                                '((y (cadr (cadr args))))))
-                    ,expr)
-               `(cons ,fn ,args))))
-      `(cons-term2 ,fn ,args)))
+(defun cons-term1 (fn args)
+  (cons-term1-body))
 
 (defun quote-listp (l)
   (declare (xargs :guard (true-listp l)))
@@ -12384,15 +12368,15 @@
 (defconst *cons-term1-alist-mv2*
   (cons-term1-alist-mv2 *cons-term1-alist*))
 
-(defmacro cons-term2-body-mv2 ()
+(defmacro cons-term1-body-mv2 ()
   `(let ((x (cadr (car args)))
          (y (cadr (cadr args))))
      (case fn
        ,@*cons-term1-alist-mv2*
        (otherwise (mv nil form)))))
 
-(defun cons-term2-mv2 (fn args form)
-  (cons-term2-body-mv2))
+(defun cons-term1-mv2 (fn args form)
+  (cons-term1-body-mv2))
 
 (mutual-recursion
 
@@ -12412,7 +12396,7 @@
                      (cond (changedp (mv t (cons-term fn lst)))
                            ((and (symbolp fn) ; optimization
                                  (quote-listp lst))
-                            (cons-term2-mv2 fn lst form))
+                            (cons-term1-mv2 fn lst form))
                            (t (mv nil form))))))))
 
 (defun sublis-var1-lst (alist l)

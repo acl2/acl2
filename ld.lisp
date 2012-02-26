@@ -18227,6 +18227,10 @@
 ; the form can be translated, at least by default (see new argument
 ; chk-translatable).
 
+; The previous definition of cons-term1 has been eliminated, and cons-term2 has
+; been renamed to cons-term1.  Thanks to Harsh Raju Chamarthi for pointing out
+; the dead code that led to this change.
+
   :doc
   ":Doc-Section release-notes
 
