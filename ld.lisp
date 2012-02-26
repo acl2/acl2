@@ -20696,7 +20696,7 @@ Ruben Gamboa</LI>
 <LI><A HREF=\"HONS-AND-MEMOIZATION.html\">ACL2(h)</A><BR>
 Support for hash cons, applicative hash tables, and function
   memoization for reuse of previously computed results<BR>
-Bob Boyer and Warren A. Hunt, Jr.</LI>
+Bob Boyer, Warren A. Hunt, Jr., Jared Davis, and Sol Swords</LI>
 <LI><A HREF=\"PARALLELISM.html\">ACL2(p)</A><BR>
 Support for parallel evaluation<BR>
 David L. Rager</LI>
