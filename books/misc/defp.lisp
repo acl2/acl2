@@ -96,7 +96,7 @@
     (disjoin (map-conjoin tests-lst))))
 
 ; (verify-termination quote-listp (declare (xargs :verify-guards t)))
-; (verify-termination cons-term2 (declare (xargs :verify-guards t))) ; fails
+; (verify-termination cons-term1 (declare (xargs :verify-guards t))) ; fails
 ; (verify-termination cons-term (declare (xargs :verify-guards t)))
 
 (program)
