@@ -18384,6 +18384,11 @@
   Added the symbols ~ilc[f-get-global], ~ilc[f-put-global], and
   ~ilc[state-global-let*] to ~c[*acl2-exports*].
 
+  Added to the ~il[guard]s of ~ilc[push-untouchable] and
+  ~ilc[remove-untouchable] the requirement that the second argument must be a
+  Boolean.  Thanks to Jared Davis for sending an example that led to this
+  change.
+
   ~st[NEW FEATURES]
 
   A new ``tau system'' provides a kind of ``type checker.''  ~l[tau-system].

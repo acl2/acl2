@@ -18114,7 +18114,8 @@
 
   (declare (xargs :guard (and name
                               (or (symbolp name)
-                                  (symbol-listp name)))))
+                                  (symbol-listp name))
+                              (booleanp fn-p))))
   (list 'push-untouchable-fn
         (list 'quote name)
         (list 'quote fn-p)
@@ -18208,7 +18209,8 @@
 
   (declare (xargs :guard (and name
                               (or (symbolp name)
-                                  (symbol-listp name)))))
+                                  (symbol-listp name))
+                              (booleanp fn-p))))
   `(cond ((not (ttag (w state)))
           (er soft 'remove-untouchable
               "It is illegal to execute remove-untouchable when there is no ~
