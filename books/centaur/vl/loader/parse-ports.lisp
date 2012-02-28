@@ -24,40 +24,26 @@
 
 
 
-; From the specification:
-;
-; list_of_ports ::= '(' port { ',' port } ')'
-;
-; port ::=
-;    [port_expression]
-;  | '.' identifier '(' [port_expression] ')'
-;
-; Essentially, the use of port_expression is a syntactic means to restrict the
-; expressions allowed in ports to identifiers, bit-selects, part-selects, and
-; concatenations.  So we parse port_expressions into plain expressions.
-;
-; Note that the above rules allow null ports, e.g., "module foo ( a, , b )".
-; As described in 12.3.2, the port expression is optional to allow for ports
-; that do not connect to anything internal to the module.
-;
-; list_of_ports ::= '(' [ port { ',' port } ] ')'
-;
-; port ::=
-;    port_expression
-;  | '.' identifier '(' [ port_expression ] ')'
+; A port_expression is just a syntactic means to restrict the expressions
+; allowed in ports to identifiers, bit-selects, part-selects, and
+; concatenations.  We just parse port_expressions into plain expressions:
 ;
 ; port_expression ::=
 ;    port_reference
 ;  | '{' port_reference { ',' port_reference } '}'
 ;
 ; port_reference ::=
-;    identifier [ '[' expression ']' ]
+;    identifier [ '[' constant_range_expression ']' ]
+;
+; constant_range_expression ::=
+;    constant_expression
+;  | msb_constant_expression : lsb_constant_expression
 
 (defparser vl-parse-port-reference (tokens warnings)
   ;; Note: Assumes that if a bracket follows the identifier, it belongs to this
-  ;; port reference.  This is safe in port-expressions since only a comma will
-  ;; follow them, and they never occur in other parts of the grammar so it
-  ;; should be fine universally.
+  ;; port reference.  This is safe in port-expressions since only a comma or
+  ;; end curly-brace will follow them, and they never occur in other parts of
+  ;; the grammar so it should be fine universally.
   :result (vl-expr-p val)
   :resultp-of-nil nil
   :fails gracefully
@@ -69,6 +55,10 @@
                    :guts (make-vl-id :name (vl-idtoken->name id)))))
         (:= (vl-match-token :vl-lbrack))
         (range := (vl-parse-range-expression))
+        (unless (or (eq (vl-erange->type range) :vl-bitselect)
+                    (eq (vl-erange->type range) :vl-colon))
+          (return-raw
+           (vl-parse-error "The +: or -: operators are not allowed in port expressions.")))
         (:= (vl-match-token :vl-rbrack))
         (return (vl-build-range-select
                  (make-vl-atom
@@ -106,7 +96,29 @@
         (ref := (vl-parse-port-reference))
         (return ref)))
 
-(defparser vl-parse-port (tokens warnings)
+
+
+; From the specification:
+;
+; list_of_ports ::= '(' port { ',' port } ')'
+;
+; port ::=
+;    [port_expression]
+;  | '.' identifier '(' [port_expression] ')'
+;
+; Note that the above rules allow null ports, e.g., "module foo ( a, , b )".
+; As described in 12.3.2, the port expression is optional to allow for ports
+; that do not connect to anything internal to the module.
+;
+; If we were to interpret this very literally, the list_of_ports for "()" would
+; be a singleton list with a blank port.  But in light of the way module
+; instances work (see the "Special note about blank ports" in
+; parse-insts.lisp), it seems like the nicest way to handle this is to instead
+; allow an empty list of ports, and treat () as producing the empty list of
+; ports instead.
+
+(defparser vl-parse-nonnull-port (tokens warnings)
+  ;; Matches ports except for the empty port
   :result (vl-port-p val)
   :resultp-of-nil nil
   :fails gracefully
@@ -138,14 +150,27 @@
                               :loc loc))))
 
 (defparser vl-parse-1+-ports-separated-by-commas (tokens warnings)
-  ;; Matches port { ',' port }
+  ;; Matches port { ',' port }, possibly producing blank ports!
   :result (vl-portlist-p val)
   :resultp-of-nil t
   :true-listp t
   :fails gracefully
-  :count strong
+  :count weak
   (seqw tokens warnings
-        (first := (vl-parse-port))
+        (when (vl-is-token? :vl-rparen)
+          ;; Blank port at the end.
+          (loc := (vl-current-loc tokens))
+          (return (list (make-vl-port :name nil :expr nil :loc loc))))
+
+        (when (vl-is-token? :vl-comma)
+          (loc := (vl-current-loc tokens))
+          (first := (mv nil (make-vl-port :name nil :expr nil :loc loc)
+                        tokens warnings))
+          (:= (vl-match-token :vl-comma))
+          (rest  := (vl-parse-1+-ports-separated-by-commas))
+          (return (cons first rest)))
+
+        (first := (vl-parse-nonnull-port))
         (when (vl-is-token? :vl-comma)
           (:= (vl-match-token :vl-comma))
           (rest := (vl-parse-1+-ports-separated-by-commas)))
@@ -158,13 +183,13 @@
   :fails gracefully
   :count strong
   (seqw tokens warnings
+        ;; Special hack: if it's just (), just return NIL instead of a
+        ;; list with a blank port.
         (:= (vl-match-token :vl-lparen))
         (unless (vl-is-token? :vl-rparen)
           (ports := (vl-parse-1+-ports-separated-by-commas)))
         (:= (vl-match-token :vl-rparen))
         (return ports)))
-
-
 
 
 
@@ -475,64 +500,164 @@
 
 (local
  (encapsulate
-  ()
-  (local (include-book "lexer")) ;; for making test inputs from strings
+   ()
+   (local (include-book "lexer")) ;; for making test inputs from strings
 
-  (defmacro test-parse-port (&key input (successp 't) name expr)
-    `(with-output
-      :off summary
-      (assert! (mv-let (erp val tokens warnings)
-                       (vl-parse-port (vl-make-test-tstream ,input) 'blah-warnings)
-                       (if ,successp
-                           (and (prog2$ (cw "Erp: ~x0.~%" erp)
-                                        (not erp))
-                                (prog2$ (cw "Val: ~x0.~%" val)
-                                        (vl-port-p val))
-                                (prog2$ (cw "Name: ~x0.~%" (vl-port->name val))
-                                        (equal (vl-port->name val) ',name))
-                                (prog2$ (cw "Expr: ~x0.~%"
-                                            (vl-pretty-expr (vl-port->expr val)))
-                                        (equal (vl-pretty-expr (vl-port->expr val))
-                                               ',expr))
-                                (prog2$ (cw "Tokens: ~x0.~%" tokens)
-                                        (not tokens))
-                                (prog2$ (cw "Warnings: ~x0.~%" warnings)
-                                        (equal warnings 'blah-warnings)))
-                         ;; Otherwise, we expect it to fail.
-                         (prog2$ (cw "Erp: ~x0.~%" erp)
-                                 erp))))))
+   (defmacro test-parse-port (&key input (successp 't) name expr)
+     `(with-output
+        :off summary
+        (assert! (mv-let (erp val tokens warnings)
+                   (vl-parse-nonnull-port (vl-make-test-tstream ,input) 'blah-warnings)
+                   (if ,successp
+                       (and (prog2$ (cw "Erp: ~x0.~%" erp)
+                                    (not erp))
+                            (prog2$ (cw "Val: ~x0.~%" val)
+                                    (vl-port-p val))
+                            (prog2$ (cw "Name: ~x0.~%" (vl-port->name val))
+                                    (equal (vl-port->name val) ',name))
+                            (prog2$ (cw "Expr: ~x0.~%"
+                                        (vl-pretty-expr (vl-port->expr val)))
+                                    (equal (vl-pretty-expr (vl-port->expr val))
+                                           ',expr))
+                            (prog2$ (cw "Tokens: ~x0.~%" tokens)
+                                    (not tokens))
+                            (prog2$ (cw "Warnings: ~x0.~%" warnings)
+                                    (equal warnings 'blah-warnings)))
+                     ;; Otherwise, we expect it to fail.
+                     (prog2$ (cw "Erp: ~x0.~%" erp)
+                             erp))))))
 
-  (test-parse-port :input "a"
-                   :name "a"
-                   :expr (id "a"))
+   (test-parse-port :input "a"
+                    :name "a"
+                    :expr (id "a"))
 
-  (test-parse-port :input "a[3:0]"
-                   :name nil
-                   :expr (:vl-partselect-colon nil (id "a") 3 0))
+   (test-parse-port :input "a[3:0]"
+                    :name nil
+                    :expr (:vl-partselect-colon nil (id "a") 3 0))
 
-  (test-parse-port :input "{a, b, c}"
-                   :name nil
-                   :expr (:vl-concat nil
-                                     (id "a")
-                                     (id "b")
-                                     (id "c")))
+   (test-parse-port :input "a[3]"
+                    :name nil
+                    :expr (:vl-bitselect nil (id "a") 3))
 
-  (test-parse-port :input ".foo(bar)"
-                   :name "foo"
-                   :expr (id "bar"))
+   (test-parse-port :input "{a, b, c}"
+                    :name nil
+                    :expr (:vl-concat nil
+                                      (id "a")
+                                      (id "b")
+                                      (id "c")))
 
-  (test-parse-port :input ".foo(a[3:0])"
-                   :name "foo"
-                   :expr (:vl-partselect-colon nil (id "a") 3 0))
+   (test-parse-port :input ".foo(bar)"
+                    :name "foo"
+                    :expr (id "bar"))
 
-  (test-parse-port :input ".foo({a, b, c})"
-                   :name "foo"
-                   :expr (:vl-concat nil
-                                     (id "a")
-                                     (id "b")
-                                     (id "c")))
+   (test-parse-port :input ".foo(a[3:0])"
+                    :name "foo"
+                    :expr (:vl-partselect-colon nil (id "a") 3 0))
 
-  (test-parse-port :input ".(a[3:0])"
-                   :successp nil)))
+   (test-parse-port :input ".foo(a[3])"
+                    :name "foo"
+                    :expr (:vl-bitselect nil (id "a") 3))
+
+   (test-parse-port :input ".foo({a, b, c})"
+                    :name "foo"
+                    :expr (:vl-concat nil
+                                      (id "a")
+                                      (id "b")
+                                      (id "c")))
+
+   (test-parse-port :input ".(a[3:0])"
+                    :successp nil)
+
+   (test-parse-port :input ".(a[3])"
+                    :successp nil)
+
+   (test-parse-port :input ".foo(a[3 +: 0])"
+                    :successp nil)
+
+   (test-parse-port :input ".foo(a[3 -: 0])"
+                    :successp nil)
+
+
+
+
+   (defun vl-pretty-maybe-exprlist (x)
+     (if (atom x)
+         nil
+       (cons (if (car x)
+                 (vl-pretty-expr (car x))
+               nil)
+             (vl-pretty-maybe-exprlist (cdr x)))))
+
+
+
+
+
+   (defmacro test-parse-portlist (&key input (successp 't) names exprs)
+     `(with-output
+        :off summary
+        (assert! (mv-let (erp val tokens warnings)
+                   (vl-parse-list-of-ports (vl-make-test-tstream ,input) 'blah-warnings)
+                   (if ,successp
+                       (and (prog2$ (cw "Erp: ~x0.~%" erp)
+                                    (not erp))
+                            (prog2$ (cw "Val: ~x0.~%" val)
+                                    (vl-portlist-p val))
+                            (prog2$ (cw "Names: ~x0.~%" (vl-portlist->names val))
+                                    (equal (vl-portlist->names val) ',names))
+                            (prog2$ (cw "Exprs: ~x0.~%"
+                                        (vl-pretty-maybe-exprlist (vl-portlist->exprs val)))
+                                    (equal (vl-pretty-maybe-exprlist (vl-portlist->exprs val))
+                                           ',exprs))
+                            (prog2$ (cw "Tokens: ~x0.~%" tokens)
+                                    (not tokens))
+                            (prog2$ (cw "Warnings: ~x0.~%" warnings)
+                                    (equal warnings 'blah-warnings)))
+                     ;; Otherwise, we expect it to fail.
+                     (prog2$ (cw "Erp: ~x0.~%" erp)
+                             erp))))))
+
+   (test-parse-portlist :input "()"
+                        :names nil
+                        :exprs nil)
+
+   (test-parse-portlist :input "(a)"
+                        :names ("a")
+                        :exprs ((id "a")))
+
+   (test-parse-portlist :input "(a,b)"
+                        :names ("a"      "b")
+                        :exprs ((id "a") (id "b")))
+
+   (test-parse-portlist :input "(a,,b)"
+                        :names ("a"      nil "b")
+                        :exprs ((id "a") nil (id "b")))
+
+   (test-parse-portlist :input "(,)"
+                        :names (nil nil)
+                        :exprs (nil nil))
+
+   (test-parse-portlist :input "(,,,,,)"
+                        :names (nil nil nil nil nil nil)
+                        :exprs (nil nil nil nil nil nil))
+
+   (test-parse-portlist :input "(a,,,b)"
+                        :names ("a" nil nil "b")
+                        :exprs ((id "a") nil nil (id "b")))
+
+
+   (test-parse-portlist :input "(,a)"
+                        :names (nil "a")
+                        :exprs (nil (id "a")))
+
+   (test-parse-portlist :input "(a,)"
+                        :names ("a" nil)
+                        :exprs ((id "a") nil))
+
+
+   (test-parse-portlist :input "(.a(), b[3:0])"
+                        :names ("a" nil)
+                        :exprs (nil (:vl-partselect-colon nil (id "b") 3 0)))
+
+   ))
 
 

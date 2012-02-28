@@ -554,6 +554,9 @@ long)))
   :body
   (b* ((dir  (vl-plainarg->dir x))
        (expr (vl-plainarg->expr x))
+       ((unless expr)
+        ;; Nothing to check.
+        warnings)
        ((unless dir)
         (cons (make-vl-warning
                :type :vl-programming-error
@@ -562,9 +565,6 @@ long)))
                :args (list loc instname)
                :fn 'vl-plainarg-lvaluecheck)
               warnings))
-       ((unless expr)
-        ;; Nothing to check.
-        warnings)
        ((when (eq dir :vl-input))
         ;; Input to a submodule -- not an lvalue, nothing to check.
         warnings)
