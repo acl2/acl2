@@ -902,7 +902,7 @@
   ~b[=== STEP 4: ===]
 
   Try your script from a Lisp program, if you like.  Here is how you can do it
-  in SBCL, for example.  ( Different Lisps have different ways to do this, as
+  in SBCL, for example.  (Different Lisps have different ways to do this, as
   summarized in function ~c[system-call] in ACL2 source file
   ~c[acl2-init.lisp].)
 

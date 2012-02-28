@@ -7,6 +7,7 @@ Makefile
 TAGS
 acl2-characters
 acl2-check.lisp
+# acl2-customization-files -- developer directory
 acl2-fns.lisp
 acl2-init.lisp
 # acl2-proclaims.lisp -- generated file
@@ -91,6 +92,15 @@ type-set-b.lisp
 # update-build-solaris -- developer file
 # worklispext -- temporary generated file, not distributed
 workshops.html
+
+# Developer directory:
+# acl2-customization-files:
+# README
+# parallel-full.lisp
+# parallel-resource-based.lisp
+# parallel-top-level.lisp
+# pseudo-parallel.lisp
+# serial.lisp
 
 books:
 GPL2
@@ -639,6 +649,7 @@ ls.lisp
 memory-mgmt-logic.lisp
 memory-mgmt-raw.lisp
 numlist.lisp
+seed-random.lisp
 sneaky-load.lisp
 suffixp.lisp
 universal-equiv.lisp
@@ -1330,7 +1341,6 @@ instance-defpkg.lsp
 instance.lisp
 listsets.lisp
 map.lisp
-map-tests.lisp
 membership.lisp
 multiappend.lisp
 multicons.lisp
@@ -1403,6 +1413,7 @@ books/coi/quantification:
 Makefile
 cert.acl2
 quant-defpkg.lsp
+quantification.acl2
 quantification.lisp
 
 books/coi/records:
@@ -1828,6 +1839,7 @@ cert.acl2
 computed-hints.lisp
 fast.lisp
 instance.lisp
+map-tests.lisp
 map.lisp
 membership.lisp
 outer.lisp
@@ -2985,6 +2997,7 @@ basic-extra.lisp
 basic.lisp
 float-extra2.lisp
 float.lisp
+mult-proofs.acl2
 mult-proofs.lisp
 mult.lisp
 round-extra2.lisp
@@ -3270,6 +3283,7 @@ bvecp-raw-helpers-extra.lisp
 bvecp-raw-helpers.lisp
 float-extra2.lisp
 float.lisp
+mult-proofs.acl2
 mult-proofs.lisp
 mult.lisp
 round-extra2.lisp
