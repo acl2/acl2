@@ -40,14 +40,6 @@
 ;; have nothing to do with the performance in raw Lisp, and arguably
 ;; we care more about ease of proving guard conjectures than we do
 ;; about how well they perform in the logic.
-(defun easy-assoc (x al)
-  (declare (xargs :guard t))
-  (if (atom al)
-      nil
-    (if (and (consp (car al))
-             (equal x (caar al)))
-        (car al)
-      (easy-assoc x (cdr al)))))
 
 (defun remove-assoc (x al)
   (declare (xargs :guard t))
@@ -71,12 +63,12 @@
       (count-keys (cdr al)))))
 
 (defthm not-assoc-remove-assoc
-  (not (easy-assoc k (remove-assoc k al))))
+  (not (hons-assoc-equal k (remove-assoc k al))))
 
 (defthm assoc-remove-assoc-diff
   (implies (not (equal j k))
-           (equal (easy-assoc k (remove-assoc j al))
-                  (easy-assoc k al))))
+           (equal (hons-assoc-equal k (remove-assoc j al))
+                  (hons-assoc-equal k al))))
 
 (defthm remove-assoc-repeat
   (equal (remove-assoc k (remove-assoc k al))
@@ -90,31 +82,16 @@
 
 (defthm count-keys-remove-assoc
   (equal (count-keys (remove-assoc k al))
-         (if (consp (easy-assoc k al))
+         (if (consp (hons-assoc-equal k al))
              (1- (count-keys al))
            (count-keys al))))
 
 (defthm count-keys-cons
   (equal (count-keys (cons (cons k v) al))
-         (if (consp (easy-assoc k al))
+         (if (consp (hons-assoc-equal k al))
              (count-keys al)
            (+ 1 (count-keys al)))))
 
-
-(defconst *report-bad-hons-equal-hash-discipline* nil)
-
-;; only works under the hood
-(defmacro hons-copy-for-ht-key (x)
-  `(let ((hons-copy-for-ht-key-key ,x))
-     (if (atom hons-copy-for-ht-key-key)
-         (maybe-str-hash hons-copy-for-ht-key-key)
-       (if (honsp hons-copy-for-ht-key-key)
-           hons-copy-for-ht-key-key
-         (if *report-bad-hons-equal-hash-discipline*
-             (progn (cw "Non-HONS key for hons-equal hash table~%")
-                    (break$)
-                    (hons-copy hons-copy-for-ht-key-key))
-           (hons-copy hons-copy-for-ht-key-key))))))
 
 #||
 
@@ -122,13 +99,11 @@
 ;; definitions of the functions used to access and update the table.
 
 (defstobj htable
-  (tab :type (hash-table eql
-                         ;; equal or hons-equal also possible.
-                         )))
+  (tab :type (hash-table eql))) ;; or (hash-table equal)
 
 (defun tabp
   (declare (xargs :guard t))
-  ;; Because we made the guards on easy-assoc and remove-assoc T, we
+  ;; Because we made the guards on hons-assoc-equal and remove-assoc T, we
   ;; don't need to constrain what tabp is logically.
   t)
 
@@ -146,14 +121,14 @@
   (declare (xargs :guard (and (htablep htable)
                               ;; eqlablep only in EQL version
                               (eqlablep k))))
-  (cdr (easy-assoc k (nth 0 htable))))
+  (cdr (hons-assoc-equal k (nth 0 htable))))
 
 ;; BOUNDP, logic:
 (defun tab-boundp (k htable)
   (declare (xargs :guard (and (htablep htable)
                               ;; eqlablep only in EQL version
                               (eqlablep k))))
-  (consp (easy-assoc k (nth 0 htable))))
+  (consp (hons-assoc-equal k (nth 0 htable))))
 
 ;; GET?, logic:
 (defun tab-get? (k htable)
@@ -184,6 +159,21 @@
 
 ;; CLEAR, logic:
 (defun tab-clear (htable)
+  (declare (xargs :guard (htablep htable)))
+  (update-nth 0 nil htable))
+
+(defun tab-init (size rehash-size rehash-threshold htable)
+  (declare (xargs :guard (and (htablep htable)
+                              (or (natp size)
+                                  (not size))
+                              (or (and (rationalp rehash-size)
+                                       (< 1 rehash-size))
+                                  (not rehash-size))
+                              (or (and (rationalp rehash-threshold)
+                                       (<= 0 rehash-threshold)
+                                       (<= rehash-threshold 1))
+                                  (not rehash-threshold)))))
+  (declare (ignore size rehash-size rehash-threshold))
   (update-nth 0 nil htable))
 
 ;; Theorems about the interactions of the functions above: Our
@@ -203,6 +193,11 @@
 ;; access of htable,
 ;; Induction case 2: (tab-rem j htable), j not equal k, reduces to
 ;; access of htable.
+
+(defthm tab-init-is-tab-clear
+  (equal (tab-init size rehash-size rehash-threshold htable)
+         (tab-clear htable)))
+
 (defthm tab-get-tab-boundp
   (implies (tab-get k htable)
            (tab-boundp k htable)))
@@ -302,6 +297,18 @@
   (clrhash (svref htable 0))
   htable)
 
+(defun tab-init (size rehash-size rehash-threshold htable)
+  (setf (svref htable 0)
+        (make-hash-table
+         :size (or size 60)
+         :rehash-size (if rehash-size
+                          (float rehash-size)
+                        (float 17/10))
+         :rehash-threshold (if rehash-threshold
+                               (float rehash-threshold)
+                             (float 3/4))))
+  htable)
+
 ||#
 
 
@@ -309,12 +316,10 @@
 
 (defttag hash-stobjs)
 
-(include-book "hacking/hacker" :dir :system)
-
 (program)
 (set-state-ok t)
 
-(with-redef-allowed
+(redef+)
 (defun defstobj-fnname (root key1 key2 renaming-alist)
 
 ; This has been moved from other-events.lisp, where other stobj-related
@@ -383,6 +388,9 @@
              (:count
               (and (eq key2 :hash-table)
                    (packn-pos (list root "-COUNT") root)))
+             (:init
+              (and (eq key2 :hash-table)
+                   (packn-pos (list root "-INIT") root)))
              (:clear
               (and (eq key2 :hash-table)
                    (packn-pos (list root "-CLEAR") root)))
@@ -397,7 +405,11 @@
 
 
 
-(defun defstobj-fields-template (field-descriptors renaming)
+(defun defstobj-fields-template (field-descriptors renaming wrld)
+
+; Note: Wrld may be a world, nil, or (in raw Lisp only) the symbol :raw-lisp.
+; See fix-stobj-array-type.
+
   (cond
    ((endp field-descriptors) nil)
    (t
@@ -435,11 +447,15 @@
            (remove-name (defstobj-fnname field :remove key2 renaming))
            (count-name (defstobj-fnname field :count key2 renaming))
            (clear-name (defstobj-fnname field :clear key2 renaming))
+           (init-name (defstobj-fnname field :init key2 renaming))
 ;   >---
            (resize-name (defstobj-fnname field :resize key2 renaming))
            (length-name (defstobj-fnname field :length key2 renaming)))
       (cons (list fieldp-name
-                  type
+                  (cond ((and (consp type)
+                              (eq (car type) 'array))
+                         (fix-stobj-array-type type wrld))
+                        (t type))
                   init
                   accessor-name
                   updater-name
@@ -452,9 +468,11 @@
                   remove-name
                   count-name
                   clear-name
+                  init-name
 ;   >---
                   )
-            (defstobj-fields-template (cdr field-descriptors) renaming))))))
+            (defstobj-fields-template
+              (cdr field-descriptors) renaming wrld))))))
 
 
 (defun defstobj-raw-init-fields (ftemps)
@@ -487,13 +505,13 @@
           (cons `(make-hash-table
                   :test
                   ,(case hash-test
-                     ((eql hons-equal) ''eql)
+                     (eql ''eql)
                      (equal
                       ;; Is this safe?
                       ''equal)
                      (t (er hard hash-test
                             "The hash test should be either ~
-EQL, EQUAL, or HONS-EQUAL.~%")))
+EQL or EQUAL.~%")))
                   :size ,hash-init-size)
                 (defstobj-raw-init-fields (cdr ftemps))))
 ;   >---
@@ -640,6 +658,7 @@ EQL, EQUAL, or HONS-EQUAL.~%")))
              (remove-name (nth 10 field-template))
              (count-name (nth 11 field-template))
              (clear-name (nth 12 field-template))
+             (init-name (nth 13 field-template))
 ;   >---
              )
         (cond
@@ -703,7 +722,7 @@ EQL, EQUAL, or HONS-EQUAL.~%")))
                                                 (eqlablep k))
                                         `(,top-recog ,var))
                               :verify-guards t))
-              (cdr (easy-assoc k (nth ,n ,var))))
+              (cdr (hons-assoc-equal k (nth ,n ,var))))
              (,updater-name
               (k v ,var)
               (declare (xargs :guard ,(if (eq hash-test 'eql)
@@ -719,7 +738,7 @@ EQL, EQUAL, or HONS-EQUAL.~%")))
                                                 (eqlablep k))
                                         `(,top-recog ,var))
                               :verify-guards t))
-              (consp (easy-assoc k (nth ,n ,var))))
+              (consp (hons-assoc-equal k (nth ,n ,var))))
              (,accessor?-name
               
               (k ,var)
@@ -745,6 +764,20 @@ EQL, EQUAL, or HONS-EQUAL.~%")))
              (,clear-name
               (,var)
               (declare (xargs :guard (,top-recog ,var)))
+              (update-nth ,n nil ,var))
+             (,init-name
+              (size rehash-size rehash-threshold ,var)
+              (declare (xargs :guard (and (,top-recog ,var)
+                                          (or (natp size)
+                                              (not size))
+                                          (or (and (rationalp rehash-size)
+                                                   (< 1 rehash-size))
+                                              (not rehash-size))
+                                          (or (and (rationalp rehash-threshold)
+                                                   (<= 0 rehash-threshold)
+                                                   (<= rehash-threshold 1))
+                                              (not rehash-threshold))))
+                       (ignorable size rehash-size rehash-threshold))
               (update-nth ,n nil ,var)))
            (defstobj-field-fns-axiomatic-defs
              top-recog var (+ n 1) (cdr ftemps) wrld)))
@@ -818,7 +851,6 @@ EQL, EQUAL, or HONS-EQUAL.~%")))
                            (if (array-etype-is-fixnum-type array-etype)
                                'fix-aref
                              vref)))
-            (max-index (and arrayp (1- *expt2-28*)))
             (accessor-name (nth 3 field-template))
             (updater-name (nth 4 field-template))
             (length-name (nth 5 field-template))
@@ -832,6 +864,7 @@ EQL, EQUAL, or HONS-EQUAL.~%")))
             (remove-name (nth 10 field-template))
             (count-name (nth 11 field-template))
             (clear-name (nth 12 field-template))
+            (init-name (nth 13 field-template))
 ;   >---
             )
        (cond
@@ -841,17 +874,16 @@ EQL, EQUAL, or HONS-EQUAL.~%")))
             (k ,var)
             ,@(and inline (list *stobj-inline-declare*))
             (values (gethash ,(if (eq hash-test 'hons-equal)
-                                 `(hons-copy-for-ht-key k)
+                                 `(hons-copy k)
                                'k)
                             (the 'hash-table (svref ,var ,n)))))
            (,updater-name
             (k v ,var)
             ,@(and inline (list *stobj-inline-declare*))
             (progn
-              #+(and hons (not acl2-loop-only))
-              (memoize-flush ,var)
+              #+hons (memoize-flush ,var)
               (setf (gethash ,(if (eq hash-test 'hons-equal)
-                                  `(hons-copy-for-ht-key k)
+                                  `(hons-copy k)
                                 'k)
                              (the 'hash-table (svref ,var ,n)))
                     v)
@@ -861,18 +893,21 @@ EQL, EQUAL, or HONS-EQUAL.~%")))
             ,@(and inline (list *stobj-inline-declare*))
             (multiple-value-bind (val boundp)
                 (gethash ,(if (eq hash-test 'hons-equal)
-                              `(hons-copy-for-ht-key k)
+                              `(hons-copy k)
                             'k)
                          (the 'hash-table (svref ,var ,n)))
               (declare (ignore val))
-              boundp))
+              (if boundp t nil)))
            (,accessor?-name
             (k ,var)
             ,@(and inline (list *stobj-inline-declare*))
-            (gethash ,(if (eq hash-test 'hons-equal)
-                          `(hons-copy-for-ht-key k)
-                        'k)
-                     (the 'hash-table (svref ,var ,n))))
+            (multiple-value-bind
+                (val boundp)
+                (gethash ,(if (eq hash-test 'hons-equal)
+                              `(hons-copy k)
+                            'k)
+                         (the 'hash-table (svref ,var ,n)))
+              (mv val (if boundp t nil))))
            (,remove-name
             (k ,var)
             ,@(and inline (list *stobj-inline-declare*))
@@ -880,7 +915,7 @@ EQL, EQUAL, or HONS-EQUAL.~%")))
               #+(and hons (not acl2-loop-only))
               (memoize-flush ,var)
               (remhash ,(if (eq hash-test 'hons-equal)
-                            `(hons-copy-for-ht-key k)
+                            `(hons-copy k)
                           'k)
                        (the 'hash-table (svref ,var ,n)))
               ,var))
@@ -895,6 +930,28 @@ EQL, EQUAL, or HONS-EQUAL.~%")))
               #+(and hons (not acl2-loop-only))
               (memoize-flush ,var)
               (clrhash (svref ,var ,n))
+              ,var))
+           (,init-name
+            (size rehash-size rehash-threshold ,var)
+            ,@(and inline (list *stobj-inline-declare*))
+            (progn
+              #+(and hons (not acl2-loop-only))
+              (memoize-flush ,var)
+              (setf (svref ,var ,n)
+                    (make-hash-table
+                     :test ',(case hash-test
+                               (eql 'eql)
+                               (equal 'equal)
+                               (t (er hard hash-test
+                                      "The hash test should be either ~
+EQL or EQUAL.~%")))
+                     :size (or size 60)
+                     :rehash-size (if rehash-size
+                                      (float rehash-size)
+                                    (float 17/10))
+                     :rehash-threshold (if rehash-threshold
+                                           (float rehash-threshold)
+                                         (float 3/4))))
               ,var))))
 ;   >---
         (arrayp
@@ -904,7 +961,7 @@ EQL, EQUAL, or HONS-EQUAL.~%")))
             ,@(if (not resizable)
                   `((declare (ignore ,var))
                     ,array-length)
-                `((the (integer 0 ,max-index)
+                `((the (and fixnum (integer 0 *))
                        (length (svref ,var ,n))))))
            (,resize-name
             (k ,var)
@@ -920,14 +977,16 @@ EQL, EQUAL, or HONS-EQUAL.~%")))
                       ,var))
                 `((if (not (and (integerp k)
                                 (>= k 0)
-                                (< k ,max-index)))
+                                (< k array-dimension-limit)))
                       (hard-error
                        ',resize-name
                        "Attempted array resize failed because the requested ~
-                        size ~x0 was not an integer between 0 and (1- (expt ~
-                        2 28)).  These bounds on array sizes are fixed by ~
-                        ACL2."
-                       (list (cons #\0 k)))
+                        size ~x0 was not a nonnegative integer less than the ~
+                        value of Common Lisp constant array-dimension-limit, ~
+                        which is ~x1.  These bounds on array sizes are fixed ~
+                        by ACL2."
+                       (list (cons #\0 k)
+                             (cons #\1 array-dimension-limit)))
                     (let* ((old (svref ,var ,n))
                            (min-index (if (< k (length old))
                                           k
@@ -949,29 +1008,27 @@ EQL, EQUAL, or HONS-EQUAL.~%")))
                                              ',init
                                              :element-type
                                              ',array-etype)))
-                      #+(and hons (not acl2-loop-only))
-                      (memoize-flush ,var)
+                      #+hons (memoize-flush ,var)
                       (setf (svref ,var ,n)
                             (,(pack2 'stobj-copy-array- fix-vref)
                              old new 0 min-index))
                       ,var)))))
            (,accessor-name
             (i ,var)
-            (declare (type (integer 0 ,max-index) i))
+            (declare (type (and fixnum (integer 0 *)) i))
             ,@(and inline (list *stobj-inline-declare*))
             (the ,array-etype
               (,vref (the ,simple-type (svref ,var ,n))
-                     (the (integer 0 ,max-index) i))))
+                     (the (and fixnum (integer 0 *)) i))))
            (,updater-name
             (i v ,var)
-            (declare (type (integer 0 ,max-index) i)
+            (declare (type (and fixnum (integer 0 *)) i)
                      (type ,array-etype v))
             ,@(and inline (list *stobj-inline-declare*))
             (progn 
-              #+(and hons (not acl2-loop-only))
-              (memoize-flush ,var)
+              #+hons (memoize-flush ,var)
               (setf (,vref (the ,simple-type (svref ,var ,n))
-                           (the (integer 0 ,max-index) i))
+                           (the (and fixnum (integer 0 *)) i))
                     (the ,array-etype v))
               ,var))))
         ((equal type t)
@@ -981,9 +1038,9 @@ EQL, EQUAL, or HONS-EQUAL.~%")))
            (,updater-name (v ,var)
                           ,@(and inline (list *stobj-inline-declare*))
                           (progn
-                            #+(and hons (not acl2-loop-only))
-                            (memoize-flush ,var)
-                            (setf (svref ,var ,n) v) ,var))))
+                            #+hons (memoize-flush ,var)
+                            (setf (svref ,var ,n) v)
+                            ,var))))
         (t
          `((,accessor-name (,var)
                            ,@(and inline (list *stobj-inline-declare*))
@@ -995,8 +1052,7 @@ EQL, EQUAL, or HONS-EQUAL.~%")))
                           (declare (type ,type v))
                           ,@(and inline (list *stobj-inline-declare*))
                           (progn
-                            #+(and hons (not acl2-loop-only))
-                            (memoize-flush ,var)
+                            #+hons (memoize-flush ,var)
                             (setf (aref (the (simple-array ,type (1))
                                           (svref ,var ,n))
                                         0)
@@ -1058,30 +1114,30 @@ EQL, EQUAL, or HONS-EQUAL.~%")))
                       (true-listp (caddr type))
                       (equal (length (caddr type)) 1)))
             (er soft ctx
-                "When a field descriptor specifies an ARRAY :type, ~
-                 the type must be of the form (ARRAY etype (n)).  ~
-                 Note that we only support single-dimensional arrays. ~
-                  The purported ARRAY :type ~x0 for the ~x1 field of ~
-                 ~x2 is not of this form."
+                "When a field descriptor specifies an ARRAY :type, the type ~
+                 must be of the form (ARRAY etype (n)).  Note that we only ~
+                 support single-dimensional arrays.  The purported ARRAY ~
+                 :type ~x0 for the ~x1 field of ~x2 is not of this form."
                 type field name))
-           (t (let* ((etype (cadr type))
+           (t (let* ((type0 (fix-stobj-array-type type wrld))
+                     (etype (cadr type0))
                      (etype-term (translate-declaration-to-guard
                                   etype 'x wrld))
-                     (n (car (caddr type))))
+                     (n (car (caddr type0))))
                 (cond
                  ((null etype-term)
                   (er soft ctx
                       "The element type specified for the ~x0 field of ~
-                      ~x1, namely ~x0, is not recognized by ACL2 as a ~
+                      ~x1, namely ~x2, is not recognized by ACL2 as a ~
                       type-spec.  See :DOC type-spec."
                       field name type))
-                 ((not (and (integerp n)
-                            (<= 0 n)))
+                 ((not (natp n))
                   (er soft ctx
-                      "Array dimensions must be non-negative integers.  ~
-                      The :type ~x0 for the ~x1 field of ~x2 is thus ~
+                     "An array dimension must be a non-negative integer or a ~
+                      defined constant whose value is a non-negative integer. ~
+                      ~ The :type ~x0 for the ~x1 field of ~x2 is thus ~
                       illegal."
-                      type field name))
+                     type0 field name))
                  (t
                   (er-let*
                    ((pair (simple-translate-and-eval etype-term
@@ -1092,7 +1148,8 @@ EQL, EQUAL, or HONS-EQUAL.~%")))
                                                       etype-term)
                                                      ctx
                                                      wrld
-                                                     state)))
+                                                     state
+                                                     nil)))
 
 ; pair is (tterm . val), where tterm is a term and val is its value
 ; under x<-init.
@@ -1132,7 +1189,7 @@ EQL, EQUAL, or HONS-EQUAL.~%")))
                               extension) HONS-EQUAL.  The test given was ~
                               ~x0.~%" (and (consp (cdr type))
                                            (cadr type))))
-                (t (value nil))))                
+                (t (value nil))))
          (t (let ((type-term (translate-declaration-to-guard
                               type 'x wrld)))
               (cond
@@ -1152,7 +1209,8 @@ EQL, EQUAL, or HONS-EQUAL.~%")))
                                                     type-term)
                                                    ctx
                                                    wrld
-                                                   state)))
+                                                   state
+                                                   nil)))
 
 ; pair is (tterm . val), where tterm is a term and val is its value
 ; under x<-init.
@@ -1254,6 +1312,7 @@ EQL, EQUAL, or HONS-EQUAL.~%")))
                            renaming))
             (count-name (defstobj-fnname field :count key2 renaming))
             (clear-name (defstobj-fnname field :clear key2 renaming))
+            (init-name (defstobj-fnname field :init key2 renaming))
 ;   >---
             (fieldp-name (defstobj-fnname field :recognizer key2 renaming))
             (accessor-name (defstobj-fnname field :accessor key2 renaming))
@@ -1292,6 +1351,7 @@ EQL, EQUAL, or HONS-EQUAL.~%")))
                                                       remove-name
                                                       count-name
                                                       clear-name
+                                                      init-name
                                                       names)
                                              names)))
                                   (cons accessor-const-name
@@ -1315,6 +1375,7 @@ EQL, EQUAL, or HONS-EQUAL.~%")))
             (remove-fn (nth 10 (car ftemps)))
             (count-fn (nth 11 (car ftemps)))
             (clear-fn (nth 12 (car ftemps)))
+            (init-fn (nth 13 (car ftemps)))
 ;;   >---
             )
         (put-stobjs-in-and-outs1
@@ -1338,32 +1399,38 @@ EQL, EQUAL, or HONS-EQUAL.~%")))
           ((and (consp type)
                 (eq (car type) 'hash-table))
            (putprop
-            clear-fn 'stobjs-in (list name)
+            init-fn 'stobjs-in (list nil nil nil name)
             (putprop
-             clear-fn 'stobjs-out (list name)
+             init-fn 'stobjs-out (list name)
              (putprop
-              count-fn 'stobjs-in (list name)
+              clear-fn 'stobjs-in (list name)
               (putprop
-               remove-fn 'stobjs-in (list nil name)
+               clear-fn 'stobjs-out (list name)
                (putprop
-                remove-fn 'stobjs-out (list name)
+                count-fn 'stobjs-in (list name)
                 (putprop
-                 accessor?-fn 'stobjs-in (list nil name)
+                 remove-fn 'stobjs-in (list nil name)
                  (putprop
-                  boundp-fn 'stobjs-in (list nil name)
+                  remove-fn 'stobjs-out (list name)
                   (putprop
-                   acc-fn 'stobjs-in (list nil name)
+                   accessor?-fn 'stobjs-in (list nil name)
                    (putprop
-                    upd-fn 'stobjs-in (list nil nil name)
+                    boundp-fn 'stobjs-in (list nil name)
                     (putprop
-                     upd-fn 'stobjs-out (list name) wrld)))))))))))
+                     acc-fn 'stobjs-in (list nil name)
+                     (putprop
+                      upd-fn 'stobjs-in (list nil nil name)
+                      (putprop
+                       upd-fn 'stobjs-out (list name) wrld)))))))))))))
           (t
            (putprop
             acc-fn 'stobjs-in (list name)
             (putprop
              upd-fn 'stobjs-in (list nil name)
              (putprop
-              upd-fn 'stobjs-out (list name) wrld)))))))))))
+              upd-fn 'stobjs-out (list name) wrld))))))))))
+
+(redef-)
 
 
 ;; Macro for proving theorems like the ones above about a hash field:
@@ -1375,8 +1442,13 @@ EQL, EQUAL, or HONS-EQUAL.~%")))
         (rem (defstobj-fnname field :remove :hash-table renaming))
         (count (defstobj-fnname field :count :hash-table renaming))
         (clear (defstobj-fnname field :clear :hash-table renaming))
+        (init (defstobj-fnname field :init :hash-table renaming))
         (make (defstobj-fnname stobj :creator :hash-table renaming)))
     `(progn
+       (defthm ,(packn-pos (list field "-INIT-IS-CLEAR") field)
+         (equal (,init size rehash-size rehash-threshold ,stobj)
+                (,clear ,stobj)))
+
        (defthm ,(packn-pos (list field "-GET-BOUNDP") field)
          (implies (,get k ,stobj)
                   (,boundp k ,stobj)))
@@ -1435,4 +1507,109 @@ EQL, EQUAL, or HONS-EQUAL.~%")))
        (defthm ,(packn-pos (list field "-COUNT-CLEAR") field)
          (equal (,count (,clear ,stobj))
                 0)))))
+
+
+
+(local
+ (progn
+
+   (defstobj bigstobj
+     (bigarray :type (array (unsigned-byte 16) (100))
+               :initially 0)
+     (bighash :type (hash-table eql))
+     (slowhash :type (hash-table equal))
+     )
+
+   (make-event
+    (let* ((bigstobj (bighash-put 0 0 bigstobj))
+           (bigstobj (slowhash-put (list 0) 0 bigstobj)))
+      (mv nil '(value-triple :invisible) state bigstobj)))
+
+   (include-book "misc/assert" :dir :system)
+
+   (assert! (equal (bighash-get 0 bigstobj) 0))
+   (assert! (equal (slowhash-get '(0) bigstobj) 0))
+
+   (defun init-stuff (n bigstobj state)
+     (declare (xargs :stobjs (bigstobj state)
+                     :verify-guards nil
+                     :guard (natp n)))
+     (if (zp n)
+         (mv bigstobj state)
+       (mv-let (rnd state) (random$ 10000 state)
+         (let* ((bigstobj (update-bigarrayi n rnd bigstobj))
+                (bigstobj (bighash-put n rnd bigstobj))
+                (bigstobj (slowhash-put (list n) rnd bigstobj)))
+           (init-stuff (- n 1) bigstobj state)))))
+
+   (make-event
+    (mv-let (bigstobj state)
+      (init-stuff 99 bigstobj state)
+      (mv nil '(value-triple :invisible) state bigstobj)))
+
+   (assert! (equal (bighash-count bigstobj) 100))
+   (assert! (equal (slowhash-count bigstobj) 100))
+
+   (make-event
+    (let* ((bigstobj (slowhash-put (cons 1 2) 3 bigstobj))
+           (bigstobj (slowhash-put (cons 1 2) 4 bigstobj)))
+      (mv nil '(value-triple :invisible) state bigstobj)))
+
+   (assert! (equal (slowhash-get (cons 1 2) bigstobj) 4))
+   (assert! (equal (slowhash-count bigstobj) 101))
+
+   
+
+   (defun check-same (n bigstobj)
+     (declare (xargs :stobjs (bigstobj)
+                     :verify-guards nil
+                     :guard (natp n)))
+     (if (zp n)
+         t
+       (let ((expect (bigarrayi n bigstobj)))
+         (and (equal (bighash-get n bigstobj) expect)
+              (equal (slowhash-get (list n) bigstobj) expect)
+              (equal (bighash-boundp n bigstobj) t)
+              (equal (slowhash-boundp (list n) bigstobj) t)
+              (equal (mv-list 2 (bighash-get? n bigstobj)) (list expect t))
+              (equal (mv-list 2 (slowhash-get? (list n) bigstobj)) (list expect
+                                                                         t))
+              (check-same (- n 1) bigstobj)))))
+
+   (assert! (check-same 99 bigstobj))
+
+   (assert! (not (bighash-boundp 101 bigstobj)))
+   (assert! (equal (mv-list 2 (bighash-get? 101 bigstobj)) (list nil nil)))
+
+   (assert! (not (slowhash-boundp 101 bigstobj)))
+   (assert! (equal (mv-list 2 (slowhash-get? 101 bigstobj)) (list nil nil)))
+
+   (assert! (not (slowhash-boundp (list 101) bigstobj)))
+   (assert! (equal (mv-list 2 (slowhash-get? (list 101) bigstobj)) (list nil nil)))
+
+   (make-event
+    (let* ((bigstobj (bighash-rem 3 bigstobj))
+           (bigstobj (slowhash-rem (list 3) bigstobj)))
+      (mv nil '(value-triple :invisible) state bigstobj)))
+
+   (assert! (not (bighash-boundp 3 bigstobj)))
+   (assert! (not (slowhash-boundp (list 3) bigstobj)))
+
+   (assert! (equal (slowhash-count bigstobj) 100))
+   (assert! (equal (bighash-count bigstobj) 99))
+
+   (make-event
+    (let* ((bigstobj (slowhash-clear bigstobj))
+           (bigstobj (bighash-init 10000 nil nil bigstobj)))
+      (mv nil '(value-triple :invisible) state bigstobj)))   
+
+   (assert! (equal (bighash-count bigstobj) 0))
+   (assert! (equal (slowhash-count bigstobj) 0))
+   (assert! (equal (bighash-get 5 bigstobj) nil))
+   (assert! (equal (slowhash-get (list 5) bigstobj) nil))
+
+   ))
+
+
+
 

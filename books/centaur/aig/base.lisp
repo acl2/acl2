@@ -225,9 +225,10 @@ encountered."
   (defmacro aig-cases (x &key true false var inv and)
     `(let ((aig-cases-var ,x))
        (cond
-        ((eq aig-cases-var t) ,true)
-        ((eq aig-cases-var nil) ,false)
-        ((atom aig-cases-var) ,var)
+        ((atom aig-cases-var)
+         (cond ((eq aig-cases-var t) ,true)
+               ((eq aig-cases-var nil) ,false)
+               (t ,var)))
         ((eq (cdr aig-cases-var) nil) ,inv)
         (t ,and)))))
 

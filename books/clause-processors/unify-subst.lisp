@@ -182,22 +182,23 @@
    (cond ((null pat)
           (if (eq term nil)
               (mv t alist)
-            (mv nil alist)))
+            (mv nil (cons (cons pat term) alist))))
          ((atom pat)
           (let ((pair (assoc-equal pat alist)))
             (if pair
                 (if (equal term (cdr pair))
                     (mv t alist)
-                  (mv nil alist))
+                  (mv nil (cons (cons pat term) alist)))
               (mv t (cons (cons pat term) alist)))))
-         ((atom term) (mv nil alist))
+         ((atom term)
+          (mv nil (cons (cons pat term) alist)))
          ((eq (car pat) 'quote)
           (if (equal pat term)
               (mv t alist)
-            (mv nil alist)))
+            (mv nil (cons (cons pat term) alist))))
          ((equal (car pat) (car term))
           (simple-one-way-unify-lst (cdr pat) (cdr term) alist))
-         (t (mv nil alist))))
+         (t (mv nil (cons (cons pat term) alist)))))
  (defun simple-one-way-unify-lst (pat term alist)
    (declare (xargs :guard (and (pseudo-term-listp pat)
                                (pseudo-term-listp term)
@@ -281,14 +282,18 @@
 
 (defthm-simple-one-way-unify-flag
   assoc-one-way-unify-lemma
-  (simple-one-way-unify
-   (implies (assoc-equal k alist)
+  (defthm assoc-equal-of-simple-one-way-unify-preserved
+   (implies (and (assoc-equal k alist)
+                 (mv-nth 0 (simple-one-way-unify pat x alist)))
             (equal (assoc-equal k (mv-nth 1 (simple-one-way-unify pat x alist)))
-                   (assoc-equal k alist))))
-  (simple-one-way-unify-lst
-   (implies (assoc-equal k alist)
-            (equal (assoc-equal k (mv-nth 1 (simple-one-way-unify-lst pat x alist)))
-                   (assoc-equal k alist))))
+                   (assoc-equal k alist)))
+   :flag simple-one-way-unify)
+  (defthm assoc-equal-of-simple-one-way-unify-lst-preserved
+    (implies (and (assoc-equal k alist)
+                  (mv-nth 0 (simple-one-way-unify-lst pat x alist)))
+             (equal (assoc-equal k (mv-nth 1 (simple-one-way-unify-lst pat x alist)))
+                    (assoc-equal k alist)))
+    :flag simple-one-way-unify-lst)
   :hints (("goal" :induct (simple-one-way-unify-flag flag pat x alist))))
 
 
@@ -318,13 +323,15 @@
 (defthm-simple-term-vars-flag
   substitute-into-one-way-unify-reduce-lemma
   (simple-term-vars
-   (implies (all-keys-bound (simple-term-vars term) alist)
+   (implies (and (all-keys-bound (simple-term-vars term) alist)
+                 (mv-nth 0 (simple-one-way-unify pat x alist)))
             (equal (substitute-into-term
                     term (mv-nth 1 (simple-one-way-unify pat x alist)))
                    (substitute-into-term term alist)))
    :name substitute-into-one-way-unify-reduce)
   (simple-term-vars-lst
-   (implies (all-keys-bound (simple-term-vars-lst term) alist)
+   (implies (and (all-keys-bound (simple-term-vars-lst term) alist)
+                 (mv-nth 0 (simple-one-way-unify pat x alist)))
             (equal (substitute-into-list
                     term (mv-nth 1 (simple-one-way-unify pat x alist)))
                    (substitute-into-list term alist)))
@@ -335,13 +342,15 @@
 (defthm-simple-term-vars-flag
   substitute-into-one-way-unify-lst-reduce-lemma
   (simple-term-vars
-   (implies (all-keys-bound (simple-term-vars term) alist)
+   (implies (and (all-keys-bound (simple-term-vars term) alist)
+                 (mv-nth 0 (simple-one-way-unify-lst pat x alist)))
             (equal (substitute-into-term
                     term (mv-nth 1 (simple-one-way-unify-lst pat x alist)))
                    (substitute-into-term term alist)))
    :name substitute-into-one-way-unify-lst-reduce)
   (simple-term-vars-lst
-   (implies (all-keys-bound (simple-term-vars-lst term) alist)
+   (implies (and (all-keys-bound (simple-term-vars-lst term) alist)
+                 (mv-nth 0 (simple-one-way-unify-lst pat x alist)))
             (equal (substitute-into-list
                     term (mv-nth 1 (simple-one-way-unify-lst pat x alist)))
                    (substitute-into-list term alist)))
@@ -404,7 +413,7 @@
               (equal (substitute-into-list pat subst) x)))
    :name simple-one-way-unify-lst-correct)
   :hints (("goal" :induct (simple-one-way-unify-flag flag pat x alist))))
-                 
+
 (in-theory (disable simple-one-way-unify simple-one-way-unify-lst))
 
 (defthm simple-one-way-unify-usage
@@ -434,7 +443,11 @@
                                    (subst (mv-nth 1 (simple-one-way-unify-lst
                                                      template term alist)))))
            :in-theory (disable substitute-into-list-correct))))
-    
+
+
+
+
+
 
 #||
 

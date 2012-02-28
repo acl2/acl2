@@ -294,6 +294,7 @@ constants, e.g., in forever-loop conversion.</p>")
     (and (vl-fast-nullstmt-p (car x))
          (vl-stmtlist-all-null-p (cdr x)))))
 
+
 (defsection vl-casestmt-rewrite
 
   (defund vl-casestmt-rewrite (casetype test exprs bodies default atts)
@@ -319,10 +320,10 @@ constants, e.g., in forever-loop conversion.</p>")
                                 (vl-atts-p atts))))
     (if (and (vl-fast-nullstmt-p default)
              (vl-stmtlist-all-null-p bodies))
-;; All statements are null, just turn into null.
+        ;; All statements are null, just turn into null.
         (make-vl-nullstmt)
-;; Otherwise don't change it.  Eventually convert all case statements
-;; into if statements?
+      ;; Otherwise don't change it.  Eventually convert all case statements
+      ;; into if statements?
       (make-vl-casestmt :casetype casetype
                         :test test
                         :exprs exprs
@@ -659,6 +660,8 @@ constants, e.g., in forever-loop conversion.</p>")
                     (exprs                 (vl-casestmt->exprs x))
                     (bodies                (vl-casestmt->bodies x))
                     (default               (vl-casestmt->default x))
+                    ((mv warnings bodies)  (vl-stmtlist-rewrite bodies unroll-limit warnings))
+                    ((mv warnings default) (vl-stmt-rewrite default unroll-limit warnings))
                     (x-prime               (vl-casestmt-rewrite casetype test exprs
                                                                 bodies default atts)))
                    (mv warnings x-prime)))
