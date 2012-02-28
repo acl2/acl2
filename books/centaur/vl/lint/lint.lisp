@@ -30,6 +30,7 @@
 (include-book "xf-lint-stmt-rewrite")
 (include-book "xf-remove-toohard")
 (include-book "xf-undefined-names")
+(include-book "xf-suppress-warnings")
 
 (include-book "../checkers/condcheck")
 (include-book "../checkers/duplicate-detect")
@@ -254,6 +255,7 @@
 
        (- (cw "~%vl-lint: cleaning up...~%"))
        (mods    (cwtime (vl-modulelist-clean-warnings mods)))
+       (mods    (cwtime (vl-modulelist-suppress-lint-warnings mods)))
        (mwalist (cwtime (vl-origname-modwarningalist mods)))
        )
     (mv mods mods0 mwalist sd-probs dalist state)))
