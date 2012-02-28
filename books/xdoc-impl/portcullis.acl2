@@ -18,5 +18,6 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-(ld "package.lsp")
+(ld "xdoc/package.lsp" :dir :system)
+(ld "str/package.lsp" :dir :system)
 (certify-book "portcullis" ? t :ttags :all)

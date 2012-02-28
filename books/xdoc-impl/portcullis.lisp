@@ -18,5 +18,13 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-(ld "package.lsp")
-(certify-book "portcullis" ? t :ttags :all)
+
+; portcullis.lisp
+;
+; This book gets included by cert.acl2, rather than directly putting in the
+; declaration of the xdoc package.  This way, the resulting .cert files for
+; the other xdoc books just contain an (include-book "portcullis") command,
+; rather than the whole package declaration for the XDOC package.
+
+(in-package "XDOC")
+

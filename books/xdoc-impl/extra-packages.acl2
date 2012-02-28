@@ -30,6 +30,7 @@
 (ld "hacking/hacker-pkg.lsp" :dir :system)
 (ld "cutil/package.lsp" :dir :system)
 (ld "serialize/package.lsp" :dir :system)
+(ld "finite-set-theory/osets/sets.defpkg" :dir :system)
 (ld "str/package.lsp" :dir :system)
 (ld "tools/flag-package.lsp" :dir :system)
 (certify-book "extra-packages" ? t)
