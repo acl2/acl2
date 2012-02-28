@@ -18473,6 +18473,12 @@
   subtopic of ~il[programming], a topic that in turn has considerably fewer
   direct subtopiics than before.
 
+  It is now possible to bind extra variables in a ~c[:USE] hint, thus avoiding
+  the error message: ``The formula you wish to instantiate, ..., mentions only
+  the variable(s) ...''.  ~l[lemma-instance], in particular the discussion of
+  keyword ~c[:extra-bindings-ok].  Thanks to Sol Swords for requesting such an
+  enhancement.
+
   ~st[HEURISTIC IMPROVEMENTS]
 
   Reading of ACL2 ~ilc[arrays] (~pl[aref1], ~pl[aref2]) has been made more
