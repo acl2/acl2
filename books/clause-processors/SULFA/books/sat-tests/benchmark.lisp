@@ -4,6 +4,18 @@
 (include-book "test-help" :ttags (sat sat-cl))
 
 ;; -----------------------------------------------------------------
+; This section was added by Matt K. to test waterfall parallelism hacks,
+; specifically, to allow clause processors that modify state.  SULFA-THM fails
+; in ACL2(p) with waterfall-parallelism enabled unless we make some
+; accommodation.
+
+#+acl2-par
+(defttag our-waterfall-parallelism-hacks)
+#+acl2-par
+(set-waterfall-parallelism-hacks-enabled t)
+;; -----------------------------------------------------------------
+
+;; -----------------------------------------------------------------
 ;; Definitions
 
 (defun bv-not (n x)

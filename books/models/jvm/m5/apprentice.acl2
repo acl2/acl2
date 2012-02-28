@@ -1,2 +1,7 @@
+#+acl2-par
+(set-total-parallelism-work-limit-error nil state)
+#+acl2-par
+(set-total-parallelism-work-limit 3000 state)
+
 (include-book "m5")
 (certify-book "apprentice" 1)

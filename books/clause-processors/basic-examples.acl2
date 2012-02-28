@@ -1,1 +1,5 @@
+#+acl2-par
+; clause processors that modify state
+(set-waterfall-parallelism nil)
+
 (certify-book "basic-examples" 0 t :ttags (my-ttag) :defaxioms-okp t)

@@ -1,4 +1,8 @@
 ; Enable proof output.
 (set-inhibit-output-lst '(proof-tree))
 
+#+acl2-par
+; computed hints that modify state
+(set-waterfall-parallelism nil)
+
 (certify-book "basic-tests" 0 t :skip-proofs-okp t :defaxioms-okp t)

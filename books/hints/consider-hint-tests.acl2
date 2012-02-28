@@ -1,1 +1,5 @@
+#+acl2-par
+; custom keyword hint that modifies state
+(set-waterfall-parallelism nil)
+
 (certify-book "consider-hint-tests" 0 t :skip-proofs-okp t)

@@ -1,0 +1,6 @@
+#+acl2-par
+; computed hint that modifies state
+(set-waterfall-parallelism nil)
+
+(ld "cert.acl2")
+(certify-book "quantification" ?)

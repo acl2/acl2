@@ -1,1 +1,5 @@
+#+acl2-par
+; You can't load profiling after threads are already started.
+(set-waterfall-parallelism nil)
+
 (certify-book "profiling" 0 t :ttags (:profiling))
