@@ -935,6 +935,72 @@ The second argument to pattern constructor ~x0 must be a symbol, but is ~x1~%~%"
       
 
 
+;; Find a pair in the alist whose key is a symbol whose name is str.
+(defun b*-assoc-symbol-name (str alist)
+  (if (atom alist)
+      nil
+    (if (and (consp (car alist))
+             (equal str (symbol-name (caar alist))))
+        (car alist)
+      (b*-assoc-symbol-name str (cdr alist))))) 
+
+(defun b*-decomp-err (arg binder component-alist)
+  (er hard? 'b*-decomp-bindings
+      "Bad ~s0 binding: ~x2.~%For a ~s0 binding you may use the following ~
+       kinds of arguments: keyword/value list form :field binder ..., ~
+       name-only where the variable bound is the same as a field name, ~
+       or parenthseized (binder :field).  The possible fields are ~v1."
+      binder (strip-cars component-alist) arg))
+
+;; Makes b* bindings for a decomposition specified by component-alist.
+;; Component-alist binds field names to their accessor functions.
+;; Accepts a number of forms of bindings:
+(defun b*-decomp-bindings (args binder component-alist var)
+  (b* (((when (atom args)) nil)
+       ((when (keywordp (car args)))
+        (b* ((look (b*-assoc-symbol-name (symbol-name (car args))
+                                         component-alist))
+             ((unless look)
+              (b*-decomp-err (car args) binder component-alist))
+             ((unless (consp (cdr args)))
+              (b*-decomp-err args binder component-alist)))
+          (cons `(,(cadr args) (,(cdr look) ,var))
+                (b*-decomp-bindings (cddr args) binder component-alist var))))
+       ((when (symbolp (car args)))
+        (b* ((look (b*-assoc-symbol-name (symbol-name (car args))
+                                         component-alist))
+             ((unless look)
+              (b*-decomp-err (car args) binder component-alist)))
+          (cons `(,(car args) (,(cdr look) ,var))
+                (b*-decomp-bindings (cdr args) binder component-alist var))))
+       ((unless (and (true-listp (car args))
+                     (equal (length (car args)) 2)
+                     (symbolp (cadar args))))
+        (b*-decomp-err (car args) binder component-alist))
+       (look (b*-assoc-symbol-name (symbol-name (cadar args)) component-alist))
+       ((unless look)
+        (b*-decomp-err (car args) binder component-alist)))
+    (cons `(,(caar args) (,(cdr look) ,var))
+          (b*-decomp-bindings (cdr args) binder component-alist var))))
+
+(defun b*-decomp-fn (args forms rest-expr binder component-alist)
+  (b* (((unless (and (true-listp forms)
+                     (= (length forms) 1)))
+        (er hard? 'b*-decomp-fn
+            "Too many RHS forms in ~x0 binder: ~x1~%" binder forms))
+       (rhs (car forms))
+       (var (if (symbolp rhs) rhs 'b*-decomp-temp-var))
+       (bindings (b*-decomp-bindings args binder component-alist var)))
+    `(b* ,(if (symbolp rhs)
+              bindings
+            (cons `(,var ,rhs) bindings))
+       ,rest-expr)))
+
+(defmacro def-b*-decomp (name &rest component-alist)
+  `(def-b*-binder ,name
+     (b*-decomp-fn args forms rest-expr ',name ',component-alist)))
+
+
 
 (set-state-ok t)
 
