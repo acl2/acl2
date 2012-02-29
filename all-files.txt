@@ -646,6 +646,7 @@ hons-remove-dups.lisp
 hons-sets.lisp
 interp-function-lookup.lisp
 ls.lisp
+make-list.lisp
 memory-mgmt-logic.lisp
 memory-mgmt-raw.lisp
 numlist.lisp
@@ -745,6 +746,7 @@ xf-drop-missing-submodules.lisp
 xf-drop-unresolved-submodules.lisp
 xf-lint-stmt-rewrite.lisp
 xf-remove-toohard.lisp
+xf-suppress-warnings.lisp
 xf-undefined-names.lisp
 
 books/centaur/vl/loader:
@@ -3913,6 +3915,7 @@ defined-const.lisp
 defsum.lisp
 deftuple.lisp
 do-not.lisp
+easy-simplify.lisp
 fake-event.lisp
 flag-package.lsp
 flag.acl2
@@ -4079,6 +4082,8 @@ mkdir-raw.acl2
 mkdir-raw.lisp
 mkdir.lisp
 parse-xml.lisp
+portcullis.acl2
+portcullis.lisp
 preprocess.lisp
 save.lisp
 sort.lisp

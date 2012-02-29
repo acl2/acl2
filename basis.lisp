@@ -8160,6 +8160,11 @@
             summary
             (cdr (assoc-eq :inhibit-warnings
                            (table-alist 'acl2-defaults-table wrld)))))
+
+; The above is sufficient to turn off (warning$ "string" ...).  But even when
+; the above condition isn't met, we turn off all warnings -- with the exception
+; of those related to soundness -- while including a book.
+
       (and (or (eq ld-skip-proofsp 'include-book)
                (eq ld-skip-proofsp 'include-book-with-locals)
                (eq ld-skip-proofsp 'initialize-acl2))
