@@ -5201,7 +5201,13 @@
 ; user-specified skipping of proofs and legitimate skipping of proofs by the
 ; system, such as including a book.
 
-                          (not (f-get-global 'skip-proofs-by-system state))
+                          (or (f-get-global 'inside-skip-proofs
+
+; See the long comment in skip-proofs for why this disjunct is necessary.
+
+                                            state)
+                              (not (f-get-global 'skip-proofs-by-system
+                                                 state)))
                           (let ((old (global-val 'skip-proofs-seen wrld)))
                             (or (not old)
 

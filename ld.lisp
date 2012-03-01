@@ -18538,6 +18538,11 @@
   only for system hackers.  Thanks to Jared Davis for reporting a bug in the
   use of ~ilc[add-include-book-dir] after our first attempt at a fix.
 
+  Fixed a soundness bug based on the use of ~ilc[skip-proofs] together with the
+  little-used argument ~c[k=t] for ~ilc[certify-book].  An example proof of
+  ~c[nil] appears in a comment in the (second) definition of ~c[skip-proofs] in
+  ACL2 source file axioms.lisp.
+
   (Technical change, primarily related to ~ilc[make-event]:) Plugged a security
   hole that allowed ~il[books]' ~il[certificate]s to be out-of-date with
   respect to ~ilc[make-event] expansions, but not recognized as such.  The
