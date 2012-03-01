@@ -29,6 +29,11 @@ use File::Spec;
 # use Cwd;
 use Cwd 'abs_path';
 
+# Note: for debugging you can enable this use and then print an error message
+# using
+#       carp "Description of the error\n";
+# and you get a backtrace as well.
+# use Carp;
 
 sub human_time {
 
@@ -85,6 +90,7 @@ sub abs_canonical_path {
     my ($vol, $dir, $file) = File::Spec->splitpath($abspath);
     if (! -d $dir) {
 	print "Oops, trying to go into $dir\n";
+	return 0;
     }
     my $absdir = Cwd::fast_abs_path($dir);
     if ($absdir) {
@@ -107,7 +113,7 @@ sub canonical_path {
     } else {
 	my $res;
 	my $abs_path = abs_canonical_path($fname);
-	if ($BASE_PATH) {
+	if ($BASE_PATH && $abs_path) {
 	    my $relpath =  File::Spec->abs2rel($abs_path, $BASE_PATH);
 	    $res = $relpath ? $relpath : ".";
 	} else {
@@ -708,8 +714,9 @@ sub lookup_colon_dir {
     my $local_dirs = shift;
 
     my $dirpath;
-    $local_dirs && ($dirpath = $local_dirs->{$name});
-    if (! defined($dirpath)) {
+    if ($local_dirs && exists $local_dirs->{$name}) {
+	$dirpath = $local_dirs->{$name};
+    } else {
 	$dirpath = $dirs{$name} ;
     }
     return $dirpath;
@@ -905,15 +912,22 @@ sub expand_dirname_cmd {
     my $fullname;
     if ($dirname) {
 	my $dirpath = lookup_colon_dir($dirname, $local_dirs);
-	unless (defined($dirpath)) {
+	unless ($dirpath) {
 	    print "Warning: Unknown :dir entry in ($cmd \"$relname\" :dir $dirname) for $basename\n";
 	    print_dirs($local_dirs) if $debugging;
 	    return 0;
 	}
+	print "expand $dirname -> $dirpath\n" if $debugging;
 	$fullname = canonical_path(rel_path($dirpath, $relname . $ext));
+	if (! $fullname) {
+	    print ":dir entry in ($cmd \"$relname\" :dir $dirname) produced bad path\n";
+	}
     } else {
 	my $dir = dirname($basename);
 	$fullname = canonical_path(rel_path($dir, $relname . $ext));
+	if (! $fullname) {
+	    print "bad path in ($cmd \"$relname\")\n";
+	}
     }
     return $fullname;
 }
@@ -986,8 +1000,11 @@ sub src_deps {
 	    my $name = $event->[1];
 	    my $dir = $event->[2];
 	    my $basedir = dirname($fname);
-	    $local_dirs->{$name} = canonical_path(rel_path($basedir,
-							   $dir));
+	    my $newdir = canonical_path(rel_path($basedir, $dir));
+	    if (! $newdir) {
+		print "Bad path processing (add-include-book-dir :$name \"$dir\") in $fname\n";
+	    }
+	    $local_dirs->{$name} = $newdir;
 	    print "src_deps: add_dir $name $local_dirs->{$name}\n" if
 		$debugging;
 	} elsif ($type eq $include_book_event) {
@@ -997,6 +1014,10 @@ sub src_deps {
 					      $local_dirs,
 					      "include-book",
 					      ".cert");
+	    if (! $fullname) {
+		print "Bad path in (include-book \"$bookname\""
+                      . ($dir ? " :dir $dir)" : ")") . " in $fname\n";
+	    }
 	    print "include-book fullname: $fullname\n" if $debugging;
 	    $fullname && push(@$certdeps, $fullname);
 	} elsif ($type eq $depends_on_event && !$book_only) {
@@ -1005,6 +1026,10 @@ sub src_deps {
 	    my $fullname = expand_dirname_cmd($depname, $fname, $dir,
 					      $local_dirs,
 					      "depends-on", "");
+	    if (! $fullname) {
+		print "Bad path in (depends-on \"$depname\""
+                      . ($dir ? " :dir $dir)" : ")") . " in $fname\n";
+	    }
 	    $fullname && push(@$srcdeps, $fullname);
 	} elsif ($type eq $loads_event) {
 	    my $srcname = $event->[1];
@@ -1023,6 +1048,9 @@ sub src_deps {
 					      $seen,
 		                              $fname);
 		$two_pass = $two_pass || $local_two_pass;
+	    } else {
+		print "Bad path in (loads \"$srcname\""
+		    . ($dir ? " :dir $dir)" : ")") . " in $fname\n";
 	    }
 	} elsif ($type eq $two_pass_event) {
 	    $two_pass = 1;
@@ -1044,6 +1072,9 @@ sub src_deps {
 						  $seen,
 			                          $fname);
 		    $two_pass = $two_pass || $local_two_pass;
+		} else {
+		    print "Bad path in (ld \"$srcname\""
+			. ($dir ? " :dir $dir)" : ")") . " in $fname\n";
 		}
 	    } else {
 		print "Warning: LD event in book context in $fname:\n";
@@ -1155,7 +1186,10 @@ sub find_deps {
 	}
 
 	if ($imagefile) {
-	    push(@{$srcdeps}, canonical_path($imagefile));
+	    my $imfilepath = canonical_path($imagefile);
+	    # Won't check the result of canonical_path because we're
+	    # already in the right directory.
+	    push(@{$srcdeps}, $imfilepath);
 	    my $line;
 	    if (open(my $im, "<", $imagefile)) {
 		$line = <$im>;
@@ -1362,9 +1396,13 @@ sub process_labels_and_targets {
 	if (substr($str, 0, 3) eq '-p ') {
 	    # Deps-of.
 	    my $name = canonical_path(to_source_name(substr($str,3)));
-	    my ($deps) = find_deps($name, $cache, 1, $tscache, 0);
-	    push (@targets, @$deps);
-	    push (@$label_targets, @$deps) if $label_started;
+	    if ($name) {
+		my ($deps) = find_deps($name, $cache, 1, $tscache, 0);
+		push (@targets, @$deps);
+		push (@$label_targets, @$deps) if $label_started;
+	    } else {
+		print "Bad path for target: $str\n";
+	    }
 	} elsif (substr($str, -1, 1) eq ':') {
 	    # label.
 	    my $label = substr($str,0,-1); # everything but the :
@@ -1378,8 +1416,12 @@ sub process_labels_and_targets {
 	} else {
 	    # filename.
 	    my $target = canonical_path(to_cert_name($str));
-	    push(@targets, $target);
-	    push(@$label_targets, $target) if $label_started;
+	    if ($target) {
+		push(@targets, $target);
+		push(@$label_targets, $target) if $label_started;
+	    } else {
+		print "Bad path for target: $str\n";
+	    }
 	}
     }
     # print "Labels:\n";

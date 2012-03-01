@@ -152,13 +152,22 @@ certlib_add_dir("SYSTEM", $RealBin);
 
 
 foreach my $target (@user_targets) {
-    push (@targets, canonical_path(to_cert_name($target)));
+    my $path = canonical_path(to_cert_name($target));
+    if ($path) {
+	push (@targets, $path);
+    } else {
+	print "Warning: bad target path $target\n";
+    }
 }
 
 foreach my $top (@deps_of) {
-    my ($certdeps) =
-	find_deps(canonical_path(to_source_name($top)), $cache, 1, \%tscache);
-    push (@targets, @{$certdeps});
+    my $path = canonical_path(to_source_name($top));
+    if ($path) {
+	my ($certdeps) = find_deps($path, $cache, 1, \%tscache);
+	push (@targets, @{$certdeps});
+    } else {
+	print "Warning: bad path in --deps-of/-p $top\n";
+    }
 }
 
 unless (@targets) {

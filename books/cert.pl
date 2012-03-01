@@ -86,6 +86,15 @@ my %certlib_opts = ( "debugging" => 0,
                      "believe_cache" => 0 );
 my $cache_file = 0;
 my $bin_dir = $ENV{'CERT_PL_BIN_DIR'};
+# Remove trailing slash from and canonicalize bin_dir
+if ($bin_dir) {
+    my $cbin_dir = canonical_path(remove_trailing_slash($bin_dir));
+    if (! $cbin_dir) {
+	die("Fatal: bad path in environment var CERT_PL_BIN_DIR=$bin_dir");
+    }
+    $bin_dir = $cbin_dir;
+}
+
 
 $base_path = abs_canonical_path(".");
 
@@ -354,15 +363,27 @@ GetOptions ("help|h"               => sub { print $summary_str;
 					   $no_build = 1;},
 	    "acl2|a=s"             => \$acl2,
 	    "acl2-books|b=s"       => \$acl2_books,
-	    "bin=s"                => \$bin_dir,
+	    "bin=s"                => sub {
+		shift;
+		my $arg = shift;
+		$bin_dir = canonical_path(remove_trailing_slash($arg));
+		if (!$bin_dir) {
+		    die("Fatal: bad path in directive --bin $arg\n");
+		}
+	    },
 	    "include|i=s"          => sub {shift;
 					   push(@includes, shift);},
 	    "include-after|ia=s"     => sub {shift;
 					     push(@include_afters,
 						  shift);},
-	    "relative-paths|r=s"   => sub {shift;
-					   $base_path =
-					       abs_canonical_path(shift);},
+	    "relative-paths|r=s"   => sub {
+		shift;
+		my $arg = shift;
+		$base_path = abs_canonical_path($arg);
+		if (! $base_path) {
+		    die("Fatal: bad path in directive --relative-paths/-r $arg\n");
+		}
+	    },
 	    "svn-status"           => sub {push (@run_sources,
 						 sub { my $target = shift;
 						       print `svn status --no-ignore $target`;
@@ -398,8 +419,6 @@ sub remove_trailing_slash {
     return ( substr($dir,-1) eq "/" && $dir ne "/" )
 	? substr($dir,0,-1) : $dir;
 }
-# Remove trailing slash from bin_dir, if any
-$bin_dir = $bin_dir && canonical_path(remove_trailing_slash($bin_dir));
 
 certlib_set_opts(\%certlib_opts);
 
