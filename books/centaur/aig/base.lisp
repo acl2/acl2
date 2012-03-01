@@ -216,6 +216,21 @@ valid <tt>action</tt>s are:</p>
   (aig-env-lookup-missing-action :warn))
 
 
+;;(defsection aig-cases
+;;  :parents (aig)
+;;  :short "Control-flow macro to split into cases on what kind of AIG you have
+;;encountered."
+;;  :long "@(def aig-cases)"
+
+;;  (defmacro aig-cases (x &key true false var inv and)
+;;    `(let ((aig-cases-var ,x))
+;;       (cond
+;;        ((eq aig-cases-var t) ,true)
+;;        ((eq aig-cases-var nil) ,false)
+;;        ((atom aig-cases-var) ,var)
+;;        ((eq (cdr aig-cases-var) nil) ,inv)
+;;        (t ,and)))))
+
 (defsection aig-cases
   :parents (aig)
   :short "Control-flow macro to split into cases on what kind of AIG you have

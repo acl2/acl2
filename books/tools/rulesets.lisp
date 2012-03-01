@@ -17,9 +17,13 @@
     (consp (assoc name ruleset-alist))))
 
 (defun ruleset-designatorp (x world)
-  (cond ((or (symbolp x)
-             (and (consp x)
-                  (not (keywordp (car x)))))
+  (cond ((symbolp x)
+         (or (theoryp (list x) world)
+             (is-ruleset x world)
+             (cw "~
+**NOTE**:~%~x0 is not a rune, theory name, or ruleset name.~%" x)))
+        ((and (consp x)
+              (not (keywordp (car x))))
          (theoryp! (list x) world))
         ((runep x world) t)
         ((and (consp x) (symbolp (car x)) (eq (cdr x) nil)) t)
@@ -120,27 +124,32 @@
   (if (atom x)
       nil
     (let ((des (car x)))
-      (if (or (atom des) (runep des world))
-          (cons des (expand-ruleset1 (cdr x) world))
-        (if (null (cdar x))
-            (cons `(:executable-counterpart ,(caar x))
-                  (expand-ruleset1 (cdr x) world))
-          (case (car des)
-            (:ruleset
-             (append (expand-ruleset1 (ruleset (cadr des)) world)
-                     (expand-ruleset1 (cdr x) world)))
-            (:executable-counterpart-theory
-             (append (executable-counterpart-theory (cadr des))
-                     (expand-ruleset1 (cdr x) world)))
-            (:rules-of-class
-             (append (rules-of-class (cadr des) (caddr des))
-                     (expand-ruleset1 (cdr x) world)))
-            (:theory
-             (append (theory (cadr des))
-                     (expand-ruleset1 (cdr x) world)))
-            (:current-theory
-             (append (executable-counterpart-theory (cadr des))
-                     (expand-ruleset1 (cdr x) world)))))))))
+      (cond ((atom des)
+             (if (theoryp (list des) world)
+                 (cons des (expand-ruleset1 (cdr x) world))
+               (append (expand-ruleset1 (ruleset des) world)
+                       (expand-ruleset1 (cdr x) world))))
+            ((runep des world)
+             (cons des (expand-ruleset1 (cdr x) world)))
+            ((null (cdar x))
+             (cons `(:executable-counterpart ,(caar x))
+                   (expand-ruleset1 (cdr x) world)))
+            (t (case (car des)
+                 (:ruleset
+                  (append (expand-ruleset1 (ruleset (cadr des)) world)
+                          (expand-ruleset1 (cdr x) world)))
+                 (:executable-counterpart-theory
+                  (append (executable-counterpart-theory (cadr des))
+                          (expand-ruleset1 (cdr x) world)))
+                 (:rules-of-class
+                  (append (rules-of-class (cadr des) (caddr des))
+                          (expand-ruleset1 (cdr x) world)))
+                 (:theory
+                  (append (theory (cadr des))
+                          (expand-ruleset1 (cdr x) world)))
+                 (:current-theory
+                  (append (executable-counterpart-theory (cadr des))
+                          (expand-ruleset1 (cdr x) world)))))))))
 
 (defun expand-ruleset (x world)
   (if (ruleset-designator-listp x world)

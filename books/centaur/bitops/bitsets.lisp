@@ -415,7 +415,8 @@ function into an array access.</p>"
                                                (* 32 (+ 1 slice))
                                                x))))
     :hints(("Goal"
-            :in-theory (disable bits-between-of-increment-right-index)))))
+            :in-theory (e/d (loghead)
+                            (bits-between-of-increment-right-index))))))
 
 
 
@@ -533,6 +534,7 @@ almost 5x faster than a regular version.  Here's the testing code I used:</p>
                                           (bignum-extract x slice)
                                           acc))))
 
+  (local (in-theory (enable loghead)))
   (defthm ttag-bitset-members-aux-redef
     (implies (and (natp slice)
                   (integerp x))
