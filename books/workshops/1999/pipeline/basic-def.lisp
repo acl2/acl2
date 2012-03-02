@@ -436,8 +436,10 @@
      (implies (and (integerp n) (>= n 0))
 	      (character-listp (explode-nonnegative-integer n print-base nil)))))
 
+; Renamed by Matt K. after Version 4.3, since a similar :type-prescription
+; lemma is now provided by the ACL2 system.  Perhaps it could be deleted now.
 (local
- (defthm true-listp-explode-nonnegative-integer
+ (defthm true-listp-explode-nonnegative-integer-rewrite
      (implies (true-listp x)
 	      (true-listp (explode-nonnegative-integer n print-base x)))))
        
