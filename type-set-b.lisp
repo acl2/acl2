@@ -1693,15 +1693,56 @@
 
 ; [3]Subgoal *2.1/5.7.9.11'''
 
-; but the internal form of these ids is:
+; but the internal form of these ids is as follows.
 
-(defrec clause-id ((forcing-round . pool-lst) case-lst . primes) t)
+(defrec clause-id
 
-; where forcing-round is a natural number, pool-lst and case-lst are generally
+; Forcing-round is a natural number, pool-lst and case-lst are generally
 ; true-lists of non-zero naturals (though elements of case-lst can be of the
 ; form Dk in the case of a dijunctive split) and primes is a natural.  The
 ; pool-lst is indeed a pool-lst.  (See the function pool-lst.) The case-lst is
 ; structurally analogous.
+
+  ((forcing-round . pool-lst) case-lst . primes)
+  t)
+
+(defun pos-listp (l)
+  (declare (xargs :guard t))
+  (cond ((atom l)
+         (equal l nil))
+        (t (and (posp (car l))
+                (pos-listp (cdr l))))))
+
+(defun all-digits-p (lst radix)
+  (declare (xargs :guard (and (character-listp lst)
+                              (integerp radix)
+                              (<= 2 radix)
+                              (<= radix 36))))
+  (cond ((endp lst) t)
+        (t (and (digit-char-p (car lst) radix)
+                (all-digits-p (cdr lst) radix)))))
+
+(defun d-pos-listp (lst)
+  (declare (xargs :guard t))
+  (cond ((atom lst) (null lst))
+        ((natp (car lst))
+         (d-pos-listp (cdr lst)))
+        (t (and (symbolp (car lst))
+                (let ((name (symbol-name (car lst))))
+                  (and (not (equal name ""))
+                       (eql (char name 0) #\D)
+                       (all-digits-p (cdr (coerce name 'list)) 10)))
+                (d-pos-listp (cdr lst))))))
+
+(defun clause-id-p (cl-id)
+  (declare (xargs :guard t))
+  (case-match cl-id
+    (((forcing-round . pool-lst) case-lst . primes)
+     (and (natp forcing-round)
+          (pos-listp pool-lst)
+          (d-pos-listp case-lst)
+          (natp primes)))
+    (& nil)))
 
 ; A useful constant, the first clause-id:
 
@@ -1730,7 +1771,7 @@
 ; tilde-@-clause-id-phrase is changed, be sure to change the functions below.
 
 (defun chars-for-tilde-@-clause-id-phrase/periods (lst)
-  (declare (xargs :guard (true-listp lst)))
+  (declare (xargs :guard (d-pos-listp lst)))
   (cond
    ((null lst) nil)
    ((null (cdr lst)) (explode-atom (car lst) 10))
@@ -1748,6 +1789,7 @@
         (t (cons #\' (append (explode-atom n 10) '(#\'))))))
 
 (defun chars-for-tilde-@-clause-id-phrase (id)
+  (declare (xargs :guard (clause-id-p id)))
   (append
    (if (= (access clause-id id :forcing-round) 0)
        nil
@@ -1776,6 +1818,7 @@
 
 ; Warning: Keep this in sync with tilde-@-clause-id-phrase.
 
+  (declare (xargs :guard (clause-id-p id)))
   (coerce (chars-for-tilde-@-clause-id-phrase id)
           'string))
 

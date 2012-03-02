@@ -735,6 +735,66 @@
 (defattach oncep-tp oncep-tp-builtin)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; verify-termination and guard verification:
+; string-for-tilde-@-clause-id-phrase and some subsidiary functions
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; David Rager proved termination and guards for
+; string-for-tilde-@-clause-id-phrase, with a proof that included distributed
+; books unicode/explode-atom and unicode/explode-nonnegative-integer.  Here, we
+; rework that proof a bit to avoid those dependencies.  Note that this proof
+; depends on d-pos-listp, whose termination and guard verification are
+; performed above.
+
+; We proved true-listp-explode-nonnegative-integer here, but then found it was
+; already proved locally in axioms.lisp.  So we made that defthm non-local (and
+; strengthened it to its current form).
+
+(verify-termination-boot-strap chars-for-tilde-@-clause-id-phrase/periods)
+
+(verify-termination-boot-strap chars-for-tilde-@-clause-id-phrase/primes)
+
+(defthm pos-listp-forward-to-integer-listp
+  (implies (pos-listp x)
+           (integer-listp x))
+  :rule-classes :forward-chaining)
+
+(verify-termination-boot-strap chars-for-tilde-@-clause-id-phrase)
+
+(defthm true-listp-chars-for-tilde-@-clause-id-phrase/periods
+  (true-listp (chars-for-tilde-@-clause-id-phrase/periods lst))
+  :rule-classes :type-prescription)
+
+(defthm true-listp-explode-atom
+  (true-listp (explode-atom n print-base))
+  :rule-classes :type-prescription)
+
+(encapsulate
+ ()
+
+; The following local events create perfectly good rewrite rules, but we avoid
+; the possibility of namespace clashes for existing books by making them local
+; as we add them after Version_4.3.
+
+ (local
+  (defthm character-listp-explode-nonnegative-integer
+    (implies
+     (character-listp ans)
+     (character-listp (explode-nonnegative-integer n print-base ans)))))
+
+ (local
+  (defthm character-listp-explode-atom
+    (character-listp (explode-atom n print-base))
+    :hints ; need to disable this local lemma from axioms.lisp
+    (("Goal" :in-theory (disable character-listp-cdr)))))
+
+ (local
+  (defthm character-listp-chars-for-tilde-@-clause-id-phrase/periods
+    (character-listp (chars-for-tilde-@-clause-id-phrase/periods lst))))
+
+ (verify-termination-boot-strap string-for-tilde-@-clause-id-phrase))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Theories
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

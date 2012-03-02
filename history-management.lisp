@@ -16799,12 +16799,6 @@
   (declare (ignorable state))
   (value@par arg))
 
-(defun pos-listp (l)
-  (cond ((atom l)
-         (equal l nil))
-        (t (and (posp (car l))
-                (pos-listp (cdr l))))))
-
 (defun@par translate-reorder-hint (arg ctx wrld state)
   (declare (ignore wrld))
   #+acl2-par

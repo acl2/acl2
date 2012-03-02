@@ -29531,13 +29531,15 @@
                  :verify-guards nil
                  :hints (("Goal" :in-theory (disable acl2-count floor))))))
 
-(local
- (defthm true-listp-explode-nonnegative-integer
-   (implies (and (force (integerp n))
-                 (force (>= n 0))
-                 (true-listp ans))
-            (true-listp (explode-nonnegative-integer n print-base ans)))
-   :rule-classes :type-prescription))
+(defthm true-listp-explode-nonnegative-integer
+
+; This was made non-local in order to support the verify-termination-boot-strap
+; for chars-for-tilde-@-clause-id-phrase/periods in file
+; boot-strap-pass-2.lisp.
+
+  (implies (true-listp ans)
+           (true-listp (explode-nonnegative-integer n print-base ans)))
+  :rule-classes :type-prescription)
 
 (local
  (skip-proofs

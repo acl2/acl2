@@ -549,6 +549,7 @@ cert.acl2
 defaults.lisp
 equal-by-logbitp.lisp
 ihs-extensions.lisp
+ihsext-basics.lisp
 integer-length.lisp
 sbitsets.lisp
 top.lisp

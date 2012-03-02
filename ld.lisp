@@ -18389,6 +18389,13 @@
   Boolean.  Thanks to Jared Davis for sending an example that led to this
   change.
 
+  The built-in function ~c[string-for-tilde-@-clause-id-phrase] has been put
+  into ~c[:]~ilc[logic] mode and had its guards verified, as have some
+  subsidiary functions.  A few new rules have been added in support of this
+  work; search for ~c[string-for-tilde-@-clause-id-phrase] in ACL2 source file
+  ~c[boot-strap-pass-2.lisp] if interested.  Thanks to David Rager for
+  contributing an initial version of this improvement.
+
   ~st[NEW FEATURES]
 
   A new ``tau system'' provides a kind of ``type checker.''  ~l[tau-system].
