@@ -215,6 +215,15 @@
                 :in-theory (disable (serialize::unsound-read-fn)))))))))
 
 
+(make-event
+ '(defconst *foo* (make-fast-alist (pairlis$ '(1 2 3 4) '(a b c d)))))
+
+(local (set-slow-alist-action :break))
+
+(value-triple (hons-get '1 *foo*))
+
+(defconst *bar* '((1 . 2)))
+
 #||
 
 ;; Well, even with compilation on, gcl and sbcl and even ccl are having

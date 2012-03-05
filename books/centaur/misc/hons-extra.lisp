@@ -25,30 +25,6 @@
 (include-book "tools/include-raw" :dir :system)
 (include-book "tools/bstar" :dir :system)
 
-(defn make-fast-alist (alist)
-  ":Doc-Section Hons-and-Memoization
-
-~c[(make-fast-alist alist)] creates a fast-alist from the input alist,
-returning ~c[alist] itself or, in some cases, a new object equal to it.~/
-
-Note: it is often better to use ~ilc[with-fast-alist]; see its documentation
-for more information.
-
-Logically, ~c[make-fast-alist] is the identity function.
-
-Under the hood, we construct and return an object that is ~c[equal] to
-~c[alist] and which is a fast alist.  If ~c[alist] is already a fast alist,
-almost no work is required: we simply return it unchanged.
-
-When ~c[alist] is not fast, we must minimally construct a hash table for its
-bindings.  It is often possible to bind this new hash table to ~c[alist]
-itself.  But in certain cases when the alist keys are not ~il[normed], a new
-alist ust be constructed, also, and so we may return an ~c[equal] but not
-~c[eq] alist.  (In these cases, we still try to avoid at least some consing by
-reusing the \"longest normed tail\" of the alist.)~/~/"
-
-  ;; Has an under-the-hood implementation
-  alist)
 
 (defttag hons-extra)
 

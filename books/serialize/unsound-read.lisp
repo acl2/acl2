@@ -41,7 +41,7 @@ including the ~c[serialize/unsound-read] book, e.g.,
 
 and accepting the ~c[:unsound-read] trust tag.
 
-The ~c[unsound-read] command is essentially like ~ilc[serialize-read], except
+The ~c[unsound-read] command is essentially like ~ilc[ACL2::serialize-read], except
 that it does not take ~c[state].
 
 General form:
