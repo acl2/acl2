@@ -1,6 +1,11 @@
 
 (in-package "ACL2")
 
+;; BOZO Some of the rules from logops-lemmas that are made redundant by rules
+;; here are left still enabled.  Perhaps accumulated-persistence will find the
+;; important ones.
+
+
 (include-book "ihs/logops-definitions" :dir :system)
 (include-book "cutil/defsection" :dir :system)
 
@@ -11,7 +16,7 @@
           logbitp logior logand lognot logxor
           logcons logcar logcdr loghead
           integer-length
-          logmaskp))
+          logmaskp logext))
 
 (make-event
  (prog2$ (cw "Note (from ihs-extensions): disabling ~&0.~%~%"
@@ -88,10 +93,17 @@
            (ifix x))
     :hints (("goal" :cases ((bitp b)))))
 
+  ;; like the above but with integerp hyps
+  (in-theory (disable logcar-logcons
+                      logcdr-logcons))
 
   (defthm logcons-destruct
     (equal (logcons (logcar x) (logcdr x))
            (ifix x)))
+
+  ;; from ihs, like the above but with integerp hyp.  Leaving it enabled as an
+  ;; elim rule.
+  (in-theory (disable (:rewrite logcar-logcdr-elim)))
 
   (defthmd equal-logcons-strong
     (equal (equal (logcons a b) i)
@@ -101,6 +113,10 @@
     :hints (("goal" :cases ((bitp a)))
             (and stable-under-simplificationp
                  '(:cases ((integerp b))))))
+
+  ;; like the above but with integerp hyps.  Note: since this was enabled by
+  ;; default before, should we instead enable the above?
+  (in-theory (disable equal-logcons))
 
   (local (in-theory (enable equal-logcons-strong)))
 
@@ -227,9 +243,6 @@
 
   (add-to-ruleset ihsext-basic-thms '(logcdr-<-const logcdr->-const)))
 
-
-
-(local (in-theory (disable equal-logcons)))
 
 (defsection logbitp**
 
@@ -838,7 +851,44 @@
 
   (add-to-ruleset ihsext-bounds-thms '(ash-<-0
                                        ash-<-0-linear
-                                       ash->=-0-linear)))
+                                       ash->=-0-linear))
+
+
+  (encapsulate nil
+    (local
+     (progn
+       (defthm ash-of-ash-1
+         (implies (and (<= 0 (ifix sh1))
+                       (<= 0 (ifix sh2)))
+                  (equal (ash (ash x sh1) sh2)
+                         (ash x (+ (ifix sh1) (ifix sh2)))))
+         :hints (("goal" :induct (acl2::ash-ind x sh1))))
+
+       (defthm ash-of-ash-2
+         (implies (and (<= (ifix sh1) 0)
+                       (<= (ifix sh2) 0))
+                  (equal (ash (ash x sh1) sh2)
+                         (ash x (+ (ifix sh1) (ifix sh2)))))
+         :hints (("goal" :induct (acl2::ash-ind x sh1))))
+
+       (defthm ash-of-ash-3
+         (implies (<= 0 (ifix sh1))
+                  (equal (ash (ash x sh1) (+ (- (ifix sh1)) (ifix sh)))
+                         (ash x sh)))
+         :hints (("goal" :induct (acl2::ash-ind x sh1))))))
+
+    (defthm ash-of-ash
+      (implies (or (<= 0 (ifix sh1))
+                   (<= (ifix sh2) 0))
+               (equal (ash (ash x sh1) sh2)
+                      (ash x (+ (ifix sh1) (ifix sh2)))))
+      :hints ('(:cases ((<= 0 (ifix sh1))))
+              '(:cases ((<= (ifix sh2) 0)))
+              (and stable-under-simplificationp
+                   '(:use ((:instance ash-of-ash-3
+                            (sh (+ sh1 sh2)))))))))
+
+  (add-to-ruleset ihsext-basic-thms ash-of-ash))
 
 (defsection expt
 
@@ -898,6 +948,12 @@
   (local (in-theory (enable unsigned-byte-p-incr)))
 
   (defthmd unsigned-byte-p-logcons
+    (implies (and (unsigned-byte-p (1- b) x)
+                  (natp b))
+             (unsigned-byte-p b (logcons bit x)))
+    :hints (("goal" :expand ((unsigned-byte-p b (logcons bit x))))))
+
+  (defthmd unsigned-byte-p-logcons-free
     (implies (and (unsigned-byte-p a x)
                   (natp b)
                   (<= a (1- b)))
@@ -912,6 +968,7 @@
 
   (add-to-ruleset ihsext-bounds-thms '(unsigned-byte-p-incr
                                        unsigned-byte-p-logcons
+                                       unsigned-byte-p-logcons-free
                                        unsigned-byte-p-logcdr))
 
   (local (in-theory (disable unsigned-byte-p-logand
@@ -1088,12 +1145,16 @@
            (if (zp size) 0 (logcar i)))
     :hints (("goal" :expand ((loghead size i)))))
 
-  ;;(defthm logcdr-of-loghead
-  ;;  (equal (logcdr (loghead size i))
-  ;;         (if (zp size)
-  ;;             0
-  ;;           (loghead (1- size) (logcdr i))))
-  ;;  :hints (("goal" :expand ((loghead size i)))))
+  (add-to-ruleset ihsext-basic-thms '(logcar-of-loghead))
+
+  (defthmd logcdr-of-loghead
+    (equal (logcdr (loghead size i))
+           (if (zp size)
+               0
+             (loghead (1- size) (logcdr i))))
+    :hints (("goal" :expand ((loghead size i)))))
+
+  (add-to-ruleset ihsext-advanced-thms logcdr-of-loghead)
 
   (local (in-theory (enable* ihsext-recursive-redefs
                              ihsext-inductions)))
@@ -1103,7 +1164,14 @@
   (defthm logbitp-of-loghead
     (equal (logbitp pos (loghead size i))
            (and (< (nfix pos) (nfix size))
-                (logbitp pos i)))))
+                (logbitp pos i))))
+
+  (add-to-ruleset ihsext-basic-thms logbitp-of-loghead)
+
+  (defthm unsigned-byte-p-of-loghead
+    (implies (and (integerp size1)
+                  (<= (nfix size) size1))
+             (unsigned-byte-p size1 (loghead size i)))))
 
 (defsection logtail**
 
@@ -1157,27 +1225,31 @@
   (add-to-ruleset ihsext-inductions '(logtail-induct))
 
 
-  ;;(defthm logcdr-of-logtail
-  ;;  (equal (logcdr (logtail pos i))
-  ;;         (if (zp pos)
-  ;;             0
-  ;;           (logtail (1- pos) (logcdr i))))
-  ;;  :hints (("goal" :expand ((logtail pos i)))))
-
   (local (in-theory (enable* ihsext-recursive-redefs
                              ihsext-inductions)))
+
+  (defthm logcdr-of-logtail
+    (equal (logcdr (logtail pos i))
+           (logtail (1+ (nfix pos)) i))
+    :hints (("goal" :expand ((logtail pos i)))))
+
+  (add-to-ruleset ihsext-basic-thms logcdr-of-logtail)
 
   (defthm logcar-of-logtail
     (equal (logcar (logtail pos i))
            (if (logbitp pos i) 1 0))
     :hints (("goal" :expand ((logtail pos i)))))
 
+  (add-to-ruleset ihsext-basic-thms logcar-of-logtail)
+
   (local (in-theory (disable logbitp-logtail)))
 
   (defthm logbitp-of-logtail
     (equal (logbitp pos (logtail pos2 i))
            (logbitp (+ (nfix pos) (nfix pos2))
-                    i))))
+                    i)))
+
+  (add-to-ruleset ihsext-basic-thms logbitp-of-logtail))
 
 
 (defsection mod
@@ -1213,3 +1285,84 @@
   (add-to-ruleset ihsext-arithmetic '(floor-to-logtail)))
 
 
+
+
+
+
+(defsection logext**
+
+  (local (in-theory (enable* ihsext-bad-type-thms
+                             logext)))
+
+  (defthm logext-when-not-posp
+    (implies (not (posp size))
+             (equal (logext size i)
+                    (if (= (logcar i) 1) -1 0)))
+    :hints(("Goal" :in-theory (enable* logext))))
+
+  (defthm logext-when-zip
+    (implies (zip i)
+             (equal (logext size i)
+                    0))
+    :hints(("Goal" :in-theory (e/d (logext) (logapp-0)))))
+
+  (defthm logext**
+    (equal (logext size i)
+           (cond ((or (not (posp size))
+                      (= size 1))
+                  (if (= (logcar i) 1) -1 0))
+                 (t (logcons (logcar i)
+                             (logext (1- size) (logcdr i))))))
+    ::hints(("Goal" :in-theory (disable logext)
+             :use ((:instance logext*
+                    (size (if (posp size) size 1))
+                    (i (ifix i))))))
+    :rule-classes ((:definition
+                    :clique (logext)
+                    :controller-alist ((logext t nil)))))
+
+  (add-to-ruleset ihsext-recursive-redefs logext**)
+  (add-to-ruleset ihsext-redefs logext**)
+
+  (defun logext-ind (size i)
+    (declare (xargs :measure (nfix size)))
+    (cond ((or (not (posp size))
+               (= size 1))
+           (if (= (logcar i) 1) -1 0))
+          (t (logcons (logcar i)
+                      (logext-ind (1- size) (logcdr i))))))
+
+  (defthmd logext-induct
+    t
+    :rule-classes ((:induction
+                    :pattern (logext pos i)
+                    :scheme (logext-ind pos i))))
+
+  (add-to-ruleset ihsext-inductions logext-induct)
+
+  (in-theory (disable logext-when-not-posp
+                      logext-when-zip))
+
+  (add-to-ruleset ihsext-bad-type-thms
+                  '(logext-when-not-posp
+                    logext-when-zip))
+
+  (local (in-theory (e/d* (ihsext-recursive-redefs
+                           ihsext-inductions)
+                          (logext signed-byte-p))))
+
+  (defthm logbitp-of-logext
+    (equal (logbitp pos (logext size i))
+           (if (< (nfix pos) (nfix size))
+               (logbitp pos i)
+             (logbitp (1- size) i))))
+
+  (defthm signed-byte-p-of-logext
+    (implies (and (integerp size1)
+                  (>= size1 (if (posp size) size 1)))
+             (signed-byte-p size1 (logext size i))))
+
+  (add-to-ruleset ihsext-basic-thms signed-byte-p-of-logext)
+
+  ;; ihs rule with unnecessary type hyps
+  (in-theory (disable signed-byte-p-logext)))

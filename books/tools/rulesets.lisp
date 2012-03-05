@@ -65,7 +65,40 @@
 (defmacro rules-of-class (class name)
   `(rules-of-class1 ,class (universal-theory ,name)))
 
+(defun def-ruleset-core (name rules world state)
+  (declare (xargs :stobjs state))
+  (if (ruleset-designator-listp rules world)
+      (value `(table ruleset-table ',name ',rules))
+    (er soft 'def-ruleset "Invalid ruleset specified~%")))
 
+(defun add-to-ruleset-core (name rules world state)
+  (declare (xargs :stobjs state))
+  (if (ruleset-designator-listp rules world)
+      (value `(table ruleset-table ',name
+                     (union-equal ',rules (ruleset ',name))))
+    (er soft 'add-to-ruleset "Invalid ruleset specified~%")))
+
+(defun check-not-ruleset (name world state)
+  (declare (xargs :stobjs state))
+  (if (is-ruleset name world)
+      (er soft 'def-ruleset
+          "~x0 is already a ruleset.  Use add-to-ruleset or def-ruleset! ~
+               instead.~%" name)
+    (value 'ok)))
+
+(defun check-ruleset (name world state)
+  (declare (xargs :stobjs state))
+  (if (is-ruleset name world)
+      (value 'ok)
+    (er soft 'add-to-ruleset
+        "~x0 is not already a ruleset.  Use def-ruleset, def-ruleset! ~
+             or add-to-ruleset! instead.~%" name)))
+  
+(defun ruleset-form-preprocess (form)
+  (if (and (symbolp form)
+           (not (booleanp form)))
+      `'(,form)
+    form))
 
 
 (defmacro def-ruleset (name form)
@@ -73,50 +106,37 @@
   `(make-event
     (let ((world (w state))
           (name ',name))
-      (if (is-ruleset name world)
-          (er soft 'def-ruleset
-              "~x0 is already a ruleset.  Use add-to-ruleset or def-ruleset! ~
-               instead.~%" name)
-        (let ((result ,form))
-          (if (ruleset-designator-listp result world)
-              (value `(table ruleset-table ',name ',result))
-            (er soft 'def-ruleset "Invalid ruleset specified~%")))))))
+      (er-progn
+       (check-not-ruleset name world state)
+       (let ((rules ,(ruleset-form-preprocess form)))
+         (def-ruleset-core 
+           name rules world state))))))
 
 (defmacro add-to-ruleset (name form)
   (declare (xargs :guard (symbolp name)))
   `(make-event
     (let ((world (w state))
           (name ',name))
-      (if (is-ruleset name world)
-          (let ((result ,form))
-            (if (ruleset-designator-listp result world)
-                (value `(table ruleset-table ',name
-                               (union-equal ',result (ruleset ',name))))
-              (er soft 'add-to-ruleset "Invalid ruleset specified~%")))
-        (er soft 'add-to-ruleset
-            "~x0 is not already a ruleset.  Use def-ruleset, def-ruleset! ~
-             or add-to-ruleset! instead.~%" name)))))
+      (er-progn
+       (check-ruleset name world state)
+       (let ((rules ,(ruleset-form-preprocess form)))
+         (add-to-ruleset-core name rules world state))))))
 
 (defmacro def-ruleset! (name form)
   (declare (xargs :guard (symbolp name)))
   `(make-event
     (let* ((world (w state))
            (name ',name)
-           (result ,form))
-      (if (ruleset-designator-listp result world)
-          (value `(table ruleset-table ',name ',result))
-        (er soft 'def-ruleset! "Invalid ruleset specified~%")))))
+           (rules ,(ruleset-form-preprocess form)))
+      (def-ruleset-core name rules world state))))
 
 (defmacro add-to-ruleset! (name form)
   (declare (xargs :guard (symbolp name)))
   `(make-event
     (let* ((world (w state))
            (name ',name)
-           (result ,form))
-      (if (ruleset-designator-listp result world)
-          (value `(table ruleset-table ',name
-                         (union-equal ',result (ruleset ',name))))
-        (er soft 'add-to-ruleset! "Invalid ruleset specified~%")))))
+           (rules ,(ruleset-form-preprocess form)))
+      (add-to-ruleset-core name rules world state))))
 
 
 ;; This is fragile; we don't recursively check rulesets that we're expanding.

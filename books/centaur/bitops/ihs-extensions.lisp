@@ -533,15 +533,16 @@
 (encapsulate nil
   (local (include-book "arithmetic-3/extra/top-ext" :dir :system))
 
-  (defthm |(integerp (expt x n))|
+  (defthmd |(integerp (expt x n))|
     (implies (and (integerp x)
                   (< 1 x))
              (equal (integerp (expt x n))
                     (<= 0 (ifix n))))
     :hints(("Goal" :in-theory (enable expt)))))
 
+(local (in-theory (enable |(integerp (expt x n))|)))
 
-(defthm |(logcdr (expt 2 n))|
+(defthmd |(logcdr (expt 2 n))|
   (equal (logcdr (expt 2 n))
          (if (posp n)
              (expt 2 (1- n))
@@ -552,7 +553,9 @@
                   (and (not (equal 0 n))
                        (integerp n))))))
 
-(defthm |(logcar (expt 2 n))|
+(local (in-theory (enable |(logcdr (expt 2 n))|)))
+
+(defthmd |(logcar (expt 2 n))|
   (equal (logcar (expt 2 n))
          (if (= (ifix n) 0)
              1
@@ -564,6 +567,7 @@
                   (and (< n 0)
                        (integerp n))))))
 
+(local (in-theory (enable  |(logcar (expt 2 n))|)))
 
 (encapsulate
   nil
@@ -574,7 +578,7 @@
            :hints(("Goal" :in-theory (enable expt)))
            :rule-classes :linear))
 
-  (defthm logand-with-2^n-is-logbitp
+  (defthmd logand-with-2^n-is-logbitp
     (implies (natp n)
              (equal (equal (logand x (expt 2 n)) 0)
                     (not (logbitp n x))))
@@ -587,6 +591,7 @@
             :in-theory (enable logand$ logbitp**)
             :induct (dec-logcdr-induct n x)))))
 
+(local (in-theory (enable logand-with-2^n-is-logbitp)))
 
 
 ;; A variation on this is proved in ihsext-basics
@@ -609,13 +614,13 @@
 (encapsulate nil
   (local (local (include-book "arithmetic-3/extra/top-ext" :dir :system)))
 
-  (defthm |(mod a (expt 2 n)) < (expt 2 n)|
+  (defthmd |(mod a (expt 2 n)) < (expt 2 n)|
     (implies (integerp a)
              (< (mod a (expt 2 n))
                 (expt 2 n)))
     :rule-classes ((:rewrite) (:linear)))
 
-  (defthm expt-2-monotonic
+  (defthmd expt-2-monotonic
     (implies (and (< a b)
                   (integerp a)
                   (integerp b))
@@ -623,14 +628,15 @@
                 (expt 2 b)))
     :rule-classes ((:rewrite) (:linear))))
 
-
+(local (in-theory (enable |(mod a (expt 2 n)) < (expt 2 n)|)))
+(local (in-theory (enable expt-2-monotonic)))
 
 
 
 (encapsulate nil
   (local (local (include-book "arithmetic-3/extra/top-ext" :dir :system)))
 
-  (defthm |(logbitp n (+ (expt 2 n) a))|
+  (defthmd |(logbitp n (+ (expt 2 n) a))|
     (implies (and (integerp a)
                   (natp n))
              (equal (logbitp n (+ (expt 2 n) a))
@@ -643,3 +649,14 @@
                                     (not (logbitp n a))))))
     :hints(("Goal" :in-theory (enable logbitp evenp oddp)))))
 
+(local (in-theory (enable |(logbitp n (+ (expt 2 n) a))|)))
+
+(def-ruleset ihs-ext-disabled-rules
+  '(|(integerp (expt x n))|
+    |(logcdr (expt 2 n))|
+    |(logcar (expt 2 n))|
+    logand-with-2^n-is-logbitp
+    |(mod a (expt 2 n)) < (expt 2 n)|
+    expt-2-monotonic
+    |(logbitp n (+ (expt 2 n) a))|))
+  
