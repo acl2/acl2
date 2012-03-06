@@ -256,6 +256,10 @@
 ;         FALS ::= FAL* 0                        ; zero-terminated list
 ;
 ;         FAL ::= NAT NAT                        ; index and hash-table-count
+;
+;   (3) We change the encoding of STR so that we can mark which strings were
+;       normed.  Instead of recording the string's LEN, we record:
+;          (len << 1) | (if honsp 1 0)
 
 
 ; -----------------------------------------------------------------------------
@@ -546,7 +550,8 @@
 
 
 
-; STR ::= LEN CHAR*             ; length and then its characters
+; (v1/v2): STR ::= LEN CHAR*             ; length and then its characters
+; (v3):    STR ::= [(LEN << 1) | (if normedp 1 0)] CHAR*
 
 ; Note that our symbol encoding/decoding stuff piggy-backs on our string stuff,
 ; so we care about string encoding/decoding performance a bit.
@@ -560,13 +565,17 @@
 
 (defun ser-encode-str (x stream)
   (declare (type string x))
-  (let ((len (length x)))
-    (ser-encode-nat-fixnum len stream)
+  (let* ((len     (length x))
+         (normedp (hl-hspace-normedp-wrapper x))
+         (header  (logior (ash len 1) (if normedp 1 0))))
+    (ser-encode-nat header stream)
     (loop for n fixnum from 0 below (the fixnum len) do
           (ser-write-char (char x n) stream))))
 
-(defun ser-decode-str (stream)
-  (let ((len (ser-decode-nat stream)))
+(defun ser-decode-str (version hons-mode stream)
+  (let* ((header (ser-decode-nat stream))
+         (len    (if (eq version :v3) (ash header -1) header))
+         (normp  (and (= (logand header 1) 1) (not (eq hons-mode :never)))))
     (unless (and (typep len 'fixnum)
                  (< (the fixnum len) array-dimension-limit))
       (error "Trying to decode a string, but the length is too long."))
@@ -574,7 +583,9 @@
       (declare (type vector str))
       (loop for i fixnum from 0 below (the fixnum len) do
             (setf (schar str i) (ser-read-char stream)))
-      str)))
+      (if normp
+          (hons-copy str)
+        str))))
 
 
 
@@ -720,18 +731,19 @@
     (dolist (elem x)
       (ser-encode-str elem stream))))
 
-(defun ser-decode-and-load-strs (decoder stream)
+(defun ser-decode-and-load-strs (hons-mode decoder stream)
   (declare (type ser-decoder decoder))
-  (let* ((len  (ser-decode-nat stream))
-         (arr  (ser-decoder-array decoder))
-         (free (ser-decoder-free decoder))
-         (stop (+ free len)))
+  (let* ((len     (ser-decode-nat stream))
+         (arr     (ser-decoder-array decoder))
+         (free    (ser-decoder-free decoder))
+         (version (ser-decoder-version decoder))
+         (stop    (+ free len)))
     (declare (fixnum free))
     (ser-print? "; Decoding ~a strings.~%" len)
     (unless (<= stop (length arr))
       (error "Invalid serialized object, too many strings."))
     (loop until (= (the fixnum stop) free) do
-          (setf (svref arr free) (ser-decode-str stream))
+          (setf (svref arr free) (ser-decode-str version hons-mode stream))
           (incf free))
     (setf (ser-decoder-free decoder) stop)))
 
@@ -774,10 +786,14 @@
 
 (defun ser-decode-and-load-package (check-packagesp decoder stream)
   (declare (type ser-decoder decoder))
-  (let* ((pkg-name (ser-decode-str stream))
-         (len      (ser-decode-nat stream))
+  (let* ((version  (ser-decoder-version decoder))
          (arr      (ser-decoder-array decoder))
          (free     (ser-decoder-free decoder))
+         ;; We always use hons-mode :never here, because there's no need to
+         ;; the package or symbol names since we're going to intern them and
+         ;; not return them
+         (pkg-name (ser-decode-str version :never stream))
+         (len      (ser-decode-nat stream))
          (stop     (+ free len)))
     (declare (fixnum free))
     (ser-print? "; Decoding ~a symbols for ~a package.~%" len pkg-name)
@@ -786,7 +802,8 @@
     (when check-packagesp
       (acl2::pkg-witness pkg-name))
     (loop until (= (the fixnum stop) free) do
-          (setf (svref arr free) (intern (ser-decode-str stream) pkg-name))
+          (setf (svref arr free)
+                (intern (ser-decode-str version :never stream) pkg-name))
           (incf free))
     (setf (ser-decoder-free decoder) stop)))
 
@@ -1452,13 +1469,13 @@
 
 
 
-(defun ser-decode-and-load-atoms (check-packagesp decoder stream)
+(defun ser-decode-and-load-atoms (check-packagesp hons-mode decoder stream)
   (declare (type ser-decoder decoder))
   (ser-decode-and-load-nats decoder stream)
   (ser-decode-and-load-rats decoder stream)
   (ser-decode-and-load-complexes decoder stream)
   (ser-decode-and-load-chars decoder stream)
-  (ser-decode-and-load-strs decoder stream)
+  (ser-decode-and-load-strs hons-mode decoder stream)
   (ser-decode-and-load-packages check-packagesp decoder stream))
 
 
@@ -1499,7 +1516,7 @@
         (setf (ser-decoder-free decoder) 2))
 
       (ser-print? "; Decoding serialized object of size ~a.~%" arr-size)
-      (ser-time? (ser-decode-and-load-atoms check-packagesp decoder stream))
+      (ser-time? (ser-decode-and-load-atoms check-packagesp hons-mode decoder stream))
       (ser-time? (ser-decode-and-load-conses hons-mode decoder stream))
 
       (when (eq version :v3)

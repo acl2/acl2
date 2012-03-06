@@ -700,17 +700,13 @@ and this new object would not be associated with the fast alist's hash table."
 
 #+(or acl2-loop-only (not hons))
 (defn make-fast-alist (alist)
-
-; The following was removed from immediately after the one-liner below, and
-; should be put back in once with-fast-alist is defined and documented.
-
-;   Note: it is often better to use ~ilc[with-fast-alist]; see its documentation
-;   for more information.
-
   ":Doc-Section Hons-and-Memoization
 
 ~c[(make-fast-alist alist)] creates a fast-alist from the input alist,
 returning ~c[alist] itself or, in some cases, a new object equal to it.~/
+
+Note: it is often better to use ~c[with-fast-alist]; see the distributed book
+~c[books/centaur/misc/hons-extra.lisp] for more information.
 
 Logically, ~c[make-fast-alist] is the identity function.
 

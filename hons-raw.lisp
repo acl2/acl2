@@ -981,6 +981,11 @@
         (t
          t)))
 
+(defun hl-hspace-normedp-wrapper (x)
+  ;; Bootstrapping hack for serialize
+  ;; Assumes *default-hs* is already initialized
+  (declare (special *default-hs*))
+  (hl-hspace-normedp x *default-hs*))
 
 
 ; ----------------------------------------------------------------------
@@ -2478,7 +2483,7 @@ To avoid the following break and get only the above warning:~%  ~a~%"
          nil)
         ((atom (car alist))
          (hl-check-alist-for-serialize-restore (cdr alist) hs))
-        ((not (hl-hspace-honsp (caar alist) hs))
+        ((not (hl-hspace-normedp (caar alist) hs))
          (error "Can't restore an alist from the serialized file since it has ~
                  a key that was not re-honsed."))
         (t
