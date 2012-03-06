@@ -218,9 +218,17 @@
 (make-event
  '(defconst *foo* (make-fast-alist (pairlis$ '(1 2 3 4) '(a b c d)))))
 
+(make-event
+ '(defconst *foo2* (make-fast-alist (list (cons "blah" 1)
+                                          (cons (concatenate 'string "bl" "ah") 2)
+                                          (cons "black" 3)
+                                          (cons (concatenate 'string "bl" "ack") 3)
+                                          (cons "sheep" 4)))))
+
 (local (set-slow-alist-action :break))
 
 (value-triple (hons-get '1 *foo*))
+(value-triple (hons-get "blah" *foo*))
 
 (defconst *bar* '((1 . 2)))
 

@@ -21,9 +21,21 @@
 (in-package "ACL2")
 (include-book "serialize-tests")
 
+(local (value-triple (cw "Blah is ~x0.~%" "blah")))
+(local (value-triple (cw "Blah is also ~x0.~%" (hons-copy "blah"))))
+
 (local (set-slow-alist-action :break))
-;; this should not break, foo should still be fast
+
+;; these should not break, foo should still be fast
 (value-triple (hons-get '1 *foo*))
+
+(value-triple (hons-get "blah" *foo2*))
+(value-triple (hons-get (concatenate 'string "bl" "ah") *foo2*))
+
+(value-triple (hons-get "black" *foo2*))
+(value-triple (hons-get (concatenate 'string "bl" "ack") *foo2*))
+
+(value-triple (hons-get "sheep" *foo2*))
 
 (local (set-slow-alist-action :warning))
 ;; this should complain, bar was never fast
