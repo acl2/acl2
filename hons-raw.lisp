@@ -603,7 +603,7 @@
 
 (defun hl-initialize-faltable-table (fal-ht-size)
 
-; Create the initial FAL-HT for a the FALTABLE.  See the Essay on Fast Alists,
+; Create the initial TABLE for a the FALTABLE.  See the Essay on Fast Alists,
 ; below, for more details.
 ;
 ; [Sol]: Note (Sol): The non-lock-free hashing algorithm in CCL seems to have
@@ -621,13 +621,13 @@
 ; table, where every element in the vector is overwritten with the
 ; free-hash-marker.  This is devestating when there is exactly one active fast
 ; alist: every "hons-acons" and "fast-alist-free" operation requires a linear
-; walk over the FAL-HT.  This took me two whole days to figure out.  To ensure
+; walk over the TABLE.  This took me two whole days to figure out.  To ensure
 ; that nobody else is bitten by it, and that I am not bitten by it again, here
-; I ensure that the FAL-HT always has at least one fast alist within it.  This
+; I ensure that the TABLE always has at least one fast alist within it.  This
 ; alist is unreachable from any ordinary ACL2 code so it should be quite hard
 ; to free it.
 
-  (let ((fal-ht (hl-mht :test #'eq :size (max 100 fal-ht-size)
+  (let ((table (hl-mht :test #'eq :size (max 100 fal-ht-size)
                         :lock-free t :weak :key)))
     #+Clozure
     ;; This isn't necessary with lock-free, but doesn't hurt.  Note that T is
@@ -637,14 +637,15 @@
            (sentinel-al (cons entry 'special-builtin-fal))
            (sentinel-ht (hl-mht :test #'eql)))
       (setf (gethash t sentinel-ht) entry)
-      (setf (gethash sentinel-al fal-ht) sentinel-ht))
+      (setf (gethash sentinel-al table) sentinel-ht))
 
-    fal-ht))
+    table))
 
 
 (defstruct hl-falslot
 
-; FAST-ALIST CACHE SLOT.
+; FAST-ALIST CACHE SLOT.  See the Essay on Fast Alists, below, for more
+; details.
 
   (key nil)                  ;; The alist being bound, or NIL for empty slots
   (val nil)                  ;; Its backing hash table
@@ -947,9 +948,38 @@
 
 
 (defun hl-hspace-honsp-wrapper (x)
-  ; Bootstrapping hack for serialize
+  ;; Bootstrapping hack for serialize
+  ;; Assumes *default-hs* is already initialized
   (declare (special *default-hs*))
   (hl-hspace-honsp x *default-hs*))
+
+(defun hl-hspace-faltable-wrapper ()
+  ;; Bootstrapping hack for serialize
+  ;; Assumes *default-hs* is already initialized
+  (declare (special *default-hs*))
+  (hl-hspace-faltable *default-hs*))
+
+
+(defun hl-hspace-normedp (x hs)
+
+; (HL-HSPACE-NORMEDP X HS) --> BOOL
+;
+; X may be any ACL2 Object and HS is a Hons Space.  We determine if X is normed
+; with respect to HS.
+
+  (declare (type hl-hspace hs))
+  (cond ((consp x)
+         (hl-hspace-honsp x hs))
+        ((stringp x)
+         (let* ((str-ht (hl-hspace-str-ht hs))
+                (entry  (gethash x str-ht)))
+           (and entry
+                #+static-hons
+                (eq x (car entry))
+                #-static-hons
+                (eq x entry))))
+        (t
+         t)))
 
 
 
@@ -1752,20 +1782,17 @@
 ; which for instance introduces the crucial notion of discipline.
 ;
 ; The implementation of fast alists is actually fairly simple.  Each Hons Space
-; includes a EQ hash table named FAL-HT that associates each "fast alist" with
-; an EQL hash table, called its "backing" hash table.
+; includes a FALTABLE which associates each "fast alist" with an EQL hash
+; table, called its "backing" hash table.
 ;
-; INVARIANTS.  For every "fast alist" AL that is bound in FAL-HT,
+; INVARIANTS.  For every "fast alist" AL that is bound in the FALTABLE,
 ;
-;    1. AL is non-empty, i.e., atoms are never bound in FAL-HT.
+;    1. AL is non-empty, i.e., atoms are never bound in FALTABLE.
 ;
-;    2. AL consists entirely of conses (i.e., there are no "malformed" entries
-;       in the alist).  We think of each entry as a (KEY . VALUE) pair.
+;    2. For every (KEY . VAL) pair in AL, KEY is normed.  This justifies our
+;       use of EQL-based backing hash tables.
 ;
-;    3. Every KEY is normed.  This justifies our use of EQL-based backing hash
-;       tables.
-;
-;    4. The backing hash table, HT, must "agree with" AL.  In particular, for
+;    3. The backing hash table, HT, must "agree with" AL.  In particular, for
 ;       all ACL2 Objects, X, the following relation must be satisfied:
 ;
 ;        (equal (hons-assoc-equal X AL)
@@ -1774,6 +1801,60 @@
 ;       In other words, for every (KEY . VALUE) pair in AL, HT must associate
 ;       KEY to (KEY . VALUE).  Meanwhile, if KEY is not bound in AL, then it
 ;       must not be bound in HT.
+;
+; PREVIOUSLY we also insisted that each AL consists entirely of conses, i.e.,
+; there are no "malformed" entries in the alist.  We abandoned this requirement
+; to allow MAKE-FAST-ALIST to be the identity.
+;
+; The FALTABLE might as well have been an EQ hash table, and historically it
+; was.  But this meant that each HONS-ACONS had to do:
+;
+;     - (GETHASH ALIST FALTABLE)                 find the current HT
+;     - (REMHASH ALIST FALTABLE)                 disassociate HT from ALIST
+;     - (SETF (GETHASH KEY HT) VAL)              update HT
+;     - (SETF (GETHASH NEW-ALIST FALTABLE) HT)   associate HT with NEW-ALIST
+;
+; This takes a lot of FALTABLE updates and all of this hashing gets expensive.
+; To avoid it, we changed the FALTABLE into a structure which had a hash table
+; and also a very small (two slot) cache in the front.  This cache lets us be
+; working with up to two fast alists without having to hash to find the backing
+; hash tables.
+
+
+; ESSAY ON CTRL+C SAFETY FOR FAST ALISTS
+;
+; Ctrl+C safety is really difficult for fast alists.  The function
+; hl-hons-acons provides the simplest example of the problem.  You might think
+; that the PROGN in this function should be a without-interrupts instead.
+; After all, an ill-timed interrupt by the user could cause us to remove the
+; old hash table from FALTABLE without installing the new hash table,
+; potentially leading to discipline failures even in otherwise perfectly
+; disciplined user-level code.
+;
+; But the problem runs deeper than this.  Even if we used without-interrupts,
+; it wouldn't be enough.  After all, an equally bad scenario is that we
+; successfully install the new table into FALTABLE, but then are interrupted
+; before ANS can be returned to the user's code.  It hardly matters that the
+; hash table has been properly installed if they don't have the new handle to
+; it.
+;
+; There really isn't any way for us, in the implementation of fast alists, to
+; prevent interrupts from violating single-threaded discipline.  Consider for
+; instance a sequence such as:
+;
+;   (defconst *foo* (make-fast-alist ...))
+;   (defconst *bar* (do-something (hons-acons 0 t *foo*)))
+;
+; Here, if the user interrupts do-something at any time after the inner
+; hons-acons has been executed, then the hash table for *foo* has already been
+; extended and there's no practical way to maintain discipline.
+;
+; Because of this, we abandon the goal of trying to maintain discipline across
+; interrupts, and set upon a much easier goal of ensuring that whatever hash
+; tables happen to be in the FALTABLE are indeed accurate reflections of the
+; alists that are bound to them.  This weaker criteria means that the progn
+; below is adequate.
+
 
 (defun hl-slow-alist-warning (name)
   ;; Name is the name of the function wherein we noticed a problem.
@@ -1792,42 +1873,6 @@ or suppress this warning message with~%  ~a~%
 To avoid the following break and get only the above warning:~%  ~a~%"
                 '(set-slow-alist-action :warning))
         (break$)))))
-
-
-
-; ESSAY ON CTRL+C SAFETY FOR FAST ALISTS
-;
-; Ctrl+C safety is really difficult for fast alists.  The function
-; hl-hons-acons, introduced immediately below, provides the simplest example of
-; the problem.  You might think that the PROGN in this function should be a
-; without-interrupts instead.  After all, an ill-timed interrupt by the user
-; could cause us to remove the old hash table from FAL-HT without installing
-; the new hash table, potentially leading to discipline failures even in
-; otherwise perfectly disciplined user-level code.
-;
-; But the problem runs deeper than this.  Even if we used without-interrupts,
-; it wouldn't be enough.  After all, an equally bad scenario is that we
-; successfully install the new table into FAL-HT, but then are interrupted
-; before ANS can be returned to the user's code.  It hardly matters that the
-; hash table has been properly installed if they don't have the new handle to
-; it.
-;
-; There really isn't any way for us, in the implementation of fast alists, to
-; prevent interrupts from violating single-threaded discipline.  Consider for
-; instance a sequence such as:
-;
-;   (defconst *foo* (make-fast-alist ...))
-;   (defconst *bar* (do-something (hons-acons 0 t *foo*)))
-;
-; Here, if the user interrupts do-something at any time after the inner
-; hons-acons has been executed, then the hash table for *foo* has already been
-; extended and there's no practical way to maintain discipline.
-;
-; Because of this, we abandon the goal of trying to maintain discipline across
-; interrupts, and set upon a much easier goal of ensuring that whatever hash
-; tables happen to be in the FAL-HT are indeed accurate reflections of the
-; alists that are bound to them.  This weaker criteria means that the progn
-; below is adequate.
 
 (defun hl-faltable-maphash (f faltable)
   (declare (type hl-faltable faltable))
@@ -2071,7 +2116,6 @@ To avoid the following break and get only the above warning:~%  ~a~%"
     ans))
 
 
-
 (defun hl-alist-stolen-warning (name)
   ;; Name is the name of the function wherein we noticed a problem.
   (let ((action (get-slow-alist-action *the-live-state*)))
@@ -2139,6 +2183,109 @@ To avoid the following break and get only the above warning:~%  ~a~%"
 
     ans))
 
+(defun hl-alist-longest-normed-tail (alist hs)
+
+; (HL-ALIST-LONGEST-NORMED-TAIL ALIST HS) --> TAIL
+;
+; ALIST is an arbitrary ACL2 object.  This returns the longest tail of ALIST
+; where all the keys are already normed.  This tail doesn't need to be reconsed
+; when we go to make a fast version of ALIST.
+
+  (declare (type hl-hspace hs))
+  (let ((ok-tail alist))
+    ;; ok-tail is a tail of alist on which we haven't yet found any unnormed keys.
+    (loop for tail on alist while (consp tail) do
+          (let ((pair (car tail)))
+            ;; We can just skip over any non-conses since they don't contribute
+            ;; to the alist.
+            (when (and (consp pair)
+                       (not (hl-hspace-normedp (car pair) hs)))
+              (setq ok-tail (cdr tail)))))
+    ok-tail))
+
+(defun hl-make-fast-norm-keys (alist tail hs)
+
+; (HL-MAKE-FAST-NORM-KEYS ALIST TAIL HS) --> ALIST' and destructively modifies HS.
+;   ** may install a new ADDR-HT, SBITS
+;   ** callers should not have ADDR-HT or SBITS let-bound!
+;
+; ALIST is an arbitrary ACL2 object.  TAIL is its longest-normed-tail.  We
+; construct a new ALIST that is EQUAL to ALIST, where all the keys are normed.
+
+  (declare (type hl-hspace hs))
+  (if (eq tail alist)
+      alist
+    (let* ((first-cons (list nil))
+           (last-cons first-cons))
+      (loop for rest on alist
+            while (and (consp rest) (not (eq rest tail)))
+            do
+            (let* ((pair (car rest))
+                   (cons (list (if (consp pair)
+                                   (cons (hl-hspace-norm (car pair) hs) (cdr pair))
+                                 pair))))
+              (setf (cdr last-cons) cons)
+              (setq last-cons cons)))
+      (setf (cdr last-cons) tail)
+      (cdr first-cons))))
+
+(defun hl-make-fast-alist-put-pairs (alist ht)
+
+; (HL-MAKE-FAST-ALIST-PUT-PAIRS ALIST HT) --> HT'.
+;
+; ALIST must have normed keys.  Assuming that HT starts empty, we initialize it
+; to have the correct values for ALIST.  That is, we set HT[KEY] := VALUE for
+; each (KEY . VALUE) pair in ALIST, except that we don't do this update when
+; HT[KEY] is already bound, i.e., we properly skip shadowed pairs.
+
+  (declare (type hash-table ht))
+  (loop for rest on alist while (consp rest) do
+        (let ((pair (car rest)))
+          (when (and (consp pair)
+                     (not (gethash (car pair) ht)))
+            (setf (gethash (car pair) ht) pair)))))
+
+(defun hl-hspace-make-fast-alist (alist hs)
+
+; (HL-HSPACE-MAKE-FAST-ALIST ALIST HS) --> ALIST' and destructively modifies HS.
+;   ** may install a new ADDR-HT, SBITS
+;   ** callers should not have ADDR-HT or SBITS let-bound!
+;
+; This function returns a fast ALIST' which is EQUAL to ALIST.  Ideally ALIST'
+; can just be ALIST, but this is sometimes not possible when ALIST' has keys
+; that are not normed.  If ALIST is already fast and already has a backing hash
+; table, we just return it.  Otherwise we build a hash table for it.
+
+  (declare (type hl-hspace hs))
+  (if (atom alist)
+      ;; Can't create a hash table for an atom, nothing to do.
+      alist
+    (let* ((faltable    (hl-hspace-faltable hs))
+           (slot        (hl-faltable-general-lookup alist faltable))
+           (alist-table (hl-falslot-val slot)))
+      (if alist-table
+          ;; Already has an associated hash table, nothing to do.
+          alist
+        (let* (;; Find the largest tail of alist in which all keys are normed.
+               (tail (hl-alist-longest-normed-tail alist hs))
+               ;; Makes a copy of alist in which all keys are normed.
+               (alist (hl-make-fast-norm-keys alist tail hs)))
+          ;; We need to make a new hash table to back ALIST.  As in
+          ;; hl-hspace-shrink-alist, we choose a size of (max 60 (* 1/8
+          ;; length)).
+          (setq alist-table (hl-mht :size (max 60 (ash (len alist) -3))))
+          (hl-make-fast-alist-put-pairs alist alist-table)
+          ;; The slot is empty, so install everything.  Since the value wasn't
+          ;; found, the initial ALIST isn't bound; if we ended up making a new
+          ;; alist due to honsing any keys, it's also not bound because we used
+          ;; cons.  So, uniqueness is guaranteed.  And we already know from the
+          ;; general lookup that it is unique.
+          (setf (hl-falslot-val slot) alist-table)
+          (setf (hl-falslot-key slot) alist)
+          alist)))))
+
+
+
 
 
 
@@ -2154,7 +2301,7 @@ To avoid the following break and get only the above warning:~%  ~a~%"
   ;; This is our function of last resort and we only call it if discipline has
   ;; failed.  We don't try to produce a fast alist, because there may not even
   ;; be a valid way to produce one that corresponds to the logical definition
-  ;; and satisfies the FAL-HT invariants.
+  ;; and satisfies the FALTABLE invariants.
   (cond ((atom alist)
          ans)
         ((atom (car alist))
@@ -2174,9 +2321,8 @@ To avoid the following break and get only the above warning:~%  ~a~%"
 
 (defun hl-shrink-alist-aux-slow (alist ans table honsp hs)
   ;; This is somewhat slower than the -fast version, because we don't assume
-  ;; ALIST is well-formed or has normed keys.  This is the function we'll use
-  ;; when shrinking an ordinary alist with an existing fast alist or with an
-  ;; atom as the ANS.
+  ;; ALIST has normed keys.  This is the function we'll use when shrinking an
+  ;; ordinary alist with an existing fast alist or with an atom as the ANS.
   (declare (type hl-hspace hs)
            (type hash-table table))
   (cond ((atom alist)
@@ -2200,26 +2346,28 @@ To avoid the following break and get only the above warning:~%  ~a~%"
            (hl-shrink-alist-aux-slow (cdr alist) ans table honsp hs)))))
 
 (defun hl-shrink-alist-aux-fast (alist ans table honsp hs)
-  ;; This is faster than the -slow version because we assume ALIST is
-  ;; well-formed and has normed keys.  This is the function we use to merge two
-  ;; fast alists.
+  ;; This is faster than the -slow version because we assume ALIST is has
+  ;; normed keys.  This is the function we use to merge two fast alists.
   (declare (type hl-hspace hs)
            (type hash-table table))
-  (if (atom alist)
-      ans
-    (let* ((key   (caar alist))
-           (entry (gethash key table)))
-      (unless entry
-        (if honsp
-            (progn
-              (setq entry (hl-hspace-hons key (cdar alist) hs))
-              (setq ans   (hl-hspace-hons entry ans hs))
-              (setf (gethash key table) entry))
-            (progn
-             (setq entry (car alist))
-             (setq ans   (cons entry ans))
-             (setf (gethash key table) entry))))
-      (hl-shrink-alist-aux-fast (cdr alist) ans table honsp hs))))
+  (cond ((atom alist)
+         ans)
+        ((atom (car alist))
+         (hl-shrink-alist-aux-fast (cdr alist) ans table honsp hs))
+        (t
+         (let* ((key   (caar alist))
+                (entry (gethash key table)))
+           (unless entry
+             (if honsp
+                 (progn
+                   (setq entry (hl-hspace-hons key (cdar alist) hs))
+                   (setq ans   (hl-hspace-hons entry ans hs))
+                   (setf (gethash key table) entry))
+               (progn
+                 (setq entry (car alist))
+                 (setq ans   (cons entry ans))
+                 (setf (gethash key table) entry))))
+           (hl-shrink-alist-aux-fast (cdr alist) ans table honsp hs)))))
 
 
 ; If ANS is an atom, we are going to create a new hash table for the result.
@@ -2302,8 +2450,6 @@ To avoid the following break and get only the above warning:~%  ~a~%"
 
         new-alist))))
 
-
-
 (defun hl-hspace-fast-alist-len (alist hs)
   (declare (type hl-hspace hs))
   (if (atom alist)
@@ -2323,6 +2469,52 @@ To avoid the following break and get only the above warning:~%  ~a~%"
             result))))))
 
 
+(defun hl-check-alist-for-serialize-restore (alist hs)
+
+; Causes an error unless every key of ALIST is normed.
+
+  (declare (type hl-hspace hs))
+  (cond ((atom alist)
+         nil)
+        ((atom (car alist))
+         (hl-check-alist-for-serialize-restore (cdr alist) hs))
+        ((not (hl-hspace-honsp (caar alist) hs))
+         (error "Can't restore an alist from the serialized file since it has ~
+                 a key that was not re-honsed."))
+        (t
+         (hl-check-alist-for-serialize-restore (cdr alist) hs))))
+
+(defun hl-hspace-restore-fal-for-serialize (alist count hs)
+
+; (HL-HSPACE-RESTORE-FAL-FOR-SERIALIZE ALIST COUNT HS) destructively modifies HS.
+;   ** may install a new ADDR-HT, SBITS
+;   ** callers should not have ADDR-HT or SBITS let-bound!
+;
+; ALIST should have just been read from a serialized object, and was marked as
+; a fast alist in a previous ACL2 session.  COUNT was its count in the previous
+; session, which we will use as its initial size.
+;
+; If ALIST has any non-honsed keys it is an error, and we check for this case.
+; If ALIST already has a hash table, it is a discipline failure.  This could
+; perhaps happen due to hons-acons! like stealing, when ALIST is itself a hons.
+
+  (declare (type hl-hspace hs))
+  (let* ((faltable  (hl-hspace-faltable hs))
+         (slot      (hl-faltable-general-lookup alist faltable))
+         (new-ht    (hl-mht :size (max 60 count))))
+    (hl-check-alist-for-serialize-restore alist new-ht)
+    (hl-make-fast-alist-put-pairs alist new-ht)
+    (when (hl-falslot-val slot)
+      ;; BOZO how much of an error is this?  Do we want to warn about it?
+      (hl-alist-stolen-warning 'hl-hspace-restore-fal-for-serialize))
+    (setf (hl-falslot-val slot) new-ht)
+    (setf (hl-falslot-key slot) alist)))
+
+(defun hl-restore-fal-for-serialize (alist count)
+  ;; Bootstrapping hack for serialize
+  ;; Assumes *default-hs* is already initialized
+  (declare (special *default-hs*))
+  (hl-hspace-restore-fal-for-serialize alist count *default-hs*))
 
 
 
@@ -3257,6 +3449,10 @@ To avoid the following break and get only the above warning:~%  ~a~%"
   (hl-maybe-initialize-default-hs)
   (hl-hspace-fast-alist-summary *default-hs*))
 
+(defun make-fast-alist (alist)
+  ;; no need to inline
+  (hl-maybe-initialize-default-hs)
+  (hl-hspace-make-fast-alist alist *default-hs*))
 
 ;  COMPATIBILITY WITH OLD HONS FUNCTIONS ------------------------
 

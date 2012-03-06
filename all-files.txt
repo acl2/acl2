@@ -3537,6 +3537,8 @@ serialize.acl2
 package.lsp
 serialize-raw.lsp
 Makefile
+serialize-tests2.acl2
+serialize-tests2.lisp
 serialize-tests.lisp
 serialize.lisp
 unsound-read-raw.lsp

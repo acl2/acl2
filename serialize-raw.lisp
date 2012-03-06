@@ -46,20 +46,24 @@
 ; INTRODUCTION
 ;
 ; We now develop a serialization scheme that allows ACL2 objects to be saved to
-; disk using a compact, structure-shared, and essentially binary encoding.
+; disk using a compact, structure-shared, binary encoding.
 ;
 ; We configure ACL2's print-object$ function so that it writes objects with our
-; encoding scheme when writing certificate files, so that large objects produced
-; by make-event are encoded efficiently.
+; encoding scheme when writing certificate files.  This allows large objects
+; produced by make-event to be written efficiently.
 ;
-; We extend the ACL2 readtable so serialized objects can be read at any time,
-; using the extended reader macros #z[...] and #Z[...].  These macros are almost
-; identical.  The only difference is that when #z is used, we reconstruct the
-; object entirely with CONS, whereas with #Z we use HONS for parts of the
-; structure that were honsed to begin with.
+; We extend the ACL2 readtable so that serialized objects can be read at any
+; time, using the extended reader macros #z[...] and #Z[...].  These macros are
+; almost identical, but
+;
+;    #z rebuilds the object entirely with CONS and does not restore any
+;       fast alists, whereas
+;
+;    #Z uses HONS for the parts of the structure that were originally normed,
+;       and rebuilds the hash tables for fast alists.
 ;
 ; We provide routines for reading and writing ACL2 objects as individual files,
-; typically with a ".sao" extension for "Serialized ACL2 Object".  But for
+; typically with a ".sao" extension for "Serialized ACL2 Object".  For
 ; bootstrapping reasons, these are introduced in hons.lisp and hons-raw.lisp
 ; instead of here in serialize-raw.lisp.
 
@@ -99,24 +103,26 @@
 ; Our scheme involves encoding ACL2 objects into a fairly simple, byte-based,
 ; binary format.
 ;
-; There are actually two different formats of serialized objects.  The older
-; format is named v1, and the newer is v2.  We can currently read both formats,
-; but we only support writing the newer format.
+; There are actually three different formats of serialized objects, named V1,
+; V2 and V3.  For compatibility with previously written files, we support
+; reading from all three file formats.  But we always write files using the
+; newest, V3 format.
 ;
-; Why do we have two versions?  We originally developed the serialization scheme
-; as ttag-based library in :dir :system, but this left us with no way to tightly
-; integrate it into ACL2's certificate printing and reading routines.  As we
-; moved serialization into ACL2 proper, we noticed a few areas that we could
-; improve, and made slight tweaks to the serialization scheme.  But this made
-; our new version incompatible with books/serialize, and we already had many
-; files written in the old format.
+; Why these different versions?  We originally developed our serialization
+; scheme as ttag-based library in :dir :system, but this left us with no way to
+; tightly integrate it into ACL2's certificate printing/reading routines.  When
+; we moved serialization into ACL2 proper, we noticed a few things that we
+; could improve, and tweaked the serialization scheme.  The new scheme, V2,
+; wasn't compatible with books/serialize, but we already had many files
+; written in the old V1 format.  Later, we realized that it would be easy to
+; restore fast alists within serialized objects, and that this would allow the
+; fast alists defined in a book to still be fast after including the book.  The
+; new format, V3, added this feature, but again we had lots of V2 files that we
+; still wanted to be able to read.
 ;
-; There is probably no reason to write the old v1 files.  But if you want to do
-; this, you can still load the books/serialize library and use its routines
-; directly.
-;
-; Both versions are very similar, so it is not too hard to support them both.
-; We first describe the v1 format:
+; Eventually we should be able to drop support for the old versions, but the
+; formats are all very similar so supporting them is not that much work.  Since
+; all of the versions are very similar, we begin with the V1 format:
 ;
 ;   OBJECT ::= MAGIC                       ; marker for sanity checking
 ;              LEN                         ; total number of objects
@@ -157,8 +163,8 @@
 ;       protect these files from tampering by programs that convert newline
 ;       characters in text files (e.g., FTP programs).
 ;
-;   (3) It gives us the option of tweaking our encoding, e.g., we use magic
-;       numbers to distinguish between v1 and v2 files, and in the future we
+;   (3) It gives us the option of tweaking our encoding.  Today we use distinct
+;       magic numbers to identify V1, V2, and V3 files, and in the future we
 ;       could add additional encodings by adding other magic numbers.
 ;
 ;
@@ -205,7 +211,7 @@
 ;
 ;
 ; The V2 format.  The V2 format is almost the same as the V1 format, but with
-; the following changes:
+; the following changes that allow us to restore the normedness of conses.
 ;
 ;   (1) The magic number changes to #xAC120BC8, so we know which format is
 ;       being used,
@@ -229,8 +235,27 @@
 ;       index of the object to be read.  Usually this just means that instead of
 ;       LEN we record LEN-1.  But it allows us to detect the special case of NIL
 ;       where the object being encoded is not necessarily at LEN - 1.
-
-
+;
+;
+; The V3 format.  The V3 format is almost the same as the V2 format, but with
+; the following changes that allow us to restore fast alists.
+;
+;   (1) The magic number changes to #xAC120BC9, and
+;
+;   (2) We extend the OBJECT format with an extra FALS field, that comes
+;       after the conses.  Note that LEN is unchanged and does not count
+;       the FALS.
+;
+;         OBJECT ::= MAGIC                       ; marker for sanity checking
+;                    LEN                         ; total number of objects
+;                    NATS RATS COMPLEXES CHARS   ; object data
+;                    STRS SYMBOLS CONSES         ;
+;                    FALS
+;                    MAGIC                       ; marker for sanity checking
+;
+;         FALS ::= FAL* 0                        ; zero-terminated list
+;
+;         FAL ::= NAT NAT                        ; index and hash-table-count
 
 
 ; -----------------------------------------------------------------------------
@@ -267,22 +292,22 @@
   `(ser-write-char (code-char (the (unsigned-byte 8) ,x)) ,stream))
 
 (defmacro ser-read-char (stream)
-  ;; Note that read-char causes an end-of-file error if EOF is reached, so we
-  ;; don't have to try to detect unexpected EOFs in our decoding routines.
+  ;; Note that Lisp's read-char causes an end-of-file error if EOF is reached,
+  ;; so we don't have to detect unexpected EOFs in our decoding routines.
   `(the character (read-char ,stream)))
 
 (defmacro ser-read-byte (stream)
   `(the (unsigned-byte 8) (char-code (ser-read-char ,stream))))
 
 (defun ser-encode-magic (stream)
-  ;; We only write V2 files now, so we write AC120BC8 instead of C7.
+  ;; We only write V3 files now, so we write AC120BC9 instead of C8 or C7.
   (ser-write-byte #xAC stream)
   (ser-write-byte #x12 stream)
   (ser-write-byte #x0B stream)
-  (ser-write-byte #xC8 stream))
+  (ser-write-byte #xC9 stream))
 
 (defun ser-decode-magic (stream)
-  ;; Returns :V1 or :V2, or causes an error.
+  ;; Returns :V1, :V2, or :V3, or causes an error.
   (let* ((magic-1 (ser-read-byte stream))
          (magic-2 (ser-read-byte stream))
          (magic-3 (ser-read-byte stream))
@@ -293,9 +318,11 @@
                         (= magic-3 #x0B)
                         (cond ((= magic-4 #xC7) :v1)
                               ((= magic-4 #xC8) :v2)
+                              ((= magic-4 #xC9) :v3)
                               (t nil)))))
       (unless version
-        (error "Invalid serialized object, magic number incorrect."))
+        (error "Invalid serialized object, magic number incorrect: ~X ~X ~X ~X"
+               magic-1 magic-2 magic-3 magic-4))
       version)))
 
 
@@ -320,13 +347,14 @@
 ; encoding we would need 64 bits for an overhead of 61/64 = 95%.  So the 8-bit
 ; encoding is much more efficient for small integers.
 ;
-; Of course, there are cases where 64-bit blocks win.  For instance, 2^62 nicely
-; fits into a single 64-bit block, but requires 9 8-bit blocks (at 7 data bits
-; apiece), i.e., 72 bits.  But on some other larger numbers, 8-bit blocks can
-; still be more efficient.  Take 2^64.  Here, we need either 2 64-bit blocks (at
-; 63 data bits apiece) for 128 bits, or 10 8-bit blocks for 80 bits.  In short,
-; the wider encoding only wins when there aren't very many unnecessary data bits
-; in the final block.
+; Of course, there are cases where 64-bit blocks win.  For instance, 2^62
+; nicely fits into a single 64-bit block, but requires 9 8-bit blocks (at 7
+; data bits apiece), i.e., 72 bits.  But on some other larger numbers, 8-bit
+; blocks can still be more efficient.  Take 2^64.  Here, we need either 2
+; 64-bit blocks (at 63 data bits apiece) for 128 bits, or 10 8-bit blocks for
+; 80 bits.  In short, the wider encoding only wins when the numbers are very
+; long, or when there aren't very many unnecessary data bits in the final
+; block.
 
 
 ; WHY ALL THESE OPTIMIZATIONS?
@@ -571,8 +599,8 @@
   (array (make-array 0) :type simple-vector)
   (free  0              :type fixnum)
 
-; The decoder also knows which file format we are decoding (either :v1 or :v2).
-; This is set based on the magic number from the start of the file.
+; The decoder also knows which file format we are decoding (i.e., :v1, :v2,
+; :v3).  This is set based on the magic number from the start of the file.
 
   (version nil))
 
@@ -827,7 +855,7 @@
   (seen-sym  (ser-hashtable-init 1000 'eq)  :type hash-table)
   (seen-eql  (ser-hashtable-init 1000 'eql) :type hash-table)
   (seen-str  (ser-hashtable-init 1000 'eq)  :type hash-table)
-  (seen-cons (ser-hashtable-init 2000 'eq) :type hash-table)
+  (seen-cons (ser-hashtable-init 2000 'eq)  :type hash-table)
 
 
 ; In addition to the above seen tables, the encoder has several accumulators
@@ -895,7 +923,6 @@
 ; performance gains.  However, anything destructive is scary with respect to
 ; multithreaded code, and we don't want to use it unless we really have no
 ; other choice.
-
 
 (defun ser-gather-atoms (x encoder)
   (declare (type ser-encoder encoder))
@@ -1126,7 +1153,7 @@
 
       ;; At this point you might expect to see something like, "(if idx ...)".
       ;; But since we are reusing the seen-cons table, every cons that does not
-      ;; already have its index assign is bound to T, not unbound.  To see if
+      ;; already have its index assigned is bound to T, not unbound.  To see if
       ;; an index has been assigned, then, we have to check if it is a number.
       ;; Since all indices are fixnums, I check whether it's a fixnum, which is
       ;; very fast (just looking at type bits), at least on CCL.
@@ -1157,7 +1184,6 @@
           (setf (ser-encoder-free-index encoder) (the fixnum (+ 1 free-index)))
           free-index)))))
 
-
 (defmacro ser-decode-loop (version hons-mode)
 
   `(loop until (= (the fixnum stop) free) do
@@ -1173,7 +1199,7 @@
                  (honsp     ,(cond ((eq hons-mode :always)
                                     't)
                                    ((and (eq hons-mode :smart)
-                                         (eq version :v2))
+                                         (not (eq version :v1)))
                                     '(logbitp 0 (the fixnum first-index)))
                                    (t
                                     nil)))
@@ -1200,7 +1226,7 @@
   ;; The valid hons modes are:
   ;;   :always  - always hons regardless of hons bits
   ;;   :never   - never hons regardless of hons bits
-  ;;   :smart   - hons only when hons bits are set (v2 only)
+  ;;   :smart   - hons only when hons bits are set (v2/3 only)
   ;;              smart does no honsing for v1 files
 
   (declare (type ser-decoder decoder))
@@ -1223,6 +1249,7 @@
         (if (eq hons-mode :always)
             (ser-decode-loop :v1 :always)
           (ser-decode-loop :v1 :never))
+      ;; v2/3 are the same here
       (cond ((eq hons-mode :always)
              (ser-decode-loop :v2 :always))
             ((eq hons-mode :never)
@@ -1234,6 +1261,108 @@
 
 
 
+; -----------------------------------------------------------------------------
+;
+;                              FAST ALISTS
+;
+; -----------------------------------------------------------------------------
+
+; See also the Essay on Fast Alists in hons-raw.lisp.  The FAL-HT binds some
+; alists to hash tables.  Some of these alists might be conses that we've just
+; written out.  For each such alist, we just want to record its index.
+;
+; Our basic approach to restoring fast alists is as follows.  First, we encode
+; the whole object -- we gather its atoms, assign indices to them, and write
+; out all the consing instructions -- without any regard to which alists inside
+; of it are fast.  Then we tack on some fast-alist information.
+;
+; Once the whole object has been encoded, we look at the FALTABLE from the Hons
+; Space.  Recall that the FALTABLE binds alists to their backing hash tables.
+; For each entry in the FALTABLE, we check whether the alist has been assigned
+; an index in the encoder's SEEN-CONS table.  I.e., we check whether the alist
+; was part of the object we just encoded.  If so, we write down a FAL
+; instruction that describes how to rebuild the hash table.
+;
+; This seems pretty efficient: each FAL instruction is only two natural
+; numbers, so the real added cost to encoding is just N hash table lookups,
+; where N is the size of the FALTABLE, and the cost of encoding 2M naturals
+; where M is the number of fast alists actually in the object.
+;
+; An encoded FAL instruction is a pair of natural numbers, INDEX and COUNT.
+; The INDEX is just the looked up index of the alist, itself.  The COUNT is the
+; hash-table-count of the backing hash table, so that when we recreate the hash
+; table we can initialize it with approximately the correct size.
+;
+; So how does decoding work?  Since the FAL instructions come at the end of the
+; object, we already have restored the whole object by the time we get to them.
+; In other words, the INDEX that we read tells us where, in the decode array,
+; we can find the alist that was fast.  Assuming we are using smart honsing or
+; always honsing, then the keys of the ALIST should already be honsed, because
+; it was a fast alist and so its keys had to be honses.  So all we need to do
+; is rebuild the hash table for this alist and install it into the FAL table,
+; which is very easy.
+;
+; We zero-terminate the FALS instead of writing down the number of FALS first.
+; This is legitimate because 0 is always the index of NIL, and NIL cannot be
+; bound in the FALTABLE, so there is no ambiguity.  It is desirable because as
+; we encode, we do not know how many FAL instructions we will actually need to
+; write out.  Likewise, as we decode we do not need to know how many FAL
+; instructions will be processed.
+
+(defun ser-encode-fals (encoder)
+  (declare (type ser-encoder encoder))
+
+; Q: Why include the hash table's count, when the decoder could just take the
+; length of the alist instead?
+;
+; A: Since the alist can have shadowed pairs, so its length may not be a very
+; good indication of the size we should use.  We could end up with a much
+; larger hash table than we really need.
+;
+; Q: Why use the hash-table-count instead of the hash-table-size?
+;
+; A: If a fast alist has been saved in a book, we think it is relatively
+; unlikely that it is going to be modified by a sub-book.  It seems more likely
+; that it is some kind of lookup table that you intend to refer to over and
+; over.
+
+  (let* ((stream    (ser-encoder-stream encoder))
+         (seen-cons (ser-encoder-seen-cons encoder))
+         (fn
+          (lambda (alist backing-hash-table)
+            (let ((idx (gethash alist seen-cons)))
+              (when idx
+                (ser-encode-nat idx stream)
+                (ser-encode-nat (hash-table-count backing-hash-table) stream))))))
+    (hl-faltable-maphash fn (hl-hspace-faltable-wrapper))
+    (ser-encode-nat 0 stream)))
+
+(defun ser-decode-and-restore-fals (decoder hons-mode stream)
+  (declare (type ser-decoder decoder))
+
+; Q: Why don't we restore when hons-mode is never?
+;
+; A: The keys of a fast alist need to be honsed.  If we didn't smartly (or
+; dumbly) make them honses when we built the conses, then we may not be able to
+; convert the alist into a fast alist.  Sure, we could build a new alist that
+; is EQUAL to the alist and make it fast, but then how would we install it?  It
+; wouldn't work to smash the entry in the decoder array -- the other conses
+; that rely on it have already been built.  The only way would be to walk
+; through the object and replace all uses of the alist with the new alist, and
+; that seems horribly slow.  At any rate, it doesn't seem unreasonable to say,
+; if you're reading the file with no honses, you get no fast alists either.
+
+  (let* ((array (ser-decoder-array decoder))
+         (max   (length array))
+         (index (ser-decode-nat stream)))
+    (loop until (= index 0) do
+          (unless (< index max)
+            (error "FAL index to restore is too large!"))
+          (unless (eq hons-mode :never)
+            (let ((alist (svref array index))
+                  (count (ser-decode-nat stream)))
+              (hl-restore-fal-for-serialize alist count)))
+          (setq index (ser-decode-nat stream)))))
 
 (defun ser-encode-atoms (encoder)
   (declare (type ser-encoder encoder))
@@ -1301,6 +1430,7 @@
     (ser-time? (ser-encode-atoms encoder))
     (ser-encode-nat nconses stream)
     (setq max-index (ser-time? (ser-encode-conses obj encoder)))
+    (ser-time? (ser-encode-fals encoder))
 
     (unless (and (equal (ser-encoder-free-index encoder)
                         total-number-of-objects)
@@ -1340,13 +1470,15 @@
 
   (let* ((version  (ser-decode-magic stream))
          (size/idx (ser-decode-nat stream))
-         (arr-size (if (eq version :v2)
+         (arr-size (if (or (eq version :v2)
+                           (eq version :v3))
                        (cond ((eq size/idx 0)
                               2)
                              (t
                               (+ size/idx 1)))
                      size/idx))
-         (final-obj (if (eq version :v2)
+         (final-obj (if (or (eq version :v2)
+                            (eq version :v3))
                         size/idx
                       (- arr-size 1))))
 
@@ -1360,7 +1492,8 @@
       (declare (dynamic-extent arr decoder)
                (type ser-decoder decoder))
 
-      (when (eq version :v2)
+      (when (or (eq version :v2)
+                (eq version :v3))
         (setf (aref arr 0) nil)
         (setf (aref arr 1) t)
         (setf (ser-decoder-free decoder) 2))
@@ -1368,6 +1501,9 @@
       (ser-print? "; Decoding serialized object of size ~a.~%" arr-size)
       (ser-time? (ser-decode-and-load-atoms check-packagesp decoder stream))
       (ser-time? (ser-decode-and-load-conses hons-mode decoder stream))
+
+      (when (eq version :v3)
+        (ser-decode-and-restore-fals decoder hons-mode stream))
 
       (unless (eq (ser-decode-magic stream) version)
         (error "Invalid serialized object, magic number mismatch."))
@@ -1378,6 +1514,7 @@
                  - Arr-size is ~a."
                (ser-decoder-free decoder) arr-size))
 
+      ;; Return the top object.
       (svref arr final-obj))))
 
 
