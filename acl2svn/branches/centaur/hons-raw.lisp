@@ -2507,7 +2507,7 @@ To avoid the following break and get only the above warning:~%  ~a~%"
   (let* ((faltable  (hl-hspace-faltable hs))
          (slot      (hl-faltable-general-lookup alist faltable))
          (new-ht    (hl-mht :size (max 60 count))))
-    (hl-check-alist-for-serialize-restore alist new-ht)
+    (hl-check-alist-for-serialize-restore alist hs)
     (hl-make-fast-alist-put-pairs alist new-ht)
     (when (hl-falslot-val slot)
       ;; BOZO how much of an error is this?  Do we want to warn about it?
