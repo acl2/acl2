@@ -706,8 +706,8 @@ and this new object would not be associated with the fast alist's hash table."
 ~c[(make-fast-alist alist)] creates a fast-alist from the input alist,
 returning ~c[alist] itself or, in some cases, a new object equal to it.~/
 
-Note: it is often better to use ~ilc[with-fast-alist]; see its documentation
-for more information.
+Note: it is often better to use ~c[with-fast-alist]; see the book
+~c[centaur/misc/hons-extra.lisp] for more information.
 
 Logically, ~c[make-fast-alist] is the identity function.
 
