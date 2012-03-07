@@ -678,8 +678,6 @@ execute concretely.  DEF-GL-CLAUSE-PROCESSOR always uses the full set
 of functions with defined symbolic counterparts as the first set, but
 allows the user to provide the second set.  (Symbolic counterparts may
 be defined by hand or using ~c[MAKE-G-WORLD].)
-~l[SYMBOLIC-COUNTERPARTS] for information on defining symbolic
-counterparts by hand.
 
 The set of functions the clause processor will be able to execute
 concretely is determined by the non-optional ~c[functions] argument

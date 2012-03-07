@@ -11,7 +11,7 @@
 
   By default, GL operates on BDD-based data structures and resolves Boolean
 reasoning questions using BDD operations.  However, it also has some support
-for a different mode that uses And-Inverter graphs instead; see ~il[aig].
+for a different mode that uses And-Inverter graphs instead.
 Using AIG mode requires a way to solve Boolean satisfiability problems on AIGs.
 We provide one method, of dubious utility, which is to transform the AIG into a
 BDD.  This mode may be used by including the book \"bfr-aig-bddify\" and then
