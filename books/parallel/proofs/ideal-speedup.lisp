@@ -33,7 +33,8 @@
 
 (defthm ideal1
   (and (p1 x) (p2 x) (p3 x) (p4 x) (p5 x) (p6 x) (p7 x) (p8 x))
-  :otf-flg t)
+  :otf-flg t
+  :rule-classes nil)
 
 #|
 (thm (and (p1 x) (p2 x) (p3 x) (p4 x))
@@ -63,7 +64,8 @@
   (and (p1 x) (p2 x) (p3 x) (p4 x) (p5 x) (p6 x) (p7 x) (p8 x) (p9 x) 
        (p10 x) (p11 x) (p12 x) (p13 x) (p14 x) (p15 x) (p16 x) (p17 x) (p18 x) (p19 x) 
        (p20 x) (p21 x) (p22 x) (p23 x) (p24 x))
-  :otf-flg t)
+  :otf-flg t 
+  :rule-classes nil)
 
 (defun p25 (n) (not (equal (countdown-wrapper n) 35)))
 (defun p26 (n) (not (equal (countdown-wrapper n) 36)))
@@ -123,4 +125,5 @@
        (p50 x) (p51 x) (p52 x) (p53 x) (p54 x) (p55 x) (p56 x) (p57 x) 
        (p58 x) (p59 x) 
        (p60 x) (p61 x) (p62 x) (p63 x) (p64 x))
-  :otf-flg t)
+  :otf-flg t
+  :rule-classes nil)
