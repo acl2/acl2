@@ -518,7 +518,7 @@ gl
 misc
 README
 ubdds
-unversioned-files-extra.txt
+# unversioned-files-extra.txt
 vl
 
 books/centaur/aig:
@@ -3527,24 +3527,25 @@ package.lsp
 random.lisp
 
 books/serialize:
-LICENSE
 acl2-customization.lsp
-compact-print-raw.lsp
 compact-print.acl2
 compact-print.lisp
+compact-print-raw.lsp
 gpl.txt
-serialize-tests.acl2
-serialize.acl2
-package.lsp
-serialize-raw.lsp
+LICENSE
 Makefile
+package.lsp
+serialize.acl2
+serialize.lisp
+serialize-raw.lsp
 serialize-tests2.acl2
 serialize-tests2.lisp
+serialize-tests.acl2
 serialize-tests.lisp
-serialize.lisp
-unsound-read-raw.lsp
 unsound-read.acl2
 unsound-read.lisp
+unsound-read-raw.lsp
+# unversioned-files-extra.txt
 
 books/sorting:
 Makefile
@@ -4092,7 +4093,7 @@ preprocess.lisp
 save.lisp
 sort.lisp
 topics.lisp
-unversioned-files-extra.txt
+# unversioned-files-extra.txt
 write-acl2-xdoc.lisp
 
 books/xdoc/support:
