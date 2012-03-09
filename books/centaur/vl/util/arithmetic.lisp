@@ -148,7 +148,7 @@
 
 
 
-(encapsulate ()
+(defsection true-listp
 
   (local (in-theory (enable true-listp)))
 
@@ -169,7 +169,7 @@
 
 
 
-(encapsulate ()
+(defsection len
 
   (local (in-theory (enable len)))
 
@@ -231,7 +231,7 @@
                            (acl2::y ""))))))
 
 
-(encapsulate ()
+(defsection acl2-count
 
   (local (in-theory (enable acl2-count o< o-p)))
 
@@ -300,7 +300,7 @@
   :hints(("Goal" :in-theory (enable acl2-count))))
 
 
-(encapsulate ()
+(defsection append
 
   (local (in-theory (enable append)))
 
@@ -345,7 +345,7 @@
 
 
 
-(encapsulate ()
+(defsection rev
 
   (local (in-theory (enable rev)))
 
@@ -367,7 +367,7 @@
 
 
 
-(encapsulate ()
+(defsection no-duplicatesp-equal
 
   (local (in-theory (enable no-duplicatesp-equal)))
 
@@ -427,7 +427,7 @@
 
 
 
-(encapsulate ()
+(defsection flatten
 
   (local (in-theory (enable flatten)))
 
@@ -481,7 +481,7 @@
 
 
 
-(encapsulate ()
+(defsection repeat
 
   (local (in-theory (enable repeat)))
 
@@ -518,7 +518,7 @@
 
 
 
-(encapsulate ()
+(defsection simpler-take
 
   (local (in-theory (enable simpler-take)))
 
@@ -547,7 +547,7 @@
 
 
 
-(encapsulate ()
+(defsection nthcdr
 
   (local (in-theory (enable nthcdr)))
 
@@ -613,7 +613,7 @@
 
 
 
-(encapsulate ()
+(defsection equal-of-append-repeat
 
   (local (defthm l0
            (implies (equal (append (repeat a n) x) y)
@@ -654,7 +654,7 @@
 
 
 
-(encapsulate ()
+(defsection nth
 
   (local (in-theory (enable nth)))
 
@@ -680,7 +680,7 @@
                     nil))))
 
 
-(encapsulate ()
+(defsection last
 
   (local (in-theory (enable last)))
 
@@ -729,7 +729,7 @@
 
 
 
-(encapsulate ()
+(defsection prefixp
 
   (local (in-theory (enable prefixp)))
 
@@ -773,7 +773,7 @@
 
 
 
-(encapsulate ()
+(defsection alistp
 
   (local (in-theory (enable alistp)))
 
@@ -808,7 +808,7 @@
 
 
 
-(encapsulate ()
+(defsection strip-cars
 
   (local (in-theory (enable strip-cars)))
 
@@ -837,7 +837,7 @@
 
 
 
-(encapsulate ()
+(defsection strip-cdrs
 
   (local (in-theory (enable strip-cdrs)))
 
@@ -867,7 +867,7 @@
 
 
 
-(encapsulate ()
+(defsection pairlis$
 
   (local (in-theory (enable pairlis$)))
 
@@ -903,7 +903,7 @@
 
 
 
-(encapsulate ()
+(defsection hons-assoc-equal
 
   (local (in-theory (enable hons-assoc-equal)))
 
@@ -953,7 +953,7 @@
 
 
 
-(encapsulate ()
+(defsection hons-shrink-alist
 
   (local (in-theory (enable hons-shrink-alist)))
 
@@ -1010,7 +1010,7 @@
 
 
 
-(encapsulate ()
+(defsection intersectp-equal
 
   (local (in-theory (enable intersectp-equal)))
 
@@ -1103,7 +1103,7 @@
 
 
 
-(encapsulate ()
+(defsection uniqueness-of-append
 
   (defthm no-duplicatesp-equal-of-append
     (equal (no-duplicatesp-equal (append x y))
@@ -1126,7 +1126,7 @@
 
 
 
-(encapsulate ()
+(defsection intersection-equal
 
   (local (in-theory (enable intersection-equal)))
 
@@ -1154,7 +1154,7 @@
 
 
 
-(encapsulate ()
+(defsection set-difference-equal
 
   (local (in-theory (enable set-difference-equal)))
 
@@ -1193,7 +1193,7 @@
 
 
 
-(encapsulate ()
+(defsection character-listp
 
   (local (in-theory (enable character-listp)))
 
@@ -1253,7 +1253,7 @@
              (character-listp (nthcdr n x)))))
 
 
-(encapsulate ()
+(defsection string-listp
 
   (local (in-theory (enable string-listp)))
 
@@ -1309,11 +1309,31 @@
     ;; BOZO what nonsense is this?
     (implies (and (string-listp cdrs)
                   (force (equal (len cars) (len cdrs))))
-             (string-listp (strip-cdrs (pairlis$ cars cdrs))))))
+             (string-listp (strip-cdrs (pairlis$ cars cdrs)))))
+
+  (defthm string-listp-of-last
+    (implies (string-listp x)
+             (string-listp (last x))))
+
+  (defthm string-listp-of-repeat
+    (equal (string-listp (repeat a n))
+           (or (stringp a)
+               (zp n)))
+    :hints(("Goal" :in-theory (enable repeat))))
+
+  (defthm string-listp-of-simpler-take
+    (implies (string-listp x)
+             (equal (string-listp (simpler-take n x))
+                    (<= (nfix n) (len x))))
+    :hints(("Goal" :in-theory (enable simpler-take))))
+
+  (defthm string-listp-of-butlast
+    (implies (string-listp x)
+             (string-listp (butlast x n)))
+    :hints(("Goal" :in-theory (enable butlast)))))
 
 
-
-(encapsulate ()
+(defsection symbol-listp
 
   (local (in-theory (enable symbol-listp)))
 
@@ -1399,8 +1419,7 @@
 
 (defthm string-append-lst-of-cons
   (equal (string-append-lst (cons a x))
-         (string-append a
-                        (string-append-lst x)))
+         (string-append a (string-append-lst x)))
   :hints(("Goal" :in-theory (enable string-append-lst))))
 
 
@@ -1427,8 +1446,8 @@
   :hints(("Goal" :in-theory (enable make-fal))))
 
 
-(encapsulate
-  ()
+(defsection characterp-of-nth
+
   (local (defthm l0
            (implies (and (< (nfix n) (len x))
                          (character-listp x))
@@ -1444,8 +1463,8 @@
 
 
 
-(encapsulate
-  ()
+(defsection make-character-list
+
   (local (in-theory (enable make-character-list)))
 
   (defthm make-character-list-when-character-listp
@@ -1462,8 +1481,8 @@
 
 
 
-(encapsulate
-  ()
+(defsection coerce
+
   (defthm length-of-coerce
     ;; Wow, coerce is sort of awful in that (coerce "foo" 'string) returns ""
     ;; and (coerce '(1 2 3) 'list) returns nil.  This leads to a weird length
@@ -1507,8 +1526,8 @@
 
 
 
-(encapsulate
-  ()
+(defsection subseq-list
+
   (local (in-theory (enable subseq-list)))
 
   (defthm len-of-subseq-list
@@ -1520,8 +1539,8 @@
     :rule-classes :type-prescription))
 
 
-(encapsulate
-  ()
+(defsection subseq
+
   (local (in-theory (enable subseq)))
 
   (defthm stringp-of-subseq
