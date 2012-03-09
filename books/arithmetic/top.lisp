@@ -33,6 +33,8 @@
 
 (include-book "rational-listp")
 
+(include-book "nat-listp")
+
 ;; Ruben Gamboa added the following books for ACL2(r) (see :doc real).
 
 #+:non-standard-analysis

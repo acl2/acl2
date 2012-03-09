@@ -19,34 +19,13 @@
 
 (include-book "app")
 
-(defund nat-listp (x)
-  (declare (xargs :guard t))
-  (if (consp x)
-      (and (natp (car x))
-           (nat-listp (cdr x)))
-    t))
-
-(defthm nat-listp-when-not-consp
-  (implies (not (consp x))
-           (equal (nat-listp x)
-                  t))
-  :hints(("Goal" :in-theory (enable nat-listp))))
-
-(defthm nat-listp-of-cons
-  (equal (nat-listp (cons a x))
-         (and (natp a)
-              (nat-listp x)))
-  :hints(("Goal" :in-theory (enable nat-listp))))
-
-(defthm nat-listp-of-list-fix
-  (equal (nat-listp (list-fix x))
-         (nat-listp x))
-  :hints(("Goal" :induct (len x))))
+(include-book "arithmetic/nat-listp" :dir :system)
 
 (defthm nat-listp-of-app
-  (equal (nat-listp (app x y))
-         (and (nat-listp x)
-              (nat-listp y)))
+  (implies (true-listp x)
+           (equal (nat-listp (app x y))
+                  (and (nat-listp x)
+                       (nat-listp (list-fix y)))))
   :hints(("Goal" :induct (len x))))
 
 (defthm natp-of-car-when-nat-listp
@@ -55,7 +34,3 @@
                        (consp x))
                 (<= 0 (car x))))
   :hints(("Goal" :induct (len x))))
-
-(defthm nat-listp-of-cdr-when-nat-listp
-  (implies (nat-listp x)
-           (nat-listp (cdr x))))

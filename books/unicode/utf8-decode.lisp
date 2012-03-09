@@ -669,7 +669,7 @@
 
 (defthm nat-listp-when-partition-creates-utf8-string
   (implies (utf8-string? (partition sizes x))
-           (nat-listp sizes))
+           (nat-listp (list-fix sizes)))
   :hints(("Goal" :in-theory (enable partition))))
 
 (defthm utf8-char?-of-simple-take-when-partition-creates-utf8-string

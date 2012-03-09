@@ -14,10 +14,8 @@
 ;; this program; if not, write to the Free Software Foundation, Inc., 59 Temple
 ;; Place - Suite 330, Boston, MA 02111-1307, USA.
 
-
-
-
-;; Note: Adapted from unicode/nat-listp.lisp, but INCOMPATIBLE with it.  This
+;; Note: Contributed initially by Sol Swords; modified by Matt Kaufmann.
+;; Adapted from unicode/nat-listp.lisp, but INCOMPATIBLE with it.  This
 ;; version of nat-listp is similar to built-in ACL2 functions integer-listp,
 ;; symbol-listp, etc, in that it implies true-listp.
 
@@ -53,17 +51,16 @@
   :hints(("Goal" :in-theory (enable nat-listp))))
 
 (defthm nat-listp-of-append
-  (implies (and (nat-listp x)
-                (nat-listp y))
-           (nat-listp (append x y)))
-  :hints(("Goal" :induct (len x))))
+  (implies (true-listp x)
+           (equal (nat-listp (append x y))
+                  (and (nat-listp x)
+                       (nat-listp y)))))
 
-(defthmd natp-of-car-when-nat-listp
-  (implies (nat-listp x)
-           (and (equal (integerp (car x))
-                       (consp x))
-                (<= 0 (car x))))
-  :hints(("Goal" :induct (len x))))
+(defthm car-nat-listp
+  (implies (and (nat-listp x)
+                x)
+           (natp (car x)))
+  :rule-classes :forward-chaining)
 
 (defthm nat-listp-of-cdr-when-nat-listp
   (implies (nat-listp x)

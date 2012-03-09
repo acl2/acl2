@@ -340,17 +340,19 @@
 
 
 (local
- (defun nat-listp (l)
+; Renamed from nat-listp by Matt K. after v4-3, to avoid conflict with
+; books/arithmetic/nat-listp.lisp.
+ (defun local-nat-listp (l)
    (if (endp l)
        t
      (and (natp (car l))
-	  (nat-listp (cdr l))))))
+	  (local-nat-listp (cdr l))))))
  
 
 (local
- (defthm list-from-to-nat-listp
+ (defthm list-from-to-local-nat-listp
    (implies (and (natp h1) (natp h2))
-	    (nat-listp (list-from-to h1 h2)))))
+	    (local-nat-listp (list-from-to h1 h2)))))
 
 
 (local
@@ -1066,7 +1068,7 @@
    (defthm tree-p-aux-update-nth-smaller-than-list
      (implies (and (tree-p-aux hs g)
 		   (natp h)
-		   (nat-listp hs)
+		   (local-nat-listp hs)
 		   (nat-true-listp l)
 		   (smaller-than-list h l))
 	      (tree-p-aux hs (update-nth h (cons x l) g)))
@@ -1329,16 +1331,16 @@
      (implies (natp h)
 	      (nat-true-listp (list-from-to h h1)))))
 		    
-  (defthm  term-as-dag-aux-l-ns-nat-listp
+  (defthm  term-as-dag-aux-l-ns-local-nat-listp
     (let* ((res (term-as-dag-aux-l-ns flg term g h))
 	   (hs-ret (third res)))
       (implies (natp h) 
-	       (nat-listp hs-ret))))
+	       (local-nat-listp hs-ret))))
  
   (defthm subsetp-list-from-to
     (implies
      (and (natp h1) (natp h2)
-	  (nat-listp hs)
+	  (local-nat-listp hs)
 	  (smaller-than-list h1 hs)
 	  (bigger-than-list h2 hs))
      (subsetp hs (list-from-to (1+ h1) h2))))
@@ -1405,13 +1407,13 @@
 	     
   (local
    (defthm graph-coincide-update-nth
-     (implies (and (not (member h hs)) (natp h) (nat-listp hs))
+     (implies (and (not (member h hs)) (natp h) (local-nat-listp hs))
 	      (graph-coincide hs g (update-nth h x g)))))
 
   (local
-   (defthm list-from-to-nat-listp
+   (defthm list-from-to-local-nat-listp
      (implies (and (natp h1) (natp h2))
-	      (nat-listp (list-from-to h1 h2)))))
+	      (local-nat-listp (list-from-to h1 h2)))))
 
 
 
@@ -2328,7 +2330,7 @@
   (local
    (defthm property-element-tree-p-natp-all-indices
      (implies (and (tree-p g)
-		   (nat-listp hs))
+		   (local-nat-listp hs))
 	      (tree-p-aux hs g))))
   
 
@@ -2849,7 +2851,7 @@
  
  (local
   (defthm empty-graph-p-covers-all-cases-version-2
-    (implies (and (nat-listp hs)
+    (implies (and (local-nat-listp hs)
 		  (empty-graph-p g))
 	     (empty-graph-p-aux hs g))))
 

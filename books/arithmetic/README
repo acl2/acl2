@@ -41,6 +41,7 @@ equalities.lisp		Arithmetic equality rules
 factorial.lisp		Theorems about the factorial function
 idiv.lisp		Theorems about integer division and related functions
 inequalities.lisp	Arithmetic inequality rules
+nat-listp.lisp          Book about lists of natural numbers
 rational-listp.lisp	Very short book about lists of rationals
 rationals-with-axioms-proved.lisp	Supersedes rationals-with-axioms.lisp
 sumlist.lisp		Theorems about sum of a list of numbers
