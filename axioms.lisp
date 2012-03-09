@@ -29060,21 +29060,20 @@
   To control ACL2 abbreviation (``evisceration'') of objects before printing
   them, ~pl[set-evisc-tuple], ~pl[without-evisc], and ~pl[set-iprint].~/
 
-  ACL2 supports input and output facilities equivalent to a subset
-  of those found in Common Lisp.  ACL2 does not support random access
-  files or bidirectional streams.  In Common Lisp, input and output
-  are to or from objects of type ~c[stream].  In ACL2, input and output
-  are to or from objects called ``channels,'' which are actually
-  symbols.  Although a channel is a symbol, one may think of it
-  intuitively as corresponding to a Common Lisp stream.  Channels are
-  in one of two ACL2 packages, ~c[\"ACL2-INPUT-CHANNEL\"] and
-  ~c[\"ACL2-OUTPUT-CHANNEL\"].  When one ``opens'' a file one gets back
-  a channel whose ~ilc[symbol-name] is the file name passed to ``open,''
-  postfixed with ~c[-n], where ~c[n] is a counter that is incremented
-  every time an open or close occurs.
+  ACL2 supports input and output facilities equivalent to a subset of those
+  found in Common Lisp.  ACL2 does not support random access to files or
+  bidirectional streams.  In Common Lisp, input and output are to or from
+  objects of type ~c[stream].  In ACL2, input and output are to or from objects
+  called ``channels,'' which are actually symbols.  Although a channel is a
+  symbol, one may think of it intuitively as corresponding to a Common Lisp
+  stream.  Channels are in one of two ACL2 packages, ~c[\"ACL2-INPUT-CHANNEL\"]
+  and ~c[\"ACL2-OUTPUT-CHANNEL\"].  When one ``opens'' a file one gets back a
+  channel whose ~ilc[symbol-name] is the file name passed to ``open,''
+  postfixed with ~c[-n], where ~c[n] is a counter that is incremented every
+  time an open or close occurs.
 
-  There are three channels which are open from the beginning and which
-  cannot be closed:
+  There are three channels which are open from the beginning and which cannot
+  be closed:
   ~bv[]
     acl2-input-channel::standard-character-input-0
     acl2-input-channel::standard-object-input-0
@@ -29083,25 +29082,25 @@
   All three of these are really Common Lisp's ~c[*standard-input*] or
   ~c[*standard-output*], appropriately.
 
-  For convenience, three global variables are bound to these rather
-  tedious channel names:
+  For convenience, three global variables are bound to these rather tedious
+  channel names:
   ~bv[]
     *standard-ci*
     *standard-oi*
     *standard-co*
   ~ev[]
-  Common Lisp permits one to open a stream for several different
-  kinds of ~c[io], e.g. character or byte.  ACL2 permits an additional
-  type called ``object''.  In ACL2 an ``io-type'' is a keyword, either
-  ~c[:character], ~c[:byte], or ~c[:object].  When one opens a file, one specifies
-  a type, which determines the kind of io operations that can be done
-  on the channel returned.  The types ~c[:character] and ~c[:byte] are
-  familiar.  Type ~c[:object] is an abstraction not found in Common Lisp.
-  An ~c[:object] file is a file of Lisp objects.  One uses ~c[read-object] to
-  read from ~c[:object] files and ~c[print-object$] (or ~c[print-object$-ser])
-  to print to ~c[:object] files.  (The reading and printing are really done
-  with the Common Lisp ~c[read] and ~c[print] functions.  For those familiar
-  with ~c[read], we note that the ~c[recursive-p] argument is ~c[nil].)
+  Common Lisp permits one to open a stream for several different kinds of
+  ~c[io], e.g. character or byte.  ACL2 permits an additional type called
+  ``object''.  In ACL2 an ``io-type'' is a keyword, either ~c[:character],
+  ~c[:byte], or ~c[:object].  When one opens a file, one specifies a type,
+  which determines the kind of io operations that can be done on the channel
+  returned.  The types ~c[:character] and ~c[:byte] are familiar.  Type
+  ~c[:object] is an abstraction not found in Common Lisp.  An ~c[:object] file
+  is a file of Lisp objects.  One uses ~c[read-object] to read from ~c[:object]
+  files and ~c[print-object$] (or ~c[print-object$-ser]) to print to
+  ~c[:object] files.  (The reading and printing are really done with the Common
+  Lisp ~c[read] and ~c[print] functions.  For those familiar with ~c[read], we
+  note that the ~c[recursive-p] argument is ~c[nil].)
 
   File-names are strings.  ACL2 does not support the Common Lisp type
   ~ilc[pathname].  However, for the ~c[file-name] argument of the
@@ -29111,8 +29110,7 @@
   written to the channel they can be retrieved by using
   ~c[get-output-stream-string$].
 
-  Here are the names, formals and output descriptions of the ACL2 io
-  functions.
+  Here are the names, formals and output descriptions of the ACL2 io functions.
   ~bv[]
   Input Functions:
     (open-input-channel (file-name io-type state) (mv channel state))
@@ -29144,13 +29142,13 @@
                                           (ctx ''get-output-stream-string$))
                                (mv erp string state))
   ~ev[]
-  The ``formatting'' functions are particularly useful;
-  ~pl[fmt] and ~pl[cw].  In particular, ~ilc[cw] prints to a
-  ``comment window'' and does not involve the ACL2 ~ilc[state], so many may
-  find it easier to use than ~ilc[fmt] and its variants.  The functions
-  ~ilc[fms!], ~ilc[fmt!], and ~ilc[fmt1!] are the same as their respective functions
-  without the ``~c[!],'' except that the ``~c[!]'' functions are guaranteed to
-  print forms that can be read back in (at a slight readability cost).
+  The ``formatting'' functions are particularly useful; ~pl[fmt] and ~pl[cw].
+  In particular, ~ilc[cw] prints to a ``comment window'' and does not involve
+  the ACL2 ~ilc[state], so many may find it easier to use than ~ilc[fmt] and
+  its variants.  The functions ~ilc[fms!], ~ilc[fmt!], and ~ilc[fmt1!] are the
+  same as their respective functions without the ``~c[!],'' except that the
+  ``~c[!]'' functions are guaranteed to print forms that can be read back
+  in (at a slight readability cost).
 
   When one enters ACL2 with ~c[(lp)], input and output are taken from
   ~ilc[*standard-oi*] to ~ilc[*standard-co*].  Because these are synonyms for
@@ -29191,9 +29189,9 @@
   functions such as ~c[fmt-to-string] that do not take a channel or ~ilc[state]
   argument and return a string.
 
-  By default, symbols are printed in upper case when vertical bars are
-  not required, as specified by Common Lisp.  ~l[set-print-case] for how
-  to get ACL2 to print symbols in lower case.
+  By default, symbols are printed in upper case when vertical bars are not
+  required, as specified by Common Lisp.  ~l[set-print-case] for how to get
+  ACL2 to print symbols in lower case.
 
   By default, numbers are printed in radix 10 (base 10).  ~l[set-print-base]
   for how to get ACL2 to print numbers in radix 2, 8, or 16.

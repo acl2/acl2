@@ -197,6 +197,7 @@ factorial.lisp
 idiv.lisp
 inequalities.lisp
 mod-gcd.lisp
+nat-listp.lisp
 natp-posp.lisp
 rational-listp.lisp
 rationals.lisp

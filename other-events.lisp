@@ -15858,7 +15858,7 @@
   When ~c[certify-book] is directed not to produce a compiled file, it will
   delete any existing compiled file for the book, so as not to mislead
   ~ilc[include-book] into loading the now outdated compiled file.  Otherwise,
-  ~c[certify-book] will create a temporarily ``expansion file'' to compile,
+  ~c[certify-book] will create a temporary ``expansion file'' to compile,
   obtained by appending the string \"@expansion.lsp\" to the end of the book
   name.  Remark: Users may ignore that file, which is automatically deleted
   unless ~il[state] global variable ~c['save-expansion-file] has been set,

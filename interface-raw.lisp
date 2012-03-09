@@ -4375,25 +4375,20 @@
                                     (t (msg file-is-older-str ofile file))))
                              (t
                               (msg "the compiled file is missing")))))
-           (er-let* ((val
-
-; Silly binding works around bogus compiler warning in Lispworks 6.0.1, which
-; probably will be fixed in subsequent Lispworks releases.
-
-                      (catch 'missing-compiled-book
-                        (state-global-let*
-                         ((raw-include-book-dir-alist nil)
-                          (connected-book-directory directory-name))
-                         (let ((*load-compiled-stack*
-                                (acons file
-                                       load-compiled-file
-                                       *load-compiled-stack*)))
-                           (cond (ofile-p (load-compiled ofile t))
-                                 (t (with-reckless-read (load efile))))
-                           (value (setq status (if to-be-compiled-p
-                                                   'to-be-compiled
-                                                 'complete))))))))
-             (value val))
+           (catch 'missing-compiled-book
+; bogus compiler warning in LispWorks 6.0.1, gone in LispWorks 6.1
+             (state-global-let*
+              ((raw-include-book-dir-alist nil)
+               (connected-book-directory directory-name))
+              (let ((*load-compiled-stack*
+                     (acons file
+                            load-compiled-file
+                            *load-compiled-stack*)))
+                (cond (ofile-p (load-compiled ofile t))
+                      (t (with-reckless-read (load efile))))
+                (value (setq status (if to-be-compiled-p
+                                        'to-be-compiled
+                                      'complete))))))
            (hcomp-transfer-to-hash-tables)
            (assert$ (member-eq status '(to-be-compiled complete incomplete))
                     status))))))))
