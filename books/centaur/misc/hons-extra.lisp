@@ -167,10 +167,45 @@ is just shorthand for:
 
 ||#
 
+(defun alist-of-alistsp (lst)
+  (declare (xargs :guard t))
+  (cond ((atom lst)
+         (null lst))
+        ((and (consp (car lst))
+              (alistp (cdar lst)))
+         (alist-of-alistsp (cdr lst)))
+        (t nil)))
 
+(defun make-fast-alist-of-alists (lst)
 
+; Perhaps a tail recursive definition would be better, but this is simpler (so
+; long as we don't overflow the stack).
 
+  (declare (xargs :guard (alist-of-alistsp lst)
+                  :mode :logic))
+  (cond 
+   ((atom lst)
+    lst)
+   (t 
+    (let* ((current-entry (car lst)))
+      (cond ((atom current-entry)
+             (prog2$ (er hard 'make-fast-alist-of-alists
+                         "Guard of alist-of-alistp not met.  ~x0 was an atom ~
+                          when it needed to be an [inner] alist."
+                         current-entry)
+                     lst))
+            (t (let* ((current-entry-key (car current-entry))
+                      (current-entry-val (cdr current-entry))
+                      (new-current-entry-val (make-fast-alist current-entry-val)))
+                 (hons-acons current-entry-key
+                             new-current-entry-val
+                             (make-fast-alist-of-alists (cdr lst))))))))))
 
+(defthm make-fast-alist-of-alists-identity
+  (equal (make-fast-alist-of-alists lst) lst))
+
+(in-theory (disable make-fast-alist-of-alists))
+ 
 (defdoc with-stolen-alist
   ":Doc-Section Hons-and-Memoization
 
