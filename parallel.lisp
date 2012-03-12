@@ -54,7 +54,7 @@
 
 (defdoc deflock
 
-  ":Doc-Section ACL2::Parallelism
+  ":Doc-Section ACL2::Parallel-programming
 
   define a wrapper macro that provides mutual exclusion in ACL2(p)~/
 
@@ -139,7 +139,7 @@
 
 ; Just in case someone types :doc parallel.
 
-  ":Doc-Section Parallelism
+  ":Doc-Section Miscellaneous
 
   evaluating forms in parallel~/
 
@@ -147,7 +147,7 @@
 
 (defdoc parallelism-build
 
-  ":Doc-Section Parallelism
+  ":Doc-Section Miscellaneous
 
   building an ACL2 executable with parallel execution enabled~/
 
@@ -196,7 +196,13 @@
 
 (defmacro set-parallel-execution (value)
 
-  ":Doc-Section Parallelism
+; Parallelism wart: clarify that parallel-execution must be enabled in order
+; for waterfall-parallelism to be in force.
+
+; Parallelism blemish: cause an error if the user tries to go into a state
+; where waterfall-parallelism is enabled but parallel-execution is disabled.
+
+  ":Doc-Section switches-parameters-and-modes
 
   enabling parallel execution for four of the parallelism primitives~/
 
@@ -235,7 +241,9 @@
   Value ~c[nil]:~nl[]
   All parallelism primitives degrade to their serial equivalents, including
   their calls made directly in the ACL2 top-level loop.  Thus, uses of
-  parallelism primitives do not in themselves cause errors.~/"
+  parallelism primitives do not in themselves cause errors.~/
+
+  :cited-by parallel-programming"
 
   (declare (xargs :guard (member-equal value
                                        '(t 't nil 'nil
@@ -251,7 +259,7 @@
 
 (defdoc parallel-execution
 
-  ":Doc-Section Parallelism
+  ":Doc-Section Parallel-programming
 
   for ACL2(p): configure parallel execution~/
 
@@ -302,7 +310,7 @@
 ; quite difficult to fix, as it would likely involve multi-threaded Lisp issues
 ; as well as acl2-unwind-protect issues.
 
-  ":Doc-Section ACL2::Parallelism
+  ":Doc-Section ACL2::Parallel-proof
 
   proof features not supported with waterfall-parallelism enabled~/
 
@@ -405,7 +413,7 @@
 
 (defdoc waterfall-printing
 
-  ":Doc-Section Parallelism
+  ":Doc-Section Parallel-proof
 
   for ACL2(p): configuring the printing within the parallelized waterfall~/
 
@@ -413,7 +421,7 @@
 
 (defdoc waterfall-parallelism
 
-  ":Doc-Section Parallelism
+  ":Doc-Section Parallel-proof
 
   for ACL2(p): configuring the parallel execution of the waterfall~/
 
@@ -617,7 +625,7 @@
   ~ev[]
   ~/
 
-  :cited-by parallelism"
+  :cited-by parallel-proof"
 
   `(let* ((val ,val)
           (ctx 'set-waterfall-parallelism))
@@ -731,7 +739,7 @@
   ~ev[]
   ~/
 
-  :cited-by parallelism"
+  :cited-by parallel-proof"
 
   `(set-waterfall-printing-fn ,val 'set-waterfall-printing state))
 
@@ -744,16 +752,16 @@
            information.")))
 
 (table waterfall-parallelism-table
-
-; Parallelism wart: now that we've changed the way set-waterfall-parallelism
-; works, should this be a state-global-based instead of table-based?  We should
-; document why this is table-based.
-
        nil nil :guard (set-waterfall-parallelism-hacks-enabled-guard world))
 
 (defmacro set-waterfall-parallelism-hacks-enabled (val)
 
-  ":Doc-Section Parallelism
+; One might consider using a state global to implement
+; set-waterfall-parallelism-hacks-enabled.  But as David Rager points out, this
+; macro can change whether or not a proof completes.  So, we want this macro
+; tied into the undoing mechanism; hence we use a table event.
+
+  ":Doc-Section switches-parameters-and-modes
 
   enable waterfall-parallelism hacks~/
 
@@ -778,18 +786,20 @@
   instead, which will automatically install a trust tag named
   ~c[:waterfall-parallelism-hacks].
 
-  ~l[error-triples-and-parallelism] for further related discussion.~/"
+  ~l[error-triples-and-parallelism] for further related discussion.~/
+  :cited-by parallel-proof"
 
   (declare (xargs :guard (or (equal val t) (null val))))
   `(table waterfall-parallelism-table 'hacks-enabled ,val))
 
 (defmacro set-waterfall-parallelism-hacks-enabled! (val)
 
-  ":Doc-Section Parallelism
+  ":Doc-Section switches-parameters-and-modes
 
   for ACL2(p): enabling waterfall parallelism hacks~/
 
-  ~l[set-waterfall-parallelism-hacks-enabled].~/~/"
+  ~l[set-waterfall-parallelism-hacks-enabled].~/~/
+  :cited-by parallel-proof"
 
   `(encapsulate
     ()
@@ -798,7 +808,7 @@
 
 (defdoc parallelism-at-the-top-level
 
-  ":Doc-Section Parallelism
+  ":Doc-Section Parallel-programming
 
   parallel execution in the ACL2 top-level loop~/
 
@@ -852,7 +862,7 @@
   (~pl[set-parallel-execution]).~/")
 
 (defdoc parallelism-tutorial
-  ":Doc-Section Parallelism
+  ":Doc-Section Parallel-programming
 
   a tutorial on how to use the parallelism library.~/
 
@@ -1136,7 +1146,7 @@
   use of a ~il[granularity] form.~/")
 
 (defdoc granularity
-  ":Doc-Section Parallelism
+  ":Doc-Section Parallel-programming
   limit the amount of parallelism~/
 
   This ~il[documentation] topic relates to the experimental extension of ACL2
@@ -1244,7 +1254,7 @@
   ~/")
 
 (defdoc parallelism-performance
-  ":Doc-Section Parallelism
+  ":Doc-Section Parallel-programming
   performance issues for parallel execution~/
 
   This ~il[documentation] topic relates to the experimental extension of ACL2
@@ -1281,7 +1291,7 @@
   ~ev[]~/~/")
 
 (defdoc early-termination
-  ":Doc-Section Parallelism
+  ":Doc-Section Parallel-programming
   early termination for ~ilc[pand] and ~ilc[por].~/~/
 
   This ~il[documentation] topic relates to the experimental extension of ACL2
@@ -1332,7 +1342,7 @@
 
 (defdoc parallel-pushing-of-subgoals-for-induction
 
-  ":Doc-Section Parallelism
+  ":Doc-Section Parallel-proof
   consequences of how parallelized proofs of subgoals are pushed for induction~/
 
   This ~il[documentation] topic relates to the experimental extension of ACL2
@@ -1432,7 +1442,7 @@
 
 #+(or acl2-loop-only (not acl2-par))
 (defmacro pargs (&rest forms)
-  ":Doc-Section Parallelism
+  ":Doc-Section Parallel-programming
 
   parallel evaluation of arguments in a function call~/
 
@@ -1487,7 +1497,7 @@
 
 #+(or acl2-loop-only (not acl2-par))
 (defmacro plet (&rest forms)
-  ":Doc-Section Parallelism
+  ":Doc-Section Parallel-programming
 
   parallel version of ~ilc[let]~/
 
@@ -1552,7 +1562,7 @@
 ; awareness of a guard-related difference based on the impact of lazy
 ; evaluation.
 
-  ":Doc-Section Parallelism
+  ":Doc-Section Parallel-programming
 
   parallel, Boolean version of ~ilc[and]~/
 
@@ -1651,7 +1661,7 @@
 ; Note that por must be Booleanized if we are to support early termination,
 ; i.e., so that any non-nil value can cause por to return.
 
-  ":Doc-Section Parallelism
+  ":Doc-Section Parallel-programming
 
   parallel, Boolean version of ~ilc[or]~/
 
@@ -1903,7 +1913,7 @@
 ; Parallelism wart: add pointers to this doc topic inside other parallelism doc
 ; topics.
 
-  ":Doc-Section Parallelism
+  ":Doc-Section Parallel-programming
 
   modification of ~ilc[mv-let] supporting speculative and parallel execution~/
 
@@ -2026,7 +2036,7 @@
 ; (g)
 
 (defdoc error-triples-and-parallelism
-  ":Doc-Section Parallelism
+  ":Doc-Section Parallel-programming
   how to avoid error triples in ACL2(p)~/
 
   This ~il[documentation] topic relates to the experimental extension of ACL2
@@ -2080,7 +2090,7 @@
 ; Note: If you're looking for the definition of with-output-lock, you can find
 ; it as (deflock <comments> *output-lock*) in axioms.lisp.
 
-  ":Doc-Section Parallelism
+  ":Doc-Section Parallel-programming
 
   provides a mutual-exclusion mechanism for performing output in parallel~/
 
@@ -2179,12 +2189,16 @@
 
 (defun set-total-parallelism-work-limit (val state)
 
-  ":Doc-Section Parallelism
+  ":Doc-Section switches-parameters-and-modes
 
   set thread limit beyond which parallelism primitives execute serially~/
 
   This ~il[documentation] topic relates to the experimental extension of ACL2
-  supporting parallel execution and proof; ~pl[parallelism].
+  supporting parallel execution and proof; ~pl[parallelism].  While the most
+  common use of the limit described below is in parallel proof
+  (~pl[parallel-proof]), it also applies to all parallelism primitives
+  (~pl[parallel-programming]) except ~ilc[spec-mv-let] ~-[] though we expect
+  that rather few programming applications will encouter this limit.
 
   ~bv[]
   General Forms:
@@ -2220,7 +2234,10 @@
   The default value of total-parallelism-work-limit can be found by calling
   function ~c[default-total-parallelism-work-limit].  If the default value is
   too high for your system please notify the ACL2 maintainers with a limit that
-  does work for your system, as they might then lower the default limit.~/"
+  does work for your system, as they might then lower the default limit.~/
+
+  :cited-by parallel-proof
+  :cited-by parallel-programming"
 
   (declare (xargs :guard (or (equal val :none)
                              (integerp val))))
@@ -2228,7 +2245,11 @@
 
 (defun set-total-parallelism-work-limit-error (val state)
 
-  ":Doc-Section Parallelism
+; Parallelism blemish: explain something about how, unlike
+; set-total-parallelism-work-limit, this one only applies to proof (not
+; programming).
+
+  ":Doc-Section switches-parameters-and-modes
 
   control the action taken when the thread limit is exceeded~/
 
@@ -2281,7 +2302,8 @@
   ~bv[]
   (set-total-parallelism-work-limit 13000 state)
   ~ev[]
-  ~/"
+  ~/
+  :cited-by parallel-proof"
 
   (declare (xargs :guard (or (equal val t)
                              (null val))))

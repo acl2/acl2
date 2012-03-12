@@ -22270,7 +22270,7 @@
                                          *the-live-state*)
                            (er hard! 'with-local-state
                                "The use of with-local-state ~
-                                (or,with-local-stobj where STATE is the ~
+                                (or, with-local-stobj where STATE is the ~
                                 stobj) is disallowed with parallelism enabled.")
                          ,p)
                     p)))

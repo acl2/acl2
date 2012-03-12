@@ -26784,9 +26784,6 @@
 
 (defdoc parallelism
 
-; This is in axioms.lisp instead of parallel.lisp in order to support the :doc
-; string for default-total-parallelism-work-limit.
-
   ":Doc-Section Parallelism
 
   experimental extension for parallel execution and proofs~/
@@ -26795,7 +26792,7 @@
   ACL2(p), created initially by David L. Rager.  ~l[compiling-acl2p] for how to
   build an executable image that supports parallel execution.  Also see
   ~c[books/parallel] for examples.  For a completely different sort of
-  parallelism, at the system level, ~pl[provisional-certification].
+  parallelism, at the system level, ~pl[provisional-certification].~/
 
   IMPORTANT NOTE.  We hope and expect that every evaluation result is correctly
   computed by ACL2(p), and that every formula proved using ACL2(p) is a theorem
@@ -26808,6 +26805,28 @@
   not discussed in ~il[unsupported-waterfall-parallelism-features]), please
   notify the implementors.
 
+  The ACL2 source code provides experimental parallel execution and proof
+  capabilities.  For example, one of ACL2's strengths lies in its ability to
+  simulate industrial models efficiently, and it can also decrease the time
+  required for proofs about such models both by making use of parallel
+  evaluation and by dispatching proof subgoals in parallel.
+
+  While we aim to support Clozure Common Lisp (CCL), Steel Bank Common
+  Lisp (SBCL), and Lispworks, SBCL and Lispworks both currently sometimes
+  experience problems when evaluating the ACL2 proof process (the
+  ``waterfall'') in parallel.  Therefore, CCL is the recommend Lisp for anyone
+  that wants to use parallelism and isn't working on fixing those
+  problems.~/")
+
+(defdoc parallel-programming
+
+  ":Doc-Section ACL2::Parallelism
+
+  parallel programming in ACL2(p)~/
+
+  Here we document support for parallel programming in ACL2(p), an experimental
+  extension of ACL2; also ~pl[parallelism].~/
+
   One of ACL2's strengths lies in its ability to execute industrial models
   efficiently.  The ACL2 source code provides an experimental parallel
   execution capability that can increase the speed of explicit evaluation,
@@ -26819,7 +26838,7 @@
   when an argument is found to evaluate to ~c[nil] or non-~c[nil],
   respectively, thus potentially improving on the efficiency of lazy
   evaluation.  ~ilc[Spec-mv-let] is a modification of ~ilc[mv-let] that
-  supports speculative and parallel execution.~/
+  supports speculative and parallel execution.
 
   Of the above five parallelism primitives, all but ~ilc[spec-mv-let] allow for
   limiting parallel execution (spawning of so-called ``threads'') depending on
@@ -26835,13 +26854,20 @@
 
   In addition to providing parallel programming primitives, ACL2(p) also
   provides the ability to execute the main ACL2 proof process in parallel.
-  ~l[set-waterfall-parallelism] for further details.
+  ~l[set-waterfall-parallelism] for further details.~/")
 
-  While we aim to support Clozure Common Lisp (CCL), Steel Bank Common
-  Lisp (SBCL), and Lispworks, SBCL and Lispworks both currently sometimes
-  experience problems when evaluating the ACL2 proof process (the
-  ``waterfall'') in parallel.  Therefore, CCL is the recommend Lisp for anyone
-  that wants to use parallelism and isn't working on fixing those problems.")
+(defdoc parallel-proof
+
+; Parallelism blemish: write a few introductory words to "advertise" parallel
+; proof in ACL2(p), perhaps by way of a very simple example.
+
+  ":Doc-Section ACL2::Parallelism
+
+  parallel proof in ACL2(p)~/
+
+  Here we document support for parallel proof in ACL2(p), an experimental
+  extension of ACL2; also ~pl[parallelism], and for parallel programming in
+  particular, ~pl[parallel-programming].~/~/")
 
 (defun default-total-parallelism-work-limit ()
 
@@ -26862,7 +26888,7 @@
 ; this can exhaust the supply of Lisp threads available to process the elements
 ; of the list.
 
-  ":Doc-Section Parallelism
+  ":Doc-Section Parallel-proof
   
   for ACL2(p): returns the default value for global ~c[total-parallelism-work-limit]~/
 
