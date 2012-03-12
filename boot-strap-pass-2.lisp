@@ -651,10 +651,12 @@
 
 (verify-termination-boot-strap hons-copy-with-state) ; and guards
 
+(verify-termination-boot-strap identity-with-state) ; and guards
+
 (defattach (acl2x-expansion-alist
 ; User-modifiable; see comment in the defstub introducing
 ; acl2x-expansion-alist.
-            hons-copy-with-state))
+            identity-with-state))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Attachments: rw-cache utilities

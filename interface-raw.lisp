@@ -3553,7 +3553,7 @@
 ;   follows.
 
 ; A key of *hcomp-book-ht* is a full-book-name.  Values in this hash table are
-; hcomp-book-ht-entry records, where each record has a ststus field that
+; hcomp-book-ht-entry records, where each record has a status field that
 ; describes the attempt to load the book's compiled file, and also has optional
 ; fields corresponding to values of *hcomp-fn-ht*, *hcomp-const-ht*, and
 ; *hcomp-macro-ht*.  When ACL2 encounters an include-book form during an early
@@ -4155,8 +4155,15 @@
     (when const-restore-ht
       (maphash (lambda (k val)
                  (cond ((eq val *hcomp-fake-value*)
+                        (remprop k 'redundant-raw-lisp-discriminator)
                         (makunbound k))
                        (t
+
+; The 'redundant-raw-lisp-discriminator property may be wrong here; but really,
+; we don't expect this case to occur, since redefinition with defconst is not
+; supported (unless perhaps extraordinary measures are taken using trust
+; tags).
+
                         (setf (symbol-value k) val))))
                const-restore-ht))
     nil))
@@ -4800,7 +4807,38 @@
                (defun
                  (setf (symbol-function name) val))
                (defparameter
-                 (setf (symbol-value name) val))
+                 (setf (symbol-value name)
+                       (cond ((and (consp (caddr def))
+				   (eq (car (caddr def)) 'quote))
+
+; Remark on Fast-alists.
+
+; We get here from processing of an add-trip form by defconst, immediately
+; after setting the 'redundant-raw-lisp-discriminator property for the symbol
+; being defined.  Now, the raw Lisp definition of defconst (which may be
+; invoked during early load of compiled files later in the session) insists
+; that the cddr above property agree with (be EQ to) the symbol's symbol-value.
+; In the case of a quotep, these are both to be EQ to the cadr of that quotep,
+; in support of the #+hons version of ACL2, as described below.  So in this
+; quotep case, we avoid the value stored in the hash table, i.e., the value
+; produced by the compiler.
+
+; To see why we want to avoid the value produced by the compiler in the #+hons
+; case, consider the following event.
+
+; (make-event
+;  `(defconst *foo* ',(make-fast-alist '((1 . 10) (2 . 20)))))
+
+; The intention here is to store a fast-alist in *foo*, and the serialize
+; reader supports this when reading from the expansion-alist in the book's
+; certificate, where the above fast-alist will be stored.  However, that
+; fast-alist nature of this constant is lost when the alist comes from the
+; book's compiled file.
+
+; See also related comments in defconst-val, make-certificate-file1.
+
+			      (cadr (caddr def)))
+			     (t val))))
                (otherwise
                 (assert$ (member-eq type '(defabbrev defmacro))
                          (setf (macro-function name) val))))

@@ -18231,6 +18231,12 @@
 ; been renamed to cons-term1.  Thanks to Harsh Raju Chamarthi for pointing out
 ; the dead code that led to this change.
 
+; We tweaked the implementation of defconst to support fast-alists, based on
+; discussions with David Rager and Jared Davis.  To see relevant code, search
+; for "Remark on Fast-alists" and also see the new call (remprop k
+; 'redundant-raw-lisp-discriminator) in the const-restore-ht case of function
+; hcomp-restore-defs.
+
   :doc
   ":Doc-Section release-notes
 

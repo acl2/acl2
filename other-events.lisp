@@ -359,12 +359,18 @@
   #+acl2-loop-only
   (declare (ignore name))
   #-acl2-loop-only
-  (let ((full-book-name (car (global-val 'include-book-path wrld))))
-    (when full-book-name
-      (let ((val (defconst-val-raw full-book-name name)))
-        (when (not (eq val *hcomp-fake-value*))
-          (return-from defconst-val
-            (value val))))))
+  (when (not (and (consp form)
+                  (eq (car form) 'quote)))
+
+; For an explanation of why we avoid the hash table in the case of a quoted
+; constant, see the Remark on Fast-alists in install-for-add-trip-include-book.
+
+    (let ((full-book-name (car (global-val 'include-book-path wrld))))
+      (when full-book-name
+        (let ((val (defconst-val-raw full-book-name name)))
+          (when (not (eq val *hcomp-fake-value*))
+            (return-from defconst-val
+                         (value val)))))))
   (er-let*
    ((pair (state-global-let*
            ((safe-mode
@@ -12222,12 +12228,21 @@
                   (print-object$ '(in-package "ACL2") ch state)
                   (print-object$ (f-get-global 'acl2-version state) ch state)
                   (print-object$ :BEGIN-PORTCULLIS-CMDS ch state)
-                  (print-objects (hons-copy (car portcullis)) ch state)
+                  (print-objects
+
+; We could apply hons-copy to (car portcullis) here, but we don't.  See the
+; Remark on Fast-alists in install-for-add-trip-include-book.
+
+                   (car portcullis) ch state)
                   (print-object$ :END-PORTCULLIS-CMDS ch state)
                   (cond (expansion-alist
                          (pprogn (print-object$ :EXPANSION-ALIST ch state)
-                                 (print-object$ (hons-copy expansion-alist) ch
-                                                state)))
+                                 (print-object$
+
+; We could apply hons-copy to expansion-alist here, but we don't.  See the
+; Remark on Fast-alists in install-for-add-trip-include-book.
+
+                                  expansion-alist ch state)))
                         (t state))
                   (print-object$ (cdr portcullis) ch state)
                   (print-object$ post-alist3 ch state)
@@ -14571,9 +14586,19 @@
   (declare (ignore state))
   (hons-copy x))
 
+(defun identity-with-state (x state)
+  (declare (xargs :guard (state-p state)))
+  (declare (ignore state))
+  x)
+
 (defattach (acl2x-expansion-alist
 ; User-modifiable; see comment in the defstub just above.
-            hons-copy-with-state)
+
+; At one time we used hons-copy-with-state here, but we are concerned that this
+; will interfere with fast-alists in the #+hons version.  See the
+; Remark on Fast-alists in install-for-add-trip-include-book.
+
+            identity-with-state)
   :skip-checks t)
 
 (defun write-acl2x-file (expansion-alist acl2x-file ctx state)
@@ -14830,7 +14855,12 @@
             (print-circle (f-get-global 'print-circle-files state)))
            (pprogn
             (print-object$ '(in-package "ACL2") ch state)
-            (print-objects (hons-copy cmds) ch state)
+            (print-objects
+
+; We could apply hons-copy to cmds here, but we don't.  See the
+; Remark on Fast-alists in install-for-add-trip-include-book.
+
+             cmds ch state)
             (close-output-channel ch state)
             (value port-file)))))))))
 
