@@ -57,10 +57,17 @@
 ; convert characters in this string like < into &lt;.  The resulting string can
 ; then be injected into <code> sections.
 
-  (b* ((state (set-fmt-hard-right-margin 62 state))
+  (b* ((hard-right-margin (f-get-global 'acl2::fmt-hard-right-margin state))
+       (soft-right-margin (f-get-global 'acl2::fmt-soft-right-margin state))
+       (print-case        (f-get-global 'acl2::print-case state))
+       (state (set-fmt-hard-right-margin 62 state))
        (state (set-fmt-soft-right-margin 58 state))
+       (state (set-print-case :downcase state))
        ((mv acc state)
-        (xdoc::fmt-to-chars-and-encode "~x0" (list (cons #\0 x)) state nil)))
+        (xdoc::fmt-to-chars-and-encode "~x0" (list (cons #\0 x)) state nil))
+       (state (set-fmt-hard-right-margin hard-right-margin state))
+       (state (set-fmt-soft-right-margin soft-right-margin state))
+       (state (set-print-case print-case state)))
     (mv (reverse (coerce acc 'string)) state)))
 
 
@@ -119,7 +126,102 @@
                        "::"
                        (symbol-name fn))))))
 
-(defun get-event (name world)
+
+(defun eat-things-from-event (keys event)
+  ;; EVENT might be something like (DEFTHM FOO :HINTS ... :RULE-CLASSES ...)
+  ;; KEYS is a list of things we want to remove, e.g., it might contain HINTS.
+  ;; We look for members of keys and eat them and their associated values.
+  (cond ((atom event)
+         event)
+        ((atom (cdr event))
+         event)
+        ((member (car event) keys)
+         (eat-things-from-event keys (cddr event)))
+        (t
+         (cons (car event) (eat-things-from-event keys (cdr event))))))
+
+(defun clean-up-xargs (xargs)
+  ;; Xargs is like (xargs :guard t :verify-guards nil ...) from a function declaration
+  ;; I leave in :guard, :stobjs, and :non-executable since those are possibly of interest...
+  (eat-things-from-event '(:guard-hints :guard-debug :hints :measure :ruler-extenders :mode
+                                        :normalize :otf-flg :verify-guards :well-founded-relation)
+                         xargs))
+
+(defun clean-up-function-decl-item (item)
+  ;; Item is like (xargs ...) or (integer foo) or whatever; it's something that occurs
+  ;; in a declaration.  I'll leave in type declarations.
+  (cond ((and (consp item)
+              (eq (car item) 'xargs))
+         (let ((clean-xargs (clean-up-xargs (cdr item))))
+           (if clean-xargs
+               (cons 'xargs clean-xargs)
+             nil)))
+        (t
+         item)))
+
+(defun clean-up-function-decl-items (items)
+  (if (consp items)
+      (let ((clean1 (clean-up-function-decl-item (car items)))
+            (rest   (clean-up-function-decl-items (cdr items))))
+        (if clean1
+            (cons clean1 rest)
+          rest))
+    items))
+
+(defun clean-up-function-decl (decl)
+  ;; DECL is like (declare (xargs ...) (type string ...)) etc.
+  (cond ((and (consp decl)
+              (eq (car decl) 'declare))
+         (let ((items (clean-up-function-decl-items (cdr decl))))
+           (if items
+               (cons 'declare items)
+             nil)))
+        ((stringp decl)
+         ;; drop doc-strings, but leave other string documentation
+         (if (str::istrprefixp ":doc-section" decl)
+             nil
+           decl))
+        (t
+         decl)))
+
+(defun clean-up-function-decls (decls)
+  (if (consp decls)
+      (let ((clean1 (clean-up-function-decl (car decls)))
+            (rest   (clean-up-function-decls (cdr decls))))
+        (if clean1
+            (cons clean1 rest)
+          rest))
+    decls))
+
+(defun clean-up-event (event)
+  (if (atom event)
+      event
+    (case (car event)
+      (defthm
+        ;; I'll leave in the rule-classes, since they're probably important.
+        (eat-things-from-event '(:hints :instructions :doc :otf-flg) event))
+      (defun
+        (let ((name    (second event))
+              (formals (third event))
+              (decls   (clean-up-function-decls (butlast (cdddr event) 1)))
+              (body    (car (last event))))
+          (if decls
+              (append (list 'defun name formals)
+                      decls
+                      (list body))
+            (list 'defun name formals body))))
+      (defmacro
+        (let ((name    (second event))
+              (formals (third event))
+              (decls   (clean-up-function-decls (butlast (cdddr event) 1)))
+              (body    (car (last event))))
+          (if decls
+              (append (list 'defmacro name formals) decls (list body))
+            (list 'defmacro name formals body))))
+      (otherwise
+       event))))
+
+(defun get-event-aux (name world)
   ;; A general purpose event lookup as in :pe
   (let* ((props (acl2::getprops name 'current-acl2-world world))
         (evt   (and props (acl2::get-event name world))))
@@ -130,6 +232,34 @@
                      (symbol-package-name name)
                      "::"
                      (symbol-name name)))))
+
+(defun get-event (name world)
+  (clean-up-event (get-event-aux name world)))
+
+#|
+
+(get-event-aux 'append (w state))
+(get-event 'append (w state))
+
+(get-event-aux 'binary-append (w state))
+(get-event 'binary-append (w state))
+
+(get-event-aux 'write-byte$ (w state))
+(get-event 'write-byte$ (w state))
+
+(defun UGLY (X)
+  (DECLARE
+   (XARGS :GUARD T
+          :GUARD-HINTS (("Goal" :USE ((:INSTANCE DEFAULT-CAR))))
+          :VERIFY-GUARDS NIL))
+  (IF (CONSP X) (UGLY (CDR X)) 0))
+
+(get-event-aux 'ugly (w state))
+(get-event 'ugly (w state))
+
+(xml-ppr-obj (get-event 'ugly (w state)) state)
+
+|#
 
 (defun get-def (fn world)
   (get-event fn world))
