@@ -17069,13 +17069,26 @@
   ~bv[]
   (defconst-fast *x* (expensive-fn ...))
   ~ev[]
-  Also ~il[using-tables-efficiently] for an analogous issue with ~ilc[table]
-  events.
+  A more general utility may be found in ~c[books/tools/defconsts.lisp].  Also
+  ~il[using-tables-efficiently] for an analogous issue with ~ilc[table] events.
 
   It may be of interest to note that ~c[defconst] is implemented at the
   lisp level using ~c[defparameter], as opposed to ~c[defconstant].
   (Implementation note:  this is important for proper support of
-  undoing and redefinition.)~/
+  undoing and redefinition.)
+
+  We close with a technical remark, perhaps of interest only to users of
+  ACL2(h), the experimental extension of ACL2 that supports hash cons, function
+  memoization, and hash-table-based ``fast alists''; ~pl[hons-and-memoization].
+  For an event of the form ~c[(defconst *C* (quote OBJ))], i.e.,
+  ~c[(defconst *C* 'OBJ)], then the value associated with ~c[*C*] is ~c[OBJ];
+  that is, the value of ~c[*C*] is ~ilc[eq] to the actual object ~c[OBJ]
+  occurring in the ~c[defconst] form.  So for example, if ~ilc[make-event] is
+  used to generate such a ~c[defconst] event, as it is in the two books
+  mentioned above, and ~c[OBJ] is a fast alist (using ACL2(h)), then the value
+  of ~c[*C*] is a fast alist.  This guarantee disappears if the term in the
+  ~c[defconst] form is not a quoted object, i.e., if it is not of the form
+  ~c[(quote OBJ)].~/
 
   :cited-by Programming"
 
