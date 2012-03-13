@@ -8,6 +8,8 @@
 
 ; See also defconst-fast-examples.lisp.
 
+; For a more general utility, see ../tools/defconsts.lisp.
+
 (in-package "ACL2")
 
 (defmacro defconst-fast (name form &optional (doc '"" doc-p))
