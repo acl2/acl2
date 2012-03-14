@@ -1,6 +1,10 @@
 ; The macro assert!, defined and illustrated below, allows for assertions
 ; within an ACL2 book, as requested by David Rager.
 
+; 2012-03-12: David Rager made the calls to assert! that fail local, so that
+; break-on-error wouldn't break when including this book.  Also, it's nice to
+; have less clutter when including the book.
+
 (in-package "ACL2")
 
 (defun assert!-body (assertion form)
@@ -36,9 +40,10 @@
 
 (include-book "eval")
 
-(must-fail
- (assert! (equal 3 4)
-          (defun assert-test2 (x) x)))
+(local
+ (must-fail
+  (assert! (equal 3 4)
+           (defun assert-test2 (x) x))))
 
 ; Check that above defun was not evaluated.
 (defun assert-test2 (x)
@@ -49,9 +54,10 @@
                 '(a b c d e f)))
 
 ; Check failure of assertion when condition is false:
-(must-fail
- (assert! (equal (append '(a b c) '(d e f))
-                 '(a b))))
+(local
+ (must-fail
+  (assert! (equal (append '(a b c) '(d e f))
+                  '(a b)))))
 
 ; The following requires that this book be certified in the initial
 ; certification world.  It also succeeds at include-book time even if we
