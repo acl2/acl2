@@ -1,4 +1,11 @@
 #+acl2-par
-# a proof goes into an infinite loop with waterfall-parallelism enabled
-(set-waterfall-parallelism nil)
+(set-waterfall-parallelism 
+
+; Due to the :otf-flg-like behavior of waterfall parallelism, a proof
+; in this book go into an infinite loop when waterfall parallelism is
+; enabled.  Thus, we disable waterfall parallelism for this book's
+; certification.
+
+  nil)
+
 (certify-book "mult-proofs")
