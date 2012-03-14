@@ -429,7 +429,7 @@
  ;; This takes just over two minutes on a P4-2800.  That's pretty amazing,
  ;; considering that it's exhaustively checking 2^32 cases!
 
- (local (defthm lemma5
+ (local (defthm lemma5-for-utf8-combine4-guard
           (implies (utf8-combine4-guard x1 x2 x3 x4)
                    (and (uchar? (utf8-combine4 x1 x2 x3 x4))
                         (utf8-table35-ok? (utf8-combine4 x1 x2 x3 x4)
@@ -573,7 +573,7 @@
                         (utf8-table35-byte-1/1? (first x)))
                    (utf8-table36-ok? (first x) x))))
 
- (local (defthm lemma5
+ (local (defthm lemma5-for-utf8-table35-byte-1/1?
           (implies (utf8-table35-byte-1/1? x)
                    (uchar? x))
           :hints(("Goal" :in-theory (enable utf8-table35-byte-1/1?
