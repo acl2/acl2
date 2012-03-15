@@ -90,6 +90,7 @@
 (defun p37 (n) (not (equal (countdown-wrapper n) 47)))
 (defun p38 (n) (not (equal (countdown-wrapper n) 48)))
 (defun p39 (n) (not (equal (countdown-wrapper n) 49)))
+(defun p40 (n) (not (equal (countdown-wrapper n) 50)))
 
 (defthm ideal-40-way
   (and (p1 x) (p2 x) (p3 x) (p4 x) (p5 x) (p6 x) (p7 x) (p8 x) (p9 x) 
@@ -103,7 +104,7 @@
   :otf-flg t
   :rule-classes nil)
 
-(defun p40 (n) (not (equal (countdown-wrapper n) 50)))
+
 (defun p41 (n) (not (equal (countdown-wrapper n) 51)))
 (defun p42 (n) (not (equal (countdown-wrapper n) 52)))
 (defun p43 (n) (not (equal (countdown-wrapper n) 53)))
