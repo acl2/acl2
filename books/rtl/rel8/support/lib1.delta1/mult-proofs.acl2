@@ -2,8 +2,8 @@
 (set-waterfall-parallelism 
 
 ; Due to the :otf-flg-like behavior of waterfall parallelism, a proof
-; in this book go into an infinite loop when waterfall parallelism is
-; enabled.  Thus, we disable waterfall parallelism for this book's
+; in this book goes into an infinite loop when waterfall parallelism
+; is enabled.  Thus, we disable waterfall parallelism for this book's
 ; certification.
 
   nil)

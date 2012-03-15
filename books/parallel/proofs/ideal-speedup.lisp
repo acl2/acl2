@@ -31,7 +31,7 @@
 
 (comp t) ; avoid stack overflow, e.g. in Allegro CL
 
-(defthm ideal1
+(defthm ideal-8-way
   (and (p1 x) (p2 x) (p3 x) (p4 x) (p5 x) (p6 x) (p7 x) (p8 x))
   :otf-flg t
   :rule-classes nil)
@@ -54,13 +54,20 @@
 (defun p18 (n) (not (equal (countdown-wrapper n) 28)))
 (defun p19 (n) (not (equal (countdown-wrapper n) 29)))
 (defun p20 (n) (not (equal (countdown-wrapper n) 30)))
+
+(defthm ideal-20-way
+  (and (p1 x) (p2 x) (p3 x) (p4 x) (p5 x) (p6 x) (p7 x) (p8 x) (p9 x) 
+       (p10 x) (p11 x) (p12 x) (p13 x) (p14 x) (p15 x) (p16 x) (p17 x) (p18 x) (p19 x) 
+       (p20 x))
+  :otf-flg t 
+  :rule-classes nil)
+
 (defun p21 (n) (not (equal (countdown-wrapper n) 31)))
 (defun p22 (n) (not (equal (countdown-wrapper n) 32)))
 (defun p23 (n) (not (equal (countdown-wrapper n) 33)))
 (defun p24 (n) (not (equal (countdown-wrapper n) 34)))
 
-
-(defthm ideal2
+(defthm ideal-24-way
   (and (p1 x) (p2 x) (p3 x) (p4 x) (p5 x) (p6 x) (p7 x) (p8 x) (p9 x) 
        (p10 x) (p11 x) (p12 x) (p13 x) (p14 x) (p15 x) (p16 x) (p17 x) (p18 x) (p19 x) 
        (p20 x) (p21 x) (p22 x) (p23 x) (p24 x))
@@ -83,6 +90,18 @@
 (defun p37 (n) (not (equal (countdown-wrapper n) 47)))
 (defun p38 (n) (not (equal (countdown-wrapper n) 48)))
 (defun p39 (n) (not (equal (countdown-wrapper n) 49)))
+
+(defthm ideal-40-way
+  (and (p1 x) (p2 x) (p3 x) (p4 x) (p5 x) (p6 x) (p7 x) (p8 x) (p9 x) 
+       (p10 x) (p11 x) (p12 x) (p13 x) (p14 x) (p15 x) (p16 x) (p17 x) 
+       (p18 x) (p19 x) 
+       (p20 x) (p21 x) (p22 x) (p23 x) (p24 x) (p25 x) (p26 x) (p27 x) 
+       (p28 x) (p29 x) 
+       (p30 x) (p31 x) (p32 x) (p33 x) (p34 x) (p35 x) (p36 x) (p37 x) 
+       (p38 x) (p39 x) 
+       (p40 x))
+  :otf-flg t
+  :rule-classes nil)
 
 (defun p40 (n) (not (equal (countdown-wrapper n) 50)))
 (defun p41 (n) (not (equal (countdown-wrapper n) 51)))
@@ -112,7 +131,7 @@
 (defun p63 (n) (not (equal (countdown-wrapper n) 73)))
 (defun p64 (n) (not (equal (countdown-wrapper n) 74)))
 
-(defthm ideal3
+(defthm ideal-64-way
   (and (p1 x) (p2 x) (p3 x) (p4 x) (p5 x) (p6 x) (p7 x) (p8 x) (p9 x) 
        (p10 x) (p11 x) (p12 x) (p13 x) (p14 x) (p15 x) (p16 x) (p17 x) 
        (p18 x) (p19 x) 
