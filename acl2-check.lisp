@@ -221,13 +221,13 @@ most-negative-fixnum = ~s."
   (with-open-file
    (str filename :direction :input
 
-; In SBCL and CLISP we have found the need to specify :external-format in order
-; to avoid errors.  Note that (for example) in our SBCL,
-; (stream-external-format *terminal-io*) evaluates to (:UTF-8 :REPLACEMENT
-; #\REPLACEMENT_CHARACTER).
+; In SBCL CLISP, and occasionall CCL, we have found the need to specify
+; :external-format in order to avoid errors.  Note that (for example) in our
+; SBCL, (stream-external-format *terminal-io*) evaluates to (:UTF-8
+; :REPLACEMENT #\REPLACEMENT_CHARACTER).
 
-        #+(or clisp sbcl) :external-format
-        #+sbcl :iso-8859-1
+        #+(or clisp sbcl ccl) :external-format
+        #+(or sbcl ccl) :iso-8859-1
         #+clisp
 ; The following came from
 ; http://en.wikibooks.org/wiki/Common_Lisp/Advanced_topics/Files_and_Directories
