@@ -18237,6 +18237,10 @@
 ; 'redundant-raw-lisp-discriminator) in the const-restore-ht case of function
 ; hcomp-restore-defs.
 
+; The new macro ill-formed-certificate-er is called to provide much more
+; information than had been provided by use of the constant,
+; *ill-formed-certificate-msg*.
+
   :doc
   ":Doc-Section release-notes
 
@@ -18459,9 +18463,11 @@
   parallelism.  ~l[provisional-certification].  Thanks to Jared Davis for
   requesting this feature and for helpful discussions, based in part on
   rudimentary provisional certification schemes that he developed first at
-  Rockwell Collins and later for his `Milawa' project.  Also thanks to Jared
-  and to Sol Swords for testing this feature and for providing a fix for a bug
-  in a preliminary implementation.
+  Rockwell Collins and later for his `Milawa' project.  Thanks also to Sol
+  Also, thanks to Jared and to Sol Swords for testing this feature and for
+  providing a fix for a bug in a preliminary implementation, and thanks to Sol
+  for providing performance feedback and a crucial suggestion that led to an
+  improved implementation.
 
   Event summaries now show the names of events that were mentioned in
   ~il[hints] of type ~c[:use], ~c[:by], or ~c[:clause-processor].
@@ -18491,6 +18497,9 @@
   the variable(s) ...''.  ~l[lemma-instance], in particular the discussion of
   keyword ~c[:extra-bindings-ok].  Thanks to Sol Swords for requesting such an
   enhancement.
+
+  The function ~c[read-object-suppress] is like ~c[read-object] except that it
+  avoids errors and discards the value read.  ~l[io].
 
   ~st[HEURISTIC IMPROVEMENTS]
 
@@ -19381,7 +19390,7 @@
      ((eq (access-event-tuple-type (cddr (car wrld))) 'encapsulate)
 
 ; In the case of an encapsulate event, flattening means do the body of the
-; encapsulate ~-[] including the LOCAL events.  Note that this destroys the sense
+; encapsulate -- including the LOCAL events.  Note that this destroys the sense
 ; of those encapsulates that introduce constrained functions!  After flattening
 ; the constrained functions are defined as their witnesses!  We cannot recover
 ; the LOCAL events by a scan through wrld since they are not in wrld.  We must
@@ -19422,7 +19431,7 @@
            (cert-obj (chk-certificate-file
                       full-book-name
                       nil
-                      t
+                      'puff
                       ctx
                       state
                       '((:uncertified-okp . t)

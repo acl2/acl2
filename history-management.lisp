@@ -21677,7 +21677,6 @@
            (value ':invisible)))
 
 (defrec certify-book-info
-; Cert-op is just an unused placeholder at this point.
   (full-book-name . cert-op)
   nil) ; could replace with t sometime
 

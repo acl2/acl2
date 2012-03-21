@@ -3664,7 +3664,14 @@ worldp-check.lisp
 
 books/system/pcert:
 Makefile
+acl2x-pcert-test-1.acl2
+acl2x-pcert-test-1.lisp
+acl2x-pcert-test-2-include.lisp
+acl2x-pcert-test-2.acl2
+acl2x-pcert-test-2.acl2x-source
+acl2x-pcert-test-2.lisp
 cert.acl2
+elide-test.lisp
 mid.acl2
 mid.lisp
 sub.lisp

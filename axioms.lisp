@@ -26440,6 +26440,7 @@
     setup-waterfall-parallelism-ht-for-name ; for #+acl2-par
     fix-stobj-array-type
     set-gc-threshold$-fn
+    certify-book-finish-complete
     ))
 
 (defconst *primitive-logic-fns-with-raw-code*
@@ -26560,6 +26561,7 @@
     make-fast-alist
 
     serialize-read-fn serialize-write-fn
+    read-object-suppress
 
   ))
 
@@ -27021,6 +27023,7 @@
     (checkpoint-processors . ; avoid unbound var error with collect-checkpoints
                            ,*initial-checkpoint-processors*)
     (checkpoint-summary-limit . (nil . 3))
+    (compiled-file-extension . nil) ; set by initialize-state-globals
     (compiler-enabled . nil) ; Lisp-specific; set by initialize-state-globals
     (connected-book-directory . nil)  ; set-cbd couldn't have put this!
     (current-acl2-world . nil)
@@ -29139,7 +29142,12 @@
   files and ~c[print-object$] (or ~c[print-object$-ser]) to print to
   ~c[:object] files.  (The reading and printing are really done with the Common
   Lisp ~c[read] and ~c[print] functions.  For those familiar with ~c[read], we
-  note that the ~c[recursive-p] argument is ~c[nil].)
+  note that the ~c[recursive-p] argument is ~c[nil].)  The function
+  ~c[read-object-suppress] is logically the same as ~c[read-object] except that
+  ~c[read-object-suppress] throws away the second returned value, i.e. the
+  value that would normally be read, simply returning ~c[(mv eof state)]; under
+  the hood, ~c[read-object-suppress] avoids errors, for example those caused by
+  encountering symbols in packages unknown to ACL2.
 
   File-names are strings.  ACL2 does not support the Common Lisp type
   ~ilc[pathname].  However, for the ~c[file-name] argument of the
@@ -29159,6 +29167,7 @@
     (peek-char$ (channel state) boolean)
     (read-byte$ (channel state) (mv byte/nil state)) ; nil for EOF
     (read-object (channel state) (mv eof-read-flg obj-read state))
+    (read-object-suppress (channel state) (mv eof-read-flg state))
 
   Output Functions:
     (open-output-channel  (file-name io-type state) (mv channel state))
@@ -31746,6 +31755,9 @@
                followed by an s-expression and you typed ~s instead."
               dollar)))))
 
+#-acl2-loop-only
+(defparameter *acl2-read-suppress* nil)
+
 (defun read-object (channel state-state)
 
 ; Read-object is somewhat like read.  It returns an mv-list of three
@@ -31783,7 +31795,7 @@
                              (current-package *the-live-state*)))
                  (*readtable* *acl2-readtable*)
                  #+DRAFT-ANSI-CL-2 (*read-eval* t)
-                 (*read-suppress* nil)
+                 (*read-suppress* *acl2-read-suppress*)
                  (*read-base* 10)
                  #+gcl (si:*notify-gbc* ; no gbc messages while typing
                         (if (or (eq channel *standard-oi*)
@@ -31841,6 +31853,23 @@
                           (open-input-channels state-state))
                 state-state)))
           (t (mv t nil state-state)))))
+
+(defun read-object-suppress (channel state)
+
+; Logically this function is the same as read-object except that it throws away
+; the second returned value, i.e. the "real" value, simply returning (mv eof
+; state).  However, under the hood it uses Lisp special *read-suppress* to
+; avoid errors in reading the next value, for example errors caused by
+; encountering symbols in packages unknown to ACL2.
+
+  (declare (xargs :guard (and (state-p state)
+                              (symbolp channel)
+                              (open-input-channel-p channel :object state))))
+  (let (#-acl2-loop-only (*acl2-read-suppress* t))
+    (mv-let (eof val state)
+            (read-object channel state)
+            (declare (ignore val))
+            (mv eof state))))
 
 (defconst *suspiciously-first-numeric-chars*
 
@@ -34300,6 +34329,7 @@
     skip-proofs-by-system
     host-lisp
     compiler-enabled
+    compiled-file-extension
     modifying-include-book-dir-alist
     raw-include-book-dir-alist
     deferred-ttag-notes

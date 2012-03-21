@@ -8594,9 +8594,11 @@
   or written by ~ilc[certify-book] when it is supplied with keyword argument
   ~c[:acl2x t].  By default, such a call of ~c[certify-book] reads a ~c[.acl2x]
   file; but if the value of state global variable ~c['write-acl2x] is not
-  ~c[nil], then ~c[certify-book] writes a ~c[.acl2x] file.  Consider for
-  example ~c[(certify-book \"foo\" 0 nil :acl2x t)].  By default, this command
-  reads file ~c[foo.acl2x], which supplies replacements for some forms in
+  ~c[nil], then ~c[certify-book] writes a ~c[.acl2x] file (in which case it is
+  illegal to specify a non-~c[nil] value for ~ilc[certify-book] keyword
+  argument ~c[:pcert]).  Consider for example
+  ~c[(certify-book \"foo\" 0 nil :acl2x t)].  By default, this command reads
+  file ~c[foo.acl2x], which supplies replacements for some forms in
   ~c[foo.lisp], as described later below.  But if the value of state global
   ~c['write-acl2x] is not ~c[nil], then instead, this ~c[certify-book] command
   writes such a file ~c[foo.acl2x].
@@ -8624,17 +8626,6 @@
   processing are allowed to succeed on uncertified books, something that is
   prohibited during most calls of ~ilc[certify-book].
 
-  One use of ~c[set-write-acl2x] is to support the provisional certification
-  process; ~pl[provisional-certification] for a discussion of how that works.
-  In particular, that process typically evaluates the form
-  ~c[(set-write-acl2x '(include-book-with-locals) state)] which, as described
-  above, permits inclusion of uncertified books during processing of a call of
-  ~ilc[certify-book].  The rest of this documentation topic takes a perspective
-  primarily based on the other main use of ~c[set-write-acl2x], which is to
-  create certified books that do not depend on trust tags (~pl[defttag]), in
-  the case that trust tags are used only to perform ~ilc[make-event]
-  expansions.  However, much of what is said below is relevant to both uses.
-
   When ~ilc[certify-book] is used to write out a ~c[.acl2x] file, there is
   typically a subsequent run of ~ilc[certify-book] that reads that file.
   Consider how this can work with a book ~c[foo.lisp].  In the first call of
@@ -8653,10 +8644,9 @@
 
   When ~ilc[Certify-book] is supplied with keyword argument ~c[:acl2x t] it
   will read or write the book's ~c[.acl2x] file; when supplied with
- ~c[:acl2x nil], it will not read or write that ~c[.acl2x] file.  The value of
-  ~c[:acl2x] is ~c[nil] by default (unless environment variable ~c[ACL2_PCERT]
-  has a non-empty value; ~pl[provisional-certification]).  The interaction of
-  ~ilc[certify-book] with the corresponding ~c[.acl2x] file is as follows.
+  ~c[:acl2x nil], it will not read or write that ~c[.acl2x] file.  The value of
+  ~c[:acl2x] is ~c[nil] by default.  The interaction of ~ilc[certify-book] with
+  the corresponding ~c[.acl2x] file is as follows.
   ~bf[]
   o If ~c[:acl2x] is ~c[t], then:
     - If ~c[set-write-acl2x] has been (most recently) called with a
@@ -8701,11 +8691,9 @@
 
   Note that ~ilc[include-book] is generally not affected by
   ~c[set-write-acl2x], other than through the indirect effect on
-  ~ilc[certify-book].  (The one exception is including a book during an Expand
-  or Pcertify step of provisional certification;
-  ~pl[provisional-certification].)  More precisely: All expansions are stored
-  in the ~il[certificate] file, so when ~ilc[include-book] is applied to a
-  certified book, the ~c[.acl2x] file is not consulted.~/
+  ~ilc[certify-book].  More precisely: All expansions are stored in the
+  ~il[certificate] file, so when ~ilc[include-book] is applied to a certified
+  book, the ~c[.acl2x] file is not consulted.~/
 
   An example of how to put this all together may be found in distributed book
   ~c[books/make-event/double-cert-test-1.lisp].  There, we see the following
