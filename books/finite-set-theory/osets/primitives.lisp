@@ -12,207 +12,123 @@
 ; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 
-; primitives.lisp
-;
-; Consider implementing a set theory library in ACL2.  Lists are a natural
-; choice for an underlying representation.  And, naturally, we are drawn to
-; define our functions in terms of the primitive list functions (car, cdr,
-; endp, cons).
-;
-; These functions are ill-suited for use in our set theory books because of the
-; non-set convention.  This convention states that non-sets should be treated
-; as the empty set.  But the primitive list functions do not support this idea.
-; For example:
-;
-;    (car '(1 1 1)) = 1, but (car nil) = nil
-;    (cdr '(1 1 1)) = (1 1), but (cdr nil) = nil
-;    (cons 1 '(1 1 1)) = (1 1 1 1), but (cons 1 nil) = (1)
-;    (endp '(1 1 1)) = nil, but (endp nil) = t
-;
-; These are "problems" in the sense that, when reasoning about sets, the
-; primitive list functions do not respect the non-set convention.  These
-; functions do not fit our problem well, and will introduce all manner of cases
-; into our proofs that we should not have to consider.
-;
-; Having recognized this as a problem, here is what we are going to do.
-; Instead of using the list primitives to manipulate sets, we will use new
-; primitives which are very similar, but which respect the non-set convention.
-; These primitives get the following names:
-;
-;    (head X) - the first element of a set, nil for non/empty sets.
-;    (tail X) - all but the first element, nil for non/empty sets.
-;    (insert a X) - ordered insert of a into the set X
-;    (empty X) - recognizer for non/empty sets.
-;
-; This file introduces these functions, and shows several theorems about them.
-; The purpose of all of this is to, at the end of this file, disable the
-; definitions for these functions, and thereby keep the primitive list
-; functions (car, cdr, ...) confined where they cannot cause case splits.
+; primitives.lisp - setp, sfix, head, tail, etc.
 
 (in-package "SETS")
 (include-book "misc/total-order" :dir :system)
 (include-book "tools/rulesets" :dir :system)
+(include-book "xdoc/top" :dir :system)
 (set-verify-guards-eagerness 2)
 
 
-; Now we can define sets.  Sets are those lists whose elements are fully
-; ordered under the relation above.  Note that this implicitly means that sets
-; contain no duplicate elements.  Testing for sets will inherently be somewhat
-; slow since we have to check that the elements are in order.  However, its
-; complexity is still only linear with the size of X.
+(defxdoc primitives
+  :parents (osets)
+  :short "Replacements for <tt>car</tt>, <tt>cdr</tt>, etc., that respect the
+<i>non-set convention</i>."
 
-(defun setp (X)
-  (declare (xargs :guard t))
-  (if (atom X)
-      (null X)
-    (or (null (cdr X))
-        (and (consp (cdr X))
-             (<< (car X) (cadr X))
-             (setp (cdr X))))))
+  :long "<p>Since the osets library uses ordered lists as the underlying
+representation of sets, at some point we have to use <b>list
+primitives</b> (car, cdr, endp, cons) to operate on sets.  A problem with using
+these functions directly is that they do not follow the non-set convention.</p>
 
-(defthm setp-type
-  (or (equal (setp X) t)
-      (equal (setp X) nil))
-  :rule-classes :type-prescription)
+<p>The <b>non-set convention</b> is: set operations should treat improper
+sets (i.e., non-<tt>nil</tt> atoms and lists that have duplicated or
+mis-ordered elements) as the empty set.  We adopt this convention throughout
+the library.  It allows most of our rewrite rules to have no @(see setp)
+hypotheses.</p>
 
-(defthm sets-are-true-lists
-  (implies (setp X)
-	   (true-listp X))
-  :rule-classes ((:rewrite) (:compound-recognizer)))
+<p>The primitive list functions do follow the non-set convention.  For
+instance:</p>
+
+<ul>
+ <li><tt>(car '(1 1 1)) = 1</tt>, but <tt>(car nil) = nil</tt></li>
+ <li><tt>(cdr '(1 1 1)) = (1 1)</tt>, but <tt>(cdr nil) = nil</tt></li>
+ <li><tt>(cons 1 '(1 1 1)) = (1 1 1 1)</tt>, but <tt>(cons 1 nil) = (1)</tt></li>
+ <li><tt>(endp '(1 1 1)) = nil</tt>, but <tt>(endp nil) = t</tt></li>
+</ul>
+
+<p>These behaviors make it harder to reason about set operations that are
+written directly in terms of the list primitives.  When we try to do so, we
+usually have to do lots of work to consider all the cases about whether the
+inputs are ordered, etc.</p>
+
+<p>To solve lots of these problems, we introduce new <b>set primitives</b> that
+are mostly like the list primitives, except that they follow the non-set
+convention.  These primitives are:</p>
+
+<ul>
+ <li><tt>(@(see head) X)</tt> - the first element of a set, nil for non/empty sets</li>
+ <li><tt>(@(see tail) X)</tt> - all rest of the set, nil for non/empty sets</li>
+ <li><tt>(@(see insert) a X)</tt> - ordered insert of <tt>a</tt> into <tt>X</tt></li>
+ <li><tt>(@(see empty) X)</tt> - recognizer for non/empty sets.</li>
+</ul>
+
+<p>The general idea is that set operations should be written in terms of these
+set primitives instead of the list primitives, and the definitions of the set
+primitives should be kept disabled to avoid having to reason about the low
+level structure of sets.</p>")
 
 
+(defsection setp
+  :parents (primitives)
+  :short "@(call setp) recognizes well-formed ordered sets."
 
+  :long "<p>A proper ordered set is a @(see true-listp) whose elements are
+fully ordered under @(see <<).  Note that this implicitly means that sets have
+no duplicate elements.</p>
 
-; At this point, we simply introduce the remainder of the primitive functions.
-; These definitions should hold few surprises.  The MBE macro is used in all of
-; these functions except for insert, to avoid potentially slow calls to setp.
+<p>Testing <tt>setp</tt> is necessarily somewhat slow: we have to check that
+the elements are in order.  Its cost is linear in the size of <tt>n</tt>.</p>"
 
-(defun empty (X)
-  (declare (xargs :guard (setp X)))
-  (mbe :logic (or (null X)
-                  (not (setp X)))
-       :exec  (null X)))
+  (defun setp (X)
+    (declare (xargs :guard t :verify-guards nil))
+    (if (atom X)
+        (null X)
+      (or (null (cdr X))
+          (and (consp (cdr X))
+               (fast-<< (car X) (cadr X))
+               (setp (cdr X))))))
 
-(defthm empty-type
-  (or (equal (empty X) t)
-      (equal (empty X) nil))
-  :rule-classes :type-prescription)
+  (verify-guards setp
+    :hints(("Goal" :in-theory (enable <<))))
 
-(defun sfix (X)
-  (declare (xargs :guard (setp X)))
-  (mbe :logic (if (empty X) nil X)
-       :exec  X))
+  (defthm setp-type
+    (or (equal (setp X) t)
+        (equal (setp X) nil))
+    :rule-classes :type-prescription)
 
-(defun head (X)
-  (declare (xargs :guard (and (setp X)
-                              (not (empty X)))))
-  (mbe :logic (car (sfix X))
-       :exec  (car X)))
-
-(defun tail (X)
-  (declare (xargs :guard (and (setp X)
-                              (not (empty X)))))
-  (mbe :logic (cdr (sfix X))
-       :exec  (cdr X)))
-
-(defun insert (a X)
-  (declare (xargs :guard (setp X)
-                  :verify-guards nil))
-  (mbe :logic (cond ((empty X) (list a))
-                    ((equal (head X) a) X)
-                    ((<< a (head X)) (cons a X))
-                    (t (cons (head X) (insert a (tail X)))))
-       :exec
-
-; On CCL, the :exec version of insert is apparently 1.6x faster, per the
-; following micro-benchmark.  2.15 seconds with the logic definition, 1.56
-; seconds with inlining but no unrolling, 1.34 seconds with unrolling
-;
-; (let ((acc nil))
-;  (gc$)
-;  (time$ (loop for i fixnum from 1 to 10000 do
-;               (setq acc (sets::insert i acc)))))
-
-       (cond ((null X) (cons a nil))
-             ((equal (car X) a) X)
-             ((lexorder a (car X)) (cons a X))
-             ((null (cdr X)) (cons (car X) (cons a nil)))
-             ((equal (cadr x) a) X)
-             ((lexorder a (cadr X)) (cons (car X) (cons a (cdr X))))
-             (t (cons (car X) (cons (cadr X) (insert a (cddr X))))))))
-
-(verify-guards insert
-  :hints(("Goal" :in-theory (enable <<))))
+  (defthm sets-are-true-lists
+    (implies (setp X)
+             (true-listp X))
+    :rule-classes ((:rewrite) (:compound-recognizer))))
 
 
 
+(defsection empty
+  :parents (primitives)
+  :short "@(call empty) recognizes empty sets."
 
-; Our goal is to "hide" the list primitives (car, cdr, ...) within head, tail,
-; etc.  This means that an end-user's functions will end up recurring over
-; tail.  It is therefore important to show that tail actually decreases some
-; measure, so that they can prove their functions terminate.  Naturally, we
-; show that acl2-count decreases with tail.  We also show that acl2-count
-; decreases with head, in case this fact is needed.
+  :long "<p>This function is like @(see endp) for lists, but it respects the
+non-set convention and always returns <tt>t</tt> for ill-formed sets.</p>"
 
-(defthm tail-count
-  (implies (not (empty X))
-           (< (acl2-count (tail X)) (acl2-count X)))
-  :rule-classes ((:rewrite) (:linear)))
+  (defun empty (X)
+    (declare (xargs :guard (setp X)))
+    (mbe :logic (or (null X)
+                    (not (setp X)))
+         :exec  (null X)))
 
-(defthm head-count
-  (implies (not (empty X))
-           (< (acl2-count (head X)) (acl2-count X)))
-  :rule-classes ((:rewrite) (:linear)))
+  (defthm empty-type
+    (or (equal (empty X) t)
+        (equal (empty X) nil))
+    :rule-classes :type-prescription)
 
-
-; These built-in rules make ACL2 say that the termination proofs of recursive
-; functions based on head/tail are trivial.  This is probably just superfluous
-; and should probably be removed.
-
-(defthm tail-count-built-in
-  (implies (not (empty X))
-           (o< (acl2-count (tail X)) (acl2-count X)))
-  :rule-classes :built-in-clause)
-
-(defthm head-count-built-in
-  (implies (not (empty X))
-           (o< (acl2-count (head X)) (acl2-count X)))
-  :rule-classes :built-in-clause)
-
-
-
-; Concluding that objects are sets is important for satisfying guard
-; conjectures, and also for proofs of equality via a double containment
-; approach.  Here are some nice theorems to help with this:
-
-(defthm sfix-produces-set
-  (setp (sfix X)))
-
-(defthm tail-produces-set
-  (setp (tail X)))
-
-(defthm insert-produces-set
-  (setp (insert a X)))
-
-(defthm nonempty-means-set
-  (implies (not (empty X))
-           (setp X)))
-
-
-
-; Does every set have a unique representation?  Yes and no.  It is true in the
-; sense that, if (setp X) holds, then there is no Y such that (in a X) <=> (in
-; a Y) except for Y = X.  But what about when (setp X) does not hold?  Well,
-; technically X is no longer a set, but our functions treat X as if it were
-; empty.  We would like to be able to reason about this case.
-;
-; Well, although we cannot say (empty X) ^ (empty Y) => X = Y, we can state
-; several similarly spirited theorems.  For example, we can say that the heads,
-; tails, sfix's, and results of inserting elements into X and Y are always the
-; same.  Here are several theorems to this effect:
+  (defthm nonempty-means-set
+    (implies (not (empty X))
+             (setp X))))
 
 (defthm empty-set-unique
-  ;; BOZO probably expensive
+  ;; BOZO probably expensive.  We don't export this from sets.lisp, and we keep
+  ;; it out of the docs above.
   (implies (and (setp X)
                 (setp Y)
                 (empty X)
@@ -220,195 +136,309 @@
            (equal (equal X Y)
                   t)))
 
-; Historically I was afraid of rules that would rewrite a set into NIL, because
-; this seemed like a violation of the abstraction.  But I now think that
-; exposing the NIL really makes these theorems nicer.
-
-;; (defthm head-empty-same
-;;   (implies (and (empty X)
-;;                 (empty Y))
-;;            (equal (equal (head X) (head Y))
-;;                   t)))
-
-;; (defthm tail-empty-same
-;;   (implies (and (empty X)
-;;                 (empty Y))
-;;            (equal (equal (tail X) (tail Y))
-;;                   t)))
-
-;; (defthm insert-empty-same
-;;   (implies (and (empty X)
-;;                 (empty Y))
-;;            (equal (equal (insert a X) (insert a Y))
-;;                   t)))
-
-;; (defthm sfix-empty-same
-;;   (implies (and (empty X)
-;;                 (empty Y))
-;;            (equal (equal (sfix X) (sfix Y))
-;;                   t)))
-
-(defthm head-when-empty
-  (implies (empty X)
-           (equal (head X)
-                  nil)))
-
-(defthm tail-when-empty
-  (implies (empty X)
-           (equal (tail X)
-                  nil)))
-
-(defthm insert-when-empty
-  (implies (and (syntaxp (not (equal X ''nil)))
-                (empty X))
-           (equal (insert a X)
-                  (insert a nil))))
-
-(defthm head-of-insert-a-nil
-  (equal (head (insert a nil))
-         a))
-
-(defthm tail-of-insert-a-nil
-  (equal (tail (insert a nil))
-         nil))
-
-(defthm sfix-when-empty
-  (implies (empty X)
-           (equal (sfix X)
-                  nil)))
-
-(defthm head-tail-same
-  ;; BOZO probably expensive
-  (implies (and (not (empty X))
-                (not (empty Y))
-                (equal (head X) (head Y))
-                (equal (tail X) (tail Y)))
-           (equal (equal X Y)
-                  t)))
 
 
+(defsection sfix
+  :parents (primitives)
+  :short "@(call sfix) is a fixing function for sets."
 
-; While the above theorems show a sort of equivalence between empty sets, it is
-; also important to know what operations preserve and destroy emptiness.
+  :long "<p>We return any proper @(see setp) unchanged, but coerce any
+non-@(see setp) into the empty set.</p>
 
-(defthm insert-never-empty
-  (not (empty (insert a X))))
+<p>This does for sets what functions like @(see nfix) or @(see rfix) do for
+numbers.  It is often useful to use <tt>sfix</tt> in the base case of a set
+operation to ensure that an ordered set is always produced.</p>"
 
+  (defun sfix (X)
+    (declare (xargs :guard (setp X)))
+    (mbe :logic (if (empty X) nil X)
+         :exec  X))
 
-;; This was subsumed by the change to expose NIL.
+  (defthm sfix-produces-set
+    (setp (sfix X)))
 
-;; (defthm tail-preserves-empty
-;;   (implies (empty X)
-;;            (empty (tail X))))
+  (defthm sfix-set-identity
+    (implies (setp X)
+             (equal (sfix X)
+                    X)))
 
+  ;; I historically did this instead of sfix-when-empty, but now I think just
+  ;; rewriting it to NIL is a lot nicer.
+  ;;
+  ;; (defthm sfix-empty-same
+  ;;   (implies (and (empty X)
+  ;;                 (empty Y))
+  ;;            (equal (equal (sfix X) (sfix Y))
+  ;;                   t)))
 
+  (defthm sfix-when-empty
+    (implies (empty X)
+             (equal (sfix X)
+                    nil))))
 
-
-; While it did take quite a few theorems to have enough information about
-; empty, the sfix function is more simple.  Sfix is the identity function on
-; sets, and maps all non-sets to nil.  We can show that all of the other
-; primitives treat have a sort of equivalence under sfix, and quickly eliminate
-; it when we see it:
-
-(defthm sfix-set-identity
-  (implies (setp X)
-           (equal (sfix X)
-                  X)))
 
 (defthm empty-sfix-cancel
   (equal (empty (sfix X))
          (empty X)))
 
-(defthm head-sfix-cancel
-  (equal (head (sfix X))
-         (head X)))
-
-(defthm tail-sfix-cancel
-  (equal (tail (sfix X))
-         (tail X)))
-
-(defthm insert-sfix-cancel
-  (equal (insert a (sfix X))
-         (insert a X)))
+(xdoc::xdoc-extend empty "@(def empty-sfix-cancel)")
 
 
 
-; Now it is time to reason about insert.  These theorems are about as most
-; complicated that we get.
-;
-; Historic Note: We used to require that nil was "greater than" everything else
-; in our order.  This had the advantage that the following theorems could have
-; a combined case for (empty X) and (<< a (head X)).  Starting in Version 0.9,
-; we remove this restriction in order to be more flexible about our order.
+(defsection head
+  :parents (primitives)
+  :short "@(call head) returns the smallest element in a set."
 
-(defthm head-insert
-  (equal (head (insert a X))
-	 (cond ((empty X) a)
-	       ((<< a (head X)) a)
-	       (t (head X)))))
+  :long "<p>This is like @(see car), but respects the non-set convention and
+always returns <tt>nil</tt> for ill-formed sets.</p>"
 
-(defthm tail-insert
-  (equal (tail (insert a X))
-	 (cond ((empty X) (sfix X))
-	       ((<< a (head X)) (sfix X))
-               ((equal a (head X)) (tail X))
-               (t (insert a (tail X))))))
+  (defun head (X)
+    (declare (xargs :guard (and (setp X)
+                                (not (empty X)))))
+    (mbe :logic (car (sfix X))
+         :exec  (car X)))
 
-(defthm insert-insert
-  (equal (insert a (insert b X))
-         (insert b (insert a X)))
-  :rule-classes ((:rewrite :loop-stopper ((a b)))))
+  (defthm head-count
+    (implies (not (empty X))
+             (< (acl2-count (head X)) (acl2-count X)))
+    :rule-classes ((:rewrite) (:linear)))
 
-(defthm repeated-insert
-  (equal (insert a (insert a X))
-         (insert a X)))
+  (defthm head-count-built-in
+    ;; BOZO probably should remove this
+    (implies (not (empty X))
+             (o< (acl2-count (head X)) (acl2-count X)))
+    :rule-classes :built-in-clause)
 
-(defthm insert-head
-  (implies (not (empty X))
-           (equal (insert (head X) X)
-                  X)))
+  ;; I historically did this instead of head-when-empty, but now I think just
+  ;; rewriting it to NIL is a lot nicer.
+  ;;
+  ;; (defthm head-empty-same
+  ;;   (implies (and (empty X)
+  ;;                 (empty Y))
+  ;;            (equal (equal (head X) (head Y))
+  ;;                   t)))
 
-(defthm insert-head-tail
-  (implies (not (empty X))
-           (equal (insert (head X) (tail X))
-                  X)))
+  (defthm head-when-empty
+    (implies (empty X)
+             (equal (head X)
+                    nil)))
 
-
-; The following became unnecessary once we exposed NIL.
-
-;; ; We also need to be able to reason about insertions into empty sets.  Do
-;; ; not move these theorems above head-insert and tail-insert, or they will be
-;; ; subsumed and proofs in membership.lisp will fail.
-
-;; (defthm head-insert-empty
-;;   (implies (empty X)
-;;            (equal (head (insert a X)) a)))
-
-;; (defthm tail-insert-empty
-;;   (implies (empty X)
-;;  	      (empty (tail (insert a X)))))
+  (defthm head-sfix-cancel
+    (equal (head (sfix X))
+           (head X))))
 
 
 
+(defsection tail
+  :parents (primitives)
+  :short "@(call tail) returns the remainder of a set after removing its @(see
+head)."
 
-; Insert can be reasoned about in terms of induction, but its inductive case
-; contains a call to "cons", and we cannot let that escape into the wild.
-; Instead, we write a theorem to rephrase this cons into an insert.
+  :long "<p>This is like @(see cdr), but respects the non-set convention and
+always returns <tt>nil</tt> for ill-formed sets.</p>"
 
-(defthm insert-induction-case
-  (implies (and (not (<< a (head X)))
-                (not (equal a (head X)))
-                (not (empty X)))
-           (equal (insert (head X) (insert a (tail X)))
-                  (insert a X))))
+  (defun tail (X)
+    (declare (xargs :guard (and (setp X)
+                                (not (empty X)))))
+    (mbe :logic (cdr (sfix X))
+         :exec  (cdr X)))
+
+  (defthm tail-count
+    (implies (not (empty X))
+             (< (acl2-count (tail X)) (acl2-count X)))
+    :rule-classes ((:rewrite) (:linear)))
+
+  (defthm tail-count-built-in
+    ;; BOZO probably should remove this
+    (implies (not (empty X))
+             (o< (acl2-count (tail X)) (acl2-count X)))
+    :rule-classes :built-in-clause)
+
+  (defthm tail-produces-set
+    (setp (tail X)))
+
+  ;; I historically did this instead of tail-when-empty, but now I think just
+  ;; rewriting it to NIL is a lot nicer.
+  ;;
+  ;; (defthm tail-empty-same
+  ;;   (implies (and (empty X)
+  ;;                 (empty Y))
+  ;;            (equal (equal (tail X) (tail Y))
+  ;;                   t)))
+
+  ;; This was also subsumed by tail-when-empty:
+  ;;
+  ;; (defthm tail-preserves-empty
+  ;;   (implies (empty X)
+  ;;            (empty (tail X))))
+
+  (defthm tail-when-empty
+    (implies (empty X)
+             (equal (tail X)
+                    nil)))
+
+  (defthm tail-sfix-cancel
+    (equal (tail (sfix X))
+           (tail X))))
+
+
+(defthm head-tail-same
+  ;; BOZO probably expensive
+  (implies (and (equal (head X) (head Y))
+                (equal (tail X) (tail Y))
+                (not (empty X))
+                (not (empty Y)))
+           (equal (equal X Y)
+                  t)))
+
+
+(defsection insert
+  :parents (primitives)
+  :short "@(call insert) adds the element <tt>a</tt> to the set <tt>X</tt>."
+
+  :long "<p>This is the fundamental set constructor.  It is similar to @(see
+cons) for lists, but of course performs an ordered insertion.  It respects the
+non-set convention and treats any ill-formed input as the empty set.</p>
+
+<p>Efficiency note.  Insert is <tt>O(n)</tt>.  It is very inefficient to call
+it repeatedly.  Instead, consider building sets with @(see mergesort) or out of
+other sets using @(see union).</p>
+
+<p>The :exec version just inlines the set primitives and does one level of loop
+unrolling.  On CCL, it runs about 1.65x faster than the :logic version on the
+following loop:</p>
+
+<code>
+ ;; 1.92 seconds :logic, 1.16 seconds :exec
+ (let ((acc nil))
+  (gc$)
+  (time$ (loop for i fixnum from 1 to 10000 do
+               (setq acc (sets::insert i acc)))))
+</code>"
+
+  (defun insert (a X)
+    (declare (xargs :guard (setp X)
+                    :verify-guards nil))
+    (mbe :logic
+         (cond ((empty X) (list a))
+               ((equal (head X) a) X)
+               ((<< a (head X)) (cons a X))
+               (t (cons (head X) (insert a (tail X)))))
+         :exec
+         (cond ((null X) (cons a nil))
+               ((equal (car X) a) X)
+               ((fast-lexorder a (car X)) (cons a X))
+               ((null (cdr X)) (cons (car X) (cons a nil)))
+               ((equal (cadr x) a) X)
+               ((fast-lexorder a (cadr X)) (cons (car X) (cons a (cdr X))))
+               (t (cons (car X) (cons (cadr X) (insert a (cddr X))))))))
+
+  (verify-guards insert
+    :hints(("Goal" :in-theory (enable <<))))
+
+  (defthm insert-produces-set
+    (setp (insert a X)))
+
+  (defthm insert-sfix-cancel
+    (equal (insert a (sfix X))
+           (insert a X)))
+
+  (defthm insert-never-empty
+    (not (empty (insert a X))))
+
+  ;; I historically did this instead of insert-when-empty, but now I think that
+  ;; canonicalizing bad inserts into (insert a NIL) seems nicer.
+  ;;
+  ;; (defthm insert-empty-same
+  ;;   (implies (and (empty X)
+  ;;                 (empty Y))
+  ;;            (equal (equal (insert a X) (insert a Y))
+  ;;                   t)))
+
+  ;; The following also became unnecessary after switching to (insert a NIL).
+  ;;
+  ;; (defthm head-insert-empty
+  ;;   (implies (empty X)
+  ;;            (equal (head (insert a X)) a)))
+  ;;
+  ;; (defthm tail-insert-empty
+  ;;   (implies (empty X)
+  ;;  	      (empty (tail (insert a X)))))
+
+  (defthm insert-when-empty
+    (implies (and (syntaxp (not (equal X ''nil)))
+                  (empty X))
+             (equal (insert a X)
+                    (insert a nil))))
+
+  ;; These special cases can come up after insert-when-empty applies, so it's
+  ;; nice to have rules to target them.
+
+  (defthm head-of-insert-a-nil
+    (equal (head (insert a nil))
+           a))
+
+  (defthm tail-of-insert-a-nil
+    (equal (tail (insert a nil))
+           nil))
+
+  ;; Historic Note: We used to require that nil was "greater than" everything else
+  ;; in our order.  This had the advantage that the following theorems could have
+  ;; a combined case for (empty X) and (<< a (head X)).  Starting in Version 0.9,
+  ;; we remove this restriction in order to be more flexible about our order.
+
+  (defthm head-insert
+    (equal (head (insert a X))
+           (cond ((empty X) a)
+                 ((<< a (head X)) a)
+                 (t (head X)))))
+
+  (defthm tail-insert
+    (equal (tail (insert a X))
+           (cond ((empty X) (sfix X))
+                 ((<< a (head X)) (sfix X))
+                 ((equal a (head X)) (tail X))
+                 (t (insert a (tail X))))))
+
+  (defthm insert-insert
+    (equal (insert a (insert b X))
+           (insert b (insert a X)))
+    :rule-classes ((:rewrite :loop-stopper ((a b)))))
+
+  (defthm repeated-insert
+    (equal (insert a (insert a X))
+           (insert a X)))
+
+  (defthm insert-head
+    (implies (not (empty X))
+             (equal (insert (head X) X)
+                    X)))
+
+  (defthm insert-head-tail
+    (implies (not (empty X))
+             (equal (insert (head X) (tail X))
+                    X)))
 
 
 
-; The last thing we really need to do is reason about element order.  The
-; following theorems are crucial for proofs in the membership level, which must
-; stricly use induction and arguments about the set elements' order for proofs.
-; Since we are disabling all of the functions at the end of this book, these
-; are the only facts which membership.lisp will be able to use.
+  ;; Insert can be reasoned about in terms of induction, but its inductive case
+  ;; contains a call to "cons", and we cannot let that escape into the wild.
+  ;; Instead, we write a theorem to rephrase this cons into an insert.
+
+  (defthm insert-induction-case
+    (implies (and (not (<< a (head X)))
+                  (not (equal a (head X)))
+                  (not (empty X)))
+             (equal (insert (head X) (insert a (tail X)))
+                    (insert a X)))))
+
+
+
+;; The last thing we really need to do is reason about element order.  The
+;; following theorems are crucial for proofs in the membership level, which
+;; must stricly use induction and arguments about the set elements' order for
+;; proofs.  Since we are disabling all of the functions at the end of this
+;; book, these are the only facts which membership.lisp will be able to use.
 
 (defthm head-tail-order
   (implies (not (empty (tail X)))

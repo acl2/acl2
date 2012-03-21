@@ -18,6 +18,8 @@
 ;
 ; This just has the defpackage events for the set theory library.
 
+(ld "xdoc/package.lsp" :dir :system)
+
 (defpkg "INSTANCE"
   (union-eq *acl2-exports*
             *common-lisp-symbols-from-main-lisp-package*))
@@ -33,14 +35,17 @@
 
 (defpkg "SETS"
   (set-difference-equal
-   (union-eq '(lexorder
-               defsection
+   (union-eq '(defsection
+               defxdoc
+               lexorder
                <<
                <<-irreflexive
                <<-transitive
                <<-asymmetric
                <<-trichotomy
                <<-implies-lexorder
+               fast-<<
+               fast-lexorder
                COMPUTED-HINTS::rewriting-goal-lit
                COMPUTED-HINTS::rewriting-conc-lit
                def-ruleset

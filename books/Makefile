@@ -140,7 +140,7 @@ coi: arithmetic arithmetic-2 arithmetic-3 data-structures ihs make-event \
 	misc ordinals rtl
 wp-gen: ordinals
 # xdoc has no dependencies
-xdoc-impl: xdoc str tools
+xdoc-impl: xdoc str tools finite-set-theory/osets
 system: tools arithmetic arithmetic-5
 cutil: xdoc tools str misc finite-set-theory/osets defsort unicode
 # Note: There is no need to include values for "centaur:", since dependencies

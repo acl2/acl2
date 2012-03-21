@@ -45,12 +45,51 @@
 ; pick-a-point strategies.
 (include-book "computed-hints")
 
+(local
+ ;; xdoc hack part 1: throw away all current xdoc
+ (table xdoc::xdoc 'xdoc::doc nil))
+
 (local (include-book "primitives"))
 (local (include-book "membership"))
 (local (include-book "fast"))
 (local (include-book "outer"))
 (local (include-book "sort"))
 
+(make-event
+ ;; xdoc hack part 2: take all the docs we got from the local includes and
+ ;; stick them onto the proper doc
+ (let ((slurped-docs (xdoc::get-xdoc-table (w state))))
+   (acl2::value `(table xdoc::xdoc 'xdoc::doc
+                        (append ',slurped-docs (xdoc::get-xdoc-table acl2::world))))))
+
+(defxdoc osets
+  :short "ACL2 Ordered Sets Library."
+
+  :long "<p>This is a finite set theory implementation for ACL2 based on fully
+ordered lists.  Some nice features of this approach are that set equality is
+just @(see equal), and set operations like @(see union), @(see intersect), and
+so forth have O(n) implementations.</p>
+
+<p>Osets mostly hides the fact that sets are represented as ordered lists.  You
+should not have to reason about the set order unless you are trying to exploit
+it to make some function faster.  Instead, we generally try to reason about
+sets with a membership-based approach, via @(see in) and @(see subset).</p>
+
+<p>The library offers some automation for pick-a-point style reasoning, see for
+instance @(see all-by-membership), @(see pick-a-point-subset-strategy), and
+@(see double-containment).</p>
+
+<p>You can load the library with:</p>
+<code>
+ (include-book \"finite-set-theory/osets/sets\" :dir :system)
+</code>
+
+<p>Besides this @(see xdoc::xdoc) documentation, you may be interested in the
+2004 ACL2 workshop paper, <a
+href='http://www.cs.utexas.edu/users/jared/publications/2004-acl2-osets/set-theory.pdf'>Finite
+Set Theory based on Fully Ordered Lists</a>, and see also the <a
+href='http://www.cs.utexas.edu/users/jared/osets/Slides/2004-02-seminar-slides.pdf'>slides</a>
+from the accompanying talk.</p>")
 
 ; We begin with the definitions of the set theory functions and a few trivial
 ; type prescriptions.
@@ -61,7 +100,7 @@
       (null X)
     (or (null (cdr X))
         (and (consp (cdr X))
-             (<< (car X) (cadr X))
+             (fast-<< (car X) (cadr X))
              (setp (cdr X))))))
 
 (defthm setp-type
@@ -106,10 +145,10 @@
        :exec
        (cond ((null X) (cons a nil))
              ((equal (car X) a) X)
-             ((lexorder a (car X)) (cons a X))
+             ((fast-lexorder a (car X)) (cons a X))
              ((null (cdr X)) (cons (car X) (cons a nil)))
              ((equal (cadr x) a) X)
-             ((lexorder a (cadr X)) (cons (car X) (cons a (cdr X))))
+             ((fast-lexorder a (cadr X)) (cons (car X) (cons a (cdr X))))
              (t (cons (car X) (cons (cadr X) (insert a (cddr X))))))))
 
 (defun in (a X)
@@ -141,7 +180,7 @@
        :exec
        (cond ((null X) t)
              ((null Y) nil)
-             ((lexorder (car X) (car Y))
+             ((fast-lexorder (car X) (car Y))
               (and (equal (car X) (car Y))
                    (fast-subset (cdr X) (cdr Y))))
              (t
@@ -173,7 +212,7 @@
         ((equal (car x) (car y))
          (fast-union (cdr x) (cdr y) (cons (car x) acc)))
         ((mbe :logic (<< (car x) (car y))
-              :exec (lexorder (car x) (car y)))
+              :exec (fast-lexorder (car x) (car y)))
          (fast-union (cdr x) y (cons (car x) acc)))
         (t
          (fast-union x (cdr y) (cons (car y) acc)))))
@@ -188,7 +227,7 @@
         ((equal (car X) (car Y))
          (fast-intersect (cdr X) (cdr Y) (cons (car X) acc)))
         ((mbe :logic (<< (car X) (car Y))
-              :exec (lexorder (car X) (car Y)))
+              :exec (fast-lexorder (car X) (car Y)))
          (fast-intersect (cdr X) Y acc))
         (t
          (fast-intersect X (cdr Y) acc))))
@@ -202,7 +241,7 @@
         ((equal (car X) (car Y))
          t)
         ((mbe :logic (<< (car X) (car y))
-              :exec (lexorder (car X) (car Y)))
+              :exec (fast-lexorder (car X) (car Y)))
          (fast-intersectp (cdr X) Y))
         (t
          (fast-intersectp X (cdr Y)))))
@@ -217,7 +256,7 @@
         ((equal (car X) (car Y))
          (fast-difference (cdr X) (cdr Y) acc))
         ((mbe :logic (<< (car X) (car Y))
-              :exec (lexorder (car X) (car Y)))
+              :exec (fast-lexorder (car X) (car Y)))
          (fast-difference (cdr X) Y (cons (car X) acc)))
         (t
          (fast-difference X (cdr Y) acc))))
@@ -329,8 +368,7 @@
  (defthmd membership-constraint
    (implies (all-hyps)
 	    (implies (in arbitrary-element (all-set))
-		     (predicate arbitrary-element))))
-)
+		     (predicate arbitrary-element)))))
 
 (defthmd all-by-membership
   (implies (all-hyps)
@@ -356,8 +394,7 @@
   :actual-collection-predicate subset
   :actual-trigger subset-trigger
   :predicate-rewrite (((predicate ?x ?y) (in ?x ?y)))
-  :tagging-theorem pick-a-point-subset-strategy
-)
+  :tagging-theorem pick-a-point-subset-strategy)
 
 (defthm double-containment
   (implies (and (setp X)
@@ -434,6 +471,11 @@
   (equal (tail (sfix X))
          (tail X)))
 
+(defthm insert-head
+  (implies (not (empty X))
+           (equal (insert (head X) X)
+                  X)))
+
 (defthm insert-head-tail
   (implies (not (empty X))
            (equal (insert (head X) (tail X))
@@ -480,6 +522,16 @@
 ; -------------------------------------------------------------------
 ; Membership Level Theorems
 
+(defthm subset-membership-tail
+  (implies (and (subset X Y)
+                (in a (tail X)))
+           (in a (tail Y))))
+
+(defthm subset-membership-tail-2
+  (implies (and (subset X Y)
+                (not (in a (tail Y))))
+           (not (in a (tail X)))))
+
 (defthm not-in-self
   (not (in x x)))
 
@@ -523,9 +575,12 @@
              (equal a b))))
 
 (defthm subset-transitive
-  (implies (and (subset X Y)
-                (subset Y Z))
-           (subset X Z)))
+  (and (implies (and (subset X Y)
+                     (subset Y Z))
+                (subset X Z))
+       (implies (and (subset Y Z)
+                     (subset X Y))
+                (subset X Z))))
 
 (defthm subset-insert-X
   (equal (subset (insert a X) Y)

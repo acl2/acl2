@@ -30,419 +30,466 @@
 
 
 
-; -------------------------------------------------------------------
-; Delete
+(defsection delete
+  :parents (osets)
+  :short "@(call delete) removes the element <tt>a</tt> from the set
+<tt>X</tt>."
 
-(defun delete (a X)
-  (declare (xargs :guard (setp X)
-                  :verify-guards nil))
-  (mbe :logic
-       (cond ((empty X) nil)
-             ((equal a (head X)) (tail X))
-             (t (insert (head X) (delete a (tail X)))))
-       :exec
-       (cond ((endp X) nil)
-             ((equal a (car X)) (cdr X))
-             (t (insert (car X) (delete a (cdr X)))))))
+  :long "<p>If <tt>a</tt> is not a member of <tt>X</tt>, then the result is
+just <tt>X</tt> itself.</p>
 
-(defthm delete-set
-  (setp (delete a X)))
+<p>Efficiency note.  Delete is <tt>O(n)</tt>.  It is very inefficient to call
+it repeatedly.  Instead, consider removing multiple elements with @(see
+difference) or @(see intersect).</p>
 
-(verify-guards delete
-  :hints(("Goal" :in-theory (enable (:ruleset primitive-rules)))))
+<p>The theorem <tt>delete-in</tt> is the essential correctness property for
+<tt>delete</tt>.</p>"
 
-(defthm delete-preserves-empty
-  (implies (empty X)
-           (empty (delete a X))))
+  (defun delete (a X)
+    (declare (xargs :guard (setp X)
+                    :verify-guards nil))
+    (mbe :logic
+         (cond ((empty X) nil)
+               ((equal a (head X)) (tail X))
+               (t (insert (head X) (delete a (tail X)))))
+         :exec
+         (cond ((endp X) nil)
+               ((equal a (car X)) (cdr X))
+               (t (insert (car X) (delete a (cdr X)))))))
 
-(defthm delete-in
-  (equal (in a (delete b X))
-         (and (in a X)
-              (not (equal a b)))))
+  (defthm delete-set
+    (setp (delete a X)))
 
-(defthm delete-sfix-cancel
-  (equal (delete a (sfix X))
-	 (delete a X)))
+  (verify-guards delete
+    :hints(("Goal" :in-theory (enable (:ruleset primitive-rules)))))
 
-(defthm delete-nonmember-cancel
-  (implies (not (in a X))
-           (equal (delete a X) (sfix X))))
+  (defthm delete-preserves-empty
+    (implies (empty X)
+             (empty (delete a X))))
 
-(defthm delete-delete
-  (equal (delete a (delete b X))
-         (delete b (delete a X)))
-  :rule-classes ((:rewrite :loop-stopper ((a b)))))
+  (defthm delete-in
+    (equal (in a (delete b X))
+           (and (in a X)
+                (not (equal a b)))))
 
-(defthm repeated-delete
-  (equal (delete a (delete a X))
-         (delete a X)))
+  (defthm delete-sfix-cancel
+    (equal (delete a (sfix X))
+           (delete a X)))
 
-(defthm delete-insert-cancel
-  (equal (delete a (insert a X))
-         (delete a X)))
-
-(defthm insert-delete-cancel
-  (equal (insert a (delete a X))
-         (insert a X)))
-
-(defthm subset-delete
-  (subset (delete a X) X))
-
-
-; -------------------------------------------------------------------
-; Union
-
-(defun union (X Y)
-  (declare (xargs :guard (and (setp X) (setp Y))
-                  :verify-guards nil))
-  (mbe :logic (if (empty X)
-                  (sfix Y)
-                (insert (head X) (union (tail X) Y)))
-       :exec  (fast-union X Y nil)))
-
-(defthm union-set
-  (setp (union X Y)))
-
-(defthm union-sfix-cancel-X
-  (equal (union (sfix X) Y) (union X Y)))
-
-(defthm union-sfix-cancel-Y
-  (equal (union X (sfix Y)) (union X Y)))
-
-(defthm union-empty-X
-  (implies (empty X)
-           (equal (union X Y) (sfix Y))))
-
-(defthm union-empty-Y
-  (implies (empty Y)
-           (equal (union X Y) (sfix X))))
-
-(defthm union-empty
-  (equal (empty (union X Y))
-	 (and (empty X) (empty Y))))
-
-(defthm union-in
-  (equal (in a (union X Y))
-         (or (in a X) (in a Y))))
-
-(verify-guards union
-  :hints(("Goal" :in-theory (enable fast-union-set
-                                    fast-union-membership))))
-
-
-(defthm union-symmetric
-  (equal (union X Y) (union Y X))
-  :rule-classes ((:rewrite :loop-stopper ((X Y)))))
-
-(defthm union-subset-X
-  (subset X (union X Y)))
-
-(defthm union-subset-Y
-  (subset Y (union X Y)))
-
-(defthm union-insert-X
-  (equal (union (insert a X) Y)
-         (insert a (union X Y))))
-
-(defthm union-insert-Y
-  (equal (union X (insert a Y))
-         (insert a (union X Y))))
-
-(defthm union-delete-X
-  (equal (union (delete a X) Y)
-         (if (in a Y)
-             (union X Y)
-           (delete a (union X Y)))))
-
-(defthm union-delete-Y
-  (equal (union X (delete a Y))
-         (if (in a X)
-             (union X Y)
-           (delete a (union X Y)))))
-
-(defthm union-self
-  (equal (union X X) (sfix X)))
-
-(defthm union-associative
-  (equal (union (union X Y) Z)
-         (union X (union Y Z))))
-
-(defthm union-commutative
-  (equal (union X (union Y Z))
-         (union Y (union X Z)))
-  :rule-classes ((:rewrite :loop-stopper ((X Y)))))
-
-(defthm union-outer-cancel
-  (equal (union X (union X Z))
-         (union X Z)))
-
-
-
-; -------------------------------------------------------------------
-; Intersect
-
-(defun intersect (X Y)
-  (declare (xargs :guard (and (setp X) (setp Y))
-                  :verify-guards nil))
-  (mbe :logic (cond ((empty X) (sfix X))
-                    ((in (head X) Y)
-                     (insert (head X) (intersect (tail X) Y)))
-                    (t (intersect (tail X) Y)))
-       :exec (fast-intersect X Y nil)))
-
-(defthm intersect-set
-  (setp (intersect X Y)))
-
-(defthm intersect-sfix-cancel-X
-  (equal (intersect (sfix X) Y) (intersect X Y)))
-
-(defthm intersect-sfix-cancel-Y
-  (equal (intersect X (sfix Y)) (intersect X Y)))
-
-(defthm intersect-empty-X
-  (implies (empty X) (empty (intersect X Y))))
-
-(defthm intersect-empty-Y
-  (implies (empty Y) (empty (intersect X Y))))
-
-(encapsulate ()
-
-  (local (defthm intersect-in-Y
-    (implies (not (in a Y))
-             (not (in a (intersect X Y))))))
-
-  (local (defthm intersect-in-X
+  (defthm delete-nonmember-cancel
     (implies (not (in a X))
-             (not (in a (intersect X Y))))))
+             (equal (delete a X) (sfix X))))
 
-  (defthm intersect-in
-    (equal (in a (intersect X Y))
-           (and (in a Y) (in a X))))
-)
+  (defthm delete-delete
+    (equal (delete a (delete b X))
+           (delete b (delete a X)))
+    :rule-classes ((:rewrite :loop-stopper ((a b)))))
 
-(defthm fast-intersect-correct
-  (implies (and (setp X)
-                (setp Y))
-           (equal (fast-intersect X Y nil)
-                  (intersect X Y)))
-  :hints(("Goal" :in-theory (enable fast-intersect-set
-                                    fast-intersect-membership))))
+  (defthm repeated-delete
+    (equal (delete a (delete a X))
+           (delete a X)))
+
+  (defthm delete-insert-cancel
+    (equal (delete a (insert a X))
+           (delete a X)))
+
+  (defthm insert-delete-cancel
+    (equal (insert a (delete a X))
+           (insert a X)))
+
+  (defthm subset-delete
+    (subset (delete a X) X)))
+
+
+(defsection union
+  :parents (osets)
+  :short "@(call union) constructs the union of <tt>X</tt> and <tt>Y</tt>."
+
+  :long "<p>The logical definition is very simple, and the essential
+correctness property is given by <tt>union-in</tt>.</p>
+
+<p>The execution uses a better, O(n) algorithm to merge the sets by exploiting
+the set order.</p>"
+
+  (defun union (X Y)
+    (declare (xargs :guard (and (setp X) (setp Y))
+                    :verify-guards nil))
+    (mbe :logic (if (empty X)
+                    (sfix Y)
+                  (insert (head X) (union (tail X) Y)))
+         :exec  (fast-union X Y nil)))
+
+  (defthm union-set
+    (setp (union X Y)))
+
+  (defthm union-sfix-cancel-X
+    (equal (union (sfix X) Y) (union X Y)))
+
+  (defthm union-sfix-cancel-Y
+    (equal (union X (sfix Y)) (union X Y)))
+
+  (defthm union-empty-X
+    (implies (empty X)
+             (equal (union X Y) (sfix Y))))
+
+  (defthm union-empty-Y
+    (implies (empty Y)
+             (equal (union X Y) (sfix X))))
+
+  (defthm union-empty
+    (equal (empty (union X Y))
+           (and (empty X) (empty Y))))
+
+  (defthm union-in
+    (equal (in a (union X Y))
+           (or (in a X) (in a Y))))
+
+  (verify-guards union
+    :hints(("Goal" :in-theory (enable fast-union-set
+                                      fast-union-membership))))
+
+
+  (defthm union-symmetric
+    (equal (union X Y) (union Y X))
+    :rule-classes ((:rewrite :loop-stopper ((X Y)))))
+
+  (defthm union-subset-X
+    (subset X (union X Y)))
+
+  (defthm union-subset-Y
+    (subset Y (union X Y)))
+
+  (defthm union-insert-X
+    (equal (union (insert a X) Y)
+           (insert a (union X Y))))
+
+  (defthm union-insert-Y
+    (equal (union X (insert a Y))
+           (insert a (union X Y))))
+
+  (defthm union-delete-X
+    (equal (union (delete a X) Y)
+           (if (in a Y)
+               (union X Y)
+             (delete a (union X Y)))))
+
+  (defthm union-delete-Y
+    (equal (union X (delete a Y))
+           (if (in a X)
+               (union X Y)
+             (delete a (union X Y)))))
+
+  (defthm union-self
+    (equal (union X X) (sfix X)))
+
+  (defthm union-associative
+    (equal (union (union X Y) Z)
+           (union X (union Y Z))))
+
+  (defthm union-commutative
+    (equal (union X (union Y Z))
+           (union Y (union X Z)))
+    :rule-classes ((:rewrite :loop-stopper ((X Y)))))
+
+  (defthm union-outer-cancel
+    (equal (union X (union X Z))
+           (union X Z))))
+
+
+
+(defsection intersect
+  :parents (osets)
+  :short "@(call intersect) constructs the intersection of <tt>X</tt> and
+<tt>Y</tt>."
+
+  :long "<p>The logical definition is very simple, and the essential
+correctness property is given by <tt>intersect-in</tt>.</p>
+
+<p>The execution uses a better, O(n) algorithm to intersect the sets by
+exploiting the set order.</p>
+
+<p>See also @(see intersectp), which doesn't construct a new set but just tells
+you whether the sets have any overlap.  It's potentially faster if you don't
+care about constructing the set, because it doesn't have to do any
+consing.</p>"
+
+  (defun intersect (X Y)
+    (declare (xargs :guard (and (setp X) (setp Y))
+                    :verify-guards nil))
+    (mbe :logic (cond ((empty X) (sfix X))
+                      ((in (head X) Y)
+                       (insert (head X) (intersect (tail X) Y)))
+                      (t (intersect (tail X) Y)))
+         :exec (fast-intersect X Y nil)))
+
+  (defthm intersect-set
+    (setp (intersect X Y)))
+
+  (defthm intersect-sfix-cancel-X
+    (equal (intersect (sfix X) Y) (intersect X Y)))
+
+  (defthm intersect-sfix-cancel-Y
+    (equal (intersect X (sfix Y)) (intersect X Y)))
+
+  (defthm intersect-empty-X
+    (implies (empty X) (empty (intersect X Y))))
+
+  (defthm intersect-empty-Y
+    (implies (empty Y) (empty (intersect X Y))))
+
+  (encapsulate ()
+
+    (local (defthm intersect-in-Y
+             (implies (not (in a Y))
+                      (not (in a (intersect X Y))))))
+
+    (local (defthm intersect-in-X
+             (implies (not (in a X))
+                      (not (in a (intersect X Y))))))
+
+    (defthm intersect-in
+      (equal (in a (intersect X Y))
+             (and (in a Y) (in a X)))))
+
+  (defthm intersect-symmetric
+    (equal (intersect X Y) (intersect Y X))
+    :rule-classes ((:rewrite :loop-stopper ((X Y)))))
+
+  (defthm intersect-subset-X
+    (subset (intersect X Y) X))
+
+  (defthm intersect-subset-Y
+    (subset (intersect X Y) Y))
+
+  (defthm intersect-insert-X
+    (implies (not (in a Y))
+             (equal (intersect (insert a X) Y)
+                    (intersect X Y))))
+
+  (defthm intersect-insert-Y
+    (implies (not (in a X))
+             (equal (intersect X (insert a Y))
+                    (intersect X Y))))
+
+  (defthm intersect-delete-X
+    (equal (intersect (delete a X) Y)
+           (delete a (intersect X Y))))
+
+  (defthm intersect-delete-Y
+    (equal (intersect X (delete a Y))
+           (delete a (intersect X Y))))
+
+  (defthm intersect-self
+    (equal (intersect X X) (sfix X)))
+
+  (defthm intersect-associative
+    (equal (intersect (intersect X Y) Z)
+           (intersect X (intersect Y Z))))
+
+  (defthm union-over-intersect
+    (equal (union X (intersect Y Z))
+           (intersect (union X Y) (union X Z))))
+
+  (defthm intersect-over-union
+    (equal (intersect X (union Y Z))
+           (union (intersect X Y) (intersect X Z))))
+
+  (defthm intersect-commutative
+    (equal (intersect X (intersect Y Z))
+           (intersect Y (intersect X Z)))
+    :rule-classes ((:rewrite :loop-stopper ((X Y)))))
+
+  (defthm intersect-outer-cancel
+    (equal (intersect X (intersect X Z))
+           (intersect X Z))))
+
+
+(local (defthm fast-intersect-correct
+         (implies (and (setp X)
+                       (setp Y))
+                  (equal (fast-intersect X Y nil)
+                         (intersect X Y)))
+         :hints(("Goal" :in-theory (enable fast-intersect-set
+                                           fast-intersect-membership)))))
 
 (verify-guards intersect)
 
-(defthm intersect-symmetric
-  (equal (intersect X Y) (intersect Y X))
-  :rule-classes ((:rewrite :loop-stopper ((X Y)))))
 
-(defthm intersect-subset-X
-  (subset (intersect X Y) X))
+(defsection intersectp
+  :parents (osets)
+  :short "@(call intersectp) checks whether <tt>X</tt> and <tt>Y</tt> have any
+common members."
 
-(defthm intersect-subset-Y
-  (subset (intersect X Y) Y))
+  :long "<p>Logically we just check whether the @(see intersect) of <tt>X</tt>
+and <tt>Y</tt> is @(see empty).</p>
 
-(defthm intersect-insert-X
-  (implies (not (in a Y))
-           (equal (intersect (insert a X) Y)
-                  (intersect X Y))))
+<p>In the execution, we use a faster function that checks for any common
+members and doesn't build any new sets.</p>"
 
-(defthm intersect-insert-Y
-  (implies (not (in a X))
-           (equal (intersect X (insert a Y))
-                  (intersect X Y))))
-
-(defthm intersect-delete-X
-  (equal (intersect (delete a X) Y)
-         (delete a (intersect X Y))))
-
-(defthm intersect-delete-Y
-  (equal (intersect X (delete a Y))
-         (delete a (intersect X Y))))
-
-(defthm intersect-self
-  (equal (intersect X X) (sfix X)))
-
-(defthm intersect-associative
-  (equal (intersect (intersect X Y) Z)
-         (intersect X (intersect Y Z))))
-
-(defthm union-over-intersect
-  (equal (union X (intersect Y Z))
-         (intersect (union X Y) (union X Z))))
-
-(defthm intersect-over-union
-  (equal (intersect X (union Y Z))
-         (union (intersect X Y) (intersect X Z))))
-
-(defthm intersect-commutative
-  (equal (intersect X (intersect Y Z))
-         (intersect Y (intersect X Z)))
-  :rule-classes ((:rewrite :loop-stopper ((X Y)))))
-
-(defthm intersect-outer-cancel
-  (equal (intersect X (intersect X Z))
-         (intersect X Z)))
-
-
-; -------------------------------------------------------------------
-; Intersectp - check if intersection is nonempty without constructing
-; the intersect.
-
-(defun intersectp (X Y)
-  (declare (xargs :guard (and (setp X) (setp Y))
-                  :guard-hints(("Goal" :in-theory (enable fast-intersectp-correct)))))
-  (mbe :logic (not (empty (intersect X Y)))
-       :exec (fast-intersectp X Y)))
+  (defun intersectp (X Y)
+    (declare (xargs :guard (and (setp X) (setp Y))
+                    :guard-hints(("Goal" :in-theory (enable fast-intersectp-correct)))))
+    (mbe :logic (not (empty (intersect X Y)))
+         :exec (fast-intersectp X Y))))
 
 
 
-; -------------------------------------------------------------------
-; Difference
+(defsection difference
+  :parents (osets)
+  :short "@(call difference) removes all members of <tt>Y</tt> from <tt>X</tt>."
 
-(defun difference (X Y)
-  (declare (xargs :guard (and (setp X) (setp Y))
-                  :verify-guards nil))
-  (mbe :logic (cond ((empty X) (sfix X))
-                    ((in (head X) Y) (difference (tail X) Y))
-                    (t (insert (head X) (difference (tail X) Y))))
-       :exec (fast-difference X Y nil)))
+  :long "<p>The logical definition is very simple, and the essential
+correctness property is given by <tt>difference-in</tt>.</p>
 
-(defthm difference-set
-  (setp (difference X Y)))
+<p>The execution uses a better, O(n) algorithm to remove the elements by
+exploiting the set order.</p>"
 
-(defthm difference-sfix-X
-  (equal (difference (sfix X) Y) (difference X Y)))
+  (defun difference (X Y)
+    (declare (xargs :guard (and (setp X) (setp Y))
+                    :verify-guards nil))
+    (mbe :logic (cond ((empty X) (sfix X))
+                      ((in (head X) Y) (difference (tail X) Y))
+                      (t (insert (head X) (difference (tail X) Y))))
+         :exec (fast-difference X Y nil)))
 
-(defthm difference-sfix-Y
-  (equal (difference X (sfix Y)) (difference X Y)))
+  (defthm difference-set
+    (setp (difference X Y)))
 
-(defthm difference-empty-X
-  (implies (empty X)
-           (equal (difference X Y) (sfix X))))
+  (defthm difference-sfix-X
+    (equal (difference (sfix X) Y) (difference X Y)))
 
-(defthm difference-empty-Y
-  (implies (empty Y)
-           (equal (difference X Y) (sfix X))))
+  (defthm difference-sfix-Y
+    (equal (difference X (sfix Y)) (difference X Y)))
 
-(encapsulate ()
-
-  (local (defthm difference-in-X
-    (implies (in a (difference X Y))
-             (in a X))))
-
-  (local (defthm difference-in-Y
-    (implies (in a (difference X Y))
-             (not (in a Y)))))
-
-  (defthm difference-in
-    (equal (in a (difference X Y))
-           (and (in a X)
-                (not (in a Y)))))
-)
-
-
-(encapsulate
-  ()
-  ;; bozo shouldn't really need this
-  (local (defthm l0
-           (implies (and (setp y) (setp x) (empty x))
-                    (empty (fast-difference x y nil)))
-           :hints(("Goal" :in-theory (enable fast-difference
-                                             (:ruleset low-level-rules))))))
-
-  (verify-guards difference
-    :hints(("Goal" :in-theory (enable fast-difference-set
-                                      fast-difference-membership)))))
-
-(defthm difference-subset-X
-  (subset (difference X Y) X))
-
-(defthm subset-difference
-  (equal (empty (difference X Y))
-         (subset X Y)))
-
-(defthm difference-over-union
-  (equal (difference X (union Y Z))
-         (intersect (difference X Y) (difference X Z))))
-
-(defthm difference-over-intersect
-  (equal (difference X (intersect Y Z))
-         (union (difference X Y) (difference X Z))))
-
-(defthm difference-insert-X
-  (equal (difference (insert a X) Y)
-         (if (in a Y)
-             (difference X Y)
-           (insert a (difference X Y)))))
-
-(defthm difference-insert-Y
-  (equal (difference X (insert a Y))
-         (delete a (difference X Y))))
-
-(defthm difference-delete-X
-  (equal (difference (delete a X) Y)
-         (delete a (difference X Y))))
-
-(defthm difference-delete-Y
-  (equal (difference X (delete a Y))
-         (if (in a X)
-             (insert a (difference X Y))
-           (difference X Y))))
-
-(defthm difference-preserves-subset
-  (implies (subset X Y)
-	   (subset (difference X Z)
-		   (difference Y Z))))
-
-
-; -------------------------------------------------------------------
-; Cardinality
-
-(defun cardinality (X)
-  (declare (xargs :guard (setp X)
-                  :verify-guards nil))
-  (mbe :logic (if (empty X)
-                  0
-                (1+ (cardinality (tail X))))
-       :exec  (length (the list X))))
-
-(verify-guards cardinality
-  ;; Normally we would never want to enable the primitives theory.  However,
-  ;; here we need to show that cardinality is equal to length, and for this we
-  ;; need to be able to reason about tail and empty.  Think of this as a tiny
-  ;; extension of "fast.lisp"
-  :hints(("Goal" :in-theory (enable (:ruleset primitive-rules)))))
-
-(defthm cardinality-type
-  (and (integerp (cardinality X))
-       (<= 0 (cardinality X)))
-  :rule-classes :type-prescription)
-
-(defthm cardinality-zero-empty
-  (equal (equal (cardinality x) 0)
-	 (empty x)))
-
-(defthm cardinality-sfix-cancel
-  (equal (cardinality (sfix X)) (cardinality X)))
-
-(encapsulate ()
-
-  (local (defthm cardinality-insert-empty
+  (defthm difference-empty-X
     (implies (empty X)
-             (equal (cardinality (insert a X)) 1))
-    :hints(("Goal" :use (:instance cardinality (x (insert a nil)))))))
+             (equal (difference X Y) (sfix X))))
 
-  (defthm insert-cardinality
-    (equal (cardinality (insert a X))
+  (defthm difference-empty-Y
+    (implies (empty Y)
+             (equal (difference X Y) (sfix X))))
+
+  (encapsulate ()
+
+    (local (defthm difference-in-X
+             (implies (in a (difference X Y))
+                      (in a X))))
+
+    (local (defthm difference-in-Y
+             (implies (in a (difference X Y))
+                      (not (in a Y)))))
+
+    (defthm difference-in
+      (equal (in a (difference X Y))
+             (and (in a X)
+                  (not (in a Y))))))
+
+  (encapsulate
+    ()
+    ;; bozo shouldn't really need this
+    (local (defthm l0
+             (implies (and (setp y) (setp x) (empty x))
+                      (not (fast-difference x y nil)))
+             :hints(("Goal" :in-theory (enable fast-difference
+                                               (:ruleset low-level-rules))))))
+
+    (verify-guards difference
+      :hints(("Goal" :in-theory (enable fast-difference-set
+                                        fast-difference-membership)))))
+
+  (defthm difference-subset-X
+    (subset (difference X Y) X))
+
+  (defthm subset-difference
+    (equal (empty (difference X Y))
+           (subset X Y)))
+
+  (defthm difference-over-union
+    (equal (difference X (union Y Z))
+           (intersect (difference X Y) (difference X Z))))
+
+  (defthm difference-over-intersect
+    (equal (difference X (intersect Y Z))
+           (union (difference X Y) (difference X Z))))
+
+  (defthm difference-insert-X
+    (equal (difference (insert a X) Y)
+           (if (in a Y)
+               (difference X Y)
+             (insert a (difference X Y)))))
+
+  (defthm difference-insert-Y
+    (equal (difference X (insert a Y))
+           (delete a (difference X Y))))
+
+  (defthm difference-delete-X
+    (equal (difference (delete a X) Y)
+           (delete a (difference X Y))))
+
+  (defthm difference-delete-Y
+    (equal (difference X (delete a Y))
            (if (in a X)
-               (cardinality X)
-             (1+ (cardinality X)))))
-)
+               (insert a (difference X Y))
+             (difference X Y))))
 
-(defthm delete-cardinality
-  (equal (cardinality (delete a X))
-         (if (in a X)
-             (1- (cardinality X))
-           (cardinality X))))
+  (defthm difference-preserves-subset
+    (implies (subset X Y)
+             (subset (difference X Z)
+                     (difference Y Z)))))
+
+
+(defsection cardinality
+  :parents (osets)
+  :short "@(call cardinality) computes the number of elements in <tt>X</tt>."
+
+  :long "<p>This is like @(see length), but respects the non-set convention and
+always returns 0 for ill-formed sets.</p>"
+
+  (defun cardinality (X)
+    (declare (xargs :guard (setp X)
+                    :verify-guards nil))
+    (mbe :logic (if (empty X)
+                    0
+                  (1+ (cardinality (tail X))))
+         :exec  (length (the list X))))
+
+  (verify-guards cardinality
+    ;; Normally we would never want to enable the primitives theory.  However,
+    ;; here we need to show that cardinality is equal to length, and for this
+    ;; we need to be able to reason about tail and empty.  Think of this as a
+    ;; tiny extension of "fast.lisp"
+    :hints(("Goal" :in-theory (enable (:ruleset primitive-rules)))))
+
+  (defthm cardinality-type
+    (and (integerp (cardinality X))
+         (<= 0 (cardinality X)))
+    :rule-classes :type-prescription)
+
+  (defthm cardinality-zero-empty
+    (equal (equal (cardinality x) 0)
+           (empty x)))
+
+  (defthm cardinality-sfix-cancel
+    (equal (cardinality (sfix X)) (cardinality X)))
+
+  (encapsulate ()
+
+    (local (defthm cardinality-insert-empty
+             (implies (empty X)
+                      (equal (cardinality (insert a X)) 1))
+             :hints(("Goal" :use (:instance cardinality (x (insert a nil)))))))
+
+    (defthm insert-cardinality
+      (equal (cardinality (insert a X))
+             (if (in a X)
+                 (cardinality X)
+               (1+ (cardinality X))))))
+
+  (defthm delete-cardinality
+    (equal (cardinality (delete a X))
+           (if (in a X)
+               (1- (cardinality X))
+             (cardinality X))))
 
 ; Now that we have the delete function, we can prove an interesting
 ; theorem, namely that if (subset X Y) and |X| = |Y|, then X = Y.  In
@@ -450,115 +497,113 @@
 ; X and Y.  This is a little ugly, but along the way we will show the
 ; nice theorem, subset-cardinality.
 
-(defun double-delete-induction (X Y)
-  (declare (xargs :guard (and (setp X) (setp Y))))
-  (if (or (empty X) (empty Y))
-      (list X Y)
-    (double-delete-induction (delete (head X) X)
-                             (delete (head X) Y))))
+  (local (defun double-delete-induction (X Y)
+           (declare (xargs :guard (and (setp X) (setp Y))))
+           (if (or (empty X) (empty Y))
+               (list X Y)
+             (double-delete-induction (delete (head X) X)
+                                      (delete (head X) Y)))))
 
-(defthmd subset-double-delete
-  (implies (subset X Y)
-           (subset (delete a X) (delete a Y))))
+  (local (defthmd subset-double-delete
+           (implies (subset X Y)
+                    (subset (delete a X) (delete a Y)))))
 
-(encapsulate ()
+  (encapsulate
+    ()
+    (local (defthm subset-cardinality-lemma
+             (implies (and (not (or (empty x) (empty y)))
+                           (implies (subset (delete (head x) x)
+                                            (delete (head x) y))
+                                    (<= (cardinality (delete (head x) x))
+                                        (cardinality (delete (head x) y)))))
+                      (implies (subset x y)
+                               (<= (cardinality x) (cardinality y))))
+             :hints(("goal" :use ((:instance subset-double-delete
+                                             (a (head x))
+                                             (x x)
+                                             (y y)))))))
 
-  (local (defthm subset-cardinality-lemma
-    (implies (and (not (or (empty x) (empty y)))
-                  (implies (subset (delete (head x) x)
-                                   (delete (head x) y))
-                           (<= (cardinality (delete (head x) x))
-                               (cardinality (delete (head x) y)))))
-             (implies (subset x y)
-                      (<= (cardinality x) (cardinality y))))
-    :hints(("goal" :use ((:instance subset-double-delete
-                                  (a (head x))
-                                  (x x)
-                                  (y y)))))))
+    (defthm subset-cardinality
+      (implies (subset X Y)
+               (<= (cardinality X) (cardinality Y)))
+      :hints(("Goal" :induct (double-delete-induction X Y)))
+      :rule-classes (:rewrite :linear)))
 
-  (defthm subset-cardinality
-    (implies (subset X Y)
-             (<= (cardinality X) (cardinality Y)))
-    :hints(("Goal" :induct (double-delete-induction X Y)))
+  (defthmd equal-cardinality-subset-is-equality
+    (implies (and (setp X)
+                  (setp Y)
+                  (subset X Y)
+                  (equal (cardinality X) (cardinality Y)))
+             (equal (equal X Y) t))
+    :hints(("Goal" :induct (double-delete-induction X Y))
+           ("Subgoal *1/2"
+            :use ((:instance subset-double-delete
+                             (a (head X))
+                             (X X)
+                             (Y Y))
+                  (:instance (:theorem
+                              (implies (equal X Y)
+                                       (equal (insert a X) (insert a Y))))
+                             (a (head X))
+                             (X (tail X))
+                             (Y (delete (head X) Y)))))))
+
+  (defthm proper-subset-cardinality
+    (implies (and (subset X Y)
+                  (not (subset Y X)))
+             (< (cardinality X) (cardinality Y)))
+    :rule-classes (:rewrite :linear)
+    :hints(("Goal"
+            :in-theory (disable pick-a-point-subset-strategy)
+            :use ((:instance equal-cardinality-subset-is-equality
+                             (X (sfix x))
+                             (Y (sfix y)))))))
+
+  (defthm intersect-cardinality-X
+    (<= (cardinality (intersect X Y))
+        (cardinality X))
     :rule-classes (:rewrite :linear))
 
-)
-
-(defthmd equal-cardinality-subset-is-equality
-  (implies (and (setp X)
-		(setp Y)
-                (subset X Y)
-                (equal (cardinality X) (cardinality Y)))
-           (equal (equal X Y) t))
-  :hints(("Goal" :induct (double-delete-induction X Y))
-         ("Subgoal *1/2"
-          :use ((:instance subset-double-delete
-                           (a (head X))
-                           (X X)
-                           (Y Y))
-                (:instance (:theorem
-                  (implies (equal X Y)
-                           (equal (insert a X) (insert a Y))))
-	             (a (head X))
-                     (X (tail X))
-                     (Y (delete (head X) Y)))))))
-
-(defthm proper-subset-cardinality
-  (implies (and (subset X Y)
-                (not (subset Y X)))
-           (< (cardinality X) (cardinality Y)))
-  :rule-classes (:rewrite :linear)
-  :hints(("Goal"
-          :in-theory (disable pick-a-point-subset-strategy)
-          :use ((:instance equal-cardinality-subset-is-equality
-                           (X (sfix x))
-                           (Y (sfix y)))))))
-
-(defthm intersect-cardinality-X
-  (<= (cardinality (intersect X Y))
-      (cardinality X))
-  :rule-classes (:rewrite :linear))
-
-(defthm intersect-cardinality-Y
-  (<= (cardinality (intersect X Y))
-      (cardinality Y))
-  :rule-classes (:rewrite :linear))
+  (defthm intersect-cardinality-Y
+    (<= (cardinality (intersect X Y))
+        (cardinality Y))
+    :rule-classes (:rewrite :linear))
 
 
 
-; There are also some interesting properties about cardinality which
-; are more precise.
+; There are also some interesting properties about cardinality which are more
+; precise.
 
-(defthm expand-cardinality-of-union
-  (equal (cardinality (union X Y))
-         (- (+ (cardinality X) (cardinality Y))
-            (cardinality (intersect X Y))))
-  :rule-classes (:rewrite :linear))
+  (defthm expand-cardinality-of-union
+    (equal (cardinality (union X Y))
+           (- (+ (cardinality X) (cardinality Y))
+              (cardinality (intersect X Y))))
+    :rule-classes (:rewrite :linear))
 
-(defthm expand-cardinality-of-difference
-  (equal (cardinality (difference X Y))
-         (- (cardinality X)
-            (cardinality (intersect X Y))))
-  :rule-classes (:rewrite :linear))
+  (defthm expand-cardinality-of-difference
+    (equal (cardinality (difference X Y))
+           (- (cardinality X)
+              (cardinality (intersect X Y))))
+    :rule-classes (:rewrite :linear))
 
-(defthm intersect-cardinality-subset
-  (implies (subset X Y)
-           (equal (cardinality (intersect X Y))
-                  (cardinality X)))
-  :rule-classes (:rewrite :linear))
+  (defthm intersect-cardinality-subset
+    (implies (subset X Y)
+             (equal (cardinality (intersect X Y))
+                    (cardinality X)))
+    :rule-classes (:rewrite :linear))
 
-(defthm intersect-cardinality-non-subset
-  (implies (not (subset x y))
-           (< (cardinality (intersect x y))
-              (cardinality x)))
-  :rule-classes (:rewrite :linear))
+  (defthm intersect-cardinality-non-subset
+    (implies (not (subset x y))
+             (< (cardinality (intersect x y))
+                (cardinality x)))
+    :rule-classes (:rewrite :linear))
 
-(defthm intersect-cardinality-subset-2
-  (equal (equal (cardinality (intersect X Y))
-                (cardinality X))
-	 (subset X Y)))
+  (defthm intersect-cardinality-subset-2
+    (equal (equal (cardinality (intersect X Y))
+                  (cardinality X))
+           (subset X Y)))
 
-(defthm intersect-cardinality-non-subset-2
-  (equal (< (cardinality (intersect x y))
-            (cardinality x))
-	 (not (subset x y))))
+  (defthm intersect-cardinality-non-subset-2
+    (equal (< (cardinality (intersect x y))
+              (cardinality x))
+           (not (subset x y)))))

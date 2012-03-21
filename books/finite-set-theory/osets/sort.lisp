@@ -12,30 +12,7 @@
 ; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 
-; sort.lisp
-;
-; We implement a mergesort which can convert lists into sets more efficiencly
-; than repeated insertion.  Logically, (mergesort x) is exactly the same as
-; repeated insertion, so it is fairly easy to reason about.  But, under the
-; hood, mergesort is implemented fairly efficiently using MBE.
-;
-; The sort we implement is probably not "blisteringly fast".  Folklore says we
-; should switch to using a bubblesort when we get down to some threshold, say
-; 40 elements.  I'm not going to bother with any of that.  If you find that the
-; mergesort's performance is inadequate, which is unlikely, you can work on
-; making it faster.
-;
-; There are a few points of interest.  If you look at the actual sort code
-; (mergesort-exec), you will see that it is actually using the set library's
-; own union function to perform the union.  This is pretty slick because union
-; is linear complexity, and yet is easy to reason about since we have already
-; got a lot of theory in place about it.
-;
-; In any case, our strategy for proving the equality of this mergesort with a
-; simple insertion sort is the exact same trick we use everywhere else in the
-; sets library.  We begin by showing that both produce sets, and then show that
-; membership in either is true exactly when an element is member-equal in the
-; original list.
+; sort.lisp -- a mergesort for constructing sets
 
 (in-package "SETS")
 (include-book "outer")
@@ -43,8 +20,6 @@
 (local (include-book "unicode/rev" :dir :system))
 (local (include-book "tools/mv-nth" :dir :system))
 (set-verify-guards-eagerness 2)
-
-
 
 (local (defthm app-of-cons-of-list-fix
          (equal (acl2::app x (cons a (acl2::list-fix y)))
@@ -65,49 +40,55 @@
               (member a x))))
 
 
+(defsection halve-list
+  :parents (mergesort)
+  :short "How we split the list for mergesort."
 
-; Historic Notes.
-;
-; Originally I used the following function to split the list.
-;
-;  (defun split-list-old (x)
-;    (declare (xargs :guard (true-listp x)))
-;    (cond ((endp x) (mv nil nil))
-;          ((endp (cdr x)) (mv (list (car x)) nil))
-;          (t (mv-let (part1 part2)
-;                     (split-list-old (cddr x))
-;                     (mv (cons (car x) part1)
-;                         (cons (cadr x) part2)))))))
-;
-; But David Rager noted that this was not tail recursive, and accordingly
-; it ran into trouble on large data sets.  Accordingly, in Version 0.91,
-; I rewrote this to be tail recursive:
-;
-;  (defun split-list (x acc acc2)
-;   (declare (xargs :guard (true-listp x)))
-;   (cond ((endp x)
-;          (mv acc acc2))
-;         ((endp (cdr x))
-;          (mv (cons (car x) acc) acc2))
-;         (t (split-list (cddr x)
-;                        (cons (car x) acc)
-;                        (cons (cadr x) acc2)))))
-;
-; Since then, I wrote the defsort/defsort library, which uses some tricks to
-; provide a faster mergesort.  One key optimization is to take the first and
-; second halves of the list, rather than splitting the list in terms of evens
-; and odds.  This allows you to split the list with half as much consing.
-;
-; Defsort's approach uses a lot of arithmetic optimization.  I later wrote a
-; mergesort for Milawa, where arithmetic is expensive.  Here, I implemented
-; split-list by walking down "one cdr" and "two cdrs" at a time.  Below is a
-; reimplementation of this strategy for osets.
-;
-; BOZO this strategy is still stupidly re-consing up half the list, when really
-; we could avoid that by just being a bit smarter.
+  :long "<p>Originally I used the following function to split the list.</p>
 
-(defund halve-list-aux (mid x acc)
-  (declare (xargs :guard (<= (len x) (len mid))))
+<code>
+  (defun split-list-old (x)
+    (declare (xargs :guard (true-listp x)))
+    (cond ((endp x) (mv nil nil))
+          ((endp (cdr x)) (mv (list (car x)) nil))
+          (t (mv-let (part1 part2)
+                     (split-list-old (cddr x))
+                     (mv (cons (car x) part1)
+                         (cons (cadr x) part2)))))))
+</code>
+
+<p>But David Rager noted that this was not tail recursive, and accordingly it
+ran into trouble on large data sets.  Accordingly, in Version 0.91, I rewrote
+this to be tail recursive:</p>
+
+<code>
+ (defun split-list (x acc acc2)
+   (declare (xargs :guard (true-listp x)))
+   (cond ((endp x)
+          (mv acc acc2))
+         ((endp (cdr x))
+          (mv (cons (car x) acc) acc2))
+         (t (split-list (cddr x)
+                        (cons (car x) acc)
+                        (cons (cadr x) acc2)))))
+</code>
+
+<p>Since then, I wrote the <tt>defsort/defsort</tt> library, which uses some
+tricks to provide a faster mergesort.  One key optimization is to take the
+first and second halves of the list, rather than splitting the list in terms of
+evens and odds.  This allows you to split the list with half as much
+consing.</p>
+
+<p>Defsort's approach uses a lot of arithmetic optimization.  I later wrote a
+mergesort for Milawa, where arithmetic is expensive.  Here, I implemented
+split-list by walking down \"one cdr\" and \"two cdrs\" at a time.  I now use
+this same strategy in osets.</p>
+
+<p>BOZO this strategy is still stupidly re-consing up half the list, when
+really we could avoid that by just being a bit smarter, like in defsort.</p>"
+
+  (defund halve-list-aux (mid x acc)
+    (declare (xargs :guard (<= (len x) (len mid))))
 
 ; We split the list by walking down it in a funny way; see halve-list.
 ; Initially, mid and x both point to the front of the list.  We walk down x
@@ -120,46 +101,46 @@
 ; performs well, handily beating the old osets split-list implementation on a
 ; large list of symbols which we used to test it.
 
-  (if (or (atom x)
-          (atom (cdr x)))
-      (mv acc mid)
-    (halve-list-aux (cdr mid)
-                    (cdr (cdr x))
-                    (cons (car mid) acc))))
+    (if (or (atom x)
+            (atom (cdr x)))
+        (mv acc mid)
+      (halve-list-aux (cdr mid)
+                      (cdr (cdr x))
+                      (cons (car mid) acc))))
 
-(defund halve-list (x)
-  (declare (xargs :guard t))
-  (halve-list-aux x x nil))
+  (defund halve-list (x)
+    (declare (xargs :guard t))
+    (halve-list-aux x x nil))
 
-(local (in-theory (enable halve-list-aux)))
+  (local (in-theory (enable halve-list-aux)))
 
-(defthm halve-list-aux-when-not-consp
-  (implies (not (consp x))
-           (equal (halve-list-aux mid x acc)
-                  (list acc mid))))
+  (local (defthm halve-list-aux-when-not-consp
+           (implies (not (consp x))
+                    (equal (halve-list-aux mid x acc)
+                           (list acc mid)))))
 
-(defthm halve-list-aux-when-not-consp-of-cdr
-    (implies (not (consp (cdr x)))
-             (equal (halve-list-aux mid x acc)
-                    (list acc mid))))
+  (local (defthm halve-list-aux-when-not-consp-of-cdr
+           (implies (not (consp (cdr x)))
+                    (equal (halve-list-aux mid x acc)
+                           (list acc mid)))))
 
-(defthm halve-list-aux-len-1
-    (implies (and (<= (len x) (len mid))
-                  (consp x)
-                  (consp (cdr x)))
-             (< (len (mv-nth 0 (halve-list-aux mid x acc)))
-                (+ (len mid) (len acc))))
-    :rule-classes ((:rewrite) (:linear)))
+  (local (defthm halve-list-aux-len-1
+           (implies (and (<= (len x) (len mid))
+                         (consp x)
+                         (consp (cdr x)))
+                    (< (len (mv-nth 0 (halve-list-aux mid x acc)))
+                       (+ (len mid) (len acc))))
+           :rule-classes ((:rewrite) (:linear))))
 
-(defthm halve-list-aux-len-2
-    (implies (and (<= (len x) (len mid))
-                  (consp x)
-                  (consp (cdr x)))
-             (< (len (mv-nth 1 (halve-list-aux mid x acc)))
-                (len mid)))
-    :rule-classes ((:rewrite) (:linear)))
+  (local (defthm halve-list-aux-len-2
+           (implies (and (<= (len x) (len mid))
+                         (consp x)
+                         (consp (cdr x)))
+                    (< (len (mv-nth 1 (halve-list-aux mid x acc)))
+                       (len mid)))
+           :rule-classes ((:rewrite) (:linear))))
 
-(local (defthm halve-list-aux-append-property
+  (local (defthm halve-list-aux-append-property
            (implies (<= (len x) (len mid))
                     (equal (acl2::app (acl2::rev (mv-nth 0 (halve-list-aux mid x acc)))
                                       (mv-nth 1 (halve-list-aux mid x acc)))
@@ -167,13 +148,13 @@
                                       mid)))
            :hints(("Goal" :do-not '(generalize fertilize)))))
 
-(local (defthm halve-list-correct
+  (local (defthm halve-list-correct
            (equal (acl2::app (acl2::rev (mv-nth 0 (halve-list x)))
                              (mv-nth 1 (halve-list x)))
                   (acl2::list-fix x))
            :hints(("Goal" :in-theory (enable halve-list)))))
 
-(defthm halve-list-len-1
+  (defthm halve-list-len-1
     (implies (and (consp x)
                   (consp (cdr x)))
              (< (len (mv-nth 0 (halve-list x)))
@@ -184,14 +165,14 @@
             :use ((:instance halve-list-aux-len-1
                              (mid x) (x x) (acc nil))))))
 
-(defthm halve-list-len-2
+  (defthm halve-list-len-2
     (implies (and (consp x)
                   (consp (cdr x)))
              (< (len (mv-nth 1 (halve-list x)))
                 (len x)))
     :hints(("Goal" :in-theory (enable halve-list))))
 
-(defthm halve-list-membership-property
+  (defthm halve-list-membership-property
     (iff (member a x)
          (or (member a (mv-nth 0 (halve-list x)))
              (member a (mv-nth 1 (halve-list x)))))
@@ -201,78 +182,110 @@
             :in-theory (disable member-of-app)
             :use ((:instance member-of-app
                              (x (acl2::rev (mv-nth 0 (halve-list x))))
-                             (y (mv-nth 1 (halve-list x))))))))
-
-(defun mergesort-exec (x)
-  (declare (xargs :guard t
-                  :measure (len x)
-                  :hints(("Goal"
-                          :use ((:instance halve-list-len-1)
-                                (:instance halve-list-len-2))))
-                  :verify-guards nil))
-  (cond ((atom x) nil)
-        ((atom (cdr x))
-         (mbe :logic (insert (car x) nil)
-              :exec (list (car x))))
-        (t (mv-let (part1 part2)
-                   (halve-list x)
-                   (fast-union (mergesort-exec part1)
-                               (mergesort-exec part2)
-                               nil)))))
-
-(local (defthm fast-union-is-union
-         (implies (and (setp x)
-                       (setp y))
-                  (equal (fast-union x y nil)
-                         (union x y)))
-         :hints(("Goal" :in-theory (enable fast-union-set
-                                           fast-union-membership)))))
-
-(local (defthm mergesort-exec-set
-         (setp (mergesort-exec x))))
-
-(local (defthm mergesort-membership-2
-         (implies (member a x)
-                  (in a (mergesort-exec x)))
-         :hints(("Subgoal *1/3" :use (:instance halve-list-membership-property)))))
-
-(local (defthm mergesort-membership-1
-         (implies (in a (mergesort-exec x))
-                  (member a x))
-         :hints(("Subgoal *1/6" :use (:instance halve-list-membership-property))
-                ("Subgoal *1/5" :use (:instance halve-list-membership-property))
-                ("Subgoal *1/4" :use (:instance halve-list-membership-property)))))
-
-(local (defthm mergesort-membership
-         (iff (in a (mergesort-exec x))
-              (member a x))))
-
-(verify-guards mergesort-exec
-               :hints(("Goal" :in-theory (e/d ((:ruleset primitive-rules))
-                                              (mv-nth)))))
+                             (y (mv-nth 1 (halve-list x)))))))))
 
 
-(defun mergesort (x)
-  (declare (xargs :guard t
-                  :verify-guards nil))
-  (mbe :logic (if (endp x)
-		  nil
-		(insert (car x)
-			(mergesort (cdr x))))
-       :exec (mergesort-exec x)))
+(defsection mergesort-exec
+  :parents (mergesort)
+  :short "The implementation of mergesort."
 
-(defthm mergesort-set
-  (setp (mergesort x)))
+  (defun mergesort-exec (x)
+    (declare (xargs :guard t
+                    :measure (len x)
+                    :hints(("Goal"
+                            :use ((:instance halve-list-len-1)
+                                  (:instance halve-list-len-2))))
+                    :verify-guards nil))
+    (cond ((atom x) nil)
+          ((atom (cdr x))
+           (mbe :logic (insert (car x) nil)
+                :exec (list (car x))))
+          (t (mv-let (part1 part2)
+               (halve-list x)
+               (fast-union (mergesort-exec part1)
+                           (mergesort-exec part2)
+                           nil)))))
 
-(defthm in-mergesort
-  (equal (in a (mergesort x))
-	 (if (member a x)
-             t
-           nil)))
+  (local (defthm fast-union-is-union
+           (implies (and (setp x)
+                         (setp y))
+                    (equal (fast-union x y nil)
+                           (union x y)))
+           :hints(("Goal" :in-theory (enable fast-union-set
+                                             fast-union-membership)))))
 
-(verify-guards mergesort)
+  (defthm mergesort-exec-set
+    (setp (mergesort-exec x)))
 
-(defthm mergesort-set-identity
-  (implies (setp X)
-	   (equal (mergesort X) X))
-  :hints(("Goal" :in-theory (enable (:ruleset primitive-rules)))))
+  (local (defthm mergesort-membership-2
+           (implies (member a x)
+                    (in a (mergesort-exec x)))
+           :hints(("Subgoal *1/3" :use (:instance halve-list-membership-property)))))
+
+  (local (defthm mergesort-membership-1
+           (implies (in a (mergesort-exec x))
+                    (member a x))
+           :hints(("Subgoal *1/6" :use (:instance halve-list-membership-property))
+                  ("Subgoal *1/5" :use (:instance halve-list-membership-property))
+                  ("Subgoal *1/4" :use (:instance halve-list-membership-property)))))
+
+  (defthm mergesort-exec-membership
+    (iff (in a (mergesort-exec x))
+         (member a x)))
+
+  (verify-guards mergesort-exec
+    :hints(("Goal" :in-theory (e/d ((:ruleset primitive-rules))
+                                   (mv-nth))))))
+
+
+(defsection mergesort
+  :parents (osets)
+  :short "@(call mergesort) converts the list <tt>X</tt> into an ordered set."
+
+  :long "<p>Logically, <tt>(mergesort x)</tt> is exactly the same as repeated
+insertion, so it is fairly easy to reason about.  But in the execution,
+mergesort is implemented with a reasonably efficient sort with O(n log n)
+performance instead of O(n^2) like repeated insertion.</p>
+
+<p>Our implementation is probably not blisteringly fast.  Folklore says we
+should switch to using a bubblesort when we get down to some threshold, say 40
+elements.  I'm not going to bother with any of that.  If you find that the
+mergesort's performance is inadequate, which is unlikely, you can work on
+making it faster.</p>
+
+<p>There are a few points of interest.  If you look at the actual sort code,
+@(see mergesort-exec), you will see that it is actually using the set library's
+own @(see union) function to perform the union.  This is pretty slick because
+union is linear complexity, and yet is easy to reason about since we have
+already got a lot of theory in place about it.</p>
+
+<p>In any case, our strategy for proving the equality of this mergesort with a
+simple insertion sort is the exact same trick we use everywhere else in the
+sets library.  We begin by showing that both produce sets, and then show that
+membership in either is true exactly when an element is @(see member-equal) in
+the original list.</p>"
+
+  (defun mergesort (x)
+    (declare (xargs :guard t
+                    :verify-guards nil))
+    (mbe :logic (if (endp x)
+                    nil
+                  (insert (car x)
+                          (mergesort (cdr x))))
+         :exec (mergesort-exec x)))
+
+  (defthm mergesort-set
+    (setp (mergesort x)))
+
+  (defthm in-mergesort
+    (equal (in a (mergesort x))
+           (if (member a x)
+               t
+             nil)))
+
+  (verify-guards mergesort)
+
+  (defthm mergesort-set-identity
+    (implies (setp X)
+             (equal (mergesort X) X))
+    :hints(("Goal" :in-theory (enable (:ruleset primitive-rules))))))

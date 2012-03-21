@@ -125,7 +125,7 @@
            ((endp Y) X)
            ((equal (car X) (car Y))
             (cons (car X) (fast-union-old (cdr X) (cdr Y))))
-           ((<< (car X) (car Y))
+           ((fast-<< (car X) (car Y))
             (cons (car X) (fast-union-old (cdr X) Y)))
            (t
             (cons (car Y) (fast-union-old X (cdr Y))))))
@@ -163,7 +163,7 @@
         ((equal (car x) (car y))
          (fast-union (cdr x) (cdr y) (cons (car x) acc)))
         ((mbe :logic (<< (car x) (car y))
-              :exec (lexorder (car x) (car y)))
+              :exec (fast-lexorder (car x) (car y)))
          (fast-union (cdr x) y (cons (car x) acc)))
         (t
          (fast-union x (cdr y) (cons (car y) acc)))))
@@ -215,7 +215,7 @@
         ((equal (car X) (car Y))
          t)
         ((mbe :logic (<< (car X) (car y))
-              :exec (lexorder (car X) (car Y)))
+              :exec (fast-lexorder (car X) (car Y)))
          (fast-intersectp (cdr X) Y))
         (t
          (fast-intersectp X (cdr Y)))))
@@ -242,7 +242,7 @@
            ((equal (car X) (car Y))
             (cons (car X) (fast-intersect-old (cdr X) (cdr Y))))
            ((mbe :logic (<< (car X) (car Y))
-                 :exec (lexorder (car X) (car Y)))
+                 :exec (fast-lexorder (car X) (car Y)))
             (fast-intersect-old (cdr X) Y))
            (t
             (fast-intersect-old X (cdr Y)))))
@@ -320,7 +320,7 @@
         ((equal (car X) (car Y))
          (fast-intersect (cdr X) (cdr Y) (cons (car X) acc)))
         ((mbe :logic (<< (car X) (car Y))
-              :exec (lexorder (car X) (car Y)))
+              :exec (fast-lexorder (car X) (car Y)))
          (fast-intersect (cdr X) Y acc))
         (t
          (fast-intersect X (cdr Y) acc))))
@@ -382,7 +382,7 @@
         ((equal (car X) (car Y))
          (fast-difference-old (cdr X) (cdr Y)))
         ((mbe :logic (<< (car X) (car Y))
-              :exec (lexorder (car X) (car Y)))
+              :exec (fast-lexorder (car X) (car Y)))
          (cons (car X) (fast-difference-old (cdr X) Y)))
         (t
          (fast-difference-old X (cdr Y)))))
@@ -447,7 +447,7 @@
         ((equal (car X) (car Y))
          (fast-difference (cdr X) (cdr Y) acc))
         ((mbe :logic (<< (car X) (car Y))
-              :exec (lexorder (car X) (car Y)))
+              :exec (fast-lexorder (car X) (car Y)))
          (fast-difference (cdr X) Y (cons (car X) acc)))
         (t
          (fast-difference X (cdr Y) acc))))

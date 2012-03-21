@@ -20,6 +20,7 @@
 
 (in-package "ACL2")
 (include-book "all")
+(include-book "finite-set-theory/osets/sets" :dir :system)
 
 ; (depends-on "bookdoc.dat")
 
