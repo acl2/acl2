@@ -77,6 +77,10 @@
 ; -------------------------------------------------------------------
 ; order-reasoning
 
+;;; Replaced by Matt K. after Jared D.'s modification
+;;; in svn 1015 of that book, since there is now a conflict:
+(include-book "misc/total-order" :dir :system)
+#||
 (defthmd <<-type
   (or (equal (<< a b) t)
       (equal (<< a b) nil))
@@ -97,6 +101,7 @@
   (implies (and (not (<< b a))
                 (not (equal a b)))
            (<< a b)))
+||#
 
 (defthmd head-insert
   (equal (head (insert a X))
@@ -120,7 +125,7 @@
            (empty (tail X))))
 
 (deftheory order-reasoning
-  '(<<-type
+  '(; <<-type ; see comment above about svn 1015
     <<-irreflexive
     <<-transitive
     <<-asymmetric

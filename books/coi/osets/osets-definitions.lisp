@@ -2592,6 +2592,10 @@
   (equal (< (cardinality (intersect x y)) (cardinality x))
          (not (subset x y))))
 
+;;; Replaced by Matt K. after Jared D.'s modification
+;;; in svn 1015 of that book, since there is now a conflict:
+(include-book "misc/total-order" :dir :system)
+#||
 (defun << (x y)
   (declare (xargs :guard t))
   (and (lexorder x y)
@@ -2619,6 +2623,7 @@
            (<< a b)))
 
 (in-theory (disable <<))
+||#
 
 ;;; Now we can define sets.  Sets are those lists whose elements are
 ;;; fully ordered under the relation above.  Note that this implicitly
@@ -3771,10 +3776,15 @@
 ; We begin with the definitions of the set theory functions and a 
 ; few trivial type prescriptions.
 
+;;; Replaced by Matt K. after Jared D.'s modification
+;;; in svn 1015 of that book, since there is now a conflict:
+(include-book "misc/total-order" :dir :system)
+#||
 (defund << (x y)
   (declare (xargs :guard t))
   (and (lexorder x y)
        (not (equal x y))))
+||#
 
 (defund setp (X)
   (declare (xargs :guard t))

@@ -64,10 +64,15 @@
 ; We begin with the definitions of the set theory functions and a 
 ; few trivial type prescriptions.
 
+;;; Replaced by Matt K. after Jared D.'s modification
+;;; in svn 1015 of that book, since there is now a conflict:
+(include-book "misc/total-order" :dir :system)
+#||
 (defund << (x y)
   (declare (xargs :guard t))
   (and (lexorder x y)
        (not (equal x y))))
+||#
 
 (defund setp (X)
   (declare (xargs :guard t))

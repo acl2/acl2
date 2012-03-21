@@ -67,6 +67,10 @@
   put together by Matt Kaufmann, Pete Manolios, and Rob Sumners.
   However, we will only use this locally and will allow other 
   orders to be used, in order to be a more flexible library.
+  (Added March 21, 2012 after svn 1015: Jared Davis says that the
+  above is consistent with history, when the symbol << was not
+  imported from the ACL2 package; but now it is, and it's
+  reasonable simply to use the notion of << from "misc/total-order".
 
 |#
 
@@ -79,7 +83,10 @@
 ;;; First we introduce the total order, <<. and prove that it is a
 ;;; total order (irreflexivity, transitivity, asymmetricity, trichot-
 ;;; omy). 
-
+;;; Replaced by Matt K. after Jared D.'s modification
+;;; in svn 1015 of that book, since there is now a conflict:
+(include-book "misc/total-order" :dir :system)
+#||
 (defun << (x y)
   (declare (xargs :guard t))
   (and (lexorder x y)
@@ -107,7 +114,7 @@
            (<< a b)))
 
 (in-theory (disable <<))
-
+||#
 
 
 
