@@ -27,13 +27,15 @@
 # This file is to be included in other Makefiles.  The include should be
 # preceded by a definition of DIRS, the list of subdirectories.
 
+export ACL2_PCERT
+
 .PHONY: top
 top:
 	@my_status=0
 	@for dir in $(DIRS) ; \
 	do \
 	if [ -f $$dir/Makefile ]; then \
-	(cd $$dir ; $(MAKE) ACL2_PCERT=$(ACL2_PCERT)) ; \
+	(cd $$dir ; $(MAKE)) ; \
 	my_status=$$? ; \
 	if [ $$my_status -ne 0 ] ; then exit 1 ; fi ; \
 	fi \

@@ -42,8 +42,8 @@
   (mv-let
    (eofp cmd state)
    (state-global-let* ((infixp nil)) (read-object ch state))
-   (cond (eofp
-          (er soft ctx *ill-formed-certificate-msg* file1 file2))
+   (cond (eofp (ill-formed-certificate-er ctx 'create-pkgs-for-cert-file1
+                                          file1 file2))
          ((eq cmd :end-portcullis-cmds)
           (value new-pkgs-sofar))
          ((and (consp cmd)
@@ -77,7 +77,7 @@
     (:skip-proofs-okp . t)))
 
 (defun create-pkgs-for-cert-file (file1 ctx state)
-  (let ((file2 (convert-book-name-to-cert-name file1 nil)))
+  (let ((file2 (convert-book-name-to-cert-name file1 t)))
     (mv-let
      (ch state)
      (open-input-channel file2 :object state)
@@ -93,7 +93,8 @@
             ((infixp nil))
             (chk-in-package ch file2 nil ctx state))))
          (if (not (equal pkg "ACL2"))
-           (er soft ctx *ill-formed-certificate-msg* file1 file2)
+             (ill-formed-certificate-er ctx 'create-pkgs-for-cert-file{1}
+                                        file1 file2 pkg)
            (state-global-let*
             ((current-package "ACL2" set-current-package1))
             (mv-let (error-flg val state)
@@ -102,15 +103,15 @@
                      (state-global-let* ((infixp nil))
                                         (read-object ch state))
                      (if (or eofp (not (stringp version)))
-                       (er soft ctx *ill-formed-certificate-msg*
-                           file1 file2)
+                         (ill-formed-certificate-er
+                          ctx 'create-pkgs-for-cert-file{2} file1 file2)
                        (mv-let
                         (eofp key state)
                         (state-global-let* ((infixp nil))
                                            (read-object ch state))
                         (if (or eofp (not (eq key :begin-portcullis-cmds)))
-                          (er soft ctx *ill-formed-certificate-msg*
-                              file1 file2)
+                            (ill-formed-certificate-er
+                             ctx 'create-pkgs-for-cert-file{3} file1 file2)
                           (create-pkgs-for-cert-file1
                            file1 file2 ch
                            (strip-cars (known-package-alist state))
@@ -140,12 +141,15 @@
       ((new-pkg-lst (create-pkgs-for-cert-file new-full-book-name ctx state))
        (cert-obj (chk-certificate-file new-full-book-name
                                        new-directory-name-with-slash
-                                       t ctx state
+                                       'certify-book ; gives light-chkp = t
+                                       ctx state
                                        *fix-cert-suspect-book-action-alist* nil)))
       (let* ((portcullis (cons (access cert-obj cert-obj :cmds)
                                (access cert-obj cert-obj :pre-alist)))
              (post-alist (access cert-obj cert-obj :post-alist))
              (expansion-alist (access cert-obj cert-obj :expansion-alist))
+             (expansion-alist-nonelided
+              (access cert-obj cert-obj :expansion-alist-nonelided))
              (old-full-book-name (caar post-alist))
              (old-directory-name (remove-after-last-directory-separator
                                   old-full-book-name))
@@ -155,8 +159,8 @@
             (value :not-needed)
           (make-certificate-file-relocated
                  new-full-book-name portcullis
-                 (convert-book-name-to-cert-name new-full-book-name nil)
-                 post-alist expansion-alist
+                 (convert-book-name-to-cert-name new-full-book-name t)
+                 post-alist expansion-alist expansion-alist-nonelided
                  old-directory-name new-directory-name
                  nil ctx state)))))))
 

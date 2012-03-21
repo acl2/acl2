@@ -29,6 +29,8 @@
 # This file is to be included in other Makefiles.  The include should be
 # preceded by a definition of DIRS, the list of subdirectories.
 
+export ACL2_PCERT
+
 .PHONY: top
 top: $(DIRS)
 

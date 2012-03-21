@@ -4,8 +4,9 @@ workxxx*
 *.date
 *.cert
 *.cert.temp
-*.pcert
-*.pcert.temp
+*.pcert0
+*.pcert1
+*.pcert0.temp
 *.port
 *.acl2x
 Makefile-deps

@@ -42,9 +42,9 @@
                  (MAKE-EVENT '(DEFUN FOO4 (X) X)))
     (ENCAPSULATE
      ((LOCAL-FN (X) T))
-     (LOCAL (DEFUN LOCAL-FN (X) X))
+     (LOCAL (VALUE-TRIPLE :ELIDED)) ; eliding was optional
      (RECORD-EXPANSION (LOCAL (MAKE-EVENT '(DEFUN FOO1 (X) X)))
-                       (LOCAL (DEFUN FOO1 (X) X)))
+                       (LOCAL (VALUE-TRIPLE :ELIDED))) ; eliding was optional
      (RECORD-EXPANSION
       (MY-MAC (SKIP-PROOFS (MAKE-EVENT '(DEFUN FOO2 (X) X)
                                        :CHECK-EXPANSION T)))
@@ -76,6 +76,7 @@
 
 (include-book "misc/file-io" :dir :system)
 
+#||
 (must-succeed
  (mv-let
   (erp val state)
@@ -87,3 +88,4 @@
                                *macros-expansion-alist*
                              *macros-expansion-alist-pcert*)))))
       (mv erp nil state)))))
+||#

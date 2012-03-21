@@ -142,7 +142,7 @@
                              (DEFTHM BAR2-PRESERVES-CONSP
                                (IMPLIES (CONSP X) (CONSP (BAR2 X)))))))
        (ENCAPSULATE ((BAR2 (X) T))
-                    (LOCAL (DEFUN BAR2 (X) (FOO X)))
+                    (LOCAL (VALUE-TRIPLE :ELIDED)) ; eliding was optional
                     (DEFTHM BAR2-PRESERVES-CONSP
                       (IMPLIES (CONSP X)
                                (CONSP (BAR2 X))))))))
@@ -154,7 +154,7 @@
                            (DEFTHM BAR2-PRESERVES-CONSP
                              (IMPLIES (CONSP X) (CONSP (BAR2 X)))))))
      (ENCAPSULATE ((BAR2 (X) T))
-                  (LOCAL (DEFUN BAR2 (X) (FOO X)))
+                  (LOCAL (VALUE-TRIPLE :ELIDED)) ; eliding was optional
                   (DEFTHM BAR2-PRESERVES-CONSP
                     (IMPLIES (CONSP X) (CONSP (BAR2 X))))))
     (7
@@ -167,7 +167,7 @@
      (ENCAPSULATE
       ((BAR3 (X) T))
       (RECORD-EXPANSION (MAKE-EVENT '(LOCAL (DEFUN BAR3 (X) (FOO X))))
-                        (LOCAL (DEFUN BAR3 (X) (FOO X))))
+                        (LOCAL (VALUE-TRIPLE :ELIDED))) ; eliding was optional
       (DEFTHM BAR3-PRESERVES-CONSP
         (IMPLIES (CONSP X) (CONSP (BAR3 X))))))
     (8 RECORD-EXPANSION
@@ -178,7 +178,7 @@
        (ENCAPSULATE
         ((BAR3 (X) T))
         (RECORD-EXPANSION (MAKE-EVENT '(LOCAL (DEFUN BAR3 (X) (FOO X))))
-                          (LOCAL (DEFUN BAR3 (X) (FOO X))))
+                          (LOCAL (VALUE-TRIPLE :ELIDED))) ; eliding was optional
         (DEFTHM BAR3-PRESERVES-CONSP
           (IMPLIES (CONSP X) (CONSP (BAR3 X))))))
     (10 RECORD-EXPANSION
@@ -201,9 +201,9 @@
      (ENCAPSULATE
       NIL (MY-LOCAL (DEFUN G3 (X) X))
       (RECORD-EXPANSION (MAKE-EVENT '(MY-LOCAL (DEFUN G3 (X) X)))
-                        (LOCAL (DEFUN G3 (X) X)))
+                        (LOCAL (VALUE-TRIPLE :ELIDED))) ; eliding was optional
       (RECORD-EXPANSION (MAKE-EVENT '(MY-LOCAL (DEFUN G4 (X) X)))
-                        (LOCAL (DEFUN G4 (X) X)))
+                        (LOCAL (VALUE-TRIPLE :ELIDED))) ; eliding was optional
       (MY-LOCAL (DEFUN G4 (X) X))
       (RECORD-EXPANSION
        (PROGN (MY-LOCAL (DEFUN G5 (X) X))
@@ -211,7 +211,7 @@
        (PROGN
         (MY-LOCAL (DEFUN G5 (X) X))
         (RECORD-EXPANSION (MY-LOCAL (MAKE-EVENT (VALUE '(DEFUN G6 (X) X))))
-                          (LOCAL (DEFUN G6 (X) X)))))))))
+                          (LOCAL (VALUE-TRIPLE :ELIDED))))))))) ; eliding was optional
 
 ; Include the book whose certificate we want to check.
 (include-book "local-elided")
@@ -226,11 +226,11 @@
 ; certificate of the "local-elided" book.
 (must-succeed
  (mv-let (erp val state)
-         (read-list "local-elided.pcert" 'top state)
+         (read-list "local-elided.pcert0" 'top state)
          (declare (ignore val))
          (er-let* ((forms (read-list "local-elided.cert" 'top state)))
            (let ((erp (not (equal (cadr (member-eq :expansion-alist forms))
-                                  (if erp ; no .pcert file
+                                  (if erp ; no .pcert0 file
                                       *local-elided-expansion-alist*
                                     *local-elided-expansion-alist-pcert*)))))
              (mv erp nil state)))))

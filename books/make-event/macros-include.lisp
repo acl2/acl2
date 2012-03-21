@@ -85,9 +85,15 @@
 (include-book "misc/file-io" :dir :system)
 
 ; Check that *macros-expansion-alist*, defined above, is equal to the
-; :expansion-alist field of the certificate of the "macros" book.
+; :expansion-alist field of the certificate of the "macros" book.  Skip the
+; check if we might be doing provisional certification (not the default
+; anyhow), since locals are elided more aggressively in that case.
 (must-succeed
- (er-let* ((forms (read-list "macros.cert" 'top state)))
-          (let ((erp (not (equal (cadr (member-eq :expansion-alist forms))
-                                 *macros-expansion-alist*))))
-            (mv erp nil state))))
+ (cond
+  ((member-eq (cert-op state)
+              '(:create-pcert :convert-pcert))
+   (value t))
+  (t (er-let* ((forms (read-list "macros.cert" 'top state)))
+       (let ((erp (not (equal (cadr (member-eq :expansion-alist forms))
+                              *macros-expansion-alist*))))
+         (mv erp nil state))))))

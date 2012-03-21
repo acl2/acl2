@@ -47,6 +47,8 @@ TIME = time
 # hons target.)
 export ACL2_CUSTOMIZATION ?= NONE
 
+export ACL2_PCERT
+
 # Directories go here; first those before certifying arithmetic/top-with-meta,
 # then those afterwards.
 
@@ -141,7 +143,7 @@ coi: arithmetic arithmetic-2 arithmetic-3 data-structures ihs make-event \
 wp-gen: ordinals
 # xdoc has no dependencies
 xdoc-impl: xdoc str tools finite-set-theory/osets
-system: tools arithmetic arithmetic-5
+system: tools arithmetic arithmetic-5 misc
 cutil: xdoc tools str misc finite-set-theory/osets defsort unicode
 # Note: There is no need to include values for "centaur:", since dependencies
 # are handled by cert.pl in that case.
