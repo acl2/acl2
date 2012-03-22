@@ -245,7 +245,7 @@
 ; One concern I have is that the array elements will be so close together, that
 ; they'll be in the same cache lines, and the CPU cores will get bogged down
 ; just keeping the writes to the cache "current".  The exact impact of this
-; thrashing is unknown. n Followup: After further thought, I realize that this
+; thrashing is unknown.  Followup: After further thought, I realize that this
 ; thrashing will be negligible when compared to the rest of the parallelism
 ; overhead.
 
@@ -436,6 +436,11 @@
 ; Cause an error to notify the user that they need to either increase the limit
 ; or disable the error by setting the global variable
 ; total-parallelism-work-limit to nil.  This is the default behavior.
+
+; Parallelism wart: shorten this error, probably suggesting instead that the
+; user just disable the check.  Then redirect the user to :doc topic
+; set-total-parallelism-work-limit for instructions on how to configure the
+; threshold that triggers this error and serial execution.
 
                     (er hard 'not-too-many-futures-already-in-existence
                         "In order to allow the surprising behavior that ~
@@ -648,8 +653,47 @@
   (loop while (>= (atomically-modifiable-counter-read *last-slot-taken*)
                   (atomically-modifiable-counter-read *last-slot-saved*))
         do
-        (when (not (wait-on-semaphore *future-added* :timeout 15))
-          (throw :worker-thread-no-longer-needed nil))))
+
+; As of Feb 19, 2012, instead of picking a somewhat random duration to wait, we
+; would always wait 15 seconds.  This was fine, except that a proof done by
+; Robert Krug caused over 3000 threads to become active at the same time,
+; because Rager's Lisp of choice (CCL) was so efficient in its handling of
+; threads and semaphore signals.  Our solution to this problem involves calling
+; the function random, below.  Here are more details:
+
+; Put briefly, the implementation of timeouts in CCL is so good, that once a
+; proof finishes, if there was a tree of subgoals (suppose those subgoals are
+; named Subgoal 10000, Subgoal 9999, ... Subgoal 2) blocked on Subgoal 1
+; finishing (which his how the implementation of waterfall1-lst works as of Feb
+; 19, 2012), once Subgoal 1 finishes, each thread associated with Subgoal
+; 10000, Subgoal 9999, ... Subgoal 2, Subgoal 1 will finish computing at
+; approximately the same time (Subgoal 10000 is waiting for Subgoal 9999,
+; Subgoal 9999 is waiting on Subgoal 9998... and so forth).  As such, once all
+; 10,000 of these threads decide to wait on the semaphore *future-added*, as
+; below, they were all enqueued to run at almost exactly the same time (15
+; seconds from when they finished proving their subgoal) by the CPU scheduler.
+; This results in the 1-minute Average Load-time (a Linux term, see
+; http://www.linuxjournal.com/article/9001 for further info) shooting through
+; the roof (upwards of 1000 in some cases), and then the Linux daemon process
+; "watchdog" (see the Linux man page for watchdog) tells the machine to reboot,
+; because "watchdog" thinks all chaos has broken loose (but, of course, chaos
+; has not broken loose).  We _could_ argue with system maintainers about what
+; an appropriate threshold is for determining when chaos breaks loose, but it
+; would be silly.  We're not even coding ACL2(p) just for use in one
+; environment -- we want it to work at all institutions without having to
+; trouble sysadmins.  As such, rather than worry about this anymore, we
+; circumvent the problem by doing the following: Instead of having every thread
+; wait 15 seconds for new parallelism work to enter the system, we have every
+; thread wait a random amount of time, within a reasonable range.
+
+; One can see Section "Another Granularity Issue Related to Thread Limitations"
+; inside :DOC topic parallelism-tutorial for an explanation of how user-level
+; programs can have trees of nested computation.
+
+        (let ((random-amount-of-time (+ 10 (random 110.0))))
+          (when (not (wait-on-semaphore *future-added* 
+                                        :timeout random-amount-of-time))
+            (throw :worker-thread-no-longer-needed nil)))))
 
 (defvar *busy-wait-var* 0)
 (defvar *current-waiting-thread* nil)

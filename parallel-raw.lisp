@@ -358,8 +358,9 @@
 ; This variable has a relatively unsophisticated use: When Rager runs his
 ; dissertation performance test scripts, sometimes he adjusts the number of
 ; cpu-cores to be a factor of the actual cpu-core count.  In this case we are
-; just testing, and we don't want to override 
-  
+; just testing, and, to avoid resetting the core count variable every time we
+; reset the parallelism system, we will want to set this variable to nil.
+
   t)
 
 (defun reset-parallelism-variables ()
@@ -1366,7 +1367,7 @@
 
   (concatenate 
    'string
-   (format nil "  Printing stats related to executing in parallel.~% ")
+   (format nil "  Printing stats related to executing proofs in parallel.~% ")
    (value-of-symbol *idle-future-core-count*)
    (value-of-symbol *idle-future-resumptive-core-count*)
    (value-of-symbol *idle-future-thread-count*)

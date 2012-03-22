@@ -6038,6 +6038,114 @@ next GC.~%"
        (oft "~%host-page-size:  ~:d" CCL:*HOST-PAGE-SIZE*))
      ans)))
 
+(defmacro globlet (bindings &rest rest)
+  ;; [Jared]: this is only used in with-lower-overhead AFAICT.
+
+  "GLOBLET is reminiscent of LET.  It is intended to be used in CCL
+  with variables that are introduced via DEFG or DEFV, i.e., may not
+  be LET or LAMBDA bound.  UNWIND-PROTECT is used to try to make sure
+  that the old value, which is assumed to exist, is restored."
+
+  (unless
+      (and (symbol-alistp bindings)
+           (loop for pair in bindings always
+                 (let ((var (car pair))
+                       (d (cdr pair)))
+                   (and (consp d)
+                        (null (cdr d))
+                        (not (constantp var))))))
+    (ofe "GLOBLET: ** bad bindings ~a." bindings))
+  (let ((vars (loop for b in bindings collect
+                    (make-symbol (symbol-name (car b))))))
+    `(let ,(loop for b in bindings as v in vars collect
+                  (list v (car b)))
+          (unwind-protect
+              (progn (psetq
+                      ,@(loop for b in bindings nconc
+                              (list (car b) (cadr b))))
+                     ,@rest)
+            (psetq ,@(loop for b in bindings as v in vars nconc
+                           (list (car b) v)))))))
+
+(defmacro with-lower-overhead (&rest r)
+  `(let ((*record-bytes* nil)
+         (*record-calls* nil)
+         (*record-hits* nil)
+         (*record-hons-calls* nil)
+         (*record-mht-calls* nil)
+         (*record-pons-calls* nil)
+         (*record-time* nil))
+     (globlet ((*count-pons-calls* nil))
+              ,@ r)))
+
+(defun hons-init-hook-memoizations ()
+
+; Keep in sync with hons-init-hook-unmemoizations.
+
+; We pull out the memoization calls so we can unmemoize and re-memoize these
+; functions when the user enables and disables waterfall parallelism,
+; respectively.
+
+  (when (not (memoizedp-raw 'bad-lisp-objectp))
+    (with-lower-overhead
+     (memoize-fn 'bad-lisp-objectp :forget t)))
+  
+  (when (not (memoizedp-raw 'worse-than-builtin))
+  
+; Warning: If this is changed or removed, visit the comment in 
+; worse-than-builtin.
+  
+    (with-lower-overhead
+     (memoize-fn 'worse-than-builtin
+                 :condition ; Sol Swords suggestion
+                 '(and (nvariablep term1)
+                       (not (fquotep term1))
+                       (nvariablep term2)
+                       (not (fquotep term2))))))
+
+  (when (not (memoizedp-raw 'fchecksum-obj))
+
+    "If this memoization is removed, modify the comment in
+      fchecksum-obj about memoization of that function."
+
+    (with-lower-overhead
+     (memoize-fn 'fchecksum-obj :forget t)))
+
+  (when (not (memoizedp-raw 'expansion-alist-pkg-names-memoize))
+
+    "If this memoization is removed, modify the comment in
+      expansion-alist-pkg-names about memoization of that function."
+
+    (with-lower-overhead
+     (memoize-fn 'expansion-alist-pkg-names-memoize :forget t)))
+
+  ;; [Jared]: merged in from e4/memoize-raw.lsp
+  (when (not (memoizedp-raw 'physical-memory))
+    (with-lower-overhead
+     (memoize-fn 'physical-memory :inline nil)))
+
+  ;; [Jared]: merged in from e4/memoize-raw.lsp
+  (when (not (memoizedp-raw 'swap-total))
+    (with-lower-overhead
+     (memoize-fn 'swap-total :inline nil))))
+
+(defun hons-init-hook-unmemoizations ()
+
+; Keep in sync with hons-init-hook-memoizations.
+
+  (when (memoizedp-raw 'bad-lisp-objectp)
+    (unmemoize-fn 'bad-lisp-objectp))
+  (when (memoizedp-raw 'worse-than-builtin)
+    (unmemoize-fn 'worse-than-builtin))
+  (when (memoizedp-raw 'fchecksum-obj)
+    (unmemoize-fn 'fchecksum-obj))
+  (when (memoizedp-raw 'expansion-alist-pkg-names-memoize)
+    (unmemoize-fn 'expansion-alist-pkg-names-memoize))
+  (when (memoizedp-raw 'physical-memory)
+    (unmemoize-fn 'physical-memory))
+  (when (memoizedp-raw 'swap-total)
+    (unmemoize-fn 'swap-total)))
+
 (defg *hons-init-hook*
   '(progn
 
@@ -6066,49 +6174,7 @@ next GC.~%"
 
      (hons-init-hook-set '*print-pretty* t)
 
-     (when (not (memoizedp-raw 'bad-lisp-objectp))
-       (with-lower-overhead
-        (memoize-fn 'bad-lisp-objectp :forget t)))
-
-     (when (not (memoizedp-raw 'worse-than-builtin))
-  
-; Warning: If this is changed or removed, visit the comment in 
-; worse-than-builtin.
-  
-       (with-lower-overhead
-        (memoize-fn 'worse-than-builtin
-                    :condition ; Sol Swords suggestion
-                    '(and (nvariablep term1)
-                          (not (fquotep term1))
-                          (nvariablep term2)
-                          (not (fquotep term2))))))
-
-     (when (not (memoizedp-raw 'fchecksum-obj))
-
-     "If this memoization is removed, modify the comment in
-      fchecksum-obj about memoization of that function."
-
-       (with-lower-overhead
-        (memoize-fn 'fchecksum-obj :forget t)))
-
-     (when (not (memoizedp-raw 'expansion-alist-pkg-names-memoize))
-
-     "If this memoization is removed, modify the comment in
-      expansion-alist-pkg-names about memoization of that function."
-
-       (with-lower-overhead
-        (memoize-fn 'expansion-alist-pkg-names-memoize :forget t)))
-
-     ;; [Jared]: merged in from e4/memoize-raw.lsp
-     (when (not (memoizedp-raw 'physical-memory))
-       (with-lower-overhead
-        (memoize-fn 'physical-memory :inline nil)))
-
-     ;; [Jared]: merged in from e4/memoize-raw.lsp
-     (when (not (memoizedp-raw 'swap-total))
-       (with-lower-overhead
-        (memoize-fn 'swap-total :inline nil)))
-
+     (hons-init-hook-memoizations)
 
      #+Clozure
      (progn
@@ -8149,48 +8215,6 @@ next GC.~%"
          (loop for x in forms when (< (car x) s) collect x)
          s
          (loop for x in forms when (>= (car x) s) collect x)))))))
-
-
-
-(defmacro globlet (bindings &rest rest)
-  ;; [Jared]: this is only used in with-lower-overhead AFAICT.
-
-  "GLOBLET is reminiscent of LET.  It is intended to be used in CCL
-  with variables that are introduced via DEFG or DEFV, i.e., may not
-  be LET or LAMBDA bound.  UNWIND-PROTECT is used to try to make sure
-  that the old value, which is assumed to exist, is restored."
-
-  (unless
-      (and (symbol-alistp bindings)
-           (loop for pair in bindings always
-                 (let ((var (car pair))
-                       (d (cdr pair)))
-                   (and (consp d)
-                        (null (cdr d))
-                        (not (constantp var))))))
-    (ofe "GLOBLET: ** bad bindings ~a." bindings))
-  (let ((vars (loop for b in bindings collect
-                    (make-symbol (symbol-name (car b))))))
-    `(let ,(loop for b in bindings as v in vars collect
-                  (list v (car b)))
-          (unwind-protect
-              (progn (psetq
-                      ,@(loop for b in bindings nconc
-                              (list (car b) (cadr b))))
-                     ,@rest)
-            (psetq ,@(loop for b in bindings as v in vars nconc
-                           (list (car b) v)))))))
-
-(defmacro with-lower-overhead (&rest r)
-  `(let ((*record-bytes* nil)
-         (*record-calls* nil)
-         (*record-hits* nil)
-         (*record-hons-calls* nil)
-         (*record-mht-calls* nil)
-         (*record-pons-calls* nil)
-         (*record-time* nil))
-     (globlet ((*count-pons-calls* nil))
-              ,@ r)))
 
 (defn lower-overhead ()
   ;; Doesn't help much.

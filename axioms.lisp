@@ -26438,6 +26438,7 @@
     flush-waterfall-parallelism-hashtables ; for #+acl2-par
     clear-current-waterfall-parallelism-ht ; for #+acl2-par
     setup-waterfall-parallelism-ht-for-name ; for #+acl2-par
+    set-waterfall-parallelism-fn ; for #+acl2-par combined with +hons
     fix-stobj-array-type
     set-gc-threshold$-fn
     certify-book-finish-complete
@@ -26927,12 +26928,14 @@
 ; low (another one of Robert's proofs showed us this).  So, now that we have
 ; the use-case for setting this to the largest number that we think the
 ; underlying runtime system will support, we do exactly that.  As of Jan 26,
-; 2012, we think a safe-enough limit is 10,000.  So, we use that number.  As
+; 2012, we think a safe enough limit is 4,000.  So, we use that number.  As
 ; multi-threading becomes more prevalent and the underlying runtime systems
-; increase their support for massive numbers of threads, we should continue to
-; increase this number.
+; increase their support for massive numbers of threads, we may wish to
+; continue to increase this number.  Note, however, that since we would also
+; like to support older systems, perhaps increasing this number is infeasible,
+; since the default should support all systems.
 
-         10000))
+         4000))
     #+(and acl2-par (not acl2-loop-only))
     (let ((bound (* 4 *core-count*)))
       (when (< val bound)

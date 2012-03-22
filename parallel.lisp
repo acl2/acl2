@@ -368,11 +368,17 @@
 
   Time limits (~pl[with-prover-time-limit]) aren't supported.
 
+  The timing information printed at the end of a proof attempt may be somewhat
+  inaccurate.  Consider using ~ilc[time$] to obtain timing information.
+
   The use of ~ilc[wormhole]s is not recommended, as there may be race
   conditions.
 
-  When waterfall-parallelism is enabled (~pl[set-waterfall-parallelism]),
-  the use of ~ilc[set-inhibit-output-lst] may not fully inhibit proof output.
+  Output specific to ~c[:OR] ~il[hints] is disabled.
+
+  Proof trees are likely not to work as originally designed.
+
+  The use of ~ilc[set-inhibit-output-lst] may not fully inhibit proof output.
 
   Interrupting a proof attempt is not yet properly supported.  At a minimum,
   interrupts are trickier with waterfall parallelism enabled.  For one, the
@@ -404,12 +410,46 @@
 
   If you are working with LispWorks 6.0 or 6.0.1, then you may see messages
   about misaligned conses.  The state of the system may be corrupted after such
-  a message has been printed.  This LispWorks bug is expected to be fixed in
-  later releases of LispWorks.
+  a message has been printed.  This LispWorks bug is fixed in LispWorks 6.1.
 
   The waterfall parallelism mode ~c[:resource-and-timing-based] is not fully
   supported when the host Lisp is other than CCL.  It may work, but we have not
-  attempted to address a potential race condition.~/~/")
+  attempted to address a potential race condition.
+
+  (Comment for ACL2(h) users; ~pl[hons-and-memoization].)  Memoization may not
+  work as intended when executing in parallel (including the waterfall).  In an
+  effort to be helpful to the user, the functions automatically memoized by
+  ACL2(h) are unmemoized when setting waterfall parallelism to anything but
+  ~c[nil].  Those exact functions are again memoized once waterfall parallelism
+  is disabled.  Note that no functions other than these exact functions are
+  treated in this way, so all user-defined memoizations must be handled by the
+  user.~/~/")
+
+(defdoc unsupported-parallelism-features
+
+  ":Doc-Section ACL2::Parallelism
+
+  ACL2 features not supported in ACL2(p)~/
+
+  This ~il[documentation] topic relates to the experimental extension of ACL2
+  supporting parallel execution and proof; ~pl[parallelism].  ~l[parallel] and
+  ~pl[parallelism-tutorial] for an introduction to parallel execution in ACL2.
+
+  For proof features of ACL2 that are not yet supported when parallel
+  execution is enabled for the primary ACL2 proof process, generally known as
+  ``the waterfall'', ~pl[unsupported-waterfall-parallelism-features].
+
+  Please note that this topic discusses ACL2 features that are disabled when
+  using ACL2(p) (~pl[compiling-acl2p]).  These features are disabled
+  regardless of whether waterfall parallelism is enabled.
+
+  Calls of ~ilc[observation-cw] simply convert to calls of ~ilc[cw], so
+  suppressing ~ilc[observation]s (~pl[set-inhibit-output-lst]) will not
+  suppress these messages.
+
+  Memoization is not supported when executing in parallel.
+  ~l[Unsupported-waterfall-parallelism-features] for memoization details
+  related to waterfall parallelism.~/~/")
 
 (defdoc waterfall-printing
 
@@ -492,7 +532,24 @@
 (defun set-waterfall-parallelism-fn (val ctx state)
   (cond ((member-eq val *waterfall-parallelism-values*)
          #+acl2-par
-         (pprogn (f-put-global 'waterfall-parallelism val state)
+         (pprogn #+(and hons (not acl2-loop-only))
+                 (progn
+                   (cond ((null val)
+                          (observation 'set-waterfall-parallelism
+                                       "Unmemoizing the functions that are ~
+                                        memoized by default as part of ~
+                                        ACL2(h) (see :DOC ~
+                                        unsupported-waterfall-parallelism-features).")
+                          (hons-init-hook-memoizations))
+                         (t 
+                          (observation 'set-waterfall-parallelism
+                                       "Memoizing the functions that are ~
+                                        memoized by default as part of ~
+                                        ACL2(h) (see :DOC ~
+                                        unsupported-waterfall-parallelism-features).")
+                          (hons-init-hook-unmemoizations)))
+                   state)
+                 (f-put-global 'waterfall-parallelism val state)
                  (value val))
          #-acl2-par
 
@@ -523,6 +580,13 @@
                "Illegal value for set-waterfall-parallelism: ~x0.  The legal ~
                 values are ~&1."
                val *waterfall-parallelism-values*))))
+
+; Parallelism wart: make a macro via deflast called with-waterfall-parallelism
+; that enables waterfall parallelism for a given form, in particular an event
+; form like calls of defun and defthm.  It's low priority, since it can easily
+; be added as a book later -- though maybe it would be nice to have this as an
+; event constructor, like with-output.  But while doing proofs with ACL2(hp),
+; Rager would have found this convenient.
 
 (defmacro set-waterfall-parallelism (val)
 
@@ -697,7 +761,7 @@
   checkpoints, similar to (but still distinct from) gag-mode
   (~pl[set-gag-mode]).  The value of ~c[:limited] also prints messages that
   indicate which subgoal is currently being proved, along with the wall-clock
-  time elapsed since ACL2(p) was invoked; and if state global
+  time elapsed since the theorem began its proof; and if state global
   ~c['waterfall-printing-when-finished] has a non-~c[nil] value, then such a
   message will also be printed at the completion of each subgoal.  The function
   ~c[print-clause-id-okp] may receive an attachment to limit such printing;
@@ -803,6 +867,12 @@
 
   `(encapsulate
     ()
+
+; Parallelism wart: the following installation of ttag
+; :waterfall-parallelism-hacks should probably be conditionalized upon val
+; being equal to t.  Furthermore, perhaps the installation should also be
+; conditionalized upon the non-existence of a prior ttag.
+
     (defttag :waterfall-parallelism-hacks)
     (set-waterfall-parallelism-hacks-enabled ,val)))
 
@@ -2187,6 +2257,89 @@
   ~ev[]
   ~/")
 
+; Parallelism wart: it is still possible in ACL2(p) to receive an error at the
+; Lisp-level when CCL cannot "create thread".  An example of a user (Kaufmann)
+; encountering this error is shown below, with book
+; concurrent-programs/bakery/stutter2.  In March 2012, Kaufmann's laptop could
+; sometimes exhibit this problem (a 2-core machine with 4 hardware threads).
+; There are two possible ways to fix this problem.  The first is to set the
+; default-total-parallelism-work-limit to a lower number so that it never
+; occurs (but this costs performance).  Kaufmann suggests that we should also
+; catch this particular Lisp error and instead cause an ACL2 error, similar to
+; the error in function not-too-many-futures-already-in-existence.  This may be
+; harder than one might intially think, because our current mechanism for
+; catching errors in child threads involves catching thrown tags and then
+; rethrowing them in the thread who is that child's parent.
+
+; The error looks like the following:
+
+;; <snip>
+;; 
+;;.............................................................
+;; ***********************************************
+;; ************ ABORTING from raw Lisp ***********
+;; Error:  .Can't create thread
+;; ***********************************************
+
+;; The message above might explain the error.  If not, and
+;; if you didn't cause an explicit interrupt (Control-C),
+;; then the root cause may be call of a :program mode
+;; function that has the wrong guard specified, or even no
+;; guard specified (i.e., an implicit guard of t).
+;; See :DOC guards.
+
+;; To enable breaks into the debugger (also see :DOC acl2-customization):
+;; (SET-DEBUGGER-ENABLE T)
+;; .
+;; ***********************************************
+;; ************ ABORTING from raw Lisp ***********
+;; Error:  Can't create thread
+;; ***********************************************
+
+;; The message above might explain the error.  If not, and
+;; if you didn't cause an explicit interrupt (Control-C),
+;; then the root cause may be call of a :program mode
+;; function that has the wrong guard specified, or even no
+;; guard specified (i.e., an implicit guard of t).
+;; See :DOC guards.
+
+;; To enable breaks into the debugger (also see :DOC acl2-customization):
+;; (SET-DEBUGGER-ENABLE T)
+;; ...........................................................
+;; ..................Here is the current pstack [see :DOC pstack]:
+;; (CLAUSIFY REWRITE-ATM
+;;          SIMPLIFY-CLAUSE SIMPLIFY-CLAUSE
+;;          REWRITE-ATM SIMPLIFY-CLAUSE REWRITE-ATM
+;;          PREPROCESS-CLAUSE PREPROCESS-CLAUSE
+;;          SETUP-SIMPLIFY-CLAUSE-POT-LST
+;;          SIMPLIFY-CLAUSE
+;;          EV-FNCALL-META REWRITE-ATM
+;;          EV-FNCALL-META EV-FNCALL-META
+;;          EV-FNCALL-META REWRITE-ATM
+;;          EV-FNCALL EV-FNCALL EV-FNCALL-META
+;;          REWRITE-ATM REWRITE-ATM SIMPLIFY-CLAUSE
+;;          FORWARD-CHAIN1 SIMPLIFY-CLAUSE
+;;          PREPROCESS-CLAUSE EV-FNCALL-META
+;;          REWRITE-ATM REWRITE-ATM REWRITE-ATM
+;;          FORWARD-CHAIN1 FORWARD-CHAIN1
+;;          SIMPLIFY-CLAUSE SIMPLIFY-CLAUSE
+;;          SIMPLIFY-CLAUSE PREPROCESS-CLAUSE
+;;          SIMPLIFY-CLAUSE SIMPLIFY-CLAUSE
+;;          SIMPLIFY-CLAUSE SIMPLIFY-CLAUSE
+;;          REWRITE-ATM PREPROCESS-CLAUSE
+;;          SIMPLIFY-CLAUSE PREPROCESS-CLAUSE
+;;          SIMPLIFY-CLAUSE PREPROCESS-CLAUSE
+;;
+;; <snip>
+
+; Parallelism wart: change the functions below,
+; set-total-parallelism-work-limit and set-total-parallelism-work-limit-error,
+; to macros that do not take state; and create functions
+; set-total-parallelism-work-limit-fn and
+; set-total-parallelism-work-limit-error-fn that take state and do most of what
+; these function bodies do.  The motivation for this change is that it's
+; simpler for the user to not have to think about state.
+
 (defun set-total-parallelism-work-limit (val state)
 
   ":Doc-Section switches-parameters-and-modes
@@ -2270,9 +2423,9 @@
 
   The value of state global ~c[total-parallelism-work-limit-error] dictates
   what occurs when the underlying runtime system runs reaches a limit on the
-  number of threads for parallel computation.  By default, the ACL2(p) user
-  will receive an error and computation will halt.  At this point, the ACL2(p)
-  user has the following options.
+  number of threads for parallel computation.  By default, when this limit is
+  reached, the ACL2(p) user will receive an error and computation will halt.
+  At this point, the ACL2(p) user has the following options.
 
   (1) Remove the limit by evaluating the following form.
   ~bv[]

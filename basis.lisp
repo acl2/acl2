@@ -8470,6 +8470,9 @@
 ; See observation.  This macro uses wormholes to avoid accessing state, and
 ; prints even when including books.
   
+; We considered using the @par naming scheme to define this macro in
+; #+acl2-par, but the name would then have "@par" in it, which could jar users.
+
   #-acl2-par
   `(observation1-cw
     ,(car args)

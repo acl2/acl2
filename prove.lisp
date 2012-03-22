@@ -6557,6 +6557,10 @@
            (format t "At time ~,6f sec, starting: ~a~%"
                    (/ (- (get-internal-real-time)
                          *acl2p-starting-proof-time*)
+
+; Parallelism wart: call (get-internal-time-units) instead of hard-coding
+; 1000000.0.
+
                       1000000.0)
                    (string-for-tilde-@-clause-id-phrase cl-id)))))
     (:very-limited
