@@ -2625,31 +2625,15 @@
     (standard-part (kwote x))
     (not (kwote (not x)))))
 
-(defmacro cons-term2-body ()
+(defmacro cons-term1-body ()
   `(let ((x (cadr (car args)))
          (y (cadr (cadr args))))
      (case fn
        ,@*cons-term1-alist*
        (otherwise (cons fn args)))))
 
-(defun cons-term2 (fn args)
-  (cons-term2-body))
-
-(defmacro cons-term1 (fn args)
-  (or (and (consp fn)
-           (eq (car fn) 'quote)
-           (symbolp (cadr fn))
-           (let ((expr (cadr (assoc-eq (cadr fn) *cons-term1-alist*))))
-             (if expr
-                 `(let* ((args ,args)
-                         (x (cadr (car args)))
-                         ,@(and (cdr (cadr (assoc-eq
-                                            (cadr fn)
-                                            *primitive-formals-and-guards*)))
-                                '((y (cadr (cadr args))))))
-                    ,expr)
-               `(cons ,fn ,args))))
-      `(cons-term2 ,fn ,args)))
+(defun cons-term1 (fn args)
+  (cons-term1-body))
 
 (defun quote-listp (l)
   (declare (xargs :guard (true-listp l)))
@@ -8154,6 +8138,7 @@
 
 (defconst *uninhibited-warning-summaries*
   '("Uncertified"
+    "Provisionally certified"
     "Skip-proofs"
     "Defaxioms"
     "Ttags"
@@ -8176,6 +8161,11 @@
             summary
             (cdr (assoc-eq :inhibit-warnings
                            (table-alist 'acl2-defaults-table wrld)))))
+
+; The above is sufficient to turn off (warning$ "string" ...).  But even when
+; the above condition isn't met, we turn off all warnings -- with the exception
+; of those related to soundness -- while including a book.
+
       (and (or (eq ld-skip-proofsp 'include-book)
                (eq ld-skip-proofsp 'include-book-with-locals)
                (eq ld-skip-proofsp 'initialize-acl2))
@@ -8605,9 +8595,11 @@
   or written by ~ilc[certify-book] when it is supplied with keyword argument
   ~c[:acl2x t].  By default, such a call of ~c[certify-book] reads a ~c[.acl2x]
   file; but if the value of state global variable ~c['write-acl2x] is not
-  ~c[nil], then ~c[certify-book] writes a ~c[.acl2x] file.  Consider for
-  example ~c[(certify-book \"foo\" 0 nil :acl2x t)].  By default, this command
-  reads file ~c[foo.acl2x], which supplies replacements for some forms in
+  ~c[nil], then ~c[certify-book] writes a ~c[.acl2x] file (in which case it is
+  illegal to specify a non-~c[nil] value for ~ilc[certify-book] keyword
+  argument ~c[:pcert]).  Consider for example
+  ~c[(certify-book \"foo\" 0 nil :acl2x t)].  By default, this command reads
+  file ~c[foo.acl2x], which supplies replacements for some forms in
   ~c[foo.lisp], as described later below.  But if the value of state global
   ~c['write-acl2x] is not ~c[nil], then instead, this ~c[certify-book] command
   writes such a file ~c[foo.acl2x].
@@ -8635,17 +8627,6 @@
   processing are allowed to succeed on uncertified books, something that is
   prohibited during most calls of ~ilc[certify-book].
 
-  One use of ~c[set-write-acl2x] is to support the provisional certification
-  process; ~pl[provisional-certification] for a discussion of how that works.
-  In particular, that process typically evaluates the form
-  ~c[(set-write-acl2x '(include-book-with-locals) state)] which, as described
-  above, permits inclusion of uncertified books during processing of a call of
-  ~ilc[certify-book].  The rest of this documentation topic takes a perspective
-  primarily based on the other main use of ~c[set-write-acl2x], which is to
-  create certified books that do not depend on trust tags (~pl[defttag]), in
-  the case that trust tags are used only to perform ~ilc[make-event]
-  expansions.  However, much of what is said below is relevant to both uses.
-
   When ~ilc[certify-book] is used to write out a ~c[.acl2x] file, there is
   typically a subsequent run of ~ilc[certify-book] that reads that file.
   Consider how this can work with a book ~c[foo.lisp].  In the first call of
@@ -8664,10 +8645,9 @@
 
   When ~ilc[Certify-book] is supplied with keyword argument ~c[:acl2x t] it
   will read or write the book's ~c[.acl2x] file; when supplied with
- ~c[:acl2x nil], it will not read or write that ~c[.acl2x] file.  The value of
-  ~c[:acl2x] is ~c[nil] by default (unless environment variable ~c[ACL2_PCERT]
-  has a non-empty value; ~pl[provisional-certification]).  The interaction of
-  ~ilc[certify-book] with the corresponding ~c[.acl2x] file is as follows.
+  ~c[:acl2x nil], it will not read or write that ~c[.acl2x] file.  The value of
+  ~c[:acl2x] is ~c[nil] by default.  The interaction of ~ilc[certify-book] with
+  the corresponding ~c[.acl2x] file is as follows.
   ~bf[]
   o If ~c[:acl2x] is ~c[t], then:
     - If ~c[set-write-acl2x] has been (most recently) called with a
@@ -8712,11 +8692,9 @@
 
   Note that ~ilc[include-book] is generally not affected by
   ~c[set-write-acl2x], other than through the indirect effect on
-  ~ilc[certify-book].  (The one exception is including a book during an Expand
-  or Pcertify step of provisional certification;
-  ~pl[provisional-certification].)  More precisely: All expansions are stored
-  in the ~il[certificate] file, so when ~ilc[include-book] is applied to a
-  certified book, the ~c[.acl2x] file is not consulted.~/
+  ~ilc[certify-book].  More precisely: All expansions are stored in the
+  ~il[certificate] file, so when ~ilc[include-book] is applied to a certified
+  book, the ~c[.acl2x] file is not consulted.~/
 
   An example of how to put this all together may be found in distributed book
   ~c[books/make-event/double-cert-test-1.lisp].  There, we see the following
@@ -12384,15 +12362,15 @@
 (defconst *cons-term1-alist-mv2*
   (cons-term1-alist-mv2 *cons-term1-alist*))
 
-(defmacro cons-term2-body-mv2 ()
+(defmacro cons-term1-body-mv2 ()
   `(let ((x (cadr (car args)))
          (y (cadr (cadr args))))
      (case fn
        ,@*cons-term1-alist-mv2*
        (otherwise (mv nil form)))))
 
-(defun cons-term2-mv2 (fn args form)
-  (cons-term2-body-mv2))
+(defun cons-term1-mv2 (fn args form)
+  (cons-term1-body-mv2))
 
 (mutual-recursion
 
@@ -12412,7 +12390,7 @@
                      (cond (changedp (mv t (cons-term fn lst)))
                            ((and (symbolp fn) ; optimization
                                  (quote-listp lst))
-                            (cons-term2-mv2 fn lst form))
+                            (cons-term1-mv2 fn lst form))
                            (t (mv nil form))))))))
 
 (defun sublis-var1-lst (alist l)

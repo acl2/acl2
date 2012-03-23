@@ -10238,7 +10238,7 @@
   ~c[(equal var term)] can bind the variable ~c[var].
 
   A small change has been made for ~c[:]~ilc[type-prescription] rules for
-  hypotheses of the form ~c[(equal var term)], where c[var] is a free variable
+  hypotheses of the form ~c[(equal var term)], where ~c[var] is a free variable
   and no variable of ~c[term] is free (~pl[free-variables]).  As with
   ~c[:]~ilc[rewrite] and ~c[:]~ilc[linear] rules, we now bind ~c[var] to
   ~c[term] even if ~c[(equal u term)] happens to be known in the current
@@ -12144,9 +12144,9 @@
 
   A new ~il[table], ~ilc[evisc-table], allows you to introduce print
   abbreviations, for example for large constants.  Moreover, a new reader macro
-  ~-[]~c[#,] ~-[] makes it convenient to reference constants even inside a quote.
-  ~l[evisc-table].  Thanks to Bob Boyer and Warren Hunt for useful discussions
-  leading to this feature.
+  ~-[] ~c[#,] ~-[] makes it convenient to reference constants even inside a
+  quote.  ~l[evisc-table].  Thanks to Bob Boyer and Warren Hunt for useful
+  discussions leading to this feature.
 
   The macros in ~c[books/misc/expander.lisp] now have a new keyword argument,
   ~c[:simplify-hyps-p].  The default behavior is as before, but now case
@@ -14675,7 +14675,7 @@
   Fixed a bug evidenced by error message ``Unexpected form in certification
   world'', which could result from attempting to certify a book after
   evaluating an ~ilc[encapsulate] form with a local ~ilc[defmacro].  Thanks to
-  Jared Davis for pointing out ths bug and sending the example:
+  Jared Davis for pointing out this bug and sending the example:
   ~bv[]
   (encapsulate
    ()
@@ -16873,7 +16873,7 @@
 
   Improved the built-in `~c[untranslate]' functions to produce ~c[let*]
   expressions when appropriate (more to help with tools that call
-  ~c[untranslate] and the like, than to help with proof output).'
+  ~c[untranslate] and the like, than to help with proof output).
 
   The utility ~ilc[redo-flat] now works for ~ilc[certify-book] failures, just
   as it continues to work for failures of ~ilc[encapsulate] and ~ilc[progn].
@@ -18227,6 +18227,20 @@
 ; the form can be translated, at least by default (see new argument
 ; chk-translatable).
 
+; The previous definition of cons-term1 has been eliminated, and cons-term2 has
+; been renamed to cons-term1.  Thanks to Harsh Raju Chamarthi for pointing out
+; the dead code that led to this change.
+
+; We tweaked the implementation of defconst to support fast-alists, based on
+; discussions with David Rager and Jared Davis.  To see relevant code, search
+; for "Remark on Fast-alists" and also see the new call (remprop k
+; 'redundant-raw-lisp-discriminator) in the const-restore-ht case of function
+; hcomp-restore-defs.
+
+; The new macro ill-formed-certificate-er is called to provide much more
+; information than had been provided by use of the constant,
+; *ill-formed-certificate-msg*.
+
   :doc
   ":Doc-Section release-notes
 
@@ -18380,6 +18394,18 @@
   Added the symbols ~ilc[f-get-global], ~ilc[f-put-global], and
   ~ilc[state-global-let*] to ~c[*acl2-exports*].
 
+  Added to the ~il[guard]s of ~ilc[push-untouchable] and
+  ~ilc[remove-untouchable] the requirement that the second argument must be a
+  Boolean.  Thanks to Jared Davis for sending an example that led to this
+  change.
+
+  The built-in function ~c[string-for-tilde-@-clause-id-phrase] has been put
+  into ~c[:]~ilc[logic] mode and had its guards verified, as have some
+  subsidiary functions.  A few new rules have been added in support of this
+  work; search for ~c[string-for-tilde-@-clause-id-phrase] in ACL2 source file
+  ~c[boot-strap-pass-2.lisp] if interested.  Thanks to David Rager for
+  contributing an initial version of this improvement.
+
   ~st[NEW FEATURES]
 
   A new ``tau system'' provides a kind of ``type checker.''  ~l[tau-system].
@@ -18437,9 +18463,11 @@
   parallelism.  ~l[provisional-certification].  Thanks to Jared Davis for
   requesting this feature and for helpful discussions, based in part on
   rudimentary provisional certification schemes that he developed first at
-  Rockwell Collins and later for his `Milawa' project.  Also thanks to Jared
-  and to Sol Swords for testing this feature and for providing a fix for a bug
-  in a preliminary implementation.
+  Rockwell Collins and later for his `Milawa' project.  Thanks also to Sol
+  Also, thanks to Jared and to Sol Swords for testing this feature and for
+  providing a fix for a bug in a preliminary implementation, and thanks to Sol
+  for providing performance feedback and a crucial suggestion that led to an
+  improved implementation.
 
   Event summaries now show the names of events that were mentioned in
   ~il[hints] of type ~c[:use], ~c[:by], or ~c[:clause-processor].
@@ -18463,6 +18491,15 @@
   are subtopics of a new topic ~-[] ~pl[acl2-built-ins] ~-[] which is a
   subtopic of ~il[programming], a topic that in turn has considerably fewer
   direct subtopiics than before.
+
+  It is now possible to bind extra variables in a ~c[:USE] hint, thus avoiding
+  the error message: ``The formula you wish to instantiate, ..., mentions only
+  the variable(s) ...''.  ~l[lemma-instance], in particular the discussion of
+  keyword ~c[:extra-bindings-ok].  Thanks to Sol Swords for requesting such an
+  enhancement.
+
+  The function ~c[read-object-suppress] is like ~c[read-object] except that it
+  avoids errors and discards the value read.  ~l[io].
 
   ~st[HEURISTIC IMPROVEMENTS]
 
@@ -18522,6 +18559,11 @@
   particular it is now untouchable (~pl[remove-untouchable]) and is intended
   only for system hackers.  Thanks to Jared Davis for reporting a bug in the
   use of ~ilc[add-include-book-dir] after our first attempt at a fix.
+
+  Fixed a soundness bug based on the use of ~ilc[skip-proofs] together with the
+  little-used argument ~c[k=t] for ~ilc[certify-book].  An example proof of
+  ~c[nil] appears in a comment in the (second) definition of ~c[skip-proofs] in
+  ACL2 source file axioms.lisp.
 
   (Technical change, primarily related to ~ilc[make-event]:) Plugged a security
   hole that allowed ~il[books]' ~il[certificate]s to be out-of-date with
@@ -18618,6 +18660,10 @@
   Fixed a bug in the ~c[mini-proveall] target in ~c[GNUmakefile].  The fix
   includes a slight change to the ~c[:mini-proveall] ~il[command] (an extra
   event at the end).  Thanks to Camm Maguire for reporting this bug.
+
+  Fixed a bug that occurred when ~ilc[certify-book] was called after using
+  ~ilc[set-fmt-soft-right-margin] or ~ilc[set-fmt-hard-right-margin] to set a
+  small right margin.
 
   ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]
 
@@ -19344,7 +19390,7 @@
      ((eq (access-event-tuple-type (cddr (car wrld))) 'encapsulate)
 
 ; In the case of an encapsulate event, flattening means do the body of the
-; encapsulate ~-[] including the LOCAL events.  Note that this destroys the sense
+; encapsulate -- including the LOCAL events.  Note that this destroys the sense
 ; of those encapsulates that introduce constrained functions!  After flattening
 ; the constrained functions are defined as their witnesses!  We cannot recover
 ; the LOCAL events by a scan through wrld since they are not in wrld.  We must
@@ -19385,7 +19431,7 @@
            (cert-obj (chk-certificate-file
                       full-book-name
                       nil
-                      t
+                      'puff
                       ctx
                       state
                       '((:uncertified-okp . t)
@@ -20688,7 +20734,7 @@ Ruben Gamboa</LI>
 <LI><A HREF=\"HONS-AND-MEMOIZATION.html\">ACL2(h)</A><BR>
 Support for hash cons, applicative hash tables, and function
   memoization for reuse of previously computed results<BR>
-Bob Boyer and Warren A. Hunt, Jr.</LI>
+Bob Boyer, Warren A. Hunt, Jr., Jared Davis, and Sol Swords</LI>
 <LI><A HREF=\"PARALLELISM.html\">ACL2(p)</A><BR>
 Support for parallel evaluation<BR>
 David L. Rager</LI>

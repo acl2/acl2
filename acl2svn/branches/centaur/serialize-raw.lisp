@@ -113,7 +113,7 @@
 ; tightly integrate it into ACL2's certificate printing/reading routines.  When
 ; we moved serialization into ACL2 proper, we noticed a few things that we
 ; could improve, and tweaked the serialization scheme.  The new scheme, V2,
-; wasn't compatible with books/serialize, but we already had qmany files
+; wasn't compatible with books/serialize, but we already had many files
 ; written in the old V1 format.  Later, we realized that it would be easy to
 ; restore fast alists within serialized objects, and that this would allow the
 ; fast alists defined in a book to still be fast after including the book.  The
@@ -803,7 +803,10 @@
       (acl2::pkg-witness pkg-name))
     (loop until (= (the fixnum stop) free) do
           (setf (svref arr free)
-                (intern (ser-decode-str version :never stream) pkg-name))
+;               (intern (ser-decode-str version :never stream) pkg-name))
+; Change by Matt K. to avoid package errors when *read-suppress* is t:
+                (let ((temp (ser-decode-str version :never stream)))
+                  (if *read-suppress* nil (intern temp pkg-name))))
           (incf free))
     (setf (ser-decoder-free decoder) stop)))
 

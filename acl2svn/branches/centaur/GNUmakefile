@@ -261,6 +261,9 @@ ACL2_SIZE =
 # on the make command line.
 ACL2_IGNORE = -i
 
+# Supporting regressions:
+export ACL2_PCERT
+
 # The order of the files below is unimportant.
 
 sources := axioms.lisp memoize.lisp hons.lisp boot-strap-pass-2.lisp\

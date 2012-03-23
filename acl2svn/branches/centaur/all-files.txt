@@ -7,6 +7,7 @@ Makefile
 TAGS
 acl2-characters
 acl2-check.lisp
+# acl2-customization-files -- developer directory
 acl2-fns.lisp
 acl2-init.lisp
 # acl2-proclaims.lisp -- generated file
@@ -91,6 +92,15 @@ type-set-b.lisp
 # update-build-solaris -- developer file
 # worklispext -- temporary generated file, not distributed
 workshops.html
+
+# Developer directory:
+# acl2-customization-files:
+# README
+# parallel-full.lisp
+# parallel-resource-based.lisp
+# parallel-top-level.lisp
+# pseudo-parallel.lisp
+# serial.lisp
 
 books:
 GPL2
@@ -187,6 +197,7 @@ factorial.lisp
 idiv.lisp
 inequalities.lisp
 mod-gcd.lisp
+nat-listp.lisp
 natp-posp.lisp
 rational-listp.lisp
 rationals.lisp
@@ -507,7 +518,7 @@ gl
 misc
 README
 ubdds
-unversioned-files-extra.txt
+# unversioned-files-extra.txt
 vl
 
 books/centaur/aig:
@@ -539,12 +550,14 @@ cert.acl2
 defaults.lisp
 equal-by-logbitp.lisp
 ihs-extensions.lisp
+ihsext-basics.lisp
 integer-length.lisp
 sbitsets.lisp
 top.lisp
 
 books/centaur/gl:
 always-equal-prep.lisp
+auto-bindings.lisp
 bfr-aig-bddify.lisp
 bfr.lisp
 bfr-sat.lisp
@@ -635,8 +648,11 @@ hons-remove-dups.lisp
 hons-sets.lisp
 interp-function-lookup.lisp
 ls.lisp
+make-list.lisp
 memory-mgmt-logic.lisp
 memory-mgmt-raw.lisp
+numlist.lisp
+seed-random.lisp
 sneaky-load.lisp
 suffixp.lisp
 universal-equiv.lisp
@@ -732,6 +748,7 @@ xf-drop-missing-submodules.lisp
 xf-drop-unresolved-submodules.lisp
 xf-lint-stmt-rewrite.lisp
 xf-remove-toohard.lisp
+xf-suppress-warnings.lisp
 xf-undefined-names.lisp
 
 books/centaur/vl/loader:
@@ -850,6 +867,7 @@ cert.acl2
 cn-hooks.lisp
 occform
 xf-addinstnames.lisp
+xf-annotate-mods.lisp
 xf-argresolve.lisp
 xf-array-indexing.lisp
 xf-assigndelays.lisp
@@ -1399,6 +1417,7 @@ books/coi/quantification:
 Makefile
 cert.acl2
 quant-defpkg.lsp
+quantification.acl2
 quantification.lisp
 
 books/coi/records:
@@ -1824,6 +1843,7 @@ cert.acl2
 computed-hints.lisp
 fast.lisp
 instance.lisp
+map-tests.lisp
 map.lisp
 membership.lisp
 outer.lisp
@@ -1831,7 +1851,6 @@ portcullis.acl2
 portcullis.lisp
 primitives.lisp
 quantify.lisp
-set-order.lisp
 sets.defpkg
 sets.lisp
 sort.lisp
@@ -2982,6 +3001,7 @@ basic-extra.lisp
 basic.lisp
 float-extra2.lisp
 float.lisp
+mult-proofs.acl2
 mult-proofs.lisp
 mult.lisp
 round-extra2.lisp
@@ -3267,6 +3287,7 @@ bvecp-raw-helpers-extra.lisp
 bvecp-raw-helpers.lisp
 float-extra2.lisp
 float.lisp
+mult-proofs.acl2
 mult-proofs.lisp
 mult.lisp
 round-extra2.lisp
@@ -3506,22 +3527,25 @@ package.lsp
 random.lisp
 
 books/serialize:
-LICENSE
 acl2-customization.lsp
-compact-print-raw.lsp
 compact-print.acl2
 compact-print.lisp
+compact-print-raw.lsp
 gpl.txt
-serialize-tests.acl2
-serialize.acl2
-package.lsp
-serialize-raw.lsp
+LICENSE
 Makefile
-serialize-tests.lisp
+package.lsp
+serialize.acl2
 serialize.lisp
-unsound-read-raw.lsp
+serialize-raw.lsp
+serialize-tests2.acl2
+serialize-tests2.lisp
+serialize-tests.acl2
+serialize-tests.lisp
 unsound-read.acl2
 unsound-read.lisp
+unsound-read-raw.lsp
+# unversioned-files-extra.txt
 
 books/sorting:
 Makefile
@@ -3640,7 +3664,14 @@ worldp-check.lisp
 
 books/system/pcert:
 Makefile
+acl2x-pcert-test-1.acl2
+acl2x-pcert-test-1.lisp
+acl2x-pcert-test-2-include.lisp
+acl2x-pcert-test-2.acl2
+acl2x-pcert-test-2.acl2x-source
+acl2x-pcert-test-2.lisp
 cert.acl2
+elide-test.lisp
 mid.acl2
 mid.lisp
 sub.lisp
@@ -3896,10 +3927,13 @@ defined-const.lisp
 defsum.lisp
 deftuple.lisp
 do-not.lisp
+easy-simplify.lisp
 fake-event.lisp
 flag-package.lsp
 flag.acl2
 flag.lisp
+in-raw-mode.acl2
+in-raw-mode.lisp
 include-raw.acl2
 include-raw.lisp
 index.html
@@ -3913,7 +3947,6 @@ plev-ccl-raw.lsp
 plev-ccl.acl2
 plev-ccl.lisp
 plev.lisp
-progndollar.lisp
 rulesets.lisp
 safe-case.lisp
 saved-errors.lisp
@@ -4061,11 +4094,13 @@ mkdir-raw.acl2
 mkdir-raw.lisp
 mkdir.lisp
 parse-xml.lisp
+portcullis.acl2
+portcullis.lisp
 preprocess.lisp
 save.lisp
 sort.lisp
 topics.lisp
-unversioned-files-extra.txt
+# unversioned-files-extra.txt
 write-acl2-xdoc.lisp
 
 books/xdoc/support:

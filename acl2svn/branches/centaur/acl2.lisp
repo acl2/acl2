@@ -779,6 +779,15 @@ ACL2 from scratch.")
 
 (in-package "ACL2")
 
+(defparameter *compiled-file-extension*
+
+; Note that books/Makefile-generic, books/Makefile-subdirs, and
+; books/Makefile-psubdirs all deal with compiled file extensions.
+; Thanks to Gary Byers for suggested the following approach for #+ansi-cl,
+; which however appears to work for all Lisps supported as of early 2006.
+
+  (pathname-type (compile-file-pathname "foo.lisp")))
+
 (defmacro initialize-state-globals ()
   (let ((acl2-compiler-enabled-var
          #+cltl2 'common-lisp-user::*acl2-compiler-enabled*
@@ -827,6 +836,10 @@ ACL2 from scratch.")
                  "Error detected in initialize-state-globals: ~%~
                   The underlying host Lisp appears not to support ACL2. ~%~
                   Contact the ACL2 implementors to request such support."))
+             *the-live-state*)
+            (f-put-global
+             'compiled-file-extension
+             ,*compiled-file-extension*
              *the-live-state*)
             #+unix
             (f-put-global 'tmp-dir "/tmp" *the-live-state*)
@@ -1128,15 +1141,6 @@ ACL2 from scratch.")
 ; still write :COMPILED as indicated above.
 
 (defvar *lisp-extension* "lisp")
-
-(defparameter *compiled-file-extension*
-
-; Note that books/Makefile-generic, books/Makefile-subdirs, and
-; books/Makefile-psubdirs all deal with compiled file extensions.
-; Thanks to Gary Byers for suggested the following approach for #+ansi-cl,
-; which however appears to work for all Lisps supported as of early 2006.
-
-  (pathname-type (compile-file-pathname "foo.lisp")))
 
 #+sbcl ; turn off compiler notes (noisy)
 (declaim (sb-ext:muffle-conditions sb-ext:compiler-note))

@@ -5926,4 +5926,4 @@
 ; To define the regeneration event we must have some additional event-level
 ; infrastructure (e.g., how to interpret the event tuples stored as
 ; EVENT-LANDMARKs, not to mention ctx computation, install-event, etc.  So we
-; delay the rest of the regeneration event until other-events.lisp.(dv 3)ecode
+; delay the rest of the regeneration event until other-events.lisp.

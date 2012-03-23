@@ -1251,7 +1251,8 @@
 ; of work.
 
         (or (equal (car body) 'mv-let@par)
-            (equal (car body) 'mv-let))))
+            (equal (car body) 'mv-let)
+            (equal (car body) 'mv?-let))))
    
   (let* ((inner-let (car body))
          (inner-bindings (cadr body))

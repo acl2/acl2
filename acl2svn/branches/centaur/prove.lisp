@@ -3512,37 +3512,6 @@
   #-acl2-loop-only
   `(waterfall-print-clause-id-fmt1-call@par ,cl-id))
 
-(defun all-digits-p (lst radix)
-  (declare (xargs :guard (and (character-listp lst)
-                              (integerp radix)
-                              (<= 2 radix)
-                              (<= radix 36))))
-  (cond ((endp lst) t)
-        (t (and (digit-char-p (car lst) radix)
-                (all-digits-p (cdr lst) radix)))))
-
-(defun d-pos-listp (lst)
-  (declare (xargs :guard t))
-  (cond ((atom lst) (null lst))
-        ((natp (car lst))
-         (d-pos-listp (cdr lst)))
-        (t (and (symbolp (car lst))
-                (let ((name (symbol-name (car lst))))
-                  (and (not (equal name ""))
-                       (eql (char name 0) #\D)
-                       (all-digits-p (cdr (coerce name 'list)) 10)))
-                (d-pos-listp (cdr lst))))))
-
-(defun clause-id-p (cl-id)
-  (declare (xargs :guard t))
-  (case-match cl-id
-    (((forcing-round . pool-lst) case-lst . primes)
-     (and (natp forcing-round)
-          (pos-listp pool-lst)
-          (d-pos-listp case-lst)
-          (natp primes)))
-    (& nil)))
-
 (defproxy print-clause-id-okp (*) => *)
 
 (defun print-clause-id-okp-builtin (cl-id)

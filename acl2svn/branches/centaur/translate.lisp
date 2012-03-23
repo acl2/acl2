@@ -5881,7 +5881,8 @@
                          with-local-stobj."
                         x)))))
    ((and (assoc-eq (car x) *ttag-fns-and-macros*)
-         (not (ttag wrld)))
+         (not (ttag wrld))
+         (not (global-val 'boot-strap-flg wrld)))
     (trans-er+ x ctx
                "The ~x0 ~s1 cannot be called unless a trust tag is in effect. ~
                 ~ See :DOC defttag.~@2"

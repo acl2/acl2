@@ -17069,13 +17069,26 @@
   ~bv[]
   (defconst-fast *x* (expensive-fn ...))
   ~ev[]
-  Also ~il[using-tables-efficiently] for an analogous issue with ~ilc[table]
-  events.
+  A more general utility may be found in ~c[books/tools/defconsts.lisp].  Also
+  ~il[using-tables-efficiently] for an analogous issue with ~ilc[table] events.
 
   It may be of interest to note that ~c[defconst] is implemented at the
   lisp level using ~c[defparameter], as opposed to ~c[defconstant].
   (Implementation note:  this is important for proper support of
-  undoing and redefinition.)~/
+  undoing and redefinition.)
+
+  We close with a technical remark, perhaps of interest only to users of
+  ACL2(h), the experimental extension of ACL2 that supports hash cons, function
+  memoization, and hash-table-based ``fast alists''; ~pl[hons-and-memoization].
+  For an event of the form ~c[(defconst *C* (quote OBJ))], i.e.,
+  ~c[(defconst *C* 'OBJ)], then the value associated with ~c[*C*] is ~c[OBJ];
+  that is, the value of ~c[*C*] is ~ilc[eq] to the actual object ~c[OBJ]
+  occurring in the ~c[defconst] form.  So for example, if ~ilc[make-event] is
+  used to generate such a ~c[defconst] event, as it is in the two books
+  mentioned above, and ~c[OBJ] is a fast alist (using ACL2(h)), then the value
+  of ~c[*C*] is a fast alist.  This guarantee disappears if the term in the
+  ~c[defconst] form is not a quoted object, i.e., if it is not of the form
+  ~c[(quote OBJ)].~/
 
   :cited-by Programming"
 
@@ -18114,7 +18127,8 @@
 
   (declare (xargs :guard (and name
                               (or (symbolp name)
-                                  (symbol-listp name)))))
+                                  (symbol-listp name))
+                              (booleanp fn-p))))
   (list 'push-untouchable-fn
         (list 'quote name)
         (list 'quote fn-p)
@@ -18208,7 +18222,8 @@
 
   (declare (xargs :guard (and name
                               (or (symbolp name)
-                                  (symbol-listp name)))))
+                                  (symbol-listp name))
+                              (booleanp fn-p))))
   `(cond ((not (ttag (w state)))
           (er soft 'remove-untouchable
               "It is illegal to execute remove-untouchable when there is no ~
@@ -19633,12 +19648,16 @@
 
 ; Certification worlds are checked for legality by
 ; chk-acceptable-certify-book1, which collects uncertified books (using
-; collect-uncertified-books) from the existing include-book-alist and which
-; checks if any redefinition was done.  We of course miss uncertified
-; locally-included books this way, but the only relevance of such books is
-; whether they employed skip-proofs, ttags, or defaxioms, and this information
-; is ultimately stored in the certificate of a parent book that is non-locally
-; included in the certification world.
+; collect-uncertified-books) from the existing include-book-alist, checks if
+; any redefinition was done, and (if not doing the Pcertify or Convert step of
+; provisional certification) checks that pcert-books is empty.  We of course
+; miss uncertified locally-included books this way, but the only relevance of
+; such books is whether they employed skip-proofs, ttags, or defaxioms, and
+; this information is ultimately stored in the certificate of a parent book
+; that is non-locally included in the certification world.  We track locally
+; included provisionally certified books under encapsulates, but as with
+; uncertified books, we are not concerned about any locally included
+; provisionally certified book under a certified book.
 
 ; The acl2-defaults-table stores the default defun-mode, and hence can affect
 ; soundness.  However, chk-acceptable-certify-book1 checks that the default
@@ -19860,7 +19879,40 @@
 
   `(state-global-let*
     ((ld-skip-proofsp (or (f-get-global 'ld-skip-proofsp state)
-                          t)))
+                          t))
+     (inside-skip-proofs
+
+; This binding fixes a soundness bug that allowed the following proof of nil
+; using ACL2 Version  4.3.  To see the bug, create the following two books.
+
+; -- foo.lisp --
+
+; (in-package "ACL2")
+; (defun f1 (x) x)
+; ; (defthm bad nil :rule-classes nil)
+
+; -- bar.lisp --
+
+; (in-package "ACL2")
+; (local (include-book "foo"))
+; (defthm bad nil :rule-classes nil)
+
+; --
+
+; Notice that foo.lisp ends in a commented-out form.  Now proceed as follows.
+
+; (skip-proofs (defthm bad nil :rule-classes nil))
+; (certify-book "foo" 1 t :skip-proofs-okp t)
+; Uncomment out the defthm form in foo.lisp.
+; (ubt! 1)
+; (certify-book "foo" t)
+; (ubt! 1)
+; (certify-book "bar")
+
+; You will see no warnings when certifying bar, and its certificate will show
+; no trace of skip-proofs.
+
+      t))
     ,x))
 
 #+acl2-loop-only
@@ -26392,6 +26444,7 @@
     setup-waterfall-parallelism-ht-for-name ; for #+acl2-par
     fix-stobj-array-type
     set-gc-threshold$-fn
+    certify-book-finish-complete
     ))
 
 (defconst *primitive-logic-fns-with-raw-code*
@@ -26512,6 +26565,7 @@
     make-fast-alist
 
     serialize-read-fn serialize-write-fn
+    read-object-suppress
 
   ))
 
@@ -26749,9 +26803,6 @@
 
 (defdoc parallelism
 
-; This is in axioms.lisp instead of parallel.lisp in order to support the :doc
-; string for default-total-parallelism-work-limit.
-
   ":Doc-Section Parallelism
 
   experimental extension for parallel execution and proofs~/
@@ -26760,7 +26811,7 @@
   ACL2(p), created initially by David L. Rager.  ~l[compiling-acl2p] for how to
   build an executable image that supports parallel execution.  Also see
   ~c[books/parallel] for examples.  For a completely different sort of
-  parallelism, at the system level, ~pl[provisional-certification].
+  parallelism, at the system level, ~pl[provisional-certification].~/
 
   IMPORTANT NOTE.  We hope and expect that every evaluation result is correctly
   computed by ACL2(p), and that every formula proved using ACL2(p) is a theorem
@@ -26773,6 +26824,28 @@
   not discussed in ~il[unsupported-waterfall-parallelism-features]), please
   notify the implementors.
 
+  The ACL2 source code provides experimental parallel execution and proof
+  capabilities.  For example, one of ACL2's strengths lies in its ability to
+  simulate industrial models efficiently, and it can also decrease the time
+  required for proofs about such models both by making use of parallel
+  evaluation and by dispatching proof subgoals in parallel.
+
+  While we aim to support Clozure Common Lisp (CCL), Steel Bank Common
+  Lisp (SBCL), and Lispworks, SBCL and Lispworks both currently sometimes
+  experience problems when evaluating the ACL2 proof process (the
+  ``waterfall'') in parallel.  Therefore, CCL is the recommend Lisp for anyone
+  that wants to use parallelism and isn't working on fixing those
+  problems.~/")
+
+(defdoc parallel-programming
+
+  ":Doc-Section ACL2::Parallelism
+
+  parallel programming in ACL2(p)~/
+
+  Here we document support for parallel programming in ACL2(p), an experimental
+  extension of ACL2; also ~pl[parallelism].~/
+
   One of ACL2's strengths lies in its ability to execute industrial models
   efficiently.  The ACL2 source code provides an experimental parallel
   execution capability that can increase the speed of explicit evaluation,
@@ -26784,7 +26857,7 @@
   when an argument is found to evaluate to ~c[nil] or non-~c[nil],
   respectively, thus potentially improving on the efficiency of lazy
   evaluation.  ~ilc[Spec-mv-let] is a modification of ~ilc[mv-let] that
-  supports speculative and parallel execution.~/
+  supports speculative and parallel execution.
 
   Of the above five parallelism primitives, all but ~ilc[spec-mv-let] allow for
   limiting parallel execution (spawning of so-called ``threads'') depending on
@@ -26800,13 +26873,20 @@
 
   In addition to providing parallel programming primitives, ACL2(p) also
   provides the ability to execute the main ACL2 proof process in parallel.
-  ~l[set-waterfall-parallelism] for further details.
+  ~l[set-waterfall-parallelism] for further details.~/")
 
-  While we aim to support Clozure Common Lisp (CCL), Steel Bank Common
-  Lisp (SBCL), and Lispworks, SBCL and Lispworks both currently sometimes
-  experience problems when evaluating the ACL2 proof process (the
-  ``waterfall'') in parallel.  Therefore, CCL is the recommend Lisp for anyone
-  that wants to use parallelism and isn't working on fixing those problems.")
+(defdoc parallel-proof
+
+; Parallelism blemish: write a few introductory words to "advertise" parallel
+; proof in ACL2(p), perhaps by way of a very simple example.
+
+  ":Doc-Section ACL2::Parallelism
+
+  parallel proof in ACL2(p)~/
+
+  Here we document support for parallel proof in ACL2(p), an experimental
+  extension of ACL2; also ~pl[parallelism], and for parallel programming in
+  particular, ~pl[parallel-programming].~/~/")
 
 (defun default-total-parallelism-work-limit ()
 
@@ -26827,7 +26907,7 @@
 ; this can exhaust the supply of Lisp threads available to process the elements
 ; of the list.
 
-  ":Doc-Section Parallelism
+  ":Doc-Section Parallel-proof
   
   for ACL2(p): returns the default value for global ~c[total-parallelism-work-limit]~/
 
@@ -26947,6 +27027,7 @@
     (checkpoint-processors . ; avoid unbound var error with collect-checkpoints
                            ,*initial-checkpoint-processors*)
     (checkpoint-summary-limit . (nil . 3))
+    (compiled-file-extension . nil) ; set by initialize-state-globals
     (compiler-enabled . nil) ; Lisp-specific; set by initialize-state-globals
     (connected-book-directory . nil)  ; set-cbd couldn't have put this!
     (current-acl2-world . nil)
@@ -26991,6 +27072,7 @@
                                      ; to nil.
     (inhibit-output-lst-stack . nil)
     (inhibited-summary-types . nil)
+    (inside-skip-proofs . nil)
     (iprint-ar . ,(init-iprint-ar *iprint-hard-bound-default* nil))
     (iprint-hard-bound . ,*iprint-hard-bound-default*)
     (iprint-soft-bound . ,*iprint-soft-bound-default*)
@@ -29024,21 +29106,20 @@
   To control ACL2 abbreviation (``evisceration'') of objects before printing
   them, ~pl[set-evisc-tuple], ~pl[without-evisc], and ~pl[set-iprint].~/
 
-  ACL2 supports input and output facilities equivalent to a subset
-  of those found in Common Lisp.  ACL2 does not support random access
-  files or bidirectional streams.  In Common Lisp, input and output
-  are to or from objects of type ~c[stream].  In ACL2, input and output
-  are to or from objects called ``channels,'' which are actually
-  symbols.  Although a channel is a symbol, one may think of it
-  intuitively as corresponding to a Common Lisp stream.  Channels are
-  in one of two ACL2 packages, ~c[\"ACL2-INPUT-CHANNEL\"] and
-  ~c[\"ACL2-OUTPUT-CHANNEL\"].  When one ``opens'' a file one gets back
-  a channel whose ~ilc[symbol-name] is the file name passed to ``open,''
-  postfixed with ~c[-n], where ~c[n] is a counter that is incremented
-  every time an open or close occurs.
+  ACL2 supports input and output facilities equivalent to a subset of those
+  found in Common Lisp.  ACL2 does not support random access to files or
+  bidirectional streams.  In Common Lisp, input and output are to or from
+  objects of type ~c[stream].  In ACL2, input and output are to or from objects
+  called ``channels,'' which are actually symbols.  Although a channel is a
+  symbol, one may think of it intuitively as corresponding to a Common Lisp
+  stream.  Channels are in one of two ACL2 packages, ~c[\"ACL2-INPUT-CHANNEL\"]
+  and ~c[\"ACL2-OUTPUT-CHANNEL\"].  When one ``opens'' a file one gets back a
+  channel whose ~ilc[symbol-name] is the file name passed to ``open,''
+  postfixed with ~c[-n], where ~c[n] is a counter that is incremented every
+  time an open or close occurs.
 
-  There are three channels which are open from the beginning and which
-  cannot be closed:
+  There are three channels which are open from the beginning and which cannot
+  be closed:
   ~bv[]
     acl2-input-channel::standard-character-input-0
     acl2-input-channel::standard-object-input-0
@@ -29047,25 +29128,30 @@
   All three of these are really Common Lisp's ~c[*standard-input*] or
   ~c[*standard-output*], appropriately.
 
-  For convenience, three global variables are bound to these rather
-  tedious channel names:
+  For convenience, three global variables are bound to these rather tedious
+  channel names:
   ~bv[]
     *standard-ci*
     *standard-oi*
     *standard-co*
   ~ev[]
-  Common Lisp permits one to open a stream for several different
-  kinds of ~c[io], e.g. character or byte.  ACL2 permits an additional
-  type called ``object''.  In ACL2 an ``io-type'' is a keyword, either
-  ~c[:character], ~c[:byte], or ~c[:object].  When one opens a file, one specifies
-  a type, which determines the kind of io operations that can be done
-  on the channel returned.  The types ~c[:character] and ~c[:byte] are
-  familiar.  Type ~c[:object] is an abstraction not found in Common Lisp.
-  An ~c[:object] file is a file of Lisp objects.  One uses ~c[read-object] to
-  read from ~c[:object] files and ~c[print-object$] (or ~c[print-object$-ser])
-  to print to ~c[:object] files.  (The reading and printing are really done
-  with the Common Lisp ~c[read] and ~c[print] functions.  For those familiar
-  with ~c[read], we note that the ~c[recursive-p] argument is ~c[nil].)
+  Common Lisp permits one to open a stream for several different kinds of
+  ~c[io], e.g. character or byte.  ACL2 permits an additional type called
+  ``object''.  In ACL2 an ``io-type'' is a keyword, either ~c[:character],
+  ~c[:byte], or ~c[:object].  When one opens a file, one specifies a type,
+  which determines the kind of io operations that can be done on the channel
+  returned.  The types ~c[:character] and ~c[:byte] are familiar.  Type
+  ~c[:object] is an abstraction not found in Common Lisp.  An ~c[:object] file
+  is a file of Lisp objects.  One uses ~c[read-object] to read from ~c[:object]
+  files and ~c[print-object$] (or ~c[print-object$-ser]) to print to
+  ~c[:object] files.  (The reading and printing are really done with the Common
+  Lisp ~c[read] and ~c[print] functions.  For those familiar with ~c[read], we
+  note that the ~c[recursive-p] argument is ~c[nil].)  The function
+  ~c[read-object-suppress] is logically the same as ~c[read-object] except that
+  ~c[read-object-suppress] throws away the second returned value, i.e. the
+  value that would normally be read, simply returning ~c[(mv eof state)]; under
+  the hood, ~c[read-object-suppress] avoids errors, for example those caused by
+  encountering symbols in packages unknown to ACL2.
 
   File-names are strings.  ACL2 does not support the Common Lisp type
   ~ilc[pathname].  However, for the ~c[file-name] argument of the
@@ -29075,8 +29161,7 @@
   written to the channel they can be retrieved by using
   ~c[get-output-stream-string$].
 
-  Here are the names, formals and output descriptions of the ACL2 io
-  functions.
+  Here are the names, formals and output descriptions of the ACL2 io functions.
   ~bv[]
   Input Functions:
     (open-input-channel (file-name io-type state) (mv channel state))
@@ -29086,6 +29171,7 @@
     (peek-char$ (channel state) boolean)
     (read-byte$ (channel state) (mv byte/nil state)) ; nil for EOF
     (read-object (channel state) (mv eof-read-flg obj-read state))
+    (read-object-suppress (channel state) (mv eof-read-flg state))
 
   Output Functions:
     (open-output-channel  (file-name io-type state) (mv channel state))
@@ -29108,13 +29194,13 @@
                                           (ctx ''get-output-stream-string$))
                                (mv erp string state))
   ~ev[]
-  The ``formatting'' functions are particularly useful;
-  ~pl[fmt] and ~pl[cw].  In particular, ~ilc[cw] prints to a
-  ``comment window'' and does not involve the ACL2 ~ilc[state], so many may
-  find it easier to use than ~ilc[fmt] and its variants.  The functions
-  ~ilc[fms!], ~ilc[fmt!], and ~ilc[fmt1!] are the same as their respective functions
-  without the ``~c[!],'' except that the ``~c[!]'' functions are guaranteed to
-  print forms that can be read back in (at a slight readability cost).
+  The ``formatting'' functions are particularly useful; ~pl[fmt] and ~pl[cw].
+  In particular, ~ilc[cw] prints to a ``comment window'' and does not involve
+  the ACL2 ~ilc[state], so many may find it easier to use than ~ilc[fmt] and
+  its variants.  The functions ~ilc[fms!], ~ilc[fmt!], and ~ilc[fmt1!] are the
+  same as their respective functions without the ``~c[!],'' except that the
+  ``~c[!]'' functions are guaranteed to print forms that can be read back
+  in (at a slight readability cost).
 
   When one enters ACL2 with ~c[(lp)], input and output are taken from
   ~ilc[*standard-oi*] to ~ilc[*standard-co*].  Because these are synonyms for
@@ -29155,9 +29241,9 @@
   functions such as ~c[fmt-to-string] that do not take a channel or ~ilc[state]
   argument and return a string.
 
-  By default, symbols are printed in upper case when vertical bars are
-  not required, as specified by Common Lisp.  ~l[set-print-case] for how
-  to get ACL2 to print symbols in lower case.
+  By default, symbols are printed in upper case when vertical bars are not
+  required, as specified by Common Lisp.  ~l[set-print-case] for how to get
+  ACL2 to print symbols in lower case.
 
   By default, numbers are printed in radix 10 (base 10).  ~l[set-print-base]
   for how to get ACL2 to print numbers in radix 2, 8, or 16.
@@ -29496,13 +29582,15 @@
                  :verify-guards nil
                  :hints (("Goal" :in-theory (disable acl2-count floor))))))
 
-(local
- (defthm true-listp-explode-nonnegative-integer
-   (implies (and (force (integerp n))
-                 (force (>= n 0))
-                 (true-listp ans))
-            (true-listp (explode-nonnegative-integer n print-base ans)))
-   :rule-classes :type-prescription))
+(defthm true-listp-explode-nonnegative-integer
+
+; This was made non-local in order to support the verify-termination-boot-strap
+; for chars-for-tilde-@-clause-id-phrase/periods in file
+; boot-strap-pass-2.lisp.
+
+  (implies (true-listp ans)
+           (true-listp (explode-nonnegative-integer n print-base ans)))
+  :rule-classes :type-prescription)
 
 (local
  (skip-proofs
@@ -31671,6 +31759,9 @@
                followed by an s-expression and you typed ~s instead."
               dollar)))))
 
+#-acl2-loop-only
+(defparameter *acl2-read-suppress* nil)
+
 (defun read-object (channel state-state)
 
 ; Read-object is somewhat like read.  It returns an mv-list of three
@@ -31708,7 +31799,7 @@
                              (current-package *the-live-state*)))
                  (*readtable* *acl2-readtable*)
                  #+DRAFT-ANSI-CL-2 (*read-eval* t)
-                 (*read-suppress* nil)
+                 (*read-suppress* *acl2-read-suppress*)
                  (*read-base* 10)
                  #+gcl (si:*notify-gbc* ; no gbc messages while typing
                         (if (or (eq channel *standard-oi*)
@@ -31766,6 +31857,23 @@
                           (open-input-channels state-state))
                 state-state)))
           (t (mv t nil state-state)))))
+
+(defun read-object-suppress (channel state)
+
+; Logically this function is the same as read-object except that it throws away
+; the second returned value, i.e. the "real" value, simply returning (mv eof
+; state).  However, under the hood it uses Lisp special *read-suppress* to
+; avoid errors in reading the next value, for example errors caused by
+; encountering symbols in packages unknown to ACL2.
+
+  (declare (xargs :guard (and (state-p state)
+                              (symbolp channel)
+                              (open-input-channel-p channel :object state))))
+  (let (#-acl2-loop-only (*acl2-read-suppress* t))
+    (mv-let (eof val state)
+            (read-object channel state)
+            (declare (ignore val))
+            (mv eof state))))
 
 (defconst *suspiciously-first-numeric-chars*
 
@@ -34225,6 +34333,7 @@
     skip-proofs-by-system
     host-lisp
     compiler-enabled
+    compiled-file-extension
     modifying-include-book-dir-alist
     raw-include-book-dir-alist
     deferred-ttag-notes
