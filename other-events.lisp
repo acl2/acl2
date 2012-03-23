@@ -11310,12 +11310,20 @@
                                             ctx state
                                             (cons form ans))))))))))
 
+(defun initial-acl2-defaults-table (acl2-defaults-table)
+  (let ((entry (assoc-eq :INHIBIT-WARNINGS acl2-defaults-table)))
+    (cond (entry (put-assoc-eq :INHIBIT-WARNINGS
+                               (cdr entry)
+                               *initial-acl2-defaults-table*))
+          (t *initial-acl2-defaults-table*))))
+                
+
 (defun chk-raise-portcullis1 (file1 file2 ch port-file-p ctx state)
 
-; We read each of the forms in ch until we get to :END-PORTCULLIS-CMDS
-; and eval them.  However, we temporarily skip proofs (in an error
-; protected way).  We return the list of command forms in the
-; portcullis.
+; After resetting the acl2-defaults-table, we read and eval each of the forms
+; in ch until we get to :END-PORTCULLIS-CMDS.  However, we temporarily skip
+; proofs (in an error protected way).  We return the list of command forms in
+; the portcullis.
 
   (state-global-let*
    ((ld-skip-proofsp 'include-book)
@@ -11337,7 +11345,8 @@
 ; x) = (car x), then in a new session include this book after
 ; (set-verify-guards-eagerness 2), and then get a hard error with (foo 3).
 
-     *initial-acl2-defaults-table* state)
+     (initial-acl2-defaults-table (table-alist 'acl2-defaults-table (w state)))
+     state)
     (chk-raise-portcullis2 file1 file2 ch port-file-p ctx state nil))))
 
 (defun mark-local-included-books (post-alist1 post-alist2)
@@ -13371,6 +13380,9 @@
 ; .port file.  Fortunately, the .port file is generally only used when
 ; including uncertified books, where all bets are off.
 
+; Note that chk-raise-portcullis1 resets the acl2-defaults-table just as would
+; be done when raising the portcullis of a certified book.
+
                         (chk-raise-portcullis1 full-book-name port-file ch t
                                                ctx state)))
                       (pprogn
@@ -14127,6 +14139,11 @@
                                        doc
                                        dir
                                        event-form)
+
+; Note that the acl2-defaults-table is initialized when raising the portcullis.
+; As of this writing, this happens by way of a call of chk-certificate-file in
+; include-book-fn1, as chk-certificate-file calls chk-certificate-file1, which
+; calls chk-raise-portcullis, etc.
 
 ; Expansion-alist is an expansion-alist generated from make-event calls if is
 ; called by certify-book-fn.  Otherwise, it is :none.

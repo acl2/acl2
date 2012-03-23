@@ -2057,19 +2057,203 @@
 
   nil)
 
-(defmacro include-book (user-book-name
-                        &key
-                        (load-compiled-file ':default)
-                        uncertified-okp
-                        defaxioms-okp
-                        skip-proofs-okp
-                        ttags
-                        dir
-                        doc)
-  (declare (ignore uncertified-okp defaxioms-okp skip-proofs-okp ttags doc))
-  `(include-book-raw ,user-book-name nil ,load-compiled-file ,dir
-                     '(include-book . ,user-book-name)
-                     *the-live-state*))
+(defmacro include-book (&whole event-form user-book-name
+                               &key
+
+; Warning:  If you change the defaults below, be sure to change the
+; construction of event-form in include-book-fn!
+
+                               (load-compiled-file ':default)
+                               (uncertified-okp 't)
+                               (defaxioms-okp 't)
+                               (skip-proofs-okp 't)
+                               (ttags ':default)
+                               dir
+                               doc)
+
+; Warning: See the Important Boot-Strapping Invariants before modifying!
+
+  (declare (xargs :guard
+                  (member-eq load-compiled-file *load-compiled-file-values*)))
+
+  ":Doc-Section Events
+
+  load the ~il[events] in a file~/
+  ~bv[]
+  Examples:
+  (include-book \"my-arith\")
+  (include-book \"/home/smith/my-arith\")
+  (include-book \"/../../my-arith\")
+
+  General Form:
+  (include-book file :load-compiled-file action
+                     :uncertified-okp t/nil      ; [default t]
+                     :defaxioms-okp t/nil        ; [default t]
+                     :skip-proofs-okp t/nil      ; [default t]
+                     :ttags ttags                ; [default nil]
+                     :dir directory
+                     :doc doc-string)
+  ~ev[]
+  where ~c[file] is a book name.  ~l[books] for general information,
+  ~pl[book-name] for information about book names, and ~pl[pathname] for
+  information about file names.  ~c[Action] is one of ~c[t], ~c[nil],
+  ~c[:default], ~c[:warn], or ~c[:comp]; these values are explained below, and
+  the default is ~c[:default].  The three ~c[-okp] keyword arguments, which
+  default to ~c[t], determine whether errors or warnings are generated under
+  certain conditions explained below; when the argument is ~c[t], warnings are
+  generated.  The ~c[dir] argument, if supplied, is a keyword that represents
+  an absolute pathname for a directory (~pl[pathname]), to be used instead of
+  the current book directory (~pl[cbd]) for resolving the given ~c[file]
+  argument to an absolute pathname.  In particular, by default ~c[:dir :system]
+  resolves ~c[file] using the distributed ~c[books/] directory of your ACL2
+  installation, unless your ACL2 executable was built somewhere other than
+  where it currently resides; please see the ``Distributed Books Directory''
+  below.  To define other keywords that can be used for ~c[dir],
+  ~pl[add-include-book-dir].  ~c[Doc-string] is an optional ~il[documentation]
+  string; ~pl[doc-string].  If the book has no ~ilc[certificate], if its
+  ~ilc[certificate] is invalid or if the certificate was produced by a
+  different ~il[version] of ACL2, a warning is printed and the book is included
+  anyway; ~pl[certificate].  This can lead to serious errors, perhaps mitigated
+  by the presence of a ~c[.port] file from an earlier certification;
+  ~pl[uncertified-books].  If the portcullis of the ~il[certificate]
+  (~pl[portcullis]) cannot be raised in the host logical ~il[world], an error
+  is caused and no change occurs to the logic.  Otherwise, the non-~ilc[local]
+  ~il[events] in file are assumed.  Then the ~il[keep] of the ~il[certificate]
+  is checked to ensure that the correct files were read; ~pl[keep].  A warning
+  is printed if uncertified ~il[books] were included.  Even if no warning is
+  printed, ~c[include-book] places a burden on you; ~pl[certificate].
+
+  If you use ~il[guard]s, please note ~c[include-book] is executed as though
+  ~c[(set-guard-checking nil)] has been evaluated; ~Pl[set-guard-checking].  If
+  you want guards checked, please ~pl[ld] and/or ~pl[rebuild].
+
+  The value, ~c[action], of ~c[:load-compiled-file] controls whether a compiled
+  file is loaded by ~c[include-book].  If compilation has been suppressed by
+  ~c[(set-compiler-enabled nil)], then ~c[action] is coerced to ~c[nil];
+  ~pl[compilation].  Otherwise, if ~c[action] is missing or its value is the
+  keyword ~c[:default], then it is treated as ~c[:warn].  If ~c[action] is
+  ~c[nil], no attempt is made to load the compiled file for the book provided.
+  In order to load the compiled file, it must be more recent than the book's
+  ~il[certificate] (except in raw mode, where it must be more recent than the
+  book itself; ~pl[set-raw-mode]).  For non-~c[nil] values of ~c[action] that
+  do not result in a loaded compiled file, ACL2 proceeds as follows.  Note that
+  a load of a compiled file or expansion file aborts partway through whenever
+  an ~ilc[include-book] form is encountered for which no suitable compiled or
+  expansion file can be loaded.  For much more detail, ~pl[book-compiled-file].
+  ~bq[]
+
+  ~c[t]: Cause an error if the compiled file is not loaded.  This same
+  requirement is imposed on every ~ilc[include-book] form evaluated during the
+  course of evaluation of the present ~c[include-book] form, except that for
+  those subsidiary ~c[include-book]s that do not themselves specify
+  ~c[:load-compiled-file t], it suffices to load the expansion file
+  (~pl[book-compiled-file]).
+
+  ~c[:warn]: An attempt is made to load the compiled file, and a warning is
+  printed if that load fails to run to completion.
+
+  ~c[:comp]: A compiled file is loaded as with value ~c[t], except that if a
+  suitable ``expansion file'' exists but the compiled file does not, then the
+  compiled file is first created.  ~l[book-compiled-file].~eq[]
+
+  The three ~c[-okp] arguments, ~c[:uncertified-okp], ~c[defaxioms-okp],
+  and ~c[skip-proofs-okp], determine the system's behavior when
+  the book or any subbook is found to be uncertified, when the book
+  or any subbook is found to contain ~ilc[defaxiom] events, and when
+  the book or any subbook is found to contain ~ilc[skip-proofs] events,
+  respectively.  All three default to ~c[t], which means it is ``ok''
+  for the condition to arise.  In this case, a warning is printed but
+  the processing to load the book is allowed to proceed.  When one of
+  these arguments is ~c[nil] and the corresponding condition arises,
+  an error is signaled and processing is aborted.  ~st[Exception]:
+  ~c[:uncertified-okp] is ignored if the ~c[include-book] is being
+  performed on behalf of a ~ilc[certify-book].
+
+  The keyword argument ~c[:ttags] may normally be omitted.  A few constructs,
+  used for example if you are building your own system based on ACL2, may
+  require it.  ~l[defttag] for an explanation of this argument.
+
+  ~c[Include-book] is similar in spirit to ~ilc[encapsulate] in that it is
+  a single event that ``contains'' other ~il[events], in this case the
+  ~il[events] listed in the file named.  ~c[Include-book] processes the
+  non-~ilc[local] event forms in the file, assuming that each is
+  admissible.  ~ilc[Local] ~il[events] in the file are ignored.  You may
+  use ~c[include-book] to load several ~il[books], creating the logical
+  ~il[world] that contains the definitions and theorems of all of
+  them.
+
+  If any non-~ilc[local] event of the book attempts to define a ~il[name]
+  that has already been defined ~-[] and the book's definition is not
+  syntactically identical to the existing definition ~-[] the attempt to
+  include the book fails, an error message is printed, and no change
+  to the logical ~il[world] occurs.  ~l[redundant-events] for the
+  details.
+
+  When a book is included, the default ~il[defun-mode]
+  (~pl[default-defun-mode]) for the first event is always ~c[:]~ilc[logic].
+  That is, the default ~il[defun-mode] ``outside'' the book ~-[] in the
+  environment in which ~c[include-book] was called ~-[] is irrelevant to the
+  book.  ~il[Events] that change the ~il[defun-mode] are permitted within a
+  book (provided they are not in ~ilc[local] forms).  However, such changes
+  within a book are not exported, i.e., at the conclusion of an
+  ~c[include-book], the ``outside'' default ~il[defun-mode] is always the same
+  as it was before the ~c[include-book].
+
+  Unlike every other event in ACL2, ~c[include-book] puts a burden on
+  you.  Used improperly, ~c[include-book] can be unsound in the sense
+  that it can create an inconsistent extension of a consistent logical
+  ~il[world].  A certification mechanism is available to help you
+  carry this burden ~-[] but it must be understood up front that even
+  certification is no guarantee against inconsistency here.  The
+  fundamental problem is one of file system security.
+  ~l[certificate] for a discussion of the security issues.
+
+  At the beginning of execution of an ~c[include-book] form, even before
+  executing ~il[portcullis] ~il[command]s, the value of
+  ~ilc[acl2-defaults-table] is restored to the value it had at startup, except
+  that the value of key ~c[:inhibit-warnings] is preserved.  After execution of
+  an ~c[include-book] form, the value of ~ilc[acl2-defaults-table] is restored
+  to what it was immediately before that ~c[include-book] form was executed.
+  ~l[acl2-defaults-table].
+
+  ~b[Distributed Books Directory.]  We refer to the ``books directory'' of an
+  executable image as the full pathname string of the books directory
+  associated with ~c[:dir :system] for that image.  This is where the
+  distributed books directory should reside.  By default, it is the ~c[books/]
+  subdirectory of the directory where the sources reside and the executable
+  image is thus built (except for ACL2(r) ~-[] ~pl[real] ~-[], where it is
+  ~c[books/nonstd/]).  If those books reside elsewhere, the environment
+  variable ~c[ACL2_SYSTEM_BOOKS] can be set to the ~c[books/] directory under
+  which they reside (a Unix-style pathname, typically ending in ~c[books/] or
+  ~c[books], is permissible).  In most cases, your ACL2 executable is a small
+  script in which you can set this environment variable just above the line on
+  which the actual ACL2 image is invoked, for example:
+  ~bv[]
+  export ACL2_SYSTEM_BOOKS
+  ACL2_SYSTEM_BOOKS=/home/acl2/4-0/acl2-sources/books
+  ~ev[]
+
+  This concludes the guided tour through ~il[books].
+  ~l[set-compile-fns] for a subtle point about the interaction
+  between ~c[include-book] and on-the-fly ~il[compilation].
+  ~l[certify-book] for a discussion of how to certify a book.~/
+
+  :cited-by Programming"
+
+; Warning: See the Important Boot-Strapping Invariants before modifying!
+
+  (list 'include-book-fn
+        (list 'quote user-book-name)
+        'state
+        (list 'quote load-compiled-file)
+        (list 'quote :none)
+        (list 'quote uncertified-okp)
+        (list 'quote defaxioms-okp)
+        (list 'quote skip-proofs-okp)
+        (list 'quote ttags)
+        (list 'quote doc)
+        (list 'quote dir)
+        (list 'quote event-form)))
 
 (defmacro certify-book (&rest args)
   (declare (ignore args))

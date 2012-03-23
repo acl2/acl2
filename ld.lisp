@@ -18665,6 +18665,10 @@
   ~ilc[set-fmt-soft-right-margin] or ~ilc[set-fmt-hard-right-margin] to set a
   small right margin.
 
+  Fixed ~ilc[set-inhibit-warnings] so that it takes effect for a subsequent
+  ~ilc[include-book] event.  Thanks to Jared Davis and David Rager for queries
+  that led to this fix.
+
   ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]
 
   Although the HTML documentation is distributed with ACL2, it had not been
