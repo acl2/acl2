@@ -728,6 +728,14 @@
   (pseudo-include-book-alistp val))
 
 ; -----------------------------------------------------------------
+; PCERT-BOOKS [GLOBAL-VALUE]
+
+; The pcert-books is a list of full book names. 
+
+(defun pseudo-pcert-booksp (val)
+  (string-listp val))
+
+; -----------------------------------------------------------------
 ; INCLUDE-BOOK-PATH [GLOBAL-VALUE]
 
 ; The include-book-path is a list of full book names. 
@@ -1516,6 +1524,7 @@
     (HONS-ENABLED (booleanp val))
     (INCLUDE-BOOK-ALIST (pseudo-include-book-alistp val))
     (INCLUDE-BOOK-ALIST-ALL (pseudo-include-book-alist-allp val))
+    (PCERT-BOOKS (pseudo-pcert-booksp val))
     (INCLUDE-BOOK-PATH (pseudo-include-book-pathp val))
     (CERTIFICATION-TUPLE (certification-tuplep val))
     (DOCUMENTATION-ALIST (documentation-alistp val))

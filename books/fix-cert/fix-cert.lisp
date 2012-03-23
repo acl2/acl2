@@ -148,8 +148,8 @@
                                (access cert-obj cert-obj :pre-alist)))
              (post-alist (access cert-obj cert-obj :post-alist))
              (expansion-alist (access cert-obj cert-obj :expansion-alist))
-             (expansion-alist-nonelided
-              (access cert-obj cert-obj :expansion-alist-nonelided))
+             (pcert-info (access cert-obj cert-obj :pcert-info))
+             (expansion-alist-nonelided (and (consp pcert-info) pcert-info))
              (old-full-book-name (caar post-alist))
              (old-directory-name (remove-after-last-directory-separator
                                   old-full-book-name))

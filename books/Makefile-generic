@@ -528,13 +528,13 @@ dependencies:
 	  $(ACL2_EGREP_CMD_DIR) $$book.lisp | $(ACL2_SED_CMD_DIR) | $(ACL2_SED_CMD_COMMENT) ;\
 	  if [ -f $$book.acl2 ]; then \
 	  echo "$$book.$$cert_or_acl2x: $$book.acl2" ; \
-	  $(ACL2_EGREP_CMD_ACL2) | $(ACL2_SED_CMD) ;\
+	  $(ACL2_EGREP_CMD_ACL2) | $(ACL2_SED_CMD_PCERT0) ;\
 	  $(ACL2_EGREP_CMD_ACL2_LD) | $(ACL2_SED_CMD_LD) ;\
 	  $(ACL2_EGREP_CMD_DIR) $$book.acl2 | $(ACL2_SED_CMD_DIR) | $(ACL2_SED_CMD_COMMENT) ;\
 	  $(ACL2_EGREP_CMD_DIR_LD) $$book.acl2 | $(ACL2_SED_CMD_DIR_LD) | $(ACL2_SED_CMD_COMMENT) ;\
 	  elif [ -f cert.acl2 ]; then \
 	  echo "$$book.$$cert_or_acl2x: cert.acl2" ; \
-	  $(ACL2_EGREP_CMD_CERT) | $(ACL2_SED_CMD) ;\
+	  $(ACL2_EGREP_CMD_CERT) | $(ACL2_SED_CMD_PCERT0) ;\
 	  $(ACL2_EGREP_CMD_CERT_LD) | $(ACL2_SED_CMD_LD) ;\
 	  $(ACL2_EGREP_CMD_DIR) cert.acl2 | $(ACL2_SED_CMD_DIR) | $(ACL2_SED_CMD_COMMENT) ;\
 	  $(ACL2_EGREP_CMD_DIR_LD) cert.acl2 | $(ACL2_SED_CMD_DIR_LD) | $(ACL2_SED_CMD_COMMENT) ;\
