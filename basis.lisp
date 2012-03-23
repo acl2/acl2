@@ -8138,6 +8138,7 @@
 
 (defconst *uninhibited-warning-summaries*
   '("Uncertified"
+    "Provisionally certified"
     "Skip-proofs"
     "Defaxioms"
     "Ttags"

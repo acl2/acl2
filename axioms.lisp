@@ -19648,12 +19648,16 @@
 
 ; Certification worlds are checked for legality by
 ; chk-acceptable-certify-book1, which collects uncertified books (using
-; collect-uncertified-books) from the existing include-book-alist and which
-; checks if any redefinition was done.  We of course miss uncertified
-; locally-included books this way, but the only relevance of such books is
-; whether they employed skip-proofs, ttags, or defaxioms, and this information
-; is ultimately stored in the certificate of a parent book that is non-locally
-; included in the certification world.
+; collect-uncertified-books) from the existing include-book-alist, checks if
+; any redefinition was done, and (if not doing the Pcertify or Convert step of
+; provisional certification) checks that pcert-books is empty.  We of course
+; miss uncertified locally-included books this way, but the only relevance of
+; such books is whether they employed skip-proofs, ttags, or defaxioms, and
+; this information is ultimately stored in the certificate of a parent book
+; that is non-locally included in the certification world.  We track locally
+; included provisionally certified books under encapsulates, but as with
+; uncertified books, we are not concerned about any locally included
+; provisionally certified book under a certified book.
 
 ; The acl2-defaults-table stores the default defun-mode, and hence can affect
 ; soundness.  However, chk-acceptable-certify-book1 checks that the default

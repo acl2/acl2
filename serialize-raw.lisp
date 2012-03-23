@@ -803,7 +803,10 @@
       (acl2::pkg-witness pkg-name))
     (loop until (= (the fixnum stop) free) do
           (setf (svref arr free)
-                (intern (ser-decode-str version :never stream) pkg-name))
+;               (intern (ser-decode-str version :never stream) pkg-name))
+; Change by Matt K. to avoid package errors when *read-suppress* is t:
+                (let ((temp (ser-decode-str version :never stream)))
+                  (if *read-suppress* nil (intern temp pkg-name))))
           (incf free))
     (setf (ser-decoder-free decoder) stop)))
 
