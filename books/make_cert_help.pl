@@ -321,7 +321,8 @@ sub collect_ls_dirs {
 }
 
 my $TARGET = shift;
-my $STEP = shift;
+my $STEP = shift;      # certify, acl2x, acl2xskip, pcertify, convert, or complete
+my $ACL2X = shift;     # "yes" or otherwise no. use ACL2X file in certify/pcertify/convert steps
 my $PREREQS = \@ARGV;
 
 # print "Prereqs for $TARGET $STEP: \n";
@@ -333,21 +334,26 @@ my $startdir = getcwd;
 # my $prereq_dirs = collect_ls_dirs($PREREQS, $startdir);
 
 my $TARGETEXT;
-if ($STEP eq "convert" || $STEP eq "cert" || $STEP eq "acl2xcert") {
+if ($STEP eq "complete" || $STEP eq "certify") {
     $TARGETEXT = "cert";
-} elsif ($STEP eq "pcert") {
-    $TARGETEXT = "pcert";
+} elsif ($STEP eq "convert") {
+    $TARGETEXT = "pcert1";
+} elsif ($STEP eq "pcertify") {
+    $TARGETEXT = "pcert0";
 } elsif ($STEP eq "acl2x" || $STEP eq "acl2xskip") {
     $TARGETEXT = "acl2x";
 } else {
     die("Unrecognized step type: $STEP");
 }
 
+# normalize acl2x flag to Boolean
+$ACL2X = ($ACL2X eq "yes") ? ":acl2x t" : "";
+
 my $INHIBIT     = $ENV{"INHIBIT"} || "";
 my $HEADER      = $ENV{"OUTFILE_HEADER"} || "";
 my $MAX_NFS_LAG = $ENV{"MAX_NFS_LAG"} || 100;
 my $DEBUG       = $ENV{"ACL2_BOOKS_DEBUG"} ? 1 : 0;
-my $FLAGS       = ($STEP eq "cert") ? $ENV{"COMPILE_FLG"} : $ENV{"COMPILE_FLG_TWOPASS"};
+my $FLAGS       = $ENV{"COMPILE_FLG"};
 my $TIME_CERT   = $ENV{"TIME_CERT"} ? 1 : 0;
 my $STARTJOB    = $ENV{"STARTJOB"} || "";
 my $ON_FAILURE_CMD = $ENV{"ON_FAILURE_CMD"} || "";
@@ -367,6 +373,16 @@ if (($? >> 8) != 0) {
     exit(1);
 }
 
+my $PCERT = "";
+if ($STEP eq "pcertify") {
+    $PCERT = ":pcert :create";
+} elsif ($STEP eq "convert") {
+    $PCERT = ":pcert :convert";
+} elsif ($STEP eq "complete") {
+    $PCERT = ":pcert :complete";
+}
+
+
 if ($DEBUG)
 {
     print "-- Starting up make_cert_help.pl in debug mode.\n";
@@ -376,6 +392,8 @@ if ($DEBUG)
     print "-- INHIBIT      = $INHIBIT\n";
     print "-- MAX_NFS_LAG  = $MAX_NFS_LAG\n";
     print "-- FLAGS        = $FLAGS\n";
+    print "-- PCERT        = $PCERT\n";
+    print "-- ACL2X        = $ACL2X\n";
     print "-- HEADER       = $HEADER\n";
     print "-- Default ACL2 = $default_acl2\n" if $DEBUG;
 }
@@ -390,25 +408,9 @@ my $fulldir = File::Spec->canonpath(File::Spec->catpath($vol, $dir, ""));
 print "-- Entering directory $fulldir\n" if $DEBUG;
 chdir($fulldir) || die("Error switching to $fulldir: $!\n");
 
-# Override ACL2 per the image file, as appropriate.
-my $acl2 = read_whole_file_if_exists("$file.image");
-$acl2 = read_whole_file_if_exists("cert.image") if !$acl2;
-$acl2 = $default_acl2 if !$acl2;
-$acl2 = trim($acl2);
-$ENV{"ACL2"} = $acl2;
-print "-- Image to use = $acl2\n" if $DEBUG;
-die("Can't determine which ACL2 to use.") if !$acl2;
-
-
-my $timefile;
-my $outfile;
-if ($STEP eq "cert") {
-    $timefile = "$file.time";
-    $outfile = "$file.out";
-} else {
-    $timefile = "$file.$STEP.time";
-    $outfile = "$file.$STEP.out";
-}
+my $status;
+my $timefile = "$file.$TARGETEXT.time";
+my $outfile = "$file.$TARGETEXT.out";
 
 print "-- Removing files to be generated.\n" if $DEBUG;
 
@@ -418,138 +420,153 @@ remove_file_if_exists($outfile);
 
 write_whole_file($outfile, $HEADER);
 
+## Consider just using "mv"/"touch" for the complete step.
+if ($STEP eq "complete") {
+    ## BOZO this is horrible and only works for CCL/linux and probably the file time thing
+    ## is also wrong.
+    my $cmd = "(time ((mv $file.pcert1 $file.cert; if [[ $file.lx64fsl -nt $file.pcert0 ]] ; then touch $file.cert; touch $file.lx64fsl; else touch $file.cert; fi) >> $outfile)) 2> $timefile";
+    if (system($cmd) != 0) {
+	die("Failed to move $file.pcert1 to $file.cert\n");
+    }
+    $status = 43;
+} else {
+
+# Override ACL2 per the image file, as appropriate.
+    my $acl2 = read_whole_file_if_exists("$file.image");
+    $acl2 = read_whole_file_if_exists("cert.image") if !$acl2;
+    $acl2 = $default_acl2 if !$acl2;
+    $acl2 = trim($acl2);
+    $ENV{"ACL2"} = $acl2;
+    print "-- Image to use = $acl2\n" if $DEBUG;
+    die("Can't determine which ACL2 to use.") if !$acl2;
+
 # ------------ TEMPORARY LISP FILE FOR ACL2 INSTRUCTIONS ----------------------
 
-my $rnd = int(rand(2**30));
-my $tmpbase = "workxxx.$goal.$rnd";
+    my $rnd = int(rand(2**30));
+    my $tmpbase = "workxxx.$goal.$rnd";
 # upper-case .LISP so if it doesn't get deleted, we won't try to certify it
-my $lisptmp = "$tmpbase.LISP";
-print "-- Temporary lisp file: $lisptmp\n" if $DEBUG;
+    my $lisptmp = "$tmpbase.LISP";
+    print "-- Temporary lisp file: $lisptmp\n" if $DEBUG;
 
-my $instrs = "";
+    my $instrs = "";
 
 # I think this strange :q/lp dance is needed for lispworks or something?
-$instrs .= "(acl2::value :q)\n";
-$instrs .= "(in-package \"ACL2\")\n";
-$instrs .= "(acl2::lp)\n\n";
+    $instrs .= "(acl2::value :q)\n";
+    $instrs .= "(in-package \"ACL2\")\n";
+    $instrs .= "(acl2::lp)\n\n";
+    $instrs .= "(set-debugger-enable :bt)\n";
+    $instrs .= "(set-write-acl2x t state)\n" if ($STEP eq "acl2x");
+    $instrs .= "(set-write-acl2x '(t) state)\n" if ($STEP eq "acl2xskip");
+    $instrs .= "$INHIBIT\n" if ($INHIBIT);
 
-$instrs .= "(set-write-acl2x t state)\n" if ($STEP eq "acl2x");
-$instrs .= "(set-write-acl2x '(t) state)\n" if ($STEP eq "acl2xskip");
-$instrs .= "$INHIBIT\n" if ($INHIBIT);
+    $instrs .= "\n";
 
-$instrs .= "\n";
 
-my $PCERT = "";
-if ($STEP eq "pcert") {
-    $PCERT = ":pcert :create";
-} elsif ($STEP eq "convert") {
-    $PCERT = ":pcert :convert";
-}
-
-my $cert_cmd = "#!ACL2 (er-progn (time\$ (certify-book \"$file\" ? $FLAGS $PCERT))
+    my $cert_cmd = "#!ACL2 (er-progn (time\$ (certify-book \"$file\" ? $FLAGS $PCERT $ACL2X))
                                  (value (exit 43)))";
 
 # Get the certification instructions from foo.acl2 or cert.acl2, if either
 # exists, or make a generic certify-book command.
-if (-f "$file.acl2") {
-    $instrs .= "; instructions from $file.acl2\n";
-    $instrs .= "; (omitting any certify-book line):\n";    
-    $instrs .= read_file_except_certify("$file.acl2");
-    $instrs .= "\n; certify-book command added automatically:\n";
-    $instrs .= "$cert_cmd\n\n";
-}
-elsif (-f "cert.acl2") {
-    $instrs .= "; instructions from cert.acl2:\n";
-    $instrs .= read_whole_file("cert.acl2");
-    $instrs .= "\n; certify-book command added automatically:\n";
-    $instrs .= "$cert_cmd\n\n";
-}
-else {
-    $instrs .= "; certify-book generated automatically:\n";
-    $instrs .= "$cert_cmd\n\n";
-}
+    if (-f "$file.acl2") {
+	$instrs .= "; instructions from $file.acl2\n";
+	$instrs .= "; (omitting any certify-book line):\n";    
+	$instrs .= read_file_except_certify("$file.acl2");
+	$instrs .= "\n; certify-book command added automatically:\n";
+	$instrs .= "$cert_cmd\n\n";
+    }
+    elsif (-f "cert.acl2") {
+	$instrs .= "; instructions from cert.acl2:\n";
+	$instrs .= read_whole_file("cert.acl2");
+	$instrs .= "\n; certify-book command added automatically:\n";
+	$instrs .= "$cert_cmd\n\n";
+    }
+    else {
+	$instrs .= "; certify-book generated automatically:\n";
+	$instrs .= "$cert_cmd\n\n";
+    }
 
-if ($DEBUG) {
-    print "-- ACL2 Instructions: $lisptmp --\n";
-    print "$instrs\n";
-    print "-------------------------------------------------------\n\n";
-}
+    if ($DEBUG) {
+	print "-- ACL2 Instructions: $lisptmp --\n";
+	print "$instrs\n";
+	print "-------------------------------------------------------\n\n";
+    }
 
-write_whole_file($lisptmp, $instrs);
+    write_whole_file($lisptmp, $instrs);
 
 
 
 # ------------ TEMPORARY SHELL SCRIPT FOR RUNNING ACL2 ------------------------
 
 # upper-case .SH to agree with upper-case .LISP
-my $shtmp = "$tmpbase.SH";
-my $shinsts = "#!/bin/sh\n\n";
+    my $shtmp = "$tmpbase.SH";
+    my $shinsts = "#!/bin/sh\n\n";
 
 # If we find a set-max-mem line, add 3 gigs of padding for the stacks and to
 # allow the lisp to have some room to go over.  Default to 6 gigs.
-my $max_mem = scan_for_set_max_mem("$file.lisp");
-$max_mem = $max_mem ? ($max_mem + 3) : 6;
+    my $max_mem = scan_for_set_max_mem("$file.lisp");
+    $max_mem = $max_mem ? ($max_mem + 3) : 6;
 
 # If we find a set-max-time line, honor it directly; otherwise default to
 # 240 minutes.
-my $max_time = scan_for_set_max_time("$file.lisp") || 240;
+    my $max_time = scan_for_set_max_time("$file.lisp") || 240;
 
-print "-- Resource limits: $max_mem gigabytes, $max_time minutes.\n\n" if $DEBUG;
+    print "-- Resource limits: $max_mem gigabytes, $max_time minutes.\n\n" if $DEBUG;
 
-$shinsts .= "#PBS -l pmem=${max_mem}gb\n";
-$shinsts .= "#PBS -l walltime=${max_time}:00\n\n";
+    $shinsts .= "#PBS -l pmem=${max_mem}gb\n";
+    $shinsts .= "#PBS -l walltime=${max_time}:00\n\n";
 
-$shinsts .= "pwd >> $outfile\n";
+    $shinsts .= "pwd >> $outfile\n";
 # $shinsts .= "echo List directories of prereqs >> $outfile\n";
 # $shinsts .= "time ( ls @$prereq_dirs > /dev/null ) 2> $outfile\n";
 # foreach my $prereq (@$PREREQS) {
 #     $shinsts .= "echo prereq: $prereq >> $outfile\n";
 #     $shinsts .= "ls -l $startdir/$prereq >> $outfile 2>&1 \n";
 # }
+    $shinsts .= "echo >> $outfile\n";
+    $shinsts .= "hostname >> $outfile\n";
+    $shinsts .= "echo >> $outfile\n";
 
-$shinsts .= "echo >> $outfile\n";
-$shinsts .= "hostname >> $outfile\n";
-$shinsts .= "echo >> $outfile\n";
+    $shinsts .= "echo Temp lisp file: >> $outfile\n";
+    $shinsts .= "cat $lisptmp >> $outfile\n";
+    $shinsts .= "echo >> $outfile\n";
 
-$shinsts .= "echo Temp lisp file: >> $outfile\n";
-$shinsts .= "cat $lisptmp >> $outfile\n";
-$shinsts .= "echo >> $outfile\n";
-
-$shinsts .= "echo Start of output: >> $outfile\n";
-$shinsts .= "echo >> $outfile\n";
-
-
-
-if ($TIME_CERT) {
-    $shinsts .= "(time (($acl2 < $lisptmp 2>&1) >> $outfile)) 2> $timefile\n";
-}
-else {
-    $shinsts .= "($acl2 < $lisptmp 2>&1) >> $outfile\n";
-}
-
-$shinsts .= "EXITCODE=\$?\n";
-$shinsts .= "ls -l $goal >> $outfile || echo $goal seems to be missing >> $outfile\n";
-$shinsts .= "exit \$EXITCODE\n";
+    $shinsts .= "echo TARGET: $TARGET >> $outfile\n";
+    $shinsts .= "echo STEP: $STEP >> $outfile\n";
+    $shinsts .= "echo Start of output: >> $outfile\n";
+    $shinsts .= "echo >> $outfile\n";
 
 
-if ($DEBUG) {
-    print "-- Wrapper Script: $shtmp --\n";
-    print "$shinsts\n";
-    print "-------------------------------------------------------\n\n";
-}
 
-write_whole_file($shtmp, $shinsts);
+    if ($TIME_CERT) {
+	$shinsts .= "(time (($acl2 < $lisptmp 2>&1) >> $outfile)) 2> $timefile\n";
+    }
+    else {
+	$shinsts .= "($acl2 < $lisptmp 2>&1) >> $outfile\n";
+    }
+
+    $shinsts .= "EXITCODE=\$?\n";
+    $shinsts .= "ls -l $goal >> $outfile || echo $goal seems to be missing >> $outfile\n";
+    $shinsts .= "exit \$EXITCODE\n";
+
+
+    if ($DEBUG) {
+	print "-- Wrapper Script: $shtmp --\n";
+	print "$shinsts\n";
+	print "-------------------------------------------------------\n\n";
+    }
+
+    write_whole_file($shtmp, $shinsts);
 
 
 # Run it!  ------------------------------------------------
 
-system("$STARTJOB $shtmp");
-my $status = $? >> 8;
+    system("$STARTJOB $shtmp");
+    $status = $? >> 8;
 
-unlink($lisptmp) if !$DEBUG;
-unlink($shtmp) if !$DEBUG;
+    unlink($lisptmp) if !$DEBUG;
+    unlink($shtmp) if !$DEBUG;
 
-
+}
 
 # Success or Failure Detection -------------------------------
 
@@ -575,14 +592,13 @@ if ($status == 43) {
 if ($success) {
     print "Successfully built $dir$goal\n";
 } else {
-    my $taskname = ($STEP eq "acl2x") ? "ACL2X GENERATION" :
-	($STEP eq "cert")  ? "CERTIFICATION" :
-	($STEP eq "acl2xcert") ? "2ND PASS CERTIFICATION" :
-	($STEP eq "pcert")     ? "PROVISIONAL CERTIFICATION" :
-	# ($STEP eq "convert")
-	"PCERT->CERT CONVERSION";
+    my $taskname = ($STEP eq "acl2x" || $STEP eq "acl2xskip") ? "ACL2X GENERATION" :
+	($STEP eq "certify")  ? "CERTIFICATION" :
+	($STEP eq "pcertify") ? "PROVISIONAL CERTIFICATION" :
+	($STEP eq "convert")  ? "PCERT0->PCERT1 CONVERSION" :
+	($STEP eq "complete") ? "PCERT1->CERT COMLETION" : "UNKNOWN";
     print "**$taskname FAILED** for $dir$file.lisp\n\n";
-    system("tail -300 $outfile | sed 's/^/   | /'");
+    system("tail -300 $outfile | sed 's/^/   | /'") if $outfile;
     print "\n\n";
 
     if ($ON_FAILURE_CMD) {

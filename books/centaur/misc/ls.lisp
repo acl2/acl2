@@ -236,7 +236,7 @@
                                            (file-namestring f)))))
                      names)
                    (error (condition)
-                          (format nil "ls-files: ~a" condition)))))
+                          (format nil "ls-files on ~a: ~a" path condition)))))
      (cond ((stringp results)
             (mv t results state))
            ((string-listp results)

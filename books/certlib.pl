@@ -44,8 +44,8 @@ sub human_time {
     my $secs = shift;
     my $shortp = shift;
 
-    if (!$secs) {
-	return "???";
+    if ($secs < 0.0) {
+	return "[Error]";
     }
 
     if ($secs < 60) {
@@ -181,11 +181,12 @@ sub get_cert_time {
     my ($path, $warnings, $use_realtime, $pcert) = @_;
 
     if ($pcert) {
-	$path =~ s/\.cert$/\.convert\.time/;
-	$path =~ s/\.pcert$/\.pcert\.time/;
+	$path =~ s/\.cert$/\.cert\.time/;
+	$path =~ s/\.pcert0$/\.pcert0\.time/;
+	$path =~ s/\.pcert1$/\.pcert1\.time/;
 	$path =~ s/\.acl2x$/\.acl2x\.time/;
     } else {
-	$path =~ s/\.cert$/\.time/;
+	$path =~ s/\.cert$/\.cert\.time/;
 	$path =~ s/\.acl2x$/\.acl2x\.time/;
     }
 
@@ -222,7 +223,7 @@ sub get_cert_time {
 	close $timefile;
 	if (!defined($usertime) || !defined($systime)) {
 	    push(@$warnings, "Corrupt timings in $path\n");
-	    return 0;
+	    return -1;
 	}
 	if ($use_realtime) {
 	    return 0.0 + $realtime;
@@ -231,7 +232,7 @@ sub get_cert_time {
 	}
     } else {
 	push(@$warnings, "Could not open $path: $!\n");
-	return 0;
+	return -1;
     }
 }
 
@@ -241,50 +242,80 @@ sub cert_to_acl2x {
     return $acl2x;
 }
 
-sub cert_to_pcert {
+sub cert_to_pcert0 {
     my $cert = shift;
-    (my $pcert = $cert) =~ s/\.cert$/\.pcert/;
+    (my $pcert = $cert) =~ s/\.cert$/\.pcert0/;
     return $pcert;
 }
 
-sub cert_deps {
+sub cert_to_pcert1 {
+    my $cert = shift;
+    (my $pcert = $cert) =~ s/\.cert$/\.pcert1/;
+    return $pcert;
+}
+
+sub cert_bookdeps {
     my ($cert, $depmap) = @_;
     my $entry = $depmap->{$cert};
     return $entry && $entry->[0];
 }
 
-sub cert_srcdeps {
+sub cert_portdeps {
     my ($cert, $depmap) = @_;
     my $entry = $depmap->{$cert};
     return $entry && $entry->[1];
 }
 
-sub cert_image {
+sub cert_deps {
+    my ($cert, $depmap) = @_;
+    my $bookdeps = cert_bookdeps($cert, $depmap);
+    my $portdeps = cert_portdeps($cert, $depmap);
+    return [ @$bookdeps, @$portdeps ];
+}
+
+sub cert_srcdeps {
     my ($cert, $depmap) = @_;
     my $entry = $depmap->{$cert};
     return $entry && $entry->[2];
 }
 
-sub cert_is_two_pass {
+sub cert_image {
     my ($cert, $depmap) = @_;
     my $entry = $depmap->{$cert};
     return $entry && $entry->[3];
 }
 
+sub cert_get_params {
+    my ($cert, $depmap) = @_;
+    my $entry = $depmap->{$cert};
+    return $entry && $entry->[4];
+}
+
+sub cert_get_param {
+    my ($cert, $depmap, $param) = @_;
+    my $params = cert_get_params($cert, $depmap);
+    return $params && $params->{$param};
+}
+
+sub cert_is_two_pass {
+    my ($certfile, $deps) = @_;
+    return cert_get_param($certfile, $deps, "two_pass");
+}
 
 sub read_costs {
     my ($deps, $basecosts, $warnings, $use_realtime, $pcert) = @_;
 
     foreach my $certfile (keys %{$deps}) {
-	if ($pcert) {
-	    my $pcertfile = cert_to_pcert($certfile);
-	    my $acl2xfile = cert_to_acl2x($certfile);
+	if ($pcert && ! get_cert_param($certfile, $deps, "no_pcert")
+	    && ! get_cert_param($certfile, $deps, "acl2x")) {
+	    my $pcert0file = cert_to_pcert0($certfile);
+	    my $pcert1file = cert_to_pcert1($certfile);
 	    $basecosts->{$certfile} = get_cert_time($certfile, $warnings, $use_realtime, $pcert);
-	    $basecosts->{$pcertfile} = get_cert_time($pcertfile, $warnings, $use_realtime, $pcert);
-	    $basecosts->{$acl2xfile} = get_cert_time($acl2xfile, $warnings, $use_realtime, $pcert);
+	    $basecosts->{$pcert0file} = get_cert_time($pcert0file, $warnings, $use_realtime, $pcert);
+	    $basecosts->{$pcert1file} = get_cert_time($pcert1file, $warnings, $use_realtime, $pcert);
 	} else {
 	    $basecosts->{$certfile} = get_cert_time($certfile, $warnings, $use_realtime, $pcert);
-	    if (cert_is_two_pass($certfile, $deps)) {
+	    if (get_cert_param($certfile, $deps, "acl2x")) {
 		my $acl2xfile = cert_to_acl2x($certfile);
 		$basecosts->{$acl2xfile} = get_cert_time($acl2xfile, $warnings, $use_realtime, $pcert);
 	    }
@@ -299,7 +330,7 @@ sub find_most_expensive {
     my $most_expensive_file = 0;
 
     foreach my $file (@{$files}) {
-	if ($file =~ /\.(cert|acl2x|pcert)$/) {
+	if ($file =~ /\.(cert|acl2x|pcert0|pcert1)$/) {
 
 	    my $file_costs = $costs->{$file};
 	    if ($file_costs) {
@@ -318,7 +349,7 @@ sub find_most_expensive {
 sub compute_cost_paths_aux {
     my ($target,$deps,$basecosts,$costs,$warnings,$pcert) = @_;
 
-    if (exists $costs->{$target} || ! ($target =~ /\.(cert|acl2x|pcert)$/)) {
+    if (exists $costs->{$target} || ! ($target =~ /\.(cert|acl2x|pcert0|pcert1)$/)) {
 	return $costs->{$target};
     }
 
@@ -329,26 +360,41 @@ sub compute_cost_paths_aux {
     
     my $targetdeps;
     if ($pcert) {
+
 	$targetdeps = [];
-	if ($target =~ /\.pcert$/) {
-	    ## The only dependency is the corresponding .acl2x.
-	    (my $acl2xfile = $target) =~ s/\.pcert$/\.acl2x/;
-	    push (@$targetdeps, $acl2xfile);
-	} elsif ($target =~ /\.acl2x$/) {
+	if ($target =~ /\.pcert0$/) {
 	    ## The dependencies are the dependencies of the cert file, but
-	    ## with each .cert replaced with the corresponding .acl2x.
-	    (my $certfile = $target) =~ s/\.acl2x$/\.cert/;
+	    ## with each .cert replaced with the corresponding .pcert0.
+	    (my $certfile = $target) =~ s/\.pcert0$/\.cert/;
 	    my $certdeps = cert_deps($certfile, $deps);
 	    foreach my $dep (@$certdeps) {
-		my $depacl2x = cert_to_acl2x($dep);
+		my $depacl2x = cert_to_pcert0($dep);
 		push(@$targetdeps, $depacl2x);
 	    }
+	} elsif ($target =~ /\.pcert1$/) {
+	    ## The only dependency is the corresponding .pcert0.
+	    (my $pcert0 = $target) =~ s/\.pcert1$/\.pcert0/;
+	    push (@$targetdeps, $pcert0);
+	} elsif ($target =~ /\.acl2x$/) {
+	    ## The dependencies are the dependencies of the cert file.
+	    (my $certfile = $target) =~ s/\.acl2x$/\.cert/;
+	    my $certdeps = cert_deps($certfile, $deps);
+	    push(@$targetdeps, @$certdeps);
 	} else { # $target =~ /\.cert$/
-	    # The dependencies are the ones saved in $deps, plus the corresponding pcert.
-	    my $certdeps = cert_deps($target, $deps);
-	    push (@$targetdeps, @$certdeps);
-	    my $pcertfile = cert_to_pcert($target);
-	    push (@$targetdeps, $pcertfile);
+	    # Depends.
+	    if (cert_get_param($target, $deps, "acl2x")) {
+		# If it's using the acl2x/two-pass, then depend only on the acl2x file.
+		(my $acl2xfile = $target) =~ s/\.cert$/\.acl2x/;
+		push (@$targetdeps, $acl2xfile);
+	    } else {
+		# otherwise, depend on its subbooks' certificates
+		push (@$targetdeps, @{cert_deps($target, $deps)});
+		if (! cert_get_param($target, $deps, "no_pcert")) {
+		    # and the pcert1 if using pcert
+		    (my $pcert1 = $target) =~ s/\.cert$/\.pcert1/;
+		    push (@$targetdeps, $pcert1);
+		}
+	    }
 	}
     } else {
 	if ($target =~ /\.acl2x$/) {
@@ -375,7 +421,7 @@ sub compute_cost_paths_aux {
 
     if (@$targetdeps) {
 	foreach my $dep (@$targetdeps) {
-	    if ($dep =~ /\.(cert|acl2x|pcert)$/) {
+	    if ($dep =~ /\.(cert|acl2x|pcert0|pcert1)$/) {
 		my $this_dep_costs = compute_cost_paths_aux($dep, $deps, $basecosts, $costs, $warnings, $pcert);
 		if (! $this_dep_costs) {
 		    if ($dep eq $target) {
@@ -476,8 +522,8 @@ sub critical_path_report {
 	my $sp_savings = $filesavings->{"speedup"};
 	my $rem_savings = $filesavings->{"remove"};
 
-	my $selftime_pr = $selftime ? human_time($selftime, 1) : "[Error]";
-	my $cumtime_pr = $cumtime ? human_time($cumtime, 1) : "[Error]";
+	my $selftime_pr = human_time($selftime, 1);
+	my $cumtime_pr = human_time($cumtime, 1);
 	my $spsav_pr = human_time($sp_savings, 1);
 	my $remsav_pr = human_time($rem_savings, 1);
 
@@ -541,8 +587,8 @@ sub individual_files_report {
     {
 	my $entry = $costs->{$name};
 	my $shortname = short_cert_name($name, $short);
-	my $cumul = $entry->{"totaltime"} ? human_time($entry->{"totaltime"}, 1) : "[Error]";
-	my $time = $basecosts->{$name} ? human_time($basecosts->{$name}, 1) : "[Error]";
+	my $cumul = human_time($entry->{"totaltime"}, 1);
+	my $time = human_time($basecosts->{$name}, 1);
 	my $depname = $entry->{"maxpath"} ? short_cert_name($entry->{"maxpath"}, $short) : "[None]";
 	my $timeclass = classify_book_time($basecosts->{$name});
 
@@ -689,7 +735,7 @@ my $add_dir_event = 'add-include-book-dir';
 my $include_book_event = 'include-book';
 my $depends_on_event = 'depends-on';
 my $loads_event = 'loads';
-my $two_pass_event = 'two-pass certification';
+my $cert_param_event = 'cert_param';
 my $ld_event = 'ld';
 
 
@@ -722,14 +768,18 @@ sub lookup_colon_dir {
     return $dirpath;
 }
 
+sub print_scanevent {
+    my ($fname,$cmd,$args) = @_;    
+    print "$fname: $cmd ";
+    foreach my $arg (@$args) {
+	$arg && print " $arg";
+    }
+    print "\n";
+}
 sub debug_print_event {
     my ($fname,$cmd,$args) = @_;
     if ($debugging) {
-	print "$fname: $cmd ";
-	foreach my $arg (@$args) {
-	    $arg && print " $arg";
-	}
-	print "\n";
+	print_scanevent($fname, $cmd, $args);
     }
 }
 
@@ -772,15 +822,35 @@ sub get_loads {
     return 0;
 }
 
+my $two_pass_warning_printed = 0;
 
-sub get_two_pass {
+sub get_cert_param {
     my ($base,$the_line,$events) = @_;
 
-    my $regexp = ";; two-pass certification";
-    my $match = $the_line =~ m/$regexp/;
-    if ($match) {
-	debug_print_event($base, "two_pass", []);
-	push(@$events, [$two_pass_event]);
+    my $regexp = ";; cert_param:[\\s]*\\(([^)]*)\\)";
+    my @match = $the_line =~ m/$regexp/;
+    if (@match) {
+	debug_print_event($base, "cert_param", \@match);
+	my @assign = $match[0] =~ m/(.*)=(.*)/;
+	if (@assign) {
+	    push(@$events, [$cert_param_event, $assign[0], $assign[1]]);
+	} else {
+	    push(@$events, [$cert_param_event, $match[0], 1]);
+	}
+	return 1;
+    }
+    $regexp = ";; two-pass certification";
+    if ($the_line =~ m/$regexp/) {
+	if ($two_pass_warning_printed) {
+	    print "$base has two-pass certification directive\n";
+	} else {
+	    $two_pass_warning_printed = 1;
+	    print "\nin $base:\n";
+	    print "Note: Though we still recognize the \";; two-pass certification\"\n";
+	    print "directive, it is deprecated in favor of:\n";
+	    print ";; cert_param (acl2x)\n\n";
+	}
+	push (@$events, [$cert_param_event, "acl2x", 1]);
 	return 1;
     }
     return 0;
@@ -859,7 +929,7 @@ sub scan_src {
 	    $done = $done || get_depends_on($fname, $the_line, \@events);
 	    $done = $done || get_loads($fname, $the_line, \@events);
 	    $done = $done || get_add_dir($fname, $the_line, \@events);
-	    $done = $done || get_two_pass($fname, $the_line, \@events);
+	    $done = $done || get_cert_param($fname, $the_line, \@events);
 	}
     }
     my $timestamp = ftimestamp($fname);
@@ -967,8 +1037,9 @@ sub src_deps {
     my ($fname,             # file to scan for dependencies
 	$cache,             # file event cache
 	$local_dirs,        # :dir name table
-	$certdeps,         # certificate dependency list (accumulator)
-	$srcdeps,       # source file dependency list (accumulator)
+	$certdeps,          # certificate dependency list (accumulator)
+	$srcdeps,           # source file dependency list (accumulator)
+	$certparams,        # cert param hash (accumulator)
 	$book_only,         # Only record include-book dependencies
 	$tscache,           # timestamp cache
 	$ld_ok,             # Allow following LD commands
@@ -992,7 +1063,6 @@ sub src_deps {
 	print "events: $fname";
 	print_events($events);
     }
-    my $two_pass = 0;
 
     foreach my $event (@$events) {
 	my $type = $event->[0];
@@ -1038,22 +1108,22 @@ sub src_deps {
 					      $local_dirs, "loads", "");
 	    if ($fullname) {
 		push(@$srcdeps, $fullname) unless $book_only;
-		my $local_two_pass = src_deps($fullname, $cache,
-					      $local_dirs,
-					      $certdeps,
-					      $srcdeps,
-					      $book_only,
-					      $tscache,
-					      $ld_ok,
-					      $seen,
-		                              $fname);
-		$two_pass = $two_pass || $local_two_pass;
+		src_deps($fullname, $cache,
+			 $local_dirs,
+			 $certdeps,
+			 $srcdeps,
+			 $certparams,
+			 $book_only,
+			 $tscache,
+			 $ld_ok,
+			 $seen,
+			 $fname);
 	    } else {
 		print "Bad path in (loads \"$srcname\""
 		    . ($dir ? " :dir $dir)" : ")") . " in $fname\n";
 	    }
-	} elsif ($type eq $two_pass_event) {
-	    $two_pass = 1;
+	} elsif ($type eq $cert_param_event) {
+	    $certparams->{$event->[1]} = $event->[2];
 	} elsif ($type eq $ld_event) {
 	    if ($ld_ok) {
 		my $srcname = $event->[1];
@@ -1062,16 +1132,16 @@ sub src_deps {
 						  $local_dirs, "ld", "");
 		if ($fullname) {
 		    push(@$srcdeps, $fullname) unless $book_only;
-		    my $local_two_pass = src_deps($fullname, $cache,
-						  $local_dirs,
-						  $certdeps,
-						  $srcdeps,
-						  $book_only,
-						  $tscache,
-						  $ld_ok,
-						  $seen,
-			                          $fname);
-		    $two_pass = $two_pass || $local_two_pass;
+		    src_deps($fullname, $cache,
+			     $local_dirs,
+			     $certdeps,
+			     $srcdeps,
+			     $certparams,
+			     $book_only,
+			     $tscache,
+			     $ld_ok,
+			     $seen,
+			     $fname);
 		} else {
 		    print "Bad path in (ld \"$srcname\""
 			. ($dir ? " :dir $dir)" : ")") . " in $fname\n";
@@ -1090,7 +1160,6 @@ sub src_deps {
 
     print "$src_deps_depth done src_deps $fname\n" if $debugging;
     $src_deps_depth = $src_deps_depth - 1;
-    return $two_pass;
 }
 
 sub print_lst {
@@ -1121,17 +1190,17 @@ sub remove_dups {
 sub find_deps {
     my ($lispfile,$cache,$book_only,$tscache,$parent) = @_;
 
-    my $certdeps = [];
+    my $bookdeps = [];
+    my $portdeps = [];
     my $srcdeps = $book_only ? [] : [ $lispfile ];
     my $local_dirs = {};
-    my $book_two_pass = 0;
-    my $acl2_two_pass = 0;
 
     # If this source file has a .lisp extension, we assume it's a
     # certifiable book and look for an .acl2 file.
     my $certifiable = $lispfile =~ /\.lisp$/;
 
     my $base;
+    my $certparams = {};
     if ($certifiable) {
 	# If a corresponding .acl2 file exists or otherwise if a
 	# cert.acl2 file exists in the directory, we need to scan that for dependencies as well.
@@ -1148,25 +1217,28 @@ sub find_deps {
 	# commands before the include-book commands.
 	if ($acl2file) {
 	    push(@$srcdeps, $acl2file) unless $book_only;
-	    $acl2_two_pass = src_deps($acl2file, $cache,
-				      $local_dirs, 
-				      $certdeps,
-				      $srcdeps,
-				      $book_only, 
-				      $tscache,
-				      1,
-				      {}, $lispfile);
+	    src_deps($acl2file, $cache,
+		     $local_dirs, 
+		     $portdeps,
+		     $srcdeps,
+		     $certparams,
+		     $book_only, 
+		     $tscache,
+		     1,
+		     {}, $lispfile);
 	}
     }
 
     # Scan the lisp file for include-books.
-    $book_two_pass = src_deps($lispfile, $cache, $local_dirs,
-			      $certdeps, $srcdeps, $book_only,
-			      $tscache, !$certifiable, {}, $parent);
+    src_deps($lispfile, $cache, $local_dirs,
+	     $bookdeps, $srcdeps, $certparams, $book_only,
+	     $tscache, !$certifiable, {}, $parent);
 
     if ($debugging) {
-	print "find_deps $lispfile: certs:\n";
-	print_lst($certdeps);
+	print "find_deps $lispfile: bookdeps:\n";
+	print_lst($bookdeps);
+	print "portdeps:\n";
+	print_lst($portdeps);
 	print "sources:\n";
 	print_lst($srcdeps);
     }
@@ -1202,7 +1274,7 @@ sub find_deps {
 	}
     }
 
-    return ($certdeps, $srcdeps, $image, $acl2_two_pass || $book_two_pass);
+    return ($bookdeps, $portdeps, $srcdeps, $image, $certparams);
 
 }
 
@@ -1286,16 +1358,20 @@ sub add_deps {
 	return;
     }
 
-    my ($certdeps, $srcdeps, $image, $two_pass)
+    my ($bookdeps, $portdeps, $srcdeps, $image, $certparams)
 	= find_deps($lispfile, $cache, 0, $tscache, $parent);
 
 
-    $depmap->{$target} = [ $certdeps, $srcdeps, $image, $two_pass ] ;
+    $depmap->{$target} = [ $bookdeps, $portdeps, $srcdeps, $image, $certparams ] ;
 
     if ($print_deps) {
 	print "Dependencies for $target:\n";
-	print "cert:\n";
-	foreach my $dep (@{$certdeps}) {
+	print "book:\n";
+	foreach my $dep (@$bookdeps) {
+	    print "$dep\n";
+	}
+	print "port:\n";
+	foreach my $dep (@$portdeps) {
 	    print "$dep\n";
 	}
 	print "src:\n";
@@ -1312,7 +1388,7 @@ sub add_deps {
     }
 
     # Run the recursive add_deps on each dependency.
-    foreach my $dep  (@{$certdeps}) {
+    foreach my $dep  (@$bookdeps, @$portdeps) {
 	add_deps($dep, $cache, $depmap, $sources, $tscache, $target);
     }
 
@@ -1350,7 +1426,7 @@ sub read_targets {
 sub to_source_name {
     my $fname = shift;
     if ($fname =~ /\./) {
-	$fname =~ s/\.(cert|acl2x|pcert)$/\.lisp/;
+	$fname =~ s/\.(cert|acl2x|pcert0|pcert1)$/\.lisp/;
 	return $fname;
     } else {
 	return "$fname.lisp";
@@ -1373,7 +1449,7 @@ sub to_source_name {
 sub to_cert_name {
     my $fname = shift;
     $fname =~ s/\.lisp$/\.cert/;
-    if ($fname =~ /\.(cert|acl2x|pcert)$/) {
+    if ($fname =~ /\.(cert|acl2x|pcert0|pcert1)$/) {
 	return $fname;
     } else {
 	return "$fname.cert";

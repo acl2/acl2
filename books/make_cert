@@ -46,14 +46,11 @@ export ON_FAILURE_CMD ?=
 # critpath.pl
 export TIME_CERT ?=
 
-# Arguments for certify-book (one-pass certification).  We prefer to allow
-# proof-skipping and ttags by default, since otherwise adding a ttag or
-# skipping a single proof in a widely-included book could lead to a huge
-# problem in updating all of the affected books.
+# Complilation, ttag, and skip-proofs arguments for certify-book.  We
+# prefer to allow proof-skipping and ttags by default, since otherwise
+# adding a ttag or skipping a single proof in a widely-included book
+# could lead to a huge problem in updating all of the affected books.
 export COMPILE_FLG ?= t :ttags :all :skip-proofs-okp t
-
-# Arguments to certify-book (two-pass certification).
-export COMPILE_FLG_TWOPASS ?= t :ttagsx :all :ttags :all :skip-proofs-okp t :acl2x t
 
 # Typically you want to inhibit most proof output during certification, since
 # this can greatly reduce the size of .out files.
@@ -97,22 +94,28 @@ export MAKE_CERT_PL ?= $(ACL2_SYSTEM_BOOKS)/make_cert_help.pl
 
 ifneq ($(ACL2_PCERT),)
 
-%.cert : %.pcert
-	@$(MAKE_CERT_PL) "$*" "convert" $^
+%.cert : %.lisp
+	@$(MAKE_CERT_PL) "$*" $(if $(findstring 1,$(NO_PCERT)),"certify","complete") "no_acl2x" $^
+	@echo "Done $*.cert"
 
-%.pcert : %.acl2x
-	@$(MAKE_CERT_PL) "$*" "pcert" $^
+%.pcert1 : %.pcert0
+	@$(MAKE_CERT_PL) "$*" "convert" $(if $(findstring 1,$(USE_ACL2X)),"yes","no") $^
+	@echo "Done $*.pcert1"
+
+%.pcert0 : %.lisp
+	@$(MAKE_CERT_PL) "$*" "pcertify" $(if $(findstring 1,$(USE_ACL2X)),"yes","no") $^
+	@echo "Done $*.pcert0"
 
 %.acl2x : %.lisp
-	@$(MAKE_CERT_PL) "$*" $(if $(TWO_PASS),"acl2x","acl2xskip") $^
+	@$(MAKE_CERT_PL) "$*" $(if $(findstring 1,$(ACL2X_SKIP_PROOFS)),"acl2xskip","acl2x") "yes" $^
 
 else
 
 %.cert : %.lisp
-	@$(MAKE_CERT_PL) "$*" $(if $(TWO_PASS),"acl2xcert","cert") $^
+	@$(MAKE_CERT_PL) "$*" "certify" $(if $(findstring 1,$(USE_ACL2X)),"yes","no") $^
 
 %.acl2x : %.lisp
-	@$(MAKE_CERT_PL) "$*" "acl2x" $^
+	@$(MAKE_CERT_PL) "$*" $(if $(findstring 1,$(ACL2X_SKIP_PROOFS)),"acl2xskip","acl2x") "yes" $^
 
 endif
 

@@ -152,12 +152,11 @@ to an .acl2 file or a file recursively LD\'d by an .acl2 file, this
 causes cert.pl to recursively scan the LD\'d file for dependencies as
 if it were part of the current file.
 
- - ;; two-pass certification
-     If this line occurs in the file, it means that the current book
-is intended to be certified in two passes.  The dependencies computed
-for the current book are thus not dependencies of the .cert file, but
-of the .acl2x file, and the .acl2x file is the only dependency of the
-cert file.
+ - ;; cert_param: (<paramname>[=<paramval>])
+     Cert_param directives control various things about how the file
+gets certified, such as whether it uses provisional certification
+(no_pcert), acl2x expansion (acl2x), and skip-proofs during acl2x
+expansion (acl2xskip).
 
 See files make-targets and regression-targets for example uses of
 cert.pl.
@@ -550,26 +549,25 @@ unless ($no_makefile) {
 
     foreach my $cert (@certs) {
 	print $mf " \\\n     $cert";
-	if (cert_is_two_pass($cert, \%depmap)) {
-	    my $acl2xfile = cert_to_acl2x($cert);
-	    print $mf " \\\n     $acl2xfile";	    
-	}
+	# if (cert_get_param($cert, \%depmap, "acl2x")) {
+	#     my $acl2xfile = cert_to_acl2x($cert);
+	#     print $mf " \\\n     $acl2xfile"; 
+	# }
     }
 
     print $mf "\n\n";
 
-    print $mf "ifneq (\$(ACL2_PCERT),)\n\n";
-    print $mf "${var_prefix}_CERTS := \$(${var_prefix}_CERTS)";
-    foreach my $cert (@certs) {
-	if ($cert =~ /\.cert$/) {
-	    my $base = $cert;
-	    $base =~ s/\.cert$//;
-	    print $mf " \\\n     $base.pcert";
-	    print $mf " \\\n     $base.acl2x";
-	}
-    }
-    print $mf "\n\nendif\n";
-	
+    # print $mf "ifneq (\$(ACL2_PCERT),)\n\n";
+    # print $mf "${var_prefix}_CERTS := \$(${var_prefix}_CERTS)";
+    # foreach my $cert (@certs) {
+    # 	if ($cert =~ /\.cert$/) {
+    # 	    my $base = $cert;
+    # 	    $base =~ s/\.cert$//;
+    # 	    print $mf " \\\n     $base.pcert0";
+    # 	    print $mf " \\\n     $base.pcert1";
+    # 	}
+    # }
+    # print $mf "\n\nendif\n";
 
     print $mf "all-cert-pl-certs: \$(" . $var_prefix . "_CERTS)\n\n";
 
@@ -596,21 +594,21 @@ unless ($no_makefile) {
 	print $mf "${label}_CERTS :=";
 	foreach my $cert (@labelcerts) {
 	    print $mf " \\\n     $cert";
-	    if (cert_is_two_pass($cert, \%depmap)) {
-		my $acl2x = cert_to_acl2x($cert);
-		print $mf " \\\n     $acl2x";
-	    }
+	    # if (cert_is_two_pass($cert, \%depmap)) {
+	    # 	my $acl2x = cert_to_acl2x($cert);
+	    # 	print $mf " \\\n     $acl2x";
+	    # }
 	}
 	print $mf "\n\n";
-	print $mf "ifneq (\$(ACL2_PCERT),)\n\n";
-	print $mf "${label}_CERTS := \$(${label}_CERTS)";
-	foreach my $cert (@labelcerts) {
-	    my $base = $cert;
-	    $base =~ s/\.cert$//;
-	    print $mf " \\\n     $base.pcert";
-	    print $mf " \\\n     $base.acl2x";
-	}
-	print $mf "\n\nendif\n";
+	# print $mf "ifneq (\$(ACL2_PCERT),)\n\n";
+	# print $mf "${label}_CERTS := \$(${label}_CERTS)";
+	# foreach my $cert (@labelcerts) {
+	#     my $base = $cert;
+	#     $base =~ s/\.cert$//;
+	#     print $mf " \\\n     $base.pcert";
+	#     print $mf " \\\n     $base.acl2x";
+	# }
+	# print $mf "\n\nendif\n";
 
 	print $mf "${label}_SOURCES :=";
 	foreach my $source (@labelsources) {
@@ -624,7 +622,19 @@ unless ($no_makefile) {
 	my $certdeps = cert_deps($cert, \%depmap);
 	my $srcdeps = cert_srcdeps($cert, \%depmap);
 	my $image = cert_image($cert, \%depmap);
-	if (cert_is_two_pass($cert, \%depmap)) {
+	my $useacl2x = cert_get_param($cert, \%depmap, "acl2x") || 0;
+	# BOZO acl2x implies no pcert
+	my $nopcert = $useacl2x || cert_get_param($cert, \%depmap, "no_pcert") || 0;
+	my $acl2xskip = cert_get_param($cert, \%depmap, "acl2xskip") || 0;
+	print $mf "$cert : USE_ACL2X = $useacl2x\n";
+	print $mf "$cert : NO_PCERT = $nopcert\n";
+	print $mf "#$cert params: ";
+	my $params = cert_get_params($cert, \%depmap);
+	while (my ($key, $val) = each %$params) {
+	    print $mf "$key = $val ";
+	}
+	print $mf "\n";
+	if ($useacl2x) {
 	    my $acl2xfile = cert_to_acl2x($cert);
 #     This would be a nice way to do things, but unfortunately the "private"
 #     keyword for target-specific variables was introduced in GNU Make 3.82,
@@ -632,13 +642,12 @@ unless ($no_makefile) {
 #	    print $mf "$cert : private TWO_PASS := 1\n";
 #     Instead, sadly, we'll individually set the TWO_PASS variable for
 #     each target instead.  (Note the ELSE case below.)
-	    print $mf "$cert : TWO_PASS = 1\n";
 	    print $mf "$cert :";
 	    print $mf " \\\n     $acl2xfile";
 	    print $mf "\n\n";
+	    print $mf "$acl2xfile : ACL2X_SKIP_PROOFS = $acl2xskip\n";
 	    print $mf "$acl2xfile :";
 	} else {
-	    print $mf "$cert : TWO_PASS = \n";
 	    print $mf "$cert :";
 	}
 	foreach my $dep (@$certdeps, @$srcdeps) {
@@ -659,33 +668,35 @@ unless ($no_makefile) {
 
     # Write dependencies for pcert mode.
     print $mf "ifneq (\$(ACL2_PCERT),)\n\n";
-    print $mf "# Dependencies for .pcert files:\n";
-    print $mf "# (each .pcert depends on its corresponding .acl2x)\n\n";
-    
-    foreach my $cert (@certs) {
-	my $base = $cert;
-	$base =~ s/\.cert$//;
-	print $mf "$base.pcert : $base.acl2x\n";
-    }
-
-    print $mf "\n# Dependencies for .acl2x files:\n";
-    print $mf "# (similar to those for .cert files)\n";
 
     foreach my $cert (@certs) {
-	my $certdeps = cert_deps($cert, \%depmap);
+	my $useacl2x = cert_get_param($cert, \%depmap, "acl2x") || 0;
+	# BOZO acl2x implies no pcert
+	my $nopcert = $useacl2x || cert_get_param($cert, \%depmap, "no_pcert");
+	# No need to continue if this isn't to be provisionally certified
+	if ($nopcert) {
+	    next;
+	}
+	my $bookdeps = cert_bookdeps($cert, \%depmap);
+	my $portdeps = cert_portdeps($cert, \%depmap);
 	my $srcdeps = cert_srcdeps($cert, \%depmap);
 	my $image = cert_image($cert, \%depmap);
 	(my $base = $cert) =~ s/\.cert$//;
-	if (cert_is_two_pass($cert, \%depmap)) {
-	    print $mf "$base.acl2x : TWO_PASS = 1\n";
-	} else {
-	    print $mf "$base.acl2x : TWO_PASS = \n";
+	## Dependencies for .pcert0 files are like those of the .cert files.
+	print $mf "$base.pcert0 : USE_ACL2X = $useacl2x\n";
+	# print $mf ".SECONDARY: $base.pcert0\n";
+	print $mf "$base.pcert0 :";
+	foreach my $dep (@$bookdeps, @$portdeps) {
+	    if (cert_get_param($dep, \%depmap, "acl2x")
+		|| cert_get_param($dep, \%depmap, "no_pcert")) {
+		print $mf " \\\n     $dep";
+	    } else {
+		print $mf " \\\n     " . cert_to_pcert0($dep);
+	    }
 	}
-	print $mf "$base.acl2x :";
-	foreach my $dep (@$certdeps) {
-	    my $acl2x = cert_to_acl2x($dep);
-	    print $mf " \\\n     $acl2x";
-	}
+	# foreach my $dep (@$portdeps) {
+	#     print $mf " \\\n     $dep";
+	# }
 	foreach my $dep (@$srcdeps) {
 	    print $mf " \\\n     $dep";
 	}
@@ -698,17 +709,16 @@ unless ($no_makefile) {
 		print " e.g.   $cert : $image\n";
 	    }
 	}
-	print $mf "\n\n";
+	print $mf "\n";
+	# Pcert1 files depend only on the corresp. pcert0.
+	print $mf "$base.pcert1 : USE_ACL2X = $useacl2x\n";
+	print $mf ".SECONDARY: $base.pcert1\n";
+	print $mf "$base.pcert1 : $base.pcert0\n";
+	# Cert files depend on their certificate dependencies (above), and
+	# the corresponding .pcert1.
+	print $mf "$cert : $base.pcert1\n\n";
     }
 
-    print $mf "# Dependencies for converting .pcert to .cert files:\n";
-    print $mf "# (Each cert file depends on its pcert.)\n";
-    
-    foreach my $cert (@certs) {
-	my $base = $cert;
-	$base =~ s/\.cert$//;
-	print $mf "$cert : $base.pcert\n";
-    }
     print $mf "\nendif\n\n";
 
 

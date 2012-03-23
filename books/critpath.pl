@@ -235,22 +235,27 @@ if (! $OPTIONS{"html"}) {
 
 if ((! $OPTIONS{"html"}) && $OPTIONS{"pcert"}) {
     my $acl2xtime = 0.0;
-    my $pcerttime = 0.0;
+    my $pcert1time = 0.0;
+    my $pcert0time = 0.0;
     my $certtime = 0.0;
     foreach my $key (keys %$basecosts) {
 	my $selfcost = $basecosts->{$key};
+	$selfcost = ($selfcost >= 0) ? $selfcost : 0.0;
 	if ($key =~ /\.cert$/) {
 	    $certtime = $certtime + $selfcost;
 	} elsif ($key =~ /\.acl2x$/) {
 	    $acl2xtime = $acl2xtime + $selfcost;
-	} elsif ($key =~ /\.pcert$/) {
-	    $pcerttime = $pcerttime + $selfcost;
+	} elsif ($key =~ /\.pcert1$/) {
+	    $pcert1time = $pcert1time + $selfcost;
+	} elsif ($key =~ /\.pcert0$/) {
+	    $pcert0time = $pcert0time + $selfcost;
 	}
     }
 
     print "\n";
     print "Total acl2x build time: " . human_time($acl2xtime) . "\n";
-    print "Total pcert build time: " . human_time($pcerttime) . "\n";
+    print "Total pcert0 build time: " . human_time($pcert0time) . "\n";
+    print "Total pcert1 build time: " . human_time($pcert1time) . "\n";
     print "Total cert build time: " . human_time($certtime) . "\n";
 }
 
