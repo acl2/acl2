@@ -48,7 +48,6 @@
 
 use strict;
 use warnings;
-use Storable;
 use FindBin qw($RealBin);
 use Getopt::Long qw(:config bundling_override);
 
@@ -421,12 +420,7 @@ sub remove_trailing_slash {
 
 certlib_set_opts(\%certlib_opts);
 
-my $cache;
-if ($cache_file && -e $cache_file) {
-    $cache = retrieve($cache_file);
-} else {
-    $cache = {};
-}
+my $cache = retrieve_cache($cache_file);
 
 # If $acl2_books is still not set, then:
 # - set it based on the location of acl2 in the path, if available
@@ -492,7 +486,7 @@ foreach my $target (@targets) {
     add_deps($target, $cache, \%depmap, \%sourcehash, \%tscache, 0);
 }
 
-$cache_file && store($cache, $cache_file);
+store_cache($cache, $cache_file);
 
 my @sources = sort(keys %sourcehash);
 

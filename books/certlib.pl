@@ -26,8 +26,11 @@ use strict;
 use warnings;
 use File::Basename;
 use File::Spec;
+use Storable;
 # use Cwd;
 use Cwd 'abs_path';
+
+my $cache_version_code = 3;
 
 # Note: for debugging you can enable this use and then print an error message
 # using
@@ -1560,6 +1563,35 @@ sub compute_savings
 
     return \%savings;
 }
+
+sub store_cache {
+    my ($cache, $fname) = @_;
+    if ($fname) {
+	store([$cache_version_code, $cache], $fname);
+    }
+}
+
+sub retrieve_cache {
+    my $fname = shift;
+    if (! $fname || ! -e $fname) {
+	return {};
+    }
+
+    my $pair = retrieve($fname);
+    if (! (ref($pair) eq 'ARRAY')) {
+	print "Invalid cache format; starting from empty cache\n";
+	return {};
+    } elsif ( $pair->[0] != $cache_version_code ) {
+	print "Wrong cache version code; starting from empty cache\n";
+	return {};
+    } elsif (! (ref($pair->[1]) eq 'HASH')) {
+	print "Right cache version code, but badly formatted! Starting from empty\n";
+	return {};
+    } else {
+	return $pair->[1];
+    }
+}
+
 
 
 # The following "1" is here so that loading this file with "do" or "require" will succeed:

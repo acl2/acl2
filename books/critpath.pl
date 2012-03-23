@@ -123,9 +123,8 @@ my $options_okp = GetOptions('h|html' => \$OPTIONS{'html'},
 			     );
 
 my $cache = {};
-if ($cache_file && -e $cache_file) {
-    $cache = retrieve($cache_file);
-}
+$cache = retrieve_cache($cache_file);
+
 my %tscache = ();
 
 push (@user_targets, @ARGV);
@@ -183,7 +182,7 @@ foreach my $target (@targets) {
     }
 }
 
-$cache_file && store($cache, $cache_file);
+store_cache($cache, $cache_file);
 
 my $basecosts = {};
 read_costs(\%deps, $basecosts, $warnings, $OPTIONS{'real'}, $OPTIONS{'pcert'});
