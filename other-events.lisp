@@ -13425,6 +13425,14 @@
                      wrld))
         (t wrld)))
 
+(defun convert-non-nil-symbols-to-keywords (x)
+  (cond ((null x) nil)
+        ((symbolp x)
+         (intern (symbol-name x) "KEYWORD"))
+        ((atom x) x)
+        (t (cons (convert-non-nil-symbols-to-keywords (car x))
+                 (convert-non-nil-symbols-to-keywords (cdr x))))))
+
 (defun include-book-fn1 (user-book-name state
                                         load-compiled-file
                                         expansion-alist
@@ -13643,7 +13651,10 @@
                            (warn-for-ttags-default
                             (and (eq ttags :default)
                                  (not (warning-off-p "Ttags" state))))
-                           (ttags (if (eq ttags :default) :all ttags)))
+                           (ttags (if (eq ttags :default)
+                                      :all
+                                    (convert-non-nil-symbols-to-keywords
+                                     ttags))))
 
                       #-acl2-loop-only
                       (when (and (not certified-p)
@@ -15551,7 +15562,8 @@
                                       (consp write-acl2x))
                                      (t skip-proofs-okp))))
                        (uncertified-okp (value (consp write-acl2x)))
-                       (ttagsx (value (if ttagsxp ttagsx ttags)))
+                       (ttagsx (value (convert-non-nil-symbols-to-keywords
+                                       (if ttagsxp ttagsx ttags))))
                        (ttags (cond ((and ttagsxp (not acl2x))
                                      (er soft ctx
                                          "The  :TTAGSX argument for ~
@@ -15559,8 +15571,9 @@
                                          :ACL2X is T.  See :DOC ~
                                          set-write-acl2x."))
                                     (t (chk-well-formed-ttags
-                                        (cond (write-acl2x ttagsx)
-                                              (t ttags))
+                                        (convert-non-nil-symbols-to-keywords
+                                         (cond (write-acl2x ttagsx)
+                                               (t ttags)))
                                         (cbd) ctx state))))
                        (pair0 (chk-acceptable-ttags1
 

@@ -21546,7 +21546,7 @@
 
 ; Here we place the bulk of the code for handling trust tags (ttags).
 
-; A trust tag (ttag) is a symbol that represents where to place responsibility
+; A trust tag (ttag) is a keyword that represents where to place responsibility
 ; for potentially unsafe operations.  For example, suppose we define a
 ; function, foo, that calls sys-call.  Any call of sys-call is potentially
 ; unsafe, in the sense that it can do things not normally expected during book
@@ -21617,6 +21617,12 @@
 
 ; That said, if the need is great enough for us to avoid the error described
 ; above, we'll figure out something.
+
+; Finally, we note that trust tags are always in the "KEYWORD" package.  This
+; simplifies the implementation of provisional certification.  Previously
+; (after Version_4.3 but before the next release), Sol Swords sent an example
+; in which the Complete operation caused an error, the reason being that an
+; unknown package was being used in the post-alist in the certificate file.
 
 (defmacro ttags-seen ()
 

@@ -3840,7 +3840,7 @@
   ~bv[]
   ACL2 !>(defttag t)
 
-  TTAG NOTE: Adding ttag T from the top level loop.
+  TTAG NOTE: Adding ttag :T from the top level loop.
    T
   ACL2 !>(progn!
            (set-raw-mode t)
@@ -35435,7 +35435,9 @@
 
          (symbol-listp val))
         ((eq key :ttag)
-         (symbolp val))
+         (or (null val)
+             (and (keywordp val)
+                  (not (equal (symbol-name val) "NIL")))))
         ((eq key :state-ok)
          (member-eq val '(t nil)))
 
@@ -39278,9 +39280,9 @@
   ACL2 Error in TOP-LEVEL:  The SYS-CALL function cannot be called unless
   a trust tag is in effect.  See :DOC defttag.
 
-  ACL2 !>(defttag t) ; Install T as an active trust tag.
+  ACL2 !>(defttag t) ; Install :T as an active trust tag.
 
-  TTAG NOTE: Adding ttag T from the top level loop.
+  TTAG NOTE: Adding ttag :T from the top level loop.
    T
   ACL2 !>(sys-call \"pwd\" nil) ; print the current directory and return NIL
   /u/kaufmann
@@ -39330,26 +39332,33 @@
   where ~c[tag-name] is a symbol.  The ~c[:doc doc-string] argument is
   optional; if supplied, then it must be a valid ~il[documentation] string
   (~pl[doc-string]), and the ~c[defttag] call will generate a corresponding
-  ~ilc[defdoc] event.  For the rest of this discussion we ignore the ~c[:doc]
-  argument.
+  ~ilc[defdoc] event for ~c[tag-name].  (For the rest of this discussion we
+  ignore the ~c[:doc] argument.)
+
+  Note however that (other than the ~c[:doc] argument), if ~c[tag-name] is not
+  ~c[nil] then it is converted to a ``corresponding ~il[keyword]'': a symbol in
+  the ~c[\"KEYWORD\"] package with the same ~ilc[symbol-name] as ~c[tag-name].
+  Thus, for example, ~c[(defttag foo)] is equivalent to ~c[(defttag :foo)].
+  Moreover, a non-~c[nil] symbol with a ~ilc[symbol-name] of ~c[\"NIL\"] is
+  illegal for trust tags; thus, for example, ~c[(defttag :nil)] is illegal.
 
   This event introduces or removes a so-called active trust tag (or ``ttag'',
-  pronounced ``tee tag'').  An active ttag is a non-~c[nil] symbol (tag) that
-  is associated with potentially unsafe evaluation.  For example, calls of
+  pronounced ``tee tag'').  An active ttag is a ~il[keyword] symbol that is
+  associated with potentially unsafe evaluation.  For example, calls of
   ~ilc[sys-call] are illegal unless there is an active trust tag.  An active
   trust tag can be installed using a ~c[defttag] event.  If one introduces an
   active ttag and then writes definitions that calls ~ilc[sys-call], presumably
   in a defensibly ``safe'' way, then responsibility for those calls is
-  attributed to that ttag.  This attribution
-  (or blame!) is at the level of ~il[books]; a book's ~il[certificate] contains
-  a list of ttags that are active in that book, or in a book that is included
-  (possibly ~il[local]ly), or in a book included in a book that is included
-  (either inclusion being potentially ~il[local]), and so on.  We explain all
-  this in more detail below.
+  attributed to that ttag.  This attribution (or blame!) is at the level of
+  ~il[books]; a book's ~il[certificate] contains a list of ttags that are
+  active in that book, or in a book that is included (possibly ~il[local]ly),
+  or in a book included in a book that is included (either inclusion being
+  potentially ~il[local]), and so on.  We explain all this in more detail
+  below.
 
-  ~c[(Defttag tag-name)] is essentially equivalent to
+  ~c[(Defttag :tag-name)] is essentially equivalent to
   ~bv[]
-  (table acl2-defaults-table :ttag tag-name)
+  (table acl2-defaults-table :ttag :tag-name)
   ~ev[]
   and hence is ~ilc[local] to any ~il[books] and ~ilc[encapsulate] ~il[events]
   in which it occurs; ~pl[acl2-defaults-table].  We say more about the scope of
@@ -39359,11 +39368,11 @@
   nevertheless executes the above ~ilc[table] event and hence changes the ACL2
   logical ~il[world], and is so recorded.  Although no event summary is
   printed, it is important to note that the ``TTAG NOTE'', discussed below, is
-  always printed for a non-nil ~c[tag-name] (unless deferred;
+  always printed for a non-nil ~c[:tag-name] (unless deferred;
   ~pl[set-deferred-ttag-notes]).
 
   ~st[Active ttags.]  Suppose ~c[tag-name] is a non-~c[nil] symbol.  Then
-  ~c[(defttag tag-name)] sets ~c[tag-name] to be the ``active ttag.''  There
+  ~c[(defttag :tag-name)] sets ~c[:tag-name] to be the ``active ttag.''  There
   must be an active ttag in order for there to be any mention of certain
   function and macro symbols, including ~ilc[sys-call]; evaluate the form
   ~c[(strip-cars *ttag-fns-and-macros*)] to see the full list of such symbols.
@@ -39381,15 +39390,15 @@
   an argument other than ~c[nil], output is printed, starting on a fresh line
   with:  ~c[TTAG NOTE].  For example:
   ~bv[]
-  ACL2 !>(defttag foo)
+  ACL2 !>(defttag :foo)
 
-  TTAG NOTE: Adding ttag FOO from the top level loop.
-   FOO
+  TTAG NOTE: Adding ttag :FOO from the top level loop.
+   :FOO
   ACL2 !>
   ~ev[]
   If the ~c[defttag] occurs in an included book, the message looks like this.
   ~bv[]
-  TTAG NOTE (for included book): Adding ttag FOO from file /u/smith/acl2/my-book.lisp.
+  TTAG NOTE (for included book): Adding ttag :FOO from file /u/smith/acl2/my-book.lisp.
   ~ev[]
   The ``~c[TTAG NOTE]'' message is always printed on a single line.  The
   intention is that one can search the standard output for all such notes in
@@ -39401,7 +39410,7 @@
   scratch and check either that no ~c[:ttags] were supplied to
   ~ilc[certify-book], or else look for every ~c[TTAG NOTE] in the standard
   output in order to locate all ~c[defttag] ~il[events] with non-~c[nil]
-  tag-name.  In this way, the certifier can in principle decide whether to be
+  tag name.  In this way, the certifier can in principle decide whether to be
   satisfied that those ~c[defttag] events did not allow inappropriate forms in
   the user-supplied books.
 
@@ -39420,65 +39429,71 @@
   ~c[defttag] forms already evaluated in the so-called certification ~il[world]
   at the time ~ilc[certify-book] is called.  But note that ~c[(defttag nil)] is
   always legal.
-
+ 
   A ~c[:ttags] argument of ~ilc[certify-book] and ~ilc[include-book] can have
   value ~c[:all], indicating that every ttag is allowed, i.e., no restriction
   is being placed on the arguments, just as in the interactive top-level loop.
-  In the case of ~c[include-book], an omitted ~c[:ttags] argument is treated
-  as ~c[:all], except that warnings will occur when the book's ~il[certificate]
-  includes ttags; but for ~c[certify-book], an omitted ~c[ttags] argument is
-  treated as ~c[nil].  Otherwise, if the ~c[:ttags] argument is supplied but
-  not ~c[:all], then its value is a true list of ttag specifications, each
-  having one of the following forms, where ~c[sym] is a non-~c[nil] symbol.
+  In the case of ~c[include-book], an omitted ~c[:ttags] argument or an
+  argument of ~c[:default] is treated as ~c[:all], except that warnings will
+  occur when the book's ~il[certificate] includes ttags; but for
+  ~c[certify-book], an omitted ~c[ttags] argument is treated as ~c[nil].
+  Otherwise, if the ~c[:ttags] argument is supplied but not ~c[:all], then its
+  value is a true list of ttag specifications, each having one of the following
+  forms, where ~c[sym] is a non-~c[nil] symbol which is treated as the
+  corresponding ~il[keyword].
   ~bq[]
-  (1) ~c[sym]
 
-  (2) ~c[(sym)]
+  (1) ~c[:sym]
 
-  (3) ~c[(sym x1 x2 ... xk)], where k > 0 and each ~c[xi] is a string, except
+  (2) ~c[(:sym)]
+
+  (3) ~c[(:sym x1 x2 ... xk)], where k > 0 and each ~c[xi] is a string, except
   that one ~c[xi] may be ~c[nil].~eq[]
 
-  In Case (1), ~c[(defttag sym)] is allowed to occur in at most one book or
+  In Case (1), ~c[(defttag :sym)] is allowed to occur in at most one book or
   else in the top-level loop (i.e., the certification world for a book under
-  certification or a book being included).  Case (2) allows ~c[(defttag sym)]
+  certification or a book being included).  Case (2) allows ~c[(defttag :sym)]
   to occur in an unlimited number of books.  For case (3) the ~c[xi] specify
-  where ~c[(defttag sym)] may occur, as follows.  The case that ~c[xi] is
+  where ~c[(defttag :sym)] may occur, as follows.  The case that ~c[xi] is
   ~c[nil] refers to the top-level loop, while all other ~c[xi] are filenames,
   where the ~c[\".lisp\"] extension is optional and relative pathnames are
-  considered to be relative to the connected book directory (~pl[cbd]).
+  considered to be relative to the connected book directory (~pl[cbd]).  Note
+  that the restrictions on ~c[(defttag :sym)] apply equally to any equivalent
+  for based on the notion of ``corresponding keyword'' discussed above, e.g.,
+  ~c[(defttag acl2::sym)].
 
   An error message, as shown below, illustrates how ACL2 enforcess the notion
   of allowed ttags.  Suppose that you call ~ilc[certify-book] with argument
-  ~c[:ttags (foo)], where you have already executed ~c[(defttag foo)] in the
+  ~c[:ttags (:foo)], where you have already executed ~c[(defttag :foo)] in the
   certification world (i.e., before calling ~ilc[certify-book]).  Then ACL2
-  immediately associates the ttag ~c[foo] with ~c[nil], where again, ~c[nil]
+  immediately associates the ttag ~c[:foo] with ~c[nil], where again, ~c[nil]
   refers to the top-level loop.  If ACL2 then encounters ~c[(defttag foo)]
   inside that book, you will get the following error (using the full book name
   for the book, as shown):
   ~bv[]
-  ACL2 Error in ( TABLE ACL2-DEFAULTS-TABLE ...):  The ttag FOO associated
+  ACL2 Error in ( TABLE ACL2-DEFAULTS-TABLE ...):  The ttag :FOO associated
   with file /u/smith/work/my-book.lisp is not among the set of ttags permitted
   in the current context, specified as follows:
-    ((FOO NIL)).
+    ((:FOO NIL)).
   See :DOC defttag.
   ~ev[]
   In general the structure displayed by the error message, which is
-  ~c[((FOO NIL))] in this case, represents the currently allowed ttags with
+  ~c[((:FOO NIL))] in this case, represents the currently allowed ttags with
   elements as discussed in (1) through (3) above.  In this case, that list's
-  unique element is ~c[(FOO NIL)], meaning that ttag ~c[FOO] is only allowed at
+  unique element is ~c[(:FOO NIL)], meaning that ttag ~c[:FOO] is only allowed at
   the top level (as represented by ~c[NIL]).
 
   ~st[Associating ttags with books and with the top-level loop.]  When a book
   is certified, each form ~c[(defttag tag)] that is encountered for non-~c[nil]
   ~c[tag] in that book or an included book is recorded in the generated
-  ~il[certificate], which associates ~c[tag] with the ~il[full-book-name] of
-  the book containing that ~c[deftag].  If such a ~c[defttag] form is
-  encountered outside a book, hence in the ~il[portcullis] of the book being
-  certified or one of its included books, then ~c[tag] is associated with
-  ~c[nil] in the generated ~il[certificate].  Note that the notion of
-  ``included book'' here applies to the recursive notion of a book either
-  included directly in the book being certified or else included in such a
-  book, where we account even for ~il[local]ly included books.
+  ~il[certificate], which associates the keyword corresponding to ~c[tag] with
+  the ~il[full-book-name] of the book containing that ~c[deftag].  If such a
+  ~c[defttag] form is encountered outside a book, hence in the ~il[portcullis]
+  of the book being certified or one of its included books, then that keyword
+  is associated with ~c[nil] in the generated ~il[certificate].  Note that the
+  notion of ``included book'' here applies to the recursive notion of a book
+  either included directly in the book being certified or else included in such
+  a book, where we account even for ~il[local]ly included books.
 
   For examples of ways to take advantage of ttags, see
   ~c[books/hacking/hacker.lisp] and ~pl[ttags-seen], ~pl[progn!],
@@ -39487,7 +39502,10 @@
   (declare (xargs :guard (symbolp tag-name)))
   `(state-global-let*
     ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
-    (progn (table acl2-defaults-table :ttag ',tag-name)
+    (progn (table acl2-defaults-table
+                  :ttag
+                  ',(and tag-name
+                         (intern (symbol-name tag-name) "KEYWORD")))
            ,@(cond (doc `((defdoc ,tag-name ,doc)))
                    (t nil))
            (table acl2-defaults-table :ttag))))

@@ -18241,6 +18241,11 @@
 ; information than had been provided by use of the constant,
 ; *ill-formed-certificate-msg*.
 
+; The change "All trust tags are now in the ~il[keyword] package" was made in
+; support of provisional certification.  Sol Swords sent an example in which
+; the Complete operation caused an error, the reason being that an unknown
+; package was being used in the post-alist in the certificate file.
+
   :doc
   ":Doc-Section release-notes
 
@@ -18405,6 +18410,13 @@
   work; search for ~c[string-for-tilde-@-clause-id-phrase] in ACL2 source file
   ~c[boot-strap-pass-2.lisp] if interested.  Thanks to David Rager for
   contributing an initial version of this improvement.
+
+  All trust tags are now in the ~il[keyword] package.  The ~ilc[defttag] event
+  may still take a symbol in an arbitrary package, but the trust tag created
+  will be in the keyword package (with the same ~ilc[symbol-name] as the symbol
+  provided).  Similarly, non-~c[nil] symbols occurring in the ~c[:ttags]
+  argument of an ~ilc[include-book] or ~ilc[certify-book] command will be
+  converted to corresponding keywords.  ~l[defttag].
 
   ~st[NEW FEATURES]
 
