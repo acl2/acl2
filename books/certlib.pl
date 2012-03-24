@@ -260,13 +260,13 @@ sub cert_to_pcert1 {
 sub cert_bookdeps {
     my ($cert, $depmap) = @_;
     my $entry = $depmap->{$cert};
-    return $entry && $entry->[0];
+    return $entry ? $entry->[0] : [];
 }
 
 sub cert_portdeps {
     my ($cert, $depmap) = @_;
     my $entry = $depmap->{$cert};
-    return $entry && $entry->[1];
+    return $entry ? $entry->[1] : [];
 }
 
 sub cert_deps {
