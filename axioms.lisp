@@ -19885,35 +19885,8 @@
                           t))
      (inside-skip-proofs
 
-; This binding fixes a soundness bug that allowed the following proof of nil
-; using ACL2 Version  4.3.  To see the bug, create the following two books.
-
-; -- foo.lisp --
-
-; (in-package "ACL2")
-; (defun f1 (x) x)
-; ; (defthm bad nil :rule-classes nil)
-
-; -- bar.lisp --
-
-; (in-package "ACL2")
-; (local (include-book "foo"))
-; (defthm bad nil :rule-classes nil)
-
-; --
-
-; Notice that foo.lisp ends in a commented-out form.  Now proceed as follows.
-
-; (skip-proofs (defthm bad nil :rule-classes nil))
-; (certify-book "foo" 1 t :skip-proofs-okp t)
-; Uncomment out the defthm form in foo.lisp.
-; (ubt! 1)
-; (certify-book "foo" t)
-; (ubt! 1)
-; (certify-book "bar")
-
-; You will see no warnings when certifying bar, and its certificate will show
-; no trace of skip-proofs.
+; See the comment inside install-event for a discussion of the use of this
+; binding.
 
       t))
     ,x))

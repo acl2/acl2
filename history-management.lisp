@@ -5199,13 +5199,16 @@
 
 ; We include the following test so that we can distinguish between the
 ; user-specified skipping of proofs and legitimate skipping of proofs by the
-; system, such as including a book.
+; system, such as including a book.  Without the disjunct below, we fail to
+; pick up a skip-proofs during the Pcertify step of provisional certification.
+; Perhaps someday there will be other times a user-supplied skip-proofs form
+; triggers setting of 'skip-proofs-seen even when 'skip-proofs-by-system is
+; true; if that turns out to be too aggressive, we'll think about this then,
+; but for now, we are happy to be conservative, making sure that
+; skip-proofs-seen is set whenever we are inside a call of skip-proofs.
 
-                          (or (f-get-global 'inside-skip-proofs
 
-; See the long comment in skip-proofs for why this disjunct is necessary.
-
-                                            state)
+                          (or (f-get-global 'inside-skip-proofs state)
                               (not (f-get-global 'skip-proofs-by-system
                                                  state)))
                           (let ((old (global-val 'skip-proofs-seen wrld)))
