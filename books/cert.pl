@@ -622,11 +622,11 @@ unless ($no_makefile) {
 	my $acl2xskip = cert_get_param($cert, \%depmap, "acl2xskip") || 0;
 	print $mf "$cert : USE_ACL2X = $useacl2x\n";
 	print $mf "$cert : NO_PCERT = $nopcert\n";
-	print $mf "#$cert params: ";
-	my $params = cert_get_params($cert, \%depmap);
-	while (my ($key, $val) = each %$params) {
-	    print $mf "$key = $val ";
-	}
+	# print $mf "#$cert params: ";
+	# my $params = cert_get_params($cert, \%depmap);
+	# while (my ($key, $val) = each %$params) {
+	#     print $mf "$key = $val ";
+	# }
 	print $mf "\n";
 	if ($useacl2x) {
 	    my $acl2xfile = cert_to_acl2x($cert);
@@ -666,31 +666,23 @@ unless ($no_makefile) {
     foreach my $cert (@certs) {
 	my $useacl2x = cert_get_param($cert, \%depmap, "acl2x") || 0;
 	# BOZO acl2x implies no pcert
-	my $nopcert = $useacl2x || cert_get_param($cert, \%depmap, "no_pcert");
-	# No need to continue if this isn't to be provisionally certified
-	if ($nopcert) {
-	    next;
-	}
+	my $nopcert = $useacl2x || cert_get_param($cert, \%depmap, "no_pcert") || 0;
+	
 	my $bookdeps = cert_bookdeps($cert, \%depmap);
 	my $portdeps = cert_portdeps($cert, \%depmap);
 	my $srcdeps = cert_srcdeps($cert, \%depmap);
 	my $image = cert_image($cert, \%depmap);
 	(my $base = $cert) =~ s/\.cert$//;
-	## Dependencies for .pcert0 files are like those of the .cert files.
-	print $mf "$base.pcert0 : USE_ACL2X = $useacl2x\n";
-	# print $mf ".SECONDARY: $base.pcert0\n";
-	print $mf "$base.pcert0 :";
+	# this is either the pcert0 or pcert1 depending on no_pcert
+	my $pcert = cert_sequential_dep($cert, \%depmap);
+	print $mf "$pcert : NO_PCERT = $nopcert\n";
+	print $mf "$pcert : USE_ACL2X = $useacl2x\n";
+	print $mf "$pcert :";
 	foreach my $dep (@$bookdeps, @$portdeps) {
-	    if (cert_get_param($dep, \%depmap, "acl2x")
-		|| cert_get_param($dep, \%depmap, "no_pcert")) {
-		print $mf " \\\n     $dep";
-	    } else {
-		print $mf " \\\n     " . cert_to_pcert0($dep);
-	    }
+	    # this is either the pcert0 or pcert1 depending whether the dependency
+	    # has no_pcert set
+	    print $mf " \\\n     " . cert_sequential_dep($dep, \%depmap);
 	}
-	# foreach my $dep (@$portdeps) {
-	#     print $mf " \\\n     $dep";
-	# }
 	foreach my $dep (@$srcdeps) {
 	    print $mf " \\\n     $dep";
 	}
@@ -704,10 +696,14 @@ unless ($no_makefile) {
 	    }
 	}
 	print $mf "\n";
-	# Pcert1 files depend only on the corresp. pcert0.
-	print $mf "$base.pcert1 : USE_ACL2X = $useacl2x\n";
 	print $mf ".SECONDARY: $base.pcert1\n";
-	print $mf "$base.pcert1 : $base.pcert0\n";
+	# If we're doing prov cert, pcert1 depends on pcert0
+	if (! $nopcert) {
+	    # Pcert1 files depend only on the corresp. pcert0.
+	    print $mf "$base.pcert1 : USE_ACL2X = $useacl2x\n";
+	    print $mf "$base.pcert1 : NO_PCERT = $nopcert\n";
+	    print $mf "$base.pcert1 : $base.pcert0\n";
+	}
 	# Cert files depend on their certificate dependencies (above), and
 	# the corresponding .pcert1.
 	print $mf "$cert : $base.pcert1\n\n";

@@ -321,8 +321,8 @@ sub collect_ls_dirs {
 }
 
 my $TARGET = shift;
-my $STEP = shift;      # certify, acl2x, acl2xskip, pcertify, convert, or complete
-my $ACL2X = shift;     # "yes" or otherwise no. use ACL2X file in certify/pcertify/convert steps
+my $STEP = shift;      # certify, acl2x, acl2xskip, pcertify, pcertifyplus, convert, or complete
+my $ACL2X = shift;     # "yes" or otherwise no. use ACL2X file in certify/pcertify/pcertifyplus/convert steps
 my $PREREQS = \@ARGV;
 
 # print "Prereqs for $TARGET $STEP: \n";
@@ -336,7 +336,7 @@ my $startdir = getcwd;
 my $TARGETEXT;
 if ($STEP eq "complete" || $STEP eq "certify") {
     $TARGETEXT = "cert";
-} elsif ($STEP eq "convert") {
+} elsif ($STEP eq "convert" || $STEP eq "pcertifyplus") {
     $TARGETEXT = "pcert1";
 } elsif ($STEP eq "pcertify") {
     $TARGETEXT = "pcert0";
@@ -378,6 +378,8 @@ if ($STEP eq "pcertify") {
     $PCERT = ":pcert :create";
 } elsif ($STEP eq "convert") {
     $PCERT = ":pcert :convert";
+} elsif ($STEP eq "pcertifyplus") {
+    $PCERT = ":pcert t";
 } elsif ($STEP eq "complete") {
     $PCERT = ":pcert :complete";
 }
@@ -595,6 +597,7 @@ if ($success) {
     my $taskname = ($STEP eq "acl2x" || $STEP eq "acl2xskip") ? "ACL2X GENERATION" :
 	($STEP eq "certify")  ? "CERTIFICATION" :
 	($STEP eq "pcertify") ? "PROVISIONAL CERTIFICATION" :
+	($STEP eq "pcertifyplus") ? "PROVISIONAL CERTIFICATION+" :
 	($STEP eq "convert")  ? "PCERT0->PCERT1 CONVERSION" :
 	($STEP eq "complete") ? "PCERT1->CERT COMLETION" : "UNKNOWN";
     print "**$taskname FAILED** for $dir$file.lisp\n\n";

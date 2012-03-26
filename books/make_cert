@@ -95,11 +95,12 @@ export MAKE_CERT_PL ?= $(ACL2_SYSTEM_BOOKS)/make_cert_help.pl
 ifneq ($(ACL2_PCERT),)
 
 %.cert : %.lisp
-	@$(MAKE_CERT_PL) "$*" $(if $(findstring 1,$(NO_PCERT)),"certify","complete") "no_acl2x" $^
+	@$(MAKE_CERT_PL) "$*" "complete" "no_acl2x" $^
 	@echo "Done $*.cert"
 
-%.pcert1 : %.pcert0
-	@$(MAKE_CERT_PL) "$*" "convert" $(if $(findstring 1,$(USE_ACL2X)),"yes","no") $^
+%.pcert1 :
+	@$(MAKE_CERT_PL) "$*" $(if $(findstring 1,$(NO_PCERT)),"pcertifyplus","convert") \
+                          $(if $(findstring 1,$(USE_ACL2X)),"yes","no") $^
 	@echo "Done $*.pcert1"
 
 %.pcert0 : %.lisp

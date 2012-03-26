@@ -234,6 +234,7 @@ sub get_cert_time {
 	    return 0.0 + $usertime + $systime;
 	}
     } else {
+	# carp("Could not open $path: $!\n");
 	push(@$warnings, "Could not open $path: $!\n");
 	return -1;
     }
@@ -305,20 +306,36 @@ sub cert_is_two_pass {
     return cert_get_param($certfile, $deps, "two_pass");
 }
 
+sub cert_sequential_dep {
+    my ($certfile, $deps) = @_;
+    my $res;
+    if (cert_get_param($certfile, $deps, "acl2x")
+	|| cert_get_param($certfile, $deps, "no_pcert")) {
+	($res = $certfile) =~ s/\.cert$/\.pcert1/;
+    } else {
+	($res = $certfile) =~ s/\.cert$/\.pcert0/;
+    }
+    return $res;
+}
+
+
 sub read_costs {
     my ($deps, $basecosts, $warnings, $use_realtime, $pcert) = @_;
 
     foreach my $certfile (keys %{$deps}) {
-	if ($pcert && ! get_cert_param($certfile, $deps, "no_pcert")
-	    && ! get_cert_param($certfile, $deps, "acl2x")) {
-	    my $pcert0file = cert_to_pcert0($certfile);
+	if ($pcert) {
 	    my $pcert1file = cert_to_pcert1($certfile);
 	    $basecosts->{$certfile} = get_cert_time($certfile, $warnings, $use_realtime, $pcert);
-	    $basecosts->{$pcert0file} = get_cert_time($pcert0file, $warnings, $use_realtime, $pcert);
 	    $basecosts->{$pcert1file} = get_cert_time($pcert1file, $warnings, $use_realtime, $pcert);
+	    if (! cert_get_param($certfile, $deps, "no_pcert")
+		&& ! cert_get_param($certfile, $deps, "acl2x")) {
+		# print "file: $certfile no_pcert: " . cert_get_param($certfile, $deps, "no_pcert") . "\n";
+		my $pcert0file = cert_to_pcert0($certfile);
+		$basecosts->{$pcert0file} = get_cert_time($pcert0file, $warnings, $use_realtime, $pcert);
+	    }
 	} else {
 	    $basecosts->{$certfile} = get_cert_time($certfile, $warnings, $use_realtime, $pcert);
-	    if (get_cert_param($certfile, $deps, "acl2x")) {
+	    if (cert_get_param($certfile, $deps, "acl2x")) {
 		my $acl2xfile = cert_to_acl2x($certfile);
 		$basecosts->{$acl2xfile} = get_cert_time($acl2xfile, $warnings, $use_realtime, $pcert);
 	    }
@@ -371,13 +388,24 @@ sub compute_cost_paths_aux {
 	    (my $certfile = $target) =~ s/\.pcert0$/\.cert/;
 	    my $certdeps = cert_deps($certfile, $deps);
 	    foreach my $dep (@$certdeps) {
-		my $depacl2x = cert_to_pcert0($dep);
-		push(@$targetdeps, $depacl2x);
+		my $deppcert = cert_sequential_dep($dep, $deps);
+		push(@$targetdeps, $deppcert);
 	    }
 	} elsif ($target =~ /\.pcert1$/) {
-	    ## The only dependency is the corresponding .pcert0.
-	    (my $pcert0 = $target) =~ s/\.pcert1$/\.pcert0/;
-	    push (@$targetdeps, $pcert0);
+	    (my $certfile = $target) =~ s/\.pcert1$/\.cert/;
+	    if (cert_get_param($certfile, $deps, "no_pcert") ||
+		cert_get_param($certfile, $deps, "acl2x")) {
+		## Depends on the sequential deps of the other certs
+		my $certdeps = cert_deps($certfile, $deps);
+		foreach my $dep (@$certdeps) {
+		    my $deppcert = cert_sequential_dep($dep, $deps);
+		    push(@$targetdeps, $deppcert);
+		}
+	    } else {
+		## For true pcert, the only dependency is the corresponding .pcert0.
+		(my $pcert0 = $target) =~ s/\.pcert1$/\.pcert0/;
+		push (@$targetdeps, $pcert0);
+	    }
 	} elsif ($target =~ /\.acl2x$/) {
 	    ## The dependencies are the dependencies of the cert file.
 	    (my $certfile = $target) =~ s/\.acl2x$/\.cert/;
@@ -390,13 +418,10 @@ sub compute_cost_paths_aux {
 		(my $acl2xfile = $target) =~ s/\.cert$/\.acl2x/;
 		push (@$targetdeps, $acl2xfile);
 	    } else {
-		# otherwise, depend on its subbooks' certificates
+		# otherwise, depend on its subbooks' certificates and the pcert1.
 		push (@$targetdeps, @{cert_deps($target, $deps)});
-		if (! cert_get_param($target, $deps, "no_pcert")) {
-		    # and the pcert1 if using pcert
-		    (my $pcert1 = $target) =~ s/\.cert$/\.pcert1/;
-		    push (@$targetdeps, $pcert1);
-		}
+		(my $pcert1 = $target) =~ s/\.cert$/\.pcert1/;
+		push (@$targetdeps, $pcert1);
 	    }
 	}
     } else {
@@ -421,7 +446,6 @@ sub compute_cost_paths_aux {
 
 
 #    print "$target depends on @$targetdeps\n";
-
     if (@$targetdeps) {
 	foreach my $dep (@$targetdeps) {
 	    if ($dep =~ /\.(cert|acl2x|pcert0|pcert1)$/) {
@@ -635,9 +659,9 @@ sub parallelism_stats {
     my @starts_ends = ();
     my $running_total = 0;
     foreach my $key (keys %$basecosts) {
-	my $selfcost = $basecosts->{$key};
+	my $selfcost = (exists $basecosts->{$key}) ? $basecosts->{$key} : 0.0 ;
 	$running_total = $running_total + $selfcost;
-	my $totalcost = $costs->{$key}->{"totaltime"};
+	my $totalcost = (exists $costs->{$key}) ? $costs->{$key}->{"totaltime"} : 0.0;
 	push (@starts_ends, [$totalcost-$selfcost, $start]);
 	push (@starts_ends, [$totalcost, $end]);
     }
@@ -1126,6 +1150,7 @@ sub src_deps {
 		    . ($dir ? " :dir $dir)" : ")") . " in $fname\n";
 	    }
 	} elsif ($type eq $cert_param_event) {
+	    # print "cert_param: $fname, " . $event->[1] . " = " . $event->[2] . "\n";
 	    $certparams->{$event->[1]} = $event->[2];
 	} elsif ($type eq $ld_event) {
 	    if ($ld_ok) {
@@ -1336,8 +1361,7 @@ sub add_deps {
     print "add_deps $target\n" if $debugging;
 
     my $local_dirs = {};
-    my $base = $target;
-    $base =~ s/\.cert$//;
+    (my $base = $target) =~ s/\.cert$//;
     my $lispfile = $base . ".lisp";
 
     # Clean the cert and out files if we're cleaning.
@@ -1382,6 +1406,13 @@ sub add_deps {
 	    print "$dep\n";
 	}
 	print "image: $image\n" if $image;
+	if ($certparams) {
+	    print "certparams: ";
+	    while (my ($key, $value) = each %$certparams) {
+		print "$key = $value";
+	    }
+	    print "\n";
+	}
 	print "\n";
     }
 
