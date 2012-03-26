@@ -1760,7 +1760,7 @@
    FOO-IMPL
   ACL2 !>(defttag t)
 
-  TTAG NOTE: Adding ttag T from the top level loop.
+  TTAG NOTE: Adding ttag :T from the top level loop.
    T
   ACL2 !>(defattach (foo-stub foo-impl) :skip-checks t)
 

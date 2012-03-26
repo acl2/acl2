@@ -5199,13 +5199,16 @@
 
 ; We include the following test so that we can distinguish between the
 ; user-specified skipping of proofs and legitimate skipping of proofs by the
-; system, such as including a book.
+; system, such as including a book.  Without the disjunct below, we fail to
+; pick up a skip-proofs during the Pcertify step of provisional certification.
+; Perhaps someday there will be other times a user-supplied skip-proofs form
+; triggers setting of 'skip-proofs-seen even when 'skip-proofs-by-system is
+; true; if that turns out to be too aggressive, we'll think about this then,
+; but for now, we are happy to be conservative, making sure that
+; skip-proofs-seen is set whenever we are inside a call of skip-proofs.
 
-                          (or (f-get-global 'inside-skip-proofs
 
-; See the long comment in skip-proofs for why this disjunct is necessary.
-
-                                            state)
+                          (or (f-get-global 'inside-skip-proofs state)
                               (not (f-get-global 'skip-proofs-by-system
                                                  state)))
                           (let ((old (global-val 'skip-proofs-seen wrld)))
@@ -21546,7 +21549,7 @@
 
 ; Here we place the bulk of the code for handling trust tags (ttags).
 
-; A trust tag (ttag) is a symbol that represents where to place responsibility
+; A trust tag (ttag) is a keyword that represents where to place responsibility
 ; for potentially unsafe operations.  For example, suppose we define a
 ; function, foo, that calls sys-call.  Any call of sys-call is potentially
 ; unsafe, in the sense that it can do things not normally expected during book
@@ -21617,6 +21620,12 @@
 
 ; That said, if the need is great enough for us to avoid the error described
 ; above, we'll figure out something.
+
+; Finally, we note that trust tags are always in the "KEYWORD" package.  This
+; simplifies the implementation of provisional certification.  Previously
+; (after Version_4.3 but before the next release), Sol Swords sent an example
+; in which the Complete operation caused an error, the reason being that an
+; unknown package was being used in the post-alist in the certificate file.
 
 (defmacro ttags-seen ()
 

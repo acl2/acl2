@@ -18241,6 +18241,47 @@
 ; information than had been provided by use of the constant,
 ; *ill-formed-certificate-msg*.
 
+; The change "All trust tags are now in the ~il[keyword] package" was made in
+; support of provisional certification.  Sol Swords sent an example in which
+; the Complete operation caused an error, the reason being that an unknown
+; package was being used in the post-alist in the certificate file.
+
+; Here is the example promised in :doc note-4-4 and in a comment about
+; :SKIPPED-PROOFSP in certify-book-fn, regarding "Fixed a soundness bug based
+; on the use of ~ilc[skip-proofs] ...."  First consider the following two
+; books.
+
+;   -- foo.lisp --
+
+;   (in-package "ACL2")
+;   (defun f1 (x) x)
+;   ; (defthm bad nil :rule-classes nil)
+
+;   -- bar.lisp --
+
+;   (in-package "ACL2")
+;   (local (include-book "foo"))
+;   (defthm bad nil :rule-classes nil)
+
+;   --
+
+; Notice that foo.lisp ends in a commented-out form.  Now proceed as follows.
+; If you prefer, you can eliminate the two calls of set-ld-skip-proofsp by,
+; instead, wrapping a skip-proofs around the defthm.
+
+;  (set-ld-skip-proofsp t state)
+;  (defthm bad nil :rule-classes nil)
+;  (set-ld-skip-proofsp nil state)
+;  (certify-book "foo" 1 t :skip-proofs-okp t)
+;  Uncomment out the defthm form in foo.lisp.
+;  (ubt! 1)
+;  (certify-book "foo" t)
+;  (ubt! 1)
+;  (certify-book "bar")
+
+; You will see no warnings when certifying bar, and its certificate will show
+; no trace of skip-proofs.
+
   :doc
   ":Doc-Section release-notes
 
@@ -18406,6 +18447,13 @@
   ~c[boot-strap-pass-2.lisp] if interested.  Thanks to David Rager for
   contributing an initial version of this improvement.
 
+  All trust tags are now in the ~il[keyword] package.  The ~ilc[defttag] event
+  may still take a symbol in an arbitrary package, but the trust tag created
+  will be in the keyword package (with the same ~ilc[symbol-name] as the symbol
+  provided).  Similarly, non-~c[nil] symbols occurring in the ~c[:ttags]
+  argument of an ~ilc[include-book] or ~ilc[certify-book] command will be
+  converted to corresponding keywords.  ~l[defttag].
+
   ~st[NEW FEATURES]
 
   A new ``tau system'' provides a kind of ``type checker.''  ~l[tau-system].
@@ -18562,8 +18610,8 @@
 
   Fixed a soundness bug based on the use of ~ilc[skip-proofs] together with the
   little-used argument ~c[k=t] for ~ilc[certify-book].  An example proof of
-  ~c[nil] appears in a comment in the (second) definition of ~c[skip-proofs] in
-  ACL2 source file axioms.lisp.
+  ~c[nil] appears in a comment in the ACL2 sources, in
+  ~c[(deflabel note-4-4 ...)].
 
   (Technical change, primarily related to ~ilc[make-event]:) Plugged a security
   hole that allowed ~il[books]' ~il[certificate]s to be out-of-date with
