@@ -118,6 +118,13 @@ export ACL2_PCERT
 export ACL2_PCERT_ARG ?=
 export ACL2_OUTFILE_SUFFIX  ?=
 
+# Define the following variable as shown in the following example, in
+# order to arrange that books be provisionally certified using
+# certify-book with :pcert keyword argument of t, to build .pcert1
+# file when .pcert0 file is built:
+export ACL2_BOOKS_PCERT_ARG_T ?=
+# ACL2_BOOKS_PCERT_ARG_T = book1 book2
+
 #################### END of editable variables ####################
 
 # We should really check that following is not empty.  It is the same as
@@ -197,6 +204,8 @@ all_pcert:
 %.acl2x:  ACL2_OUTFILE_SUFFIX = .acl2x
 
 %.pcert0: ACL2_PCERT_ARG = CREATE
+# Override:
+$(patsubst %, %.pcert0, $(ACL2_BOOKS_PCERT_ARG_T)): ACL2_PCERT_ARG = T
 %.pcert1: ACL2_PCERT_ARG = CONVERT
 ifneq ($(ACL2_PCERT),)
 %.cert:   ACL2_PCERT_ARG = COMPLETE
@@ -301,8 +310,14 @@ endif
 %.pcert0: %.lisp
 	@$(cert_cmd)
 
+# See override just below.
 %.pcert1: %.pcert0
 	@$(cert_cmd)
+
+# Override for %.pcert1 when using :pcert t to build .pcert0 and
+# .pcert1 files together (handy use of a static pattern rule):
+$(patsubst %, %.pcert1, $(ACL2_BOOKS_PCERT_ARG_T)): %.pcert1: %.pcert0
+	@echo "Note: Skipping build of $@ (normally built with $*.pcert0)."
 
 %.acl2x: %.lisp
 	@$(cert_cmd)
