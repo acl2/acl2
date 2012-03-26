@@ -1724,6 +1724,11 @@
        (defpkg-raw1 ,name ,imports ,event-form)))))
 
 (defmacro defpkg (&whole event-form name imports &optional doc book-path hidden-p)
+
+; Keep this in sync with get-cmds-from-portcullis1, make-hidden-defpkg,
+; equal-modulo-hidden-defpkgs, and (of course) the #+acl2-loop-only definition
+; of defpkg.
+
   (declare (ignore doc book-path hidden-p))
   (or (stringp name)
       (interface-er "Attempt to call defpkg on a non-string, ~x0."
@@ -15850,6 +15855,10 @@
 ; Warning: If this event ever generates proof obligations, remove it from the
 ; list of exceptions in install-event just below its "Comment on irrelevance of
 ; skip-proofs".
+
+; Keep this in sync with get-cmds-from-portcullis1, make-hidden-defpkg,
+; equal-modulo-hidden-defpkgs, and (of course) the #-acl2-loop-only definition
+; of defpkg.
 
   ":Doc-Section Events
 
@@ -34678,7 +34687,38 @@
 ; on a large book we found a 2.8% time savings by redefining this function
 ; simply to return nil.
 
-  (when (not *inside-include-book-fn*)
+  (when (not (or *inside-include-book-fn*
+
+; We avoid the bad-lisp-objectp check during the Convert procedure of
+; provisional certification, in part because it is not necessary but, more
+; important, to avoid errors due to hidden defpkg events.  Without the check on
+; cert-op below, we get such an error with the following example from Sol
+; Swords.
+
+;;; event.lisp
+;   (in-package "FOO")
+;   (defmacro acl2::my-event ()
+;       '(make-event '(defun asdf () nil)))
+
+;;; top.lisp
+;   (in-package "ACL2")
+;   (include-book "event")
+;   (my-event)
+
+;;; Do these commands:
+
+; ; In one session:
+; (defpkg "FOO" *acl2-exports*)
+; (certify-book "event" ?)
+
+; ; Then in another session:
+; (certify-book "top" ? t :pcert :create)
+
+; ; Then in yet another session:
+; (set-debugger-enable :bt) ; optional
+; (certify-book "top" ? t :pcert :convert)
+
+                 (eq (cert-op *the-live-state*) :convert-pcert)))
     (let ((msg (bad-lisp-objectp x)))
       (cond (msg (interface-er "~@0" msg))
             (t nil)))))
