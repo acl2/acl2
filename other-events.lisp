@@ -1747,9 +1747,12 @@
 
   (coerce (append (reverse (cddddr (reverse (coerce x 'list))))
                   (case cert-op
-                    ((t) '(#\c #\e #\r #\t))
-                    (:create-pcert '(#\p #\c #\e #\r #\t #\0))
-                    (:convert-pcert '(#\p #\c #\e #\r #\t #\1))
+                    ((t)
+                     '(#\c #\e #\r #\t))
+                    ((:create-pcert :create+convert-pcert)
+                     '(#\p #\c #\e #\r #\t #\0))
+                    (:convert-pcert
+                     '(#\p #\c #\e #\r #\t #\1))
                     (otherwise ; including :write-acl2x
                      (er hard 'convert-book-name-to-cert-name
                          "Bad value of cert-op for ~
@@ -6435,6 +6438,7 @@
 ; - t              ; Ordinary certification;
 ;                  ;   also the Complete procedure of provisional certification
 ; - :create-pcert  ; Pcertify (pcert0) procedure of provisional certification
+; - :create+convert-pcert ; Pcertify but also creating .pcert1 file
 ; - :convert-pcert ; Convert (pcert1) procedure of provisional certification
 ; - :write-acl2x   ; Write .acl2x file
 ; - :write-acl2xu  ; Write .acl2x file, allowing uncertified sub-books
@@ -6452,13 +6456,15 @@
     (case (cert-op state)
       ((nil :write-acl2x :write-acl2xu)
        x)
-      ((t)
+      ((t :create+convert-pcert)
        (cons 'certify-book x))
       (otherwise ; :create-pcert or :convert-pcert
 
 ; We need to avoid eliding locals for make-event forms when building the
-; .pcert0 file.  We might as well do so for building the .pcert1 file as well,
-; though that could perhaps be reworked.
+; .pcert0 file, unless we are doing the :create+convert-pcert operation.  We
+; might as well also not bother eliding locals for building the .pcert1 file as
+; well, since ultimately we expect to use the pcert0-file's make-event
+; expansions (but we could reconsider this decision if a reason arises).
 
        (cons 'pcert x)))))
 
@@ -10979,7 +10985,7 @@
                          (mv eofp nil state)))
                 (t (read-object ch state)))
           (cond ((or eofp
-                     (eq obj :expansion-alist-nonelided))
+                     (eq obj :pcert-info))
                  (mv x state))
                 (t (post-alist-from-channel y obj ch state)))))
 
@@ -10990,6 +10996,9 @@
      (ch state)
      (open-input-channel cert-name :object state)
      (mv ch cert-name state))))
+
+(defmacro pcert-op-p (cert-op)
+  `(member-eq ,cert-op '(:create-pcert :create+convert-pcert :convert-pcert)))
 
 (defun certificate-file-and-input-channel (full-book-name old-cert-op state)
 
@@ -11009,7 +11018,9 @@
                                                  state)
             (mv ch
                 cert-name
-                (member-eq old-cert-op '(:create-pcert :convert-pcert))
+                (if (pcert-op-p old-cert-op)
+                    old-cert-op
+                  nil)
                 state)))
    (t
     (mv-let ; try .cert first
@@ -11021,24 +11032,24 @@
                (certificate-file-and-input-channel1 full-book-name
                                                     :create-pcert
                                                     state)
-               (cond (ch (mv ch cert-name t state))
+               (cond (ch (mv ch cert-name :create-pcert state))
                      (t (mv-let ; finally try .pcert1
                          (ch cert-name state)
                          (certificate-file-and-input-channel1 full-book-name
                                                               :convert-pcert
                                                               state)
-                         (mv ch cert-name t state)))))))))))
+                         (mv ch cert-name :convert-pcert state)))))))))))
 
 (defun cert-annotations-and-checksum-from-cert-file (full-book-name state)
   (mv-let
-   (ch cert-name pcert-p state)
+   (ch cert-name pcert-op state)
    (certificate-file-and-input-channel full-book-name
                                        (if (eq (cert-op state)
                                                :convert-pcert)
                                            :create-pcert
                                          nil)
                                        state)
-   (declare  (ignore cert-name pcert-p))
+   (declare  (ignore cert-name pcert-op))
    (cond (ch (mv-let (x state)
                      (post-alist-from-channel nil nil ch state)
                      (pprogn (close-input-channel ch state)
@@ -11591,6 +11602,15 @@
   (include-book-alistp1 x local-markers-allowedp))
 
 (defrec cert-obj
+
+; The :pcert-info field is used for provisional certification.  Its value is
+; either an expansion-alist that has not had locals elided (as per elide-locals
+; and related functions), or one of tokens :proved or :unproved.  Note that an
+; expansion-alist, even a nil value, implicitly indicates that proofs have been
+; skipped when producing the corresponding certificate file (a .pcert0 file);
+; the explicit value :unproved is stored when constructing a cert-obj from a
+; .pcert1 file.
+
   ((cmds . pre-alist)
    post-alist expansion-alist . pcert-info)
   t)
@@ -11726,14 +11746,14 @@
                     (read-object ch state)
                     (cond
                      ((not (or eofp
-                               (eq temp :expansion-alist-nonelided)))
+                               (eq temp :pcert-info)))
                       (ill-formed-certificate-er
                        ctx
-                       'chk-raise-portcullis{expansion-alist-nonelided-1}
+                       'chk-raise-portcullis{pcert-info-1}
                        file1 file2 temp))
                      (t
                       (er-let*
-                          ((expansion-alist-nonelided
+                          ((pcert-info
                             (cond ((or eofp
                                        (not (eq caller 'convert-pcert)))
                                    (value nil))
@@ -11744,7 +11764,7 @@
                                        (eofp1
                                         (ill-formed-certificate-er
                                          ctx
-                                         'chk-raise-portcullis{expansion-alist-nonelided-2}
+                                         'chk-raise-portcullis{pcert-info-2}
                                          file1 file2))
                                        (t (value temp1))))))))
                         (let ((chk-sum2
@@ -11761,7 +11781,7 @@
                                      (not (int= chk-sum1 chk-sum2))))
                             (ill-formed-certificate-er
                              ctx
-                             'chk-raise-portcullis{expansion-alist-nonelided-3}
+                             'chk-raise-portcullis{pcert-info-3}
                              file1 file2
                              (list :chk-sum1 chk-sum1 :chk-sum2 chk-sum2)))
                            ((and (not light-chkp)
@@ -11807,7 +11827,7 @@
                                            :post-alist post-alist3
                                            :expansion-alist expansion-alist
                                            :pcert-info
-                                           expansion-alist-nonelided)))))))))))))))))))))))
+                                           pcert-info)))))))))))))))))))))))
 
 (defun chk-certificate-file1 (file1 file2 ch light-chkp caller
                                     ctx state suspect-book-action-alist
@@ -11925,9 +11945,9 @@
                  file1 file2 version)))))))))))
 
 (defun certificate-file (full-book-name state)
-  (mv-let (ch cert-name pcert-p state)
+  (mv-let (ch cert-name pcert-op state)
           (certificate-file-and-input-channel full-book-name nil state)
-          (declare (ignore pcert-p))
+          (declare (ignore pcert-op))
           (pprogn (cond (ch (close-input-channel ch state))
                         (t state))
                   (mv (and ch cert-name) state))))
@@ -11958,7 +11978,7 @@
   (let ((dir (or dir
                  (directory-of-absolute-pathname file1))))
     (mv-let
-     (ch file2 pcert-p state)
+     (ch file2 pcert-op state)
      (certificate-file-and-input-channel file1
                                          (if (eq caller 'convert-pcert)
                                              :create-pcert
@@ -11985,7 +12005,7 @@
               (mv-let (error-flg val state)
                       (chk-certificate-file1 file1 file2 ch
                                              (case caller ; light-chkp
-                                               ('convert-pcert nil)
+                                               (convert-pcert nil)
                                                (certify-book t) ; k=t
                                                (include-book nil)
                                                (puff t)
@@ -11997,11 +12017,23 @@
                                              caller ctx state
                                              suspect-book-action-alist evalp)
                       (let ((val (cond ((and val
-                                             pcert-p
+                                             pcert-op
                                              (not (access cert-obj val
                                                           :pcert-info)))
+
+; We don't print a :pcert-info field to the .pcert1 file, because it will
+; ultimately be moved to a .cert file.  (We could live with such fields in
+; .cert files, but we are happy to avoid dealing with them.)  We also don't
+; bother printing a :pcert-info field to a .pcert0 file when its value is nil
+; (perhaps an arbitrary decision).  We now deal with the above observations.
+
                                         (change cert-obj val
-                                                :pcert-info t))
+                                                :pcert-info
+                                                (if (eq pcert-op :create-pcert)
+                                                    :unproved
+                                                  (assert$
+                                                   (eq pcert-op :convert-pcert)
+                                                   :proved))))
                                        (t val))))
                         (pprogn (close-input-channel ch state)
                                 (mv error-flg val state)))))))))))))
@@ -12094,9 +12126,9 @@
 ; certificate file for the given book, file.
 
 ; Note that for the Convert procedure of provisional certification, we keep the
-; expansion-alist and expansion-alist-nonelided from the existing .pcert0 file.
-; But in all other cases, we do not use an existing expansion-alist, even if
-; the original argument k for certify-book is t, even though we may return it.
+; expansion-alist (and pcert-info) from the existing .pcert0 file.  But in all
+; other cases, we do not keep an existing expansion-alist, even if the original
+; argument k for certify-book is t.
 
   (let ((pre-alist (global-val 'include-book-alist wrld))
         (cmds (or cmds
@@ -12341,8 +12373,7 @@
                  command; see :DOC ubt."
                 'ld-redefinition-action
                 (global-val 'redef-seen wrld)))
-           ((and (not (eq cert-op :create-pcert))
-                 (not (eq cert-op :convert-pcert))
+           ((and (not (pcert-op-p cert-op))
                  (global-val 'pcert-books wrld))
             (let ((books (global-val 'pcert-books wrld)))
               (er soft ctx
@@ -12513,17 +12544,17 @@
 (defun elide-locals-and-split-expansion-alist (alist acl2x-alist x y)
 
 ; This function supports provisional certification.  It takes alist, an
-; expansion-alist that was produced during the Pcertify procedure without
-; eliding locals (hence strongp=t in the call below of elide-locals-rec).  It
-; extends x and y (initially both nil) and reverses each, to return (mv x y),
-; where x is the result of eliding locals from alist, and y is the result of
-; accumulating original entries from alist that were changed before going into
-; x, but only those that do not already equal corresponding entries in
-; acl2x-alist (another expansion-alist).  We will eventually write the elided
-; expansion-alist (again, obtained by accumulating into x) into the
-; :EXPANSION-ALIST field of the .pcert0 file, and the non-elided part (again,
-; obtained by accumulating into y) will become the value of the
-; :EXPANSION-ALIST-NONELIDED field of the .pcert0 file.  The latter will be
+; expansion-alist that was produced during the Pcertify (not Pcertify+)
+; procedure without eliding locals (hence strongp=t in the call below of
+; elide-locals-rec).  It extends x and y (initially both nil) and reverses
+; each, to return (mv x y), where x is the result of eliding locals from alist,
+; and y is the result of accumulating original entries from alist that were
+; changed before going into x, but only those that do not already equal
+; corresponding entries in acl2x-alist (another expansion-alist).  We will
+; eventually write the elided expansion-alist (again, obtained by accumulating
+; into x) into the :EXPANSION-ALIST field of the .pcert0 file, and the
+; non-elided part (again, obtained by accumulating into y) will become the
+; value of the :PCERT-INFO field of the .pcert0 file.  The latter will be
 ; important for providing a suitable expansion-alist for the Convert procedure
 ; of provisional certification, where local events are needed in order to
 ; support proofs.
@@ -12557,7 +12588,7 @@
                            y)))))))))
 
 (defun make-certificate-file1 (file portcullis certification-file post-alist3
-                                    expansion-alist expansion-alist-nonelided
+                                    expansion-alist pcert-info
                                     cert-op ctx state)
 
 ; See make-certificate-file.
@@ -12572,69 +12603,72 @@
 
   (assert$
    (not (member-eq cert-op ; else we exit certify-book-fn before this point
-                   '(:write-acl2x :write-acl2xu :convert-pcert)))
-   (let ((chk-sum (check-sum-cert-obj (car portcullis)  ; :cmds
-                                      (cdr portcullis)  ; :pre-alist
-                                      post-alist3       ; :post-alist
-                                      expansion-alist   ; :expansion-alist
-                                      )))
-     (cond
-      ((not (integerp chk-sum))
-       (value (er hard ctx
-                  "Check-sum-obj returned a non-integerp value on the ~
-                   portcullis and post-alist3!")))
-      (t
-       (with-output-object-channel-sharing
-        ch certification-file
-        (cond
-         ((null ch)
-          (er soft ctx
-              "We cannot open a certificate file for ~x0.  The file we tried ~
-               to open for output was ~x1."
-              file
-              certification-file))
-         (t (with-print-defaults
-             ((current-package "ACL2")
-              (print-circle (f-get-global 'print-circle-files state)))
-             (pprogn
-              (print-object$ '(in-package "ACL2") ch state)
-              (print-object$ (f-get-global 'acl2-version state) ch state)
-              (print-object$ :BEGIN-PORTCULLIS-CMDS ch state)
-              (print-objects
+                   '(:write-acl2x :write-acl2xu)))
+   (assert$
+    (implies (eq cert-op :convert-pcert)
+             (eq (cert-op state) :create+convert-pcert))
+    (let ((chk-sum (check-sum-cert-obj (car portcullis) ; :cmds
+                                       (cdr portcullis) ; :pre-alist
+                                       post-alist3      ; :post-alist
+                                       expansion-alist  ; :expansion-alist
+                                       )))
+      (cond
+       ((not (integerp chk-sum))
+        (value (er hard ctx
+                   "Check-sum-obj returned a non-integerp value on the ~
+                    portcullis and post-alist3!")))
+       (t
+        (with-output-object-channel-sharing
+         ch certification-file
+         (cond
+          ((null ch)
+           (er soft ctx
+               "We cannot open a certificate file for ~x0.  The file we tried ~
+                to open for output was ~x1."
+               file
+               certification-file))
+          (t (with-print-defaults
+              ((current-package "ACL2")
+               (print-circle (f-get-global 'print-circle-files state)))
+              (pprogn
+               (print-object$ '(in-package "ACL2") ch state)
+               (print-object$ (f-get-global 'acl2-version state) ch state)
+               (print-object$ :BEGIN-PORTCULLIS-CMDS ch state)
+               (print-objects
 
 ; We could apply hons-copy to (car portcullis) here, but we don't.  See the
 ; Remark on Fast-alists in install-for-add-trip-include-book.
 
-               (car portcullis) ch state)
-              (print-object$ :END-PORTCULLIS-CMDS ch state)
-              (cond (expansion-alist
-                     (pprogn (print-object$ :EXPANSION-ALIST ch state)
-                             (print-object$
+                (car portcullis) ch state)
+               (print-object$ :END-PORTCULLIS-CMDS ch state)
+               (cond (expansion-alist
+                      (pprogn (print-object$ :EXPANSION-ALIST ch state)
+                              (print-object$
 
 ; We could apply hons-copy to expansion-alist here, but we don't.  See the
 ; Remark on Fast-alists in install-for-add-trip-include-book.
 
-                              expansion-alist ch state)))
-                    (t state))
-              (print-object$ (cdr portcullis) ch state)
-              (print-object$ post-alist3 ch state)
-              (print-object$ chk-sum ch state)
-              (cond (expansion-alist-nonelided
-                     (pprogn (print-object$ :EXPANSION-ALIST-NONELIDED ch
-                                            state)
-                             (print-object$
+                               expansion-alist ch state)))
+                     (t state))
+               (print-object$ (cdr portcullis) ch state)
+               (print-object$ post-alist3 ch state)
+               (print-object$ chk-sum ch state)
+               (cond (pcert-info
+                      (pprogn (print-object$ :PCERT-INFO ch state)
+                              (print-object$
 
-; We could apply hons-copy to expansion-alist-nonelided here, but we don't.  See
-; the Remark on Fast-alists in install-for-add-trip-include-book.
+; We could apply hons-copy to pcert-info (as it may be an expansion-alist
+; without local elision), but we don't.  See the Remark on Fast-alists in
+; install-for-add-trip-include-book.
 
-                              expansion-alist-nonelided ch state)))
-                    (t state))
-              (close-output-channel ch state)
-              (value certification-file)))))))))))
+                               pcert-info ch state)))
+                     (t state))
+               (close-output-channel ch state)
+               (value certification-file))))))))))))
 
 (defun make-certificate-file-relocated (file portcullis certification-file
                                              post-alist3 expansion-alist
-                                             expansion-alist-nonelided old-dir
+                                             pcert-info old-dir
                                              new-dir cert-op ctx state)
 
 ; See make-certificate-file.
@@ -12647,10 +12681,10 @@
    certification-file
    (replace-string-prefix-in-tree
     post-alist3 old-dir (length old-dir) new-dir)
-   expansion-alist expansion-alist-nonelided cert-op ctx state))
+   expansion-alist pcert-info cert-op ctx state))
 
 (defun make-certificate-file (file portcullis post-alist1 post-alist2
-                                   expansion-alist expansion-alist-nonelided
+                                   expansion-alist pcert-info
                                    cert-op ctx state)
 
 ; This function writes out, and returns, a certificate file.  We first give
@@ -12659,7 +12693,7 @@
 ; to its suitable .cert name.  This way, we expect that that the compiled file
 ; will have a write date that is later than (or at least, not earlier than) the
 ; write date of the certificate file; yet, we can be assured that "make"
-; targets that depend on the .cert file's existence will be able to rely
+; targets that depend on the certificate file's existence will be able to rely
 ; implicitly on the compiled file's existence as well.  After Version_4.3 we
 ; arranged that even when not compiling we use a temporary file, so that (we
 ; hope) once the .cert file exists, it has all of its contents.
@@ -12775,7 +12809,7 @@
                      (make-certificate-file-relocated
                       file portcullis
                       (concatenate 'string certification-file ".final")
-                      post-alist3 expansion-alist expansion-alist-nonelided
+                      post-alist3 expansion-alist pcert-info
                       old-dir new-dir cert-op ctx
                       state))
                     (t (er soft ctx
@@ -12792,7 +12826,45 @@
      (make-certificate-file1 file portcullis
                              (concatenate 'string certification-file ".temp")
                              post-alist3 expansion-alist
-                             expansion-alist-nonelided cert-op ctx state))))
+                             pcert-info cert-op ctx state))))
+
+(defun make-certificate-files (full-book-name portcullis post-alist1
+                                              post-alist2 expansion-alist
+                                              pcert-info cert-op ctx state)
+
+; This function returns a renaming alist with entries (temp-file
+; . desired-file).
+
+  (cond
+   ((eq cert-op :create+convert-pcert)
+    (er-let* ((pcert0-file
+               (make-certificate-file full-book-name portcullis
+                                      post-alist1 post-alist2
+                                      expansion-alist pcert-info
+                                      :create-pcert ctx state)))
+      (er-let* ((pcert1-file
+                 (make-certificate-file full-book-name portcullis
+                                        post-alist1 post-alist2
+                                        expansion-alist
+                                        nil ; pcert-info for .pcert1 file
+                                        :convert-pcert ctx state)))
+        (value (list (cons pcert0-file
+                           (convert-book-name-to-cert-name
+                            full-book-name
+                            :create-pcert))
+                     (cons pcert1-file
+                           (convert-book-name-to-cert-name
+                            full-book-name
+                            :convert-pcert)))))))
+   (t (er-let* ((cert-file
+                 (make-certificate-file full-book-name portcullis
+                                        post-alist1 post-alist2
+                                        expansion-alist pcert-info
+                                        cert-op ctx state)))
+        (value (list (cons cert-file
+                           (convert-book-name-to-cert-name
+                            full-book-name
+                            cert-op))))))))
                            
 ; We now develop a general-purpose read-object-file, which expects
 ; the given file to start with an IN-PACKAGE and then reads into that
@@ -14030,9 +14102,7 @@
                                                  :pcert-info))
                                     (pprogn
                                      (cond
-                                      ((or (member-eq (cert-op state)
-                                                      '(:create-pcert
-                                                        :convert-pcert))
+                                      ((or (pcert-op-p (cert-op state))
                                            (warning-off-p
                                             "Provisionally certified"
                                             state))
@@ -14050,10 +14120,15 @@
                                             ctx
                                             ("Provisionally certified")
                                             "The book ~s0 was only ~
-                                             provisionally certified. ~ See ~
-                                             :DOC ~
-                                             provisional-certification-warning."
-                                            full-book-name)))))))
+                                             provisionally certified (proofs ~
+                                             ~s1)."
+                                            full-book-name
+                                            (if (eq (access cert-obj
+                                                            cert-obj
+                                                            :pcert-info)
+                                                    :proved)
+                                                "completed"
+                                              "skipped"))))))))
                                      (value t)))
                                    (t (value nil)))))
                                 (install-event
@@ -15093,8 +15168,8 @@
 (defun merge-into-expansion-alist (acl2x-expansion-alist
                                    computed-expansion-alist)
 
-; Note: Computed expansion-alist can be t, a value for the :pcert-info field of
-; a cert-obj that represents the empty expansion-alist.
+; Note: Computed expansion-alist can be a value for the :pcert-info field of a
+; cert-obj that represents the empty expansion-alist (:unproved or :proved).
 
 ; Each argument is an expansion-alist, i.e., an alist whose keys are increasing
 ; positive integers (see acl2x-alistp).  We return the expansion-alist whose
@@ -15240,10 +15315,10 @@
                              (close-input-channel ch-from state)
                              (er soft ctx
                                  "Unable to open file ~x0 for output (to copy ~
-                                 into from file ~x1)."
+                                  into from file ~x1)."
                                  to from)))
                            (t (pprogn (copy-object-channel-until-marker
-                                       :expansion-alist-nonelided
+                                       :pcert-info
                                        ch-from ch-to state)
                                       (close-input-channel ch-from state)
                                       (close-output-channel ch-to state)
@@ -15313,7 +15388,7 @@
                                full-book-name state)))
            (er-progn (copy-pcert0-to-pcert1 pcert0-name pcert1-name ctx state)
 
-; Arrange that compiled file is not older than newcertificate file.
+; Arrange that compiled file is not older than new certificate file.
 
                      (touch? compiled-name pcert0-name ctx state)
                      (value pcert1-name))))
@@ -15502,17 +15577,10 @@
 
 ; For the remaining cases we know pcert-env is not nil, hence pcert = :default.
 
-                               ((string-equal pcert-env "CREATE")
-                                (value :create))
-                               ((string-equal pcert-env "CONVERT")
-                                (value :convert))
-                               ((string-equal pcert-env "COMPLETE")
-                                (value :complete))
-                               (t (er soft ctx
-                                      "Illegal value for environment variable ~
-                                       ACL2_PCERT_ARG (see :DOC ~
-                                       provisional-certification): ~x0"
-                                      pcert-env)))))
+                               ((string-equal pcert-env "T")
+                                (value t))
+                               (t (value (intern (string-upcase pcert-env)
+                                                 "KEYWORD"))))))
           (mv-let
            (full-book-name directory-name familiar-name)
            (parse-book-name (cbd) user-book-name ".lisp" ctx state)
@@ -15527,18 +15595,19 @@
                                (getenv! "ACL2_WRITE_PORT" state))
                               (t (er soft ctx
                                      "Illegal :write-port argument, ~x0.  See ~
-                                     :DOC certify-book."))))
+                                      :DOC certify-book."))))
                        (write-acl2x
                         (cond (acl2x (value (f-get-global 'write-acl2x state)))
                               ((f-get-global 'write-acl2x state)
                                (er soft ctx
                                    "Apparently set-write-acl2x has been ~
-                                   evaluated with argument value ~x0, yet ~
-                                   certify-book is being called without ~
-                                   supplying keyword argument :ACL2X T.  This ~
-                                   is illegal.  See :DOC set-write-acl2x.  If ~
-                                   you do not intend to write a .acl2x file, ~
-                                   you may wish to evaluate ~x1."
+                                    evaluated with argument value ~x0, yet ~
+                                    certify-book is being called without ~
+                                    supplying keyword argument :ACL2X T.  ~
+                                    This is illegal.  See :DOC ~
+                                    set-write-acl2x.  If you do not intend to ~
+                                    write a .acl2x file, you may wish to ~
+                                    evaluate ~x1."
                                    (f-get-global 'write-acl2x state)
                                    '(set-write-acl2x nil state)))
                               (t (value nil))))
@@ -15562,12 +15631,21 @@
                                       (t (case pcert
                                            (:create (value :create-pcert))
                                            (:convert (value :convert-pcert))
+                                           ((t) (value :create+convert-pcert))
                                            ((nil) (value t))
-                                           (otherwise (er soft ctx
-                                                          "Illegal value of ~
-                                                          :pcert, ~x0.  See ~
-                                                          :DOC certify-book."
-                                                          pcert))))))
+                                           (otherwise
+                                            (er soft ctx
+                                                "Illegal value of :pcert, ~
+                                                 ~x0~@1.  See :DOC ~
+                                                 certify-book."
+                                                pcert
+                                                (cond
+                                                 (pcert-env
+                                                  (msg " (from environment ~
+                                                        variable ~
+                                                        ACL2_PCERT_ARG=~x0"
+                                                       pcert-env))
+                                                 (t ""))))))))
                        (skip-proofs-okp
                         (value (cond ((eq skip-proofs-okp :default)
                                       (consp write-acl2x))
@@ -15578,9 +15656,9 @@
                        (ttags (cond ((and ttagsxp (not acl2x))
                                      (er soft ctx
                                          "The  :TTAGSX argument for ~
-                                         certify-book may only be supplied if ~
-                                         :ACL2X is T.  See :DOC ~
-                                         set-write-acl2x."))
+                                          certify-book may only be supplied ~
+                                          if :ACL2X is T.  See :DOC ~
+                                          set-write-acl2x."))
                                     (t (chk-well-formed-ttags
                                         (convert-non-nil-symbols-to-keywords
                                          (cond (write-acl2x ttagsx)
@@ -15682,6 +15760,9 @@
                                               " (for writing .acl2x file)")
                                              (:create-pcert
                                               " (for writing .pcert0 file)")
+                                             (:create+convert-pcert
+                                              " (for writing .pcert0 and ~
+                                               .pcert1 files)")
                                              (:convert-pcert
                                               " (for writing .pcert1 file)")
                                              (t "")))
@@ -15713,16 +15794,17 @@
                                       (bad-entry
                                        (er soft ctx
                                            "The following expansion-alist ~
-                                           entry from file ~x0 is ~
-                                           unexpected:~|~x1~|~@2"
+                                            entry from file ~x0 is ~
+                                            unexpected:~|~x1~|~@2"
                                            acl2x-file
                                            bad-entry
                                            (cond
                                             (elided-entry
                                              (msg "It was expected to ~
-                                                  correspond to the following entry ~
-                                                  from the :expansion-alist ~
-                                                  in file ~x0:~|~x1"
+                                                   correspond to the ~
+                                                   following entry from the ~
+                                                   :expansion-alist in file ~
+                                                   ~x0:~|~x1"
                                                   (convert-book-name-to-cert-name
                                                    full-book-name
                                                    :create-pcert)
@@ -15823,38 +15905,40 @@
                                                    (merge-into-expansion-alist
                                                     expansion-alist0
                                                     (car expansion-alist-and-index)))))))
-                                              (cond
-                                               (write-acl2x
-                                                (assert$
-                                                 (not (eq cert-op :convert-pcert))
+                                       (cond
+                                        (write-acl2x
+                                         (assert$
+                                          (not (eq cert-op :convert-pcert))
 
 ; See the Essay on .acl2x Files (Double Certification).  Below we will exit
 ; certify-book-fn, so the value returned here for pass1-result will be
 ; ignored.
 
-                                                 (write-acl2x-file
-                                                  expansion-alist acl2x-file
-                                                  ctx state)))
-                                               (t
-                                                (let ((expansion-alist
-                                                       (cond
-                                                        ((member-eq cert-op
-                                                                    '(:create-pcert
-                                                                      :convert-pcert))
+                                          (write-acl2x-file
+                                           expansion-alist acl2x-file
+                                           ctx state)))
+                                        (t
+                                         (let ((expansion-alist
+                                                (cond
+                                                 ((or (eq cert-op
+                                                          :create-pcert)
+                                                      (eq cert-op
+                                                          :convert-pcert))
 
 ; The value here is irrelevant for :convert-pcert.  We avoid eliding locals for
-; :create-pcert; we'll take care of that later, after dealing with
+; :create-pcert (except when pcert = t, since then we are doing just what we
+; would do for ordinary certification without pcert), hence we elide along the
+; way); we'll take care of that later, after dealing with
 ; expansion-alist-pkg-names to support reading the unelided expansion-alist
 ; members from the .pcert0 file during the Convert procedure.
 
-                                                         expansion-alist)
-                                                        (t
-                                                         (elide-locals-from-expansion-alist
-                                                          expansion-alist
-                                                          nil)))))
-                                                  (value ; pass1-result:
-                                                   (list
-                                                    (or
+                                                  expansion-alist)
+                                                 (t
+                                                  (elide-locals-from-expansion-alist
+                                                   expansion-alist
+                                                   nil)))))
+                                           (value ; pass1-result:
+                                            (list (or
 
 ; We are computing whether proofs may have been skipped.  If k = t, then we are
 ; using an existing certificate.  If proofs were skipped during that previous
@@ -15865,22 +15949,22 @@
 ; example in a comment in the deflabel note-4-4 pertaining to "Fixed a
 ; soundness bug based on the use of ~ilc[skip-proofs] ...."
 
-                                                     (and
-                                                      (eql k t)
-                                                      cert-obj ; always true?
-                                                      (let ((cert-ann
-                                                             (cadddr
-                                                              (car
-                                                               (access cert-obj
-                                                                       cert-obj
-                                                                       :post-alist)))))
-                                                        (cdr (assoc-eq
-                                                              :SKIPPED-PROOFSP
-                                                              cert-ann))))
-                                                     (let ((val (global-val
-                                                                 'skip-proofs-seen
-                                                                 (w state))))
-                                                       (and val
+                                                   (and
+                                                    (eql k t)
+                                                    cert-obj ; always true?
+                                                    (let ((cert-ann
+                                                           (cadddr
+                                                            (car
+                                                             (access cert-obj
+                                                                     cert-obj
+                                                                     :post-alist)))))
+                                                      (cdr (assoc-eq
+                                                            :SKIPPED-PROOFSP
+                                                            cert-ann))))
+                                                   (let ((val (global-val
+                                                               'skip-proofs-seen
+                                                               (w state))))
+                                                     (and val
 
 ; Here we are trying to record whether there was a skip-proofs form in the
 ; present book or its portcullis commands, not merely on behalf of an included
@@ -15888,37 +15972,37 @@
 ; consulted by skipped-proofsp-in-post-alist.  See the comment about this
 ; comment in install-event.
 
-                                                            (not (eq (car val)
-                                                                     :include-book)))))
-                                                    portcullis-skipped-proofsp
-                                                    (f-get-global 'axiomsp state)
-                                                    (global-val 'ttags-seen
-                                                                (w state))
-                                                    (global-val
-                                                     'include-book-alist-all
-                                                     (w state))
-                                                    expansion-alist
+                                                          (not (eq (car val)
+                                                                   :include-book)))))
+                                                  portcullis-skipped-proofsp
+                                                  (f-get-global 'axiomsp state)
+                                                  (global-val 'ttags-seen
+                                                              (w state))
+                                                  (global-val
+                                                   'include-book-alist-all
+                                                   (w state))
+                                                  expansion-alist
 
 ; The next form represents the part of the expansion-alist that needs to be
 ; checked for new packages, in the sense described above the call below of
 ; expansion-alist-pkg-names.
 
-                                                    (let ((index
-                                                           (cdr expansion-alist-and-index)))
-                                                      (cond
-                                                       ((eq cert-op :convert-pcert)
+                                                  (let ((index
+                                                         (cdr expansion-alist-and-index)))
+                                                    (cond
+                                                     ((eq cert-op :convert-pcert)
 
 ; Presumably the packages defined in the portcullis commands of the .pcert0
 ; file, as computed by chk-acceptable-certify-book1, are sufficient for reading
 ; the expansion-alist.
 
-                                                        nil)
-                                                       ((integerp index)
-                                                        (restrict-expansion-alist
-                                                         index
-                                                         expansion-alist))
-                                                       (t
-                                                        expansion-alist)))))))))))))
+                                                      nil)
+                                                     ((integerp index)
+                                                      (restrict-expansion-alist
+                                                       index
+                                                       expansion-alist))
+                                                     (t
+                                                      expansion-alist)))))))))))))
                           (cond
                            (write-acl2x ; early exit
                             (value acl2x-file))
@@ -16036,13 +16120,17 @@
 ; *inside-include-book-fn* is 'hcomp-build.
 
                                    (mv-let
-                                    (expansion-alist expansion-alist-nonelided)
+                                    (expansion-alist pcert-info)
                                     (cond
                                      ((eq cert-op :create-pcert)
                                       (elide-locals-and-split-expansion-alist
                                        expansion-alist acl2x-expansion-alist
                                        nil nil))
-                                     (t (mv expansion-alist nil)))
+                                     (t (mv expansion-alist
+                                            (if (eq cert-op
+                                                    :create+convert-pcert)
+                                                :proved
+                                              nil))))
                                     (er-let* ((defpkg-items
                                                 (defpkg-items
                                                   pass1-known-package-alist
@@ -16178,8 +16266,8 @@
 ; compilation (if any) has completed.
 
                                                 (er-let*
-                                                    ((temp-cert-file
-                                                      (make-certificate-file
+                                                    ((temp-alist
+                                                      (make-certificate-files
                                                        full-book-name
                                                        (cons portcullis-cmds
                                                              (access cert-obj
@@ -16188,7 +16276,7 @@
                                                        (cons extra-entry post-alist1)
                                                        (cons extra-entry post-alist2)
                                                        expansion-alist
-                                                       expansion-alist-nonelided
+                                                       pcert-info
                                                        cert-op
                                                        ctx
                                                        state)))
@@ -16229,20 +16317,20 @@
                                                       full-book-name)
                                                      (value nil)))
                                                    #-acl2-loop-only
-                                                   (let ((cert-file
-                                                          (pathname-unix-to-os
-                                                           (convert-book-name-to-cert-name
-                                                            full-book-name
-                                                            cert-op)
-                                                           state)))
-; Install temporary certificate file.
+                                                   (progn
+; Install temporary certificate file(s).
                                                      (delete-cert-files
                                                       full-book-name)
-                                                     (rename-file
-                                                      (pathname-unix-to-os
-                                                       temp-cert-file
-                                                       state)
-                                                      cert-file)
+                                                     (loop for pair in
+                                                           temp-alist
+                                                           do
+                                                           (rename-file
+                                                            (pathname-unix-to-os
+                                                             (car pair)
+                                                             state)
+                                                            (pathname-unix-to-os
+                                                             (cdr pair)
+                                                             state)))
                                                      (value nil))
                                                    (pprogn
                                                     (cond
@@ -16545,7 +16633,9 @@
 ; covered in the :doc topic (which serves as a prerequisite for these remarks).
 
 ; Let us consider the :pcert-info field of a cert-obj, which comes from the
-; :expansion-alist-nonelided field of a .pcert0 file.  The value is an
+; :pcert-info field of a .pcert0 file.  The value is :PROVED when the .pcert0
+; file was created by the Pcertify+ procedure, but now we consider the value
+; when the .pcert0 file was created by the Pcertify procedure.  The value is an
 ; expansion-alist that associates indices with full expansions, before applying
 ; elide-locals or elide-locals-rec.  When there is no such elision in the
 ; regular :expansion-alist, no entry is made in the :pcert-info field.  We do
@@ -16573,15 +16663,15 @@
 ; Our solution is to allow .pcert0 and .pcert1 files to serve as certificate
 ; files in all circumstances, with the following two kinds of special handling.
 ; First, and most important, we do the following two things: (a) we make a note
-; in the world (in world global pcert-books) when cert-op is not :create-pcert
-; or :convert-pcert and an include-book has taken place that uses a .pcert0 or
-; .pcert1 file as a certificate, and (b) we disallow certify-book in any such
-; world unless the :pcert argument has value :create or :convert (where this
-; argument might, of course, come from environment variable ACL2_PCERT_ARG).
-; Second, we print a warning when using a .pcert0 or .pcert1 file unless we are
-; in an environment with ACL2_PCERT set to a non-empty string.  (Of course,
-; that warning may also be inhibited by set-inhibit-warnings or
-; set-inhibit-output-lst.)
+; in the world (in world global pcert-books) when cert-op is not :create-pcert,
+; :create+convert-pcert or :convert-pcert, and an include-book has taken place
+; that uses a .pcert0 or .pcert1 file as a certificate, and (b) we disallow
+; certify-book in any such world unless the :pcert argument has value :create,
+; t, or :convert (where this argument might, of course, come from environment
+; variable ACL2_PCERT_ARG).  Second, we print a warning when using a .pcert0 or
+; .pcert1 file unless we are in an environment with ACL2_PCERT set to a
+; non-empty string.  (Of course, that warning may also be inhibited by
+; set-inhibit-warnings or set-inhibit-output-lst.)
 
   ":Doc-Section Books
 
@@ -16630,7 +16720,8 @@
   `make'.  Below we assume prior familiarity with ~il[books], in particular
   ~ilc[certify-book] and ~ilc[include-book].  The remainder of this
   ~il[documentation] topic is divided into sections: Summary, Correctness Claim
-  and Issues, and Further Information.~/
+  and Issues, Combining Pcertify and Convert into Pcertify+, and Further
+  Information.~/
 
   ~st[Summary]
 
@@ -16667,6 +16758,12 @@
   ~c[bk.pcert1] to ~c[bk.cert].  Note that all arguments of ~c[certify-book]
   other than the ~c[:pcert] argument are ignored for this procedure, other than
   for some trivial argument checking.~eq[]
+
+  You can combine the Pcertify and Convert procedures into a single procedure,
+  Pcertify+, which may be useful for books that contain expensive
+  ~ilc[include-book] ~il[events] but do few proofs.  We defer discussion of
+  that feature to the section below, ``Combining Pcertify and Convert into
+  Pcertify+''.
 
   The main idea of provisional certification is to break sequential
   dependencies caused by ~ilc[include-book], that is, so that a book's proofs
@@ -16754,6 +16851,39 @@
   project to be certified from scratch without the provisional certification
   process.
 
+  ~st[Combining Pcertify and Convert into Pcertify+]
+
+  You can combine the Pcertify and Convert procedure into a single procedure,
+  Pcertify+, which may be useful for books that contain expensive
+  ~ilc[include-book] ~il[events] but do few proofs.  If you are using the ACL2
+  `make' approach to do provisional certification, just set `make' variable
+  ~c[ACL2_BOOKS_PCERT_ARG_T] to the list of books for which you want the
+  Pcertify+ procedure performed instead of separate Pcertify and Convert
+  procedures.  Either of two common methods may be used to set this variable,
+  as illustrated below for the case that books ~c[sub.lisp] and ~c[mid.lisp]
+  are the ones on which you want Pcertify+ performed.  One method is to add the
+  following to your directory's Makefile, above the ~c[include] of
+  ~c[Makefile-generic].
+  ~bv[]
+  ACL2_BOOKS_PCERT_ARG_T = sub mid
+  ~ev[]
+  Alternatively, you can specify the desired books on the command line, for
+  example as follows.
+  ~bv[]
+  make -j 4 ACL2_BOOKS_PCERT_ARG_T='sub mid'
+  ~ev[]
+  Note that the books are given without their ~c[.lisp] extensions.
+
+  At the ACL2 level, the Pcertify+ procedure is performed when the value ~c[t]
+  is supplied to the ~c[:pcert] keyword argument of ~ilc[certify-book].  Thus,
+  ~c[:pcert t] can be thought of as a combination of ~c[:pcert :create] and
+  ~c[:pcert :convert].  However, what ACL2 actually does is to perform the
+  Pcertify step without skipping proofs, and at the end of the ~c[certify-book]
+  run, it writes out both the ~c[.pcert0] and ~c[.pcert1] file, with
+  essentially the same contents.  (We say ``essentially'' because the
+  implementation writes ~c[:PCERT-INFO :PROVED] to the end of the ~c[.pcert0]
+  file, but not to the ~c[.pcert1] file.)
+
   ~st[Further Information]
 
   Some errors during provisional certification cannot be readily solved.  For
@@ -16778,19 +16908,20 @@
   Normally, the global value of ~ilc[ld-skip-proofsp] is unchanged during
   ~c[make-event] expansion, except that it is bound to ~c[nil] when the
   ~c[make-event] form has a non-~c[nil] ~c[:check-expansion] argument.  But
-  during the Pcertify procedure, ~ilc[ld-skip-proofsp] is always bound to
-  ~c[nil] at the start of ~c[make-event] expansion.  To see why, consider for
-  example the distributed book ~c[books/make-event/proof-by-arith.lisp].  This
-  book introduces a macro, ~c[proof-by-arith], that expands to a call of
-  ~ilc[make-event].  This ~c[make-event] form expands by trying to prove a
-  given theorem using a succession of included arithmetic books, until the
-  proof succeeds.  Now proofs are skipped during the Pcertify procedure, and if
-  proofs were also skipped during ~c[make-event] expansion within that
-  procedure, the first arithmetic book's ~ilc[include-book] form would always
-  be saved because the theorem's proof ``succeeded'' (as it was skipped!).  Of
-  course, the theorem's proof could then easily fail during the Convert step.
-  If you really want to inhibit proofs during ~c[make-event] expansion in the
-  Pcertify step, consider using a form such as the following:
+  during the Pcertify procedure (not the Pcertify+ procedure),
+  ~ilc[ld-skip-proofsp] is always bound to ~c[nil] at the start of
+  ~c[make-event] expansion.  To see why, consider for example the distributed
+  book ~c[books/make-event/proof-by-arith.lisp].  This book introduces a macro,
+  ~c[proof-by-arith], that expands to a call of ~ilc[make-event].  This
+  ~c[make-event] form expands by trying to prove a given theorem using a
+  succession of included arithmetic books, until the proof succeeds.  Now
+  proofs are skipped during the Pcertify procedure, and if proofs were also
+  skipped during ~c[make-event] expansion within that procedure, the first
+  arithmetic book's ~ilc[include-book] form would always be saved because the
+  theorem's proof ``succeeded'' (as it was skipped!).  Of course, the theorem's
+  proof could then easily fail during the Convert step.  If you really want to
+  inhibit proofs during ~c[make-event] expansion in the Pcertify step, consider
+  using a form such as the following:
   ~c[(state-global-let* ((ld-skip-proofsp nil)) ...)].
 
   Finally, we describe what it means for there to be a valid ~il[certificate]
