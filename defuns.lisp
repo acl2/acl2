@@ -8323,6 +8323,13 @@
 
 (link-doc-to set-serialize-character serialize with-serialize-character)
 
+(link-doc-to &allow-other-keys miscellaneous macro-args)
+(link-doc-to &body miscellaneous macro-args)
+(link-doc-to &key miscellaneous macro-args)
+(link-doc-to &optional miscellaneous macro-args)
+(link-doc-to &rest miscellaneous macro-args)
+(link-doc-to &whole miscellaneous macro-args)
+
 #+:non-standard-analysis
 (defun build-valid-std-usage-clause (arglist body)
   (cond ((null arglist)

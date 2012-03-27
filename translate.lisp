@@ -353,6 +353,30 @@
   ((:K1 3 :K2 4 :K3 5) 3 4 5)
   ACL2 !>(foo :k1 3 :k2 4)
   ((:K1 3 :K2 4) 3 4 NIL)
+  ACL2 !>(foo :k1 3 :bad-key 7)
+
+
+  ACL2 Error in macro expansion:  Illegal key/value args (:BAD-KEY 7)
+  in macro expansion of (FOO :K1 3 :BAD-KEY 7).  The argument list for
+  FOO is 
+  (&REST ARGS &KEY K1 K2 K3).
+
+  ACL2 !>
+  ~ev[]
+  If we don't want to get the error above, we can use
+  ~c[&allow-other-keys], as follows.
+  ~bv[]
+  ACL2 !>(defmacro bar (&rest args &key k1 k2 k3
+                              &allow-other-keys)
+           (list 'quote (list args k1 k2 k3)))
+
+  Summary
+  Form:  ( DEFMACRO BAR ...)
+  Rules: NIL
+  Time:  0.00 seconds (prove: 0.00, print: 0.00, other: 0.00)
+   BAR
+  ACL2 !>(bar :k1 3 :bad-key 7)
+  ((:K1 3 :BAD-KEY 7) 3 NIL NIL)
   ACL2 !>
   ~ev[]
 

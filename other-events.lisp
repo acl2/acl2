@@ -15443,6 +15443,19 @@
             (delete-file cert-file)))))
 
 (defun include-book-alist-uncertified-books (alist acc state)
+
+; Alist is a post-alist from a certificate file, which was constructed from the
+; "proof" pass of certify-book, even if proofs were actually skipped in the
+; Pcertify step of provisional certification.  We use that alist to do a
+; lightweight check for uncertified books, collecting all that we find.  That
+; check is simply that for each entry in the alist, the included sub-book from
+; that entry (even if locally included) has a .cert file with a write date at
+; least as recent as that sub-book.
+
+; It is clear by induction on the tree of books that if no uncertified book is
+; found this way, then assuming that all .cert files were created by ACL2 in
+; the proper way, all books in the alist are indeed certified.
+
   (cond ((endp alist) (value acc))
         (t (let* ((entry0 (car alist))
                   (entry (if (eq (car entry0) 'local)
