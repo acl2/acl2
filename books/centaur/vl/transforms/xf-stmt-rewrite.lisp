@@ -77,14 +77,30 @@ constants, e.g., in forever-loop conversion.</p>")
 
 
 (defsection vl-waitstmt-rewrite
+  :parents (stmtrewrite)
+  :short "Convert wait statements into empty while loops."
 
-; wait (condition) body
-;   -->
-; begin
-;   while(condition)
-;     ; // <-- null statement
-;   body
-; end
+  :long "<p>@(call vl-waitstmt-rewrite) returns a new @(see vl-stmt-p).</p>
+
+<p>The basic rewrite this performs is:</p>
+
+<code>
+ wait (condition) body
+   --&gt;
+ begin
+   while(condition)
+     ; // this is just a null statement
+   body
+ end
+</code>
+
+<p>This might not be a very useful thing to do.  It seems hard to synthesize
+arbitrary while loops.  On the other hand, it does eliminate any <tt>wait</tt>
+statement, perhaps simplifying the target language for a back-end to
+implement.</p>
+
+<p>BOZO is this sound?  Can we come up with some tests that establish it is
+valid?  What if the condition is X/Z?</p>"
 
   (defund vl-waitstmt-rewrite (condition body atts)
     (declare (xargs :guard (and (vl-expr-p condition)
@@ -110,11 +126,21 @@ constants, e.g., in forever-loop conversion.</p>")
 
 
 (defsection vl-foreverstmt-rewrite
+  :parents (stmtrewrite)
+  :short "Convert forever statements into while loops."
+  :long "<p>The basic rewrite this performs is:</p>
 
-; forever body
-;   -->
-; while(1)
-;   body
+<code>
+ forever body
+   --&gt;
+ while(1)
+   body
+</code>
+
+<p>This might not be a very useful thing to do.  It seems hard to synthesize
+arbitrary while loops.  On the other hand, it does eliminate any
+<tt>forever</tt> statement, simplifying the target language for a back-end to
+implement.</p>"
 
   (defund vl-foreverstmt-rewrite (body atts)
     (declare (xargs :guard (and (vl-stmt-p body)
@@ -137,17 +163,34 @@ constants, e.g., in forever-loop conversion.</p>")
 
 
 
-
 (defsection vl-repeatstmt-rewrite
+  :parents (stmtrewrite)
+  :short "Unroll deterministic repeat statements."
+  :long "<p>The basic rewrite this performs is:</p>
 
-; repeat(n) body;   // with 0 <= n <= unroll-limit
-;   -->
-; begin
-;   body   }
-;   body   }  n times
-;   ...    }
-;   body   }
-; end
+<code>
+ repeat(n) body;   // with 0 &lt;= n &lt;= unroll-limit
+   --&gt;
+ begin
+   body   }
+   body   }  n times
+   ...    }
+   body   }
+ end
+</code>
+
+<p>We actually use @(see vl-rangeexpr-reduce) to try to evaluate condition,
+which allows us to unroll things like <tt>width - 1</tt> after @(see
+unparameterization) has occurred.</p>
+
+<p>The <tt>unroll-limit</tt> is just meant to avoid the possibility of dying
+spectacularly when we run into a <tt>repeat</tt> statement with a giant
+<tt>n</tt>.  If the actual <tt>n</tt> we encounter is too large, or if it isn't
+something we can statically resolve with the very simple expression evaluation
+capabilities of <tt>vl-rangeexpr-reduce</tt>, then we do not perform the
+rewrite and just preserve the <tt>repeat</tt> statement.  This might leave us
+with a statement that is too complicated for a backend to process.  We issue a
+non-fatal warning in either of these cases.</p>"
 
   (defund vl-repeatstmt-rewrite (condition body atts warnings unroll-limit)
     "Returns (MV WARNINGS STMT-PRIME)"
@@ -156,11 +199,6 @@ constants, e.g., in forever-loop conversion.</p>")
                                 (vl-atts-p atts)
                                 (vl-warninglist-p warnings)
                                 (natp unroll-limit))))
-
-; We actually use vl-rangeexpr-reduce to try to evaluate condition.  This will
-; allow us to unroll things like "width - 1" after the unparameterization has
-; occurred, in addition to ordinary constants.
-
     (let ((count (vl-rangeexpr-reduce condition)))
 
       (if (or (not count)
@@ -214,6 +252,7 @@ constants, e.g., in forever-loop conversion.</p>")
 
 
 (defsection vl-ifstmt-combine-rewrite
+  :parents (stmtrewrite)
 
 ; Rewrite #1.
 ;
@@ -369,28 +408,55 @@ constants, e.g., in forever-loop conversion.</p>")
 
 
 (defsection vl-flatten-blocks
+  :parents (vl-blockstmt-rewrite)
+  :short "Collapse nested <tt>begin/end</tt> and <tt>fork/join</tt> blocks."
+  :long "<p>This function carries out rewrites such as:</p>
 
-; This function is used to collapse nested blocks like
-;
-;   begin
-;     foo = a;
-;     begin
-;       bar = b;
-;       baz = c;
-;     end
-;     goo = d;
-;   end
-;
-; Into
-;
-;   begin
-;     foo = a
-;     bar = b;
-;     baz = c;
-;     goo = d;
-;   end
-;
-; We can also collapse fork/join blocks with inner fork/join blocks.
+<code>
+   begin
+     foo = a;
+     begin
+       bar = b;
+       baz = c;
+     end
+     goo = d;
+   end
+
+ --&gt;
+
+   begin
+     foo = a
+     bar = b;
+     baz = c;
+     goo = d;
+   end
+</code>
+
+<p>It can also collapse fork/join blocks with inner fork/join blocks.</p>
+
+<p><b>Signature</b>: @(call vl-flatten-blocks) returns a @(see
+vl-stmtlist-p).</p>
+
+<ul>
+
+<li><tt>sequentialp</tt> says whether the top-level block we're working in is
+sequential (begin/end) or not (fork/join).  It's only sound to merge subblocks
+of the same type.</li>
+
+<li><tt>stmts</tt> are initially the statements from the top-level block.</li>
+
+</ul>
+
+<p>We just produce a new list of statements by replacing any compatible
+sub-blocks with their list of statements.</p>
+
+<p>We don't try to merge blocks that have their own scopes (i.e., names/decls).
+Handling them correctly seems very tricky because of hierarchical identifiers,
+etc.</p>
+
+<p>We recursively flatten sub-statements.  BOZO.  I am not sure if we need to
+do this, given the way that @(see vl-stmt-rewrite) works.  Well, it's probably
+just some useless computation if it's not necessary.</p>"
 
   (defthm acl2-count-of-list-fix
     (<= (acl2-count (list-fix x))
@@ -409,17 +475,6 @@ constants, e.g., in forever-loop conversion.</p>")
     (declare (xargs :guard (and (booleanp sequentialp)
                                 (vl-stmtlist-p stmts))
                     :measure (acl2-count stmts)))
-
-; Inputs:
-;
-;   - Sequentialp says whether the block we're working in is sequential (begin/end)
-;     or not (fork/join).  It's only sound to merge subblocks of the same type.
-;
-;   - Stmts are the statements from a block.
-;
-; We produce a new list of statements by replacing any compatible sub-blocks with
-; their list of statements.
-
     (cond ((atom stmts)
            nil)
 
@@ -430,11 +485,6 @@ constants, e.g., in forever-loop conversion.</p>")
                 ;; name or decls.
                 (not (vl-blockstmt->name (car stmts)))
                 (atom (vl-blockstmt->decls (car stmts))))
-
-; I am not sure if we need to recursively flatten the sub-statements.  It might
-; be expensive to do so given that our rewriter is going to walk over the term.
-; But it might also be necessary to flatten all blocks.
-
            ;; Merge the sub-block's statements into the list of statements
            ;; we are returning
            (vl-flatten-blocks sequentialp
@@ -456,19 +506,27 @@ constants, e.g., in forever-loop conversion.</p>")
 
 
 (defsection vl-blockstmt-rewrite
+  :parents (stmtrewrite)
+  :short "Flatten sub-blocks and remove any null statements from a block."
 
-; We flatten sub-blocks and remove any null statements from the block.
-;
-; We collapse empty blocks (i.e., literally "begin end") into null statements,
-; unless they have a name or decls.
-;
-; We rewrite "begin stmt end" to just "stmt", unless it has a name or decls.
-;
-; The name/decl restrictions are important, because if the block name is used
-; somewhere in a hierarchical identifier, and we throw the block away, we're
-; hosed.  Also, the decls need to be preserved.  I think we will need to handle
-; decls ahead of time, in another, separate transform.  But by refusing to do
-; the rewrite in this case, we ensure that this rewrite is at least sound.
+  :parents "<p>In this rewrite:</p>
+<ul>
+
+<li>We collapse simple (name/decl-free), empty blocks (i.e., literally
+\"<tt>begin end</tt>\") into null statements</li>
+
+<li>We rewrite simple (name/decl-free) single-statment blocks (i.e., \"<tt>begin stmt end</tt>\")
+to just <tt>stmt</tt>.</li>
+
+</ul>
+
+<p>The name/decl restrictions are important; it seems generally difficult to
+support named blocks and handle nested declarations correctly.  If the block
+name is used somewhere in a hierarchical identifier, and we throw the block
+away, we're hosed.  Also, the decls need to be preserved.  I think we will need
+to handle decls ahead of time, in another, separate transform.  So we just
+refuse to do any rewriting in this case under the theory that always sound to
+do nothing, but we at least issue a warning.</p>"
 
   (defund vl-blockstmt-rewrite (sequentialp name decls stmts atts warnings)
     "Returns (MV WARNINGS STMT-PRIME)"

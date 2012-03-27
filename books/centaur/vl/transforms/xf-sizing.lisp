@@ -4593,7 +4593,7 @@ a @(see " type-s ")"))
   (defun vl-maybe-warn-about-implicit-truncation (lvalue expr x warnings)
     (declare (xargs :guard (and (vl-expr-p lvalue)
                                 (vl-expr-p expr)
-                                (vl-assign-p x)
+                                (vl-modelement-p x)
                                 (vl-warninglist-p warnings))))
     (b* ((lw (vl-expr->finalwidth lvalue))
          (ew (vl-expr->finalwidth expr))
@@ -4948,6 +4948,17 @@ sensible way used to size the expression.</p>"
 
              ((mv rhs-successp warnings rhs-prime)
               (vl-expr-size lhs-size x.expr mod ialist elem warnings))
+
+             (warnings
+              ;; By vl-expr->finalwidth-of-vl-expr-size-when-lhs-size, we know
+              ;; that rhs-prime is at least as wide as lhs-size.  But it can be
+              ;; wider, and in such cases we may wish to warn about truncation.
+              (if (and (posp (vl-expr->finalwidth rhs-prime))
+                       (< lhs-size (vl-expr->finalwidth rhs-prime)))
+                  (vl-maybe-warn-about-implicit-truncation lhs-prime rhs-prime
+                                                           elem warnings)
+                warnings))
+
              ((mv delay-successp warnings ctrl-prime)
               (vl-maybe-delayoreventcontrol-exprsize x.ctrl mod ialist elem warnings))
              (successp
@@ -4958,6 +4969,7 @@ sensible way used to size the expression.</p>"
                                     :expr rhs-prime
                                     :ctrl ctrl-prime)))
           (mv successp warnings x-prime)))
+
 
 (def-vl-exprsize vl-enablestmt-exprsize
   :takes-elem t

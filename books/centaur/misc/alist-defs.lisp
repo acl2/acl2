@@ -22,9 +22,10 @@
 
 ;; for alist-keys, alist-vals:
 (include-book "misc/hons-help" :dir :system)
+(include-book "hons-extra")
 
 (defund alists-agree (keys al1 al2)
-  (declare (Xargs :guard t))
+  (declare (xargs :guard t))
   (or (atom keys)
       (and (equal (hons-get (car keys) al1)
                   (hons-get (car keys) al2))
@@ -47,22 +48,70 @@
 ;; FAL-EXTRACT: given a list of variables and an alist, produces an alist
 ;; containing bindings for that list of variables.  Any variable not present in
 ;; the alist is skipped.
-(defund fal-extract (keys al)
+(defund fal-extract1 (keys al)
+  "Assumes AL is fast"
   (declare (xargs :guard t))
-  (if (atom keys)
-      nil
-    (let ((look (hons-get (car keys) al)))
-      (if look
-          (cons look (fal-extract (cdr keys) al))
-        (fal-extract (cdr keys) al)))))
+  (b* (((when (atom keys))
+        nil)
+       (look (hons-get (car keys) al))
+       ((when look)
+        (cons look (fal-extract1 (cdr keys) al))))
+    (fal-extract1 (cdr keys) al)))
+
+(defund fal-extract (keys al)
+  "Makes AL fast if necessary"
+  (declare (xargs :guard t :verify-guards nil))
+  (mbe :logic
+       (b* (((when (atom keys))
+             nil)
+            (look (hons-get (car keys) al))
+            ((when look)
+             (cons look (fal-extract (cdr keys) al))))
+         (fal-extract (cdr keys) al))
+       :exec
+       (with-fast-alist al
+         (fal-extract1 keys al))))
+
+(defthm fal-extract1-removal
+  (equal (fal-extract1 keys al)
+         (fal-extract keys al))
+  :hints(("Goal" :in-theory (enable fal-extract1
+                                    fal-extract))))
+
+(verify-guards fal-extract
+  :hints(("Goal" :in-theory (enable fal-extract))))
 
 (defthm alistp-fal-extract
   (equal (alistp (fal-extract keys al)) t)
   :hints(("Goal" :in-theory (enable fal-extract))))
 
-(defun fal-extract-vals (keys al)
+
+
+(defund fal-extract-vals1 (keys al)
+  "Assumes AL is fast"
   (declare (xargs :guard t))
   (if (atom keys)
       nil
     (cons (cdr (hons-get (car keys) al))
-          (fal-extract-vals (cdr keys) al))))
+          (fal-extract-vals1 (cdr keys) al))))
+
+(defund fal-extract-vals (keys al)
+  "Makes AL fast if necessary"
+  (declare (xargs :guard t :verify-guards nil))
+  (mbe :logic
+       (if (atom keys)
+           nil
+         (cons (cdr (hons-get (car keys) al))
+               (fal-extract-vals (cdr keys) al)))
+       :exec
+       (with-fast-alist al
+         (fal-extract-vals1 keys al))))
+
+(defthm fal-extract-vals1-removal
+  (equal (fal-extract-vals1 keys al)
+         (fal-extract-vals keys al))
+  :hints(("Goal" :in-theory (enable fal-extract-vals1
+                                    fal-extract-vals))))
+
+(verify-guards fal-extract-vals
+  :hints(("Goal" :in-theory (enable fal-extract-vals))))

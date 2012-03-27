@@ -19,6 +19,9 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "ACL2")
+(include-book "finite-set-theory/osets/sets" :dir :system)
+(include-book "coi/util/in-conclusion" :dir :system)
+(include-book "witness-cp")
 
 (local (defthm equal-of-booleans-to-iff
          (implies (and (booleanp a) (booleanp b))
@@ -44,6 +47,13 @@
        (and (member-equal x a)
             (member-equal x b))))
 
+
+(defthm subsetp-equal-of-singleton
+  (equal (subsetp-equal (list a) x)
+         (if (member-equal a x)
+             t
+           nil))
+  :hints(("Goal" :expand (subsetp-equal (list a) x))))
 
 (defthmd subsetp-equal-member
   (implies (and (subsetp-equal x y)
@@ -89,7 +99,7 @@
          (implies (member-equal a x)
                   (member-equal a y)))))
 
-(include-book "coi/util/in-conclusion" :dir :system)
+
 
 
 (defthm subsetp-equal-witness-rw
@@ -230,7 +240,7 @@
 
 ;; Set reasoning for WITNESS-CP.
 
-(include-book "witness-cp")
+
 
 (defwitness subsetp-equal-witnessing
   :predicate (not (subsetp-equal x y))
@@ -471,12 +481,12 @@
 (in-theory (disable set-reasoning-witnesses))
 
 
-(include-book "finite-set-theory/osets/sets" :dir :system)
+
 
 
 ;; BOZO talk to sol about whether these should become defwitness nonsense
 
-(local (defthm l0
+(local (defthm promote-member-equal-to-in
          (implies (sets::setp x)
                   (iff (member-equal a x)
                        (sets::in a x)))
@@ -531,3 +541,53 @@
 (defthm set-equivp-append-nil
   (set-equivp (append x nil) x)
   :hints ((set-reasoning)))
+
+
+; Some additional rules that are useful for canoncializing APPEND nests under SET-EQUIV
+
+(defthm commutativity-of-append-under-set-equivp
+  (set-equivp (append x y)
+              (append y x))
+  :hints((set-reasoning)))
+
+(defthm commutativity-2-of-append-under-set-equivp
+  (set-equivp (append x (append y z))
+              (append y (append x z)))
+  :hints((set-reasoning)))
+
+(defthm cancel-append-self-under-set-equivp
+  (set-equivp (append x x)
+              x)
+  :hints((set-reasoning)))
+
+(defthm cancel-append-self-2-under-set-equivp
+  (set-equivp (append x x y)
+              (append x y))
+  :hints((set-reasoning)))
+
+(encapsulate
+  ()
+  (local (defthm l0
+           (implies (set-equivp x (append x y))
+                    (subsetp-equal y x))))
+
+  (local (defthm l1
+           (implies (subsetp-equal y x)
+                    (set-equivp (append x y) x))
+           :hints((set-reasoning))))
+
+  (defthm set-equivp-with-append-other-right
+    (equal (set-equivp x (append x y))
+           (subsetp-equal y x))
+    :hints(("Goal"
+            :use ((:instance l0)
+                  (:instance l1)))))
+
+  (defthm set-equivp-with-append-other-left
+    (equal (set-equivp x (append y x))
+           (subsetp-equal y x))))
+
+(defthm append-singleton-under-set-equivp
+  (set-equivp (append x (list a))
+              (cons a x))
+  :hints((set-reasoning)))

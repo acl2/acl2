@@ -8,23 +8,22 @@
 ; Jared added the definitions of fast-lexorder and fast-<< in order to speed up
 ; ordered sets stuff.
 
-(defsection fast-lexorder
-  :parents (lexorder)
-  :short "Probably faster alternative to @(see lexorder)."
+(defsection fast-alphorder
+  :parents (alphorder)
+  :short "Probably faster alternative to @(see alphorder)."
 
-  :long "<p>@(call fast-lexorder) is logically the same as ACL2's built-in
-@(call lexorder), but is probably usually faster on real set elements.</p>
+  :long "<p>@(call fast-alphorder) is logically the same as ACL2's built-in
+@(see alphorder), but it is probably usually faster on real set elements.</p>
 
 <p>Conjecture: most \"real\" ACL2 objects are mainly built up from integers,
 symbols, and strings.  That is, non-integer numbers and characters are probably
 somewhat rare.</p>
 
-<p>ACL2's built-in <tt>lexorder</tt> uses @(see alphorder) to compare atoms.
-But <tt>alphorder</tt> first checks whether the elements are real or complex
-numbers, then characters, then finally strings or symbols.  This order isn't
-great if the conjecture above is true.  It seems especially unfortunate since
-<tt>real/rationalp</tt> and <tt>complex/complex-rationalp</tt> checks seem to
-be relatively expensive.  For instance, in CCL the following loop:</p>
+<p>ACL2's built-in @(see alphorder) to first checks checks whether the elements
+are real or complex numbers, then characters, then finally strings or symbols.
+This order isn't great if the conjecture above is true.  It seems especially
+unfortunate as <tt>real/rationalp</tt> and <tt>complex/complex-rationalp</tt>
+seem to be relatively expensive.  For instance, in CCL the following loop:</p>
 
 <code>
  (loop for a in
@@ -54,11 +53,120 @@ be relatively expensive.  For instance, in CCL the following loop:</p>
  <li><tt>real/rationalp</tt> is much slower (4-6 seconds seconds)</li>
 </ul>
 
-<p>The <tt>fast-lexorder</tt> function just rearranges things so that we first
+<p>The <tt>fast-alphorder</tt> function just rearranges things so that we first
 check for integers, strings, and symbols, which optimizes for our expected data
-distribution and avoids these expensive checks.  It also inlines this
-rearranged <tt>alphorder</tt> check into the top-level function to avoid the
-overhead of calling another function for each atom comparison.</p>
+distribution and avoids these expensive checks.  This seems to give us a nice
+speedup for our expected kinds of data:</p>
+
+<code>
+ (loop for elem in
+   '( (1 . 2)                 ; 1.004 sec vs .769 sec
+      (\"foo\" . \"bar\")         ; 6.03 sec vs. 4.72 sec
+      (foo . bar)             ; 7.55 sec vs. 5.705 sec
+      (foo . foo)             ; 19.65 sec vs. .87 sec
+      (#\\a . #\\b) )           ; 2.276 sec vs 1.03 sec
+   do
+   (let ((a (car elem))
+         (b (cdr elem)))
+     (format t \"---- ~a vs. ~a ------~%\" a b)
+     (time (loop for i fixnum from 1 to 100000000
+              do (alphorder a b)))
+     (time (loop for i fixnum from 1 to 100000000
+              do (fast-alphorder a b)))))
+</code>"
+
+  (local (in-theory (enable alphorder)))
+
+  (defun fast-alphorder (x y)
+    (declare (xargs :guard (and (atom x) (atom y))))
+    (mbe :logic (alphorder x y)
+         :exec
+         (cond ((integerp x)
+                (cond ((integerp y)
+                       (<= x y))
+                      ((real/rationalp y)
+                       (<= x y))
+                      (t
+                       t)))
+
+               ((symbolp x)
+                (if (symbolp y)
+                    ;; Doing an EQ check here costs relatively very
+                    ;; little.  After all, we're about to do a function
+                    ;; call and two string compares.  And if it hits,
+                    ;; it's a big win.
+                    (or (eq x y)
+                        (not (symbol-< y x)))
+                  ;; Ugh.  We should just know this is true, but we have
+                  ;; to consider these cases because of bad atoms:
+                  (not (or (integerp y)
+                           (stringp y)
+                           (characterp y)
+                           (real/rationalp y)
+                           (complex/complex-rationalp y)))))
+
+               ((stringp x)
+                (cond ((stringp y)
+                       (and (string<= x y) t))
+                      ((integerp y)
+                       nil)
+                      ((symbolp y)
+                       t)
+                      (t
+                       (not (or (characterp y)
+                                (real/rationalp y)
+                                (complex/complex-rationalp y))))))
+
+               ((characterp x)
+                (cond ((characterp y)
+                       (<= (char-code x) (char-code y)))
+                      (t
+                       (not (or (integerp y)
+                                (real/rationalp y)
+                                (complex/complex-rationalp y))))))
+
+               ((real/rationalp x)
+                (cond ((integerp y)
+                       (<= x y))
+                      ((real/rationalp y)
+                       (<= x y))
+                      (t t)))
+
+               ((real/rationalp y)
+                nil)
+
+               ((complex/complex-rationalp x)
+                (cond ((complex/complex-rationalp y)
+                       (or (< (realpart x)
+                              (realpart y))
+                           (and (= (realpart x)
+                                   (realpart y))
+                                (<= (imagpart x)
+                                    (imagpart y)))))
+                      (t t)))
+
+               ;; Ugly, just need this in case of bad-atoms.
+               ((or (symbolp y)
+                    (stringp y)
+                    (characterp y)
+                    (complex/complex-rationalp y))
+                nil)
+
+               (t
+                (acl2::bad-atom<= x y))))))
+
+
+(defsection fast-lexorder
+  :parents (lexorder)
+  :short "Probably faster alternative to @(see lexorder)."
+
+  :long "<p>@(call fast-lexorder) is logically the same as ACL2's built-in
+@(call lexorder), but is probably usually faster because:</p>
+
+<ol>
+ <li>it rearranges the check as in @(see fast-alphorder), and</li>
+ <li>it inlines the alphorder comparisons</li>
+</ol>
 
 <p>This seems to give us a nice speedup:</p>
 
@@ -102,7 +210,7 @@ overhead of calling another function for each atom comparison.</p>
                           ;; call and two string compares.  And if it hits,
                           ;; it's a big win.
                           (or (eq x y)
-                              (and (symbol-< x y) t))
+                              (not (symbol-< y x)))
                         ;; Ugh.  We should just know this is true, but we have
                         ;; to consider these cases because of bad atoms:
                         (not (or (integerp y)

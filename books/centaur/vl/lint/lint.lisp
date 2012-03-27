@@ -34,6 +34,7 @@
 
 (include-book "../checkers/condcheck")
 (include-book "../checkers/duplicate-detect")
+(include-book "../checkers/duperhs")
 (include-book "../checkers/leftright")
 (include-book "../checkers/multidrive-detect")
 (include-book "../checkers/oddexpr")
@@ -163,6 +164,7 @@
        (- (cw "~%vl-lint: initial processing...~%"))
        (mods (cwtime (vl-modulelist-portcheck mods)))
        (mods (cwtime (vl-modulelist-check-case mods)))
+       (mods (cwtime (vl-modulelist-duperhs-check mods)))
        (mods (cwtime (vl-modulelist-duplicate-detect mods)))
        (mods (cwtime (vl-modulelist-condcheck mods)))
        (mods (cwtime (vl-modulelist-leftright-check mods)))
@@ -410,7 +412,8 @@
         :vl-warn-leftright
         :vl-warn-selfassign
         :vl-warn-instances-same
-        :vl-warn-case-sensitive-names))
+        :vl-warn-case-sensitive-names
+        :vl-warn-same-rhs))
 
 (defconst *smell-minor-warnings*
   (list :vl-warn-partselect-same

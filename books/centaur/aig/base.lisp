@@ -22,6 +22,7 @@
 
 (in-package "ACL2")
 (include-book "cutil/defsection" :dir :system)
+(include-book "../misc/hons-alphorder-merge")
 
 ; aig/base.lisp
 ;   - Semantics of AIGs (aig-eval) and FAIGs (faig-eval)
@@ -358,57 +359,6 @@ ordinary (slow) alist as a result.</p>"
 ;
 ; -----------------------------------------------------------------------------
 
-(defsection hons-alphorder-merge
-  :parents (aig-vars)
-  :short "Merge two already-@(see alphorder)ed lists of atoms."
-
-  :long "<p>This is a completely standard ordered-union operation.  Since we
-often use symbols as variables, and since alphorder puts the symbolp case far
-down after many other type checks, we use our own <tt>fast-alphorder</tt> that
-optimizes for symbols.</p>"
-
-;; BOZO maybe release the proof from nat-var-sexprs.lisp that this is just
-;; sets::union for sets of atoms.
-
-  (defabbrev fast-alphorder (x y)
-    (mbe :logic (alphorder x y)
-         :exec
-         (if (and (symbolp x)
-                  (symbolp y))
-             (or (eq x y)
-                 (not (symbol-< y x)))
-           (alphorder x y))))
-
-  (defun hons-alphorder-merge (a b)
-    (declare (xargs :guard (and (atom-listp a)
-                                (atom-listp b))
-                    :guard-hints(("Goal" :in-theory (enable alphorder symbol-<)))
-                    :measure (+ (len a) (len b))))
-    (cond ((atom a) b)
-          ((atom b) a)
-          ((equal (car a) (car b))
-           (hons-alphorder-merge (cdr a) b))
-          ((fast-alphorder (car b) (car a))
-           (hons (car b) (hons-alphorder-merge a (cdr b))))
-          (t (hons (car a) (hons-alphorder-merge (cdr a) b)))))
-
-  (memoize 'hons-alphorder-merge
-           :condition '(or (consp a) (consp b))
-           :inline nil)
-
-  (defthm atom-listp-hons-alphorder-merge
-    (implies (and (atom-listp a)
-                  (atom-listp b))
-             (atom-listp (hons-alphorder-merge a b)))
-    :hints(("Goal" :in-theory (enable hons-alphorder-merge
-                                      atom-listp))))
-
-  (defthm member-equal-hons-alphorder-merge
-    (iff (member-equal k (hons-alphorder-merge a b))
-         (or (member-equal k a)
-             (member-equal k b)))))
-
-
 (defsection aig-vars
   :parents (aig)
   :short "@(call aig-vars) returns the list of variables used in the AIG
@@ -419,7 +369,7 @@ optimizes for symbols.</p>"
 
   :long "<p>This is one scheme for collecting variables from an AIG.  We
 memoize the whole computation and return ordered lists so that merging is
-linear.  This can be very expensive.  See @(see sexpr-vars) for an analagous
+linear.  This can be very expensive.  See @(see 4v-sexpr-vars) for an analagous
 discussion.</p>"
 
   (defun aig-vars (x)
@@ -428,10 +378,13 @@ discussion.</p>"
     (aig-cases x
                :true  nil
                :false nil
-               :var   (hons x nil)
+               :var   (mbe :logic (sets::insert x nil)
+                           :exec (hons x nil))
                :inv   (aig-vars (car x))
-               :and   (hons-alphorder-merge (aig-vars (car x))
-                                            (aig-vars (cdr x)))))
+               :and   (mbe :logic (sets::union (aig-vars (car x))
+                                               (aig-vars (cdr x)))
+                           :exec (hons-alphorder-merge (aig-vars (car x))
+                                                       (aig-vars (cdr x))))))
 
   (defthm atom-listp-aig-vars
     (atom-listp (aig-vars x)))
@@ -440,7 +393,12 @@ discussion.</p>"
     (true-listp (aig-vars x))
     :rule-classes :type-prescription)
 
-  (verify-guards aig-vars)
+  (defthm setp-aig-vars
+    (sets::setp (aig-vars x))
+    :hints(("Goal" :in-theory (enable* (:ruleset sets::primitive-rules)))))
+
+  (verify-guards aig-vars
+    :hints(("Goal" :in-theory (enable* (:ruleset sets::primitive-rules)))))
 
   (memoize 'aig-vars :condition '(and (consp x) (cdr x))))
 

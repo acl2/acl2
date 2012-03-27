@@ -577,7 +577,25 @@ endmodule
 
 <p>VL takes this as a primitive.  It is used in @(see vl-mux-occform) as the
 basis for conditional expressions with <tt>Z</tt> branches that are typically
-used to implement muxes.</p>")
+used to implement muxes.</p>
+
+<p>Verilog truth table:</p>
+
+<code>
+  sel    a    |   out         sel    a        out
+ -------------+---------     -------------+-----------
+   0     0    |    z           x     0    |    x
+   0     1    |    z           x     1    |    x
+   0     x    |    z           x     x    |    x
+   0     z    |    z           x     z    |    x
+   1     0    |    0           z     0    |    x
+   1     1    |    1           z     1    |    x
+   1     x    |    x           z     x    |    x
+   1     z    |    z           z     z    |    x
+</code>
+
+<p>The @(see esim) equivalent drives its output with <tt>(tristate sel a)</tt>;
+see @(see 4v-tristate), which matches the Verilog truth table exactly.</p>")
 
 (defconsts *vl-1-bit-zmux*
   ;; BOZO previous comments questioned whether E's *ft-buf* is equivalent to
