@@ -11170,9 +11170,12 @@
                     phrase1)
               state)))
 
-(defun get-cmds-from-portcullis1 (ch state ans)
+(defun get-cmds-from-portcullis1 (eval-hidden-defpkgs ch ctx state ans)
 
-; Keep this in sync with chk-raise-portcullis2.
+; Keep this in sync with equal-modulo-hidden-defpkgs, make-hidden-defpkg, and
+; the #-acl2-loop-only and #+acl2-loop-only definitions of defpkg.
+
+; Also keep this in sync with chk-raise-portcullis2.
 
 ; We read successive forms from ch, stopping when we get to
 ; :END-PORTCULLIS-CMDS and returning the list of forms read, which we
@@ -11186,7 +11189,17 @@
            (eofp (mv t nil state))
            ((eq form :END-PORTCULLIS-CMDS)
             (value (reverse ans)))
-           (t (get-cmds-from-portcullis1 ch state (cons form ans))))))
+           ((and eval-hidden-defpkgs
+                 (case-match form
+                   (('defpkg & & & & 't) t)
+                   (& nil)))
+            (er-progn (trans-eval form ctx state
+; Perhaps aok could be t, but we use nil just to be conservative.
+                                  nil)
+                      (get-cmds-from-portcullis1
+                       eval-hidden-defpkgs ch ctx state (cons form ans))))
+           (t (get-cmds-from-portcullis1
+               eval-hidden-defpkgs ch ctx state (cons form ans))))))
 
 (defun hidden-defpkg-events-simple (kpa acc)
 
@@ -11212,13 +11225,15 @@
                    (kwote imports))))
              acc))))))
 
-(defun get-cmds-from-portcullis (file1 file2 ch ctx state)
+(defun get-cmds-from-portcullis (file1 file2 eval-hidden-defpkgs ch ctx state)
 
 ; In order to read the certificate's portcullis for a book that has been
 ; included only locally in the construction of the current world, we may need
 ; to evaluate the hidden packages (see the Essay on Hidden Packages)
 ; created by that book.  We obtain the necessary defpkg events by calling
 ; hidden-defpkg-events-simple below.
+
+; See the comment about "eval hidden defpkg events" in chk-raise-portcullis.
 
   (revert-world-on-error
    (let* ((wrld (w state))
@@ -11233,7 +11248,7 @@
         (value nil))
       (mv-let
        (erp val state)
-       (get-cmds-from-portcullis1 ch state nil)
+       (get-cmds-from-portcullis1 eval-hidden-defpkgs ch ctx state nil)
        (cond (erp (ill-formed-certificate-er
                    ctx 'get-cmds-from-portcullis
                    file1 file2))
@@ -11654,7 +11669,17 @@
        ((portcullis-cmds
          (if evalp
              (chk-raise-portcullis1 file1 file2 ch nil ctx state)
-           (get-cmds-from-portcullis file1 file2 ch ctx state))))
+           (get-cmds-from-portcullis
+
+; When we are raising the portcullis on behalf of the Convert procedure of
+; provisional certification, we may need to eval hidden defpkg events from the
+; portcullis.  Each such eval is logically a no-op (other than restricting
+; potential logical extensions made later with defpkg), but it permits reading
+; the rest of the certificate file.  See the comment in chk-bad-lisp-object for
+; an example from Sol Swords showing how this can be necessary.
+
+            (eq caller 'convert-pcert)
+            file1 file2 ch ctx state))))
      (state-global-let*
       ((infixp nil))
       (mv-let
@@ -12039,6 +12064,9 @@
 
 (defun equal-modulo-hidden-defpkgs (cmds1 cmds2)
 
+; Keep this in sync with get-cmds-from-portcullis1, make-hidden-defpkg, and the
+; #-acl2-loop-only and #+acl2-loop-only definitions of defpkg.
+
 ; Test equality of cmds1 and cmds2, except that cmds2 may have hidden defpkg
 ; events missing from cmds1.
 
@@ -12048,7 +12076,7 @@
          (equal-modulo-hidden-defpkgs (cdr cmds1) (cdr cmds2)))
         (t (let ((cmd (car cmds2)))
              (case-match cmd
-               (('defpkg & & & & t) ; keep in sync with make-hidden-defpkg
+               (('defpkg & & & & 't) ; keep in sync with make-hidden-defpkg
                 (equal-modulo-hidden-defpkgs cmds1 (cdr cmds2)))
                (& nil))))))
 
@@ -15398,6 +15426,19 @@
             (delete-file cert-file)))))
 
 (defun include-book-alist-uncertified-books (alist acc state)
+
+; Alist is a post-alist from a certificate file, which was constructed from the
+; "proof" pass of certify-book, even if proofs were actually skipped in the
+; Pcertify step of provisional certification.  We use that alist to do a
+; lightweight check for uncertified books, collecting all that we find.  That
+; check is simply that for each entry in the alist, the included sub-book from
+; that entry (even if locally included) has a .cert file with a write date at
+; least as recent as that sub-book.
+
+; It is clear by induction on the tree of books that if no uncertified book is
+; found this way, then assuming that all .cert files were created by ACL2 in
+; the proper way, all books in the alist are indeed certified.
+
   (cond ((endp alist) (value acc))
         (t (let* ((entry0 (car alist))
                   (entry (if (eq (car entry0) 'local)
