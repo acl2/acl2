@@ -1000,6 +1000,43 @@ The second argument to pattern constructor ~x0 must be a symbol, but is ~x1~%~%"
   `(def-b*-binder ,name
      (b*-decomp-fn args forms rest-expr ',name ',component-alist)))
 
+(defun patbind-local-stobjs-helper (stobjs retvals form)
+  (declare (xargs :mode :program))
+  (if (atom stobjs)
+      form
+    (let ((rest-retvals (remove-eq (car stobjs) retvals)))
+      (patbind-local-stobjs-helper
+       (cdr stobjs)
+       rest-retvals
+       `(with-local-stobj
+          ,(car stobjs)
+          (mv-let ,retvals
+            ,form
+            ,(if (consp (cdr rest-retvals))
+                 `(mv . ,rest-retvals)
+               (car rest-retvals))))))))
+          
+(defun patbind-local-stobjs-fn (args forms rest-expr)
+  (declare (xargs :mode :program))
+  (b* (((unless (symbol-listp args))
+        (er hard? 'patbind-local-stobjs-fn
+            "In local-stobjs b* binder, arguments must be symbols"))
+       ((unless (and (= (len forms) 1)
+                     (symbol-listp (car forms))
+                     (eq (caar forms) 'mv)))
+        (er hard? 'patbind-local-stobjs-fn
+            "In local-stobjs b* binder, bound form must be an MV
+              of some symbols, giving the return values"))
+       (retvals (cdar forms)))
+    (patbind-local-stobjs-helper
+     args retvals rest-expr)))
+
+
+(def-b*-binder local-stobjs
+  (patbind-local-stobjs-fn args forms rest-expr))
+
+
+
 
 
 (set-state-ok t)
@@ -1022,6 +1059,10 @@ The second argument to pattern constructor ~x0 must be a symbol, but is ~x1~%~%"
 
     (defmacro transl-equal-tests (&rest tests)
       (transl-equal-tests-fn tests))
+
+
+    (defstobj st1 (arr1 :type (array t (0)) :resizable t))
+    (defstobj st2 (arr2 :type (array t (0)) :resizable t))
 
 
     (defun patbind-tests-fn (tests state)
@@ -1161,4 +1202,33 @@ Testing of the patbind macro failed on expression ~x0~%~%" (car tests))
           (let ((b (car |(CONS B (QUOTE NIL))|)))
             (list a b)))))
 
-     ))))
+     )
+    
+    (defthm len-resize-list
+      (equal (len (resize-list a b c))
+             (nfix b)))
+
+    (defun localstobjtest (a b c)
+      (declare (xargs :guard t))
+      (b* ((d (cons b c))
+           ((local-stobjs st1 st2)
+            (mv g st2 h st1))
+           (a (nfix a))
+           (st1 (resize-arr1 (+ 1 a) st1))
+           (st2 (resize-arr2 (+ 1 (nfix b)) st2))
+           (st1 (update-arr1i a d st1))
+           (st2 (update-arr2i (nfix b) a st2)))
+        (mv (arr2i (nfix b) st2)
+            st2
+            (arr1i a st1)
+            st1)))
+
+    (make-event
+     (mv-let (res1 res2)
+       (localstobjtest nil 10 'c)
+       (if (and (equal res1 0)
+                (equal res2 '(10 . c)))
+           '(value-triple :passed)
+         (er hard 'test-local-stobj
+             "test failed")))))))
+           
