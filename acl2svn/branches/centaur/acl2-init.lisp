@@ -1469,7 +1469,7 @@ implementations.")
 ; which "plays badly with the thread-local hash tables that make up the hons
 ; space".
 
-                      "~s -I ~s -e \"(acl2::acl2-default-restart)\" $*~%"
+                      "~s -I ~s -e \"(acl2::acl2-default-restart)\" -K ISO-8859-1 $*~%"
                       ccl-program
                       core-name))
     (chmod-executable sysout-name)

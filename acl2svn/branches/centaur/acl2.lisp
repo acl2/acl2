@@ -284,6 +284,11 @@
        #+unix :latin1-base
        #-unix :latin1))
 
+;; Jared's fix for CCL character encoding
+#+ccl
+(setf ccl:*default-file-character-encoding* :iso-8859-1)
+
+
 ; Turn off automatic declaration of special variables, in particular since we
 ; do not want state declared special; see the comment above
 ; (eval '(setq state *the-live-state*)) in load-acl2.
