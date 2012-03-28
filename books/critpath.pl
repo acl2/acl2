@@ -103,7 +103,7 @@ my @deps_of = ();
 my $debug = 0;
 
 my $cache_file = 0;
-
+my $params_file = 0;
 my $options_okp = GetOptions('h|html' => \$OPTIONS{'html'},
 			     'help'   => \$OPTIONS{'help'},
 			     'nowarn' => \$OPTIONS{'nowarn'},
@@ -119,7 +119,8 @@ my $options_okp = GetOptions('h|html' => \$OPTIONS{'html'},
 			     "deps-of|p=s"
 			              => \@deps_of,
 			     "cache|h=s"
-			              => \$cache_file
+			              => \$cache_file,
+			     "params=s"             => \$params_file,
 			     );
 
 my $cache = {};
@@ -180,6 +181,23 @@ foreach my $target (@targets) {
     if ($target =~ /\.cert/) {
 	add_deps($target, $cache, \%deps, \%sourcehash, \%tscache, 0);
     }
+}
+
+if ($params_file && open (my $params, "<", $params_file)) {
+    while (my $pline = <$params>) {
+	my @parts = $pline =~ m/([^:]*):(.*)/;
+	if (@parts) {
+	    my ($certname, $paramstr) = @parts;
+	    my $certpars = cert_get_params($certname, \%deps);
+	    if ($certpars) {
+		my $passigns = parse_params($paramstr);
+		foreach my $pair (@$passigns) {
+		    $certpars->{$pair->[0]} = $pair->[1];
+		}
+	    }
+	}
+    }
+    close($params);
 }
 
 store_cache($cache, $cache_file);

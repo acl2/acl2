@@ -851,18 +851,34 @@ sub get_loads {
 
 my $two_pass_warning_printed = 0;
 
+sub parse_params {
+    my $param_str = shift;
+    my @params = split(/,/, $param_str);
+    my @pairs = ();
+    foreach my $param (@params) {
+	my @assign = $param =~ m/[\s]*([^\s=]*)[\s]*=[\s]*([^\s=]*)[\s]*/;
+	if (@assign) {
+	    push(@pairs, [$assign[0], $assign[1]]);
+	} else {
+	    push(@pairs, [$param, 1]);
+	}
+    }
+    return \@pairs;
+}
+
+
+
 sub get_cert_param {
     my ($base,$the_line,$events) = @_;
 
-    my $regexp = ";; cert_param:[\\s]*\\(([^)]*)\\)";
+    my $regexp = "cert_param:[\\s]*\\(?([^)]*)\\)?";
     my @match = $the_line =~ m/$regexp/;
     if (@match) {
 	debug_print_event($base, "cert_param", \@match);
-	my @assign = $match[0] =~ m/(.*)=(.*)/;
-	if (@assign) {
-	    push(@$events, [$cert_param_event, $assign[0], $assign[1]]);
-	} else {
-	    push(@$events, [$cert_param_event, $match[0], 1]);
+	my $pairs = parse_params($match[0]);
+	foreach my $pair (@$pairs) {
+	    (my $param, my $val) = @$pair;
+	    push(@$events, [$cert_param_event, $param, $val]);
 	}
 	return 1;
     }
@@ -958,6 +974,7 @@ sub scan_src {
 	    $done = $done || get_add_dir($fname, $the_line, \@events);
 	    $done = $done || get_cert_param($fname, $the_line, \@events);
 	}
+	close($file);
     }
     my $timestamp = ftimestamp($fname);
 

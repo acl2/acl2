@@ -99,24 +99,24 @@ ifneq ($(ACL2_PCERT),)
 	@echo "Done $*.cert"
 
 %.pcert1 :
-	@$(MAKE_CERT_PL) "$*" $(if $(findstring 1,$(NO_PCERT)),"pcertifyplus","convert") \
-                          $(if $(findstring 1,$(USE_ACL2X)),"yes","no") $^
+	@$(MAKE_CERT_PL) "$*" $(if $(findstring 1,$(no_pcert)),"pcertifyplus","convert") \
+                          $(if $(findstring 1,$(acl2x)),"yes","no") $^
 	@echo "Done $*.pcert1"
 
 %.pcert0 : %.lisp
-	@$(MAKE_CERT_PL) "$*" "pcertify" $(if $(findstring 1,$(USE_ACL2X)),"yes","no") $^
+	@$(MAKE_CERT_PL) "$*" "pcertify" $(if $(findstring 1,$(acl2x)),"yes","no") $^
 	@echo "Done $*.pcert0"
 
 %.acl2x : %.lisp
-	@$(MAKE_CERT_PL) "$*" $(if $(findstring 1,$(ACL2X_SKIP_PROOFS)),"acl2xskip","acl2x") "yes" $^
+	@$(MAKE_CERT_PL) "$*" $(if $(findstring 1,$(acl2xskip)),"acl2xskip","acl2x") "yes" $^
 
 else
 
 %.cert : %.lisp
-	@$(MAKE_CERT_PL) "$*" "certify" $(if $(findstring 1,$(USE_ACL2X)),"yes","no") $^
+	@$(MAKE_CERT_PL) "$*" "certify" $(if $(findstring 1,$(acl2x)),"yes","no") $^
 
 %.acl2x : %.lisp
-	@$(MAKE_CERT_PL) "$*" $(if $(findstring 1,$(ACL2X_SKIP_PROOFS)),"acl2xskip","acl2x") "yes" $^
+	@$(MAKE_CERT_PL) "$*" $(if $(findstring 1,$(acl2xskip)),"acl2xskip","acl2x") "yes" $^
 
 endif
 

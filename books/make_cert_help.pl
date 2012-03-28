@@ -426,7 +426,7 @@ write_whole_file($outfile, $HEADER);
 if ($STEP eq "complete") {
     ## BOZO this is horrible and only works for CCL/linux and probably the file time thing
     ## is also wrong.
-    my $cmd = "(time ((mv $file.pcert1 $file.cert; if [[ $file.lx64fsl -nt $file.pcert0 ]] ; then touch $file.cert; touch $file.lx64fsl; else touch $file.cert; fi) >> $outfile)) 2> $timefile";
+    my $cmd = "(time (ln $file.pcert1 $file.cert >> $outfile)) 2> $timefile";
     if (system($cmd) != 0) {
 	die("Failed to move $file.pcert1 to $file.cert\n");
     }
@@ -455,6 +455,8 @@ if ($STEP eq "complete") {
 # I think this strange :q/lp dance is needed for lispworks or something?
     $instrs .= "(acl2::value :q)\n";
     $instrs .= "(in-package \"ACL2\")\n";
+    $instrs .= "(profile-fn 'prove)\n";
+    $instrs .= "(profile-fn 'certify-book-fn)\n";
     $instrs .= "(acl2::lp)\n\n";
     $instrs .= "(set-debugger-enable :bt)\n";
     $instrs .= "(set-write-acl2x t state)\n" if ($STEP eq "acl2x");
@@ -465,7 +467,7 @@ if ($STEP eq "complete") {
 
 
     my $cert_cmd = "#!ACL2 (er-progn (time\$ (certify-book \"$file\" ? $FLAGS $PCERT $ACL2X))
-                                 (value (exit 43)))";
+                                 (value (prog2\$ (memsum) (exit 43))))";
 
 # Get the certification instructions from foo.acl2 or cert.acl2, if either
 # exists, or make a generic certify-book command.

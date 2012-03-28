@@ -85,6 +85,7 @@ my %certlib_opts = ( "debugging" => 0,
                      "believe_cache" => 0 );
 my $cache_file = 0;
 my $bin_dir = $ENV{'CERT_PL_BIN_DIR'};
+my $params_file = 0;
 # Remove trailing slash from and canonicalize bin_dir
 if ($bin_dir) {
     my $cbin_dir = canonical_path(remove_trailing_slash($bin_dir));
@@ -339,6 +340,15 @@ OPTIONS:
           set, and at certification time we look for the image in the
           user\'s PATH.
 
+   --params <filename>
+          Specifies a file that contains lines like:
+             mybook.cert:  no_pcert = 1, acl2x = 0
+          with the grammar:
+             <bookname>.cert: <param> = <val> [ , <param> = <val> ]*
+          The parameters specified have the same meaning as cert_param
+          directives in the books themselves, and if the same parameter
+          is assigned in the book and in the params file, the params
+          file takes precedence.
 ';
 
 GetOptions ("help|h"               => sub { print $summary_str;
@@ -409,7 +419,8 @@ GetOptions ("help|h"               => sub { print $summary_str;
 	    "cache|h=s"            => \$cache_file,
 	    "accept-cache"         => \$certlib_opts{"believe_cache"},
 	    "deps-of|p=s"          => sub { shift; push(@user_targets, "-p " . shift); },
-	    "<>"                   => sub { push(@user_targets, shift); }
+	    "params=s"             => \$params_file,
+	    "<>"                   => sub { push(@user_targets, shift); },
 	    );
 
 sub remove_trailing_slash {
@@ -485,6 +496,24 @@ my %sourcehash = ( );
 foreach my $target (@targets) {
     add_deps($target, $cache, \%depmap, \%sourcehash, \%tscache, 0);
 }
+
+if ($params_file && open (my $params, "<", $params_file)) {
+    while (my $pline = <$params>) {
+	my @parts = $pline =~ m/([^:]*):(.*)/;
+	if (@parts) {
+	    my ($certname, $paramstr) = @parts;
+	    my $certpars = cert_get_params($certname, \%depmap);
+	    if ($certpars) {
+		my $passigns = parse_params($paramstr);
+		foreach my $pair (@$passigns) {
+		    $certpars->{$pair->[0]} = $pair->[1];
+		}
+	    }
+	}
+    }
+    close($params);
+}
+	
 
 store_cache($cache, $cache_file);
 
@@ -611,6 +640,8 @@ unless ($no_makefile) {
 	print $mf "\n\n";
     }
 
+    my $warned_bindir = 0;
+
     # write out the dependencies
     foreach my $cert (@certs) {
 	my $certdeps = cert_deps($cert, \%depmap);
@@ -620,13 +651,28 @@ unless ($no_makefile) {
 	# BOZO acl2x implies no pcert
 	my $nopcert = $useacl2x || cert_get_param($cert, \%depmap, "no_pcert") || 0;
 	my $acl2xskip = cert_get_param($cert, \%depmap, "acl2xskip") || 0;
-	print $mf "$cert : USE_ACL2X = $useacl2x\n";
-	print $mf "$cert : NO_PCERT = $nopcert\n";
+	print $mf "$cert : acl2x = $useacl2x\n";
+	print $mf "$cert : no_pcert = $nopcert\n";
 	# print $mf "#$cert params: ";
 	# my $params = cert_get_params($cert, \%depmap);
 	# while (my ($key, $val) = each %$params) {
 	#     print $mf "$key = $val ";
 	# }
+	print $mf "\n";
+	print $mf "$cert :";
+	foreach my $dep (@$certdeps, @$srcdeps) {
+	    print $mf " \\\n     $dep";
+	}
+	if ($image && ($image ne "acl2")) {
+	    if ($bin_dir) {
+		$image = rel_path($bin_dir, $image);
+		print $mf " \\\n     $image";
+	    } elsif (! $warned_bindir) {
+		print "Warning: no --bin set, so not adding image dependencies,\n";
+		print " e.g.   $cert : $image\n";
+		$warned_bindir = 1;
+	    }
+	}
 	print $mf "\n";
 	if ($useacl2x) {
 	    my $acl2xfile = cert_to_acl2x($cert);
@@ -636,24 +682,23 @@ unless ($no_makefile) {
 #	    print $mf "$cert : private TWO_PASS := 1\n";
 #     Instead, sadly, we'll individually set the TWO_PASS variable for
 #     each target instead.  (Note the ELSE case below.)
-	    print $mf "$cert :";
+	    print $mf "$cert : |";   # order-only prerequisite
 	    print $mf " \\\n     $acl2xfile";
 	    print $mf "\n\n";
-	    print $mf "$acl2xfile : ACL2X_SKIP_PROOFS = $acl2xskip\n";
+	    print $mf "$acl2xfile : acl2xskip = $acl2xskip\n";
 	    print $mf "$acl2xfile :";
-	} else {
-	    print $mf "$cert :";
-	}
-	foreach my $dep (@$certdeps, @$srcdeps) {
-	    print $mf " \\\n     $dep";
-	}
-	if ($image && ($image ne "acl2")) {
-	    if ($bin_dir) {
-		$image = rel_path($bin_dir, $image);
-		print $mf " \\\n     $image";
-	    } else {
-		print "Warning: no --bin set, so not adding image dependencies,\n";
-		print " e.g.   $cert : $image\n";
+	    foreach my $dep (@$certdeps, @$srcdeps) {
+		print $mf " \\\n     $dep";
+	    }
+	    if ($image && ($image ne "acl2")) {
+		if ($bin_dir) {
+		    $image = rel_path($bin_dir, $image);
+		    print $mf " \\\n     $image";
+		} elsif (! $warned_bindir) {
+		    print "Warning: no --bin set, so not adding image dependencies,\n";
+		    print " e.g.   $cert : $image\n";
+		    $warned_bindir = 1;
+		}
 	    }
 	}
 
@@ -675,8 +720,8 @@ unless ($no_makefile) {
 	(my $base = $cert) =~ s/\.cert$//;
 	# this is either the pcert0 or pcert1 depending on no_pcert
 	my $pcert = cert_sequential_dep($cert, \%depmap);
-	print $mf "$pcert : NO_PCERT = $nopcert\n";
-	print $mf "$pcert : USE_ACL2X = $useacl2x\n";
+	print $mf "$pcert : no_pcert = $nopcert\n";
+	print $mf "$pcert : acl2x = $useacl2x\n";
 	print $mf "$pcert :";
 	foreach my $dep (@$bookdeps, @$portdeps) {
 	    # this is either the pcert0 or pcert1 depending whether the dependency
@@ -690,23 +735,26 @@ unless ($no_makefile) {
 	    if ($bin_dir) {
 		$image = rel_path($bin_dir, $image);
 		print $mf " \\\n     $image";
-	    } else {
+	    } elsif (! $warned_bindir) {
 		print "Warning: no --bin set, so not adding image dependencies,\n";
 		print " e.g.   $cert : $image\n";
+		$warned_bindir = 1;
 	    }
 	}
 	print $mf "\n";
-	print $mf ".SECONDARY: $base.pcert1\n";
 	# If we're doing prov cert, pcert1 depends on pcert0
 	if (! $nopcert) {
 	    # Pcert1 files depend only on the corresp. pcert0.
-	    print $mf "$base.pcert1 : USE_ACL2X = $useacl2x\n";
-	    print $mf "$base.pcert1 : NO_PCERT = $nopcert\n";
+	    print $mf "$base.pcert1 : acl2x = $useacl2x\n";
+	    print $mf "$base.pcert1 : no_pcert = $nopcert\n";
 	    print $mf "$base.pcert1 : $base.pcert0\n";
+	} elsif ($useacl2x) {
+	    # pcert1 depends on .acl2x
+	    print $mf "$base.pcert1 : $base.acl2x\n";
 	}
 	# Cert files depend on their certificate dependencies (above), and
-	# the corresponding .pcert1.
-	print $mf "$cert : $base.pcert1\n\n";
+	# (order-only) on the corresponding .pcert1.
+	print $mf "$cert : | $base.pcert1\n\n";
     }
 
     print $mf "\nendif\n\n";
