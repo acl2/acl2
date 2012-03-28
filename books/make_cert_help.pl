@@ -426,7 +426,7 @@ write_whole_file($outfile, $HEADER);
 if ($STEP eq "complete") {
     ## BOZO this is horrible and only works for CCL/linux and probably the file time thing
     ## is also wrong.
-    my $cmd = "(time (ln $file.pcert1 $file.cert >> $outfile)) 2> $timefile";
+    my $cmd = "(time ((cp $file.pcert1 $file.cert; if [[ $file.lx64fsl -nt $file.pcert1 ]]; then touch $file.lx64fsl; fi) >> $outfile)) 2> $timefile";
     if (system($cmd) != 0) {
 	die("Failed to move $file.pcert1 to $file.cert\n");
     }

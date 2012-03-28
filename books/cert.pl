@@ -665,8 +665,7 @@ unless ($no_makefile) {
 	}
 	if ($image && ($image ne "acl2")) {
 	    if ($bin_dir) {
-		$image = rel_path($bin_dir, $image);
-		print $mf " \\\n     $image";
+		print $mf " \\\n     " . rel_path($bin_dir, $image);
 	    } elsif (! $warned_bindir) {
 		print "Warning: no --bin set, so not adding image dependencies,\n";
 		print " e.g.   $cert : $image\n";
@@ -692,8 +691,7 @@ unless ($no_makefile) {
 	    }
 	    if ($image && ($image ne "acl2")) {
 		if ($bin_dir) {
-		    $image = rel_path($bin_dir, $image);
-		    print $mf " \\\n     $image";
+		    print $mf " \\\n     " . rel_path($bin_dir, $image);
 		} elsif (! $warned_bindir) {
 		    print "Warning: no --bin set, so not adding image dependencies,\n";
 		    print " e.g.   $cert : $image\n";
@@ -733,8 +731,7 @@ unless ($no_makefile) {
 	}
 	if ($image && ($image ne "acl2")) {
 	    if ($bin_dir) {
-		$image = rel_path($bin_dir, $image);
-		print $mf " \\\n     $image";
+		print $mf " \\\n     " . rel_path($bin_dir, $image);
 	    } elsif (! $warned_bindir) {
 		print "Warning: no --bin set, so not adding image dependencies,\n";
 		print " e.g.   $cert : $image\n";
