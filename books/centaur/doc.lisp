@@ -34,31 +34,18 @@
 (include-book "aig/misc")
 (include-book "aig/three-four")
 (include-book "aig/witness")
+(include-book "aig/vuaig")
 
 (include-book "ubdds/lite")
 (include-book "ubdds/param")
 
 (include-book "bitops/top")
 
-(include-book "misc/alist-defs")
-(include-book "misc/alist-equiv")
-(include-book "misc/defapply")
-(include-book "misc/equal-sets")
-(include-book "misc/evaluator-metatheorems")
-(include-book "misc/fast-alists")
-(include-book "misc/f-put-global")
-(include-book "misc/hons-extra")
-(include-book "misc/hons-sets")
-(include-book "misc/interp-function-lookup")
-(include-book "misc/ls")
-(include-book "misc/memory-mgmt-raw")
-(include-book "misc/sneaky-load")
-(include-book "misc/universal-equiv")
-(include-book "misc/vecs-ints")
-(include-book "misc/witness-cp")
-
 (include-book "gl/gl")
 (include-book "gl/bfr-aig-bddify")
+
+(include-book "4v-sexpr/top")
+
 
 ; The following are included automatically by the xdoc::save command below, but
 ; we include them explicitly to support the hons `make' target in the books/
@@ -69,6 +56,7 @@
 (include-book "../xdoc-impl/mkdir-raw")
 (include-book "../xdoc-impl/topics")
 (include-book "../xdoc-impl/extra-packages")
+
 
 (make-event
 ; xdoc::save is an event, so we might have just called it directly.  But for
