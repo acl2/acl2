@@ -510,6 +510,7 @@ ztwaalf1.be
 ztwaalf2.be
 
 books/centaur:
+4v-sexpr
 aig
 bitops
 doc.acl2
@@ -520,6 +521,35 @@ README
 ubdds
 # unversioned-files-extra.txt
 vl
+
+books/centaur/4v-sexpr:
+4v-logic.lisp
+bitspecs.lisp
+cert.acl2
+compose-sexpr.lisp
+g-sexpr-eval.acl2
+g-sexpr-eval.lisp
+nsexprs.lisp
+onehot-rewrite.lisp
+portcullis.acl2
+portcullis.lisp
+sexpr-3v.lisp
+sexpr-advanced.lisp
+sexpr-building.lisp
+sexpr-equivs.lisp
+sexpr-eval.lisp
+sexpr-fixpoint-correct.lisp
+sexpr-fixpoint-rewriting.lisp
+sexpr-fixpoint-spec.lisp
+sexpr-fixpoint-top.lisp
+sexpr-fixpoint.lisp
+sexpr-loop-debug.lisp
+sexpr-rewrites.lisp
+sexpr-to-faig.lisp
+sexpr-vars-1pass.lisp
+sexpr-vars.lisp
+svarmap.lisp
+top.lisp
 
 books/centaur/aig:
 acl2-customization.lsp
@@ -538,6 +568,7 @@ misc.lisp
 portcullis.acl2
 portcullis.lisp
 three-four.lisp
+vuaig.lisp
 witness.acl2
 witness.lisp
 
@@ -634,16 +665,20 @@ alist-defs.lisp
 alist-equiv.lisp
 ap.lisp
 defapply.lisp
+dfs-measure.lisp
 equal-by-nths.lisp
 equal-sets.acl2
 equal-sets.lisp
 evaluator-metatheorems.lisp
+f-put-global.lisp
 fal-graphs.lisp
 fast-alists.lisp
-f-put-global.lisp
+filter-alist.lisp
+hons-alphorder-merge.acl2
+hons-alphorder-merge.lisp
 hons-analyze-memory-raw.lsp
-hons-extra.lisp
 hons-extra-raw.lsp
+hons-extra.lisp
 hons-remove-dups.lisp
 hons-sets.lisp
 interp-function-lookup.lisp
@@ -651,10 +686,14 @@ ls.lisp
 make-list.lisp
 memory-mgmt-logic.lisp
 memory-mgmt-raw.lisp
+nat-list-duplicates.lisp
 numlist.lisp
+patterns.lisp
 seed-random.lisp
 sneaky-load.lisp
 suffixp.lisp
+top.lisp
+tuplep.lisp
 universal-equiv.lisp
 vecs-ints.lisp
 witness-cp.acl2
@@ -723,6 +762,7 @@ acl2-customization.lsp
 cert.acl2
 checkers.lisp
 condcheck.lisp
+duperhs.lisp
 duplicate-detect.lisp
 leftright.lisp
 multidrive-detect.lisp
