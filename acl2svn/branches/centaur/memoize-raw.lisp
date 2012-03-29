@@ -5357,7 +5357,7 @@ the calls took.")
                         (null (memoize-condition fn))))
            #+Clozure
            (bytes-allocated (bytes-allocated num))
-           (tt (total-time num))
+           (tt (max .000001 (total-time num)))
            (t/c (time/call num))
            (tnh (time-for-non-hits/call num))
            (in-progress-str
