@@ -1,2 +1,0 @@
-
-(include-book "xdoc/portcullis" :dir :system)
