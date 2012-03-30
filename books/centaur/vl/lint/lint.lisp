@@ -140,11 +140,12 @@
 
 
 
-(defun run-vl-lint (start-files search-path searchext top-mods state)
+(defun run-vl-lint (start-files search-path searchext top-mods ignore state)
   (declare (xargs :guard (and (string-listp start-files)
                               (string-listp search-path)
                               (string-listp searchext)
-                              (string-listp top-mods))
+                              (string-listp top-mods)
+                              (string-listp ignore))
                   :stobjs state))
   (b* ((- (cw "Starting VL-Lint ~s0~%" *vl-lint-version*))
        (- (cw "~%vl-lint: loading modules...~%"))
@@ -258,6 +259,7 @@
        (- (cw "~%vl-lint: cleaning up...~%"))
        (mods    (cwtime (vl-modulelist-clean-warnings mods)))
        (mods    (cwtime (vl-modulelist-suppress-lint-warnings mods)))
+       (mods    (cwtime (vl-modulelist-lint-ignoreall mods ignore)))
        (mwalist (cwtime (vl-origname-modwarningalist mods)))
        )
     (mv mods mods0 mwalist sd-probs dalist state)))
@@ -695,14 +697,15 @@ wide addition instead of a 10-bit wide addition.")))
 
 (defmacro vl-lint (&key start-files search-path
                         (searchext ''("v"))
-                        ;; gross yucky thing; suppress defaults to all ACL2
-                        ;; output, but for debugging use :suppress nil to be
-                        ;; able to see what is wrong.
                         top-mods
-                        (suppress ':all))
-  (declare (ignorable start-files search-path searchext suppress))
+                        ;; Ignore is the list of warnings to ignore
+                        ignore
+                        ;; gross yucky thing; acl2-suppress defaults to all
+                        ;; ACL2 output, but for debugging use :acl2-suppress
+                        ;; nil to be able to see what is wrong.
+                        (acl2-suppress ':all))
   `(with-output
-    :off ,(or suppress 'proof-tree)
+    :off ,(or acl2-suppress 'proof-tree)
     (make-event
      (b* ((- (acl2::set-max-mem (* 12 (expt 2 30))))
           (- (acl2::hons-resize :str-ht 1000000))
@@ -711,7 +714,7 @@ wide addition instead of a 10-bit wide addition.")))
            ;; make-event code, rather than ahead of time.
            (assign acl2::writes-okp t))
           ((mv ?mods ?mods0 ?mwalist ?sd-probs ?dalist ?state)
-           (cwtime (run-vl-lint ,start-files ,search-path ,searchext ,top-mods state)
+           (cwtime (run-vl-lint ,start-files ,search-path ,searchext ,top-mods ,ignore state)
                    :name vl-lint))
           (state (vl-lint-report mwalist sd-probs state)))
        (value `(progn (defconst *mods* ',mods)

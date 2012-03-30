@@ -4571,9 +4571,7 @@ keyword was found in the source code.</p>")
    origname
    warnings
    comments
-   defm
-   emod
-   esim-mod ;; the new module format for sol, BOZO document me
+   esim
    )
   :tag :vl-module
   :legiblep nil
@@ -4724,16 +4722,9 @@ for displaying the transformed module with comments preserved.</p>
 
 <h4>Fields for E Translation</h4>
 
-<p>The <tt>defm</tt> field is set in the @(see make-defm-command)
-transformation, and contains the actual call of <tt>defm</tt> that will be used
-to generate the E language translation of this module.  There are no
-constraints upon the <tt>defm</tt> field because the input for <tt>defm</tt> is
-not yet well-specified.</p>
-
-<p>The <tt>emod</tt> field is set in the @(see etrans) transformation, and
-contains an ACL2 event which can be used to install the E-language definition
-for this module.  For this event to be successful, the previous modules must be
-installed first.  Ugly ugly.  See @(see etrans) for details.</p>" )
+<p>The <tt>esim</tt> field is a temporary/historic artifact used in the
+translation to @(see esim).  This is in flux so I'm not going to document it
+right now.</p>")
 
 (deflist vl-modulelist-p (x)
   (vl-module-p x)
@@ -4774,17 +4765,12 @@ installed first.  Ugly ugly.  See @(see etrans) for details.</p>" )
   :hints(("Goal" :induct (len x))))
 
 
-(defprojection vl-modulelist->emods (x)
-  (vl-module->emod x)
+(defprojection vl-modulelist->esims (x)
+  (vl-module->esim x)
   :guard (vl-modulelist-p x)
   :nil-preservingp t
   :parents (vl-modulelist-p))
 
-(defprojection vl-modulelist->defms (x)
-  (vl-module->defm x)
-  :guard (vl-modulelist-p x)
-  :nil-preservingp t
-  :parents (vl-modulelist-p))
 
 
 

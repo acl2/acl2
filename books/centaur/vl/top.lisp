@@ -1162,6 +1162,8 @@ argument; these files will be parsed in the order they are given.</p>
     :start-files (list \"foo_control.v\" \"foo_datapath.v\"))
 </code>
 
+<p><b>BOZO</b> fix me, this doesn't currently introduce the E modules.</p>
+
 <p>After submitting this event, E modules for all successfully translated
 modules will be introduced, e.g., <tt>|*foo_control*|</tt>.  Additionally, the
 constant <tt>*foo*</tt> will be defined as a @(see vl-translation-p) that
@@ -1392,16 +1394,6 @@ options in the future, as the need arises.</p>"
                            search-path searchext include-dirs
                            defines problem-modules state))))))
 
-  (defund vl-modulelist-nonnil-emods (x)
-    (declare (xargs :guard (vl-modulelist-p x)))
-    (cond ((atom x)
-           nil)
-          ((vl-module->emod (car x))
-           (cons (vl-module->emod (car x))
-                 (vl-modulelist-nonnil-emods (cdr x))))
-          (t
-           (vl-modulelist-nonnil-emods (cdr x)))))
-
   (defmacro defmodules (name &key
                              override-dirs
                              start-files
@@ -1455,16 +1447,14 @@ options in the future, as the need arises.</p>"
             (cwtime (defmodules-fn override-dirs start-files start-modnames
                       search-path searchext include-dirs
                       defines problem-modules state)
-                    :name defmodules-fn))
-
-           (emods (vl-modulelist-nonnil-emods
-                   (vl-translation->mods translation))))
+                    :name defmodules-fn)))
 
           (value
            `(with-output
              :off (summary)
              (progn (defconst ,name ',translation)
-                    ,@emods
+                    ;; BOZO fix this to introduce the E modules again, and
+                    ;; update the documentation above after it's been fixed.
                     (value-triple ',name))))))))
 
 

@@ -113,6 +113,10 @@ logical definition.</p>"
 
   (verify-guards upcase-charlist)
 
+  (defthm len-of-upcase-charlist
+    (equal (len (upcase-charlist x))
+           (len x)))
+
   (defthm string-upcase1-is-upcase-charlist
     (equal (acl2::string-upcase1 x)
            (upcase-charlist (double-rewrite x)))))
@@ -194,6 +198,10 @@ logical definition.</p>"
                     x)))
 
   (verify-guards downcase-charlist)
+
+  (defthm len-of-downcase-charlist
+    (equal (len (downcase-charlist x))
+           (len x)))
 
   (defthm string-downcase1-redef
     (equal (acl2::string-downcase1 x)
@@ -331,6 +339,15 @@ Well, at least we're better when no work needs to be done:</p>
 
   (verify-guards upcase-string)
 
+  (defthm len-of-upcase-string
+    (equal (len (coerce (upcase-string x) 'list))
+           (len (coerce x 'list)))
+    :hints(("Goal" :in-theory (enable upcase-string))))
+
+  (defthm length-of-upcase-string
+    (equal (length (upcase-string x))
+           (length (coerce x 'list))))
+
   (defthm string-upcase-is-upcase-string
     (equal (acl2::string-upcase x)
            (upcase-string x))
@@ -445,6 +462,15 @@ make this fast.</p>"
                                       downcase-charlist))))
 
   (verify-guards downcase-string)
+
+  (defthm len-of-downcase-string
+    (equal (len (coerce (downcase-string x) 'list))
+           (len (coerce x 'list)))
+    :hints(("Goal" :in-theory (enable downcase-string))))
+
+  (defthm length-of-downcase-string
+    (equal (length (downcase-string x))
+           (len (coerce x 'list))))
 
   (defthm string-downcase-is-downcase-string
     (equal (acl2::string-downcase x)

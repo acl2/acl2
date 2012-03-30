@@ -36,9 +36,27 @@ Copyright Notice
     * needs Hons and lots of memory
     * mainly used by GL
 
+  aig/
+    * basic AIG library for use in GL, etc.
+
+  4v-sexpr/
+    * a four-valued logic and s-expressions
+    * this is the logic used by esim
+
+  esim/
+    * a symbolic simulator for hardware modeling
+    * integrates with vl and gl
+
   bitops/
     * arithmetic lemmas about logand, logxor, etc.
     * bitset libraries for compactly representing sets of natural numbers
+
+  vl/
+    * verilog toolkit (parser, transformations, static checks, ...)
+
+  gl/
+    * "bit blasting" decision procedure for ACL2 theorems involving
+       finitely-constrained variables
 
   misc/
     * lemmas about set reasoning and fast alists
@@ -46,15 +64,6 @@ Copyright Notice
     * memory management books (critical for bdd operations)
     * miscellaneous tools and lemmas
 
-   vl/
-     * verilog toolkit (parser, transformations, static checks, ...)
-
-   gl/
-     * "bit blasting" decision procedure for ACL2 theorems involving
-        finitely-constrained variables
-
-   aig/
-     * basic AIG library for use in GL, etc.
 
    ... and others forthcoming ...
 
@@ -120,16 +129,6 @@ Copyright Notice
   This manual actually also has all of the regular ACL2 documentation, as well
   as the documentation for several other ordinary ACL2 libraries that we rely
   on (e.g., str, serialize, and ihs).
-
-  To clean the cert files, you should be able to run either of the following.
-
-      cert.pl -c doc.lisp  # in acl2-sources/books/centaur
-      make clean-books     # in acl2-sources
-
-  Of course, the second of these will delete all certificates under the books/
-  directory.  HOWEVER, note that the above cert.pl command also will delete
-  some certificates not under books/centaur, namely: all certificates of books
-  included by the books/centaur books.
 
 
   Getting Help.

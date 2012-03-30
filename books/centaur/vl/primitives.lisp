@@ -19,13 +19,10 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "util/defs")
-(local (include-book "mlib/stmt-tools"))
 (include-book "mlib/expr-building")
+(include-book "../esim/esim-primitives")
+(local (include-book "mlib/stmt-tools"))
 
-
-; BOZO consider simplifying the primitives, especially things like
-; nand/nor/xnor which aren't used for much of anything, anyway.
 
 (defxdoc primitives
   :parents (vl)
@@ -37,10 +34,10 @@ transforms) tries to convert rich Verilog modules that include expressions,
 gates, parameters, etc., into simple, hierarchical modules that do nothing more
 than instantiate other modules, with these primitive modules at the tips.</p>
 
-<p>This set of primitives modules could be simplified, for instance we could
-rewrite all of the basic gate modules into <tt>nand</tt> or some other basic
-form.  We haven't done this yet, under the (probably misguided) theory that
-having a richer set of primitives might somehow be more efficient for our
+<p><b>BOZO</b> This set of primitives modules could be simplified, for instance
+we could rewrite all of the basic gate modules into <tt>nand</tt> or some other
+basic form.  We haven't done this yet, under the (probably misguided) theory
+that having a richer set of primitives might somehow be more efficient for our
 symbolic simulator.</p>")
 
 
@@ -110,7 +107,9 @@ endmodule
 </code>
 
 <p>VL takes this as a primitive.  This module is mainly used by @(see
-weirdint-elim) to eliminate explicit X values from literals.</p>")
+weirdint-elim) to eliminate explicit X values from literals.</p>
+
+<p>The corresponding @(see esim) primitive is @(see acl2::*esim-x*).</p>")
 
 (defconsts *vl-1-bit-x*
   (b* ((name "VL_1_BIT_X")
@@ -125,7 +124,8 @@ weirdint-elim) to eliminate explicit X values from literals.</p>")
                            :assigns   (list out-assign)
                            :minloc    *vl-fakeloc*
                            :maxloc    *vl-fakeloc*
-                           :atts      atts)))
+                           :atts      atts
+                           :esim      acl2::*esim-x*)))
 
 
 (defxdoc *vl-1-bit-z*
@@ -141,7 +141,9 @@ endmodule
 </code>
 
 <p>VL takes this as a primitive.  This module is mainly used by @(see
-weirdint-elim) to eliminate explicit Z values from literals.</p>")
+weirdint-elim) to eliminate explicit Z values from literals.</p>
+
+<p>The corresponding @(see esim) primitive is @(see acl2::*esim-z*).</p>")
 
 (defconsts *vl-1-bit-z*
   (b* ((name "VL_1_BIT_Z")
@@ -156,7 +158,8 @@ weirdint-elim) to eliminate explicit Z values from literals.</p>")
                            :assigns   (list out-assign)
                            :minloc    *vl-fakeloc*
                            :maxloc    *vl-fakeloc*
-                           :atts      atts)))
+                           :atts      atts
+                           :esim      acl2::*esim-z*)))
 
 
 (defxdoc *vl-1-bit-assign*
@@ -174,6 +177,8 @@ endmodule
 
 <p>VL takes this as a primitive.  This module is also the basis for wider
 assignment modules; see @(see vl-make-n-bit-assign).</p>
+
+<p>The corresponding @(see esim) primitive is @(see acl2::*esim-id*).</p>
 
 <p>Something subtle is that there is probably no way to implement
 <tt>VL_1_BIT_ASSIGN</tt> in hardware.  One obvious approach would be to use a
@@ -201,7 +206,8 @@ modules that involve transistors.</p>")
                            :assigns   (list assign)
                            :minloc    *vl-fakeloc*
                            :maxloc    *vl-fakeloc*
-                           :atts      atts)))
+                           :atts      atts
+                           :esim      acl2::*esim-id*)))
 
 
 (defxdoc *vl-1-bit-delay-1*
@@ -218,7 +224,11 @@ endmodule
 </code>
 
 <p>VL takes this as a primitive.  It is used by our @(see assigndelays)
-transform to separate delays from assignment statements.</p>")
+transform to separate delays from assignment statements.</p>
+
+<p>The corresponding @(see esim) primitive is @(see acl2::*esim-del*), but note
+that esim really has no notion of delays and this ends up being equivalent to
+an ordinary @(see *vl-1-bit-assign*).</p>")
 
 (defconsts *vl-1-bit-delay-1*
   (b* ((name "VL_1_BIT_DELAY_1")
@@ -236,7 +246,8 @@ transform to separate delays from assignment statements.</p>")
                            :assigns   (list assign)
                            :minloc    *vl-fakeloc*
                            :maxloc    *vl-fakeloc*
-                           :atts      atts)))
+                           :atts      atts
+                           :esim      acl2::*esim-del*)))
 
 
 (defxdoc *vl-1-bit-buf*
@@ -254,7 +265,9 @@ endmodule
 
 <p>VL takes this as a primitive.  We use this in place of <tt>buf</tt> gates,
 but probably not for much else since ordinary assignments are handled with
-@(see *vl-1-bit-assign*), instead.</p>")
+@(see *vl-1-bit-assign*), instead.</p>
+
+<p>The corresponding @(see esim) primitive is @(see acl2::*esim-buf*).</p>")
 
 (defconsts *vl-1-bit-buf*
   (b* ((name "VL_1_BIT_BUF")
@@ -274,7 +287,8 @@ but probably not for much else since ordinary assignments are handled with
                            :gateinsts (list gate)
                            :minloc    *vl-fakeloc*
                            :maxloc    *vl-fakeloc*
-                           :atts      atts)))
+                           :atts      atts
+                           :esim      acl2::*esim-buf*)))
 
 
 (defxdoc *vl-1-bit-not*
@@ -292,7 +306,9 @@ endmodule
 
 <p>VL takes this as a primitive.  We use this in place of <tt>not</tt> gates
 and <tt>~</tt> operators, and also in many modules we generate for other
-operators like <tt>+</tt>.</p>")
+operators like <tt>+</tt>.</p>
+
+<p>The corresponding @(see esim) primitive is @(see acl2::*esim-not*).</p>")
 
 (defconsts *vl-1-bit-not*
   (b* ((name "VL_1_BIT_NOT")
@@ -312,7 +328,8 @@ operators like <tt>+</tt>.</p>")
                            :gateinsts (list gate)
                            :minloc    *vl-fakeloc*
                            :maxloc    *vl-fakeloc*
-                           :atts      atts)))
+                           :atts      atts
+                           :esim      acl2::*esim-not*)))
 
 
 (defxdoc *vl-1-bit-and*
@@ -331,7 +348,9 @@ endmodule
 
 <p>VL takes this as a primitive.  We use this in place of <tt>and</tt> gates
 and <tt>&amp;</tt> operators, and also in many modules we generate for other
-operators like <tt>+</tt>.</p>")
+operators like <tt>+</tt>.</p>
+
+<p>The corresponding @(see esim) primitive is @(see acl2::*esim-and*)</p>")
 
 (defconsts *vl-1-bit-and*
   (b* ((name "VL_1_BIT_AND")
@@ -353,7 +372,8 @@ operators like <tt>+</tt>.</p>")
                            :gateinsts (list gate)
                            :minloc    *vl-fakeloc*
                            :maxloc    *vl-fakeloc*
-                           :atts      atts)))
+                           :atts      atts
+                           :esim      acl2::*esim-and*)))
 
 
 (defxdoc *vl-1-bit-or*
@@ -372,7 +392,9 @@ endmodule
 
 <p>VL takes this as a primitive.  We use this in place of <tt>or</tt> gates and
 <tt>|</tt> operators, and also in many modules we generate for other operators
-like <tt>+</tt>.</p>")
+like <tt>+</tt>.</p>
+
+<p>The corresponding @(see esim) primitive is @(see acl2::*esim-or*)</p>")
 
 (defconsts *vl-1-bit-or*
   (b* ((name "VL_1_BIT_OR")
@@ -394,7 +416,8 @@ like <tt>+</tt>.</p>")
                            :gateinsts (list gate)
                            :minloc    *vl-fakeloc*
                            :maxloc    *vl-fakeloc*
-                           :atts      atts)))
+                           :atts      atts
+                           :esim      acl2::*esim-or*)))
 
 
 (defxdoc *vl-1-bit-xor*
@@ -413,7 +436,9 @@ endmodule
 
 <p>VL takes this as a primitive.  We use this in place of <tt>xor</tt> gates
 and <tt>^</tt> operators, and also in many modules we generate for other
-operators like <tt>+</tt>.</p>")
+operators like <tt>+</tt>.</p>
+
+<p>The corresponding @(see esim) primitive is @(see acl2::*esim-xor*)</p>")
 
 (defconsts *vl-1-bit-xor*
   (b* ((name "VL_1_BIT_XOR")
@@ -435,7 +460,8 @@ operators like <tt>+</tt>.</p>")
                            :gateinsts (list gate)
                            :minloc    *vl-fakeloc*
                            :maxloc    *vl-fakeloc*
-                           :atts      atts)))
+                           :atts      atts
+                           :esim      acl2::*esim-xor*)))
 
 
 (defxdoc *vl-1-bit-nand*
@@ -453,10 +479,11 @@ endmodule
 </code>
 
 <p>VL takes this as a primitive.  We use this in place of <tt>nand</tt> gates
-but probably not much else.</p>")
+but probably not much else.</p>
+
+<p>The corresponding @(see esim) primitive is @(see acl2::*esim-nand*)</p>")
 
 (defconsts *vl-1-bit-nand*
-  ;; BOZO this should probably be a non-primitive.
   (b* ((name "VL_1_BIT_NAND")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
@@ -476,7 +503,8 @@ but probably not much else.</p>")
                            :gateinsts (list gate)
                            :minloc    *vl-fakeloc*
                            :maxloc    *vl-fakeloc*
-                           :atts      atts)))
+                           :atts      atts
+                           :esim      acl2::*esim-nand*)))
 
 
 (defxdoc *vl-1-bit-nor*
@@ -494,10 +522,11 @@ endmodule
 </code>
 
 <p>VL takes this as a primitive.  We use this in place of <tt>nor</tt> gates,
-but probably not much else.</p>")
+but probably not much else.</p>
+
+<p>The corresponding @(see esim) primitive is @(see acl2::*esim-nor*)</p>")
 
 (defconsts *vl-1-bit-nor*
-  ;; BOZO this should probably be a non-primitive.
   (b* ((name "VL_1_BIT_NOR")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
@@ -517,7 +546,8 @@ but probably not much else.</p>")
                            :gateinsts (list gate)
                            :minloc    *vl-fakeloc*
                            :maxloc    *vl-fakeloc*
-                           :atts      atts)))
+                           :atts      atts
+                           :esim      acl2::*esim-nor*)))
 
 
 (defxdoc *vl-1-bit-xnor*
@@ -535,7 +565,9 @@ endmodule
 </code>
 
 <p>VL takes this as a primitive.  We use this in place of <tt>xnor</tt> gates,
-but probably not much else.</p>")
+but probably not much else.</p>
+
+<p>The corresponding @(see esim) primitive is @(see acl2::*esim-xnor*)</p>")
 
 (defconsts *vl-1-bit-xnor*
   ;; BOZO this should probably be a non-primitive.
@@ -558,7 +590,8 @@ but probably not much else.</p>")
                            :gateinsts (list gate)
                            :minloc    *vl-fakeloc*
                            :maxloc    *vl-fakeloc*
-                           :atts      atts)))
+                           :atts      atts
+                           :esim      acl2::*esim-xnor*)))
 
 
 (defxdoc *vl-1-bit-zmux*
@@ -594,12 +627,11 @@ used to implement muxes.</p>
    1     z    |    z           z     z    |    x
 </code>
 
-<p>The @(see esim) equivalent drives its output with <tt>(tristate sel a)</tt>;
-see @(see 4v-tristate), which matches the Verilog truth table exactly.</p>")
+<p>The corresponding @(see esim) primitive is @(see *esim-tri*), which drives
+its output to <tt>(tristate sel a)</tt>; see @(see 4v-tristate).  This matches
+the Verilog truth table exactly.</p>")
 
 (defconsts *vl-1-bit-zmux*
-  ;; BOZO previous comments questioned whether E's *ft-buf* is equivalent to
-  ;; the Verilog semantics, or conservative to it?
   (b* ((name "VL_1_BIT_ZMUX")
        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
@@ -619,7 +651,8 @@ see @(see 4v-tristate), which matches the Verilog truth table exactly.</p>")
                            :minloc    *vl-fakeloc*
                            :maxloc    *vl-fakeloc*
                            :atts      atts
-                           :origname  name)))
+                           :origname  name
+                           :esim      acl2::*esim-tri*)))
 
 
 (defxdoc *vl-1-bit-ceq*
@@ -636,14 +669,16 @@ module VL_1_BIT_CEQ (out, a, b) ;
 endmodule
 </code>
 
-<p>VL takes this as a primitive, and uses of <tt>===</tt> and <tt>!==</tt>
-operators are generally converted into instances of this module or wide
-versions of it.</p>
+<p>VL takes this as a primitive, and uses it to implement <tt>===</tt> and
+<tt>!==</tt> operators.</p>
 
 <p>These operators are inherently unsound because they do not treat <tt>X</tt>
 as an unknown.  For our back-end tools, we usually conservatively approximate
 <tt>VL_1_BIT_CEQ</tt> with an <tt>xnor</tt> gate.  But a less conservative tool
-might choose to give it a different interpretation.</p>")
+might choose to give it a different interpretation.</p>
+
+<p>The corresponding @(see esim) primitive is @(see acl2::*esim-ceq*), which is
+just an <tt>xnor</tt> gate.</p>")
 
 (defconsts *vl-1-bit-ceq*
   ;; BOZO this should probably be a non-primitive.
@@ -666,7 +701,8 @@ might choose to give it a different interpretation.</p>")
                            :assigns   (list assign)
                            :minloc    *vl-fakeloc*
                            :maxloc    *vl-fakeloc*
-                           :atts      atts)))
+                           :atts      atts
+                           :esim      acl2::*esim-ceq*)))
 
 
 
@@ -688,7 +724,9 @@ endmodule
 </code>
 
 <p>VL takes this as a primitive.  The @(see flop-inference) transform converts
-certain <tt>always</tt> statements into instances of this module.</p>")
+certain <tt>always</tt> statements into instances of this module.</p>
+
+<p>The corresponding @(see esim) primitive is @(see acl2::*esim-flop*).</p>")
 
 (defconsts *vl-1-bit-flop*
   (b* ((name "VL_1_BIT_FLOP")
@@ -716,7 +754,8 @@ certain <tt>always</tt> statements into instances of this module.</p>")
                            :regdecls  (list q-regdecl)
                            :alwayses  (list always)
                            :minloc    *vl-fakeloc*
-                           :maxloc    *vl-fakeloc*)))
+                           :maxloc    *vl-fakeloc*
+                           :esim      acl2::*esim-flop*)))
 
 
 (defxdoc *vl-1-bit-latch*
@@ -737,7 +776,9 @@ endmodule
 </code>
 
 <p>VL takes this as a primitive.  The @(see latch-inference) transform converts
-certain <tt>always</tt> statements into instances of this module.</p>")
+certain <tt>always</tt> statements into instances of this module.</p>
+
+<p>The corresponding @(see esim) primitive is @(see acl2::*esim-latch*).</p>")
 
 (defconsts *vl-1-bit-latch*
   (b* ((name (hons-copy "VL_1_BIT_LATCH"))
@@ -773,7 +814,8 @@ certain <tt>always</tt> statements into instances of this module.</p>")
                            :alwayses  (list always)
                            :minloc    *vl-fakeloc*
                            :maxloc    *vl-fakeloc*
-                           :atts      atts)))
+                           :atts      atts
+                           :esim      acl2::*esim-latch*)))
 
 
 
@@ -795,7 +837,9 @@ endmodule
 
 <p>VL takes this as a primitive.  This module, and wrappers that extend it to
 higher arities and wider signals, may be introduced by the @(see multidrive)
-transform to deal with multiply driven wires.</p>")
+transform to deal with multiply driven wires.</p>
+
+<p>The corresponding @(see esim) primitive is @(see acl2::*esim-res*).</p>")
 
 (defconsts *vl-1-bit-resolve-wire*
   (b* ((name "VL_1_BIT_RESOLVE_WIRE")
@@ -813,51 +857,75 @@ transform to deal with multiply driven wires.</p>")
                            :assigns   (list              a-assign    b-assign)
                            :minloc    *vl-fakeloc*
                            :maxloc    *vl-fakeloc*
-                           :atts      atts)))
+                           :atts      atts
+                           :esim      acl2::*esim-res*)))
+
+
+(defconst *vl-primitive-mods*
+  (list *vl-1-bit-x*
+        *vl-1-bit-z*
+        *vl-1-bit-assign*
+        *vl-1-bit-delay-1*
+        *vl-1-bit-buf*
+        *vl-1-bit-not*
+        *vl-1-bit-and*
+        *vl-1-bit-or*
+        *vl-1-bit-xor*
+        *vl-1-bit-nand*
+        *vl-1-bit-nor*
+        *vl-1-bit-xnor*
+        *vl-1-bit-zmux*
+        *vl-1-bit-ceq*
+        *vl-1-bit-flop*
+        *vl-1-bit-latch*
+        *vl-1-bit-resolve-wire*))
 
 
 
 
-(defxdoc *vl-1-bit-resolve-wor*
-  :parents (primitives)
-  :short "Primitive module that resolves multiple drivers on a <tt>wor</tt> net."
-  :long "<p>The Verilog definition of this module is:</p>
 
-<code>
-module VL_1_BIT_RESOLVE_WOR (out, a, b) ;
-  output out;
-  input a;
-  input b;
+;; Commenting this out for now, until we implement WAND/WOR.
 
-  wor out;
+;; (defxdoc *vl-1-bit-resolve-wor*
+;;   :parents (primitives)
+;;   :short "Primitive module that resolves multiple drivers on a <tt>wor</tt> net."
+;;   :long "<p>The Verilog definition of this module is:</p>
 
-  assign out = a;
-  assign out = b;
-endmodule
-</code>
+;; <code>
+;; module VL_1_BIT_RESOLVE_WOR (out, a, b) ;
+;;   output out;
+;;   input a;
+;;   input b;
 
-<p>VL takes this as a primitive.  This module, and wrappers that extend it to
-higher arities and wider signals, may be introduced by the @(see multidrive)
-transform to deal with multiply driven wired ors.</p>")
+;;   wor out;
 
-(defconsts *vl-1-bit-resolve-wor*
-  (b* ((name "VL_1_BIT_RESOLVE_WOR")
-       (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
-       ((mv a-expr   a-port   a-portdecl   a-netdecl)   (vl-primitive-mkport "a"   :vl-input))
-       ((mv b-expr   b-port   b-portdecl   b-netdecl)   (vl-primitive-mkport "b"   :vl-input))
-       (out-netdecl  (change-vl-netdecl out-netdecl :type :vl-wor))
-       (a-assign     (make-vl-assign :lvalue out-expr :expr a-expr :loc *vl-fakeloc*))
-       (b-assign     (make-vl-assign :lvalue out-expr :expr b-expr :loc *vl-fakeloc*)))
-    (make-honsed-vl-module :name      name
-                           :origname  name
-                           :ports     (list out-port     a-port      b-port)
-                           :portdecls (list out-portdecl a-portdecl  b-portdecl)
-                           :netdecls  (list out-netdecl  a-netdecl   b-netdecl)
-                           :assigns   (list              a-assign    b-assign)
-                           :minloc    *vl-fakeloc*
-                           :maxloc    *vl-fakeloc*
-                           :atts      atts)))
+;;   assign out = a;
+;;   assign out = b;
+;; endmodule
+;; </code>
+
+;; <p>VL takes this as a primitive.  This module, and wrappers that extend it to
+;; higher arities and wider signals, may be introduced by the @(see multidrive)
+;; transform to deal with multiply driven wired ors.</p>")
+
+;; (defconsts *vl-1-bit-resolve-wor*
+;;   (b* ((name "VL_1_BIT_RESOLVE_WOR")
+;;        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
+;;        ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
+;;        ((mv a-expr   a-port   a-portdecl   a-netdecl)   (vl-primitive-mkport "a"   :vl-input))
+;;        ((mv b-expr   b-port   b-portdecl   b-netdecl)   (vl-primitive-mkport "b"   :vl-input))
+;;        (out-netdecl  (change-vl-netdecl out-netdecl :type :vl-wor))
+;;        (a-assign     (make-vl-assign :lvalue out-expr :expr a-expr :loc *vl-fakeloc*))
+;;        (b-assign     (make-vl-assign :lvalue out-expr :expr b-expr :loc *vl-fakeloc*)))
+;;     (make-honsed-vl-module :name      name
+;;                            :origname  name
+;;                            :ports     (list out-port     a-port      b-port)
+;;                            :portdecls (list out-portdecl a-portdecl  b-portdecl)
+;;                            :netdecls  (list out-netdecl  a-netdecl   b-netdecl)
+;;                            :assigns   (list              a-assign    b-assign)
+;;                            :minloc    *vl-fakeloc*
+;;                            :maxloc    *vl-fakeloc*
+;;                            :atts      atts)))
 
 
 

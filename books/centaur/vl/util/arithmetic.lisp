@@ -731,22 +731,27 @@
 
 (defsection prefixp
 
+;; BOZO these should really get merged into unicode
+
   (local (in-theory (enable prefixp)))
 
-  (defthm prefixp-when-atom
-    (implies (atom x)
-             (prefixp x y)))
+  ;; not needed since unicode has prefixp-when-not-consp-left
+  ;; (defthm prefixp-when-atom
+  ;;   (implies (atom x)
+  ;;            (prefixp x y)))
 
-  (defthm prefixp-of-cons
-    (equal (prefixp (cons a x) y)
-           (and (consp y)
-                (equal a (car y))
-                (prefixp x (cdr y)))))
+  ;; not needed since unicode has prefixp-of-cons-left
+  ;; (defthm prefixp-of-cons
+  ;;   (equal (prefixp (cons a x) y)
+  ;;          (and (consp y)
+  ;;               (equal a (car y))
+  ;;               (prefixp x (cdr y)))))
 
-  (defthm prefixp-when-atom-right
-    (implies (atom y)
-             (equal (prefixp x y)
-                    (atom x))))
+  ;; not needed since unicode has prefixp-when-not-consp-right
+  ;; (defthm prefixp-when-atom-right
+  ;;   (implies (atom y)
+  ;;            (equal (prefixp x y)
+  ;;                   (atom x))))
 
   (defthm prefixp-of-simpler-take
     (equal (prefixp (simpler-take n x) x)
