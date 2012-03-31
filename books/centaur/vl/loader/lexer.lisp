@@ -1667,14 +1667,22 @@ case.</li>
             (mv token remainder2 warnings)))
 
          ;; Otherwise, we weren't able to interpret the normalized edigits as a
-         ;; number, so they have some X or Z characters.
-
+         ;; number.  The number might still be valid, but just contain X or Z
+         ;; characters.
          (digits (vl-echarlist->chars normalized-edigits))
          (bits   (case radix
                    (16        (vl-hex-digits-to-bitlist digits))
                    (10        (vl-decimal-digits-to-bitlist digits))
                    (8         (vl-octal-digits-to-bitlist digits))
                    (otherwise (vl-binary-digits-to-bitlist digits))))
+         ((unless bits)
+          ;; There aren't even any bits?
+          (mv (cw "Lexer error (~s0): invalid number: ~s1.~%"
+                  (vl-location-string (vl-echar->loc firstchar))
+                  (vl-echarlist->string etext))
+              echars
+              warnings))
+
          ((mv warnings bits)
           (vl-correct-bitlist (vl-echar->loc firstchar)
                               bits

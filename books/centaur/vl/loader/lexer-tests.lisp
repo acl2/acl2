@@ -317,6 +317,18 @@
                          :successp nil
                          )
 
+(vl-lex-integer-testcase :input "1'h"  ;; no value is illegal
+                         :successp nil
+                         )
+
+(vl-lex-integer-testcase :input "1'op"  ;; no value is illegal
+                         :successp nil
+                         )
+
+(vl-lex-integer-testcase :input "1'o___"  ;; no value is illegal
+                         :successp nil
+                         )
+
 (vl-lex-integer-testcase :input "2_147_483_647" ;; biggest plain number allowed without a warning
                          :successp t
                          :width 32
