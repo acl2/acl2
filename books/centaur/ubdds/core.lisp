@@ -106,6 +106,8 @@
 
 (defun ubddp (x)
 
+;; BOZO what the heck, this is the same as normp, why do we have both?!
+
   ":Doc-Section ubdds
 
    Recognizer for well-formed UBDDs~/~/ ~c[(UBDDP x)] is our
@@ -164,6 +166,8 @@
                                      ((eq d t) t)
                                      (t (ubddp d))))
                               (t (and (ubddp a) (ubddp d)))))))))
+
+(memoize 'ubddp)
 
 (defund normp (x)
 
@@ -530,6 +534,8 @@
         0
       (1+ (max (max-depth (car x))
                (max-depth (cdr x))))))
+
+  (memoize 'max-depth :condition '(consp x))
 
   ;; This is like the trick in the osets book. We want to write the rule:
   ;;
