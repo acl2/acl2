@@ -1,5 +1,5 @@
 ; ESIM Symbolic Hardware Simulator
-; Copyright (C) 2010 Centaur Technology
+; Copyright (C) 2010-2012 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
