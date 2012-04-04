@@ -50,7 +50,7 @@ message in source file acl2-init.lisp.")
 (push :acl2-mv-as-values *features*)
 
 ; Essay on Parallelism, Parallelism Warts, Parallelism Blemishes, Parallelism
-; No-fixes, and Parallelism Hazards
+; No-fixes, Parallelism Hazards, and #+ACL2-PAR notes.
 
 ; These sources incorporate code for an experimental extension for parallelism
 ; contributed by David Rager during his master's and Ph.D. dissertation work.
@@ -83,6 +83,8 @@ message in source file acl2-init.lisp.")
 ; if state-global-let* is called while executing concurrently, we want to know
 ; about it and develop a work-around.  See *possible-parallelism-hazards* and
 ; warn-about-parallelism-hazard for more information.
+
+; #+ACL2-PAR notes contain documentation that only applies to #+acl2-par.
 
 ; In an effort to avoid code duplication, we created a definition scheme that
 ; supports defining both serial and parallel versions of a function with one

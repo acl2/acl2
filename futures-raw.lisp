@@ -88,7 +88,8 @@
 ;---------------------------------------------------------------------
 ; Section:  Multi-threaded Futures
 
-; Notes on the specification:
+; Notes on the implementation of adding, removing, and aborting the evaluation
+; of closures:
 
 ; (1) Producer is responsible for *always* placing the closure on the queue
 ;
@@ -105,8 +106,8 @@
 ; thread array and secondly checks the future's abort flag.
 ;
 ; (5) The combination of (3) and (4) results in the following six potential
-; race scenarios (these conditions could be turned into a dissertation
-; graphic):
+; race conditions/scenarios.  The first column contains things the producer can
+; do, and the second column contains things the consumer might do.
 ;
 ;  (A) - 12AB
 ;
@@ -178,8 +179,8 @@
 
 ; We currently use a feature to control whether resources are tested for
 ; availability at the level of futures.  Since this feature only controls
-; futures, it only impacts the implementation underlying spec-mv-let.  Plet,
-; pargs, pand, and por are unaffected.
+; futures, it only impacts the implementation underlying spec-mv-let.  Thus,
+; plet, pargs, pand, and por are unaffected.
 
 (push :skip-resource-availability-test *features*)
 
@@ -508,17 +509,29 @@
 ; Idea: have a queue for both the evaluation of closures and the abortion of
 ; futures.  Give the abortion queue higher priority.
 
+(defvar *threads-waiting-for-starting-core* 
+
+; Since this variable is only used for debugging purposes, we intentionally do
+; not lock this variable when reading or writing to it.
+
+  0)
+
 (defun claim-starting-core ()
+  #+ccl
+  (incf *threads-waiting-for-starting-core*)
   (let ((notification (make-semaphore-notification)))
     (unwind-protect-disable-interrupts-during-cleanup
      (wait-on-semaphore *idle-core* :notification notification)
-     (when (semaphore-notification-status notification)
-       (setf *allocated-core* *starting-core*)
-       (atomic-decf *idle-future-core-count*)
+     (progn 
+       (when (semaphore-notification-status notification)
+         (setf *allocated-core* *starting-core*)
+         (atomic-decf *idle-future-core-count*)
 ; Parallelism wart: Label the following comment as a wart, blemish, etc.
 ; Is this really the right place to do this?
-       (setf *decremented-idle-future-thread-count* t)
-       (atomic-decf *idle-future-thread-count*)))))
+         (setf *decremented-idle-future-thread-count* t)
+         (atomic-decf *idle-future-thread-count*))
+       #+ccl
+       (decf *threads-waiting-for-starting-core*)))))
 
 (defun claim-resumptive-core ()
 

@@ -44609,16 +44609,15 @@ Lisp definition."
 (table custom-keywords-table nil nil
        :guard
 
-; Parallelism wart: the comment below starting with "Val must be of the
-; form..." will need to be updated once we finalize the way custom keyword
-; hints work in ACL2(p).
-
 ; Val must be of the form (uterm1 uterm2), where uterm1 and uterm2 are
 ; untranslated terms with certain syntactic properties, including being
 ; single-threaded in state and with output signatures (mv erp val state).  But
 ; we cannot check that without access to state.  So we actually don't check
 ; those key properties until we use them and we employ trans-eval at that
 ; point.
+
+; #+ACL2-PAR note: it may be the case that, with waterfall parallelism enabled,
+; both uterm1 and uterm2 must not return state.
 
 ; As a matter of interest, uterm1 is the untranslated generator term for the
 ; key and uterm2 is the untranslated checker term.
