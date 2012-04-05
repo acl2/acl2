@@ -455,8 +455,8 @@ if ($STEP eq "complete") {
 # I think this strange :q/lp dance is needed for lispworks or something?
     $instrs .= "(acl2::value :q)\n";
     $instrs .= "(in-package \"ACL2\")\n";
-    $instrs .= "(profile-fn 'prove)\n";
-    $instrs .= "(profile-fn 'certify-book-fn)\n";
+    $instrs .= "#+acl2-hons (profile-fn 'prove)\n";
+    $instrs .= "#+acl2-hons (profile-fn 'certify-book-fn)\n";
     $instrs .= "(acl2::lp)\n\n";
     $instrs .= "(set-debugger-enable :bt)\n";
     $instrs .= "(set-write-acl2x t state)\n" if ($STEP eq "acl2x");
