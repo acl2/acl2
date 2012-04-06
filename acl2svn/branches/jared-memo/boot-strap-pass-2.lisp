@@ -1,4 +1,4 @@
-; ACL2 Version 4.2 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 4.3 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2011  University of Texas at Austin
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -29,9 +29,9 @@
 ; This file, boot-strap-pass-2, is compiled and loaded; but it is only
 ; processed during the second pass of the boot-strap process, not the first.
 
-; After defining some theories, we introduce propert defattach events (i.e.,
-; without :skip-checks t).  Here are some guiding principles for making system
-; functions available for attachment by users.
+; We introduce proper defattach events, i.e., without :skip-checks t.  Here are
+; some guiding principles for making system functions available for attachment
+; by users.
 
 ; - The initial attachment is named by adding the suffix -builtin.  For
 ;   example, worse-than is a constrained function initially attached to
@@ -46,93 +46,39 @@
 ;   worse-than-list as a constrained function, since its only use is in the
 ;   mutual-recursion event that defines worse-than.
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; Theories
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(deftheory definition-minimal-theory
-  (definition-runes
-    *definition-minimal-theory*
-    nil
-    world))
-
-(deftheory executable-counterpart-minimal-theory
-  (definition-runes
-    *built-in-executable-counterparts*
-    t
-    world))
-
-(deftheory minimal-theory
-
-; Warning: The resulting value must be a runic-theoryp.  See
-; theory-fn-callp.
-
-; Keep this definition in sync with translate-in-theory-hint.
-
-  (union-theories (theory 'definition-minimal-theory)
-                  (union-theories
-
-; Without the :executable-counterpart of force, the use of (theory
-; 'minimal-theory) will produce the warning "Forcing has transitioned
-; from enabled to disabled", at least if forcing is enabled (as is the
-; default).
-
-                   '((:executable-counterpart force))
-                   (theory 'executable-counterpart-minimal-theory)))
-  :doc
-  ":Doc-Section Theories
-
-  a minimal theory to enable~/~/
-
-  This ~ilc[theory] (~pl[theories]) enables only a few built-in
-  functions and executable counterparts.  It can be useful when you
-  want to formulate lemmas that rather immediately imply the theorem
-  to be proved, by way of a ~c[:use] hint (~pl[hints]), for example as
-  follows.
-  ~bv[]
-  :use (lemma-1 lemma-2 lemma-3)
-  :in-theory (union-theories '(f1 f2) (theory 'minimal-theory))
-  ~ev[]
-  In this example, we expect the current goal to follow from lemmas
-  ~c[lemma-1], ~c[lemma-2], and ~c[lemma-3] together with rules ~c[f1]
-  and ~c[f2] and some obvious facts about built-in functions (such as
-  the ~il[definition] of ~ilc[implies] and the
-  ~c[:]~ilc[executable-counterpart] of ~ilc[car]).  The
-  ~c[:]~ilc[in-theory] hint above is intended to speed up the proof by
-  turning off all inessential rules.~/
-
-  :cited-by theory-functions")
-
-(deftheory ground-zero (current-theory :here)
-
-; WARNING: Keep this near the end of *acl2-pass-2-files* in order for
-; the ground-zero theory to be as expected.
-
-  :doc
-  ":Doc-Section Theories
-
-  ~il[enable]d rules in the ~il[startup] theory~/
-
-  ACL2 concludes its initialization ~c[(boot-strapping)] procedure by
-  defining the theory ~c[ground-zero]; ~pl[theories].  In fact, this
-  theory is just the theory defined by ~c[(current-theory :here)] at
-  the conclusion of initialization; ~pl[current-theory].~/
-
-  Note that by evaluating the event
-  ~bv[]
-  (in-theory (current-theory 'ground-zero))
-  ~ev[]
-  you can restore the current theory to its value at the time you
-  started up ACL2.~/
-
-  :cited-by theory-functions")
+; We conclude by defining some theories, at the end so that they pick up the
+; rest of this file.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Miscellaneous verify-termination and guard verification
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; observation1-cw
+
 (verify-termination-boot-strap observation1-cw)
 (verify-guards observation1-cw)
+
+; packn1 and packn
+
+(verify-termination-boot-strap packn1) ; and guards
+
+(encapsulate ()
+
+(local
+ (defthm character-listp-explode-nonnegative-integer
+   (implies (character-listp z)
+            (character-listp (explode-nonnegative-integer x y z)))
+   :rule-classes ((:forward-chaining :trigger-terms
+                                     ((explode-nonnegative-integer x y z))))))
+
+(local
+ (defthm character-listp-explode-atom
+   (character-listp (explode-atom x y))
+   :rule-classes ((:forward-chaining :trigger-terms
+                                     ((explode-atom x y))))))
+
+(verify-termination-boot-strap packn) ; and guards
+)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Attachment: too-many-ifs-post-rewrite and too-many-ifs-pre-rewrite
@@ -705,10 +651,240 @@
 
 (verify-termination-boot-strap hons-copy-with-state) ; and guards
 
+(verify-termination-boot-strap identity-with-state) ; and guards
+
 (defattach (acl2x-expansion-alist
 ; User-modifiable; see comment in the defstub introducing
 ; acl2x-expansion-alist.
-            hons-copy-with-state))
+            identity-with-state))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Attachments: rw-cache utilities
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(verify-termination-boot-strap rw-cache-debug-builtin) ; and guards
+
+(defattach rw-cache-debug rw-cache-debug-builtin)
+
+(verify-termination-boot-strap rw-cache-debug-action-builtin) ; and guards
+
+(defattach rw-cache-debug-action rw-cache-debug-action-builtin)
+
+(verify-termination-boot-strap rw-cacheable-failure-reason-builtin) ; and guards
+
+(defattach rw-cacheable-failure-reason rw-cacheable-failure-reason-builtin)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Attachments: print-clause-id-okp
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(verify-termination-boot-strap all-digits-p) ; and guards
+
+(verify-termination-boot-strap ; and guards
+ (d-pos-listp
+  (declare
+   (xargs
+    :guard-hints
+    (("Goal"
+      :use ((:instance coerce-inverse-2
+                       (x (symbol-name (car lst))))
+            (:instance character-listp-coerce
+                       (str (symbol-name (car lst)))))
+      :expand ((len (coerce (symbol-name (car lst)) 'list)))
+      :in-theory (disable coerce-inverse-2
+                          character-listp-coerce)))))))
+
+(verify-termination-boot-strap pos-listp)
+(verify-guards pos-listp)
+
+(defthm d-pos-listp-forward-to-true-listp
+  (implies (d-pos-listp x)
+           (true-listp x))
+  :rule-classes :forward-chaining)
+
+(verify-termination-boot-strap clause-id-p) ; and guards
+
+(encapsulate
+ (((print-clause-id-okp *) => * :formals (cl-id) :guard (clause-id-p cl-id)))
+ (local (defun print-clause-id-okp (x)
+          x)))
+
+(verify-termination-boot-strap print-clause-id-okp-builtin) ; and guards
+
+(defattach print-clause-id-okp print-clause-id-okp-builtin)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Attachments: oncep-tp
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(encapsulate
+ (((oncep-tp * *) => *
+   :formals (rune wrld)
+   :guard (and (plist-worldp wrld)
+
+; Although (runep rune wrld) is appropriate here, we don't want to fight the
+; battle yet of putting runep into :logic mode.  So we just lay down the
+; syntactic part of its code, which should suffice for user-defined attachments
+; to oncep-tp.
+
+               (and (consp rune)
+                    (consp (cdr rune))
+                    (symbolp (cadr rune))))))
+ (logic)
+ (local (defun oncep-tp (rune wrld)
+          (oncep-tp-builtin rune wrld))))
+
+(defattach oncep-tp oncep-tp-builtin)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; verify-termination and guard verification:
+; string-for-tilde-@-clause-id-phrase and some subsidiary functions
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; David Rager proved termination and guards for
+; string-for-tilde-@-clause-id-phrase, with a proof that included distributed
+; books unicode/explode-atom and unicode/explode-nonnegative-integer.  Here, we
+; rework that proof a bit to avoid those dependencies.  Note that this proof
+; depends on d-pos-listp, whose termination and guard verification are
+; performed above.
+
+; We proved true-listp-explode-nonnegative-integer here, but then found it was
+; already proved locally in axioms.lisp.  So we made that defthm non-local (and
+; strengthened it to its current form).
+
+(verify-termination-boot-strap chars-for-tilde-@-clause-id-phrase/periods)
+
+(verify-termination-boot-strap chars-for-tilde-@-clause-id-phrase/primes)
+
+(defthm pos-listp-forward-to-integer-listp
+  (implies (pos-listp x)
+           (integer-listp x))
+  :rule-classes :forward-chaining)
+
+(verify-termination-boot-strap chars-for-tilde-@-clause-id-phrase)
+
+(defthm true-listp-chars-for-tilde-@-clause-id-phrase/periods
+  (true-listp (chars-for-tilde-@-clause-id-phrase/periods lst))
+  :rule-classes :type-prescription)
+
+(defthm true-listp-explode-atom
+  (true-listp (explode-atom n print-base))
+  :rule-classes :type-prescription)
+
+(encapsulate
+ ()
+
+; The following local events create perfectly good rewrite rules, but we avoid
+; the possibility of namespace clashes for existing books by making them local
+; as we add them after Version_4.3.
+
+ (local
+  (defthm character-listp-explode-nonnegative-integer
+    (implies
+     (character-listp ans)
+     (character-listp (explode-nonnegative-integer n print-base ans)))))
+
+ (local
+  (defthm character-listp-explode-atom
+    (character-listp (explode-atom n print-base))
+    :hints ; need to disable this local lemma from axioms.lisp
+    (("Goal" :in-theory (disable character-listp-cdr)))))
+
+ (local
+  (defthm character-listp-chars-for-tilde-@-clause-id-phrase/periods
+    (character-listp (chars-for-tilde-@-clause-id-phrase/periods lst))))
+
+ (verify-termination-boot-strap string-for-tilde-@-clause-id-phrase))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Theories
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(deftheory definition-minimal-theory
+  (definition-runes
+    *definition-minimal-theory*
+    nil
+    world))
+
+(deftheory executable-counterpart-minimal-theory
+  (definition-runes
+    *built-in-executable-counterparts*
+    t
+    world))
+
+(deftheory minimal-theory
+
+; Warning: The resulting value must be a runic-theoryp.  See
+; theory-fn-callp.
+
+; Keep this definition in sync with translate-in-theory-hint.
+
+  (union-theories (theory 'definition-minimal-theory)
+                  (union-theories
+
+; Without the :executable-counterpart of force, the use of (theory
+; 'minimal-theory) will produce the warning "Forcing has transitioned
+; from enabled to disabled", at least if forcing is enabled (as is the
+; default).
+
+                   '((:executable-counterpart force))
+                   (theory 'executable-counterpart-minimal-theory)))
+  :doc
+  ":Doc-Section Theories
+
+  a minimal theory to enable~/~/
+
+  This ~ilc[theory] (~pl[theories]) enables only a few built-in
+  functions and executable counterparts.  It can be useful when you
+  want to formulate lemmas that rather immediately imply the theorem
+  to be proved, by way of a ~c[:use] hint (~pl[hints]), for example as
+  follows.
+  ~bv[]
+  :use (lemma-1 lemma-2 lemma-3)
+  :in-theory (union-theories '(f1 f2) (theory 'minimal-theory))
+  ~ev[]
+  In this example, we expect the current goal to follow from lemmas
+  ~c[lemma-1], ~c[lemma-2], and ~c[lemma-3] together with rules ~c[f1]
+  and ~c[f2] and some obvious facts about built-in functions (such as
+  the ~il[definition] of ~ilc[implies] and the
+  ~c[:]~ilc[executable-counterpart] of ~ilc[car]).  The
+  ~c[:]~ilc[in-theory] hint above is intended to speed up the proof by
+  turning off all inessential rules.~/
+
+  :cited-by theory-functions")
+
+; See the Essay on the Status of the Tau System During and After Bootstrapping
+; in axioms.lisp where we discuss choices (1.a), (1.b), (2.a) and (2.b)
+; related to the status of the tau system.  Here is where we implement
+; (2.a).
+
+(in-theory (if (cadr *tau-status-boot-strap-settings*)          ; (2.a)
+               (enable (:executable-counterpart tau-system))
+               (disable (:executable-counterpart tau-system))))
+
+(deftheory ground-zero (current-theory :here)
+
+; WARNING: Keep this near the end of *acl2-pass-2-files* in order for
+; the ground-zero theory to be as expected.
+
+  :doc
+  ":Doc-Section Theories
+
+  ~il[enable]d rules in the ~il[startup] theory~/
+
+  ACL2 concludes its initialization ~c[(boot-strapping)] procedure by
+  defining the theory ~c[ground-zero]; ~pl[theories].  In fact, this
+  theory is just the theory defined by ~c[(current-theory :here)] at
+  the conclusion of initialization; ~pl[current-theory].~/
+
+  Note that by evaluating the event
+  ~bv[]
+  (in-theory (current-theory 'ground-zero))
+  ~ev[]
+  you can restore the current theory to its value at the time you
+  started up ACL2.~/
+
+  :cited-by theory-functions")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; End

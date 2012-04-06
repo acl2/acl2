@@ -1,4 +1,4 @@
-; ACL2 Version 4.2 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 4.3 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2011  University of Texas at Austin
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -37,7 +37,7 @@
 
 (defmacro defn (f a &rest r)
 
-  ":Doc-Section Programming
+  ":Doc-Section Events
    definition with ~il[guard] ~c[t]~/
 
    ~c[Defn] is ~ilc[defun] with ~il[guard] ~c[t].~/~/"
@@ -375,10 +375,6 @@
   Volumne 218, 1968, pages 19-22.
   ~/")
 
-(defun hons-enabledp (state)
-  (declare (xargs :guard (state-p state)))
-  (global-val 'hons-enabled (w state)))
-
 #+(or acl2-loop-only (not hons))
 (defn clear-memoize-table (fn)
 
@@ -569,13 +565,6 @@
                (er hard 'memoize
                    "The symbol ~x0 is not a known function symbol, and thus ~
                     it cannot be memoized."
-                   fn))
-              ((not (eq :common-lisp-compliant
-                        (symbol-class fn wrld)))
-               (er hard 'memoize
-                   "~x0 is not Common Lisp compliant, so is best memoized and ~
-                    called from raw Lisp (but raw Lisp should be avoiding ~
-                    unless you are hacking)."
                    fn))
 
 ; Certify-book seems to do things twice, so the following is commented out.
@@ -1040,7 +1029,7 @@
 
 (defmacro memoize-on (fn form)
 
-; MEMOIZE-ON evaluates x.  During the evaluation the symbol fn has as
+; MEMOIZE-ON evaluates form.  During the evaluation the symbol fn has as
 ; its symbol-function what it had immediately AFTER the memoization of
 ; fn.  Hence, the values of calls of fn may be remembered during the
 ; evaluation and later.  Warning: to use MEMOIZE-ON, fn must already
@@ -1055,7 +1044,7 @@
 
 (defmacro memoize-off (fn form)
 
-; MEMOIZE-OFF evaluates x.  During the evaluation the symbol fn has as
+; MEMOIZE-OFF evaluates form.  During the evaluation the symbol fn has as
 ; its symbol-function what it had immediately BEFORE the memoization
 ; of fn.  Hence the values of calls of fn may not be remembered during
 ; the evaluation.  Warning: to use MEMOIZE-OFF, fn must already be
@@ -1091,5 +1080,4 @@
 (defmacro memoizedp (fn)
   (declare (xargs :guard t))
   `(memoizedp-world ,fn (w state)))
-
 

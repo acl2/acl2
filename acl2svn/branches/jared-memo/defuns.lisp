@@ -1,4 +1,4 @@
-; ACL2 Version 4.2 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 4.3 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2011  University of Texas at Austin
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -45,26 +45,75 @@
 ; defproxy, non-executablep will be nil.
 
   (cond ((null bodies) (trans-value nil))
-        (t (trans-er-let*
-            ((x (translate1-cmp (car bodies)
-                                (if non-executablep t (car names))
-                                (if non-executablep nil bindings)
-                                (car known-stobjs-lst)
-                                (if (and (consp ctx)
-                                         (equal (car ctx)
-                                                *mutual-recursion-ctx-string*))
-                                    (msg "( MUTUAL-RECURSION ... ( DEFUN ~x0 ...) ~
+        (t (mv-let
+            (erp x bindings2)
+            (translate1-cmp (car bodies)
+                            (if non-executablep t (car names))
+                            (if non-executablep nil bindings)
+                            (car known-stobjs-lst)
+                            (if (and (consp ctx)
+                                     (equal (car ctx)
+                                            *mutual-recursion-ctx-string*))
+                                (msg "( MUTUAL-RECURSION ... ( DEFUN ~x0 ...) ~
                                       ...)"
-                                         (car names))
-                                  ctx)
-                                wrld state-vars))
-             (y (translate-bodies1 non-executablep
-                                   (cdr names)
-                                   (cdr bodies)
-                                   bindings
-                                   (cdr known-stobjs-lst)
-                                   ctx wrld state-vars)))
-            (trans-value (cons x y))))))
+                                     (car names))
+                              ctx)
+                            wrld state-vars)
+            (cond
+             ((and erp
+                   (eq bindings2 :UNKNOWN-BINDINGS))
+
+; We try translating in some other order.  This attempt isn't complete; for
+; example, the following succeeds, but it fails if we switch the first two
+; definitions.  But it's cheap and better than nothing; without it, the
+; unswitched version would fail, too.  If this becomes an issue, consider the
+; potentially quadratic algorithm of first finding one definition that
+; translates successfully, then another, and so on, until all have been
+; translated.
+
+; (set-state-ok t)
+; (set-bogus-mutual-recursion-ok t)
+; (program)
+; (mutual-recursion
+;  (defun f1 (state)
+;    (let ((state (f-put-global 'last-m 1 state)))
+;      (f2 state)))
+;  (defun f2 (state)
+;    (let ((state (f-put-global 'last-m 1 state)))
+;      (f3 state)))
+;  (defun f3 (state)
+;    state))
+
+              (trans-er-let*
+               ((y (translate-bodies1 non-executablep
+                                      (cdr names)
+                                      (cdr bodies)
+                                      bindings
+                                      (cdr known-stobjs-lst)
+                                      ctx wrld state-vars))
+                (x (translate1-cmp (car bodies)
+                                   (if non-executablep t (car names))
+                                   (if non-executablep nil bindings)
+                                   (car known-stobjs-lst)
+                                   (if (and (consp ctx)
+                                            (equal (car ctx)
+                                                   *mutual-recursion-ctx-string*))
+                                       (msg "( MUTUAL-RECURSION ... ( DEFUN ~x0 ...) ~
+                                      ...)"
+                                            (car names))
+                                     ctx)
+                                   wrld state-vars)))
+               (trans-value (cons x y))))
+             (erp (mv erp x bindings2))
+             (t (let ((bindings bindings2))
+                  (trans-er-let*
+                   ((y (translate-bodies1 non-executablep
+                                          (cdr names)
+                                          (cdr bodies)
+                                          bindings
+                                          (cdr known-stobjs-lst)
+                                          ctx wrld state-vars)))
+                   (trans-value (cons x y))))))))))
 
 (defun throw-nonexec-error-p (body)
 
@@ -1686,38 +1735,28 @@
                                           (mv nil tests)))))))))
 
 (defun simplify-tests-and-calls (tc)
-  (let* ((tests0 (access tests-and-calls tc :tests)))
+
+; For an example of the utility of removing guard holders, note that lemma
+; STEP2-PRESERVES-DL->NOT2 in
+; books/workshops/2011/verbeek-schmaltz/sources/correctness.lisp has failed
+; when we did not do so.
+
+  (let* ((tests0 (remove-guard-holders-lst
+                  (access tests-and-calls tc :tests))))
     (mv-let
      (var const)
      (term-equated-to-constant-in-termlist tests0)
-     (cond
-      (var
-       (mv-let
-        (changedp tests)
-        (simplify-tests var const tests0)
-        (cond ((null tests) (mv changedp nil)) ; contradictory case
-              (changedp (mv t
-                            (make tests-and-calls
-                                  :tests tests
-                                  :calls (access tests-and-calls tc :calls))))
-              (t (mv nil tc)))))
-      (t (mv nil tc))))))
-
-(defun simplify-tests-and-calls-lst-rec (tc-list)
-  (cond ((endp tc-list)
-         (mv nil nil))
-        (t (mv-let
-            (changedp1 tc)
-            (simplify-tests-and-calls (car tc-list))
-            (mv-let
-             (changedp2 rest)
-             (simplify-tests-and-calls-lst-rec (cdr tc-list))
-             (cond ((null tc) ; contradictory
-                    (mv t rest))
-                   ((or changedp1 changedp2)
-                    (mv t (cons tc rest)))
-                   (t
-                    (mv nil tc-list))))))))
+     (let ((tests
+            (cond (var (mv-let (changedp tests)
+                               (simplify-tests var const tests0)
+                               (declare (ignore changedp))
+                               tests))
+                  (t tests0))))
+       (cond ((null tests) nil) ; contradictory case
+             (t (make tests-and-calls
+                      :tests tests
+                      :calls (remove-guard-holders-lst
+                              (access tests-and-calls tc :calls)))))))))
 
 (defun simplify-tests-and-calls-lst (tc-list)
 
@@ -1736,10 +1775,10 @@
 
 ; (thm (equal (foo x) yyy))
 
-  (mv-let (changedp ans)
-          (simplify-tests-and-calls-lst-rec tc-list)
-          (declare (ignore changedp))
-          ans))
+  (cond ((endp tc-list)
+         nil)
+        (t (cons (simplify-tests-and-calls (car tc-list))
+                 (simplify-tests-and-calls-lst (cdr tc-list))))))
 
 (defun induction-machine-for-fn (names body ruler-extenders)
 
@@ -1978,12 +2017,9 @@
 
   As a ``user-friendly'' gesture, ACL2 implicitly moves ~c[map]-like functions
   out of encapsulations; logically speaking, they are introduced after the
-  encapsulation.  This simplifies the constraint.  This is done only for
-  ``top-level'' encapsulations.  When an ~c[encapsulate] containing a non-empty
-  ~il[signature] list is embedded in another ~c[encapsulate] with a non-empty
-  signature list, no attempt is made to move ~c[map]-like functions out.  The
-  user is advised, via the ``infected'' warning, to phrase the encapsulation in
-  the simplest way possible.
+  encapsulation.  This simplifies the constraint.  When the constraint cannot
+  be thus simplfied the user is advised, via the ``infected'' warning, to
+  phrase the encapsulation in the simplest way possible.
 
   The lingering bug between Versions 1.5 and 2.3 mentioned above was due to our
   failure to detect the ~c[g]-like nature of some functions when they were
@@ -5313,12 +5349,13 @@
     (READ-BYTE$                  (NIL STATE)     (NIL STATE)) 
     (READ-OBJECT                 (NIL STATE)     (NIL NIL STATE)) 
     (READ-ACL2-ORACLE            (STATE)         (NIL NIL STATE)) 
+    (READ-ACL2-ORACLE@PAR        (STATE)         (NIL NIL)) 
     (READ-RUN-TIME               (STATE)         (NIL STATE)) 
     (READ-IDATE                  (STATE)         (NIL STATE)) 
     (LIST-ALL-PACKAGE-NAMES      (STATE)         (NIL STATE)) 
     (PRINC$                      (NIL NIL STATE) (STATE)) 
     (WRITE-BYTE$                 (NIL NIL STATE) (STATE)) 
-    (PRINT-OBJECT$               (NIL NIL STATE) (STATE)) 
+    (PRINT-OBJECT$-SER           (NIL NIL NIL STATE) (STATE)) 
     (GET-GLOBAL                  (NIL STATE)     (NIL)) 
     (BOUNDP-GLOBAL               (NIL STATE)     (NIL)) 
     (MAKUNBOUND-GLOBAL           (NIL STATE)     (STATE)) 
@@ -6612,13 +6649,30 @@
                                                   (strip-cars def-lst))))
                          (t ans)))))))))
 
+(defun get-unnormalized-bodies (names wrld)
+  (cond ((endp names) nil)
+        (t (cons (getprop (car names) 'unnormalized-body nil
+                          'current-acl2-world wrld)
+                 (get-unnormalized-bodies (cdr names) wrld)))))
+
+(defun strip-last-elements (lst)
+  (declare (xargs :guard (true-list-listp lst)))
+  (cond ((endp lst) nil)
+        (t (cons (car (last (car lst)))
+                 (strip-last-elements (cdr lst))))))
+
 (defun redundant-or-reclassifying-defunsp (defun-mode symbol-class
-                                            ld-skip-proofsp def-lst wrld)
+                                            ld-skip-proofsp def-lst ctx wrld
+                                            ld-redefinition-action fives
+                                            non-executablep stobjs-in-lst
+                                            default-state-vars)
 
 ; We return 'redundant if the functions in def-lst are already identically
 ; defined with :mode defun-mode and class symbol-class.  We return
-; 'reclassifying if they are all identically defined :programally and
-; defun-mode is :logic.  We return nil otherwise.
+; 'verify-guards if they are al identically defined with :mode :logic and class
+; :ideal, but this definition indicates promotion to :common-lisp-compliant.
+; Finally, we return 'reclassifying if they are all identically defined in
+; :mode :program and defun-mode is :logic.  We return nil otherwise.
 
 ; We start to answer this question by independently considering each def in
 ; def-lst.  We then add additional requirements pertaining to mutual-recursion.
@@ -6700,8 +6754,63 @@
 ;  ignorep def1 ... defn) means (defuns def1 ...  defn) was executed in this
 ;  world with the indicated defun-mode.
 
-  (redundant-or-reclassifying-defunsp0 defun-mode symbol-class
-                                       ld-skip-proofsp t def-lst wrld))
+  (let ((ans
+         (redundant-or-reclassifying-defunsp0 defun-mode symbol-class
+                                              ld-skip-proofsp t def-lst wrld)))
+    (cond ((and ld-redefinition-action
+                (member-eq ans '(redundant reclassifying verify-guards)))
+
+; We do some extra checking, converting ans to nil, in order to consider there
+; to be true redefinition (by returning nil) in cases where that seems possible
+; -- in particular, because translated bodies have changed due to prior
+; redefinition of macros or defconsts called in a new body.  Our handling of
+; this case isn't perfect, for example because it may reject reclassification
+; when the order changes.  But at least it forces some definitions to be
+; considered as doing redefinition.  Notice that this extra effort is only
+; performed when redefinition is active, so as not to slow down the system in
+; the normal case.  If there has been no redefinition in the session, then we
+; expect this extra checking to be unnecessary.
+
+           (let ((names (strip-cars fives))
+                 (bodies (get-bodies fives)))
+             (mv-let (erp lst bindings)
+                     (translate-bodies1 (eq non-executablep t) ; not :program
+                                        names bodies
+                                        (pairlis$ names names)
+                                        stobjs-in-lst
+                                        ctx wrld default-state-vars)
+                     (declare (ignore bindings))
+                     (cond (erp ans)
+                           ((eq (symbol-class (car names) wrld)
+                                :program)
+                            (let ((old-defs (recover-defs-lst (car names)
+                                                              wrld)))
+                              (and (equal names (strip-cars old-defs))
+                                   (mv-let
+                                    (erp old-lst bindings)
+                                    (translate-bodies1
+
+; The old non-executablep is nil; see recover-defs-lst.
+
+                                     nil
+                                     names
+                                     (strip-last-elements old-defs)
+                                     (pairlis$ names names)
+                                     stobjs-in-lst
+                                     ctx wrld default-state-vars)
+                                    (declare (ignore bindings))
+                                    (cond ((and (null erp)
+                                                (equal lst old-lst))
+                                           ans)
+                                          (t nil))))))
+
+; Otherwise we expect to be dealing with :logic mode functions.
+
+                           ((equal lst
+                                   (get-unnormalized-bodies names wrld))
+                            ans)
+                           (t nil)))))
+          (t ans))))
 
 (defun collect-when-cadr-eq (sym lst)
   (cond ((null lst) nil)
@@ -6943,8 +7052,7 @@
          (relevant-posns-lambdas
           (lambda-body (ffn-symb term))
           (acons (ffn-symb term)
-                 (make-posns (lambda-formals (ffn-symb term))
-                             (all-vars (lambda-body (ffn-symb term))))
+                 nil
                  (relevant-posns-lambdas-lst (fargs term) ans))))
         (t (relevant-posns-lambdas-lst (fargs term) ans))))
 
@@ -7906,7 +8014,11 @@
             (non-executablep (caddr tuple))
             (symbol-class (cdddr tuple))
             (rc (redundant-or-reclassifying-defunsp
-                 defun-mode symbol-class (ld-skip-proofsp state) lst wrld)))
+                 defun-mode symbol-class (ld-skip-proofsp state) lst
+                 ctx wrld
+                 (ld-redefinition-action state)
+                 fives non-executablep stobjs-in-lst
+                 (default-state-vars t))))
        (cond
         ((eq rc 'redundant)
          (chk-acceptable-defuns-redundancy names ctx wrld state))
@@ -8109,22 +8221,22 @@
 (link-doc-to-keyword no-thanks miscellaneous hints)
 (link-doc-to-keyword backtrack miscellaneous hints)
 
-(link-doc-to read-byte$ programming io)
-(link-doc-to open-input-channel programming io)
-(link-doc-to open-input-channel-p programming io)
-(link-doc-to close-input-channel programming io)
-(link-doc-to read-char$ programming io)
-(link-doc-to peek-char$ programming io)
-(link-doc-to read-object programming io)
-(link-doc-to open-output-channel programming io)
-(link-doc-to open-output-channel-p programming io)
-(link-doc-to close-output-channel programming io)
-(link-doc-to write-byte$ programming io)
-(link-doc-to print-object$ programming io)
-(link-doc-to get-output-stream-string$ programming io)
+(link-doc-to read-byte$ acl2-built-ins io)
+(link-doc-to open-input-channel acl2-built-ins io)
+(link-doc-to open-input-channel-p acl2-built-ins io)
+(link-doc-to close-input-channel acl2-built-ins io)
+(link-doc-to read-char$ acl2-built-ins io)
+(link-doc-to peek-char$ acl2-built-ins io)
+(link-doc-to read-object acl2-built-ins io)
+(link-doc-to open-output-channel acl2-built-ins io)
+(link-doc-to open-output-channel-p acl2-built-ins io)
+(link-doc-to close-output-channel acl2-built-ins io)
+(link-doc-to write-byte$ acl2-built-ins io)
+(link-doc-to print-object$ acl2-built-ins io)
+(link-doc-to get-output-stream-string$ acl2-built-ins io)
 
 (link-doc-to lambda miscellaneous term)
-(link-doc-to untranslate miscellaneous user-defined-functions-table)
+(link-doc-to untranslate acl2-built-ins user-defined-functions-table)
 
 (link-doc-to set-ld-skip-proofsp switches-parameters-and-modes
              ld-skip-proofsp)
@@ -8162,6 +8274,8 @@
 
 (link-doc-to waterfall miscellaneous hints-and-the-waterfall)
 
+(link-doc-to trust-tag miscellaneous defttag)
+
 (link-doc-to verify-guards-eagerness switches-parameters-and-modes
              set-verify-guards-eagerness)
 (link-doc-to default-verify-guards-eagerness switches-parameters-and-modes
@@ -8170,42 +8284,51 @@
 (link-doc-to set-compiler-enabled switches-parameters-and-modes
              compilation)
 
-(link-doc-to member-eq programming member)
-(link-doc-to member-equal programming member)
-(link-doc-to assoc-eq programming assoc)
-(link-doc-to assoc-equal programming assoc)
-(link-doc-to subsetp-eq programming subsetp)
-(link-doc-to subsetp-equal programming subsetp)
-(link-doc-to no-duplicatesp-eq programming no-duplicatesp)
-(link-doc-to no-duplicatesp-equal programming no-duplicatesp)
-(link-doc-to rassoc-eq programming rassoc)
-(link-doc-to rassoc-equal programming rassoc)
-(link-doc-to remove-eq programming remove)
-(link-doc-to remove-equal programming remove)
-(link-doc-to remove1-eq programming remove1)
-(link-doc-to remove1-equal programming remove1)
-(link-doc-to remove-duplicates-eq programming remove-duplicates)
-(link-doc-to remove-duplicates-equal programming remove-duplicates)
-(link-doc-to position-eq programming position)
-(link-doc-to position-equal programming position)
-(link-doc-to set-difference-eq programming set-difference$)
-(link-doc-to set-difference-equal programming set-difference$)
-(link-doc-to add-to-set-eq programming add-to-set)
-(link-doc-to add-to-set-eql programming add-to-set) ; pre-v4-3 compatibility
-(link-doc-to add-to-set-equal programming add-to-set)
-(link-doc-to intersectp-eq programming intersectp)
-(link-doc-to intersectp-equal programming intersectp)
-(link-doc-to put-assoc-eq programming put-assoc)
-(link-doc-to put-assoc-eql programming put-assoc) ; pre-v4-3 compatibility
-(link-doc-to put-assoc-equal programming put-assoc)
-(link-doc-to delete-assoc-eq programming delete-assoc)
-(link-doc-to delete-assoc-equal programming delete-assoc)
-(link-doc-to union-eq programming union$)
-(link-doc-to union-equal programming union$)
-(link-doc-to intersection-eq programming intersection$)
-(link-doc-to intersection-equal programming intersection$)
+(link-doc-to member-eq acl2-built-ins member)
+(link-doc-to member-equal acl2-built-ins member)
+(link-doc-to assoc-eq acl2-built-ins assoc)
+(link-doc-to assoc-equal acl2-built-ins assoc)
+(link-doc-to subsetp-eq acl2-built-ins subsetp)
+(link-doc-to subsetp-equal acl2-built-ins subsetp)
+(link-doc-to no-duplicatesp-eq acl2-built-ins no-duplicatesp)
+(link-doc-to no-duplicatesp-equal acl2-built-ins no-duplicatesp)
+(link-doc-to rassoc-eq acl2-built-ins rassoc)
+(link-doc-to rassoc-equal acl2-built-ins rassoc)
+(link-doc-to remove-eq acl2-built-ins remove)
+(link-doc-to remove-equal acl2-built-ins remove)
+(link-doc-to remove1-eq acl2-built-ins remove1)
+(link-doc-to remove1-equal acl2-built-ins remove1)
+(link-doc-to remove-duplicates-eq acl2-built-ins remove-duplicates)
+(link-doc-to remove-duplicates-equal acl2-built-ins remove-duplicates)
+(link-doc-to position-eq acl2-built-ins position)
+(link-doc-to position-equal acl2-built-ins position)
+(link-doc-to set-difference-eq acl2-built-ins set-difference$)
+(link-doc-to set-difference-equal acl2-built-ins set-difference$)
+(link-doc-to add-to-set-eq acl2-built-ins add-to-set)
+(link-doc-to add-to-set-eql acl2-built-ins add-to-set) ; pre-v4-3 compatibility
+(link-doc-to add-to-set-equal acl2-built-ins add-to-set)
+(link-doc-to intersectp-eq acl2-built-ins intersectp)
+(link-doc-to intersectp-equal acl2-built-ins intersectp)
+(link-doc-to put-assoc-eq acl2-built-ins put-assoc)
+(link-doc-to put-assoc-eql acl2-built-ins put-assoc) ; pre-v4-3 compatibility
+(link-doc-to put-assoc-equal acl2-built-ins put-assoc)
+(link-doc-to delete-assoc-eq acl2-built-ins delete-assoc)
+(link-doc-to delete-assoc-equal acl2-built-ins delete-assoc)
+(link-doc-to union-eq acl2-built-ins union$)
+(link-doc-to union-equal acl2-built-ins union$)
+(link-doc-to intersection-eq acl2-built-ins intersection$)
+(link-doc-to intersection-equal acl2-built-ins intersection$)
 
-(link-doc-to observation-cw programming observation)
+(link-doc-to observation-cw acl2-built-ins observation)
+
+(link-doc-to set-serialize-character serialize with-serialize-character)
+
+(link-doc-to &allow-other-keys miscellaneous macro-args)
+(link-doc-to &body miscellaneous macro-args)
+(link-doc-to &key miscellaneous macro-args)
+(link-doc-to &optional miscellaneous macro-args)
+(link-doc-to &rest miscellaneous macro-args)
+(link-doc-to &whole miscellaneous macro-args)
 
 #+:non-standard-analysis
 (defun build-valid-std-usage-clause (arglist body)
@@ -8720,7 +8843,11 @@
                   (stobjs-out (car names) wrld))
             (make-udf-insigs (cdr names) wrld)))))
 
-(defun intro-udf (insig kwd-alist wrld)
+(defun intro-udf (insig wrld)
+
+; This function is called during pass 2 of an encapsulate.  See the comment
+; below about guards.
+
   (case-match
    insig
    ((fn formals stobjs-in stobjs-out)
@@ -8740,41 +8867,28 @@
            fn 'stobjs-in stobjs-in nil
            (putprop
             fn 'formals formals
-            (let ((guard (cdr (assoc-eq :GUARD kwd-alist))))
-              (cond (guard (putprop-unless fn 'guard guard *t* wrld))
-                    (t wrld))))))))))))
+            (putprop fn 'guard
+
+; We are putting a guard of t on a signature function, even though a :guard
+; other than t might have been specified for this function.  This may seem to
+; be an error.  However, proofs are skipped during that pass, so an incorrect
+; guard proof obligation will not be noticed anyhow.  Instead, guard
+; verification takes place during the first pass of the encapsulate, which
+; could indeed present a problem if we are not careful.  However, we call
+; function bogus-exported-compliants to check that we are not making that sort
+; of mistake; see bogus-exported-compliants.
+
+                     *t*
+                     wrld))))))))))
   (& (er hard 'store-signature "Unrecognized signature!" insig))))
 
-(defun intro-udf-lst1 (insigs kwd-alist-lst wrld)
+(defun intro-udf-lst1 (insigs wrld)
   (cond ((null insigs) wrld)
         (t (intro-udf-lst1 (cdr insigs)
-                           (cdr kwd-alist-lst)
                            (intro-udf (car insigs)
-                                      (car kwd-alist-lst)
                                       wrld)))))
 
-(defun apply-stobj-print-names (vars stobjs)
-  (cond ((endp vars) nil)
-        (t (cons (cond
-                  ((member-eq (car vars) stobjs)
-                   (kwote
-                    (intern-in-package-of-symbol (stobj-print-name (car vars))
-                                                 (car vars))))
-                  (t (car vars)))
-                 (apply-stobj-print-names (cdr vars) stobjs)))))
-
-(defun null-body-er+ (fn formals wrld maybe-attach)
-  (let ((alt-formals
-         (let ((stobjs-in (stobjs-in fn wrld)))
-           (cond ((and stobjs-in
-                       (not (all-nils stobjs-in)))
-                  (apply-stobj-print-names formals stobjs-in))
-                 (t formals)))))
-    (if maybe-attach
-        (list 'throw-or-attach fn formals alt-formals)
-      (list 'throw-without-attach nil fn alt-formals))))
-
-(defun intro-udf-lst2 (insigs kwd-alist-lst wrld)
+(defun intro-udf-lst2 (insigs kwd-value-list-lst)
 
 ; Warning: Keep this in sync with oneify-cltl-code.
 
@@ -8785,33 +8899,34 @@
 ; Note that the body we build (in this ACL2 code) is a Common Lisp body but not
 ; an ACL2 expression!
 
-; Kwd-alist-lst is normally a list that corresponds by position to insigs, each
-; of whose elements associates keywords with values; in particular it can
+; kwd-value-list-lst is normally a list that corresponds by position to insigs,
+; each of whose elements associates keywords with values; in particular it can
 ; associate :guard with the guard for the corresponding element of insigs.
-; However, kwd-alist-lst can be the atom 'non-executable-programp, which we use
-; for proxy functions (see :DOC defproxy), i.e., :program mode functions with
-; the xarg declaration :non-executable :program.
+; However, kwd-value-list-lst can be the atom 'non-executable-programp, which
+; we use for proxy functions (see :DOC defproxy), i.e., :program mode functions
+; with the xarg declaration :non-executable :program.
 
   (cond
    ((null insigs) nil)
    (t (cons `(,(caar insigs)
               ,(cadar insigs)
-              ,@(cond ((eq kwd-alist-lst 'non-executable-programp)
-                       '((declare (xargs :non-executable :program))))
-                      (t (let ((guard (cdr (assoc-eq :guard (car kwd-alist-lst)))))
-                           (and guard
-                                `((declare (xargs :guard ,guard)))))))
-              ,(null-body-er+ (caar insigs)
-                              (cadar insigs)
-                              wrld
-                              t))
+              ,@(cond
+                 ((eq kwd-value-list-lst 'non-executable-programp)
+                  '((declare (xargs :non-executable :program))))
+                 (t (let ((guard
+                           (cadr (assoc-keyword :guard
+                                                (car kwd-value-list-lst)))))
+                      (and guard
+                           `((declare (xargs :guard ,guard)))))))
+              ,(null-body-er (caar insigs)
+                             (cadar insigs)
+                             t))
             (intro-udf-lst2 (cdr insigs)
-                            (if (eq kwd-alist-lst 'non-executable-programp)
+                            (if (eq kwd-value-list-lst 'non-executable-programp)
                                 'non-executable-programp
-                              (cdr kwd-alist-lst))
-                            wrld)))))
+                              (cdr kwd-value-list-lst)))))))
 
-(defun intro-udf-lst (insigs kwd-alist-lst wrld)
+(defun intro-udf-lst (insigs kwd-value-list-lst wrld)
 
 ; Insigs is a list of internal form signatures.  We know all the function
 ; symbols are new in wrld.  We declare each of them to have the given formals,
@@ -8824,10 +8939,9 @@
       wrld
     (put-cltl-command `(defuns nil nil
                          ,@(intro-udf-lst2 insigs
-                                           (and (not (eq kwd-alist-lst t))
-                                                kwd-alist-lst)
-                                           wrld))
-                      (intro-udf-lst1 insigs kwd-alist-lst wrld)
+                                           (and (not (eq kwd-value-list-lst t))
+                                                kwd-value-list-lst)))
+                      (intro-udf-lst1 insigs wrld)
                       wrld)))
 
 (defun defun-ctx (def-lst state event-form #+:non-standard-analysis std-p)
@@ -8868,8 +8982,7 @@
                       ,@(intro-udf-lst2
                          (make-udf-insigs names wrld)
                          (and (eq non-executablep :program)
-                              'non-executable-programp)
-                         wrld)))
+                              'non-executable-programp))))
                   (t `(defuns ,(if (eq symbol-class :program)
                                    :program
                                  :logic)

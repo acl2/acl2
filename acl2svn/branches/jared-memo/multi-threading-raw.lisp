@@ -1,4 +1,4 @@
-; ACL2 Version 4.2 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 4.3 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2011  University of Texas at Austin
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -41,6 +41,22 @@
 
 #+(and (not sbcl) sb-thread)
 (error "Feature sb-thread not supported on Lisps other than SBCL")
+
+; We would like to use the semaphore notification objects supported in SBCL
+; 1.0.54+, but version 1.0.54 has a heap exhaustion error that we wish to
+; avoid.  As such, for now, we remain compatible with 1.0.53 and below.  While
+; we can consider uncommenting the following feature push once SBCL's support
+; for semaphore notification objects is stable, the following questions seem
+; difficult to answer: How can we determine when that is the case, and how
+; confident are we that Rager's implementation using semaphore notification
+; objects is correct?  Rager determined that 1.0.54 was unstable by making all
+; of the books with parallelism enabled (and experiencing the "heap exhausted"
+; error in one of the ordinal books [at the moment of this writing, he does not
+; recall which one]).  Thus, Rager's code has not been completely tested using
+; semaphore notification objects.
+
+; #+sbcl
+; (push :sbcl-sno-patch *features*)
 
 ;---------------------------------------------------------------------
 ; Section:  Enabling and Disabling Interrupts
@@ -130,9 +146,9 @@
 ; achieves two things: (1) The code is there if we decide we want to use it
 ; again later (maybe after reading on the SBCL email lists that a bug with
 ; these atomic operations was fixed) and (2) We will have an on-going record of
-; the code that causes us to observe this bug (note that ACL2 4.2 also contains
-; the implementation that uses atomic operations).  Maybe someone will be able
-; to tell us what we are doing wrong.
+; the code that causes us to observe this bug (note that ACL2  4.2 also
+; contains the implementation that uses atomic operations).  Maybe someone will
+; be able to tell us what we are doing wrong.
 
   (val 0 ; :type (unsigned-byte #+x86-64 64 #-x86-64 32)
        )
@@ -172,13 +188,23 @@
   #+ccl
   `(ccl::atomic-incf ,x)
   #+sb-thread
+
+; Parallelism blemish: we (David Rager) performed experiments in either 2009 or
+; 2010 that indicated that there was a problem with using SBCL's built-in
+; atomic increment and decrements.  Because of this observation, we roll our
+; own atomic increments and decrements based on locking.  For future reference,
+; we leave the version of the code that used SBCL's built-in primitives as a
+; comment.
+
 ;  `(progn ; (sb-debug:backtrace) 
 ;          (1+ (sb-ext:atomic-incf
 ;               (atomically-modifiable-counter-val ,x))))
 
-; Parallelism wart: why is nil used in the call to with-recursive-lock?
+; Parallelism blemish: we do not recall why nil appears in the call to
+; with-recursive-lock below.  Probably it can be omitted.
 
-  `(sb-thread:with-recursive-lock ((atomically-modifiable-counter-lock ,x)) nil
+  `(sb-thread:with-recursive-lock ((atomically-modifiable-counter-lock ,x))
+                                  nil ; see comment above
                                   (incf (atomically-modifiable-counter-val ,x)))
   #+lispworks
   `(system:atomic-incf ,x)
@@ -275,15 +301,26 @@
 
 ; Deflock defines what some Lisps call a "recursive lock", namely a lock that
 ; can be grabbed more than once by the same thread, but such that if a thread
-; outside the owner tries to grab it, that thread will block.
+; outside the owner tries to grab it, that thread will block.  In addition to
+; defining a lock, this macro also defines a macro that uses the lock to
+; provide mutual-exclusion for a given list of operations.  This macro has the
+; name with-<modified-lock-name>, where <modified-lock-name> is the given
+; lock-symbol without the leading and trailing * characters.
 
 ; Note that if lock-symbol is already bound, then deflock will not re-bind
 ; lock-symbol.
 
-; Parallelism wart: this could also define #+acl2-par wrappers.
-
-  `(defvar ,lock-symbol
-     (make-lock (symbol-name ',lock-symbol))))
+  (let* ((name (symbol-name lock-symbol))
+         (macro-symbol (intern 
+                        (concatenate 'string
+                                     "WITH-"
+                                     (subseq name 1 (1- (length name))))
+                        "ACL2")))
+    `(progn
+       (defvar ,lock-symbol
+         (make-lock (symbol-name ',lock-symbol)))
+       (defmacro ,macro-symbol (&rest args)
+         (list* 'with-lock ',lock-symbol args)))))
 
 (defmacro reset-lock (bound-symbol)
 
@@ -315,10 +352,6 @@
     `(sb-thread:with-recursive-lock (,bound-symbol) nil ,@forms)
     #+lispworks
     `(mp:with-lock (,bound-symbol) nil ,@forms)
-
-; Parallelism wart: we could define deflock to also define with-lock 
-; accessors (e.g., "with-output-lock").
-
     #-(or ccl sb-thread lispworks)
     `(progn ,@forms)))
 
@@ -650,8 +683,10 @@
   (declare (ignore name))
   #+ccl
   (ccl:make-semaphore)
-  #+(or sb-thread lispworks)
+  #+(or (and sb-thread (not sbcl-sno-patch)) lispworks)
   (make-acl2-semaphore)
+  #+(and sb-thread sbcl-sno-patch)
+  (sb-thread:make-semaphore)
   #-(or ccl sb-thread lispworks)
 
 ; We return nil in the uni-threaded case in order to stay in sync with
@@ -694,8 +729,10 @@
 
   #+ccl
   (ccl:make-semaphore-notification)
-  #+(or sb-thread lispworks)
+  #+(or (and sb-thread (not sbcl-sno-patch)) lispworks)
   (make-array 1 :initial-element nil)
+  #+(and sb-thread sbcl-sno-patch)
+  (sb-thread:make-semaphore-notification)
   #-(or ccl sb-thread lispworks)
   nil)
 
@@ -704,8 +741,10 @@
   (declare (ignore semaphore-notification-object))
   #+ccl
   (ccl:semaphore-notification-status semaphore-notification-object)
-  #+(or sb-thread lispworks)
+  #+(or (and sb-thread (not sbcl-sno-patch)) lispworks)
   (aref semaphore-notification-object 0)
+  #+(and sb-thread sbcl-sno-patch)
+  (sb-thread:semaphore-notification-status semaphore-notification-object)
   #-(or ccl sb-thread lispworks)
 
 ; t may be the wrong default, but we don't have a use case for this return
@@ -719,8 +758,10 @@
   (declare (ignore semaphore-notification-object))
   #+ccl
   (ccl:clear-semaphore-notification-status semaphore-notification-object)
-  #+(or sb-thread lispworks)
+  #+(or (and sb-thread (not sbcl-sno-patch)) lispworks)
   (setf (aref semaphore-notification-object 0) nil)
+  #+(and sb-thread sbcl-sno-patch)
+  (sb-thread:clear-semaphore-notification semaphore-notification-object)
   #-(or ccl sb-thread lispworks)
   nil)
 
@@ -749,22 +790,14 @@
   (declare (ignore semaphore))
   #+ccl
   (ccl:signal-semaphore semaphore)
-  #+(or sb-thread lispworks)
+  #+(or (and sb-thread (not sbcl-sno-patch)) lispworks)
   (with-lock
    (acl2-semaphore-lock semaphore)
    (without-interrupts
     (incf (acl2-semaphore-count semaphore))
     (signal-condition-variable (acl2-semaphore-cv semaphore))))
-
-; Parallelism wart: delete the following commented code.
-
-;  #+lispworks
-;  (mp:with-lock
-;   ((lispworks-semaphore-lock semaphore))
-;   (without-interrupts
-;    (incf (lispworks-semaphore-count semaphore))
-;    (mp:condition-variable-signal (lispworks-semaphore-cv semaphore))))
-
+  #+(and sb-thread sbcl-sno-patch)
+  (sb-thread:signal-semaphore semaphore)  
   #-(or ccl sb-thread lispworks)
   nil)
 
@@ -803,7 +836,7 @@
       (ccl:timed-wait-on-semaphore semaphore timeout notification)
     (ccl:wait-on-semaphore semaphore notification))
 
-  #+(or sb-thread lispworks)
+  #+(or (and sb-thread (not sbcl-sno-patch)) lispworks)
   (let ((received-signal nil))
 
 ; If we did not use a variable like "received-signal", we could have the
@@ -868,6 +901,10 @@
 ; is the cost of a "live" implementation ("live" loosely means "makes progress").
 
           (signal-condition-variable (acl2-semaphore-cv semaphore))))))
+  #+(and sb-thread sbcl-sno-patch)
+  (sb-thread:wait-on-semaphore semaphore 
+                               :timeout timeout
+                               :notification notification) 
   #-(or ccl sb-thread lispworks)
   t) ; default is to receive a semaphore/lock
 
@@ -905,10 +942,39 @@
   (if (endp thread-list)
       nil
     (progn
+      #-sbcl
       (interrupt-thread
        (car thread-list)
        #'(lambda () (when *throwable-worker-thread*
                       (throw :worker-thread-no-longer-needed nil))))
+      #+sbcl
+      (handler-case
+       (interrupt-thread
+        (car thread-list)
+        #'(lambda () (when *throwable-worker-thread*
+                       (throw :worker-thread-no-longer-needed nil))))
+       (sb-thread:interrupt-thread-error
+        ()
+
+; Parallelism no-fix: turns out that this error is common.  And since we think
+; that the error is caused by the thread being finished by the time we get
+; around to interrupting it, we do not print the following warning.  The error
+; message we are trying to avoid is:
+
+; debugger invoked on a SB-THREAD:INTERRUPT-THREAD-ERROR in thread #<THREAD
+;                                                                    "initial thread" RUNNING
+
+;                                                                    {100E761FB1}>:
+;   Interrupt thread failed: thread #<THREAD "Worker thread" FINISHED values: 17
+;                                     {100F1AD651}> has exited.
+
+;        (format t "Warning: We tried to interrupt a thread and throw it with ~%~
+;                   the :worker-thread-no-longer-needed tag, but we ~%~
+;                   encountered an error. Since the error is likely benign, ~%~
+;                   this is only a warning.  Unless you are an ACL2(p) ~%~
+;                   maintainer, you can ignore this warning.~%")
+
+        ))
       (throw-all-threads-in-list (cdr thread-list)))))
 
 (defun kill-all-threads-in-list (thread-list)
@@ -923,44 +989,43 @@
       (kill-thread (car thread-list))
       (kill-all-threads-in-list (cdr thread-list)))))
 
-#+lispworks
+#+(or ccl sbcl lispworks)
 (defun initial-threads1 (threads)
   (cond ((endp threads)
          nil)
-        ((member-equal (mp:process-name (car threads))
+        (#+ccl
+         (member-equal (ccl:process-name (car threads))
+                       '("listener" "Initial"))
+
+         #+sbcl
+         (member-equal (sb-thread:thread-name (car threads))
+                       '("initial thread"))
+         #+lispworks
+         (member-equal (mp:process-name (car threads))
                        '("TTY Listener" "The idle process" 
                          "Restart Function Process"))
          (cons (car threads)
                (initial-threads1 (cdr threads))))
         (t (initial-threads1 (cdr threads)))))
 
-(defvar *initial-threads* 
-
-; *Intial-threads* stores a list of threads that are considered to be part of
-; the non-threaded part of ACL2.  When terminating parallelism threads, only
-; those not appearing in this list will be terminated.  Warning: If ACL2 uses
-; parallelism during the build process, this variable could incorrectly record
-; parallelism threads as initial threads.
-
-  (all-threads))
-
 (defun initial-threads ()
 
-; We know how to set the *initial-threads* variable reliably in all Lisps
-; except Lispworks.  Due to Lispworks' multiprocessing model (where we start a
-; tty-listener when lp exits), accurately updating this variable is difficult
-; (perhaps infeasiable).  Rather than spend even more time on this problem, we
-; simply return the threads that currently exist that match the names of
-; threads that we associate with "initial" threads.
+; Once upon a time, we would set a *initial-threads* variable upon startup of
+; ACL2.  This variable accurately reflected the set of initial threads in both
+; CCL and SBCL, but not Lispworks.  Due to our use of Lispworks'
+; multiprocessing model (where we start a tty-listener when lp exits),
+; accurately updating this variable is difficult (perhaps infeasible).  Since
+; we prefer a more uniform approach across Lisp implementations, we simply
+; return the threads that currently exist that match the names of threads that
+; we associate with "initial" threads.
 
-; Parallelism wart: we might want to adapt a similar name-based strategy for
-; SBCL and CCL.  This would allow us to get rid of *initial-threads*
-; altogether.
+; When terminating parallelism threads, only those not appearing in the list
+; returned by initial-threads will be terminated.
 
-  #-lispworks
-  *initial-threads* 
-  #+lispworks
-  (initial-threads1 (all-threads)))
+  #+(or ccl sbcl lispworks)
+  (initial-threads1 (all-threads))
+  #-(or ccl sbcl lispworks)
+  nil)
 
 (defun all-threads-except-initial-threads-are-dead ()
   #+sbcl
@@ -968,24 +1033,63 @@
   #-sbcl
   (null (set-difference (all-threads) (initial-threads))))
 
+#+ccl
+(defun all-given-threads-are-reset (threads)
+  (if (endp threads)
+      t
+    (and (equal (ccl:process-whostate (car threads))
+                "Reset")
+         (all-given-threads-are-reset (cdr threads)))))
+
+ (defun all-threads-except-initial-threads-are-dead-or-reset ()
+   (format t "All-threads is ~s~%" (all-threads))
+
+; CCL has a bug that if you try to throw a thread that is "reset" ("reset" is a
+; CCL term), it ignores the throw (and the thread never expires).  As such, we
+; do not let threads in the "reset" state prevent us from finishing the
+; resetting of parallelism variables.
+
+  #+ccl
+  (all-given-threads-are-reset 
+   (set-difference (all-threads) (initial-threads)))
+  #+sbcl
+  (<= (length (all-threads)) 1)
+  #-(or ccl sbcl)
+  (null (set-difference (all-threads) (initial-threads))))
+
 (defun send-die-to-all-except-initial-threads ()
 
 ; This function is evaluated only for side effect.
 
-; Parallelism wart: When building ACL2(p), we receive a warning message about
-; send-die-to-all-except-initial-threads being undefined.  This warning is
-; benign, but it would be nice to remove it.
-
   (let ((target-threads (set-difference (all-threads)
                                         (initial-threads))))
-    (throw-all-threads-in-list target-threads))
+    (throw-all-threads-in-list target-threads)
+    (let ((round 0))
+      (loop do
+      
+; We used to call "(thread-wait 'all-threads-except-initial-threads-are-dead)".
+; However, we noticed a synchronization problem between what we might prefer
+; the underlying Lisp to do (in this one case) and what the Lisp actually does.
+; In particular, when we call run-thread, the call to run-thread returns,
+; before we know that the thread has actually started running.  This is
+; probably fine in the general case.  However, in this instance, it is possible
+; for the threads that are about to be run to not receive the throw, because
+; they haven't really started running yet.  Rather than work out the details of
+; this problem, we punt, and simply wait for one second before issuing a new
+; throw.  In practice, this works just fine.
 
-; We can't call thread-wait in Lispworks until after multiprocessing is
-; enabled.  We therefore conditionalize the call on a condition that should be
-; nil when multiprocessing is disabled.
+            (when (equal (mod round 10) 0)
+              (throw-all-threads-in-list target-threads)
 
-  (when (not (all-threads-except-initial-threads-are-dead))
-    (thread-wait 'all-threads-except-initial-threads-are-dead)))
+; The following commented code is only for debugging
+
+;              (format t "Waiting for all non-initial threads to halt.~%")
+;              (format t "Current threads are ~%~s~%~%" (all-threads))
+
+              )
+            (sleep 0.1)
+            (incf round)
+            while (not (all-threads-except-initial-threads-are-dead-or-reset))))))
 
 (defun kill-all-except-initial-threads ()
 
@@ -1025,10 +1129,14 @@
     (or default 16)))
 
 (defvar *core-count*
+
+; *core-count* is a variable so that we can redefine it dynamically (for
+; performance testing) and not have to redefine everything that uses it.
+
   (core-count-raw)
   "The total number of CPU cores in the system.")
 
-(defconstant *unassigned-and-active-work-count-limit*
+(defvar *unassigned-and-active-work-count-limit*
 
 ; The *unassigned-and-active-work-count-limit* limits work on the *work-queue*
 ; to what we think the system will be able to process in a reasonable amount of
@@ -1046,38 +1154,6 @@
 
   (* 4 *core-count*))
 
-(defconstant *total-work-limit* ; unassigned, started, resumed AND pending
-
-; The number of pieces of work in the system, *parallelism-work-count*, must be
-; less than *total-work-limit* in order to enable creation of new pieces of
-; work.  (However, we could go from 49 to 69 pieces of work when encountering a
-; pand; just not from 50 to 52.)
-
-; Why limit the amount of work in the system?  :Doc parallelism-how-to
-; (subtopic "Another Granularity Issue Related to Thread Limitations") provides
-; an example showing how cdr recursion can rapidly create threads.  That
-; example shows that if there is no limit on the amount of work we may create,
-; then eventually, many successive cdrs starting at the top will correspond to
-; waiting threads.  If we do not limit the amount of work that can be created,
-; this can exhaust the supply of Lisp threads available to process the elements
-; of the list.
-
-  (let ((val
-
-; Warning: It is possible, in principle to create (+ val
-; *max-idle-thread-count*) threads.  Presumably you'll get a hard Lisp error
-; (or seg fault!) if your Lisp cannot create that many threads.
-
-         50)
-        (bound (* 2 *core-count*)))
-    (when (< val bound)
-      (error "The variable *total-work-limit* needs to be at least ~s, i.e., ~%~
-              at least double the *core-count*.  Please redefine ~%~
-              *total-work-limit* so that it is not ~s."
-             bound
-             val))
-    val))
-
 (defconstant *max-idle-thread-count* 
 
 ; We don't want to spawn more worker threads (which are initially idle) when we
@@ -1085,4 +1161,4 @@
 ; *max-idle-thread-count* to limit this spawning in function
 ; spawn-worker-threads-if-needed.
 
-(* 2 *core-count*))
+  (* 2 *core-count*))

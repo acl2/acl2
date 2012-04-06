@@ -1,4 +1,4 @@
-; ACL2 Version 4.2 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 4.3 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2011  University of Texas at Austin
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -93,7 +93,7 @@
 ; assoc-eq on histories to detect the presence of a history-entry for
 ; a given processor.  Do not move the processor field!
 
-  (processor ttree clause . signal)
+  (processor ttree #+acl2-par cl-id clause . signal)
   t)
 
 ; Processor is a waterfall processor (e.g., 'simplify-clause).  The
@@ -540,17 +540,7 @@
 ; as a 'lemma in the 'accumulated-ttree of the final state.)  This encourages
 ; us to cons a new ttree into the accumulator every time we do output.
 
-#+(and acl2-par (not acl2-loop-only))
 (deflock *ttree-lock*)
-
-#+(and acl2-par (not acl2-loop-only))
-(defmacro with-ttree-lock (&rest args)
-  `(with-lock *ttree-lock*
-              ,@args))
-
-#-(and acl2-par (not acl2-loop-only))
-(defmacro with-ttree-lock (&rest args)
-  `(progn$ ,@args))
 
 (defun@par accumulate-ttree-and-step-limit-into-state (ttree step-limit state)
 
@@ -565,19 +555,33 @@
   (declare (ignorable state))
   (pprogn@par
    (cond ((eq step-limit :skip) (state-mac@par))
-         (t (f-put-global@par 'last-step-limit step-limit state)))
+         (t
+
+; Parallelism no-fix: the following call of (f-put-global@par 'last-step-limit
+; ...) may be overridden by another similar call performed by a concurrent
+; thread.  But we can live with that because step-limits do not affect
+; soundness.
+
+          (f-put-global@par 'last-step-limit step-limit state)))
    (cond
     ((eq ttree nil) (value@par nil))
     (t (pprogn@par
-
-; Parallelism wart: there is probably a way to accumulate the ttree that
-; doesn't involve using a raw Lisp hack, but we just use f-put-global in raw
-; Lisp for now.
-
         (with-ttree-lock
+
+; In general, it is dangerous to set the same state global in two different
+; threads, because the first setting is blown away by the second.  But here, we
+; are _accumulating_ into a state global (namely, 'accumulated-ttree), and we
+; don't care about the order in which the accumulation occurs (even though such
+; nondeterminism isn't explained logically -- after all, we are modifying state
+; without passing it in, so we already are punting on providing a logical story
+; here).  Our only concern is that two such accumulations interfere with each
+; other, but the lock just above takes care of that (i.e., provides mutual
+; exclusion).
+
          (f-put-global@par 'accumulated-ttree
                            (cons-tag-trees ttree
-                                           (f-get-global 'accumulated-ttree state))
+                                           (f-get-global 'accumulated-ttree
+                                                         state))
                            state))
         (value@par ttree))))))
 
@@ -1654,7 +1658,7 @@
                                      (+f 2 calls)))))
            #+:non-standard-analysis
            ((realp evg)
-            (prog2$ (er hard 'fn-count-evg 
+            (prog2$ (er hard? 'fn-count-evg 
                         "Encountered an irrational in fn-count-evg!")
                     0))
            ((complex-rationalp evg)
@@ -1665,7 +1669,7 @@
                               (+f 2 calls)))
            #+:non-standard-analysis
            ((complexp evg)
-            (prog2$ (er hard 'fn-count-evg 
+            (prog2$ (er hard? 'fn-count-evg 
                         "Encountered a complex irrational in ~ fn-count-evg!")
                     0))
            ((symbolp evg)

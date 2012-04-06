@@ -10,8 +10,8 @@
 #   make DOC
 # or
 #   make TEXINFO
-# from the main ACL2 directory.  The make variables PREFIX and ACL2_SUFFIX are
-# used in this script.
+# from the main ACL2 directory.  The environment variable ACL2 is used
+# in this script; it is typically set in ../GNUmakefile.
 
 rm -f doc/workxxx.texinfo
 
@@ -37,7 +37,7 @@ echo '(certify-book "doc/write-acl2-texinfo")' >> doc/workxxx.texinfo
 echo '(write-texinfo-file :dir-string "doc/EMACS/" :file "acl2-doc-emacs" :tex-only-flg nil :non-lucid-flg t)' >> doc/workxxx.texinfo
 echo ':q' >> doc/workxxx.texinfo
 
-./${PREFIX}saved_acl2${ACL2_SUFFIX} < doc/workxxx.texinfo
+${ACL2} < doc/workxxx.texinfo
 
 ## emacs -batch "doc/EMACS/acl2-doc-emacs.texinfo" -l "../make-texinfo.el" -f texinfo-format-buffer-and-save
 

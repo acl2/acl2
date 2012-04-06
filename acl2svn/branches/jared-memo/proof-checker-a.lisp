@@ -1,4 +1,4 @@
-; ACL2 Version 4.2 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 4.3 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2011  University of Texas at Austin
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -428,13 +428,8 @@
 (defmacro add-pc-command (name command-type)
   `(table pc-command-table ',name ,command-type))
 
-(defun table-get (name key wrld)
-  (assoc-equal key
-               (getprop name 'table-alist nil
-                        'current-acl2-world wrld)))
-
 (defmacro pc-command-type (name)
-  `(cdr (table-get 'pc-command-table ,name (w state))))
+  `(cdr (assoc-equal ,name (table-alist 'pc-command-table (w state)))))
 
 (defmacro print-no-change3 (&optional str alist (col '0))
   `(pprogn (print-no-change-fn ,str ,alist ,col state)
@@ -781,7 +776,8 @@
           :oncep-override (match-free-override wrld)
           :force-info t
           :nonlinearp (non-linearp wrld)
-          :backchain-limit-rw (backchain-limit wrld :rewrite)))
+          :backchain-limit-rw (backchain-limit wrld :rewrite)
+          :rw-cache-state (rw-cache-state wrld)))
 
 (defun make-new-goals-fixed-hyps (termlist hyps goal-name start-index)
   ;; similar to make-new-goals

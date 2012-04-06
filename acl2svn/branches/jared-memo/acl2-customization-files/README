@@ -1,0 +1,24 @@
+The following five files are useful for running regressions with
+ACL2(p):
+
+  parallel-full.lisp
+  parallel-resource-based.lisp
+  parallel-top-level.lisp
+  pseudo-parallel.lisp
+  serial.lisp
+
+For example:
+
+(time nice make -j 8 regression-fresh ACL2=/projects/acl2/devel/ccl-saved_acl2p ACL2_CUSTOMIZATION=/projects/acl2/devel/acl2-customization-files/parallel-full.lisp) >& logs/make-regression-par-ccl-j-8-feb27.log&
+
+Note: Sometimes parallelism is defeated or modified for individual
+books.  To find out where:
+
+  cd books
+  grep -l acl2-par `find . -name "*.acl2"`
+
+For example, hints/basic-tests.acl2 has this:
+
+  #+acl2-par
+  ; computed hints that modify state
+  (set-waterfall-parallelism nil)

@@ -1,4 +1,4 @@
-; ACL2 Version 4.2 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 4.3 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2011  University of Texas at Austin
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -832,7 +832,8 @@
   Calling ACL2 from another program~/
 
   ACL2 is intended for interactive use.  It is generally unrealistic to expect
-  it to prove theorems fully automatically; ~pl[the-method].
+  it to prove theorems fully automatically; ~pl[the-method], and
+  ~pl[introduction-to-the-theorem-prover] for a more detailed tutorial.
 
   Nevertheless, here we describe an approach for how to call the ACL2 theorem
   prover noninteractively.  These steps can of course be modified according to
@@ -901,7 +902,7 @@
   ~b[=== STEP 4: ===]
 
   Try your script from a Lisp program, if you like.  Here is how you can do it
-  in SBCL, for example.  ( Different Lisps have different ways to do this, as
+  in SBCL, for example.  (Different Lisps have different ways to do this, as
   summarized in function ~c[system-call] in ACL2 source file
   ~c[acl2-init.lisp].)
 
@@ -938,9 +939,9 @@
 
   Many successful ACL2 users run in an shell under Emacs; ~pl[emacs].  However,
   those not familiar with Emacs may prefer to start with an Eclipse-based
-  interface developed by Peter Dillinger and Pete Manolios called the ``ACL2
-  Sedan'', or ``ACL2s''.  As of this writing, the home page for ACL2s is
-  ~url[http://acl2s.ccs.neu.edu/acl2s/doc/].~/
+  interface initiallly developed by Peter Dillinger and Pete Manolios called
+  the ``ACL2 Sedan'', or ``ACL2s''.  As of this writing, the home page for
+  ACL2s is ~url[http://acl2s.ccs.neu.edu/acl2s/doc/].~/
 
   ACL2 sessions in the ACL2 Sedan can utilize non-standard extensions and
   enhancements, especially geared toward new users, termination reasoning, and
@@ -949,8 +950,8 @@
   ~url[http://acl2s.ccs.neu.edu/acl2s/src/acl2-extensions].  (Some code
   originating from this project has been migrated to the ACL2 system books, but
   only after it was quite stable.)  Thanks to Peter Dillinger, Pete Manolios,
-  and Daron Vroon for their work on the ACL2 Sedan and for making their books
-  available to ACL2 users.  ~/")
+  Daron Vroon, and Harsh Raju Chamarthi for their work on the ACL2 Sedan and
+  for making their books available to ACL2 users.  ~/")
 
 (deflabel solution-to-simple-example
   :doc
@@ -8195,7 +8196,7 @@
    ~c[\"arithmetic-5/top\"] provides an ~c[elim] rule that eliminates ~c[(floor x y)]
    and ~c[(mod x y)] by replacing ~c[x] by ~c[(+ r (* y q))], so that the
    ~c[floor] expression becomes ~c[q] and the ~c[mod] expression becomes ~c[r].
-   When introducing your own ~c[elim] rules you will probably also need to into
+   When introducing your own ~c[elim] rules you will probably also need to
    introduce ~c[generalize] rules (see below) so that the new variables are
    appropriately constrained.
 
@@ -8933,7 +8934,7 @@
    the context of the target.  If the appropriate assumption is present but
    ACL2 is finding another one, try undoing the problematic rule and proving it
    again, specifying the ~c[:match-free :all] modifier of the ~c[:rewrite] or
-   ~c[:linear] rule class.  ~l[rule-classes].  Alternativey, undo and prove the
+   ~c[:linear] rule class.  ~l[rule-classes].  Alternatively, undo and prove the
    problematic rule again and use a ~ilc[bind-free] form to compute the
    appropriate instantiation.
 

@@ -1,4 +1,4 @@
-; ACL2 Version 4.2 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 4.3 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2011  University of Texas at Austin
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -51,67 +51,6 @@
 ; rewrite-rule, which checks that all the :REWRITE rules generated
 ; from a term are legal.  We then develop add-rewrite-rule which does
 ; the actual generation and addition of the rules to the world.
-
-; We first tear up the user's term into a bunch of conjoined
-; implications, with unprettyify.
-
-(defun unprettyify/add-hyps-to-pairs (hyps lst)
-
-; Each element of lst is a pair of the form (hypsi . concli), where hypsi
-; is a list of terms.  We append hyps to hypsi in each pair.
-
-  (cond ((null lst) nil)
-        (t (cons (cons (append hyps (caar lst)) (cdar lst))
-                 (unprettyify/add-hyps-to-pairs hyps (cdr lst))))))
-
-(defun unprettyify (term)
-
-; This function returns a list of pairs (hyps . concl) such that the
-; conjunction of all (implies (and . hyps) concl) is equivalent to
-; term.  Hyps is a list of hypotheses, implicitly conjoined.  Concl
-; does not begin with an AND (of course, its a macro, but concl
-; doesn't begin with an IF that represents an AND) or IMPLIES.
-; In addition concl doesn't begin with an open lambda.
-
-; This function is used to extract the :REWRITE rules from a term.
-; Lambdas are sort of expanded to expose the conclusion.  They are not
-; expanded in the hypotheses, or within an function symbol other than
-; the top-level IFs and IMPLIES.  But top-level lambdas (those enclosing
-; the entire term) are blown away.
-
-; Thus, if you have a proposed :REWRITE rule
-;    (implies (and p q) (let ((x a)) (equal (f x) b)))
-; it will be converted to
-;    (implies (and p q) (equal (f a) b)).
-; The rule
-;    (let ((x a)) (implies (and (p x) (q x)) (equal (f x) b))) [1]
-; will become
-;    (implies (and (p a) (q a)) (equal (f a) b)).              [2]
-; But
-;    (implies (let ((x a)) (and (p x) (q x)))                  [3]
-;             (equal (let ((x a)) (f x)) b))
-; stays untouched.  In general, once you've moved the let into a
-; hypothesis it is not seen or opened.  Once you move it into the
-; equivalence relation of the conclusion it is not seen or opened.
-; Note that this processing of lambdas can cause terms to be duplicated
-; and simplified more than once (see a in [2] compared to [3]).  
-
-  (case-match term
-              (('if t1 t2 t3)
-               (cond ((equal t2 *nil*)
-                      (append (unprettyify (dumb-negate-lit t1))
-                              (unprettyify t3)))
-                     ((equal t3 *nil*)
-                      (append (unprettyify t1)
-                              (unprettyify t2)))
-                     (t (list (cons nil term)))))
-              (('implies t1 t2)
-               (unprettyify/add-hyps-to-pairs
-                (flatten-ands-in-lit t1)
-                (unprettyify t2)))
-              ((('lambda vars body) . args)
-               (unprettyify (subcor-var vars args body)))
-              (& (list (cons nil term)))))
 
 (mutual-recursion
 
@@ -5386,7 +5325,8 @@
                        cl-set0
                        (normalized-evaluator-cl-set evfn-lst wrld)))
                      (cl-set2
-                      (evaluator-clauses evfn evfn-lst fn-args-lst)))
+                      (remove-guard-holders-lst-lst
+                       (evaluator-clauses evfn evfn-lst fn-args-lst))))
                 (cond
                  ((not (and (clause-set-subsumes nil cl-set1 cl-set2)
                             (clause-set-subsumes nil cl-set2 cl-set1)))
@@ -6708,7 +6648,9 @@
   At the moment, the best description of how ACL2 ~c[:generalize] rules
   are used may be found in the discussion of ``Generalize Rules,'' page
   248 of A Computational Logic Handbook, or ``Generalization,'' page
-  132 of ``Computer-Aided Reasoning: An Approach.''")
+  132 of ``Computer-Aided Reasoning: An Approach.''  Also
+  ~pl[introduction-to-the-theorem-prover] for detailed tutorial on using ACL2
+  to prove theorems, which includes some discussion of generalization.")
 
 (defun chk-acceptable-generalize-rule (name term ctx wrld state)
 
@@ -7189,13 +7131,13 @@
 (defun add-type-prescription-rule (rune nume typed-term term
                                         backchain-limit-lst ens wrld quietp)
   (mv-let
-    (erp hyps concl ts vars ttree)
-    (destructure-type-prescription (base-symbol rune)
-                                   typed-term term ens wrld)
-    (declare (ignore concl ttree))  
-    (cond
-     (erp
-      (cond (quietp
+   (erp hyps concl ts vars ttree)
+   (destructure-type-prescription (base-symbol rune)
+                                  typed-term term ens wrld)
+   (declare (ignore concl ttree))  
+   (cond
+    (erp
+     (cond (quietp
 
 ; We pass in the quietp flag when attempting to add a :type-prescription rule
 ; indirectly, as under a defequiv event.  The following example causes the
@@ -7225,15 +7167,15 @@
 ;        BOOLEANP (MY-EQUAL X Y))
 ;   ACL2 !>
 
-             (prog2$ (cw "~%NOTE:  ACL2 is unable to create a proposed ~
+            (prog2$ (cw "~%NOTE:  ACL2 is unable to create a proposed ~
                           type-prescription rule from the term ~x0 for ~
                           :typed-term ~x1, so this proposed rule is not being ~
                           added.~|"
-                         term typed-term)
-                     wrld))
-            (t
-             (er hard 'add-type-prescription-rule
-                 "Unable to process this :TYPE-PRESCRIPTION rule.  A possible ~
+                        term typed-term)
+                    wrld))
+           (t
+            (er hard 'add-type-prescription-rule
+                "Unable to process this :TYPE-PRESCRIPTION rule.  A possible ~
                   explanation is that we are in the second pass of an ~
                   include-book or encapsulate, and although this rule was ~
                   legal in the first pass, it is not legal in the second pass. ~
@@ -7241,27 +7183,27 @@
                   :COMPOUND-RECOGNIZER rule local to this encapsulate or ~
                   include-book.  The usual error message for ~
                   :TYPE-PRESCRIPTION rules now follows.~|~%~@0"
-                 erp))))
-     (t
-      (putprop (ffn-symb typed-term)
-               'type-prescriptions
-               (cons (make type-prescription
-                           :rune rune
-                           :nume nume
-                           :term typed-term
-                           :hyps hyps
-                           :backchain-limit-lst
-                           (rule-backchain-limit-lst
-                            backchain-limit-lst hyps wrld :ts)
-                           :basic-ts ts
-                           :vars vars
-                           :corollary term)
-                     (getprop (ffn-symb typed-term)
-                              'type-prescriptions
-                              nil
-                              'current-acl2-world
-                              wrld))
-               wrld)))))
+                erp))))
+    (t
+     (putprop (ffn-symb typed-term)
+              'type-prescriptions
+              (cons (make type-prescription
+                          :rune rune
+                          :nume nume
+                          :term typed-term
+                          :hyps hyps
+                          :backchain-limit-lst
+                          (rule-backchain-limit-lst
+                           backchain-limit-lst hyps wrld :ts)
+                          :basic-ts ts
+                          :vars vars
+                          :corollary term)
+                    (getprop (ffn-symb typed-term)
+                             'type-prescriptions
+                             nil
+                             'current-acl2-world
+                             wrld))
+              wrld)))))
 
 (defun chk-acceptable-type-prescription-rule (name typed-term term
                                                    backchain-limit-lst
@@ -7348,10 +7290,10 @@
                          "The :type-prescription rule generated from ~x0 ~
                           contains the free variable~#1~[ ~&1.  This ~
                           variable~/s ~&1.  These variables~] will be chosen ~
-                          by searching for ~#2~[an instance~/instances~] of ~
-                          ~&2 among the hypotheses of the conjecture being ~
-                          rewritten.  This is generally a severe restriction ~
-                          on the applicability of the :type-prescription rule."
+                          by searching for instances of ~&2 among the ~
+                          hypotheses of conjectures being rewritten.  This is ~
+                          generally a severe restriction on the applicability ~
+                          of the :type-prescription rule."
                          name warned-free-vars inst-hyps))
               (t state))
              (cond
@@ -9254,6 +9196,13 @@
                             (global-val 'type-set-inverter-rules wrld))
                       wrld)))
 
+; --------------------------------------------------------------------------
+; Section: :TAU-SYSTEM rules
+
+; The code for adding :tau-system rules is in a prior file, namely
+; history-management, where it is used in install-event as part of
+; tau-auto-modep.
+
 ;---------------------------------------------------------------------------
 ; Section:  :CLAUSE-PROCESSOR Rules
 
@@ -9299,12 +9248,15 @@
   rather than individual subterms of terms in the clause.
 
   We begin with a simple illustrative example: a clause-processor that assumes
-  an alleged fact and creates a separate goal to prove that fact.  We can
-  extend the hypotheses of the current goal with a term by adding the negation
-  of that term to the clause (disjunctive) representation of that goal.  So the
-  following returns two clauses: the result of adding ~c[term] as a hypothesis
-  to the input clause, as just described, and a second clause consisting only
-  of that term.
+  an alleged fact (named ~c[term] in the example) and creates a separate goal
+  to prove that fact.  We can extend the hypotheses of the current goal (named
+  ~c[cl] in the example) with a term by adding the negation of that term to the
+  clause (disjunctive) representation of that goal.  So the following returns
+  a list of two clauses: the result of adding ~c[term] as a hypothesis to the
+  input clause, as just described, and a second clause consisting only of that
+  term.  This list of two clauses can be viewed as the conjunction of the first
+  clause and the second clause (where again, each clause is viewed as a
+  disjunction).
   ~bv[]
 
   (defun note-fact-clause-processor (cl term)
@@ -11149,6 +11101,7 @@
                                           ;   and :SCHEME
                        :TYPE-SET-INVERTER ; :TYPE-SET (optional)
                        :CLAUSE-PROCESSOR
+                       :TAU-SYSTEM
                        )))
   (cond
    ((not (member-eq (car class) rule-tokens))
@@ -11372,6 +11325,8 @@
             name
             (cadr (assoc-keyword :TYPE-SET (cdr class)))
             term ctx ens wrld state))
+          (:TAU-SYSTEM
+           (chk-acceptable-tau-rule name term ctx wrld state))
           (otherwise
            (value (er hard ctx
                       "Unrecognized rule class token ~x0 in CHK-ACCEPTABLE-X-RULE."
@@ -11578,6 +11533,16 @@
             rune nume
             (cadr (assoc-keyword :TYPE-SET (cdr class)))
             term ens wrld))
+
+          (:TAU-SYSTEM
+
+; One might think that :tau-system rules are added here, since every other rule
+; class is handled here.  But one would be wrong!  Because of the automatic mode in 
+; the tau system and because of the facility for regenerating the tau data base,
+; :tau-system rules are added by the tau-visit code invoked most often from
+; install-event. 
+           
+           wrld)
 
 ; WARNING: If this function is changed, change info-for-x-rules (and/or
 ; subsidiaries) and find-rules-of-rune2.
@@ -12202,7 +12167,9 @@
 ; See add-x-rule for an enumeration of rule classes that generate the
 ; properties shown below.
 
-; Warning: Keep this function in sync with find-rules-of-rune2.
+; Warning: Keep this function in sync with find-rules-of-rune2.  In that
+; spirit, tau rules are completely invisible and so we return nil for
+; any property affected by tau rules.
 
 ; Info functions inspect the various rules and turn them into alists of the
 ; form:
@@ -12268,20 +12235,26 @@
   (if (not (consp keys))
       state
     (mv-let (col state) 
-            (fmt1 "~s0:~t1~q2" 
+            (fmt1 "~s0:"
                   (list (cons #\0 (let* ((name (symbol-name (car keys)))
                                          (lst (coerce name 'list)))
                                     (coerce (cons (car lst)
                                                   (string-downcase1 (cdr lst)))
-                                            'string)))
-                        (cons #\1 14)
-                        (cons #\2 (caar vals)))
-                  0
-                  chan
-                  state
-                  nil)
-            (declare (ignore col))
-            (print-info-for-rules-entry (cdr keys) (cdr vals) chan state))))
+                                            'string))))
+                  0 chan state nil)
+            (mv-let (col state)
+                    (cond ((< col 14)
+                           (fmt1 "~t0~q1"
+                                 (list (cons #\0 14)
+                                       (cons #\1 (caar vals)))
+                                 col chan state nil))
+                          (t (fmt1 " ~q1"
+                                   (list (cons #\0 14)
+                                         (cons #\1 (caar vals)))
+                                   col chan state nil)))
+                    (declare (ignore col))
+                    (print-info-for-rules-entry (cdr keys) (cdr vals) chan
+                                                state)))))
 
 (defun print-info-for-rules (info chan state)
   (if (not (consp info))
@@ -12390,7 +12363,7 @@
   might be:
   ~bv[]
     Rune:     (:LINEAR ABC)
-    Status:   Enabled
+    Enabled:  T
     Hyps:     ((CONSP X))
     Concl:    (< (ACL2-COUNT (CAR X)) (ACL2-COUNT X))
     Max-term: (ACL2-COUNT (CAR X))
@@ -12506,7 +12479,7 @@
 ; a new, similar, rule-class.
 
 ; There is no record object generated only by        ;;; :refinement
-
+;                                                    ;;; :tau-system
   (case x
         (recognizer-tuple                            ;;; :compound-recognizer
          (access recognizer-tuple rule :rune))
@@ -12586,7 +12559,9 @@
 ; Wart: If key is 'eliminate-destructors-rule, then val is a single rule, not a
 ; list of rules.  We handle this case specially below.
 
-; Warning: Keep this function in sync with info-for-x-rules.
+; Warning: Keep this function in sync with info-for-x-rules.  In that spirit,
+; note that tau rules never store runes and hence are completely ignored
+; here, as in info-for-x-rules.
 
   (let ((token (car rune)))
 
@@ -13268,16 +13243,16 @@
   To see which ~il[rune]s are ~il[monitor]ed and what their break conditions
   are, evaluate ~c[(monitored-runes)].
 
-  ~c[Monitor], ~c[unmonitor] and ~c[monitored-runes] are macros that expand into
-  expressions involving ~c[state].  While these macros appear to return
+  ~c[Monitor], ~c[unmonitor] and ~c[monitored-runes] are macros that expand
+  into expressions involving ~c[state].  While these macros appear to return
   the list of ~il[monitor]ed ~il[rune]s this is an illusion.  They all print
   ~il[monitor]ed ~il[rune] information to the comment window and then return
-  error triples instructing ~c[ld] to print nothing.  It is impossible to
-  return the list of ~il[monitor]ed ~il[rune]s because it exists only in the
-  ~il[wormhole] ~il[state] with which you interact when a break occurs.  This
-  allows you to change the ~il[monitor]ed ~il[rune]s and their conditions during
-  the course of a proof attempt without changing the ~il[state] in which
-  the the proof is being constructed.
+  values (so-called ``error triples'') instructing ~c[ld] to print nothing.  It
+  is impossible to return the list of ~il[monitor]ed ~il[rune]s because it
+  exists only in the ~il[wormhole] ~il[state] with which you interact when a
+  break occurs.  This allows you to change the ~il[monitor]ed ~il[rune]s and
+  their conditions during the course of a proof attempt without changing the
+  ~il[state] in which the the proof is being constructed.
 
   Unconditional break points are obtained by using the break condition
   ~c[t].  We now discuss conditional break points.  The break condition,
@@ -13504,35 +13479,34 @@
   General Form:
   :ok-if expr
   ~ev[]
-  where ~c[expr] is a term involving no free variables other than ~c[state]
-  and returning one non-~c[state] result which is treated as Boolean.
-  This form is intended to be executed from within ~c[break-rewrite]
+  where ~c[expr] is a term involving no free variables other than ~c[state] and
+  returning one non-~c[state] result which is treated as Boolean.  This form is
+  intended to be executed from within ~c[break-rewrite]
   (~pl[break-rewrite]).
 
-  Consider first the simple situation that the ~c[(ok-if term)] is a
-  command read by ~c[break-rewrite].  Then, if the term is non-~c[nil],
+  Consider first the simple situation that the ~c[(ok-if term)] is a command
+  read by ~c[break-rewrite].  Then, if the term is non-~c[nil],
   ~c[break-rewrite] exits and otherwise it does not.
 
   More generally, ~c[ok-if] returns an ACL2 error triple
-  ~c[(mv erp val state)].  (~l[ld] for more on error triples.)  If
-  any form being evaluated as a command by ~c[break-rewrite] returns
-  the triple returned by ~c[(ok-if term)] then the effect of that form
-  is to exit ~il[break-rewrite] if term is non-~c[nil].  Thus, one
-  might define a function or macro that returns the value of ~c[ok-if]
-  expressions on all outputs and thus create a convenient new way to
+  ~c[(mv erp val state)].  (~l[ld] or ~pl[programming-with-state] for more on
+  error triples.)  If any form being evaluated as a command by
+  ~c[break-rewrite] returns the triple returned by ~c[(ok-if term)] then the
+  effect of that form is to exit ~il[break-rewrite] if term is non-~c[nil].
+  Thus, one might define a function or macro that returns the value of
+  ~c[ok-if] expressions on all outputs and thus create a convenient new way to
   exit ~c[break-rewrite].
 
   The exit test, ~c[term], generally uses ~c[brr@] to access context sensitive
-  information about the attempted rule application.  ~l[brr@].
-  ~c[Ok-if] is useful inside of command sequences produced by break
-  conditions.  ~l[monitor].  ~c[:ok-if] is most useful after an ~c[:eval]
-  command has caused ~c[break-rewrite] to try to apply the rule because in
-  the resulting break environment ~c[expr] can access such things as
-  whether the rule succeeded, if so, what term it produced, and if
-  not, why.  There is no need to use ~c[:ok-if] before ~c[:eval]ing the rule
-  since the same effects could be achieved with the break condition on
-  the rule itself.  Perhaps we should replace this concept with
-  ~c[:eval-and-break-if]?  Time will tell."
+  information about the attempted rule application.  ~l[brr@].  ~c[Ok-if] is
+  useful inside of command sequences produced by break conditions.
+  ~l[monitor].  ~c[:ok-if] is most useful after an ~c[:eval] command has caused
+  ~c[break-rewrite] to try to apply the rule because in the resulting break
+  environment ~c[expr] can access such things as whether the rule succeeded, if
+  so, what term it produced, and if not, why.  There is no need to use
+  ~c[:ok-if] before ~c[:eval]ing the rule since the same effects could be
+  achieved with the break condition on the rule itself.  Perhaps we should
+  replace this concept with ~c[:eval-and-break-if]?  Time will tell."
 
   `(ok-if-fn ,term state))
 
@@ -13802,6 +13776,21 @@
           `("<MissingFunction>" "~x*" "~x* and " "~x*," 
             ,non-classical-fns)))))
 
+#+(and acl2-par (not acl2-loop-only))
+(defmacro with-waterfall-parallelism-timings (name form)
+  `(unwind-protect-disable-interrupts-during-cleanup
+    (progn (setup-waterfall-parallelism-ht-for-name ,name)
+           (reset-future-queue-length-history)
+           (setf *acl2p-starting-proof-time*
+                 (get-internal-real-time))
+           ,form)
+    (clear-current-waterfall-parallelism-ht)))
+
+#-(and acl2-par (not acl2-loop-only))
+(defmacro with-waterfall-parallelism-timings (name form)
+  (declare (ignore name))
+  form)
+
 (defun defthm-fn1 (name term state
                         rule-classes
                         instructions
@@ -13810,7 +13799,6 @@
                         doc
                         event-form
                         #+:non-standard-analysis std-p)
-
   (with-ctx-summarized
    (if (output-in-infixp state) event-form (cons 'defthm name))
    (let ((wrld (w state))
@@ -13836,46 +13824,48 @@
          (ld-skip-proofsp (ld-skip-proofsp state)))
      (pprogn
       (warn-on-inappropriate-defun-mode ld-skip-proofsp event-form ctx state)
-      (er-progn
-       (chk-all-but-new-name name ctx nil wrld state)
-       (er-let*
-        ((tterm0 (translate term t t t ctx wrld state))
+      (with-waterfall-parallelism-timings
+       name
+       (er-progn
+        (chk-all-but-new-name name ctx nil wrld state)
+        (er-let*
+         ((tterm0 (translate term t t t ctx wrld state))
 ; known-stobjs = t (stobjs-out = t)
-         (tterm 
-          #+:non-standard-analysis
-          (if std-p
-              (er-progn
-               (chk-classical-term-or-standardp-of-classical-term
-                tterm0 term ctx wrld state)
-               (translate (weaken-using-transfer-principle term)
-                          t t t ctx wrld state))
-            (value tterm0))
-          #-:non-standard-analysis
-          (value tterm0))
-         (classes
+          (tterm 
+           #+:non-standard-analysis
+           (if std-p
+               (er-progn
+                (chk-classical-term-or-standardp-of-classical-term
+                 tterm0 term ctx wrld state)
+                (translate (weaken-using-transfer-principle term)
+                           t t t ctx wrld state))
+             (value tterm0))
+           #-:non-standard-analysis
+           (value tterm0))
+          (classes
 
 ; (#+:non-standard-analysis) We compute rule classes with respect to the
 ; original (translated) term.  The modified term is only relevant for proof.
 
-          (translate-rule-classes name rule-classes tterm0 ctx ens wrld
-                                  state)))
-        (cond
-         ((redundant-theoremp name tterm0 classes wrld)
-          (stop-redundant-event ctx state))
-         (t
-          (enforce-redundancy
-           event-form ctx wrld
-           (er-let*
-            ((ttree1 (chk-acceptable-rules name classes ctx ens wrld
-                                           state))
-             (wrld1 (chk-just-new-name name 'theorem nil ctx wrld state)))
+           (translate-rule-classes name rule-classes tterm0 ctx ens wrld
+                                   state)))
+         (cond
+          ((redundant-theoremp name tterm0 classes wrld)
+           (stop-redundant-event ctx state))
+          (t
+           (enforce-redundancy
+            event-form ctx wrld
             (er-let*
-             ((instructions (if (or (eq ld-skip-proofsp 'include-book)
-                                    (eq ld-skip-proofsp 'include-book-with-locals)
-                                    (eq ld-skip-proofsp 'initialize-acl2))
-                                (value nil)
-                              (translate-instructions name instructions
-                                                      ctx wrld1 state)))
+             ((ttree1 (chk-acceptable-rules name classes ctx ens wrld
+                                            state))
+              (wrld1 (chk-just-new-name name 'theorem nil ctx wrld state)))
+             (er-let*
+              ((instructions (if (or (eq ld-skip-proofsp 'include-book)
+                                     (eq ld-skip-proofsp 'include-book-with-locals)
+                                     (eq ld-skip-proofsp 'initialize-acl2))
+                                 (value nil)
+                               (translate-instructions name instructions
+                                                       ctx wrld1 state)))
 
 ; Observe that we do not translate the hints if ld-skip-proofsp is non-nil.
 ; Once upon a time we translated the hints unless ld-skip-proofsp was
@@ -13884,66 +13874,66 @@
 ; was not defined when it was first used in axioms.lisp.  This choice is
 ; a little unsettling because it means
 
-              (hints (if (or (eq ld-skip-proofsp 'include-book)
-                             (eq ld-skip-proofsp 'include-book-with-locals)
-                             (eq ld-skip-proofsp 'initialize-acl2))
-                         (value nil)
-                       (translate-hints+ name
-                                         hints
+               (hints (if (or (eq ld-skip-proofsp 'include-book)
+                              (eq ld-skip-proofsp 'include-book-with-locals)
+                              (eq ld-skip-proofsp 'initialize-acl2))
+                          (value nil)
+                        (translate-hints+ name
+                                          hints
   
 ; If there are :instructions, then default hints are to be ignored; otherwise
 ; the error just below will prevent :instructions in the presence of default
 ; hints.
 
-                                         (and (null instructions)
-                                              (default-hints wrld1))
-                                         ctx wrld1 state)))
-              (doc-pair (translate-doc name doc ctx state))
-              (ttree2 (cond (instructions
-                             (er-progn
-                              (cond (hints (er soft ctx
-                                               "It is not permitted to supply ~
-                                                both :INSTRUCTIONS and :HINTS ~
-                                                to DEFTHM."))
-                                    (t (value nil)))
-                              #+:non-standard-analysis
-                              (if std-p
+                                          (and (null instructions)
+                                               (default-hints wrld1))
+                                          ctx wrld1 state)))
+               (doc-pair (translate-doc name doc ctx state))
+               (ttree2 (cond (instructions
+                              (er-progn
+                               (cond (hints (er soft ctx
+                                                "It is not permitted to ~
+                                                 supply both :INSTRUCTIONS ~
+                                                 and :HINTS to DEFTHM."))
+                                     (t (value nil)))
+                               #+:non-standard-analysis
+                               (if std-p
 
 ; How could this happen?  Presumably the user created a defthm event using the
 ; proof-checker, and then absent-mindedly somehow suffixed "-std" on to the
 ; car, defthm, of that form.
 
-                                  (er soft ctx
-                                      ":INSTRUCTIONS are not supported for ~
+                                   (er soft ctx
+                                       ":INSTRUCTIONS are not supported for ~
                                         defthm-std events.")
-                                (value nil))
-                              (proof-checker name term
-                                             tterm classes instructions
-                                             wrld1 state)))
-                            (t (prove tterm
-                                      (make-pspv ens wrld1
-                                                 :displayed-goal term
-                                                 :otf-flg otf-flg)
-                                      hints ens wrld1 ctx state))))
-              (ttree3 (cond (ld-skip-proofsp (value nil))
-                            (t (prove-corollaries name tterm0 classes ens wrld1
-                                                  ctx state)))))
-             (let ((wrld2
-                    (update-doc-data-base
-                     name doc doc-pair
-                     (add-rules name classes tterm0 term ens wrld1 state)))
-                   (ttree4 (cons-tag-trees ttree1
-                                           (cons-tag-trees ttree2 ttree3))))
-               (er-progn
-                (chk-assumption-free-ttree ttree4 ctx state)
-                (print-rule-storage-dependencies name ttree1 state)
-                (install-event name
-                               event-form
-                               'defthm
-                               name
-                               ttree4
-                               nil :protect ctx wrld2
-                               state))))))))))))))
+                                 (value nil))
+                               (proof-checker name term
+                                              tterm classes instructions
+                                              wrld1 state)))
+                             (t (prove tterm
+                                       (make-pspv ens wrld1
+                                                  :displayed-goal term
+                                                  :otf-flg otf-flg)
+                                       hints ens wrld1 ctx state))))
+               (ttree3 (cond (ld-skip-proofsp (value nil))
+                             (t (prove-corollaries name tterm0 classes ens wrld1
+                                                   ctx state)))))
+              (let ((wrld2
+                     (update-doc-data-base
+                      name doc doc-pair
+                      (add-rules name classes tterm0 term ens wrld1 state)))
+                    (ttree4 (cons-tag-trees ttree1
+                                            (cons-tag-trees ttree2 ttree3))))
+                (er-progn
+                 (chk-assumption-free-ttree ttree4 ctx state)
+                 (print-rule-storage-dependencies name ttree1 state)
+                 (install-event name
+                                event-form
+                                'defthm
+                                name
+                                ttree4
+                                nil :protect ctx wrld2
+                                state)))))))))))))))
 
 (defun defthm-fn (name term state
                        rule-classes

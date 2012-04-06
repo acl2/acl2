@@ -1,4 +1,4 @@
-; ACL2 Version 4.2 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 4.3 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2011  University of Texas at Austin
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -592,7 +592,7 @@
 ; The loss of efficiency caused by using symbol-value below should be more than
 ; compensated for by the lack of a warning here when building the system.
 
-           (template (qfuncall defstobj-template name args))
+           (template (qfuncall defstobj-template name args nil))
            (raw-defs (qfuncall defstobj-raw-defs name template
 
 ; We do not want to rely on having the world available here, so we pass in nil
@@ -881,6 +881,8 @@ notation causes an error and (b) the use of ,. is not permitted."
 
 (defvar *inhibit-sharp-comma-warning* nil)
 
+(defvar *inside-sharp-u-read* nil)
+
 (defun sharp-comma-read (stream char n)
   (or *inhibit-sharp-comma-warning*
       (format t
@@ -927,7 +929,7 @@ notation causes an error and (b) the use of ,. is not permitted."
 ; Thanks to Pascal J. Bourguignon for suggesting this approach.
   
   (declare (ignore char n))
-  (let* ((package-name (read stream))
+  (let* ((package-name (read stream t nil t))
          (package-string (cond ((symbolp package-name)
                                 (symbol-name package-name))
                                ((stringp package-name)
@@ -940,7 +942,32 @@ notation causes an error and (b) the use of ,. is not permitted."
                       (error "There is no package named ~S that is known to ~
                               ACL2 in this context."
                              package-name))))
-    (read stream)))
+    (read stream t nil t)))
+
+(defun sharp-u-read (stream char n)
+  (declare (ignore char n))
+  (let* ((*inside-sharp-u-read*
+          (or (not *inside-sharp-u-read*)
+              (error "Recursive attempt to read a sharp-u (#u)~%expression ~
+                      while inside a sharp-u expression.  This is not~%~
+                      allowed.")))
+         (x (read stream t nil t)))
+    (cond
+     ((numberp x) x)
+     ((not (symbolp x))
+      (error "Failure to read #u expression:~%~
+              #u was not followed by a symbol."))
+     (t (let* ((name (symbol-name x))
+               (c (and (not (equal name ""))
+                       (char name 0))))
+          (cond ((member c '(#\B #\O #\X))
+                 (read-from-string
+                  (concatenate 'string "#" (remove #\_ name))))
+                (t (let ((n (read-from-string (remove #\_ name))))
+                     (cond ((numberp n) n)
+                           (t (error "Failure to read #u expression:~%~
+                                      Result ~s is not a numeral."
+                                     n)))))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                            SUPPORT FOR #@
@@ -1165,14 +1192,15 @@ notation causes an error and (b) the use of ,. is not permitted."
 ; WARNING: Keep this in sync with the #-acl2-loop-only definition of setenv$.
 
   #+cmu
-  (and (boundp ext::*environment-list*)
-       (cdr (assoc-eq (intern string :keyword)
-                      ext::*environment-list*)))
+  (and (boundp 'ext::*environment-list*)
+       (cdr (assoc (intern string :keyword)
+                   ext::*environment-list*
+                   :test #'eq)))
   #+(or gcl allegro lispworks ccl sbcl clisp)
   (let ((fn
          #+gcl       'si::getenv
          #+allegro   'sys::getenv
-         #+lispworks 'cl::getenv
+         #+lispworks 'hcl::getenv
          #+ccl       'ccl::getenv
          #+sbcl      'sb-ext::posix-getenv
          #+clisp     'ext:getenv))
@@ -1347,25 +1375,9 @@ notation causes an error and (b) the use of ,. is not permitted."
 
 (defmacro special-form-or-op-p (name)
 
-; This odd macro deals with the problem that the notion of special operator
-; is defined differently in different lisps.
+; At one time we thought that special-operator-p does not work in all Lisps.
+; But if that was true, it no longer seems to be the case in October 2011.
 
-; Even though cmu lisp purports to be CLTL2, in fact it does not
-; contain a defun for special-form-p and does contain a defun of
-; special-operator-p.
-
-; SBCL makes no claim to being CLTL2.  Unfortunately acl2.lisp helpfully
-; pushes :CLTL2 to *FEATURES* anyway (for all :ANSI-CL implementations).
-
-  #+(and (not DRAFT-ANSI-CL-2) CLTL2
-         (not cmu) (not sbcl) (not clisp) (not ccl))
-  `(common-lisp::special-form-p ,name)
-  #+ccl
-  `(common-lisp::special-operator-p ,name)
-  #+(and (not DRAFT-ANSI-CL-2) (not CLTL2)
-         (not cmu) (not sbcl) (not clisp) (not ccl))
-  `(lisp::special-form-p ,name)
-  #+(or (and DRAFT-ANSI-CL-2 (not ccl)) cmu sbcl clisp)
   `(special-operator-p ,name))
 
 (defvar *startup-package-name* "ACL2")

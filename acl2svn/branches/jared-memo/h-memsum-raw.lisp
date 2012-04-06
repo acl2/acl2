@@ -363,7 +363,7 @@ the calls took.")
            (no-hits (or (not *report-hits*)
                         (null (memoize-condition fn))))
            (bytes-allocated (bytes-allocated num))
-           (tt (total-time num))
+           (tt (max .000001 (total-time num)))
            (t/c (time/call num))
            (tnh (time-for-non-hits/call num))
            (in-progress-str

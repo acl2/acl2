@@ -1,6 +1,6 @@
 #  -*- Fundamental -*- 
 
-# ACL2 Version 4.2 -- A Computational Logic for Applicative Common Lisp
+# ACL2 Version 4.3 -- A Computational Logic for Applicative Common Lisp
 # Copyright (C) 2011  University of Texas at Austin.
 
 # This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -189,7 +189,7 @@
 
 LISP = gcl
 DIR = /tmp
-ACL2_VERSION = v4-2
+ACL2_VERSION = v4-3
 
 # The variable NONSTD should be defined for the non-standard version and not
 # for the standard version.  Non-standard ACL2 images will end in saved_acl2r
@@ -261,8 +261,8 @@ ACL2_SIZE =
 # on the make command line.
 ACL2_IGNORE = -i
 
-# Avoid loading customization file.
-export ACL2-CUSTOMIZATION = NONE
+# Supporting regressions:
+export ACL2_PCERT
 
 # The order of the files below is unimportant.
 
@@ -270,11 +270,12 @@ sources := axioms.lisp memoize.lisp hons.lisp boot-strap-pass-2.lisp\
            basis.lisp parallel.lisp translate.lisp\
            type-set-a.lisp linear-a.lisp\
            type-set-b.lisp linear-b.lisp\
-           non-linear.lisp\
+           non-linear.lisp tau.lisp\
            rewrite.lisp simplify.lisp bdd.lisp\
            other-processes.lisp induct.lisp prove.lisp\
            proof-checker-a.lisp history-management.lisp defuns.lisp defthm.lisp\
            other-events.lisp ld.lisp proof-checker-b.lisp interface-raw.lisp\
+           serialize.lisp serialize-raw.lisp\
            defpkgs.lisp
 
 ifdef ACL2_HONS
@@ -475,6 +476,7 @@ copy-distribution:
 # match what lisp returns from truename.
 	rm -f workxxx
 	rm -f workyyy
+	rm -f acl2r.lisp
 	echo '(load "init.lisp")' > workxxx
 	echo '(acl2::copy-distribution "workyyy" "${CURDIR}" "${DIR}")' >> workxxx
 	echo '(acl2::exit-lisp)' >> workxxx
@@ -492,6 +494,7 @@ copy-workshops:
 # DIR for both.
 	rm -f workxxx
 	rm -f workyyy
+	rm -f acl2r.lisp
 	echo '(load "init.lisp")' > workxxx
 	echo '(acl2::copy-distribution "workyyy" "${CURDIR}" "${DIR}" "all-files-workshops.txt" t)' >> workxxx
 	echo '(acl2::exit-lisp)' >> workxxx
@@ -509,6 +512,7 @@ copy-nonstd:
 # DIR for both.
 	rm -f workxxx
 	rm -f workyyy
+	rm -f acl2r.lisp
 	echo '(load "init.lisp")' > workxxx
 	echo '(acl2::copy-distribution "workyyy" "${CURDIR}" "${DIR}" "all-files-nonstd.txt" t)' >> workxxx
 	echo '(acl2::exit-lisp)' >> workxxx
@@ -526,6 +530,7 @@ copy-extra:
 	$(MAKE) copy-distribution DIR=$(DIR)
 	rm -f workxxx
 	rm -f workyyy
+	rm -f acl2r.lisp
 	echo '(load "init.lisp")' > workxxx
 	echo '(acl2::copy-distribution "workyyy" "${CURDIR}" "${DIR}" "all-files-extra.txt" t)' >> workxxx
 	echo '(acl2::exit-lisp)' >> workxxx
@@ -646,11 +651,19 @@ DOC: HTML EMACS_TEX STATS
 
 # Use ACL2_DOC_UNDOCUMENTED_FILE if you want to support broken links
 # (by having them point to a page acknowledging that the link is
-# broken, rather htan by having doc/create-acl2-html simply fail).
+# broken, rather than by having doc/create-acl2-html simply fail).
 # Note that this only works for the HTML target, not for the EMACS_TEX
 # or EMACS_ONLY targets.
 HTML:
-	PREFIX=$(PREFIX) ; export PREFIX ; ACL2_SUFFIX=$(ACL2_SUFFIX) ; export ACL2_SUFFIX ; doc/create-acl2-html
+	@if [ "$(ACL2)" = "" ]; then \
+	    ACL2="../../$(PREFIX)saved_acl2$(ACL2_SUFFIX)" ;\
+	    export ACL2 ;\
+	    doc/create-acl2-html ;\
+	else \
+	    ACL2=$(ACL2) ;\
+	    export ACL2 ;\
+	    doc/create-acl2-html ;\
+	fi
 
 # Note: doc/create-acl2-tex builds a ps file, so depends on texi2dvi
 # and dvips.  These might not be present on some systems (but is
@@ -661,14 +674,42 @@ HTML:
 # Note that doc/create-acl2-texinfo certifies doc/write-acl2-texinfo,
 # but (for efficiency) doc/create-acl2-tex does not.
 EMACS_TEX:
-	PREFIX=$(PREFIX) ; export PREFIX ; ACL2_SUFFIX=$(ACL2_SUFFIX) ; export ACL2_SUFFIX ; doc/create-acl2-texinfo ; doc/create-acl2-tex
+	@if [ "$(ACL2)" = "" ]; then \
+	    ACL2="./$(PREFIX)saved_acl2$(ACL2_SUFFIX)" ;\
+	    export ACL2 ;\
+	    doc/create-acl2-texinfo ; doc/create-acl2-tex ;\
+	else \
+	    ACL2=$(ACL2) ;\
+	    export ACL2 ;\
+	    doc/create-acl2-texinfo ; doc/create-acl2-tex ;\
+	fi
 
 EMACS_ONLY:
-	PREFIX=$(PREFIX) ; export PREFIX ; ACL2_SUFFIX=$(ACL2_SUFFIX) ; export ACL2_SUFFIX ; doc/create-acl2-texinfo
+	@if [ "$(ACL2)" = "" ]; then \
+	    ACL2="./$(PREFIX)saved_acl2$(ACL2_SUFFIX)" ;\
+	    export ACL2 ;\
+	    doc/create-acl2-texinfo ;\
+	else \
+	    ACL2=$(ACL2) ;\
+	    export ACL2 ;\
+	    doc/create-acl2-texinfo ;\
+	fi
 
 # See the Essay on Computing Code Size in the ACL2 source code.
 STATS:
-	@PREFIX=$(PREFIX) ; export PREFIX ; ACL2_SUFFIX=$(ACL2_SUFFIX) ; export ACL2_SUFFIX export ACL2_SOURCES="$(sources)" ; doc/create-acl2-code-size
+	@if [ "$(ACL2)" = "" ]; then \
+	    ACL2="../$(PREFIX)saved_acl2$(ACL2_SUFFIX)" ;\
+	    export ACL2 ;\
+	    ACL2_SOURCES="$(sources)" ;\
+	    export ACL2_SOURCES ;\
+	    doc/create-acl2-code-size ;\
+	else \
+	    ACL2=$(ACL2) ;\
+	    export ACL2 ;\
+	    ACL2_SOURCES="$(sources)" ;\
+	    export ACL2_SOURCES ;\
+	    doc/create-acl2-code-size ;\
+	fi
 
 .PHONY: clean
 clean:
@@ -676,7 +717,7 @@ clean:
 # (since there could be many executables that one prefers not to delete),
 # except for *osaved_acl2* files.
 	rm -f *.o *#* *.c *.h *.data gazonk.* workxxx workyyy *.lib \
-	  *.fasl *.fas *.sparcf *.ufsl *.64ufasl *.ufasl *.dfsl \
+	  *.fasl *.fas *.sparcf *.ufsl *.64ufasl *.ufasl *.dfsl *.dxl \
 	  *.d64fsl *.dx64fsl *.lx64fsl \
 	  *.lx32fsl *.x86f *.o \
 	  TAGS acl2-status.txt acl2r.lisp acl2-proclaims.lisp .acl2rc \
@@ -768,6 +809,27 @@ regression:
 	uname -a
 	cd books ; $(MAKE) $(ACL2_IGNORE) all-plus
 
+.PHONY: hons-check
+hons-check:
+	@if [ "$(ACL2)" = "" ]; then \
+		echo 'Error: "make" variable ACL2 must be set for "hons" targets.' ;\
+		exit 1 ;\
+	fi
+
+.PHONY: regression-hons-only
+regression-hons-only: hons-check
+	uname -a
+	cd books ; \
+	  $(MAKE) $(ACL2_IGNORE) hons ACL2_HONS_OPT=$(ACL2_HONS_OPT) ACL2=$(ACL2)
+
+.PHONY: regression-hons
+# For a HONS regression, we do regression-hons-only first both to get
+# the extra parallelism and (primarily) to check up front that `make'
+# variable ACL2 is bound.
+regression-hons:
+	$(MAKE) regression-hons-only
+	$(MAKE) regression
+
 .PHONY: regression-fast
 regression-fast:
 	uname -a
@@ -790,6 +852,8 @@ certify-books-fresh: clean-books
 .PHONY: regression-fresh regression-fast-fresh regression-nonstd-fresh
 regression-fresh: clean-books
 	$(MAKE) $(ACL2_IGNORE) regression
+regression-hons-fresh: hons-check clean-books
+	$(MAKE) $(ACL2_IGNORE) regression-hons
 regression-fast-fresh: clean-books
 	$(MAKE) $(ACL2_IGNORE) regression-fast
 regression-nonstd-fresh: clean-books-nonstd
@@ -874,7 +938,7 @@ clean-doc:
 
 .PHONY: clean-books
 clean-books:
-	cd books ; $(MAKE) $(ACL2_IGNORE) clean
+	cd books ; $(MAKE) $(ACL2_IGNORE) clean ; $(MAKE) $(ACL2_IGNORE) clean-hons
 
 .PHONY: clean-books-nonstd
 clean-books-nonstd:
@@ -939,7 +1003,7 @@ arch: full init move-large regression-fresh proofs
 mini-proveall:
 	@rm -rf mini-proveall.out
 	@echo '(value :q) (lp) (mini-proveall)' | ./${PREFIXsaved_acl2} > mini-proveall.out
-	@(grep '^ ORDERED-SYMBOL-ALISTP-REMOVE-FIRST-PAIR-TEST' mini-proveall.out > /dev/null) || \
+	@(grep '^ "Mini-proveall completed successfully."' mini-proveall.out > /dev/null) || \
 	(echo 'Mini-proveall failed!' ; ls -l ./${PREFIXsaved_acl2}; cat mini-proveall.out ; exit 1)
 	@echo 'Mini-proveall passed.'
 

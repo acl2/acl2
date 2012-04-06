@@ -1,4 +1,4 @@
-; ACL2 Version 4.2 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 4.3 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2011  University of Texas at Austin
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -30,32 +30,66 @@
 ; CCL-specific changes made to hons-raw.lisp.  With some work this restriction
 ; could probably be relaxed, but it's not clear that it's worth the effort.
 #+(and hons (not ccl))
-
 (error "It is illegal to build the experimental HONS version
 of ACL2 in this Common Lisp.  For that version, the
 underlying Common Lisp must be CCL (Clozure Common Lisp,
 formerly OpenMCL).  CCL runs on many platforms, including
-both 32-bit and 64-bit Linux.  See the ACL2 installation
-instructions for how to obtain CCL.")
+Linux and Mac OS.  See the ACL2 installation instructions 
+how to obtain CCL.")
+
+#+(and hons ccl (not 64-bit-host)) ; use 64-bit-target instead?
+(error "It appears that you are trying to build the
+experimental HONS version of ACL2 in 32-bit CCL.  That is
+not currently supported; indeed, we have seen errors during
+a regression.  You can proceed by commenting out this error
+message in source file acl2-init.lisp.")
 
 ; Allow taking advantage of threads in SBCL, CCL, and Lispworks (where we may
 ; want to build a parallel version, which needs this to take place).
 #+(or (and sbcl sb-thread) ccl lispworks)
 (push :acl2-mv-as-values *features*)
 
-; Essay on Parallelism and Parallelism Warts
+; Essay on Parallelism, Parallelism Warts, Parallelism Blemishes, Parallelism
+; No-fixes, Parallelism Hazards, and #+ACL2-PAR notes.
 
-; These sources incorporate code for an experimental extension for parallelism,
-; initiated in David Rager's dissertation work.  That extension may be produced
-; by setting the :acl2-par feature, for example using make (see :DOC
-; parallelism-build).  This work is evolving, but we have taken great pains to
-; preserve the functionality of ACL2 without parallelism.  As the parallelism
-; extension is still under active development as of this writing (May, 2011),
-; we use the phrase "Parallelism wart:" to annotate comments about known issues
-; for the #+acl2-par build of ACL2.  These range from minor comment suggestions
-; to deeper questions concerning the correctness of the code.  Rager intends to
-; address most of these parallelism warts by the time his dissertation work is
-; complete.
+; These sources incorporate code for an experimental extension for parallelism
+; contributed by David Rager during his master's and Ph.D. dissertation work.
+; That extension may be built by setting the :acl2-par feature, for example
+; using make (see :DOC compiling-acl2p).  The incorporation of code supporting
+; parallelism has been carried out while taking great pains to preserve the
+; functionality of the ACL2 system proper (i.e., without the experimental
+; extension for parallelism).
+
+; We use the phrase "Parallelism wart:" to label comments about known issues
+; for the #+acl2-par build of ACL2 that we would like to fix, time permitting.
+; We also use the phrase "Parallelism blemish:" to identify known issues for
+; the #+acl2-par build of ACL2 that we intend to fix only if led to do so by
+; user complaints.  Finally, we use the phrase "Parallelism no-fix:" to label
+; comments about known issues for the #+acl2-par build of ACL2 that we do not
+; intend to fix, though we could reclassify these if there are sufficiently
+; strong user complaints.  Searching through the parallism warts, blemishes,
+; and no-fixes could be useful when a user reports a bug in #+acl2-par that
+; cannot be replicated in #-acl2-par.
+
+; Parallelism hazards are unrelated to parallelism warts, blemishes, and
+; no-fixes.  Parallelism hazards are macros or functions that are known to be
+; theoretically unsafe when performing multi-threaded execution.  We originally
+; did not expect users to encounter parallelism hazards (because we should have
+; programmed such that the hazards never occur).  However, in practice, these
+; parallelism hazards are somewhat common and we have disabled the automatic
+; warning that occurs everytime a hazard occurs.  Once we re-enable that
+; warning, in the event that users encounter a parallelism hazard, they will be
+; asked to report the associated warning to the ACL2 maintainers.  For example,
+; if state-global-let* is called while executing concurrently, we want to know
+; about it and develop a work-around.  See *possible-parallelism-hazards* and
+; warn-about-parallelism-hazard for more information.
+
+; #+ACL2-PAR notes contain documentation that only applies to #+acl2-par.
+
+; In an effort to avoid code duplication, we created a definition scheme that
+; supports defining both serial and parallel versions of a function with one
+; call to a defun-like macro.  See the definitions of @par-mappings and
+; defun@par for an explanation of this scheme.
 
 ; Developer note on emacs and parallelism.  When comparing with versions up
 ; through svn revision 335 (May 27, 2011), it may be useful to ignore "@par"
@@ -74,11 +108,11 @@ instructions for how to obtain CCL.")
 ;   (put 'warning$@par 'lisp-indent-function nil)
 
 ; Only allow the feature :acl2-par in environments that support
-; multi-threading.  Keep this in sync with the error message about SBCL and
-; CCL in set-parallel-evaluation and with :doc parallelism-build.
-; If we add support for non-ANSI GCL, consider providing a call of
-; reset-parallelism-variables analogous to the one generated by setting
-; *reset-parallelism-variables* in our-abort.
+; multi-threading.  Keep this in sync with the error message about CCL,
+; Lispworks, and SBCL in set-parallel-execution-fn and with :doc
+; compiling-acl2p.  If we add support for non-ANSI GCL, consider providing a
+; call of reset-parallelism-variables analogous to the one generated by setting
+
 #+(and acl2-par (not ccl) (not (and sbcl sb-thread)) (not lispworks))
 (error "It is currently illegal to build the parallel version of ACL2 in this
 Common Lisp.  See source file acl2-init.lisp for this error message,
@@ -97,8 +131,26 @@ implementations.")
 #+clisp
 (setq CUSTOM:*DEFAULT-FILE-ENCODING* :unix)
 
-#+lispworks
-(setq system::*stack-overflow-behaviour* nil) ; could be :warn
+#+(and lispworks (not acl2-par))
+(setq system::*stack-overflow-behaviour*
+
+; The following could reasonably be nil or :warn.  David Rager did some
+; experiments suggesting that ACL2(p) regressions (as of July 2011) may be more
+; robust with the :warn setting.  However, that setting causes warnings during
+; the build, and it's easy to imagine that ACL2 users would also see that
+; cryptic warning -- very un-ACL2-like!  So we use nil rather than :warn here.
+
+      nil)
+
+#+(and lispworks acl2-par)
+(setq system:*stack-overflow-behaviour* 
+
+; Since a setting of nil is at least sometimes (if not always) ignored when
+; safety is set to 0 (according to an email communication between David Rager
+; and Martin Simmons), we choose to use the warn setting for the #+acl2-par
+; build.
+
+      :warn)
 
 ; We have observed a significant speedup with Allegro CL when turning off
 ; its cross-referencing capability.  Here are the times before and after
@@ -120,9 +172,51 @@ implementations.")
 
 (load "acl2.lisp")
 
+; Fix a bug in SBCL 1.0.49 (https://bugs.launchpad.net/bugs/795705), thanks to
+; patch provided by Nikodemus Siivola.
+#+sbcl
+(in-package :sb-c)
+#+sbcl
+(when (equal (lisp-implementation-version) "1.0.49")
+  (without-package-locks
+
+   (defun undefine-fun-name (name)
+     (when name
+       (macrolet ((frob (type &optional val)
+                        `(unless (eq (info :function ,type name) ,val)
+                           (setf (info :function ,type name) ,val))))
+                 (frob :info)
+                 (frob :type (specifier-type 'function))
+                 (frob :where-from :assumed)
+                 (frob :inlinep)
+                 (frob :kind)
+                 (frob :macro-function)
+                 (frob :inline-expansion-designator)
+                 (frob :source-transform)
+                 (frob :structure-accessor)
+                 (frob :assumed-type)))
+     (values))
+   ))
+
+; WARNING: The next form should be an in-package (see in-package form for sbcl
+; just above).
+
 ;  Now over to the "ACL2" package for the rest of this file.
 
 (in-package "ACL2")
+
+(defconstant *current-acl2-world-key*
+
+; *Current-acl2-world-key* is the property used for the current-acl2-world
+; world.  We formerly used a defvar, but there seemed to be no reason to use a
+; special variable, which Gary Byers has pointed out takes about 5 instructions
+; to read in CCL in order to check if a thread-local binding is dynamically in
+; effect.  So we tried using a defconstant.  Unfortunately, that trick failed
+; in Allegro CL; even if we use a boundp test to guard the defconstant, when we
+; used make-symbol to create the value; the build failed.  So the value is now
+; an interned symbol.
+
+  'acl2_invisible::*CURRENT-ACL2-WORLD-KEY*)
 
 #+(and gcl hons)
 (when (not (gcl-version->= 2 7 0))
@@ -148,7 +242,7 @@ implementations.")
 
 (defun system-call (string arguments)
   #+akcl
-  (lisp::system
+  (si::system
    (let ((result string))
      (dolist
       (x arguments)
@@ -463,7 +557,8 @@ implementations.")
                                    "compact-print.lisp"
                                    "multi-threading-raw.lisp"
                                    "futures-raw.lisp"
-                                   "parallel-raw.lisp")))))
+                                   "parallel-raw.lisp"
+                                   "serialize-raw.lisp")))))
 
 (defvar *saved-build-date-lst*)
 (defvar *saved-mode*)
@@ -875,32 +970,6 @@ implementations.")
   (maybe-load-acl2-init)
   (eval `(in-package ,*startup-package-name*))
 
-; Remark for #+acl2-par.  Here (for Lispworks) and in parallel-raw.lisp (for
-; CCL and SBCL), we set the gc-threshold to a high number.  If the Lisps
-; support it, this threshold could be based off the actual memory in the
-; system, but we just leave it at 2 gigabytes for now.  We peform this setting
-; of the threshold for Lispworks inside the restart function, because Lispworks
-; doesn't save the GC configuration as part of the Lisp image.
-
-; Parallelism wart: the 2 gigabyte threshold may cause problems for machines
-; with less than 2 gigabytes of free RAM.
-
-  #+(and acl2-par lispworks)
-  (progn
-
-; Calling set-gen-num-gc-threshold sets the GC threshold for the given
-; generation of garbage.
-
-    (system:set-gen-num-gc-threshold 0 (expt 2 20))
-    (system:set-gen-num-gc-threshold 1 (expt 2 27))
-    (system:set-gen-num-gc-threshold 2 (expt 2 28))
-
-; This call to set-blocking-gen-num accomplishes two things: (1) It sets the
-; third generation as the "final" generation -- nothing can be promoted to
-; generation four or higher.  (2) It sets the GC threshold for generation 3.
-
-    (system:set-blocking-gen-num 3 :gc-threshold (expt 2 31)))
-   
 ; The following two lines follow the recommendation in Allegro CL's
 ; documentation file doc/delivery.htm.
 
@@ -934,7 +1003,7 @@ implementations.")
                   :full-gc t))
 
 #+lispworks
-(defun lispworks-save-exec-raw (sysout-name)
+(defun lispworks-save-exec-aux (sysout-name eventual-sysout-name)
 
 ; LispWorks support (Dave Fox) pointed out, in the days of LispWorks 4, that we
 ; need to be sure to call (mp:initialize-multiprocessing) when starting up.  Up
@@ -951,17 +1020,7 @@ implementations.")
 ; ;; No live processes except internal servers - stopping multiprocessing
 
 ; So we have decided not to call :multiprocessing t, and also not to call
-; (mp:initialize-multiprocessing).  LispWorks 6.0 seems to work fine for ACL2,
-; so it seems that we need not think further about
-; mp:initialize-multiprocessing until perhaps LispWorks is supported with
-; #+acl2-par.
-
-; Parallelism wart: It's unclear whether calling stop-multiprocessing really
-; works.  We are currently seeing an error in ACL2(p) on Lispworks, where
-; cons's are reported as misaligned when including books and also when
-; executing proofs in parallel.  This error didn't occur initially, and it
-; started surfacing about the time that we started calling
-; stop-multiprocessing.
+; (mp:initialize-multiprocessing) in the #-acl2-par case.
 
   #+acl2-par
   (when mp::*multiprocessing*
@@ -975,33 +1034,76 @@ implementations.")
              'mp:initialize-multiprocessing' instead of calling 'lp'.  This ~%~
              is necessary because of the way multiprocessing works in ~%~
              Lispworks.~%~%"))
-  (cond ((and system::*init-file-loaded*
-              system::*complain-about-init-file-loaded*)
+
+; We just make a guess that Lispworks can be handled the way that GCL is
+; handled.
+
+  (if (probe-file "worklispext")
+      (delete-file "worklispext"))
+  (let* ((ext "lw")
+         (ext+
+
+; We deal with the apparent fact that Windows implementations of GCL append
+; ".exe" to the filename created by save-system -- and assume, until someone
+; tells us otherwise, that Lispworks does similarly.
+
+          #+mswindows "lw.exe"
+          #-mswindows "lw")
+         (lw-exec-file
+          (unix-full-pathname sysout-name ext+))
+         (eventual-lw-exec-file
+          (unix-full-pathname eventual-sysout-name ext+)))
+    (with-open-file (str "worklispext" :direction :output)
+                    (format str ext+))
+    (if (probe-file sysout-name)
+        (delete-file sysout-name))
+    (if (probe-file lw-exec-file)
+        (delete-file lw-exec-file))
+    (with-open-file (str sysout-name :direction :output)
+                    (write-exec-file str nil
+
+; We pass options "-init -" and "-siteinit -" to inhibit loading init and patch
+; files because because we assume that whatever such files were to be loaded,
+; were in fact loaded at the time the original Lispworks executable was saved.
+; Of course, individual users who doesn't like this decision and know better
+; could always edit this script file, i.e., lw-exec-file, in the same spirit as
+; changing the underlying Lisp implementation before building ACL2 (again,
+; presumably based on knowledge of the host Lisp implementation).
+
+                                     "~s -init - -siteinit - $*~%"
+                                     eventual-lw-exec-file))
+    (chmod-executable sysout-name)
+    (cond ((and system::*init-file-loaded*
+                system::*complain-about-init-file-loaded*)
 
 ; We hope it's fine to save an image when an init-file has been loaded.  Maybe
 ; somebody can explain to us why LispWorks causes a break in such a situation
 ; by default (which explains the binding of
 ; system::*complain-about-init-file-loaded* below).
 
-         (format t
-                 "Warning: Overriding LispWorks hesitation to save an image~%~
+           (format t
+                   "Warning: Overriding LispWorks hesitation to save an image~%~
                   after init-file has been loaded.~%")
-         (let ((system::*complain-about-init-file-loaded* nil))
-           (system::save-image sysout-name
-                               :restart-function 'acl2-default-restart
-                               #+acl2-par :multiprocessing
-                               #+acl2-par t
-                               :gc t)))
-        (t (system::save-image sysout-name
-                               :restart-function 'acl2-default-restart
-                               #+acl2-par :multiprocessing
-                               #+acl2-par t
-                               :gc t))))
+           (let ((system::*complain-about-init-file-loaded* nil))
+             (system::save-image lw-exec-file
+                                 :restart-function 'acl2-default-restart
+                                 #+acl2-par :multiprocessing
+                                 #+acl2-par t
+                                 :gc t)))
+          (t (system::save-image lw-exec-file
+                                 :restart-function 'acl2-default-restart
+                                 #+acl2-par :multiprocessing
+                                 #+acl2-par t
+                                 :gc t)))))
 
 #+lispworks
-(defun save-acl2-in-lispworks (sysout-name &optional mode)
+(defun save-acl2-in-lispworks (sysout-name mode eventual-sysout-name)
   (setq *saved-mode* mode)
-  (lispworks-save-exec-raw sysout-name))
+  (if (probe-file "worklispext")
+      (delete-file "worklispext"))
+  (with-open-file (str "worklispext" :direction :output)
+                  (format str "lw"))
+  (lispworks-save-exec-aux sysout-name eventual-sysout-name))
 
 #+lispworks
 (defun save-exec-raw (sysout-name)
@@ -1009,7 +1111,7 @@ implementations.")
 ; See the comment above about :multiprocessing t.
 
   (setq *acl2-default-restart-complete* nil)
-  (lispworks-save-exec-raw sysout-name))
+  (lispworks-save-exec-aux sysout-name sysout-name))
 
 #+cmu
 (defun save-acl2-in-cmulisp-aux (sysout-name core-name)
@@ -1092,14 +1194,31 @@ implementations.")
 
         ("~a~%"
          (let ((contrib-dir
-                (and (fboundp 'sb-int::sbcl-homedir-pathname)
-                     (funcall 'sb-int::sbcl-homedir-pathname))))
+                (and (boundp 'sb-ext::*core-pathname*)
+                     (ignore-errors
+                      (let* ((core-dir
+                              (pathname-directory sb-ext::*core-pathname*))
+                             (contrib-dir-pathname
+                              (and (equal (car (last core-dir))
+                                          "output")
+                                   (make-pathname
+                                    :directory
+                                    (append (butlast core-dir 1)
+                                            (list "contrib"))))))
+                        (and (probe-file contrib-dir-pathname)
+                             (namestring contrib-dir-pathname)))))))
            (if contrib-dir
                (format nil
                        "export SBCL_HOME=~s"
-                       (namestring contrib-dir))
+                       contrib-dir)
              "")))
-        "~s --core ~s~a --eval '(acl2::sbcl-restart)'"
+
+; We have observed with SBCL 1.0.49 that "make HTML" fails on our 64-bit linux
+; system unless we start sbcl with --control-stack-size 4 [or larger].  The
+; default, according to http://www.sbcl.org/manual/, is 2.  The problem seems
+; to be stack overflow from fmt0, which is not tail recursive.
+
+        "~s --control-stack-size 4 --core ~s~a --eval '(acl2::sbcl-restart)'"
         prog
         eventual-sysout-core
 
@@ -1346,6 +1465,13 @@ implementations.")
                                      "export CCL_DEFAULT_DIRECTORY=~s"
                                      default-dir)
                            "")))
+
+; It is probably important to use -e just below instead of :toplevel-function,
+; at least for #+hone.  Jared Davis and Sol Swords have told us that it seems
+; that with :toplevel-function one gets a new "toplevel" thread at start-up,
+; which "plays badly with the thread-local hash tables that make up the hons
+; space".
+
                       "~s -I ~s -e \"(acl2::acl2-default-restart)\" $*~%"
                       ccl-program
                       core-name))
@@ -1420,7 +1546,7 @@ implementations.")
   #+lucid
   (save-acl2-in-lucid "nsaved_acl2" mode)
   #+lispworks
-  (save-acl2-in-lispworks "nsaved_acl2" mode)
+  (save-acl2-in-lispworks "nsaved_acl2" mode other-info)
   #+allegro
   (save-acl2-in-allegro "nsaved_acl2" mode other-info)
   #+cmu

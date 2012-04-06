@@ -1,4 +1,4 @@
-; ACL2 Version 4.2 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 4.3 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2011  University of Texas at Austin
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -1032,10 +1032,8 @@
 ; logic.  So we restrict this solution to raw mode.  Furthermore, the lisps
 ; listed below do not need this fix, and they all print a newline even with
 ; "~&" when apparently not necessary, so we exclude them from this fix.
-; (Note Jan. 2009: Apparently CCL doesn't need this fix either, but it seems
-; harmless, so we'll leave it in for CCL.)
 
-    #-(or acl2-loop-only gcl cmu sbcl lispworks)
+    #-(or acl2-loop-only gcl cmu sbcl lispworks ccl)
     (when (raw-mode-p state)
       (format (get-output-stream-from-channel output-channel) "~&"))
     (cond
@@ -1843,19 +1841,21 @@
   called.)  ~c[Ld] is also a general-purpose ACL2 file loader and a
   ~il[command] interpreter.  ~c[Ld] is actually a macro that expands to a
   function call involving ~ilc[state].  ~c[Ld] returns an ``error triple''
-  ~c[(mv erp val state)] as explained below.
+  ~c[(mv erp val state)] as explained below.  (For much more on error triples,
+  ~pl[programming-with-state].)
 
   ~l[rebuild] for a variant of ~c[ld] that skips proofs.
 
   The arguments to ~c[ld], except for ~c[:dir], all happen to be global
-  variables in ~ilc[state].  For example, ~c[']~ilc[current-package] and
-  ~c[']~ilc[ld-verbose] are global variables, which may be accessed via
-  ~c[(@ current-package)] and ~c[(@ ld-verbose)].  When ~c[ld] is called, it
-  ``binds'' these variables.  By ``binds'' we actually mean the variables are
-  globally set but restored to their old values on exit.  Because ~c[ld]
-  provides the illusion of ~il[state] global variables being bound, they are
-  called ``~c[ld] specials'' (after the Lisp convention of calling a variable
-  ``special'' if it is referenced freely after having been bound).
+  variables in ~ilc[state] (~pl[state] and ~pl[programming-with-state]).  For
+  example, ~c[']~ilc[current-package] and ~c[']~ilc[ld-verbose] are global
+  variables, which may be accessed via ~c[(@ current-package)] and
+  ~c[(@ ld-verbose)].  When ~c[ld] is called, it ``binds'' these variables.  By
+  ``binds'' we actually mean the variables are globally set but restored to
+  their old values on exit.  Because ~c[ld] provides the illusion of ~il[state]
+  global variables being bound, they are called ``~c[ld] specials'' (after the
+  Lisp convention of calling a variable ``special'' if it is referenced freely
+  after having been bound).
 
   Note that all arguments but the first are passed via keyword.  Any variable
   not explicitly given a value in a call retains its pre-call value, with the
@@ -3158,7 +3158,7 @@
 
   ACL2 copyright, license, sponsorship~/~/
 
-  ACL2 Version 4.2 -- A Computational Logic for Applicative Common Lisp
+  ACL2 Version 4.3 -- A Computational Logic for Applicative Common Lisp
   Copyright (C) 2011  University of Texas at Austin
 
   This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -3335,7 +3335,7 @@
 
 (deflabel breaks
   :doc
-  ":Doc-Section Miscellaneous
+  ":Doc-Section ACL2::ACL2-built-ins
 
   Common Lisp breaks~/
   ~bv[]
@@ -9076,8 +9076,8 @@
   The ~il[proof-checker] now does non-linear arithmetic when appropriate.  It
   had formerly ignored ~ilc[set-non-linearp] executed in the ACL2 command loop.
 
-  Incremental releases are now supported.  ~l[version] and
-  ~pl[set-tainted-okp].  Thanks to Hanbing Liu for discovering a flaw in our
+  Incremental releases are now supported.  ~l[version] and {obsolete after 4.3}
+  set-tainted-okp.  Thanks to Hanbing Liu for discovering a flaw in our
   original design.
 
   The pattern-matching algorithm for ~c[:]~ilc[rewrite] rules has been made
@@ -10238,7 +10238,7 @@
   ~c[(equal var term)] can bind the variable ~c[var].
 
   A small change has been made for ~c[:]~ilc[type-prescription] rules for
-  hypotheses of the form ~c[(equal var term)], where c[var] is a free variable
+  hypotheses of the form ~c[(equal var term)], where ~c[var] is a free variable
   and no variable of ~c[term] is free (~pl[free-variables]).  As with
   ~c[:]~ilc[rewrite] and ~c[:]~ilc[linear] rules, we now bind ~c[var] to
   ~c[term] even if ~c[(equal u term)] happens to be known in the current
@@ -12144,9 +12144,9 @@
 
   A new ~il[table], ~ilc[evisc-table], allows you to introduce print
   abbreviations, for example for large constants.  Moreover, a new reader macro
-  ~-[]~c[#,] ~-[] makes it convenient to reference constants even inside a quote.
-  ~l[evisc-table].  Thanks to Bob Boyer and Warren Hunt for useful discussions
-  leading to this feature.
+  ~-[] ~c[#,] ~-[] makes it convenient to reference constants even inside a
+  quote.  ~l[evisc-table].  Thanks to Bob Boyer and Warren Hunt for useful
+  discussions leading to this feature.
 
   The macros in ~c[books/misc/expander.lisp] now have a new keyword argument,
   ~c[:simplify-hyps-p].  The default behavior is as before, but now case
@@ -12504,7 +12504,7 @@
   (For system hackers only.)  The handling of ~il[events] of the form
   ~c[(progn! (state-global-let* ...))] had a bug that was causing bindings to
   be evaluated twice.  Moreover, the use of system function
-  ~c[state-global-let*] is suspect in raw Lisp.  We have eliminated special
+  ~ilc[state-global-let*] is suspect in raw Lisp.  We have eliminated special
   treatment of ~c[state-global-let*] by ~c[progn!] in favor of a new keyword
   argument, ~c[state-global-bindings], that provides the intended
   functionality.  ~l[progn!].  Moreover, special handling that allowed
@@ -12751,7 +12751,8 @@
   his own implementation).
 
   The ACL2 customization file can now be specified using environment variable
-  ~c[ACL2-CUSTOMIZATION].  ~l[acl2-customization].  Thanks to Peter Dillinger
+  ~c[ACL2-CUSTOMIZATION] [note: starting with Version_4.0,
+  ~c[ACL2_CUSTOMIZATION]].  ~l[acl2-customization].  Thanks to Peter Dillinger
   for requesting this feature.
 
   Added new emacs capabilities for proof trees (all documented in emacs):
@@ -13046,7 +13047,7 @@
   :doc
   ":Doc-Section release-notes
 
-  ACL2 Version  3.3(r) (xxx, 20xx) Notes~/
+  ACL2 Version  3.3(r) (November, 2007) Notes~/
 
   ~/
 
@@ -13537,7 +13538,7 @@
   to the ~il[documentation] and to adding this warning.
 
   You may now use ~ilc[set-non-linear], ~ilc[set-let*-abstraction],
-  ~ilc[set-tainted-ok], and ~ilc[set-ld-skip-proofs] in place of their versions
+  ~c[set-tainted-ok], and ~ilc[set-ld-skip-proofs] in place of their versions
   ending in ``~c[p]''.  Thanks to Jared Davis for suggesting consideration of
   such a change.  All ``~c[set-]'' utilites now have a version without the
   final ``~c[p]'' (and most do not have a version with the final ``~c[p]'').
@@ -14674,7 +14675,7 @@
   Fixed a bug evidenced by error message ``Unexpected form in certification
   world'', which could result from attempting to certify a book after
   evaluating an ~ilc[encapsulate] form with a local ~ilc[defmacro].  Thanks to
-  Jared Davis for pointing out ths bug and sending the example:
+  Jared Davis for pointing out this bug and sending the example:
   ~bv[]
   (encapsulate
    ()
@@ -16872,7 +16873,7 @@
 
   Improved the built-in `~c[untranslate]' functions to produce ~c[let*]
   expressions when appropriate (more to help with tools that call
-  ~c[untranslate] and the like, than to help with proof output).'
+  ~c[untranslate] and the like, than to help with proof output).
 
   The utility ~ilc[redo-flat] now works for ~ilc[certify-book] failures, just
   as it continues to work for failures of ~ilc[encapsulate] and ~ilc[progn].
@@ -17412,16 +17413,53 @@
 ; Moved assert$ to the right place in cmp-to-error-triple (thanks to David
 ; Rager for correcting an error in our initial change).
 
+; Below we show how to obtain a hard Lisp error in Version_4.2, when, as
+; mentioned in the :doc string below, "including books with hidden packages".
+; The problem was that write-expansion-file was deciding whether to push
+; maybe-introduce-empty-pkg-1 and maybe-introduce-empty-pkg-2 forms based on
+; the known-package-alist just before pass 1 of certify-book, rather than just
+; after it.  But a second defpkg form can use symbols defined in the first, so
+; since it's pretty cheap just to lay down all such forms, that's what we do.
+
+;   sloth:~/temp> cat sub.lisp
+;   ; First execute these two commands in the certification world:
+;   ; (defpkg "FOO" '(a))
+;   ; (defpkg "BAR" '(foo::b))
+;   
+;   ; Then:
+;   ; (certify-book "sub" 2)
+;   
+;   (in-package "ACL2")
+;   
+;   (defun g (x) x)
+;   sloth:~/temp> cat top.lisp
+;   ; Just do this:
+;   ; (certify-book "top")
+;   
+;   (in-package "ACL2")
+;   
+;   (local (include-book "sub"))
+;   
+;   (defun h (x) x)
+;   sloth:~/temp> 
+;   
+;   ACL2 !>(include-book "top")
+;   
+;   ***********************************************
+;   ************ ABORTING from raw Lisp ***********
+;   Error:  There is no package named "FOO" .
+;   ***********************************************
+
   :Doc
   ":Doc-Section release-notes
 
-  ACL2 Version  4.3 (xxx, 20xx) Notes~/
+  ACL2 Version  4.3 (July, 2011) Notes~/
 
   NOTE!  New users can ignore these release notes, because the
   ~il[documentation] has been updated to reflect all changes that are recorded
   here.
 
-  Below we roughly organize the changes since Version 4.2 into the following
+  Below we roughly organize the changes since Version  4.2 into the following
   categories of changes: existing features, new features, heuristic
   improvements, bug fixes, changes at the system level and to distributed
   books, Emacs support, and experimental versions.  Each change is described in
@@ -17540,8 +17578,8 @@
   ~il[State] globals ~c[fmt-hard-right-margin] and ~c[fmt-soft-right-margin]
   are now untouchable (~pl[set-fmt-hard-right-margin] and
   ~pl[push-untouchable]).  If you bind these ~c[state] globals with
-  ~c[state-global-let*], then you will need to do so with appropriate setteres
-  to restore their values, for example as follows.
+  ~ilc[state-global-let*], then you will need to do so with appropriate
+  setters to restore their values, for example as follows.
   ~bv[]
     (state-global-let*
      ((fmt-hard-right-margin 500 set-fmt-hard-right-margin)
@@ -17579,6 +17617,51 @@
 
   We no longer print induction schemes with ~il[gag-mode]; use ~c[:]~ilc[pso]
   if you want to see them.  Thanks to Dave Greve for this suggestion.
+
+  It is now legal to supply a constant for a ~il[stobj] array dimension.
+  ~l[defstobj].  Thanks to Warren Hunt for requesting this enhancement.
+
+  We cleaned up a few issues with ~ilc[defpkg].~bq[]
+
+  o It is no longer illegal to submit a ~ilc[defpkg] form in raw-mode
+  (~pl[set-raw-mode]).  Thanks to Jun Sawada for reporting an example in which
+  an ~ilc[include-book] form submitted in raw-mode caused an error because of a
+  `hidden' ~ilc[defpkg] form (~pl[hidden-defpkg]).  There will no longer be an
+  error in such cases.
+
+  o It had been the case that ~il[local]ly including a book could make it
+  possible to use a package defined by that book.  Consider for example the
+  following book, ~c[foo.lisp].
+  ~bv[]
+  (in-package \"ACL2\")
+  (local (include-book \"arithmetic/top\" :dir :system))
+  ~ev[]
+  After certifying this book, it had been possible to admit the following
+  events in a new session.
+  ~bv[]
+  (include-book \"foo\")
+  (defconst acl2-asg::*foo* 3)
+  (defconst *c* 'acl2-asg::xyz)
+  ~ev[]
+  In Version_4.3, neither of these ~ilc[defconst] events is admitted.
+
+  o A hard Lisp error is now avoided that had been possible in rare cases when
+  including books with hidden packages (~pl[hidden-defpkg]). An example may be
+  found in a comment in the ~ilc[deflabel] for ~c[note-4-3] (in ACL2 source
+  file ~c[ld.lisp]).~eq[]
+
+  The undocumented (but sometimes useful) functions ~c[packn1] and ~c[packn]
+  are now ~il[guard]-verified ~c[:]~ilc[logic] mode functions.  Thanks to
+  Sandip Ray for requesting this enhancement.
+
+  It had been the case that when including a book, functions defined in the
+  book's certification ~il[world] (that is, in its ~il[portcullis]
+  ~il[command]s) were typically not given compiled code.  That has been fixed.
+
+  The commands ~c[:]~ilc[pl] and ~c[:]~ilc[pl2] have been improved, primarily
+  by printing information for more rule classes.  ~l[pl] and ~pl[pl2].  See
+  also the item below about the new ~il[proof-checker] command,
+  ~c[show-type-prescriptions].
 
   ~st[NEW FEATURES]
 
@@ -17644,7 +17727,39 @@
   ~ev[]
   Thanks to David Rager for contributing this macro.
 
+  The macro ~ilc[defattach] may now be supplied the argument
+  ~c[:skip-checks :cycles].  In this case, as with argument ~c[:skip-checks t],
+  a trust tag is reuired (~pl[defttag]), and no logical claims are made.  The
+  effect is to avoid the usual check that the extended ancestor relation has no
+  cycles (~pl[defattach]).  Thanks to Dave Greve for requesting this feature.
+
+  You can now limit the printing of subgoal names when using
+  ~c[:]~ilc[set-gag-mode]~c[ :goals].  ~l[set-print-clause-ids].  Thanks to
+  Karl Hoech for a suggestion leading to this enhancement.
+
+  A new ~il[proof-checker] command, ~c[show-type-prescriptions], or ~c[st] for
+  short, provides information about ~c[:]~ilc[type-prescription] rules that
+  match a given term.  Thanks to Dave Greve for requesting this enhancement.
+  See also the item above about related improvements to commands ~c[:]~ilc[pl]
+  and ~c[:]~ilc[pl2].
+
   ~st[HEURISTIC IMPROVEMENTS]
+
+  ACL2 now avoids some repeated attempts to rewrite hypotheses of rewrite
+  rules.  ~l[set-rw-cache-state] for a discussion of this behavior and how to
+  avoid it.  The default behavior has been observed to reduce by 11% the
+  overall time required to complete a regression.  Here are the directories
+  that had the top three time decreases and top three time increases, shown in
+  seconds.
+  ~bv[]
+    -368 coi/gacc (1064 down to 696: decrease of 35%)
+    -220 workshops/1999/ste (664 down to 444: decrease of 33%)
+    -148 unicode (331 down to 183: decrease of 45%)
+    ....
+      +7 workshops/2002/cowles-flat/support (229 up to 236: increase of 3%)
+      +8 workshops/1999/ivy/ivy-v2/ivy-sources (508 up to 516: increase of 2%)
+     +12 workshops/2009/hardin/deque-stobj (78 up to 91: increase of 17%)
+  ~ev[]
 
   The so-called ``ancestors check,'' which is used to limit backchaining, has
   been strengthened so that two calls of ~ilc[equal] are considered the same
@@ -17665,6 +17780,12 @@
   discussion of ``cross-referencing'' in ACL2 source file ~c[acl2-init.lisp]).
   As a result of this change we have about a 6% speedup on the regression
   suite, but a 27% time reduction on an example that includes a lot of books.
+
+  Exhaustive matching for the case of ~il[free-variables] has been extended to
+  ~il[type-prescription] rules, in analogy to the default setting
+  ~c[:match-free :all] already in place for ~il[rewrite], ~il[linear], and
+  ~il[forward-chaining] rules.  ~l[free-variables-type-prescription].  Thanks
+  to Dave Greve for requesting this enhancement.
 
   ~st[BUG FIXES]
 
@@ -17687,6 +17808,18 @@
   such a proof and a bit of further explanation, see the example at the top of
   the comments for ~c[(deflabel note-4-3 ..)] in ACL2 source file ~c[ld.lisp].
 
+  It had been possible to prove ~c[nil] by proving the following
+  theorem using ACL2 built on CCL and then proving its negation using
+  ACL2 built on a different host Lisp.
+  ~bv[]
+  (defthm host-lisp-is-ccl
+    (equal (cdr (assoc 'host-lisp *initial-global-table*))
+           :ccl)
+    :rule-classes nil)
+  ~ev[]
+  This hole has been plugged by moving the setting of ~c['host-lisp] out
+  of the constant ~c[*initial-global-table*].
+
   Fixed ~ilc[trace$] for arguments that are ~il[stobj] accessors or updaters.
   It also gives an informative error in this case when the accessor or updater
   is a macro (because the introducing ~ilc[defstobj] event specified
@@ -17694,10 +17827,10 @@
 
   Avoided a potential error that could occur when no user home directory is
   located.  Our previous solution for Windows simply avoided looking for ACL2
-  customization files (~pl[ACL2-CUSTOMIZATION]) and ~c[acl2-init.lsp] files in
+  customization files (~pl[acl2-customization]) and ~c[acl2-init.lsp] files in
   a user's home directory.  With this change, we handle such files the same for
   Windows as for non-Windows systems: we always look for ACL2 customization
-  files (~pl[ACL2-CUSTOMIZATION]) and ~c[acl2-init.lsp] files in a user's home
+  files (~pl[acl2-customization]) and ~c[acl2-init.lsp] files in a user's home
   directory, but only if such a directory exists.  Thanks to Hanbing Liu for
   reporting this issue.
 
@@ -17784,7 +17917,79 @@
   attention; a slight variant of his example appears in a comment in ACL2
   source function ~c[oneify-cltl-code].
 
+  It had been the case that even when a ~il[stobj] creator function was
+  declared to be untouchable (~pl[push-untouchable]), a ~ilc[with-local-stobj]
+  form based on that same stobj was permitted.  Now, such forms are not
+  admitted.  Thanks to Jared Davis for a query leading to this fix.
+
+  Fixed a buggy message upon ~il[guard] violations, which was suggesting the
+  use of ~c[(set-guard-checking :none)] in some cases when guard-checking was
+  already set to ~c[:none].
+
+  It had been possible to get a hard Lisp error when computing with
+  ~ilc[ec-call] in ~il[books].  The following is an example of such a book,
+  whose certification no longer causes an error.
+  ~bv[]
+  (in-package \"ACL2\")
+  (defun f (x) x)
+  (defconst *c* (ec-call (f 3)))
+  (defun g (x) (cons x x))
+  ~ev[]
+
+  The command ~c[:]~ilc[pl2], and also the ~il[proof-checker] commands
+  ~c[rewrite] and ~c[show-rewrites] (and hence their respective aliases ~c[r]
+  and ~c[sr]), now take rule-id arguments that can be ~c[:]~ilc[definition]
+  ~il[rune]s.  These commands dealt with definition rules already, e.g.
+  ~bv[]
+  :pl2 (append x y) binary-append
+  ~ev[]
+  but they did not allow explicit specification of ~c[:definition] runes, e.g.:
+  ~bv[]
+  :pl2 (append x y) (:definition binary-append)
+  ~ev[]
+
+  The following example illustrates a bug in the processing of (admittedly
+  obscure) ~il[hints] of the form ~c[:do-not-induct name], where ~c[name] is
+  not ~c[t], ~c[:otf-flg-override], ~c[:otf], or ~c[nil].  In this example,
+  ACL2 had essentially ignored the hint and reverted to prove the original goal
+  by induction, rather than to skip the goal temporarily as is expected for
+  such hints.  Thanks to David Rager for a helpful discussion.
+  ~bv[]
+  (thm (and (equal (append (append x y) z) (append x y z))
+            (equal (append (append x2 y2) z2) (append x2 y2 z2)))
+       :hints ((\"Subgoal 1\" :do-not-induct some-name)))
+  ~ev[]
+
+  Fixed a slight bug in the definitions of built-in ~ilc[theories].  For
+  example, in a fresh ACL2 session the value of the following form is ~c[nil],
+  but formerly included several ~c[:]~ilc[definition] ~il[rune]s.
+  ~bv[]
+  (let ((world (w state)))
+    (set-difference-theories (function-theory :here)
+                             (function-theory 'ground-zero)))
+  ~ev[]
+
   ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]
+
+  Many changes have been made to the distributed books, as recorded in svn logs
+  under the `Source' and 'Updates' links at
+  ~url[http://acl2-books.googlecode.com/].  Here we list some of the more
+  significant changes.~bq[]
+
+  o A large library has been graciously contributed by the formal verification
+  group at Centaur Technology.  See ~c[books/centaur/] and, in particular, file
+  ~c[books/centaur/README], which explains how the library depends on the
+  experimental HONS extension (~pl[hons-and-memoization]).
+
+  o Among the new books is an illustration of ~ilc[defattach],
+  ~c[books/misc/defattach-example.lisp], as well as a variant of defattach that
+  avoids the need for ~il[guard] verification,
+  ~c[books/misc/defattach-bang.lisp].
+
+  o Distributed book ~c[books/misc/trace1.lisp] has been deleted.  It had
+  provided slightly more friendly ~il[trace] output for new users, but 
+  distributed book ~c[books/misc/trace-star.lisp] may be better suited for that
+  purpose.~eq[]
 
   ACL2 can once again be built on LispWorks (i.e., as the host Lisp), at least
   with LispWorks 6.0.  Thanks to David Rager for useful conversations.
@@ -17794,30 +17999,41 @@
   o You can save an image with ~ilc[save-exec].~nl[]
   o Multiprocessing is not enabled.~nl[]
   o The stack size is managed using a LispWorks variable that causes the stack
-  to grow as needed.
+  to grow as needed.~nl[]
+  o When ACL2 is built a script file is written, as is done for other host
+  Lisps.  Thus, (assuming that no ~c[PREFIX] is specified), ~c[saved_acl2] is
+  just a small text file that invokes a binary executable, which for Lispworks
+  is ~c[saved_acl2.lw].
 
   The HTML documentation no longer has extra newlines in <pre> environments.
-
-  Among the new books is an illustration of ~ilc[defattach],
-  ~c[books/misc/defattach-example.lisp], as well as a variant of defattach that
-  avoids the need for ~il[guard] verification,
-  ~c[books/misc/defattach-bang.lisp].
-
-  Distributed book ~c[books/misc/trace1.lisp] has been deleted.  It had
-  provided slightly more friendly ~il[trace] output for new users, but 
-  distributed book ~c[books/misc/trace-star.lisp] may be better suited for that
-  purpose.
 
   Statistics on ACL2 code size may be found in distributed file
   ~c[doc/acl2-code-size.txt].  This file and other information can be found in
   a new ~il[documentation] topic, ~il[about-acl2].
 
-  (SBCL only) More warnings are suppressed when the host Lisp is SBCL.
-
   Fixed the build process to pay attention to environment variable
   ~c[ACL2_SYSTEM_BOOKS] (which may be supplied as a command-line argument to
   `~c[make]').  An ACL2 executable can thus now be built even when there is no
   ~c[books/] subdirectory if a suitable replacement directory is supplied.
+
+  Some warnings from the host Lisp are now suppressed that could formerly
+  appear.  For example, the warnings shown below occurs in Version  4.2 using
+  Allegro CL, but not in Version  4.3.
+  ~bv[]
+  ACL2 !>(progn (set-ignore-ok t)
+                (set-irrelevant-formals-ok t)
+                (defun bar (x y)
+                  x))
+  [[.. output omitted ..]]
+   BAR
+  ACL2 !>:comp bar
+  ; While compiling BAR:
+  Warning: Variable Y is never used.
+  ; While compiling (LABELS ACL2_*1*_ACL2::BAR ACL2_*1*_ACL2::BAR):
+  Warning: Variable Y is never used.
+   BAR
+  ACL2 !>
+  ~ev[]
 
   ~st[EMACS SUPPORT]
 
@@ -17866,7 +18082,7 @@
   :doc
   ":Doc-Section release-notes
 
-  ACL2 Version  4.3(r) (xxx, 20xx) Notes~/
+  ACL2 Version  4.3(r) (July, 2011) Notes~/
 
   ~/
 
@@ -17875,102 +18091,811 @@
   ~/
   ")
 
+(deflabel note-4-4
+
+; Improved comments about step-limits.
+
+; Here is a slightly simplified version of the example sent to us by Warren
+; Hunt for the defstobj bug involving, quoting the :doc below, "excessively
+; restrictive type declarations".
+
+;   (defstobj x86-32
+;     (mem :type (array (unsigned-byte 8) (4294967296)) ;; 2^32
+;          :initially 0
+;          :resizable nil)
+;     :inline t)
+
+; It has for some time been illegal to do guard verification inside a
+; non-trivial encapsulate for an exported function whose body or guard depends
+; on signature functions; see function bogus-exported-compliants.  However, we
+; made exceptions both for constrained functions and for non-executable
+; functions.  The latter exception has been removed; after all, if the guard
+; obligations aren't theorems of the post-encapsulate theory, it's a bit odd to
+; allow them.
+
+; For more about the increase in speed for ACL2 array reads, see the Essay on
+; Array Caching.
+
+; Regarding the fix to getenv$ etc. mentioned below: we also changed
+; throw-nonexec-error, get-output-stream-string$-fn, and set-debugger-enable-fn
+; just a bit, just to be safe, though we're not aware of a soundness bug for
+; those functions.
+
+; We removed a #-acl2-loop-only shortcut in plist-worldp, which remains as a
+; comment in that function.
+
+; Modified the check in acl2-check.lisp related to
+; *common-lisp-specials-and-constants*, so that it no longer causes an error
+; when attempting to build with ECL (which bound the symbol
+; COMMON-LISP:FUNCTION), in case this is something we try in the future.
+
+; The soundness bug for with-live-state has been recorded in a comment where
+; that macro is defined.
+
+; (Lispworks mods courtesy of Martin Simmons) Changed calls of
+; special-form-or-op-p to expand to calls of special-operator-p.  Changed
+; 'cl::getenv to 'hcl::getenv and changed 'cl::setenv to 'hcl::setenv.
+; Changed lisp::quit to lispworks:quit in acl2.lisp.
+
+; Modified the DOC targets (and HTML, etc. targets under it) so that one can
+; specify ACL2=<your_acl2> on the command line with the make command or as an
+; environment variable.  If ACL2 is not thus specified, then PREFIX and
+; ACL2_SUFFIX will be used, as before.
+
+; The time-reporting bug was in initialize-summary-accumulators, which had
+; called main-timer without accumulating times.  The following simple example
+; clearly illustrates the bug, as the summary time should match the runtime
+; reported by time$.
+
+; (defun fib (n) (if (or (zp n) (eql n 1)) 1 (+ (fib (- n 1)) (fib (- n 2)))))
+; (time$ (progn (defun f1 (x) x)
+;               (value-triple (length (make-list 10000000)))
+;               (defun f2 (x) x)))
+
+; Cleaned up special-form-or-op-p.
+
+; Modified script saved for sbcl to double the control-stack-size, which
+; allowed "make DOC" to complete.
+
+; Fixed the function INDUCT so that the second argument of the inform-simplify
+; call is less likely to have duplicates.
+
+; Here we say a bit more about the "logical modeling of the ACL2 evaluator"
+; mentioned below.  The function ev-fncall-rec is defined in the logic to be
+; ev-fncall-rec-logical, but they did not actually match up.  For example, the
+; result differed if ev-fncall-rec below was changed to ev-fncall-rec-logical.
+;   (defstub foo () t)
+;   (defttag t)
+;   (remove-untouchable ev-fncall-rec t)
+;   (ev-fncall-rec 'foo nil (w state) 100000 nil nil nil nil t)
+; We found several such discrepancies and have fixed them.
+
+; After remarks from Gary Byers, improved fgetprop a bit by using defconstant
+; to introduce *current-acl2-world-key* and by using symbol-value for
+; 'ACL2_GLOBAL_ACL2::CURRENT-ACL2-WORLD.
+
+; Here is an example showing the "security hole" mentioned in these release
+; notes, below.
+
+;   ;;;;; File foo.lisp ;;;;;
+;   (in-package "ACL2")
+;   
+;   (defun foo (x)
+;     x)
+;   
+;   ;;;;; File foo.acl2x ;;;;;
+;   ((1 . (defun foo (x) (cons x x))))
+;   
+;   ;;;;; File top.lisp ;;;;;
+;   (in-package "ACL2")
+;   
+;   (include-book "foo")
+;   
+;   (defthm foo-cons
+;     (equal (foo x)
+;            (cons x x)))
+;   
+;   ;;;;; File top2.lisp ;;;;;
+;   (in-package "ACL2")
+;   
+;   (include-book "top")
+;   
+;   (defthm ouch
+;     nil
+;     :hints (("Goal" :in-theory (disable foo-cons)
+;              :use foo-cons))
+;     :rule-classes nil)
+;   
+;   ;;;;; File cert.lsp ;;;;;
+;   
+;   (certify-book "foo" 0 t :acl2x t)
+;   (u)
+;   (certify-book "top")
+;   (u)
+;   (certify-book "foo" 0 t)
+;   (u)
+;   (certify-book "top2")
+;   
+;   ;;;;; Now evaluate (ld "cert.lsp") ;;;;;
+
+; We improved the function chk-ld-skip-proofsp to cause a soft error instead of
+; a hard error.  For this purpose, we moved set-ld-skip-proofsp and replaced
+; its use in axioms.lisp with an f-put-global,
+
+; Modified observation-cw for ACL2(p).  Also, in support of ACL2(p) but also of
+; general applicability, we modified io? in the commentp=t case to check that
+; the form can be translated, at least by default (see new argument
+; chk-translatable).
+
+; The previous definition of cons-term1 has been eliminated, and cons-term2 has
+; been renamed to cons-term1.  Thanks to Harsh Raju Chamarthi for pointing out
+; the dead code that led to this change.
+
+; We tweaked the implementation of defconst to support fast-alists, based on
+; discussions with David Rager and Jared Davis.  To see relevant code, search
+; for "Remark on Fast-alists" and also see the new call (remprop k
+; 'redundant-raw-lisp-discriminator) in the const-restore-ht case of function
+; hcomp-restore-defs.
+
+; The new macro ill-formed-certificate-er is called to provide much more
+; information than had been provided by use of the constant,
+; *ill-formed-certificate-msg*.
+
+; The change "All trust tags are now in the ~il[keyword] package" was made in
+; support of provisional certification.  Sol Swords sent an example in which
+; the Complete operation caused an error, the reason being that an unknown
+; package was being used in the post-alist in the certificate file.
+
+; Here is the example promised in :doc note-4-4 and in a comment about
+; :SKIPPED-PROOFSP in certify-book-fn, regarding "Fixed a soundness bug based
+; on the use of ~ilc[skip-proofs] ...."  First consider the following two
+; books.
+
+;   -- foo.lisp --
+
+;   (in-package "ACL2")
+;   (defun f1 (x) x)
+;   ; (defthm bad nil :rule-classes nil)
+
+;   -- bar.lisp --
+
+;   (in-package "ACL2")
+;   (local (include-book "foo"))
+;   (defthm bad nil :rule-classes nil)
+
+;   --
+
+; Notice that foo.lisp ends in a commented-out form.  Now proceed as follows.
+; If you prefer, you can eliminate the two calls of set-ld-skip-proofsp by,
+; instead, wrapping a skip-proofs around the defthm.
+
+;  (set-ld-skip-proofsp t state)
+;  (defthm bad nil :rule-classes nil)
+;  (set-ld-skip-proofsp nil state)
+;  (certify-book "foo" 1 t :skip-proofs-okp t)
+;  Uncomment out the defthm form in foo.lisp.
+;  (ubt! 1)
+;  (certify-book "foo" t)
+;  (ubt! 1)
+;  (certify-book "bar")
+
+; You will see no warnings when certifying bar, and its certificate will show
+; no trace of skip-proofs.
+
+  :doc
+  ":Doc-Section release-notes
+
+  ACL2 Version  4.4 (xxx, 20xx) Notes~/
+
+  NOTE!  New users can ignore these release notes, because the
+  ~il[documentation] has been updated to reflect all changes that are recorded
+  here.
+
+  Below we roughly organize the changes since Version  4.3 into the following
+  categories of changes: existing features, new features, heuristic
+  improvements, bug fixes, changes at the system level and to distributed
+  books, Emacs support, and experimental versions.  Each change is described in
+  just one category, though of course many changes could be placed in more than
+  one category.
+
+  ~st[CHANGES TO EXISTING FEATURES]
+
+  A fatal error now occurs if environment variable ~c[ACL2_CUSTOMIZATION] has a
+  value other than ~c[NONE] or the empty string, but is not the name of an
+  existing file.  Thanks to Harsh Raju Chamarthi for requesting such a change.
+
+  Functions ~c[read-acl2-oracle] (and ~c[read-acl2-oracle@par]),
+  ~c[read-run-time], and ~c[main-timer] are no longer untouchable
+  (~pl[remove-untouchable]).
+
+  We now avoid certain duplicate conjuncts in the ~il[constraint] stored for
+  ~ilc[encapsulate] ~il[events].  For example, the constraint stored for the
+  following event formerly included ~c[(EQUAL (FOOP (CONS X Y)) (FOOP Y))] and
+  ~c[(BOOLEANP (FOOP X))] twice each, but no more.
+  ~bv[]
+  (encapsulate
+   ((foop (x) t))
+   (local (defun foop (x) (declare (ignore x)) t))
+   (defthm foop-constraints
+     (and (booleanp (foop x))
+          (equal (foop (cons x y)) (foop y)))
+     :rule-classes
+     ((:type-prescription :corollary (booleanp (foop x)))
+      (:rewrite :corollary (equal (foop (cons x y)) (foop y))))))
+  ~ev[]
+
+  The ~c[:]~ilc[guard] for a constrained function (~pl[signature]) may now
+  mention function symbols introduced in the same ~ilc[encapsulate] event that
+  introduces that function.  Thanks to Nathan Wetzler for a helpful discussion
+  leading to this improvement.
+
+  The test for redundancy (~pl[redundant-events]) of ~ilc[encapsulate]
+  ~il[events] has been improved in cases involving redefinition
+  (~pl[ld-redefinition-action]).  Thanks to Jared Davis for providing the
+  following example, which illustrates the problem.
+  ~bv[]
+    (redef!)
+
+    (encapsulate ()
+      (defun g (x)
+        (+ 3 x)))
+
+    (g 0) ; 3, as expected
+
+    (encapsulate ()
+      (defun g (x)
+        (+ 4 x)))
+
+    (g 0) ; 4, as expected
+
+    ; Unfortunately, the following was flagged as redundant because it agreed
+    ; with the first encapsulate above.  That has been fixed; now, it is
+    ; recognized as not being redundant.
+    (encapsulate ()
+      (defun g (x)
+        (+ 3 x)))
+  ~ev[]
+
+  The test for redundancy of ~ilc[defun] and ~ilc[defconst] events has been
+  improved in the case that redefinition is active.  In that case, redundancy
+  now additionally requires that the ``translated'' body is unchanged, i.e.,
+  even after expanding macro calls and replacing constants (defined by
+  ~ilc[defconst]) with their values.  Thanks for Sol Swords for requesting this
+  enhancement, and to Jared Davis for pointing out a bug in a preliminary
+  change.  ~l[redundant-events], in particular the ``Note About Unfortunate
+  Redundancies''.  Note that this additional requirement was already in force
+  for redundancy of ~ilc[defmacro] events.
+
+  The macro ~ilc[defmacro-last] and the ~il[table] ~ilc[return-last-table] have
+  been modified so that when they give special treatment to a macro ~c[mac] and
+  its raw Lisp counterpart ~c[mac-raw], a call ~c[(return-last 'mac-raw ...)]
+  can be made illegal when encountered directly in the top level loop, as
+  opposed to inside a function body.  ~l[return-last].  Thanks to Harsh Raju
+  Chamarthi for showing us an example that led us to make this improvement.
+
+  We removed a barrier to admitting function definitions, as we explain using
+  the following example.
+  ~bv[]
+  (defun foo (m state)
+    (declare (xargs :stobjs state))
+    (if (consp m)
+        (let ((state (f-put-global 'last-m m state)))
+          (foo (cdr m) state))
+      state))
+  ~ev[]
+  Previously, ACL2 complained that it could not determine the outputs of the
+  ~ilc[LET] form, as is necessary in order to ensure that ~ilc[STATE] is
+  returned by it.  ACL2 now works harder to solve this problem as well as the
+  analogous problem for ~ilc[MV-LET] and, more generally for
+  ~ilc[mutual-recursion].  (The main idea is to reverse the order of processing
+  the ~ilc[IF] branches if necessary.)  We thank Sol Swords for contributing a
+  version of the above example and requesting this improvement.
+
+  (CCL and SBCL only) When the host Lisp is CCL or SBCL, then since all
+  functions are compiled, a ~ilc[certify-book] command will no longer load the
+  newly-compiled file (and similarly for ~ilc[include-book] with argument
+  ~c[:load-compiled-file :comp]).
+
+  ~ilc[Set-write-acl2x] now returns an error triple and can take more values,
+  some of which automatically allow including uncertified books when
+  ~ilc[certify-book] is called with argument :acl2x t.
+
+  The environment variable ~c[COMPILE_FLG] has been renamed
+  ~c[ACL2_COMPILE_FLG]; ~pl[certify-book].
+
+  The macros ~ilc[defthmd] and ~ilc[defund] no longer return an error triple
+  with value ~c[:SKIPPED] when proofs are being skipped.  Rather, the value
+  returned is the same as would be returned on success when proofs are not
+  skipped.
+
+  For those who use ~ilc[set-write-acl2x]: now, when ~ilc[certify-book] is
+  called without a ~c[:ttagsx] argument supplied, then the value of ~c[:ttagsx]
+  defaults to the (explicit or default) value of the ~c[:ttags] argument.
+
+  Improvements have been made related to the reading of characters.  In
+  particular, checks are now done for ASCII encoding and for the expected
+  ~ilc[char-code] values for ~c[Space], ~c[Tab], ~c[Newline], ~c[Page], and
+  ~c[Rubout].  Also, an error no longer occurs with certain uses of
+  non-standard characters.  For example, it had caused an error to certify a
+  book after a single ~il[portcullis] ~il[command] of
+  ~c[(make-event `(defconst *my-null* ,(code-char 0)))]; but this is no longer
+  an issue.  Thanks to Jared Davis for helpful correspondence that led us to
+  make these improvements.
+
+  The ~c[:]~ilc[pl] and ~c[:]~ilc[pl2] ~il[command]s can now accept ~il[term]s
+  that had previously been rejected.  For example, the command
+  ~c[:pl (member a (append x y))] had caused an error, but now it works as one
+  might reasonably expect, treating ~ilc[member] as ~ilc[member-equal]
+  (~pl[equality-variants] for relevant background).  Thanks to Jared Davis for
+  reporting this problem by sending the above example.
+
+  We have eliminated some hypotheses in built-in ~il[rewrite] rules
+  ~c[characterp-nth] and ~c[ordered-symbol-alistp-delete-assoc-eq].
+
+  Added the symbols ~ilc[f-get-global], ~ilc[f-put-global], and
+  ~ilc[state-global-let*] to ~c[*acl2-exports*].
+
+  Added to the ~il[guard]s of ~ilc[push-untouchable] and
+  ~ilc[remove-untouchable] the requirement that the second argument must be a
+  Boolean.  Thanks to Jared Davis for sending an example that led to this
+  change.
+
+  The built-in function ~c[string-for-tilde-@-clause-id-phrase] has been put
+  into ~c[:]~ilc[logic] mode and had its guards verified, as have some
+  subsidiary functions.  A few new rules have been added in support of this
+  work; search for ~c[string-for-tilde-@-clause-id-phrase] in ACL2 source file
+  ~c[boot-strap-pass-2.lisp] if interested.  Thanks to David Rager for
+  contributing an initial version of this improvement.
+
+  All trust tags are now in the ~il[keyword] package.  The ~ilc[defttag] event
+  may still take a symbol in an arbitrary package, but the trust tag created
+  will be in the keyword package (with the same ~ilc[symbol-name] as the symbol
+  provided).  Similarly, non-~c[nil] symbols occurring in the ~c[:ttags]
+  argument of an ~ilc[include-book] or ~ilc[certify-book] command will be
+  converted to corresponding keywords.  ~l[defttag].
+
+  ~st[NEW FEATURES]
+
+  A new ``tau system'' provides a kind of ``type checker.''  ~l[tau-system].
+  Thanks to Dave Greve for supplying a motivating example (on which this system
+  can provide significant speedup), and to Sol Swords for sending a very
+  helpful bug report on a preliminary implementation.
+
+  Users may now arrange for additional summary information to be printed at the
+  end of ~il[events]; ~pl[print-summary-user].  Thanks to Harsh Raju Chamarthi
+  for requesting this feature and participating in a design discussion.
+
+  A new, advanced ~il[proof-checker] command, ~c[geneqv], shows the generated
+  equivalence relation at the current subterm.  Thanks to Dave Greve for an
+  inquiry leading to this enhancement.
+
+  A new reader macro, ~c[#u], permits the use of underscore characters in a
+  number.  ~l[sharp-u-reader].  Thanks to Jared Davis for requesting this
+  capability.
+
+  New ~il[proof-checker] commands ~c[pl] and ~c[pr] provide interfaces to the
+  ACL2 commands ~c[:]~ilc[pl] and ~c[:]~ilc[pr], respectively.  These can be
+  useful if you want to see trivially-proved hypotheses, as now clarified in
+  the ~il[proof-checker] documentation for its ~c[show-rewrites] command.
+  ~l[proof-checker-commands].  Thanks to Pete Manolios for suggesting such
+  clarification and capability.
+
+  It is now legal to call ~il[non-executable] functions without the usual
+  ~il[signature] restrictions imposed on executable code.  For example,
+  the third event below was not admissible, but now it is.
+  ~bv[]
+  (defstobj foo fld)
+  (defun-nx id (x)
+    x)
+  (defun f (foo)
+    (declare (xargs :stobjs foo :verify-guards nil))
+    (cons 3 (id foo)))
+  ~ev[]
+  Thanks to Jared Davis for requesting this enhancement, in particular for
+  calling non-executable functions in the ~c[:logic] part of an ~ilc[mbe]
+  call.  Here is Jared's example, which is admissible now but formerly was
+  not.
+  ~bv[]
+  (defstobj foo (fld))
+  (defun-nx my-identity (x) x)
+  (defun my-fld (foo)
+    (declare (xargs :stobjs foo))
+    (mbe :logic (my-identity foo)
+         :exec (let ((val (fld foo)))
+                 (update-fld val foo))))
+  ~ev[]
+
+  A new ``provisional certification'' process is supported that can allow
+  ~il[books] to be certified before their included sub-books have been
+  certified, thus allowing for potentially much greater `~c[make]'-level
+  parallelism.  ~l[provisional-certification].  Thanks to Jared Davis for
+  requesting this feature and for helpful discussions, based in part on
+  rudimentary provisional certification schemes that he developed first at
+  Rockwell Collins and later for his `Milawa' project.  Thanks also to Sol
+  Also, thanks to Jared and to Sol Swords for testing this feature and for
+  providing a fix for a bug in a preliminary implementation, and thanks to Sol
+  for providing performance feedback and a crucial suggestion that led to an
+  improved implementation.
+
+  Event summaries now show the names of events that were mentioned in
+  ~il[hints] of type ~c[:use], ~c[:by], or ~c[:clause-processor].
+  ~l[set-inhibited-summary-types].  Thanks to Francisco J. Martín Mateos for
+  requesting such an enhancement (actually thanks to the community, as his
+  request is the most recent but this has come up from time to time before).
+
+  ACL2 now stores a data structure representing the relation ``Event A is used
+  in the proof of Event B.''  ~l[dead-events], which explains this data
+  structure and mentions one application: to identify dead code and unused
+  theorems.  Thanks to Shilpi Goel for requesting such a feature and for
+  helpful feedback.
+
+  A new ~il[documentation] topic provides a guide to programming with state;
+  ~pl[programming-with-state].  Thanks to Sarah Weissman for suggesting that
+  such a guide might be useful, and to David Rager for helpful feedback on a
+  preliminary version.  There also has been some corresponding reorganization
+  of the documentation as well as creation of additional documentation (e.g.,
+  ~pl[state-global-let*]).  Now, most built-in functions and macros commonly
+  used in programs (as opposed to ~il[events] like ~ilc[defun], for example)
+  are subtopics of a new topic ~-[] ~pl[acl2-built-ins] ~-[] which is a
+  subtopic of ~il[programming], a topic that in turn has considerably fewer
+  direct subtopiics than before.
+
+  It is now possible to bind extra variables in a ~c[:USE] hint, thus avoiding
+  the error message: ``The formula you wish to instantiate, ..., mentions only
+  the variable(s) ...''.  ~l[lemma-instance], in particular the discussion of
+  keyword ~c[:extra-bindings-ok].  Thanks to Sol Swords for requesting such an
+  enhancement.
+
+  The function ~c[read-object-suppress] is like ~c[read-object] except that it
+  avoids errors and discards the value read.  ~l[io].
+
+  ~st[HEURISTIC IMPROVEMENTS]
+
+  Reading of ACL2 ~ilc[arrays] (~pl[aref1], ~pl[aref2]) has been made more
+  efficient (as tested with CCL as the host Lisp) in the case of consecutive
+  repeated reads of the same named array.  Thanks to Jared Davis and Sol Swords
+  for contributing this improvement.
+
+  Slightly modified the induction schemes stored, so that calls of so-called
+  ``guard-holders'' (such as ~ilc[mbe] and ~ilc[prog2$] ~-[] indeed, any call
+  of ~ilc[return-last] ~-[] and ~ilc[the]) are expanded away.  In particular,
+  calls of equality variants such as ~ilc[member] are treated as their
+  corresponding function calls, e.g., ~ilc[member-equal];
+  ~pl[equality-variants].  Guard-holders are also now expanded away before
+  storing ~il[constraint]s for ~ilc[encapsulate] ~il[events], which can
+  sometimes result in simpler constraints.
+
+  Improved the performance of ~ilc[dmr] (technical note: by modifying raw Lisp
+  code for function ~c[dmr-flush], replacing ~c[finish-output] by
+  ~c[force-output]).
+
+  We now avoid certain rewriting loops.  A long comment about this change,
+  including an example of a loop that no longer occurs, may be found in source
+  function ~c[expand-permission-result].
+
+  Slightly strengthened ~il[type-set] reasoning.  See the comment in ACL2
+  source function ~c[rewrite-atm] about the ``use of dwp = t'' for an example
+  of a theorem provable only after this change.
+
+  ~st[BUG FIXES]
+
+  Fixed a class of soundness bugs involving each of the following functions:
+  ~ilc[getenv$], ~ilc[get-wormhole-status], ~ilc[cpu-core-count],
+  ~ilc[wormhole-p], ~ilc[random$], ~c[file-write-date$], and
+  ~c[serialize-read-fn], and (for the HONS version of ACL2)
+  ~ilc[clear-memoize-table] and ~ilc[clear-memoize-tables] as well as (possible
+  soundness bug) ~c[serialize-write-fn].  For example, we were able to admit
+  the following events, but that is no longer the case (neither for ~c[getenv$]
+  as shown, nor analogously for other functions listed above).
+  ~bv[]
+  (defthm not-true
+    (stringp (cadr (getenv$ \"PWD\" (build-state))))
+    :rule-classes nil)
+
+  (defthm contradiction
+    nil
+    :hints ((\"Goal\"
+             :in-theory (disable (getenv$))
+             :use not-true))
+    :rule-classes nil)
+  ~ev[]
+
+  Fixed a soundness bug involving ~c[with-live-state], which could cause an
+  error in the use of ~ilc[add-include-book-dir] or
+  ~ilc[delete-include-book-dir] in a book or its ~il[portcullis] commands.
+  ~l[with-live-state], as the documentation for this macro has been updated; in
+  particular it is now untouchable (~pl[remove-untouchable]) and is intended
+  only for system hackers.  Thanks to Jared Davis for reporting a bug in the
+  use of ~ilc[add-include-book-dir] after our first attempt at a fix.
+
+  Fixed a soundness bug based on the use of ~ilc[skip-proofs] together with the
+  little-used argument ~c[k=t] for ~ilc[certify-book].  An example proof of
+  ~c[nil] appears in a comment in the ACL2 sources, in
+  ~c[(deflabel note-4-4 ...)].
+
+  (Technical change, primarily related to ~ilc[make-event]:) Plugged a security
+  hole that allowed ~il[books]' ~il[certificate]s to be out-of-date with
+  respect to ~ilc[make-event] expansions, but not recognized as such.  The
+  change is to include the so-called expansion-alist in the certificate's
+  checksum.  An example appears in a comment in the ACL2 sources, in
+  ~c[(deflabel note-4-4 ...)].
+
+  While calls of many event macros had been prohibited inside executable code,
+  others should have been but were not.  For example, the following was
+  formerly allowed.
+  ~bv[]
+  (defun foo (state)
+    (declare (xargs :mode :program :stobjs state))
+    (add-custom-keyword-hint :my-hint (identity nil)))
+  (foo state) ; Caused hard raw Lisp error!
+  ~ev[]
+  Thus, several event macros (including for example
+  ~ilc[add-custom-keyword-hint]) may no longer be called inside executable
+  code.
+
+  Fixed an assertion that could occur, for example, after reverting to prove
+  the original goal by induction and generating a goal of ~c[NIL].  Thanks to
+  Jared Davis for sending us a helpful example to bring this bug to our
+  attention.
+
+  It was possible for ~ilc[defstobj] to generate raw Lisp code with
+  excessively restrictive type declarations.  This has been fixed.  Thanks to
+  Warren Hunt for reporting this bug and sending an example that illustrates
+  it.  ~l[stobj-example-2] for examples of such raw Lisp code; now, one finds
+  ~c[(and fixnum (integer 0 *))] where formerly the type was restricted to
+  ~c[(integer 0 268435455)].
+
+  Fixed a bug in that was ignoring the use of ~c[:computed-hint-replacement] in
+  certain cases involving a combination of computed hints and custom keyword
+  hints.  Thanks to Robert Krug for reporting this bug and sending a very
+  helpful example.
+
+  Fixed a bug in the output from ~ilc[defattach], which was failing to list
+  previous ~il[events] in the message about ``bypassing constraints that have
+  been proved when processing the event(s)''.
+
+  (GCL only) Fixed a bug in ~ilc[set-debugger-enable] (which was only a bug in
+  GCL, not an issue for other host Lisps).
+
+  Fixed ACL2 trace output to indent properly for levels above 99 (up to 9999).
+  Thanks to Warren Hunt for bringing this bug to our attention.
+
+  Fixed a bug in the reporting of times in event summaries ~-[] probably one
+  that has been very long-standing!  The times reported had often been too
+  small in the case of compound ~il[events], notably ~ilc[include-book].
+  Thanks to everyone who reported this problem (we have a record of emails from
+  Eric Smith and Jared Davis on this issue).
+
+  Fixed a bug in ~c[:expand] ~il[hints], where the use of ~c[:lambdas] could
+  prevent other parts of such a hint.  For example, the following invocation of
+  ~ilc[thm] failed before this fix was made.
+  ~bv[]
+  (defund foo (x) (cons x x))
+  (thm (equal (car (foo x)) x)
+  :hints ((\"Goal\" :expand (:lambdas (foo x)))))
+  ~ev[]
+
+  Certain ``program-only'' function calls will now cause hard Lisp
+  errors.  (The rather obscure reason for this fix is to support logical
+  modeling of the ACL2 evaluator.  A relevant technical discussion may be found
+  in source function ~c[oneify-cltl-code], at the binding of variable
+  ~c[fail_program-only-safe].)
+
+  There was an unnecessary restriction that ~ilc[FLET]-bound functions must
+  return all ~il[stobj]s among their inputs.  For example, the following
+  definition was rejected because ~c[state] was not among the outputs of ~c[h].
+  This restriction has been removed.
+  ~bv[]
+  (defun foo (state)
+    (declare (xargs :stobjs state))
+    (flet ((h (state) (f-boundp-global 'x state)))
+      (h state)))
+  ~ev[]
+
+  We fixed a bug, introduced in the preceding release (4.3), in the check for
+  irrelevant formals (~pl[irrelevant-formals]).  That check had been too
+  lenient in its handling of lambda (~il[LET]) expressions, for example
+  allowing the following definition to be admitted in spite of its first
+  formal parameter obviously being irrelevant.
+  ~bv[]
+  (defun foo (x clk)
+    (if (zp clk)
+        :diverge
+      (let ((clk (1- clk)))
+        (foo x clk))))
+  ~ev[]
+
+  Fixed a bug in the ~c[mini-proveall] target in ~c[GNUmakefile].  The fix
+  includes a slight change to the ~c[:mini-proveall] ~il[command] (an extra
+  event at the end).  Thanks to Camm Maguire for reporting this bug.
+
+  Fixed a bug that occurred when ~ilc[certify-book] was called after using
+  ~ilc[set-fmt-soft-right-margin] or ~ilc[set-fmt-hard-right-margin] to set a
+  small right margin.
+
+  Fixed ~ilc[set-inhibit-warnings] so that it takes effect for a subsequent
+  ~ilc[include-book] event.  Thanks to Jared Davis and David Rager for queries
+  that led to this fix.
+
+  ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]
+
+  Although the HTML documentation is distributed with ACL2, it had not been
+  possible for users to build that documentation without omitting graphics, for
+  example on the ACL2 home page.  That has been fixed, as files
+  ~c[graphics/*.gif] are now distributed.
+
+  Compiler warnings are suppressed more completely than they had been before.
+  For example, the following had produced a compiler warning when the host Lisp
+  is CCL, but no longer does so.
+  ~bv[]
+  (defun f () (car 3))
+  (trace$ f)
+  ~ev[]
+
+  Removed support for ``tainted'' ~il[certificate]s.  One reason is that there
+  are rarely incremental releases.  A stronger reason is that for the
+  compatibility of a new release is with the previous non-incremental release,
+  it's not particularly relevant whether or not the new release is incremental.
+
+  The `make' variable ~c[BOOKS] can now be defined above the line that includes
+  Makefile-generic.  (For relevant background, ~pl[book-makefiles].)
+
+  ~st[EMACS SUPPORT]
+
+  ~st[EXPERIMENTAL VERSIONS]
+
+  Among the enchancements for the parallel version, ACL2(p) (~pl[parallelism]),
+  are the following.~bq[]
+
+  The macro ~c[set-parallel-evaluation] has been renamed
+  ~ilc[set-parallel-execution].
+
+  The macros ~ilc[set-waterfall-parallelism] and ~ilc[set-waterfall-printing]
+  are no longer ~il[events], so may not be placed at the top level of
+  ~il[books].  However, it is easy to create events that have these effects;
+  ~pl[set-waterfall-parallelism] and ~pl[set-waterfall-printing].  These
+  changes were made so that ~c[:]~ilc[ubt] and similar commands do not change
+  the settings for waterfall-parallelism or waterfall-printing.  Thanks to
+  David Rager for contributing an initial implementation of these changes.
+  ~eq[]
+
+  Among the enchancements for the HONS version (~pl[hons-and-memoization]) are
+  the following.~bq[]
+
+  The compact-print code has been replaced by new serialization routines
+  contributed by Jared Davis.  This may improve performance when including
+  books that contain ~ilc[make-event]s that expand to very large constants.
+  You can also now save objects to disk without going into raw lisp;
+  ~pl[serialize] for details.
+
+  Printing of certain messages has been sped up (by using Lisp function
+  ~c[force-output] in place of ~c[finish-output]).  Thanks to Jared Davis for
+  contributing this improvement.
+
+  ~il[Stobj] array writes are perhaps twice as fast.
+
+  It is now permitted to ~il[memoize] functions that take user-defined
+  ~il[stobj]s as inputs, provided that no ~il[stobj]s are returned.  Thanks to
+  Sol Swords for an observation that led to this improvement and useful
+  conversations.
+
+  Fixes have been made for memoizing with a non-~c[nil] value of
+  ~c[:ideal-okp].  Errors had occurred when memoizing with a ~c[:condition]
+  other than ~c[t] for a ~c[:]~ilc[logic] mode function that had not been
+  ~il[guard]-verified, even with a non-~c[nil] value of ~c[:ideal-okp]; and
+  after successfully memoizing such a function (without such ~c[:condition]),
+  it had not been possible to ~ilc[unmemoize] it.  Thanks to Sol Swords for
+  reporting issues with the ~c[:ideal-okp] argument of ~ilc[memoize].
+
+  If a book defined a function that was subsequently ~il[memoize]d in that
+  book, the function would no longer behaves as memoized upon completion of
+  book certification (unless that ~ilc[certify-book] command was undone and
+  replaced by evaluation of a corresponding ~ilc[include-book] command).  This
+  has been fixed.  Thanks to David Rager for pointing out the problem by
+  sending an example.
+
+  ~il[Gag-mode] now is initially set to ~c[:goals] instead of ~c[t].
+
+  An error now occurs when attempting to build the HONS version of ACL2 on a
+  32-bit platform.  We have seen regression failures on such a (CCL) platform.
+  ~eq[]
+
+  ~/~/")
+
 (deflabel the-method
   :doc
   ":Doc-Section Miscellaneous
 
   how to find proofs~/
 
-  Many users develop proof scripts in an Emacs buffer and submit one
-  event at a time to the theorem prover running in a ~c[*shell*] buffer.
-  The script buffer is logically divided into two regions: the events
-  that have been accepted by the theorem prover and those that have
-  not yet been accepted.  An imaginary ``barrier'' divides these two
-  regions.  The region above the barrier describes the state of the
-  ~c[*shell*] buffer (and ACL2's logical world).  The region below the
-  barrier is the ``to do'' list.
+  Also ~pl[introduction-to-the-theorem-prover] for a more detailed tutorial on
+  how to prove theorems with ACL2.
 
-  We usually start a proof project by typing the key lemmas, and main
-  goal into the to do list.  Definitions are here just regarded as
-  theorems to prove (i.e., the measure conjectures).  Then we follow
-  ``The Method.''
+  Many users develop proof scripts in an Emacs buffer and submit one event at a
+  time to the theorem prover running in a ~c[*shell*] buffer.  The script
+  buffer is logically divided into two regions: the events that have been
+  accepted by the theorem prover and those that have not yet been accepted.  An
+  imaginary ``barrier'' divides these two regions.  The region above the
+  barrier describes the state of the ~c[*shell*] buffer (and ACL2's logical
+  world).  The region below the barrier is the ``to do'' list.
 
-  (1) Think about the proof of the first theorem in the to do list.
-  Structure the proof either as an induction followed by
-  simplification or just simplification.  Have the necessary lemmas
-  been proved? That is, are the necessary lemmas in the done list
-  already?  If so, proceed to Step 2.  Otherwise, add the necessary
-  lemmas at the front of the to do list and repeat Step 1.
+  We usually start a proof project by typing the key lemmas, and main goal into
+  the to do list.  Definitions are here just regarded as theorems to
+  prove (i.e., the measure conjectures).  Then we follow ``The Method.''
 
-  (2) Call the theorem prover on the first theorem in the to do list
-  and let the output stream into the *shell* buffer.  Abort the proof
-  if it runs more than a few seconds.
+  (1) Think about the proof of the first theorem in the to do list.  Structure
+  the proof either as an induction followed by simplification or just
+  simplification.  Have the necessary lemmas been proved? That is, are the
+  necessary lemmas in the done list already?  If so, proceed to Step 2.
+  Otherwise, add the necessary lemmas at the front of the to do list and repeat
+  Step 1.
 
-  (3) If the theorem prover succeeded, advance the barrier past the
-  successful command and go to Step 1.
+  (2) Call the theorem prover on the first theorem in the to do list and let
+  the output stream into the *shell* buffer.  Abort the proof if it runs more
+  than a few seconds.
 
-  (4) Otherwise, inspect the failed proof attempt, starting from the
-  beginning, not the end.  Basically you should look for the first
-  place the proof attempt deviates from your imagined proof.  If your
-  imagined proof was inductive, inspect the induction scheme used by
-  ACL2.  If that is ok, then find the first subsequent subgoal that is
-  stable under simplification and think about why it was not proved by
-  the simplifier.  If your imagined proof was not inductive, then
-  think about the first subgoal stable under simplification, as above.
-  Modify the script appropriately.  It usually means adding lemmas to
-  the to do list, just in front of the theorem just tried.  It could
-  mean adding hints to the current theorem.  In any case, after the
-  modifications go to Step 1.~/
+  (3) If the theorem prover succeeded, advance the barrier past the successful
+  command and go to Step 1.
 
-  We do not seriously suggest that this or any rotely applied
-  algorithm will let you drive ACL2 to difficult proofs.  Indeed, to
-  remind you of this we call this ``The Method'' rather than ``the
-  method.''  That is, we are aware of the somewhat pretentious nature
-  of any such advice.  But these remarks have helped many users
-  approach ACL2 in a constructive and disciplined way.
+  (4) Otherwise, inspect the failed proof attempt, starting from the beginning,
+  not the end.  Basically you should look for the first place the proof attempt
+  deviates from your imagined proof.  If your imagined proof was inductive,
+  inspect the induction scheme used by ACL2.  If that is ok, then find the
+  first subsequent subgoal that is stable under simplification and think about
+  why it was not proved by the simplifier.  If your imagined proof was not
+  inductive, then think about the first subgoal stable under simplification, as
+  above.  Modify the script appropriately.  It usually means adding lemmas to
+  the to do list, just in front of the theorem just tried.  It could mean
+  adding hints to the current theorem.  In any case, after the modifications go
+  to Step 1.~/
 
-  We say much more about The Method in the ACL2 book.  See the
-  home page.  Also ~pl[set-gag-mode] for a discussion of a way for
-  ACL2 to help you to use The Method.
+  We do not seriously suggest that this or any rotely applied algorithm will
+  let you drive ACL2 to difficult proofs.  Indeed, to remind you of this we
+  call this ``The Method'' rather than ``the method.''  That is, we are aware
+  of the somewhat pretentious nature of any such advice.  But these remarks
+  have helped many users approach ACL2 in a constructive and disciplined way.
 
-  Learning to read failed proofs is a useful skill.  There are several
-  kinds of ``checkpoints'' in a proof: (1) a formula to which induction
-  is being (or would be) applied, (2) the first formula stable under
-  simplification, (3) a formula that is possibly generalized, either
-  by cross-fertilizing with and throwing away an equivalence hypothesis
-  or by explicit generalization of a term with a new variable.  
+  We say much more about The Method in the ACL2 book.  See the home page.  Also
+  ~pl[set-gag-mode] for a discussion of a way for ACL2 to help you to use The
+  Method.  And again, ~pl[introduction-to-the-theorem-prover] for a more
+  detailed tutorial.
 
-  At the induction checkpoint, confirm that you believe the formula
-  being proved is a theorem and that it is appropriately strong for an
-  inductive proof.  Read the selected induction scheme and make sure it
-  agrees with your idea of how the proof should go.
+  Learning to read failed proofs is a useful skill.  There are several kinds of
+  ``checkpoints'' in a proof: (1) a formula to which induction is being (or
+  would be) applied, (2) the first formula stable under simplification, (3) a
+  formula that is possibly generalized, either by cross-fertilizing with and
+  throwing away an equivalence hypothesis or by explicit generalization of a
+  term with a new variable.
 
-  At the post-simplification checkpoint, which is probably the most
-  commonly seen, consider whether there are additional rewrite rules
-  you could prove to make the formula simplify still further.  Look
-  for compositions of function symbols you could rewrite.  Look for
-  contradictions among hypotheses and prove the appropriate
-  implications: for example, the checkpoint might contain the two
-  hypotheses ~c[(P (F A))] and ~c[(NOT (Q (G (F A))))] and you might
-  realize that ~c[(implies (p x) (q (g x)))] is a theorem.  Look for
-  signs that your existing rules did not apply, e.g., for terms that
-  should have been rewritten, and figure out why they were not.
-  Possible causes include that they do not exactly match your old
-  rules, that your old rules have hypotheses that cannot be relieved
-  here -- perhaps because some other rules are missing, or perhaps
-  your old rules are disabled.  If you cannot find any further
-  simplifications to make in the formula, ask yourself whether it is
-  valid.  If so, sketch a proof.  Perhaps the proof is by appeal to a
-  combination of lemmas you should now prove?  
+  At the induction checkpoint, confirm that you believe the formula being
+  proved is a theorem and that it is appropriately strong for an inductive
+  proof.  Read the selected induction scheme and make sure it agrees with your
+  idea of how the proof should go.
 
-  At the two generalization checkpoints --- where hypotheses are
-  discarded or terms are replaced by variables --- ask yourself whether
-  the result is a theorem.  It often is not.  Think about rewrite rules
-  that would prove the formula.  These are often restricted versions of the
-  overly-general formulas created by the system's heuristics.
+  At the post-simplification checkpoint, which is probably the most commonly
+  seen, consider whether there are additional rewrite rules you could prove to
+  make the formula simplify still further.  Look for compositions of function
+  symbols you could rewrite.  Look for contradictions among hypotheses and
+  prove the appropriate implications: for example, the checkpoint might contain
+  the two hypotheses ~c[(P (F A))] and ~c[(NOT (Q (G (F A))))] and you might
+  realize that ~c[(implies (p x) (q (g x)))] is a theorem.  Look for signs that
+  your existing rules did not apply, e.g., for terms that should have been
+  rewritten, and figure out why they were not.  Possible causes include that
+  they do not exactly match your old rules, that your old rules have hypotheses
+  that cannot be relieved here -- perhaps because some other rules are missing,
+  or perhaps your old rules are disabled.  If you cannot find any further
+  simplifications to make in the formula, ask yourself whether it is valid.  If
+  so, sketch a proof.  Perhaps the proof is by appeal to a combination of
+  lemmas you should now prove?
 
-  ~l[proof-tree] for a discussion of a tool to help you navigate through
-  ACL2 proofs.")
+  At the two generalization checkpoints --- where hypotheses are discarded or
+  terms are replaced by variables --- ask yourself whether the result is a
+  theorem.  It often is not.  Think about rewrite rules that would prove the
+  formula.  These are often restricted versions of the overly-general formulas
+  created by the system's heuristics.
+
+  ~l[proof-tree] for a discussion of a tool to help you navigate through ACL2
+  proofs.")
 
 (deflabel lp
   :doc
@@ -18517,7 +19442,7 @@
      ((eq (access-event-tuple-type (cddr (car wrld))) 'encapsulate)
 
 ; In the case of an encapsulate event, flattening means do the body of the
-; encapsulate ~-[] including the LOCAL events.  Note that this destroys the sense
+; encapsulate -- including the LOCAL events.  Note that this destroys the sense
 ; of those encapsulates that introduce constrained functions!  After flattening
 ; the constrained functions are defined as their witnesses!  We cannot recover
 ; the LOCAL events by a scan through wrld since they are not in wrld.  We must
@@ -18558,7 +19483,7 @@
            (cert-obj (chk-certificate-file
                       full-book-name
                       nil
-                      t
+                      'puff
                       ctx
                       state
                       '((:uncertified-okp . t)
@@ -18573,6 +19498,7 @@
              (check-sum-cert (and cert-obj
                                   (access cert-obj cert-obj
                                           :cmds))
+                             expansion-alist
                              ev-lst)))
            (cond
             ((not (integerp ev-lst-chk-sum))
@@ -19336,6 +20262,8 @@
                  (ordered-symbol-alistp (delete-assoc-eq key l)))
         :hints (("Goal" :in-theory (disable ordered-symbol-alistp-delete-assoc-eq))))
 
+      (value-triple "Mini-proveall completed successfully.")
+
       )
     :ld-skip-proofsp nil
     :ld-redefinition-action nil
@@ -19801,7 +20729,7 @@ Recent changes to this page</A>
 </TD>
 <TD>
 <!-- This relative URL is made absolute in distributed tar file -->
-<A HREF=\"installation/installation.html\">Obtaining and Installing Version 4.2</A>
+<A HREF=\"installation/installation.html\">Obtaining and Installing Version 4.3</A>
 </TD>
 
 </TR>
@@ -19811,7 +20739,7 @@ Recent changes to this page</A>
 <A HREF=\"~sg\"><IMG SRC=\"note02.gif\" BORDER=0></A>
 </TD>
 <TD>
-<A HREF=\"~sg\">Differences from Version 4.1</A><A HREF=\"~s7\"> <IMG SRC=\"twarning.gif\"></A>
+<A HREF=\"~sg\">Differences from Version 4.2</A><A HREF=\"~s7\"> <IMG SRC=\"twarning.gif\"></A>
 </TD>
 <TD ALIGN=CENTER VALIGN=MIDDLE>
 <A HREF=\"other-releases.html\">
@@ -19858,7 +20786,7 @@ Ruben Gamboa</LI>
 <LI><A HREF=\"HONS-AND-MEMOIZATION.html\">ACL2(h)</A><BR>
 Support for hash cons, applicative hash tables, and function
   memoization for reuse of previously computed results<BR>
-Bob Boyer and Warren A. Hunt, Jr.</LI>
+Bob Boyer, Warren A. Hunt, Jr., Jared Davis, and Sol Swords</LI>
 <LI><A HREF=\"PARALLELISM.html\">ACL2(p)</A><BR>
 Support for parallel evaluation<BR>
 David L. Rager</LI>
@@ -19954,7 +20882,7 @@ with ACL2.
 
 <B>Note</B>: The documentation is available for reading in a Web
 browser (recommended), in Emacs Info, using the ACL2 <CODE>:DOC</CODE> command,
-or as a printed book (over 1800 pages).  These are available as follows.
+or as a printed book (about 1900 pages).  These are available as follows.
 
 <ul>
 
@@ -19968,7 +20896,12 @@ Davis's xdoc utility, visit <CODE><A
 HREF=\"http://www.cs.utexas.edu/users/moore/acl2/~s3/distrib/xdoc/manual/preview.html\">xdoc/manual/preview.html</A></CODE>.
 Better yet, view a local copy of this file found under your
 <CODE>acl2-sources/books/</CODE> directory, if you have certified your distributed
-books.</li>
+books.  If you use the experimental HONS version of ACL2 then you can build a
+more complete manual in <CODE>books/centaur/manual/preview.html</A> by running:
+<pre>
+  make regression-hons-fresh ACL2=<path to your saved_acl2>
+</pre>
+</li>
 
 <li>Those familiar with Emacs Info can read the documentation in that format by
 loading the file <CODE>emacs/emacs-acl2.el</CODE> distributed with ACL2 (under
@@ -20059,7 +20992,7 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
     programming                         ;;; d
     rule-classes                        ;;; e
     books                               ;;; f
-    note-4-2                            ;;; g
+    note-4-3                            ;;; g
     the-method                          ;;; h
     introduction-to-the-theorem-prover  ;;; i   ; This is not used right now.
     interesting-applications            ;;; j
@@ -23821,12 +24754,34 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
   :set-print-clause-ids nil
   ~ev[]
   This command affects output from the theorem prover only when ~c['prove]
-  output is inhibited; ~pl[set-inhibit-output-lst].  Calling this macro with
-  value ~c[t] as shown above will cause subsequent proof attempts with
-  ~c['prove] output inhibited to print the subgoal number, so that you can see
-  the progress of the proof; value ~c[nil] reverts to the default behavior,
-  where this is not the case.  On a related note, we point out that you can
-  cause output to be saved for later display; ~pl[pso] and ~pl[pso!].~/~/"
+  output is inhibited (~pl[set-inhibit-output-lst]) or gag-mode is on (but in
+  that case the ~c[:goals] setting issues this command automatically;
+  ~pl[set-gag-mode]).  Calling this macro with value ~c[t] as shown above will
+  cause subsequent proof attempts with ~c['prove] output inhibited to print the
+  subgoal number, so that you can see the progress of the proof; value ~c[nil]
+  reverts to the default behavior, where this is not the case.  On a related
+  note, we point out that you can cause output to be saved for later display;
+  ~pl[pso] and ~pl[pso!].~/
+
+  If ~c['prove] output is inhibited or gag-mode is on, and if you issue
+  ~c[(set-print-clause-ids t)] (either explicitly or with
+  ~c[(set-gag-mode :goals)]), then you can restrict when subgoal numbers are
+  printed.  In the following example we restrict to subgoals that are no more
+  than four inductions deep, no more than four casesplits deep, and no more
+  than four single-subgoals deep.  For additional relevant explanation,
+  ~pl[clause-identifier] and ~pl[defattach].
+  ~bv[]
+  (defun print-clause-id-okp-level-4 (cl-id)
+    (declare (xargs :mode :logic :guard (clause-id-p cl-id)))
+    (and (<= (length (access clause-id cl-id :pool-lst))
+             4)
+         (<= (length (access clause-id cl-id :case-lst))
+             4)
+         (<= (access clause-id cl-id :primes)
+             4)))
+
+  (defattach print-clause-id-okp print-clause-id-okp-level-4)
+  ~ev[]~/"
 
   (declare (xargs :guard (member-equal flg '(t 't nil 'nil))))
   (let ((flg (if (atom flg)
@@ -23901,7 +24856,8 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
   ``Descended'' signifies that both goals are at the top level in the same
   forcing round, or are in the same proof by induction.)  Successful ACL2 users
   generally focus their attention on key checkpoints; for a discussion of how
-  to use ACL2 prover output in an effective manner, ~pl[the-method].  In
+  to use ACL2 prover output in an effective manner, ~pl[the-method], and
+  ~pl[introduction-to-the-theorem-prover] for a more detailed tutorial.  In
   gag-mode, a key checkpoint is only displayed when ACL2 is unable to make any
   further progress on that goal or some descendent of it, other than with a
   proof by induction.
@@ -24015,7 +24971,7 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
   #-acl2-loop-only
   (progn
 
-; Parallelism wart: It may be a good idea to reset the parallelism variables
+; Parallelism wart: it may be a good idea to reset the parallelism variables
 ; in all #+acl2-par compilations before saving the image.
 
     (if (not (eql *ld-level* 0))
@@ -24069,7 +25025,7 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
 
   about ACL2~/
 
-  This is ACL2 Version 4.2, copyright (C) 2011 University of Texas at Austin,
+  This is ACL2 Version 4.3, copyright (C) 2011 University of Texas at Austin,
   authored by Matt Kaufmann and J Strother Moore.
 
   For past versions, see

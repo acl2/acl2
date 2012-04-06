@@ -1,4 +1,4 @@
-; ACL2 Version 4.2 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 4.3 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2011  University of Texas at Austin
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -37,9 +37,9 @@
 ; Parallelism wart: create an "Essay on Futures" that should act as a guide to
 ; this file.
 
-; Parallelism wart: cleanup this file by removing blank lines that are
-; inconsistent with the ACL2 style guide (and other ways that trike the
-; author's fancy).
+; Parallelism wart: clean up this file by removing blank lines that are
+; inconsistent with the ACL2 style guide and making other improvements as
+; appropriate (e.g., clean up comments about pending work).
 
 ;---------------------------------------------------------------------
 ; Section:  Single-threaded Futures
@@ -88,7 +88,8 @@
 ;---------------------------------------------------------------------
 ; Section:  Multi-threaded Futures
 
-; Notes on the specification:
+; Notes on the implementation of adding, removing, and aborting the evaluation
+; of closures:
 
 ; (1) Producer is responsible for *always* placing the closure on the queue
 ;
@@ -105,8 +106,8 @@
 ; thread array and secondly checks the future's abort flag.
 ;
 ; (5) The combination of (3) and (4) results in the following six potential
-; race scenarios (these conditions could be turned into a dissertation
-; graphic):
+; race conditions/scenarios.  The first column contains things the producer can
+; do, and the second column contains things the consumer might do.
 ;
 ;  (A) - 12AB
 ;
@@ -176,19 +177,12 @@
 ; stored at the given index.  It's possible to change the design, but it would
 ; require more locking and be slower.
 
+; We currently use a feature to control whether resources are tested for
+; availability at the level of futures.  Since this feature only controls
+; futures, it only impacts the implementation underlying spec-mv-let.  Thus,
+; plet, pargs, pand, and por are unaffected.
 
-; Parallelism wart: there was once a problem when :debugging wasn't on the
-; features list.  I need to clean this up.
-
-(push :debugging *features*)
 (push :skip-resource-availability-test *features*)
-
-; Parallelism wart: I leave the pushing of feature :studless-waterfall as
-; reference for the dead code (which I should delete) that references this
-; feature.
-
-; (push :studless-waterfall *features*)
-
 
 (defstruct atomic-notification
   (value nil))
@@ -252,7 +246,7 @@
 ; One concern I have is that the array elements will be so close together, that
 ; they'll be in the same cache lines, and the CPU cores will get bogged down
 ; just keeping the writes to the cache "current".  The exact impact of this
-; thrashing is unknown. n Followup: After further thought, I realize that this
+; thrashing is unknown.  Followup: After further thought, I realize that this
 ; thrashing will be negligible when compared to the rest of the parallelism
 ; overhead.
 
@@ -260,18 +254,38 @@
 (defvar *future-array*)
 (defvar *future-dependencies*)
 
+(defparameter *future-queue-length-history* nil)
 
 (defvar *current-thread-index* 0) ; set to 0 for the main thread
 (defconstant *starting-core* 'start)
 (defconstant *resumptive-core* 'resumptive)
 
-(defvar *allocated-core* *starting-core*)
+(defvar *allocated-core*
+
+; We now document a rather strange behavior that resulted in a bug in the
+; parallelism system for a good while.  This strange behavior justifies giving
+; *allocated-core* an initial value of *resumptive-core* instead of
+; *starting-core*.  To understand why, suppose we instead gave *allocated-core*
+; the initial value of *starting-core*.  Then, when the main thread encountered
+; its first parallelism primitive, it would set *allocated-core* to nil and
+; then, when it resumed execution after the parallelized portion was done, it
+; would claim a resumptive core, and the main thread would then have
+; *resumptive-core* for its value of *allocated-core*.  This would be fine,
+; except that we'll never reclaim the original *starting-core* for the main
+; thread.  So, rather than worry about this problem, we side-step it entirely
+; and start the main thread as a "resumptive" core.
+
+; Parallelism blemish: the above correction may also need to be made for the
+; other parallelism implementation that supports plet/pargs/pand/por.
+
+  *resumptive-core*)
+
 (defvar *decremented-idle-future-thread-count* nil)
 
 (defvar *idle-future-core-count* 
-  (make-atomically-modifiable-counter (1- *core-count*)))
-(defvar *idle-future-resumptive-core-count* 
   (make-atomically-modifiable-counter *core-count*))
+(defvar *idle-future-resumptive-core-count* 
+  (make-atomically-modifiable-counter (1- *core-count*)))
 (defvar *idle-core* (make-semaphore))
 
 (define-atomically-modifiable-counter *idle-future-thread-count* 0)
@@ -279,16 +293,18 @@
 (defvar *future-added* (make-semaphore))
 
 (defvar *idle-resumptive-core* (make-semaphore))
-#+debugging
 (defvar *threads-spawned* 0)
 
 
-(define-atomically-modifiable-counter *unassigned-and-active-future-count* 0)
+(define-atomically-modifiable-counter *unassigned-and-active-future-count*
+
+; We treat the initial thread as an active future.
+  
+  1)
 
 (define-atomically-modifiable-counter *total-future-count* 0)
 
-(defconstant *future-array-size* ; #+debugging 100 #-debugging
-  200000)
+(defconstant *future-array-size* 200000)
 
 (defmacro faref (array subscript)
   `(aref ,array 
@@ -297,12 +313,35 @@
              0
            (1+ (mod ,subscript (1- *future-array-size*))))))
 
-(defun reset-future-parallelism-variables ()
-  ;(sleep 30)
-; We need to send-die-toall-except-initial-threads when we evaluate save-exec
-; to save the ACL2 image at the end of the build process
+(defvar *resource-and-timing-based-parallelizations*
+  0
+  "Tracks the number of times that we parallelize execution when
+  waterfall-parallelism is set to :resource-and-timing-based")
 
-;  (send-die-to-all-except-initial-threads)
+(defvar *resource-and-timing-based-serializations*
+  0
+  "Tracks the number of times that we do not parallize execution when
+  waterfall-parallelism is set to :resource-and-timing-based")
+
+(defvar *resource-based-parallelizations*
+  0
+  "Tracks the number of times that we parallelize execution when
+  waterfall-parallelism is set to :resource-based")
+
+(defvar *resource-based-serializations*
+  0
+  "Tracks the number of times that we do not parallize execution when
+  waterfall-parallelism is set to :resource-based")
+
+(defun reset-future-queue-length-history ()
+  (setf *future-queue-length-history* nil))
+
+(defun reset-future-parallelism-variables ()
+
+; Parallelism wart: some relevant variables may be unintentionally omitted from
+; this reset.
+
+; (sleep 30)
 
   (setf *thread-array* 
         (make-array *future-array-size* :initial-element nil))
@@ -314,15 +353,15 @@
   (setf *future-added* (make-semaphore))
 
   (setf *idle-future-core-count*
-        (make-atomically-modifiable-counter (1- *core-count*)))
+        (make-atomically-modifiable-counter *core-count*))
 
   (setf *idle-future-resumptive-core-count* 
-        (make-atomically-modifiable-counter *core-count*))
+        (make-atomically-modifiable-counter (1- *core-count*)))
 
   (setf *idle-core* (make-semaphore))
   (setf *idle-resumptive-core* (make-semaphore))
 
-  (dotimes (i (1- *core-count*)) (signal-semaphore *idle-core*))
+  (dotimes (i *core-count*) (signal-semaphore *idle-core*))
   (dotimes (i (1- *core-count*)) (signal-semaphore *idle-resumptive-core*))
   
 ; The last slot taken and saved starts at zero, because slot zero is always
@@ -330,8 +369,11 @@
 
   (setf *last-slot-taken* (make-atomically-modifiable-counter 0))
   (setf *last-slot-saved* (make-atomically-modifiable-counter 0))
-  #+debugging
   (setf *threads-spawned* 0)
+
+  (setf *total-future-count* (make-atomically-modifiable-counter 0))
+  (setf *unassigned-and-active-future-count*
+        (make-atomically-modifiable-counter 1))
 
 ; If we let the threads expire naturally instead of calling the above
 ; send-die-to-all-except-initial-threads, then this setting is unnecessary.
@@ -340,17 +382,92 @@
 ; (setf *resumptive-future-thread-count* (make-atomically-modifiable-counter 0))
 
 ; (setf *acl2-par-arrays-lock* (make-lock))
+
+  (setf *resource-and-timing-based-parallelizations* 0)
+  (setf *resource-and-timing-based-serializations* 0)
+
+  (setf *resource-based-parallelizations* 0)
+  (setf *resource-based-serializations* 0)
+;  (setf *aborted-futures-total* 0)
+
+  (reset-future-queue-length-history)
+
   t ; return t
 )
 
-#-lisp-works
+#-lispworks
 (reset-future-parallelism-variables)
 
 (defun reset-all-parallelism-variables ()
   (format t "Resetting parallelism and futures variables.  This may take a ~
              few seconds (often either~% 0 or 15).~%")
   (reset-parallelism-variables)
-  (reset-future-parallelism-variables))
+  (reset-future-parallelism-variables)
+  (format t "Done resetting parallelism and futures variables.~%"))
+
+(defun futures-parallelism-buffer-has-space-available ()
+  (< (atomically-modifiable-counter-read *unassigned-and-active-future-count*)
+     *unassigned-and-active-work-count-limit*))
+
+(defun not-too-many-futures-already-in-existence ()
+
+; See :DOC topic set-total-parallelism-work-limit and :DOC topic
+; set-total-parallelism-work-limit-error for more details.
+
+  (let ((total-parallelism-work-limit 
+         (f-get-global 'total-parallelism-work-limit *the-live-state*)))
+    (cond ((equal total-parallelism-work-limit :none)
+
+; If the value is :none, then there is no limit.
+
+           t)
+          ((< (atomically-modifiable-counter-read *total-future-count*)
+              total-parallelism-work-limit)
+           t)
+          (t 
+
+; We are above the total-parallelism-work-limit.  Now the question is whether we
+; notify the user with an error.
+
+           (let ((total-parallelism-work-limit-error
+                  (f-get-global 'total-parallelism-work-limit-error
+                                *the-live-state*))) 
+             (cond ((equal total-parallelism-work-limit-error t) 
+
+; Cause an error to notify the user that they need to either increase the limit
+; or disable the error by setting the global variable
+; total-parallelism-work-limit to nil.  This is the default behavior.
+
+; Parallelism wart: shorten this error, probably suggesting instead that the
+; user just disable the check.  Then redirect the user to :doc topic
+; set-total-parallelism-work-limit for instructions on how to configure the
+; threshold that triggers this error and serial execution.
+
+                    (er hard 'not-too-many-futures-already-in-existence
+                        "In order to allow the surprising behavior that ~
+                         serializes computation for the :full waterfall ~
+                         parallelism mode once a risky number of threads are ~
+                         required to continue executing, you must set ~
+                         total-parallelism-work-limit-error to nil. ~
+                         Alternatively, you may increase the threshold for ~
+                         the number of threads allowed into the system by ~
+                         setting total-parallelism-work-limit to a higher ~
+                         number. Also, you may set ~
+                         total-parallelism-work-limit to :none, which will ~
+                         always parallelize computation.  This setting will ~
+                         allow your machine to blow up.  The default setting ~
+                         for total-parallelism-work-limit-error is t, which ~
+                         will result in this error.  See :DOC ~
+                         set-total-parallelism-work-limit and :DOC ~
+                         set-total-parallelism-work-limit-error for more ~
+                         information."))
+                   ((null total-parallelism-work-limit-error)
+                    nil)
+                   (t (er hard 'not-too-many-futures-already-in-existence
+                          "The value for global variable ~
+                           total-parallelism-work-limit-error must be one of ~
+                           t or nil.  Please change the value of this global ~
+                           variable to either of those values."))))))))
 
 (defun futures-resources-available ()
 
@@ -366,11 +483,9 @@
 ; In summary, it is unneccessary to acquire a lock, because we just don't care
 ; if we miss a few chances to parallelize, or parallelize a few extra times.
 
-  (and (f-get-global 'parallel-evaluation-enabled *the-live-state*)
-       (< (atomically-modifiable-counter-read *unassigned-and-active-future-count*)
-          *unassigned-and-active-work-count-limit*)
-       (< (atomically-modifiable-counter-read *total-future-count*)
-          *total-work-limit*)))
+  (and (f-get-global 'parallel-execution-enabled *the-live-state*)
+       (futures-parallelism-buffer-has-space-available)
+       (not-too-many-futures-already-in-existence)))
 
 (defmacro unwind-protect-disable-interrupts-during-cleanup
   (body-form &rest cleanup-forms)
@@ -379,6 +494,9 @@
 ; cleanup-form cannot be interrupted.  Note that CCL's implementation already
 ; disables interrupts during cleanup.
 
+; Parallelism wart: we should specify a Lispworks compile-time definition (as
+; we did for CCL and SBCL).
+
   #+ccl
   `(unwind-protect ,body-form ,@cleanup-forms)
   #+sb-thread
@@ -386,28 +504,73 @@
   #-(or ccl sb-thread)
   `(unwind-protect ,body-form ,@cleanup-forms))
 
+; Parallelism wart: Label the following comment as a wart, blemish, etc.,
+; and/or maybe give a bit more explanation.
 ; Idea: have a queue for both the evaluation of closures and the abortion of
 ; futures.  Give the abortion queue higher priority.
 
+(defvar *threads-waiting-for-starting-core* 
+
+; Since this variable is only used for debugging purposes, we intentionally do
+; not lock this variable when reading or writing to it.
+
+  0)
+
 (defun claim-starting-core ()
+  #+ccl
+  (incf *threads-waiting-for-starting-core*)
   (let ((notification (make-semaphore-notification)))
     (unwind-protect-disable-interrupts-during-cleanup
      (wait-on-semaphore *idle-core* :notification notification)
-     (when (semaphore-notification-status notification)
-       (setf *allocated-core* *starting-core*)
-       (atomic-decf *idle-future-core-count*)
+     (progn 
+       (when (semaphore-notification-status notification)
+         (setf *allocated-core* *starting-core*)
+         (atomic-decf *idle-future-core-count*)
+; Parallelism wart: Label the following comment as a wart, blemish, etc.
 ; Is this really the right place to do this?
-       (setf *decremented-idle-future-thread-count* t)
-       (atomic-decf *idle-future-thread-count*)))))
+         (setf *decremented-idle-future-thread-count* t)
+         (atomic-decf *idle-future-thread-count*))
+       #+ccl
+       (decf *threads-waiting-for-starting-core*)))))
 
 (defun claim-resumptive-core ()
+
+; Parallelism blemish: the following script showcases a bug where the
+; *idle-resumptive-core* semaphore signal isn't being appropriately
+; received... most likely because it's not being signaled (otherwise it would
+; be a CCL issue).
+
+;; (defun make-and-read-future ()
+;;   (future-read (future 3)))
+
+;; (time$ (dotimes (i 100000)
+;;          (make-and-read-future)))
+
+;; (defvar *making-and-reading-done*
+;;   (make-semaphore))
+
+;; (defun make-and-read-future-100000-times ()
+;;   (time$ (dotimes (i 100000)
+;;            (make-and-read-future)))
+;;   (signal-semaphore *making-and-reading-done*))
+
+;; (defun make-and-read-future-in-multiple-threads (thread-count)
+;;   (time
+;;    (dotimes (i thread-count)
+;;      (run-thread "making and reading futures"
+;;                  #'make-and-read-future-100000-times))
+;;    (dotimes (i thread-count)
+;;      (wait-on-semaphore *making-and-reading-done*))))
+
+;; (make-and-read-future-in-multiple-threads 2)
+
   (let ((notification (make-semaphore-notification)))
     (unwind-protect-disable-interrupts-during-cleanup
      (wait-on-semaphore *idle-resumptive-core* :notification notification)
      (when (semaphore-notification-status notification)
        (setf *allocated-core* *resumptive-core*)
        (atomic-decf *idle-future-resumptive-core-count*)))))
-    
+
 (defun free-allocated-core ()
   (without-interrupts
    (cond ((equal *allocated-core* *starting-core*)
@@ -436,7 +599,6 @@
 ; "early-terminate-relatives".
 
   (abort-future-indexes (faref *future-dependencies* index))
-  ;#-debugging
   (setf (faref *future-dependencies* index) nil)
 )
 
@@ -481,7 +643,6 @@
          (atomic-incf *idle-future-thread-count*))
        (free-allocated-core)
 
-       ;#-debugging
        (setf (faref *future-array* index) nil)
        ;; (setf *current-thread-index* -1) ; falls out of scope
        ))))
@@ -496,89 +657,234 @@
 ; *Throwable-future-worker-thread* is unrelated to tag
 ; *:worker-thread-no-longer-needed.
 
+; Parallelism blemish: pick a name that makes it more obvious that this
+; variable is unrelated to variable *throwable-worker-thread*.
+
  nil)
 
 (defun wait-for-a-closure ()
   (loop while (>= (atomically-modifiable-counter-read *last-slot-taken*)
                   (atomically-modifiable-counter-read *last-slot-saved*))
         do
-        (when (not (wait-on-semaphore *future-added* :timeout 15))
-          (throw :worker-thread-no-longer-needed nil))))
+
+; As of Feb 19, 2012, instead of picking a somewhat random duration to wait, we
+; would always wait 15 seconds.  This was fine, except that a proof done by
+; Robert Krug caused over 3000 threads to become active at the same time,
+; because Rager's Lisp of choice (CCL) was so efficient in its handling of
+; threads and semaphore signals.  Our solution to this problem involves calling
+; the function random, below.  Here are more details:
+
+; Put briefly, the implementation of timeouts in CCL is so good, that once a
+; proof finishes, if there was a tree of subgoals (suppose those subgoals are
+; named Subgoal 10000, Subgoal 9999, ... Subgoal 2) blocked on Subgoal 1
+; finishing (which his how the implementation of waterfall1-lst works as of Feb
+; 19, 2012), once Subgoal 1 finishes, each thread associated with Subgoal
+; 10000, Subgoal 9999, ... Subgoal 2, Subgoal 1 will finish computing at
+; approximately the same time (Subgoal 10000 is waiting for Subgoal 9999,
+; Subgoal 9999 is waiting on Subgoal 9998... and so forth).  As such, once all
+; 10,000 of these threads decide to wait on the semaphore *future-added*, as
+; below, they were all enqueued to run at almost exactly the same time (15
+; seconds from when they finished proving their subgoal) by the CPU scheduler.
+; This results in the 1-minute Average Load-time (a Linux term, see
+; http://www.linuxjournal.com/article/9001 for further info) shooting through
+; the roof (upwards of 1000 in some cases), and then the Linux daemon process
+; "watchdog" (see the Linux man page for watchdog) tells the machine to reboot,
+; because "watchdog" thinks all chaos has broken loose (but, of course, chaos
+; has not broken loose).  We _could_ argue with system maintainers about what
+; an appropriate threshold is for determining when chaos breaks loose, but it
+; would be silly.  We're not even coding ACL2(p) just for use in one
+; environment -- we want it to work at all institutions without having to
+; trouble sysadmins.  As such, rather than worry about this anymore, we
+; circumvent the problem by doing the following: Instead of having every thread
+; wait 15 seconds for new parallelism work to enter the system, we have every
+; thread wait a random amount of time, within a reasonable range.
+
+; One can see Section "Another Granularity Issue Related to Thread Limitations"
+; inside :DOC topic parallelism-tutorial for an explanation of how user-level
+; programs can have trees of nested computation.
+
+        (let ((random-amount-of-time (+ 10 (random 110.0))))
+          (when (not (wait-on-semaphore *future-added* 
+                                        :timeout random-amount-of-time))
+            (throw :worker-thread-no-longer-needed nil)))))
 
 (defvar *busy-wait-var* 0)
 (defvar *current-waiting-thread* nil)
 (defvar *fresh-waiting-threads* 0)
-(defvar *thrown-with-raw-ev-fncall* nil)
-(defvar *thrown-with-raw-ev-fncall-count*
 
-; Used for debugging.
+(defun make-tclet-thrown-symbol1 (tags first-tag)
+  (if (endp tags)
+      ""
+    (concatenate 'string
+                 (if first-tag
+                     ""
+                   "-OR-")
+                 (symbol-name (car tags))
+                 "-THROWN"
+                 (make-tclet-thrown-symbol1 (cdr tags) nil))))
 
-; Parallelism wart: change the code for catching tags in the mt-future's
-; implementation to use a scheme like the following:
+(defun make-tclet-thrown-symbol (tags)
+  (intern (make-tclet-thrown-symbol1 tags t) "ACL2"))
+
+(defun make-tclet-bindings1 (tags)
+  (if (endp tags)
+      nil
+    (cons (list (make-tclet-thrown-symbol (reverse tags))
+                t)
+          (make-tclet-bindings1 (cdr tags)))))
+
+(defun make-tclet-bindings (tags)
+  (Reverse (make-tclet-bindings1 (reverse tags))))
+
+(defun make-tclet-thrown-tags1 (tags)
+  (if (endp tags)
+      nil
+    (cons (make-tclet-thrown-symbol (reverse tags))
+          (make-tclet-thrown-tags1 (cdr tags)))))
+
+(defun make-tclet-thrown-tags (tags)
+  (reverse (make-tclet-thrown-tags1 (reverse tags))))
+
+(defun make-tclet-catches (rtags body thrown-tag-bindings)
+  (if (endp rtags)
+      body
+    (list 'catch
+          (list 'quote (car rtags))
+          (list 'prog1 ; 'our-multiple-value-prog1 ; we don't support multiple-values at all
+           (make-tclet-catches (cdr rtags) body (cdr thrown-tag-bindings))
+           `(setq ,(car thrown-tag-bindings) nil)))))
+
+
+(defun make-tclet-cleanups (thrown-tags cleanups)
+  (if (endp thrown-tags)
+      '((t nil))
+    (cons (list (car thrown-tags)
+                (car cleanups))
+          (make-tclet-cleanups (cdr thrown-tags)
+                         (cdr cleanups)))))
+
+(defmacro throw-catch-let (tags body cleanups)
+
+; This macro takes three arguments:
+
+; Tags is a list of tags that can be thrown from within body.
+
+; Body is the body to execute.
+
+; Cleanups is a list of forms, one of which will be executed in the event that
+; the corresponding tag is thrown.  The tags and cleanup forms are given their
+; association with each other by their order.  So, if tag 'x-tag is the third
+; element in tags, the cleanup form for 'x-tag should also be the third form in
+; cleanups.
+
+; This macro does not support throwing multiple-values as a throw's return
+; value.
+
+; Here is an example of what we expect throw-catch-let to automatically do for
+; us.  We let throw-catch-let worry about the details.  Some examples of such
+; details are: (1) whether we have the right order for checking one-thrown,
+; one-or-two-thrown, et al. (2) whether our catches are in the right order, (3)
+; whether the value returned by the catches is the right value (which is why we
+; have to use prog1).  Note that this form is missing some of the detail (e.g.,
+; the aforementioned prog1).
 
 ;; (let ((one-thrown 't)
-;;      (one-or-two-thrown 't)
-;;      (one-or-two-or-three-thrown 't))
-;;  (catch 'one
-;;    (catch 'two
-;;      (catch 'three
-;;        (arbitrary-code-here)
-;;        ;; (if X
-;;        ;;     (throw 'one)
-;;        ;;   (if Y
-;;        ;;       (throw 'two)
-;;        ;;     (if Z
-;;        ;;         (throw 'three)
-;;        ;;       nil)))
-;;        (setq one-or-two-or-three-thrown nil))
-;;      (setq one-or-two-thrown nil))
-;;    (setq one-thrown nil))
-;;  (cond
-;;   (one-thrown (handle-one))
-;;   (one-or-two-thrown (handle-two))
-;;   (one-or-two-or-three-thrown (handle-three))))
-  
-  0)
+;;       (one-or-two-thrown 't)
+;;       (one-or-two-or-three-thrown 't))
+;;   (catch 'one
+;;     (catch 'two
+;;       (catch 'three
+;;         (arbitrary-code-here)
+;;         ;; (if X
+;;         ;;     (throw 'one)
+;;         ;;   (if Y
+;;         ;;       (throw 'two)
+;;         ;;     (if Z
+;;         ;;         (throw 'three)
+;;         ;;       nil)))
+;;         (setq one-or-two-or-three-thrown nil))
+;;       (setq one-or-two-thrown nil))
+;;     (setq one-thrown nil))
+;;   (cond
+;;    (one-thrown (handle-one))
+;;    (one-or-two-thrown (handle-two))
+;;    (one-or-two-or-three-thrown (handle-three))))
+
+; Here is an example use of throw-catch-let.
+       
+;; (throw-catch-let
+;;  (x y)
+;;  (cond ((equal *flg* 3) (throw 'x 10))
+;;        ((equal *flg* 4) (throw 'y 11))
+;;        (t 7))  
+;;  ((setq *x-thrown* t)
+;;   (setq *y-thrown* t)))
+
+; While Rager wrote this macro, Nathan Wetzler has his gratitude for helping
+; derive the main ideas.
+
+  (let* ((thrown-tags (make-tclet-thrown-tags tags)))    
+    `(let ,(make-tclet-bindings tags)
+       (let ((tclet-result ,(make-tclet-catches tags body thrown-tags)))
+         (prog2 (cond ,@(make-tclet-cleanups thrown-tags cleanups))
+             tclet-result)))))
 
 (defun eval-a-closure ()
   (let* ((index (atomic-incf *last-slot-taken*))
          (*current-thread-index* index)
-         (*thrown-with-raw-ev-fncall* t)
-         (thrown-tag-result nil)
+         (thrown-tag nil)
+         (thrown-val nil)
          (future nil))
-; very rarely busy wait for the future to arrive
+
+; Hopefully very rarely, we busy wait for the future to arrive.
+
     (loop while (not (faref *future-array* index)) do
           (incf *busy-wait-var*)
           (when (not (equal (current-thread) *current-waiting-thread*))
             (setf *current-waiting-thread* (current-thread))
             (incf *fresh-waiting-threads*)))
-; semi-bozo: the value from the throw/catch is discarded
-    (setf 
-     thrown-tag-result
-     (catch 'raw-ev-fncall 
-      (catch :result-no-longer-needed
-        (let ((*throwable-future-worker-thread* t))
-          (progn (setq future (faref *future-array* index))
-                 (set-thread-check-for-abort-and-funcall future))))
-      (setq *thrown-with-raw-ev-fncall* nil)))
+
+; The tags we need to catch for throwing again later are raw-ev-fncall,
+; local-top-level, time-limit5-tag, and step-limit-tag.  We do not bother
+; catching missing-compiled-book, because the code that throws it says it would
+; be an ACL2 implementation error to actually execute the throw.  If other tags
+; are later added to the ACL2 source code, we should add them to the below
+; throw-catch-let.
+
+    (throw-catch-let
+     (raw-ev-fncall local-top-level time-limit5-tag step-limit-tag)
+     (catch :result-no-longer-needed
+         (let ((*throwable-future-worker-thread* t))
+           (progn (setq future (faref *future-array* index))
+                  (set-thread-check-for-abort-and-funcall future))))
+     ((progn (setf thrown-tag 'raw-ev-fncall) (setf thrown-val tclet-result))
+      (progn (setf thrown-tag 'local-top-level) (setf thrown-val tclet-result))
+      (progn (setf thrown-tag 'time-limit5-tag) (setf thrown-val tclet-result))
+      (progn (setf thrown-tag 'step-limit-tag) (setf thrown-val tclet-result))))
+
 ; The following does not need to be inside an unwindprotect-cleanup because
 ; set-thread-check-for-abort-and-funcall also removes the pointer to this
 ; thread in *thread-array*.
+
     (atomic-decf *unassigned-and-active-future-count*)
     (atomic-decf *total-future-count*)
-    (when *thrown-with-raw-ev-fncall*
-      (incf *thrown-with-raw-ev-fncall-count*) ; debugging
-      (setf (mt-future-thrown-tag future) (cons 'raw-ev-fncall thrown-tag-result))
-; a future that threw a tag is still a legal future to read
+    (when thrown-tag
+      (setf (mt-future-thrown-tag future)
+            (cons thrown-tag thrown-val))
+
+; A future that threw a tag is still a legal future to read.  In fact, the
+; throw does not re-occur until the future is read.
+
       (broadcast-barrier (mt-future-valid future)))))
 
 (defun eval-closures ()
   ;; (atomic-incf *idle-future-thread-count*) ; done inside the spawner
   (catch :worker-thread-no-longer-needed
-    (loop 
-     (wait-for-a-closure)
+    (let ((*throwable-worker-thread* t))
+      (loop 
+       (wait-for-a-closure)
 ; the catch of tag :result-no-longer-needed is performed inside eval-a-closure
-     (eval-a-closure)))
+       (eval-a-closure))))
 ; The following decrement will always execute, unless the user terminates the
 ; thread in some manual raw Lisp way.
   (atomic-decf *idle-future-thread-count*))
@@ -591,7 +897,7 @@
                   *max-idle-thread-count*) 
      do
      (progn (atomic-incf *idle-future-thread-count*)
-            #+debugging (incf *threads-spawned*)
+            (incf *threads-spawned*)
             (run-thread "Worker thread" 'eval-closures)))))
 
 (defun make-future-with-closure (closure)
@@ -619,51 +925,67 @@
   future)
 
 (defmacro mt-future (x)
-  `(if #-skip-resource-availability-test (not (futures-resources-available))
+  (let ((ld-level-sym (gensym))
+        (ld-level-state-sym (gensym))
+        (wormholep-sym (gensym))
+        (local-safe-mode-sym (gensym))
+        (local-gc-on-sym (gensym)))
+    `(if #-skip-resource-availability-test (not (futures-resources-available))
        #+skip-resource-availability-test nil
 ; need to return a "single-threaded" future, as in futures-st.lisp
        (prog2 (incf *futures-resources-unavailable-count*)
            (st-future ,x))
-     ;;       ,(multiple-value-list x)
-     (prog2 (incf *futures-resources-available-count*)
-         (let* ((ld-level *ld-level*)
+       ;;     ,(multiple-value-list x)
+       (prog2 (incf *futures-resources-available-count*)
+           (let* ((,ld-level-sym *ld-level*)
+                  (,ld-level-state-sym
+
+; We have discussed with David Rager whether it is an invariant of ACL2 that
+; *ld-level* and (@ ld-level) have the same value, except perhaps when cleaning
+; up with acl2-unwind-protect.  If it is, then David believes that it's also an
+; invariant of ACL2(p).  We add an assertion here to check that.
+                 
+                   (assert$ (equal *ld-level*
+                                   (f-get-global 'ld-level *the-live-state*))
+                            (f-get-global 'ld-level *the-live-state*)))
+
 ; consider also *ev-shortcut-okp* *raw-guard-warningp*
-                (acl2-unwind-protect-stack *acl2-unwind-protect-stack*)
-                (wormholep *wormholep*)
-;                (wormhole-cleanup-form *wormhole-cleanup-form*)
-                (standard-oi  *standard-oi*)
-                (standard-co *standard-co*)
-                ; *deep-gstack*  ???
-;                (proofs-co *standard-co*)
-;    (ld-skip-proofsp (f-get-global 'ld-skip-proofsp *the-live-state*))
-#|    (ld-redefinition-action . nil)
-    (ld-prompt . t)
-    (ld-keyword-aliases . nil)
-    (ld-pre-eval-filter . :all)
-    (ld-pre-eval-print . nil)
-    (ld-post-eval-print . :command-conventions)
-    (ld-evisc-tuple . nil)
-    (ld-error-triples . t)
-    (ld-error-action . :continue)
-    (ld-query-control-alist . nil)
-    (ld-verbose |# 
-    
-                (closure (lambda () 
-                           (let ((*ld-level* ld-level)
-                                 (*acl2-unwind-protect-stack*
-                                  acl2-unwind-protect-stack) 
-                                 (*wormholep* wormholep)
-                                 ;(*wormhole-cleanup-form*
-                                 ; wormhole-cleanup-form)
-                                 (*standard-oi* standard-oi)
-                                 (*standard-co* standard-co)
-                                 ;(*proofs-co* proofs-co)
-                                 )
-                             ,x))))
-           (without-interrupts
-            (let ((future (make-future-with-closure closure)))
-              (without-interrupts (add-future-to-queue future))
-              future))))))
+                  (acl2-unwind-protect-stack *acl2-unwind-protect-stack*)
+                  (,wormholep-sym *wormholep*)
+                  ;; (wormhole-cleanup-form *wormhole-cleanup-form*)
+                  (,local-safe-mode-sym (f-get-global 'safe-mode *the-live-state*))
+                  (,local-gc-on-sym (f-get-global 'guard-checking-on
+                                                  *the-live-state*)) 
+
+; Parallelism no-fix: we have considered causing child threads to inherit
+; ld-specials from their parents, as the following comment from David Rager
+; suggests.  But this now seems too difficult to justify that effort.
+
+;   At one point, in an effort to fix printing in parallel from within
+;   wormholes, I tried rebinding the ld-specials.  I now know that my approach
+;   at that time was doomed to fail, because these specials aren't implemented
+;   as global variables but instead as a setq of a variable in a completely
+;   different package.  Now that I understand how state global variables work
+;   in ACL2, it may be worth coming back to this code and trying once again to
+;   inherit the ld-specials (listed in *initial-ld-special-bindings*).  We
+;   could also consider binding *deep-gstack*, and it seems that we also should
+;   bind *wormhole-cleanup-form* since we bind *wormholep*, but we haven't done
+;   so.
+
+                  (closure (lambda () 
+                             (let ((*ld-level* ,ld-level-sym)
+                                   (*acl2-unwind-protect-stack*
+                                    acl2-unwind-protect-stack) 
+                                   (*wormholep* ,wormholep-sym))
+                               (state-free-global-let*
+                                ((ld-level ,ld-level-state-sym)
+                                 (safe-mode ,local-safe-mode-sym)
+                                 (guard-checking-on ,local-gc-on-sym))
+                                ,x)))))
+             (without-interrupts
+              (let ((future (make-future-with-closure closure)))
+                (without-interrupts (add-future-to-queue future))
+                future)))))))
 
 (defun mt-future-read (future)
   (cond ((st-future-p future)
@@ -694,18 +1016,14 @@
 ; unwind-protect.  It's unnecessary because if we're terminating early, we
 ; don't really care whether we "claim" the core.  In fact, we actually prefer
 ; to leave the core unclaimed, because claiming the core would require
-; receiving a semaphore signal.
+; blocking until we temporarily receive a semaphore signal.
 
                   (claim-resumptive-core))
                 
                 (progn
                   (when notif
-                    (atomic-incf *unassigned-and-active-future-count*))
-                    #-debugging
-                    (setf (faref *future-dependencies*
-                                 *current-thread-index*)
-                          nil)))))
-           (when (mt-future-thrown-tag future) 
+                    (atomic-incf *unassigned-and-active-future-count*))))))
+           (when (mt-future-thrown-tag future)
              (throw (car (mt-future-thrown-tag future)) 
                     (cdr (mt-future-thrown-tag future))))
            (values-list (mt-future-value future))))
@@ -804,34 +1122,6 @@
       (progn (print n) 
              (print (faref array n)) 
              (print-non-nils-in-array array (1+ n))))))
-#+ccl
-(ccl:egc nil)
-
-(defun print-interesting-variables()
-  (format t "Printing vars related to evaluating futures.~%")
-  (format t "*idle-future-core-count* is ~s~%"
-          (atomically-modifiable-counter-read *idle-future-core-count*))
-  (format t "*idle-future-resumptive-core-count* is ~s~%"
-          (atomically-modifiable-counter-read
-           *idle-future-resumptive-core-count*))
-  (format t "*idle-future-thread-count* is ~s~%"
-          (atomically-modifiable-counter-read *idle-future-thread-count*))
-  (format t "*unassigned-and-active-future-count* is ~s~%"
-          (atomically-modifiable-counter-read
-           *unassigned-and-active-future-count*))
-  (format t "*total-future-count* is ~s~%"
-          (atomically-modifiable-counter-read *total-future-count*))  
-  (format t "*futures-resources-available-count* is ~s~%"
-          *futures-resources-available-count*)
-  (format t "*futures-resources-unavailable-count* is ~s~%"
-          *futures-resources-unavailable-count*)
-
-  (format t "~%Printing vars related to aborting futures.~%")
-  (format t "*aborted-futures-total* is ~s~%" *aborted-futures-total*)
-  (format t "*aborted-futures-via-throw* is ~s~%" *aborted-futures-via-throw*)
-  (format t "*aborted-futures-via-flag* is ~s~%" *aborted-futures-via-flag*)
-  (format t "*almost-aborted-future-count* is ~s~%" *almost-aborted-future-count*))
-
 
 ;---------------------------------------------------------------------
 ; Section:  Futures Interface
@@ -840,17 +1130,9 @@
   `(mt-future ,x))
 
 (defun future-read (x)
-
-; Parallelism wart: Make macro to avoid the function call.  I leave as a
-; function call for now so that I get an extra debuggin layer.
-
   (mt-future-read x))
 
 (defun future-abort (x)
-
-; Parallelism wart: Make macro to avoid the function call.  I leave as a
-; function call for now so that I get an extra debuggin layer.
-
   (mt-future-abort x))
 
 (defun abort-futures (futures)

@@ -1,4 +1,4 @@
-; ACL2 Version 4.2 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 4.3 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2011  University of Texas at Austin
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -1553,8 +1553,8 @@
       state
     (let* ((forcing-round (access clause-id cl-id :forcing-round))
            (aborting-p (and (eq signal 'abort)
-                            (not (eq (tagged-object 'abort-cause ttree)
-                                     'revert))))
+                            (not (equal (tagged-objects 'abort-cause ttree)
+                                        '(revert)))))
            (clause-count
             (cond ((eq signal 'or-hit)
                    (assert$
@@ -1844,6 +1844,7 @@
 ;           in-theory                0 (no name introduced)
 ;           in-arithmetic-theory     0 (no name introduced)
 ;           push-untouchable         0
+;           regenerate-tau-data-base 0 (no name introduced)
 ;           remove-untouchable       0
 ;           reset-prehistory         0
 ;           set-body                 0 (no name introduced)
@@ -1919,6 +1920,7 @@
                               (mutual-recursion (strip-cadrs (cdr form)))
                               ((verify-guards in-theory
                                               in-arithmetic-theory
+                                              regenerate-tau-data-base
                                               push-untouchable
                                               remove-untouchable
                                               reset-prehistory
@@ -1931,6 +1933,14 @@
           (cons (cons ev-type
                       (cons namex symbol-class))
                 form))))
+
+(defun access-event-tuple-number (x)
+
+; Warning: If we change the convention that n is (car x) when (car x)
+; is an integerp, then change the default value given getprop in
+; max-absolute-event-number.
+
+  (if (integerp (car x)) (car x) (caar x)))
 
 (defun access-event-tuple-depth (x)
   (if (integerp (car x)) 0 (cdar x)))
@@ -1959,6 +1969,7 @@
           (mutual-recursion (strip-cadrs (cddr x)))
           ((verify-guards in-theory
                           in-arithmetic-theory
+                          regenerate-tau-data-base
                           push-untouchable remove-untouchable reset-prehistory
                           set-body table)
            0)
@@ -2049,14 +2060,6 @@
 
 (defun access-command-tuple-cbd (x)
   (access command-tuple x :cbd))
-
-(defun access-event-tuple-number (x)
-
-; Warning: If we change the convention that n is (car x) when (car x)
-; is an integerp, then change the default value given getprop in
-; max-absolute-event-number.
-
-  (if (integerp (car x)) (car x) (caar x)))
 
 ; Absolute Event and Command Numbers
 
@@ -2697,6 +2700,7 @@
                  NON-EXECUTABLEP
                  SIBLINGS
                  LEVEL-NO
+                 TAU-PAIR
                  QUICK-BLOCK-INFO
                  PRIMITIVE-RECURSIVE-DEFUNP
                  CONSTRAINEDP
@@ -2771,7 +2775,15 @@
                  PREDEFINED
                  DEFAXIOM-SUPPORTER
                  ATTACHMENT ; see Essay on Defattach re: :ATTACHMENT-DISALLOWED
-                 CLAUSE-PROCESSOR))
+                 CLAUSE-PROCESSOR
+                 TAU-PAIR-SAVED
+                 POS-IMPLICANTS
+                 NEG-IMPLICANTS
+                 UNEVALABLE-BUT-KNOWN
+                 SIGNATURE-RULES-FORM-1
+                 SIGNATURE-RULES-FORM-2
+                 BIG-SWITCH
+                 ))
 
 ; and these are not created by the introductory event of name (which must have
 ; been a defun or constrain) and hence are left untouched here.
@@ -2912,15 +2924,18 @@
   #+(and (not acl2-loop-only) acl2-rewrite-meter) ; for stats on rewriter depth
   (setq *rewrite-depth-max* 0)
 
-  (pprogn (push-timer 'other-time 0 state)
+  (pprogn (cond ((null (cdr (get-timer 'other-time state))) ; top-level event
+                 (mv-let (x state)
+                         (main-timer state)
+                         (declare (ignore x))
+                         state))
+                (t ; inbetween events
+                 (increment-timer 'other-time state)))
+          (push-timer 'other-time 0 state)
           (push-timer 'prove-time 0 state)
           (push-timer 'print-time 0 state)
           (push-timer 'proof-tree-time 0 state)
-          (push-warning-frame state)
-          (mv-let (x state)
-                  (main-timer state)
-                  (declare (ignore x))
-                  state)))
+          (push-warning-frame state)))
 
 (defun print-warnings-summary (state)
   (mv-let
@@ -3319,6 +3334,265 @@
                   (newline channel state)
                   (fms *proof-failure-string* nil channel state nil))))))
 
+(defstub print-summary-user (state) t)
+
+(defun print-summary-user-builtin (state)
+   (declare (ignore state)
+            (xargs :mode :logic :verify-guards t))
+   nil)
+
+(defattach print-summary-user print-summary-user-builtin)
+
+(defdoc print-summary-user
+  ":Doc-Section switches-parameters-and-modes
+
+  causing additional summary output~/
+
+  ACL2 prints summaries at the conclusions of processing ~il[events] (unless
+  summaries are inhibited; ~pl[set-inhibit-output-lst] and also
+  ~pl[set-inhibited-summary-types]).  You may arrange for information to be
+  printed at the end of the summary, by defining a function of ~c[state] that
+  returns an ordinary value (typically ~c[nil], but the value is irrelevant).
+  This function should normally be a ~il[guard]-verified ~c[:]~ilc[logic] mode
+  function with no explicit guard (hence, its guard is actually
+  ~c[(state-p state)]), but later below we discuss how to avoid this
+  requirement.  It is then attached (~pl[defattach]) to the function
+  ~c[print-summary-user].  The following example illustrates how this all
+  works.
+
+  ~bv[]
+  (defun print-summary-user-test (state)
+    (declare (xargs :stobjs state))
+    (and (f-boundp-global 'abbrev-evisc-tuple state)
+         (observation-cw
+          'my-test
+          \"~~|Value of abbrev-evisc-tuple: ~~x0~~|\"
+          (f-get-global 'abbrev-evisc-tuple state))))
+  
+  (defattach print-summary-user print-summary-user-test)
+  ~ev[]
+
+  After admission of the two events above, every event summary will conclude
+  with extra printout, for example:
+
+  ~bv[]
+  ACL2 Observation in MY-TEST:  
+  Value of abbrev-evisc-tuple: :DEFAULT
+  ~ev[]
+
+  If the attachment function (above, ~c[print-summary-user-test]) does not meet
+  all the requirements stated above, then you can use the ~c[:skip-checks]
+  argument of ~ilc[defattach] to get around the requirement, as illustrated by
+  the following example.
+
+  ~bv[]
+  (defun print-summary-user-test2 (state)
+    (declare (xargs :stobjs state
+                    :mode :program))
+    (observation-cw
+     'my-test
+     \"~~|Value of term-evisc-tuple: ~~x0~~|\"
+     (f-get-global 'term-evisc-tuple state)))
+
+  (defttag t) ; needed for :skip-checks t
+
+  (defattach (print-summary-user print-summary-user-test2)
+             :skip-checks t)
+  ~ev[]~/~/")
+
+(defun lmi-seed (lmi)
+
+; The "seed" of an lmi is either a symbolic name or else a term.  In
+; particular, the seed of a symbolp lmi is the lmi itself, the seed of
+; a rune is its base symbol, the seed of a :theorem is the term
+; indicated, and the seed of an :instance or :functional-instance is
+; obtained recursively from the inner lmi.
+
+; Warning: If this is changed so that runes are returned as seeds, it
+; will be necessary to change the use of filter-atoms below.
+
+  (cond ((atom lmi) lmi)
+        ((eq (car lmi) :theorem) (cadr lmi))
+        ((or (eq (car lmi) :instance)
+             (eq (car lmi) :functional-instance))
+         (lmi-seed (cadr lmi)))
+        (t (base-symbol lmi))))
+
+(defun lmi-techs (lmi)
+  (cond
+   ((atom lmi) nil)
+   ((eq (car lmi) :theorem) nil)
+   ((eq (car lmi) :instance)
+    (add-to-set-equal "instantiation" (lmi-techs (cadr lmi))))
+   ((eq (car lmi) :functional-instance)
+    (add-to-set-equal "functional instantiation" (lmi-techs (cadr lmi))))
+   (t nil)))
+
+(defun lmi-seed-lst (lmi-lst)
+  (cond ((null lmi-lst) nil)
+        (t (add-to-set-eq (lmi-seed (car lmi-lst))
+                          (lmi-seed-lst (cdr lmi-lst))))))
+
+(defun lmi-techs-lst (lmi-lst)
+  (cond ((null lmi-lst) nil)
+        (t (union-equal (lmi-techs (car lmi-lst))
+                        (lmi-techs-lst (cdr lmi-lst))))))
+
+(defun filter-atoms (flg lst)
+
+; If flg=t we return all the atoms in lst.  If flg=nil we return all
+; the non-atoms in lst.
+
+  (cond ((null lst) nil)
+        ((eq (atom (car lst)) flg)
+         (cons (car lst) (filter-atoms flg (cdr lst))))
+        (t (filter-atoms flg (cdr lst)))))
+
+(defun print-runes-summary (ttree channel state)
+
+; This should be called under (io? summary ...).
+
+  (let ((runes (merge-sort-runes
+                (all-runes-in-ttree ttree nil))))
+    (mv-let (col state)
+            (fmt1 "Rules: ~y0~|"
+                  (list (cons #\0 runes))
+                  0 channel state nil)
+            (declare (ignore col))
+            state)))
+
+; We admit the following sorting functions in :logic mode, verify their guards,
+; and prove properties of them in books/misc/sort-symbols.lisp.
+
+(defun strict-merge-symbol-< (l1 l2 acc)
+
+; If l1 and l2 are strictly ordered by symbol-< and above acc, which is also
+; thus strictly ordered, then the result is strictly ordered by symbol-<.
+
+  (declare (xargs :guard (and (symbol-listp l1)
+                              (symbol-listp l2)
+                              (true-listp acc))
+
+; We admit this to the logic and prove termination in
+; books/misc/sort-symbols.lisp.
+
+                  :mode :program))
+  (cond ((endp l1) (revappend acc l2))
+        ((endp l2) (revappend acc l1))
+        ((eq (car l1) (car l2))
+         (strict-merge-symbol-< (cdr l1) (cdr l2) (cons (car l1) acc)))
+        ((symbol-< (car l1) (car l2))
+         (strict-merge-symbol-< (cdr l1) l2 (cons (car l1) acc)))
+        (t (strict-merge-symbol-< l1 (cdr l2) (cons (car l2) acc)))))
+
+(defun strict-merge-sort-symbol-< (l)
+
+; Produces a result with the same elements as the list l of symbols, but
+; strictly ordered by symbol-name.
+
+  (declare (xargs :guard (symbol-listp l)
+
+; We admit this to the logic and prove termination in
+; books/misc/sort-symbols.lisp.
+
+                  :mode :program))
+  (cond ((endp (cdr l)) l)
+        (t (strict-merge-symbol-<
+            (strict-merge-sort-symbol-< (evens l))
+            (strict-merge-sort-symbol-< (odds l))
+            nil))))
+
+(defun strict-symbol-<-sortedp (x)
+  (declare (xargs :guard (symbol-listp x)))
+  (cond ((or (endp x) (null (cdr x)))
+         t)
+        (t (and (symbol-< (car x) (cadr x))
+                (strict-symbol-<-sortedp (cdr x))))))
+
+(defun sort-symbol-listp (x)
+  (declare (xargs :guard (symbol-listp x)))
+  (cond ((strict-symbol-<-sortedp x)
+         x)
+        (t (strict-merge-sort-symbol-< x))))
+
+(defun use-names-in-ttree (ttree)
+  (let* ((objs (tagged-objects :USE ttree))
+         (lmi-lst (append-lst (strip-cars (strip-cars objs))))
+         (seeds (lmi-seed-lst lmi-lst))
+         (lemma-names (filter-atoms t seeds)))
+    (sort-symbol-listp lemma-names)))
+
+(defun by-names-in-ttree (ttree)
+  (let* ((objs (tagged-objects :BY ttree))
+         (lmi-lst (append-lst (strip-cars objs)))
+         (seeds (lmi-seed-lst lmi-lst))
+         (lemma-names (filter-atoms t seeds)))
+    (sort-symbol-listp lemma-names)))
+
+(defrec clause-processor-hint
+  (term stobjs-out . verified-p)
+  nil)
+
+(defun clause-processor-fns (cl-proc-hints)
+  (cond ((endp cl-proc-hints) nil)
+        (t (cons (ffn-symb (access clause-processor-hint
+                                   (car cl-proc-hints)
+                                   :term))
+                 (clause-processor-fns (cdr cl-proc-hints))))))
+
+(defun cl-proc-names-in-ttree (ttree)
+  (let* ((objs (tagged-objects :CLAUSE-PROCESSOR ttree))
+         (cl-proc-hints (strip-cars objs))
+         (cl-proc-fns (clause-processor-fns cl-proc-hints)))
+    (sort-symbol-listp cl-proc-fns)))
+
+(defun print-hint-events-summary (ttree channel state)
+
+; This should be called under (io? summary ...).
+
+  (flet ((make-rune-like-objs (kwd lst)
+                              (and lst ; optimization for common case
+                                   (pairlis$ (make-list (length lst)
+                                                        :INITIAL-ELEMENT kwd)
+                                             (pairlis$ lst nil)))))
+    (let* ((use-lst (use-names-in-ttree ttree))
+           (by-lst (by-names-in-ttree ttree))
+           (cl-proc-lst (cl-proc-names-in-ttree ttree))
+           (lst (append (make-rune-like-objs :BY by-lst)
+                        (make-rune-like-objs :CLAUSE-PROCESSOR cl-proc-lst)
+                        (make-rune-like-objs :USE use-lst))))
+      (cond (lst (mv-let (col state)
+                         (fmt1 "Hint-events: ~y0~|"
+                               (list (cons #\0 lst))
+                               0 channel state nil)
+                         (declare (ignore col))
+                         state))
+            (t state)))))
+
+(defun print-rules-and-hint-events-summary (state)
+  (pprogn
+   (io? summary nil state
+        ()
+        (let ((channel (proofs-co state))
+              (acc-ttree (f-get-global 'accumulated-ttree state))
+              (inhibited-summary-types (f-get-global 'inhibited-summary-types
+                                                     state)))
+          (pprogn
+           (cond ((member-eq 'rules inhibited-summary-types)
+                  state)
+                 (t (print-runes-summary acc-ttree channel state)))
+           (cond ((member-eq 'hint-events inhibited-summary-types)
+                  state)
+                 (t (print-hint-events-summary acc-ttree channel state))))))
+
+; Since we've already printed from the accumulated-ttree, there is no need to
+; print again the next time we want to print rules or hint-events.  That is why
+; we set the accumulated-ttree to nil here.  If we ever want certify-book, say,
+; to be able to print rules and hint-events when it fails, then we should use a
+; stack of ttrees rather than a single accumulated-ttree.
+
+   (f-put-global 'accumulated-ttree nil state)))
+
 (defun print-summary (erp noop-flg ctx state)
 
 ; This function prints the Summary paragraph.  Part of that paragraph includes
@@ -3421,7 +3695,7 @@
                         (fmt-ctx ctx col channel state)
                         (declare (ignore col))
                         (newline channel state))))))))
-       (print-rules-summary state) ; Call of io? is inside
+       (print-rules-and-hint-events-summary state) ; call of io? is inside
        (pprogn (print-warnings-summary state)
                (print-time-summary state)
                (print-steps-summary state))
@@ -3438,7 +3712,8 @@
                               (print-proof-tree state))))
                 (t state))))
              (t state))
-       (f-put-global 'proof-tree nil state))))))
+       (prog2$ (print-summary-user state)
+               (f-put-global 'proof-tree nil state)))))))
 
 (defun make-step-limit-record (limit)
   (make step-limit-record
@@ -3450,18 +3725,17 @@
   (let ((protected-form
          `(state-global-let*
            ((step-limit-record (make-step-limit-record wpsl-limit)))
-           (check-vars-not-free (wpsl-limit
-                                 wpsl-old-limit)
+           (check-vars-not-free (wpsl-limit wpsl-old-limit)
                                 ,form))))
     `(let ((wpsl-limit ; new step-limit for child environment
             (let ((limit ,limit))
               (cond ((null limit)
                      *default-step-limit*)
+                    ((eq limit :start) ; inherit limit from parent environment
+                     (initial-step-limit (w state) state))
                     ((and (natp limit)
                           (<= limit *default-step-limit*))
                      limit)
-                    ((eq limit :start) ; inherit limit from parent environment
-                     (initial-step-limit (w state) state))
                     (t (er hard 'with-prover-step-limit
                            "Illegal value for ~x0, ~x1.  See :DOC ~
                             with-prover-step-limit."
@@ -3593,6 +3867,10 @@
   ; Do not limit the number of prover steps, regardless of such a limit imposed
   ; globally or by the surrounding context.
   (with-prover-step-limit nil (mini-proveall))
+
+  ; Same as just above (indeed, nil above is converted to
+  ; *default-step-limit*):
+  (with-prover-step-limit *default-step-limit* (mini-proveall))
 
   ; Limit the indicated theorem to 100 steps, and when the proof does not
   ; complete, then put down a label instead.
@@ -4501,10 +4779,6 @@
 ; Keep in sync with eval-theory-expr.
 
   (cond ((equal expr '(current-theory :here))
-
-; Parallelism wart: here is another substitution of ev-w for ev which we will
-; need to check.
-
          (mv-let (erp val)
                  (ev-w '(current-theory-fn ':here world)
                        (list (cons 'world wrld))
@@ -4521,11 +4795,14 @@
                nil
                "A theory expression" ctx wrld state t
 
-; Parallelism wart: the #-acl2-par definition sets safe-mode to t, so maybe 
-; rather than reading from state, we should be passing in t.
+; The following arguments are intended to match the safe-mode and gc-off values
+; from the state in eval-theory-expr at the call there of
+; simple-translate-and-eval.  Since there is a superior state-global-let*
+; binding guard-checking-on to t, we bind our gc-off argument below to what
+; would be the value of (gc-off state) in that function, which is nil.
 
-               (f-get-global 'safe-mode state) 
-               t)))
+               (f-get-global 'safe-mode state)
+               nil)))
 
 ; Trans-ans is (term . val).
 
@@ -4735,6 +5012,52 @@
                             wrld))))
     (global-set 'cltl-command cltl-cmd wrld)))
 
+(defun strip-non-nil-base-symbols (runes acc)
+  (cond ((endp runes) acc)
+        (t (strip-non-nil-base-symbols
+            (cdr runes)
+            (let ((b (base-symbol (car runes))))
+              (cond ((null b) acc)
+                    (t (cons b acc))))))))
+
+(defun install-proof-supporters (namex ttree wrld)
+
+; This function returns an extension of wrld in which the world global
+; 'proof-supporters-alist is extended by associating namex, when a symbol or
+; list of symbols, with the list of names of events used in an admissibility
+; proof.  This list is sorted (by symbol-<) and is based on event names
+; recorded in ttree, including runes as well as events from hints of type :use,
+; :by, or :clause-processor.  However, if the list of events is empty, then we
+; do not extend wrld.  See :DOC dead-events.
+
+  (let* ((use-lst (use-names-in-ttree ttree))
+         (by-lst (by-names-in-ttree ttree))
+         (cl-proc-lst (cl-proc-names-in-ttree ttree))
+         (runes (all-runes-in-ttree ttree nil))
+         (names (append use-lst by-lst cl-proc-lst
+                        (strip-non-nil-base-symbols runes nil)))
+         (sorted-names (and names ; optimization
+                            (sort-symbol-listp
+                             (cond ((symbolp namex)
+                                    (cond ((member-eq namex names)
+
+; For example, the :induction rune for namex, or a :use (or maybe even :by)
+; hint specifying namex, can be used in the guard proof.
+
+                                           (remove-eq namex names))
+                                          (t names)))
+                                   ((intersectp-eq namex names)
+                                    (set-difference-eq names namex))
+                                   (t names))))))
+    (cond ((and (not (eql namex 0))
+                sorted-names)
+           (global-set 'proof-supporters-alist
+                       (acons namex
+                              sorted-names
+                              (global-val 'proof-supporters-alist wrld))
+                       wrld))
+          (t wrld))))
+
 (defun install-event (val form ev-type namex ttree cltl-cmd
                           chk-theory-inv-p ctx wrld state)
 
@@ -4822,14 +5145,18 @@
               (revappend (strip-cars (tagged-objects :use ttree))
                          (reverse ; for backwards compatibility with v4-2
                           (tagged-objects :by ttree)))))
+            (wrld0 (if (or (ld-skip-proofsp state)
+                           (and (atom namex) (not (symbolp namex))))
+                       wrld
+                     (install-proof-supporters namex ttree wrld)))
             (wrld1 (if new-proved-fnl-insts
                        (global-set
                         'proved-functional-instances-alist
                         (append new-proved-fnl-insts
                                 (global-val 'proved-functional-instances-alist
-                                            wrld)) 
-                        wrld)
-                     wrld))
+                                            wrld0)) 
+                        wrld0)
+                       wrld0))
 
 ; We set world global 'skip-proofs-seen or 'redef-seen if ld-skip-proofsp or
 ; ld-redefinition-action (respectively) is non-nil and the world global is not
@@ -4848,7 +5175,9 @@
 ; generate a proof obligation.  Also do not include encapsulate; even though it
 ; takes responsibility for setting skip-proofs-seen based on its first pass,
 ; nevertheless it does not account for a skip-proofs surrounding the
-; encapsulate.
+; encapsulate.  Finally, do not include defattach; the use of (skip-proofs
+; (defattach f g)) can generate bogus data in world global
+; 'proved-functional-instances-alist that can be used to prove nil later.
 
                                           '(include-book
                                             defchoose
@@ -4862,6 +5191,7 @@
                                             in-arithmetic-theory
                                             in-theory
                                             push-untouchable
+                                            regenerate-tau-data-base
                                             remove-untouchable
                                             reset-prehistory
                                             set-body
@@ -4869,9 +5199,18 @@
 
 ; We include the following test so that we can distinguish between the
 ; user-specified skipping of proofs and legitimate skipping of proofs by the
-; system, such as including a book.
+; system, such as including a book.  Without the disjunct below, we fail to
+; pick up a skip-proofs during the Pcertify step of provisional certification.
+; Perhaps someday there will be other times a user-supplied skip-proofs form
+; triggers setting of 'skip-proofs-seen even when 'skip-proofs-by-system is
+; true; if that turns out to be too aggressive, we'll think about this then,
+; but for now, we are happy to be conservative, making sure that
+; skip-proofs-seen is set whenever we are inside a call of skip-proofs.
 
-                          (not (f-get-global 'skip-proofs-by-system state))
+
+                          (or (f-get-global 'inside-skip-proofs state)
+                              (not (f-get-global 'skip-proofs-by-system
+                                                 state)))
                           (let ((old (global-val 'skip-proofs-seen wrld)))
                             (or (not old)
 
@@ -4898,37 +5237,42 @@
             (wrld4 (if cltl-cmd
                        (put-cltl-command cltl-cmd wrld3
                                          currently-installed-wrld)
-                     wrld3))
+                       wrld3)))
+       (er-let*
+         ((wrld5 (tau-visit-event t ev-type namex
+                                  (tau-auto-modep wrld4)
+                                  (ens state)
+                                  ctx wrld4 state)))
 
 ; WARNING: Do not put down any properties here!  The cltl-command should be the
 ; last property laid down before the call of add-event-landmark.  We rely on
 ; this invariant when looking for 'redefined tuples in
 ; compile-uncompiled-defuns and compile-uncompiled-*1*-defuns.
 
-            (wrld5 (add-event-landmark form ev-type namex wrld4
-                                       (global-val 'boot-strap-flg
-                                                   currently-installed-wrld))))
-       (pprogn
-        (f-put-global 'accumulated-ttree ttree state)
-        (cond
-         ((eq chk-theory-inv-p :protect)
-          (revert-world-on-error
-           (let ((state (set-w 'extension wrld5 state)))
-             (er-progn
-              (chk-theory-invariant1 :install
-                                     (ens state)
-                                     theory-invariant-table
-                                     nil ctx state)
-              (value val)))))
-         (t (let ((state (set-w 'extension wrld5 state)))
-              (cond (chk-theory-inv-p
-                     (er-progn
-                      (chk-theory-invariant1 :install
-                                             (ens state)
-                                             theory-invariant-table
-                                             nil ctx state)
-                      (value val)))
-                    (t (value val)))))))))))
+         (let ((wrld6 (add-event-landmark form ev-type namex wrld5
+                                          (global-val 'boot-strap-flg
+                                                      currently-installed-wrld))))
+           (pprogn
+            (f-put-global 'accumulated-ttree ttree state)
+            (cond
+             ((eq chk-theory-inv-p :protect)
+              (revert-world-on-error
+               (let ((state (set-w 'extension wrld6 state)))
+                 (er-progn
+                  (chk-theory-invariant1 :install
+                                         (ens state)
+                                         theory-invariant-table
+                                         nil ctx state)
+                  (value val)))))
+             (t (let ((state (set-w 'extension wrld6 state)))
+                  (cond (chk-theory-inv-p
+                         (er-progn
+                          (chk-theory-invariant1 :install
+                                                 (ens state)
+                                                 theory-invariant-table
+                                                 nil ctx state)
+                          (value val)))
+                        (t (value val)))))))))))))
 
 (deflabel redundant-events
   :doc
@@ -5008,8 +5352,8 @@
   definitions.  If you try to define the same theory name twice, you
   will get a ``name in use'' error.
 
-  An ~ilc[in-theory] event or ~ilc[defattach] event is never redundant because
-  it doesn't define any name.
+  An ~ilc[in-theory], ~ilc[defattach] or ~ilc[regenerate-tau-data-base] event
+  is never redundant because it doesn't define any name.
 
   A ~ilc[push-untouchable] event is redundant if every name supplied is
   already a member of the corresponding list of untouchable symbols.
@@ -5028,10 +5372,17 @@
   it sets an entire table (using keyword ~c[:clear]) to its existing value;
   ~pl[table].
 
-  An ~ilc[encapsulate] event is redundant if and only if a syntactically
-  identical ~ilc[encapsulate] has already been executed under the same
-  ~ilc[default-defun-mode], ~ilc[default-ruler-extenders], and
-  ~ilc[default-verify-guards-eagerness].
+  In most cases, an ~ilc[encapsulate] event is redundant if and only if a
+  syntactically identical ~ilc[encapsulate] has already been executed under the
+  same ~ilc[default-defun-mode], ~ilc[default-ruler-extenders], and
+  ~ilc[default-verify-guards-eagerness].  There are two rather obscure
+  exceptions to this rule.  One exception is relevant only if ~ilc[make-event]
+  is invoked in the earlier ~c[encapsulate]; in that case, it suffices that the
+  two ~c[encapsulate]s are equal after replacing each top-level sub-event of
+  the earlier ~c[encapsulate] by its ~ilc[make-event] expansion.  The other
+  exception is in the case of redefinition (~pl[ld-redefinition-action]), in
+  which case an attempt is made to ignore an earlier ~c[encapsulate] that has
+  already been superseded by redefinition.
 
   An ~ilc[include-book] is redundant if the book has already been included.
 
@@ -5093,10 +5444,10 @@
   names that will not shift around when the ~il[books] are included.  The
   best such names are those created by ~ilc[deflabel].
 
-  ~em[Note About Unfortunate Redundancies:]
+  ~em[Note About Unfortunate Redundancies.]
 
   Notice that our syntactic criterion for redundancy of ~ilc[defun] ~il[events]
-  does not allow redefinition to take effect unless there is a syntactic change
+  may not allow redefinition to take effect unless there is a syntactic change
   in the definition.  The following example shows how an attempt to redefine a
   function can fail to make any change.
   ~bv[]
@@ -5104,18 +5455,46 @@
   (defmacro mac (x) x)
   (defun foo (x) (mac x))
   (defmacro mac (x) (list 'car x))
+  (set-ld-redefinition-action nil state)
   (defun foo (x) (mac x)) ; redundant, unfortunately; foo does not change
   (thm (equal (foo 3) 3)) ; succeeds, showing that redef of foo didn't happen
   ~ev[]
-  The call of macro ~c[mac] was expanded away when the first definition of
-  ~c[foo] was processed, so the new definition of ~c[mac] is not seen in
-  ~c[foo] unless ~c[foo] is redefined; yet our attempt at redefinition failed!
-  An easy workaround is first to supply a different definition of ~c[foo], just
-  before the last definition of ~c[foo] above.  Then that final definition will
-  no longer be redundant.
+  The call of macro ~c[mac] was expanded away before storing the first
+  definition of ~c[foo] for the theorem prover.  Therefore, the new definition
+  of ~c[mac] does not affect the expansion of ~c[foo] by the theorem prover,
+  because the new definition of ~c[foo] is ignored.
 
-  The phenomenon illustrated above can occur even without macros.  Here is a
-  more complex example, based on one supplied by Grant Passmore.
+  One workaround is first to supply a different definition of ~c[foo], just
+  before the last definition of ~c[foo] above.  Then that final definition will
+  no longer be redundant.  However, as a courtesy to users, we strengthen the
+  redundancy check for function definitions when redefinition is active.  If in
+  the example above we remove the form
+  ~c[(set-ld-redefinition-action nil state)], then the problem goes away:
+
+  ~bv[]
+  (set-ld-redefinition-action '(:warn . :overwrite) state)
+  (defmacro mac (x) x)
+  (defun foo (x) (mac x))
+  (defmacro mac (x) (list 'car x))
+  (defun foo (x) (mac x)) ; no longer redundant
+  (thm (equal (foo 3) 3)) ; fails, as we would like
+  ~ev[]
+
+  To summarize: If a ~ilc[defun] form is submitted that meets the usual
+  redundancy criteria, then it may be considered redundant even if a macro
+  called in the definition has since been redefined.  The analogous problem
+  applie to constants, i.e., symbols defined by ~ilc[defconst] that occur in
+  the definition body.  However, if redefinition is currently active the
+  problem goes away: that is, the redundancy check is strengthened to check the
+  ``translated'' body, in which macro calls and constants defined by
+  ~ilc[defconst] are expanded away.
+
+  The above discussion for ~ilc[defun] forms applies to ~ilc[defconst] forms as
+  well.  However, for ~ilc[defmacro] forms ACL2 always checks translated
+  bodies, so such bogus redundancy does not occur.
+
+  Here is more complex example illustrating the limits of redefinition, based
+  on one supplied by Grant Passmore.
   ~bv[]
   (defun n3 () 0)
   (defun n4 () 1)
@@ -5123,51 +5502,48 @@
   (thm (equal (n5) nil)) ; succeeds, trivially
   (set-ld-redefinition-action '(:warn . :overwrite) state)
   (defun n3 () 2)
+  (thm (equal (n5) nil)) ; still succeeds, sadly
   ~ev[]
-  If now we execute ~c[(thm (equal (n5) nil))], it still succeeds even though
-  we expect ~c[(n5)] = ~c[(> (n3) (n4))] = ~c[(> 2 1)] = ~c[t].  That is
-  because the body of ~c[n5] was normalized to ~c[nil].  (Such normalization
-  can be avoided; see the brief discussion of ~c[:normalize] in the
-  documentation for ~ilc[defun].)  So, given this unfortunate situation, one
-  might expect at this point simply to redefine ~c[n5] using the same
-  definition as before, in order to pick up the new definition of ~c[n3].  Such
-  ``redefinition'' would, however, be redundant, for the same reason as in the
-  previous example:  no syntactic change was made to the definition.  The same
-  workaround applies as before: redefine ~c[n5] to be something different, and
-  then redefine ~c[n5] again to be as desired.
+  We may expect the final ~ilc[thm] call to fail because of the following
+  reasoning: ~c[(n5)] = ~c[(> (n3) (n4))] = ~c[(> 2 1)] = ~c[t].  Unfortunatly,
+  the body of ~c[n5] was simplified (``normalized'') to ~c[nil] when ~c[n5] was
+  admitted, so the redefinition of ~c[n3] is ignored during the final ~c[thm]
+  call.  (Such normalization can be avoided; see the brief discussion of
+  ~c[:normalize] in the documentation for ~ilc[defun].)  So, given this
+  unfortunate situation, one might expect at this point simply to redefine
+  ~c[n5] using the same definition as before, in order to pick up the new
+  definition of ~c[n3].  Such ``redefinition'' would, however, be redundant,
+  for the same reason as in the previous example: no syntactic change was made
+  to the definition.  Even with redefinition active, there is no change in the
+  body of ~c[n5], even with macros and constants (defined by ~ilc[defconst])
+  expanded; there are none such!  The same workaround applies as before:
+  redefine ~c[n5] to be something different, and then redefine ~c[n5] again to
+  be as desired.
 
   A related phenomenon can occur for ~ilc[encapsulate].  As explained above, an
   ~c[encapsulate] event is redundant if it is identical to one already in the
   database.  Consider then the following contrived example.
   ~bv[]
-  (encapsulate () (defun foo (x) x))
+  (defmacro mac (x) x)
+  (encapsulate () (defun foo (x) (mac x)))
   (set-ld-redefinition-action '(:warn . :overwrite) state)
-  (defun foo (x) (cons x x))
-  (encapsulate () (defun foo (x) x)) ; redundant!
+  (defmacro mac (x) (list 'car x))
+  (encapsulate () (defun foo (x) (mac x)))
   ~ev[]
   The last ~c[encapsulate] event is redundant because it meets the criterion
-  for redundancy: it is identical to the earlier ~c[encapsulate] event.  A
-  workaround can be to add something trivial to the ~c[encapsulate], for
+  for redundancy: it is identical to the earlier ~c[encapsulate] event.  Even
+  though redefinition is active, and hence ACL2 ``should'' be able to see that
+  the new ~ilc[defun] of ~c[foo] is not truly redundant, nevertheless the
+  criterion for redundancy of ~ilc[encapsulate] allows the new ~c[encapsulate]
+  form to be redundant.
+
+  A workaround can be to add something trivial to the ~c[encapsulate], for
   example:
   ~bv[]
   (encapsulate () 
     (deflabel try2) ; ``Increment'' to try3 next time, and so on.
     (defun foo (x) x))
-  ~ev[]
-
-  The examples above are suggestive but by no means exhaustive.  Consider the
-  following example.
-  ~bv[]
-  (defstub f1 () => *)
-  (set-ld-redefinition-action '(:warn . :overwrite) state)
-  (defun f1 () 3)
-  (defstub f1 () => *) ; redundant -- has no effect
-  ~ev[]
-  The reason that the final ~ilc[defstub] is redundant is that ~c[defstub] is
-  a macro that expands to a call of ~c[encapsulate]; so this is very similar to
-  the immediately preceding example.
-
-  ")
+  ~ev[]")
 
 (defun stop-redundant-event (ctx state)
   (let ((chan (proofs-co state)))
@@ -6108,7 +6484,7 @@
     ((defconst defpkg)
      (zap-doc-string-from-event-form/third-arg form))
     ((verify-guards in-theory
-                    in-arithmetic-theory
+                    in-arithmetic-theory regenerate-tau-data-base
                     push-untouchable remove-untouchable reset-prehistory
                     table encapsulate defstobj) form)
     (otherwise form)))
@@ -6167,11 +6543,28 @@
 ; Form evaluates to state.  Here, we want to evaluate form with the print base
 ; set to 10.
 
-  `(mv-let (erp val state)
-     (state-global-let* ((print-base 10 set-print-base))
-                        (pprogn ,form (value nil)))
-     (declare (ignore erp val))
-     state))
+; In order to avoid parallelism hazards due to wormhole printing from inside
+; the waterfall (see for example (io? prove t ...) in waterfall-msg), we avoid
+; calling state-global-let* below when the print-base is already 10, as it
+; typically will be (see with-ctx-summarized).  The downside is that we are
+; replicating the code, form.  Without this change, if you build ACL2 with
+; #+acl2-par, then evaluate the following forms, you'll see lots of parallelism
+; hazard warnings.
+
+;   :mini-proveall
+;   :ubt! force-test
+;   (set-waterfall-parallelism :pseudo-parallel)
+;   (set-waterfall-printing :full)
+;   (f-put-global 'parallelism-hazards-action t state)
+;   (DEFTHM FORCE-TEST ...) ; see mini-proveall
+
+  `(cond ((eq (f-get-global 'print-base state) 10)
+          ,form)
+         (t (mv-let (erp val state)
+                    (state-global-let* ((print-base 10 set-print-base))
+                                       (pprogn ,form (value nil)))
+                    (declare (ignore erp val))
+                    state))))
 
 (defun print-ldd-formula-column (state)
   (cond ((hons-enabledp state) ; extra column for the memoization status
@@ -7258,10 +7651,10 @@
   :ubt! :x-4
   ~ev[]~/
 
-  The keyword ~il[command] ~c[:ubt!] is the same as ~c[:]~ilc[ubt], but with related
-  queries suppressed appropriately, and with a guarantee that it is
-  ``error-free.''  More precisely, the error triple returned by ~c[:ubt!]
-  will always have a first component of ~c[nil].  ~c[:]~ilc[Oops] will undo the last
+  The keyword ~il[command] ~c[:ubt!] is the same as ~c[:]~ilc[ubt], but with
+  related queries suppressed appropriately, and with a guarantee that it is
+  ``error-free.''  More precisely, the value returned by ~c[:ubt!]  will always
+  be of the form ~c[(mv nil val state)].  ~c[:]~ilc[Oops] will undo the last
   ~c[:ubt!].  ~l[ubt], ~pl[ubu], and ~pl[u].~/"
 
   (list 'ubt!-ubu!-fn :ubt cd 'state))
@@ -7310,8 +7703,8 @@
   The keyword ~il[command] ~c[:ubu!] is the same as ~c[:]~ilc[ubu], but with
   related queries suppressed appropriately, and with a guarantee that it is
   ``error-free.''  More precisely, the error triple returned by ~c[:ubu!]  will
-  always have a first component of ~c[nil].  ~c[:]~ilc[Oops] will undo the last
-  ~c[:ubu!].  Also ~pl[ubu], ~pl[ubt], and ~pl[u].~/"
+  always be of the form ~c[(mv nil val state)].  ~c[:]~ilc[Oops] will undo the
+  last ~c[:ubu!].  Also ~pl[ubu], ~pl[ubt], and ~pl[u].~/"
 
   (list 'ubt!-ubu!-fn :ubu cd 'state))
 
@@ -8616,11 +9009,11 @@
   For example, suppose you want to define a theory (using ~ilc[deftheory]).
   You need to prove the lemmas in that theory before executing the
   ~ilc[deftheory] event.  However, it is quite natural to define a
-  ~c[:doc-section] (~pl[doc-string]) whose name is the name of the
+  ~c[:Doc-Section] (~pl[doc-string]) whose name is the name of the
   theory to be defined, and put the ~il[documentation] for that theory's
-  lemmas into that ~c[:doc-section].  ~c[Defdoc] is ideal for this purpose,
-  since it can be used to introduce the ~c[:doc-section], followed by the
-  lemmas referring to that ~c[:doc-section], and finally concluded with a
+  lemmas into that ~c[:Doc-Section].  ~c[Defdoc] is ideal for this purpose,
+  since it can be used to introduce the ~c[:Doc-Section], followed by the
+  lemmas referring to that ~c[:Doc-Section], and finally concluded with a
   ~ilc[deftheory] event of the same name.  If ~ilc[deflabel] were used
   instead of ~c[defdoc], for example, then the ~ilc[deftheory] event would
   be disallowed because the name is already in use by the ~ilc[deflabel]
@@ -8633,7 +9026,7 @@
 
   Any time ~c[defdoc] is used to attach ~il[documentation] to an
   already-documented name, the name must not be attached to a new
-  ~c[:doc-section].  We make this requirement as a way of avoiding
+  ~c[:Doc-Section].  We make this requirement as a way of avoiding
   loops in the ~il[documentation] tree.  When ~il[documentation] is redefined, a
   warning will be printed to the terminal.~/"
 
@@ -10659,7 +11052,7 @@
   string's cited-by list.  We also add ~c[name] to the related names field
   of its section-name.  Observe that the cites list in a string is
   only the initial value of the related names of the names.  Future
-  ~il[documentation] strings may add to it via ~c[:cited-by] or ~c[:doc-section].
+  ~il[documentation] strings may add to it via ~c[:cited-by] or ~c[:Doc-Section].
   Indeed, this is generally the case.  We discuss this further below.
 
   When a brief description of ~c[name] is required (as by ~c[:docs **]), ~c[name]
@@ -13599,13 +13992,9 @@
                      (list (cons 'world wrld))
                      nil
                      "A :do-not hint"
-                     ctx wrld state t 
-
-; Parallelism wart: the next two arguments are safe-mode and gc-off.  Consider
-; whether nil and nil are really correct or whether we should read these from
-; state.
-
-                     nil nil)))))
+                     ctx wrld state t
+                     (f-get-global 'safe-mode state)
+                     (gc-off state))))))
 
 ; trans-ans is (& . val), where & is either nil or a term.
 
@@ -13708,45 +14097,6 @@
         ((eq (car arg) 'lambda)
          (translate-hands-off-hint1@par (list arg) ctx wrld state))
         (t (translate-hands-off-hint1@par arg ctx wrld state))))
-
-; The next few functions are used to produced the formulas represented by
-; type-prescriptions.
-
-(defun convert-returned-vars-to-term-lst (term vars)
-  (cond ((null vars) nil)
-        (t (cons (mcons-term* 'equal term (car vars))
-                 (convert-returned-vars-to-term-lst term (cdr vars))))))
-
-(defun implicate (t1 t2)
-
-; We return a term equivalent to (IMPLIES t1 t2).
-
-  (cond ((equal t1 *t*) t2)
-        ((equal t1 *nil*) *t*)
-        ((equal t2 *t*) *t*)
-        ((equal t2 *nil*) (dumb-negate-lit t1))
-        (t (mcons-term* 'implies t1 t2))))
-
-(defun convert-type-prescription-to-term (tp ens wrld)
-
-; Tp is a type-prescription.  We generate a term that expresses it relative to
-; the supplied ens.  We will usually store this term in the :corollary of tp
-; itself; generally the current :corollary field of tp is *t* right now because
-; tp was generated by putprop-initial-type-prescriptions.  We return
-; the generated corollary term and a ttree citing the type-set-inverter
-; rules used.
-
-  (mv-let (concl ttree)
-          (convert-type-set-to-term (access type-prescription tp :term)
-                                    (access type-prescription tp :basic-ts)
-                                    ens wrld nil)
-          (mv (implicate (conjoin (access type-prescription tp :hyps))
-                         (disjoin
-                          (cons concl
-                                (convert-returned-vars-to-term-lst
-                                 (access type-prescription tp :term)
-                                 (access type-prescription tp :vars)))))
-              ttree)))
 
 (defun truncated-class (rune mapping-pairs classes)
 
@@ -13953,62 +14303,6 @@
         (t (merge-symbol-< (merge-sort-symbol-< (evens l))
                            (merge-sort-symbol-< (odds l))
                            nil))))
-
-; The following variants of the above sorting routines are used when processing
-; the in-package form at the top of proof-checker-pkg.lisp, so
-; other-events.lisp is too late; so we define them here.  We expect to admit
-; these, verify guards, and prove properties in books/misc/sort-symbols.lisp.
-
-(defun strict-merge-symbol-< (l1 l2 acc)
-
-; If l1 and l2 are strictly ordered by symbol-< and above acc, which is also
-; thus strictly ordered, then the result is strictly ordered by symbol-<.
-
-  (declare (xargs :guard (and (symbol-listp l1)
-                              (symbol-listp l2)
-                              (true-listp acc))
-
-; We admit this to the logic and prove termination in
-; books/misc/sort-symbols.lisp.
-
-                  :mode :program))
-  (cond ((endp l1) (revappend acc l2))
-        ((endp l2) (revappend acc l1))
-        ((eq (car l1) (car l2))
-         (strict-merge-symbol-< (cdr l1) (cdr l2) (cons (car l1) acc)))
-        ((symbol-< (car l1) (car l2))
-         (strict-merge-symbol-< (cdr l1) l2 (cons (car l1) acc)))
-        (t (strict-merge-symbol-< l1 (cdr l2) (cons (car l2) acc)))))
-
-(defun strict-merge-sort-symbol-< (l)
-
-; Produces a result with the same elements as the list l of symbols, but
-; strictly ordered by symbol-name.
-
-  (declare (xargs :guard (symbol-listp l)
-
-; We admit this to the logic and prove termination in
-; books/misc/sort-symbols.lisp.
-
-                  :mode :program))
-  (cond ((endp (cdr l)) l)
-        (t (strict-merge-symbol-<
-            (strict-merge-sort-symbol-< (evens l))
-            (strict-merge-sort-symbol-< (odds l))
-            nil))))
-
-(defun strict-symbol-<-sortedp (x)
-  (declare (xargs :guard (symbol-listp x)))
-  (cond ((or (endp x) (null (cdr x)))
-         t)
-        (t (and (symbol-< (car x) (cadr x))
-                (strict-symbol-<-sortedp (cdr x))))))
-
-(defun sort-symbol-listp (x)
-  (declare (xargs :guard (symbol-listp x)))
-  (cond ((strict-symbol-<-sortedp x)
-         x)
-        (t (strict-merge-sort-symbol-< x))))
 
 ;; RAG - I added the non-standard primitives here.
 
@@ -15468,8 +15762,9 @@
 
 )
 
-(defun@par translate-lmi/instance
-  (formula constraints event-names new-entries substn ctx wrld state)
+(defun@par translate-lmi/instance (formula constraints event-names new-entries
+                                           extra-bindings-ok substn ctx wrld
+                                           state)
 
 ; Formula is some term, obtained by previous instantiations.  Constraints
 ; are the constraints generated by those instantiations -- i.e., if the
@@ -15485,7 +15780,9 @@
   (er-let*@par
    ((alist (translate-substitution@par substn ctx wrld state)))
    (let* ((vars (all-vars formula))
-          (un-mentioned-vars (set-difference-eq (strip-cars alist) vars)))
+          (un-mentioned-vars (and (not extra-bindings-ok)
+                                  (set-difference-eq (strip-cars alist)
+                                                     vars))))
      (cond
       (un-mentioned-vars
        (er@par soft ctx
@@ -15493,8 +15790,10 @@
           variables~/only the variable ~&1~/the variables ~&1~].  Thus, there ~
           is no reason to include ~&2 in the domain of your substitution.  We ~
           point this out only because it frequently indicates that a mistake ~
-          has been made.  See the :instance discussion in :MORE-DOC ~
-          lemma-instance."
+          has been made.  See the discussion of :instance in :DOC ~
+          lemma-instance, which explains how to use a keyword, ~
+          :extra-bindings-ok, to avoid this error (for example, in case your ~
+          substitution was automatically generated by a macro)."
          (zero-one-or-more vars)
          (merge-sort-symbol-< vars)
          (merge-sort-symbol-< un-mentioned-vars)
@@ -15687,8 +15986,14 @@
                (substn (cddr lmi)))
            (cond
             ((eq (car lmi) :instance)
-             (translate-lmi/instance@par formula constraints event-names
-                                         new-entries substn ctx wrld state))
+             (mv-let
+              (extra-bindings-ok substn)
+              (cond ((eq (car substn) :extra-bindings-ok)
+                     (mv t (cdr substn)))
+                    (t (mv nil substn)))
+              (translate-lmi/instance@par formula constraints event-names
+                                          new-entries extra-bindings-ok substn
+                                          ctx wrld state)))
             (t (translate-lmi/functional-instance@par
                 formula constraints event-names new-entries substn
                 (global-val 'proved-functional-instances-alist wrld)
@@ -15699,7 +16004,8 @@
                  (car lmi))))))
      (t (er@par soft ctx str lmi
           "is not a symbol, a rune in the current logical world, or a list ~
-           whose first element is :THEOREM, :INSTANCE, or :FUNCTIONAL-INSTANCE")))))
+           whose first element is :THEOREM, :INSTANCE, or~ ~
+           :FUNCTIONAL-INSTANCE")))))
 
 (deflabel lemma-instance
   :doc
@@ -15752,7 +16058,11 @@
   (4) ~c[(:instance lmi (v1 t1) ... (vn tn))], where ~c[lmi] is recursively a
   lemma instance, the ~c[vi]'s are distinct variables and the ~c[ti]'s are
   terms.  Such a lemma instance denotes the formula obtained by instantiating
-  the formula denoted by ~c[lmi], replacing each ~c[vi] by ~c[ti].
+  the formula denoted by ~c[lmi], replacing each ~c[vi] by ~c[ti].  Normally
+  ACL2 enforces the requirement that every variable ~c[vi] must be bound in the
+  formula denoted by ~c[lmi].  However, the keyword ~c[:extra-bindings-ok] may
+  be inserted immediately after the lemma instance in order to remove that
+  requirement: ~c[(:instance lmi :extra-bindings-ok (v1 t1) ... (vn tn))].
 
   (5) ~c[(:functional-instance lmi (f1 g1) ... (fn gn))], where ~c[lmi] is
   recursively a lemma instance and each ~c[fi] is an ``instantiable'' function
@@ -16102,7 +16412,7 @@
 
 (defun character-alistp (x)
 
-  ":Doc-Section ACL2::Programming
+  ":Doc-Section ACL2::ACL2-built-ins
 
   recognizer for association lists with characters as keys~/
 
@@ -16492,12 +16802,6 @@
   (declare (ignorable state))
   (value@par arg))
 
-(defun pos-listp (l)
-  (cond ((atom l)
-         (equal l nil))
-        (t (and (posp (car l))
-                (pos-listp (cdr l))))))
-
 (defun@par translate-reorder-hint (arg ctx wrld state)
   (declare (ignore wrld))
   #+acl2-par
@@ -16509,10 +16813,6 @@
       "The value for a :reorder hint must be a true list of positive integers ~
        without duplicates, but ~x0 is not."
       arg)))
-
-(defrec clause-processor-hint
-  (term stobjs-out . verified-p)
-  nil)
 
 (defun arity-mismatch-msg (sym expected-arity wrld)
 
@@ -16651,6 +16951,12 @@
                    (set-difference-eq (non-stobjps (all-vars term) t wrld)
                                       '(clause))
                    'clause)))
+
+; #+ACL2-PAR note: Here, we could check that clause-processors do not modify
+; state when waterfall-parallelism is enabled.  However, since performing the
+; check in eval-clause-processor@par suffices, we do not perform the check
+; here.
+
            (t (value@par (make clause-processor-hint
                                :term term
                                :stobjs-out (translate-deref :stobjs-out
@@ -16681,7 +16987,11 @@
             print-clause-ids           ;;; allow user to modify this in a book
             fmt-soft-right-margin      ;;; allow user to modify this in a book
             fmt-hard-right-margin      ;;; allow user to modify this in a book
-            parallel-evaluation-enabled ;; allow user to modify this in a book
+            parallel-execution-enabled ;;; allow user to modify this in a book
+            waterfall-parallelism      ;;; allow user to modify this in a book
+            waterfall-parallelism-timing-threshold ;;; see just above
+            waterfall-printing         ;;; allow user to modify this in a book
+            waterfall-printing-when-finished ;;; see just above
             saved-output-reversed      ;;; for feedback after expansion failure
             saved-output-p             ;;; for feedback after expansion failure
             ttags-allowed              ;;; propagate changes outside expansion
@@ -16704,11 +17014,6 @@
             more-doc-state             ;;; for proof-checker :more command
             pc-ss-alist                ;;; for saves under :instructions hints
             last-step-limit            ;;; propagate step-limit past expansion
-
-; Note that tainted-okp is deliberately omitted from this list of exceptions,
-; since its global value is the one that should be used during event
-; processing.
-
             ))))
     val))
 
@@ -16733,6 +17038,8 @@
 
 ; Keep in sync with formal-value-triple@par.
 
+; Returns a form that evaluates to the error triple (mv erp val state).
+
   (fcons-term* 'cons erp
                (fcons-term* 'cons val
                             (fcons-term* 'cons 'state *nil*))))
@@ -16742,30 +17049,22 @@
 
 ; Keep in sync with formal-value-triple.
 
-; Parallelism wart: why is this different from formal-value-triple?  Document
-; why once I rediscover the reason.  It obviously has something to do with not
-; using state, but I should explain why fcons-term* is needed.
-
   (fcons-term* 'cons erp
                (fcons-term* 'cons val *nil*)))
 
 (defun@par translate-simple-or-error-triple (uform ctx wrld state)
 
-; Parallelism wart: clean up this function's documentation for the #+acl2-par
-; case and for the #-acl2-par case.  The documentation prefixed with ";;;" is
-; an incorrect first attempt at the new version of the documentation.
+; First suppose either #-acl2-par or else #+acl2-par with waterfall-parallelism
+; disabled.  Uform is an untranslated term that is expected to translate either
+; to an error triple or to an ordinary value.  In those cases we return an
+; error triple whose value component is the translated term or, respectively,
+; the term representing (mv nil tterm state) where tterm is the translated
+; term.  Otherwise, we return a soft error.
 
-;;; Uform is an untranslated term that is expected to translate either to a
-;;; context message pair or to an ordinary value.  In those cases we return an
-;;; error triple/double whose value component is the translated term or,
-;;; respectively, the term representing (mv nil tterm [state]) where tterm is
-;;; the translated term.  Otherwise, we return a soft error.
-
-; Uform is an untranslated term that is expected to translate either to an
-; error triple or to an ordinary value.  In those cases we return an error
-; triple whose value component is the translated term or, respectively, the
-; term representing (mv nil tterm state) where tterm is the translated term.
-; Otherwise, we return a soft error.
+; Now consider the case of #+acl2-par with waterfall-parallelism enabled.
+; Uform is an untranslated term that is expected to translate to an ordinary
+; value.  In this case, we return an error pair (mv nil val) where val is the
+; translated term.  Otherwise, uform translates into an error pair (mv t nil).
 
   (mv-let@par
    (erp term bindings state)
@@ -16780,10 +17079,48 @@
        (cond
         ((equal stobjs-out '(nil)) ; replace term by (value@par term)
          (value@par (formal-value-triple@par *nil* term)))
-        ((equal stobjs-out
-                (serial-first-form-parallel-second-form@par 
-                 *error-triple-sig*
-                 *cmp-sig*))
+        ((equal stobjs-out *error-triple-sig*)
+         (serial-first-form-parallel-second-form@par
+          (value@par term)
+
+; #+ACL2-PAR note: This message is used to check that computed hints and custom
+; keyword hints (and perhaps other hint mechanisms too) do not modify state.
+; Note that not all hint mechanisms rely upon this check.  For example,
+; apply-override-hint@par and eval-clause-processor@par perform their own
+; checks.
+
+          (er@par soft ctx
+            "Since we are translating a form in ACL2(p) intended to be ~
+             executed with waterfall parallelism enabled, the form ~x0 was ~
+             expected to represent an ordinary value, not an error triple (mv ~
+             erp val state), as would be acceptable in a serial execution of ~
+             ACL2.  Therefore, the form returning a tuple of the form ~x1 is ~
+             an error.  See :DOC unsupported-waterfall-parallelism-features ~
+             and :DOC error-triples-and-parallelism for further explanation."
+            uform
+            (prettyify-stobj-flags stobjs-out))))
+        #+acl2-par
+        ((serial-first-form-parallel-second-form@par
+          nil
+          (and 
+
+; The test of this branch is never true in the non-@par version of the
+; waterfall.  We need this test for custom-keyword-hints, which are evaluated
+; using the function eval-and-translate-hint-expression[@par].  Since
+; eval-and-translate-hint-expression[@par] calls
+; translate-simple-or-error-triple[@par] to check the return signature of the
+; custom hint, we must not cause an error when we encounter this legitimate
+; use.
+
+; Parallelism wart: consider eliminating the special case below, given the spec
+; for translate-simple-or-error-triple[@par] in the comment at the top of this
+; function.  This could be achieved by doing the test below before calling
+; translate-simple-or-error-triple@par, either inline where we now call
+; translate-simple-or-error-triple@par or else with a wrapper that handles this
+; special case before calling translate-simple-or-error-triple@par.
+
+           (equal stobjs-out *cmp-sig*) 
+           (eq (car uform) 'custom-keyword-hint-interpreter@par)))
          (value@par term))
         (t (serial-first-form-parallel-second-form@par
             (er soft ctx
@@ -16793,13 +17130,10 @@
                 uform
                 (prettyify-stobj-flags stobjs-out))
             (er@par soft ctx
-
-; Parallelism wart: Consider adding a documentation topic on Context message
-; pairs.
-
-              "The form ~x0 was expected to represent an ordinary value or a ~
-               Context message pair (mv erp msg), but it returns a tuple of ~
-               the form ~x1."
+              "The form ~x0 was expected to represent an ordinary value, but ~
+               it returns a tuple of the form ~x1. Note that Error triples ~
+               are not allowed in this feature in ACL2(p) (see :doc ~
+               error-triples-and-parallelism)"
               uform
               (prettyify-stobj-flags stobjs-out))))))))))
 
@@ -16904,17 +17238,18 @@
 ; xtrans-eval that uses ev-w for evaluation rather than using ev.  The extra
 ; function call adds only trivial cost.
 
-; Parallelism wart: This function calls ev-w in a way that violates the
-; contract that state is not part of one of ev-w's arguments ("alist").  As
-; such, while this implementation "works", it is unlikely that it is both sound
-; and as "user friendly" as it should be.
-
-; Parallelism wart: a correct version of the xtrans-eval documentation needs to
-; be written here.
-
   (er-let*@par
    ((term
      (if trans-flg
+
+; #+ACL2-PAR note: As of August 2011, there are two places that call
+; xtrans-eval@par with the trans-flg set to nil: apply-override-hint@par and
+; eval-and-translate-hint-expression@par.  In both of these cases, we performed
+; a manual inspection of the code (aided by testing) to determine that if state
+; can be modified by executing uterm, that the user will receive an error
+; before even reaching this call of xtrans-eval@par.  In this way, we guarantee
+; that the invariant for ev-w (that uterm does not modify state) is maintained.
+
          (translate-simple-or-error-triple@par uterm ctx (w state) state)
        (value@par uterm))))
    (cond
@@ -16922,8 +17257,12 @@
          (subsetp-eq (all-vars term)
                      (cons 'state (strip-cars alist))))
 
-; Parallelism wart: We currently discard any changes to the world.  Figure out
-; whether this is okay.
+; #+ACL2-PAR note: we currently discard any changes to the world of the live
+; state.  But if we restrict to terms that don't modify state, as discussed in
+; the #+ACL2-PAR note above, then there is no issue because state hasn't
+; changed.  Otherwise, if we cheat, the world could indeed change out from
+; under us, which is just one example of the evils of cheating by modifying
+; state under the hood.
 
      (er-let*-cmp
       ((val
@@ -16934,10 +17273,7 @@
                             alist)
                       (w state)
                       (f-get-global 'safe-mode state)
-
-; Parallelism wart: why not pull gc-off from the state?
-
-                      nil
+                      (gc-off state)
                       nil
                       aok)
                 (cond
@@ -17011,7 +17347,11 @@
 ; isn't, unless we made custom hint authors translate all custom
 ; hints, even those they don't "own."
 
-  (er-progn@par (xtrans-eval@par uterm2
+  (er-progn@par (xtrans-eval@par #-acl2-par uterm2
+                                 #+acl2-par
+                                 (serial-first-form-parallel-second-form@par
+                                  uterm2
+                                  (if (equal uterm2 '(value t)) t uterm2))
                                  (list (cons 'val arg)
                                        (cons 'world wrld)
                                        (cons 'ctx ctx))
@@ -17135,7 +17475,24 @@
                     (cons 'world wrld)
                     (cons 'ctx ctx))))
          (er-progn@par
-          (xtrans-eval@par uterm2
+          (xtrans-eval@par #-acl2-par uterm2
+
+; Parallelism wart: Deal with the following comment, which appears out of date
+; as of 2/4/2012.
+; The following change doesn't seem to matter when we run our tests.  However,
+; we include it, because from looking at the code, David Rager perceives that
+; it can't hurt and that it might help.  It may turn out that the change to
+; translate-custom-keyword-hint (which performs a similar replacement),
+; supercedes this change, because that occurs earlier in the call stack (before
+; the waterfall).  David Rager suspects that the call to
+; custom-keyword-hint-interpreter1@par is used inside the waterfall (perhaps
+; when the custom keyword hint process it told to 'wait and deal with the hint
+; later).  If that is the case, then this replacement is indeed necessary!
+
+                           #+acl2-par 
+                           (serial-first-form-parallel-second-form@par
+                            uterm2
+                            (if (equal uterm2 '(value t)) t uterm2))
                            checker-bindings
                            t ; trans-flg = t
                            t ; ev-flg = t
@@ -17214,9 +17571,9 @@
                 (io?@par prove nil state
                          (keyi id  keyword-alist val)
                          (fms "~%(Advisory from ~
-                            show-custom-keyword-hint-expansion:  The custom ~
-                            keyword hint ~x0, appearing in ~@1, ~
-                            transformed~%~%~Y23,~%into~%~%~Y43.)~%"
+                               show-custom-keyword-hint-expansion:  The ~
+                               custom keyword hint ~x0, appearing in ~@1, ~
+                               transformed~%~%~Y23,~%into~%~%~Y43.)~%"
                               (list
                                (cons #\0 keyi)
                                (cons #\1 (tilde-@-clause-id-phrase id))
@@ -17297,7 +17654,10 @@
 ; Parallelism wart: is the quoting below of
 ; "custom-keyword-hint-interpreter@par" a problem (as compared to the serial
 ; case)?  One can issue a tags search for 'custom-keyword-hint-interpreter, and
-; find some changed comparisons.
+; find some changed comparisons.  We believe that Matt K. and David R. began to
+; look into this, and we were not aware of any problems, so we have decided not
+; to try to think it all the way through.  David is in the process of fixing a
+; problem that may be related to this question (2/4/2012).
 
                 (serial-first-form-parallel-second-form@par
                  (eq (ffn-symb term) 'custom-keyword-hint-interpreter)
@@ -17308,7 +17668,7 @@
            (cadr (fargn term 1)))
           (t nil))))
 
-(defun put-cl-id-of-custom-keyword-hint-in-computed-hint-form
+(defun@par put-cl-id-of-custom-keyword-hint-in-computed-hint-form
   (computed-hint-tuple cl-id)
 
 ; We assume the computed-hint-tuple is a computed hint tuple and has
@@ -17321,7 +17681,9 @@
     (list 'eval-and-translate-hint-expression
           (nth 1 computed-hint-tuple)
           (nth 2 computed-hint-tuple)
-          (fcons-term* 'custom-keyword-hint-interpreter
+          (fcons-term* (serial-first-form-parallel-second-form@par
+                        'custom-keyword-hint-interpreter
+                        'custom-keyword-hint-interpreter@par)
                        (fargn term 1)
                        (kwote cl-id)
                        (fargn term 3)
@@ -17437,6 +17799,60 @@
 ; We ``translate'' such a function symbol into a call of the function on the
 ; appropriate argument variables.
 
+; Here is a form that allows us to trace many of the functions related to
+; translating hints.
+
+; (trace$ 
+;  (translate-hints+1)
+;  (translate-hints+1@par)
+;  (translate-hints2)
+;  (translate-hints2@par)
+;  (translate-hints1)
+;  (apply-override-hints@par)
+;  (apply-override-hints)
+;  (translate-x-hint-value)
+;  (translate-x-hint-value@par)
+;  (translate-custom-keyword-hint)
+;  (translate-custom-keyword-hint@par)
+;  (custom-keyword-hint-interpreter@par)
+;  (custom-keyword-hint-interpreter)
+;  (translate-simple-or-error-triple)
+;  (translate-simple-or-error-triple@par)
+;  (xtrans-eval)
+;  (xtrans-eval-with-ev-w)
+;  (eval-and-translate-hint-expression)
+;  (eval-and-translate-hint-expression@par)
+;  (translate-hint-expression@par)
+;  (translate-hint-expression)
+;  (translate-hints1@par)
+;  (waterfall)
+;  (find-applicable-hint-settings1)
+;  (find-applicable-hint-settings1@par)
+;  (xtrans-eval@par)
+;  (simple-translate-and-eval@par)
+;  (simple-translate-and-eval)
+;  (translate-hints)
+;  (translate-hints+)
+;  (thm-fn)
+;  (formal-value-triple)
+;  (formal-value-triple@par)
+;  (eval-clause-processor)
+;  (eval-clause-processor@par)
+;  (apply-top-hints-clause@par)
+;  (apply-top-hints-clause)
+;  (waterfall-step1)
+;  (waterfall-step1@par)
+;  (waterfall-step)
+;  (waterfall-step@par)
+;  (translate1)
+;  (translate1@par)
+;  (translate)
+;  (translate@par)
+;  (translate-doc)
+;  (translate-clause-processor-hint)
+;  (translate-clause-processor-hint@par)
+;  (translate1-cmp))
+
   (cond
    ((symbolp term)
     (cond ((and (function-symbolp term wrld)
@@ -17452,14 +17868,14 @@
               (list 'eval-and-translate-hint-expression
                     name-tree
                     nil
-                    (formal-value-triple
+                    (formal-value-triple@par
                      *nil*
                      (fcons-term term '(id clause world)))))
              ((equal (arity term wrld) 4)
               (list 'eval-and-translate-hint-expression
                     name-tree
                     t
-                    (formal-value-triple
+                    (formal-value-triple@par
                      *nil*
                      (fcons-term term
                                  '(id clause world
@@ -17468,7 +17884,7 @@
               (list 'eval-and-translate-hint-expression
                     name-tree
                     t
-                    (formal-value-triple
+                    (formal-value-triple@par
                      *nil*
                      (fcons-term term
                                  '(id clause world
@@ -17544,9 +17960,18 @@
 (defun@par translate-backtrack-hint (name-tree arg ctx wrld state)
   (translate-hint-expression@par name-tree arg 'backtrack ctx wrld state))
 
+(defun@par translate-rw-cache-state-hint (arg ctx wrld state)
+  (declare (ignore wrld))
+  (cond ((member-eq arg *legal-rw-cache-states*)
+         (value@par arg))
+        (t (er@par soft ctx
+             "Illegal :rw-cache-state argument, ~x0 (should be ~v1)"
+             arg
+             *legal-rw-cache-states*))))
+
 (mutual-recursion@par
 
- (defun@par translate-or-hint (name-tree str arg ctx wrld state)
+(defun@par translate-or-hint (name-tree str arg ctx wrld state)
 
 ; Arg is the value of the :OR key in a user-supplied hint settings,
 ; e.g., if the user typed: :OR ((:in-theory t1 :use lem1) (:in-theory
@@ -17565,40 +17990,40 @@
 ; Note: Unlike other hints, we do some additional translation of :OR
 ; hints on the output of this function!  See translate-hint.
 
-   (cond ((atom arg)
-          (if (null arg)
-              (value@par nil)
-            (er@par soft ctx "An :OR hint must be a true-list.")))
-         (t (er-let*@par
-             ((val (translate-hint@par name-tree
-                                       (cons
-                                        (make-disjunctive-goal-spec
-                                         str
-                                         (length arg)
-                                         (current-package state))
-                                        (car arg))
-                                       nil ctx wrld state))
-              (tl (translate-or-hint@par name-tree str (cdr arg) ctx wrld state)))
+  (cond ((atom arg)
+         (if (null arg)
+             (value@par nil)
+           (er@par soft ctx "An :OR hint must be a true-list.")))
+        (t (er-let*@par
+            ((val (translate-hint@par name-tree
+                                      (cons
+                                       (make-disjunctive-goal-spec
+                                        str
+                                        (length arg)
+                                        (current-package state))
+                                       (car arg))
+                                      nil ctx wrld state))
+             (tl (translate-or-hint@par name-tree str (cdr arg) ctx wrld state)))
 
 ; Val is either a translated computed hint expression, whose car
 ; is eval-and-translate-hint-expression, or else it is a pair of
 ; the form (cl-id . hint-settings), where cl-id was derived from
 ; str.
 
-             (cond
-              ((eq (car val) 'eval-and-translate-hint-expression)
-               (value@par (cons (cons (car arg) val)
-                                tl)))
-              (t
+            (cond
+             ((eq (car val) 'eval-and-translate-hint-expression)
+              (value@par (cons (cons (car arg) val)
+                               tl)))
+             (t
 
 ; If val is (cl-id . hint-settings), we just let val be hint-settings
 ; below, as the cl-id is being managed by the :OR itself.
 
-               (let ((val (cdr val)))
-                 (value@par (cons (cons (car arg) val)
-                                  tl)))))))))
+              (let ((val (cdr val)))
+                (value@par (cons (cons (car arg) val)
+                                 tl)))))))))
 
- (defun@par translate-hint-settings (name-tree str key-val-lst ctx wrld state)
+(defun@par translate-hint-settings (name-tree str key-val-lst ctx wrld state)
 
 ; We assume that key-val-lst is a list of :keyword/value pairs, (:key1
 ; val1 ... :keyn valn), and that each :keyi is one of the acceptable
@@ -17609,84 +18034,84 @@
 ; Str is the goal-spec string identifying the clause to which these
 ; hints are attached.
 
-   (cond
-    ((null key-val-lst) (value@par nil))
-    ((and (eq (car key-val-lst) :use)
-          (eq (cadr key-val-lst) nil))
+  (cond
+   ((null key-val-lst) (value@par nil))
+   ((and (eq (car key-val-lst) :use)
+         (eq (cadr key-val-lst) nil))
 
 ; We allow empty :use hints, but we do not want to have to think about
 ; how to process them.
 
-     (translate-hint-settings@par name-tree
-                                  str
-                                  (cddr key-val-lst) ctx wrld state))
-    (t (er-let*@par
-        ((val (translate-x-hint-value@par name-tree
-                                          str
-                                          (car key-val-lst) (cadr key-val-lst)
-                                          ctx wrld state))
-         (tl (translate-hint-settings@par name-tree
-                                          str
-                                          (cddr key-val-lst) ctx wrld state)))
-        (value@par
-         (cons (cons (car key-val-lst) val)
-               tl))))))
+    (translate-hint-settings@par name-tree
+                                 str
+                                 (cddr key-val-lst) ctx wrld state))
+   (t (er-let*@par
+       ((val (translate-x-hint-value@par name-tree
+                                         str
+                                         (car key-val-lst) (cadr key-val-lst)
+                                         ctx wrld state))
+        (tl (translate-hint-settings@par name-tree
+                                         str
+                                         (cddr key-val-lst) ctx wrld state)))
+       (value@par
+        (cons (cons (car key-val-lst) val)
+              tl))))))
 
- (defun@par translate-x-hint-value (name-tree str x arg ctx wrld state)
+(defun@par translate-x-hint-value (name-tree str x arg ctx wrld state)
 
 ; Str is the goal-spec string identifying the clause to which this
 ; hint was attached.  
 
-   (mv-let
-    (flg uterm1 uterm2)
-    (custom-keyword-hint x wrld)
-    (declare (ignore uterm1))
-    (cond
-     (flg
-      (translate-custom-keyword-hint@par arg uterm2 ctx wrld state))
-     (t
-      (case x
-        (:expand
-         (translate-expand-hint@par arg ctx wrld state))
-        (:restrict
-         (translate-restrict-hint@par arg ctx wrld state))
-        (:hands-off
-         (translate-hands-off-hint@par arg ctx wrld state))
-        (:do-not-induct
-         (translate-do-not-induct-hint@par arg ctx wrld state))
-        (:do-not
-         (translate-do-not-hint@par arg ctx state))
-        (:use
-         (translate-use-hint@par arg ctx wrld state))
-        (:or
-         (translate-or-hint@par name-tree str arg ctx wrld state))
-        (:cases
-         (translate-cases-hint@par arg ctx wrld state))
-        (:case-split-limitations
-         (translate-case-split-limitations-hint@par arg ctx wrld state))
-        (:by
-         (translate-by-hint@par name-tree arg ctx wrld state))
-        (:induct
-         (translate-induct-hint@par arg ctx wrld state))
-        (:in-theory
-         (translate-in-theory-hint@par arg t ctx wrld state))
-        (:bdd
-         (translate-bdd-hint@par arg ctx wrld state))
-        (:clause-processor
-         (translate-clause-processor-hint@par arg ctx wrld state))
-        (:nonlinearp
-         (translate-nonlinearp-hint@par arg ctx wrld state))
-        (:no-op
-         (translate-no-op-hint@par arg ctx wrld state))
-        (:no-thanks
-         (translate-no-thanks-hint@par arg ctx wrld state))
-        (:reorder
-         (translate-reorder-hint@par arg ctx wrld state))
-        (:backtrack
-         (translate-backtrack-hint@par name-tree arg ctx wrld state))
-        (:backchain-limit-rw
-         (translate-backchain-limit-rw-hint@par arg ctx wrld state))
-        (:error
+  (mv-let
+   (flg uterm1 uterm2)
+   (custom-keyword-hint x wrld)
+   (declare (ignore uterm1))
+   (cond
+    (flg
+     (translate-custom-keyword-hint@par arg uterm2 ctx wrld state))
+    (t
+     (case x
+       (:expand
+        (translate-expand-hint@par arg ctx wrld state))
+       (:restrict
+        (translate-restrict-hint@par arg ctx wrld state))
+       (:hands-off
+        (translate-hands-off-hint@par arg ctx wrld state))
+       (:do-not-induct
+        (translate-do-not-induct-hint@par arg ctx wrld state))
+       (:do-not
+        (translate-do-not-hint@par arg ctx state))
+       (:use
+        (translate-use-hint@par arg ctx wrld state))
+       (:or
+        (translate-or-hint@par name-tree str arg ctx wrld state))
+       (:cases
+        (translate-cases-hint@par arg ctx wrld state))
+       (:case-split-limitations
+        (translate-case-split-limitations-hint@par arg ctx wrld state))
+       (:by
+        (translate-by-hint@par name-tree arg ctx wrld state))
+       (:induct
+        (translate-induct-hint@par arg ctx wrld state))
+       (:in-theory
+        (translate-in-theory-hint@par arg t ctx wrld state))
+       (:bdd
+        (translate-bdd-hint@par arg ctx wrld state))
+       (:clause-processor
+        (translate-clause-processor-hint@par arg ctx wrld state))
+       (:nonlinearp
+        (translate-nonlinearp-hint@par arg ctx wrld state))
+       (:no-op
+        (translate-no-op-hint@par arg ctx wrld state))
+       (:no-thanks
+        (translate-no-thanks-hint@par arg ctx wrld state))
+       (:reorder
+        (translate-reorder-hint@par arg ctx wrld state))
+       (:backtrack
+        (translate-backtrack-hint@par name-tree arg ctx wrld state))
+       (:backchain-limit-rw
+        (translate-backchain-limit-rw-hint@par arg ctx wrld state))
+       (:error
 
 ; We know this case never happens.  The error is caught and signalled
 ; early by translate-hint.  But we include it here to remind us that
@@ -17694,37 +18119,39 @@
 ; which causes an immediate error -- is also consistent with the
 ; intended interpretation of :error.
 
-         (translate-error-hint@par arg ctx wrld state))
-        (otherwise
-         (mv@par
-          (er hard 'translate-x-hint-value
-              "The object ~x0 not recognized as a legal hint keyword. See :DOC ~
+        (translate-error-hint@par arg ctx wrld state))
+       (:rw-cache-state
+        (translate-rw-cache-state-hint@par arg ctx wrld state))
+       (otherwise
+        (mv@par
+         (er hard 'translate-x-hint-value
+             "The object ~x0 not recognized as a legal hint keyword. See :DOC ~
               hints."
-              x)
-          nil
-          state)))))))
+             x)
+         nil
+         state)))))))
 
- (defun replace-goal-spec-in-name-tree1 (name-tree goal-spec)
-   (cond
-    ((atom name-tree)
-     (cond ((and (stringp name-tree)
-                 (parse-clause-id name-tree))
-            (mv t goal-spec))
-           (t (mv nil name-tree))))
-    (t (mv-let
-        (flg1 name-tree1)
-        (replace-goal-spec-in-name-tree1 (car name-tree)
-                                         goal-spec)
-        (cond
-         (flg1 (mv t (cons name-tree1 (cdr name-tree))))
-         (t (mv-let (flg2 name-tree2)
-                    (replace-goal-spec-in-name-tree1 (cdr name-tree)
-                                                     goal-spec)
-                    (mv flg2 
-                        (cons (car name-tree)
-                              name-tree2)))))))))
+(defun replace-goal-spec-in-name-tree1 (name-tree goal-spec)
+  (cond
+   ((atom name-tree)
+    (cond ((and (stringp name-tree)
+                (parse-clause-id name-tree))
+           (mv t goal-spec))
+          (t (mv nil name-tree))))
+   (t (mv-let
+       (flg1 name-tree1)
+       (replace-goal-spec-in-name-tree1 (car name-tree)
+                                        goal-spec)
+       (cond
+        (flg1 (mv t (cons name-tree1 (cdr name-tree))))
+        (t (mv-let (flg2 name-tree2)
+                   (replace-goal-spec-in-name-tree1 (cdr name-tree)
+                                                    goal-spec)
+                   (mv flg2 
+                       (cons (car name-tree)
+                             name-tree2)))))))))
 
- (defun replace-goal-spec-in-name-tree (name-tree goal-spec)
+(defun replace-goal-spec-in-name-tree (name-tree goal-spec)
 
 ; Name-trees are trees of strings and symbols used to generate
 ; meaningful names for :by hints.  Typically, a name tree will have at
@@ -17740,13 +18167,13 @@
 ; by adding a "Dj" suffice.  We want to replace the original goal spec
 ; in the name-tree by this modified goal spec.
 
-   (mv-let (flg new-name-tree)
-           (replace-goal-spec-in-name-tree1 name-tree goal-spec)
-           (cond
-            (flg new-name-tree)
-            (t (cons name-tree goal-spec)))))
+  (mv-let (flg new-name-tree)
+          (replace-goal-spec-in-name-tree1 name-tree goal-spec)
+          (cond
+           (flg new-name-tree)
+           (t (cons name-tree goal-spec)))))
 
- (defun@par translate-hint (name-tree pair hint-type ctx wrld state)
+(defun@par translate-hint (name-tree pair hint-type ctx wrld state)
 
 ; Pair is supposed to be a "hint", i.e., a pair of the form (str :key1
 ; val1 ...  :keyn valn).  We check that it is, that str is a string
@@ -17771,38 +18198,38 @@
 ; 'eval-and-translate-hint-expression the answer is a translated
 ; computed hint, otherwise it is of the form (cl-id . hint-settings).
 
-   (cond ((not (and (consp pair)
-                    (stringp (car pair))
-                    (keyword-value-listp (cdr pair))))
-          (er@par soft ctx
-            "Each hint is supposed to be a list of the form (str :key1 val1 ~
-             ... :keyn valn), but a proposed hint, ~x0, is not.  See :DOC ~
-             hints."
-            pair))
-         (t (let ((cl-id (parse-clause-id (car pair))))
-              (cond
-               ((null cl-id)
-                (er@par soft ctx
-                  "The object ~x0 is not a goal-spec.  See :DOC hints and ~
-                   :DOC goal-spec."
-                  (car pair)))
-               ((assoc-keyword :error (cdr pair))
+  (cond ((not (and (consp pair)
+                   (stringp (car pair))
+                   (keyword-value-listp (cdr pair))))
+         (er@par soft ctx
+           "Each hint is supposed to be a list of the form (str :key1 val1 ~
+            ... :keyn valn), but a proposed hint, ~x0, is not.  See :DOC ~
+            hints."
+           pair))
+        (t (let ((cl-id (parse-clause-id (car pair))))
+             (cond
+              ((null cl-id)
+               (er@par soft ctx
+                 "The object ~x0 is not a goal-spec.  See :DOC hints and :DOC ~
+                  goal-spec."
+                 (car pair)))
+              ((assoc-keyword :error (cdr pair))
 
 ; If an :error hint was given, we immediately cause the requested error.
 ; Note that we thus allow :error hints to occur multiple times and just
 ; look at the first one.  If we get past this test, there are no
 ; :error hints.
 
-                (translate-error-hint@par
-                 (cadr (assoc-keyword :error (cdr pair)))
-                 ctx wrld state))
-               (t
-                (mv-let
-                 (keyi vali uterm1 uterm2)
-                 (find-first-custom-keyword-hint (cdr pair) wrld)
-                 (declare (ignore vali uterm1 uterm2))
-                 (cond
-                  (keyi
+               (translate-error-hint@par
+                (cadr (assoc-keyword :error (cdr pair)))
+                ctx wrld state))
+              (t
+               (mv-let
+                (keyi vali uterm1 uterm2)
+                (find-first-custom-keyword-hint (cdr pair) wrld)
+                (declare (ignore vali uterm1 uterm2))
+                (cond
+                 (keyi
 
 ; There is a custom keyword among the keys.  One of two possibilities
 ; exists.  The first is that the hint can be expanded statically
@@ -17821,24 +18248,24 @@
 ; generator cannot assume that a common hint has a well-formed val or
 ; that other custom hints have well-formed vals.
 
-                   (mv-let@par
-                    (erp val state)
-                    (custom-keyword-hint-interpreter@par
-                     (cdr pair)
-                     cl-id
-                     cl-id
-                     NIL wrld NIL NIL NIL ctx state
-                     t)
+                  (mv-let@par
+                   (erp val state)
+                   (custom-keyword-hint-interpreter@par
+                    (cdr pair)
+                    cl-id
+                    cl-id
+                    NIL wrld NIL NIL NIL ctx state
+                    t)
 
 ; The four NILs above are bogus values for the dynamic variables.  The
 ; final t is the eagerp flag which will cause the interpreter to
 ; signal the WAIT ``error'' if the expansion fails because of some
 ; unbound dynamic variable.
 
-                    (cond
-                     (erp
-                      (cond
-                       ((eq val 'WAIT)
+                   (cond
+                    (erp
+                     (cond
+                      ((eq val 'WAIT)
 
 ; In this case, we must treat this as a computed hint so we will
 ; manufacture an appropriate one.  As a courtesy to the user, we will
@@ -17847,15 +18274,15 @@
 ; involved in the actual hint that will be generated by the processing
 ; of these custom hints when the subgoal arises.
 
-                        (er-let*@par
-                         ((hint-settings
-                           (translate-hint-settings@par
-                            (replace-goal-spec-in-name-tree
-                             name-tree
-                             (car pair))
-                            (car pair)
-                            (cdr pair)
-                            ctx wrld state)))
+                       (er-let*@par
+                        ((hint-settings
+                          (translate-hint-settings@par
+                           (replace-goal-spec-in-name-tree
+                            name-tree
+                            (car pair))
+                           (car pair)
+                           (cdr pair)
+                           ctx wrld state)))
 
 ; Note: If you ever consider not ignoring the translated
 ; hint-settings, recognize how strange it is.  E.g., it may have
@@ -17863,90 +18290,90 @@
 ; binding custom keywords to their untranslated values, a data
 ; structure we never use.
                   
-                         (translate-hint-expression@par
-                          name-tree
+                        (translate-hint-expression@par
+                         name-tree
 
 ; Below we generate a standard computed hint that uses the
 ; interpreter.  Note that the interpreter is given the eagerp
 ; NIL flag.
 
-                          (serial-first-form-parallel-second-form@par
-                           `(custom-keyword-hint-interpreter
-                             ',(cdr pair)
-                             ',cl-id
-                             ID CLAUSE WORLD STABLE-UNDER-SIMPLIFICATIONP
-                             HIST PSPV CTX STATE 'nil)
-                           `(custom-keyword-hint-interpreter@par
-                             ',(cdr pair)
-                             ',cl-id
-                             ID CLAUSE WORLD STABLE-UNDER-SIMPLIFICATIONP
-                             HIST PSPV CTX STATE 'nil))
-                          hint-type ctx wrld state)))
-                       (t (mv@par t nil state))))
-                     (t
+                         (serial-first-form-parallel-second-form@par
+                          `(custom-keyword-hint-interpreter
+                            ',(cdr pair)
+                            ',cl-id
+                            ID CLAUSE WORLD STABLE-UNDER-SIMPLIFICATIONP
+                            HIST PSPV CTX STATE 'nil)
+                          `(custom-keyword-hint-interpreter@par
+                            ',(cdr pair)
+                            ',cl-id
+                            ID CLAUSE WORLD STABLE-UNDER-SIMPLIFICATIONP
+                            HIST PSPV CTX STATE 'nil))
+                         hint-type ctx wrld state)))
+                      (t (mv@par t nil state))))
+                    (t
 
 ; In this case, we have eliminated all custom keyword hints
 ; eagerly and val is a keyword alist we ought to
 ; use for the hint.  We translate it from scratch.
 
-                      (translate-hint@par name-tree
-                                          (cons (car pair) val)
-                                          hint-type ctx wrld state)))))
-                  (t
+                     (translate-hint@par name-tree
+                                         (cons (car pair) val)
+                                         hint-type ctx wrld state)))))
+                 (t
 
 ; There are no custom keywords in the hint.
 
-                   (let* ((key-val-lst (remove-redundant-no-ops (cdr pair)))
+                  (let* ((key-val-lst (remove-redundant-no-ops (cdr pair)))
 
 ; By stripping out redundant :NO-OPs now we allow such lists as (:OR x
 ; :NO-OP T), whereas normally :OR would "object" to the presence of
 ; another hint.
 
-                          (keys (evens key-val-lst))
-                          (expanded-hint-keywords
-                           (append
-                            (strip-cars
-                             (table-alist 'custom-keywords-table wrld))
-                            *hint-keywords*)))
-                     (cond
-                      ((null keys)
-                       (er@par soft ctx
-                         "There is no point in attaching the empty list of ~
+                         (keys (evens key-val-lst))
+                         (expanded-hint-keywords
+                          (append
+                           (strip-cars
+                            (table-alist 'custom-keywords-table wrld))
+                           *hint-keywords*)))
+                    (cond
+                     ((null keys)
+                      (er@par soft ctx
+                        "There is no point in attaching the empty list of ~
                           hints to ~x0.  We suspect that you have made a ~
                           mistake in presenting your hints.  See :DOC hints. ~
                           ~ If you really want a hint that changes nothing, ~
                           use ~x1."
-                         (car pair)
-                         (cons (car pair) '(:NO-OP T))))
-                      ((not (subsetp-eq keys expanded-hint-keywords))
-                       (er@par soft ctx
-                         "The legal hint keywords are ~&0.  ~&1 ~
+                        (car pair)
+                        (cons (car pair) '(:NO-OP T))))
+                     ((not (subsetp-eq keys expanded-hint-keywords))
+                      (er@par soft ctx
+                        "The legal hint keywords are ~&0.  ~&1 ~
                           ~#1~[is~/are~] unrecognized.  See :DOC hints."
-                         expanded-hint-keywords
-                         (set-difference-eq keys expanded-hint-keywords)))
-                      ((member-eq :computed-hints-replacement keys)
+                        expanded-hint-keywords
+                        (set-difference-eq keys expanded-hint-keywords)))
+                     ((member-eq :computed-hints-replacement keys)
 
 ; If translate-hint is called correctly, then we expect this case not to arise
 ; for well-formed hints.  For example, in eval-and-translate-hint-expression we
 ; remove an appropriate use of :computed-hints-replacement.
 
-                       (er@par soft ctx
-                         "The hint keyword ~x0 has been used incorrectly.  ~
+                      (er@par soft ctx
+                        "The hint keyword ~x0 has been used incorrectly.  ~
                           Its only appropriate use is as a leading hint ~
                           keyword in computed hints.  See :DOC computed-hints."
-                         :computed-hints-replacement))
-                      ((not (no-duplicatesp-equal keys))
-                       (er@par soft ctx
-                         "You have duplicate occurrences of the hint keyword ~
+                        :computed-hints-replacement))
+                     ((not (no-duplicatesp-equal keys))
+                      (er@par soft ctx
+                        "You have duplicate occurrences of the hint keyword ~
                           ~&0 in your hint.  While duplicate occurrences of ~
                           keywords are permitted by CLTL, the semantics ~
                           ignores all but the left-most.  We therefore ~
                           suspect that you have made a mistake in presenting ~
                           your hints."
-                         (duplicates keys)))
-                      ((and (assoc-keyword :OR (cdr pair))
-                            (not (minimally-well-formed-or-hintp
-                                  (cadr (assoc-keyword :OR (cdr pair))))))
+                        (duplicates keys)))
+                     ((and (assoc-keyword :OR (cdr pair))
+                           (not (minimally-well-formed-or-hintp
+                                 (cadr (assoc-keyword :OR (cdr pair))))))
 
 ; Users are inclined to write hints like this:
 
@@ -17963,16 +18390,16 @@
 ; hints.  If not, we cause an error now.  We check the rest of the
 ; restrictions on :OR after the transformation.
 
-                       (er@par soft ctx
-                         "The value supplied to an :OR hint must be a ~
+                      (er@par soft ctx
+                        "The value supplied to an :OR hint must be a ~
                           non-empty true-list of non-empty true-lists of even ~
                           length, i.e., of the form ((...) ...).  But you ~
                           supplied the value ~x0."
-                         (cdr pair)))
-                      ((and (member-eq :induct keys)
-                            (member-eq :use keys))
-                       (er@par soft ctx
-                         "We do not support the use of an :INDUCT hint with a ~
+                        (cdr pair)))
+                     ((and (member-eq :induct keys)
+                           (member-eq :use keys))
+                      (er@par soft ctx
+                        "We do not support the use of an :INDUCT hint with a ~
                           :USE hint.  When a subgoal with an :INDUCT hint ~
                           arises, we push it for proof by induction.  Upon ~
                           popping it, we interpret the :INDUCT hint to ~
@@ -17998,32 +18425,32 @@
                           would cause an induction and set the post-induction ~
                           locally enabled theory to be as specified by the ~
                           :IN-THEORY."))
-                      ((and (member-eq :reorder keys)
-                            (intersectp-eq '(:or :induct) keys))
-                       (cond
-                        ((member-eq :or keys)
-                         (er@par soft ctx
-                           "We do not support the use of a :REORDER hint with ~
+                     ((and (member-eq :reorder keys)
+                           (intersectp-eq '(:or :induct) keys))
+                      (cond
+                       ((member-eq :or keys)
+                        (er@par soft ctx
+                          "We do not support the use of a :REORDER hint with ~
                             an :OR hint.  The order of disjunctive subgoals ~
                             corresponds to the list of hints given by the :OR ~
                             hint, so you may want to reorder that list ~
                             instead."))
-                        (t
-                         (er@par soft ctx
-                           "We do not support the use of a :REORDER hint with ~
+                       (t
+                        (er@par soft ctx
+                          "We do not support the use of a :REORDER hint with ~
                             an :INDUCT hint.  If you want this capability, ~
                             please send a request to the ACL2 implementors."))))
-                      (t
-                       (let ((bad-keys (intersection-eq
-                                        `(:induct ,@*top-hint-keywords*)
-                                        keys)))
-                         (cond
-                          ((and (< 1 (length bad-keys))
-                                (not (and (member-eq :use bad-keys)
-                                          (member-eq :cases bad-keys)
-                                          (equal 2 (length bad-keys)))))
-                           (er@par soft ctx
-                             "We do not support the use of a~#0~[n~/~] ~x1 ~
+                     (t
+                      (let ((bad-keys (intersection-eq
+                                       `(:induct ,@*top-hint-keywords*)
+                                       keys)))
+                        (cond
+                         ((and (< 1 (length bad-keys))
+                               (not (and (member-eq :use bad-keys)
+                                         (member-eq :cases bad-keys)
+                                         (equal 2 (length bad-keys)))))
+                          (er@par soft ctx
+                            "We do not support the use of a~#0~[n~/~] ~x1 ~
                               hint with a~#2~[n~/~] ~x3 hint, since they ~
                               suggest two different ways of replacing the ~
                               current goal by new goals.  ~@4Which is it to ~
@@ -18031,36 +18458,36 @@
                               together with a~#2~[n~/~] ~x3 hint is not ~
                               allowed because the intention of such a ~
                               combination does not seem sufficiently clear."
-                             (if (member-eq (car bad-keys) '(:or :induct))
-                                 0 1)
-                             (car bad-keys)
-                             (if (member-eq (cadr bad-keys) '(:or :induct))
-                                 0 1)
-                             (cadr bad-keys)
-                             (cond
-                              ((and (eq (car bad-keys) :by)
-                                    (eq (cadr bad-keys) :induct))
-                               "The :BY hint suggests that the goal follows ~
+                            (if (member-eq (car bad-keys) '(:or :induct))
+                                0 1)
+                            (car bad-keys)
+                            (if (member-eq (cadr bad-keys) '(:or :induct))
+                                0 1)
+                            (cadr bad-keys)
+                            (cond
+                             ((and (eq (car bad-keys) :by)
+                                   (eq (cadr bad-keys) :induct))
+                              "The :BY hint suggests that the goal follows ~
                                  from an existing theorem, or is to be ~
                                  pushed.  However, the :INDUCT hint provides ~
                                  for replacement of the current goal by ~
                                  appropriate new goals before proceeding.  ")
-                              (t ""))))
-                          (t
-                           (er-let*@par
-                            ((hint-settings
-                              (translate-hint-settings@par
-                               (replace-goal-spec-in-name-tree
-                                name-tree
-                                (car pair))
-                               (car pair)
-                               (cond
-                                ((assoc-keyword :or (cdr pair))
-                                 (distribute-other-hints-into-or
-                                  (cdr pair)))
-                                (t (cdr pair)))
-                               ctx wrld state)))
-                            (cond
+                             (t ""))))
+                         (t
+                          (er-let*@par
+                           ((hint-settings
+                             (translate-hint-settings@par
+                              (replace-goal-spec-in-name-tree
+                               name-tree
+                               (car pair))
+                              (car pair)
+                              (cond
+                               ((assoc-keyword :or (cdr pair))
+                                (distribute-other-hints-into-or
+                                 (cdr pair)))
+                               (t (cdr pair)))
+                              ctx wrld state)))
+                           (cond
 
 ; Hint-settings is of the form ((:key1 . val1) ...(:keyn . valn)).
 ; If :key1 is :OR, we know n=1; translated :ORs always occur as
@@ -18069,21 +18496,21 @@
 ; If there is only one alist in that list, then we're dealing
 ; with an :OR with only one disjunct.
 
-                             ((and (consp hint-settings)
-                                   (eq (caar hint-settings) :OR)
-                                   (consp (cdr (car hint-settings)))
-                                   (null (cddr (car hint-settings))))
+                            ((and (consp hint-settings)
+                                  (eq (caar hint-settings) :OR)
+                                  (consp (cdr (car hint-settings)))
+                                  (null (cddr (car hint-settings))))
 
 ; This is a singleton :OR.  We just drop the :OR.
 
-                              (assert$
-                               (null (cdr hint-settings))
-                               (value@par
-                                (cons cl-id
-                                      (car (cdr (car hint-settings)))))))
-                             (t (value@par
-                                 (cons cl-id hint-settings))))))))))))))))))))
- )
+                             (assert$
+                              (null (cdr hint-settings))
+                              (value@par
+                               (cons cl-id
+                                     (car (cdr (car hint-settings)))))))
+                            (t (value@par
+                                (cons cl-id hint-settings))))))))))))))))))))
+)
 
 (defun@par translate-hint-expressions (name-tree terms hint-type ctx wrld state)
 
@@ -18105,24 +18532,24 @@
                                                 hint-type ctx wrld state)))
        (value@par (cons thint thints))))))
 
-(defun check-translated-override-hint (hint uhint ctx state)
+(defun@par check-translated-override-hint (hint uhint ctx state)
   (cond ((not (and (consp hint)
                    (eq (car hint)
                        'eval-and-translate-hint-expression)))
-         (er soft ctx
+         (er@par soft ctx
              "The proposed override-hint, ~x0, was not a computed hint.  See ~
               :DOC override-hints."
              uhint))
         (t ; term is (caddr (cdr hint)); we allow any term here
-         (value nil))))
+         (value@par nil))))
 
-(defun translate-hints1 (name-tree lst hint-type override-hints ctx wrld state)
+(defun@par translate-hints1 (name-tree lst hint-type override-hints ctx wrld state)
 
-; A note on the taxonomy of hints.  A "hint setting" is a pair of the
-; form (key . val), such as (:DO-NOT-INDUCT . T) or (:USE . (lmi-lst
-; (h1...hn) ...)).  List of such pairs are called "hint settings."  A
-; pair consisting of a clause-id and some hint-settings is called a
-; "hint".  A list of such pairs is called "hints."
+; A note on the taxonomy of translated hints.  A "hint setting" is a pair of
+; the form (key . val), such as (:DO-NOT-INDUCT . T) or (:USE . (lmi-lst
+; (h1...hn) ...)).  Lists of such pairs are called "hint settings."  A pair
+; consisting of a clause-id and some hint-settings is called a "(translated)
+; hint".  A list of such pairs is called "(translated) hints."
 
 ; Thus, following the :HINTS keyword to defthm, the user types "hints" (in
 ; untranslated form).  This function takes a lst, which is supposed be some
@@ -18158,80 +18585,83 @@
 ; override-hints to eval-and-translate-hint-expression.
 
   (cond ((atom lst)
-         (cond ((null lst) (value nil))
-               (t (er soft ctx
-                      "The :HINTS keyword is supposed to have a true-list as ~
-                       its value, but ~x0 is not one.  See :DOC hints."
-                      lst))))
+         (cond ((null lst) (value@par nil))
+               (t (er@par soft ctx
+                    "The :HINTS keyword is supposed to have a true-list as ~
+                     its value, but ~x0 is not one.  See :DOC hints."
+                    lst))))
         ((and (consp (car lst))
               (stringp (caar lst))
               (null (cdar lst)))
-         (translate-hints1 name-tree (cdr lst) hint-type override-hints ctx
-                           wrld state))
-        (t (er-let*
+         (translate-hints1@par name-tree (cdr lst) hint-type override-hints ctx
+                               wrld state))
+        (t (er-let*@par
             ((hint (cond ((and (consp (car lst))
                                (stringp (caar lst)))
-                          (translate-hint name-tree (car lst) hint-type ctx
-                                          wrld state))
-                         (t (translate-hint-expression
+                          (translate-hint@par name-tree (car lst) hint-type ctx
+                                              wrld state))
+                         (t (translate-hint-expression@par
                              name-tree (car lst) hint-type ctx wrld state))))
-             (rst (translate-hints1 name-tree (cdr lst) hint-type
-                                    override-hints ctx wrld state)))
-            (er-progn
+             (rst (translate-hints1@par name-tree (cdr lst) hint-type
+                                        override-hints ctx wrld state)))
+            (er-progn@par
              (cond ((eq hint-type 'override)
-                    (check-translated-override-hint hint (car lst) ctx state))
-                   (t (value nil)))
-             (value (cons (cond ((atom hint) hint) ; nil
-                                ((and (consp (car lst))
-                                      (stringp (caar lst)))
-                                 (cond (override-hints
-                                        (list* (car hint) ; (caar lst)
-                                               (cons :KEYWORD-ALIST
-                                                     (cdar lst))
-                                               (cons :NAME-TREE
-                                                     name-tree)
-                                               (cdr hint)))
-                                       (t hint)))
-                                ((eq (car hint)
-                                     'eval-and-translate-hint-expression)
-                                 hint)
-                                (t (er hard ctx
-                                       "Internal error: Unexpected ~
-                                        translation ~x0 for hint ~x1.  Please ~
-                                        contact the ACL2 implementors."
-                                       hint (car lst))))
-                          rst)))))))
+                    (check-translated-override-hint@par hint (car lst) ctx state))
+                   (t (value@par nil)))
+             (value@par (cons (cond ((atom hint) hint) ; nil
+                                    ((and (consp (car lst))
+                                          (stringp (caar lst)))
+                                     (cond (override-hints
+                                            (list* (car hint) ; (caar lst)
+                                                   (cons :KEYWORD-ALIST
+                                                         (cdar lst))
+                                                   (cons :NAME-TREE
+                                                         name-tree)
+                                                   (cdr hint)))
+                                           (t hint)))
+                                    ((eq (car hint)
+                                         'eval-and-translate-hint-expression)
+                                     hint)
+                                    (t (er hard ctx
+                                           "Internal error: Unexpected ~
+                                            translation ~x0 for hint ~x1.  ~
+                                            Please contact the ACL2 ~
+                                            implementors."
+                                           hint (car lst))))
+                              rst)))))))
 
-(defun warn-on-duplicate-hint-goal-specs (lst seen ctx state)
+(defun@par warn-on-duplicate-hint-goal-specs (lst seen ctx state)
   (cond ((endp lst)
-         state)
+         (state-mac@par))
         ((and (consp (car lst))
               (stringp (caar lst)))
          (if (member-equal (caar lst) seen)
-             (pprogn (warning$ ctx ("Hints")
-                               "The goal-spec ~x0 is explicitly associated ~
-                                with more than one hint.  All but the first ~
-                                of these hints may be ignored.  If you ~
-                                intended to give all of these hints, combine ~
-                                them into a single hint of the form (~x0 ~
-                                :kwd1 val1 :kwd2 val2 ...).  See :DOC ~
-                                hints-and-the-waterfall."
-                               (caar lst))
-                     (warn-on-duplicate-hint-goal-specs (cdr lst) seen ctx
-                                                        state))
-           (warn-on-duplicate-hint-goal-specs (cdr lst) (cons (caar lst) seen)
-                                              ctx state)))
-        (t (warn-on-duplicate-hint-goal-specs (cdr lst) seen ctx state))))
+             (pprogn@par (warning$@par ctx ("Hints")
+                           "The goal-spec ~x0 is explicitly associated with ~
+                            more than one hint.  All but the first of these ~
+                            hints may be ignored.  If you intended to give ~
+                            all of these hints, combine them into a single ~
+                            hint of the form (~x0 :kwd1 val1 :kwd2 val2 ...). ~
+                            ~ See :DOC hints-and-the-waterfall."
+                           (caar lst))
+                         (warn-on-duplicate-hint-goal-specs@par (cdr lst) seen
+                                                                ctx state))
+           (warn-on-duplicate-hint-goal-specs@par (cdr lst)
+                                                  (cons (caar lst) seen)
+                                                  ctx state)))
+        (t (warn-on-duplicate-hint-goal-specs@par (cdr lst) seen ctx state))))
 
-(defun translate-hints2 (name-tree lst hint-type override-hints ctx wrld state)
+(defun@par translate-hints2 (name-tree lst hint-type override-hints ctx wrld state)
   (cond ((warning-disabled-p "Hints")
-         (translate-hints1 name-tree lst hint-type override-hints ctx wrld
-                           state))
+         (translate-hints1@par name-tree lst hint-type override-hints ctx wrld
+                               state))
         (t
-         (er-let* ((hints (translate-hints1 name-tree lst hint-type
-                                            override-hints ctx wrld state)))
-                  (pprogn (warn-on-duplicate-hint-goal-specs lst nil ctx state)
-                          (value hints))))))
+         (er-let*@par ((hints (translate-hints1@par name-tree lst hint-type
+                                                    override-hints ctx wrld
+                                                    state)))
+                      (pprogn@par (warn-on-duplicate-hint-goal-specs@par
+                                   lst nil ctx state)
+                                  (value@par hints))))))
 
 (defun override-hints (wrld)
   (declare (xargs :guard (and (plist-worldp wrld)
@@ -18241,7 +18671,7 @@
 
   a list of hints given priority in every proof attempt~/
 
-  This is an advanced feature, originally implmented to help system designers
+  This is an advanced feature, originally implemented to help system designers
   to create ``modes'' that control the way hints are supplied to the theorem
   prover.  Please ~pl[default-hints] for the much more usual way to install
   hints that may be applied by default.~/
@@ -18272,23 +18702,25 @@
   hint keywords and their values, whose source is either an explicit hint
   ~c[(goal-name :key1 val1 ... :keyn valn)] where the ~c[:keyi] are allowed to
   be custom hint keywords (which are expanded away; ~pl[custom-keyword-hints]),
-  or else is the non-~c[nil] result from evaluating a computed hint.  Then the
-  override-hints are applied to that keyword-alist as follows, one at a time,
-  in order of their occurrence in the list of override-hints (as determined by
-  the use of ~ilc[set-override-hints] and ~ilc[add-override-hints]).  The first
-  override-hint is evaluated, in the usual manner of evaluating computed hints
-  but with the variable ~c[KEYWORD-ALIST] bound to the above keyword-alist.
-  That evaluation produces a result that should also be a keyword-alist, or
-  else an error occurs.  Any custom keyword hints are then eliminated from that
-  keyword-alist.  The resulting keyword-alist must not contain the ~c[:ERROR]
-  hint keyword and must not start with the ~c[:COMPUTED-HINT-REPLACEMENT]
-  keyword; otherwise an error occurs.  With ~c[KEYWORD-ALIST] is bound to this
-  result, the second override-hint is similarly evaluated.  This process
-  continues, and the keyword-alist returned by the final override-hint is the
-  one used when processing the goal at hand.  If the final result is ~c[nil],
-  then the hint is discarded and the remaining hints are considered as above,
-  regardless of whether the tentatively selected hint object came from a
-  computed hint or from an explicit hint.
+  or else is the non-~c[nil] keyword-alist produced by evaluating a computed
+  hint.  Then the override-hints are applied to that keyword-alist as follows,
+  one at a time, in order of their occurrence in the list of override-hints (as
+  determined by the use of ~ilc[set-override-hints] and
+  ~ilc[add-override-hints]).  The first override-hint is evaluated, in the
+  usual manner of evaluating computed hints but with the variable
+  ~c[KEYWORD-ALIST] bound to the above keyword-alist.  That evaluation produces
+  a result that should also be a keyword-alist, or else an error occurs.  Any
+  custom keyword hints are then eliminated from that keyword-alist.  The
+  resulting keyword-alist must not contain the ~c[:ERROR] hint keyword and must
+  not start with the ~c[:COMPUTED-HINT-REPLACEMENT] keyword; otherwise an error
+  occurs.  With ~c[KEYWORD-ALIST] bound to this result, the second
+  override-hint is similarly evaluated.  This process continues, and the
+  keyword-alist returned by the final override-hint is the one used when
+  processing the goal at hand.  Except: If that keyword-alist is ~c[nil], then
+  the next hint among the pending hints is tentatively selected and the process
+  repeats, applying each override hint to that new tentative selection.  Of
+  course we might obtain ~c[nil] again, in which case we tentatively select the
+  next pending hint; and so on.
 
   If finally no hint is selected for the current goal, then ~c[KEYWORD-ALIST]
   is bound to ~c[nil] and the override-hints are applied as described above.
@@ -18332,14 +18764,19 @@
   ~c[(\"Subgoal x.y\" :do-not '(fertilize))].  What we would really want in
   this case is to generate the hint for the indicated subgoal that binds
   ~c[:do-not] to a list indicating that both fertilization _and_ generalization
-  are disabled for that goal.  A solution is to merge, as follows.
+  are disabled for that goal.  A solution is to merge, for example as follows.
+  (The use of ~ilc[prog2$] and ~ilc[cw] is of course optional, included here to
+  provide debug printing.)
   ~bv[]
   (add-override-hints
-   '((let ((tmp (assoc-eq :do-not KEYWORD-ALIST)))
-       (put-assoc-eq :do-not
-                     (add-to-set-eq 'generalize
-                                    (cdr tmp))
-                     KEYWORD-ALIST))))
+   '((let* ((tmp (assoc-keyword :do-not KEYWORD-ALIST))
+            (new-keyword-alist
+             (cond (tmp (list* :do-not
+                               `(cons 'generalize ,(cadr tmp))
+                               (remove-keyword :do-not KEYWORD-ALIST)))
+                   (t (list* :do-not ''(generalize) KEYWORD-ALIST)))))
+       (prog2$ (cw \"New: ~~x0~~|\" new-keyword-alist)
+               new-keyword-alist))))
   ~ev[]
 
   ~sc[Remarks]
@@ -18370,25 +18807,46 @@
 
   (cdr (assoc-eq :override (table-alist 'default-hints-table wrld))))
 
-(defun translate-hints (name-tree lst ctx wrld state)
-  (translate-hints2 name-tree lst nil (override-hints wrld) ctx wrld state))
+(defun@par translate-hints (name-tree lst ctx wrld state)
+  (translate-hints2@par name-tree lst nil (override-hints wrld) ctx wrld
+                        state))
 
-(defun translate-hints+ (name-tree lst default-hints ctx wrld state)
+(defun@par translate-hints+1 (name-tree lst default-hints ctx wrld state)
   (cond
    ((not (true-listp lst))
-    (er soft ctx
-        "The :HINTS keyword is supposed to have a true-list as its value, but ~
-         ~x0 is not one.  See :DOC hints."
-        lst))
+    (er@par soft ctx
+      "The :HINTS keyword is supposed to have a true-list as its value, but ~
+       ~x0 is not one.  See :DOC hints."
+      lst))
    (t
-    (translate-hints name-tree (append lst default-hints) ctx wrld state))))
+    (translate-hints@par name-tree (append lst default-hints) ctx wrld
+                         state))))
+
+(defun translate-hints+ (name-tree lst default-hints ctx wrld state)
+  #-acl2-par
+  (translate-hints+1 name-tree lst default-hints ctx wrld state)
+  #+acl2-par
+  (if (f-get-global 'waterfall-parallelism state)
+      (cmp-to-error-triple
+       (translate-hints+1@par name-tree lst default-hints ctx wrld state))
+      (translate-hints+1 name-tree lst default-hints ctx wrld state)))
 
 (defun translate-override-hints (name-tree lst ctx wrld state)
+  #-acl2-par
   (translate-hints2 name-tree lst 'override
                     nil ; no override-hints are applied
-                    ctx wrld state))
+                    ctx wrld state)
+  #+acl2-par
+  (if (f-get-global 'waterfall-parallelism state)
+      (cmp-to-error-triple
+       (translate-hints2@par name-tree lst 'override
+                             nil ; no override-hints are applied
+                             ctx wrld state))
+    (translate-hints2 name-tree lst 'override
+                      nil ; no override-hints are applied
+                      ctx wrld state)))
 
-(defun@par apply-override-hint
+(defun@par apply-override-hint1
   (override-hint cl-id clause hist pspv ctx wrld
                  stable-under-simplificationp clause-list processor
                  keyword-alist state)
@@ -18417,6 +18875,18 @@
                                stable-under-simplificationp)
                          nil)
                  nil))
+
+; #+ACL2-PAR note: we wish that we could have determined that the translation
+; mentioned at the beginning of this function's definition was performed by
+; translate-simple-or-error-triple@par (via a call to translate-hints+@par,
+; which occurs before entering the waterfall).  However, in the case of
+; override hints, the translation really occurs when the override hint is added
+; (perhaps via a call to "set-override-hints").  As such, even though we would
+; like to check the output signature of the override hint, there is no way to
+; do so without retranslating.  We therefore disallow override hints whenever
+; waterfall parallelism is enabled and waterfall-parallelism-hacks have not
+; been enabled.
+
         nil ; trans-flg = nil because term is already translated
         t   ; ev-flg = t because we have bound all the vars
         ctx state t)))
@@ -18488,6 +18958,29 @@
            wrld state))
          (t
           (value@par new-keyword-alist)))))))))
+
+(defun@par apply-override-hint 
+  (override-hint cl-id clause hist pspv ctx wrld
+                 stable-under-simplificationp clause-list processor
+                 keyword-alist state)
+  #-acl2-par
+  (apply-override-hint1 override-hint cl-id clause hist pspv ctx wrld
+                        stable-under-simplificationp clause-list processor
+                        keyword-alist state)
+  #+acl2-par
+  (cond ((and (f-get-global 'waterfall-parallelism state)
+              (not (cdr (assoc-eq 'hacks-enabled
+                                  (table-alist 'waterfall-parallelism-table
+                                               (w state))))))
+         (er@par soft ctx 
+           "Override-hints are not officially supported in ACL2(p).  If you ~
+            wish to use override hints anyway, you can call ~x0. See :DOC ~
+            set-waterfall-parallelism-hacks-enabled for more information."
+           '(set-waterfall-parallelism-hacks-enabled t)))
+        (t (apply-override-hint1@par override-hint cl-id clause hist pspv ctx
+                                     wrld stable-under-simplificationp
+                                     clause-list processor keyword-alist
+                                     state))))
 
 (defun@par apply-override-hints
   (override-hints cl-id clause hist pspv ctx wrld
@@ -18647,7 +19140,7 @@
               "The hint ~x0 produced a :COMPUTED-HINT-REPLACEMENT value as ~
                part of its result.  It is not permitted for custom keyword ~
                hints to produce such a value (only computed hints are allowed ~
-               to do that). The result produced was ~x1."
+               to do that).  The result produced was ~x1."
               (cons str
                     (cadr (fargn term 1)))
               val0))
@@ -18737,19 +19230,30 @@
                                  ~x1.  "
                                 (if (equal val0 val1) 1 0)
                                 val))))
-                 wrld state)))
+                 wrld state))
+               (temp1
+                (cond
+                 ((eq (car temp) 'eval-and-translate-hint-expression)
+                  (eval-and-translate-hint-expression@par
+                   (cdr temp)
+                   cl-id clause wrld stable-under-simplificationp hist pspv
+                   clause-list processor keyword-alist hint-type
+                   nil ; we have already dealt with the override-hints
+                   ctx state))
+                 (t (value@par (cdr temp))))))
               (cond
-               ((eq (car temp) 'eval-and-translate-hint-expression)
-                (eval-and-translate-hint-expression@par
-                 (cdr temp)
-                 cl-id clause wrld stable-under-simplificationp hist pspv
-                 clause-list processor keyword-alist hint-type
-                 nil ; we have already dealt with the override-hints
-                 ctx state))
-               (chr-p (value@par (list* :computed-hint-replacement
-                                        chr
-                                        (cdr temp))))
-               (t (value@par (cdr temp))))))))))))))))
+               ((and chr-p
+                     (not (eq (car temp1) :computed-hint-replacement)))
+
+; What if chr-p and (eq (car temp1) :computed-hint-replacement)?  We take the
+; value of the inner :computed-hint-replacement, but we could equally well take
+; the outer value or cause an error instead.  We have simply chosen the
+; simplest alternative to code.
+
+                (value@par (list* :computed-hint-replacement
+                                  chr
+                                  temp1)))
+               (t (value@par temp1)))))))))))))))
 
 (deflabel goal-spec
   :doc
@@ -18835,7 +19339,28 @@
   formula into the pool of goals to prove by induction.  The induct
   hint is attached to the formula in the pool and when the time comes
   to turn our attention to that goal, the induct advice is
-  followed.~/")
+  followed.
+
+  We conclude by emphasizing a point made above, that a hint is applied to a
+  goal when the hint's goal specification matches the name ACL2 assigns to the
+  goal.  If there is no such match, then the hint is ignored.  Consider the
+  following example.
+  ~bv[]
+  (thm (equal (append (append x y) z) (append x y z))
+       :hints ((\"Subgoal *1/\" :in-theory nil)))
+  ~ev[]
+  Normally, ~c[:in-theory] hints are inherited by subgoals
+  (~pl[hints-and-the-waterfall]), so you might expect that the empty theory is
+  used in ~c[Subgoal *1/2] and ~c[Subgoal *1/1].  But in fact, since there is
+  no subgoal printed that is labeled ~c[Subgoal *1/], the above ~c[:in-theory]
+  hint is ignored.  The above example is in contrast to the following, where
+  the hint makes the proof fail, because there really is a ~c[Subgoal *1/] in
+  the proof this time.
+  ~bv[]
+  (thm (implies (and (not (endp x)) (not (endp (cdr x))))
+                (equal (append (append x y) z) (append x y z)))
+       :hints ((\"Subgoal *1/\" :in-theory nil)))
+  ~ev[]~/")
 
 (deflabel hints-and-the-waterfall
   :doc
@@ -18848,11 +19373,12 @@
   point is important to take away from this ~il[documentation] topic: you may
   specify hints during a proof (~pl[hints]; perhaps also ~pl[computed-hints]
   and ~pl[default-hints]), and they can be expected to behave intuitively.
-  ~l[the-method] for a summary of how to interact with the ACL2 prover, and
-  ~pl[hints] for an introduction to ACL2 hints and detailed ~il[documentation]
-  for specific hint types.
+  ~l[the-method] for a summary of how to interact with the ACL2 prover;
+  ~pl[introduction-to-the-theorem-prover] for a more detailed tutorial; and
+  ~pl[hints] for an introduction to ACL2 hints, including detailed
+  ~il[documentation] for specific hint types.
 
-  The remainder of this topic serves as a references in case one needs a deeper
+  The remainder of this topic serves as a reference in case one needs a deeper
   understanding of the workings of ACL2's handling of hints.  Also, for
   examples of the sophisticated use of hints, primarily for experts, see
   distributed book ~c[books/hints/basic-tests.lisp].
@@ -18890,7 +19416,7 @@
   settling down has occurred and modify their heuristics accordingly.)  For
   example, if ~c[\"Goal\"] simplifies to ~c[\"Subgoal 2\"] (among others), and
   ~c[\"Subgoal 2\"] simplifies to ~c[\"Subgoal 2.3\"] (among others), which in
-  turn is not further simplified, then the the ``settled-down'' process hits on
+  turn is not further simplified, then the ``settled-down'' process hits on
   ~c[\"Subgoal 2.3\"] but not on any of its children, their children, and so
   on.
 
@@ -18939,22 +19465,23 @@
   The list of hint settings associates hint keywords with values.  It is passed
   from the current goal to its children (and hence the children's children, and
   so on), though modified by hints selected from pending hints, as described
-  below.  This list is consulted when a goal is pushed for later proof by
-  induction, at which time the hint settings are stored so that when the
-  induction proof begins, it begins with those hint settings.  Note that the
-  list of hint settings is not re-applied to descendents of a goal; a hint is
-  applied only when it is selected.  For example, if the hint selected for
-  ~c[\"Subgoal 3\"] includes ~c[:in-theory (enable foo)], then the hint
-  settings are correspondingly updated when processing ~c[\"Subgoal 3\"], and
-  they persist at subgoals such as ~c[\"Subgoal 3.2\"] and
-  ~c[\"Subgoal 3.2.1\"] (unless overriden by hints on those goals); but the
+  below.  This list is maintained so that when a goal is pushed for proof by
+  induction, the hint settings are applied at the start of the proof by
+  induction.  Note that the list of hint settings is not re-applied to
+  descendents of a goal in the current waterfall; a hint is applied only when
+  it is selected (and also perhaps later as just described, through the stored
+  hint settings at the start of a proof by induction).  For example, if the
+  hint selected for ~c[\"Subgoal 3\"] includes ~c[:in-theory (enable foo)],
+  then the hint settings are correspondingly updated when processing
+  ~c[\"Subgoal 3\"], and they persist at subgoals such as ~c[\"Subgoal 3.2\"]
+  and ~c[\"Subgoal 3.2.1\"] (unless overriden by hints on those goals); but the
   theory specifying ~c[foo] is not re-installed at every such subgoal.
 
-  When a hint is selected, the list of hint-settings is updated so that for
+  When a hint is selected, the list of hint settings is updated so that for
   each keyword ~c[:kwd] and associated value ~c[val] from the hint, ~c[:kwd] is
-  associated with ~c[val] in the hint-settings, discarding any previous
-  association of ~c[:kwd] with a value in the hint-settings.  Except, certain
-  ``top-level'' hints are never saved in the hint-settings: ~c[:use],
+  associated with ~c[val] in the hint settings, discarding any previous
+  association of ~c[:kwd] with a value in the hint settings.  Except, certain
+  ``top-level'' hints are never saved in the hint settings: ~c[:use],
   ~c[:cases], ~c[:by], ~c[:bdd], ~c[:or], and ~c[:clause-processor].
 
   For example, suppose that we specify the following hints, with no default
@@ -18984,16 +19511,16 @@
   ~c[:in-theory] association is removed from the hint settings and the global
   theory is re-installed.  However, the list of pending hints remains empty.
 
-  It remains to describe how hints are chosen for a goal.  When a goal is first
-  considered (hence at the top of the waterfall), the list of pending hints is
-  scanned, in order, until one of the hints is suitable for the goal.  An
-  explicit hint ~c[(goal-name :kwd1 val1 ... :kwdn valn)] is suitable if
+  It remains to describe how a hint is selected for a goal.  When a goal is
+  first considered (hence at the top of the waterfall), the list of pending
+  hints is scanned, in order, until one of the hints is suitable for the goal.
+  An explicit hint ~c[(goal-name :kwd1 val1 ... :kwdn valn)] is suitable if
   ~c[goal-name] is the name of the current goal and there is at least one
-  keyword.  A computed hint is suitable if it evaluates to a non-~c[nil]
-  value.  As indicated earlier in this documentation topic, an exception occurs
-  when a computed hint is selected after simplification fails (the
+  keyword.  A computed hint is suitable if it evaluates to a non-~c[nil] value.
+  As indicated earlier in this documentation topic, an exception occurs when a
+  computed hint is selected after simplification fails (the
   ``~c[stable-under-simplificationp]'' case): in that case, the goal returns to
-  the top of the waterfall with that hint is the selected hint, and no
+  the top of the waterfall with that hint as the selected hint, and no
   additional search for a hint to select is made at that time.
 
   The following slightly tricky example illustrates handling of hints.
@@ -19019,17 +19546,17 @@
   ~ev[]
 
   The warning above is printed because ~c[\"Goal\"] is associated with two
-  hints: one given by the ~ilc[set-default-hints] call and one supplied by the
-  ~c[:]~ilc[hints] keyword of the ~ilc[thm] form.  The ~c[:in-theory] hint is
-  selected because user-supplied hints are ahead of default hints in the list
-  of hints to consider; we then get the first ``Note'' above.  The goal
+  pending hints: one given by the ~ilc[set-default-hints] call and one supplied
+  by the ~c[:]~ilc[hints] keyword of the ~ilc[thm] form.  The ~c[:in-theory]
+  hint is selected because user-supplied hints are ahead of default hints in
+  the list of pending hints; we then get the first ``Note'' above.  The goal
   progresses through the waterfall without any proof process applying to the
   goal; in particular, it cannot be further simplified.  After the
   simplification process, a ``settled-down'' process applies, as discussed
-  above, immediately causing another trip through the waterfall.  At that point
-  the ~c[:in-theory] hint had previously been removed when it was applied,
-  leaving the default (~c[:do-not]) hint as the only applicable hint.  That
-  hint is indeed applied, resulting in the second ``Note'' above.
+  above, immediately causing another trip through the waterfall.  Since the
+  ~c[:in-theory] hint was earlier removed from the list of pending hints when
+  it was applied, the default (~c[:do-not]) hint is now the only pending hint.
+  That hint is applied, resulting in the second ``Note'' above.
 
   Again, more examples may be found in the distributed book
   ~c[books/hints/basic-tests.lisp].  A particularly tricky but informative
@@ -19081,6 +19608,7 @@
            :no-thanks t
            :error (\"Bad value ~~x0.\" 123)
            :or (hint-kwd-alist-1 ... hint-kwd-alist-k)
+           :rw-cache-state nil
            :backtrack (my-computed-hint clause processor clause-list)))
   ~ev[]
   A very common hint is the ~c[:use] hint, which in general takes as its
@@ -19659,6 +20187,12 @@
   created for each ~c[i], numbered in the usual manner (hence, counting down)
   except that the ``~c[D]'' is prefixed to each resulting goal.
 
+  ~c[:RW-CACHE-STATE]~nl[]
+  ~c[Value] is an element of the list constant ~c[*legal-rw-cache-states*]:
+  ~c[:atom] (the default), ~c[nil], ~c[t], or ~c[:disabled].  This hint applies
+  to the indicated goal and all its descendents, to set the so-called
+  ``rw-cache-state'' to the indicated value; ~pl[set-rw-cache-state].
+
   ~c[:BACKTRACK]~nl[]
   This is an advanced hint.  You can probably accomplish its effect by the use
   of ordinary computed hints; ~pl[computed-hints].  But if you are an expert,
@@ -19756,16 +20290,19 @@
   returns ~c[nil], then the ~c[:backtrack] hint has no effect, and the goal is
   replaced by the list of goals (the value of ~c[CLAUSE-LIST] described above),
   as usual.  Otherwise, the clause processor is deemed to have failed, and the
-  goal clause is tried again after applying the hint returned by the above
-  evaluation.  That hint will normally be an alternating list of hint keywords
-  and their values, but if it is a custom keyword hint
-  (~pl[custom-keyword-hints]), then it will be handled in the usual manner but
-  with the first three variables above bound to the symbol ~c[:OMITTED].  Of
-  course, if the new hint includes a value for ~c[:BACKTRACK] then this process
-  can loop; care should be taken to keep that from happening.
+  goal clause is tried again starting at the top of the waterfall after
+  selecting the hint returned by the above evaluation.  That hint will normally
+  be an alternating list of hint keywords and their values, but if it is a
+  custom keyword hint (~pl[custom-keyword-hints]), then it will be handled in
+  the usual manner but with the first three variables above bound to the symbol
+  ~c[:OMITTED].  Of course, if the new hint includes a value for ~c[:BACKTRACK]
+  then this process can loop; care should be taken to keep that from happening.
 
-  A final note about ~c[:BACKTRACK] hints: ~il[override-hints] (if any) are
-  applied in their processing.  ~l[override-hints].~/")
+  A final note about ~c[:BACKTRACK] hints: since these are a form of computed
+  hints, ~il[override-hints] (if any) are applied to their evaluation result
+  just as with any computed hint.  That is, the backtrack hint is successively
+  modified with each override-hint, to produce a final hint that is actually
+  used (or, ignored if that final hint is ~c[nil]).  ~l[override-hints].~/")
 
 (deflabel clause-identifier
   :doc
@@ -19870,7 +20407,8 @@
   other hand, if a computation returns an error triple in which ~c[erp] is nil,
   then ``value'' of the computation is taken to be the second component,
   ~c[val], of the triple (along with the possibly modified ~ilc[state]), and
-  computation continues.
+  computation continues.  For more information about programming with error
+  triples, ~pl[programming-with-state].
 
   The function symbol cases are treated as abbreviations of the term
   ~c[(fn ID CLAUSE WORLD)],
@@ -21011,7 +21549,7 @@
 
 ; Here we place the bulk of the code for handling trust tags (ttags).
 
-; A trust tag (ttag) is a symbol that represents where to place responsibility
+; A trust tag (ttag) is a keyword that represents where to place responsibility
 ; for potentially unsafe operations.  For example, suppose we define a
 ; function, foo, that calls sys-call.  Any call of sys-call is potentially
 ; unsafe, in the sense that it can do things not normally expected during book
@@ -21083,6 +21621,12 @@
 ; That said, if the need is great enough for us to avoid the error described
 ; above, we'll figure out something.
 
+; Finally, we note that trust tags are always in the "KEYWORD" package.  This
+; simplifies the implementation of provisional certification.  Previously
+; (after Version_4.3 but before the next release), Sol Swords sent an example
+; in which the Complete operation caused an error, the reason being that an
+; unknown package was being used in the post-alist in the certificate file.
+
 (defmacro ttags-seen ()
 
 ; The following is a potentially useful utility, which we choose to include in
@@ -21141,6 +21685,10 @@
            (declare (ignore col))
            (value ':invisible)))
 
+(defrec certify-book-info
+  (full-book-name . cert-op)
+  nil) ; could replace with t sometime
+
 (defun active-book-name (wrld state)
 
 ; This returns the full book name (an absolute pathname ending in .lisp) of the
@@ -21149,7 +21697,7 @@
 
   (or (car (global-val 'include-book-path wrld))
       (let ((x (f-get-global 'certify-book-info state)))
-        (cond (x (let ((y (if (consp x) (car x) x)))
+        (cond (x (let ((y (access certify-book-info x :full-book-name)))
                    (assert$ (stringp y) y)))))))
 
 (defrec deferred-ttag-note
@@ -21164,44 +21712,59 @@
   (fms str alist *standard-co* state evisc-tuple))
 
 (defun print-ttag-note (val active-book-name include-bookp deferred-p state)
-  (pprogn
-   (let* ((filename (or active-book-name ""))
-          (included (if include-bookp
-                        " (for included book)"
-                      ""))
-          (str (if active-book-name
-                   "TTAG NOTE~s0: Adding ttag ~x1 from file ~s2."
-                 "TTAG NOTE~s0: Adding ttag ~x1 from the top level loop."))
-          (bound (+ (length included)
-                    (length str)
-                    (length (symbol-package-name val))
-                    2 ; for "::"
-                    (length (symbol-name val))
-                    (length filename))))
-     (mv-let (erp val state)
-             (state-global-let*
-              ((fmt-hard-right-margin bound set-fmt-hard-right-margin)
-               (fmt-soft-right-margin bound set-fmt-soft-right-margin))
-              (pprogn (fms-to-standard-co str
-                                          (list (cons #\0 included)
-                                                (cons #\1 val)
-                                                (cons #\2 filename))
-                                          state nil)
-                      (cond (deferred-p state)
-                            (t (newline *standard-co* state)))
-                      (value nil)))
-             (declare (ignore erp val))
-             state))
-   (cond ((and (consp include-bookp) ; (cons ctx full-book-name)
-               (not deferred-p))
-          (warning$ (car include-bookp) ; ctx
-                    "Ttags"
-                    "The ttag note just printed to the terminal indicates a ~
-                     modification to ACL2.  To avoid this warning, supply an ~
-                     explicit :TTAGS argument when including the book ~x0."
-                    (cdr include-bookp) ; full-book-name
-                    ))
-         (t state))))
+
+; Active-book-name is nil or else satisfies chk-book-name.  If non-nil, we
+; print it as "book x" where x omits the .lisp extension, since if the defttag
+; event might not be in the .lisp file.  For example, it could be in the
+; expansion-alist in the book's certificate or, if the book is not certified,
+; it could be in the .port file.
+
+; If include-bookp is a cons, then its cdr satisfies chk-book-name.
+
+  (flet ((book-name-root (book-name)
+                         (subseq book-name 0 (- (length book-name) 5))))
+    (pprogn
+     (let* ((book-name (cond (active-book-name
+                              (book-name-root active-book-name))
+                             (t "")))
+            (included (if include-bookp
+                          " (for included book)"
+                        ""))
+            (str (if active-book-name
+                     "TTAG NOTE~s0: Adding ttag ~x1 from book ~s2."
+                   "TTAG NOTE~s0: Adding ttag ~x1 from the top level loop."))
+            (bound (+ (length included)
+                      (length str)
+                      (length (symbol-package-name val))
+                      2 ; for "::"
+                      (length (symbol-name val))
+                      (length book-name))))
+       (mv-let (erp val state)
+               (state-global-let*
+                ((fmt-hard-right-margin bound set-fmt-hard-right-margin)
+                 (fmt-soft-right-margin bound set-fmt-soft-right-margin))
+                (pprogn (fms-to-standard-co str
+                                            (list (cons #\0 included)
+                                                  (cons #\1 val)
+                                                  (cons #\2 book-name))
+                                            state nil)
+                        (cond (deferred-p state)
+                              (t (newline *standard-co* state)))
+                        (value nil)))
+               (declare (ignore erp val))
+               state))
+     (cond ((and (consp include-bookp) ; (cons ctx full-book-name)
+                 (not deferred-p))
+            (warning$ (car include-bookp) ; ctx
+                      "Ttags"
+                      "The ttag note just printed to the terminal indicates a ~
+                       modification to ACL2.  To avoid this warning, supply ~
+                       an explicit :TTAGS argument when including the book ~
+                       ~x0."
+                      (book-name-root
+                       (cdr include-bookp)) ; full-book-name
+                      ))
+           (t state)))))
 
 (defun show-ttag-notes1 (notes state)
   (cond ((endp notes)

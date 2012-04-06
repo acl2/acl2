@@ -1071,7 +1071,7 @@
 (defmacro oftr (&rest r) ; For writing to *trace-output*.
   `(progn (format *trace-output* ,@r) (force-output *trace-output*)))
 
-(defn1 suffix (str sym)
+(defn1 memoize-fn-suffix (str sym)
   (check-type str string)
   (check-type sym symbol)
   (let ((spkn (package-name (symbol-package sym)))
@@ -1122,31 +1122,67 @@
 ; the memoize tables that will be set to nil whenever the stobj st is changed.
 
   (check-type st symbol)
-  (multiple-value-bind (symbol status)
-      (intern (format nil "HONS-S-~s,~s"
-                      (package-name (symbol-package st))
-                      (symbol-name st))
-              (find-package "ACL2_INVISIBLE"))
-    (or status (eval `(defg ,symbol nil)))
-    symbol))
+  (intern (format nil "HONS-S-~s,~s"
+                  (package-name (symbol-package st))
+                  (symbol-name st))
+          (find-package "ACL2_INVISIBLE")))
+
+
+
+; Essay on Memoization Involving Stobjs
+
+; We allow memoization of functions that take user-defined stobjs (not state)
+; as arguments but do not return stobjs.  The key is the use of memoize-flush
+; to "forget" all that was remembered for certain functions that use certain
+; stobjs.  We must keep memoize-flush very fast in execution so as not to slow
+; down stobj update or resize operations in general.  Indeed, memoize-flush may
+; (according to tests run) incur essentially no cost (after Version_4.3) as
+; long as no functions with stobj arguments are actually memoized.
+
+; The following example shows why we disallow memoization of functions that
+; return stobjs.  First, redefine memoize-table-chk by eliminating the branch
+; that causes an error in the presence of stobj names in stobjs-out.  Then
+; start up ACL2 and submit the forms below.  The problem is that we do not
+; inhibit storing a result in the case that the stobj has changed from the time
+; the function was called to the time the result is to be stored.
+
+; (defstobj st fld)
+; (defun foo (st)
+;   (declare (xargs :stobjs st))
+;   (let ((st (update-fld (cons (fld st) (fld st)) st)))
+;     (mv (fld st) st)))
+; (foo st) ; updates (fld st), returns (mv (nil) st)
+; (memoize 'foo)
+; (foo st) ; updates (fld st), returns (mv ((nil) nil) st)
+; (foo st) ; no longer updates (fld st)
+; (foo st) ; no longer updates (fld st)
+; (fld st) ; still ((nil . nil). (nil . nil))
+
+(defun memoize-flush1 (lst)
+
+; Experiments showed that when lst is nil, it is faster to call this function
+; then to inline its code into the body of memoize-flush.
+
+; We "forget" all memoized values by clearing all necessary memoize tables; see
+; the comment about memoize-flush in memoize-fn.  We leave the pons table alone
+; in order to keep this flushing operation as fast as possible.  Note that the
+; pons table merely stores keys to be looked up in the memo table, so there is
+; no soundness issue, and in fact those pons table entries might remain useful;
+; the cost is the space taken up by the pons tables.
+
+  (loop for sym in lst do
+        (when (boundp (the symbol sym)) ; Is this test needed?
+          (let ((old (symbol-value (the symbol sym))))
+            (unless (or (null old) (empty-ht-p old))
+              (setf (symbol-value (the symbol sym)) nil))))))
 
 (defmacro memoize-flush (st)
 
-; MEMOIZE-FLUSH 'forgets' all that was remembered for certain functions that
-; use certain stobjs.  We must keep memoize-flush very fast in execution so as
-; not to slow down stobj update or resize operations in general.  We 'forget'
-; the pons table later.
+; See memoize-flush1 for a relevant discussion.
 
   (let ((s (st-lst st)))
-    `(when (boundp ',s)
-       (loop for sym in (symbol-value ',s) do
-             (when (boundp sym) ; Is this test needed?
-               (let ((old (symbol-value sym)))
-                 (unless (or (null old)
-                             ;; don't clear empty hts?  probably silly
-                             (and (hash-table-p old)
-                                  (eql 0 (hash-table-count old))))
-                   (setf (symbol-value sym) nil))))))))
+    `(when ,s ; optimization
+       (memoize-flush1 ,s))))
 
 
 
@@ -1231,13 +1267,29 @@
     (mht :size size-to-use)))
 
 (defun make-initial-memoize-pons-table (fn init-size)
+  (declare (ignorable init-size))
 
 ; This is just like make-initial-memoize-hash-table, but for the pons table.
 
   (let* ((max-sizes (gethash fn *memo-max-sizes*))
          (size-to-use
           (if (not max-sizes)
-              init-size
+              ;; We've never cleared this pons table before, so we don't have
+              ;; anything to go on besides what the user says.  Now, this is
+              ;; subtle.  Originally I just returned init-size here, i.e., "do
+              ;; what the user says."  But while this makes sense for the memo
+              ;; table, it doesn't necessarily make much sense for the pons
+              ;; table.  In particular, we can sometimes avoid ponsing by using
+              ;; our static-cons-index-hashing scheme.
+              ;;
+              ;; In some sense it would probably be good to give the user
+              ;; explicit control over the pons table size.  But for now, the
+              ;; main use of our memoize table size controls is to set things
+              ;; up for big BDD/AIG/SEXPR operations where we've got honsed
+              ;; data.  So, I'm going to just use 60 here, and say that the
+              ;; memo-table-init-size only affects the memoize table and not
+              ;; the pons table.
+              60
             (let* ((nclears       (access memo-max-sizes-entry max-sizes :num-clears))
                    (avg-pt-size   (access memo-max-sizes-entry max-sizes :avg-pt-size))
                    (our-guess     (ceiling (* 1.20 avg-pt-size)))
@@ -1544,29 +1596,29 @@
 
 (defun memoize-use-attachment-warning (fn at-fn)
   (when *memoize-use-attachment-warning-p*
-    (with-live-state
-     (warning$ 'top-level "Attachment"
-               "Although the function ~x0 is memoized, a result is not being ~
-                stored because ~@1.  Warnings such as this one, about not ~
-                storing results, will remain off for all functions for the ~
-                remainder of the session unless the variable ~x2 is set to a ~
-                non-nil value in raw Lisp."
-               fn
-               (mv-let (lookup-p at-fn)
-                       (if (consp at-fn)
-                           (assert$ (eq (car at-fn) :lookup)
-                                    (mv t (cdr at-fn)))
-                         (mv nil at-fn))
-                       (cond (lookup-p
-                              (msg "a stored result was used from a call of ~
-                                    memoized function ~x0, which may have been ~
-                                    computed using attachments"
-                                   at-fn))
-                             (t
-                              (msg "an attachment to function ~x0 was used ~
-                                    during evaluation of one of its calls"
-                                   at-fn))))
-               '*memoize-use-attachment-warning-p*))
+    (let ((state *the-live-state*))
+      (warning$ 'top-level "Attachment"
+                "Although the function ~x0 is memoized, a result is not being ~
+                 stored because ~@1.  Warnings such as this one, about not ~
+                 storing results, will remain off for all functions for the ~
+                 remainder of the session unless the variable ~x2 is set to a ~
+                 non-nil value in raw Lisp."
+                fn
+                (mv-let (lookup-p at-fn)
+                        (if (consp at-fn)
+                            (assert$ (eq (car at-fn) :lookup)
+                                     (mv t (cdr at-fn)))
+                          (mv nil at-fn))
+                        (cond (lookup-p
+                               (msg "a stored result was used from a call of ~
+                                     memoized function ~x0, which may have ~
+                                     been computed using attachments"
+                                    at-fn))
+                              (t
+                               (msg "an attachment to function ~x0 was used ~
+                                     during evaluation of one of its calls"
+                                    at-fn))))
+                '*memoize-use-attachment-warning-p*))
     (setq *memoize-use-attachment-warning-p* nil)))
 
 
@@ -1908,26 +1960,39 @@
 
           (dcls (dcls (cdddr (butlast cl-defun))))
           (start-time (let ((v (hons-gentemp
-                                (suffix "START-TIME-" fn))))
+                                (memoize-fn-suffix "START-TIME-" fn))))
                         (eval `(prog1 (defg ,v -1)
                                  (declaim (type integer ,v))))))
           (tablename
            ;; Submits the defg form and returns the crazy name that gets generated.
            (eval `(defg
-                    ,(hons-gentemp (suffix "MEMOIZE-HT-FOR-" fn))
+                    ,(hons-gentemp (memoize-fn-suffix "MEMOIZE-HT-FOR-" fn))
                     nil)))
           (ponstablename
            ;; Submits the defg form and returns the crazy name that gets generated.
            (eval `(defg
-                    ,(hons-gentemp (suffix "PONS-HT-FOR-" fn))
+                    ,(hons-gentemp (memoize-fn-suffix "PONS-HT-FOR-" fn))
                     nil)))
 
           (localtablename (make-symbol "TABLENAME"))
           (localponstablename (make-symbol "PONSTABLENAME"))
 
-          ;; When these user-level stobjs change the memo table will need to be cleared, I guess...
-          (sts (loop for x in (union stobjs-in stobjs-out)
-                     when x collect (st-lst x)))
+          (sts
+
+; Here we support memoize-flush, which keeps memoize tables coherent in the
+; presence of user-defined stobjs.  For each (user-level) stobj input name, x,
+; we collect up the variable (st-lst x), whose value is the list of names of
+; memoize tables that need to be cleared whenever that stobj changes.  Below,
+; we will push the present function's table name onto each of these lists.
+
+           (loop for x in (union stobjs-in stobjs-out)
+                 when x
+                 collect (assert$ (not (and condition
+                                            (eq x 'state))) ; see memoize-table-chk
+                                  (st-lst x))))
+
+
+
 
           ;; Number of arguments.  Specials only matter for common lisp functions, see the notes above in memoize-fn.
           ;; Basically if the function reads from specials we want to count them as args.
@@ -2593,14 +2658,16 @@
   (when (symbolp fn)
     (let ((info (gethash fn *memoize-info-ht*)))
       (when info
-        (clear-one-memo-and-pons-hash info)))))
+        (clear-one-memo-and-pons-hash info))))
+  fn)
 
 (defn1 clear-memoize-tables ()
   ;; User-level.  See memoize.lisp.
   (maphash (lambda (key info)
              (when (symbolp key)
                (clear-one-memo-and-pons-hash info)))
-           *memoize-info-ht*))
+           *memoize-info-ht*)
+  nil)
 
 
 
@@ -3141,6 +3208,8 @@
           rename-package
           replace
           require
+          reverse-strip-cars
+          reverse-strip-cdrs
           room
           round
           sbit

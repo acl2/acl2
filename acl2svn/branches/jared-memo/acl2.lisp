@@ -1,4 +1,4 @@
-; ACL2 Version 4.2 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 4.3 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2011  University of Texas at Austin
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
@@ -178,8 +178,10 @@
 
 ; Consider using (safety 3) if there is a problem with LispWorks.  It enabled
 ; us to see a stack overflow involving collect-assumptions in the proof of
-; bitn-lam0 from books/rtl/rel2/support/lop3.lisp.  (See save-acl2-in-lispworks
-; for how we have eliminated that stack overflow.)
+; bitn-lam0 from books/rtl/rel2/support/lop3.lisp.  The safety setting of 3
+; helped in this example, because, when the safety is set to 0, the stack is
+; not always automatically extended upon overflow (despite setting
+; system::*stack-overflow-behaviour* to nil in acl2-init.lisp).
 
 ; Safety 1 for CCL has avoided the kernel debugger, e.g. for compiled calls
 ; of car on a non-nil atom.  The following results for CCL show why we have
@@ -248,17 +250,6 @@
 ;                          LISP BUGS AND QUIRKS
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Patch from Gary Byers for OpenMCL 1.0 (CCL).  He says (4/13/07):
-;   Sometime over the last year or so, code was introduced into ACL2 that
-;   triggered a bug in OpenMCL 1.0 (namely, the initialization of binding
-;   of LOWER-BOUND in the THE-FIXNUM! macro in basis.lisp treats the expression
-;   (1+ UPPER-BOUND) as a fixnum (it isn't ...) and winds up negating the
-;   address of a bignum.
-#+(and ccl coral) ; the symbol :CORAL was on *FEATURES* in 1.0 and earlier
-(ccl:advise ccl::grovel-numeric-form
-            (let* ((ccl::*nx-form-type* t)) (:do-it))
-            :when :around)
-
 ; See acl2-fns.lisp for a fix to user-homedir-pathname for some versions of
 ; GCL.
 
@@ -321,6 +312,101 @@
 ; isn't typically exploited by ACL2 users.
 #+ccl
 (setq ccl::*record-source-file* nil)
+
+; We have tried to build under ECL (Embeddable Common-Lisp), and with some
+; modifications, we made progress -- except there appears (as of Sept. 2011) to
+; be no good way for us to save an executable image.  Specifically, it appears
+; that c:build-program not will suffice for saving state (properties etc.) --
+; it's just for saving specified .o files.
+
+; Here we document steps to take towards possibly porting to ECL in the future.
+
+; If state-global-let* expansion causes an error due to excessive code blow-up,
+; then consider replacing its definition by placing the following after
+; state-free-global-let*.  HOWEVER, first think about whether this is right; we
+; haven't thought through the effect of mixing a stack of let*-bindings of
+; state global variables with the acl2-unwind-protect mechanism.  Also,
+; comments are omitted here; be sure to restore them.
+
+;;; (defmacro state-global-let*-logical (bindings body)
+;;;   (declare (xargs :guard (and (state-global-let*-bindings-p bindings)
+;;;                               (no-duplicatesp-equal (strip-cars bindings)))))
+;;; 
+;;;   `(let ((state-global-let*-cleanup-lst
+;;;           (list ,@(state-global-let*-get-globals bindings))))
+;;;      ,@(and (null bindings)
+;;;             '((declare (ignore state-global-let*-cleanup-lst))))
+;;;      (acl2-unwind-protect
+;;;       "state-global-let*"
+;;;       (pprogn ,@(state-global-let*-put-globals bindings)
+;;;               (check-vars-not-free (state-global-let*-cleanup-lst) ,body))
+;;;       (pprogn
+;;;        ,@(state-global-let*-cleanup bindings 0)
+;;;        state)
+;;;       (pprogn
+;;;        ,@(state-global-let*-cleanup bindings 0)
+;;;        state))))
+;;; 
+;;; #-acl2-loop-only
+;;; (defmacro enforce-live-state-p (form)
+;;; 
+;;; ; Note that STATE is intended to be lexically bound at the point where this
+;;; ; macro is called.
+;;; 
+;;;   `(progn (when (not (live-state-p state)) ; (er hard! ...)
+;;;             (let ((*hard-error-returns-nilp* nil))
+;;;               (illegal 'enforce-live-state-p
+;;;                        "The state was expected to be live in the context of ~
+;;;                         an evaluation of the form:~|~x0"
+;;;                        (list (cons #\0 ',form)))))
+;;;           ,form))
+;;; 
+;;; (defmacro state-global-let* (bindings body)
+;;;   (cond #-acl2-loop-only
+;;;         ((and (symbol-doublet-listp bindings)
+;;;               (not (assoc-eq 'acl2-raw-mode-p bindings)))
+;;; 
+;;; ; The test above guarantees that we merely have bindings of state globals.  A
+;;; ; triple requires cleanup using a setter function.  Also we avoid giving this
+;;; ; simple treatment to 'acl2-raw-mode-p because the semantics of
+;;; ; state-global-let* are to call f-put-global, which has side effects in the
+;;; ; case of 'acl2-raw-mode-p.
+;;; 
+;;;          `(enforce-live-state-p
+;;;            (warn-about-parallelism-hazard
+;;;             '(state-global-let* ,bindings ,body)
+;;;             (state-free-global-let* ,bindings ,body))))
+;;;         (t `(state-global-let*-logical ,bindings ,body))))
+
+; Also, place the following forms in file acl2-fns.lisp, just above qfuncall
+; (but there may be better ways to do this).
+
+;;; ; The following is in acl2.lisp, but seems to be needed here as well.
+;;; #+ecl
+;;; (ext:package-lock "COMMON-LISP" nil)
+;;; 
+;;; Similarly in acl2.lisp, just before handling of package-lock on
+;;; "COMMON-LISP" for clisp:
+;;; 
+;;; #+ecl
+;;; (ext:package-lock "COMMON-LISP" nil)
+
+; Finally, consider thee additional notes.
+
+;;; We need (require "cmp") if we're to use c:build-program.
+
+;;; Special-form-or-op-p: treat ecl like sbcl.
+
+;;; System-call: treat ecl like akcl (actually replace #+akcl by #+(or akcl
+;;; ecl)).
+
+;;; Initialize-state-globals: treat ecl just like lispworks.
+
+;;; Where we have the binding (compiler:*suppress-compiler-notes* t) for akcl,
+;;; perhaps include the binding (*compile-verbose* t) for ecl.
+
+;;; Modify exit-lisp to treat ecl like akcl, except using ext::quit instead of
+;;; lisp::bye.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                              PACKAGES
@@ -410,10 +496,16 @@
       (make-package inv :use nil)))
 
 ; LispWorks has a package named "DEF", and that name conflicts with an ACL2
-; package of that name introduced in books/coi/.  So we rename it here.
+; package of that name introduced in books/coi/.  We deal with that issue
+; here.  Thanks to Martin Simmons for providing this code in place of the
+; original code, which instead invoked (rename-package "DEF"
+; "DEF-FROM-LW-RENAMED").
 #+lispworks
 (when (find-package "DEF")
-  (rename-package "DEF" "DEF-FROM-LW-RENAMED"))
+  (unless (equal (package-name "DEF") "DSPEC")
+    (error "Expected LispWorks DEF package to be called DSPEC"))
+  (rename-package "DSPEC" "DSPEC"
+                  (remove "DEF" (package-nicknames "DSPEC") :test 'equal)))
 
 ; The value of the constant *the-live-state* is actually just a
 ; symbol, but that symbol is the unique representative of the one
@@ -482,14 +574,24 @@
            (error "Illegal attempt to redeclare the constant ~s."
                   name)))))
 
+(defparameter acl2::*safe-mode-verified-p*
+
+; This global may be bound to t when we are evaluating a form that we know will
+; not lead to an ill-guarded call in raw Lisp (say, because the form was
+; previously evaluated by ACL2 in safe-mode).  See also the comment in
+; ec-call1-raw.
+
+  nil)
+
 (defmacro acl2::defconst (name term &rest rst)
   (declare (ignore rst)) ; e.g., documentation
   (let ((disc (gensym)))
     `(defparameter ,name
-       (cond
-        ((boundp ',name)
+       (let ((acl2::*safe-mode-verified-p* t))
          (cond
-          (acl2::*compiling-certified-file*
+          ((boundp ',name)
+           (cond
+            (acl2::*compiling-certified-file*
 
 ; We avoid the potentially expensive redundancy check done below, which is
 ; legitimate since we are simply loading a compiled file at the end of
@@ -507,32 +609,33 @@
 ;    `(defconst ,name ',(tree n)))
 ; (deftree *big* 35)
 
-           (symbol-value ',name))
-          (t
+             (symbol-value ',name))
+            (t
 
 ; Even though ',name is bound, we refer to its value with
 ; (symbol-value ',name) rather than simply an in-line ,name, to avoid
 ; compiler warnings.
 
-           (let ((,disc (get ',name 'acl2::redundant-raw-lisp-discriminator)))
-             (cond
-              ((and (consp ,disc)
-                    (eq (car ,disc) 'acl2::defconst))
-               (assert (consp (cdr ,disc)))
+             (let ((,disc (get ',name
+                               'acl2::redundant-raw-lisp-discriminator)))
                (cond
-                ((and (eq (cdr (cdr ,disc)) (symbol-value ',name))
-                      (or (equal (car (cdr ,disc)) ',term)
-                          (equal (cdr (cdr ,disc)) ,term)))
-                 (symbol-value ',name))
-                (t (acl2::defconst-redeclare-error ',name))))
-              ((acl2::raw-mode-p acl2::*the-live-state*)
+                ((and (consp ,disc)
+                      (eq (car ,disc) 'acl2::defconst))
+                 (assert (consp (cdr ,disc)))
+                 (cond
+                  ((and (eq (cdr (cdr ,disc)) (symbol-value ',name))
+                        (or (equal (car (cdr ,disc)) ',term)
+                            (equal (cdr (cdr ,disc)) ,term)))
+                   (symbol-value ',name))
+                  (t (acl2::defconst-redeclare-error ',name))))
+                ((acl2::raw-mode-p acl2::*the-live-state*)
 
 ; In this case we allow redeclaration of the constant; this is, after all, raw
 ; mode, where there are no guarantees.
 
-               ,term)
-              (t 
-               (acl2::defconst-redeclare-error ',name)))))))
+                 ,term)
+                (t 
+                 (acl2::defconst-redeclare-error ',name)))))))
 
 ; If ',name is not bound, we must evaluate ,term.  Note that we do so
 ; outside of all local bindings, so as not to disturb variables in
@@ -540,11 +643,11 @@
 ; but you never know!)  We may want to enforce that this code is only executed
 ; during the boot-strap; see the Essay on Guard Checking.
 
-        (t (let* ((val ,term)
-                  (d (list* 'acl2::defconst ',term val)))
-             (setf (get ',name 'acl2::redundant-raw-lisp-discriminator)
-                   d)
-             (cdr (cdr d))))))))
+          (t (let* ((val ,term)
+                    (d (list* 'acl2::defconst ',term val)))
+               (setf (get ',name 'acl2::redundant-raw-lisp-discriminator)
+                     d)
+               (cdr (cdr d)))))))))
 
 ; We now get our imports for package ACL2, putting them into the
 ; variable acl2::*common-lisp-symbols-from-main-lisp-package*.
@@ -572,9 +675,11 @@
 
   '(
     #+acl2-par "multi-threading-raw"
+    #+hons "serialize-raw"
     "axioms"
-    "memoize" ; but only get special under-the-hood treatment with #+hons
-    "hons"    ; but only get special under-the-hood treatment with #+hons
+    "memoize"   ; but only get special under-the-hood treatment with #+hons
+    "hons"      ; but only get special under-the-hood treatment with #+hons
+    "serialize" ; but only get special under-the-hood treatment with #+hons
     "boot-strap-pass-2"
     "basis"
     "parallel" ; but only get special under-the-hood treatment with #+acl2-par
@@ -597,6 +702,7 @@
     "type-set-b"
     "linear-b"
     "non-linear"
+    "tau"
     "rewrite"
     "simplify"
     "bdd"
@@ -669,7 +775,7 @@ ACL2 from scratch.")
    (setq acl2::*copy-of-acl2-version*
 ;  Keep this in sync with the value of acl2-version in *initial-global-table*.
          (concatenate 'string
-                      "ACL2 Version 4.2"
+                      "ACL2 Version 4.3"
                       #+non-standard-analysis
                       "(r)"
                       #+(and mcl (not ccl))
@@ -681,6 +787,15 @@ ACL2 from scratch.")
          (eval (caddr (read fl))))))
 
 (in-package "ACL2")
+
+(defparameter *compiled-file-extension*
+
+; Note that books/Makefile-generic, books/Makefile-subdirs, and
+; books/Makefile-psubdirs all deal with compiled file extensions.
+; Thanks to Gary Byers for suggested the following approach for #+ansi-cl,
+; which however appears to work for all Lisps supported as of early 2006.
+
+  (pathname-type (compile-file-pathname "foo.lisp")))
 
 (defmacro initialize-state-globals ()
   (let ((acl2-compiler-enabled-var
@@ -706,11 +821,35 @@ ACL2 from scratch.")
                                             ,acl2-compiler-enabled-var))
                                  ,acl2-compiler-enabled-var)
                                 (t
-                                 #+(or ccl sbcl) ; these compile on the fly
+
+; Warning: Keep the following "compile on the fly" readtime conditional in sync
+; with the one in acl2-compile-file.
+
+                                 #+(or ccl sbcl)
                                  :books
                                  #-(or ccl sbcl)
                                  t))
                           *the-live-state*)
+            (f-put-global
+             'host-lisp
+             ,(let () ; such empty binding has avoided errors in  GCL 2.6.7
+                #+gcl :gcl
+                #+ccl :ccl
+                #+sbcl :sbcl
+                #+allegro :allegro
+                #+clisp :clisp
+                #+cmu :cmu
+                #+lispworks :lispworks
+                #-(or gcl ccl sbcl allegro clisp cmu lispworks)
+                (error
+                 "Error detected in initialize-state-globals: ~%~
+                  The underlying host Lisp appears not to support ACL2. ~%~
+                  Contact the ACL2 implementors to request such support."))
+             *the-live-state*)
+            (f-put-global
+             'compiled-file-extension
+             ,*compiled-file-extension*
+             *the-live-state*)
             #+unix
             (f-put-global 'tmp-dir "/tmp" *the-live-state*)
             #-acl2-mv-as-values
@@ -826,10 +965,46 @@ ACL2 from scratch.")
 ; instead of the "LISP BUGS AND QUIRKS" section because we want to define this
 ; in the ACL2 package.
 
+(defmacro with-redefinition-suppressed (&rest forms)
+
+; This macro is equivalent to progn for SBCL and CMUCL, where we typically
+; suppress more warnings anyhow; see with-warnings-suppressed.
+
+  `(let (#+lispworks
+         (compiler::*redefinition-action* :QUIET)
+         #+allegro
+         (excl:*redefinition-warnings* nil)
+         #+clisp
+         (custom::*suppress-check-redefinition*
+
+; This binding may not suffice during the build.  Below is a comment that is
+; probably old as of this writing (Oct. 9, 2011).
+
+; Unfortunately, the above binding seems to be ignored when in the scope of
+; with-compilation-unit, so we get redefinition warnings from clisp during the
+; build.  Here is an example that exhibits that behavior CLISP 2.44.1 (even
+; without ACL2); and the same problem occurs if we switch the order of
+; with-compilation-unit and the binding of *suppress-check-redefinition*.
+
+;   (common-lisp::with-compilation-unit
+;    ()
+;    (let ((custom::*suppress-check-redefinition* t))
+;      (dolist (name '("foo" "bar"))
+;        (let ((source (make-pathname :name name :type "lisp")))
+;          (load source)
+;          (progn
+;            (compile-file source)
+;            (load (make-pathname :name name :type "fas")))))))
+
+          t)
+         #+ccl
+         (ccl::*compiler-warn-on-duplicate-definitions* nil))
+     ,@forms))
+
 (defmacro with-warnings-suppressed (&rest forms)
 
-; Keep this in sync with the handler-bind call in init.lisp.  Thanks to Juho
-; Snellman for the SBCL form.
+; See also the handler-bind call in init.lisp.  Thanks to Juho Snellman for his
+; assistance with handler-bind.
 
 ; We are happy to turn off redefinition warnings because we trust that
 ; functions such as add-trip know what they are doing.  Without this code, for
@@ -837,65 +1012,75 @@ ACL2 from scratch.")
 
   #+sbcl
 
-; Warning: We turn off all warnings in SBCL because they are so noisy.  Here is
-; the story:
-
-; In the case of SBCL, we have noticed that the inhibition of style-warnings
-; eliminates a huge amount of noise during the build, probably because
-; with-warnings-suppressed is called in compile-acl2.  Unfortunately, some of
-; that "noise" is the reporting of unused formals.  So, developers may want to
-; compile in some Lisp other than SBCL in order to see warnings about unused
-; formals and perhaps other warnings as well.
-
-; Considerable noise can be eliminated even if we only turn off
-; sb-kernel:redefinition-warning (at least, we tried this in SBCL 1.0.19;
-; sb-kernel:redefinition-warning doesn't work in SBCL 1.0.3).  But there is
-; still a lot of noise left when suppressing only
-; sb-kernel:redefinition-warning and not all style-warnings, e.g. on constant
-; names, ignorable variable CONDITION-P in memoize, and undefined function
-; warnings for *1* functions defined in mutual-recursions.
-
-; So, we suppress style-warnings.  We formerly did so as follows.
+; Warning: We turn off all warnings in SBCL because they are so noisy.  We
+; eliminate most of them in the proclaim form earlier in this file, using
+; (sb-ext:inhibit-warnings 3), because without that the following doesn't work;
+; just start up sbcl and submit the following form without the leading
+; backquote and replacing ,@forms by (defun f (x y) x).
 
 ; `(handler-bind
-;;   ((style-warning (lambda (c)
+;   ((warning       (lambda (c)
+;                     (declare (ignore c))
+;                     (invoke-restart 'muffle-warning)))
+;    (style-warning (lambda (c)
 ;                     (declare (ignore c))
 ;                     (invoke-restart 'muffle-warning))))
 ;   ,@forms)
 
-; However, sbcl still gives a warning in the following example:
-
-; (handler-bind
-;  ((style-warning (lambda (c)
-;                    (declare (ignore c))
-;                    (invoke-restart 'muffle-warning))))
-;  (eval '(defun foo () (= 'a 3))))
-
-; So we turn off all warnings, not just style warnings, as follows.
+; However, even with the above proclaim form we still get redefinition
+; warnings.  So we wrap the following handler-bind around forms in order to
+; eliminate redefinition warnings as well.
 
   `(handler-bind
     ((warning (lambda (c)
                 (declare (ignore c))
                 (invoke-restart 'muffle-warning))))
     ,@forms)
-  #+cmucl
-  `(progn (setq ext:*gc-verbose* nil) ,@forms)
+
+  #+cmu
+  `(progn (setq ext:*gc-verbose* nil)
+          (handler-bind
+           ((warning (lambda (c)
+                       (declare (ignore c))
+                       (invoke-restart 'muffle-warning))))
+           ,@forms))
+
+  #-(or sbcl cmu)
+  `(with-redefinition-suppressed ,@forms))
+
+(defmacro with-more-warnings-suppressed (&rest forms)
+
+; We add additional warning suppression beyond what is provided by
+; with-warnings-suppressed.  Warning: We do not necessarily suppress all
+; warnings that are suppressed by with-warnings-suppressed, so you will
+; probably want to call this macro in a context underneath
+; with-warnings-suppressed.
+
+; The handler-bind form given in with-warnings-suppressed for sbcl and cmucl is
+; sufficient; we do not need anything further here.  But even with the addition
+; of style-warnings (as commented there), that form doesn't seem to work for
+; CCL, Allegro CL, Lispworks, or CLISP.  So we bind some globals instead.
+
   #+lispworks
-  `(let ((compiler::*redefinition-action* :QUIET)) ,@forms)
+  `(let ((compiler::*compiler-warnings* nil))
+     ,@forms)
+
   #+allegro
-  `(let ((excl:*redefinition-warnings* nil)) ,@forms)
+  `(handler-bind
+    ((style-warning (lambda (c)
+                      (declare (ignore c))
+                      (invoke-restart 'muffle-warning))))
+    ,@forms)
+
   #+clisp
+  `(let ((*compile-verbose* nil))
+     ,@forms)
 
-; Setting custom::*suppress-check-redefinition* seems harmless, but doesn't
-; help avoid warnings (as of CLISP 2.47) for more than one definition of the
-; same function in the same file.  We could bind *compile-verbose* to nil, but
-; that seems too extreme; although we do something analogous for SBCL, we felt
-; compelled there because of extreme noise, which isn't the case for CLISP.
-
-  `(let ((custom::*suppress-check-redefinition* t)) ,@forms)
   #+ccl
-  `(let ((ccl::*compiler-warn-on-duplicate-definitions* nil)) ,@forms)
-  #-(or cmucl sbcl lispworks allegro clisp ccl)
+  `(let ((ccl::*suppress-compiler-warnings* t))
+     ,@forms)
+
+  #-(or lispworks allegro clisp ccl)
   (if (cdr forms) `(progn ,@forms) (car forms)))
 
 (defmacro with-suppression (&rest forms)
@@ -965,15 +1150,6 @@ ACL2 from scratch.")
 ; still write :COMPILED as indicated above.
 
 (defvar *lisp-extension* "lisp")
-
-(defparameter *compiled-file-extension*
-
-; Note that books/Makefile-generic, books/Makefile-subdirs, and
-; books/Makefile-psubdirs all deal with compiled file extensions.
-; Thanks to Gary Byers for suggested the following approach for #+ansi-cl,
-; which however appears to work for all Lisps supported as of early 2006.
-
-  (pathname-type (compile-file-pathname "foo.lisp")))
 
 #+sbcl ; turn off compiler notes (noisy)
 (declaim (sb-ext:muffle-conditions sb-ext:compiler-note))
@@ -1100,8 +1276,34 @@ which is saved just in case it's needed later.")
    #\!
    #'sharp-bang-read))
 
+(defun define-sharp-u ()
+  (set-dispatch-macro-character
+   #\#
+   #\u
+   #'sharp-u-read))
+
+(defvar *old-character-reader*
+  (get-dispatch-macro-character #\# #\\))
+
 (defun modify-acl2-readtable (do-all-changes)
   (let ((*readtable* *acl2-readtable*))
+
+; Thanks to Jared Davis for contributing the code for #\Y and #\Z (see
+; serialize-raw.lisp).  Note that p. 531 of CLtL2 specifies that #\Y and #\Z
+; are available to us.  Keep these two settings in sync with
+; *reckless-acl2-readtable*.
+
+    #+hons ; SBCL requires #+hons (same restriction as ser-hons-reader-macro)
+    (set-dispatch-macro-character
+     #\#
+     #\Z
+     'ser-hons-reader-macro)
+
+    #+hons ; SBCL requires #+hons (same restriction as ser-cons-reader-macro)
+    (set-dispatch-macro-character
+     #\#
+     #\Y
+     'ser-cons-reader-macro)
 
 ; Backquote
 
@@ -1134,7 +1336,8 @@ which is saved just in case it's needed later.")
       (define-sharp-dot)
       (define-sharp-comma)
       (define-sharp-atsign)
-      (define-sharp-bang))
+      (define-sharp-bang)
+      (define-sharp-u))
 
 ;  Keep control of character reader.  However, we do not need to keep such
 ;  control when reading in a .fas file for CLISP, and in fact, the set-theory
@@ -1164,6 +1367,7 @@ which is saved just in case it's needed later.")
           (define-sharp-comma)
           (define-sharp-atsign)
           (define-sharp-bang)
+          (define-sharp-u)
           (set-dispatch-macro-character
            #\#
            #\\
@@ -1180,6 +1384,34 @@ which is saved just in case it's needed later.")
     (set-dispatch-macro-character #\#
                                   #\=
                                   #'reckless-sharp-equal-read)
+    (set-dispatch-macro-character
+     #\#
+     #\\
+     *old-character-reader*)
+
+; Thanks to Jared Davis for contributing the code for #\Z and #\z (see
+; serialize-raw.lisp).  But is this readtable even necessary now that
+; compact-printing has been replaced by the serialize reader?  Quite possibly
+; it is indeed needed for #-hons, for (as of Version_4.3) the binding of
+; *readtable* to *reckless-acl2-readtable* in a call of compile-file in
+; acl2-compile-file, and for the calls of with-reckless-read in
+; load-compiled-book and include-book-raw.  But we could quite possibly omit
+; the #+hons code below.  At any rate, it seems harmless enough to continue to
+; use this function and to include the #+hons below.  Keep these two settings
+; in sync with modify-acl2-readtable.
+
+    #+hons ; SBCL requires #+hons (same restriction as ser-hons-reader-macro)
+    (set-dispatch-macro-character
+     #\#
+     #\Z
+     'ser-hons-reader-macro)
+
+    #+hons ; SBCL requires #+hons (same restriction as ser-cons-reader-macro)
+    (set-dispatch-macro-character
+     #\#
+     #\Y
+     'ser-cons-reader-macro)
+
     *readtable*))
 
 (defvar *load-compiled-verbose* nil)
@@ -1695,6 +1927,19 @@ which is saved just in case it's needed later.")
 
 (defun exit-lisp (&optional (status '0 status-p))
 
+; Parallelism blemish: In ACL2(p), LispWorks 6.0.1 hasn't always successfully
+; exited when exit-lisp was called.  The call below of stop-multiprocessing is
+; an attempt to improve the chance of a succesful exit.  In practice, the call
+; does not fix the problem.  However, we leave it for now since we don't think
+; it can hurt.  If exit-lisp starts working reliably without the following
+; calls to send-die-to-all-except-initial-threads and stop-multiprocessing,
+; they should be removed.
+
+  #+(and acl2-par lispworks)
+  (when mp::*multiprocessing*
+    (send-die-to-all-except-initial-threads)
+    (mp::stop-multiprocessing))
+
 ; The status (an integer) will be returned as the exit status (shell variable
 ; $?).  We avoid passing the status argument when it is 0, in case Windows or
 ; other operating systems get confused by it.  However, this function is a
@@ -1721,7 +1966,7 @@ which is saved just in case it's needed later.")
   #+clisp
   (if status-p (user::exit status) (user::exit))
   #+lispworks ; Version 4.2.0; older versions have used bye
-  (if status-p (lisp::quit :status status) (lisp::quit))
+  (if status-p (lispworks:quit :status status) (lispworks:quit))
   #+akcl
   (if status-p (lisp::bye status) (lisp::bye))
   #+lucid

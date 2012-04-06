@@ -462,7 +462,7 @@
           cons-make-list
           cons-ppr1
           cons-term
-          cons-term2
+          cons-term1
           const-list-acc
           constant-controller-pocketp
           constant-controller-pocketp1
@@ -892,6 +892,7 @@
           no-op-histp
           nominate-destructor-candidates
           non-linearp
+          tau-auto-modep
           non-stobjps
           normalize
           normalize-lst
@@ -969,10 +970,12 @@
           print-defun-msg/collect-type-prescriptions
           print-defun-msg/type-prescriptions
           print-defun-msg/type-prescriptions1
+          print-hint-events-summary
           print-prompt
           print-rational-as-decimal
           print-redefinition-warning
-          print-rules-summary
+          print-rules-and-hint-events-summary
+          print-runes-summary
           print-summary
           print-time-summary
           print-timer
@@ -1014,6 +1017,7 @@
           qzget-sign-abs
           raw-mode-p
           read-acl2-oracle
+          read-acl2-oracle@par
           read-object
           read-run-time
           read-standard-oi
@@ -1172,7 +1176,7 @@
           sublis-var-lst
           subsetp-eq
           subsumption-replacement-loop
-          suffix
+          memoize-fn-suffix
           sweep-clauses
           sweep-clauses1
           symbol-<
