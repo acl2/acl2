@@ -5,3 +5,5 @@
 
 (include-book "hl-addr-combine")
 (include-book "too-many-ifs")
+(include-book "verified-termination")
+(include-book "verified-guards")
