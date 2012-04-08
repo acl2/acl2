@@ -1,3 +1,22 @@
+; Centaur Miscellaneous Books
+; Copyright (C) 2008-2012 Centaur Technology
+;
+; Contact:
+;   Centaur Technology Formal Verification Group
+;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+;   http://www.centtech.com/
+;
+; This program is free software; you can redistribute it and/or modify it under
+; the terms of the GNU General Public License as published by the Free Software
+; Foundation; either version 2 of the License, or (at your option) any later
+; version.  This program is distributed in the hope that it will be useful but
+; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+; more details.  You should have received a copy of the GNU General Public
+; License along with this program; if not, write to the Free Software
+; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+;
+; Original author: Sol Swords <sswords@centtech.com>
 
 (in-package "SETS")
 
@@ -384,10 +403,21 @@
                                 (active-runep '(:rewrite in-tail)))))
                   :key in-tail-rewrite-loop)
 
-(acl2::def-ruleset osets-fancy-rules
+(defthmd in-of-cons
+  (equal (in a (cons b y))
+         (and (setp y)
+              (or (empty y)
+                  (<< b (head y)))
+              (or (equal a b)
+                  (in a y))))
+  :hints(("Goal" :in-theory (enable setp head tail empty)
+          :expand ((in a (cons b y)))
+          :do-not-induct t)))
+
+(acl2::def-ruleset! osets-fancy-rules
   '(pick-a-point-subset-strategy))
 
-(acl2::def-ruleset osets-specialized-rules
+(acl2::def-ruleset! osets-specialized-rules
   '(insert-never-empty
     insert-head
     insert-head-tail
@@ -470,12 +500,12 @@
     double-containment
     in-tail))
 
-(acl2::def-ruleset osets-defs
+(acl2::def-ruleset! osets-defs
   '(setp in empty subset
          insert delete intersect union difference
          head tail))
 
-(acl2::def-ruleset osets-witnessing-rules
+(acl2::def-ruleset! osets-witnessing-rules
   '(difference-in
     union-in
     intersect-in
@@ -492,6 +522,7 @@
     nonempty-when-in
     never-in-empty
     in-head
+    in-of-cons
     in-tail-to-in-x
     in-sfix-cancel))
 
