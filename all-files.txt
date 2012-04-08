@@ -521,6 +521,7 @@ misc
 README
 ubdds
 # unversioned-files-extra.txt
+vcd
 vl
 
 books/centaur/4v-sexpr:
@@ -588,8 +589,25 @@ sbitsets.lisp
 top.lisp
 
 books/centaur/esim:
-plist.lisp
+acl2-customization.lsp
+cert.acl2
+esim-paths.lisp
 esim-primitives.lisp
+esim-sexpr-correct.lisp
+esim-sexpr-support-thms.lisp
+esim-sexpr-support.lisp
+esim-sexpr.lisp
+esim-spec.lisp
+esim-vl.lisp
+local-theory.lisp
+packages.lsp
+plist.lisp
+portcullis.acl2
+portcullis.lisp
+steps.lisp
+stv-compile.lisp
+stv-expand.lisp
+stv.lisp
 
 books/centaur/gl:
 always-equal-prep.lisp
@@ -669,6 +687,8 @@ books/centaur/misc:
 alist-defs.lisp
 alist-equiv.lisp
 ap.lisp
+date.acl2
+date.lisp
 defapply.lisp
 dfs-measure.lisp
 equal-by-nths.lisp
@@ -693,11 +713,15 @@ memory-mgmt-logic.lisp
 memory-mgmt-raw.lisp
 nat-list-duplicates.lisp
 numlist.lisp
+osets-witnessing.acl2
+osets-witnessing.lisp
 patterns.lisp
 seed-random.lisp
 sneaky-load.lisp
 suffixp.lisp
 top.lisp
+tshell-raw.lsp
+tshell.lisp
 tuplep.lisp
 universal-equiv.lisp
 vecs-ints.lisp
@@ -735,6 +759,14 @@ ubdds.pdf
 ubdds.tex
 venn-diagrams.png
 witness.tex
+
+books/centaur/vcd:
+esim-snapshot.lisp
+vcd-impl.lisp
+vcd.lisp
+acl2-customization.lsp
+vcd-stub.lisp
+cert.acl2
 
 books/centaur/vl:
 acl2-customization.lsp
@@ -3704,6 +3736,8 @@ pseudo-good-worldp.lisp
 too-many-ifs.acl2
 too-many-ifs.lisp
 top.lisp
+verified-guards.lisp
+verified-termination.lisp
 worldp-check.acl2
 worldp-check.lisp
 
