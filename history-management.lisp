@@ -9662,10 +9662,24 @@
   (and (f-boundp-global 'bar-sep-p state)
        (f-get-global 'bar-sep-p state)))
 
+(defun char-to-string-alistp (lst)
+  (declare (xargs :guard t
+                  :mode :logic))
+  (cond ((atom lst)
+         (null lst))
+        (t (and (consp lst)
+                (consp (car lst))
+                (characterp (caar lst))
+                (stringp (cdar lst))
+                (char-to-string-alistp (cdr lst))))))
+
 (defun missing-fmt-alist-chars1 (str char-to-tilde-s-string-alist fmt-alist)
 
 ; See documentation for missing-fmt-alist-chars.
 
+  (declare (xargs :guard (and (stringp str)
+                              (char-to-string-alistp char-to-tilde-s-string-alist)
+                              (eqlable-alistp fmt-alist))))
   (cond ((endp char-to-tilde-s-string-alist)
          nil)
         (t
@@ -9695,6 +9709,8 @@
 ; character C is found, or even avoid an error by pointing to a special
 ; "undocumented" topic.
 
+  (declare (xargs :guard (and (stringp str)
+                              (eqlable-alistp fmt-alist))))
   (missing-fmt-alist-chars1 str
                             '((#\p . "~sp")
                               (#\s . "~ss")

@@ -2969,7 +2969,7 @@
 
   To see the ACL2 definition of this function, ~pl[pf].~/~/"
 
-  (declare (xargs :guard t))
+  (declare (xargs :mode :logic :guard t))
   (if (consp l)
       (and (eqlablep (car l))
            (eqlable-listp (cdr l)))
@@ -6321,7 +6321,7 @@
 ;; RAG - After adding the non-standard predicates, this number grew to 110.
 
 (defconst *force-xnume*
-  (let ((x 122))
+  (let ((x 126))
     #+:non-standard-analysis
     (+ x 12)
     #-:non-standard-analysis

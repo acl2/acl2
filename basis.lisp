@@ -4889,7 +4889,13 @@
 ; We only increment i by a small amount, j.
 
            (type (integer 0 100) j)
-           (type string s))
+           (type string s)
+           (xargs :guard 
+
+; A less restrictive guard that uses the knowledge that j is between 0 and 100
+; may exist.
+
+                  (< (expt 2 29) maximum)))
   (the character
        (cond ((< (+f i j) maximum) (charf s (+f i j)))
              (t
@@ -5035,7 +5041,13 @@
 
 (defun fmt-var (s alist i maximum)
   (declare (type (signed-byte 30) i maximum)
-           (type string s))
+           (type string s)
+           (xargs :guard
+
+; A less restrictive guard that uses the knowledge that j is between 0 and 100
+; may exist.
+
+                  (< (expt 2 29) maximum)))
   (let ((x (assoc (the character (fmt-char s i 2 maximum t)) alist)))
     (cond (x (cdr x))
           (t (er hard 'fmt-var
