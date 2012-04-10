@@ -458,7 +458,7 @@ if ($STEP eq "complete") {
     $instrs .= "#+acl2-hons (profile-fn 'prove)\n";
     $instrs .= "#+acl2-hons (profile-fn 'certify-book-fn)\n";
     $instrs .= "(acl2::lp)\n\n";
-    $instrs .= "(set-debugger-enable :bt)\n";
+#    $instrs .= "(set-debugger-enable :bt)\n";
     $instrs .= "(set-write-acl2x t state)\n" if ($STEP eq "acl2x");
     $instrs .= "(set-write-acl2x '(t) state)\n" if ($STEP eq "acl2xskip");
     $instrs .= "$INHIBIT\n" if ($INHIBIT);
@@ -467,7 +467,9 @@ if ($STEP eq "complete") {
 
 
     my $cert_cmd = "#!ACL2 (er-progn (time\$ (certify-book \"$file\" ? $FLAGS $PCERT $ACL2X))
-                                 (value (prog2\$ (memsum) (exit 43))))";
+                                 (value (prog2\$ #+acl2-hons (memsum)
+                                                 #-acl2-hons nil
+                                                 (exit 43))))";
 
 # Get the certification instructions from foo.acl2 or cert.acl2, if either
 # exists, or make a generic certify-book command.

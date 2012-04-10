@@ -26,7 +26,7 @@
 (local (include-book "modname-sets"))
 (local (include-book "../util/arithmetic"))
 (local (include-book "../util/osets"))
-
+(local (include-book "centaur/misc/osets-witnessing" :dir :system))
 
 (defxdoc hierarchy
   :parents (mlib)
@@ -170,11 +170,23 @@ module lookups.</p>"
            (list-fix x)))
 
   (defthm hons-assoc-equal-of-vl-modalist
-    (implies (force (vl-modulelist-p x))
-             (equal (hons-assoc-equal name (vl-modalist x))
-                    (if (vl-has-module name x)
-                        (cons name (vl-find-module name x))
-                      nil)))))
+;     (implies (force (vl-modulelist-p x))
+    (equal (hons-assoc-equal name (vl-modalist x))
+           (if (vl-has-module name x)
+               (cons name (vl-find-module name x))
+             nil))
+    :hints(("Goal" :in-theory (disable (force)))))
+
+  (defalist vl-modalist-p (x)
+    :key (stringp x)
+    :val (vl-module-p x)
+    :keyp-of-nil nil
+    :valp-of-nil nil)
+
+  (defthm vl-modalist-p-of-vl-modalist
+    (implies (vl-modulelist-p x)
+             (vl-modalist-p (vl-modalist x)))))
+
 
 
 (defsection vl-fast-has-module
@@ -1090,118 +1102,23 @@ right-hand side, but not in the left-hand side.</p>
 
 <p><i>Q.E.D.</i></p>"
 
-  (defsection admission-lemma-1
+  
 
-    (local (defthm lemma1
-             (implies (and (subset newinsts modnames)
-                           (not (subset newinsts (union curr prev))))
-                      (subset (intersect (union curr prev) modnames)
-                              (intersect (union newinsts (union curr prev))
-                                         modnames)))))
+  (local (sets::use-osets-reasoning))
 
+  (local (in-theory (disable cardinality
+                             subset-of-union
+                             sets::expand-cardinality-of-union
+                             sets::expand-cardinality-of-difference
+                             sets::intersect-cardinality-subset
+                             vl-modulelist-complete-p)))
 
-    (local (defthm crock
-             (implies (and (not (empty newinsts))
-                           (not (in (head newinsts) other))
-                           (in (head newinsts) modnames)
-                           (subset (tail newinsts) modnames))
-                      (not (subset (intersect modnames newinsts)
-                                   (intersect modnames other))))))
-
-    (local (defthm crock2
-             (implies (not (subset (intersect modnames (tail newinsts))
-                                   (intersect modnames other)))
-                      (not (subset (intersect modnames newinsts)
-                                   (intersect modnames other))))))
-
-    (local (defthmd crock3
-             (implies (and (subset newinsts modnames)
-                           (not (subset newinsts other)))
-                      (not (subset (intersect (union newinsts other) modnames)
-                                   (intersect other modnames))))))
-
-    (local (defthm lemma2
-             (implies (and (subset newinsts modnames)
-                           (not (subset newinsts (union curr prev))))
-                      (not (subset (intersect (union newinsts (union curr prev))
-                                              modnames)
-                                   (intersect (union curr prev)
-                                              modnames))))
-             :hints(("goal" :by crock3))))
-
-    (defthmd vl-dependent-mods-admission-lemma1
-      (implies (and (subset newinsts modnames)
-                    (not (subset newinsts (union curr prev))))
-               (< (cardinality (intersect (union curr prev) modnames))
-                  (cardinality (intersect (union newinsts (union curr prev)) modnames))))
-      :hints(("Goal"
-              :use ((:instance sets::proper-subset-cardinality
-                               (sets::x (intersect (union curr prev) modnames))
-                               (sets::y (intersect (union newinsts (union curr prev)) modnames)))
-                    (:instance lemma2)
-                    (:instance lemma1))))))
-
-
-  (defsection admission-lemma-2
-
-    (local (defthm intersect-intersect-rw
-             (equal (intersect (difference x y)
-                               (difference x z))
-                    (difference x (union y z)))))
-
-    (local (in-theory (disable sets::difference-over-union)))
-
-    (local (defthm note1
-             (equal (cardinality (difference x (union y z)))
-                    (- (cardinality x)
-                       (cardinality (intersect (union y z) x))))))
-
-    ;; We re-prove <-minus-minus from arithmetic-3.  This is really easy and lets
-    ;; us avoid the arith-3 dependency.
-
-    (local (defthmd lemma-for-<-minus-minus
-             (equal (equal (< a b) (< c d))
-                    (iff (< a b) (< c d)))))
-
-    (local (defthm <-minus-minus
-             (equal (< (- x) (- y))
-                    (< y x))
-             :hints(("Goal" :in-theory (enable lemma-for-<-minus-minus)))))
-
-    (local (defthm union-of-difference-of-self
-             (equal (union a (difference b a))
-                    (union a b))))
-
-    (local  (defthm union-of-union-of-difference-of-self
-              (equal (union a (union b (difference c a)))
-                     (union a (union b c)))))
-
-    (local  (defthm union-of-intersect-and-union
-              (equal (union (intersect a b)
-                            (intersect a c))
-                     (intersect a (union b c)))))
-
-    (local  (in-theory (disable sets::intersect-over-union)))
-
-    (defthmd vl-dependent-mods-admission-lemma2
-      (implies (and (subset newinsts modnames)
-                    (not (subset newinsts (union curr prev))))
-               (< (cardinality (union (intersect (difference modnames curr)
-                                                 (intersect (difference modnames prev)
-                                                            (difference modnames (difference newinsts curr))))
-                                      (intersect (difference modnames curr)
-                                                 (intersect (difference modnames prev)
-                                                            (difference modnames (difference newinsts prev))))))
-                  (cardinality (intersect (difference modnames curr)
-                                          (difference modnames prev)))))
-      :hints(("Goal"
-              :in-theory (disable vl-dependent-mods-admission-lemma1)
-              :use ((:instance vl-dependent-mods-admission-lemma1
-                               (modnames modnames)
-                               (curr curr)
-                               (prev prev)
-                               (newinsts newinsts)))))))
-
+  (local (defthm cardinalty-<-by-proper-subset
+              (iff (< (cardinality x) (cardinality y))
+                   (if (subset x y)
+                       (not (subset y x))
+                     (hide (< (cardinality x) (cardinality y)))))
+              :hints (("goal" :expand ((:free (x) (hide x)))))))
 
   (defund vl-dependent-modules-aux (curr prev mods depalist)
     (declare (xargs :guard (and (setp curr)
@@ -1217,16 +1134,7 @@ right-hand side, but not in the left-hand side.</p>
                               (difference (vl-modulelist-meganames (sfix mods))
                                           (union curr prev)))
 
-                    :hints (("Goal"
-                             :in-theory (disable (:linear sets::expand-cardinality-of-difference)
-                                                 (:rewrite sets::expand-cardinality-of-union))
-                             :do-not '(generalize fertilize)
-                             :do-not-induct t
-                             :use ((:instance vl-dependent-mods-admission-lemma2
-                                              (modnames (vl-modulelist-meganames (sfix mods)))
-                                              (curr curr)
-                                              (newinsts (mergesort (vl-dependent-modules-direct curr (sfix mods) depalist)))
-                                              (prev prev)))))))
+                    :hints (("Goal" :in-theory (disable (force))))))
 
     (let* ((mods      (mbe :logic (sfix mods) :exec mods))
            (newinsts  (vl-dependent-modules-direct curr mods depalist))
@@ -1252,6 +1160,15 @@ right-hand side, but not in the left-hand side.</p>
         (vl-dependent-modules-aux (difference newinsts curr+prev)
                                   curr+prev mods depalist)))))
 
+
+  (local (in-theory (disable sets::difference-in
+                             sets::subset-in
+                             sets::intersect-over-union
+                             sets::intersect-in
+                             sets::subset-difference
+                             sets::in-tail
+                             sets::insert-identity)))
+
   (local (in-theory (enable vl-dependent-modules-aux)))
 
   (defthm setp-of-vl-dependent-modules-aux
@@ -1268,6 +1185,7 @@ right-hand side, but not in the left-hand side.</p>
                   (force (subset prev (vl-modulelist-meganames mods)))
                   (force (equal depalist (vl-depalist mods))))
              (string-listp (vl-dependent-modules-aux curr prev mods depalist))))
+
 
   (defthm subset-of-vl-dependent-modules-aux-when-complete
     (implies (and (vl-modulelist-complete-p mods mods)
@@ -1514,12 +1432,14 @@ run.  See @(see vl-fast-necessary-modules) for a faster alternative which use a
                   (force (vl-modulelist-p mods)))
              (string-listp (vl-necessary-modules-direct-slow names mods))))
 
-  (local (defthm stringp-when-in-vl-modulelist->names
+  (local
+   (encapsulate nil
+     (local (sets::use-osets-reasoning))
+     (defthm stringp-when-in-vl-modulelist->names
            (implies (and (in a (vl-modulelist->names x))
                          (force (vl-modulelist-p x)))
                     (stringp a))
-           :hints(("Goal" :in-theory (enable (:ruleset sets::primitive-rules)
-                                             vl-modulelist->names)))))
+           :hints(("Goal" :in-theory (enable vl-modulelist->names))))))
 
   (verify-guards vl-necessary-modules-direct-slow)
 
@@ -1634,6 +1554,23 @@ run.  See @(see vl-fast-necessary-modules) for a faster alternative which use a
 ; modules for (curr U prev), so we can recursively begin looking for these
 ; modules.
 
+  (local (sets::use-osets-reasoning))
+
+  (local (in-theory (disable cardinality
+                             subset-of-union
+                             sets::expand-cardinality-of-union
+                             sets::expand-cardinality-of-difference
+                             sets::intersect-cardinality-subset
+                             vl-modulelist-complete-p)))
+
+  (local (defthm cardinalty-<-by-proper-subset
+              (iff (< (cardinality x) (cardinality y))
+                   (if (subset x y)
+                       (not (subset y x))
+                     (hide (< (cardinality x) (cardinality y)))))
+              :hints (("goal" :expand ((:free (x) (hide x)))))))
+
+
   (defund vl-necessary-modules-aux (curr prev mods modalist)
     (declare (xargs :guard (and (setp curr)
                                 (setp prev)
@@ -1651,15 +1588,7 @@ run.  See @(see vl-fast-necessary-modules) for a faster alternative which use a
                                           (union curr prev)))
                     :hints
                     (("Goal"
-                      :in-theory (disable (:linear sets::expand-cardinality-of-difference)
-                                          (:rewrite sets::expand-cardinality-of-union))
-                      :do-not '(generalize fertilize)
-                      :do-not-induct t
-                      :use ((:instance vl-dependent-mods-admission-lemma2
-                                       (modnames (vl-modulelist-meganames (sfix mods)))
-                                       (curr curr)
-                                       (newinsts (vl-necessary-modules-direct-fast curr (sfix mods) modalist))
-                                       (prev prev)))))))
+                      :in-theory (disable (force))))))
 
     (let* ((mods      (mbe :logic (sfix mods) :exec mods))
            (newinsts  (vl-necessary-modules-direct-fast curr mods modalist))

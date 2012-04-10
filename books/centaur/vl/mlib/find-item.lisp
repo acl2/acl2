@@ -126,6 +126,21 @@
   (defthm alistp-of-vl-portdecl-alist
     (alistp (vl-portdecl-alist x)))
 
+  (defalist vl-portdecl-alist-p (x)
+    :key (stringp x)
+    :val (vl-portdecl-p x)
+    :keyp-of-nil nil
+    :valp-of-nil nil)
+
+  (defthm hons-assoc-equal-of-vl-portdecl-alist
+    (implies (force (vl-portdecllist-p x))
+             (equal (hons-assoc-equal k (vl-portdecl-alist x))
+                    (and (vl-find-portdecl k x)
+                         (cons k (vl-find-portdecl k x)))))
+    :hints(("Goal" :in-theory (e/d (vl-find-portdecl)
+                                   (vl-find-portdecl-under-iff)))))
+
+
   (defun vl-fast-find-portdecl (name portdecls alist)
     ;; This is just a faster version of vl-find-portdecl, where the search is
     ;; done as an fast-alist lookup rather than as string search.
@@ -135,13 +150,6 @@
                     :verify-guards nil))
     (mbe :logic (vl-find-portdecl name portdecls)
          :exec (cdr (hons-get name alist))))
-
-  (local (defthm lemma
-           (implies (and (vl-portdecllist-p portdecls)
-                         (stringp name))
-                    (equal (vl-find-portdecl name portdecls)
-                           (cdr (hons-assoc-equal name (vl-portdecl-alist portdecls)))))
-           :hints(("Goal" :in-theory (enable vl-find-portdecl)))))
 
   (verify-guards vl-fast-find-portdecl))
 
@@ -338,6 +346,8 @@
          (fast-fn       (mksym 'vl-fast- type 'list-alist))
          (find-fn       (mksym 'vl-find- type))
          (list-p        (mksym 'vl- type 'list-p))
+         (alist-p       (mksym 'vl- type 'alist-p))
+         (elt-p         (mksym 'vl- type '-p)) 
          (element->name (or element->name
                             (mksym 'vl- type '->name))))
     `(defsection ,fn
@@ -384,6 +394,16 @@
          (implies (force (,list-p x))
                   (vl-moditem-alist-p (,fn x)))
          :hints(("Goal" :in-theory (enable vl-moditem-p))))
+
+       (defalist ,alist-p (x)
+         :key (stringp x)
+         :val (,elt-p x)
+         :keyp-of-nil nil
+         :valp-of-nil nil)
+
+       (defthm ,(mksym alist-p '-of- fn)
+         (implies (force (,list-p x))
+                  (,alist-p (,fn x))))
 
        (defthm ,(mksym 'hons-assoc-equal-of- fn)
          (implies (and (force (,list-p x))
