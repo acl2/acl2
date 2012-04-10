@@ -1,3 +1,6 @@
+; At some point, if :full waterfall parallelism is enabled, we should
+; override the :full setting and use :resource-based instead.
+
 #+acl2-par
 (set-total-parallelism-work-limit-error nil)
 #+acl2-par
