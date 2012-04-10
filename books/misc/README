@@ -79,6 +79,10 @@ callers-and-ancestors.lisp -- utilities for finding all callers and
 
 ===============================================================================
 
+character-encoding-test.{acl2,lisp} -- check for handling character encodings
+
+===============================================================================
+
 check-acl2-exports.lisp -- check for accidental omissions from *acl2-exports*
 
 ===============================================================================

@@ -1,0 +1,13 @@
+; WARNING: Before saving this file in emacs, evaluate the following form,
+; especially if you have loaded distributed file emacs/emacs-acl2.el into your
+; emacs session, since that file sets the character encoding to iso-8859-1.
+
+; (setq save-buffer-coding-system 'utf-8)
+
+; If you have not done this, then in a linux shell, executing
+;   cat character-encoding-test.lisp
+; may show clearly that the string below has a single character.
+
+(defun test-1 () "ó")
+
+(certify-book "character-encoding-test" ?)
