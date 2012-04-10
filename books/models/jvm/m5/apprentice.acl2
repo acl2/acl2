@@ -1,7 +1,7 @@
 #+acl2-par
 (set-total-parallelism-work-limit-error nil)
 #+acl2-par
-(set-total-parallelism-work-limit 3000)
+(set-total-parallelism-work-limit 8000)
 
 (include-book "m5")
 (certify-book "apprentice" 1)
