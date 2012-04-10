@@ -18519,7 +18519,7 @@
 
   Event summaries now show the names of events that were mentioned in
   ~il[hints] of type ~c[:use], ~c[:by], or ~c[:clause-processor].
-  ~l[set-inhibited-summary-types].  Thanks to Francisco J. MartÃ­n Mateos for
+  ~l[set-inhibited-summary-types].  Thanks to Francisco J. Martín Mateos for
   requesting such an enhancement (actually thanks to the community, as his
   request is the most recent but this has come up from time to time before).
 
@@ -18718,6 +18718,12 @@
   that led to this fix.
 
   ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]
+
+  The character encoding has been fixed at iso-8859-1.
+  ~l[character-encoding].  Thanks to Jared Davis for bringing this portability
+  issue to our attention (as this change arose in order to deal with a change
+  in the default character encoding for the host Lisp, CCL), and pointing us in
+  the right direction for dealing with it.
 
   Although the HTML documentation is distributed with ACL2, it had not been
   possible for users to build that documentation without omitting graphics, for

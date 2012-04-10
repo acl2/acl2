@@ -247,6 +247,164 @@
 ; Common Lisp for which ACL2 is a verification system.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;                       READING CHARACTERS FROM FILES
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Files may be viewed as sequences of bytes.  But Lisp can interpret these byte
+; sequences as sequences of characters, depending on so-called character
+; encodings.
+
+; For example, through about March 2012 the default character encoding in CCL
+; was ISO-8859-1, sometimes known as LATIN-1.  When this changed to UTF-8 a
+; failure was reported when attempting to certify
+; books/workshops/2006/cowles-gamboa-euclid/Euclid/fld-u-poly/coe-fld.lisp,
+; apparently because of the following line, where the next-to-last character is
+; actually an accented `o' sometimes known as
+; #\LATIN_SMALL_LETTER_O_WITH_ACUTE, having code 243.  (The CLISP build fails
+; if we use that character here, because at this point we have not yet made the
+; adjustments to the character encoding that are done below!)
+
+  ;;; Inverso de la primera operacion
+
+; The accented `o' above is encoded as a single byte in LATIN-1 but as two
+; bytes in UTF-8.
+
+; Jared Davis then suggested that we explicitly specify ISO-8859-1, which might
+; be slightly more efficient for reading files.  Note that GCL (non-Ansi, circa
+; 2010 but probably later) only supports ISO-8859-1 as far as we can tell.  We
+; follow Jared's suggestion below.  It seems that character encoding for
+; reading from files is controlled differently from character encoding for ACL2
+; reading from the terminal.  Jared also suggested setting the terminal
+; encoding to ISO-8859-1 as well, and showed us how to do that in CCL.  We have
+; been unable to figure out how to do that in some other host Lisps, but since
+; files are typically shared between users and (of course) ACL2 reading from
+; the terminal is not, the encoding for the terminal seems less important than
+; for files.
+
+; Even for files, we assert there is no soundness issue, in the sense that for
+; maximum trust we expect each user to certify all books from scratch in a
+; single environment.  But in practice, users share books (in particular,
+; via the distributed books); so it is desirable to enforce uniform character
+; encodings for files.
+
+; The use of latin-1 could in principle cause problems for those whose default
+; Emacs buffer encoding is utf-8.  That's in fact the case for us at UT CS, but
+; not on one of our Mac laptops as of this writing (April 2012), probably
+; because environment variable LANG is en_US.UTF-8 at UT CS.  But ACL2 users
+; don't often save Lisp files with nonstandard characters.  If they have
+; occasion to do so, they can evaluate
+
+; (setq save-buffer-coding-system 'iso-8859-1)
+
+; in Emacs buffers before saving into files.  This will happen automatically
+; for users who load file emacs/emacs-acl2.el into their emacs sessions.
+
+; At any rate, it seems best to standardize file encodings and leave it to
+; individuals to cope with editing issues.
+
+; Without further ado, we set the default encoding for files.  Below, we make
+; some attempt to do so for the terminal.  We wrap all this into a function,
+; because we have found that for sbcl, upon restart we lose the effect of the
+; assignment below.  It seems safest then to do these same assignments at
+; startup; see the call of the following function in acl2-default-restart.
+
+(defun acl2-set-character-encoding ()
+
+; We set the character encoding (see discussion above).
+
+  #+allegro
+; Alternatively, we could set the locale on the command line using -locale C:
+; see http://www.franz.com/support/documentation/6.1/doc/iacl.htm#locales-1
+; Note that (setq *default-external-format* :ISO-8859-1) is obsolete:
+; http://www.franz.com/support/documentation/6.1/doc/iacl.htm#older-ef-compatibility-2
+  (setq *locale* (find-locale "C"))
+
+  #+ccl
+  (setq ccl:*default-file-character-encoding* :iso-8859-1)
+
+; #+clisp
+; Set using -E ISO-8859-1 command-line option from save-exec.
+; Note that the setting below for custom:*default-file-encoding* works for
+; files, but we were unable to do the analogous thing successfully for
+; custom:*terminal-encoding*, even when restricting that assignment to
+; (interactive-stream-p *terminal-io*).
+
+  #+cmu
+  (setq *default-external-format* :iso-8859-1)
+
+; #+gcl -- already iso-8859-1, it seems, and nothing we can do to change
+;          the encoding anyhow
+
+  #+lispworks
+; This the default on our linux system, at least on both 32- and 64-bit,
+; version 6.1.0.
+  (setq stream::*default-external-format* '(:LATIN-1 :EOL-STYLE :LF))
+
+  #+sbcl
+  (setq sb-impl::*default-external-format* :iso-8859-1)
+
+; ;;;
+; We have made only limited attempts to set the character encoding at the
+; terminal, as discussed above.
+; ;;;
+
+; #+allegro
+; Handled by *locale* setting above.  Formerly the following was later in
+; this file; now we include it only as a comment.
+;  #+(and allegro allegro-version>= (version>= 6 0))
+;  (setf (stream-external-format *terminal-io*)
+;        (excl::find-external-format
+;         #+unix :latin1-base
+;         #-unix :latin1))
+
+; #+ccl
+; For terminal, set using -K ISO-8859-1 command-line option from save-exec.
+
+; #+cmucl -- Probably no setting is necessary.
+
+; #+clisp -- Set using command-line option (see above).
+
+; #+gcl -- There seems to be nothing we can do.
+
+; #+lispworks -- No support seems to be available.
+
+; #+sbcl
+; We found that "unsetenv LANG" results in (stream-external-format
+; *terminal-io*) being ascii at the terminal instead of utf-8; or, just start
+; up sbcl like this to get ascii:
+
+;   LANG=C ; XTERM_LOCALE=C ; sbcl
+
+; But we don't know how to get latin-1.  We even tried each of these, but got
+; ascii:
+
+;   LANG=en_US.LATIN-1 ; XTERM_LOCALE=en_US.LATIN-1
+;   LANG=en_US.ISO-8859-1 ; XTERM_LOCALE=en_US.ISO-8859-1
+
+  )
+
+; Here, we invoke the function defined above, so that a suitable character
+; encoding is used during the build, not only when starting up a built image
+; (which is why we call acl2-set-character-encoding in acl2-default-restart).
+(acl2-set-character-encoding)
+
+; We also do the following for clisp, since we set the encoding on the command
+; line (see comment above) but we want to be able to read our own source files
+; during the build.  Without this, the build breaks because of a string in :doc
+; note-4-4.  You can search for it this way in Emacs, from the top of ld.lisp:
+; (re-search-forward "Mart[^i]n Mateos")
+; With this, we do not need an explicit :external-format argument for the call
+; of with-open-file in acl2-check.lisp that opens a stream for
+; "acl2-characters".
+#+clisp
+(setq custom:*default-file-encoding*
+      (ext:make-encoding :charset 'charset:iso-8859-1
+; The following is a bit of a guess, but seems consistent with what we used to
+; do in acl2-init.lisp; see the commented-out call there that sets
+; custom:*default-file-encoding*.
+                         :line-terminator :unix))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                          LISP BUGS AND QUIRKS
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -276,13 +434,6 @@
               :test
               (function (lambda (x y)
                           (equal (symbol-name x) (symbol-name y))))))
-
-; Speed up I/O in Allegro 6 and beyond:
-#+(and allegro allegro-version>= (version>= 6 0))
-(setf (stream-external-format *terminal-io*)
-      (excl::find-external-format
-       #+unix :latin1-base
-       #-unix :latin1))
 
 ; Turn off automatic declaration of special variables, in particular since we
 ; do not want state declared special; see the comment above

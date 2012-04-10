@@ -29411,6 +29411,40 @@
   ~c[*PRINT-READABLY*], ~c[*PRINT-PPRINT-DISPATCH*], and
   ~c[*PRINT-RIGHT-MARGIN*] do not have any effect for such GCL versions.)~/~/")
 
+(defdoc character-encoding
+
+  ":Doc-Section IO
+
+  how bytes are parsed into characters~/
+
+  When the Common Lisp reader comes across bytes in a file or at the terminal,
+  they are parsed into characters.  The simplest case is when each byte that is
+  read is a standard character (~pl[standard-char-p]).  It is actually quite
+  common that each byte that is read corresponds to a single character.  The
+  parsing of bytes into characters is based on a ~em[character encoding], that
+  is, a mapping that associates one or more bytes with each legal character.
+
+  In order to help guarantee the portability of files (including ~il[books]),
+  ACL2 installs a common character encoding for reading files, often known as
+  iso-8859-1 or latin-1.  For some host Lisps this character encoding is also
+  used for reading from the terminal (but, sadly, this doesn't seem to be
+  possible for all host Lisps).
+
+  The use of the above encoding could in principle cause problems if one's
+  editor produces files using an encoding other than iso-8859-1, at least if
+  one uses non-standard characters.  In particular, the default Emacs buffer
+  encoding may be utf-8.  If your file has non-standard characters, then in
+  Emacs you can evaluate the form
+  ~bv[]
+  (setq save-buffer-coding-system 'iso-8859-1)
+  ~ev[]
+  before saving the buffer into a file.  This will happen automatically for
+  users who load distributed file ~c[emacs/emacs-acl2.el] into their Emacs
+  sessions.
+
+  For an example of character encodings in action, see the distributed book
+  ~c[books/misc/character-encoding-test.lisp].~/~/")
+
 (defun set-forms-from-bindings (bindings)
   (declare (xargs :guard (and (symbol-alistp bindings)
                               (true-list-listp bindings))))
@@ -30796,6 +30830,10 @@
                  #+akcl
                  ((and (eq typ :object)
                        (not (lisp-book-syntaxp os-file-name)))
+
+; Note that lisp-book-syntaxp returns t unless state global 'infixp is t.  So
+; ignore the code below unless you're thinking about the infix case!
+
                   (let* ((mirror-file-name
                           (concatenate 'string
                                        (namestring stream)

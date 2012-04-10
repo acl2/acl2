@@ -218,22 +218,12 @@ most-negative-fixnum = ~s."
 ;                 (loop for i from 0 to 255
 ;                       do (write-char (code-char i) str)))
 
+; We explicitly specify the :external-format in the case of host Lisps for
+; which we set the character encoding after the build, on the command line
+; written by save-acl2.
+
   (with-open-file
-   (str filename :direction :input
-
-; In SBCL CLISP, and occasionall CCL, we have found the need to specify
-; :external-format in order to avoid errors.  Note that (for example) in our
-; SBCL, (stream-external-format *terminal-io*) evaluates to (:UTF-8
-; :REPLACEMENT #\REPLACEMENT_CHARACTER).
-
-        #+(or clisp sbcl ccl) :external-format
-        #+(or sbcl ccl) :iso-8859-1
-        #+clisp
-; The following came from
-; http://en.wikibooks.org/wiki/Common_Lisp/Advanced_topics/Files_and_Directories
-; in January 2012.
-        (ext:make-encoding :charset 'charset:iso-8859-1
-                           :line-terminator :unix))
+   (str filename :direction :input)
    (loop for i from 0 to 255
 
 ; The function legal-acl2-character-p, called in bad-lisp-objectp for

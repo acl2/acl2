@@ -6803,12 +6803,6 @@
                     (cons new-name (exported-function-names (cdr new-trips))))
                    (t (exported-function-names (cdr new-trips))))))))
 
-(defun get-unnormalized-bodies (names wrld)
-  (cond ((endp names) nil)
-        (t (cons (getprop (car names) 'unnormalized-body nil
-                          'current-acl2-world wrld)
-                 (get-unnormalized-bodies (cdr names) wrld)))))
-
 (defun get-subversives (fns wrld)
   (cond ((endp fns) nil)
         (t (let ((j (getprop (car fns) 'justification nil 'current-acl2-world
@@ -15491,13 +15485,15 @@
          pcert1-file cert-file))
     (t (mv-let (val state)
                (post-alist-from-channel nil nil chan state)
-               (cond ((equal (caar val) full-book-name)
-                      (value val))
-                     (t (er soft ctx
-                            "Ill-formed post-alist encountered: expected its ~
-                             caar to be the full-book-name ~x0, but the ~
-                             post-alist encountered was ~x1."
-                            full-book-name val))))))))
+               (pprogn
+                (close-input-channel chan state)
+                (cond ((equal (caar val) full-book-name)
+                       (value val))
+                      (t (er soft ctx
+                             "Ill-formed post-alist encountered: expected its ~
+                              caar to be the full-book-name ~x0, but the ~
+                              post-alist encountered was ~x1."
+                             full-book-name val)))))))))
 
 (defun certify-book-finish-complete (full-book-name ctx state)
   (let ((pcert0-file
