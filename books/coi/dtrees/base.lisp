@@ -788,7 +788,7 @@
           (implies (set::in a (aux-domain (dtreemapfix map)))
                    (set::in a (aux-domain map)))))
  
- (local (defthm lemma2
+ (local (defthm lemma2-for-aux-domain-of-dtreemapfix
           (implies (set::in a (aux-domain map))
                    (set::in a (aux-domain (dtreemapfix map))))))
  
