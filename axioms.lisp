@@ -12360,14 +12360,27 @@
 
   define a non-executable function symbol~/
 
+  ~bv[]
+  Example:
+
+  (set-state-ok t)
+  (defun-nx foo (x state)
+    (mv-let (a b c)
+            (cons x state)
+            (list a b c b a)))
+  ; Note ``ill-formed'' call of foo just below.
+  (defun bar (state y)
+    (foo state y))
+  ~ev[]
+
   The macro ~c[defun-nx] introduces definitions using the ~ilc[defun] macro,
   always in ~c[:]~ilc[logic] mode, such that the calls of the resulting
   function cannot be evaluated.  Such a definition is admitted without
-  enforcing the usual ~il[stobj] restrictions on arguments of its function
-  calls.  After such a definition is admitted, the usual syntactic rules for
-  ~ilc[state] and user-defined ~il[stobj]s are relaxed for its calls: each
-  argument that is not ~c[state] or the name of a user-defined ~il[stobj]
-  should evaluate to a single ordinary (non-~ilc[state], non-~il[stobj]) value.
+  enforcing syntactic restrictions for executability, in particular for
+  single-threadedness (~pl[stobj]) and multiple-values passing (~pl[mv] and
+  ~pl[mv-let]).  After such a definition is admitted, the usual syntactic rules
+  for ~ilc[state] and user-defined ~il[stobj]s are relaxed for calls of the
+  function it defines.
 
   The syntax is identical to that of ~ilc[defun].  A form
   ~bv[]
@@ -24828,14 +24841,34 @@
   ~c[Mv-nth] is equivalent to the Common Lisp function ~ilc[nth] (although
   without the guard condition that the list is a ~ilc[true-listp]), but is used
   by ACL2 to access the nth value returned by a multiply valued expression.
-  For an example of the use of ~c[mv-nth], try
+  For example, the following are logically equivalent:
   ~bv[]
-  ACL2 !>:trans1 (mv-let (erp val state)
-                         (read-object ch state)
-                         (value (list erp val)))
+  (mv-let (erp val state)
+          (read-object ch state)
+          (value (list erp val)))
+  ~ev[]
+  and
+  ~bv[]
+  (let ((erp (mv-nth 0 (read-object ch state)))
+        (val (mv-nth 1 (read-object ch state)))
+        (state (mv-nth 2 (read-object ch state))))
+    (value (list erp val)))
   ~ev[]
   
-  To see the ACL2 definition of this function, ~pl[pf].~/"
+  To see the ACL2 definition of ~c[mv-nth], ~pl[pf].
+
+  If ~c[EXPR] is an expression that is multiply valued, then the form
+  ~c[(mv-nth n EXPR)] is illegal both in definitions and in forms submitted
+  directly to the ACL2 loop.  Indeed, ~c[EXPR] cannot be passed as an argument
+  to any function (~c[mv-nth] or otherwise) in such an evaluation context.  The
+  reason is that ACL2 code compiled for execution does not actually create a
+  list for multiple value return; for example, the ~c[read-object] call above
+  logically returns a list of length 3, but when evaluated, it instead stores
+  its three returned values without constructing a list.  In such cases you can
+  use ~c[mv-nth] to access the corresponding list by using ~c[mv-list], writing
+  ~c[(mv-nth n (mv-list k EXPR))] for suitable ~c[k], where ~c[mv-list]
+  converts a multiple value result into the corresponding list;
+  ~pl[mv-list].~/"
 
   (declare (xargs :guard (and (integerp n)
                               (>= n 0))))
@@ -24874,21 +24907,21 @@
 
   returning a multiple value~/
 
-  ~c[Mv] is the mechanism provided by ACL2 for returning two or more
-  values.  Logically, ~c[(mv x1 x2 ... xn)] is the same as
-  ~c[(list x1 x2 ... xn)], a list of the indicated values.  However,
-  ACL2 avoids the cost of building this list structure, with the cost
-  that ~c[mv] may only be used in a certain style in definitions:  if a
-  function ever returns using ~c[mv] (either directly, or by calling
-  another function that returns a multiple value), then this function
-  must always return the same number of values.
+  ~c[Mv] is the mechanism provided by ACL2 for returning two or more values.
+  Logically, ~c[(mv x1 x2 ... xn)] is the same as ~c[(list x1 x2 ... xn)], a
+  list of the indicated values.  However, ACL2 avoids the cost of building this
+  list structure, with the cost that ~c[mv] may only be used in a certain style
+  in definitions: if a function ever returns using ~c[mv] (either directly, or
+  by calling another function that returns a multiple value), then this
+  function must always return the same number of values.
 
   For more explanation of the multiple value mechanism,
-  ~pl[mv-let].~/
+  ~pl[mv-let].  Also ~pl[mv-list] for a way to convert a multiple value into an
+  ordinary list.~/
 
-  ACL2 does not support the Common Lisp construct ~c[values], whose
-  logical meaning seems difficult to characterize.  ~c[Mv] is the ACL2
-  analogue of that construct.~/"
+  ACL2 does not support the Common Lisp construct ~c[values], whose logical
+  meaning seems difficult to characterize.  ~c[Mv] is the ACL2 analogue of that
+  construct.~/"
 
   (declare (xargs :guard (>= (length l) 2)))
 
@@ -25210,7 +25243,8 @@
 
   ACL2 does not support the Common Lisp construct
   ~c[multiple-value-bind], whose logical meaning seems difficult to
-  characterize.  ~c[Mv-let] is the ACL2 analogue of that construct.~/"
+  characterize.  ~c[Mv-let] is the ACL2 analogue of that construct.
+  Also ~pl[mv] and ~pl[mv-list].~/"
 
   (declare (xargs :guard (and (>= (length rst) 3)
                               (true-listp (car rst))

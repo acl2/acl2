@@ -1608,6 +1608,7 @@ Makefile
 cert.acl2
 compiler-proof.lisp
 compiler.lisp
+complex.acl2
 complex.lisp
 zero.lisp
 
