@@ -72,45 +72,121 @@
 
 )
 
-; We use the following function to determine the sense of the conclusion
+; We use the following functions to determine the sense of the conclusion
 ; as a :REWRITE rule.
 
-(defun interpret-term-as-rewrite-rule (term ens wrld)
+(defun interpret-term-as-rewrite-rule2 (name hyps lhs rhs wrld)
+  (cond
+   ((equal lhs rhs)
+    (msg
+     "A :REWRITE rule generated from ~x0 is illegal because it rewrites the ~
+      term ~x1 to itself!  This can happen even when you submit a rule whose ~
+      left and right sides appear to be different, in the case that those two ~
+      sides represent the same term (in particular, after macroexpansion).  ~
+      See :DOC rewrite.  You may wish to consider submitting a DEFTHM event ~
+      ending with :RULE-CLASSES NIL."
+     name
+     lhs))
+   ((or (variablep lhs)
+        (fquotep lhs)
+        (flambda-applicationp lhs)
+        (eq (ffn-symb lhs) 'if))
+    (msg
+     "A :REWRITE rule generated from ~x0 is illegal because it rewrites the ~
+      ~@1 ~x2.  See :DOC rewrite."
+     name
+     (cond ((variablep lhs) "variable symbol")
+           ((fquotep lhs) "quoted constant")
+           ((flambda-applicationp lhs) "LET-expression")
+           (t "IF-expression"))
+     lhs))
+   (t (let ((bad-synp-hyp-msg (bad-synp-hyp-msg
+                               hyps (all-vars lhs) nil wrld)))
+        (cond
+         (bad-synp-hyp-msg
+          (msg
+           "A rewrite rule generated from ~x0 is illegal because ~@1"
+           name
+           bad-synp-hyp-msg))
+         (t nil))))))
 
-; This function returns four values.  The first is an equivalence
-; relation, eqv.  The second two are terms, lhs and rhs, such that
-; (eqv lhs rhs) is propositionally equivalent to term.  The fourth is
-; an 'assumption-free ttree justifying the claim.
+(defun interpret-term-as-rewrite-rule1 (term equiv-okp ens wrld)
+
+; Here we do the work described in interpret-term-as-rewrite-rule.  If
+; equiv-okp is nil, then no special treatment is given to equivalence relations
+; other than equal, iff, and members of *equality-aliases*.
+
+  (cond ((variablep term) (mv 'iff term *t* nil))
+        ((fquotep term) (mv 'iff term *t* nil))
+        ((member-eq (ffn-symb term) *equality-aliases*)
+         (mv 'equal (fargn term 1) (fargn term 2) nil))
+        ((if equiv-okp
+             (equivalence-relationp (ffn-symb term) wrld)
+           (member-eq (ffn-symb term) '(equal iff)))
+         (mv-let (equiv ttree)
+                 (cond ((eq (ffn-symb term) 'iff)
+                        (mv-let
+                         (ts ttree)
+                         (type-set (fargn term 1) nil nil nil ens wrld nil
+                                   nil nil)
+                         (cond ((ts-subsetp ts *ts-boolean*)
+                                (mv-let
+                                 (ts ttree)
+                                 (type-set (fargn term 2) nil nil nil ens
+                                           wrld ttree nil nil)
+                                 (cond ((ts-subsetp ts *ts-boolean*)
+                                        (mv 'equal ttree))
+                                       (t (mv 'iff nil)))))
+                               (t (mv 'iff nil)))))
+                       (t (mv (ffn-symb term) nil)))
+                 (mv equiv (fargn term 1) (fargn term 2) ttree)))
+        ((eq (ffn-symb term) 'not) (mv 'equal (fargn term 1) *nil* nil))
+        (t (mv-let (ts ttree)
+                   (type-set term nil nil nil ens wrld nil nil nil)
+                   (cond ((ts-subsetp ts *ts-boolean*)
+                          (mv 'equal term *t* ttree))
+                         (t (mv 'iff term *t* nil)))))))
+
+(defun interpret-term-as-rewrite-rule (name hyps term ens wrld)
+
+; This function returns five values.  The first can be a msg for printing an
+; error message.  Otherwise the first is nil, in which case the second is an
+; equivalence relation, eqv; the next two are terms, lhs and rhs, such that
+; (eqv lhs rhs) is propositionally equivalent to term; and the last is an
+; 'assumption-free ttree justifying the claim.
 
   (let ((term (remove-lambdas term)))
-    (cond ((variablep term) (mv 'iff term *t* nil))
-          ((fquotep term) (mv 'iff term *t* nil))
-          ((member-eq (ffn-symb term) *equality-aliases*)
-           (mv 'equal (fargn term 1) (fargn term 2) nil))
-          ((equivalence-relationp (ffn-symb term) wrld)
-           (mv-let (equiv ttree)
-                   (cond ((eq (ffn-symb term) 'iff)
-                          (mv-let
-                           (ts ttree)
-                           (type-set (fargn term 1) nil nil nil ens wrld nil
-                                     nil nil)
-                           (cond ((ts-subsetp ts *ts-boolean*)
-                                  (mv-let
-                                   (ts ttree)
-                                   (type-set (fargn term 2) nil nil nil ens
-                                             wrld ttree nil nil)
-                                   (cond ((ts-subsetp ts *ts-boolean*)
-                                          (mv 'equal ttree))
-                                         (t (mv 'iff nil)))))
-                                 (t (mv 'iff nil)))))
-                         (t (mv (ffn-symb term) nil)))
-                   (mv equiv (fargn term 1) (fargn term 2) ttree)))
-          ((eq (ffn-symb term) 'not) (mv 'equal (fargn term 1) *nil* nil))
-          (t (mv-let (ts ttree)
-                     (type-set term nil nil nil ens wrld nil nil nil)
-                     (cond ((ts-subsetp ts *ts-boolean*)
-                            (mv 'equal term *t* ttree))
-                           (t (mv 'iff term *t* nil))))))))
+    (mv-let
+     (eqv lhs rhs ttree)
+     (interpret-term-as-rewrite-rule1 term t ens wrld)
+     (let ((msg (interpret-term-as-rewrite-rule2 name hyps lhs rhs wrld)))
+       (cond
+        (msg
+
+; We try again, this time with equiv-okp = nil to avoid errors for a form such
+; as the following.  Its evaluation caused a hard Lisp error in Version_4.3
+; during the second pass of the encapsulate at the final defthm, and is based
+; closely on an example sent to us by Jared Davis.
+
+;   (encapsulate
+;    ()
+;    (defun my-equivp (x y)
+;      (equal (nfix x) (nfix y)))
+;    (local
+;     (defthm my-equivp-reflexive
+;       (my-equivp x x)))
+;    (defequiv my-equivp)
+;    (defthm my-equivp-reflexive
+;      (my-equivp x x)))
+
+         (mv-let
+          (eqv2 lhs2 rhs2 ttree2)
+          (interpret-term-as-rewrite-rule1 term nil ens wrld)
+          (cond
+           ((interpret-term-as-rewrite-rule2 name hyps lhs2 rhs2 wrld)
+            (mv msg eqv lhs rhs ttree))
+           (t (mv nil eqv2 lhs2 rhs2 ttree2)))))
+        (t (mv nil eqv lhs rhs ttree)))))))
 
 ; We inspect the lhs and some hypotheses with the following function
 ; to determine if non-recursive defuns will present a problem to the
@@ -1434,54 +1510,23 @@
 ; the :REWRITE rule -- it sometimes depends on type-set information.
 
   (mv-let
-   (eqv lhs rhs ttree)
-   (interpret-term-as-rewrite-rule concl ens wrld)
+   (msg eqv lhs rhs ttree)
+   (interpret-term-as-rewrite-rule name hyps concl ens wrld)
    (cond
-    ((equal lhs rhs)
-     (er soft ctx
-         "A :REWRITE rule generated from ~x0 is illegal because it rewrites ~
-          the term ~x1 to itself!  This can happen even when you submit a ~
-          rule whose left and right sides appear to be different, in the case ~
-          that those two sides represent the same term (in particular, after ~
-          macroexpansion).  See :DOC rewrite.  You may wish to consider ~
-          submitting a DEFTHM event ending with :RULE-CLASSES NIL."
-         name
-         lhs))
-    ((or (variablep lhs)
-         (fquotep lhs)
-         (flambda-applicationp lhs)
-         (eq (ffn-symb lhs) 'if))
-     (er soft ctx
-         "A :REWRITE rule generated from ~x0 is illegal because it rewrites ~
-          the ~@1 ~x2.  See :DOC rewrite."
-         name
-         (cond ((variablep lhs) "variable symbol")
-               ((fquotep lhs) "quoted constant")
-               ((flambda-applicationp lhs) "LET-expression")
-               (t "IF-expression"))
-         lhs))
-    (t (let ((bad-synp-hyp-msg (bad-synp-hyp-msg
-                                hyps (all-vars lhs) nil wrld)))
-         (cond
-          (bad-synp-hyp-msg
-           (er soft ctx
-               "A rewrite rule generated from ~x0 is illegal because ~@1"
-               name
-               bad-synp-hyp-msg))
-          (t
-           (let ((rewrite-rule
-                  (create-rewrite-rule *fake-rune-for-anonymous-enabled-rule*
-                                       nil hyps eqv lhs rhs nil nil nil wrld)))
+    (msg (er soft ctx "~@0" msg))
+    (t (let ((rewrite-rule
+              (create-rewrite-rule *fake-rune-for-anonymous-enabled-rule*
+                                   nil hyps eqv lhs rhs nil nil nil wrld)))
 
 ; The :REWRITE rule created above is used only for subsumption checking and
 ; then discarded.  The rune, nume, loop-stopper-lst, and match-free used are
 ; irrelevant.  The warning messages, if any, concerning subsumption report the
 ; name of the rule as name.
 
-             (er-progn
-              (chk-rewrite-rule-warnings name match-free loop-stopper
-                                         rewrite-rule ctx ens wrld state)
-              (value ttree))))))))))
+         (er-progn
+          (chk-rewrite-rule-warnings name match-free loop-stopper
+                                     rewrite-rule ctx ens wrld state)
+          (value ttree)))))))
 
 (defun chk-acceptable-rewrite-rule1 (name match-free loop-stopper lst ctx ens
                                           wrld state)
@@ -1527,23 +1572,72 @@
 ; This is the basic function for generating and adding a rule named
 ; rune from the formula (IMPLIES (AND . hyps) concl).
 
-  (mv-let (eqv lhs rhs ttree)
-          (interpret-term-as-rewrite-rule concl ens wrld)
-          (declare (ignore ttree))
-          (let* ((match-free-value (match-free-value match-free hyps lhs wrld))
-                 (rewrite-rule (create-rewrite-rule rune nume hyps eqv
-                                                    lhs rhs
-                                                    loop-stopper-lst
-                                                    backchain-limit-lst
-                                                    match-free-value
-                                                    wrld))
-                 (wrld1 (putprop (ffn-symb lhs)
-                                 'lemmas
-                                 (cons rewrite-rule
-                                       (getprop (ffn-symb lhs) 'lemmas nil
-                                                'current-acl2-world wrld))
-                                 wrld)))
-            (put-match-free-value match-free-value rune wrld1))))
+  (mv-let
+   (msg eqv lhs rhs ttree)
+   (interpret-term-as-rewrite-rule (base-symbol rune) hyps concl ens wrld)
+   (declare (ignore ttree))
+   (cond
+    (msg
+
+; Msg is nil if we have called chk-acceptable-rewrite-rule for the
+; corresponding rule under the same event that we are processing here.  But
+; suppose we are in the second pass of encapsulate or the local compatibility
+; check of certify-book.  Then that check may have been done in a different
+; world than the one we have now.
+
+; Even then, we typically expect that if interpret-term-as-rewrite-rule avoids
+; returning an error, then it does so for every call made on the same arguments
+; other than, perhaps, the world.  Looking at the code for
+; interpret-term-as-rewrite-rule2 and its callees, we see that it suffices to
+; show that if interpret-term-as-rewrite-rule2 returns nil for lhs and rhs that
+; are returned by a call of interpret-term-as-rewrite-rule1, then that call of
+; interpret-term-as-rewrite-rule2 returns nil when the only input argument
+; changes are the world and, for the latter call, equiv-okp = t.  A
+; counterexample would have to be a term of the form (equiv x y), where equiv
+; is an equivalence relation in the first world passed to
+; interpret-term-as-rewrite-rule1 but not in the second, where
+; interpret-term-as-rewrite-rule2 returns nil for lhs = x and rhs = y but
+; returns a non-nil msg for lhs = (equiv x y) and rhs = *t*.  The only way that
+; can happen is with the bad-synp-hyp-msg check in
+; interpret-term-as-rewrite-rule2, as in the following example -- and it does
+; indeed happen!  But we think this hard error is so rare that it is
+; tolerable.
+
+;   (encapsulate
+;    ()
+;    (defun my-equivp (x y)
+;      (equal (nfix x) (nfix y)))
+;    (local (defequiv my-equivp))
+;    (defthm foo
+;      (implies (and (bind-free (list (cons 'y x)) (y))
+;                    (equal y x))
+;               (my-equivp (identity x) y))))
+
+     (er hard 'add-rewrite-rule2
+         "We believe that this error is occurring because the conclusion of a ~
+          proposed :REWRITE rule generated from ~x0 is of the form (equiv LHS ~
+          RHS), where equiv was a known equivalence relation when this rule ~
+          was originally processed, but that is no longer the case.  As a ~
+          result,the rule is now treated as rewriting (equiv LHS RHS) to t, ~
+          and yet a BIND-FREE hypothesis is attempting to bind a variable in ~
+          RHS.  Perhaps you can fix this problem by making equiv an ~
+          equivalence relation non-locally."
+         (base-symbol rune)))
+    (t
+     (let* ((match-free-value (match-free-value match-free hyps lhs wrld))
+            (rewrite-rule (create-rewrite-rule rune nume hyps eqv
+                                               lhs rhs
+                                               loop-stopper-lst
+                                               backchain-limit-lst
+                                               match-free-value
+                                               wrld))
+            (wrld1 (putprop (ffn-symb lhs)
+                            'lemmas
+                            (cons rewrite-rule
+                                  (getprop (ffn-symb lhs) 'lemmas nil
+                                           'current-acl2-world wrld))
+                            wrld)))
+       (put-match-free-value match-free-value rune wrld1))))))
 
 (defun add-rewrite-rule1 (rune nume lst loop-stopper-lst
                                backchain-limit-lst match-free ens wrld)
@@ -11368,6 +11462,9 @@
   (let ((classes
          (cond ((or (eq (ld-skip-proofsp state) 'include-book)
                     (eq (ld-skip-proofsp state) 'include-book-with-locals))
+
+; We avoid the check for :REWRITE rules, tolerating a rare hard error as a
+; result.  See the comment just above the hard error in add-rewrite-rule2.
 
 ; We need to check :meta and :clause-processor rules even when skipping proofs.
 ; Below is a slight modification of a proof of nil sent by Dave Greve and Jared

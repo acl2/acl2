@@ -18717,6 +18717,13 @@
   ~ilc[include-book] event.  Thanks to Jared Davis and David Rager for queries
   that led to this fix.
 
+  Hard Lisp errors are now avoided for certain ~c[:]~ilc[rewrite] rules: those
+  whose ~il[equivalence] relation is other than ~c[equal] when the rule is
+  originally processed, but is no longer a known equivalence relation when the
+  rule is to be stored.  Thanks to Jared Davis for sending a useful example, a
+  minor variant of which is included in a comment in source function
+  ~c[interpret-term-as-rewrite-rule] (file ~c[defthm.lisp]).
+
   ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]
 
   The character encoding has been fixed at iso-8859-1.
