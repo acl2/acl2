@@ -145,12 +145,14 @@
   (let ((lst (unprettyify term))) ; pair = (hyps . concl)
     (cond
      ((equal (length lst) 1)
-      (mv-let (equiv lhs rhs ttree)
+      (mv-let (msg equiv lhs rhs ttree)
               (interpret-term-as-rewrite-rule
+               'some-name
+               nil ; hyps
                (cdr (car lst))
                (ens state)
                wrld)
-              (declare (ignore equiv rhs ttree))
+              (declare (ignore msg equiv rhs ttree))
               (value lhs)))
      (t (er soft ctx
             "We cannot determine the :lhs of a formula because it ~
