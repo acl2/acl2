@@ -1431,7 +1431,7 @@
     :rule-classes nil))
 
  (local
-  (defthm lemma-9
+  (defthm lemma-9-for-lemma-10
     (implies (and (integerp k) (<= 0 k))
 	     (m-= (m-+ (m-* (m-- (m-id (n))
 				 (m-* (gain k) (h k)))
@@ -1462,7 +1462,7 @@
 				 (m-trans (gain k)))))
 		  (pplus k)))
     :hints (("Goal" :do-not-induct t
-	     :use ((:instance lemma-9))
+	     :use ((:instance lemma-9-for-lemma-10))
 	     :in-theory (disable pminus pminus-recdef gain gain-recdef)))
     :rule-classes nil))
 
