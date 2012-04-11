@@ -288,7 +288,24 @@
   (make-atomically-modifiable-counter (1- *core-count*)))
 (defvar *idle-core* (make-semaphore))
 
-(define-atomically-modifiable-counter *idle-future-thread-count* 0)
+(define-atomically-modifiable-counter *idle-future-thread-count* 
+
+; Parallelism blemish: on April 6, 2012, Rager observed that
+; *idle-future-thread-count* and *threads-waiting-for-starting-core* can sync
+; up and obtain the same value.  As such, it occurs to Rager that maybe we
+; still consider threads that are waiting for a CPU core to be "idle."  This
+; labeling might be fine, but it's inconsistent with our heuristic for
+; determining whether to spawn a closure consumer (but as we explain below, in
+; practice, it does not present a problem).  Investigate when a thread is
+; considered to no longer be idle, and revise the heuristic as needed.  Note
+; that this investigation isn't absolutely necessary, because we currently
+; ensure that the total number of threads that are idle or waiting on a CPU
+; core (we call these classifications "available" below) are at least twice the
+; number of CPU cores in the system.  Thus, counting the same thread twice
+; still results in having a number of available threads that's at least the
+; number of CPU cores, which is fine.
+
+  0)
 
 (defvar *future-added* (make-semaphore))
 
@@ -509,16 +526,19 @@
 ; Idea: have a queue for both the evaluation of closures and the abortion of
 ; futures.  Give the abortion queue higher priority.
 
-(defvar *threads-waiting-for-starting-core* 
+(define-atomically-modifiable-counter *threads-waiting-for-starting-core* 
 
-; Since this variable is only used for debugging purposes, we intentionally do
-; not lock this variable when reading or writing to it.
+; Once upon a time this variable was only used for debugging purposes, so we
+; didn't make its updates atomic.  However, we actually observed this variable
+; going to a value of -37 (it should never go below 0) when we weren't using
+; atomic updates.  Plus, now we actually use this variable's value to determine
+; whether we spawn closure consumers.  So, as of April 2012, it is an atomic
+; variable.
 
   0)
 
 (defun claim-starting-core ()
-  #+ccl
-  (incf *threads-waiting-for-starting-core*)
+  (atomic-incf *threads-waiting-for-starting-core*)
   (let ((notification (make-semaphore-notification)))
     (unwind-protect-disable-interrupts-during-cleanup
      (wait-on-semaphore *idle-core* :notification notification)
@@ -530,8 +550,7 @@
 ; Is this really the right place to do this?
          (setf *decremented-idle-future-thread-count* t)
          (atomic-decf *idle-future-thread-count*))
-       #+ccl
-       (decf *threads-waiting-for-starting-core*)))))
+       (atomic-decf *threads-waiting-for-starting-core*)))))
 
 (defun claim-resumptive-core ()
 
@@ -889,12 +908,35 @@
 ; thread in some manual raw Lisp way.
   (atomic-decf *idle-future-thread-count*))
 
+(defun number-of-idle-threads-and-threads-waiting-for-a-starting-core ()
+  (+ (atomically-modifiable-counter-read
+      *idle-future-thread-count*)
+     (atomically-modifiable-counter-read
+      *threads-waiting-for-starting-core*)))
+
 (defun spawn-closure-consumers ()
   (without-interrupts
-; There may be a bug where *idle-future-thread-count* is incremented to 64
-; under early termination.
-   (loop while (< (atomically-modifiable-counter-read *idle-future-thread-count*) 
-                  *max-idle-thread-count*) 
+
+; Parallelism blemish: there may be a bug where *idle-future-thread-count* is
+; incremented to 64 under early termination.
+
+; Once upon a time, we issued the following commented while loop to control
+; whether we spawned threads that evaluated futures.  This worked okay, but
+; what would happen is we would spawn the threads, they would immediately grab
+; the next piece of paralellism work from the queue, and then they would wait
+; for an idle CPU core.  This resulted in hundreds of threads waiting for an
+; idle CPU core.  Given we want to lessen the number of threads in existence,
+; we then changed (in April, 2012) the condition to what is uncommented.  By
+; using this condition, we lessen the number of threads in existence.  This
+; means that the value of *idle-future-thread-count* will often be zero.  But
+; this is okay, because there will still be many threads that have already
+; grabbed a piece of parallelism work and are just waiting for an idle core.
+
+;;   (loop while (< (atomically-modifiable-counter-read *idle-future-thread-count*) 
+;;                  *max-idle-thread-count*) 
+
+   (loop while (< (number-of-idle-threads-and-threads-waiting-for-a-starting-core)
+                  *max-idle-thread-count*)
      do
      (progn (atomic-incf *idle-future-thread-count*)
             (incf *threads-spawned*)

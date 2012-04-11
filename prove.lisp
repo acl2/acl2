@@ -6631,6 +6631,20 @@
           increment-waterfall-parallelism-counter"
          abbreviated-symbol))))
 
+#+acl2-par
+(defun halves-with-length (clauses)
+
+; Returns (mv first-half second-half len), where clauses is split into the
+; indicated halves (maintaining the order of the input list), and len is the
+; length of the first half.
+
+  (declare (xargs :guard (true-listp clauses)))
+  (let* ((len (length clauses))
+         (split-point (ceiling (/ len 2) 1))
+         (first-half (take split-point clauses))
+         (second-half (nthcdr split-point clauses)))
+    (mv first-half second-half split-point)))
+
 (mutual-recursion@par
 
 (defun@par waterfall1
@@ -7292,7 +7306,7 @@
 ; derived by extending the parent's case-lst.
 
 ; Keep the main body of waterfall1-lst in sync with waterfall1-lst@par-serial
-; and waterfall1-lst@par-parallel.
+; and waterfall1-tree@par-parallel.
 
   (cond
    ((null clauses) (mv step-limit 'continue pspv jppl-flg state))
@@ -7360,7 +7374,7 @@
                                     step-limit)
 
 ; Keep the main body of waterfall1-lst in sync with waterfall1-lst@par-serial,
-; waterfall1-lst@par-parallel, and waterfall1-lst@par-pseudo-parallel.  Keep
+; waterfall1-tree@par-parallel, and waterfall1-tree@par-pseudo-parallel.  Keep
 ; the calculation of cl-id in sync with waterfall1-lst@par.
 
   (cond
@@ -7419,17 +7433,17 @@
                                step-limit))))))))
 
 #+acl2-par
-(defun waterfall1-lst@par-pseudo-parallel (n parent-cl-id clauses hist pspv
-                                             jppl-flg hints suppress-print ens
-                                             wrld ctx state step-limit)
+(defun waterfall1-tree@par-pseudo-parallel (n parent-cl-id clauses hist pspv
+                                              jppl-flg hints suppress-print ens
+                                              wrld ctx state step-limit)
 
 ; Keep the main body of waterfall1-lst in sync with waterfall1-lst@par-serial,
-; waterfall1-lst@par-parallel, and waterfall1-lst@par-pseudo-parallel.  Keep
+; waterfall1-tree@par-parallel, and waterfall1-tree@par-pseudo-parallel.  Keep
 ; the calculation of cl-id in sync with waterfall1-lst@par.
 
-; Since waterfall1-lst@par-pseudo-parallel is just a refactoring of
-; waterfall1-lst@par-parallel, I remove many comments from this defintion.  So,
-; see waterfall1-lst@par-parallel for a more complete set of comments.
+; Since waterfall1-tree@par-pseudo-parallel is just a refactoring of
+; waterfall1-tree@par-parallel, I remove many comments from this defintion.  So,
+; see waterfall1-tree@par-parallel for a more complete set of comments.
 
   (declare (ignorable ens))
   (cond
@@ -7452,71 +7466,92 @@
                                                :case-lst)
                                        (list n))
                                :primes 0)))))
-        (mv-let@par
-         (step-limit1 signal1 pspv1 jppl-flg1 state)
-         (waterfall1-wrapper@par
-          (waterfall1@par *preprocess-clause-ledge* 
-                          cl-id
-                          (car clauses) 
-                          hist 
-                          pspv
-                          hints
-                          suppress-print
-                          ens
-                          wrld
-                          ctx
-                          state
-                          step-limit))
-         (if
+        (mv-let
+         (first-half-clauses second-half-clauses len-first-half)
+         (halves-with-length clauses)
+         (mv-let@par
+          (step-limit1 signal1 pspv1 jppl-flg1 state)
+          (cond ((assert$ (consp clauses)
+                          (null (cdr clauses))) ; just one clause, call waterfall1
+                 (waterfall1-wrapper@par
+                  (waterfall1@par *preprocess-clause-ledge* 
+                                  cl-id
+                                  (car clauses) 
+                                  hist 
+                                  pspv
+                                  hints
+                                  suppress-print
+                                  ens
+                                  wrld
+                                  ctx
+                                  state
+                                  step-limit)))
+                (t
+                 (waterfall1-lst@par (cond ((eq n 'settled-down-clause) n)
+                                           ((null n) nil)
+                                           (t n)) ;(1- n)))
+                                     parent-cl-id
+                                     first-half-clauses
+                                     hist 
+                                     pspv 
+                                     jppl-flg
+                                     hints
+                                     nil
+                                     ens
+                                     wrld
+                                     ctx
+                                     state
+                                     step-limit)))
+          (if
 
 ; Conditions that must be true for the speculative call to be valid:
 
-             (and (not (eq signal1 'error))
-                  (not (eq signal1 'abort))
-                  (speculative-execution-valid pspv pspv1))
-             (mv-let 
+              (and (not (eq signal1 'error))
+                   (not (eq signal1 'abort))
+                   (speculative-execution-valid pspv pspv1))
+              (mv-let 
 
 ; Here, we perform the speculative call of waterfall1-lst@par, which is the
 ; recursion on the cdr of clauses.  As such, this code matches the code at the
 ; end of waterfall1-lst.
 
-              (step-limit2 signal2 pspv2 jppl-flg2)
-              (waterfall1-lst@par (cond ((eq n 'settled-down-clause) n)
-                                        ((null n) nil)
-                                        (t (1- n)))
-                                  parent-cl-id
-                                  (cdr clauses) 
-                                  hist 
-                                  pspv 
-                                  jppl-flg
-                                  hints
-                                  nil
-                                  ens
-                                  wrld
-                                  ctx
-                                  state
-                                  step-limit)
+               (step-limit2 signal2 pspv2 jppl-flg2)
+               (waterfall1-lst@par (cond ((eq n 'settled-down-clause) n)
+                                         ((null n) nil)
+                                         (t (- n len-first-half)))
+                                   parent-cl-id
+                                   second-half-clauses
+                                   hist 
+                                   pspv 
+                                   jppl-flg
+                                   hints
+                                   nil
+                                   ens
+                                   wrld
+                                   ctx
+                                   state
+                                   step-limit)
 
-              (cond ((eq signal2 'error)
-                     (mv@par step-limit2 'error nil nil state))
-                    ((eq signal2 'abort)
-                     (mv@par step-limit2 'abort pspv2 jppl-flg2
-                             state))
-                    (t
-                     (let ((combined-step-limit (- (- step-limit
-                                                      (- step-limit step-limit1))
-                                                   (- step-limit step-limit2)))
-                           (combined-prove-spec-vars 
-                            (combine-prove-spec-vars 
-                             pspv pspv1 pspv2 ctx
-                             (f-get-global 'debug-pspv state)
-                             signal1 signal2)))
+               (cond ((eq signal2 'error)
+                      (mv@par step-limit2 'error nil nil state))
+                     ((eq signal2 'abort)
+                      (mv@par step-limit2 'abort pspv2 jppl-flg2
+                              state))
+                     (t
+                      (let ((combined-step-limit (- (- step-limit
+                                                       (- step-limit step-limit1))
+                                                    (- step-limit step-limit2)))
+                            (combined-prove-spec-vars 
+                             (combine-prove-spec-vars 
+                              pspv pspv1 pspv2 ctx
+                              (f-get-global 'debug-pspv state)
+                              signal1 signal2)))
 
-                       (if (abort-will-occur-in-pool
-                            (access prove-spec-var combined-prove-spec-vars :pool))
-                           (prog2$ 
-                            (with-output-lock
-                             (cw "Normally we would attempt to prove two or ~
+                        (if (abort-will-occur-in-pool
+                             (access prove-spec-var combined-prove-spec-vars :pool))
+                            (prog2$ 
+                             (with-output-lock
+                              (cw "Normally we would attempt to prove two or ~
                                   more of the previously printed subgoals by ~
                                   induction.  However, we prefer in this ~
                                   instance to focus on the original input ~
@@ -7525,51 +7560,67 @@
                                   previous work on these conjectures and ~
                                   reassign the name *1 to the original ~
                                   conjecture."))
-                            (mv@par combined-step-limit 
-                                    'abort
-                                    combined-prove-spec-vars
-                                    jppl-flg2
-                                    state))
-                         (mv@par combined-step-limit 
-                                 signal2
-                                 combined-prove-spec-vars
-                                 jppl-flg2 state))))))
-           (cond
-            ((eq signal1 'error) (mv@par step-limit1 'error nil nil state))
-            ((eq signal1 'abort) (mv@par step-limit1 'abort pspv1 jppl-flg1
-                                         state))
-            (t ; we need to recompute the recursive call
-             (prog2$
-              (cond ((member-eq 'prove
-                                (f-get-global 'inhibit-output-lst state))
-                     nil)
-                    (t (with-output-lock
-                        (cw "Invalid speculation for children of subgoal ~
+                             (mv@par combined-step-limit 
+                                     'abort
+                                     combined-prove-spec-vars
+                                     jppl-flg2
+                                     state))
+                          (mv@par combined-step-limit 
+                                  signal2
+                                  combined-prove-spec-vars
+                                  jppl-flg2 state))))))
+            (cond
+             ((eq signal1 'error) (mv@par step-limit1 'error nil nil state))
+             ((eq signal1 'abort) (mv@par step-limit1 'abort pspv1 jppl-flg1
+                                          state))
+             (t ; we need to recompute the recursive call
+              (prog2$
+               (cond ((member-eq 'prove
+                                 (f-get-global 'inhibit-output-lst state))
+                      nil)
+                     (t (with-output-lock
+                         (cw "Invalid speculation for children of subgoal ~
                                 ~x0~%"
-                            (string-for-tilde-@-clause-id-phrase cl-id)))))
-              (waterfall1-lst@par (cond ((eq n 'settled-down-clause) n) 
-                                        ((null n) nil)
-                                        (t (1- n))) 
-                                  parent-cl-id
-                                  (cdr clauses) 
-                                  hist
-                                  pspv1
-                                  jppl-flg1
-                                  hints
-                                  nil
-                                  ens
-                                  wrld
-                                  ctx
-                                  state step-limit1))))))))))
+                             (string-for-tilde-@-clause-id-phrase cl-id)))))
+               (waterfall1-lst@par (cond ((eq n 'settled-down-clause) n) 
+                                         ((null n) nil)
+                                         (t (- n len-first-half)))
+                                   parent-cl-id
+                                   second-half-clauses
+                                   hist
+                                   pspv1
+                                   jppl-flg1
+                                   hints
+                                   nil
+                                   ens
+                                   wrld
+                                   ctx
+                                   state step-limit1)))))))))))
 
 #+acl2-par
-(defun waterfall1-lst@par-parallel (n parent-cl-id clauses hist pspv jppl-flg
-                                      hints suppress-print ens wrld ctx state
-                                      step-limit)
+(defun waterfall1-tree@par-parallel (n parent-cl-id clauses hist pspv jppl-flg
+                                       hints suppress-print ens wrld ctx state
+                                       step-limit)
 
 ; Keep the main body of waterfall1-lst in sync with waterfall1-lst@par-serial,
-; waterfall1-lst@par-parallel, and waterfall1-lst@par-pseudo-parallel.  Keep
+; waterfall1-tree@par-parallel, and waterfall1-tree@par-pseudo-parallel.  Keep
 ; the calculation of cl-id in sync with waterfall1-lst@par.
+
+; Once upon a time, we took a "list-based" approach to parallelizing the proofs
+; of clauses.  We now take a "tree-based" approach.
+
+; Originally waterfall1-tree@par-parallel would "cdr" down the list of clauses
+; and spawn a thread for each of those recursive calls.  However, that approach
+; required too many threads (we attempted to mitigate this problem with
+; set-total-parallelism-work-limit, but it was just a bandage on a more glaring
+; problem).  As of April, 2012, we now take a "tree-based" approach and split
+; the list of clauses into halves, and then call waterfall1-lst@par again,
+; twice, each with its own half.  We eventually call waterfall1-lst@par with a
+; clause list of length 1, and then that clause is proven.
+
+; Note that splitting the list like this is a reasonable thing to do -- we do
+; not reorder any subgoals, and we increment the variable that keeps track of
+; the current subgoal number (n) by the length of the first half of clauses.
 
   (declare (ignorable ens))
   (cond
@@ -7592,75 +7643,97 @@
                                                :case-lst)
                                        (list n))
                                :primes 0)))))
-        (spec-mv-let 
+        (mv-let 
+         (first-half-clauses second-half-clauses len-first-half)
+         (halves-with-length clauses)
+
+         (spec-mv-let 
 
 ; Here, we perform the speculative call of waterfall1-lst@par, which is the
 ; recursion on the cdr of clauses.  As such, this code matches the code at the
 ; end of waterfall1-lst.
 
-         (step-limit2 signal2 pspv2 jppl-flg2)
-         (waterfall1-lst@par (cond ((eq n 'settled-down-clause) n)
-                                   ((null n) nil)
-                                   (t (1- n)))
-                             parent-cl-id
-                             (cdr clauses) 
-                             hist 
-                             pspv 
-                             jppl-flg
-                             hints
-                             nil
-                             ens
-                             wrld
-                             ctx
-                             state
-                             step-limit)
-         (mv-let@par
-          (step-limit1 signal1 pspv1 jppl-flg1 state)
-          (waterfall1-wrapper@par
-           (waterfall1@par *preprocess-clause-ledge* 
-                           cl-id
-                           (car clauses) 
-                           hist 
-                           pspv
-                           hints
-                           suppress-print
-                           ens
-                           wrld
-                           ctx
-                           state
-                           step-limit))
-          (if
+          (step-limit2 signal2 pspv2 jppl-flg2)
+          (waterfall1-lst@par (cond ((eq n 'settled-down-clause) n)
+                                    ((null n) nil)
+                                    (t (- n len-first-half)))
+                              parent-cl-id
+                              second-half-clauses
+                              hist
+                              pspv
+                              jppl-flg
+                              hints
+                              nil
+                              ens
+                              wrld
+                              ctx
+                              state
+                              step-limit)
+          (mv-let@par
+           (step-limit1 signal1 pspv1 jppl-flg1 state)
+           (cond ((assert$ (consp clauses)
+                           (null (cdr clauses))) ; just one clause, call waterfall1
+                  (waterfall1-wrapper@par
+                   (waterfall1@par *preprocess-clause-ledge* 
+                                   cl-id
+                                   (car clauses) 
+                                   hist 
+                                   pspv
+                                   hints
+                                   suppress-print
+                                   ens
+                                   wrld
+                                   ctx
+                                   state
+                                   step-limit)))
+                 (t 
+                  (waterfall1-lst@par (cond ((eq n 'settled-down-clause) n)
+                                            ((null n) nil)
+                                            (t n))
+                                      parent-cl-id
+                                      first-half-clauses
+                                      hist 
+                                      pspv 
+                                      jppl-flg
+                                      hints
+                                      nil
+                                      ens
+                                      wrld
+                                      ctx
+                                      state
+                                      step-limit)))
+           (if
 
 ; Conditions that must be true for the speculative call to be valid:
 
-              (and (not (eq signal1 'error))
-                   (not (eq signal1 'abort))
-                   (speculative-execution-valid pspv pspv1))
+               (and (not (eq signal1 'error))
+                    (not (eq signal1 'abort))
+                    (speculative-execution-valid pspv pspv1))
 
 ; Parallelism wart: document that variables xxx1 is from the "current subogal"
 ; and variables xxx2 are from the speculative execution.
               
-              (cond ((eq signal2 'error)
-                     (mv@par step-limit2 'error nil nil state))
-                    ((eq signal2 'abort)
+               (cond ((eq signal2 'error)
+                      (mv@par step-limit2 'error nil nil state))
+                     ((eq signal2 'abort)
 
 ; It is okay to just return pspv2, because if there is an abort, any clauses
 ; pushed for induction into pspv1 would be discarded anyway.  See Essay on
 ; prove-spec-var pool modifications for further discussion.
 
-                     (mv@par step-limit2 'abort pspv2 jppl-flg2 state))
-                    (t
-                     (let ((combined-step-limit (- (- step-limit
-                                                      (- step-limit step-limit1))
-                                                   (- step-limit step-limit2)))
-                           (combined-prove-spec-vars 
-                            (combine-prove-spec-vars 
-                             pspv pspv1 pspv2 ctx
-                             (f-get-global 'debug-pspv state)
-                             signal1 signal2)))
-                       (if (abort-will-occur-in-pool
-                            (access prove-spec-var combined-prove-spec-vars :pool))
-                           (prog2$ 
+                      (mv@par step-limit2 'abort pspv2 jppl-flg2 state))
+                     (t
+                      (let ((combined-step-limit (- (- step-limit
+                                                       (- step-limit step-limit1))
+                                                    (- step-limit step-limit2)))
+                            (combined-prove-spec-vars 
+                             (combine-prove-spec-vars 
+                              pspv pspv1 pspv2 ctx
+                              (f-get-global 'debug-pspv state)
+                              signal1 signal2)))
+                        (if (abort-will-occur-in-pool
+                             (access prove-spec-var combined-prove-spec-vars :pool))
+                            (prog2$ 
 
 ; Parallelism wart: maybe this call to cw should be inside waterfall instead of
 ; here.  The potential problem with printing the message here is that printing
@@ -7675,8 +7748,8 @@
 ; that might print have already returned (because Subgoal 3.3.4 must be 
 ; finished before the call of waterfall1 on Subgoal 3.3 returns).
 
-                            (with-output-lock
-                             (cw "Normally we would attempt to prove two or ~
+                             (with-output-lock
+                              (cw "Normally we would attempt to prove two or ~
                                   more of the previously printed subgoals by ~
                                   induction.  However, we prefer in this ~
                                   instance to focus on the original input ~
@@ -7685,26 +7758,26 @@
                                   previous work on these conjectures and ~
                                   reassign the name *1 to the original ~
                                   conjecture."))
-                            (mv@par combined-step-limit 
-                                    'abort
+                             (mv@par combined-step-limit 
+                                     'abort
 
 ; We do not adjust the pspv's pool here.  Instead, we rely upon waterfall to
 ; correctly convert the 'maybe-to-be-proved-by-induction tag to a
 ; 'to-be-proved-by-induction and discard the other clauses.
 
-                                    combined-prove-spec-vars
-                                    jppl-flg2
-                                    state))
-                         (mv@par combined-step-limit 
-                                 signal2
-                                 combined-prove-spec-vars
-                                 jppl-flg2 state)))))
-            (cond
-             ((eq signal1 'error) (mv@par step-limit1 'error nil nil state))
-             ((eq signal1 'abort) (mv@par step-limit1 'abort pspv1
-                                          jppl-flg1 state))
-             (t ; we need to recompute the recursive call
-              (prog2$
+                                     combined-prove-spec-vars
+                                     jppl-flg2
+                                     state))
+                          (mv@par combined-step-limit 
+                                  signal2
+                                  combined-prove-spec-vars
+                                  jppl-flg2 state)))))
+             (cond
+              ((eq signal1 'error) (mv@par step-limit1 'error nil nil state))
+              ((eq signal1 'abort) (mv@par step-limit1 'abort pspv1
+                                           jppl-flg1 state))
+              (t ; we need to recompute the recursive call
+               (prog2$
 
 ; Parallelism wart: improve message just below (maybe even eliminate it?).
 ; Also, consider avoiding this direct use of inhibit-output-lst (it seemed that
@@ -7717,34 +7790,34 @@
 ; example use of 'inhibit-output-lst (also see parallelism wart immediately
 ; above).
 
-               (cond ((member-eq 'prove
-                                 (f-get-global 'inhibit-output-lst state))
-                      nil)
-                     (t (with-output-lock
-                         (cw "Invalid speculation for children of subgoal ~
+                (cond ((member-eq 'prove
+                                  (f-get-global 'inhibit-output-lst state))
+                       nil)
+                      (t (with-output-lock
+                          (cw "Invalid speculation for children of subgoal ~
                               ~x0~%"
-                             (string-for-tilde-@-clause-id-phrase cl-id)))))
-               (waterfall1-lst@par (cond ((eq n 'settled-down-clause) n) 
-                                         ((null n) nil)
-                                         (t (1- n))) 
-                                   parent-cl-id
-                                   (cdr clauses) 
-                                   hist
-                                   pspv1
-                                   jppl-flg1
-                                   hints
-                                   nil
-                                   ens
-                                   wrld
-                                   ctx
-                                   state step-limit1)))))))))))
+                              (string-for-tilde-@-clause-id-phrase cl-id)))))
+                (waterfall1-lst@par (cond ((eq n 'settled-down-clause) n) 
+                                          ((null n) nil)
+                                          (t (- n len-first-half))) 
+                                    parent-cl-id
+                                    second-half-clauses
+                                    hist
+                                    pspv1
+                                    jppl-flg1
+                                    hints
+                                    nil
+                                    ens
+                                    wrld
+                                    ctx
+                                    state step-limit1))))))))))))
 
 #+acl2-par
 (defun waterfall1-lst@par (n parent-cl-id clauses hist pspv jppl-flg
                              hints suppress-print ens wrld ctx state step-limit)
 
 ; Keep the main body of waterfall1-lst in sync with waterfall1-lst@par-serial
-; and waterfall1-lst@par-parallel.  Keep the calculation of cl-id in sync with
+; and waterfall1-tree@par-parallel.  Keep the calculation of cl-id in sync with
 ; waterfall1-lst@par.
 
   (let ((primes-subproof
@@ -7838,18 +7911,38 @@
                     "Waterfall-parallelism type is not what it's supposed to ~
                      be.  Please contact the ACL2 authors.")))))))
       (case call-type
+
+; There are three modes of execution available to the waterfall in ACL2(p).  We
+; describe each mode inline, below.
+
         ((serial)
+
+; The serial mode cdrs down the list of clauses, just like waterfall1-lst.
+
          (waterfall1-lst@par-serial n parent-cl-id clauses hist pspv jppl-flg
                                     hints suppress-print ens wrld ctx state
                                     step-limit))
         ((parallel)
-         (waterfall1-lst@par-parallel n parent-cl-id clauses hist pspv
-                                      jppl-flg hints suppress-print ens
-                                      wrld ctx state step-limit))
+
+; The parallel mode will call waterfall1-lst@par on the first half of clauses
+; in the current thread and call waterfall1-lst@par on the second half of
+; clauses in another thread.  Once upon a time, we took a "list-based" approach
+; to proving the list of clauses -- where we would prove the (car clauses) in
+; the current thread and call (waterfall1-lst@par (cdr clauses)) in another
+; thread.  We now take a "tree-based" approach, hence the difference in name
+; ("tree" vs. "lst").
+
+         (waterfall1-tree@par-parallel n parent-cl-id clauses hist pspv
+                                       jppl-flg hints suppress-print ens
+                                       wrld ctx state step-limit))
         ((pseudo-parallel)
-         (waterfall1-lst@par-pseudo-parallel n parent-cl-id clauses hist pspv
-                                             jppl-flg hints suppress-print ens
-                                             wrld ctx state step-limit))
+
+; The psuedo-parallel mode is just like parallel mode, except both calls occur
+; in the current thread.
+
+         (waterfall1-tree@par-pseudo-parallel n parent-cl-id clauses hist pspv
+                                              jppl-flg hints suppress-print ens
+                                              wrld ctx state step-limit))
         (otherwise 
          (prog2$ (er hard 'waterfall1-lst@par
                      "Implementation error in waterfall1-lst@par.  Please ~

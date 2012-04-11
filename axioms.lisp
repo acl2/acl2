@@ -26958,7 +26958,13 @@
 ; like to support older systems, perhaps increasing this number is infeasible,
 ; since the default should support all systems.
 
-         4000))
+; On April 6, 2012, Rager reworked the way that we use spec-mv-let in the
+; waterfall.  As such, the limit on the total amount of parallelism work
+; allowed in the system now has a different consequence (in terms of the number
+; of threads required to process futures).  As such, the limit was increased
+; from 4,000 to 8,000 on April 11, 2012.
+
+         8000))
     #+(and acl2-par (not acl2-loop-only))
     (let ((bound (* 4 *core-count*)))
       (when (< val bound)

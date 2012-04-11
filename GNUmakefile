@@ -66,6 +66,14 @@
 #                    ; Same as make regression, but use xxx as ACL2, which
 #                    ; should either be an absolute filename or a command on
 #                    ; one's path.
+#   make regression ACL2_CUSTOMIZATION=xxx
+#                    ; Same as make regression, but use xxx as the
+#                    ; ACL2 customization file (see :DOC acl2-customization).
+#                    ; In particular, this is useful for certifying
+#                    ; the books in the regression suite using
+#                    ; waterfall parallelism (requires the
+#                    ; experimental extension ACL2(p) of ACL2); see
+#                    ; file acl2-customization-files/README.
 #   make regression-fast
 #                    ; (WARNINGS:
 #                       (1) This target should be considered a bit experimental:

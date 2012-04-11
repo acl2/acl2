@@ -1339,6 +1339,9 @@
 
      ))
 
+(defun total-number-of-threads ()
+  (length (all-threads)))
+
 (defvar *refresh-rate-indicator* 0)
 
 (defmacro value-of-symbol (var)
@@ -1388,6 +1391,10 @@
    (value-of-symbol *idle-future-core-count*)
    (value-of-symbol *idle-future-resumptive-core-count*)
    (value-of-symbol *idle-future-thread-count*)
+   (value-of-symbol *threads-waiting-for-starting-core*)
+   (value-of-symbol number-of-idle-threads-and-threads-waiting-for-a-starting-core)
+   (value-of-symbol total-number-of-threads)
+
    (format nil "~% ")
 
    (value-of-symbol *unassigned-and-active-future-count*)
@@ -1403,7 +1410,6 @@
    (format nil "~% ")
    (value-of-symbol *last-slot-taken*)
    (value-of-symbol *last-slot-saved*)
-   (value-of-symbol *threads-waiting-for-starting-core*)
    (value-of-symbol future-queue-length)
    (value-of-symbol average-future-queue-size)
 
