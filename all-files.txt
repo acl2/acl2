@@ -3739,8 +3739,7 @@ pseudo-good-worldp.lisp
 too-many-ifs.acl2
 too-many-ifs.lisp
 top.lisp
-verified-guards.lisp
-verified-termination.lisp
+verified-termination-and-guards.lisp
 worldp-check.acl2
 worldp-check.lisp
 
