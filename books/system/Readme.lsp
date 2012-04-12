@@ -8,8 +8,7 @@ hl-addr-combine.lisp
 pseudo-good-worldp.lisp
 too-many-ifs.lisp
 top.lisp
-verified-guards.lisp
-verified-termination.lisp
+verified-termination-and-guards.lisp
 worldp-check.acl2
 worldp-check.lisp
 "
@@ -27,10 +26,10 @@ functions.  The scope may broaden in the future.
 The book top.lisp includes books verifying termination and guards of system
 functions.  Add an include-book to top.lisp for each new such book.
 
-verified-guards.lisp verifies the guards of some ACL2 system functions
+verified-termination-and-guards.lisp admits some :program mode ACL2 system
+functions into the logic by verifying their termination.  It is also a good
+place to verify the guards of :logic mode system functions."
 
-verified-termination.lisp admits some :program mode ACL2 system functions into
-the logic by verifying their termination."  
 )
  (:PERMISSION
 
