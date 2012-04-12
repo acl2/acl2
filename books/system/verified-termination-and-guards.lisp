@@ -9,7 +9,7 @@
 ; then one must also call verify-guards to verify that the implicit guard of
 ; "t" is strong enough.  See :doc verify-termination for further details.
 
-(verify-termination fmt-char)
-(verify-termination fmt-var)
-(verify-termination missing-fmt-alist-chars1)
-(verify-termination missing-fmt-alist-chars)
+(verify-termination fmt-char) ; and guards
+(verify-termination fmt-var) ; and guards
+(verify-termination missing-fmt-alist-chars1) ; and guards
+(verify-termination missing-fmt-alist-chars) ; and guards
