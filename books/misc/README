@@ -95,6 +95,10 @@ computed-hint.lisp -- examples of computed hints
 
 ===============================================================================
 
+congruent-stobjs-test.lisp -- examples testing congruent stobjs
+
+===============================================================================
+
 csort.lisp  -- a proof of the ``feed-drain'' systolic sort algorithm
 
 Specification and proof of correctness of an abstract comparator array

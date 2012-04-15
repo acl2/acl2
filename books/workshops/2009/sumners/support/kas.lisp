@@ -1099,6 +1099,7 @@
 
 (defunk funcall (op. args.) :inline
   (ev-fncall-w op. args. (get-current-world ls$)
+               nil    ; user-stobj-alist (guess from Matt K. after v4-3)
                nil    ; safe-mode
                t      ; gc-off
                nil    ; hard-error-returns-nilp

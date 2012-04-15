@@ -94,6 +94,7 @@
                     (ev-fncall-w preprocess-fn
                                  (list term wrld)
                                  wrld
+                                 nil ; user-stobj-alist
                                  nil ; safe-mode
                                  nil ; gc-off
                                  nil ; hard-error-returns-nilp
