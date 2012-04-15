@@ -32,8 +32,9 @@
 # For example, to clean and time book certification (including workshops):
 # make clean all-plus
 
-# To see how one can build the regression suite using waterfall parallelism
-# (requires ACL2(p)), see file acl2-sources/acl2-customization-files/README.
+# To see how one can certify the books in the regression suite using
+# waterfall parallelism (requires the experimental extension ACL2(p)
+# of ACL2), see file acl2-sources/acl2-customization-files/README.
 
 # We do not set variable ACL2 set here, because the value here would be
 # overriden anyhow by the values in the subsidiary Makefiles, which get their
