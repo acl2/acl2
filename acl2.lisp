@@ -232,6 +232,12 @@
                            0))
                      )))
 
+; Uncomment the following form if you want extra checks to be done during the
+; use of ACL2, the only effect (other than performance) being to cause errors
+; when those checks fail.
+
+; (push acl2-extra-checks *features*)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                               FILES
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

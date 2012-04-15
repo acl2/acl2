@@ -16519,7 +16519,7 @@
 ; Fixed the definition of gv to pass the appropriate stobjs-in to
 ; throw-raw-ev-fncall.  Before this fix, the following caused a guard violation
 ; for remove-stobjs-in-by-position.  (After this fix, a different error
-; occurred because of save-mode, but that is irrelevant to this discussion.)
+; occurred because of safe-mode, but that is irrelevant to this discussion.)
 ;   (assign safe-mode 3)
 ;   (car 3)
 ;   (print-gv)
@@ -18282,6 +18282,12 @@
 ; You will see no warnings when certifying bar, and its certificate will show
 ; no trace of skip-proofs.
 
+; Among the changes made to support congruent stobjs are latching of stobjs in
+; raw-ev-fncall; the use of FLET in :print-gv output; and a change to
+; processing of rewrite rules such that interpret-term-as-rewrite-rule1 now has
+; the previous functionality of interpret-term-as-rewrite-rule, except for
+; removing lambdas.
+
   :doc
   ":Doc-Section release-notes
 
@@ -18548,6 +18554,12 @@
 
   The function ~c[read-object-suppress] is like ~c[read-object] except that it
   avoids errors and discards the value read.  ~l[io].
+
+  A ~il[stobj] may now be passed as an argument where another stobj is expected
+  if the two are ``congruent''.  ~l[defstobj], in particular, its discussion of
+  the new ~c[:congruent-to] keyword of ~c[defstobj].  Thanks to Sol Swords for
+  requesting this enhancement and for useful discussions contributing to its
+  design.
 
   ~st[HEURISTIC IMPROVEMENTS]
 

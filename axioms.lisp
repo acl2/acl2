@@ -1871,6 +1871,7 @@
 ; the raw lisp defmacro of acl2::defconst.
 
   (let* ((template (defstobj-template name args :raw-lisp))
+         #+hons (congruent-to (sixth template))
          (init (defstobj-raw-init template))
          (the-live-name (the-live-var name)))
     `(progn
@@ -1882,7 +1883,8 @@
 
 ; Memoize-flush expects the variable (st-lst name) to be bound.
 
-       #+hons (defg ,(st-lst name) nil)
+       #+hons ,@(and (null congruent-to)
+                     `((defg ,(st-lst name) nil)))
        (let* ((template ',template)
               (boundp (boundp ',the-live-name))
               (d (and boundp
@@ -1910,6 +1912,12 @@
 ; or a defstobj in a book whose value is modified in a make-event later in that
 ; book.  Either way, ok-p would be false when this code is executed by loading
 ; the compiled file.
+
+; We do not check the :doc, :inline, or :congruent-to fields, because these
+; incur no proof obligations.  If a second pass of encapsulate, or inclusion of
+; a book, exposes a later non-local defstobj that is redundant with an earlier
+; local one, then any problems will be caught during local compatibility
+; checks.
 
                          )))
          (cond
@@ -1948,7 +1956,7 @@
              (cond
               (old ; hence raw-mode
                (fms "Note:  Redefining and reinitializing stobj ~x0 in raw ~
-                   mode.~%"
+                     mode.~%"
                     (list (cons #\0 ',name))
                     (standard-co *the-live-state*) *the-live-state* nil)
                (setf (cdr old)
@@ -9877,7 +9885,9 @@
   (cond ((or (= *ld-level* 0)
              (raw-mode-p *the-live-state*))
          (interface-er "~@0"
-                       (ev-fncall-msg val (w *the-live-state*))))
+                       (ev-fncall-msg val
+                                      (w *the-live-state*)
+                                      (user-stobj-alist *the-live-state*))))
         (t
          (throw 'raw-ev-fncall val))))
 
@@ -17609,18 +17619,21 @@
             (fieldk :type typek :initially valk :resizable bk)
             :renaming alist
             :doc doc-string
-            :inline inline-flag)
+            :inline flg
+            :congruent-to old-stobj-name)
   ~ev[]
   where ~c[name] is a new symbol, each ~c[fieldi] is a symbol, each ~c[typei]
   is either a ~ilc[type-spec] or ~c[(ARRAY] ~ilc[type-spec] ~c[(max))], each
   ~c[vali] is an object satisfying ~c[typei], and each ~c[bi] is ~c[t] or
   ~c[nil].  Each pair ~c[:initially vali] and ~c[:resizable bi] may be omitted;
-  more on this below.  The ~c[alist] argument is optional and allows the user
+  more on this below.  The ~c[:renaming alist] argument is optional and allows the user
   to override the default function names introduced by this event.  The
-  ~ilc[doc-string] is also optional.  The ~c[inline-flag] Boolean argument is
+  ~ilc[doc-string] is also optional.  The ~c[:inline flg] Boolean argument is
   also optional and declares to ACL2 that the generated access and update
   functions for the stobj should be implemented as macros under the hood (which
-  has the effect of inlining the function calls).  We describe further
+  has the effect of inlining the function calls).  The optional
+  ~c[:congruent-to old-stobj-name] argument specifies an existing stobj with
+  exactly the same structure, and is discussed below.  We describe further
   restrictions on the ~c[fieldi], ~c[typei], ~c[vali], and on ~c[alist] below.
   We recommend that you read about single-threaded objects (stobjs) in ACL2
   before proceeding; ~pl[stobj].
@@ -17934,7 +17947,52 @@
   inlined functions are implemented as macros in raw Lisp, tracing
   (~pl[trace$]) will not show their calls.  These drawbacks are avoided by
   default, but the user who is not concerned about them is advised to specify
-  ~c[:inline t].~/"
+  ~c[:inline t].
+
+  ~em[Specifying Congruent Stobjs]
+
+  Two stobjs are may be considered to be ``congruent'' if they have the same
+  structure, that is, their ~c[defstobj] events are identical when ignoring
+  field names.  In particular, every stobj is congruent to itself.  In order to
+  tell ACL2 that a new stobj ~c[st2] is indeed to be considered as congruent to
+  an existing stobj ~c[st1], the ~c[defstobj] event introducing ~c[st2] is
+  given the keyword argument ~c[:congruent-to st1].  Congruence is an
+  equivalence relation: when you specify a new stobj to be congruent to an old
+  one, you are also specifying that the new stobj is congruent to all other
+  stobjs that are congruent to the old one.  Thus, continuing the example
+  above, if you specify that ~c[st3] is ~c[:congruent-to st2], then ~c[st1],
+  ~c[st2], and ~c[st3] will all be congruent to each other.
+
+  When two stobjs are congruent, ACL2 allows you to substitute one for another
+  in a function call.  The following example shows how this works; for more
+  examples of how to take advantage of congruent stobjs, and also of how to
+  misuse them, see distributed book ~c[books/misc/congruent-stobjs-test.lisp].
+  ~bv[]
+  (defstobj st1 fld1)
+  (defstobj st2 fld2 :congruent-to st1)
+  (defstobj st3 fld3 :congruent-to st2) ; equivalently, :congruent-to st1
+  (defun f (st1 st2 st3)
+    (declare (xargs :stobjs (st1 st2 st3)))
+    (list (fld2 st1) (fld3 st2) (fld1 st3)))
+  (update-fld1 1 st1)
+  (update-fld1 2 st2) ; notice use of update-fld1 on st2
+  (update-fld1 3 st3) ; notice use of update-fld1 on st3
+  (assert-event (equal (f st3 st2 st1) '(3 2 1)))
+  ~ev[]
+  The following example shows an error that occurs when stobj arguments are
+  repeated.  These must be distinct.
+  ~bv[]
+  ACL2 !>(f st1 st1 st1)
+
+
+  ACL2 Error in TOP-LEVEL:  The form ST1 is being used, as an argument
+  to a call of F, where the single-threaded object ST2 was expected,
+  even though these are congruent stobjs.  See :DOC defstobj, in particular
+  the discussion of congruent stobjs.  Note:  this error occurred in
+  the context (F ST1 ST1 ST1).
+
+  ACL2 !>
+  ~ev[]~/"
 
 ; Warning: See the Important Boot-Strapping Invariants before modifying!
 

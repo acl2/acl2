@@ -3563,61 +3563,54 @@
 
 ; Essay on Abbreviating Live Stobjs
 
-; Right now the live state is abbreviated as <state> when it is
-; printed, and the user's live stobj $s is abbreviated as <$s>.  It
-; would be cool if the user could specify how he or she wants a stobj
-; displayed, e.g., by selecting key components for printing or by
-; providing a function which maps the stobj to some non-stobj
-; ``stand-in'' or eviscerated object for printing.
+; Right now the live state is abbreviated as <state> when it is printed, and
+; the user's live stobj $s is abbreviated as <$s>.  It would be cool if the
+; user could specify how he or she wants a stobj displayed, e.g., by selecting
+; key components for printing or by providing a function which maps the stobj
+; to some non-stobj ``stand-in'' or eviscerated object for printing.
 
-; I have given this matter several hours' thought and abandoned it for
-; the moment.  I am not convinced it is worth the trouble.  It IS a
-; lot of trouble.
+; I have given this matter several hours' thought and abandoned it for the
+; moment.  I am not convinced it is worth the trouble.  It IS a lot of trouble.
 
-; We eviscerate stobjs in two main places, a very low-level place:
-; ev-fncall-msg (and its more pervasive friend, ev-fncall-guard-er)
-; and in a very high level place: ld-print-results.  The low-level
-; place is used to print stobjs involved in calls of functions on args
-; that violate a guard.  The high-level place is the ``print'' in the
-; read-eval-print loop.
+; We eviscerate stobjs in the read-eval-print loop.  (Through Version_4.3, we
+; also eviscerated stobjs in a very low-level place: ev-fncall-msg (and its
+; more pervasive friend, ev-fncall-guard-er), used to print stobjs involved in
+; calls of functions on args that violate a guard.)
 
-; Every stobj must have some ``stand-in transformer'' function, fn.
-; We will typically be holding a stobj name, e.g., $S, and a live
-; value, val, e.g., (#(777) #(1 2 3 ...)), and wish to obtain some
-; ACL2 object to print in place of the value.  This value is obtained
-; by applying fn to val.  The two main issues I see are
+; Every stobj must have some ``stand-in transformer'' function, fn.  We will
+; typically be holding a stobj name, e.g., $S, and a live value, val, e.g.,
+; (#(777) #(1 2 3 ...)), and wish to obtain some ACL2 object to print in place
+; of the value.  This value is obtained by applying fn to val.  The two main
+; issues I see are
 
-; (a) where do we find fn?  The candidate places are state, world, and
-; val itself.  But we do not have state available in the low-level
-; code.
+; (a) where do we find fn?  The candidate places are state, world, and val
+; itself.  But we do not have state available in the low-level code.
 
-; (b) how do we apply fn to val?  The obvious thing is to call
-; trans-eval or do an ev-fncall.  Again, we need state.  Furthermore,
-; depending on how we do it, we have to fight a syntactic battle of
-; ``casting'' an arbitrary object, val, to a stobj of type name, to
-; apply a function which has a STOBJS-IN of (name).  A more important
-; problem is the one of order-of-definition.  Which is defined first:
-; how to eviscerate a stobj or how to evaluate a form?  Stobj
-; evisceration calls evaluation to apply fn, but evaluation calls
-; stobj evisceration to report guard errors.
+; (b) how do we apply fn to val?  The obvious thing is to call trans-eval or do
+; an ev-fncall.  Again, we need state.  Furthermore, depending on how we do it,
+; we have to fight a syntactic battle of ``casting'' an arbitrary object, val,
+; to a stobj of type name, to apply a function which has a STOBJS-IN of (name).
+; A more important problem is the one of order-of-definition.  Which is defined
+; first: how to eviscerate a stobj or how to evaluate a form?  Stobj
+; evisceration calls evaluation to apply fn, but evaluation calls stobj
+; evisceration to report guard errors.
 
 ; Is user-specified stobj abbreviation really worth the trouble?
 
-; One idea that presents itself is that val ``knows how to abbreviate
-; itself.''  I think this is akin to the idea of having a :program
-; mode function, say stobj-standin, which syntactically takes a
-; non-stobj and returns a non-stobj.  Actually, stobj-standin would be
-; called on val.  It is clear that I could define this function in raw
-; lisp: look in *the-live-state* to determine how to abbreviate val
-; and then just do it.  But what would be the logical definition of
-; it?  We could leave it undefined, or defined to be an undefined
-; function.  Until we admit the whole ACL2 system :logically, we could
-; even define it in the logic to be t even though it really returned
-; something else, since as a :program its logical definition is
-; irrelevant.  But at the moment I don't think ACL2 has a precedent
-; for such a function and I don't think user-specified stobj
-; abbreviation is justification enough for doing it.
+; One idea that presents itself is that val ``knows how to abbreviate itself.''
+; I think this is akin to the idea of having a :program mode function, say
+; stobj-standin, which syntactically takes a non-stobj and returns a non-stobj.
+; Actually, stobj-standin would be called on val.  It is clear that I could
+; define this function in raw lisp: look in *the-live-state* to determine how
+; to abbreviate val and then just do it.  But what would be the logical
+; definition of it?  We could leave it undefined, or defined to be an undefined
+; function.  Until we admit the whole ACL2 system :logically, we could even
+; define it in the logic to be t even though it really returned something else,
+; since as a :program its logical definition is irrelevant.  But at the moment
+; I don't think ACL2 has a precedent for such a function and I don't think
+; user-specified stobj abbreviation is justification enough for doing it.
 
+; End of Essay on Abbreviating Live Stobjs
 
 ; Now we lay down some macros that help with the efficiency of the FMT
 ; functions, by making it easy to declare various formals and function values

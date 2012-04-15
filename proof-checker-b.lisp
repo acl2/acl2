@@ -2379,7 +2379,8 @@
   (declare (xargs :guard (plist-worldp wrld)))
   (table-alist 'dive-into-macros-table wrld))
 
-(defun expand-address (addr raw-term term abbreviations iff-flg accumulated-addr-r wrld)
+(defun expand-address (addr raw-term term abbreviations iff-flg
+                            accumulated-addr-r wrld)
 
 ; This definition roughly parallels the definition of untranslate.  It normally
 ; returns (mv nil new-addr), where new-addr is an address appropriate for
@@ -2474,7 +2475,7 @@
              (mv-let (erp val)
                      (ev-fncall-w dive-fn
                                   (list (car addr) raw-term term wrld)
-                                  wrld nil t nil t)
+                                  wrld nil nil t nil t)
                      (cond
                       ((or erp (stringp (car val)))
                        (mv (car val) (cdr val)))

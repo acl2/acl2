@@ -3885,11 +3885,12 @@ the calls took.")
 ; memoize tables that need to be cleared whenever that stobj changes.  Below,
 ; we will push the present function's table name onto each of these lists.
 
-          (loop for x in (union stobjs-in stobjs-out)
-                when x
-                collect (assert$ (not (and condition
-                                           (eq x 'state))) ; see memoize-table-chk
-                                 (st-lst x))))
+          (remove-duplicates-eq
+           (loop for x in (union stobjs-in stobjs-out)
+                 when x
+                 collect (assert$ (not (and condition
+                                            (eq x 'state))) ; see memoize-table-chk
+                                  (st-lst (congruent-stobj-rep x wrld))))))
 
          ;; Number of arguments.  Specials only matter for common lisp functions, see the notes above in memoize-fn.
          ;; Basically if the function reads from specials we want to count them as args.

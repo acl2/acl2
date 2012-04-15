@@ -490,34 +490,40 @@
 ; this clause is make the final value of latches, in general, EQ to
 ; the original value of latches.
 
+
+            ((not temp)
+             (er hard! 'latch-stobjs
+                 "We are trying to latch a value for the single-threaded ~
+                  object named ~x0, but there is no entry for that name in ~
+                  the stobj latches provided.  The possible latch names are ~
+                  ~&1.~#2~[~/  This error most likely is caused by the ~
+                  attempt to ev a form that is not ``supposed'' to mention ~
+                  stobjs but does.  Often when dealing with forms that are ~
+                  not supposed to mention stobjs we call ev with last ~
+                  argument NIL and then ignore the resulting latches.~]"
+                 (car stobjs-out)
+                 (strip-cars latches)
+                 (if latches 0 1)))
             #-acl2-loop-only
-            ((and temp (eq (cdr temp) (car vals)))
+            ((eq (cdr temp) (car vals))
              (latch-stobjs1 (cdr stobjs-out)
                             (cdr vals)
                             latches))
-            (temp
+            (t
+             #-acl2-loop-only
+             (er hard! 'latch-stobjs1
+                 "We had thought that the values in user-stobj-alist match up ~
+                  with the values of corresponding stobjs.  Please contact ~
+                  the ACL2 implementors.")
+             #+acl2-loop-only
              (latch-stobjs1 (cdr stobjs-out)
                             (cdr vals)
                             (put-assoc-eq (car stobjs-out)
                                           (car vals)
-                                          latches)))
-            (t (er hard 'latch-stobjs
-                   "We are trying to latch a value for the ~
-                    single-threaded object named ~x0, but there is no ~
-                    entry for that name in the stobj latches ~
-                    provided.  The possible latch names are ~
-                    ~&1.~#2~[~/  This error most likely is caused by ~
-                    the attempt to ev a form that is not ``supposed'' ~
-                    to mention stobjs but does.  Often when dealing ~
-                    with forms that are not supposed to mention ~
-                    stobjs we call ev with last argument NIL and then ~
-                    ignore the resulting latches.~]"
-                   (car stobjs-out)
-                   (strip-cars latches)
-                   (if latches 0 1))))))
+                                          latches))))))
         (t (latch-stobjs1 (cdr stobjs-out)
-                                   (cdr vals)
-                                   latches))))
+                          (cdr vals)
+                          latches))))
 
 (defun latch-stobjs (stobjs-out vals latches)
 
@@ -546,13 +552,68 @@
 ; that it should be bound before calling *1* functions.
 (defvar *raw-guard-warningp*)
 
+(defun actual-stobjs-out1 (stobjs-in args user-stobj-alist)
+  (cond ((endp stobjs-in)
+         (assert$ (null args) nil))
+        (t (let ((rest (actual-stobjs-out1 (cdr stobjs-in) (cdr args)
+                                           user-stobj-alist)))
+             (cond ((or (null (car stobjs-in))
+                        (eq (car stobjs-in) 'state))
+                    rest)
+                   (t (let ((pair (rassoc-equal (car args) user-stobj-alist)))
+                        (assert$ pair
+                                 (cond ((eq (car stobjs-in) (car pair))
+                                        rest)
+                                       (t (acons (car stobjs-in)
+                                                 (car pair)
+                                                 rest)))))))))))
+
+(defun apply-symbol-alist (alist lst acc)
+
+; Alist represents a function to apply to each element of lst, a list of
+; symbols.  (This function is the identity on elements not in the domain of
+; alist.)  The resulting list is accumulated into acc and reversed.
+
+  (cond ((endp lst) (reverse acc))
+        (t (apply-symbol-alist alist
+                               (cdr lst)
+                               (cons (let ((pair (assoc-eq (car lst) alist)))
+                                       (cond (pair (cdr pair))
+                                             (t (car lst))))
+                                     acc)))))
+
+(defun apply-inverse-symbol-alist (alist lst acc)
+
+; See apply-symbol-alist.  Here, though, we apply the inverse of the mapping
+; represented by alist.  We assume that the cdrs of alist are suitable for
+; testing with eq (i.e., symbols or stobjs).
+
+  (cond ((endp lst) (reverse acc))
+        (t (apply-inverse-symbol-alist
+            alist
+            (cdr lst)
+            (cons (let ((pair (rassoc-eq (car lst) alist)))
+                    (cond (pair (car pair))
+                          (t (car lst))))
+                  acc)))))
+
+(defun actual-stobjs-out (fn args wrld user-stobj-alist)
+  (let ((stobjs-out (stobjs-out fn wrld)))
+    (cond ((all-nils stobjs-out) ; optimization for common case
+           stobjs-out)
+          (t (let ((stobjs-in (stobjs-in fn wrld)))
+               (let ((alist
+                      (actual-stobjs-out1 stobjs-in args user-stobj-alist)))
+                 (cond (alist (apply-symbol-alist alist stobjs-out nil))
+                       (t stobjs-out))))))))
+
 #-acl2-loop-only
-(defun raw-ev-fncall (fn args latches hard-error-returns-nilp aok)
+(defun raw-ev-fncall (fn args latches w user-stobj-alist
+                         hard-error-returns-nilp aok)
   (let ((*aokp* aok))
     (the #+acl2-mv-as-values (values t t t)
          #-acl2-mv-as-values t
-         (let* ((w (w *the-live-state*))
-                (throw-raw-ev-fncall-flg t)
+         (let* ((throw-raw-ev-fncall-flg t)
                 (*1*fn (*1*-symbol fn))
                 (applied-fn (cond
                              ((fboundp *1*fn) *1*fn)
@@ -566,15 +627,18 @@
                                    initialization, but the *1* function for ~
                                    ~x0, which should be ~x1, is not."
                                   fn *1*fn))))
-                #+acl2-mv-as-values ; stobjs-out might not be needed otherwise
-                (stobjs-out (if (eq fn 'return-last)
+                (stobjs-out
+                 (cond ((eq fn 'return-last)
 
 ; Things can work out fine if we imagine that return-last returns a single
 ; value: in the case of (return-last ... (mv ...)), the mv returns a list and
 ; we just pass that along.
 
-                                '(nil)
-                              (stobjs-out fn w)))
+                        '(nil))
+                       #+acl2-extra-checks
+                       (latches ; optimization
+                        (actual-stobjs-out fn args w user-stobj-alist))
+                       (t (stobjs-out fn w))))
                 (val (catch 'raw-ev-fncall
                        (cond ((not (fboundp fn))
                               (er hard 'raw-ev-fncall
@@ -608,24 +672,28 @@
 
            (cond
             (throw-raw-ev-fncall-flg
-             (mv t (ev-fncall-msg val w) latches))
+             (mv t (ev-fncall-msg val w user-stobj-alist) latches))
             (t #-acl2-mv-as-values ; adjust val for the multiple value case
-               (let* ((stobjs-out ; see comment in earlier stobjs-out binding
-                       (if (eq fn 'return-last)
-                           '(nil)
-                         (stobjs-out fn w)))
-                      (val
-                       (cond ((null (cdr stobjs-out)) val)
-                             (t (cons val (mv-refs (1- (length stobjs-out))))))))
+               (let ((val
+                      (cond
+                       ((null (cdr stobjs-out)) val)
+                       (t (cons val
+                                (mv-refs (1- (length stobjs-out))))))))
                  (mv nil
                      val
-                     (latch-stobjs stobjs-out
+                     #-acl2-extra-checks
+                     latches
+                     #+acl2-extra-checks
+                     (latch-stobjs stobjs-out ; adjusted to actual-stobjs-out
                                    val
                                    latches)))
                #+acl2-mv-as-values ; val already adjusted for multiple value case
                (mv nil
                    val
-                   (latch-stobjs stobjs-out
+                   #-acl2-extra-checks
+                   latches
+                   #+acl2-extra-checks
+                   (latch-stobjs stobjs-out ; adjusted to actual-stobjs-out
                                  val
                                  latches))))))))
 
@@ -1266,6 +1334,7 @@
   (defvar *return-last-arg3*)
   (defvar *return-last-alist*)
   (defvar *return-last-fn-w*)
+  (defvar *return-last-fn-user-stobj-alist*)
   (defvar *return-last-fn-big-n*)
   (defvar *return-last-fn-safe-mode*)
   (defvar *return-last-fn-gc-off*)
@@ -1313,6 +1382,31 @@
                      (untranslate-preprocess-fn ,wrld)
                      ,wrld))
 
+(defun apply-user-stobj-alist-or-kwote (user-stobj-alist lst acc)
+
+; This function accumulates into acc (eventually reversing the accumulation)
+; the result of replacing each element of lst either with its reverse lookup in
+; user-stobj-alist, if it is a bad-atom (i.e., a stobj -- which it is!), else
+; with the result of quoting that element.
+
+; We considered using rassoc-eq in place of rassoc-equal below, but that would
+; prevent guard verification down the road (unless we change to guard of eq to
+; allow bad-atoms in place of symbols).  So we are content to use rassoc-equal,
+; which may be quite fast on bad atoms, and since (as of this writing) we only
+; use this function for occasional user-level error and debug messages.
+
+  (cond ((endp lst) (reverse acc))
+        (t (apply-user-stobj-alist-or-kwote
+            user-stobj-alist
+            (cdr lst)
+            (cons (cond ((bad-atom (car lst))
+                         (let ((pair (rassoc-equal (car lst)
+                                                   user-stobj-alist)))
+                           (cond (pair (car pair))
+                                 (t '|<some-local-stobj>|))))
+                        (t (kwote (car lst))))
+                  acc)))))
+
 (mutual-recursion
 
 ; Here we combine what may naturally be thought of as two separate
@@ -1323,11 +1417,14 @@
 ; bogus warning in that case (which goes away if the char-code case is
 ; eliminated from ev-fncall-rec-logical!).
 
-(defun ev-fncall-rec-logical (fn args w big-n safe-mode gc-off latches
-                                 hard-error-returns-nilp aok)
+(defun ev-fncall-rec-logical (fn args w user-stobj-alist big-n safe-mode gc-off
+                                 latches hard-error-returns-nilp aok)
 
 ; This is the "slow" code for ev-fncall-rec, for when raw-ev-fncall is not
 ; called.
+
+; Note that user-stobj-alist is only used for error messages, so this function
+; may be called in the presence of local stobjs.
 
 ; The following guard is simply a way to trick ACL2 into not objecting
 ; to the otherwise irrelevant hard-error-returns-nilp.  See the comment
@@ -1372,7 +1469,8 @@
                     (and (bad-atom x)
                          (bad-atom y)))
                 (mv nil (bad-atom<= x y) latches))
-               (t (ev-fncall-guard-er fn args w latches extra))))
+               (t (ev-fncall-guard-er fn args w user-stobj-alist latches
+                                      extra))))
         (BINARY-*
          (cond ((or guard-checking-off
                     (and (acl2-numberp x)
@@ -1380,47 +1478,55 @@
                 (mv nil
                     (* x y)
                     latches))
-               (t (ev-fncall-guard-er fn args w latches extra))))
+               (t (ev-fncall-guard-er fn args w user-stobj-alist latches
+                                      extra))))
         (BINARY-+
          (cond ((or guard-checking-off
                     (and (acl2-numberp x)
                          (acl2-numberp y)))
                 (mv nil (+ x y) latches))
-               (t (ev-fncall-guard-er fn args w latches extra))))
+               (t (ev-fncall-guard-er fn args w user-stobj-alist latches
+                                      extra))))
         (UNARY--
          (cond ((or guard-checking-off
                     (acl2-numberp x))
                 (mv nil (- x) latches))
-               (t (ev-fncall-guard-er fn args w latches extra))))
+               (t (ev-fncall-guard-er fn args w user-stobj-alist latches
+                                      extra))))
         (UNARY-/
          (cond ((or guard-checking-off
                     (and (acl2-numberp x)
                          (not (= x 0))))
                 (mv nil (/ x) latches))
-               (t (ev-fncall-guard-er fn args w latches extra))))
+               (t (ev-fncall-guard-er fn args w user-stobj-alist latches
+                                      extra))))
         (<
          (cond ((or guard-checking-off
                     (and (real/rationalp x)
                          (real/rationalp y)))
                 (mv nil (< x y) latches))
-               (t (ev-fncall-guard-er fn args w latches extra))))
+               (t (ev-fncall-guard-er fn args w user-stobj-alist latches
+                                      extra))))
         (CAR
          (cond ((or guard-checking-off
                     (or (consp x)
                         (eq x nil)))
                 (mv nil (car x) latches))
-               (t (ev-fncall-guard-er fn args w latches extra))))
+               (t (ev-fncall-guard-er fn args w user-stobj-alist latches
+                                      extra))))
         (CDR
          (cond ((or guard-checking-off
                     (or (consp x)
                         (eq x nil)))
                 (mv nil (cdr x) latches))
-               (t (ev-fncall-guard-er fn args w latches extra))))
+               (t (ev-fncall-guard-er fn args w user-stobj-alist latches
+                                      extra))))
         (CHAR-CODE
          (cond ((or guard-checking-off
                     (characterp x))
                 (mv nil (char-code x) latches))
-               (t (ev-fncall-guard-er fn args w latches extra))))
+               (t (ev-fncall-guard-er fn args w user-stobj-alist latches
+                                      extra))))
         (CHARACTERP
          (mv nil (characterp x) latches))
         (CODE-CHAR
@@ -1429,13 +1535,15 @@
                          (<= 0 x)
                          (< x 256)))
                 (mv nil (code-char x) latches))
-               (t (ev-fncall-guard-er fn args w latches extra))))
+               (t (ev-fncall-guard-er fn args w user-stobj-alist latches
+                                      extra))))
         (COMPLEX
          (cond ((or guard-checking-off
                     (and (real/rationalp x)
                          (real/rationalp y)))
                 (mv nil (complex x y) latches))
-               (t (ev-fncall-guard-er fn args w latches extra))))
+               (t (ev-fncall-guard-er fn args w user-stobj-alist latches
+                                      extra))))
         (COMPLEX-RATIONALP
          (mv nil (complex-rationalp x) latches))
         #+:non-standard-analysis
@@ -1448,7 +1556,8 @@
                         (and (character-listp x)
                              (eq y 'string))))
                 (mv nil (coerce x y) latches))
-               (t (ev-fncall-guard-er fn args w latches extra))))
+               (t (ev-fncall-guard-er fn args w user-stobj-alist latches
+                                      extra))))
         (CONS
          (mv nil (cons x y) latches))
         (CONSP
@@ -1457,7 +1566,8 @@
          (cond ((or guard-checking-off
                     (rationalp x))
                 (mv nil (denominator x) latches))
-               (t (ev-fncall-guard-er fn args w latches extra))))
+               (t (ev-fncall-guard-er fn args w user-stobj-alist latches
+                                      extra))))
         (EQUAL
          (mv nil (equal x y) latches))
         #+:non-standard-analysis
@@ -1465,7 +1575,8 @@
          (cond ((or guard-checking-off
                     (realp x))
                 (mv nil (floor x 1) latches))
-               (t (ev-fncall-guard-er fn args w latches extra))))
+               (t (ev-fncall-guard-er fn args w user-stobj-alist latches
+                                      extra))))
         (IF
          (mv nil
              (er hard 'ev-fncall-rec
@@ -1475,7 +1586,8 @@
          (cond ((or guard-checking-off
                     (acl2-numberp x))
                 (mv nil (imagpart x) latches))
-               (t (ev-fncall-guard-er fn args w latches extra))))
+               (t (ev-fncall-guard-er fn args w user-stobj-alist latches
+                                      extra))))
         (INTEGERP
          (mv nil (integerp x) latches))
         (INTERN-IN-PACKAGE-OF-SYMBOL
@@ -1483,22 +1595,26 @@
                     (and (stringp x)
                          (symbolp y)))
                 (mv nil (intern-in-package-of-symbol x y) latches))
-               (t (ev-fncall-guard-er fn args w latches extra))))
+               (t (ev-fncall-guard-er fn args w user-stobj-alist latches
+                                      extra))))
         (NUMERATOR
          (cond ((or guard-checking-off
                     (rationalp x))
                 (mv nil (numerator x) latches))
-               (t (ev-fncall-guard-er fn args w latches extra))))
+               (t (ev-fncall-guard-er fn args w user-stobj-alist latches
+                                      extra))))
         (PKG-IMPORTS
          (cond ((or guard-checking-off
                     (stringp x))
                 (mv nil (pkg-imports x) latches))
-               (t (ev-fncall-guard-er fn args w latches extra))))
+               (t (ev-fncall-guard-er fn args w user-stobj-alist latches
+                                      extra))))
         (PKG-WITNESS
          (cond ((or guard-checking-off
                     (and (stringp x) (not (equal x ""))))
                 (mv nil (pkg-witness x) latches))
-               (t (ev-fncall-guard-er fn args w latches extra))))
+               (t (ev-fncall-guard-er fn args w user-stobj-alist latches
+                                      extra))))
         (RATIONALP
          (mv nil (rationalp x) latches))
         #+:non-standard-analysis
@@ -1508,19 +1624,22 @@
          (cond ((or guard-checking-off
                     (acl2-numberp x))
                 (mv nil (realpart x) latches))
-               (t (ev-fncall-guard-er fn args w latches extra))))
+               (t (ev-fncall-guard-er fn args w user-stobj-alist latches
+                                      extra))))
         (STRINGP
          (mv nil (stringp x) latches))
         (SYMBOL-NAME
          (cond ((or guard-checking-off
                     (symbolp x))
                 (mv nil (symbol-name x) latches))
-               (t (ev-fncall-guard-er fn args w latches extra))))
+               (t (ev-fncall-guard-er fn args w user-stobj-alist latches
+                                      extra))))
         (SYMBOL-PACKAGE-NAME
          (cond ((or guard-checking-off
                     (symbolp x))
                 (mv nil (symbol-package-name x) latches))
-               (t (ev-fncall-guard-er fn args w latches extra))))
+               (t (ev-fncall-guard-er fn args w user-stobj-alist latches
+                                      extra))))
         (SYMBOLP
          (mv nil (symbolp x) latches))
 
@@ -1553,15 +1672,15 @@
               (ev-rec (if guard-checking-off
                           ''t
                         (guard fn nil w))
-                      alist
-                      w (decrement-big-n big-n) (eq extra t) guard-checking-off
+                      alist w user-stobj-alist
+                      (decrement-big-n big-n) (eq extra t) guard-checking-off
                       latches
                       hard-error-returns-nilp
                       aok)
               (cond
                (er (mv er val latches))
                ((null val)
-                (ev-fncall-guard-er fn args w latches extra))
+                (ev-fncall-guard-er fn args w user-stobj-alist latches extra))
                ((and (eq fn 'hard-error)
                      (not hard-error-returns-nilp))
 
@@ -1573,6 +1692,7 @@
  
 ;   (mv-let (erp val ign)
 ;           (ev-fncall-rec-logical 'hard-error '(top "ouch" nil) (w state)
+;                                  (user-stobj-alist state)
 ;                                  100000 nil nil nil nil t)
 ;           (declare (ignore ign val))
 ;           erp)
@@ -1582,7 +1702,7 @@
                ((member-eq fn '(pkg-witness pkg-imports))
                 (mv t (unknown-pkg-error-msg fn (car args)) latches))
                (attachment
-                (ev-fncall-rec-logical attachment args w
+                (ev-fncall-rec-logical attachment args w user-stobj-alist
                                        (decrement-big-n big-n)
                                        safe-mode gc-off latches
                                        hard-error-returns-nilp aok))
@@ -1593,8 +1713,8 @@
                (t
                 (mv-let
                  (er val latches)
-                 (ev-rec body alist
-                         w (decrement-big-n big-n) (eq extra t)
+                 (ev-rec body alist w user-stobj-alist
+                         (decrement-big-n big-n) (eq extra t)
                          guard-checking-off
                          latches
                          hard-error-returns-nilp
@@ -1610,10 +1730,13 @@
                           val
                           latches)))))))))))))))))
 
-(defun ev-fncall-rec (fn args w big-n safe-mode gc-off latches
+(defun ev-fncall-rec (fn args w user-stobj-alist big-n safe-mode gc-off latches
                          hard-error-returns-nilp aok)
 
 ; WARNING: This function should only be called with *raw-guard-warningp* bound.
+
+; Note that user-stobj-alist is only used for error messages, so this function
+; may be called in the presence of local stobjs.
 
   (declare (xargs :guard (plist-worldp w)))
   #-acl2-loop-only
@@ -1624,7 +1747,7 @@
 ; hard error as caused by (formals fn w).
 
                 (return-from ev-fncall-rec
-                             (raw-ev-fncall fn args latches
+                             (raw-ev-fncall fn args latches w user-stobj-alist
                                             hard-error-returns-nilp aok)))))
         (t
          (let ((pair (assoc-eq 'state latches)))
@@ -1640,11 +1763,26 @@
                               (mv t
                                   (cons "Implementation error" nil)
                                   latches)))))))
-  (ev-fncall-rec-logical fn args w big-n safe-mode gc-off latches
-                         hard-error-returns-nilp aok))
+  (ev-fncall-rec-logical fn args w user-stobj-alist big-n safe-mode gc-off
+                             latches hard-error-returns-nilp aok))
 
-(defun ev-rec-return-last (fn arg2 arg3 alist w big-n safe-mode gc-off latches
-                              hard-error-returns-nilp aok)
+#-acl2-loop-only
+(progn
+  (defvar *return-last-arg2*)
+  (defvar *return-last-arg3*)
+  (defvar *return-last-alist*)
+  (defvar *return-last-fn-w*)
+  (defvar *return-last-fn-user-stobj-alist*)
+  (defvar *return-last-fn-big-n*)
+  (defvar *return-last-fn-safe-mode*)
+  (defvar *return-last-fn-gc-off*)
+  (defvar *return-last-fn-latches*)
+  (defvar *return-last-fn-hard-error-returns-nilp*)
+  (defvar *return-last-fn-aok*))
+
+(defun ev-rec-return-last (fn arg2 arg3 alist w user-stobj-alist big-n
+                              safe-mode gc-off latches hard-error-returns-nilp
+                              aok)
 
 ; This function should only be called when fn is a key of return-last-table,
 ; and is not mbe1-raw (which is handled directly in ev-rec, to avoid executing
@@ -1654,6 +1792,9 @@
 ; ev-rec about how we leave it to the user not to remove a key from
 ; return-last-table before passing quotation of that key as the first argument
 ; of a return-last call.
+
+; Note that user-stobj-alist is only used for error messages, so this function
+; may be called in the presence of local stobjs.
 
   (assert$
    (not (eq fn 'mbe1-raw))
@@ -1670,8 +1811,9 @@
 ; ev-rec on behalf of the trans-eval call under ld-read-eval-print.
 
                             t))
-      (ev-rec arg2 alist w (decrement-big-n big-n) safe-mode gc-off latches
-              hard-error-returns-nilp
+      (ev-rec arg2 alist w user-stobj-alist
+              (decrement-big-n big-n)
+              safe-mode gc-off latches hard-error-returns-nilp
 
 ; There is no logical problem with using attachments when evaluating the second
 ; argument of return-last, because logically the third argument provides the
@@ -1691,18 +1833,22 @@
 ; anyhow, so we can treat it as a progn.
 
                ((progn ec-call1-raw)
-                (ev-rec arg3 alist w (decrement-big-n big-n) safe-mode gc-off
-                        latches hard-error-returns-nilp aok))
+                (ev-rec arg3 alist w user-stobj-alist
+                        (decrement-big-n big-n)
+                        safe-mode gc-off latches hard-error-returns-nilp aok))
                (with-guard-checking1-raw
                 (return-last
                  'with-guard-checking1-raw
                  arg2-val
-                 (ev-rec arg3 alist w (decrement-big-n big-n) safe-mode
+                 (ev-rec arg3 alist w user-stobj-alist
+                         (decrement-big-n big-n)
+                         safe-mode
                          (gc-off1 arg2-val)
                          latches hard-error-returns-nilp aok)))
                (otherwise
                 #+acl2-loop-only
-                (ev-rec arg3 alist w (decrement-big-n big-n)
+                (ev-rec arg3 alist w user-stobj-alist
+                        (decrement-big-n big-n)
                         safe-mode gc-off latches hard-error-returns-nilp aok)
 
 ; The following raw Lisp code is a bit odd in its use of special variables.
@@ -1717,6 +1863,7 @@
                       (*return-last-arg3* arg3)
                       (*return-last-alist* alist)
                       (*return-last-fn-w* w)
+                      (*return-last-fn-user-stobj-alist* user-stobj-alist)
                       (*return-last-fn-big-n* big-n)
                       (*return-last-fn-safe-mode* safe-mode)
                       (*return-last-fn-gc-off* gc-off)
@@ -1728,6 +1875,7 @@
                               (ev-rec *return-last-arg3*
                                       *return-last-alist*
                                       *return-last-fn-w*
+                                      *return-last-fn-user-stobj-alist*
                                       *return-last-fn-big-n*
                                       *return-last-fn-safe-mode*
                                       *return-last-fn-gc-off*
@@ -1735,7 +1883,7 @@
                                       *return-last-fn-hard-error-returns-nilp*
                                       *return-last-fn-aok*)))))))))))
 
-(defun ev-rec (form alist w big-n safe-mode gc-off latches
+(defun ev-rec (form alist w user-stobj-alist big-n safe-mode gc-off latches
                     hard-error-returns-nilp aok)
 
 ; WARNING: This function should only be called with *raw-guard-warningp* bound.
@@ -1758,6 +1906,9 @@
 ; hard-error-returns-nilp should be set to nil.  Nil is the
 ; conservative setting.
 
+; Note that user-stobj-alist is only used for error messages, so this function
+; may be called in the presence of local stobjs.
+
   (declare (xargs :guard (and (plist-worldp w)
                               (termp form w)
                               (symbol-alistp alist))))
@@ -1777,8 +1928,9 @@
 ; We relegate this special case to a separate function, even though it could be
 ; open-coded, because it is so distracting.
 
-         (ev-rec-acl2-unwind-protect form alist
-                                     w (decrement-big-n big-n) safe-mode gc-off
+         (ev-rec-acl2-unwind-protect form alist w user-stobj-alist
+                                     (decrement-big-n big-n)
+                                     safe-mode gc-off
                                      latches
                                      hard-error-returns-nilp
                                      aok))
@@ -1817,8 +1969,8 @@
                                    alist)
                              alist)))
              (mv-let (body-er body-val latches)
-                     (ev-rec body alist
-                             w (decrement-big-n big-n) safe-mode gc-off latches
+                     (ev-rec body alist w user-stobj-alist
+                             (decrement-big-n big-n) safe-mode gc-off latches
                              hard-error-returns-nilp
                              aok)
                      (cond
@@ -1829,27 +1981,27 @@
                          (mv nil nil latches)))))))
         ((eq (ffn-symb form) 'if)
          (mv-let (test-er test latches)
-                 (ev-rec (fargn form 1) alist
-                         w (decrement-big-n big-n) safe-mode gc-off
+                 (ev-rec (fargn form 1) alist w user-stobj-alist
+                         (decrement-big-n big-n) safe-mode gc-off
                          latches
                          hard-error-returns-nilp
                          aok)
                  (cond
                   (test-er (mv t test latches))
                   (test
-                   (ev-rec (fargn form 2) alist
-                           w (decrement-big-n big-n) safe-mode gc-off
+                   (ev-rec (fargn form 2) alist w user-stobj-alist
+                           (decrement-big-n big-n) safe-mode gc-off
                            latches
                            hard-error-returns-nilp
                            aok))
-                  (t (ev-rec (fargn form 3) alist
-                             w (decrement-big-n big-n) safe-mode gc-off
+                  (t (ev-rec (fargn form 3) alist w user-stobj-alist
+                             (decrement-big-n big-n) safe-mode gc-off
                              latches
                              hard-error-returns-nilp
                              aok)))))
         ((eq (ffn-symb form) 'mv-list)
-         (ev-rec (fargn form 2) alist
-                 w (decrement-big-n big-n) safe-mode gc-off
+         (ev-rec (fargn form 2) alist w user-stobj-alist
+                 (decrement-big-n big-n) safe-mode gc-off
                  latches hard-error-returns-nilp aok))
         ((and (eq (ffn-symb form) 'return-last)
               (not (and (equal (fargn form 1) ''mbe1-raw)
@@ -1883,23 +2035,25 @@
 ; We avoid running the exec code (see comment above).
                
                (ev-rec (fargn form 3) ; optimization: avoid exec argument
-                       alist w (decrement-big-n big-n) safe-mode gc-off latches
+                       alist w user-stobj-alist
+                       (decrement-big-n big-n) safe-mode gc-off latches
                        hard-error-returns-nilp aok))
               (t (ev-rec-return-last fn (fargn form 2) (fargn form 3)
-                                     alist w big-n safe-mode gc-off latches
+                                     alist w user-stobj-alist
+                                     big-n safe-mode gc-off latches
                                      hard-error-returns-nilp aok))))
             (t ; first arg is not quotep with special behavior; treat as progn
              (mv-let (args-er args latches)
-                     (ev-rec-lst (fargs form) alist
-                                 w (decrement-big-n big-n) safe-mode gc-off
+                     (ev-rec-lst (fargs form) alist w user-stobj-alist
+                                 (decrement-big-n big-n) safe-mode gc-off
                                  latches
                                  hard-error-returns-nilp
                                  aok)
                      (cond (args-er (mv t args latches))
                            (t (mv nil (car (last args)) latches))))))))
         (t (mv-let (args-er args latches)
-                   (ev-rec-lst (fargs form) alist
-                               w (decrement-big-n big-n) safe-mode gc-off
+                   (ev-rec-lst (fargs form) alist w user-stobj-alist
+                               (decrement-big-n big-n) safe-mode gc-off
                                latches
                                hard-error-returns-nilp
                                aok)
@@ -1908,19 +2062,23 @@
                     ((flambda-applicationp form)
                      (ev-rec (lambda-body (ffn-symb form))
                              (pairlis$ (lambda-formals (ffn-symb form)) args)
-                             w (decrement-big-n big-n) safe-mode gc-off
+                             w user-stobj-alist
+                             (decrement-big-n big-n) safe-mode gc-off
                              latches
                              hard-error-returns-nilp
                              aok))
-                    (t (ev-fncall-rec (ffn-symb form) args
-                                      w (decrement-big-n big-n) safe-mode
-                                      gc-off latches
+                    (t (ev-fncall-rec (ffn-symb form) args w user-stobj-alist
+                                      (decrement-big-n big-n)
+                                      safe-mode gc-off latches
                                       hard-error-returns-nilp aok)))))))
 
-(defun ev-rec-lst (lst alist w big-n safe-mode gc-off latches
+(defun ev-rec-lst (lst alist w user-stobj-alist big-n safe-mode gc-off latches
                        hard-error-returns-nilp aok)
 
 ; WARNING: This function should only be called with *raw-guard-warningp* bound.
+
+; Note that user-stobj-alist is only used for error messages, so this function
+; may be called in the presence of local stobjs.
 
   (declare (xargs :guard (and (plist-worldp w)
                               (term-listp lst w)
@@ -1930,8 +2088,8 @@
     (mv t (cons "Evaluation ran out of time." nil) latches))
    ((null lst) (mv nil nil latches))
    (t (mv-let (first-er first-val first-latches)
-              (ev-rec (car lst) alist
-                      w (decrement-big-n big-n) safe-mode gc-off
+              (ev-rec (car lst) alist w user-stobj-alist
+                      (decrement-big-n big-n) safe-mode gc-off
                       latches
                       hard-error-returns-nilp
                       aok)
@@ -1939,8 +2097,8 @@
                (first-er (mv first-er first-val first-latches))
                (t
                 (mv-let (rest-er rest-val rest-latches)
-                        (ev-rec-lst (cdr lst) alist
-                                    w (decrement-big-n big-n) safe-mode gc-off
+                        (ev-rec-lst (cdr lst) alist w user-stobj-alist
+                                    (decrement-big-n big-n) safe-mode gc-off
                                     first-latches
                                     hard-error-returns-nilp
                                     aok)
@@ -1950,8 +2108,9 @@
                                 (cons first-val rest-val)
                                 rest-latches))))))))))
 
-(defun ev-rec-acl2-unwind-protect (form alist w big-n safe-mode gc-off
-                                        latches hard-error-returns-nilp aok)
+(defun ev-rec-acl2-unwind-protect (form alist w user-stobj-alist big-n
+                                        safe-mode gc-off latches
+                                        hard-error-returns-nilp aok)
 
 ; WARNING: This function should only be called with *raw-guard-warningp* bound.
 
@@ -1964,6 +2123,9 @@
 ; error we run the cleanup1 code, just as Common Lisp would had the body been
 ; compiled and caused a hard lisp error.  Furthermore, if the evaluation of
 ; body is aborted, we ensure that the cleanup1 code is EV'd upon unwinding.
+
+; Note that user-stobj-alist is only used for error messages, so this function
+; may be called in the presence of local stobjs.
 
 ; See the unwind-protect essay in axioms.lisp.
 
@@ -2017,7 +2179,8 @@
                             (let ((*ev-shortcut-okp* t))
                               (mv-let (erp val latches)
                                 (ev-rec cleanup1 alist
-                                        w big-n safe-mode gc-off
+                                        w user-stobj-alist
+                                        big-n safe-mode gc-off
                                         latches
                                         hard-error-returns-nilp
                                         aok)
@@ -2033,7 +2196,7 @@
                       'ev-rec-acl2-unwind-protect)))
      (mv-let
       (body-erp body-val body-latches)
-      (ev-rec body alist w big-n safe-mode gc-off latches
+      (ev-rec body alist w user-stobj-alist big-n safe-mode gc-off latches
               hard-error-returns-nilp aok)
       (cond
        (body-erp ; "hard error", e.g., guard error in body
@@ -2052,7 +2215,7 @@
                  (put-assoc-eq 'state
                                (cdr (assoc-eq 'state body-latches))
                                alist)
-                 w big-n safe-mode gc-off
+                 w user-stobj-alist big-n safe-mode gc-off
                  body-latches hard-error-returns-nilp aok)
 
          #-acl2-loop-only
@@ -2101,7 +2264,7 @@
                  (put-assoc-eq 'state
                                (cdr (assoc-eq 'state body-latches))
                                alist)
-                 w big-n safe-mode gc-off
+                 w user-stobj-alist big-n safe-mode gc-off
                  body-latches hard-error-returns-nilp aok)
          #-acl2-loop-only
          (cond (temp
@@ -2142,7 +2305,7 @@
                  (put-assoc-eq 'state
                                (cdr (assoc-eq 'state body-latches))
                                alist)
-                 w big-n safe-mode gc-off
+                 w user-stobj-alist big-n safe-mode gc-off
                  body-latches hard-error-returns-nilp aok)
 
          #-acl2-loop-only
@@ -2169,7 +2332,8 @@
                      (cdr (assoc-eq 'state clean-latches)))
                clean-latches))))))))))
 
-(defun ev-fncall-w (fn args w safe-mode gc-off hard-error-returns-nilp aok)
+(defun ev-fncall-w (fn args w user-stobj-alist safe-mode gc-off
+                       hard-error-returns-nilp aok)
   (declare (xargs :guard (plist-worldp w)))
 
 ; WARNING: Do not call this function if args contains the live state
@@ -2185,6 +2349,9 @@
 ; writing a function that has nothing to do with state, yet handles
 ; guards in a way appropriate to the current world.  We need to modify
 ; the state to match the inputs safe-mode and gc-off.
+
+; Note that user-stobj-alist is only used for error messages, so this function
+; may be called in the presence of local stobjs.
 
 ; Keep the two ev-fncall-rec calls below in sync.
 
@@ -2210,7 +2377,7 @@
          (not gc-off)))
        (mv-let
         (erp val latches)
-        (ev-fncall-rec fn args w (big-n) safe-mode gc-off
+        (ev-fncall-rec fn args w user-stobj-alist (big-n) safe-mode gc-off
                        nil ; latches
                        hard-error-returns-nilp
                        aok)
@@ -2221,80 +2388,53 @@
                            fn
                            args
                            '<wrld>
+                           (if user-stobj-alist
+                               '<user-stobj-alist>
+                             nil)
                            safe-mode gc-off hard-error-returns-nilp aok)))
                (mv erp val)))))
     #+acl2-loop-only
     (mv-let
      (erp val latches)
-     (ev-fncall-rec fn args w (big-n) safe-mode gc-off
+     (ev-fncall-rec fn args w user-stobj-alist (big-n) safe-mode gc-off
                     nil ; latches
                     hard-error-returns-nilp
                     aok)
      (declare (ignore latches))
      (mv erp val)))))
 
-(defun ev-fncall-guard-er-msg (fn guard stobjs-in args w extra)
+(defun ev-fncall-guard-er-msg (fn guard stobjs-in args w user-stobj-alist extra)
 
 ; Guard is printed directly, so should generally be in untranslated form.
 
+; Note that user-stobj-alist is only used for error messages, so this function
+; may be called in the presence of local stobjs.
+
   (prog2$
    (save-ev-fncall-guard-er fn guard stobjs-in args)
-   (mv-let
-    (evisc-obj empty-iprint-alist)
-    (eviscerate-stobjs ; see below
-
-; Note: We cons a nil onto the evisceration stobj marks to account for consing
-; fn onto the quoted arg list in the evisceration tuple commented on below.
-
-     (cons nil (evisceration-stobj-marks stobjs-in t))
-     (cons fn (untranslate*-lst (kwote-lst args) nil w))
-     3 4 nil (table-alist 'evisc-table w) nil
-
-; Note that the iprint-alist is nil.  We never do iprinting for guard errors,
-; because it seems awkward to do so (see comments below).  We consider that a
-; minor inconvenience to the user, since the call below of
-; error-trace-suggestion refers to print-gv.
-
-     nil)
-    (assert$
-     (symbolp empty-iprint-alist)
-     (msg
-      "The guard for the~#0~[ :program~/~] function call ~x1, which is ~P23, ~
-       is violated by the arguments in the call ~P45.~@6~@7~@8"
-      (if (programp fn w) 0 1)
-      (cons fn (formals fn w))
-      guard
-      nil ; might prefer (term-evisc-tuple nil state) if we had state here
-
-; Note: The following value is printed with ~P45 above.  One might
-; wonder why we didn't create a suitable evisc-tuple for #\5.  The
-; reason is that we do not support stobj evisceration in evisc-tuples.
-; So we eviscerate the thing the way we want, now.
-
-      evisc-obj
-
-; The following evisceration tuple is pretty subtle.  We cannot
-; provide a tuple of nil or else the evisceration marks in the object
-; above are not recognized.  We cannot provide a trivial evisceration
-; tuple like (evisc-tuple nil nil nil nil), because it then goes out
-; of its way to ensure that the evisceration marks are printed as
-; evisceration marks!  So we use the alist component of the
-; evisceration tuple to override this protection of the evisceration
-; mark!
-
-      (evisc-tuple nil nil
-                   (list (cons *evisceration-mark* *evisceration-mark*))
-                   nil)
-      (cond ((and (eq fn 'return-last)
-                  (eq (car args) 'mbe1-raw))
-             (msg "  This offending call is equivalent to the more common ~
-                   form, ~x0."
-                  `(mbe :logic
-                        ,(untranslate* (kwote (caddr args)) nil w)
-                        :exec
-                        ,(untranslate* (kwote (cadr args)) nil w))))
-            (t ""))
-      (cond ((eq extra :live-stobj)
+   (msg
+    "The guard for the~#0~[ :program~/~] function call ~x1, which is ~P23, is ~
+     violated by the arguments in the call ~P45.~@6~@7~@8"
+    (if (programp fn w) 0 1)
+    (cons fn (formals fn w))
+    guard
+    nil ; might prefer (term-evisc-tuple nil state) if we had state here
+    (cons fn
+          (untranslate*-lst
+           (apply-user-stobj-alist-or-kwote user-stobj-alist args nil)
+           nil
+           w))
+    (evisc-tuple 3 4 nil nil)
+    (cond ((and (eq fn 'return-last)
+                (eq (car args) 'mbe1-raw))
+           (msg "  This offending call is equivalent to the more common form, ~
+                 ~x0."
+                `(mbe :logic
+                      ,(untranslate* (kwote (caddr args)) nil w)
+                      :exec
+                      ,(untranslate* (kwote (cadr args)) nil w))))
+          (t ""))
+    (cond ((eq extra :live-stobj)
 
 ; This case occurs if we attempt to execute the call of a "oneified" function
 ; on a live stobj (including state) when the guard of the fn is not satisfied,
@@ -2306,29 +2446,36 @@
 ; error for built-in functions like aset-t-stack that rely on guard-checking to
 ; validate their arguments.
 
-             (msg "~|This error is being reported even though guard-checking ~
-                   has been turned off, because the stobj argument of ~x0 is ~
-                   the ``live'' ~p1 and ACL2 does not support non-compliant ~
-                   live stobj manipulation."
-                  fn
-                  (find-first-non-nil stobjs-in)))
-            ((eq extra :no-extra) "")
-            (extra *safe-mode-guard-er-addendum*)
-            (t "~|See :DOC set-guard-checking for information about ~
-                suppressing this check with (set-guard-checking :none), as ~
-                recommended for new users."))
-      (error-trace-suggestion t))))))
+           (msg "~|This error is being reported even though guard-checking ~
+                 has been turned off, because the stobj argument of ~x0 is ~
+                 the ``live'' ~p1 and ACL2 does not support non-compliant ~
+                 live stobj manipulation."
+                fn
+                (find-first-non-nil stobjs-in)))
+          ((eq extra :no-extra) "")
+          (extra *safe-mode-guard-er-addendum*)
+          (t "~|See :DOC set-guard-checking for information about suppressing ~
+              this check with (set-guard-checking :none), as recommended for ~
+              new users."))
+    (error-trace-suggestion t))))
 
-(defun ev-fncall-guard-er (fn args w latches extra)
+(defun ev-fncall-guard-er (fn args w user-stobj-alist latches extra)
+
+; Note that user-stobj-alist is only used for error messages, so this function
+; may be called in the presence of local stobjs.
+
   (mv t
       (ev-fncall-guard-er-msg fn
                               (untranslate* (guard fn nil w) t w)
-                              (stobjs-in fn w) args w extra)
+                              (stobjs-in fn w) args w user-stobj-alist extra)
       latches))
 
-(defun ev-fncall-msg (val wrld)
+(defun ev-fncall-msg (val wrld user-stobj-alist)
 
 ; Warning: Keep this in sync with ev-fncall-rec-logical.
+
+; Note that user-stobj-alist is only used for error messages, so this function
+; may be called in the presence of local stobjs.
 
   (cond
    ((and (consp val)
@@ -2343,7 +2490,8 @@
 ; guard-checking is on.
 
     (ev-fncall-guard-er-msg (cadr val) (cadddr val) (car (cddddr val))
-                            (caddr val) wrld (cadr (cddddr val))))
+                            (caddr val) wrld user-stobj-alist
+                            (cadr (cddddr val))))
    ((and (consp val)
          (eq (car val) 'ev-fncall-creator-er))
 
@@ -2399,6 +2547,7 @@
                           (ev-fncall-w preprocess-fn
                                        (list term wrld)
                                        wrld
+                                       nil ; user-stobj-alist
                                        nil ; safe-mode
                                        nil ; gc-off
                                        nil ; hard-error-returns-nilp
@@ -2718,7 +2867,7 @@
 
 ; See the comment in ev for why we don't check the time limit here.
 
-       (ev-fncall-rec fn args (w state) (big-n)
+       (ev-fncall-rec fn args (w state) (user-stobj-alist state) (big-n)
                       (f-get-global 'safe-mode state)
                       (gc-off state)
                       latches hard-error-returns-nilp aok)))
@@ -2752,7 +2901,7 @@
 ;             latches))
 ;        (t
        (ev-rec form alist
-               (w state) (big-n)
+               (w state) (user-stobj-alist state) (big-n)
                (f-get-global 'safe-mode state)
                (gc-off state)
                latches hard-error-returns-nilp aok)))
@@ -2769,6 +2918,7 @@
 
        (ev-rec-lst lst alist
                    (w state)
+                   (user-stobj-alist state)
                    (big-n)
                    (f-get-global 'safe-mode state)
                    (gc-off state)
@@ -2784,6 +2934,7 @@
          (ev-fncall-w user-untranslate
                       (list term iff-flg wrld)
                       wrld
+                      nil ; user-stobj-alist
                       nil ; safe-mode
                       nil ; gc-off
                       nil ; hard-error-returns-nilp
@@ -2811,6 +2962,7 @@
          (ev-fncall-w user-untranslate-lst
                       (list lst iff-flg wrld)
                       wrld
+                      nil ; user-stobj-alist
                       nil ; safe-mode
                       nil ; gc-off
                       nil ; hard-error-returns-nilp
@@ -2837,7 +2989,8 @@
                         (untranslate-preprocess-fn wrld)
                         wrld))))
 
-(defun ev-w (form alist w safe-mode gc-off hard-error-returns-nilp aok)
+(defun ev-w (form alist w user-stobj-alist safe-mode gc-off
+                  hard-error-returns-nilp aok)
 
 ; WARNING: Do not call this function if alist contains the live state or any
 ; other live stobjs and evaluation of form could modify any of those stobjs.
@@ -2850,6 +3003,10 @@
 ; before evaluating) and hence we must make ev-w untouchable.  It would be
 ; simple enough to create a user-available version of ev-w, if requested, which
 ; would need to do an untouchables check.
+
+; Note that user-stobj-alist is only used for error messages, so this function
+; may be called in the presence of local stobjs.  Probably user-stobj-alist
+; could be replaced as nil because of the stobj restriction on alist.
 
   (declare (xargs :guard (and (plist-worldp w)
                               (termp form w)
@@ -2872,29 +3029,36 @@
        (not gc-off)))
      (mv-let
       (erp val latches)
-      (ev-rec form alist w (big-n) safe-mode gc-off
+      (ev-rec form alist w user-stobj-alist (big-n) safe-mode gc-off
               nil ; latches
               hard-error-returns-nilp
               aok)
       (progn (when latches
                (er hard! 'ev-w
                    "The call ~x0 returned non-nil latches."
-                   (list 'ev-w form alist '<wrld> safe-mode gc-off
+                   (list 'ev-w form alist '<wrld>
+                         (if user-stobj-alist '<user-stobj-alist> nil)
+                         safe-mode gc-off
                          hard-error-returns-nilp aok)))
              (mv erp val)))))
   #+acl2-loop-only
   (mv-let (erp val latches)
-          (ev-rec form alist w (big-n) safe-mode gc-off
+          (ev-rec form alist w user-stobj-alist (big-n) safe-mode gc-off
                   nil ; latches
                   hard-error-returns-nilp
                   aok)
           (declare (ignore latches))
           (mv erp val)))
 
-(defun ev-w-lst (lst alist w safe-mode gc-off hard-error-returns-nilp aok)
+(defun ev-w-lst (lst alist w user-stobj-alist safe-mode gc-off
+                     hard-error-returns-nilp aok)
 
 ; WARNING: See the warning in ev-w, which explains that live stobjs must not
 ; occur in alist.
+
+; Note that user-stobj-alist is only used for error messages, so this function
+; may be called in the presence of local stobjs.  Probably user-stobj-alist
+; could be replaced as nil because of the stobj restriction on alist.
 
 ; See the comment in ev-w about untouchables.
 
@@ -2919,19 +3083,21 @@
        (not gc-off)))
      (mv-let
       (erp val latches)
-      (ev-rec-lst lst alist w (big-n) safe-mode gc-off
+      (ev-rec-lst lst alist w user-stobj-alist (big-n) safe-mode gc-off
                   nil ; latches
                   hard-error-returns-nilp
                   aok)
       (progn (when latches
                (er hard 'ev-w-lst
                    "The call ~x0 returned non-nil latches."
-                   (list 'ev-w-lst lst alist '<wrld> safe-mode gc-off
+                   (list 'ev-w-lst lst alist '<wrld>
+                         (if user-stobj-alist '<user-stobj-alist> nil)
+                         safe-mode gc-off
                          hard-error-returns-nilp aok)))
              (mv erp val)))))
   #+acl2-loop-only
   (mv-let (erp val latches)
-          (ev-rec-lst lst alist w (big-n) safe-mode gc-off
+          (ev-rec-lst lst alist w user-stobj-alist (big-n) safe-mode gc-off
                       nil ; latches
                       hard-error-returns-nilp
                       aok)
@@ -3377,7 +3543,9 @@
               (macro-args (car x) wrld)
               x wrld state-vars)))
      (mv-let (erp guard-val)
-             (ev-w (guard (car x) nil wrld) alist wrld t
+             (ev-w (guard (car x) nil wrld) alist wrld
+                   nil ; user-stobj-alist
+                   t
                    gc-off
                    nil
 
@@ -3414,6 +3582,7 @@
                                              macro-body.")
                                    'current-acl2-world wrld)
                           alist wrld
+                          nil ; user-stobj-alist
                           (not (global-val 'boot-strap-flg wrld)) ; safe-mode
                           gc-off nil nil)
                          (cond (erp
@@ -4730,6 +4899,85 @@
    (declare (ignore bindings))
    (mv erp msg :UNKNOWN-BINDINGS)))
 
+(defun congruent-stobj-rep (name wrld)
+  (or (getprop name 'congruent-stobj-rep nil 'current-acl2-world wrld)
+      name))
+
+(defun congruent-stobjsp (st1 st2 wrld)
+  (eq (congruent-stobj-rep st1 wrld)
+      (congruent-stobj-rep st2 wrld)))
+
+(defun stobjs-in-out1 (stobjs-in args known-stobjs wrld alist new-stobjs-in)
+
+; We are translating an application of a function to args. where args satisfies
+; the stobjs discipline of passing a stobj name to a stobjs-in position; see
+; the comment about this in translate11-call.
+
+  (cond ((endp stobjs-in)
+         (if (null args)
+             (mv alist (reverse new-stobjs-in))
+           (mv :failed nil)))
+        ((endp args) (mv :failed nil))
+        ((null (car stobjs-in))
+         (stobjs-in-out1 (cdr stobjs-in) (cdr args) known-stobjs wrld alist
+                         (cons nil new-stobjs-in)))
+        ((and (car stobjs-in)
+              (stobjp (car args) known-stobjs wrld)
+              (not (rassoc-eq (car args)
+                              alist)) ; equiv. to not member of new-stobjs-in
+              (or (eq (car stobjs-in) (car args))
+                  (congruent-stobjsp (car stobjs-in) (car args) wrld)))
+         (stobjs-in-out1 (cdr stobjs-in) (cdr args) known-stobjs wrld
+                         (acons (car stobjs-in) (car args) alist)
+                         (cons (car args) new-stobjs-in)))
+        (t (mv :failed nil))))
+
+(defun stobjs-in-matchp (stobjs-in args)
+  (cond ((endp stobjs-in) (null args))
+        ((endp args) nil)
+        ((or (null (car stobjs-in))
+             (eq (car stobjs-in) (car args)))
+         (stobjs-in-matchp (cdr stobjs-in) (cdr args)))
+        (t nil)))
+
+(defun stobjs-in-out (fn args stobjs-out known-stobjs wrld)
+
+; We are translating an application of fn to args, where fn has the indicated
+; stobjs-out and args satisfies the stobjs discipline of passing a stobj name
+; to a stobjs-in position.  See the comment about this discipline in
+; translate11-call.
+
+; In general we return (mv flg new-stobjs-in new-stobjs-out), according to one
+; of the following cases.
+
+; - If flg is :failed, then we return (mv :failed stobjs-in stobjs-out), where
+;   stobjs-in is the stobjs-in of fn and stobjs-out is returned unchanged.
+
+; - Otherwise flg is an alist, and either stobjs-out is a symbol (representing
+;   a function symbol or :stobjs-out bound in an implicit bindings in
+;   translate11), or else fn can be viewed as mapping new-stobjs-in to
+;   new-stobjs-out.  Alist maps the original stobjs-in to new-stobjs-in; in
+;   particular, if alist is nil then new-stobjs-in is equal to the original
+;   stobjs-in.
+
+  (let ((stobjs-in (cond ((consp fn)
+                          (compute-stobj-flags (lambda-formals fn)
+                                               known-stobjs
+                                               wrld))
+                         (t (stobjs-in fn wrld)))))
+    (cond ((stobjs-in-matchp stobjs-in args)
+           (mv nil stobjs-in stobjs-out))
+          (t (mv-let
+              (alist new-stobjs-in)
+              (stobjs-in-out1 stobjs-in args known-stobjs wrld nil nil)
+              (cond ((eq alist :failed)
+                     (mv :failed stobjs-in stobjs-out))
+                    ((symbolp stobjs-out)
+                     (mv alist new-stobjs-in stobjs-out))
+                    (t (mv alist
+                           new-stobjs-in
+                           (apply-symbol-alist alist stobjs-out nil)))))))))
+
 (mutual-recursion
 
 (defun translate11-flet-alist (form fives stobjs-out bindings known-stobjs
@@ -5321,26 +5569,49 @@
 
 (defun translate11-call (form fn args stobjs-out stobjs-out2 bindings
                               known-stobjs msg flet-alist ctx wrld state-vars)
-  (let ((stobjs-in
-         (if (consp fn)
-             (compute-stobj-flags (lambda-formals fn)
-                                  known-stobjs
-                                  wrld)
-           (stobjs-in fn wrld))))
-    (cond
-     ((consp stobjs-out)
-      (cond
-       ((consp stobjs-out2)
-        (cond
-         ((not (equal stobjs-out stobjs-out2))
-          (trans-er+ form ctx
-                     "It is illegal to invoke ~@0 here because of a signature ~
-                      mismatch.  This function returns a result of shape ~x1 ~
-                      where a result of shape ~x2 is required."
-                     (if (consp fn) msg (msg "~x0" fn))
-                     (prettyify-stobjs-out stobjs-out2)
-                     (prettyify-stobjs-out stobjs-out)))
-         (t (trans-er-let*
+
+; We are translating (for execution, not merely theorems) a call of fn on args.
+; Stobjs-out and stobjs-out2 are respectively the expected stobjs-out from the
+; present context and the stobjs-out from fn, already dereferenced.  Note that
+; each of these is either a legitimate (true-list) stobjs-out or else a symbol
+; representing an unknown stobjs-out.
+
+; Note that for this call to be suitable, args has to satisfy the stobjs
+; discipline of passing a stobj name to a stobjs-in position.  We take
+; advantage of this point in the call of stobjs-in-out below, where we
+; ultimately work our way down to checking stobjp of each arg in
+; stobjs-in-out1.  For that reason, it is good that we do not call
+; translate11-call on arbitrary let expressions, viewed as lambdas, where the
+; args would be arbitrary expressions (from the cadrs of the doublets in the
+; let-bindings).
+
+  (mv-let
+   (flg stobjs-in-call stobjs-out-call)
+   (stobjs-in-out fn args stobjs-out2 known-stobjs wrld)
+
+; If flg is :failed, then stobjs-in-call and stobjs-out-call are just the
+; stobjs-in and (dereferenced) stobjs-out of fn.  In that case we proceed
+; happily without any mapping of input stobjs, expecting the usual
+; input-mismatch error from a failed call of translate11-lst.
+
+   (cond
+    ((consp stobjs-out)
+     (cond
+      ((consp stobjs-out-call) ; equivalently: (consp stobjs-out2)
+       (cond
+        ((not (equal stobjs-out stobjs-out-call))
+         (trans-er+ form ctx
+                    "It is illegal to invoke ~@0 here because of a signature ~
+                     mismatch.  This function call returns a result of shape ~
+                     ~x1~@2 where a result of shape ~x3 is required."
+                    (if (consp fn) msg (msg "~x0" fn))
+                    (prettyify-stobjs-out stobjs-out-call)
+                    (if (and flg (not (eq flg :failed)))
+                        " (after accounting for the replacement of some input ~
+                         stobjs by congruent stobjs)"
+                      "")
+                    (prettyify-stobjs-out stobjs-out)))
+        (t (trans-er-let*
 
 ; We handle the special translation of wormhole-eval both here, when stobjs-out
 ; is known, and below, where it is not.  Of course, stobjs-out2 (for
@@ -5351,55 +5622,84 @@
 ; actually be quoted forms, not macro calls that expand to quoted forms.  So we
 ; put bogus nils in here and then swap back the untranslated args below.
 
-             ((targs (translate11-lst (if (eq fn 'wormhole-eval)
-                                          (list *nil* *nil* (nth 2 args))
-                                          args)
-                                      stobjs-in
-                                      bindings
-                                      known-stobjs
-                                      msg flet-alist form ctx wrld
-                                      state-vars)))
-             (cond ((eq fn 'wormhole-eval)
-                    (translate11-wormhole-eval (car args)
-                                               (cadr args)
-                                               (caddr targs)
-                                               bindings flet-alist ctx wrld
-                                               state-vars))
-                   (t (trans-value (fcons-term fn targs))))))))
-       (t
-        (let ((bindings
-               (translate-bind stobjs-out2 stobjs-out bindings)))
-          (trans-er-let*
-           ((args (translate11-lst args
-                                   stobjs-in
-                                   bindings known-stobjs
-                                   msg flet-alist form ctx wrld state-vars)))
-           (trans-value (fcons-term fn args)))))))
-     ((consp stobjs-out2)
-      (let ((bindings
-             (translate-bind stobjs-out stobjs-out2 bindings)))
-        (trans-er-let*
-         ((targs (translate11-lst (if (eq fn 'wormhole-eval)
-                                      (list *nil* *nil* (nth 2 args))
-                                      args)
-                                  stobjs-in
+            ((targs (translate11-lst (if (eq fn 'wormhole-eval)
+                                         (list *nil* *nil* (nth 2 args))
+                                       args)
+                                     stobjs-in-call
+                                     bindings
+                                     known-stobjs
+                                     msg flet-alist form ctx wrld
+                                     state-vars)))
+            (cond ((eq fn 'wormhole-eval)
+                   (translate11-wormhole-eval (car args)
+                                              (cadr args)
+                                              (caddr targs)
+                                              bindings flet-alist ctx wrld
+                                              state-vars))
+                  (t (trans-value (fcons-term fn targs))))))))
+      (t  ; (symbolp stobjs-out2); equivalently, (symbolp stobjs-out-call)
+
+; If flg is a non-empty alist, then the expected stobjs-out is not the
+; stobjs-out to be returned by fn on arguments satisfying its declared
+; signature.  For example, suppose that st1 and st2 are congruent stobjs;
+; stobjs-out is (st2); fn is f; f has input signature (st1); and args is (st2),
+; i.e., we are considering the call (f st2).  Then flg is ((st1 . st2)).  We
+; apply the mapping, flg, in reverse to stobjs-out = (st2), to deduce that the
+; stobjs-out of fn is (st1) -- the point is that if we apply flg to (st1), then
+; we get the expected stobjs-out of (st2).
+
+       (let ((bindings
+              (translate-bind stobjs-out2
+                              (if (consp flg)
+                                  (apply-inverse-symbol-alist flg stobjs-out
+                                                              nil)
+                                stobjs-out)
+                              bindings)))
+         (trans-er-let*
+          ((args (translate11-lst args
+                                  stobjs-in-call
                                   bindings known-stobjs
                                   msg flet-alist form ctx wrld state-vars)))
-         (cond ((eq fn 'wormhole-eval)
-                (translate11-wormhole-eval (car args)
-                                           (cadr args)
-                                           (caddr targs)
-                                           bindings flet-alist ctx wrld
-                                           state-vars))
-               (t (trans-value (fcons-term fn targs)))))))
-     (t (let ((bindings
-               (translate-bind stobjs-out2 stobjs-out bindings)))
-          (trans-er-let*
-           ((args (translate11-lst args
-                                   stobjs-in
-                                   bindings known-stobjs
-                                   msg flet-alist form ctx wrld state-vars)))
-           (trans-value (fcons-term fn args))))))))
+          (trans-value (fcons-term fn args)))))))
+    ((consp stobjs-out-call) ; equivalently: (consp stobjs-out2)
+     (let ((bindings
+            (translate-bind stobjs-out stobjs-out-call bindings)))
+       (trans-er-let*
+        ((targs (translate11-lst (if (eq fn 'wormhole-eval)
+                                     (list *nil* *nil* (nth 2 args))
+                                   args)
+                                 stobjs-in-call
+                                 bindings known-stobjs
+                                 msg flet-alist form ctx wrld state-vars)))
+        (cond ((eq fn 'wormhole-eval)
+               (translate11-wormhole-eval (car args)
+                                          (cadr args)
+                                          (caddr targs)
+                                          bindings flet-alist ctx wrld
+                                          state-vars))
+              (t (trans-value (fcons-term fn targs)))))))
+    (t (let ((bindings
+
+; If the stobjs-in of fn are compatible with args, but only when mapping at
+; least one input stobj to a congruent stobj (i.e., flg is a non-empty alist),
+; then we cannot simply bind stobjs-out2 to stobjs-out.  For example, suppose
+; st1 and st2 are congruent stobjs and we are defining a function (f st1 st2)
+; in a context where we do not know the expected result signature, i.e.,
+; stobjs-out is a symbol, nor do we know the stobjs-out of f, which could for
+; example be (st1 st2) or (st2 st1).  (Is this example even possible?  Not
+; sure, so let's continue....)  If we are looking at a call (f st2 st1), then
+; we can actually be certain that the call does _not_ return the output
+; signature of f!
+
+              (if (consp flg)
+                  bindings
+                (translate-bind stobjs-out2 stobjs-out bindings))))
+         (trans-er-let*
+          ((args (translate11-lst args
+                                  stobjs-in-call
+                                  bindings known-stobjs
+                                  msg flet-alist form ctx wrld state-vars)))
+          (trans-value (fcons-term fn args))))))))
 
 (defun translate11 (x stobjs-out bindings known-stobjs flet-alist
                       cform ctx wrld state-vars)
@@ -5824,6 +6124,7 @@
                                (list (cons 'form ans)
                                      (cons 'world wrld))
                                wrld
+                               nil ; user-stobj-alist
                                (access state-vars state-vars :safe-mode)
                                (gc-off1 (access state-vars state-vars
                                                 :guard-checking-on))
@@ -6683,6 +6984,21 @@
                                    ((null (cdr known-stobjs)) 1)
                                    (t 2))
                              known-stobjs)))
+               ((and (symbolp (car lst))
+                     (congruent-stobjsp (car lst)
+                                        (car stobjs-out)
+                                        wrld))
+                (trans-er+ cform ctx
+                             "The form ~x0 is being used~#1~[ ~/, as an ~
+                              argument to a call of ~x2,~/, ~@2,~] where the ~
+                              single-threaded object ~x3 was expected, even ~
+                              though these are congruent stobjs.  See :DOC ~
+                              defstobj, in particular the discussion of ~
+                              congruent stobjs."
+                             (car lst)
+                             (if (null msg) 0 (if (symbolp msg) 1 2))
+                             msg
+                             (car stobjs-out)))
                (t (trans-er+ cform ctx
                              "The form ~x0 is being used~#1~[ ~/, as an ~
                               argument to a call of ~x2,~/, ~@2,~] where the ~
@@ -7132,7 +7448,10 @@
                      (user-stobj-alist-safe 'trans-eval vars state))))
     (mv-let
      (erp val)
-     (ev-w trans alist (w state) (f-get-global 'safe-mode state) (gc-off state)
+     (ev-w trans alist
+           (w state)
+           (user-stobj-alist state)
+           (f-get-global 'safe-mode state) (gc-off state)
            nil aok)
 
      (cond
@@ -7374,7 +7693,9 @@
                                             ok-stobj-names
                                             vars)
                                            state)))
-                            (w state) safe-mode gc-off nil aok)
+                            (w state)
+                            (user-stobj-alist state)
+                            safe-mode gc-off nil aok)
                       (cond
                        (erp (pprogn@par
                              (error-fms@par nil ctx (car val) 

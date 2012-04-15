@@ -4783,6 +4783,7 @@
                  (ev-w '(current-theory-fn ':here world)
                        (list (cons 'world wrld))
                        (w state)
+                       (user-stobj-alist state)
                        (f-get-global 'safe-mode state) 
                        (gc-off state)
                        nil t)
@@ -17288,6 +17289,7 @@
                                   (coerce-state-to-object state))
                             alist)
                       (w state)
+                      (user-stobj-alist state)
                       (f-get-global 'safe-mode state)
                       (gc-off state)
                       nil

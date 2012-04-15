@@ -1440,7 +1440,9 @@
          (mv-let
           (erp val)
           (pstk
-           (ev-fncall-w (ffn-symb term) (strip-cadrs args) wrld nil t t nil))
+           (ev-fncall-w (ffn-symb term) (strip-cadrs args) wrld
+                        nil ; user-stobj-alist
+                        nil t t nil))
           (cond
            (erp
             (mv (cons-term (ffn-symb term) args) nil ttree))

@@ -20245,7 +20245,7 @@
   (packn-pos (list "*THE-LIVE-" name "*") name))
 
 (defconst *defstobj-keywords*
-  '(:renaming :doc :inline))
+  '(:renaming :doc :inline :congruent-to))
 
 (defun defstobj-redundancy-bundle (name args storep)
 
@@ -20301,6 +20301,17 @@
                        'current-acl2-world wrld)
               (defstobj-redundancy-bundle name args nil))))
 
+(defun congruent-stobj-fields (fields1 fields2)
+  (cond ((endp fields1) (null fields2))
+        (t (let ((x1 (car fields1))
+                 (x2 (car fields2)))
+             (and (if (symbolp x1)
+                      (symbolp x2)
+                    (and (consp x1)
+                         (consp x2)
+                         (equal (cdr x1) (cdr x2))))
+                  (congruent-stobj-fields (cdr fields1) (cdr fields2)))))))
+
 (defun chk-acceptable-defstobj (name args ctx wrld state)
 
 ; We check that (defstobj name . args) is well-formed and either
@@ -20322,15 +20333,34 @@
     (t
      (let ((renaming (cdr (assoc-eq :renaming key-alist)))
            (doc (cdr (assoc-eq :doc key-alist)))
-           (inline (cdr (assoc-eq :inline key-alist))))
+           (inline (cdr (assoc-eq :inline key-alist)))
+           (congruent-to (cdr (assoc-eq :congruent-to key-alist))))
        (cond
         ((redundant-defstobjp name args wrld)
          (value 'redundant))
         ((not (booleanp inline))
          (er soft ctx
              "DEFSTOBJ requires the :INLINE keyword argument to have a Boolean ~
-              value.  See :DOC stobj."
+              value.  See :DOC defstobj."
              (list* 'defstobj name args)))
+        ((and congruent-to
+              (not (stobjp congruent-to t wrld)))
+         (er soft ctx
+             "The :CONGRUENT-TO field of a DEFSTOBJ must either be nil or the ~
+              name of an existing stobj, but the value ~x0 is neither  See ~
+              :DOC defstobj."
+             congruent-to))
+        ((and congruent-to
+              (not (congruent-stobj-fields
+                    field-descriptors
+                    (car (getprop congruent-to 'redundancy-bundle nil
+                                  'current-acl2-world wrld)))))
+         (er soft ctx
+             "A non-nil :CONGRUENT-TO field of a DEFSTOBJ must be the name of ~
+              a stobj that has the same shape as the proposed new stobj.  ~
+              However, the proposed stobj named ~x0 does not have the same ~
+              shape as the existing stobj named ~x1.  See :DOC defstobj."
+             name congruent-to))
         (t
          (er-progn
 
@@ -20490,16 +20520,6 @@
             (defstobj-fields-template
               (cdr field-descriptors) renaming wrld))))))
 
-(defun defstobj-doc (args)
-
-; We retrieve the doc string, if any, from (defstobj name . args).
-
-  (mv-let (erp field-descriptors key-alist)
-          (partition-rest-and-keyword-args args *defstobj-keywords*)
-          (declare (ignore field-descriptors))
-          (assert$ (not erp)
-                   (cdr (assoc-eq :doc key-alist)))))
-
 (defun defstobj-template (name args wrld)
 
 ; Note: Wrld may be a world, nil, or (in raw Lisp only) the symbol :raw-lisp.
@@ -20538,12 +20558,14 @@
     (t
      (let ((renaming (cdr (assoc-eq :renaming key-alist)))
            (doc (cdr (assoc-eq :doc key-alist)))
-           (inline (cdr (assoc-eq :inline key-alist))))
+           (inline (cdr (assoc-eq :inline key-alist)))
+           (congruent-to (cdr (assoc-eq :congruent-to key-alist))))
        (list (defstobj-fnname name :recognizer :top renaming)
              (defstobj-fnname name :creator :top renaming)
              (defstobj-fields-template field-descriptors renaming wrld)
              doc
-             inline))))))
+             inline
+             congruent-to))))))
 
 (defun defstobj-component-recognizer-calls (ftemps n var ans)
 
@@ -20862,16 +20884,15 @@
                                  (the (unsigned-byte 29) (1+ i))
                                  (the (unsigned-byte 29) n)))))
 
-(defmacro the-live-stobjp (name)
+(defmacro live-stobjp (name)
 
-; With the introduction of local stobjs, we still rely on the
-; symbol-value of (the-live-var name) to get the global value of a
-; stobj, but we must also consider let-bound values.  Because of
-; translate and oneify, we know that we are binding the live var as we
-; go.  We could use `(arrayp ,name) below, but we stick to the eq test
-; for now.
+; Through Version_4.3, this macro was called the-live-stobj, and its body was
+; `(eq ,name ,(the-live-var name)).  However, we need a more permissive
+; definition in support of congruent stobjs.  We use typep instead of arrayp
+; because in CCL, disassemble seems to suggest that typep may be faster,
+; perhaps comparable with an eq test.
 
-  `(eq ,name ,(the-live-var name)))
+  `(typep ,name 'array))
 
 (defun array-etype-is-fixnum-type (array-etype)
   (declare (xargs :guard 
@@ -20909,10 +20930,11 @@
                    (<= (cadr array-etype) 
                        30))))))
 
-(defun defstobj-field-fns-raw-defs (var inline n ftemps)
+(defun defstobj-field-fns-raw-defs (var flush-var inline n ftemps)
 
 ; Warning:  See the guard remarks in the Essay on Defstobj Definitions.
 
+  #-hons (declare (ignorable flush-var)) ; irrelevant var without hons
   (cond
    ((endp ftemps) nil)
    (t
@@ -20993,7 +21015,7 @@
                                              ',init
                                              :element-type
                                              ',array-etype)))
-                      #+hons (memoize-flush ,var)
+                      #+hons (memoize-flush ,flush-var)
                       (setf (svref ,var ,n)
                             (,(pack2 'stobj-copy-array- fix-vref)
                              old new 0 min-index))
@@ -21011,7 +21033,7 @@
                      (type ,array-etype v))
             ,@(and inline (list *stobj-inline-declare*))
             (progn 
-              #+hons (memoize-flush ,var)
+              #+hons (memoize-flush ,flush-var)
               (setf (,vref (the ,simple-type (svref ,var ,n))
                            (the (and fixnum (integer 0 *)) i))
                     (the ,array-etype v))
@@ -21023,7 +21045,7 @@
            (,updater-name (v ,var)
                           ,@(and inline (list *stobj-inline-declare*))
                           (progn
-                            #+hons (memoize-flush ,var)
+                            #+hons (memoize-flush ,flush-var)
                             (setf (svref ,var ,n) v)
                             ,var))))
         (t
@@ -21037,13 +21059,13 @@
                           (declare (type ,type v))
                           ,@(and inline (list *stobj-inline-declare*))
                           (progn
-                            #+hons (memoize-flush ,var)
+                            #+hons (memoize-flush ,flush-var)
                             (setf (aref (the (simple-array ,type (1))
                                           (svref ,var ,n))
                                         0)
                                   (the ,type v))
                             ,var))))))
-     (defstobj-field-fns-raw-defs var inline (1+ n) (cdr ftemps))))))
+     (defstobj-field-fns-raw-defs var flush-var inline (1+ n) (cdr ftemps))))))
 
 (defun defstobj-raw-init-fields (ftemps)
 
@@ -21105,7 +21127,7 @@
         field-templates wrld))
      `((,recog (,name)
                (cond
-                ((the-live-stobjp ,name)
+                ((live-stobjp ,name)
                  t)
                 (t (and (true-listp ,name)
                         (= (length ,name) ,(length field-templates))
@@ -21114,7 +21136,11 @@
        ,@(and wrld
               `((,creator ()
                           ,(defstobj-raw-init template))))
-       ,@(defstobj-field-fns-raw-defs name inline 0 field-templates)))))
+       ,@(defstobj-field-fns-raw-defs
+           name
+           (congruent-stobj-rep (or (sixth template) name)
+                                wrld)
+           inline 0 field-templates)))))
 
 (defun put-stobjs-in-and-outs1 (name ftemps wrld)
 
@@ -21268,7 +21294,8 @@
                  (creator-name (cadr template))
                  (names (strip-cars ax-def-lst))
                  (the-live-var (the-live-var name))
-                 (doc (defstobj-doc args)))
+                 (doc (fourth template))
+                 (congruent-to (sixth template)))
             (er-progn
              (cond ((set-equalp-equal names
                                       (strip-cars raw-def-lst))
@@ -21359,37 +21386,41 @@
 ; an event must have the same symbol-class.
 
                                 (putprop
-                                 name 'symbol-class :common-lisp-compliant
-                                 (put-stobjs-in-and-outs
-                                  name template
+                                 name
+                                 'congruent-stobj-rep
+                                 (congruent-stobj-rep congruent-to wrld2)
+                                 (putprop
+                                  name 'symbol-class :common-lisp-compliant
+                                  (put-stobjs-in-and-outs
+                                   name template
 
 ; Rockwell Addition: It is convenient for the recognizer to be in a
 ; fixed position in this list, so I can find out its name.
 
-                                  (putprop
-                                   name 'stobj
-                                   (cons the-live-var
-                                         (cons recog-name
-                                               (append (remove1-eq recog-name
-                                                                   names)
-                                                       field-const-names)))
                                    (putprop
-                                    name 'redundancy-bundle
-                                    (defstobj-redundancy-bundle name args t)
-                                    (putprop-x-lst1
-                                     names 'stobj-function name
+                                    name 'stobj
+                                    (cons the-live-var
+                                          (cons recog-name
+                                                (append (remove1-eq recog-name
+                                                                    names)
+                                                        field-const-names)))
+                                    (putprop
+                                     name 'redundancy-bundle
+                                     (defstobj-redundancy-bundle name args t)
                                      (putprop-x-lst1
-                                      field-const-names 'stobj-constant name
-                                      (putprop
-                                       the-live-var 'stobj-live-var name
+                                      names 'stobj-function name
+                                      (putprop-x-lst1
+                                       field-const-names 'stobj-constant name
                                        (putprop
-                                        the-live-var 'symbol-class
-                                        :common-lisp-compliant
+                                        the-live-var 'stobj-live-var name
                                         (putprop
-                                         name
-                                         'accessor-names
-                                         (accessor-array name field-names)
-                                         wrld2))))))))))))
+                                         the-live-var 'symbol-class
+                                         :common-lisp-compliant
+                                         (putprop
+                                          name
+                                          'accessor-names
+                                          (accessor-array name field-names)
+                                          wrld2)))))))))))))
 
 ; The property 'stobj marks a single-threaded object name.  Its value
 ; is a non-nil list containing all the names associated with this
@@ -21505,7 +21536,8 @@
 
   The consequences of this simple rule are far-reaching and require some
   getting used to.  For example, if ~c[OBJ] has been declared as a
-  single-threaded object name, then:
+  single-threaded object name, then the following consequences ensue (but see
+  the discussion of congruent stobjs below for a slight relaxation).
 
   o ~c[OBJ] is a top-level global variable that contains the current object,
     obj.
@@ -21550,7 +21582,15 @@
   semantics and the clean applicative semantics, and uses the first in contexts
   where execution speed is paramount and the second during proofs.
 
-  To start the stobj tour, ~pl[stobj-example-1].~/
+  ~ilc[Defstobj] ~il[events] introduce stobjs.  ~l[defstobj] for more details
+  about stobjs.  In particular, a relatively advanced notion of ``congruent
+  stobjs'' is discussed there.  The idea is to allow a stobj, ~c[st2], of the
+  same ``shape'' as a given stobj, ~c[st1], to be used in place of ~c[st1].
+  Other ~ilc[defstobj] keywords allow inlining and renaming of stobj accessors
+  and updaters.
+
+  But we are getting ahead of ourselves.  To start the stobj tour,
+  ~pl[stobj-example-1].~/
 
   :cite defstobj")
 
@@ -25145,13 +25185,15 @@
             :multiplicity
             1
             :entry
-            (progn (fmt-abbrev "~%ACL2 Error ~@0:   ~@1"
-                               (list (cons #\0 ,throw-raw-ev-fncall-string)
-                                     (cons #\1 (ev-fncall-msg
-                                                (car arglist)
-                                                (w *the-live-state*))))
-                               0 *standard-co* *the-live-state*
-                               "~|~%")
+            (progn (fmt-abbrev
+                    "~%ACL2 Error ~@0:   ~@1"
+                    (list (cons #\0 ,throw-raw-ev-fncall-string)
+                          (cons #\1 (ev-fncall-msg
+                                     (car arglist)
+                                     (w *the-live-state*)
+                                     (user-stobj-alist *the-live-state*))))
+                    0 *standard-co* *the-live-state*
+                    "~|~%")
                    (maybe-print-call-history *the-live-state*)
                    (break$)))))
     `(let ((on ,on))
@@ -27312,24 +27354,33 @@
         (t (cons (car lst)
                  (remove-stobjs-in-by-position (cdr lst) (cdr stobjs-in))))))
 
-(defun print-gv1 (fn-guard-stobjsin-args wrld)
-  (let* ((fn (nth 0 fn-guard-stobjsin-args))
+(defun alist-to-doublets (alist)
+  (declare (xargs :guard (alistp alist)))
+  (cond ((endp alist) nil)
+        (t (cons (list (caar alist) (cdar alist))
+                 (alist-to-doublets (cdr alist))))))
+
+(defun print-gv1 (fn-guard-stobjsin-args state)
+  (let* ((wrld (w state))
+         (fn (nth 0 fn-guard-stobjsin-args))
          (guard (nth 1 fn-guard-stobjsin-args))
-         (stobjs-in (nth 2 fn-guard-stobjsin-args))
-         (args (nth 3 fn-guard-stobjsin-args))
-         (formals (remove-stobjs-in-by-position (formals fn wrld) stobjs-in))
-         (actuals (remove-stobjs-in-by-position args stobjs-in))
-         (len (length actuals)))
-    (case len
-      (0 guard)
-      (1 `(let ((,(car formals)
-                 ,(kwote (car actuals))))
-            (declare (ignorable ,@formals))
-            ,guard))
-      (t `(mv-let (,@formals)
-                  (mv ,@(kwote-lst actuals))
-                  (declare (ignorable ,@formals))
-                  ,guard)))))
+         (args (apply-user-stobj-alist-or-kwote
+                (user-stobj-alist state)
+                (nth 3 fn-guard-stobjsin-args)
+                nil))
+         (formals (formals fn wrld))
+         (guard-fn (intern-in-package-of-symbol
+                    (concatenate 'string (symbol-name fn) "{GUARD}")
+                    fn)))
+
+; Note: (nth 2 fn-guard-stobjsin-args) is the stobjs-in of fn, but we don't
+; need it.
+
+    `(flet ((,guard-fn
+             ,formals
+             (declare (ignorable ,@formals))
+             ,guard))
+       (,guard-fn ,@args))))
 
 (defun print-gv-fn (evisc-tuple state)
   (prog2$
@@ -27338,11 +27389,12 @@
                 (set-wormhole-entry-code whs :ENTER))
              nil
              `(pprogn
-               (let ((info (wormhole-data (f-get-global 'wormhole-status state))))
+               (let ((info ; see save-ev-fncall-guard-er
+                      (wormhole-data (f-get-global 'wormhole-status state))))
                  (cond (info
                         (fms "~x0~|~%"
                              (list (cons #\0
-                                         (print-gv1 info (w state))))
+                                         (print-gv1 info state)))
                              (standard-co state) state ',evisc-tuple))
                        (t
                         (fms "There is no guard violation to debug.~|~%"
@@ -27440,18 +27492,85 @@
   ~ev[]
   Aha!  Now we can investigate why the second predicate fails for 3.
 
-  Finally, we mention a hack that will give you access in raw Lisp to the form
-  printed by ~c[(print-gv)].  After a guard violation, just submit this form to
-  raw Lisp:
+  The following hack will give you access in raw Lisp to the form printed by
+  ~c[(print-gv)].  After a guard violation, just submit this form to raw Lisp:
   ~bv[]
   (print-gv1 (wormhole-data (cdr (assoc 'ev-fncall-guard-er-wormhole
                                         *wormhole-status-alist*)))
-             (w state))
+             state)
   ~ev[]
 
-  And even more finally, we note that while ~c[print-gv] is a utility for
-  debugging guard violations, in contrast, ~pl[guard-debug] for a utility to
-  assist in debugging failed proofs arising from guard verification.~/"
+  If you use local ~il[stobj]s (~pl[with-local-stobj]), you my need to edit the
+  output of ~c[print-gv] in order to evaluate it.  Consider the following
+  example.
+  ~bv[]
+  (defstobj st fld)
+
+  (defun g (x st)
+    (declare (xargs :guard (consp x) :stobjs st)
+             (ignore x))
+    (fld st))
+
+  (defun test ()
+    (with-local-stobj
+     st
+     (mv-let (result st)
+             (mv (g 3 st) st)
+             result)))
+
+  (test)
+  ~ev[]
+  Then ~c[:print-gv] yields the result shown below.
+  ~bv[]
+  (FLET ((G{GUARD} (X ST)
+                   (DECLARE (IGNORABLE X ST))
+                   (AND (STP ST) (CONSP X))))
+        (G{GUARD} '3 |<some-local-stobj>|))
+  ~ev[]
+  In this example you could replace ``~c[|<some-local-stobj>|]'' by ``~c[st]''
+  to obtain a result of ~c[nil].  But similar cases may require the use of a
+  local stobj that is no longer available, in which case you may need to be
+  creative in order to take advantage of ~c[:print-gv].  Here is such an
+  example.
+  ~bv[]
+  (defstobj st2 fld2)
+
+  (defun g2 (st2)
+    (declare (xargs :guard (null (fld2 st2)) :stobjs st2))
+    (mv 0 st2))
+
+  (defun test2 ()
+    (with-local-stobj
+     st2
+     (mv-let (result st2)
+             (let ((st2 (update-fld2 17 st2)))
+               (g2 st2))
+             result)))
+
+  (test2)
+  ~ev[]
+  In this case, ~c[:print-gv] yields the following.
+  ~bv[]
+  (FLET ((G2{GUARD} (ST2)
+                    (DECLARE (IGNORABLE ST2))
+                    (AND (ST2P ST2) (NULL (FLD2 ST2)))))
+        (G2{GUARD} |<some-local-stobj>|))
+  ~ev[]
+  But if you replace ``~c[|<some-local-stobj>|]'' by ``~c[st]'', the guard
+  holds; it is only the local stobj, which is no longer available, that
+  produced a guard violation (because its field had been updated to a cons).
+  ~bv[]
+  ACL2 !>(FLET ((G2{GUARD} (ST2)
+                           (DECLARE (IGNORABLE ST2))
+                           (AND (ST2P ST2) (NULL (FLD2 ST2)))))
+               (G2{GUARD} st2))
+  T
+  ACL2 !>
+  ~ev[]
+
+  Finally, we note that while ~c[print-gv] is a utility for debugging guard
+  violations, in contrast, ~pl[guard-debug] for a utility to assist in
+  debugging failed proofs arising from guard verification.~/"
 
   `(print-gv-fn ,evisc-tuple state))
 
