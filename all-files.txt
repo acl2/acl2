@@ -2135,6 +2135,7 @@ character-encoding-test.lisp
 check-acl2-exports.lisp
 computed-hint-rewrite.lisp
 computed-hint.lisp
+congruent-stobjs-test.lisp
 csort.lisp
 dead-events.lisp
 defattach-bang.lisp
