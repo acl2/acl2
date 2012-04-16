@@ -610,10 +610,12 @@
 #-acl2-loop-only
 (defun raw-ev-fncall (fn args latches w user-stobj-alist
                          hard-error-returns-nilp aok)
+  (declare (ignore w)) ; temporary fix for backward compatibility
   (let ((*aokp* aok))
     (the #+acl2-mv-as-values (values t t t)
          #-acl2-mv-as-values t
-         (let* ((throw-raw-ev-fncall-flg t)
+         (let* ((w (w *the-live-state*)) ; temporary fix for backward compatibility
+                (throw-raw-ev-fncall-flg t)
                 (*1*fn (*1*-symbol fn))
                 (applied-fn (cond
                              ((fboundp *1*fn) *1*fn)
