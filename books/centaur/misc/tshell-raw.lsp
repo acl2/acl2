@@ -164,17 +164,18 @@
     (force-output killer-in)))
 
 
-(defun tshell-echo (line buf)
+(defun tshell-echo (line buf stream)
 
 ; Called by tshell to echo output from the sub-program.  We put this in its own
 ; function so that it can be redefined.  The buf is the previous lines from
 ; this invocation of the program, in reverse order.
 
   (declare (ignorable buf))
-  (write-line line)
-  (force-output))
+  (write-line line stream)
+  (force-output stream))
 
-(defun tshell-echo-alldone ()
+(defun tshell-echo-alldone (stream)
+  (declare (ignorable stream))
 
 ; Called by tshell after all the output has been printed with tshell-echo, in
 ; case tshell-echo wants to not print newlines right away
@@ -229,6 +230,8 @@
          (stdout-exit   nil)
          (stderr-exit   nil)
          (buf           nil)
+         (stream        (get-output-stream-from-channel *standard-co*))
+
 
 ; To run a command, we basically tell our bash shell to execute:
 ;
@@ -288,7 +291,7 @@
                     (t
                      (progn
                        (when print
-                         (tshell-echo line buf))
+                         (tshell-echo line buf stream))
                        (when save
                          (push line buf))))))
 
@@ -322,7 +325,7 @@
                 (tshell-debug "TSHELL_RECOVER: Skip ~a on stderr.~%" line)))))
 
     (tshell-debug "TSHELL_RUN done.~%")
-    (tshell-echo-alldone)
+    (tshell-echo-alldone stream)
 
     (values (and stdout-exit stderr-exit)
             exit-status
