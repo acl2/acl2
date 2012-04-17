@@ -16337,7 +16337,7 @@
     (with-output
      :off summary
      (in-theory (disable NAME)))
-    (value NAME)).
+    (value-triple '(:defund NAME))).
   ~ev[]
   Only the ~c[:]~ilc[definition] rule (and, for recursively defined functions,
   the ~c[:]~ilc[induction] rule) for the function are disabled, and the summary
@@ -17237,7 +17237,7 @@
     (with-output
      :off summary
      (in-theory (disable NAME)))
-    (value NAME)).
+    (value-triple '(:defthmd NAME))).
   ~ev[]
 
   Note that ~c[defthmd] commands are never redundant (~pl[redundant-events]).

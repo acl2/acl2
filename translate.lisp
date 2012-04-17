@@ -610,11 +610,11 @@
 #-acl2-loop-only
 (defun raw-ev-fncall (fn args latches w user-stobj-alist
                          hard-error-returns-nilp aok)
-  (declare (ignore w)) ; temporary fix for backward compatibility
   (let ((*aokp* aok))
     (the #+acl2-mv-as-values (values t t t)
          #-acl2-mv-as-values t
-         (let* ((w (w *the-live-state*)) ; temporary fix for backward compatibility
+         (let* ((pair (assoc-eq 'state latches))
+                (w (if pair (w (cdr pair)) w)) ; (cdr pair) = *the-live-state*
                 (throw-raw-ev-fncall-flg t)
                 (*1*fn (*1*-symbol fn))
                 (applied-fn (cond
@@ -665,7 +665,13 @@
 ; It is important to rebind w here, since we may have updated state since the
 ; last binding of w.
 
-                (w (w *the-live-state*)))
+                (w (if pair
+
+; We use the live state now if and only if we used it above, in which case (cdr
+; pair) = *the-live-state*.
+
+                       (w (cdr pair))
+                     w)))
 
 ; Observe that if a throw to 'raw-ev-fncall occurred during the 
 ; (apply fn args) then the local variable throw-raw-ev-fncall-flg
@@ -1728,7 +1734,7 @@
                   (t (mv nil
                          val
                          (latch-stobjs
-                          (stobjs-out fn w)
+                          (actual-stobjs-out fn args w user-stobj-alist)
                           val
                           latches)))))))))))))))))
 

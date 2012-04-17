@@ -18736,6 +18736,9 @@
   minor variant of which is included in a comment in source function
   ~c[interpret-term-as-rewrite-rule] (file ~c[defthm.lisp]).
 
+  Fixed a bug in the ACL2 evaluator (source function ~c[raw-ev-fncall]), which
+  was unlikely to be exhibited in practice.
+
   ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]
 
   The character encoding has been fixed at iso-8859-1.
