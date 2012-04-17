@@ -196,9 +196,6 @@
 
 (defmacro set-parallel-execution (value)
 
-; Parallelism wart: clarify that parallel-execution must be enabled in order
-; for waterfall-parallelism to be in force.
-
 ; Parallelism blemish: cause an error if the user tries to go into a state
 ; where waterfall-parallelism is enabled but parallel-execution is disabled.
 
@@ -492,8 +489,31 @@
 (defun set-waterfall-parallelism-fn (val ctx state)
   (cond ((member-eq val *waterfall-parallelism-values*)
          #+acl2-par
-         (pprogn (f-put-global 'waterfall-parallelism val state)
-                 (value val))
+         (cond 
+          ((null (f-get-global 'parallel-execution-enabled state))
+           (er soft ctx 
+               "Parallel execution must be enabled before enabling waterfall ~
+                parallelism.  See :DOC set-parallel-execution"))
+          (t
+           (pprogn #+(and hons (not acl2-loop-only))
+                   (progn
+                     (cond ((null val)
+                            (observation 'set-waterfall-parallelism
+                                         "Unmemoizing the functions that are ~
+                                          memoized by default as part of ~
+                                          ACL2(h) (see :DOC ~
+                                          unsupported-waterfall-parallelism-features).")
+                            (hons-init-hook-memoizations))
+                           (t 
+                            (observation 'set-waterfall-parallelism
+                                         "Memoizing the functions that are ~
+                                        memoized by default as part of ~
+                                        ACL2(h) (see :DOC ~
+                                        unsupported-waterfall-parallelism-features).")
+                            (hons-init-hook-unmemoizations)))
+                     state)
+                   (f-put-global 'waterfall-parallelism val state)
+                   (value val))))
          #-acl2-par
 
 ; Once upon a time we issued an error here instead of an observation.  In
@@ -523,6 +543,13 @@
                "Illegal value for set-waterfall-parallelism: ~x0.  The legal ~
                 values are ~&1."
                val *waterfall-parallelism-values*))))
+
+; Parallelism blemish: make a macro via deflast called
+; with-waterfall-parallelism that enables waterfall parallelism for a given
+; form, in particular an event form like calls of defun and defthm.  It's low
+; priority, since it can easily be added as a book later -- though maybe it
+; would be nice to have this as an event constructor, like with-output.  But
+; while doing proofs with ACL2(hp), Rager would have found this convenient.
 
 (defmacro set-waterfall-parallelism (val)
 
@@ -803,6 +830,12 @@
 
   `(encapsulate
     ()
+
+; Parallelism blemish: the following installation of ttag
+; :waterfall-parallelism-hacks should probably be conditionalized upon val
+; being equal to t.  Furthermore, perhaps the installation should also be
+; conditionalized upon the non-existence of a prior ttag.
+
     (defttag :waterfall-parallelism-hacks)
     (set-waterfall-parallelism-hacks-enabled ,val)))
 
@@ -2187,7 +2220,87 @@
   ~ev[]
   ~/")
 
-(defun set-total-parallelism-work-limit (val state)
+; Parallelism wart: it is still possible in ACL2(p) to receive an error at the
+; Lisp-level when CCL cannot "create thread".  An example of a user (Kaufmann)
+; encountering this error is shown below, with book
+; concurrent-programs/bakery/stutter2.  In March 2012, Kaufmann's laptop could
+; sometimes exhibit this problem (a 2-core machine with 4 hardware threads).
+; There are two possible ways to fix this problem.  The first is to set the
+; default-total-parallelism-work-limit to a lower number so that it never
+; occurs (but this costs performance).  Kaufmann suggests that we should also
+; catch this particular Lisp error and instead cause an ACL2 error, similar to
+; the error in function not-too-many-futures-already-in-existence.  This may be
+; harder than one might intially think, because our current mechanism for
+; catching errors in child threads involves catching thrown tags and then
+; rethrowing them in the thread who is that child's parent.
+
+; The error looks like the following:
+
+;; <snip>
+;; 
+;;.............................................................
+;; ***********************************************
+;; ************ ABORTING from raw Lisp ***********
+;; Error:  .Can't create thread
+;; ***********************************************
+
+;; The message above might explain the error.  If not, and
+;; if you didn't cause an explicit interrupt (Control-C),
+;; then the root cause may be call of a :program mode
+;; function that has the wrong guard specified, or even no
+;; guard specified (i.e., an implicit guard of t).
+;; See :DOC guards.
+
+;; To enable breaks into the debugger (also see :DOC acl2-customization):
+;; (SET-DEBUGGER-ENABLE T)
+;; .
+;; ***********************************************
+;; ************ ABORTING from raw Lisp ***********
+;; Error:  Can't create thread
+;; ***********************************************
+
+;; The message above might explain the error.  If not, and
+;; if you didn't cause an explicit interrupt (Control-C),
+;; then the root cause may be call of a :program mode
+;; function that has the wrong guard specified, or even no
+;; guard specified (i.e., an implicit guard of t).
+;; See :DOC guards.
+
+;; To enable breaks into the debugger (also see :DOC acl2-customization):
+;; (SET-DEBUGGER-ENABLE T)
+;; ...........................................................
+;; ..................Here is the current pstack [see :DOC pstack]:
+;; (CLAUSIFY REWRITE-ATM
+;;          SIMPLIFY-CLAUSE SIMPLIFY-CLAUSE
+;;          REWRITE-ATM SIMPLIFY-CLAUSE REWRITE-ATM
+;;          PREPROCESS-CLAUSE PREPROCESS-CLAUSE
+;;          SETUP-SIMPLIFY-CLAUSE-POT-LST
+;;          SIMPLIFY-CLAUSE
+;;          EV-FNCALL-META REWRITE-ATM
+;;          EV-FNCALL-META EV-FNCALL-META
+;;          EV-FNCALL-META REWRITE-ATM
+;;          EV-FNCALL EV-FNCALL EV-FNCALL-META
+;;          REWRITE-ATM REWRITE-ATM SIMPLIFY-CLAUSE
+;;          FORWARD-CHAIN1 SIMPLIFY-CLAUSE
+;;          PREPROCESS-CLAUSE EV-FNCALL-META
+;;          REWRITE-ATM REWRITE-ATM REWRITE-ATM
+;;          FORWARD-CHAIN1 FORWARD-CHAIN1
+;;          SIMPLIFY-CLAUSE SIMPLIFY-CLAUSE
+;;          SIMPLIFY-CLAUSE PREPROCESS-CLAUSE
+;;          SIMPLIFY-CLAUSE SIMPLIFY-CLAUSE
+;;          SIMPLIFY-CLAUSE SIMPLIFY-CLAUSE
+;;          REWRITE-ATM PREPROCESS-CLAUSE
+;;          SIMPLIFY-CLAUSE PREPROCESS-CLAUSE
+;;          SIMPLIFY-CLAUSE PREPROCESS-CLAUSE
+;;
+;; <snip>
+
+(defun set-total-parallelism-work-limit-fn (val state)
+  (declare (xargs :guard (or (equal val :none)
+                             (integerp val))))
+  (f-put-global 'total-parallelism-work-limit val state))
+
+(defmacro set-total-parallelism-work-limit (val)
 
   ":Doc-Section switches-parameters-and-modes
 
@@ -2202,8 +2315,8 @@
 
   ~bv[]
   General Forms:
-  (set-total-parallelism-work-limit :none state)     ; disable the limit
-  (set-total-parallelism-work-limit <integer> state) ; set limit to <integer>
+  (set-total-parallelism-work-limit :none)     ; disable the limit
+  (set-total-parallelism-work-limit <integer>) ; set limit to <integer>
   ~ev[]
 
   ~l[parallelism-tutorial], Section ``Another Granularity Issue Related to
@@ -2223,12 +2336,12 @@
   current default limit is 10,000, then to allow 13,000 threads to exist, issue
   the following form at the top level.
   ~bv[]
-  (set-total-parallelism-work-limit 13000 state)
+  (set-total-parallelism-work-limit 13000)
   ~ev[]
 
   To disable this limit altogether, evaluate the following form:
   ~bv[]
-  (set-total-parallelism-work-limit :none state)
+  (set-total-parallelism-work-limit :none)
   ~ev[]
 
   The default value of total-parallelism-work-limit can be found by calling
@@ -2241,9 +2354,14 @@
 
   (declare (xargs :guard (or (equal val :none)
                              (integerp val))))
-  (f-put-global 'total-parallelism-work-limit val state))
+  `(set-total-parallelism-work-limit-fn ,val state))
 
-(defun set-total-parallelism-work-limit-error (val state)
+(defun set-total-parallelism-work-limit-error-fn (val state)
+  (declare (xargs :guard (or (equal val t)
+                             (null val))))
+  (f-put-global 'total-parallelism-work-limit-error val state))
+
+(defmacro set-total-parallelism-work-limit-error (val)
 
 ; Parallelism blemish: explain something about how, unlike
 ; set-total-parallelism-work-limit, this one only applies to proof (not
@@ -2258,9 +2376,9 @@
 
   ~bv[]
   General Forms:
-  (set-total-parallelism-work-limit-error t state)   ; cause error (default)
-  (set-total-parallelism-work-limit-error nil state) ; disable error and
-                                                     ; continue serially
+  (set-total-parallelism-work-limit-error t)   ; cause error (default)
+  (set-total-parallelism-work-limit-error nil) ; disable error and
+                                               ; continue serially
   ~ev[]
 
   ~l[parallelism-tutorial], Section ``Another Granularity Issue Related to
@@ -2276,35 +2394,35 @@
 
   (1) Remove the limit by evaluating the following form.
   ~bv[]
-  (set-total-parallelism-work-limit :none state)
+  (set-total-parallelism-work-limit :none)
   ~ev[]
 
   (2) Disable the error so that execution continues serially once the available
   thread resources have been exhausted.
   ~bv[]
-  (set-total-parallelism-work-limit-error nil state)
+  (set-total-parallelism-work-limit-error nil)
   ~ev[]
 
   (3) Increase the limit on number of threads that ACL2(p) is willing to
   create, in spite of potential risk (~pl[set-total-parallelism-work-limit]).
   In this case, the following query returns the current limit.
   ~bv[]
-  (f-get-global 'total-parallelism-work-limit state)
+  (f-get-global 'total-parallelism-work-limit)
   ~ev[]
   Then to increase that limit, evaluate the following form:
   ~bv[]
-  (set-total-parallelism-work-limit <new-integer-value> state)
+  (set-total-parallelism-work-limit <new-integer-value>)
   ~ev[]
 
   For example, suppose that the value of ~c[total-parallelism-work-limit] was
   originally 10,000.  Then evaluation of the following form increases that
   limit to 13,000.
   ~bv[]
-  (set-total-parallelism-work-limit 13000 state)
+  (set-total-parallelism-work-limit 13000)
   ~ev[]
   ~/
   :cited-by parallel-proof"
 
   (declare (xargs :guard (or (equal val t)
                              (null val))))
-  (f-put-global 'total-parallelism-work-limit-error val state))
+  `(set-total-parallelism-work-limit-error-fn ,val state))

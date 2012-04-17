@@ -510,16 +510,48 @@ ztwaalf1.be
 ztwaalf2.be
 
 books/centaur:
+4v-sexpr
 aig
 bitops
 doc.acl2
 doc.lisp
+esim
 gl
 misc
 README
 ubdds
 # unversioned-files-extra.txt
+vcd
 vl
+
+books/centaur/4v-sexpr:
+4v-logic.lisp
+bitspecs.lisp
+cert.acl2
+compose-sexpr.lisp
+g-sexpr-eval.acl2
+g-sexpr-eval.lisp
+nsexprs.lisp
+onehot-rewrite.lisp
+portcullis.acl2
+portcullis.lisp
+sexpr-3v.lisp
+sexpr-advanced.lisp
+sexpr-building.lisp
+sexpr-equivs.lisp
+sexpr-eval.lisp
+sexpr-fixpoint-correct.lisp
+sexpr-fixpoint-rewriting.lisp
+sexpr-fixpoint-spec.lisp
+sexpr-fixpoint-top.lisp
+sexpr-fixpoint.lisp
+sexpr-loop-debug.lisp
+sexpr-rewrites.lisp
+sexpr-to-faig.lisp
+sexpr-vars-1pass.lisp
+sexpr-vars.lisp
+svarmap.lisp
+top.lisp
 
 books/centaur/aig:
 acl2-customization.lsp
@@ -538,6 +570,7 @@ misc.lisp
 portcullis.acl2
 portcullis.lisp
 three-four.lisp
+vuaig.lisp
 witness.acl2
 witness.lisp
 
@@ -554,6 +587,27 @@ ihsext-basics.lisp
 integer-length.lisp
 sbitsets.lisp
 top.lisp
+
+books/centaur/esim:
+acl2-customization.lsp
+cert.acl2
+esim-paths.lisp
+esim-primitives.lisp
+esim-sexpr-correct.lisp
+esim-sexpr-support-thms.lisp
+esim-sexpr-support.lisp
+esim-sexpr.lisp
+esim-spec.lisp
+esim-vl.lisp
+local-theory.lisp
+packages.lsp
+plist.lisp
+portcullis.acl2
+portcullis.lisp
+steps.lisp
+stv-compile.lisp
+stv-expand.lisp
+stv.lisp
 
 books/centaur/gl:
 always-equal-prep.lisp
@@ -633,17 +687,23 @@ books/centaur/misc:
 alist-defs.lisp
 alist-equiv.lisp
 ap.lisp
+date.acl2
+date.lisp
 defapply.lisp
+dfs-measure.lisp
 equal-by-nths.lisp
 equal-sets.acl2
 equal-sets.lisp
 evaluator-metatheorems.lisp
+f-put-global.lisp
 fal-graphs.lisp
 fast-alists.lisp
-f-put-global.lisp
+filter-alist.lisp
+hons-alphorder-merge.acl2
+hons-alphorder-merge.lisp
 hons-analyze-memory-raw.lsp
-hons-extra.lisp
 hons-extra-raw.lsp
+hons-extra.lisp
 hons-remove-dups.lisp
 hons-sets.lisp
 interp-function-lookup.lisp
@@ -651,10 +711,18 @@ ls.lisp
 make-list.lisp
 memory-mgmt-logic.lisp
 memory-mgmt-raw.lisp
+nat-list-duplicates.lisp
 numlist.lisp
+osets-witnessing.acl2
+osets-witnessing.lisp
+patterns.lisp
 seed-random.lisp
 sneaky-load.lisp
 suffixp.lisp
+top.lisp
+tshell-raw.lsp
+tshell.lisp
+tuplep.lisp
 universal-equiv.lisp
 vecs-ints.lisp
 witness-cp.acl2
@@ -692,6 +760,14 @@ ubdds.tex
 venn-diagrams.png
 witness.tex
 
+books/centaur/vcd:
+esim-snapshot.lisp
+vcd-impl.lisp
+vcd.lisp
+acl2-customization.lsp
+vcd-stub.lisp
+cert.acl2
+
 books/centaur/vl:
 acl2-customization.lsp
 cert.acl2
@@ -723,6 +799,7 @@ acl2-customization.lsp
 cert.acl2
 checkers.lisp
 condcheck.lisp
+duperhs.lisp
 duplicate-detect.lisp
 leftright.lisp
 multidrive-detect.lisp
@@ -1531,6 +1608,7 @@ Makefile
 cert.acl2
 compiler-proof.lisp
 compiler.lisp
+complex.acl2
 complex.lisp
 zero.lisp
 
@@ -2052,9 +2130,12 @@ assert.lisp
 bash.lisp
 beta-reduce.lisp
 callers-and-ancestors.lisp
+character-encoding-test.acl2
+character-encoding-test.lisp
 check-acl2-exports.lisp
 computed-hint-rewrite.lisp
 computed-hint.lisp
+congruent-stobjs-test.lisp
 csort.lisp
 dead-events.lisp
 defattach-bang.lisp
@@ -3659,6 +3740,7 @@ pseudo-good-worldp.lisp
 too-many-ifs.acl2
 too-many-ifs.lisp
 top.lisp
+verified-termination-and-guards.lisp
 worldp-check.acl2
 worldp-check.lisp
 

@@ -8270,6 +8270,8 @@
 (link-doc-to iprint io set-iprint)
 (link-doc-to iprinting io set-iprint)
 
+(link-doc-to external-format io character-encoding)
+
 (link-doc-to acl2s miscellaneous acl2-sedan)
 
 (link-doc-to waterfall miscellaneous hints-and-the-waterfall)

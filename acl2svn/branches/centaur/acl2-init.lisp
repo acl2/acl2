@@ -50,7 +50,7 @@ message in source file acl2-init.lisp.")
 (push :acl2-mv-as-values *features*)
 
 ; Essay on Parallelism, Parallelism Warts, Parallelism Blemishes, Parallelism
-; No-fixes, and Parallelism Hazards
+; No-fixes, Parallelism Hazards, and #+ACL2-PAR notes.
 
 ; These sources incorporate code for an experimental extension for parallelism
 ; contributed by David Rager during his master's and Ph.D. dissertation work.
@@ -83,6 +83,8 @@ message in source file acl2-init.lisp.")
 ; if state-global-let* is called while executing concurrently, we want to know
 ; about it and develop a work-around.  See *possible-parallelism-hazards* and
 ; warn-about-parallelism-hazard for more information.
+
+; #+ACL2-PAR notes contain documentation that only applies to #+acl2-par.
 
 ; In an effort to avoid code duplication, we created a definition scheme that
 ; supports defining both serial and parallel versions of a function with one
@@ -120,14 +122,16 @@ implementations.")
 #+akcl
 (setq si:*notify-gbc* t)
 
-; Dave Greve reported a problem: the saved_acl2 script in CLISP had characters
-; that, contrary to expectation, were not being interpreter as newlines.  The
-; CLISP folks explained that "CUSTOM:*DEFAULT-FILE-ENCODING* defaults to :DOS
-; on cygwin, so #\Newline is printed as '\r\n' (CRLF)."  We expect that the
-; following setting will fix the problem; Dave tried an experiment for us that
-; seemed to validate this expectation.
-#+clisp
-(setq CUSTOM:*DEFAULT-FILE-ENCODING* :unix)
+; The following has been superseded; see the section on reading characters from
+; files in acl2.lisp.
+;  ; Dave Greve reported a problem: the saved_acl2 script in CLISP had characters
+;  ; that, contrary to expectation, were not being interpreter as newlines.  The
+;  ; CLISP folks explained that "CUSTOM:*DEFAULT-FILE-ENCODING* defaults to :DOS
+;  ; on cygwin, so #\Newline is printed as '\r\n' (CRLF)."  We expect that the
+;  ; following setting will fix the problem; Dave tried an experiment for us that
+;  ; seemed to validate this expectation.
+;  #+clisp
+;  (setq CUSTOM:*DEFAULT-FILE-ENCODING* :unix)
 
 #+(and lispworks (not acl2-par))
 (setq system::*stack-overflow-behaviour*
@@ -945,6 +949,11 @@ implementations.")
   (if *acl2-default-restart-complete*
       (return-from acl2-default-restart nil))
 
+  (#+cltl2
+   common-lisp-user::acl2-set-character-encoding
+   #-cltl2
+   user::acl2-set-character-encoding)
+
   #+ccl
   (progn
 
@@ -1369,7 +1378,7 @@ implementations.")
      (str sysout-name :direction :output)
      (write-exec-file str
                       nil
-                      "~s -i ~s -p ACL2 -M ~s -m ~dMB $*~%"
+                      "~s -i ~s -p ACL2 -M ~s -m ~dMB -E ISO-8859-1 $*~%"
                       (or (ext:getenv "LISP") "clisp")
                       (rc-filename save-dir)
                       eventual-sysout-mem
@@ -1464,12 +1473,15 @@ implementations.")
                            "")))
 
 ; It is probably important to use -e just below instead of :toplevel-function,
-; at least for #+hone.  Jared Davis and Sol Swords have told us that it seems
+; at least for #+hons.  Jared Davis and Sol Swords have told us that it seems
 ; that with :toplevel-function one gets a new "toplevel" thread at start-up,
 ; which "plays badly with the thread-local hash tables that make up the hons
 ; space".
 
-                      "~s -I ~s -e \"(acl2::acl2-default-restart)\" -K ISO-8859-1 $*~%"
+; See the section on "reading characters from files" in file acl2.lisp for an
+; explanation of the -K argument below.
+
+                      "~s -I ~s -K ISO-8859-1 -e \"(acl2::acl2-default-restart)\" $*~%"
                       ccl-program
                       core-name))
     (chmod-executable sysout-name)

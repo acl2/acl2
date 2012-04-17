@@ -16519,7 +16519,7 @@
 ; Fixed the definition of gv to pass the appropriate stobjs-in to
 ; throw-raw-ev-fncall.  Before this fix, the following caused a guard violation
 ; for remove-stobjs-in-by-position.  (After this fix, a different error
-; occurred because of save-mode, but that is irrelevant to this discussion.)
+; occurred because of safe-mode, but that is irrelevant to this discussion.)
 ;   (assign safe-mode 3)
 ;   (car 3)
 ;   (print-gv)
@@ -18282,6 +18282,12 @@
 ; You will see no warnings when certifying bar, and its certificate will show
 ; no trace of skip-proofs.
 
+; Among the changes made to support congruent stobjs are latching of stobjs in
+; raw-ev-fncall; the use of FLET in :print-gv output; and a change to
+; processing of rewrite rules such that interpret-term-as-rewrite-rule1 now has
+; the previous functionality of interpret-term-as-rewrite-rule, except for
+; removing lambdas.
+
   :doc
   ":Doc-Section release-notes
 
@@ -18519,7 +18525,7 @@
 
   Event summaries now show the names of events that were mentioned in
   ~il[hints] of type ~c[:use], ~c[:by], or ~c[:clause-processor].
-  ~l[set-inhibited-summary-types].  Thanks to Francisco J. MartÃ­n Mateos for
+  ~l[set-inhibited-summary-types].  Thanks to Francisco J. Martín Mateos for
   requesting such an enhancement (actually thanks to the community, as his
   request is the most recent but this has come up from time to time before).
 
@@ -18548,6 +18554,12 @@
 
   The function ~c[read-object-suppress] is like ~c[read-object] except that it
   avoids errors and discards the value read.  ~l[io].
+
+  A ~il[stobj] may now be passed as an argument where another stobj is expected
+  if the two are ``congruent''.  ~l[defstobj], in particular, its discussion of
+  the new ~c[:congruent-to] keyword of ~c[defstobj].  Thanks to Sol Swords for
+  requesting this enhancement and for useful discussions contributing to its
+  design.
 
   ~st[HEURISTIC IMPROVEMENTS]
 
@@ -18713,7 +18725,20 @@
   ~ilc[set-fmt-soft-right-margin] or ~ilc[set-fmt-hard-right-margin] to set a
   small right margin.
 
+  Hard Lisp errors are now avoided for certain ~c[:]~ilc[rewrite] rules: those
+  whose ~il[equivalence] relation is other than ~c[equal] when the rule is
+  originally processed, but is no longer a known equivalence relation when the
+  rule is to be stored.  Thanks to Jared Davis for sending a useful example, a
+  minor variant of which is included in a comment in source function
+  ~c[interpret-term-as-rewrite-rule] (file ~c[defthm.lisp]).
+
   ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]
+
+  The character encoding has been fixed at iso-8859-1.
+  ~l[character-encoding].  Thanks to Jared Davis for bringing this portability
+  issue to our attention (as this change arose in order to deal with a change
+  in the default character encoding for the host Lisp, CCL), and pointing us in
+  the right direction for dealing with it.
 
   Although the HTML documentation is distributed with ACL2, it had not been
   possible for users to build that documentation without omitting graphics, for

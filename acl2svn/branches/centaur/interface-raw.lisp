@@ -1306,7 +1306,7 @@
       t
     (let* ((stj (car stobjs))
            (rst (create-live-user-stobjp-test (cdr stobjs)))
-           (tst `(the-live-stobjp ,stj)))
+           (tst `(live-stobjp ,stj)))
       (cond ((eq stj 'state) rst)
             ((eq rst t) tst)
             (t `(and ,tst ,rst))))))
@@ -1566,7 +1566,7 @@
              (super-stobjs-chk
               (if stobj-flag
                   (let ((first-non-nil (find-first-non-nil super-stobjs-in)))
-                    `(the-live-stobjp ,first-non-nil))
+                    `(live-stobjp ,first-non-nil))
                 `(live-state-p
                   ,(select-stobj 'state super-stobjs-in formals))))
              (declared-stobjs (if stobj-flag

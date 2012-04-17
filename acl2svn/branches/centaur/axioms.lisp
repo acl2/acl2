@@ -1871,6 +1871,7 @@
 ; the raw lisp defmacro of acl2::defconst.
 
   (let* ((template (defstobj-template name args :raw-lisp))
+         #+hons (congruent-to (sixth template))
          (init (defstobj-raw-init template))
          (the-live-name (the-live-var name)))
     `(progn
@@ -1882,7 +1883,8 @@
 
 ; Memoize-flush expects the variable (st-lst name) to be bound.
 
-       #+hons (defg ,(st-lst name) nil)
+       #+hons ,@(and (null congruent-to)
+                     `((defg ,(st-lst name) nil)))
        (let* ((template ',template)
               (boundp (boundp ',the-live-name))
               (d (and boundp
@@ -1910,6 +1912,12 @@
 ; or a defstobj in a book whose value is modified in a make-event later in that
 ; book.  Either way, ok-p would be false when this code is executed by loading
 ; the compiled file.
+
+; We do not check the :doc, :inline, or :congruent-to fields, because these
+; incur no proof obligations.  If a second pass of encapsulate, or inclusion of
+; a book, exposes a later non-local defstobj that is redundant with an earlier
+; local one, then any problems will be caught during local compatibility
+; checks.
 
                          )))
          (cond
@@ -1948,7 +1956,7 @@
              (cond
               (old ; hence raw-mode
                (fms "Note:  Redefining and reinitializing stobj ~x0 in raw ~
-                   mode.~%"
+                     mode.~%"
                     (list (cons #\0 ',name))
                     (standard-co *the-live-state*) *the-live-state* nil)
                (setf (cdr old)
@@ -2969,7 +2977,7 @@
 
   To see the ACL2 definition of this function, ~pl[pf].~/~/"
 
-  (declare (xargs :guard t))
+  (declare (xargs :mode :logic :guard t))
   (if (consp l)
       (and (eqlablep (car l))
            (eqlable-listp (cdr l)))
@@ -6321,7 +6329,7 @@
 ;; RAG - After adding the non-standard predicates, this number grew to 110.
 
 (defconst *force-xnume*
-  (let ((x 122))
+  (let ((x 126))
     #+:non-standard-analysis
     (+ x 12)
     #-:non-standard-analysis
@@ -9877,7 +9885,9 @@
   (cond ((or (= *ld-level* 0)
              (raw-mode-p *the-live-state*))
          (interface-er "~@0"
-                       (ev-fncall-msg val (w *the-live-state*))))
+                       (ev-fncall-msg val
+                                      (w *the-live-state*)
+                                      (user-stobj-alist *the-live-state*))))
         (t
          (throw 'raw-ev-fncall val))))
 
@@ -12360,14 +12370,27 @@
 
   define a non-executable function symbol~/
 
+  ~bv[]
+  Example:
+
+  (set-state-ok t)
+  (defun-nx foo (x state)
+    (mv-let (a b c)
+            (cons x state)
+            (list a b c b a)))
+  ; Note ``ill-formed'' call of foo just below.
+  (defun bar (state y)
+    (foo state y))
+  ~ev[]
+
   The macro ~c[defun-nx] introduces definitions using the ~ilc[defun] macro,
   always in ~c[:]~ilc[logic] mode, such that the calls of the resulting
   function cannot be evaluated.  Such a definition is admitted without
-  enforcing the usual ~il[stobj] restrictions on arguments of its function
-  calls.  After such a definition is admitted, the usual syntactic rules for
-  ~ilc[state] and user-defined ~il[stobj]s are relaxed for its calls: each
-  argument that is not ~c[state] or the name of a user-defined ~il[stobj]
-  should evaluate to a single ordinary (non-~ilc[state], non-~il[stobj]) value.
+  enforcing syntactic restrictions for executability, in particular for
+  single-threadedness (~pl[stobj]) and multiple-values passing (~pl[mv] and
+  ~pl[mv-let]).  After such a definition is admitted, the usual syntactic rules
+  for ~ilc[state] and user-defined ~il[stobj]s are relaxed for calls of the
+  function it defines.
 
   The syntax is identical to that of ~ilc[defun].  A form
   ~bv[]
@@ -17596,18 +17619,21 @@
             (fieldk :type typek :initially valk :resizable bk)
             :renaming alist
             :doc doc-string
-            :inline inline-flag)
+            :inline flg
+            :congruent-to old-stobj-name)
   ~ev[]
   where ~c[name] is a new symbol, each ~c[fieldi] is a symbol, each ~c[typei]
   is either a ~ilc[type-spec] or ~c[(ARRAY] ~ilc[type-spec] ~c[(max))], each
   ~c[vali] is an object satisfying ~c[typei], and each ~c[bi] is ~c[t] or
   ~c[nil].  Each pair ~c[:initially vali] and ~c[:resizable bi] may be omitted;
-  more on this below.  The ~c[alist] argument is optional and allows the user
+  more on this below.  The ~c[:renaming alist] argument is optional and allows the user
   to override the default function names introduced by this event.  The
-  ~ilc[doc-string] is also optional.  The ~c[inline-flag] Boolean argument is
+  ~ilc[doc-string] is also optional.  The ~c[:inline flg] Boolean argument is
   also optional and declares to ACL2 that the generated access and update
   functions for the stobj should be implemented as macros under the hood (which
-  has the effect of inlining the function calls).  We describe further
+  has the effect of inlining the function calls).  The optional
+  ~c[:congruent-to old-stobj-name] argument specifies an existing stobj with
+  exactly the same structure, and is discussed below.  We describe further
   restrictions on the ~c[fieldi], ~c[typei], ~c[vali], and on ~c[alist] below.
   We recommend that you read about single-threaded objects (stobjs) in ACL2
   before proceeding; ~pl[stobj].
@@ -17921,7 +17947,52 @@
   inlined functions are implemented as macros in raw Lisp, tracing
   (~pl[trace$]) will not show their calls.  These drawbacks are avoided by
   default, but the user who is not concerned about them is advised to specify
-  ~c[:inline t].~/"
+  ~c[:inline t].
+
+  ~em[Specifying Congruent Stobjs]
+
+  Two stobjs are may be considered to be ``congruent'' if they have the same
+  structure, that is, their ~c[defstobj] events are identical when ignoring
+  field names.  In particular, every stobj is congruent to itself.  In order to
+  tell ACL2 that a new stobj ~c[st2] is indeed to be considered as congruent to
+  an existing stobj ~c[st1], the ~c[defstobj] event introducing ~c[st2] is
+  given the keyword argument ~c[:congruent-to st1].  Congruence is an
+  equivalence relation: when you specify a new stobj to be congruent to an old
+  one, you are also specifying that the new stobj is congruent to all other
+  stobjs that are congruent to the old one.  Thus, continuing the example
+  above, if you specify that ~c[st3] is ~c[:congruent-to st2], then ~c[st1],
+  ~c[st2], and ~c[st3] will all be congruent to each other.
+
+  When two stobjs are congruent, ACL2 allows you to substitute one for another
+  in a function call.  The following example shows how this works; for more
+  examples of how to take advantage of congruent stobjs, and also of how to
+  misuse them, see distributed book ~c[books/misc/congruent-stobjs-test.lisp].
+  ~bv[]
+  (defstobj st1 fld1)
+  (defstobj st2 fld2 :congruent-to st1)
+  (defstobj st3 fld3 :congruent-to st2) ; equivalently, :congruent-to st1
+  (defun f (st1 st2 st3)
+    (declare (xargs :stobjs (st1 st2 st3)))
+    (list (fld2 st1) (fld3 st2) (fld1 st3)))
+  (update-fld1 1 st1)
+  (update-fld1 2 st2) ; notice use of update-fld1 on st2
+  (update-fld1 3 st3) ; notice use of update-fld1 on st3
+  (assert-event (equal (f st3 st2 st1) '(3 2 1)))
+  ~ev[]
+  The following example shows an error that occurs when stobj arguments are
+  repeated.  These must be distinct.
+  ~bv[]
+  ACL2 !>(f st1 st1 st1)
+
+
+  ACL2 Error in TOP-LEVEL:  The form ST1 is being used, as an argument
+  to a call of F, where the single-threaded object ST2 was expected,
+  even though these are congruent stobjs.  See :DOC defstobj, in particular
+  the discussion of congruent stobjs.  Note:  this error occurred in
+  the context (F ST1 ST1 ST1).
+
+  ACL2 !>
+  ~ev[]~/"
 
 ; Warning: See the Important Boot-Strapping Invariants before modifying!
 
@@ -24828,14 +24899,34 @@
   ~c[Mv-nth] is equivalent to the Common Lisp function ~ilc[nth] (although
   without the guard condition that the list is a ~ilc[true-listp]), but is used
   by ACL2 to access the nth value returned by a multiply valued expression.
-  For an example of the use of ~c[mv-nth], try
+  For example, the following are logically equivalent:
   ~bv[]
-  ACL2 !>:trans1 (mv-let (erp val state)
-                         (read-object ch state)
-                         (value (list erp val)))
+  (mv-let (erp val state)
+          (read-object ch state)
+          (value (list erp val)))
+  ~ev[]
+  and
+  ~bv[]
+  (let ((erp (mv-nth 0 (read-object ch state)))
+        (val (mv-nth 1 (read-object ch state)))
+        (state (mv-nth 2 (read-object ch state))))
+    (value (list erp val)))
   ~ev[]
   
-  To see the ACL2 definition of this function, ~pl[pf].~/"
+  To see the ACL2 definition of ~c[mv-nth], ~pl[pf].
+
+  If ~c[EXPR] is an expression that is multiply valued, then the form
+  ~c[(mv-nth n EXPR)] is illegal both in definitions and in forms submitted
+  directly to the ACL2 loop.  Indeed, ~c[EXPR] cannot be passed as an argument
+  to any function (~c[mv-nth] or otherwise) in such an evaluation context.  The
+  reason is that ACL2 code compiled for execution does not actually create a
+  list for multiple value return; for example, the ~c[read-object] call above
+  logically returns a list of length 3, but when evaluated, it instead stores
+  its three returned values without constructing a list.  In such cases you can
+  use ~c[mv-nth] to access the corresponding list by using ~c[mv-list], writing
+  ~c[(mv-nth n (mv-list k EXPR))] for suitable ~c[k], where ~c[mv-list]
+  converts a multiple value result into the corresponding list;
+  ~pl[mv-list].~/"
 
   (declare (xargs :guard (and (integerp n)
                               (>= n 0))))
@@ -24874,21 +24965,21 @@
 
   returning a multiple value~/
 
-  ~c[Mv] is the mechanism provided by ACL2 for returning two or more
-  values.  Logically, ~c[(mv x1 x2 ... xn)] is the same as
-  ~c[(list x1 x2 ... xn)], a list of the indicated values.  However,
-  ACL2 avoids the cost of building this list structure, with the cost
-  that ~c[mv] may only be used in a certain style in definitions:  if a
-  function ever returns using ~c[mv] (either directly, or by calling
-  another function that returns a multiple value), then this function
-  must always return the same number of values.
+  ~c[Mv] is the mechanism provided by ACL2 for returning two or more values.
+  Logically, ~c[(mv x1 x2 ... xn)] is the same as ~c[(list x1 x2 ... xn)], a
+  list of the indicated values.  However, ACL2 avoids the cost of building this
+  list structure, with the cost that ~c[mv] may only be used in a certain style
+  in definitions: if a function ever returns using ~c[mv] (either directly, or
+  by calling another function that returns a multiple value), then this
+  function must always return the same number of values.
 
   For more explanation of the multiple value mechanism,
-  ~pl[mv-let].~/
+  ~pl[mv-let].  Also ~pl[mv-list] for a way to convert a multiple value into an
+  ordinary list.~/
 
-  ACL2 does not support the Common Lisp construct ~c[values], whose
-  logical meaning seems difficult to characterize.  ~c[Mv] is the ACL2
-  analogue of that construct.~/"
+  ACL2 does not support the Common Lisp construct ~c[values], whose logical
+  meaning seems difficult to characterize.  ~c[Mv] is the ACL2 analogue of that
+  construct.~/"
 
   (declare (xargs :guard (>= (length l) 2)))
 
@@ -25210,7 +25301,8 @@
 
   ACL2 does not support the Common Lisp construct
   ~c[multiple-value-bind], whose logical meaning seems difficult to
-  characterize.  ~c[Mv-let] is the ACL2 analogue of that construct.~/"
+  characterize.  ~c[Mv-let] is the ACL2 analogue of that construct.
+  Also ~pl[mv] and ~pl[mv-list].~/"
 
   (declare (xargs :guard (and (>= (length rst) 3)
                               (true-listp (car rst))
@@ -26921,7 +27013,13 @@
 ; increase their support for massive numbers of threads, we should continue to
 ; increase this number.
 
-         10000))
+; On April 6, 2012, Rager reworked the way that we use spec-mv-let in the
+; waterfall.  As such, the limit on the total amount of parallelism work
+; allowed in the system now has a different consequence (in terms of the number
+; of threads required to process futures).  As such, the limit was increased
+; from 4,000 to 8,000 on April 11, 2012.
+
+         8000))
     #+(and acl2-par (not acl2-loop-only))
     (let ((bound (* 4 *core-count*)))
       (when (< val bound)
@@ -29408,6 +29506,40 @@
   ~c[*PRINT-READABLY*], ~c[*PRINT-PPRINT-DISPATCH*], and
   ~c[*PRINT-RIGHT-MARGIN*] do not have any effect for such GCL versions.)~/~/")
 
+(defdoc character-encoding
+
+  ":Doc-Section IO
+
+  how bytes are parsed into characters~/
+
+  When the Common Lisp reader comes across bytes in a file or at the terminal,
+  they are parsed into characters.  The simplest case is when each byte that is
+  read is a standard character (~pl[standard-char-p]).  It is actually quite
+  common that each byte that is read corresponds to a single character.  The
+  parsing of bytes into characters is based on a ~em[character encoding], that
+  is, a mapping that associates one or more bytes with each legal character.
+
+  In order to help guarantee the portability of files (including ~il[books]),
+  ACL2 installs a common character encoding for reading files, often known as
+  iso-8859-1 or latin-1.  For some host Lisps this character encoding is also
+  used for reading from the terminal (but, sadly, this doesn't seem to be
+  possible for all host Lisps).
+
+  The use of the above encoding could in principle cause problems if one's
+  editor produces files using an encoding other than iso-8859-1, at least if
+  one uses non-standard characters.  In particular, the default Emacs buffer
+  encoding may be utf-8.  If your file has non-standard characters, then in
+  Emacs you can evaluate the form
+  ~bv[]
+  (setq save-buffer-coding-system 'iso-8859-1)
+  ~ev[]
+  before saving the buffer into a file.  This will happen automatically for
+  users who load distributed file ~c[emacs/emacs-acl2.el] into their Emacs
+  sessions.
+
+  For an example of character encodings in action, see the distributed book
+  ~c[books/misc/character-encoding-test.lisp].~/~/")
+
 (defun set-forms-from-bindings (bindings)
   (declare (xargs :guard (and (symbol-alistp bindings)
                               (true-list-listp bindings))))
@@ -30793,6 +30925,10 @@
                  #+akcl
                  ((and (eq typ :object)
                        (not (lisp-book-syntaxp os-file-name)))
+
+; Note that lisp-book-syntaxp returns t unless state global 'infixp is t.  So
+; ignore the code below unless you're thinking about the infix case!
+
                   (let* ((mirror-file-name
                           (concatenate 'string
                                        (namestring stream)
@@ -44606,16 +44742,15 @@ Lisp definition."
 (table custom-keywords-table nil nil
        :guard
 
-; Parallelism wart: the comment below starting with "Val must be of the
-; form..." will need to be updated once we finalize the way custom keyword
-; hints work in ACL2(p).
-
 ; Val must be of the form (uterm1 uterm2), where uterm1 and uterm2 are
 ; untranslated terms with certain syntactic properties, including being
 ; single-threaded in state and with output signatures (mv erp val state).  But
 ; we cannot check that without access to state.  So we actually don't check
 ; those key properties until we use them and we employ trans-eval at that
 ; point.
+
+; #+ACL2-PAR note: it may be the case that, with waterfall parallelism enabled,
+; both uterm1 and uterm2 must not return state.
 
 ; As a matter of interest, uterm1 is the untranslated generator term for the
 ; key and uterm2 is the untranslated checker term.

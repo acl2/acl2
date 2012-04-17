@@ -1319,7 +1319,27 @@
 ; code below says (number-of-active-threads).
 
   (+ (- *last-slot-saved* *last-slot-taken*)
-     (max 0 (- *unassigned-and-active-future-count* (number-of-active-threads)))))
+
+; At one point I used the immediately following commented code to determine the
+; number of threads that had acquired the work but were waiting for a CPU core.
+; However, this often provided the wrong answer (and was unnoticeably slow
+; since it calls all-threads).  So, instead, I added a new variable,
+; *threads-waiting-for-starting-core*, and update it inside
+; claim-starting-core.  This gives me the exact information I need.
+
+     ;; (max 0 (- *unassigned-and-active-future-count*
+     ;;           (number-of-active-threads)))
+     *threads-waiting-for-starting-core*
+
+; I intentionally ignore the threads that have incremented *last-slot-taken*
+; but not yet entered claim-starting-core.  I could come up with some mechanism
+; to track these, but there should be an insignificant number of them, and it's
+; not worth it right now.
+
+     ))
+
+(defun total-number-of-threads ()
+  (length (all-threads)))
 
 (defvar *refresh-rate-indicator* 0)
 
@@ -1370,6 +1390,10 @@
    (value-of-symbol *idle-future-core-count*)
    (value-of-symbol *idle-future-resumptive-core-count*)
    (value-of-symbol *idle-future-thread-count*)
+   (value-of-symbol *threads-waiting-for-starting-core*)
+   (value-of-symbol number-of-idle-threads-and-threads-waiting-for-a-starting-core)
+   (value-of-symbol total-number-of-threads)
+
    (format nil "~% ")
 
    (value-of-symbol *unassigned-and-active-future-count*)

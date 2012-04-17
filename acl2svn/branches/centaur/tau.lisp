@@ -1530,7 +1530,7 @@
 ; on the Use of ENS by Function Evaluation in the Tau System.
 
   (mv-let (erp val)
-          (ev-fncall-w fn evg-lst wrld nil t t nil)
+          (ev-fncall-w fn evg-lst wrld nil nil t t nil)
 
 ; The arguments to ev-fncall-w above, after wrld, are safe-mode (= nil), gc-off
 ; (= t), hard-error-returns-nilp (= t), and aok (= nil).  These are the same
