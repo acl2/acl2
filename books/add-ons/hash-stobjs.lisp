@@ -827,10 +827,11 @@ EQL or EQUAL.~%")))
                 (defstobj-axiomatic-init-fields (cdr ftemps)))))))))
 
 
-(defun defstobj-field-fns-raw-defs (var inline n ftemps)
+(defun defstobj-field-fns-raw-defs (var flush-var inline n ftemps)
 
 ; Warning:  See the guard remarks in the Essay on Defstobj Definitions.
 
+  #-hons (declare (ignorable flush-var)) ; irrelevant var without hons
   (cond
    ((endp ftemps) nil)
    (t
@@ -1008,7 +1009,7 @@ EQL or EQUAL.~%")))
                                              ',init
                                              :element-type
                                              ',array-etype)))
-                      #+hons (memoize-flush ,var)
+                      #+hons (memoize-flush ,flush-var)
                       (setf (svref ,var ,n)
                             (,(pack2 'stobj-copy-array- fix-vref)
                              old new 0 min-index))
@@ -1026,7 +1027,7 @@ EQL or EQUAL.~%")))
                      (type ,array-etype v))
             ,@(and inline (list *stobj-inline-declare*))
             (progn 
-              #+hons (memoize-flush ,var)
+              #+hons (memoize-flush ,flush-var)
               (setf (,vref (the ,simple-type (svref ,var ,n))
                            (the (and fixnum (integer 0 *)) i))
                     (the ,array-etype v))
@@ -1038,7 +1039,7 @@ EQL or EQUAL.~%")))
            (,updater-name (v ,var)
                           ,@(and inline (list *stobj-inline-declare*))
                           (progn
-                            #+hons (memoize-flush ,var)
+                            #+hons (memoize-flush ,flush-var)
                             (setf (svref ,var ,n) v)
                             ,var))))
         (t
@@ -1052,13 +1053,13 @@ EQL or EQUAL.~%")))
                           (declare (type ,type v))
                           ,@(and inline (list *stobj-inline-declare*))
                           (progn
-                            #+hons (memoize-flush ,var)
+                            #+hons (memoize-flush ,flush-var)
                             (setf (aref (the (simple-array ,type (1))
                                           (svref ,var ,n))
                                         0)
                                   (the ,type v))
                             ,var))))))
-     (defstobj-field-fns-raw-defs var inline (1+ n) (cdr ftemps))))))
+     (defstobj-field-fns-raw-defs var flush-var inline (1+ n) (cdr ftemps))))))
 
 
 
@@ -1175,6 +1176,7 @@ EQL or EQUAL.~%")))
               "The :resizable keyword is only legal for array types, hence is ~
                illegal for the ~x0 field of ~x1."
               field name))
+;---<
          ((and (consp type)
                (eq (car type) 'hash-table))
           (cond ((or (atom (cdr type))
@@ -1190,6 +1192,7 @@ EQL or EQUAL.~%")))
                               ~x0.~%" (and (consp (cdr type))
                                            (cadr type))))
                 (t (value nil))))
+;   >---
          (t (let ((type-term (translate-declaration-to-guard
                               type 'x wrld)))
               (cond
