@@ -5621,9 +5621,10 @@
   :REWRITE or :DEFINITION rule, so you may want to consider disabling
   (:REWRITE CDR-CONS) in the hint provided for Subgoal *1/1.
   ~ev[]
-  The warning is telling us that if you leave the rewrite rule enabled, ACL2
-  may simplify away the hypothesis added by the ~c[:use] hint.  We now explain
-  this danger in more detail and suggest a solution.~/
+  The warning is saying that if you leave the rewrite rule enabled, ACL2 may
+  simplify away the hypothesis added by the ~c[:use] hint.  We now explain this
+  danger in more detail and show how disabling the rule can solve this
+  problem.~/
 
   Recall (~pl[hints]) how ~c[:use] ~il[hints] work.  Such a hint specifies a
   formula, ~c[F], which is based on an existing lemma.  Then the indicated
@@ -5644,13 +5645,12 @@
                   (equal x1 x2))
          :hints ((\"Goal\"
                   :use ((:instance car-p (x x1))
-                        (:instance car-p (x x2)))
-                  :in-theory (disable car-p))))
+                        (:instance car-p (x x2))))))
   ~ev[]
-  Without the above ~c[:]~ilc[in-theory] hint, the proof of the final ~ilc[thm]
-  form fails, because the new hypotheses are rewritten to ~c[t] using the
-  ~c[:]~ilc[rewrite] rule ~c[CAR-P], as illustrated by the following proof
-  log.
+  The proof of the final ~ilc[thm] form fails, because the new hypotheses are
+  rewritten to ~c[t] using the ~c[:]~ilc[rewrite] rule ~c[CAR-P], in the manner
+  described above.  The following proof log shows the new hypotheses and their
+  disappearance via rewriting.
   ~bv[]
     We augment the goal with the hypotheses provided by the :USE hint.
     These hypotheses can be derived from CAR-P via instantiation.  We are
@@ -5668,7 +5668,17 @@
     (IMPLIES (EQUAL (P X1) (P X2))
              (EQUAL X1 X2)).
   ~ev[]
-  When we disable the rule ~c[CAR-P], the proof succeeds.~/")
+  When we disable the rule ~c[CAR-P] as follows, the proof succeeds.
+  ~bv[]
+    (thm (implies (equal (p x1) (p x2))
+                  (equal x1 x2))
+         :hints ((\"Goal\"
+                  :use ((:instance car-p (x x1))
+                        (:instance car-p (x x2)))
+                  :in-theory (disable car-p))))
+  ~ev[]
+  In general, then, a solution is to disable the rewrite rule that you are
+  supplying in a ~c[:use] hint.~/")
 
 (defun@par maybe-warn-for-use-hint (pspv cl-id ctx wrld state)
   (cond
