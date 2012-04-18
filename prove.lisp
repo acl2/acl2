@@ -5605,7 +5605,72 @@
           (add-to-set-equal x (enabled-lmi-names ens (cdr lmi-lst) wrld)))
          (t (enabled-lmi-names ens (cdr lmi-lst) wrld)))))))
 
-(defun@par maybe-warn-for-use-hint (pspv ctx wrld state)
+(defdoc using-enabled-rules
+  ":Doc-Section Miscellaneous
+
+  avoiding ~c[:use] ~il[hints] for ~il[enable]d ~c[:]~ilc[rewrite] rules~/
+
+  Consider the following (admittedly silly) example.
+  ~bv[]
+  (thm (equal (append (append x y) z) (append x y z))
+       :hints ((\"Subgoal *1/1\" :use cdr-cons)))
+  ~ev[]
+  ACL2's output includes the following warning.
+  ~bv[]
+  ACL2 Warning [Use] in ( THM ...):  It is unusual to :USE an enabled
+  :REWRITE or :DEFINITION rule, so you may want to consider disabling
+  (:REWRITE CDR-CONS) in the hint provided for Subgoal *1/1.
+  ~ev[]
+  The warning is telling us that if you leave the rewrite rule enabled, ACL2
+  may simplify away the hypothesis added by the ~c[:use] hint.  We now explain
+  this danger in more detail and suggest a solution.~/
+
+  Recall (~pl[hints]) how ~c[:use] ~il[hints] work.  Such a hint specifies a
+  formula, ~c[F], which is based on an existing lemma.  Then the indicated
+  goal, ~c[G], is replaced by the implication ~c[(implies F G)].  The intention
+  is that the truth of ~c[F] will help in the simplification of ~c[G] to
+  ~c[T] (true).  The ``[Use]'' warning shown above is telling us of the danger
+  that ~c[F] may be rewritten to ~c[T], reducing the implication above to
+  ~c[(implies T G)] ~-[] thus, sadly, ~c[F] has disappeared and is not
+  available to help with the simplification of ~c[G].
+
+  Consider the following tiny example.
+  ~bv[]
+    (defun p (x) (cons x x))
+    (defthm car-p
+       (equal (car (p x)) x))
+    (in-theory (disable p (:type-prescription p)))
+    (thm (implies (equal (p x1) (p x2))
+                  (equal x1 x2))
+         :hints ((\"Goal\"
+                  :use ((:instance car-p (x x1))
+                        (:instance car-p (x x2)))
+                  :in-theory (disable car-p))))
+  ~ev[]
+  Without the above ~c[:]~ilc[in-theory] hint, the proof of the final ~ilc[thm]
+  form fails, because the new hypotheses are rewritten to ~c[t] using the
+  ~c[:]~ilc[rewrite] rule ~c[CAR-P], as illustrated by the following proof
+  log.
+  ~bv[]
+    We augment the goal with the hypotheses provided by the :USE hint.
+    These hypotheses can be derived from CAR-P via instantiation.  We are
+    left with the following subgoal.
+
+    Goal'
+    (IMPLIES (AND (EQUAL (CAR (P X1)) X1)
+                  (EQUAL (CAR (P X2)) X2))
+             (IMPLIES (EQUAL (P X1) (P X2))
+                      (EQUAL X1 X2))).
+
+    By the simple :rewrite rule CAR-P we reduce the conjecture to
+
+    Goal''
+    (IMPLIES (EQUAL (P X1) (P X2))
+             (EQUAL X1 X2)).
+  ~ev[]
+  When we disable the rule ~c[CAR-P], the proof succeeds.~/")
+
+(defun@par maybe-warn-for-use-hint (pspv cl-id ctx wrld state)
   (cond
    ((warning-disabled-p "Use")
     (state-mac@par))
@@ -5622,8 +5687,10 @@
        (enabled-lmi-names
         (warning$@par ctx ("Use")
           "It is unusual to :USE an enabled :REWRITE or :DEFINITION rule, so ~
-           you may want to consider disabling ~&0."
-          enabled-lmi-names))
+           you may want to consider disabling ~&0 in the hint provided for ~
+           ~@1.  See :DOC using-enabled-rules."
+          enabled-lmi-names
+          (tilde-@-clause-id-phrase cl-id)))
        (t (state-mac@par)))))))
 
 (defun@par maybe-warn-about-theory-simple (ens1 ens2 ctx wrld state)
@@ -6753,7 +6820,7 @@
       (erp (mv@par step-limit 'error pspv nil state))
       (t
        (pprogn@par
-        (maybe-warn-for-use-hint@par new-pspv-1 ctx wrld state)
+        (maybe-warn-for-use-hint@par new-pspv-1 cl-id ctx wrld state)
         (maybe-warn-about-theory-from-rcnsts@par
          (access prove-spec-var pspv :rewrite-constant)
          (access prove-spec-var new-pspv-1 :rewrite-constant)

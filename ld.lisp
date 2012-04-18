@@ -18288,6 +18288,10 @@
 ; the previous functionality of interpret-term-as-rewrite-rule, except for
 ; removing lambdas.
 
+; Improved the :use hint warning by adding the goal name and pointing to a new
+; :doc topic, using-enabled-rules.  Thanks to David Rager for pointing out how
+; the existing warning could be improved.
+
   :doc
   ":Doc-Section release-notes
 
@@ -18738,6 +18742,12 @@
 
   Fixed a bug in the ACL2 evaluator (source function ~c[raw-ev-fncall]), which
   was unlikely to be exhibited in practice.
+
+  Fixed a hard Lisp error that could occur for ill-formed ~c[:]~ilc[meta]
+  ~il[rule-classes], e.g., ~c[(:meta :trigger-fns '(foo))].
+
+  It is now an error to include a ~il[stobj] name in the ~c[:renaming] alist
+  (~pl[defstobj]).
 
   ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]
 

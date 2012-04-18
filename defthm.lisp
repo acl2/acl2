@@ -10466,7 +10466,8 @@
                           (mv :error rst))
                          (t (let* ((next (car lst))
                                    (fn (deref-macro-name next macro-aliases)))
-                              (cond ((not (function-symbolp fn wrld))
+                              (cond ((not (and (symbolp fn)
+                                               (function-symbolp fn wrld)))
                                      (mv :error
                                          (msg "contains ~x0"
                                               next)))
@@ -10758,9 +10759,22 @@
                  ((atom (cadr alist))
                   (er soft ctx
                       "The :TRIGGER-FNS component of a :META rule class must ~
-                       be a non-empty true-list of function symbols.  but ~x0 ~
+                       be a non-empty true-list of function symbols.  But ~x0 ~
                        is empty.  See :DOC meta."
                       (cadr alist)))
+                 ((eq (car (cadr alist)) 'quote)
+                  (er soft ctx
+                      "The :TRIGGER-FNS component of a :META rule class must ~
+                       be a non-empty true-list of function symbols.  You ~
+                       specified ~x0 for this component, but the list is not ~
+                       to be quoted.~@1  See :DOC meta."
+                      (cadr alist)
+                      (cond ((and (consp (cdr (cadr alist)))
+                                  (symbol-listp (cadr (cadr alist)))
+                                  (null (cddr (cadr alist))))
+                             (msg "  Perhaps you intended ~x0 instead."
+                                  (cadr (cadr alist))))
+                            (t ""))))
                  (t (mv-let (flg lst)
                             (eliminate-macro-aliases (cadr alist)
                                                      (macro-aliases wrld)
@@ -10771,7 +10785,7 @@
                                         rule class must be a non-empty ~
                                         true-list of function symbols, but ~
                                         ~x0 ~@1.  See :DOC meta."
-                                       lst))
+                                       (cadr alist) lst))
                                   (t (value lst)))))))
                (:TRIGGER-TERMS
                 (cond

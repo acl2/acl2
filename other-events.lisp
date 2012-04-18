@@ -20006,8 +20006,7 @@
 
   (cond
    ((endp field-descriptors)
-    (let ((default-names (list* name
-                                (defstobj-fnname name :recognizer :top nil)
+    (let ((default-names (list* (defstobj-fnname name :recognizer :top nil)
                                 (defstobj-fnname name :creator :top nil)
                                 (reverse default-names)))
           (domain (strip-cars renaming)))
