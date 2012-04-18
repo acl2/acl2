@@ -396,9 +396,9 @@
 
 ; We also do the following for clisp, since we set the encoding on the command
 ; line (see comment above) but we want to be able to read our own source files
-; during the build.  Without this, the build breaks because of a string in :doc
-; note-4-4.  You can search for it this way in Emacs, from the top of ld.lisp:
-; (re-search-forward "Mart[^i]n Mateos")
+; during the build.  Without this, the build breaks with the following string
+; (note the accented "i" in Martin, below):
+;   Francisco J. Martín Mateos
 ; With this, we do not need an explicit :external-format argument for the call
 ; of with-open-file in acl2-check.lisp that opens a stream for
 ; "acl2-characters".

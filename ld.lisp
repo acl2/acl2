@@ -18529,7 +18529,7 @@
 
   Event summaries now show the names of events that were mentioned in
   ~il[hints] of type ~c[:use], ~c[:by], or ~c[:clause-processor].
-  ~l[set-inhibited-summary-types].  Thanks to Francisco J. Martín Mateos for
+  ~l[set-inhibited-summary-types].  Thanks to Francisco J. Martin Mateos for
   requesting such an enhancement (actually thanks to the community, as his
   request is the most recent but this has come up from time to time before).
 
