@@ -108,17 +108,22 @@
 ; reading from all three file formats.  But we always write files using the
 ; newest, V3 format.
 ;
-; Why these different versions?  We originally developed our serialization
-; scheme as ttag-based library in :dir :system, but this left us with no way to
-; tightly integrate it into ACL2's certificate printing/reading routines.  When
-; we moved serialization into ACL2 proper, we noticed a few things that we
-; could improve, and tweaked the serialization scheme.  The new scheme, V2,
-; wasn't compatible with books/serialize, but we already had many files
-; written in the old V1 format.  Later, we realized that it would be easy to
-; restore fast alists within serialized objects, and that this would allow the
-; fast alists defined in a book to still be fast after including the book.  The
-; new format, V3, added this feature, but again we had lots of V2 files that we
-; still wanted to be able to read.
+; Why these different versions?
+;
+;    V1.  We originally developed our serialization scheme as ttag-based
+;         library in :dir :system, but this left us with no way to tightly
+;         integrate it into ACL2's certificate printing/reading routines.
+;
+;    V2. When we moved serialization into ACL2 proper, we noticed a few things
+;        that we could improve, and tweaked the serialization scheme.  The new
+;        scheme, V2, wasn't compatible with books/serialize, but we already had
+;        many files written in the old V1 format.
+;
+;    V3. Later, we realized that it would be easy to restore fast alists within
+;        serialized objects, and that this would allow the fast alists defined
+;        in a book to still be fast after including the book.  The new format,
+;        V3, added this feature, but again we had lots of V2 files that we
+;        still wanted to be able to read.
 ;
 ; Eventually we should be able to drop support for the old versions, but the
 ; formats are all very similar so supporting them is not that much work.  Since
@@ -574,8 +579,12 @@
 
 (defun ser-decode-str (version hons-mode stream)
   (let* ((header (ser-decode-nat stream))
-         (len    (if (eq version :v3) (ash header -1) header))
-         (normp  (and (= (logand header 1) 1) (not (eq hons-mode :never)))))
+         (len    (if (eq version :v3)
+                     (ash header -1)
+                   header))
+         (normp  (and (eq version :v3)
+                      (= (the bit (logand header 1)) 1)
+                      (not (eq hons-mode :never)))))
     (unless (and (typep len 'fixnum)
                  (< (the fixnum len) array-dimension-limit))
       (error "Trying to decode a string, but the length is too long."))
@@ -861,16 +870,15 @@
 ; keep track of which objects we have explored.  As we gather atoms, we mark the
 ; objects we have seen by binding them to T in the appropriate hash table.
 ;
-; Every symbol we have seen is in the SYM hash table, and every number/character
-; we have seen is in the EQL hash table.  But the string and cons tables are
-; only EQ hash tables.  Because of this, EQUAL-but-not-EQ strings and conses may
-; be bound in their seen tables.
+; Every symbol we have seen is in the SYM hash table, and every
+; number/character we have seen is in the EQL hash table.  But the string and
+; cons tables are only EQ hash tables.  Because of this, EQUAL-but-not-EQ
+; strings and conses may be bound in their seen tables.
 ;
-; We originally tried to use an EQUAL hash table for strings, but its
-; performance was too slow.  We now take some special efforts (after gathering
-; atoms) to avoid writing out multiple copies of duplicated strings.  But we
-; don't try to avoid redundantly writing conses.  (Of course, a HONS user could
-; first hons-copy their object to achieve full structure sharing.)
+; We make no effort to avoid "redundantly" writing EQUAL-but-not-EQ conses or
+; strings.  Of course, a HONS user could first hons-copy their object to
+; achieve full structure sharing.  This would perhaps improve read time at the
+; cost of write time.
 
   (seen-sym  (ser-hashtable-init 1000 'eq)  :type hash-table)
   (seen-eql  (ser-hashtable-init 1000 'eql) :type hash-table)
@@ -930,7 +938,7 @@
          (setf (gethash x tbl) t)
          nil))))
 
-
+(defun ser-gather-atoms (x encoder)
 
 ; Gathering atoms is particularly performance critical, so we have looked into
 ; making it faster.  We assume X is a valid ACL2 object.  We do some typep
@@ -944,7 +952,6 @@
 ; multithreaded code, and we don't want to use it unless we really have no
 ; other choice.
 
-(defun ser-gather-atoms (x encoder)
   (declare (type ser-encoder encoder))
   (cond ((consp x)
          (unless (ser-see-obj x (ser-encoder-seen-cons encoder))
@@ -990,6 +997,85 @@
 
 
 
+
+; ESSAY ON HOW WE HANDLE EQUAL-BUT-NOT-EQ STRINGS
+;
+; A subtle change in V3 is that we no longer make any effort to avoid
+; redundantly encoding EQUAL-but-not-EQ or strings.
+;
+; When I first developed serialize, I wanted to use it to save the models of
+; our processor.  My Verilog translator produced objects with lots of strings,
+; and in many cases these strings could be different, e.g., if you parsed a
+; module with:
+;
+;     module m ( ..., foo, ... );
+;        input foo;
+;        assign ... = foo;
+;        ...
+;     endmodule
+;
+; Then you could end up with lots of different strings that all said "foo".
+; Note also that in this context, I really wanted to optimize for read time
+; instead of write time (a script made the processor models at night, where
+; time is irrelevant, but I needed to read them in while developing proofs.)
+; At any rate, for these reasons, I really wanted to avoid writing out
+; redundant strings.
+;
+; My first idea was to just use an EQUAL hash table for seen-str, but this
+; turned out to be far too slow.
+;
+; Instead, I developed a fancy scheme.  First, the seen-str was only an EQ hash
+; table.  But when encoding the collected strings, I (1) sorted them using
+; Lisp's SORT function, which is a stable sort, and (2) assigned their indices
+; using a tricky function that looked for adjacent EQUAL strings, and reused
+; the index in this case.  The net effect was that all strings would be
+; canonicalized to some representative.  This was probably a performance win
+; because, instead of having to EQUAL-hash at each occurrence of the string, we
+; only have to EQ hash and then do one global sort at the end.  (It probably
+; would have worked just as well to use separate EQ and EQUAL hash tables.)
+;
+; This scheme was used in V1 and V2.  However, in V3, where we started to
+; record whether strings were normed, and restore them to their normed status,
+; we ran into a problem.
+;
+; Suppose there are two EQUAL-but-not-EQ strings,
+;    - X (which is normed) and
+;    - Y (which is not).
+;
+; Under our canonicalization scheme, we would choose one of these as the
+; canonical form "at random."  (Actually the winner just depended on which we
+; first encountered, but you can think of that as basically random.)  At any
+; rate, this could two bad outcomes:
+;
+;    (1) Y could be canonicalized to X, and hence become normed.  This seems
+;        basically fine and is probably nothing to be worried about unless some
+;        TTAG code is depending on it being different from Y, which wouldn't be
+;        sound anyway).
+;
+;    (2) X could be canonicalized to Y, and hence lose its normed status.  This
+;        is bad because if X is being used as a fast alist key, we will have
+;        trouble restoring that alist.
+;
+; It seems easy enough to fix this by norming the string whenever ANY of its
+; EQUAL-but-not-EQ partners are normed.  But instead, we now just do not try to
+; avoid writing out redundant strings.  Why not?
+;
+;   - It was somewhat complicated and ugly, and the fix seems kind of gross.
+;
+;   - Sorting the strings slows down writing, and write speed is now more
+;     important than it used to be.  We used to only write out our processor
+;     models with an automated script.  But now serialize is used to print
+;     certificates, etc., and while write speed is certainly still less
+;     important than read speed, it is at least somewhat important.
+;
+;   - EQUAL-but-not-EQ strings don't seem that prevalent anyway, e.g., we now
+;     judiciously use HONS-COPY to normalize strings in the Verilog parser,
+;     etc., and other users can do the same if they think EQUAL-but-not-EQ
+;     copies of a string are likely to occur.
+
+
+(defun ser-make-atom-map (encoder)
+
 ; After the atoms have been gathered we want to assign them unique indexes.
 ; These indexes will need to agree with the implicit order of the indexes in
 ; the serialized file.  So, we need to assign indexes to the naturals first,
@@ -1010,64 +1096,12 @@
 ; need is going to be a fixnum.  Because of this, throughout this code we can
 ; assume that all indices are always fixnums.
 ;
-; Future optimization optential.  It might be possible to do the index
+; Future optimization potential.  It might be possible to do the index
 ; assignment inline with atom gathering, by keeping separate track of how many
 ; naturals we have seen, how many characters, etc., and storing only
-; type-relative offsets into the atom maps instead of absolute indices.  I'm
-; not sure if this would be much faster.  It might be particularly tricky to do
-; correctly for strings.
-
-(defun ser-make-atom-map-for-strings
-  (x          ; The list of strings we gathered, which we are recurring down
-   free-index ; Next available index that hasn't been assigned yet
-   seen-str   ; The seen-str table; we are smashing it's T's with indexes.
-   acc        ; Accumulator for unique strings
-   )
-  "Returns (VALUES UNIQUE-X FREE-INDEX')"
-  (declare (type hash-table seen-str)
-           (fixnum free-index))
-
-; We do something pretty tricky for strings.
-;
-; To avoid EQUAL hashing, we only used an EQ seen table to detect whether
-; strings had already been seen when we gathered atoms.  So our accumulated
-; strings may have various EQUAL-but-not-EQ duplicates.  We can "implicitly"
-; get rid of these duplicates by building our atom map in a funny way.
-;
-; This function is called with X = (sort gathered-strings #'string<).  Note
-; that in Common Lisp, SORT is a stable sort.  Because of this, we only need to
-; look at adjacent strings to see if they are EQUAL-but-not-EQ.
-;
-; We assign an index to every string we have gathered, but here is a trick: if
-; the string is EQUAL to its neighbor, we do not increment the free-index and
-; we do not add the string to our answer accumulator.
-;
-; In other words, given a list like ("foo" "foo" "bar") of non-EQ strings, we
-; will assign the first two "foo"s to the same index, and "bar" to the next
-; index.  But we still bind both copies of "foo" to the same index.  This way,
-; when SER-ENCODE-CONSES wants to look up a string, it can still do an EQ
-; lookup into the string table and find the appropriate index.
-;
-; We smash the atom seen-str table and return a sub-list of X where all the
-; duplicates have been eliminated and where the strings are put into the right
-; order for the indexes we have assigned them.
-
-  (cond ((null x)
-         (values free-index (nreverse acc)))
-        (t
-         ;; In all cases, add an entry for the first string.
-         (setf (gethash (first x) seen-str) free-index)
-         (if (or (null (cdr x))
-                 (not (equal (first x) (second x))))
-             ;; Not (STR1 STR1 ...), so increment and keep going
-             (ser-make-atom-map-for-strings (cdr x)
-                                        (the fixnum (+ 1 free-index))
-                                        seen-str
-                                        (cons (car x) acc))
-           ;; (STR1 STR1 ...), so treat it as (STR1 ...)
-           (ser-make-atom-map-for-strings (cdr x) free-index seen-str acc)))))
-
-(defun ser-make-atom-map (encoder)
+; type-relative offsets into the atom maps instead of absolute indices.  This
+; might be worthwhile: it should significantly reduce the amount of hashing we
+; need to do.
 
   ;; Note: this order must agree with ser-encode-main.
 
@@ -1095,13 +1129,9 @@
       (setf (gethash elem seen-eql) free-index)
       (incf free-index))
 
-    ;; Strings get sorted then added with our custom routine.
-    (let* ((strs        (ser-encoder-strings encoder))
-           (strs-sorted (ser-time? (sort strs #'string<))))
-      (multiple-value-bind (free strs-chopped)
-        (ser-time? (ser-make-atom-map-for-strings strs-sorted free-index seen-str nil))
-        (setf (ser-encoder-strings encoder) strs-chopped)
-        (setf free-index free)))
+    (dolist (elem (ser-encoder-strings encoder))
+      (setf (gethash elem seen-str) free-index)
+      (incf free-index))
 
     ;; Turn the hash table of symbols into an alist so that they're in the same
     ;; order now and when we encode.  This might not be necessary, but it's
