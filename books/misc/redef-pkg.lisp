@@ -21,65 +21,60 @@
 ;   the user to most cases of this, but it's still unfortunate.  Example log:
 
 ;      ACL2 !>(defpkg "TEST" '(cons car defun))
-;  
+;      
 ;      Summary
 ;      Form:  ( DEFPKG "TEST" ...)
 ;      Rules: NIL
-;      Warnings:  None
-;      Time:  0.00 seconds (prove: 0.00, print: 0.00, other: 0.00)
+;      Time:  0.01 seconds (prove: 0.00, print: 0.00, other: 0.01)
 ;       "TEST"
 ;      ACL2 !>(in-package "TEST")
 ;       "TEST"
 ;      TEST !>(defun foo (x) (cons x x))
-;  
+;      
 ;      Since FOO is non-recursive, its admission is trivial.  We observe that
 ;      the type of FOO is described by the theorem (COMMON-LISP::CONSP (FOO X)).
 ;      We used primitive type reasoning.
-;  
+;      
 ;      Summary
 ;      Form:  ( DEFUN FOO ...)
 ;      Rules: ((:FAKE-RUNE-FOR-TYPE-SET COMMON-LISP::NIL))
-;      Warnings:  None
-;      Time:  0.01 seconds (prove: 0.00, print: 0.01, other: 0.00)
+;      Time:  0.01 seconds (prove: 0.00, print: 0.00, other: 0.00)
 ;       FOO
 ;      TEST !>(acl2::in-package "ACL2")
 ;       "ACL2"
 ;      ACL2 !>(include-book "misc/redef-pkg" :dir :system)
-;  
-;      TTAG NOTE (for included book): Adding ttag :REDEF-PKG from file /v/filer4b/v11q001/acl2/devel/books/misc/redef-pkg.lisp.
-;  
+;      
+;      TTAG NOTE (for included book): Adding ttag :REDEF-PKG from book /Users/kaufmann/acl2/devel/books/misc/redef-pkg.
+;      
 ;      ACL2 Warning [Ttags] in ( INCLUDE-BOOK "misc/redef-pkg" ...):  The
 ;      ttag note just printed to the terminal indicates a modification to
 ;      ACL2.  To avoid this warning, supply an explicit :TTAGS argument when
-;      including the book "/v/filer4b/v11q001/acl2/devel/books/misc/redef-pkg.lisp".
-;  
-;      ; Fast loading /v/filer4b/v11q001/acl2/devel/books/misc/redef-pkg.fasl
-;  
+;      including the book "/Users/kaufmann/acl2/devel/books/misc/redef-pkg".
+;      
+;      
 ;      Summary
 ;      Form:  ( INCLUDE-BOOK "misc/redef-pkg" ...)
 ;      Rules: NIL
 ;      Warnings:  Ttags
-;      Time:  0.01 seconds (prove: 0.00, print: 0.00, other: 0.01)
-;       "/v/filer4b/v11q001/acl2/devel/books/misc/redef-pkg.lisp"
+;      Time:  0.06 seconds (prove: 0.00, print: 0.00, other: 0.06)
+;       "/Users/kaufmann/acl2/devel/books/misc/redef-pkg.lisp"
 ;      ACL2 !>(defpkg "TEST" '(cons car defun foo))
-;  
+;      
 ;      Executing the redefined chk-acceptable-defpkg
-;  
-;      Debug: imports and package-entry-imports are different.
-;      imports: (CAR CONS DEFUN FOO)
-;      %package-entry-imports: (CAR CONS DEFUN)
-;  
+;      
 ;      NOTE: Added the following list of symbols to package "TEST":
 ;       (FOO)
-;  
-;  
-;      ACL2 Warning [Package] in ADD-SYMBOLS-TO-PKG:  The symbol with name
-;      "FOO" imported into the "TEST" package may cause problems, since it
-;      already has properties in the ACL2 world.
-;  
-;  
+;      and deleted the following list of symbols:
+;       NIL
+;      
+;      
+;      ACL2 Warning [Package] in SET-IMPORTED-SYMBOLS-TO-PKG:  The symbol
+;      with name "FOO" imported into the "TEST" package may cause problems,
+;      since it already has properties in the ACL2 world.
+;      
+;      
 ;      The event ( DEFPKG "TEST" ...) is redundant.  See :DOC redundant-events.
-;  
+;      
 ;      Summary
 ;      Form:  ( DEFPKG "TEST" ...)
 ;      Rules: NIL
@@ -87,34 +82,36 @@
 ;      Time:  0.00 seconds (prove: 0.00, print: 0.00, other: 0.00)
 ;       :REDUNDANT
 ;      ACL2 !>:pbt 0
-;                0  (EXIT-BOOT-STRAP-MODE)
-;                1  (DEFPKG "TEST" '#)
-;       L        2  
+;                 0  (EXIT-BOOT-STRAP-MODE)
+;                 1  (DEFPKG "TEST" '#)
+;       L         2  
 ;      ***********************************************
 ;      ************ ABORTING from raw Lisp ***********
 ;      Error:  The symbol FOO, which has no package, was encountered
 ;      by ACL2.  This is an inconsistent state of affairs, one that
 ;      may have arisen by undoing a defpkg but holding onto a symbol
 ;      in the package being flushed, contrary to warnings printed.
-;  
+;      
 ;      ***********************************************
-;  
-;      If you didn't cause an explicit interrupt (Control-C),
+;      
+;      The message above might explain the error.  If not, and
+;      if you didn't cause an explicit interrupt (Control-C),
 ;      then the root cause may be call of a :program mode
 ;      function that has the wrong guard specified, or even no
 ;      guard specified (i.e., an implicit guard of t).
 ;      See :DOC guards.
-;  
+;      
 ;      To enable breaks into the debugger (also see :DOC acl2-customization):
 ;      (SET-DEBUGGER-ENABLE T)
 ;      ACL2 !>
-;  
+
 (in-package "ACL2")
 
 (defttag :redef-pkg)
 
-; Don't use this in a theorem!
-(defun add-symbols-to-pkg (imports name)
+; Don't use this in a theorem!  See setting of program-fns-with-raw-code,
+; below.
+(defun set-imported-symbols-to-pkg (imports name)
   (declare (ignore imports name)
            (xargs :guard t :mode :program))
   nil)
@@ -127,7 +124,13 @@
 
 (set-raw-mode-on state)
 
-; Redefine add-symbols-to-pkg.
+(f-put-global 'program-fns-with-raw-code
+              (add-to-set-eq 'set-imported-symbols-to-pkg
+                             (f-get-global 'program-fns-with-raw-code
+                                           *the-live-state*))
+              *the-live-state*)
+
+; Redefine set-imported-symbols-to-pkg.
 (defun set-imported-symbols-to-pkg (syms pkg &aux (state *the-live-state*))
   (let ((pkg-entry0 (assoc-equal pkg *ever-known-package-alist*))
         (pkg-entry1 (assoc-equal pkg (known-package-alist *the-live-state*)))
@@ -159,9 +162,9 @@
               (when (get temp *current-acl2-world-key*)
                 (push (symbol-name temp) ans))
               (unintern temp pkg))))
-        (fms "NOTE: Added the following list of symbols to package ~x0:~| ~
-              ~x1~|and deleted the following list of symbols:~| ~
-              ~x2~|~%"
+        (fms "NOTE: Added this list of symbols to the imports of package ~
+              ~x0:~| ~x1~|and deleted this list of symbols from the imports ~
+              of package ~x0:~| ~x2~|~%"
              (list (cons #\0 pkg)
                    (cons #\1 new)
 		   (cons #\2 deleted))
@@ -180,7 +183,7 @@
 ; WARNING!  Update this if ACL2's def. of the following changes.
 ; (books/hacking/ has some sort of pattern-matching way to redefine functions
 ; that might be more robust.)
-(defun chk-acceptable-defpkg (name form defpkg-book-path ctx w state)
+(defun chk-acceptable-defpkg (name form defpkg-book-path hidden-p ctx w state)
 
 ; We return an error triple.  The non-error value is either 'redundant or a
 ; triple (tform value . package-entry), where tform and value are a translated
@@ -207,7 +210,8 @@
 #||
     (cond
      ((and package-entry
-           (not (package-entry-hidden-p package-entry))
+           (or hidden-p
+               (not (package-entry-hidden-p package-entry)))
            (equal (caddr (package-entry-defpkg-event-form package-entry))
                   form))
       (value 'redundant))
@@ -295,6 +299,11 @@
        (state-global-let*
         ((safe-mode
 
+; Warning: If you are tempted to bind safe-mode to nil outside the boot-strap,
+; then revisit the binding of *safe-mode-verified-p* to t in the
+; #-acl2-loop-only definition of defpkg-raw.  See the defparameter for
+; *safe-mode-verified-p*.
+
 ; In order to build a profiling image for GCL, we have observed a need to avoid
 ; going into safe-mode when building the system.
 
@@ -302,7 +311,16 @@
         (er-let*
          ((pair (simple-translate-and-eval form nil nil
                                            "The second argument to defpkg"
-                                           ctx w state t)))
+                                           ctx w state
+;;; Begin code replacement
+; We may as well allow attachments, since we are taking such drastic action
+; anyhow.
+#||
+nil
+||#
+                                           t
+;;; End code replacement
+                                           )))
          (let ((tform (car pair))
                (imports (cdr pair)))
            (cond
@@ -350,7 +368,9 @@
                              (package-entry-imports package-entry)
                              imports)
                             (package-entry-book-path package-entry)
-                            defpkg-book-path w))
+                            defpkg-book-path
+                            w
+                            (f-get-global 'distributed-books-dir state)))
 ||#
 ;;; End code deletion
 ;;; Begin code addition
@@ -367,7 +387,8 @@
                          (value 'redundant)))
 ;;; End code addition
                       ((and package-entry
-                            (not (package-entry-hidden-p package-entry)))
+                            (or hidden-p
+                                (not (package-entry-hidden-p package-entry))))
                        (prog2$
                         (chk-package-reincarnation-import-restrictions
                          name imports)
@@ -384,7 +405,7 @@
 ; on the fact that the symbol name-PACKAGE is new!
 
                           (chk-just-new-name base-symbol
-                                             'package nil ctx w state)
+                                             'theorem nil ctx w state)
                           (prog2$
                            (chk-package-reincarnation-import-restrictions
                             name imports)
