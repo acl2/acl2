@@ -1,0 +1,14 @@
+#summary Place to store requests for cleaning up the books repository.
+
+= Introduction =
+
+It's well-known that the books could use cleanup, but it's a very large amount of effort to do so.  This wiki page serves as a wishlist/todo-list for people that are interested in making this happen.
+
+
+= Details =
+
+Items:
+  * Improve performance of books/regex with faster implementations
+  * Make books/regex easier to use
+  * Pull out the proofs related to the ACL2 system from books/unicode and move them into books/system
+  * Enhance books/str
