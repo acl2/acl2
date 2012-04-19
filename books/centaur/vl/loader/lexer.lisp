@@ -1293,10 +1293,10 @@ case.</li>
                        (cons (make-vl-warning
                               :type :vl-warn-incompatible
                               :msg "~l0: unsized numbers with leading X or Z ~
-                                  bit have a different interpretation in ~
-                                  Verilog-1995 than in Verilog-2001 and ~
-                                  beyond.  You may wish to use an explicit ~
-                                  size specifier on this number."
+                                    bit have a different interpretation in ~
+                                    Verilog-1995 than in Verilog-2001 and ~
+                                    beyond.  You may wish to use an explicit ~
+                                    size specifier on this number."
                               :args (list loc)
                               :fn 'vl-correct-bitlist)
                              warnings)
@@ -1309,10 +1309,11 @@ case.</li>
          ((when (< desired-len actual-len))
           (b* ((msg "~l0: implicitly truncating ~s1 from ~x2 to ~x3 bits.")
                (msg (if unsizedp
-                        (str::cat msg "  Note that this truncation emulates a ~
-                       32-bit Verilog implementation, and that on a 64-bit ~
-                       system a different value could be produced.  We ~
-                       strongly recommend adding an explicit size specifier.")
+                        (cat msg "  Note that this truncation emulates a ~
+                                  32-bit Verilog implementation, and that on ~
+                                  a 64-bit system a different value could be ~
+                                  produced.  We strongly recommend adding an ~
+                                  explicit size specifier.")
                       msg))
                (bitstr (vl-bitlist->string bits))
                (w (make-vl-warning

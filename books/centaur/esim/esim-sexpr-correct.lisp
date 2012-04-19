@@ -1612,7 +1612,7 @@
   :hints (("goal" :in-theory (e/d* (subsetp-equal)
                                    (sexpr-eval-list-norm-env-when-ground-args-p 
                                     nth-with-large-index
-                                    cons-member-equal
+                                    member-equal-of-cons
                                     4v-sexpr-eval
                                     4v-sexpr-eval-when-agree-on-keys
                                     4v-alists-agree
@@ -1687,7 +1687,7 @@
                            esim-sexpr-occs-out
                            good-esim-modulep not
                            4v-sexpr-eval 4v-fix
-                           set-equivp-trans
+                           ;set-equivp-trans
                            set-equivp-implies-key-and-env-equiv-4v-alist-extract-1
                            intersectp-equal-non-cons-1
                            intersectp-equal-non-cons
@@ -1711,7 +1711,7 @@
                            set-equivp-asym pat-flatten
                            ; 4v-fix-when-4vp
                            esim-sexpr-correct-occsp
-                           member-equal-atom member-equal
+                           member-equal-when-atom member-equal
                            alist-vals-when-atom
                            collect-signal-list
                            occmap-when-no-occs
@@ -1838,7 +1838,7 @@
                              hons-assoc-equal
                              ; 4v-fix-when-4vp
                              4v-alists-agree
-                             member-equal member-equal-atom
+                             member-equal member-equal-when-atom
                              alist-equiv-append-when-keys-nil
                              good-esim-modulep
                              occmap-when-no-occs

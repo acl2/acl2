@@ -256,7 +256,7 @@ away."
                              remove-equal
                              promote-member-equal-to-membership
                              true-listp
-                             member-equal-when-subsetp-equal
+                             acl2::subsetp-equal-member
                              acl2::true-listp-member-equal)))
 
   (defconst *vl-bad-submodule-message*
@@ -404,7 +404,7 @@ away."
                                  remove-equal
                                  promote-member-equal-to-membership
                                  true-listp
-                                 member-equal-when-subsetp-equal
+                                 acl2::subsetp-equal-member
                                  acl2::true-listp-member-equal)
              :do-not '(generalize fertilize)))))
 
@@ -414,13 +414,12 @@ away."
     ;; this is a good rule.
     (implies
      (force (no-duplicatesp-equal (vl-modulelist->names mods)))
-     (subsetp-equiv
+     (set-equivp
       (vl-modulelist->names (mv-nth 1 (vl-apply-blame-alist mods alist)))
       (set-difference-equal
        (vl-modulelist->names mods)
        (vl-modulelist->names (mv-nth 0 (vl-apply-blame-alist mods alist))))))
-    :hints(("Goal" :in-theory (e/d (subsetp-equiv)
-                                   (vl-apply-blame-alist))))))
+    :hints((set-reasoning))))
 
 
 
@@ -501,7 +500,7 @@ still okay, and </li>
     ;; names to be in terms of the survivors' names.  It's not clear whether
     ;; this is a good rule.
     (implies (force (no-duplicatesp-equal (vl-modulelist->names mods)))
-             (subsetp-equiv
+             (set-equivp
               (vl-modulelist->names (mv-nth 1 (vl-remove-bad-modules names mods)))
               (set-difference-equal
                (vl-modulelist->names mods)
@@ -607,7 +606,7 @@ kept in the same order as they occur in <tt>x</tt>.</p>"
     ;; names to be in terms of the survivors' names.  It's not clear whether
     ;; this is a good rule.
     (implies (force (no-duplicatesp-equal (vl-modulelist->names mods)))
-             (subsetp-equiv
+             (set-equivp
               (vl-modulelist->names (mv-nth 1 (vl-propagate-errors mods)))
               (set-difference-equal
                (vl-modulelist->names mods)

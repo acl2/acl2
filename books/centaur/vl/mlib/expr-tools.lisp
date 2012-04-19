@@ -531,8 +531,46 @@ expression list."
   (defthm string-listp-of-vl-exprlist-names
     (implies (force (vl-exprlist-p x))
              (string-listp (vl-exprlist-names x)))
-    :hints(("Goal" :use ((:instance lemma (flag 'list)))))))
+    :hints(("Goal" :use ((:instance lemma (flag 'list))))))
 
+  (defthm vl-exprlist-names-when-atom
+    (implies (atom x)
+             (equal (vl-exprlist-names x)
+                    nil))
+    :hints(("Goal" :expand (vl-exprlist-names x))))
+
+  (defthm vl-exprlist-names-of-cons
+    (equal (vl-exprlist-names (cons a x))
+           (append (vl-expr-names a)
+                   (vl-exprlist-names x)))
+    :hints(("Goal" :expand ((vl-exprlist-names (cons a x))))))
+
+  (defthm vl-exprlist-names-of-append
+    (equal (vl-exprlist-names (append x y))
+           (append (vl-exprlist-names x)
+                   (vl-exprlist-names y)))
+    :hints(("Goal" :induct (len x))))
+
+  (local (defthm c0
+           (implies (member-equal a x)
+                    (subsetp-equal (vl-expr-names a)
+                                   (vl-exprlist-names x)))
+           :hints(("Goal" :induct (len x)))))
+
+  (local (defthm c1
+           (implies (subsetp-equal x y)
+                    (subsetp-equal (vl-exprlist-names x)
+                                   (vl-exprlist-names y)))
+           :hints(("Goal" :induct (len x)))))
+
+  (local (defthm c2
+           (implies (and (subsetp-equal x y)
+                         (member-equal a x))
+                    (subsetp-equal (vl-expr-names a)
+                                   (vl-exprlist-names y)))))
+
+  (defcong set-equivp set-equivp (vl-exprlist-names x) 1
+    :hints(("Goal" :in-theory (enable set-equivp)))))
 
 
 

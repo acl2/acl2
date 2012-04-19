@@ -28,6 +28,7 @@
 (include-book "inject-comments")
 (include-book "overrides")
 (include-book "../mlib/hierarchy")
+(include-book "../mlib/print-warnings")
 (include-book "../util/cwtime")
 (include-book "../util/gc")
 (include-book "centaur/misc/hons-extra" :dir :system)

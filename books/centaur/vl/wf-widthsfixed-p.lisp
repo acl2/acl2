@@ -102,7 +102,7 @@
                     "~s0: failed to compute widths of arguments to ~s1."
                     (list (vl-modinst->loc x)
                           (or (vl-modinst->instname x)
-                              (str::cat "<unnamed instance of " (vl-modinst->modname x) ">")))))
+                              (cat "<unnamed instance of " (vl-modinst->modname x) ">")))))
 
 (defwellformed-list vl-modinstlist-widthsfixed-p (x)
   :element vl-modinst-widthsfixed-p
@@ -117,7 +117,7 @@
                     "~s0: failed to compute widths of arguments to ~s1."
                     (list (vl-gateinst->loc x)
                           (or (vl-gateinst->name x)
-                              (str::cat "<unnamed " (symbol-name (vl-gateinst->type x)) " gate>")))))
+                              (cat "<unnamed " (symbol-name (vl-gateinst->type x)) " gate>")))))
 
 (defwellformed-list vl-gateinstlist-widthsfixed-p (x)
   :element vl-gateinst-widthsfixed-p

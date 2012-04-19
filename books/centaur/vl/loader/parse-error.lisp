@@ -50,12 +50,12 @@
     (declare (xargs :guard (vl-tokenlist-p tokens)))
     (if (not err)
         nil
-      (let ((context (str::cat "  Near: \""
-                               (vl-tokenlist->string-with-spaces
-                                (take (min 4 (len tokens))
-                                      (redundant-list-fix tokens)))
-                               (if (> (len tokens) 4) "..." "")
-                               "\"")))
+      (let ((context (cat "  Near: \""
+                          (vl-tokenlist->string-with-spaces
+                           (take (min 4 (len tokens))
+                                 (redundant-list-fix tokens)))
+                          (if (> (len tokens) 4) "..." "")
+                          "\"")))
         (vl-actually-report-parse-error
          ;; Have to hons the arguments for the memoization to work correctly.
          ;; Fortunately they're usually very small.

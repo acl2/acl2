@@ -33,10 +33,10 @@
 vl::primitives)."
 
   :long "<p>The patterns used for the :i and :o ports here might look strange.
-For instance, why do we use <tt>((a) (b))</tt> as the input pattern for an AND
-gate instead of <tt>(a b)</tt>?  This allows our primitives to be directly
-compatible with VL's primitives, as far as @(see vl-portdecls-to-i/o) is
-concerned.</p>
+For instance, why do we use <tt>((|a|) (|b|))</tt> as the input pattern for an
+AND gate instead of <tt>(|a| |b|)</tt>?  This allows our primitives to be
+directly compatible with VL's primitives, as far as @(see vl-portdecls-to-i/o)
+is concerned.</p>
 
 <p><b>BOZO</b> Things to consider:</p>
 
@@ -69,14 +69,7 @@ aren't using them for anything.</li>
   (b* (((unless x)
         (er hard? 'def-esim-primitive
             "Only use this for modules with :x definitions."))
-       (s (strip-cars (gpl :nst x)))
-       (body (append `(:n ,name
-                          :x ,x
-                          :i ,i
-                          :o ,o)
-                     ;; BOZO can we get rid of all the full stuff yet??
-                     (if s `(:s ,s :full-s ,s) nil)
-                     `(:full-i ,i :full-o ,o))))
+       (body `(:n ,name :x ,x :i ,i :o ,o)))
     `(defsection ,name
        :parents ,parents
        :short ,short
@@ -88,105 +81,105 @@ aren't using them for anything.</li>
   :short "Primitive E module for producing T."
   :long "<p>We use this to implement @(see vl::*vl-1-bit-t*).</p>"
   :i ()
-  :o ((o))
-  :x (:out ((o . (t)))))
+  :o ((|out|))
+  :x (:out ((|out| . (t)))))
 
 (def-esim-primitive *esim-f*
   :short "Primitive E module for producing F."
   :long "<p>We use this to implement @(see vl::*vl-1-bit-f*).</p>"
   :i ()
-  :o ((o))
-  :x (:out ((o . (f)))))
+  :o ((|out|))
+  :x (:out ((|out| . (f)))))
 
 (def-esim-primitive *esim-x*
   :short "Primitive E module for producing X."
   :long "<p>We use this to implement @(see vl::*vl-1-bit-x*).</p>"
   :i ()
-  :o ((o))
-  :x (:out ((o . (x)))))
+  :o ((|out|))
+  :x (:out ((|out| . (x)))))
 
 (def-esim-primitive *esim-z*
   :short "Primitive E module for producing Z."
   :long "<p>We use this to implement @(see vl::*vl-1-bit-z*).</p>"
   :i ()
-  :o ((o))
-  :x (:out ((o . (z)))))
+  :o ((|out|))
+  :x (:out ((|out| . (z)))))
 
 (def-esim-primitive *esim-id*
   :short "Primitive E module for identity assignment."
   :long "<p>We use this to implement @(see vl::*vl-1-bit-assign*).  This
 differs from a BUF in that it does not coerce Z into X.  There is probably not
 any way to actually implement this in hardware.</p>"
-  :i ((a))
-  :o ((o))
-  :x (:out ((o . a))))
+  :i ((|in|))
+  :o ((|out|))
+  :x (:out ((|out| . |in|))))
 
 (def-esim-primitive *esim-del*
   :short "Primitive E module for a delayed assignment."
   :long "<p>We use this to implement @(see vl::*vl-1-bit-delay-1*).  However,
 really esim has no concept of delays and this is no different @(see
 *esim-id*).</p>"
-  :i ((a))
-  :o ((o))
-  :x (:out ((o . a))))
+  :i ((|in|))
+  :o ((|out|))
+  :x (:out ((|out| . |in|))))
 
 (def-esim-primitive *esim-buf*
   :short "Primitive E module for a BUF gate."
   :long "<p>We use this to implement @(see vl::*vl-1-bit-buf*).  This is used
 for real BUF gates, not for ordinary assignments; see also @(see
 *esim-id*).</p>"
-  :i ((a))
-  :o ((o))
-  :x (:out ((o . (buf a)))))
+  :i ((|in|))
+  :o ((|out|))
+  :x (:out ((|out| . (buf |in|)))))
 
 (def-esim-primitive *esim-not*
   :short "Primitive E module for a NOT gate."
   :long "<p>We use this to implement @(see vl::*vl-1-bit-not*).</p>"
-  :i ((a))
-  :o ((o))
-  :x (:out ((o . (not a)))))
+  :i ((|in|))
+  :o ((|out|))
+  :x (:out ((|out| . (not |in|)))))
 
 (def-esim-primitive *esim-and*
   :short "Primitive E module for an AND gate."
   :long "<p>We use this to implement @(see vl::*vl-1-bit-and*).</p>"
-  :i ((a) (b))
-  :o ((o))
-  :x (:out ((o . (and a b)))))
+  :i ((|a|) (|b|))
+  :o ((|out|))
+  :x (:out ((|out| . (and |a| |b|)))))
 
 (def-esim-primitive *esim-or*
   :short "Primitive E module for an OR gate."
   :long "<p>We use this to implement @(see vl::*vl-1-bit-or*).</p>"
-  :i ((a) (b))
-  :o ((o))
-  :x (:out ((o . (or a b)))))
+  :i ((|a|) (|b|))
+  :o ((|out|))
+  :x (:out ((|out| . (or |a| |b|)))))
 
 (def-esim-primitive *esim-xor*
   :short "Primitive E module for an XOR gate."
   :long "<p>We use this to implement @(see vl::*vl-1-bit-xor*).</p>"
-  :i ((a) (b))
-  :o ((o))
-  :x (:out ((o . (xor a b)))))
+  :i ((|a|) (|b|))
+  :o ((|out|))
+  :x (:out ((|out| . (xor |a| |b|)))))
 
 (def-esim-primitive *esim-nand*
   :short "Primitive E module for a NAND gate."
   :long "<p>We use this to implement @(see vl::*vl-1-bit-nand*).</p>"
-  :i ((a) (b))
-  :o ((o))
-  :x (:out ((o . (not (and a b))))))
+  :i ((|a|) (|b|))
+  :o ((|out|))
+  :x (:out ((|out| . (not (and |a| |b|))))))
 
 (def-esim-primitive *esim-nor*
   :short "Primitive E module for a NOR gate."
   :long "<p>We use this to implement @(see vl::*vl-1-bit-nor*).</p>"
-  :i ((a) (b))
-  :o ((o))
-  :x (:out ((o . (not (or a b))))))
+  :i ((|a|) (|b|))
+  :o ((|out|))
+  :x (:out ((|out| . (not (or |a| |b|))))))
 
 (def-esim-primitive *esim-xnor*
   :short "Primitive E module for an XNOR gate."
   :long "<p>We use this to implement @(see vl::*vl-1-bit-xnor*).</p>"
-  :i ((a) (b))
-  :o ((o))
-  :x (:out ((o . (iff a b)))))
+  :i ((|a|) (|b|))
+  :o ((|out|))
+  :x (:out ((|out| . (iff |a| |b|)))))
 
 (def-esim-primitive *esim-ceq*
   :short "Primitive E module for a Verilog <tt>===</tt> operator."
@@ -197,42 +190,36 @@ modeled in esim because it is violates @(see 4v-monotonicity).  We just
 conservatively approximate <tt>===</tt> with an xnor gate.  That is, this
 module is nothing more than a @(see *esim-xnor*).</p>"
 
-  :i ((a) (b))
-  :o ((o))
-  :x (:out ((o . (iff a b)))))
+  :i ((|a|) (|b|))
+  :o ((|out|))
+  :x (:out ((|out| . (iff |a| |b|)))))
 
-(def-esim-primitive *esim-res*
-  :short "Primitive E module for resolving multiple drivers on a wire."
-  :long "<p>We use this to implement @(see vl::*vl-1-bit-resolve-wire*).</p>"
-  :i ((a) (b))
-  :o ((o))
-  :x (:out ((o . (res a b)))))
-
-;; BOZO add WOR, WAND...
+;; Note: VL now generates RES modules directly, see the vl/toe directory.
+;; BOZO perhaps rework how that's done, and perhaps WOR, WAND, etc.
 
 (def-esim-primitive *esim-tri*
   :short "Primitive E module for a tri-state buffer."
   :long "<p>We use this to implement @(see vl::*vl-1-bit-zmux*).</p>"
-  :i ((sel) (a))
-  :o ((o))
-  :x (:out ((o . (tristate sel a)))))
+  :i ((|sel|) (|a|))
+  :o ((|out|))
+  :x (:out ((|out| . (tristate |sel| |a|)))))
 
 (def-esim-primitive *esim-flop*
   :short "Primitive E module for a register."
   :long "<p>We use this to implement @(see vl::*vl-1-bit-flop*).</p>"
-  :i ((clk) (d))
-  :o ((q))
-  :x (:out ((q  . (ite clk s- s+)))
-      :nst ((s- . (ite clk s- d))
-            (s+ . (ite clk s- s+)))))
+  :i ((|clk|) (|d|))
+  :o ((|q|))
+  :x (:out ((|q|  . (ite |clk| s- s+)))
+      :nst ((s- . (ite |clk| s- |d|))
+            (s+ . (ite |clk| s- s+)))))
 
 (def-esim-primitive *esim-latch*
   :short "Primitive E module for a latch."
   :long "<p>We use this to implement @(see vl::*vl-1-bit-latch*).</p>"
-  :i ((clk) (d))
-  :o ((q))
-  :x (:out ((q . (ite clk d s)))
-      :nst ((s . (ite clk d s)))))
+  :i ((|clk|) (|d|))
+  :o ((|q|))
+  :x (:out ((|q| . (ite |clk| |d| s)))
+      :nst ((s   . (ite |clk| |d| s)))))
 
 (defsection *esim-primitives*
   :parents (esim-primitives)
@@ -255,7 +242,7 @@ module is nothing more than a @(see *esim-xnor*).</p>"
           *esim-nor*
           *esim-xnor*
           *esim-ceq*
-          *esim-res*
+;;          *esim-res*
           *esim-tri*
           *esim-flop*
           *esim-latch*)))

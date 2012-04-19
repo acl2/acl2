@@ -225,9 +225,9 @@
        (vl-parse-error "Unexpected EOF.")
      (seqw tokens warnings
            (:= (vl-parse-warning :vl-warn-taskdecl
-                                 (str::cat "Task declarations are not yet implemented.  "
-                                           "Instead, we are simply ignoring everything "
-                                           "until 'endtask'.")))
+                                 (cat "Task declarations are not yet implemented.  "
+                                      "Instead, we are simply ignoring everything "
+                                      "until 'endtask'.")))
            (ret := (vl-parse-task-declaration-aux))
            (return ret)))))
 

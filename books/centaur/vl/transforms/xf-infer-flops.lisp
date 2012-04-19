@@ -86,7 +86,7 @@ list of module instances.</p>
                      (make-vl-plainarg :expr clk-wire      :dir :vl-input  :portname (hons-copy "clk"))
                      (make-vl-plainarg :expr (car d-wires) :dir :vl-input  :portname (hons-copy "d"))))
          (inst (make-vl-modinst :modname   (vl-module->name *vl-1-bit-flop*)
-                                :instname  (hons-copy (str::cat "bit_" (str::natstr n)))
+                                :instname  (hons-copy (cat "bit_" (natstr n)))
                                 :paramargs (vl-arguments nil nil)
                                 :portargs  (vl-arguments nil args)
                                 :loc       *vl-fakeloc*)))
@@ -123,7 +123,7 @@ that need to be added to the module list for completeness.</p>"
     (b* (((when (= n 1))
           (list *vl-1-bit-flop*))
 
-         (name (hons-copy (str::cat "VL_" (str::natstr n) "_BIT_FLOP")))
+         (name (hons-copy (cat "VL_" (natstr n) "_BIT_FLOP")))
 
          ((mv q-expr q-port q-portdecl q-netdecl)         (vl-occform-mkport "q" :vl-output n))
          ((mv clk-expr clk-port clk-portdecl clk-netdecl) (vl-occform-mkport "clk" :vl-input 1))
@@ -336,7 +336,7 @@ list of module instances.</p>
                      (make-vl-plainarg :expr clk-wire      :dir :vl-input  :portname (hons-copy "clk"))
                      (make-vl-plainarg :expr (car d-wires) :dir :vl-input  :portname (hons-copy "d"))))
          (inst (make-vl-modinst :modname   (vl-module->name *vl-1-bit-latch*)
-                                :instname  (hons-copy (str::cat "bit_" (str::natstr n)))
+                                :instname  (hons-copy (cat "bit_" (natstr n)))
                                 :paramargs (vl-arguments nil nil)
                                 :portargs  (vl-arguments nil args)
                                 :loc       *vl-fakeloc*)))
@@ -373,7 +373,7 @@ completeness.</p>"
     (b* (((when (= n 1))
           (list *vl-1-bit-latch*))
 
-         (name        (hons-copy (str::cat "VL_" (str::natstr n) "_BIT_LATCH")))
+         (name        (hons-copy (cat "VL_" (natstr n) "_BIT_LATCH")))
 
          ((mv q-expr q-port q-portdecl q-netdecl)         (vl-occform-mkport "q" :vl-output n))
          ((mv clk-expr clk-port clk-portdecl clk-netdecl) (vl-occform-mkport "clk" :vl-input 1))
@@ -907,7 +907,7 @@ the module.</li>
          ;; Later, the assign can be truncated like any other assignment.
 
          ((mv rhs-temp-name nf)
-          (vl-namefactory-plain-name (str::cat lhs-name "_temp_rhs") nf))
+          (vl-namefactory-plain-name (cat lhs-name "_temp_rhs") nf))
 
          (rhs-temp-expr (make-vl-atom :guts (make-vl-id :name rhs-temp-name)))
          (rhs-temp-decl (make-vl-netdecl :loc loc
@@ -925,7 +925,7 @@ the module.</li>
          ;; introduce such a temp wire.
 
          ((mv lhs-temp-name nf)
-          (vl-namefactory-plain-name (str::cat lhs-name "_temp_lhs") nf))
+          (vl-namefactory-plain-name (cat lhs-name "_temp_lhs") nf))
 
          (lhs-temp-expr (make-vl-atom :guts (make-vl-id :name lhs-temp-name)))
          (lhs-temp-decl (make-vl-netdecl :loc loc
@@ -949,7 +949,7 @@ the module.</li>
          (portargs (vl-arguments nil (list q-arg clk-arg d-arg)))
 
          ((mv inst-name nf)
-          (vl-namefactory-plain-name (str::cat lhs-name "_inst") nf))
+          (vl-namefactory-plain-name (cat lhs-name "_inst") nf))
 
          (inst    (make-vl-modinst :instname inst-name
                                    :modname modname

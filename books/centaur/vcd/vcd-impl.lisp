@@ -25,7 +25,8 @@
 (include-book "centaur/aig/three-four" :dir :system)
 (include-book "centaur/misc/hons-extra" :dir :system)
 (include-book "centaur/vl/util/print" :dir :system)
-(include-book "centaur/vl/mlib/emodwire" :dir :system)
+(include-book "centaur/vl/toe/toe-emodwire" :dir :system)
+(include-book "centaur/vl/toe/toe-verilogify" :dir :system)
 (include-book "centaur/vl/util/prefix-hash" :dir :system)
 (local (include-book "make-event/assert" :dir :system))
 (local (include-book "centaur/vl/util/arithmetic" :dir :system))
@@ -247,6 +248,9 @@
 ; Recognize emod wires that can be split successfully and don't seem to have
 ; anything that would confuse the hierarchy.
 
+; BOZO this might well be unnecessary now that we encode ., !, and / in emodwires,
+; and indeed it might be pretty expensive to do this checking...
+
   (defund vcd-name-p (x)
     (declare (xargs :guard t))
     (b* (((unless (vl-emodwire-p x))
@@ -288,7 +292,7 @@
   (deflist vcd-namelist-p (x)
     (vcd-name-p x)
     :guard t
-    :elementp-of-nil t)
+    :elementp-of-nil nil)
 
   (defthm vl-emodwirelist-p-when-vcd-namelist-p
     (implies (vcd-namelist-p x)
@@ -364,7 +368,7 @@
 (defalist vcd-snapshot-p (x)
   :key (vcd-name-p x)
   :val (vcd-value-p x)
-  :keyp-of-nil t
+  :keyp-of-nil nil
   :valp-of-nil t)
 
 (defsection vcd-snapshotlist-p

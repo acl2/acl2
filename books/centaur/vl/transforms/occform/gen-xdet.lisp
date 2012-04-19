@@ -54,7 +54,7 @@ original answer.  But if it is X, then the resulting bits are all X.</p>"
 
   :guard (posp n)
   :body
-  (b* ((name  (hons-copy (str::cat "VL_" (str::natstr n) "_BIT_X_DETECT")))
+  (b* ((name  (hons-copy (cat "VL_" (natstr n) "_BIT_X_DETECT")))
 
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output 1))
        ((mv in-expr in-port in-portdecl in-netdecl)     (vl-occform-mkport "in" :vl-input n))
@@ -123,7 +123,7 @@ xor'ed vector.</p>"
 
   :guard (posp n)
   :body
-  (b* ((name  (hons-copy (str::cat "VL_" (str::natstr n) "_BIT_XOR_EACH")))
+  (b* ((name  (hons-copy (cat "VL_" (natstr n) "_BIT_XOR_EACH")))
 
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output n))
        ((mv a-expr a-port a-portdecl a-netdecl)         (vl-occform-mkport "a" :vl-input 1))
@@ -172,7 +172,7 @@ endmodule
               (posp m))
 
   :body
-  (b* ((name (hons-copy (str::cat "VL_" (str::natstr n) "_BY_" (str::natstr m) "_XPROP")))
+  (b* ((name (hons-copy (cat "VL_" (natstr n) "_BY_" (natstr m) "_XPROP")))
 
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output m))
        ((mv ans-expr ans-port ans-portdecl ans-netdecl) (vl-occform-mkport "ans" :vl-input m))

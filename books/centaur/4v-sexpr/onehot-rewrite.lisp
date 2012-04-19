@@ -266,12 +266,6 @@ sexprs.</p>")
                :use ((:instance duplicity-badguy-under-iff
                                 (x (alist-keys (hons-shrink-alist alist nil)))))))))
 
-   (defthm subsetp-equal-of-cons
-     (equal (subsetp-equal (cons a x) y)
-            (and (member-equal a y)
-                 (subsetp-equal (double-rewrite x) y)))
-     :hints(("Goal" :in-theory (enable subsetp-equal))))
-
 
    (encapsulate
      ()

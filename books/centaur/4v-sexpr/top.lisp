@@ -47,20 +47,35 @@
 
 
 (defxdoc 4v
-  :short "The four-valued logic of the @(see esim) hardware simulator."
+  :short "Centaur four-valued logic library."
 
-  :long "<p>We model circuits using a four-valued logic, which loosely means
-that any wire can take on one of four values:</p>
+  :long "<p>This library defines the logic of the @(see esim) symbolic
+simulator.  By \"four-valued\", we mean that each wire can take one of the four
+values recognized by @(see 4vp):</p>
 
 <ul>
- <li>X represents \"unknown\" values</li>
- <li>Z represents an \"undriven\" or \"floating\" value</li>
- <li>T represents logical truth</li>
- <li>F represents logical falsity</li>
+ <li><b>X</b> represents \"unknown\" values</li>
+ <li><b>Z</b> represents an \"undriven\" or \"floating\" value</li>
+ <li><b>T</b> represents logical truth</li>
+ <li><b>F</b> represents logical falsity</li>
 </ul>
 
-<p>These values are recognized with @(see 4vp).</p>")
+<p>The non-Boolean values X and Z are <see topic='@(url why-4v-logic)'>often
+useful</see> when modeling hardware, and are intended to correspond to
+Verilog's notions of X and Z.</p>
 
+<p>Our logic has a fixed set of primitive @(see 4v-operations) that model, for
+instance, how an AND gate behaves when given a pair of four-valued inputs.  On
+top of these primitives, we use a simplified <see topic='@(url
+4v-sexprs)'>s-expression syntax</see> to represent expressions in the logic.
+The semantics of these s-expressions are defined by @(see 4v-sexpr-eval), a
+simple evaluator that can look up variables and apply the primitive
+operations.</p>
+
+<p>A feature of our logic is that all the primitives are intrinsically <see
+topic='@(url 4v-monotonicity)'>monotonic</see>, which loosely means that they
+properly treat X inputs as unknowns.  The monotonicity of the primitives
+carries over to the s-expressions.</p>")
 
 (defxdoc why-4v-logic
   :parents (4v)

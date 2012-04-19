@@ -53,6 +53,11 @@ endmodule
 <tt>assign {carry, sum} = a + b + cin</tt> in Verilog because of X handling.
 See @(see vl-make-n-bit-plusminus) for the real module generator.</p>"
 
+  (defconst *vl-1-bit-adder-core-support*
+    (list *vl-1-bit-xor*
+          *vl-1-bit-and*
+          *vl-1-bit-or*))
+
   (defconst *vl-1-bit-adder-core*
 
     (b* ((name (hons-copy "VL_1_BIT_ADDER_CORE"))
@@ -117,9 +122,9 @@ the last bit, but we think it's best to keep things simple.</p>"
 
   :body
   (b* (((when (= n 1))
-        (list *vl-1-bit-adder-core*))
+        (cons *vl-1-bit-adder-core* *vl-1-bit-adder-core-support*))
 
-       (name (hons-copy (str::cat "VL_" (str::natstr n) "_BIT_ADDER_CORE")))
+       (name (hons-copy (cat "VL_" (natstr n) "_BIT_ADDER_CORE")))
 
        ((mv sum-expr sum-port sum-portdecl sum-netdecl)     (vl-occform-mkport "sum" :vl-output n))
        ((mv cout-expr cout-port cout-portdecl cout-netdecl) (vl-primitive-mkport "cout" :vl-output))
@@ -151,15 +156,16 @@ the last bit, but we think it's best to keep things simple.</p>"
                                          b-wires
                                          (cons cin-expr carry-wires))))
 
-    (list (make-vl-module :name      name
-                          :origname  name
-                          :ports     (list sum-port cout-port a-port b-port cin-port)
-                          :portdecls (list sum-portdecl cout-portdecl a-portdecl b-portdecl cin-portdecl)
-                          :netdecls  (list sum-netdecl cout-netdecl a-netdecl b-netdecl cin-netdecl carry-netdecl)
-                          :modinsts  fa-insts
-                          :minloc    *vl-fakeloc*
-                          :maxloc    *vl-fakeloc*)
-          *vl-1-bit-adder-core*)))
+    (list* (make-vl-module :name      name
+                           :origname  name
+                           :ports     (list sum-port cout-port a-port b-port cin-port)
+                           :portdecls (list sum-portdecl cout-portdecl a-portdecl b-portdecl cin-portdecl)
+                           :netdecls  (list sum-netdecl cout-netdecl a-netdecl b-netdecl cin-netdecl carry-netdecl)
+                           :modinsts  fa-insts
+                           :minloc    *vl-fakeloc*
+                           :maxloc    *vl-fakeloc*)
+           *vl-1-bit-adder-core*
+           *vl-1-bit-adder-core-support*)))
 
 #||
 (vl-pps-modulelist (vl-make-n-bit-adder-core 10))
@@ -201,10 +207,10 @@ implemented.</p>"
               (posp n))
 
   :body
-  (b* ((name  (hons-copy (str::cat "VL_" (str::natstr n) "_BIT_"
-                                   (case type
-                                     (:vl-binary-plus "PLUS")
-                                     (:vl-binary-minus "MINUS")))))
+  (b* ((name  (hons-copy (cat "VL_" (natstr n) "_BIT_"
+                              (case type
+                                (:vl-binary-plus "PLUS")
+                                (:vl-binary-minus "MINUS")))))
 
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output n))
        ((mv a-expr a-port a-portdecl a-netdecl)         (vl-occform-mkport "a" :vl-input n))

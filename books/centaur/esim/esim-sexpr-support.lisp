@@ -27,10 +27,6 @@
 (include-book "unicode/explode-nonnegative-integer" :dir :system)
 (include-book "unicode/two-nats-measure" :dir :system)
 (include-book "arithmetic/nat-listp" :dir :system)
-
-
-
-
 (set-well-founded-relation nat-list-<)
 
 (defund stringify-atom (x)
@@ -774,9 +770,11 @@
   (declare (xargs :guard t))
   (if (good-esim-modulep mod)
       mod
-    (primitives-to-esim
-     (mod-fix-t-f
-      (mod-reduce mod)))))
+    (prog2$
+     (cw "Warning: Fixing ~x0 for esim.~%" (gpl :n mod))
+     (primitives-to-esim
+      (mod-fix-t-f
+       (mod-reduce mod))))))
 
 
 

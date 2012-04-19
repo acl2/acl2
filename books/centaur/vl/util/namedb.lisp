@@ -37,7 +37,7 @@ vl-pgenstr->val).</p>"
   (defund vl-pgenstr (prefix n)
     (declare (xargs :guard (and (stringp prefix)
                                 (natp n))))
-    (hons-copy (str::cat prefix "_" (str::natstr n)))))
+    (hons-copy (cat prefix "_" (natstr n)))))
 
 
 
@@ -261,9 +261,9 @@ that \"<tt>prefix</tt>_n\" occurs in <tt>names</tt>."
              (vl-prefix-map-correct-p-aux x pmap names))
     :hints(("Goal" :induct (len x))))
 
-  (defcong subsetp-equiv equal (vl-prefix-map-correct-p-aux x pmap names) 1
+  (defcong set-equivp equal (vl-prefix-map-correct-p-aux x pmap names) 1
     :hints(("goal"
-            :in-theory (enable subsetp-equiv)
+            :in-theory (enable set-equivp)
             :cases ((vl-prefix-map-correct-p-aux x pmap names)))))
 
   (defthm vl-prefix-map-correct-p-aux-of-hons-shrink-alist
@@ -299,7 +299,7 @@ that \"<tt>prefix</tt>_n\" occurs in <tt>names</tt>."
                               (alistp pset)
                               (vl-string-keys-p pset))))
   (and (or names (not pmap))
-       (subsetp-equiv (strip-cars pset) (strip-cars pmap))))
+       (set-equivp (strip-cars pset) (strip-cars pmap))))
 
 (defaggregate vl-namedb
   (names pmap pset)
@@ -321,7 +321,7 @@ that \"<tt>prefix</tt>_n\" occurs in <tt>names</tt>."
             (vl-namedb-okp-when-vl-namedb-p
              (vl-namedb-okp names pmap pset))
             )
-  :parents (util)
+  :parents (utilities)
 
   :short "Produces fresh names for a module."
 
@@ -479,9 +479,9 @@ vl-compatible-with-prefix-set-p) for details.</p>")
           :in-theory (disable vl-namedb-okp-when-vl-namedb-p)
           :use ((:instance vl-namedb-okp-when-vl-namedb-p)))))
 
-(defthm vl-namedb->pset-under-subsetp-equiv
+(defthm vl-namedb->pset-under-set-equivp
   (implies (force (vl-namedb-p x))
-           (subsetp-equiv (strip-cars (vl-namedb->pset x))
+           (set-equivp (strip-cars (vl-namedb->pset x))
                           (strip-cars (vl-namedb->pmap x))))
   :hints(("Goal"
           :in-theory (disable vl-namedb-okp-when-vl-namedb-p)
@@ -728,9 +728,9 @@ matches a current prefix.</p>"
                      (vl-unlike-any-prefix-p name x))
             :hints(("Goal" :induct (len x)))))
 
-   (defcong subsetp-equiv equal (vl-unlike-any-prefix-p name prefixes) 2
+   (defcong set-equivp equal (vl-unlike-any-prefix-p name prefixes) 2
      :hints(("Goal"
-             :in-theory (e/d (subsetp-equiv)
+             :in-theory (e/d (set-equivp)
                              (vl-unlike-any-prefix-p))
              :cases ((vl-unlike-any-prefix-p name prefixes))))))
 
@@ -829,7 +829,7 @@ When this is not possible, a note is printed and <tt>fresh-name</tt> looks like
   (defthm stringp-of-vl-namedb-plain-name
     (implies (force (stringp name))
              (stringp (mv-nth 0 (vl-namedb-plain-name name db))))
-    :hints(("Goal" :in-theory (disable vl-namedb->pset-under-subsetp-equiv)))
+    :hints(("Goal" :in-theory (disable vl-namedb->pset-under-set-equivp)))
     :rule-classes :type-prescription)
 
   (defthm vl-namedb-p-of-vl-namedb-plain-name

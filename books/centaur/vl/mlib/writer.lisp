@@ -19,8 +19,9 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "hierarchy")
+(include-book "find-module")
 (include-book "stmt-tools")
+(include-book "modnamespace") ;; bozo at least for portdecllist->names
 (include-book "../loader/lexer") ; yucky, for simple-id-tail-p, etc.
 (include-book "../util/print")
 (include-book "str/strrpos" :dir :system)
@@ -871,12 +872,12 @@ displays.  The module browser's web pages are responsible for defining the
 (encapsulate
   ()
   ;; Speed hint
-  (local (in-theory (disable member-equal-of-cons
+  (local (in-theory (disable acl2::member-equal-of-cons
                              MEMBER-EQUAL-WHEN-MEMBER-EQUAL-OF-CDR-UNDER-IFF
                              double-containment
                              ACL2::TRUE-LISTP-MEMBER-EQUAL
                              ACL2::CONSP-MEMBER-EQUAL
-                             MEMBER-EQUAL-WHEN-SUBSETP-EQUAL
+                             ACL2::SUBSETP-EQUAL-MEMBER
                              (:ruleset tag-reasoning)
                              )))
 
@@ -970,7 +971,7 @@ displays.  The module browser's web pages are responsible for defining the
                    :in-theory (e/d (vl-expr-p))
                    :use ((:instance crock0d (x (vl-nonatom->args x))))))))
 
-  (local (in-theory (enable member-equal-of-cons)))
+  (local (in-theory (enable acl2::member-equal-of-cons)))
 
 
   (verify-guards vl-pp-expr-fn

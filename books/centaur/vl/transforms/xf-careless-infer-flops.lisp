@@ -259,8 +259,7 @@ the module.</li>
          ;; Later, the assign can be truncated like any other assignment.
 
          ((mv rhs-temp-name nf)
-          (vl-namefactory-plain-name (str::cat (car lhs-names)
-                                               "_temp_rhs") nf))
+          (vl-namefactory-plain-name (cat (car lhs-names) "_temp_rhs") nf))
 
          (rhs-temp-expr (make-vl-atom :guts (make-vl-id :name rhs-temp-name)))
          (rhs-temp-decl (make-vl-netdecl :loc loc
@@ -278,7 +277,7 @@ the module.</li>
          ;; introduce such a temp wire.
 
          ((mv lhs-temp-name nf)
-          (vl-namefactory-plain-name (str::cat (car lhs-names) "_temp_lhs") nf))
+          (vl-namefactory-plain-name (cat (car lhs-names) "_temp_lhs") nf))
 
          (lhs-temp-expr (make-vl-atom :guts (make-vl-id :name lhs-temp-name)))
          (lhs-temp-decl (make-vl-netdecl :loc loc
@@ -302,7 +301,7 @@ the module.</li>
          (portargs (vl-arguments nil (list q-arg clk-arg d-arg)))
 
          ((mv inst-name nf)
-          (vl-namefactory-plain-name (str::cat (car lhs-names) "_inst") nf))
+          (vl-namefactory-plain-name (cat (car lhs-names) "_inst") nf))
 
          (inst    (make-vl-modinst :instname inst-name
                                    :modname modname

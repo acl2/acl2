@@ -230,9 +230,9 @@ vl-compatible-with-prefix-set-p) for details.</p>")
           :in-theory (disable vl-namefactory-okp-when-vl-namefactory-p)
           :use ((:instance vl-namefactory-okp-when-vl-namefactory-p)))))
 
-;; (defthm vl-namefactory->pset-under-subsetp-equiv
+;; (defthm vl-namefactory->pset-under-set-equivp
 ;;   (implies (force (vl-namefactory-p x))
-;;            (subsetp-equiv (strip-cars (vl-namefactory->pset x))
+;;            (set-equivp (strip-cars (vl-namefactory->pset x))
 ;;                           (strip-cars (vl-namefactory->pmap x))))
 ;;   :hints(("Goal"
 ;;           :in-theory (disable vl-namefactory-okp-when-vl-namefactory-p)
@@ -261,7 +261,7 @@ vl-compatible-with-prefix-set-p) for details.</p>")
   ;; available already.  We could do this as part of vl-starting-namefactory
   ;; instead, but this allows us to make vl-starting-namefactory very cheap and
   ;; avoid computing the modnamespace if it isn't used.
- 
+
   (defund vl-namefactory-maybe-initialize (factory)
     (declare (xargs :guard (vl-namefactory-p factory)
                     :guard-hints (("goal" :in-theory (enable vl-namedb-allnames)))))
@@ -281,7 +281,7 @@ vl-compatible-with-prefix-set-p) for details.</p>")
     (implies (force (vl-namefactory-p factory))
              (vl-namefactory-p (vl-namefactory-maybe-initialize factory)))
     :hints(("Goal" :in-theory (e/d (vl-namedb-allnames)
-                                   (pick-a-point-subsetp-equal-strategy
+                                   ( ;pick-a-point-subsetp-equal-strategy
                                     (force))))))
 
   (defthm vl-namefactory->mod-of-vl-namefactory-maybe-initialize
@@ -297,11 +297,8 @@ vl-compatible-with-prefix-set-p) for details.</p>")
               (vl-namedb-allnames (vl-namefactory->namedb
                                    (vl-namefactory-maybe-initialize
                                     factory)))))
-    :hints(("Goal" :in-theory (e/d ()
-                                   (pick-a-point-subsetp-equal-strategy)))
-           (and stable-under-simplificationp
-                '(:in-theory (e/d (vl-namedb-allnames)
-                                  (pick-a-point-subsetp-equal-strategy)))))
+    :hints((and stable-under-simplificationp
+                '(:in-theory (enable vl-namedb-allnames))))
     :rule-classes ((:rewrite)
                    (:forward-chaining :trigger-terms
                                       ((vl-namefactory-maybe-initialize factory))))))
@@ -358,9 +355,7 @@ vl-namefactory-p) for all name factory documentation.</p>"
 
   (defund vl-starting-namefactory (mod)
     (declare (xargs :guard (vl-module-p mod)
-                    :guard-hints (("goal" :in-theory (disable
-                                                      pick-a-point-subsetp-equal-strategy))
-                                  (and stable-under-simplificationp
+                    :guard-hints ((and stable-under-simplificationp
                                        '(:in-theory (enable vl-empty-namedb))))))
     (make-vl-namefactory :mod mod :namedb (vl-empty-namedb)))
 
@@ -544,9 +539,9 @@ looks like <tt>prefix_n</tt> for some natural number <tt>n</tt>, and returns
 ;;                      (vl-unlike-any-prefix-p name x))
 ;;             :hints(("Goal" :induct (len x)))))
 
-;;    (defcong subsetp-equiv equal (vl-unlike-any-prefix-p name prefixes) 2
+;;    (defcong set-equivp equal (vl-unlike-any-prefix-p name prefixes) 2
 ;;      :hints(("Goal"
-;;              :in-theory (e/d (subsetp-equiv)
+;;              :in-theory (e/d (set-equivp)
 ;;                              (vl-unlike-any-prefix-p))
 ;;              :cases ((vl-unlike-any-prefix-p name prefixes))))))
 

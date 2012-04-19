@@ -333,11 +333,6 @@
               (acl2-count y)))
     :hints(("Goal" :in-theory (enable acl2-count))))
 
-  (defthm subsetp-equal-of-append
-    (equal (subsetp-equal (append x y) z)
-           (and (subsetp-equal x z)
-                (subsetp-equal y z))))
-
   (defthm app-removal
     (equal (acl2::app x y)
            (append x (list-fix y)))
@@ -357,9 +352,9 @@
     (iff (member-equal a (rev x))
          (member-equal a x)))
 
-  (defthm rev-under-subsetp-equiv
-    (subsetp-equiv (rev x) (double-rewrite x))
-    :hints(("Goal" :in-theory (enable subsetp-equiv))))
+  (defthm rev-under-set-equivp
+    (set-equivp (rev x) (double-rewrite x))
+    :hints(("Goal" :in-theory (enable set-equivp))))
 
   (defthm duplicity-of-rev
     (equal (acl2::duplicity a (rev x))
@@ -426,7 +421,6 @@
                            (acl2::duplicity-rhs (lambda () (append y x)))))))))
 
 
-
 (defsection flatten
 
   (local (in-theory (enable flatten)))
@@ -459,10 +453,12 @@
 
   (local (defthm l2
            (implies (subsetp-equal x y)
-                    (subsetp-equal (flatten x) (flatten y)))))
+                    (subsetp-equal (flatten x) (flatten y)))
+           :hints((acl2::witness
+                   :ruleset (acl2::subsetp-equal-witnessing)))))
 
-  (defcong subsetp-equiv subsetp-equiv (flatten x) 1
-    :hints(("Goal" :in-theory (enable subsetp-equiv))))
+  (defcong set-equivp set-equivp (flatten x) 1
+    :hints(("Goal" :in-theory (enable set-equivp))))
 
   (defthm duplicity-of-flatten-of-rev
     (equal (acl2::duplicity a (flatten (rev x)))
@@ -511,9 +507,10 @@
                     (repeat x n))))
 
   (defthm member-equal-of-repeat
-    (iff (member-equal a (repeat b n))
-         (and (equal a b)
-              (posp n)))))
+    (equal (member-equal a (repeat b n))
+           (if (equal a b)
+               (repeat b n)
+             nil))))
 
 
 
@@ -836,9 +833,11 @@
            (append (strip-cars x)
                    (strip-cars y))))
 
-  (defthm len-of-strip-cars
-    (equal (len (strip-cars x))
-           (len x))))
+  ;; don't need this anymore, we get acl2::len-strip-cars from witness-cp
+  ;; (defthm len-of-strip-cars
+  ;;   (equal (len (strip-cars x))
+  ;;          (len x)))
+  )
 
 
 
@@ -856,9 +855,10 @@
            (cons (cdr a)
                  (strip-cdrs x))))
 
-  (defthm len-of-strip-cdrs
-    (equal (len (strip-cdrs x))
-           (len x)))
+  ;; don't need this anymore, we get acl2::len-strip-cdrs from witness-cp
+  ;; (defthm len-of-strip-cdrs
+  ;;   (equal (len (strip-cdrs x))
+  ;;          (len x)))
 
   (defthm strip-cdrs-of-append
     (equal (strip-cdrs (append x y))
@@ -985,10 +985,12 @@
            (or (hons-assoc-equal a ans)
                (hons-assoc-equal a x))))
 
+  ;; BOZO probably want to redo this stuff with alist-keys instead of strip-cars
+
   (local (defthm l0
-          (implies (alistp x)
-                   (iff (hons-assoc-equal a x)
-                        (member-equal a (strip-cars x))))))
+           (implies (alistp x)
+                    (iff (hons-assoc-equal a x)
+                         (member-equal a (strip-cars x))))))
 
   (local (defthm l1
            (implies (and (alistp x)
@@ -997,12 +999,12 @@
                          (or (member-equal a (strip-cars x))
                              (member-equal a (strip-cars y)))))))
 
-  (defthm strip-cars-of-hons-shrink-alist-under-subsetp-equiv
+  (defthm strip-cars-of-hons-shrink-alist-under-set-equivp
     (implies (and (alistp x)
                   (alistp y))
-             (subsetp-equiv (strip-cars (hons-shrink-alist x y))
-                            (strip-cars (append x y))))
-    :hints(("Goal" :in-theory (enable subsetp-equiv))))
+             (set-equivp (strip-cars (hons-shrink-alist x y))
+                         (strip-cars (append x y))))
+    :hints((set-reasoning)))
 
   (local (defthm l2
            (implies (and (not (member-equal a (strip-cars x)))
@@ -1011,7 +1013,8 @@
 
   (defthm subsetp-equal-of-strip-cars-of-hons-shrink-alist
     (subsetp-equal (strip-cars (hons-shrink-alist x nil))
-                   (strip-cars x))))
+                   (strip-cars x))
+    :hints((set-reasoning))))
 
 
 
@@ -1019,21 +1022,11 @@
 
   (local (in-theory (enable intersectp-equal)))
 
-  (defthm intersectp-equal-when-atom-left
-    (implies (atom x)
-             (equal (intersectp-equal x y)
-                    nil)))
+;; We used to have lots of stuff here, but it was all redundant with other ACL2
+;; libraries, especially data-structures/no-duplicates and misc/equal-sets.
 
-  (defthm intersectp-equal-when-atom-right
-    (implies (atom y)
-             (equal (intersectp-equal x y)
-                    nil)))
-
-  (defthm intersect-equal-of-cons-left
-    (equal (intersectp-equal (cons a x) y)
-           (if (member-equal a y)
-               t
-             (intersectp-equal x y))))
+  ;; Our -of-cons-right rule is stronger
+  (in-theory (disable ACL2::INTERSECTP-EQUAL-CONS-SECOND))
 
   (defthm intersectp-equal-of-cons-right
     (equal (intersectp-equal x (cons a y))
@@ -1041,71 +1034,11 @@
                t
              (intersectp-equal x y))))
 
-  (defthm intersectp-equal-of-append-left
-    (equal (intersectp-equal (append x y) z)
-           (or (intersectp-equal x z)
-               (intersectp-equal y z))))
-
-  (defthm intersectp-equal-of-append-right
-    (equal (intersectp-equal x (append y z))
-           (or (intersectp-equal x y)
-               (intersectp-equal x z))))
-
-  (defthm intersectp-equal-commutative
-    (equal (intersectp-equal x y)
-           (intersectp-equal y x)))
-
-  (local (defun badguy (x y)
-           (cond ((atom x)
-                  nil)
-                 ((member-equal (car x) y)
-                  (list (car x)))
-                 (t
-                  (badguy (cdr x) y)))))
-
-  (local (defthm l0
-           (equal (intersectp-equal x y)
-                  (if (badguy x y)
-                      t
-                    nil))))
-
-  (local (defthm l1
-           (implies (and (member-equal a x)
-                         (member-equal a y))
-                    (badguy x y))))
-
-  (local (defthm l2
-           (implies (and (subsetp-equal x x2)
-                         (badguy x y))
-                    (badguy x2 y))))
-
-  (local (defthm l3
-           (implies (and (subsetp-equal x x2)
-                         (not (badguy x2 y)))
-                    (not (badguy x y)))))
-
-  (local (defthm l4
-           (implies (and (subsetp-equal y y2)
-                         (badguy x y))
-                    (badguy x y2))))
-
-  (local (defthm l5
-           (implies (and (subsetp-equal y y2)
-                         (not (badguy x y2)))
-                    (not (badguy x y)))))
-
-  (local (defcong subsetp-equiv iff (badguy x y) 1
-           :hints(("Goal" :in-theory (enable subsetp-equiv)))))
-
-  (local (defcong subsetp-equiv iff (badguy x y) 2
-           :hints(("Goal" :in-theory (enable subsetp-equiv)))))
-
-  (defcong subsetp-equiv equal (intersectp-equal x y) 1
-    :hints(("Goal" :in-theory (enable subsetp-equiv))))
-
-  (defcong subsetp-equiv equal (intersectp-equal x y) 2
-    :hints(("Goal" :in-theory (enable subsetp-equiv)))))
-
+  (defthm intersect-equal-of-cons-left
+    (equal (intersectp-equal (cons a x) y)
+           (if (member-equal a y)
+               t
+             (intersectp-equal x y)))))
 
 
 (defsection uniqueness-of-append
@@ -1130,7 +1063,6 @@
     :hints(("Goal" :in-theory (enable subsetp-equal)))))
 
 
-
 (defsection intersection-equal
 
   (local (in-theory (enable intersection-equal)))
@@ -1146,16 +1078,15 @@
                (cons a (intersection-equal x y))
              (intersection-equal x y))))
 
-  (defthm member-equal-of-intersection-equal
-    (iff (member-equal a (intersection-equal x y))
-         (and (member-equal a x)
-              (member-equal a y))))
-
   (defthm subsetp-equal-of-intersection-equal-1
-    (subsetp-equal (intersection-equal x y) x))
+    ;; BOZO consider moving to equal-sets
+    (subsetp-equal (intersection-equal x y) x)
+    :hints((set-reasoning)))
 
   (defthm subsetp-equal-of-intersection-equal-2
-    (subsetp-equal (intersection-equal x y) y)))
+    ;; BOZO consider moving to equal-sets
+    (subsetp-equal (intersection-equal x y) y)
+    :hints((set-reasoning))))
 
 
 
@@ -1174,11 +1105,6 @@
                (set-difference-equal x y)
              (cons a (set-difference-equal x y)))))
 
-  (defthm member-equal-of-set-difference-equal
-    (iff (member-equal a (set-difference-equal x y))
-         (and (member-equal a (double-rewrite x))
-              (not (member-equal a (double-rewrite y))))))
-
   (defthm set-difference-equal-when-subsetp-equal
     (implies (subsetp-equal x y)
              (equal (set-difference-equal x y)
@@ -1189,12 +1115,7 @@
            nil))
 
   (defthm empty-intersect-with-difference-of-self
-    (not (intersectp-equal a (set-difference-equal b a))))
-
-  (defcong subsetp-equiv equal (set-difference-equal x y) 2)
-
-  (defcong subsetp-equiv subsetp-equiv (set-difference-equal x y) 1
-    :hints(("Goal" :in-theory (enable subsetp-equiv)))))
+    (not (intersectp-equal a (set-difference-equal b a)))))
 
 
 

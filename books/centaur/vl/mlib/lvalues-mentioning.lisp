@@ -246,9 +246,9 @@ an lvalue.")
          ;; (remove-thm-s   (symbol-name remove-thm))
          ;; (str-thm-s      (symbol-name str-thm))
 
-;;          (short          (str::cat "Gather @(see lvalues-mentioning) from a @(see " rec-s ")."))
+;;          (short          (cat "Gather @(see lvalues-mentioning) from a @(see " rec-s ")."))
 
-;;          (long           (str::cat "<p><b>Signature</b> @(call " collect-s ") returns a
+;;          (long           (cat "<p><b>Signature</b> @(call " collect-s ") returns a
 ;; string list.</p>
 
 ;; <h3>Definition</h3>
@@ -320,9 +320,9 @@ an lvalue.")
 ;;          (list-collect-exec-s (symbol-name list-collect-exec))
 ;;          (str-thm-s           (symbol-name str-thm))
 
-;;          (short (str::cat "Gather @(see lvalues-mentioning) from a @(see " list-rec-s ")."))
+;;          (short (cat "Gather @(see lvalues-mentioning) from a @(see " list-rec-s ")."))
 
-;;          (long (str::cat "<p><b>Signature</b> @(call " list-collect-s ")
+;;          (long (cat "<p><b>Signature</b> @(call " list-collect-s ")
 ;; returns a string list.</p>
 
 ;; <h3>Definition</h3>

@@ -53,9 +53,9 @@ expressions within <tt>(* foo = bar *)</tt>-style attributes.</p>")
          (rec-s           (symbol-name rec))
          (collect-s       (symbol-name collect))
 
-         (short          (str::cat
+         (short          (cat
 "Gather all top-level expressions from a @(see " rec-s ")."))
-         (long           (str::cat
+         (long           (cat
 "<p><b>Signature</b> @(call " collect-s ") returns a @(see vl-exprlist-p).</p>
 
 <p>We return a list of all the top-level expressions used throughout a @(see "
@@ -118,9 +118,9 @@ optimization.</p>")))
          (list-rec-s          (symbol-name list-rec))
          (list-collect-s      (symbol-name list-collect))
 
-         (short          (str::cat
+         (short          (cat
 "Gather all top-level expressions from a @(see " list-rec-s ")."))
-         (long           (str::cat
+         (long           (cat
 "<p><b>Signature</b> @(call " list-collect-s ") returns a @(see vl-exprlist-p).</p>
 
 <p>We return a list of all the top-level expressions used throughout a @(see "
@@ -675,34 +675,11 @@ optimization.</p>"
   :element vl-module)
 
 
-(defsection vl-module-exprnames-set
 
-  (local (defthm vl-exprlist-names-of-append
-           (equal (vl-exprlist-names (append x y))
-                  (append (vl-exprlist-names x)
-                          (vl-exprlist-names y)))
-           :hints(("Goal"
-                   :induct (len x)
-                   :in-theory (enable vl-exprlist-names)))))
-
-  (local (defthm lemma1
-           (implies (member-equal a (vl-exprlist-names x))
-                    (member-equal a (vl-exprlist-names (append x y))))
-           :hints(("Goal"
-                   :in-theory (enable vl-exprlist-names)
-                   :induct (len x)))))
-
-  (local (defthm lemma2
-           (iff (member-equal a (vl-exprlist-names (rev x)))
-                (member-equal a (vl-exprlist-names x)))
-           :hints(("Goal"
-                   :induct (len x)
-                   :in-theory (enable vl-exprlist-names)))))
-
-  (defun vl-module-exprnames-set (x)
-    (declare (xargs :guard (vl-module-p x)))
-    (mbe :logic (mergesort (vl-exprlist-names (vl-module-allexprs x)))
-         :exec
-         (let* ((exprs (vl-module-allexprs-exec x nil))
-                (names (vl-exprlist-names-exec exprs nil)))
-           (mergesort names)))))
+(defun vl-module-exprnames-set (x)
+  (declare (xargs :guard (vl-module-p x)))
+  (mbe :logic (mergesort (vl-exprlist-names (vl-module-allexprs x)))
+       :exec
+       (let* ((exprs (vl-module-allexprs-exec x nil))
+              (names (vl-exprlist-names-exec exprs nil)))
+         (mergesort names))))

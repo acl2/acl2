@@ -9,7 +9,6 @@ GUIDE TO THE VL SOURCE CODE ("bottom up")
 vl/util/           -- basic ACL2 stuff used throughout VL
 
    * Generic functions (tuplep, same-lengthp, ...)
-   * Macros like deflist, defprojection, defaggregate
    * The VL Printer
    * Warning Objects
    * Locations, Extended Characters
@@ -50,10 +49,10 @@ vl/mlib/           -- general purpose, low-level functions for working
 
 
 
-vl/transforms/     -- main transformations for E translation
+vl/transforms/     -- main verilog->verilog simplifications
 
    Includes many general purpose transforms like:
-    * introducing implicit wires
+
     * resolving arguments for module instances
     * expanding away module parameters
     * "resolving" wire sizes and computing bit- and part-select indices
@@ -65,12 +64,14 @@ vl/transforms/     -- main transformations for E translation
     * simplifying expressions by rewriting operators
     * splitting up expressions and eliminating assignment statements
     * inferring flops and latches from always statements
-    * building "defm" commands to introduce E modules.
+    * synthesizing operators into module instances
 
    You may wish to pick and choose from these transformations when
    developing new static checks or repurposing VL to do something
    else.
 
+
+vl/toe/            -- "to E", convert Verilog to E modules
 
 
 vl/checkers/      -- static checks

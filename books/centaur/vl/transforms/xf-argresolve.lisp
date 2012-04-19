@@ -21,7 +21,7 @@
 (in-package "VL")
 (include-book "../mlib/find-item")
 (include-book "../mlib/port-tools")
-(include-book "../mlib/hierarchy")
+(include-book "../mlib/find-module")
 (local (include-book "../util/arithmetic"))
 (local (include-book "../util/osets"))
 

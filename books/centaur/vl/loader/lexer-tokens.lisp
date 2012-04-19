@@ -115,7 +115,7 @@ symbol.  Otherwise, we return <tt>nil</tt>.</p>
     (declare (xargs :verify-guards nil))
     (if (consp x)
         (hons-acons (car x)
-                    (intern (str::cat "VL-KWD-" (string-upcase (car x))) "KEYWORD")
+                    (intern (cat "VL-KWD-" (string-upcase (car x))) "KEYWORD")
                     (vl-make-keyword-table (cdr x)))
       nil))
 
@@ -862,7 +862,7 @@ vl-location-p)</p>.
 ; back into a string.  This can be useful for error reporting in the parser.
 
   (if (consp x)
-      (str::cat (vl-echarlist->string (vl-token->etext (car x)))
-                " "
-                (vl-tokenlist->string-with-spaces (cdr x)))
+      (cat (vl-echarlist->string (vl-token->etext (car x)))
+           " "
+           (vl-tokenlist->string-with-spaces (cdr x)))
     ""))

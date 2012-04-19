@@ -21,6 +21,7 @@
 (in-package "VL")
 (include-book "../mlib/allexprs")
 (include-book "../mlib/context")
+(include-book "../mlib/modnamespace")
 (include-book "../mlib/stmt-tools")
 (local (include-book "../util/arithmetic"))
 (local (include-book "../util/osets"))
@@ -376,10 +377,10 @@ allowed.</p>"
     ;; Just to make sure we keep ths up to date if we ever change
     ;; vl-modinst-allexprs
     (let ((ret (vl-modinst-exprs-for-implicit-wires x)))
-      (subsetp-equiv (append (mv-nth 0 ret)
+      (set-equivp (append (mv-nth 0 ret)
                              (mv-nth 1 ret))
                      (vl-modinst-allexprs x)))
-    :hints(("Goal" :in-theory (enable subsetp-equiv vl-modinst-allexprs)))))
+    :hints(("Goal" :in-theory (enable set-equivp vl-modinst-allexprs)))))
 
 
 
@@ -413,10 +414,10 @@ instance (its range, delay) where implicit wires aren't allowed.</p>"
     ;; Just to make sure we keep ths up to date if we ever change
     ;; vl-gateinst-allexprs
     (let ((ret (vl-gateinst-exprs-for-implicit-wires x)))
-      (subsetp-equiv (append (mv-nth 0 ret)
+      (set-equivp (append (mv-nth 0 ret)
                              (mv-nth 1 ret))
                      (vl-gateinst-allexprs x)))
-    :hints(("Goal" :in-theory (enable subsetp-equiv vl-gateinst-allexprs)))))
+    :hints(("Goal" :in-theory (enable set-equivp vl-gateinst-allexprs)))))
 
 
 

@@ -76,7 +76,7 @@ operates on O(log_2 n) muxes.</p>"
 
   :body
   (b* ((shift-amount (expt 2 (- p 1)))
-       (name  (hons-copy (str::cat "VL_" (str::natstr n) "_BIT_SHR_PLACE_" (str::natstr p))))
+       (name  (hons-copy (cat "VL_" (natstr n) "_BIT_SHR_PLACE_" (natstr p))))
 
        ((mv out-expr out-port out-portdecl out-netdecl)             (vl-occform-mkport "out" :vl-output n))
        ((mv in-expr in-port in-portdecl in-netdecl)                 (vl-occform-mkport "in" :vl-input n))
@@ -174,7 +174,7 @@ endmodule
               (posp m))
 
   :body
-  (b* ((name (hons-copy (str::cat "VL_" (str::natstr n) "_BIT_SHR_BY_" (str::natstr m) "_BITS")))
+  (b* ((name (hons-copy (cat "VL_" (natstr n) "_BIT_SHR_BY_" (natstr m) "_BITS")))
 
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output n))
        ((mv a-expr a-port a-portdecl a-netdecl)         (vl-occform-mkport "a" :vl-input n))

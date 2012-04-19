@@ -342,11 +342,11 @@
     (cond ((zp n)
            "")
           ((= n 1)
-           (str::cat "~l1"))
+           (cat "~l1"))
           ((= n 2)
-           (str::cat "~l2 and ~l1"))
+           (cat "~l2 and ~l1"))
           (t
-           (str::cat "~l" (str::natstr n) ", " (vl-locationlist-string (- n 1))))))
+           (cat "~l" (natstr n) ", " (vl-locationlist-string (- n 1))))))
 
   (local (in-theory (enable vl-locationlist-string)))
 
@@ -366,11 +366,11 @@
          (elided-locs (if elide-p (take 9 locs) locs)))
       (make-vl-warning
        :type :vl-warn-duplicates
-       :msg  (str::cat "In module ~m0, found duplicated " type " at "
-                       (vl-locationlist-string (len elided-locs))
-                       (if elide-p
-                           " (and other locations)."
-                         "."))
+       :msg  (cat "In module ~m0, found duplicated " type " at "
+                  (vl-locationlist-string (len elided-locs))
+                  (if elide-p
+                      " (and other locations)."
+                    "."))
        :args (cons modname elided-locs)
        :fatalp nil
        :fn 'vl-make-duplicate-warning
@@ -510,13 +510,13 @@
       (b* ((locs    (vl-duplicate-assign-locations (car dupes) fixed orig))
            (lvalue  (vl-assign->lvalue (car dupes)))
            (type    (if (vl-idexpr-p lvalue)
-                        (str::cat "assignments to " (vl-idexpr->name lvalue))
+                        (cat "assignments to " (vl-idexpr->name lvalue))
                       (let ((lvalue-str (vl-pps-origexpr lvalue)))
                         (if (< (length lvalue-str) 40)
-                            (str::cat "assignments to " lvalue-str)
-                          (str::cat "assignments to \""
-                                    (subseq lvalue-str 0 40)
-                                    "...\"")))))
+                            (cat "assignments to " lvalue-str)
+                          (cat "assignments to \""
+                               (subseq lvalue-str 0 40)
+                               "...\"")))))
            (warning (vl-make-duplicate-warning type locs modname))
            (rest    (vl-duplicate-assign-warnings (cdr dupes) fixed orig modname)))
         (cons warning rest))))

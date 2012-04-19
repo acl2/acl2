@@ -19,7 +19,7 @@
 ; Original author: Sol Swords <sswords@centtech.com>
 
 ; sexpr-fixpoint-spec.lisp
-;  
+;
 
 (in-package "ACL2")
 (include-book "sexpr-fixpoint")
@@ -52,30 +52,31 @@
          (witness)))
 
 
+;; (defthm member-equal-remove
+;;   (iff (member-equal j (remove k x))
+;;        (and (not (equal j k))
+;;             (member-equal j x)))
+;;   :hints (("goal" :induct (len x))))
 
-(defthm member-equal-remove
-  (iff (member-equal j (remove k x))
-       (and (not (equal j k))
-            (member-equal j x)))
-  :hints (("goal" :induct (len x))))
+(encapsulate
+  ()
+  (local (defthmd lemma
+           (iff (set-equivp a (cons b c))
+                (and (member-equal b a)
+                     (set-equivp (remove b a) (remove b c))))
+           :hints ((set-reasoning))))
 
-(defcong set-equivp set-equivp (remove k a) 2
-  :hints ((set-reasoning)))
-
-(defcong set-equivp set-equivp (cons k a) 2
-  :hints ((set-reasoning)))
-
-(defthmd set-equivp-breakdown-cons
-  (iff (set-equivp a (cons b c))
-       (and (member-equal b a)
-            (set-equivp (remove b a) (remove b c))))
-  :hints ((set-reasoning)))
+  (defthmd set-equivp-breakdown-cons
+    (equal (set-equivp a (cons b c))
+           (and (member-equal b a)
+                (set-equivp (remove b a) (remove b c))))
+    :hints(("Goal" :use ((:instance lemma))))))
 
 (defthmd set-equivp-breakdown-cons2
-  (iff (set-equivp (cons b c) a)
-       (and (member-equal b a)
-            (set-equivp (remove b a) (remove b c))))
-  :hints ((set-reasoning)))
+  (equal (set-equivp (cons b c) a)
+         (and (member-equal b a)
+              (set-equivp (remove b a) (remove b c))))
+  :hints(("Goal" :use ((:instance set-equivp-breakdown-cons)))))
 
 (defthm remove-remove
   (equal (remove k (remove k x))
@@ -527,7 +528,7 @@
 ;;    (defthm 4v-<=-cons-append-env
 ;;      (implies (and (4v-alist-<= (cons (cons k v) a) fp0)
 ;;                    (keys-equiv (double-rewrite (cons (cons k v) a)) fp0))
-;;               (4v-<= 
+;;               (4v-<=
 ;;                (4v-sexpr-eval
 ;;                 x (cons (cons k v) (append a env)))
 ;;                (4v-sexpr-eval
@@ -623,7 +624,7 @@
 ;;                                4v-sexpr-eval
 ;;                                4v-alist-<=-acons-1
 ;;                                4v-fix 4v-<=)))))))
-  
+
 (defthmd 4v-alist-<=-acons->remove
      (implies (not (hons-assoc-equal k a))
               (iff (4v-alist-<= (cons (cons k v) a) b)
@@ -649,7 +650,7 @@
 ;; In the inductive case, let update-fns = ((s1 : up1) :: upsr), i.e. s1
 ;; is the first signal bound and up1 is its update function.  By IH we
 ;; have computed lbr, lower bound for upsr.  Meaning, for any fpr, envr
-;; where fpr has the same keys as upsr and satisfying 
+;; where fpr has the same keys as upsr and satisfying
 ;; upsr (fpr :: envr) <= fpr,
 ;; we have lbr(envr) <= fpr.
 
@@ -658,7 +659,7 @@
 ;;        :: (lbr * (s1 : ((up1 * lbr) * (s1 : X)))).
 
 ;; We need to show that for any fp, env where the bound signals of fp are
-;; the same as those of ups and ups (fp :: env) <= fp, 
+;; the same as those of ups and ups (fp :: env) <= fp,
 ;; we have lbf(env) <= fp.
 
 ;; Suppose we have such an fp, env.  Decomposing, we have
@@ -682,8 +683,8 @@
 
 ;; Looking at the second obligation, we need to show
 ;; lbr ((s1 : up1(lbr((s1 : X) :: env) :: (s1 : X) :: env)) :: env) <= s1\fp1.
-;; 
-;; Using the IH, let fpr, envr as above be fp\s1 and 
+;;
+;; Using the IH, let fpr, envr as above be fp\s1 and
 ;; ((s1 : up1(lbr((s1 : X) :: env) :: (s1 : X) :: env)) :: env).
 ;; If we can show
 ;; upsr (fpr :: envr) <= fpr, i.e.
@@ -739,8 +740,6 @@
                fp)
   :hints ((witness :ruleset 4v-alist-<=-witnessing)))
 
-
-
 (defthmd 4v-alist-<=-append-cons-append
   (implies (and (set-equivp (double-rewrite (cons bk (alist-keys a)))
                             (double-rewrite (alist-keys d)))
@@ -755,36 +754,34 @@
                              )
                             (alist-keys-member-hons-assoc-equal
                              4v-fix 4v-<= default-car default-cdr
-                             append member-equal-atom member-equal
+                             append member-equal-when-atom member-equal
                              alist-keys-when-atom
-                             set-equivp-asym set-equivp-trans
+                             ;; set-equivp-asym set-equivp-trans
                              (:rules-of-class :type-prescription :here))))
           (witness :ruleset (4v-alist-<=-witnessing
                              4v-alist-<=-4v-lookup-example))
           (witness :ruleset set-equivp-member-template)))
 
 
-;; (why 4v-alist-<=-trans2)
-;; (why 4V-ALIST-<=-SEXPR-EVAL-ALIST-MONOTONIC-ENV)
-;; (why 4v-alist-<=-append-cons-append)
+;(why 4v-alist-<=-trans2)
+;(why 4V-ALIST-<=-SEXPR-EVAL-ALIST-MONOTONIC-ENV)
+;(why 4v-alist-<=-append-cons-append)
 
-;; Assuming 
+
+;; Assuming
 ;; upsr (fp :: env) <= fp\s1,
 ;; prove
 ;; upsr (fp\s1 :: (s1 : X) :: env) <= fp\s1.
 (defthm |upsr (fp\s1 :: (s1 : X) :: env) <= fp\s1|
-  (implies (and (4v-alist-<=
-                 (4v-sexpr-eval-alist upsr (append fp env))
-                 (remove-assoc s1 fp))
+  (implies (and (4v-alist-<= (4v-sexpr-eval-alist upsr (append fp env))
+                             (remove-assoc s1 fp))
                 (set-equivp (alist-keys fp)
                             (cons s1 (alist-keys upsr))))
-           (4v-alist-<=
-            (4v-sexpr-eval-alist
-             upsr
-             (append (remove-assoc s1 fp)
-                     (cons (cons s1 *4vx*)
-                           env)))
-            (remove-assoc s1 fp)))
+           (4v-alist-<= (4v-sexpr-eval-alist upsr
+                                             (append (remove-assoc s1 fp)
+                                                     (cons (cons s1 *4vx*)
+                                                           env)))
+                        (remove-assoc s1 fp)))
   :hints(("Goal" :in-theory
           (e/d (4v-alist-<=-trans2
                 hons-assoc-equal-iff-member-alist-keys
@@ -796,10 +793,11 @@
           :do-not-induct t)))
 
 
+
 ;; Given
 ;; upsr (fp :: env) <= fp\s1
 ;; and lbr a FLB of upsr,
-;; show 
+;; show
 ;; lbr ((s1 : X) :: env) <= fp\s1.
 (defthm |lbr ((s1 : X) :: env) <= fp\s1|
   (implies (and (4v-sexpr-fixpoint-lower-boundp upsr lbr)
@@ -945,7 +943,7 @@
           :do-not-induct t)))
 
 
-;; Using the IH, let fpr, envr as above be fp\s1 and 
+;; Using the IH, let fpr, envr as above be fp\s1 and
 ;; ((s1 : up1(lbr((s1 : X) :: env) :: (s1 : X) :: env)) :: env).
 ;; If we can show
 ;; upsr (fpr :: envr) <= fpr, i.e.

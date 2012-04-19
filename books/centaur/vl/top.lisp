@@ -26,6 +26,7 @@
 (include-book "checkers/use-set")
 (include-book "loader/loader")
 (include-book "mlib/comment-writer")
+(include-book "toe/toe-top")
 (include-book "transforms/cn-hooks")
 (include-book "transforms/occform/occform-top")
 (include-book "transforms/xf-addinstnames")
@@ -904,46 +905,21 @@ from @(see vl-simplify-part2).</p>"
       (mods (xf-cwtime (vl-modulelist-optimize mods)
                        :name optimize))
 
-      (mods (xf-cwtime (vl-deporder-sort mods)
-                       :name xf-deporder-sort))
-
-      ((unless (xf-cwtime (uniquep (vl-modulelist->names mods))
-                          :name doublecheck-unique-names))
-       (prog2$ (er hard? 'vl-simplify-part3
-                   "Deporder sort causes name clashes??  BOZO prove this away.")
-               (mv nil failmods)))
-
-; <<Previous safe-mode checks: :vl-modules :vl-unique-names :vl-complete
-; :vl-reasonable :vl-always-known :vl-param-free :vl-ranges-resolved
-; :vl-selects-resolved :vl-selects-in-bounds :vl-ranges-simple :vl-widths-fixed
-; :vl-args-compat>>
-
-
-      (- (sneaky-save 'pre-defm mods))
-
-      (mods (xf-cwtime (vl-modulelist-make-defm-commands-hook mods)
-                       :name xf-make-defm-commands))
+      ;; This is just a useful place to add on any additional transforms you want
+      ;; before E generation.
+      (mods (xf-cwtime (vl-modulelist-pre-toe-hook mods)
+                       :name pre-toe))
 
       ((mv mods failmods) (xf-cwtime (vl-propagate-new-errors mods failmods)
                                      :name propagate-errors))
 
-      (- (vl-gc))
+      (- (sneaky-save 'pre-defm mods))
 
-      (mods (xf-cwtime (vl-modulelist-esim-trans-hook mods)
-                       :name xf-esim-trans))
+      (mods (xf-cwtime (vl-modulelist-to-e mods)
+                       :name xf-convert-to-e))
 
-      (- (vl-gc))
-
-      ;; (mods (if etrans-p
-      ;;           (xf-cwtime (vl-modulelist-etrans mods)
-      ;;                      :name xf-etrans)
-      ;;         mods))
-
-      ;; ((mv mods failmods)
-      ;;  (if etrans-p
-      ;;      (xf-cwtime (vl-propagate-new-errors mods failmods)
-      ;;                 :name propagate-errors)
-      ;;    (mv mods failmods)))
+      ((mv mods failmods) (xf-cwtime (vl-propagate-new-errors mods failmods)
+                                     :name propagate-errors))
 
       (mods (xf-cwtime (vl-modulelist-clean-warnings mods)
                        :name xf-clean-warnings))
@@ -951,6 +927,7 @@ from @(see vl-simplify-part2).</p>"
       (failmods (xf-cwtime (vl-modulelist-clean-warnings failmods)
                            :name xf-clean-warnings-failmods))
 
+      (- (vl-gc))
       ;(- (cw "~x0 modules remain.~%" (len mods)))
 
       )

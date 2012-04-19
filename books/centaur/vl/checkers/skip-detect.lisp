@@ -20,6 +20,7 @@
 
 (in-package "VL")
 (include-book "../mlib/ctxexprs")
+(include-book "../mlib/print-context")
 (include-book "../util/cwtime")
 (local (include-book "../util/arithmetic"))
 (local (include-book "../util/osets"))
@@ -153,7 +154,7 @@ a wire name, and accumulates them into <tt>acc</tt>."
          ((mv val len) (str::parse-nat-from-string x 0 0 n xl))
          (prefix       (subseq x 0 n))
          (suffix       (subseq x (min xl (+ n len)) nil))
-         (pat          (str::cat prefix "*" suffix))
+         (pat          (cat prefix "*" suffix))
          (key          (make-sd-key :pat (hons-copy pat)
                                     :index val
                                     :orig x)))
@@ -782,7 +783,7 @@ sd-problem-p)s, sorted in priority order.</p>"
   (let ((full (with-local-ps (vl-pp-modelement-full (vl-context->elem x)))))
     (if (< (length full) 230)
         full
-      (str::cat (subseq full 0 230) "..." *nls*))))
+      (cat (subseq full 0 230) "..." *nls*))))
 
 
 (defpp sd-pp-problem-long (x)

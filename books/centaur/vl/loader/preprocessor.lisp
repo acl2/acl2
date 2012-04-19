@@ -32,13 +32,42 @@
 (local (include-book "../util/arithmetic"))
 
 
+;; stupid speed hacking
+
 (local (in-theory (disable vl-echarlist-p-when-subsetp-equal
                            nthcdr-of-increment
                            double-containment
                            default-car
                            default-cdr
-                           subsetp-equal-of-append
+                           acl2::subsetp-equal-append1
                            vl-echar-p-when-member-equal-of-vl-echarlist-p)))
+
+
+(local (defthm append-nil
+         (equal (append nil y) y)))
+
+(local (defthm true-listp-append-rw
+         (equal (true-listp (append x y))
+                (true-listp y))))
+
+(local (in-theory (disable acl2-count-positive-when-consp
+                           append-when-not-consp
+                           append-of-cons
+                           acl2::true-listp-append
+                           (:type-prescription true-listp)
+                           )))
+
+(local (in-theory (disable ;ACL2-COUNT-OF-VL-READ-UNTIL-END-OF-DEFINE-WEAK
+                           hons-assoc-equal
+                           CONSP-WHEN-MEMBER-EQUAL-OF-CONS-LISTP
+                           STRINGP-WHEN-MEMBER-EQUAL-IN-STRING-LISTP
+                           STRING-LISTP-WHEN-SUBSETP-EQUAL-OF-STRING-LISTP
+                           STRING-LISTP-WHEN-MEMBER-EQUAL-OF-STRING-LIST-LISTP
+                           SYMBOL-LISTP-WHEN-SUBSETP-EQUAL-OF-SYMBOL-LISTP
+                           TRUE-LISTP-WHEN-MEMBER-EQUAL-OF-TRUE-LIST-LISTP)))
+
+(local (in-theory (disable VL-MATCHES-STRING-P-WHEN-ACL2-COUNT-ZERO)))
+
 
 (defxdoc preprocessor
   :parents (loader)

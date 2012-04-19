@@ -679,10 +679,10 @@
                 (return (vl-mark-as-explicit-parens expr))))
 
          (t
-          (vl-parse-error (str::cat "Expected a primary, but found a "
-                                    (symbol-name type)
-                                    " token with text "
-                                    (vl-echarlist->string (vl-token->etext (car tokens))))))))))
+          (vl-parse-error (cat "Expected a primary, but found a "
+                               (symbol-name type)
+                               " token with text "
+                               (vl-echarlist->string (vl-token->etext (car tokens))))))))))
 
 
 ; expression ::=

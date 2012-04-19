@@ -20,6 +20,7 @@
 (include-book "g-predicates")
 (include-book "g-binary-mult")
 (include-book "g-floor")
+(include-book "g-make-fast-alist")
 (include-book "g-mod")
 (include-book "g-truncate")
 (include-book "g-rem")

@@ -48,7 +48,7 @@
   (let* ((mksym-package-symbol 'vl::foo)
          (fn            (mksym 'vl-find- type))
          (element-p     (mksym 'vl- type '-p))
-         (tag           (intern (str::cat "VL-" (symbol-name type)) "KEYWORD"))
+         (tag           (intern (cat "VL-" (symbol-name type)) "KEYWORD"))
          (list-p        (mksym 'vl- type 'list-p))
          (element->name (or element->name
                             (mksym 'vl- type '->name)))

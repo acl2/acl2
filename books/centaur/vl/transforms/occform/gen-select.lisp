@@ -235,7 +235,7 @@ endmodule
        (k (expt 2 (1- n)))
 
        (submods (vl-make-2^n-bit-dynamic-bitselect (- n 1)))
-       (name (hons-copy (str::cat "VL_" (str::natstr m) "_BIT_DYNAMIC_BITSELECT")))
+       (name (hons-copy (cat "VL_" (natstr m) "_BIT_DYNAMIC_BITSELECT")))
 
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
        ((mv in-expr in-port in-portdecl in-netdecl)     (vl-occform-mkport "in" :vl-input m))
@@ -344,7 +344,7 @@ endmodule
         ;; modules directly.
         coremods)
 
-       (name (hons-copy (str::cat "VL_" (str::natstr n) "_BIT_DYNAMIC_BITSELECT")))
+       (name (hons-copy (cat "VL_" (natstr n) "_BIT_DYNAMIC_BITSELECT")))
 
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
        ((mv in-expr in-port in-portdecl in-netdecl)     (vl-occform-mkport "in" :vl-input n))
@@ -429,7 +429,7 @@ checking.</p>"
          coremods)
 
         ;; Else, we need a new module.
-        (name (str::cat "VL_" (str::natstr n) "_BIT_DYNAMIC_BITSELECT_" (str::natstr m)))
+        (name (cat "VL_" (natstr n) "_BIT_DYNAMIC_BITSELECT_" (natstr m)))
 
         ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
         ((mv in-expr in-port in-portdecl in-netdecl)     (vl-occform-mkport "in" :vl-input n))

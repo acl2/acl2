@@ -1085,8 +1085,8 @@ the value of the input, then we are unsure of the value of the output.</p>"
   :long "<p>We say X &lt;= Y for four-valued lists when:</p>
 
 <ul>
- <li>X and Y have the same length, and</li>
- <li>Xi &lt;= Yi for all i.</li>
+ <li>Y is at least as long as X, and</li>
+ <li>Xi &lt;= Yi for all i up to |X|.</li>
 </ul>"
 
   (defun 4v-list-<= (x y)

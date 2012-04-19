@@ -21,7 +21,8 @@
 (in-package "VL")
 (include-book "duplicate-detect")
 (include-book "../mlib/lvalues")
-(include-book "../mlib/wirealist")
+(include-book "../toe/toe-wirealist")
+(include-book "../toe/toe-verilogify")
 (local (include-book "../util/arithmetic"))
 (include-book "../../misc/fal-graphs")
 
@@ -510,8 +511,8 @@
          ;; Note: walist only includes net declarations (it omits registers)
          ((mv successp warnings walist)
           (vl-module-wirealist x x.warnings))
+         ((with-fast walist))
          ((unless successp)
-          (fast-alist-free walist)
           (b* ((w (make-vl-warning
                    :type :vl-multidrive-detect-fail
                    :msg "Wire alist construction for ~m0 failed.  We will ~
@@ -642,19 +643,25 @@
 
 
 
-(defsection vl-modulelist-multidrive-detect
+(defsection vl-modulelist-multidrive-detect-aux
 
-  (defprojection vl-modulelist-multidrive-detect (x)
+  (defprojection vl-modulelist-multidrive-detect-aux (x)
     (vl-module-multidrive-detect x)
     :guard (vl-modulelist-p x)
+    :result-type vl-modulelist-p
     :nil-preservingp nil)
 
-  (local (in-theory (enable vl-modulelist-multidrive-detect)))
+  (local (in-theory (enable vl-modulelist-multidrive-detect-aux)))
 
-  (defthm vl-modulelist-p-of-vl-modulelist-multidrive-detect
-    (implies (force (vl-modulelist-p x))
-             (vl-modulelist-p (vl-modulelist-multidrive-detect x))))
-
-  (defthm vl-modulelist->names-of-vl-modulelist-multidrive-detect
-    (equal (vl-modulelist->names (vl-modulelist-multidrive-detect x))
+  (defthm vl-modulelist->names-of-vl-modulelist-multidrive-detect-aux
+    (equal (vl-modulelist->names (vl-modulelist-multidrive-detect-aux x))
            (vl-modulelist->names x))))
+
+
+
+
+(defun vl-modulelist-multidrive-detect (x)
+  (declare (xargs :guard (vl-modulelist-p x)))
+  (b* ((ans (vl-modulelist-multidrive-detect-aux x)))
+    (clear-memoize-table 'vl-module-wirealist)
+    ans))

@@ -27,7 +27,7 @@
 
 (local (in-theory (disable
                    acl2-count-positive-when-consp
-                   acl2-count-when-member-equal
+                   acl2::acl2-count-when-member-equal
                    (:type-prescription acl2-count)
                    consp-under-iff-when-true-listp
                    VL-IS-TOKEN?-FN-WHEN-NOT-CONSP-OF-TOKENS
@@ -45,7 +45,7 @@
                    vl-parse-assignment-result
                    car-when-all-equalp
                    default-car default-cdr
-                   member-equal-when-subsetp-equal
+                   acl2::subsetp-equal-member
                    (:rules-of-class :type-prescription :here))))
 
 

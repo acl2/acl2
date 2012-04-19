@@ -615,10 +615,9 @@
           nil))
       (list (make-vl-warning
              :type :vl-warn-oddexpr
-             :msg (str::cat "~a0: found ~s1 that suggest precedence problems ~
-                             may be present.  Details:~%"
-                            (with-local-ps
-                             (vl-pp-oddexpr-details details)))
+             :msg (cat "~a0: found ~s1 that suggest precedence problems may ~
+                        be present.  Details:~%"
+                       (with-local-ps (vl-pp-oddexpr-details details)))
              :args (list ctx
                          (if (vl-plural-p details) "subexpressions" "a subexpression"))
              :fatalp nil

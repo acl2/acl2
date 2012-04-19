@@ -53,6 +53,8 @@
       unexplode-nonnegative-integer
       base10-digit-char-listp
       prefixp
+      set-equivp
+      set-reasoning
 
       cutil::mksym
       cutil::mksym-package-symbol
@@ -81,6 +83,12 @@
       make-fast-alist
       with-fast-alist
       with-fast
+      with-stolen
+
+      run-when
+      run-if
+      run-unless
+      assocs
 
       defconsts
       definline
@@ -129,7 +137,30 @@
       with-fast
       with-fast-alists
 
-      vcd-dump))
+      vcd-dump
+
+      gpl
+      pat->al
+      pat->fal
+      al->pat
+      data-for-patternp
+      similar-patternsp
+      pat-flatten
+      pat-flatten1
+      collect-signal-list
+      good-esim-primitivep
+      good-esim-modulep
+      good-esim-occp
+      good-esim-occsp
+      bad-esim-modulep
+      bad-esim-occp
+      bad-esim-occsp
+
+      str::cat
+      str::natstr
+
+
+      ))
 
    ;; Things to remove:
    '(true-list-listp

@@ -209,14 +209,14 @@ actually refer to arrays into <tt>:vl-array-index</tt> operations.</p>")
 (defmacro def-vl-make-array-indexing (name &key type body)
   (let* ((name-s     (symbol-name name))
          (type-s     (symbol-name type))
-         (thm-warn-s (str::cat "VL-WARNINGLIST-P-" name-s))
-         (thm-type-s (str::cat type-s "-OF-" name-s))
+         (thm-warn-s (cat "VL-WARNINGLIST-P-" name-s))
+         (thm-type-s (cat type-s "-OF-" name-s))
          (thm-warn   (intern-in-package-of-symbol thm-warn-s name))
          (thm-type   (intern-in-package-of-symbol thm-type-s name))
-         (short      (str::cat "Introduce <tt>:vl-array-index</tt> operators throughout
+         (short      (cat "Introduce <tt>:vl-array-index</tt> operators throughout
 a @(see " type-s ")"))
 
-         (long       (str::cat "<p><b>Signature:</b> @(call " name-s ") returns
+         (long       (cat "<p><b>Signature:</b> @(call " name-s ") returns
 <tt>(mv warnings-prime x-prime)</tt></p>")))
 
   `(defsection ,name
@@ -245,15 +245,15 @@ a @(see " type-s ")"))
 (defmacro def-vl-make-array-indexing-list (name &key type element)
   (let* ((name-s     (symbol-name name))
          (type-s     (symbol-name type))
-         (thm-warn-s (str::cat "VL-WARNINGLIST-P-" name-s))
-         (thm-type-s (str::cat type-s "-OF-" name-s))
-         (thm-true-s (str::cat "TRUE-LISTP-OF-" name-s))
+         (thm-warn-s (cat "VL-WARNINGLIST-P-" name-s))
+         (thm-type-s (cat type-s "-OF-" name-s))
+         (thm-true-s (cat "TRUE-LISTP-OF-" name-s))
          (thm-warn   (intern-in-package-of-symbol thm-warn-s name))
          (thm-type   (intern-in-package-of-symbol thm-type-s name))
          (thm-true   (intern-in-package-of-symbol thm-true-s name))
-         (short      (str::cat "Introduce <tt>:vl-array-index</tt> operators throughout
+         (short      (cat "Introduce <tt>:vl-array-index</tt> operators throughout
 a @(see " type-s ")"))
-         (long       (str::cat "<p><b>Signature:</b> @(call " name-s ") returns
+         (long       (cat "<p><b>Signature:</b> @(call " name-s ") returns
 <tt>(mv warnings-prime x-prime)</tt></p>")))
 
   `(defsection ,name

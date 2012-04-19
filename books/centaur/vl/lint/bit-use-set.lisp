@@ -19,16 +19,18 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "../mlib/port-bits")
+(include-book "../toe/toe-preliminary")
 (include-book "../wf-reasonable-p")
 (include-book "disconnected")
 (include-book "../mlib/hierarchy")
 (include-book "../mlib/allexprs")
 (include-book "../mlib/lvalues")
+(include-book "../mlib/warnings")
 (include-book "../util/cwtime")
 (include-book "centaur/bitops/bitsets" :dir :system)
 (local (include-book "../util/arithmetic"))
 (local (include-book "../util/osets"))
+
 
 
 ; IMPORTANT WHITEBOARD NOTES FROM JARED
@@ -47,9 +49,9 @@
 ;                   |                   |
 ; "output":         |                   |
 ;   0      1        |     0     0       | unnecessary output *       never used/set above
-;   0      1        |     0     1       | trainwreck **              none
+;   0      1        |     0     1       | possible trainwreck **     none
 ;   0      1        |     1     0       | fine                       none
-;   0      1        |     1     1       | trainwreck **              none
+;   0      1        |     1     1       | possible trainwreck **     none
 ;                   |                   |
 ; "input":          |                   |
 ;   1      0        |     0     0       | unset port (yikes!) **     never used/set above
@@ -59,9 +61,9 @@
 ;                   |                   |
 ; "inout":          |                   |
 ;   1      1        |     0     0       | unnecessary port           never used/set above
-;   1      1        |     0     1       | trainwreck **              none
+;   1      1        |     0     1       | horrible trainwreck **     none
 ;   1      1        |     1     0       | fine                       none
-;   1      1        |     1     1       | trainwreck **              none
+;   1      1        |     1     1       | horrible trainwreck **     none
 ; ------------------+-------------------+-------------------------------------------------------------------------------------------------------
 ;
 ;
@@ -92,30 +94,172 @@
 ;   1      1        |     1     1       | fine           none
 ; ------------------+-------------------+------------------------------------------------
 
-(defund prefix-emodwires (prefix wires)
-  (declare (xargs :guard (and (stringp prefix)
-                              (vl-emodwirelist-p wires))))
-  (if (atom wires)
-      nil
-    (cons (make-vl-emodwire
-           :basename (str::cat prefix (vl-emodwire->basename (car wires)))
-           :index    (vl-emodwire->index (car wires)))
-          (prefix-emodwires prefix (cdr wires)))))
-
-(defthm vl-emodwirelist-p-of-prefix-emodwires
-  (implies (force (vl-emodwirelist-p wires))
-           (vl-emodwirelist-p (prefix-emodwires prefix wires)))
-  :hints(("Goal" :in-theory (enable prefix-emodwires))))
 
 
-(defund prefix-walist (prefix walist)
-  (declare (xargs :guard (and (stringp prefix)
-                              (vl-wirealist-p walist))))
-  (if (atom walist)
-      nil
-    (hons-acons (caar walist)
-                (prefix-emodwires prefix (cdar walist))
-                (prefix-walist prefix (cdr walist)))))
+;; BOZO axe all-wirealists, memoizing vl-module-wirealist seems better...
+
+
+(defsection vl-modulelist-all-wirealists
+  :parents (vl-wirealist-p)
+  :short "Safely generate the (fast) wirealists for a list of modules."
+
+  :long "<p>@(call vl-modulelist-all-wirealists) returns <tt>(mv warning-alist
+all-wirealists)</tt>.</p>
+
+<p>We attempt to construct the @(see vl-wirealist-p) for every module in the
+module list <tt>x</tt>.  This process might fail for any particular module; see
+@(see vl-module-wirealist) for details.  So, we return two values:</p>
+
+<ul>
+<li><tt>warning-alist</tt> is a @(see vl-modwarningalist-p) that may bind the
+names of some modules in <tt>x</tt> to new warnings explaining why we were
+unable to construct their wire alists.</li>
+
+<li><tt>all-wirealists</tt> is a fast alist that binds each module's name to
+its wire alist.  Note that if there were any problems, this may be an empty or
+partial wire alist.</li>
+</ul>"
+
+  (defund vl-modulelist-all-wirealists (x)
+    "Returns (MV WARNING-ALIST ALL-WIREALISTS)"
+    (declare (xargs :guard (vl-modulelist-p x)))
+    (b* (((when (atom x))
+          (mv nil nil))
+
+         (car-name (vl-module->name (car x)))
+
+         ((mv warning-alist cdr-wire-alists)
+          (vl-modulelist-all-wirealists (cdr x)))
+
+         ((mv ?successp car-warnings car-wire-alist)
+          (vl-module-wirealist (car x) nil))
+
+         (warning-alist
+          (if (consp car-warnings)
+              (vl-extend-modwarningalist-list car-name car-warnings warning-alist)
+            warning-alist))
+
+         (wire-alists
+          (hons-acons car-name car-wire-alist cdr-wire-alists)))
+
+      (mv warning-alist wire-alists)))
+
+  (local (in-theory (enable vl-modulelist-all-wirealists)))
+
+  (defthm vl-modwarningalist-p-of-vl-modulelist-all-wirealists
+    (implies (force (vl-modulelist-p x))
+             (vl-modwarningalist-p (mv-nth 0 (vl-modulelist-all-wirealists x)))))
+
+  (defthm hons-assoc-equal-of-vl-modulelist-all-wirealists
+    (implies (and ;(no-duplicatesp-equal (vl-modulelist->names x))
+              (force (vl-modulelist-p x)))
+             (equal (hons-assoc-equal name (mv-nth 1 (vl-modulelist-all-wirealists x)))
+                    (let ((mod (vl-find-module name x)))
+                      (and mod
+                           (cons name (mv-nth 2 (vl-module-wirealist mod nil)))))))
+    :hints(("Goal" :induct (vl-modulelist-all-wirealists x)))))
+
+
+  #||
+
+; Some performance work.
+
+ (progn
+  (include-book
+    "serialize/serialize" :dir :system)
+  (include-book
+    "serialize/unsound-read" :dir :system)
+  (include-book
+    "centaur/misc/memory-mgmt-raw" :dir :system)
+  (value-triple (acl2::set-max-mem ;; newline to fool limits scanner
+    (* 30 (expt 2 30))))
+  (value-triple (acl2::hons-resize :addr-ht 10000000))
+  (defconst *mods*
+    (cdr (assoc :mods
+                (serialize::unsound-read "/n/fv2/translations/stable/cnq-speedsim/xdat.sao"
+                                         :verbosep t
+                                         :honsp t)))))
+
+  (defun test (x)
+    (declare (xargs :mode :program)
+             (ignorable x))
+    (b* (((mv ?warnings ?walists)
+          (vl-modulelist-all-wirealists x)))
+     (fast-alist-free warnings)
+     (fast-alist-free walists)
+     nil))
+
+  (prog2$ (gc$)
+          (time$ (test *mods*)))
+
+; OLD NOTES.  (These results are all bogus because they are from before
+; fast-cat.)  Initial versions were around 27.5 seconds.  New fancy
+; no-duplicates check with hons-acons and hons-get symbols already interned:
+; 36.7 seconds, 518 MB allocated, 129k faults.  Very sucky.  With no duplicate
+; checking at all (just to see how much this matters) 25.26 seconds, 457 mb
+; allocated, 112k faults So this is already pretty fast, the duplicate check is
+; costing us about 6% of the runtime.  END OLD NOTES.
+
+; NEW NOTES.  Fast-cat.  Optimized vl-emodwires-from-high-to-low.
+;
+; BASELINE RUNS: 21.51 sec avg
+
+ (/ (+
+    22.081 ;sec, 740,903,936 MB, 182K minor faults
+    21.222 ;sec, 741,059,824 MB, 181K minor faults
+;;    26.579 ;sec, ..., but might have had interference
+    21.876 ;sec, ...
+    21.619 ;sec, ...
+    21.084 ;sec, ...
+    21.185 ;sec
+   ) 6.0) = 21.51 sec
+
+
+; Runs with duplicate checking disabled (unsound): 19.74 sec avg
+; This just lets us see how expensive the duplicate checks are.
+
+ (/ (+
+     20.475 ;sec, 456 MB allocated, no faults <-- interesting
+     19.267 ;sec, 455 MB allocated
+     19.407
+     19.840)
+    4) = 19.74 sec
+
+; So duplicate-checking is costing us 1.77 seconds (8.2% of the runtime)
+
+ (prog2$ (gc$)
+         (time$ (test *mods*)))
+
+ ; Duplicate-checking re-enabled.
+ ; Disable T/F/NIL checking in plain-wire generation.
+
+  #||
+  (/ (+
+     20.768 ; sec, 740 MB allocated
+     20.910
+     21.225
+     22.820) 4.0) = 21.430
+  ||#
+
+  ; So the T/F/NIL check is totally inconsequential, less than 1%.
+
+
+ ||#
+
+
+(defsection vl-nowarn-all-wirealists
+  :parents (vl-wirealist-p)
+  :short "Wrapper for @(see vl-modulelist-all-wirealists) that ignores any
+warnings."
+  :long "<p>We leave this enabled.  It's mostly useful for guards.</p>"
+
+  (defun vl-nowarn-all-wirealists (x)
+    (declare (xargs :guard (vl-modulelist-p x)))
+    (b* (((mv warnings-alist all-walists)
+          (vl-modulelist-all-wirealists x)))
+      (fast-alist-free warnings-alist)
+      all-walists)))
+
 
 
 (defthm vl-portdecl->dir-default
@@ -480,7 +624,7 @@
   (defalist us-db-p (x)
     :key (vl-emodwire-p x)
     :val (natp x)
-    :keyp-of-nil t
+    :keyp-of-nil nil
     :valp-of-nil nil))
 
 

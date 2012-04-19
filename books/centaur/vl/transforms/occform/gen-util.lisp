@@ -129,7 +129,7 @@ net declaration.  The expression is unsigned and is \"already sized.\"</p>"
     `(defsection ,name
        :parents ,parents
        :short ,short
-       :long ,(str::cat "<p><b>Signature:</b> @(call " (symbol-name name) ")
+       :long ,(cat "<p><b>Signature:</b> @(call " (symbol-name name) ")
 returns a non-empty module list.  The first module in the list is the desired
 module; the other modules are any necessary supporting modules.</p>" long)
 
@@ -225,7 +225,7 @@ module; the other modules are any necessary supporting modules.</p>" long)
                                 (vl-location-p loc))))
     (if (atom arglists)
         nil
-      (cons (vl-simple-instantiate x (str::cat prefix (str::natstr n)) (car arglists)
+      (cons (vl-simple-instantiate x (cat prefix (natstr n)) (car arglists)
                                    :loc loc)
             (vl-simple-instantiate-list-fn x prefix (cdr arglists) (+ 1 n) loc))))
 

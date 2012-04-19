@@ -176,7 +176,7 @@ generate module instance names.</li>
     `(defsection ,name
        :parents ,parents
        :short ,short
-       :long ,(str::cat "<p><b>Signature:</b> @(call " (symbol-name name) ")
+       :long ,(cat "<p><b>Signature:</b> @(call " (symbol-name name) ")
 produces <tt>(mv new-warnings new-modules new-modinsts new-n)</tt>, as
 described in @(see occform).</p>" long)
 

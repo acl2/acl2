@@ -76,10 +76,10 @@ Assuming that hashing operations are constant time, constructing this table is
 
        (defxdoc ,keep-fn
          :parents (filtering-by-name)
-         :short ,(str::cat "Keep @(see vl-" (symbol-name type) "-p)s by "
+         :short ,(cat "Keep @(see vl-" (symbol-name type) "-p)s by "
 short-name ".")
 
-         :long ,(str::cat "<p>We are given <tt>names</tt>, a list of strings, and
+         :long ,(cat "<p>We are given <tt>names</tt>, a list of strings, and
 <tt>x</tt>, a list of @(see vl-" (symbol-name type) "-p)s.  We return all of the
 members of <tt>x</tt> whose " short-name "s are in <tt>names</tt>.</p>"
 
@@ -96,10 +96,10 @@ keep-long
 
        (defxdoc ,del-fn
          :parents (filtering-by-name)
-         :short ,(str::cat "Remove @(see vl-" (symbol-name type) "-p)s by "
+         :short ,(cat "Remove @(see vl-" (symbol-name type) "-p)s by "
 short-name ".")
 
-         :long ,(str::cat "<p>We are given <tt>names</tt>, a list of strings, and
+         :long ,(cat "<p>We are given <tt>names</tt>, a list of strings, and
 <tt>x</tt>, a list of @(see vl-" (symbol-name type) "-p)s.  We remove all of the
 members of <tt>x</tt> whose " short-name "s are in <tt>names</tt>.</p>"
 
@@ -115,10 +115,10 @@ del-long
 
        (defxdoc ,fn
          :parents (filtering-by-name)
-         :short ,(str::cat "Partition a list of @(see vl-" (symbol-name
+         :short ,(cat "Partition a list of @(see vl-" (symbol-name
 type) "-p)s by " short-name ".")
 
-         :long ,(str::cat "<p><b>Signature</b>: @(call " (symbol-name fn) ")
+         :long ,(cat "<p><b>Signature</b>: @(call " (symbol-name fn) ")
 returns <tt>(mv named unnamed)</tt>.</p>
 
 <p>The only reason to use this function is efficiency.  Logically,

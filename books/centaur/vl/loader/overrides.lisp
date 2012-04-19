@@ -439,9 +439,9 @@ corresponding to a particular module.</p>
         (name := (vl-match-token :vl-idtoken))
         (unless (equal (vl-idtoken->name name) filename)
           (return-raw
-           (vl-parse-error (str::cat "Module name " (vl-idtoken->name name)
-                                     " does not match file name "
-                                     filename "."))))
+           (vl-parse-error (cat "Module name " (vl-idtoken->name name)
+                                " does not match file name "
+                                filename "."))))
         (rest := (vl-parse-through-endmodule))
         (return (list* mod name rest))))
 
@@ -584,7 +584,7 @@ override-alist filemap defines' comment-map' walist' state)</tt>.</p>
                                 (booleanp filemapp))
                     :stobjs state))
 
-    (b* ((filename (str::cat path "/" modname ".ov"))
+    (b* ((filename (cat path "/" modname ".ov"))
          (- (cw "Reading override file ~s0.~%" filename))
 
          (filemap nil)

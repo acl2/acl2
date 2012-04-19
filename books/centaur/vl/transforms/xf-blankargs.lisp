@@ -19,7 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
-(include-book "../mlib/hierarchy")
+(include-book "../mlib/find-module")
 (include-book "../mlib/namefactory")
 (include-book "../mlib/range-tools")
 (include-book "../mlib/port-tools")

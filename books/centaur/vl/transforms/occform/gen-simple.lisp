@@ -85,7 +85,7 @@ endmodule
 ; expect to see a VL_1_BIT_BUF instead of a VL_1_BIT_REDUCTION_AND.  So for
 ; consistency we go ahead and try to keep the wrapper in all cases.
 
-       (name (hons-copy (str::cat "VL_" (str::natstr n) "_BIT_POINTWISE_"
+       (name (hons-copy (cat "VL_" (natstr n) "_BIT_POINTWISE_"
                                   (case type
                                     (:vl-and "AND")
                                     (:vl-or "OR")
@@ -152,7 +152,7 @@ endmodule
   (b* (((when (= n 1))
         (list *vl-1-bit-assign*))
 
-       (name (hons-copy (str::cat "VL_" (str::natstr n) "_BIT_ASSIGN")))
+       (name (hons-copy (cat "VL_" (natstr n) "_BIT_ASSIGN")))
 
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output n))
        ((mv in-expr in-port in-portdecl in-netdecl)     (vl-occform-mkport "in" :vl-input n))
@@ -211,7 +211,7 @@ above we would have:</p>
   (b* (((when (= n 1))
         (list *vl-1-bit-not*))
 
-       (name (hons-copy (str::cat "VL_" (str::natstr n) "_BIT_NOT")))
+       (name (hons-copy (cat "VL_" (natstr n) "_BIT_NOT")))
 
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output n))
        ((mv in-expr in-port in-portdecl in-netdecl)     (vl-occform-mkport "in" :vl-input n))
@@ -274,7 +274,7 @@ endmodule
               (posp n))
 
   :body
-  (b* ((name (hons-copy (str::cat "VL_" (str::natstr n) "_BIT_REDUCTION_"
+  (b* ((name (hons-copy (cat "VL_" (natstr n) "_BIT_REDUCTION_"
                                   (case type
                                     (:vl-unary-bitand "AND")
                                     (:vl-unary-bitor "OR")
@@ -343,7 +343,7 @@ endmodule
 (def-vl-modgen vl-make-1-bit-mux (approxp)
   :short "Generate a 1-bit multiplexor module."
   :body
-  (b* ((name (str::cat "VL_1_BIT_" (if approxp "APPROX_MUX" "MUX")))
+  (b* ((name (cat "VL_1_BIT_" (if approxp "APPROX_MUX" "MUX")))
 
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
        ((mv sel-expr sel-port sel-portdecl sel-netdecl) (vl-primitive-mkport "sel" :vl-input))
@@ -464,7 +464,7 @@ T.</p>"
               *vl-1-bit-not*
               *vl-1-bit-and*))
 
-       (name (str::cat "VL_" (str::natstr n) "_BIT_" (if approxp "APPROX_MUX" "MUX")))
+       (name (cat "VL_" (natstr n) "_BIT_" (if approxp "APPROX_MUX" "MUX")))
 
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output n))
        ((mv sel-expr sel-port sel-portdecl sel-netdecl) (vl-primitive-mkport "sel" :vl-input))
@@ -535,7 +535,7 @@ T.</p>"
 ;;                                 (natp n))))
 ;;     (if (atom out-wires)
 ;;         nil
-;;       (cons (vl-instance-1-bit-zmux (hons-copy (str::cat prefix (str::natstr n)))
+;;       (cons (vl-instance-1-bit-zmux (hons-copy (cat prefix (natstr n)))
 ;;                                     (car out-wires) (car sel-wires) (car a-wires))
 ;;             (vl-instance-zmux-list (cdr out-wires) (cdr sel-wires) (cdr a-wires)
 ;;                                    prefix (+ 1 n)))))
@@ -582,7 +582,7 @@ this actually handles both cases.</p>"
   (b* (((when (= n 1))
         (list *vl-1-bit-zmux*))
 
-       (name (hons-copy (str::cat "VL_" (str::natstr n) "_BIT_ZMUX")))
+       (name (hons-copy (cat "VL_" (natstr n) "_BIT_ZMUX")))
 
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output n))
        ((mv sel-expr sel-port sel-portdecl sel-netdecl) (vl-primitive-mkport "sel" :vl-input))
@@ -640,7 +640,7 @@ reduction-and the results.</p> "
   (b* (((when (= n 1))
         (list *vl-1-bit-ceq*))
 
-       (name (hons-copy (str::cat "VL_" (str::natstr n) "_BIT_CEQ")))
+       (name (hons-copy (cat "VL_" (natstr n) "_BIT_CEQ")))
 
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output 1))
        ((mv a-expr   a-port   a-portdecl   a-netdecl)   (vl-occform-mkport "a" :vl-input n))

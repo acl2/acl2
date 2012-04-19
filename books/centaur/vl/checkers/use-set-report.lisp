@@ -20,8 +20,7 @@
 
 (in-package "VL")
 (include-book "../mlib/writer")
-(include-book "../mlib/warnings")
-;(include-book "../transforms/xf-cross-active")
+(include-book "../mlib/print-warnings")
 (include-book "../util/string-alists")
 (local (include-book "../util/arithmetic"))
 (local (include-book "../util/osets"))
@@ -126,7 +125,7 @@
   (cond ((atom x)
          nil)
         ((member-equal (car x) warning-wires)
-         (cons (str::cat (car x) "*")
+         (cons (cat (car x) "*")
                (vl-star-names-of-warning-wires (cdr x) warning-wires)))
         (t
          (cons (car x)

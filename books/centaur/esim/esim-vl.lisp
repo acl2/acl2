@@ -22,7 +22,7 @@
 
 (in-package "VL")
 (include-book "esim-sexpr-support")
-(include-book "centaur/vl/mlib/wirealist" :dir :system)
+(include-book "centaur/vl/toe/toe-wirealist" :dir :system)
 
 
 (defsection esim-vl

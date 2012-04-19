@@ -154,8 +154,8 @@ attributes is left up to the implementation.</p>"
     ()
     (defxdoc ,name
       :parents (substitution)
-      :short ,(str::cat "Substitute into a @(see " (symbol-name type) ").")
-      :long ,(str::cat "@(def " (symbol-name name) ")"))
+      :short ,(cat "Substitute into a @(see " (symbol-name type) ").")
+      :long ,(cat "@(def " (symbol-name name) ")"))
 
     (defund ,name (x sigma)
       (declare (xargs :guard (and (,type x)
@@ -164,7 +164,7 @@ attributes is left up to the implementation.</p>"
       ,body)
 
     (defthm ,(intern-in-package-of-symbol
-              (str::cat (symbol-name type) "-OF-" (symbol-name name))
+              (cat (symbol-name type) "-OF-" (symbol-name name))
               name)
       (implies (and (force (,type x))
                     (force (vl-sigma-p sigma)))
@@ -176,8 +176,8 @@ attributes is left up to the implementation.</p>"
     ()
     (defxdoc ,name
       :parents (substitution)
-      :short ,(str::cat "Substitute into a @(see " (symbol-name type) ").")
-      :long ,(str::cat "@(def " (symbol-name name) ")"))
+      :short ,(cat "Substitute into a @(see " (symbol-name type) ").")
+      :long ,(cat "@(def " (symbol-name name) ")"))
 
     (defprojection ,name (x sigma)
       (,element x sigma)
@@ -186,7 +186,7 @@ attributes is left up to the implementation.</p>"
       :nil-preservingp nil)
 
     (defthm ,(intern-in-package-of-symbol
-              (str::cat (symbol-name type) "-OF-" (symbol-name name))
+              (cat (symbol-name type) "-OF-" (symbol-name name))
               name)
       (implies (and (force (,type x))
                     (force (vl-sigma-p sigma)))

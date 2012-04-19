@@ -104,21 +104,21 @@
  :defines (list (cons "bar" (vl-echarlist-from-str "value of bar"))))
 
 (preprocessor-basic-test
- :input (str::cat "`ifdef outer "
-                  "`ifdef foo 1 `elsif bar 2 `else 3 `endif "
-                  "`elsif baz 4 "
-                  "`else 5 "
-                  "`endif")
+ :input (cat "`ifdef outer "
+             "`ifdef foo 1 `elsif bar 2 `else 3 `endif "
+             "`elsif baz 4 "
+             "`else 5 "
+             "`endif")
  :output "  1  "
  :defines (list (cons "outer" (vl-echarlist-from-str "1"))
                 (cons "foo"   (vl-echarlist-from-str "1"))))
 
 (preprocessor-basic-test
- :input (str::cat "`ifdef outer "
-                  "`ifdef foo 1 `elsif bar 2 `else 3 `endif "
-                  "`elsif baz 4 "
-                  "`else 5 "
-                  "`endif")
+ :input (cat "`ifdef outer "
+             "`ifdef foo 1 `elsif bar 2 `else 3 `endif "
+             "`elsif baz 4 "
+             "`else 5 "
+             "`endif")
  :output "  1  "
  :defines (list (cons "outer" (vl-echarlist-from-str "1"))
                 (cons "foo"   (vl-echarlist-from-str "1"))
@@ -126,39 +126,39 @@
                 (cons "baz"   (vl-echarlist-from-str "1"))))
 
 (preprocessor-basic-test
- :input (str::cat "`ifdef outer "
-                  "`ifdef foo 1 `elsif bar 2 `else 3 `endif "
-                  "`elsif baz 4 "
-                  "`else 5 "
-                  "`endif")
+ :input (cat "`ifdef outer "
+             "`ifdef foo 1 `elsif bar 2 `else 3 `endif "
+             "`elsif baz 4 "
+             "`else 5 "
+             "`endif")
  :output "  2  "
  :defines (list (cons "outer" (vl-echarlist-from-str "1"))
                 (cons "bar"   (vl-echarlist-from-str "1"))))
 
 (preprocessor-basic-test
- :input (str::cat "`ifdef outer "
-                  "`ifdef foo 1 `elsif bar 2 `else 3 `endif "
-                  "`elsif baz 4 "
-                  "`else 5 "
-                  "`endif")
+ :input (cat "`ifdef outer "
+             "`ifdef foo 1 `elsif bar 2 `else 3 `endif "
+             "`elsif baz 4 "
+             "`else 5 "
+             "`endif")
  :output "  3  "
  :defines (list (cons "outer" (vl-echarlist-from-str "1"))))
 
 (preprocessor-basic-test
- :input (str::cat "`ifdef outer "
-                  "`ifdef foo 1 `elsif bar 2 `else 3 `endif "
-                  "`elsif baz 4 "
-                  "`else 5 "
-                  "`endif")
+ :input (cat "`ifdef outer "
+             "`ifdef foo 1 `elsif bar 2 `else 3 `endif "
+             "`elsif baz 4 "
+             "`else 5 "
+             "`endif")
  :output " 4 "
  :defines (list (cons "baz" (vl-echarlist-from-str "1"))))
 
 (preprocessor-basic-test
- :input (str::cat "`ifdef outer "
-                  "`ifdef foo 1 `elsif bar 2 `else 3 `endif "
-                  "`elsif baz 4 "
-                  "`else 5 "
-                  "`endif")
+ :input (cat "`ifdef outer "
+             "`ifdef foo 1 `elsif bar 2 `else 3 `endif "
+             "`elsif baz 4 "
+             "`else 5 "
+             "`endif")
  :output " 5 ")
 
 

@@ -408,7 +408,7 @@
          (str1 (cdar x))
          ((when (and (> (length str1) 2)
                      (eql (char str1 1) #\*)))
-          (cons (cons loc1 (str::cat str1 *nls*))
+          (cons (cons loc1 (cat str1 *nls*))
                 (vl-add-newlines-after-block-comments (cdr x)))))
       (cons (car x)
             (vl-add-newlines-after-block-comments (cdr x)))))
@@ -433,9 +433,9 @@
          (loc1 (caar x))
          (str1 (cdar x)))
       (cons (cons loc1
-                  (str::cat "<span class=\"vl_cmt\">"
-                            (vl-html-encode-string str1 tabsize)
-                            "</span>"))
+                  (cat "<span class=\"vl_cmt\">"
+                       (vl-html-encode-string str1 tabsize)
+                       "</span>"))
             (vl-html-encode-commentmap (cdr x) tabsize))))
 
   (local (in-theory (enable vl-html-encode-commentmap)))

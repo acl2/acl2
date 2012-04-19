@@ -22,6 +22,9 @@
 
 (include-book "vl/top")
 (include-book "vl/lint/lint")
+(include-book "vl/mlib/clean-concats")
+(include-book "vl/mlib/atts")
+(include-book "vl/transforms/xf-careless-infer-flops")
 
 (include-book "aig/aig-equivs")
 (include-book "aig/aig-vars")
@@ -46,6 +49,9 @@
 
 (include-book "4v-sexpr/top")
 
+(include-book "esim/stv")
+(include-book "esim/esim-sexpr-correct")
+
 
 ; The following are included automatically by the xdoc::save command below, but
 ; we include them explicitly to support the hons `make' target in the books/
@@ -57,6 +63,13 @@
 (include-book "../xdoc-impl/topics")
 (include-book "../xdoc-impl/extra-packages")
 
+(include-book "misc/hons-remove-dups")
+(include-book "misc/make-list")
+(include-book "misc/seed-random")
+(include-book "misc/equal-by-nths")
+
+(include-book "tutorial/intro")
+(include-book "tutorial/alu16-book")
 
 (make-event
 ; xdoc::save is an event, so we might have just called it directly.  But for

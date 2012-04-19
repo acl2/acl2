@@ -323,7 +323,8 @@ throughout the module list.</p>"
 
   (defund vl-module-clean-params (x)
     "Returns (mv x-prime useless/nil)"
-    (declare (xargs :guard (vl-module-p x)))
+    (declare (xargs :guard (vl-module-p x)
+                    :verify-guards nil))
     (b* (((when (vl-module->hands-offp x))
           (mv x nil))
 
@@ -361,7 +362,10 @@ throughout the module list.</p>"
          (new-paramdecls    (vl-delete-paramdecls useless-param-names paramdecls))
          (x-prime           (change-vl-module x :paramdecls new-paramdecls)))
 
-        (mv x-prime useless-struct)))
+      (mv x-prime useless-struct)))
+
+  (verify-guards vl-module-clean-params
+    :hints ((set-reasoning)))
 
   (local (in-theory (enable vl-module-clean-params)))
 

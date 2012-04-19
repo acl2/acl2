@@ -105,7 +105,7 @@ handle problems with collecting bits.</p>"
   (defund vl-selfassign-bit (name index)
     (declare (xargs :guard (and (stringp name)
                                 (natp index))))
-    (str::cat name "[" (str::natstr index) "]"))
+    (cat name "[" (natstr index) "]"))
 
   (defund vl-selfassign-bits (name low high)
     (declare (xargs :guard (and (stringp name)

@@ -267,7 +267,7 @@
     (local (in-theory (enable ,name)))
 
     (defthm ,(intern-in-package-of-symbol
-              (str::cat (symbol-name type) "-OF-" (symbol-name name))
+              (cat (symbol-name type) "-OF-" (symbol-name name))
               name)
       (implies (and (force (,type x))
                     (force (vl-module-p mod))
@@ -294,13 +294,13 @@
     (local (in-theory (enable ,name)))
 
     (defthm ,(intern-in-package-of-symbol
-              (str::cat "TRUE-LISTP-OF-" (symbol-name name) "-2")
+              (cat "TRUE-LISTP-OF-" (symbol-name name) "-2")
               name)
       (true-listp (mv-nth 1 (,name x mod ialist)))
       :rule-classes :type-prescription)
 
     (defthm ,(intern-in-package-of-symbol
-              (str::cat (symbol-name list-type) "-OF-" (symbol-name name))
+              (cat (symbol-name list-type) "-OF-" (symbol-name name))
               name)
       (implies (and (force (,list-type x))
                     (force (vl-module-p mod))

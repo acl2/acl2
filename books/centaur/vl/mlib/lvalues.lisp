@@ -189,9 +189,9 @@ their \"wires\" since they're in a different namespace.</p>")
          (rec-s           (symbol-name rec))
          (collect-s       (symbol-name collect))
 
-         (short          (str::cat
+         (short          (cat
 "Gather lvalue-position expressions from a @(see " rec-s ")."))
-         (long           (str::cat
+         (long           (cat
 "<p><b>Signature</b> @(call " collect-s ") returns a @(see vl-exprlist-p).</p>
 
 <p>We return a list of all the top-level lvalue-positioned expressions used
@@ -260,9 +260,9 @@ optimization.</p>")))
          (list-rec-s          (symbol-name list-rec))
          (list-collect-s      (symbol-name list-collect))
 
-         (short          (str::cat
+         (short          (cat
 "Gather lvalue-positioned expressions from a @(see " list-rec-s ")."))
-         (long           (str::cat
+         (long           (cat
 "<p><b>Signature</b> @(call " list-collect-s ") returns a @(see vl-exprlist-p).</p>
 
 <p>We return a list of all the top-level lvalue-positioned expressions used
@@ -493,9 +493,9 @@ these functions.</p>")
          (rec-s          (symbol-name rec))
          (chk-s          (symbol-name chk))
 
-         (short (str::cat "Check well-formedness of lvalues in a @(see " rec-s ")."))
+         (short (cat "Check well-formedness of lvalues in a @(see " rec-s ")."))
 
-         (long (str::cat "<p><b>Signature</b> @(call " chk-s ") returns
+         (long (cat "<p><b>Signature</b> @(call " chk-s ") returns
 <tt>warnings-prime</tt>.</p>
 
 <p>We are given <tt>x</tt>, a @(see " rec-s "), and <tt>warnings</tt>, an

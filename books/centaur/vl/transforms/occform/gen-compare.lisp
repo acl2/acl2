@@ -60,7 +60,7 @@ operation.)</p>"
 
   :guard (posp n)
   :body
-  (b* ((name (hons-copy (str::cat "VL_" (str::natstr n) "_BIT_UNSIGNED_GTE")))
+  (b* ((name (hons-copy (cat "VL_" (natstr n) "_BIT_UNSIGNED_GTE")))
 
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
        ((mv a-expr a-port a-portdecl a-netdecl)         (vl-occform-mkport "a" :vl-input n))
@@ -220,7 +220,7 @@ ordinary unsigned comparisons work in the other cases.</p>"
   (b* (((when (= n 1))
         (list *vl-1-bit-signed-gte*))
 
-       (name (hons-copy (str::cat "VL_" (str::natstr n) "_BIT_SIGNED_GTE")))
+       (name (hons-copy (cat "VL_" (natstr n) "_BIT_SIGNED_GTE")))
 
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
        ((mv a-expr a-port a-portdecl a-netdecl)         (vl-occform-mkport "a" :vl-input n))

@@ -760,12 +760,12 @@ vl-expr-p) <tt>x</tt> and returns <tt>(mv warnings-prime x-prime)</tt>."
 (defmacro def-vl-oprewrite (name &key type body)
   (let* ((name-s     (symbol-name name))
          (type-s     (symbol-name type))
-         (thm-warn-s (str::cat "VL-WARNINGLIST-P-" name-s))
-         (thm-type-s (str::cat type-s "-OF-" name-s))
+         (thm-warn-s (cat "VL-WARNINGLIST-P-" name-s))
+         (thm-type-s (cat type-s "-OF-" name-s))
          (thm-warn   (intern-in-package-of-symbol thm-warn-s name))
          (thm-type   (intern-in-package-of-symbol thm-type-s name))
-         (short      (str::cat "Rewrite operators throughout a @(see " type-s ")"))
-         (long       (str::cat "<p><b>Signature:</b> @(call " name-s ") returns
+         (short      (cat "Rewrite operators throughout a @(see " type-s ")"))
+         (long       (cat "<p><b>Signature:</b> @(call " name-s ") returns
 <tt>(mv warnings-prime x-prime)</tt></p>")))
 
   `(defsection ,name
@@ -793,14 +793,14 @@ vl-expr-p) <tt>x</tt> and returns <tt>(mv warnings-prime x-prime)</tt>."
 (defmacro def-vl-oprewrite-list (name &key type element)
   (let* ((name-s     (symbol-name name))
          (type-s     (symbol-name type))
-         (thm-warn-s (str::cat "VL-WARNINGLIST-P-" name-s))
-         (thm-type-s (str::cat type-s "-OF-" name-s))
-         (thm-true-s (str::cat "TRUE-LISTP-OF-" name-s))
+         (thm-warn-s (cat "VL-WARNINGLIST-P-" name-s))
+         (thm-type-s (cat type-s "-OF-" name-s))
+         (thm-true-s (cat "TRUE-LISTP-OF-" name-s))
          (thm-warn   (intern-in-package-of-symbol thm-warn-s name))
          (thm-type   (intern-in-package-of-symbol thm-type-s name))
          (thm-true   (intern-in-package-of-symbol thm-true-s name))
-         (short      (str::cat "Rewrite operators throughout a @(see " type-s ")"))
-         (long       (str::cat "<p><b>Signature:</b> @(call " name-s ") returns
+         (short      (cat "Rewrite operators throughout a @(see " type-s ")"))
+         (long       (cat "<p><b>Signature:</b> @(call " name-s ") returns
 <tt>(mv warnings-prime x-prime)</tt></p>")))
 
   `(defsection ,name

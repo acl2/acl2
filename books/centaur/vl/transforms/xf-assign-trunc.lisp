@@ -315,7 +315,7 @@ to the module,</li>
          ;; We now preserve the delay/strength of the assignment
          (new-assign2 (change-vl-assign x
                                         :expr chop-expr
-                                        :atts (acons (str::cat "TRUNC_" (str::natstr lw))
+                                        :atts (acons (cat "TRUNC_" (natstr lw))
                                                      nil nil))))
         (mv warnings
             (list new-netdecl)

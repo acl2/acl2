@@ -22,7 +22,7 @@
 
 (in-package "ACL2")
 (include-book "sexpr-fixpoint")
-(include-book "centaur/vl/mlib/emodwire" :dir :system)
+(include-book "centaur/vl/toe/toe-emodwire" :dir :system)
 (include-book "centaur/vl/util/cw-unformatted" :dir :system)
 (local (include-book "centaur/vl/util/arithmetic" :dir :system))
 (local (include-book "centaur/vl/util/osets" :dir :system))

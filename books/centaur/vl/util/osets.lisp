@@ -142,7 +142,8 @@
 
 (defthm subsetp-equal-of-intersect-1
   (implies (setp x)
-           (subsetp-equal (intersect x y) x)))
+           (subsetp-equal (intersect x y) x))
+  :hints((set-reasoning)))
 
 (defthm subsetp-equal-of-intersect-2
   (implies (setp y)
@@ -160,35 +161,32 @@
 
 (defthm subsetp-equal-of-difference-1
   (implies (setp x)
-           (subsetp-equal (difference x y) x)))
+           (subsetp-equal (difference x y) x))
+  :hints((set-reasoning)))
 
 (defthm member-equal-of-mergesort
    (iff (member-equal a (mergesort x))
-        (member-equal a x)))
+        (member-equal a (double-rewrite x))))
 
-(defcong subsetp-equiv equal (mergesort x) 1
-   :hints(("Goal"
-           :in-theory (e/d (subsetp-equiv)
-                           (mergesort)))))
+(defcong set-equivp equal (mergesort x) 1)
 
-(defthm mergesort-under-subsetp-equiv
-  (subsetp-equiv (mergesort x) x)
-  :hints(("Goal" :in-theory (enable subsetp-equiv))))
+(defthm mergesort-under-set-equivp
+  (set-equivp (mergesort x) x))
 
-(defthm subsetp-equal-of-mergesort-left
-  ;; BOZO seems redundant with mergesort-under-subsetp-equiv
-  (equal (subsetp-equal (mergesort x) y)
-         (subsetp-equal x y)))
+;; (defthm subsetp-equal-of-mergesort-left
+;;   ;; BOZO seems redundant with mergesort-under-set-equivp
+;;   (equal (subsetp-equal (mergesort x) y)
+;;          (subsetp-equal x y)))
 
-(defthm subsetp-equal-of-mergesort-right
-  ;; BOZO seems redundant with mergesort-under-subsetp-equiv
-  (equal (subsetp-equal x (mergesort y))
-         (subsetp-equal x y)))
+;; (defthm subsetp-equal-of-mergesort-right
+;;   ;; BOZO seems redundant with mergesort-under-set-equivp
+;;   (equal (subsetp-equal x (mergesort y))
+;;          (subsetp-equal x y)))
 
 
 
-(defthm subsetp-equal-when-not-cdr
-  (implies (not (cdr x))
+(defthm subsetp-equal-when-cdr-atom
+  (implies (atom (cdr x))
            (equal (subsetp-equal x y)
                   (if (consp x)
                       (if (member-equal (first x) y)
@@ -219,9 +217,6 @@
   :hints(("Goal"
           :induct (union x y)
           :in-theory (enable union (:ruleset sets::primitive-rules)))))
-
-
-
 
 
 
@@ -287,12 +282,12 @@
 
 (defthm mergesort-of-rev
   (equal (mergesort (rev x))
-         (mergesort x)))
+         (mergesort (double-rewrite x))))
 
 (defthm subset-of-mergesort-when-subsetp-equal
   (implies (setp b)
            (equal (subset (mergesort a) b)
-                  (subsetp-equal a b))))
+                  (subsetp-equal a (double-rewrite b)))))
 
 (defthm subset-of-union
   (equal (subset (union x y) z)
@@ -362,7 +357,7 @@
 (defund strings (n)
   (if (zp n)
       nil
-    (cons (str::cat "String " (str::natstr n))
+    (cons (cat "String " (natstr n))
           (strings (- n 1)))))
 
 (defconst *test* (strings 10000))

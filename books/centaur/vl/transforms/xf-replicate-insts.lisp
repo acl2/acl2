@@ -21,7 +21,7 @@
 (in-package "VL")
 (include-book "../mlib/expr-slice")
 (include-book "../mlib/namefactory")
-(include-book "../mlib/hierarchy")
+(include-book "../mlib/find-module")
 (include-book "../mlib/context")
 (local (include-book "../util/arithmetic"))
 
@@ -132,7 +132,7 @@ return <tt>foo_N, ..., foo_0</tt>.  But if the range goes the other way, i.e.,
                     :measure (nfix (- (nfix high) (nfix low)))))
     (let ((low  (mbe :logic (nfix low) :exec low))
           (high (mbe :logic (nfix high) :exec high))
-          (name (str::cat instname "_" (str::natstr low))))
+          (name (cat instname "_" (natstr low))))
       (if (mbe :logic (zp (- high low))
                :exec (= low high))
           (list name)
@@ -206,7 +206,7 @@ return <tt>foo_N, ..., foo_0</tt>.  But if the range goes the other way, i.e.,
          ;; Use bad names.  We don't care what order them come in.
          ((mv fresh nf)
           (vl-bad-replicate-names (+ 1 (- high low))
-                                  (str::cat "vl_badname_" instname)
+                                  (cat "vl_badname_" instname)
                                   nf))
          (warnings
           (cons (make-vl-warning
@@ -273,7 +273,7 @@ vl-replicated-instnames).</p>"
                     :measure (nfix (- (nfix high) (nfix low)))))
     (let ((low  (mbe :logic (nfix low) :exec low))
           (high (mbe :logic (nfix high) :exec high))
-          (name (str::cat instname "[" (str::natstr low) "]")))
+          (name (cat instname "[" (natstr low) "]")))
       (if (mbe :logic (zp (- high low))
                :exec (= low high))
           (list name)
@@ -1435,7 +1435,7 @@ the replicate transform."
          ((unless origname) nil)
          (origidx (vl-modinst-origidx x)))
       (if origidx
-          (str::cat origname "[" (str::natstr origidx) "]")
+          (cat origname "[" (natstr origidx) "]")
         origname)))
 
   (defthm vl-maybe-string-p-of-vl-modinst-origname/idx
@@ -1487,7 +1487,7 @@ the replicate transform."
          ((unless origname) nil)
          (origidx (vl-gateinst-origidx x)))
       (if origidx
-          (str::cat origname "[" (str::natstr origidx) "]")
+          (cat origname "[" (natstr origidx) "]")
         origname)))
 
   (defthm vl-maybe-string-p-of-vl-gateinst-origname/idx

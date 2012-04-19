@@ -688,7 +688,7 @@ implementation, we just regard the size of <tt>$random</tt> as 32.</p>"
                 nil
               ;; The value was too large for the other arg, so this is actually a
               ;; particularly interesting case.  Give it a new type.
-              (intern-in-package-of-symbol (str::cat (symbol-name type) "-CONST-TOOBIG") type))))
+              (intern-in-package-of-symbol (cat (symbol-name type) "-CONST-TOOBIG") type))))
 
 ; If we get this far, then the 32-bit argument isn't just a plain integer.  A
 ; particularly insidious source of extra warnings is when we have an expression
@@ -716,9 +716,9 @@ implementation, we just regard the size of <tt>$random</tt> as 32.</p>"
 ; let's mark anything with these operations as minor.
 
          ((when (vl-expr-has-ops '(:vl-binary-plus :vl-binary-minus) expr-32))
-          (intern-in-package-of-symbol (str::cat (symbol-name type) "-MINOR") type)))
+          (intern-in-package-of-symbol (cat (symbol-name type) "-MINOR") type)))
 
-      (intern-in-package-of-symbol (str::cat (symbol-name type) "-COMPLEX") type)))
+      (intern-in-package-of-symbol (cat (symbol-name type) "-COMPLEX") type)))
 
   (local (in-theory (enable vl-tweak-fussy-warning-type)))
 
@@ -3910,9 +3910,9 @@ context-determined expressions."
 (local (acl2::def-ruleset! extra-disables
                            '(sets::double-containment
                             (:type-prescription member-equal)
-                            member-equal-of-cons
+                            acl2::member-equal-of-cons
                             member-equal-when-member-equal-of-cdr-under-iff
-                            member-equal-when-subsetp-equal
+                            acl2::subsetp-equal-member
                             acl2::true-listp-member-equal
                             acl2::consp-member-equal
                             default-car
@@ -4038,7 +4038,7 @@ context-determined expressions."
                              default-car
                              default-cdr
                              natp-when-member-equal-of-nat-listp
-                             member-equal-when-subsetp-equal
+                             acl2::subsetp-equal-member
                              member-equal-when-member-equal-of-cdr-under-iff
                              vl-expr-p-when-member-equal-of-vl-exprlist-p
                              vl-exprtype-p-when-vl-maybe-exprtype-p
@@ -4118,7 +4118,7 @@ context-determined expressions."
                      ACL2::TRUE-LISTP-MEMBER-EQUAL
                      (:ruleset tag-reasoning)
                      (:ruleset basic-arithmetic-rules)
-                     member-equal-when-subsetp-equal
+                     acl2::subsetp-equal-member
                      default-car
                      default-cdr
                      VL-MODELEMENT-P-WHEN-VL-VARDECL-P
@@ -4211,7 +4211,7 @@ context-determined expressions."
                      default-car
                      default-cdr
                      vl-module-p-when-wrong-tag
-                     member-equal-when-subsetp-equal
+                     acl2::subsetp-equal-member
                      natp-when-posp
                      integerp-when-natp
                      acl2::posp-rw
@@ -4334,13 +4334,13 @@ context-determined expressions."
 (defmacro def-vl-exprsize (name &key type body takes-elem (long '""))
   (let* ((name-s     (symbol-name name))
          (type-s     (symbol-name type))
-         (thm-warn-s (str::cat "VL-WARNINGLIST-P-" name-s))
-         (thm-type-s (str::cat type-s "-OF-" name-s))
+         (thm-warn-s (cat "VL-WARNINGLIST-P-" name-s))
+         (thm-type-s (cat type-s "-OF-" name-s))
          (thm-warn   (intern-in-package-of-symbol thm-warn-s name))
          (thm-type   (intern-in-package-of-symbol thm-type-s name))
-         (short      (str::cat "Compute sizes and types of expressions
+         (short      (cat "Compute sizes and types of expressions
 throughout a @(see " type-s ")"))
-         (long       (str::cat "<p><b>Signature:</b> @(call " name-s ") returns
+         (long       (cat "<p><b>Signature:</b> @(call " name-s ") returns
 <tt>(mv successp warnings x-prime)</tt>.</p>" long))
          (formals    (append '(x mod ialist)
                              (if takes-elem '(elem) nil)
@@ -4377,15 +4377,15 @@ throughout a @(see " type-s ")"))
 (defmacro def-vl-exprsize-list (name &key type element takes-elem)
   (let* ((name-s     (symbol-name name))
          (type-s     (symbol-name type))
-         (thm-warn-s (str::cat "VL-WARNINGLIST-P-" name-s))
-         (thm-type-s (str::cat type-s "-OF-" name-s))
-         (thm-true-s (str::cat "TRUE-LISTP-OF-" name-s))
+         (thm-warn-s (cat "VL-WARNINGLIST-P-" name-s))
+         (thm-type-s (cat type-s "-OF-" name-s))
+         (thm-true-s (cat "TRUE-LISTP-OF-" name-s))
          (thm-warn   (intern-in-package-of-symbol thm-warn-s name))
          (thm-type   (intern-in-package-of-symbol thm-type-s name))
          (thm-true   (intern-in-package-of-symbol thm-true-s name))
-         (short      (str::cat "Compute sizes and types of expressions throughout
+         (short      (cat "Compute sizes and types of expressions throughout
 a @(see " type-s ")"))
-         (long       (str::cat "<p><b>Signature:</b> @(call " name-s ") returns
+         (long       (cat "<p><b>Signature:</b> @(call " name-s ") returns
 <tt>(mv successp warnings x-prime)</tt>.</p>"))
          (formals   (append '(x mod ialist)
                             (if takes-elem '(elem) nil)

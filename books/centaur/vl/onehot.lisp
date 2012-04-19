@@ -184,7 +184,7 @@ pattern.</p>"
          (submodules (append sub-A sub-B))
 
          ;; module VL_N_BIT_ONEHOT (out, in);
-         (name (hons-copy (str::cat "VL_" (coerce (explode-atom n 10) 'string) "_BIT_ONEHOT")))
+         (name (hons-copy (cat "VL_" (coerce (explode-atom n 10) 'string) "_BIT_ONEHOT")))
 
          ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output 1))
          ((mv in-expr in-port in-portdecl in-netdecl)     (vl-occform-mkport "in"  :vl-input  n))

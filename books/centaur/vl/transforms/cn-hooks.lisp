@@ -95,41 +95,41 @@
 
 
 (encapsulate
-  (((vl-modulelist-make-defm-commands-hook *) => *
+  (((vl-modulelist-pre-toe-hook *) => *
     :formals (x)
     :guard (and (vl-modulelist-p x)
                 (uniquep (vl-modulelist->names x)))))
 
-  (local (defun vl-modulelist-make-defm-commands-hook (x) x))
+  (local (defun vl-modulelist-pre-toe-hook (x) x))
 
-  (defthm vl-modulelist-p-of-vl-modulelist-make-defm-commands-hook
+  (defthm vl-modulelist-p-of-vl-modulelist-pre-toe-hook
     (implies (force (vl-modulelist-p x))
-             (vl-modulelist-p (vl-modulelist-make-defm-commands-hook x))))
+             (vl-modulelist-p (vl-modulelist-pre-toe-hook x))))
 
-  (defthm vl-modulelist->names-of-vl-modulelist-make-defm-commands-hook
-    (equal (vl-modulelist->names (vl-modulelist-make-defm-commands-hook x))
+  (defthm vl-modulelist->names-of-vl-modulelist-pre-toe-hook
+    (equal (vl-modulelist->names (vl-modulelist-pre-toe-hook x))
            (vl-modulelist->names x))))
 
-(defattach vl-modulelist-make-defm-commands-hook identity)
+(defattach vl-modulelist-pre-toe-hook identity)
 
 
 
-(encapsulate
-  (((vl-modulelist-esim-trans-hook *) => *
-    :formals (x)
-    :guard (vl-modulelist-p x)))
+;; (encapsulate
+;;   (((vl-modulelist-esim-trans-hook *) => *
+;;     :formals (x)
+;;     :guard (vl-modulelist-p x)))
 
-  (local (defun vl-modulelist-esim-trans-hook (x) x))
+;;   (local (defun vl-modulelist-esim-trans-hook (x) x))
 
-  (defthm vl-modulelist-p-of-vl-modulelist-esim-trans-hook
-    (implies (force (vl-modulelist-p x))
-             (vl-modulelist-p (vl-modulelist-esim-trans-hook x))))
+;;   (defthm vl-modulelist-p-of-vl-modulelist-esim-trans-hook
+;;     (implies (force (vl-modulelist-p x))
+;;              (vl-modulelist-p (vl-modulelist-esim-trans-hook x))))
 
-  (defthm vl-modulelist->names-of-vl-modulelist-esim-trans-hook
-    (equal (vl-modulelist->names (vl-modulelist-esim-trans-hook x))
-           (vl-modulelist->names x))))
+;;   (defthm vl-modulelist->names-of-vl-modulelist-esim-trans-hook
+;;     (equal (vl-modulelist->names (vl-modulelist-esim-trans-hook x))
+;;            (vl-modulelist->names x))))
 
-(defattach vl-modulelist-esim-trans-hook identity)
+;; (defattach vl-modulelist-esim-trans-hook identity)
 
 
 

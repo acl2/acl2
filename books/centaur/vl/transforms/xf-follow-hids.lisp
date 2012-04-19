@@ -160,7 +160,7 @@ unsigned restriction, but arrdims might be more difficult.</p>"
                                         ctx-modname
                                         (vl-module->name curr)
                                         name
-                                        (str::cat name " not found"))
+                                        (cat name " not found"))
                             :fatalp t
                             :fn 'vl-find-hid-module-aux)
                            warnings)
@@ -174,8 +174,8 @@ unsigned restriction, but arrdims might be more difficult.</p>"
                                         ctx-modname
                                         (vl-module->name curr)
                                         name
-                                        (str::cat "Expected " name " to be a net or reg, but found "
-                                                  (symbol-name (tag item))))
+                                        (cat "Expected " name " to be a net or reg, but found "
+                                             (symbol-name (tag item))))
                             :fatalp t
                             :fn 'vl-find-hid-module-aux)
                            warnings)
@@ -241,7 +241,7 @@ unsigned restriction, but arrdims might be more difficult.</p>"
                                         ctx-modname
                                         (vl-module->name curr)
                                         name1
-                                        (str::cat name1 " not found"))
+                                        (cat name1 " not found"))
                             :fatalp t
                             :fn 'vl-find-hid-module-aux)
                            warnings)
@@ -257,9 +257,9 @@ unsigned restriction, but arrdims might be more difficult.</p>"
                                         ctx-modname
                                         (vl-module->name curr)
                                         name1
-                                        (str::cat "Expected " name1
-                                                  " to be a module instance, but found "
-                                                  (symbol-name (tag item))))
+                                        (cat "Expected " name1
+                                             " to be a module instance, but found "
+                                             (symbol-name (tag item))))
                             :fatalp t
                             :fn 'vl-find-hid-module-aux)
                            warnings)
@@ -279,9 +279,9 @@ unsigned restriction, but arrdims might be more difficult.</p>"
                                         ctx-modname
                                         (vl-module->name curr)
                                         name1
-                                        (str::cat "Expected " name1
-                                                  " to be a module instance array, "
-                                                  "but found a plain module instance."))
+                                        (cat "Expected " name1
+                                             " to be a module instance array, "
+                                             "but found a plain module instance."))
                             :fatalp t
                             :fn 'vl-find-hid-module-aux)
                            warnings)
@@ -298,8 +298,8 @@ unsigned restriction, but arrdims might be more difficult.</p>"
                                         ctx-modname
                                         (vl-module->name curr)
                                         name1
-                                        (str::cat name1 " is an instance of " modname
-                                                  ", which is not a defined module."))
+                                        (cat name1 " is an instance of " modname
+                                             ", which is not a defined module."))
                             :fatalp t
                             :fn 'vl-find-hid-module-aux)
                            warnings)
@@ -835,14 +835,14 @@ identifier.</p>"
 (defmacro def-vl-follow-hids (name &key type body)
   (let* ((name-s     (symbol-name name))
          (type-s     (symbol-name type))
-         (thm-warn-s (str::cat "VL-WARNINGLIST-P-" name-s))
-         (thm-type-s (str::cat type-s "-OF-" name-s))
+         (thm-warn-s (cat "VL-WARNINGLIST-P-" name-s))
+         (thm-type-s (cat type-s "-OF-" name-s))
          (thm-warn   (intern-in-package-of-symbol thm-warn-s name))
          (thm-type   (intern-in-package-of-symbol thm-type-s name))
-         (short (str::cat "Annotate hierarchical identifiers throughout a @(see " type-s
+         (short (cat "Annotate hierarchical identifiers throughout a @(see " type-s
 ") with attributes such as <tt>VL_HID_RESOLVED_MODULE_NAME</tt>, as described in @(see
 hid-elim)."))
-         (long  (str::cat "<p><b>Signature:</b> @(call " name-s ") returns
+         (long  (cat "<p><b>Signature:</b> @(call " name-s ") returns
 <tt>(mv warnings x-prime)</tt>.</p>")))
 
   `(defsection ,name
@@ -878,16 +878,16 @@ hid-elim)."))
 (defmacro def-vl-follow-hids-list (name &key type element)
   (let* ((name-s     (symbol-name name))
          (type-s     (symbol-name type))
-         (thm-warn-s (str::cat "VL-WARNINGLIST-P-" name-s))
-         (thm-type-s (str::cat type-s "-OF-" name-s))
-         (thm-true-s (str::cat "TRUE-LISTP-OF-" name-s))
+         (thm-warn-s (cat "VL-WARNINGLIST-P-" name-s))
+         (thm-type-s (cat type-s "-OF-" name-s))
+         (thm-true-s (cat "TRUE-LISTP-OF-" name-s))
          (thm-warn   (intern-in-package-of-symbol thm-warn-s name))
          (thm-type   (intern-in-package-of-symbol thm-type-s name))
          (thm-true   (intern-in-package-of-symbol thm-true-s name))
-         (short (str::cat "Annotate hierarchical identifiers throughout a @(see " type-s
+         (short (cat "Annotate hierarchical identifiers throughout a @(see " type-s
 ") with attributes such as <tt>VL_HID_RESOLVED_MODULE_NAME</tt>, as described in @(see
 hid-elim)."))
-         (long  (str::cat "<p><b>Signature:</b> @(call " name-s ") returns
+         (long  (cat "<p><b>Signature:</b> @(call " name-s ") returns
 <tt>(mv warnings x-prime)</tt>.</p>")))
 
   `(defsection ,name
@@ -1356,8 +1356,6 @@ hid-elim)."))
 
 
 (defsection vl-modulelist-follow-hids-aux
-
-  (local (in-theory (disable pick-a-point-subsetp-equal-strategy))) ;; why??
 
   (defprojection vl-modulelist-follow-hids-aux (x mods modalist toplev)
     (vl-module-follow-hids x mods modalist toplev)

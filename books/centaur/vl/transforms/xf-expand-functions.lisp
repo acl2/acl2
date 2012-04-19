@@ -292,7 +292,8 @@ explicitly reorders <tt>x</tt> to match <tt>names</tt>.</p>"
   (defthm subsetp-equal-of-vl-reorder-fundecls
     ;; pick-a-point with l2
     (implies (subsetp-equal (double-rewrite names) (vl-fundecllist->names x))
-             (subsetp-equal (vl-reorder-fundecls names x) x)))
+             (subsetp-equal (vl-reorder-fundecls names x) x))
+    :hints((set-reasoning)))
 
 
   ;; For the other direction we need no-duplicatesp-equal, since "shadowed"
@@ -325,15 +326,16 @@ explicitly reorders <tt>x</tt> to match <tt>names</tt>.</p>"
            (implies (and (no-duplicatesp-equal (vl-fundecllist->names x))
                          (subsetp-equal (vl-fundecllist->names x) names)
                          (vl-fundecllist-p x))
-                    (subsetp-equal x (vl-reorder-fundecls names x)))))
+                    (subsetp-equal x (vl-reorder-fundecls names x)))
+           :hints((acl2::witness :ruleset (acl2::subsetp-equal-witnessing)))))
 
-  (defthm vl-reorder-fundecls-under-subsetp-equiv
+  (defthm vl-reorder-fundecls-under-set-equivp
     (implies (and (no-duplicatesp-equal (vl-fundecllist->names x))
-                  (subsetp-equiv (double-rewrite names) (vl-fundecllist->names x))
+                  (set-equivp (double-rewrite names) (vl-fundecllist->names x))
                   (force (vl-fundecllist-p x)))
-             (subsetp-equiv (vl-reorder-fundecls names x)
+             (set-equivp (vl-reorder-fundecls names x)
                             (double-rewrite x)))
-    :hints(("Goal" :in-theory (enable subsetp-equiv)))))
+    :hints(("Goal" :in-theory (enable set-equivp)))))
 
 
 
@@ -403,12 +405,12 @@ added.</p>"
 
   (local (in-theory (enable vl-depsort-functions)))
 
-  (defthm vl-depsort-functions-under-subsetp-equiv
+  (defthm vl-depsort-functions-under-set-equivp
     ;; This shows that no functions are added/lost as a result of depsorting.
     (implies (force (vl-fundecllist-p x))
-             (subsetp-equiv (mv-nth 2 (vl-depsort-functions x warnings))
+             (set-equivp (mv-nth 2 (vl-depsort-functions x warnings))
                             x))
-    :hints(("Goal" :in-theory (enable subsetp-equiv))))
+    :hints(("Goal" :in-theory (enable set-equivp))))
 
   (defthm vl-warninglist-p-of-vl-depsort-functions
     (implies (force (vl-warninglist-p warnings))
@@ -1236,17 +1238,17 @@ registers and inputs.</p>"
          (spurious-msg   (cond ((not spurious-regs)
                                 "")
                                ((vl-plural-p spurious-regs)
-                                (str::cat "~&1 are never mentioned" spurious-sep))
+                                (cat "~&1 are never mentioned" spurious-sep))
                                (t
-                                (str::cat "~&1 is never mentioned" spurious-sep))))
+                                (cat "~&1 is never mentioned" spurious-sep))))
 
          (unread-sep     (if unwritten-regs "; " ""))
          (unread-msg     (cond ((not unread-all)
                                 "")
                                ((vl-plural-p unread-all)
-                                (str::cat "~&2 are never read" unread-sep))
+                                (cat "~&2 are never read" unread-sep))
                                (t
-                                (str::cat "~&2 is never read" unread-sep))))
+                                (cat "~&2 is never read" unread-sep))))
 
          (unwritten-msg  (cond ((not unwritten-regs)
                                 "")
@@ -1259,7 +1261,7 @@ registers and inputs.</p>"
           (if (or spurious-regs unread-all unwritten-regs)
               (cons (make-vl-warning
                      :type :vl-warn-function-vars
-                     :msg (str::cat "In ~a0, " spurious-msg unread-msg unwritten-msg ".")
+                     :msg (cat "In ~a0, " spurious-msg unread-msg unwritten-msg ".")
                      :args (list function spurious-regs unread-all unwritten-regs)
                      :fatalp nil
                      :fn 'vl-fun-assignorder-okp)
@@ -1562,7 +1564,7 @@ throughout the rest of the module we only need one pass.</p>")
           (b* ((w (make-vl-warning
                    :type :vl-bad-function-input
                    :msg "In ~a0, input ~s1 has unsupported type ~s2."
-                   :args (list function x1.name (vl-funtype-string x1.type))
+                   :args (list function x1.name x1.type)
                    :fatalp t
                    :fn 'vl-funinputlist-types-okp)))
             (mv nil (cons w warnings)))))
@@ -1722,7 +1724,7 @@ unsupported constructs or doesn't meet our other sanity criteria.</p>"
                    :msg "In ~a0, we do not support functions with return ~
                          types other than plain/reg or 'signed', but this ~
                          function has type ~s1."
-                   :args (list x (vl-funtype-string x.rtype))
+                   :args (list x x.rtype)
                    :fatalp t
                    :fn 'vl-fundecl-expansion-template)))
             (mv nil (cons w warnings))))
@@ -2427,12 +2429,12 @@ module), and which is free of function calls on success.</p>"
 (defmacro def-vl-expand-function-calls (name &key type body ctxp)
   (let* ((name-s       (symbol-name name))
          (type-s       (symbol-name type))
-         (thm-warn-s   (str::cat "VL-WARNINGLIST-P-" name-s))
-         (thm-basics-s (str::cat name-s "-BASICS"))
+         (thm-warn-s   (cat "VL-WARNINGLIST-P-" name-s))
+         (thm-basics-s (cat name-s "-BASICS"))
          (thm-warn     (intern-in-package-of-symbol thm-warn-s name))
          (thm-basics   (intern-in-package-of-symbol thm-basics-s name))
-         (short        (str::cat "Expand function calls throughout a @(see " type-s ")"))
-         (long         (str::cat "<p><b>Signature:</b> @(call " name-s ") returns
+         (short        (cat "Expand function calls throughout a @(see " type-s ")"))
+         (long         (cat "<p><b>Signature:</b> @(call " name-s ") returns
 <tt>(mv successp warnings nf x-prime netdecls assigns)</tt></p>"))
          (ctx-part     (if ctxp '(ctx) nil)))
 
@@ -2476,14 +2478,14 @@ module), and which is free of function calls on success.</p>"
 (defmacro def-vl-expand-function-calls-list (name &key type element ctxp)
   (let* ((name-s      (symbol-name name))
          (type-s      (symbol-name type))
-         (thm-warn-s  (str::cat "VL-WARNINGLIST-P-" name-s))
-         (thm-basic-s (str::cat name-s "-BASICS"))
-         (thm-true-s  (str::cat "TRUE-LISTP-OF-" name-s))
+         (thm-warn-s  (cat "VL-WARNINGLIST-P-" name-s))
+         (thm-basic-s (cat name-s "-BASICS"))
+         (thm-true-s  (cat "TRUE-LISTP-OF-" name-s))
          (thm-warn    (intern-in-package-of-symbol thm-warn-s name))
          (thm-basic   (intern-in-package-of-symbol thm-basic-s name))
          (thm-true    (intern-in-package-of-symbol thm-true-s name))
-         (short       (str::cat "Expand function calls throughout a @(see " type-s ")"))
-         (long        (str::cat "<p><b>Signature:</b> @(call " name-s ") returns
+         (short       (cat "Expand function calls throughout a @(see " type-s ")"))
+         (long        (cat "<p><b>Signature:</b> @(call " name-s ") returns
 <tt>(mv successp warnings nf x-prime netdecls assigns)</tt></p>"))
          (ctx-part    (if ctxp '(ctx) nil)))
 
@@ -2593,7 +2595,7 @@ module), and which is free of function calls on success.</p>"
                  :msg "In ~a0, we found a function call in a ~s1-port ~
                        connection, ~a2, but we only allow function calls in ~
                        input-port connections."
-                 :args (list ctx (vl-direction-string x.dir) x)
+                 :args (list ctx x.dir x)
                  :fatalp t
                  :fn 'vl-plainarg-expand-function-calls)))
           (mv nil (cons w warnings) nf x netdecls assigns)))

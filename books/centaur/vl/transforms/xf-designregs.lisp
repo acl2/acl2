@@ -678,7 +678,7 @@ cdrs of the map are guaranteed to be unique and non-nil.</p>")
 ;       wire, and "baz_inst" is the instance name of the VL_N_BIT_FLOP
 ;       or VL_N_BIT_LATCH that is driving baz.
 ;
-; I originally built the string with str::cat.  Now I instead append
+; I originally built the string with cat.  Now I instead append
 ; onto a character list, for efficiency.
 
   (defund vl-dreg-emod-root-aux (x acc)
@@ -772,7 +772,7 @@ cdrs of the map are guaranteed to be unique and non-nil.</p>")
 
   (defun vl-make-name-array (head n tail)
     (declare (xargs :ruler-extenders :all))
-    (cons (cons n (str::cat head (str::natstr n) tail))
+    (cons (cons n (cat head (natstr n) tail))
           (if (zp n)
               nil
             (vl-make-name-array head (1- n) tail))))
@@ -804,12 +804,12 @@ cdrs of the map are guaranteed to be unique and non-nil.</p>")
         acc
       (let* (([n]master
               (mbe :logic
-                   (str::cat "[" (str::natstr (car indices)) "]:master")
+                   (cat "[" (natstr (car indices)) "]:master")
                    :exec
                    (if (< (car indices) 256)
                        (aref1 '*vl-master-name-array* *vl-master-name-array* (car indices))
-                     (str::cat "[" (str::natstr (car indices)) "]:master"))))
-             (root[n]master (str::cat root [n]master))
+                     (cat "[" (natstr (car indices)) "]:master"))))
+             (root[n]master (cat root [n]master))
              (master        (intern root[n]master "ACL2"))
              (acc           (cons master acc)))
         (vl-verilog-style-flop-master-names root (cdr indices) acc))))
@@ -838,12 +838,12 @@ cdrs of the map are guaranteed to be unique and non-nil.</p>")
         acc
       (let* (([n]slave
               (mbe :logic
-                   (str::cat "[" (str::natstr (car indices)) "]:slave")
+                   (cat "[" (natstr (car indices)) "]:slave")
                    :exec
                    (if (< (car indices) 256)
                        (aref1 '*vl-slave-name-array* *vl-slave-name-array* (car indices))
-                     (str::cat "[" (str::natstr (car indices)) "]:slave"))))
-             (root[n]slave (str::cat root [n]slave))
+                     (cat "[" (natstr (car indices)) "]:slave"))))
+             (root[n]slave (cat root [n]slave))
              (slave        (intern root[n]slave "ACL2"))
              (acc          (cons slave acc)))
         (vl-verilog-style-flop-slave-names root (cdr indices) acc))))
@@ -894,12 +894,12 @@ cdrs of the map are guaranteed to be unique and non-nil.</p>")
         acc
       (b* ((!bit_n-1!BIT!S-
             (mbe :logic
-                 (str::cat "!bit_" (str::natstr (- n 1)) "!BIT!S-")
+                 (cat "!bit_" (natstr (- n 1)) "!BIT!S-")
                  :exec
                  (if (< n 257)
                      (aref1 '*vl-emod-master-name-array* *vl-emod-master-name-array* (- n 1))
-                   (str::cat "!bit_" (str::natstr (- n 1)) "!BIT!S-"))))
-           (master (intern (str::cat root !bit_n-1!BIT!S-) "ACL2"))
+                   (cat "!bit_" (natstr (- n 1)) "!BIT!S-"))))
+           (master (intern (cat root !bit_n-1!BIT!S-) "ACL2"))
            (acc    (cons master acc)))
         (if (= n 1)
             acc
@@ -930,12 +930,12 @@ cdrs of the map are guaranteed to be unique and non-nil.</p>")
         acc
       (b* ((!bit_n-1!BIT!S+
             (mbe :logic
-                 (str::cat "!bit_" (str::natstr (- n 1)) "!BIT!S+")
+                 (cat "!bit_" (natstr (- n 1)) "!BIT!S+")
                  :exec
                  (if (< n 257)
                      (aref1 '*vl-emod-slave-name-array* *vl-emod-slave-name-array* (- n 1))
-                   (str::cat "!bit_" (str::natstr (- n 1)) "!BIT!S+"))))
-           (slave (intern (str::cat root !bit_n-1!BIT!S+) "ACL2"))
+                   (cat "!bit_" (natstr (- n 1)) "!BIT!S+"))))
+           (slave (intern (cat root !bit_n-1!BIT!S+) "ACL2"))
            (acc   (cons slave acc)))
         (if (= n 1)
             acc
@@ -989,8 +989,8 @@ cdrs of the map are guaranteed to be unique and non-nil.</p>")
          (enames-acc
           (if (= size 1)
               ;; Special case: just (BIT!S- and BIT!S+)
-              (list* (intern (str::cat eroot "!BIT!S+") "ACL2")
-                     (intern (str::cat eroot "!BIT!S-") "ACL2")
+              (list* (intern (cat eroot "!BIT!S+") "ACL2")
+                     (intern (cat eroot "!BIT!S-") "ACL2")
                      enames-acc)
             (let* ((enames-acc (vl-emod-style-flop-master-names eroot size enames-acc)))
               (vl-emod-style-flop-slave-names eroot size enames-acc)))))
@@ -1119,13 +1119,13 @@ cdrs of the map are guaranteed to be unique and non-nil.</p>")
         acc
       (let* (([n]
               (mbe :logic
-                   (str::cat "[" (str::natstr (car indices)) "]")
+                   (cat "[" (natstr (car indices)) "]")
                    :exec
                    (if (< (car indices) 256)
                        (aref1 '*vl-verilog-latch-name-array* *vl-verilog-latch-name-array*
                               (car indices))
-                     (str::cat "[" (str::natstr (car indices)) "]"))))
-             (acc (cons (intern (str::cat root [n]) "ACL2") acc)))
+                     (cat "[" (natstr (car indices)) "]"))))
+             (acc (cons (intern (cat root [n]) "ACL2") acc)))
         (vl-verilog-style-latch-names root (cdr indices) acc))))
 
   (local (assert! (equal (vl-verilog-style-latch-names "foo" (list 5 4 3) nil)
@@ -1165,13 +1165,13 @@ cdrs of the map are guaranteed to be unique and non-nil.</p>")
         acc
       (b* ((!bit_n-1!INST!S
             (mbe :logic
-                 (str::cat "!bit_" (str::natstr (- n 1)) "!INST!S")
+                 (cat "!bit_" (natstr (- n 1)) "!INST!S")
                  :exec
                  (if (< n 257)
                      (aref1 '*vl-emod-latch-name-array* *vl-emod-latch-name-array*
                             (- n 1))
-                   (str::cat "!bit_" (str::natstr (- n 1))  "!INST!S"))))
-           (sym  (intern (str::cat root !bit_n-1!INST!S) "ACL2"))
+                   (cat "!bit_" (natstr (- n 1))  "!INST!S"))))
+           (sym  (intern (cat root !bit_n-1!INST!S) "ACL2"))
            (acc  (cons sym acc)))
         (if (= n 1)
             acc
@@ -1222,7 +1222,7 @@ cdrs of the map are guaranteed to be unique and non-nil.</p>")
          (size     (+ 1 (- high low)))
          (enames-acc (if (= size 1)
                          ;; Special case: just INST!S
-                         (cons (intern (str::cat eroot "!INST!S") "ACL2")
+                         (cons (intern (cat eroot "!INST!S") "ACL2")
                                enames-acc)
                        (vl-emod-style-latch-names eroot size enames-acc))))
 

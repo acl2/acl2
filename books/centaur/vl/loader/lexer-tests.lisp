@@ -112,11 +112,11 @@
       (list* `(vl-lex-op-testcase :input ,(caar alist)
                                  :successp t
                                  :type ,(cdar alist))
-             `(vl-lex-op-testcase :input ,(str::cat (caar alist) " foo")
+             `(vl-lex-op-testcase :input ,(cat (caar alist) " foo")
                                   :successp t
                                   :remainder " foo"
                                   :type ,(cdar alist))
-             `(vl-lex-op-testcase :input ,(str::cat (caar alist) "1")
+             `(vl-lex-op-testcase :input ,(cat (caar alist) "1")
                                   :successp t
                                   :remainder "1"
                                   :type ,(cdar alist))
@@ -131,7 +131,7 @@
       (list* `(vl-lex-op-testcase :input ,(caar alist)
                                  :successp t
                                  :type ,(cdar alist))
-             `(vl-lex-op-testcase :input ,(str::cat (caar alist) " foo")
+             `(vl-lex-op-testcase :input ,(cat (caar alist) " foo")
                                   :successp t
                                   :remainder " foo"
                                   :type ,(cdar alist))
@@ -193,16 +193,16 @@
 
 (vl-lex-string-testcase :input "\"crazy \\7\""
                         :successp t
-                        :expansion (str::cat "crazy "
-                                             (coerce (list (code-char 7)) 'string)))
+                        :expansion (cat "crazy "
+                                        (coerce (list (code-char 7)) 'string)))
 
 (vl-lex-string-testcase :input "\"\\\\ another \\n basic \\t escape \\\" test\""
                         :successp t
-                        :expansion (str::cat "\\ another "
-                                             (coerce (list #\Newline) 'string)
-                                             " basic "
-                                             (coerce (list #\Tab) 'string)
-                                             " escape \" test"))
+                        :expansion (cat "\\ another "
+                                        (coerce (list #\Newline) 'string)
+                                        " basic "
+                                        (coerce (list #\Tab) 'string)
+                                        " escape \" test"))
 
 ;; Should fail string tests
 

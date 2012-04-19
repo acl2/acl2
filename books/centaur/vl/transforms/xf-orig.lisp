@@ -127,11 +127,11 @@ original version of X into its attributes.</p>"
 (defmacro def-vl-origexprs (name &key type body)
   (let* ((name-s       (symbol-name name))
          (type-s       (symbol-name type))
-         (thm-type-s   (str::cat type-s "-OF-" name-s))
+         (thm-type-s   (cat type-s "-OF-" name-s))
          (thm-type     (intern-in-package-of-symbol thm-type-s name))
-         (short        (str::cat "Add <tt>VL_ORIG_EXPR</tt> annotations throughout "
-                                 "a @(see " type-s ")"))
-         (long         (str::cat "<p><b>Signature:</b> @(call " name-s ") returns <tt>x-prime</tt>.</p>")))
+         (short        (cat "Add <tt>VL_ORIG_EXPR</tt> annotations throughout "
+                            "a @(see " type-s ")"))
+         (long         (cat "<p><b>Signature:</b> @(call " name-s ") returns <tt>x-prime</tt>.</p>")))
     `(defsection ,name
        :parents (origexprs)
        :short ,short
@@ -152,11 +152,11 @@ original version of X into its attributes.</p>"
 (defmacro def-vl-origexprs-list (name &key type element)
   (let* ((name-s (symbol-name name))
          (type-s (symbol-name type))
-         (thm-type-s (str::cat (symbol-name type) "-OF-" (symbol-name name) "-1"))
+         (thm-type-s (cat (symbol-name type) "-OF-" (symbol-name name) "-1"))
          (thm-type   (intern-in-package-of-symbol thm-type-s name))
-         (short      (str::cat "Add <tt>VL_ORIG_EXPR</tt> annotations throughout "
-                               "a @(see " type-s ")"))
-         (long       (str::cat "<p><b>Signature:</b> @(call " name-s ") returns
+         (short      (cat "Add <tt>VL_ORIG_EXPR</tt> annotations throughout "
+                          "a @(see " type-s ")"))
+         (long       (cat "<p><b>Signature:</b> @(call " name-s ") returns
 <tt>x-prime</tt>.</p>")))
 
     `(defsection ,name

@@ -94,7 +94,7 @@ endmodule
                     :measure (nfix (- (nfix n) (nfix i)))))
     (b* (((when (zp (- (nfix n) (nfix i))))
           nil)
-         (name (hons-copy (str::cat prefix (str::natstr i))))
+         (name (hons-copy (cat prefix (natstr i))))
          (decl (make-vl-netdecl :name name
                                 :type :vl-wire
                                 :range range
@@ -128,7 +128,7 @@ endmodule
     (declare (xargs :guard (and (natp i)
                                 (natp n)
                                 (< i n))))
-    (b* ((p-name (hons-copy (str::cat "p" (str::natstr i))))
+    (b* ((p-name (hons-copy (cat "p" (natstr i))))
          (p-expr (vl-idexpr p-name n :vl-unsigned))
          (p-high (vl-make-list-of-bitselects p-expr i (- n 1)))
          (p-low  (if (zp i)
@@ -146,9 +146,9 @@ endmodule
          (b-high (take (len p-high) b-bits))
          (b-low  (repeat |*sized-1'b0*| (len p-low)))
 
-         (ands (vl-simple-inst-list *vl-1-bit-and* (str::cat "mk_" p-name "_high")
+         (ands (vl-simple-inst-list *vl-1-bit-and* (cat "mk_" p-name "_high")
                                     p-high a-high b-high))
-         (bufs (vl-simple-inst-list *vl-1-bit-buf* (str::cat "mk_" p-name "_low")
+         (bufs (vl-simple-inst-list *vl-1-bit-buf* (cat "mk_" p-name "_low")
                                     p-low b-low nil)))
       (revappend ands (reverse bufs))))
 
@@ -208,7 +208,7 @@ circuitry.</p>"
   :body
   (b* (((when (= n 1))
         (list *vl-1-bit-mult*))
-       (name  (hons-copy (str::cat "VL_" (str::natstr n) "_BIT_MULT")))
+       (name  (hons-copy (cat "VL_" (natstr n) "_BIT_MULT")))
        (range (vl-make-n-bit-range n))
 
        ((mv o-expr o-port o-portdecl o-netdecl) (vl-occform-mkport "o" :vl-output n))

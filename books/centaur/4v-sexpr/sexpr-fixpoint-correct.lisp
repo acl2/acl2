@@ -613,7 +613,7 @@
                           default-car default-cdr
                           hons-acons-each
                           append not
-                          member-equal-atom
+                          member-equal-when-atom
                           (:type-prescription subsetp-equal)
                           (:type-prescription member-equal)))))
   (defthm 4v-sexpr-restrict-alist-when-keys-subset
@@ -768,7 +768,7 @@
   :hints(("Goal" :in-theory
           (e/d ()
                (4v-sexpr-vars default-car default-cdr
-                           union-equal member-equal-atom
+                           union-equal member-equal-when-atom
                            subsetp-car-member-equal
                            alist-keys-when-atom)))))
 
@@ -782,7 +782,7 @@
              'finished)))
   :hints (("goal" :induct (sexpr-dfs queue deps seen-al parent
                                  back-edges)
-           :in-theory (disable default-car cons-member-equal union-equal
+           :in-theory (disable default-car member-equal-of-cons union-equal
                                default-cdr 4v-sexpr-vars)
            :do-not-induct t)))
 

@@ -149,7 +149,7 @@
                               (equal (nthcdr (- (len formals) 2) formals)
                                      '(tokens warnings)))
                   :mode :program))
-  (let* ((fn-name (intern-in-package-of-symbol (str::cat (symbol-name name) "-FN")
+  (let* ((fn-name (intern-in-package-of-symbol (cat (symbol-name name) "-FN")
                                                name))
          (args-for-def   (throw-away-keyword-parts args))
          (decls          (butlast args-for-def 1))
@@ -201,7 +201,7 @@
         ,@(if (not (or count result resultp-of-nil result-hints true-listp fails))
               nil
             `((defthm ,(intern-in-package-of-symbol
-                        (str::cat "VL-TOKENLIST-P-OF-" (symbol-name name))
+                        (cat "VL-TOKENLIST-P-OF-" (symbol-name name))
                         name)
                 (implies (force (vl-tokenlist-p tokens))
                          (vl-tokenlist-p (mv-nth 2 (,name . ,formals))))
@@ -212,7 +212,7 @@
                 :rule-classes ((:rewrite :backchain-limit-lst 0)))
 
               (defthm ,(intern-in-package-of-symbol
-                        (str::cat "VL-WARNINGLIST-P-OF-" (symbol-name name))
+                        (cat "VL-WARNINGLIST-P-OF-" (symbol-name name))
                         name)
                 (implies (force (vl-warninglist-p warnings))
                          (vl-warninglist-p (mv-nth 3 (,name . ,formals))))
@@ -226,7 +226,7 @@
                  nil)
                 ((equal (symbol-name fails) "NEVER")
                  `((defthm ,(intern-in-package-of-symbol
-                             (str::cat (symbol-name name) "-NEVER-FAILS")
+                             (cat (symbol-name name) "-NEVER-FAILS")
                              name)
                      (not (mv-nth 0 (,name . ,formals)))
                      :hints(,@(if hint-chicken-switch
@@ -235,7 +235,7 @@
                                    '(,fn-name . ,formals) :disable '((force)))))))))
                 ((equal (symbol-name fails) "GRACEFULLY")
                  `((defthm ,(intern-in-package-of-symbol
-                             (str::cat (symbol-name name) "-FAILS-GRACEFULLY")
+                             (cat (symbol-name name) "-FAILS-GRACEFULLY")
                              name)
                      (implies (mv-nth 0 (,name . ,formals))
                               (not (mv-nth 1 (,name . ,formals))))
@@ -250,7 +250,7 @@
                  nil)
                 (t
                  `((defthm ,(intern-in-package-of-symbol
-                             (str::cat (symbol-name name) "-RESULT")
+                             (cat (symbol-name name) "-RESULT")
                              name)
                      ,(cond
                        ((and resultp-of-nil
@@ -292,7 +292,7 @@
                  nil)
                 (t
                  `((defthm ,(intern-in-package-of-symbol
-                             (str::cat (symbol-name name) "-TRUE-LISTP")
+                             (cat (symbol-name name) "-TRUE-LISTP")
                              name)
                      (true-listp (mv-nth 1 (,name . ,formals)))
                      :rule-classes :type-prescription
@@ -306,7 +306,7 @@
                  nil)
                 ((equal (symbol-name count) "WEAK")
                  `((defthm ,(intern-in-package-of-symbol
-                             (str::cat (symbol-name name) "-COUNT-WEAK")
+                             (cat (symbol-name name) "-COUNT-WEAK")
                              name)
                      (<= (acl2-count (mv-nth 2 (,name . ,formals)))
                          (acl2-count tokens))
@@ -319,7 +319,7 @@
 
                 ((equal (symbol-name count) "STRONG")
                  `((defthm ,(intern-in-package-of-symbol
-                             (str::cat (symbol-name name) "-COUNT-STRONG")
+                             (cat (symbol-name name) "-COUNT-STRONG")
                              name)
                      (and (<= (acl2-count (mv-nth 2 (,name . ,formals)))
                               (acl2-count tokens))
@@ -335,7 +335,7 @@
 
                 ((equal (symbol-name count) "STRONG-ON-VALUE")
                  `((defthm ,(intern-in-package-of-symbol
-                             (str::cat (symbol-name name) "-COUNT-STRONG-ON-VALUE")
+                             (cat (symbol-name name) "-COUNT-STRONG-ON-VALUE")
                              name)
                      (and (<= (acl2-count (mv-nth 2 (,name . ,formals)))
                               (acl2-count tokens))
@@ -416,9 +416,9 @@
                               (vl-tokenlist-p tokens)
                               (vl-warninglist-p warnings))))
   (mv (if (consp tokens)
-          (list (str::cat "Parse error in ~s0 (at ~l1): " description)
+          (list (cat "Parse error in ~s0 (at ~l1): " description)
                 function (vl-token->loc (car tokens)))
-        (list (str::cat "Parser error in ~s0 (at EOF): " description)
+        (list (cat "Parser error in ~s0 (at EOF): " description)
               function))
       nil tokens warnings))
 
@@ -461,8 +461,8 @@
                               (vl-tokenlist-p tokens)
                               (vl-warninglist-p warnings))))
   (let* ((msg (if (atom tokens)
-                  (str::cat "Warning in ~s0 (at EOF): " description)
-                (str::cat "Warning in ~s0 (at ~l1): " description)))
+                  (cat "Warning in ~s0 (at EOF): " description)
+                (cat "Warning in ~s0 (at ~l1): " description)))
          (args (if (atom tokens)
                    (list function)
                  (list function (vl-token->loc (car tokens)))))

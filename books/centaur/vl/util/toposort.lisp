@@ -23,8 +23,6 @@
 (local (include-book "arithmetic"))
 (local (include-book "osets"))
 
-
-(local (in-theory (disable pick-a-point-subsetp-equal-strategy)))
 (local (in-theory (disable acl2::alist-keys-member-hons-assoc-equal)))
 
 (local (defthm hons-assoc-equal-under-iff
@@ -262,14 +260,14 @@ at the <tt>:started</tt> nodes.  See @(see extract-topological-loop).</p>"
   (local (defthm l1
            (subsetp-equal (alist-keys seen)
                           (alist-keys (mv-nth 1 (toposort-aux queue seen graph))))
-           :hints(("Goal" :in-theory (enable pick-a-point-subsetp-equal-strategy)))))
+           :hints((set-reasoning))))
 
   (local (defthm l2
            (subsetp-equal (alist-keys seen)
                           (alist-keys (mv-nth 1 (toposort-aux queue (cons (cons key :started) seen) graph))))
            :rule-classes ((:forward-chaining
                            :trigger-terms ((toposort-aux queue (cons (cons key :started) seen) graph))))
-           :hints(("Goal" :in-theory (enable pick-a-point-subsetp-equal-strategy)))))
+           :hints((set-reasoning))))
 
   (verify-guards toposort-aux)
 
@@ -312,11 +310,22 @@ toposort-aux)."
     (implies (true-listp acc)
              (true-listp (extract-topological-order seen acc))))
 
-  (defthm subsetp-equal-of-extract-topological-order
-    (subsetp-equal (extract-topological-order seen acc)
-                   (append (alist-keys seen)
-                           acc))
-    :hints(("Goal" :in-theory (enable pick-a-point-subsetp-equal-strategy))))
+  (encapsulate
+    ()
+    (local (defthm l0
+             (implies (member-equal a acc)
+                      (member-equal a (extract-topological-order seen acc)))))
+
+    (local (defthm l1
+             (implies (and (member-equal a (extract-topological-order seen acc))
+                           (not (member-equal a acc)))
+                      (member-equal a (alist-keys seen)))))
+
+    (defthm subsetp-equal-of-extract-topological-order
+      (subsetp-equal (extract-topological-order seen acc)
+                     (append (alist-keys seen)
+                             acc))
+      :hints((set-reasoning))))
 
 
   ;; Now we prove a completeness theorem that shows extract-topological-order
@@ -359,7 +368,7 @@ toposort-aux)."
            (implies (and (mv-nth 0 (toposort-aux queue seen graph))
                          (subsetp-equal queue (alist-keys graph)))
                     (subsetp-equal queue (eto (mv-nth 1 (toposort-aux queue seen graph)))))
-           :hints(("Goal" :in-theory (enable pick-a-point-subsetp-equal-strategy)))))
+           :hints((acl2::witness :ruleset (acl2::subsetp-equal-witnessing)))))
 
   (defthm extract-topological-order-includes-queue
     (implies (and (mv-nth 0 (toposort-aux queue seen graph))
@@ -428,8 +437,9 @@ toposort-aux)."
      )
     (declare (xargs :guard (cons-listp seen)))
     (cond ((atom seen)
-           (er hard? 'extract-topological-loop
-               "Should never hit the end of seen!"))
+           (prog2$ (er hard? 'extract-topological-loop
+                       "Should never hit the end of seen!")
+                   acc))
           ((eq (cdar seen) :started)
            (b* ((name      (caar seen))
                 (finishedp (eq (cdr (hons-get name full-seen)) :finished))
@@ -448,11 +458,20 @@ toposort-aux)."
     (implies (true-listp acc)
              (true-listp (extract-topological-loop seen stop acc full-seen))))
 
+  (local (defthm l0
+           (implies (member-equal a acc)
+                    (member-equal a (extract-topological-loop seen stop acc full-seen)))))
+
+  (local (defthm l1
+           (implies (and (member-equal a (extract-topological-loop seen stop acc full-seen))
+                         (not (member-equal a acc)))
+                    (member-equal a (alist-keys seen)))))
+
   (defthm subsetp-equal-of-extract-topological-loop
     (subsetp-equal (extract-topological-loop seen stop acc full-seen)
                    (append (alist-keys seen)
                            acc))
-    :hints(("Goal" :in-theory (enable pick-a-point-subsetp-equal-strategy)))))
+    :hints((set-reasoning))))
 
 
 (defsection toposort
@@ -563,11 +582,8 @@ strategy is the easiest way to topologically sort your data.</p>"
   (local (defthm l2
            (implies (and (consp x)
                          (cons-listp x))
-                    (subsetp-equiv (append (alist-keys (cdr x))
-                                           (list (caar x)))
-                                   (alist-keys x)))
-           :hints(("Goal" :in-theory (enable subsetp-equiv
-                                             pick-a-point-subsetp-equal-strategy)))))
+                    (set-equivp (cons (caar x) (alist-keys (cdr x)))
+                                (alist-keys x)))))
 
   (local (make-event
           (let* ((aux  `(toposort-aux (alist-keys graph)
@@ -584,7 +600,9 @@ strategy is the easiest way to topologically sort your data.</p>"
                                         (seen (cdr ,seen))
                                         (stop (caar ,seen))
                                         (acc  (list (caar ,seen)))
-                                        (full-seen ,seen)))))))))
+                                        (full-seen ,seen))))
+                      (acl2::witness :ruleset (acl2::subsetp-equal-witnessing)))))))
+
 
   (defthm subsetp-equal-of-toposort
     ;; This holds regardless of success
@@ -608,9 +626,9 @@ strategy is the easiest way to topologically sort your data.</p>"
 
   (defthm toposort-set-equiv
     (implies (mv-nth 0 (toposort graph))
-             (subsetp-equiv (mv-nth 1 (toposort graph))
-                            (alist-keys graph)))
-    :hints(("Goal" :in-theory (e/d (subsetp-equiv)
+             (set-equivp (mv-nth 1 (toposort graph))
+                         (alist-keys graph)))
+    :hints(("Goal" :in-theory (e/d (set-equivp)
                                    (toposort)))))
 
   (defthm no-duplicatesp-equal-of-toposort

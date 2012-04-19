@@ -45,6 +45,7 @@
 (include-book "esim-vl")
 (include-book "esim-paths")
 (include-book "centaur/vl/mlib/hid-tools" :dir :system)
+(include-book "centaur/vl/mlib/print-warnings" :dir :system)
 (include-book "centaur/vl/loader/lexer" :dir :system)
 (include-book "centaur/vl/loader/parse-expressions" :dir :system)
 (include-book "centaur/vl/loader/parse-error" :dir :system)

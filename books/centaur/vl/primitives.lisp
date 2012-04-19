@@ -819,46 +819,47 @@ certain <tt>always</tt> statements into instances of this module.</p>
 
 
 
+;; BOZO this is a whole family of primitives, I guess
 
-(defxdoc *vl-1-bit-resolve-wire*
-  :parents (primitives)
-  :short "Primitive module that resolves multiple drivers on a wire."
-  :long "<p>The Verilog definition of this module is:</p>
+;; (defxdoc *vl-1-bit-resolve-wire*
+;;   :parents (primitives)
+;;   :short "Primitive module that resolves multiple drivers on a wire."
+;;   :long "<p>The Verilog definition of this module is:</p>
 
-<code>
-module VL_1_BIT_RESOLVE_WIRE (out, a, b) ;
-  output out;
-  input a;
-  input b;
-  assign out = a;
-  assign out = b;
-endmodule
-</code>
+;; <code>
+;; module VL_1_BIT_RESOLVE_WIRE (out, a, b) ;
+;;   output out;
+;;   input a;
+;;   input b;
+;;   assign out = a;
+;;   assign out = b;
+;; endmodule
+;; </code>
 
-<p>VL takes this as a primitive.  This module, and wrappers that extend it to
-higher arities and wider signals, may be introduced by the @(see multidrive)
-transform to deal with multiply driven wires.</p>
+;; <p>VL takes this as a primitive.  This module, and wrappers that extend it to
+;; higher arities and wider signals, may be introduced by the @(see multidrive)
+;; transform to deal with multiply driven wires.</p>
 
-<p>The corresponding @(see esim) primitive is @(see acl2::*esim-res*).</p>")
+;; <p>The corresponding @(see esim) primitive is @(see acl2::*esim-res*).</p>")
 
-(defconsts *vl-1-bit-resolve-wire*
-  (b* ((name "VL_1_BIT_RESOLVE_WIRE")
-       (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
-       ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
-       ((mv a-expr   a-port   a-portdecl   a-netdecl)   (vl-primitive-mkport "a"   :vl-input))
-       ((mv b-expr   b-port   b-portdecl   b-netdecl)   (vl-primitive-mkport "b"   :vl-input))
-       (a-assign     (make-vl-assign :lvalue out-expr :expr a-expr :loc *vl-fakeloc*))
-       (b-assign     (make-vl-assign :lvalue out-expr :expr b-expr :loc *vl-fakeloc*)))
-    (make-honsed-vl-module :name      name
-                           :origname  name
-                           :ports     (list out-port     a-port      b-port)
-                           :portdecls (list out-portdecl a-portdecl  b-portdecl)
-                           :netdecls  (list out-netdecl  a-netdecl   b-netdecl)
-                           :assigns   (list              a-assign    b-assign)
-                           :minloc    *vl-fakeloc*
-                           :maxloc    *vl-fakeloc*
-                           :atts      atts
-                           :esim      acl2::*esim-res*)))
+;; (defconsts *vl-1-bit-resolve-wire*
+;;   (b* ((name "VL_1_BIT_RESOLVE_WIRE")
+;;        (atts '(("VL_PRIMITIVE") ("VL_HANDS_OFF")))
+;;        ((mv out-expr out-port out-portdecl out-netdecl) (vl-primitive-mkport "out" :vl-output))
+;;        ((mv a-expr   a-port   a-portdecl   a-netdecl)   (vl-primitive-mkport "a"   :vl-input))
+;;        ((mv b-expr   b-port   b-portdecl   b-netdecl)   (vl-primitive-mkport "b"   :vl-input))
+;;        (a-assign     (make-vl-assign :lvalue out-expr :expr a-expr :loc *vl-fakeloc*))
+;;        (b-assign     (make-vl-assign :lvalue out-expr :expr b-expr :loc *vl-fakeloc*)))
+;;     (make-honsed-vl-module :name      name
+;;                            :origname  name
+;;                            :ports     (list out-port     a-port      b-port)
+;;                            :portdecls (list out-portdecl a-portdecl  b-portdecl)
+;;                            :netdecls  (list out-netdecl  a-netdecl   b-netdecl)
+;;                            :assigns   (list              a-assign    b-assign)
+;;                            :minloc    *vl-fakeloc*
+;;                            :maxloc    *vl-fakeloc*
+;;                            :atts      atts
+;;                            :esim      acl2::*esim-res*)))
 
 
 (defconst *vl-primitive-mods*
@@ -878,7 +879,8 @@ transform to deal with multiply driven wires.</p>
         *vl-1-bit-ceq*
         *vl-1-bit-flop*
         *vl-1-bit-latch*
-        *vl-1-bit-resolve-wire*))
+        ;; *vl-1-bit-resolve-wire*
+        ))
 
 
 

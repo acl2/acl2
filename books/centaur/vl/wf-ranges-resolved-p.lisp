@@ -108,7 +108,9 @@
                       "~l0: failed to resolve range of modinst ~s1: current range is ~x2."
                       (list (vl-modinst->loc x)
                             (or (vl-modinst->instname x)
-                                (str::cat "<unnamed instance of module " (vl-modinst->modname x) ">"))
+                                (cat "<unnamed instance of module "
+                                     (vl-modinst->modname x)
+                                     ">"))
                             range))))
 
 (defthm vl-maybe-range-resolved-p-of-vl-modinst->range
@@ -130,9 +132,9 @@
                       "~l0: failed to resolve range of gateinst ~s1: current range is ~x2."
                       (list (vl-gateinst->loc x)
                             (or (vl-gateinst->name x)
-                                (str::cat "<unnamed gate of type "
-                                          (symbol-name (vl-gateinst->type x))
-                                          ">"))
+                                (cat "<unnamed gate of type "
+                                     (symbol-name (vl-gateinst->type x))
+                                     ">"))
                             range))))
 
 (defthm vl-maybe-range-resolved-p-of-vl-gateinst->range

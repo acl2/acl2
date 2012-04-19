@@ -41,11 +41,11 @@ end with a slash."
   (defund vl-extend-pathname (dir filename)
     (declare (xargs :guard (and (stringp dir)
                                 (stringp filename))))
-    (str::cat dir
-              (if (vl-ends-with-directory-separatorp dir)
-                  ""
-                (coerce (list ACL2::*directory-separator*) 'string))
-              filename))
+    (cat dir
+         (if (vl-ends-with-directory-separatorp dir)
+             ""
+           (coerce (list ACL2::*directory-separator*) 'string))
+         filename))
 
   (defthm stringp-of-vl-extend-pathname
     (stringp (vl-extend-pathname dir filename))
@@ -159,7 +159,7 @@ extensions."
           (mv nil state))
          ((mv rest state)
           (vl-find-basename/extension-aux filename (cdr extensions) dir state))
-         (filename1 (str::cat filename "." (car extensions)))
+         (filename1 (cat filename "." (car extensions)))
          (attempt   (vl-extend-pathname dir filename1))
          ((mv channel state)
           (open-input-channel attempt :character state))

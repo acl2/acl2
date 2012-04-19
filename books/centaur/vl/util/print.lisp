@@ -1297,7 +1297,7 @@ natural numbers."
   ;;    whether we're in HTML mode.
   ;;
   ;; 2. We essentially use str::revappend-natchars instead of calling
-  ;;    str::natstr or similar.  This does the minimum amount of consing and
+  ;;    natstr or similar.  This does the minimum amount of consing and
   ;;    doesn't build a string.
   ;;
   ;; 3. We manually inline the executable definition of str::revappend-natchars
@@ -1363,7 +1363,7 @@ natural numbers."
 
   (defmacro vl-print-nat (x)
     (cond ((natp x)
-           (let ((str (str::natstr x)))
+           (let ((str (natstr x)))
              `(vl-print-raw-fast ,str ,(length str))))
           (t
            `(vl-print-nat-main ,x)))))

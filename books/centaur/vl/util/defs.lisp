@@ -73,19 +73,19 @@ working with Verilog modules.")
     (coerce (list #\Newline) 'string)))
 
 
+(defsection set-equivp
 
-(defsection subsetp-equiv
-
-  (local (include-book "subsetp-equal"))
+  (local (include-book "centaur/misc/equal-sets" :dir :system))
   (set-enforce-redundancy t) ;; note: implicitly local
 
-  (defund subsetp-equiv (x y)
+  #!ACL2
+  (defun set-equivp (x y)
     (declare (xargs :guard (and (true-listp x)
                                 (true-listp y))))
     (and (subsetp-equal x y)
          (subsetp-equal y x)))
 
-  (defequiv subsetp-equiv))
+  (defequiv set-equivp))
 
 
 
@@ -349,6 +349,10 @@ lists.</p>
 
   (defthm strip-cars-of-make-lookup-alist
     (equal (strip-cars (make-lookup-alist x))
+           (list-fix x)))
+
+  (defthm alist-keys-of-make-lookup-alist
+    (equal (alist-keys (make-lookup-alist x))
            (list-fix x))))
 
 

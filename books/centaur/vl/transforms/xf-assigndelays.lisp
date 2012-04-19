@@ -56,7 +56,7 @@
       nil
     (let ((args (list (make-vl-plainarg :expr (car outs) :dir :vl-output :portname "out")
                       (make-vl-plainarg :expr (car ins)  :dir :vl-input  :portname "in"))))
-      (cons (make-vl-modinst :instname  (str::cat basename (str::natstr n))
+      (cons (make-vl-modinst :instname  (cat basename (natstr n))
                              :modname   modname
                              :paramargs (vl-arguments nil nil)
                              :portargs  (vl-arguments nil args)
@@ -96,7 +96,7 @@ endmodule
   (b* (((when (= m 1))
         (list *vl-1-bit-delay-1*))
 
-       (name  (str::cat "VL_1_BIT_DELAY_" (str::natstr m)))
+       (name  (cat "VL_1_BIT_DELAY_" (natstr m)))
 
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output 1))
        ((mv in-expr  in-port  in-portdecl  in-netdecl)  (vl-occform-mkport "in" :vl-input 1))
@@ -136,7 +136,7 @@ endmodule
        ((when (= n 1))
         base)
 
-       (name (str::cat "VL_" (str::natstr n) "_BIT_DELAY_" (str::natstr m)))
+       (name (cat "VL_" (natstr n) "_BIT_DELAY_" (natstr m)))
 
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output n))
        ((mv in-expr  in-port  in-portdecl  in-netdecl)  (vl-occform-mkport "in" :vl-input n))

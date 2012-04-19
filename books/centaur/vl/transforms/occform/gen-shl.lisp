@@ -75,7 +75,7 @@ operates on O(log_2 n) muxes.</p>"
   :guard (and (posp n) (posp p))
   :body
   (b* ((shift-amount (expt 2 (- p 1)))
-       (name  (hons-copy (str::cat "VL_" (str::natstr n) "_BIT_SHL_PLACE_" (str::natstr p))))
+       (name  (hons-copy (cat "VL_" (natstr n) "_BIT_SHL_PLACE_" (natstr p))))
 
        ((mv out-expr out-port out-portdecl out-netdecl)             (vl-occform-mkport "out" :vl-output n))
        ((mv in-expr in-port in-portdecl in-netdecl)                 (vl-occform-mkport "in" :vl-input n))
@@ -181,7 +181,7 @@ generated net declaration.</p>"
                                 (vl-maybe-range-p range))))
     (if (zp n)
         nil
-      (cons (make-vl-netdecl :name  (str::cat basename "_" (str::natstr n))
+      (cons (make-vl-netdecl :name  (cat basename "_" (natstr n))
                              :type  :vl-wire
                              :range range
                              :loc   *vl-fakeloc*)
@@ -215,7 +215,7 @@ generated net declaration.</p>"
                                 (same-lengthp mods bs))))
     (b* (((when (atom mods))
           nil)
-         (modinst (vl-simple-inst (car mods) (str::cat "shift_" (str::natstr name-index))
+         (modinst (vl-simple-inst (car mods) (cat "shift_" (natstr name-index))
                                   (car outs) (car as) (car bs))))
       (cons modinst
             (vl-make-modinsts-for-shl (+ 1 name-index) (cdr mods) (cdr outs) (cdr as) (cdr bs)))))
@@ -258,7 +258,7 @@ endmodule
               (posp m))
 
   :body
-  (b* ((name (hons-copy (str::cat "VL_" (str::natstr n) "_BIT_SHL_BY_" (str::natstr m) "_BITS")))
+  (b* ((name (hons-copy (cat "VL_" (natstr n) "_BIT_SHL_BY_" (natstr m) "_BITS")))
 
        ((mv out-expr out-port out-portdecl out-netdecl) (vl-occform-mkport "out" :vl-output n))
        ((mv a-expr a-port a-portdecl a-netdecl)         (vl-occform-mkport "a" :vl-input n))

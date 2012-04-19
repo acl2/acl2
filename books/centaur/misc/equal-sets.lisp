@@ -28,63 +28,98 @@
                   (equal (equal a b) (iff a b)))))
 
 
-;; built into ACL2 now.
-;; (defun intersection-equal (x y)
-;;   (declare (xargs :guard (and (true-listp x) (true-listp y))))
-;;   (cond ((endp x) nil)
-;;         ((member-equal (car x) y)
-;;          (cons (car x)
-;;                (intersection-equal (cdr x) y)))
-;;         (t (intersection-equal (cdr x) y))))
+(defsection member-equal
 
-(defthm set-difference-equal-member
-  (iff (member-equal x (set-difference-equal a b))
-       (and (member-equal x a)
-            (not (member-equal x b)))))
+  (defthm member-equal-when-atom
+    (implies (atom x)
+             (not (member-equal a x))))
 
-(defthm intersection-equal-member
-  (iff (member-equal x (intersection-equal a b))
-       (and (member-equal x a)
-            (member-equal x b))))
+  (defthm member-equal-of-cons
+    (equal (member-equal a (cons b x))
+           (if (equal a b)
+               (cons b x)
+             (member-equal a x))))
+
+  (defthm member-equal-of-car
+    (equal (member-equal (car x) x)
+           (if (consp x)
+               x
+             nil)))
+
+  ;; We don't need member-equal-of-append, it's already in witness-cp
+
+  (local (defthm l0
+           (implies (member-equal a y)
+                    (not (member-equal a (set-difference-equal x y))))))
+
+  (defthm member-equal-of-set-difference-equal
+    (iff (member-equal a (set-difference-equal x y))
+         (and (member-equal a x)
+              (not (member-equal a y))))
+    :hints(("Goal" :induct (len x))))
+
+  (local (defthm l1
+           (implies (not (member-equal a y))
+                    (not (member-equal a (intersection-equal x y))))))
+
+  (defthm member-equal-of-intersection-equal
+    (iff (member-equal a (intersection-equal x y))
+         (and (member-equal a x)
+              (member-equal a y)))
+    :hints(("Goal" :induct (len x))))
+
+  (local (defthm l2
+           (not (member-equal a (remove-equal a x)))))
+
+  (defthm member-equal-of-remove-equal
+    (iff (member-equal a (remove-equal b x))
+         (and (member-equal a x)
+              (not (equal a b))))
+    :hints(("Goal" :induct (len x))))
+
+  (defthm acl2-count-when-member-equal
+    (implies (member-equal a x)
+             (< (acl2-count a) (acl2-count x)))
+    :rule-classes ((:rewrite) (:linear))
+    :hints(("Goal" :in-theory (enable member-equal acl2-count))))
+
+  (defthm member-equal-self
+    (not (member-equal x x))
+    :hints(("Goal"
+            :in-theory (disable acl2-count-when-member-equal)
+            :use ((:instance acl2-count-when-member-equal (a x)))))))
 
 
-(defthm subsetp-equal-of-singleton
-  (equal (subsetp-equal (list a) x)
-         (if (member-equal a x)
-             t
-           nil))
-  :hints(("Goal" :expand (subsetp-equal (list a) x))))
+
+
+(defthm subsetp-equal-when-atom
+    (implies (atom x)
+             (subsetp-equal x y)))
+
+(defthm subsetp-equal-nil
+    (subsetp-equal nil x))
+
+(defthm subsetp-equal-of-cons
+    (equal (subsetp-equal (cons a x) y)
+           (if (member-equal a y)
+               (subsetp-equal x y)
+             nil)))
 
 (defthmd subsetp-equal-member
-  (implies (and (subsetp-equal x y)
-                (member-equal a x))
-           (member-equal a y)))
-
-(defthmd subsetp-equal-member2
   (implies (and (member-equal a x)
                 (subsetp-equal x y))
-           (member-equal a y)))
-
-(defthmd subsetp-equal-not-member
-  (implies (and (subsetp-equal a b)
-                (not (member-equal k b)))
-           (not (member-equal k a)))
-  :hints(("Goal" :in-theory (enable subsetp-equal-member))))
-
-(defthmd subsetp-equal-not-member2
-  (implies (and (not (member-equal k b))
-                (subsetp-equal a b))
-           (not (member-equal k a)))
-  :hints(("Goal" :in-theory (enable subsetp-equal-member))))
-
-(defthm cons-member-equal
-  (iff (member-equal a (cons x y))
-       (or (equal x a)
-           (member-equal a y))))
-
-(defthm member-equal-atom
-  (implies (atom a)
-           (not (member-equal x a))))
+           (member-equal a y))
+  :rule-classes ((:rewrite)
+                 (:rewrite :corollary (implies (and (subsetp-equal x y)
+                                                    (member-equal a x))
+                                               (member-equal a y)))
+                 (:rewrite :corollary (implies (and (not (member-equal a y))
+                                                    (subsetp-equal x y))
+                                               (not (member-equal a x))))
+                 (:rewrite :corollary (implies (and (subsetp-equal x y)
+                                                    (not (member-equal a y)))
+                                               (not (member-equal a x)))))
+  :hints(("Goal" :induct (len x))))
 
 (defun subsetp-equal-witness (x y)
   (if (atom x)
@@ -162,15 +197,19 @@
            (equal (intersectp-equal x y) t)))
 
 
-(defthm subsetp-equal-nil
-  (subsetp-equal nil x))
 
 (defthm subsetp-equal-implies-subsetp-equal-cdr
   (implies (subsetp-equal x y)
            (subsetp-equal (cdr x) y)))
 
+(defthm subsetp-equal-of-cdr
+  (subsetp-equal (cdr x) x))
+
+
 
 (defun set-equivp (x y)
+  (declare (xargs :guard (and (true-listp x)
+                              (true-listp y))))
   (and (subsetp-equal x y)
        (subsetp-equal y x)))
 
@@ -182,19 +221,24 @@
                        (member-equal a y))
                   t)))
 
-(defthm set-equivp-refl
-  (set-equivp x x))
+(encapsulate
+  ()
+  (local (defthm set-equivp-refl
+           ;; Automatic after defequiv
+           (set-equivp x x)))
 
-(defthm set-equivp-asym
-  (implies (set-equivp x y) (set-equivp y x)))
+  (defthm set-equivp-asym
+    ;; NOT automatic after defequiv, so make it non-local
+    (equal (set-equivp x y)
+           (set-equivp y x)))
 
+  (local (defthm set-equivp-trans
+           ;; Automatic after defequiv
+           (implies (and (set-equivp x y)
+                         (set-equivp y z))
+                    (set-equivp x z))))
 
-(defthm set-equivp-trans
-  (implies (and (set-equivp x y)
-                (set-equivp y z))
-           (set-equivp x z)))
-
-(defequiv set-equivp)
+  (defequiv set-equivp))
 
 (defcong set-equivp iff (member-equal x y) 2)
 
@@ -379,6 +423,7 @@
   :hints ((set-reasoning)))
 
 
+
 (in-theory (disable set-difference-equal intersection-equal))
 
 
@@ -419,11 +464,6 @@
   :hints ((set-reasoning)))
 
 
-(defthm append-member
-  (iff (member-equal x (append a b))
-       (or (member-equal x a)
-           (member-equal x b)))
-  :hints(("Goal" :in-theory (enable member-equal))))
 
 (defthm subsetp-equal-append1
   (equal (subsetp-equal (append a b) c)
@@ -498,10 +538,6 @@
                        (cons a (double-rewrite x))))
   :hints((set-reasoning)))
 
-(defthm member-equal-of-remove-equal
-  (iff (member-equal a (remove-equal b x))
-       (and (member-equal a x)
-            (not (equal a b)))))
 
 (defthm sets::delete-under-set-equivp
   (implies (sets::setp x)
@@ -591,3 +627,60 @@
   (set-equivp (append x (list a))
               (cons a x))
   :hints((set-reasoning)))
+
+
+(defsection revappend
+
+  (local (defthm l0
+           (iff (member-equal x (revappend a b))
+                (or (member-equal x a)
+                    (member-equal x b)))))
+
+  (defcong set-equivp set-equivp (revappend x y) 1
+    :hints((set-reasoning)))
+
+  (defcong set-equivp set-equivp (revappend x y) 2
+    :hints((set-reasoning)))
+
+  (defthm revappend-under-set-equivp
+    (set-equivp (revappend x y)
+                (append x y))
+    :hints((set-reasoning))))
+
+
+(defthm reverse-under-set-equivp
+  (implies (true-listp x)
+           (set-equivp (reverse x)
+                       x))
+  :hints((set-reasoning)))
+
+
+(defsection remove-duplicates-equal
+
+  (local (defthm l0
+           (iff (member-equal a (remove-duplicates-equal x))
+                (member-equal a x))))
+
+  (defthm remove-duplicates-equal-under-set-equivp
+    (set-equivp (remove-duplicates-equal x)
+                x)
+    :hints((set-reasoning)))
+
+  (defcong set-equivp set-equivp (remove-duplicates-equal x) 1
+    :hints((set-reasoning))))
+
+
+
+(defthm set-equivp-of-cons-self
+   (equal (set-equivp x (cons a x))
+          (if (member-equal a x)
+              t
+            nil))
+   :hints((set-reasoning)))
+
+(defcong set-equivp set-equivp (cons a x) 2
+  :hints((set-reasoning)))
+
+
+(defcong set-equivp set-equivp (remove-equal k a) 2
+  :hints ((set-reasoning)))

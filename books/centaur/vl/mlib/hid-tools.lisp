@@ -559,18 +559,18 @@ vl-hid-indicies-resolved-p).</p>"
             (args (vl-nonatom->args x)))
         (case op
           (:vl-hid-dot
-           (str::cat (vl-hidpiece->name (vl-atom->guts (first args)))
-                     "."
-                     (vl-flatten-hidexpr (second args))))
+           (cat (vl-hidpiece->name (vl-atom->guts (first args)))
+                "."
+                (vl-flatten-hidexpr (second args))))
 
           (:vl-hid-arraydot
            ;; BOZO eventually switch to natstr, but for now we don't know it's a
            ;; natural number.
-           (str::cat (vl-hidpiece->name (vl-atom->guts (first args)))
-                     "["
-                     (coerce (explode-atom (vl-resolved->val (second args)) 10) 'string)
-                     "]"
-                     (vl-flatten-hidexpr (third args))))
+           (cat (vl-hidpiece->name (vl-atom->guts (first args)))
+                "["
+                (coerce (explode-atom (vl-resolved->val (second args)) 10) 'string)
+                "]"
+                (vl-flatten-hidexpr (third args))))
 
           (otherwise
            ;; Nonsense for unconditional stringp type-prescription

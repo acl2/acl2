@@ -21,7 +21,7 @@
 (in-package "VL")
 (include-book "xf-subst")
 (include-book "../mlib/remove-bad")
-(include-book "../mlib/warnings")
+(include-book "../mlib/print-warnings")
 (include-book "../wf-ranges-resolved-p")
 (include-book "../onehot")
 (include-book "../util/cwtime")
@@ -721,9 +721,9 @@ unparameterization code that no conflicts are introduced.</p>"
           (t
            (let* ((param-name    (caar sigma))
                   (param-val     (vl-resolved->val (cdar sigma)))
-                  (param-val-str (str::natstr param-val)))
+                  (param-val-str (natstr param-val)))
              (vl-unparam-newname-aux
-              (str::cat origname "$" param-name "=" param-val-str)
+              (cat origname "$" param-name "=" param-val-str)
               (cdr sigma))))))
 
   (local (in-theory (enable vl-unparam-newname-aux)))

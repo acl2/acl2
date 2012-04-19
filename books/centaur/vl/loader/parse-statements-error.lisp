@@ -33,11 +33,11 @@
                            member-equal-when-member-equal-of-cdr-under-iff
                            vl-is-some-token?-fn-when-not-consp-of-tokens
                            vl-parse-expression-eof-vl-parse-expression-fn
-                           acl2-count-when-member-equal
+                           acl2::acl2-count-when-member-equal
                            vl-tokenlist-p-of-vl-match-token-fn
                            default-car
                            vl-parse-assignment-result
-                           member-equal-when-subsetp-equal
+                           acl2::subsetp-equal-member
                            default-<-1
                            default-<-2
                            default-cdr

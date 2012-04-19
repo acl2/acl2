@@ -85,11 +85,11 @@ of the form <i>filename:line:col</i>.</p>"
 
   (defund vl-location-string (loc)
     (declare (xargs :guard (vl-location-p loc)))
-    (str::cat (vl-location->filename loc)
-              ":"
-              (str::natstr (vl-location->line loc))
-              ":"
-              (str::natstr (vl-location->col loc))))
+    (cat (vl-location->filename loc)
+         ":"
+         (natstr (vl-location->line loc))
+         ":"
+         (natstr (vl-location->col loc))))
 
   (defthm stringp-of-vl-location-string
     (stringp (vl-location-string loc))
