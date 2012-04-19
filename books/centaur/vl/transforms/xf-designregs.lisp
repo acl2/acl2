@@ -29,6 +29,8 @@
 (include-book "defsort/defsort" :dir :system)
 (local (include-book "../util/arithmetic"))
 
+(local (include-book "../primitives"))
+(local (include-book "centaur/esim/esim-sexpr-support" :dir :system))
 
 (defxdoc design-regs
   :parents (transforms)
@@ -51,6 +53,8 @@ That's going to be a huge mess.</p>")
   :long "<p>At the moment we only collect <tt>vl-dreg-p</tt> objects for flops
 and latches which have been inferred.  We may wish to add support for other
 kinds of registers in the future.</p>")
+
+
 
 (defsection vl-dreg-type-from-modname
   :parents (design-regs)
@@ -621,6 +625,17 @@ vl-dreglist-emap).</p>"
 
 
 
+;; If these change, the names in the discussions and code below will need to
+;; also be updated.
+
+(local (assert! (equal (acl2::mod-state (vl-module->esim *VL-1-BIT-FLOP*))
+                       '(ACL2::S- ACL2::S+))))
+
+(local (assert! (equal (acl2::mod-state (vl-module->esim *VL-1-BIT-LATCH*))
+                       '(ACL2::S))))
+
+
+
 (defxdoc vl-dreglist-emap
   :parents (design-regs)
   :short "Map from EMOD state bits to actual registers in the design."
@@ -631,10 +646,10 @@ state bits in the Emod simulation.  For instance, if <tt>foo.bar.baz</tt> is a
 end up with 8 state bits with names like:</p>
 
 <code>
-   foo!bar!baz_inst!bit_0!BIT!S-
-   foo!bar!baz_inst!bit_0!BIT!S+
-   foo!bar!baz_inst!bit_1!BIT!S-
-   foo!bar!baz_inst!bit_1!BIT!S+
+   foo!bar!baz_inst!bit_0!S-
+   foo!bar!baz_inst!bit_0!S+
+   foo!bar!baz_inst!bit_1!S-
+   foo!bar!baz_inst!bit_1!S+
    ...
 </code>
 
@@ -642,15 +657,36 @@ end up with 8 state bits with names like:</p>
 that maps these bits to names like:</p>
 
 <code>
-   foo.bar.baz[0]:master
+   foo.bar.baz[0]:master        // for flops
    foo.bar.baz[0]:slave
    foo.bar.baz[1]:master
    foo.bar.baz[2]:master
    ...
 </code>
 
-<p>These names are like those used in the @(see state-relationship-language)
-and refer to registers that actually exist in the Verilog module.</p>
+<p>Meanwhile, if this <tt>baz</tt> is a latch instead of a flop, then there
+will only be four state bits with names:</p>
+
+<code>
+  foo!bar!baz_inst!bit_0!S
+  foo!bar!baz_inst!bit_1!S
+  foo!bar!baz_inst!bit_2!S
+  foo!bar!baz_inst!bit_3!S
+</code>
+
+<p>And here <tt>vl-dreglist-emap</tt> will bind these bits to the Verilog-style
+names:</p>
+
+<code>
+  foo.bar.baz[0]
+  foo.bar.baz[1]
+  foo.bar.baz[2]
+  foo.bar.baz[3]
+</code>
+
+<p>We originally developed emaps for a now-defunct equivalence checking tool
+named <tt>vl-equiv</tt>, but these names are still used in a signal-hunting
+tool.</p>
 
 <p>@(call vl-dreglist-emap) is given a list of @(see vl-dreg-p)s.  Ordinarily
 this list should be the list of dregs that have been collected for some module;
@@ -661,7 +697,6 @@ ordinary, non-fast association list that binds Emod-style names (symbols) such
 as <tt>|foo!bar!baz_inst!bit_0!BIT!S-|</tt> to Verilog-style names (symbols)
 such as <tt>|foo.bar.baz[0]:master|</tt>.  See @(see vl-emap-p).  The cars and
 cdrs of the map are guaranteed to be unique and non-nil.</p>")
-
 
 
 (defsection vl-dreg-emod-root
@@ -734,25 +769,24 @@ cdrs of the map are guaranteed to be unique and non-nil.</p>")
 ; (VL-DREG-FLOP-EMAP X) is given a dreg (which must have type flop) and
 ; produces a mapping from EMOD state bits to Verilog-style names.
 ;
-; The :full-s for a VL_1_BIT_FLOP looks like (BIT!S- BIT!S+)
-; because we use a *REG* module named BIT; see VL::*VL-1-BIT-FLOP-DEFM*.
+; The mod-state of a VL_1_BIT_FLOP looks like (S- S+).
 ;
-; However, the :full-s for a VL_N_BIT_FLOP for N>1 is more complex because we
+; However, the mod-state for a VL_N_BIT_FLOP for N>1 is more complex because we
 ; use a list of VL_1_BIT_FLOP instances, and in fact looks like this:
 ;
-;    ((|bit_0!BIT!S-|     |bit_0!BIT!S+)
-;     (|bit_1!BIT!S-|     |bit_1!BIT!S+)
+;    ((|bit_0!S-|     |bit_0!S+)
+;     (|bit_1!S-|     |bit_1!S+)
 ;     ...
-;     (|bit_{n-1}!BIT!S-| |bit_{n-1}!BIT!S+))
+;     (|bit_{n-1}!S-| |bit_{n-1}!S+))
 ;
 ; In either case, regard the S- bits as "master" bits, whereas the S+ bits are
 ; "slave" bits.
 ;
 ; We need to construct a mapping between names like foo.bar.baz[3]:master and
-; foo!bar!baz_inst!bit_3!BIT!S-.  To complicate this, the range of foo.bar.baz
+; foo!bar!baz_inst!bit_3!S-.  To complicate this, the range of foo.bar.baz
 ; might use indicies like [13:10] instead of [3:0], in which case we need to
-; actually map from foo.bar.baz[13]:master to foo!bar!baz_inst!bit_3!BIT!S-
-; and so on.  This is because basically when we have:
+; actually map from foo.bar.baz[13]:master to foo!bar!baz_inst!bit_3!S- and so
+; on.  This is because basically when we have:
 ;
 ;    reg [13:10] foo;
 ;    always @(posedge clk) foo <= rhs;
@@ -762,9 +796,9 @@ cdrs of the map are guaranteed to be unique and non-nil.</p>")
 ;    wire [13:10] foo;
 ;    VL_4_BIT_FLOP(foo, rhs_temp);
 ;
-; The state bits like |...!bit_3!BIT!S-| are always indexed from 0 to N-1,
-; because they are coming from the VL_4_BIT_FLOP instance.  Then, bits like
-; foo[13] are connected to the output bit q[3] of the flop.
+; The state bits like |...!bit_3!S-| are always indexed from 0 to N-1, because
+; they are coming from the VL_4_BIT_FLOP instance.  Then, bits like foo[13] are
+; connected to the output bit q[3] of the flop.
 ;
 ; We deal with the disconnect in indicies by constructing the list of Verilog
 ; style names separately from the list of Emod style names.  We then zip the
@@ -866,24 +900,24 @@ cdrs of the map are guaranteed to be unique and non-nil.</p>")
 
 
   (defconst *vl-emod-master-name-array*
-    ;; Array of pre-computed strings "!bit_0!BIT!S-" "!bit_1!BIT!S-" ... "!bit_255!BIT!S-"
+    ;; Array of pre-computed strings "!bit_0!S-" "!bit_1!S-" ... "!bit_255!S-"
     (compress1 '*vl-emod-master-name-array*
                (cons (list :HEADER
                            :DIMENSIONS (list 256)
                            :MAXIMUM-LENGTH 257
                            :DEFAULT 0
                            :NAME '*vl-emod-master-name-array*)
-                     (vl-make-name-array "!bit_" 255 "!BIT!S-"))))
+                     (vl-make-name-array "!bit_" 255 "!S-"))))
 
   (defconst *vl-emod-slave-name-array*
-    ;; Array of pre-computed strings "!bit_0!BIT!S+" "!bit_1!BIT!S+" ... "!bit_255!BIT!S+"
+    ;; Array of pre-computed strings "!bit_0!S+" "!bit_1!S+" ... "!bit_255!S+"
     (compress1 '*vl-emod-slave-name-array*
                (cons (list :HEADER
                            :DIMENSIONS (list 256)
                            :MAXIMUM-LENGTH 257
                            :DEFAULT 0
                            :NAME '*vl-emod-slave-name-array*)
-                     (vl-make-name-array "!bit_" 255 "!BIT!S+"))))
+                     (vl-make-name-array "!bit_" 255 "!S+"))))
 
   (defund vl-emod-style-flop-master-names (root n acc)
     ;; Only for multi-bit version!
@@ -894,11 +928,11 @@ cdrs of the map are guaranteed to be unique and non-nil.</p>")
         acc
       (b* ((!bit_n-1!BIT!S-
             (mbe :logic
-                 (cat "!bit_" (natstr (- n 1)) "!BIT!S-")
+                 (cat "!bit_" (natstr (- n 1)) "!S-")
                  :exec
                  (if (< n 257)
                      (aref1 '*vl-emod-master-name-array* *vl-emod-master-name-array* (- n 1))
-                   (cat "!bit_" (natstr (- n 1)) "!BIT!S-"))))
+                   (cat "!bit_" (natstr (- n 1)) "!S-"))))
            (master (intern (cat root !bit_n-1!BIT!S-) "ACL2"))
            (acc    (cons master acc)))
         (if (= n 1)
@@ -906,9 +940,9 @@ cdrs of the map are guaranteed to be unique and non-nil.</p>")
           (vl-emod-style-flop-master-names root (- n 1) acc)))))
 
   (local (assert! (equal (vl-emod-style-flop-master-names "foo" 3 nil)
-                         (list 'ACL2::|foo!bit_0!BIT!S-|
-                               'ACL2::|foo!bit_1!BIT!S-|
-                               'ACL2::|foo!bit_2!BIT!S-|))))
+                         (list 'ACL2::|foo!bit_0!S-|
+                               'ACL2::|foo!bit_1!S-|
+                               'ACL2::|foo!bit_2!S-|))))
 
   (defthm symbol-listp-of-vl-emod-style-flop-master-names
     (implies (symbol-listp acc)
@@ -930,11 +964,11 @@ cdrs of the map are guaranteed to be unique and non-nil.</p>")
         acc
       (b* ((!bit_n-1!BIT!S+
             (mbe :logic
-                 (cat "!bit_" (natstr (- n 1)) "!BIT!S+")
+                 (cat "!bit_" (natstr (- n 1)) "!S+")
                  :exec
                  (if (< n 257)
                      (aref1 '*vl-emod-slave-name-array* *vl-emod-slave-name-array* (- n 1))
-                   (cat "!bit_" (natstr (- n 1)) "!BIT!S+"))))
+                   (cat "!bit_" (natstr (- n 1)) "!S+"))))
            (slave (intern (cat root !bit_n-1!BIT!S+) "ACL2"))
            (acc   (cons slave acc)))
         (if (= n 1)
@@ -942,9 +976,9 @@ cdrs of the map are guaranteed to be unique and non-nil.</p>")
           (vl-emod-style-flop-slave-names root (- n 1) acc)))))
 
   (local (assert! (equal (vl-emod-style-flop-slave-names "foo" 3 nil)
-                         (list 'ACL2::|foo!bit_0!BIT!S+|
-                               'ACL2::|foo!bit_1!BIT!S+|
-                               'ACL2::|foo!bit_2!BIT!S+|))))
+                         (list 'ACL2::|foo!bit_0!S+|
+                               'ACL2::|foo!bit_1!S+|
+                               'ACL2::|foo!bit_2!S+|))))
 
   (defthm symbol-listp-of-vl-emod-style-flop-slave-names
     (implies (symbol-listp acc)
@@ -988,9 +1022,9 @@ cdrs of the map are guaranteed to be unique and non-nil.</p>")
          (size     (+ 1 (- high low)))
          (enames-acc
           (if (= size 1)
-              ;; Special case: just (BIT!S- and BIT!S+)
-              (list* (intern (cat eroot "!BIT!S+") "ACL2")
-                     (intern (cat eroot "!BIT!S-") "ACL2")
+              ;; Special case: just (!S- and !S+)
+              (list* (intern (cat eroot "!S+") "ACL2")
+                     (intern (cat eroot "!S-") "ACL2")
                      enames-acc)
             (let* ((enames-acc (vl-emod-style-flop-master-names eroot size enames-acc)))
               (vl-emod-style-flop-slave-names eroot size enames-acc)))))
@@ -1016,14 +1050,14 @@ cdrs of the map are guaranteed to be unique and non-nil.</p>")
             (vl-dreg-flop-emap *test-dreg* nil nil)
             (equal (mergesort (pairlis$ enames vnames))
                    (mergesort
-                    '((ACL2::|foo!bar!baz_inst!bit_3!BIT!S-| . ACL2::|foo.bar.baz[13]:master|)
-                      (ACL2::|foo!bar!baz_inst!bit_2!BIT!S-| . ACL2::|foo.bar.baz[12]:master|)
-                      (ACL2::|foo!bar!baz_inst!bit_1!BIT!S-| . ACL2::|foo.bar.baz[11]:master|)
-                      (ACL2::|foo!bar!baz_inst!bit_0!BIT!S-| . ACL2::|foo.bar.baz[10]:master|)
-                      (ACL2::|foo!bar!baz_inst!bit_3!BIT!S+| . ACL2::|foo.bar.baz[13]:slave|)
-                      (ACL2::|foo!bar!baz_inst!bit_2!BIT!S+| . ACL2::|foo.bar.baz[12]:slave|)
-                      (ACL2::|foo!bar!baz_inst!bit_1!BIT!S+| . ACL2::|foo.bar.baz[11]:slave|)
-                      (ACL2::|foo!bar!baz_inst!bit_0!BIT!S+|
+                    '((ACL2::|foo!bar!baz_inst!bit_3!S-| . ACL2::|foo.bar.baz[13]:master|)
+                      (ACL2::|foo!bar!baz_inst!bit_2!S-| . ACL2::|foo.bar.baz[12]:master|)
+                      (ACL2::|foo!bar!baz_inst!bit_1!S-| . ACL2::|foo.bar.baz[11]:master|)
+                      (ACL2::|foo!bar!baz_inst!bit_0!S-| . ACL2::|foo.bar.baz[10]:master|)
+                      (ACL2::|foo!bar!baz_inst!bit_3!S+| . ACL2::|foo.bar.baz[13]:slave|)
+                      (ACL2::|foo!bar!baz_inst!bit_2!S+| . ACL2::|foo.bar.baz[12]:slave|)
+                      (ACL2::|foo!bar!baz_inst!bit_1!S+| . ACL2::|foo.bar.baz[11]:slave|)
+                      (ACL2::|foo!bar!baz_inst!bit_0!S+|
                              . ACL2::|foo.bar.baz[10]:slave|)))))))
 
   (local (defconst *test-dreg2*
@@ -1044,8 +1078,8 @@ cdrs of the map are guaranteed to be unique and non-nil.</p>")
             (vl-dreg-flop-emap *test-dreg2* nil nil)
             (equal (mergesort (pairlis$ enames vnames))
                    (mergesort
-                    '((ACL2::|foo!bar!baz_inst!BIT!S+| . ACL2::|foo.bar.baz[0]:slave|)
-                      (ACL2::|foo!bar!baz_inst!BIT!S-| . ACL2::|foo.bar.baz[0]:master|)))))))
+                    '((ACL2::|foo!bar!baz_inst!S+| . ACL2::|foo.bar.baz[0]:slave|)
+                      (ACL2::|foo!bar!baz_inst!S-| . ACL2::|foo.bar.baz[0]:master|)))))))
 
   (defthm vl-dreg-flop-emap-basics
     (implies (and (force (vl-dreg-p x))
@@ -1086,19 +1120,18 @@ cdrs of the map are guaranteed to be unique and non-nil.</p>")
 ; since there aren't master/slave pairs of bits for each latch bit, but rather
 ; just a single bit.
 ;
-; For a VL_1_BIT_LATCH, the lone state bit is called INST!S.
+; For a VL_1_BIT_LATCH, the lone state bit is called S.
 ;
 ; For larger N, VL_N_BIT_LATCH has the following state bits:
 ;
-;  |bit_0!INST!S|
-;  |bit_1!INST!S|
+;  |bit_0!S|
+;  |bit_1!S|
 ;   ...
-;  |bit_{n-1}!INST!S|
+;  |bit_{n-1}!S|
 ;
 ; Again we have a potential disconnect between the Verilog indices and the
 ; internal state bit indices caused by non-standard ranges like [13:10], and
 ; we handle this in the same way as for flops.
-
 
   (defconst *vl-verilog-latch-name-array*
     ;; Array of pre-computed strings "[0]", "[1]", ..., "[255]"
@@ -1147,14 +1180,14 @@ cdrs of the map are guaranteed to be unique and non-nil.</p>")
 
 
   (defconst *vl-emod-latch-name-array*
-    ;; Array of pre-computed strings "!bit_0!INST!S" "!bit_1!INST!S" ... "!bit_255!INST!S"
+    ;; Array of pre-computed strings "!bit_0!S" "!bit_1!S" ... "!bit_255!S"
     (compress1 '*vl-emod-latch-name-array*
                (cons (list :HEADER
                            :DIMENSIONS (list 256)
                            :MAXIMUM-LENGTH 257
                            :DEFAULT 0
                            :NAME '*vl-emod-latch-name-array*)
-                     (vl-make-name-array "!bit_" 255 "!INST!S"))))
+                     (vl-make-name-array "!bit_" 255 "!S"))))
 
   (defund vl-emod-style-latch-names (root n acc)
     ;; Only for multi-bit version!
@@ -1163,24 +1196,24 @@ cdrs of the map are guaranteed to be unique and non-nil.</p>")
     (if (mbe :logic (zp n) :exec nil)
         ;; Stupid termination hack
         acc
-      (b* ((!bit_n-1!INST!S
+      (b* ((!bit_n-1!S
             (mbe :logic
-                 (cat "!bit_" (natstr (- n 1)) "!INST!S")
+                 (cat "!bit_" (natstr (- n 1)) "!S")
                  :exec
                  (if (< n 257)
                      (aref1 '*vl-emod-latch-name-array* *vl-emod-latch-name-array*
                             (- n 1))
-                   (cat "!bit_" (natstr (- n 1))  "!INST!S"))))
-           (sym  (intern (cat root !bit_n-1!INST!S) "ACL2"))
+                   (cat "!bit_" (natstr (- n 1))  "!S"))))
+           (sym  (intern (cat root !bit_n-1!S) "ACL2"))
            (acc  (cons sym acc)))
         (if (= n 1)
             acc
           (vl-emod-style-latch-names root (- n 1) acc)))))
 
   (local (assert! (equal (vl-emod-style-latch-names "foo" 3 nil)
-                         (list 'ACL2::|foo!bit_0!INST!S|
-                               'ACL2::|foo!bit_1!INST!S|
-                               'ACL2::|foo!bit_2!INST!S|))))
+                         (list 'ACL2::|foo!bit_0!S|
+                               'ACL2::|foo!bit_1!S|
+                               'ACL2::|foo!bit_2!S|))))
 
   (defthm symbol-listp-of-vl-emod-style-latch-names
     (implies (symbol-listp acc)
@@ -1221,8 +1254,8 @@ cdrs of the map are guaranteed to be unique and non-nil.</p>")
          (eroot    (reverse (coerce (vl-dreg-emod-root x nil) 'string)))
          (size     (+ 1 (- high low)))
          (enames-acc (if (= size 1)
-                         ;; Special case: just INST!S
-                         (cons (intern (cat eroot "!INST!S") "ACL2")
+                         ;; Special case: just !S
+                         (cons (intern (cat eroot "!S") "ACL2")
                                enames-acc)
                        (vl-emod-style-latch-names eroot size enames-acc))))
 
@@ -1247,10 +1280,10 @@ cdrs of the map are guaranteed to be unique and non-nil.</p>")
             (vl-dreg-latch-emap *test-dreg* nil nil)
             (equal (mergesort (pairlis$ enames vnames))
                    (mergesort
-                    '((ACL2::|foo!bar!baz_inst!bit_3!INST!S| . ACL2::|foo.bar.baz[13]|)
-                      (ACL2::|foo!bar!baz_inst!bit_2!INST!S| . ACL2::|foo.bar.baz[12]|)
-                      (ACL2::|foo!bar!baz_inst!bit_1!INST!S| . ACL2::|foo.bar.baz[11]|)
-                      (ACL2::|foo!bar!baz_inst!bit_0!INST!S| . ACL2::|foo.bar.baz[10]|)))))))
+                    '((ACL2::|foo!bar!baz_inst!bit_3!S| . ACL2::|foo.bar.baz[13]|)
+                      (ACL2::|foo!bar!baz_inst!bit_2!S| . ACL2::|foo.bar.baz[12]|)
+                      (ACL2::|foo!bar!baz_inst!bit_1!S| . ACL2::|foo.bar.baz[11]|)
+                      (ACL2::|foo!bar!baz_inst!bit_0!S| . ACL2::|foo.bar.baz[10]|)))))))
 
   (defthm vl-dreg-latch-emap-basics
     (implies (and (force (vl-dreg-p x))
