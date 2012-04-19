@@ -1833,6 +1833,9 @@
 
 (defun chk-acceptable-defpkg (name form defpkg-book-path hidden-p ctx w state)
 
+; Warning: Keep this in sync with the redefinition of this function in
+; books/misc/redef-pkg.lisp.
+
 ; We return an error triple.  The non-error value is either 'redundant or a
 ; triple (tform value . package-entry), where tform and value are a translated
 ; form and its value, and either package-entry is nil in the case that no
