@@ -513,12 +513,14 @@ books/centaur:
 4v-sexpr
 aig
 bitops
+centaur-logo.jpg
 doc.acl2
 doc.lisp
 esim
 gl
 misc
-README
+README.html
+tutorial
 ubdds
 # unversioned-files-extra.txt
 vcd
@@ -632,6 +634,7 @@ g-binary-mult.lisp
 g-code-char.lisp
 g-coerce.lisp
 g-cons.lisp
+g-make-fast-alist.lisp
 general-objects.lisp
 general-object-thms.lisp
 generic-geval.lisp
@@ -728,6 +731,14 @@ vecs-ints.lisp
 witness-cp.acl2
 witness-cp.lisp
 
+centaur/tutorial:
+acl2-customization.lsp
+alu16-book.lisp
+alu16.lsp
+alu16.v
+cert.acl2
+intro.lisp
+
 books/centaur/ubdds:
 cert.acl2
 core.lisp
@@ -786,6 +797,7 @@ primitives
 primitives.lisp
 README
 talks
+toe
 top.lisp
 transforms
 translation.lisp
@@ -886,12 +898,12 @@ clean-concats.lisp
 comment-writer.lisp
 context.lisp
 ctxexprs.lisp
-emodwire.lisp
 expr-building.lisp
 expr-slice.lisp
 expr-tools.lisp
 filter.lisp
 find-item.lisp
+find-module.lisp
 fmt.lisp
 hid-tools.lisp
 hierarchy.lisp
@@ -900,8 +912,9 @@ lvalues-mentioning.lisp
 modname-sets.lisp
 modnamespace.lisp
 namefactory.lisp
-port-bits.lisp
 port-tools.lisp
+print-context.lisp
+print-warnings.lisp
 ram-tools.lisp
 range-tools.lisp
 remove-bad.lisp
@@ -909,7 +922,6 @@ rvalues.lisp
 stmt-tools.lisp
 warnings.lisp
 welltyped.lisp
-wirealist.lisp
 writer.lisp
 
 books/centaur/vl/primitives:
@@ -937,6 +949,18 @@ translator.pdf
 translator.tex
 vl.png
 vl.svg
+
+books/centaur/vl/toe:
+acl2-customization.lsp
+cert.acl2
+toe-add-res-modules.lisp
+toe-add-zdrivers.lisp
+toe-emodwire.lisp
+toe-eocc-allnames.lisp
+toe-preliminary.lisp
+toe-top.lisp
+toe-verilogify.lisp
+toe-wirealist.lisp
 
 books/centaur/vl/transforms:
 acl2-customization.lsp
@@ -1006,6 +1030,7 @@ cw-unformatted.lisp
 defs.lisp
 defwellformed.lisp
 echars.lisp
+esim-lemmas.lisp
 gc.lisp
 intersectp-equal.lisp
 namedb.lisp
