@@ -2485,7 +2485,11 @@ To avoid the following break and get only the above warning:~%  ~a~%"
          (hl-check-alist-for-serialize-restore (cdr alist) hs))
         ((not (hl-hspace-normedp (caar alist) hs))
          (error "Can't restore an alist from the serialized file since it has ~
-                 a key that was not re-honsed."))
+                 a key that was not re-honsed.~%  ~
+                  - Problematic key: ~S~%  ~
+                  - Tail of alist: ~S~%"
+                (caar alist)
+                alist))
         (t
          (hl-check-alist-for-serialize-restore (cdr alist) hs))))
 
