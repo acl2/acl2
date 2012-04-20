@@ -52,6 +52,11 @@
 
 ; End of Section "To Consider".
 
+; Parallelism wart: cleanup the implementation and documentation of deflock.
+
+; Parallelism wart: in the event that the just mentioned cleanup of deflock is
+; not finished, insert the script that Kaufmann sent Rager in email.
+
 (defdoc deflock
 
   ":Doc-Section ACL2::Parallel-programming
@@ -78,12 +83,18 @@
   in the body of a ~il[guard]-verified or ~c[:]~ilc[program] mode function.
   (To get around that restriction, ~pl[top-level].)
 
-  In the raw Lisp version of the code, the newly defined macro uses a lock,
-  with the given ~c[*symbol*] as its name.  This lock guarantees that for any
-  two forms that are each in the scope of a call of
+  The raw Lisp version of the macro that ~c[deflock] defines uses a lock, with
+  the given ~c[*symbol*] as its name.  This lock guarantees that for any two
+  forms that are each in the scope of a call of
   ~c[with-<modified-lock-symbol>], the forms do not execute concurrently.
+  Since only the raw Lisp version of ~c[deflock] can define the macro that
+  actually provides mutual exclusion guarantees, to get these guarentees, as a
+  first option, the user can load the form that calls ~c[deflock] as part of a
+  compiled file (perhaps in a book, ~pl[certify-book]).  Alternatively, the
+  user can ~c[:q] into raw Lisp, issue the call of ~c[deflock], and then
+  re-enter the loop with ~c[(lp)].
 
-  An example script is as follows.
+  An example script that could be included in a book is as follows.
 
   ~bv[]
   (deflock *my-cw-lock*)
@@ -1982,9 +1993,6 @@
 
 #+(or acl2-loop-only (not acl2-par))
 (defmacro spec-mv-let (bindings computation body)
-
-; Parallelism wart: add pointers to this doc topic inside other parallelism doc
-; topics.
 
   ":Doc-Section Parallel-programming
 

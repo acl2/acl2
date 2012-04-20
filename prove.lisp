@@ -1197,6 +1197,21 @@
           (t ttree))))
 
 #+acl2-par
+(defun save-acl2p-checkpoint-for-summary (cl-id prettyified-clause state)
+
+; We almost note that we are changing the global state of the program by
+; returning a modified state.  However, we manually ensure that this global
+; change is thread-safe by calling with-acl2p-checkpoint-saving-lock, and so
+; instead, we give ourselves the Okay to call f-put-global@par.
+
+  (declare (ignorable cl-id prettyified-clause state))
+  (with-acl2p-checkpoint-saving-lock
+   (f-put-global@par 'acl2p-checkpoints-for-summary
+                     (cons (cons cl-id prettyified-clause)
+                           (f-get-global 'acl2p-checkpoints-for-summary state))
+                     state)))
+
+#+acl2-par
 (defun find-the-first-checkpoint (h checkpoint-processors)
 
 ; "H" is the history reversed, which really means h is in the order that the
@@ -1238,12 +1253,12 @@
         cl))
    (t
     (let* ((hist-entry 
-          (find-the-first-checkpoint
-                (reverse hist) 
-                (f-get-global 'checkpoint-processors state)))
+            (find-the-first-checkpoint
+             (reverse hist) 
+             (f-get-global 'checkpoint-processors state)))
 
-         (checkpoint-clause 
-          (or (access history-entry hist-entry :clause)
+           (checkpoint-clause 
+            (or (access history-entry hist-entry :clause)
 
 ; We should be able to add an assertion that, if the hist-entry is nil (and
 ; thus, the :clause field of hist-entry is also nil), cl always has the same
@@ -1251,19 +1266,22 @@
 ; have access to the original conjecture in this function, we avoid such an
 ; assertion.
 
-              cl))
-         (cl-id (access history-entry hist-entry :cl-id))
-         (cl-id (if cl-id cl-id *initial-clause-id*))
-         (forcing-round (access clause-id cl-id :forcing-round))
-         (old-pspv-pool-lst
-          (pool-lst (cdr (access prove-spec-var pspv :pool)))))
-    (with-output-lock
-     (progn$
-       (cw "~%~%([ A key ACL2(p) checkpoint:~%~%~s0~%"
-           (string-for-tilde-@-clause-id-phrase cl-id))
-       (cw "~x0" (prettyify-clause checkpoint-clause 
-                                 (let*-abstractionp state) 
-                                 wrld))
+                cl))
+           (cl-id (access history-entry hist-entry :cl-id))
+           (cl-id (if cl-id cl-id *initial-clause-id*))
+           (forcing-round (access clause-id cl-id :forcing-round))
+           (old-pspv-pool-lst
+            (pool-lst (cdr (access prove-spec-var pspv :pool))))
+           (prettyified-clause (prettyify-clause checkpoint-clause 
+                                                 (let*-abstractionp state) 
+                                                 wrld)))
+      (prog2$
+       (save-acl2p-checkpoint-for-summary cl-id prettyified-clause state)
+       (with-output-lock
+        (progn$
+         (cw "~%~%([ A key ACL2(p) checkpoint:~%~%~s0~%"
+             (string-for-tilde-@-clause-id-phrase cl-id))
+         (cw "~x0" prettyified-clause)
 
 ; Parallelism no-fix: we are encountering a problem that we've known about from
 ; within the first few months of looking at parallelizing the waterfall.  When
@@ -1285,15 +1303,15 @@
 ; (thm (equal (append x (append y z)) (append (append x y) z))
 ;      :hints (("Goal" :do-not-induct t)))
 
-       (cw "~%~%The above subgoal may cause a goal to be pushed for proof by ~
+         (cw "~%~%The above subgoal may cause a goal to be pushed for proof by ~
             induction.  The pushed goal's new name might be ~@0.  Note that ~
             we may instead decide (either now or later) to prove the original ~
             conjecture by induction.  Also note that if a hint indicates that ~
             this subgoal or the original conjecture should not be proved by ~
             induction, the proof attempt will halt.~%~%])~%~%"
-           (tilde-@-pool-name-phrase
-            forcing-round
-            old-pspv-pool-lst))))))))
+             (tilde-@-pool-name-phrase
+              forcing-round
+              old-pspv-pool-lst)))))))))
 
 (defun@par push-clause (cl hist pspv wrld state)
 
@@ -7723,7 +7741,6 @@
         (mv-let 
          (first-half-clauses second-half-clauses len-first-half)
          (halves-with-length clauses)
-
          (spec-mv-let 
 
 ; Here, we perform the speculative call of waterfall1-lst@par, which is the

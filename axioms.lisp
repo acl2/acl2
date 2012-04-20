@@ -27100,6 +27100,7 @@
                                 "(r)"
                                 #+(and mcl (not ccl))
                                 "(mcl)"))
+    (acl2p-checkpoints-for-summary . nil)
     (axiomsp . nil)
     (bddnotes . nil)
     (certify-book-info .

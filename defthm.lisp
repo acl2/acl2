@@ -13935,6 +13935,8 @@
          (ld-skip-proofsp (ld-skip-proofsp state)))
      (pprogn
       (warn-on-inappropriate-defun-mode ld-skip-proofsp event-form ctx state)
+      #+acl2-par
+      (erase-acl2p-checkpoints-for-summary state)
       (with-waterfall-parallelism-timings
        name
        (er-progn

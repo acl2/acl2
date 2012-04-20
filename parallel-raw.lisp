@@ -378,6 +378,9 @@
 ; prompt after entering a raw Lisp break (using
 ; *reset-parallelism-variables*).
 
+; This function is not to be confused with reset-future-parallelism-variables
+; (although it is similar in nature).
+
 ; (a) Kill all worker threads.
 
   (send-die-to-all-except-initial-threads)
@@ -1380,7 +1383,7 @@
   (setf *future-queue-length-history* 
 
 ; Note that this setf isn't thread safe, but if we lose one entry in the
-; history, we don't really care.
+; history, we don't really care -- it's just a debugging tool anyway.
 
         (cons (future-queue-length)
               *future-queue-length-history*))

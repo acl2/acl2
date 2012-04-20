@@ -202,6 +202,21 @@
 ; barrier, because there will always be only one thread waiting.
 
 (defstruct barrier
+
+; A barrier is a hybrid between a semaphore and a condition variable.  What we
+; need is something that once it's signaled once, any thread that waits on it
+; will be allowed to proceed.  
+
+; We could elaborate upon how it's the similar to and different from semaphores
+; and condition variables, but we instead rely upon our simple specification
+; and rely upon the reader's knowledge of semaphores and condition variables to
+; understand how our specification can not be met by either.
+
+; Our implementation of barriers also has the extra property that, a little bit
+; after the barrier is signaled (technically, after all CPU core caches
+; synchronize their value for variable barrier-value), any thread that waits on
+; the barrier will not have to obtain the lock to proceed past the barrier.
+
   (value nil)
   (lock (make-lock))
   (wait-count 0)
@@ -229,8 +244,6 @@
 ; There has to be another test after holding the lock.
       (when (not (barrier-value barrier))
         (wait-on-semaphore (barrier-sem barrier))))))
-
-;(load "/u/ragerdl/r/pacl2/futures/futures-st.lisp")
 
 (defstruct mt-future
   (index nil)
@@ -312,7 +325,6 @@
 (defvar *idle-resumptive-core* (make-semaphore))
 (defvar *threads-spawned* 0)
 
-
 (define-atomically-modifiable-counter *unassigned-and-active-future-count*
 
 ; We treat the initial thread as an active future.
@@ -354,6 +366,9 @@
   (setf *future-queue-length-history* nil))
 
 (defun reset-future-parallelism-variables ()
+
+; This function is not to be confused with reset-parallelism-variables
+; (although it is similar in nature).
 
 ; Parallelism wart: some relevant variables may be unintentionally omitted from
 ; this reset.

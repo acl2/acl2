@@ -3301,7 +3301,10 @@
                     state))))
                (t state))))
        (t ; no checkpoints; aborted
-        (fms "*** Note: No checkpoints to print. ***~|"
+        (fms #-acl2-par
+             "*** Note: No checkpoints to print. ***~|"
+             #+acl2-par
+             "*** Note: No checkpoints from gag-mode to print. ***~|"
              nil chan state nil)))))
    (t ; no checkpoints; proof never started
     state)))
@@ -3323,8 +3326,112 @@
          (pprogn (erase-gag-state state)
                  (print-gag-state1 gag-state state)))))
 
+#+acl2-par
+(defun clause-id-is-top-level (cl-id)
+  (and (null (access clause-id cl-id :pool-lst))
+       (equal (access clause-id cl-id :forcing-round) 0)))
+
+#+acl2-par
+(defun clause-id-is-induction-round (cl-id)
+  (and (access clause-id cl-id :pool-lst)
+       (equal (access clause-id cl-id :forcing-round) 0)))
+
+#+acl2-par
+(defun clause-id-is-forcing-round (cl-id)
+
+; Note that we do not have a recognizer for inductions that occur while
+; forcing.
+
+  (not (equal (access clause-id cl-id :forcing-round) 0)))
+
+#+acl2-par
+(defun print-acl2p-checkpoints1 (checkpoints top-level-banner-printed
+                                             induction-banner-printed
+                                             forcing-banner-printed)
+  (declare (ignorable top-level-banner-printed induction-banner-printed
+                      forcing-banner-printed))
+  (cond 
+   ((atom checkpoints)
+    nil)
+   (t (let* ((cl-id (caar checkpoints))
+             (prettyified-clause (cdar checkpoints))
+             (top-level-banner-printed
+              (or top-level-banner-printed
+                  (if (and (not top-level-banner-printed) 
+                           (clause-id-is-top-level cl-id))
+                      (prog2$ (cw "~%*** Key ACL2(p) checkpoint[s] at the ~
+                                   top-level: ***~%")
+                              t)
+                    top-level-banner-printed)))
+             (induction-banner-printed
+              (or induction-banner-printed
+                  (if (and (not induction-banner-printed) 
+                           (clause-id-is-induction-round cl-id))
+                      (prog2$ (cw "~%*** Key ACL2(p) checkpoint[s] under a ~
+                                   top-level induction: ***~%")
+                              t)
+                    induction-banner-printed)))
+
+             (forcing-banner-printed
+              (or forcing-banner-printed
+                  (if (and (not forcing-banner-printed) 
+                           (clause-id-is-forcing-round cl-id))
+                      (prog2$ (cw "~%*** Key ACL2(p) checkpoint[s] under a ~
+                                   forcing round (including any from ~
+                                   induction): ***~%")
+                              t)
+                    forcing-banner-printed))))                 
+        (progn$ (cw "~%~s0~%"
+                    (string-for-tilde-@-clause-id-phrase cl-id))
+                (cw "~x0~%" prettyified-clause)
+                (print-acl2p-checkpoints1 (cdr checkpoints)
+                                          top-level-banner-printed
+                                          induction-banner-printed
+                                          forcing-banner-printed))))))
+
+#+acl2-par
+(deflock *acl2p-checkpoint-saving-lock*)
+
+#+acl2-par
+(defun erase-acl2p-checkpoints-for-summary (state)
+  (with-acl2p-checkpoint-saving-lock
+   (f-put-global 'acl2p-checkpoints-for-summary nil state)))
+
+#+acl2-par
+(defun print-acl2p-checkpoints (state)
+  (with-acl2p-checkpoint-saving-lock
+
+; Technically, this lock acquisition is unnecessary, because we only print
+; acl2p checkpoints after we have finished the waterfall (ACL2(p) is operating
+; with only a single thread at that point).  However, we go ahead and do it
+; anyway, as an example of good programming practice.
+
+   (prog2$
+    (if (f-get-global 'waterfall-parallelism state)
+        (prog2$
+         (cw "~%~%Printing the key ACL2(p) checkpoints that were encountered ~
+            during the proof attempt (and pushed for induction or ~
+            sub-induction).  Note that some of these checkpoints may have ~
+            been later proven by induction or sub-induction.  Thus, the user ~
+            must decide for themselves which of these checkpoints are ~
+            relevant to debugging their proof.~%~%")
+         (print-acl2p-checkpoints1 
+          (reverse (f-get-global 'acl2p-checkpoints-for-summary
+                                 state))
+          nil nil nil))
+      nil)
+  
+; At first we followed the precedent set by erase-gag-state and tried only
+; clearing the set of ACL2(p) checkpoints to print whenever this function is
+; called.  However, we noticed that succesful proof attempts then do not clear
+; the saved checkpoints.  As such, we also clear the checkpoints in defthm-fn1.
+  
+    (erase-acl2p-checkpoints-for-summary state))))
+
 (defun print-failure (ctx state)
   (pprogn (print-gag-state state)
+          #+acl2-par
+          (print-acl2p-checkpoints state)
           (io? error nil state
                (ctx)
                (let ((channel (proofs-co state)))
