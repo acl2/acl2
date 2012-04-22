@@ -73,11 +73,11 @@
 
 (defmacro without-interrupts (&rest forms)
 
-; This macro prevents interrupting evaluation of any of the indicated forms in
-; a parallel lisp.  In a non-parallel environment (#-(or ccl sb-thread)),
-; we simply evaluate the forms.  This behavior takes priority over any
-; enclosing call of with-interrupts.  Since we do not have a good use case for
-; providing with-interrupts, we omit it from this interface.
+; This macro prevents interrupting evaluation (including throws, e.g., as done
+; in support of por) of any of the indicated forms in a parallel lisp.  In a
+; non-parallel environment, we simply evaluate the forms.  This behavior takes
+; priority over any enclosing call of with-interrupts.  Since we do not have a
+; good use case for providing with-interrupts, we omit it from this interface.
 
   #+ccl
   `(ccl:without-interrupts ,@forms)
@@ -222,7 +222,13 @@
 ; documentation, Lispworks returns the new value.
 
   #+ccl
-  `(without-interrupts (dotimes (i ,count) (ccl::atomic-incf ,counter)))
+  `(without-interrupts
+
+; Admittedly, the following loop can be viewed as not being "atomic".  But the
+; important thing is that two threads don't increment from the same value, and
+; the use of atomic-incf guarantees that.
+
+    (dotimes (i ,count) (ccl::atomic-incf ,counter)))
   #+sb-thread
 ;  `(+ (sb-ext:atomic-incf 
 ;       (atomically-modifiable-counter-val ,counter) ,count)
@@ -274,6 +280,8 @@
 
 ; See also deflock.
 
+; If lock-name is supplied, it must be nil or a string.
+
 ; Even though CCL nearly always uses a FIFO for threads blocking on a lock,
 ; it does not guarantee so: no such promise is made by the CCL
 ; documentation or implementor (in fact, we are aware of a race condition that
@@ -296,31 +304,6 @@
 ; We return nil in the uni-threaded case in order to stay in sync with lockp.
 
   nil)
-
-(defmacro deflock (lock-symbol)
-
-; Deflock defines what some Lisps call a "recursive lock", namely a lock that
-; can be grabbed more than once by the same thread, but such that if a thread
-; outside the owner tries to grab it, that thread will block.  In addition to
-; defining a lock, this macro also defines a macro that uses the lock to
-; provide mutual-exclusion for a given list of operations.  This macro has the
-; name with-<modified-lock-name>, where <modified-lock-name> is the given
-; lock-symbol without the leading and trailing * characters.
-
-; Note that if lock-symbol is already bound, then deflock will not re-bind
-; lock-symbol.
-
-  (let* ((name (symbol-name lock-symbol))
-         (macro-symbol (intern 
-                        (concatenate 'string
-                                     "WITH-"
-                                     (subseq name 1 (1- (length name))))
-                        "ACL2")))
-    `(progn
-       (defvar ,lock-symbol
-         (make-lock (symbol-name ',lock-symbol)))
-       (defmacro ,macro-symbol (&rest args)
-         (list* 'with-lock ',lock-symbol args)))))
 
 (defmacro reset-lock (bound-symbol)
 
@@ -462,6 +445,8 @@
 ; There is no implicit progn for the body argument.  This is different from
 ; sb-sys:with-deadline, but we figure the simplicity is more valuable than
 ; randomly passing in a :timeout value.
+
+; Note that if there is a timeout, the return value is unspecified.
 
   #+sb-thread
   `(if ,timeout
@@ -991,6 +976,13 @@
 
 #+(or ccl sbcl lispworks)
 (defun initial-threads1 (threads)
+
+; Parallelism wart: this function is intended to return all threads not under
+; ACL2(p) control.  As currently implemented, it depends on exact names of
+; initial threads, and it doesn't comprehend threads created by the system
+; after startup (e.g. for parallel garbage collection or alarm clocks, if those
+; ever exist).
+
   (cond ((endp threads)
          nil)
         (#+ccl
@@ -1041,8 +1033,8 @@
                 "Reset")
          (all-given-threads-are-reset (cdr threads)))))
 
- (defun all-threads-except-initial-threads-are-dead-or-reset ()
-   (format t "All-threads is ~s~%" (all-threads))
+(defun all-threads-except-initial-threads-are-dead-or-reset ()
+  (format t "All-threads is ~s~%" (all-threads))
 
 ; CCL has a bug that if you try to throw a thread that is "reset" ("reset" is a
 ; CCL term), it ignores the throw (and the thread never expires).  As such, we
@@ -1110,6 +1102,11 @@
 
 (defun core-count-raw (&optional (ctx nil) default)
 
+; Parallelism wart: document in unsupported-parallelism-features that
+; core-count is hardcoded to 16 in sbcl and lispworks.  More generally, add a
+; disclaimer that sbcl and lispworks support are not expected to be nearly as
+; robust as ccl support.
+
 ; If ctx is supplied, then we cause an error using the given ctx.  Otherwise we
 ; return a suitable default value (see below).
 
@@ -1142,7 +1139,7 @@
 ; to what we think the system will be able to process in a reasonable amount of
 ; time.  Suppose we have 8 CPU cores.  This means that there can be 8 active
 ; work consumers, and that generally not many more than 24 pieces of
-; paralellism work are stored in the *work-queue* to be processed.  This
+; parallelism work are stored in the *work-queue* to be processed.  This
 ; provides us the guarantee that if all worker threads were immediately to
 ; finish their piece of parallelism work, that each of them would immediately
 ; be able to grab another piece from the work queue.
@@ -1155,6 +1152,10 @@
   (* 4 *core-count*))
 
 (defconstant *max-idle-thread-count* 
+
+; Note that although this is a defconstant and
+; *unassigned-and-active-work-count-limit* is a defvar, David Rager says that
+; there's no particular reason he recalls for this distinction.
 
 ; We don't want to spawn more worker threads (which are initially idle) when we
 ; already have sufficiently many idle worker threads.  We use

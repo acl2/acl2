@@ -6113,7 +6113,7 @@
                                  state-vars)))
 
 ; The next mv-let is spiritually just a continuation of the trans-er-let*
-; above, as though to say "and let  test-term be (translate11 (list ...)...)"
+; above, as though to say "and let test-term be (translate11 (list ...)...)"
 ; except that we do not want to touch the current setting of bindings nor
 ; do we wish to permit the current bindings to play a role in the translation
 ; of the test.

@@ -26645,6 +26645,7 @@
     serialize-read-fn serialize-write-fn
     read-object-suppress
 
+    assign-lock
   ))
 
 (defconst *primitive-macros-with-raw-code*
@@ -26733,6 +26734,7 @@
     warn-about-parallelism-hazard ; for #+acl2-par
     state-global-let* ; raw Lisp version for efficiency
     with-reckless-readtable
+    with-lock
     ))
 
 (defmacro with-live-state (form)
@@ -29191,7 +29193,9 @@
   For a discussion of formatted printing, ~pl[fmt].
 
   To control ACL2 abbreviation (``evisceration'') of objects before printing
-  them, ~pl[set-evisc-tuple], ~pl[without-evisc], and ~pl[set-iprint].~/
+  them, ~pl[set-evisc-tuple], ~pl[without-evisc], and ~pl[set-iprint].
+
+  To redirect output to a file, ~pl[output-to-file].~/
 
   ACL2 supports input and output facilities equivalent to a subset of those
   found in Common Lisp.  ACL2 does not support random access to files or
@@ -29343,6 +29347,61 @@
   Finally, we note that the distributed book ~c[books/misc/file-io.lisp]
   contains useful file io functions whose definitions illustrate some of the
   features described above.~/")
+
+(defdoc output-to-file
+  ":Doc-Section IO
+
+  redirecting output to a file~/
+
+  For a general discussion of ACL2 input/output and of the ACL2 read-eval-print
+  loop, ~pl[io] and ~pl[ld] (respectively).  Here we use an example to
+  illustrate how to use some of the options provided by ~c[ld] to redirect ACL2
+  output to a file, other than the printing of the prompt (which continues to
+  go to the terminal).
+
+  There are two ~c[ld] specials that control output from the ~c[ld] command:
+  ~ilc[proofs-co] for proof output and ~ilc[standard-co] for other output.  The
+  following example shows how to use these to redirect output to a file
+  ~c[\"tmp.out\"].  The following command opens a character output channel to
+  to the file ~c[\"tmp.out\"] and redirects proof output to that channel, i.e.,
+  to file ~c[\"tmp.out\"].
+  ~bv[]
+  (mv-let (chan state)
+          (open-output-channel \"tmp.out\" :character state)
+          (set-proofs-co chan state))
+  ~ev[]
+  Next, we redirect standard output to that same channel.
+  ~bv[]
+  (set-standard-co (proofs-co state) state)
+  ~ev[]
+  Now we can load an input file, in this case file ~c[\"tmp.lisp\"], and output
+  will be redirected to file ~c[\"tmp.out\"].  (The use of
+  ~c[:ld-pre-eval-print t] is optional; ~pl[ld].)
+  ~bv[]
+  (ld \"tmp.lisp\" :ld-pre-eval-print t)
+  ~ev[]
+  Having completed our load operation, we restore both proof output and
+  standard output to the terminal, as follows.
+  ~bv[]
+  (set-standard-co *standard-co* state)
+  (close-output-channel (proofs-co state) state)
+  (set-proofs-co *standard-co* state)
+  ~ev[]
+
+  The following variant of the above example shows how to redirect output as
+  above except without changing the global settings of the two ~ilc[ld]
+  specials, ~ilc[proofs-co] and ~ilc[standard-co].  This approach uses
+  a notion of ``global variables'' stored in the ACL2 ~il[state]; ~pl[assign]
+  and ~pl[@].
+  ~bv[]
+  (mv-let (chan state)
+          (open-output-channel \"tmp.out\" :character state)
+          (assign tmp-channel chan))
+  (ld \"tmp.lisp\" :ld-pre-eval-print t
+                 :proofs-co (@ tmp-channel)
+                 :standard-co (@ tmp-channel))
+  (close-output-channel (@ tmp-channel) state)
+  ~ev[]~/~/")
 
 (defdoc *standard-co*
   ":Doc-Section IO
@@ -31560,37 +31619,83 @@
               'string)
     (subseq-list seq start (or end (length seq)))))
 
-#+(or (not acl2-par) acl2-loop-only)
+(defun lock-symbol-name-p (lock-symbol)
+  (declare (xargs :guard t))
+  (and (symbolp lock-symbol)
+       (let* ((name (symbol-name lock-symbol))
+              (len (length name)))
+         (and (> len 2)
+              (eql (char name 0) #\*)
+              (eql (char name (1- len)) #\*)))))
+
+(defun assign-lock (key)
+  (declare (xargs :guard (lock-symbol-name-p key)))
+  #-(and (not acl2-loop-only) acl2-par)
+  (declare (ignore key))
+  #+(and (not acl2-loop-only) acl2-par)
+  (cond ((boundp key)
+         (when (not (lockp (symbol-value key)))
+           (error "Raw Lisp variable ~s is already bound to a value ~
+                   that~%does not satisfy lockp."
+                  key)))
+        (t (proclaim (list 'special key))
+           (setf (symbol-value key)
+                 (make-lock (symbol-name key)))))
+  t)
+
+(table lock-table nil nil
+       :guard
+       (and (lock-symbol-name-p key)
+            (assign-lock key)))
+
+#+(or acl2-loop-only (not acl2-par))
+(defmacro with-lock (bound-symbol &rest forms)
+  (declare (xargs :guard (lock-symbol-name-p bound-symbol)))
+  `(translate-and-test
+    (lambda (x)
+      (prog2$
+       x ; x is not otherwise used
+       (or (consp (assoc-eq ',bound-symbol (table-alist 'lock-table world)))
+           (msg "The variable ~x0 has not been defined as a lock."
+                ',bound-symbol))))
+    (progn$ ,@forms)))
+
 (defmacro deflock (lock-symbol)
 
-; Note: The definition for #-(or (not acl2-par) acl2-loop-only) is in file
-; multi-threading-raw.lisp, which is where it needs to be.  The present
-; definition can't go into that file, because it's for the logic, whereas
-; multi-threading-raw.lisp is loaded into raw Lisp.  The documentation is in
-; yet a third file, parallel.lisp, because its doc-section, Parallelism, is
-; defined in that file.
+; Deflock puts lock-symbol into the lock-table, and also defines a macro
+; WITH-lock-symbol that is really just progn$.  However, if #+acl2-par holds,
+; then deflock also defines a 
 
-; In the logic, and even in raw Lisp if #-acl2-par, a call of deflock
-; macroexpands to a definition of a macro that returns its last argument
-; (basically, an identity macro).  The raw Lisp #+acl2-par definition may be
-; found elsewhere.
+; Deflock defines what some Lisps call a "recursive lock", namely a lock that
+; can be grabbed more than once by the same thread, but such that if a thread
+; outside the owner tries to grab it, that thread will block.  In addition to
+; defining a lock, this macro also defines a macro that uses the lock to
+; provide mutual-exclusion for a given list of operations.  This macro has the
+; name with-<modified-lock-name>, where <modified-lock-name> is the given
+; lock-symbol without the leading and trailing * characters.
 
-  (declare (xargs :guard 
-                  (and (symbolp lock-symbol)
-                       (let ((name (symbol-name lock-symbol)))
-                         (and (> (length name) 2)
-                              (eql (char name 0) #\*)
-                              (eql (char name (1- (length name))) #\*))))))
+; Note that if lock-symbol is already bound, then deflock will not re-bind
+; lock-symbol.
+
+  (declare (xargs :guard (lock-symbol-name-p lock-symbol)))
   (let* ((name (symbol-name lock-symbol))
          (macro-symbol (intern 
                         (concatenate 'string
                                      "WITH-"
                                      (subseq name 1 (1- (length name))))
                         "ACL2")))
-    `(defmacro ,macro-symbol (&rest args)
-       (if (and (consp args) (null (cdr args)))
-           (car args)
-         (cons 'progn$ args)))))
+    `(progn
+       (table lock-table ',lock-symbol t)
+
+; The table event above calls make-lock when #+acl2-par, via assign-lock from
+; the table guard of lock.  However, table events are no-ops in raw Lisp, so we
+; include the following form as well.
+
+       #+(and acl2-par (not acl2-loop-only))
+       (defvar ,lock-symbol
+         (make-lock (symbol-name ',lock-symbol)))
+       (defmacro ,macro-symbol (&rest args)
+         (list* 'with-lock ',lock-symbol args)))))
 
 (deflock
 

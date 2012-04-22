@@ -81,26 +81,32 @@
 ; collection.
 
   (assert (st-future-p st-future))
-  (setf (st-future-closure st-future) nil)
   (setf (st-future-aborted st-future) t)
+  (setf (st-future-closure st-future) nil)
   st-future)
 
 ;---------------------------------------------------------------------
 ; Section:  Multi-threaded Futures
 
+; Parallelism wart: discuss these notes with Matt.
+
 ; Notes on the implementation of adding, removing, and aborting the evaluation
 ; of closures:
 
-; (1) Producer is responsible for *always* placing the closure on the queue
+; (1) Producer is responsible for *always* placing the closure on the queue.
 ;
 ; (2) Consumer is responsible for *always* removing the closure from the queue,
 ; regardless of whether there was early termination.  Upon early termination,
 ; it is optional as to whether the early terminated future's barrier is
-; signaled.  For now, the barrier should not be signaled.
+; signaled.  (See defstruct barrier below for information about barriers.)  For
+; now, the barrier should not be signaled.
 ;
-; (3) Only the producer of a particular future can abort that future.  The
-; producer does so by first setting the abort flag of the future and then
-; throwing any consumer that could be evaluating that future.
+; (3) Only the producer of a particular future should abort that future.  (The
+; use of futures by spec-mv-let observes this protocol.  Perhaps we should
+; consider storing the thread in the future so that an eq test can be used to
+; enforce this discipline.)  The producer does so by first setting the abort
+; flag of the future and then throwing any consumer that could be evaluating
+; that future.
 ; 
 ; (4) When a consumer evaluates a future, it first sets a pointer to itself in
 ; thread array and secondly checks the future's abort flag.
@@ -191,6 +197,8 @@
 ; Closure evaluators
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Parallelism wart: probably delete the following two paragraphs.
+
 ; We continue our array-based approach for storing and grabbing pieces of
 ; parallelism work.  This time, however, we do things a little differently.
 ; Instead of saving "pieces of parallelism work" to a queue, we only store
@@ -202,6 +210,9 @@
 ; barrier, because there will always be only one thread waiting.
 
 (defstruct barrier
+
+; Parallelism wart: clarify the senses in which these uses of "barrier" and
+; "synchronization" are non-standard.
 
 ; A barrier is a hybrid between a semaphore and a condition variable.  What we
 ; need is something that once it's signaled once, any thread that waits on it

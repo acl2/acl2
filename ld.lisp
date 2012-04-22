@@ -1844,7 +1844,8 @@
   ~c[(mv erp val state)] as explained below.  (For much more on error triples,
   ~pl[programming-with-state].)
 
-  ~l[rebuild] for a variant of ~c[ld] that skips proofs.
+  ~l[rebuild] for a variant of ~c[ld] that skips proofs.  ~l[output-to-file]
+  for examples showing how to redirect output to a file.
 
   The arguments to ~c[ld], except for ~c[:dir], all happen to be global
   variables in ~ilc[state] (~pl[state] and ~pl[programming-with-state]).  For
@@ -18795,6 +18796,11 @@
   changes were made so that ~c[:]~ilc[ubt] and similar commands do not change
   the settings for waterfall-parallelism or waterfall-printing.  Thanks to
   David Rager for contributing an initial implementation of these changes.
+
+  The implementation of ~ilc[deflock] has been improved.  Now, the macro it
+  defines can provide a lock when invoked inside a ~il[guard]-verified or
+  ~c[:]~ilc[program] mode function.  Previously, this was only the case if the
+  function definition was loaded from raw Lisp, typically via a compiled file.
   ~eq[]
 
   Among the enchancements for the HONS version (~pl[hons-and-memoization]) are

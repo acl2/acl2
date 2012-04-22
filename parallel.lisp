@@ -80,30 +80,65 @@
   ~c[with-<modified-lock-symbol>], where ~c[<modified-lock-symbol>] is the
   given symbol with the leading and trailing ~c[*] characters removed.  This
   newly defined macro will guarantee mutually exclusive execution when called
-  in the body of a ~il[guard]-verified or ~c[:]~ilc[program] mode function.
-  (To get around that restriction, ~pl[top-level].)
+  in the body of the raw Lisp definition of a function, as is typically the
+  case for ~il[guard]-verified functions, for ~c[:]~ilc[program] mode
+  functions, and for calls of macro ~ilc[top-level].
+  (~l[guard-evaluation-table] for details of how raw Lisp code might not be
+  invoked when guard-checking (~pl[set-guard-checking]) has value ~c[:none] or
+  ~c[:all].)
 
-  The raw Lisp version of the macro that ~c[deflock] defines uses a lock, with
-  the given ~c[*symbol*] as its name.  This lock guarantees that for any two
-  forms that are each in the scope of a call of
-  ~c[with-<modified-lock-symbol>], the forms do not execute concurrently.
-  Since only the raw Lisp version of ~c[deflock] can define the macro that
-  actually provides mutual exclusion guarantees, to get these guarentees, as a
-  first option, the user can load the form that calls ~c[deflock] as part of a
-  compiled file (perhaps in a book, ~pl[certify-book]).  Alternatively, the
-  user can ~c[:q] into raw Lisp, issue the call of ~c[deflock], and then
-  re-enter the loop with ~c[(lp)].
+  To see how mutual exclusion is guaranteed, consider the raw Lisp code
+  generated for the macro, ~c[with-<modified-lock-symbol>], that is introduced
+  by a call of ~c[deflock].  This code uses a lock (with the given ~c[*symbol*]
+  as its name), which guarantees that for any two forms that are each in the
+  scope of a call of ~c[with-<modified-lock-symbol>], the forms do not execute
+  concurrently.
 
-  An example script that could be included in a book is as follows.
+  Note that a call of ~c[deflock] expands into the application of ~c[progn] to
+  two events, as illustrated below.
+  ~bv[]
+  ACL2 !>:trans1 (deflock *my-cw-lock*)
+   (PROGN (TABLE LOCK-TABLE '*MY-CW-LOCK* T)
+          (DEFMACRO WITH-MY-CW-LOCK (&REST ARGS)
+                    (LIST* 'WITH-LOCK '*MY-CW-LOCK* ARGS)))
+  ACL2 !>
+  ~ev[]
+  Thus, ~c[deflock] forms are legal embedded event forms
+  (~pl[embedded-event-form]) for ~il[books] as well as ~ilc[encapsulate] and
+  ~ilc[progn] ~il[events].
+
+  The following log shows a lock in action.  Recall that locks work as expected
+  in ~il[guard]-verified and ~c[:]~ilc[program] mode functions; they do not,
+  however, work in ~c[:]~ilc[logic] mode functions that have not been
+  guard-verified, as illustrated below.
 
   ~bv[]
-  (deflock *my-cw-lock*)
-  (defun foo ()
-    (declare (xargs :verify-guards t)) ; or :mode :program
-    (with-my-cw-lock
-     (cw \"No other use of ~~x0 can print concurrently with me!~~%\"
-         'with-my-cw-lock)))
-  (foo)
+  ACL2 !>(deflock *my-cw-lock*)
+  [[.. output omitted ..]]
+   WITH-MY-CW-LOCK
+  ACL2 !>(defun foo (n)
+           (declare (xargs :guard (natp n) :verify-guards nil))
+           (plet ((x1 (with-my-cw-lock (cw \"~~x0\" (make-list n))))
+                  (x2 (with-my-cw-lock (cw \"~~x0\" (make-list n)))))
+                 (and (null x1) (null x2))))
+  [[.. output omitted ..]]
+   FOO
+  ACL2 !>(foo 20)
+  (NIL NIL NIL NIL( NIL NIL NIL NIL NIL NILNIL  NIL NILNIL  NIL NILNIL 
+       NIL NILNIL NIL  NIL NILNIL  NIL NIL
+  NIL      NILNIL  NIL NILNIL )
+  NIL NIL NIL NIL NIL NIL NIL NIL)
+  T
+  ACL2 !>(verify-guards foo)
+  [[.. output omitted ..]]
+   FOO
+  ACL2 !>(foo 20)
+  (NIL NIL NIL NIL NIL NIL NIL NIL NIL NIL
+       NIL NIL NIL NIL NIL NIL NIL NIL NIL NIL)
+  (NIL NIL NIL NIL NIL NIL NIL NIL NIL NIL
+       NIL NIL NIL NIL NIL NIL NIL NIL NIL NIL)
+  T
+  ACL2 !>
   ~ev[]~/~/")
 
 (defdoc compiling-acl2p
