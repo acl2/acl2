@@ -49,6 +49,12 @@ defattach-example.lisp -- example use of defattach
 
 ===============================================================================
 
+disassemble.lisp -- support for disassemble$, an interface to Common
+                    Lisp's disassemble utility for showing assembly
+                    code for a given function symbol's definition
+
+===============================================================================
+
 bash.lisp -- simplification of top-level goal
 
 If you submit (bash term), you will get back a list of terms produced by the
