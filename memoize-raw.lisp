@@ -6157,8 +6157,6 @@ next GC.~%"
        (fresh-line)
        (princ "Better use a version of CCL past revision 13280."))
 
-     (set-gag-mode :goals)
-
      "If the ACL2 global PRINT-CIRCLE is not t,
       then .cert files may be huge."
 

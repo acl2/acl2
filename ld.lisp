@@ -3712,6 +3712,61 @@
                           (cond (erp (mv "WET failed!" nil state))
                                 (t (value `(value-triple ,val)))))))))
 
+(defmacro disassemble$ (fn &rest args
+                           &key (recompile ':default)
+
+; And, in case books/misc/disassemble.lisp changes between releases:
+
+                           &allow-other-keys)
+
+  ":Doc-Section Other
+
+  disassemble a function~/
+
+  The macro ~c[disassemble$] provides a convenient interface to the underlying
+  ~c[disassemble] utility of the host Common Lisp implementation, which prints
+  assembly code for a given function symbol at the terminal.  It works by
+  including the distributed book ~c[books/misc/disassemble.lisp], which defines
+  the supporting function ~c[disassemble$-fn], and then by calling that
+  function.  Note that the arguments to ~c[disassemble$] are evaluated.  Also
+  note that ~c[disassemble$] is intended as a top-level utility for the ACL2
+  loop, not to be called in code; for such a purpose, include the above book
+  and call ~c[disassemble$-fn] directly.
+
+  ~bv[]
+  Example Forms:
+
+  (disassemble$ 'foo)
+  (disassemble$ 'foo :recompile t)~/
+
+  General Forms:
+  (disassemble$ form)
+  (disassemble$ form :recompile flg)
+  ~ev[]
+  where ~c[form] evaluates to a function symbol and ~c[flg] evaluates to any
+  value.  If ~c[flg] is ~c[nil], then the existing definition of that function
+  symbol is disassembled.  But if ~c[flg] is supplied and has a value other
+  than ~c[nil] or ~c[:default], and if that function symbol is defined in the
+  ACL2 loop (not merely in raw Lisp; for example, ~pl[set-raw-mode]), then the
+  disassembly will be based on a recompilation of that ACL2 definition.
+  Normally this recompilation is not necessary, but for some host Lisps, it may
+  be useful; in particular, for CCL the above book arranges that source code
+  information is saved, so that the output is annotated with such information.
+  When recompilation takes place, the previous definition is restored after
+  disassembly is complete.  Finally, if ~c[flg] is omitted or has the value
+  ~c[:default] ~-[] i.e., in the default case ~-[] then recompilation may take
+  place or not, depending on the host Lisp.  The values of ~c[(@ host-lisp)]
+  for which recompilation takes place by default may be found by looking at the
+  above book, or by including it and evaluating the constant
+  ~c[*host-lisps-that-recompile-by-default*].~/"
+
+  `(with-ubt!
+    (with-output
+     :off (event expansion summary proof-tree)
+     (progn
+       (include-book "misc/disassemble" :dir :system :ttags '(:disassemble$))
+       (value-triple (disassemble$-fn ,fn ,recompile (list ,@args)))))))
+
 (deflabel release-notes
   :doc
   ":Doc-Section release-notes
@@ -18465,6 +18520,9 @@
   argument of an ~ilc[include-book] or ~ilc[certify-book] command will be
   converted to corresponding keywords.  ~l[defttag].
 
+  Gag-mode now is initially set to ~c[:goals], suppressing proof commentary
+  other than key checkpoints; ~pl[set-gag-mode].
+
   ~st[NEW FEATURES]
 
   A new ``tau system'' provides a kind of ``type checker.''  ~l[tau-system].
@@ -18565,6 +18623,16 @@
   the new ~c[:congruent-to] keyword of ~c[defstobj].  Thanks to Sol Swords for
   requesting this enhancement and for useful discussions contributing to its
   design.
+
+  A new top-level utility has been provided that shows the assembly language
+  for a defined function symbol; ~pl[disassemble$].  Thanks to Jared Davis for
+  requesting such a utility.  Note that it uses the distributed book
+  ~c[books/misc/disassemble.lisp], which users are welcome to modify (see
+  ~url[http://www.cs.utexas.edu/users/moore/acl2/]).
+
+  The macro ~c[set-accumulated-persistence] is an alias for
+  ~ilc[accumulated-persistence].  Thanks to Robert Krug for suggesting this
+  addition.
 
   ~st[HEURISTIC IMPROVEMENTS]
 
@@ -18837,8 +18905,6 @@
   replaced by evaluation of a corresponding ~ilc[include-book] command).  This
   has been fixed.  Thanks to David Rager for pointing out the problem by
   sending an example.
-
-  ~il[Gag-mode] now is initially set to ~c[:goals] instead of ~c[t].
 
   An error now occurs when attempting to build the HONS version of ACL2 on a
   32-bit platform.  We have seen regression failures on such a (CCL) platform.
@@ -24872,7 +24938,7 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
   ~bv[]
   Examples:
 
-  :set-gag-mode t      ; enable gag-mode
+  :set-gag-mode t      ; enable gag-mode, suppressing most proof commentary
   (set-gag-mode t)     ; same as above
   :set-gag-mode :goals ; same as above, but print names of goals when produced
   :set-gag-mode nil    ; disable gag-mode~/
@@ -24889,9 +24955,8 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
   ~bv[]
   (set-gag-mode t) ; or, (set-gag-mode :goals)
   ~ev[]
-  in your ACL2 customization file; ~pl[acl2-customization].  Future releases of
-  ACL2 may install this setting as the default.  Please contact the ACL2
-  implementors if you have suggestions for improving output in gag-mode.
+  in your ACL2 customization file; ~pl[acl2-customization].  The default value
+  is ~c[:goals].
 
   The basic idea of gag-mode is to focus attention on so-called ``key
   checkpoints''.  By default, a checkpoint is a goal that cannot be simplified.

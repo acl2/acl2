@@ -8248,6 +8248,7 @@
 (link-doc-to set-ruler-extenders switches-parameters-and-modes ruler-extenders)
 
 (link-doc-to show-accumulated-persistence other accumulated-persistence)
+(link-doc-to set-accumulated-persistence other accumulated-persistence)
 (link-doc-to dynamically-monitor-rewrites other dmr)
 
 (link-doc-to keyword miscellaneous keywordp)

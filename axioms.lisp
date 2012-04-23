@@ -27144,7 +27144,7 @@
     (eviscerate-hide-terms . nil)
     (fmt-hard-right-margin . 77)
     (fmt-soft-right-margin . 65) ; same as proof-tree-buffer-width
-    (gag-mode . nil)
+    (gag-mode . nil) ; set in lp
     (gag-state . nil)
     (gag-state-saved . nil) ; saved when gag-state is set to nil
     (global-enabled-structure . nil) ; initialized in enter-boot-strap-mode

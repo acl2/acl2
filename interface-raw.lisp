@@ -7459,6 +7459,7 @@ Missing functions:
              (f-put-global 'save-expansion-file t *the-live-state*))
            (when user-home-dir
              (f-put-global 'user-home-dir user-home-dir *the-live-state*)))
+         (set-gag-mode-fn :goals *the-live-state*)
          #-hons
 ; Hons users are presumably advanced enough to tolerate the lack of a
 ; "[RAW LISP]" prompt.

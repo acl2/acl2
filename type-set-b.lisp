@@ -6280,6 +6280,9 @@
 
   ~ev[]~/
 
+  Note: ~c[set-accumulated-persistence] is equivalent to
+  ~c[accumulated-persistence].
+
   See the end of this item for a discussion of ``enhanced statistics
   gathering,'' which can be useful for more fine-grained proof debugging.
 
@@ -6638,6 +6641,9 @@
                                       :totals '(nil))
                               nil)))
       nil)))
+
+(defmacro set-accumulated-persistence (flg)
+  `(accumulated-persistence ,flg))
 
 (defdoc accumulated-persistence-subtleties
 
