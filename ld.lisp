@@ -3758,7 +3758,9 @@
   place or not, depending on the host Lisp.  The values of ~c[(@ host-lisp)]
   for which recompilation takes place by default may be found by looking at the
   above book, or by including it and evaluating the constant
-  ~c[*host-lisps-that-recompile-by-default*].~/"
+  ~c[*host-lisps-that-recompile-by-default*].  As of this writing, CCL is the
+  only such Lisp (because that is the one for which we can obtain source
+  annotation in the output by recompiling).~/"
 
   `(with-ubt!
     (with-output
@@ -18347,6 +18349,9 @@
 ; Improved the :use hint warning by adding the goal name and pointing to a new
 ; :doc topic, using-enabled-rules.  Thanks to David Rager for pointing out how
 ; the existing warning could be improved.
+
+; Updated guards for sublis-var and sublis-var-lst, and some ancestor
+; functions, to support guard verification (in books/system/sublis-var.lisp).
 
   :doc
   ":Doc-Section release-notes

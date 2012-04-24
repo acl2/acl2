@@ -45,6 +45,10 @@
 ; Section:  Single-threaded Futures
 
 (defstruct st-future
+
+; Unlike mt-future objects, st-future objects execute lazily, i.e., only when
+; reading them.
+
   (value nil)
   (valid nil) ; whether the value is valid
   (closure nil)
@@ -257,9 +261,12 @@
         (wait-on-semaphore (barrier-sem barrier))))))
 
 (defstruct mt-future
+
+; Unlike st-future objects, mt-future objects execute eagerly.
+
   (index nil)
   (value nil)
-  (valid (make-barrier)) ; whether the value is valid
+  (valid (make-barrier)) ; initially contains a nil valid bit for the barrier
   (closure nil)
   (aborted nil)
   (thrown-tag nil))
@@ -267,24 +274,45 @@
 (define-atomically-modifiable-counter *last-slot-saved* 0)
 (define-atomically-modifiable-counter *last-slot-taken* 0)
 
-; One concern I have is that the array elements will be so close together, that
-; they'll be in the same cache lines, and the CPU cores will get bogged down
-; just keeping the writes to the cache "current".  The exact impact of this
-; thrashing is unknown.  Followup: After further thought, I realize that this
-; thrashing will be negligible when compared to the rest of the parallelism
-; overhead.
+; Perhaps we should be concerned that the array elements will be so close
+; together, that they'll be in the same cache lines, and the CPU cores will get
+; bogged down just keeping the writes to the cache "current".  The exact impact
+; on performance of this thrashing is unknown.  (However, correctness is not an
+; issue, since semantically caches are just an optimization, as enforced by
+; cache coherency schemes.)  Followup: After further thought, David Rager
+; believes that this thrashing will be negligible when compared to the rest of
+; the parallelism overhead.
 
-(defvar *thread-array*)
+; The following three arrays all have the same length, *future-array-size*.
+; They correspond as follows: for a future F stored in the ith element of
+; *future-array*, the ith element of *thread-array* is the thread executing F,
+; and the ith element of *future-dependencies* is a list of all indices (in
+; *future-array*) of futures created by F.
+
 (defvar *future-array*)
+(defvar *thread-array*)
 (defvar *future-dependencies*)
 
-(defparameter *future-queue-length-history* nil)
+(defparameter *future-queue-length-history*
 
-(defvar *current-thread-index* 0) ; set to 0 for the main thread
+; supports dmr as modified for ACL2(p)
+
+  nil)
+
+(defvar *current-thread-index*
+
+; For this variable, we take advantage of the fact that special variables are
+; thread-local.  Here we set it to 0 for the main thread.
+
+  0)
+
 (defconstant *starting-core* 'start)
 (defconstant *resumptive-core* 'resumptive)
 
 (defvar *allocated-core*
+
+; The value of this variable is always *starting-core*, *resumptive-core*, or
+; nil.
 
 ; We now document a rather strange behavior that resulted in a bug in the
 ; parallelism system for a good while.  This strange behavior justifies giving
@@ -342,13 +370,18 @@
   
   1)
 
-(define-atomically-modifiable-counter *total-future-count* 0)
+(define-atomically-modifiable-counter *total-future-count*
+
+; An invariant is that the value of this counter is always less than the value
+; of ACL2 state global 'total-parallelism-work-limit.
+
+  0)
 
 (defconstant *future-array-size* 200000)
 
 (defmacro faref (array subscript)
   `(aref ,array 
-; avoid reusing slot 0, which is always reserved for the intial thread.
+; Avoid reusing slot 0, which is always reserved for the initial thread.
          (if (equal 0 ,subscript) 
              0
            (1+ (mod ,subscript (1- *future-array-size*))))))
@@ -378,13 +411,16 @@
 
 (defun reset-future-parallelism-variables ()
 
+; Warning: this function should only be called after calling
+; reset-parallelism-variables, which calls
+; send-die-to-all-except-initial-threads to kill all worker threads.
+
 ; This function is not to be confused with reset-parallelism-variables
-; (although it is similar in nature).
+; (although it is similar in nature).  Both are called by
+; reset-all-parallelism-variables.
 
 ; Parallelism wart: some relevant variables may be unintentionally omitted from
 ; this reset.
-
-; (sleep 30)
 
   (setf *thread-array* 
         (make-array *future-array-size* :initial-element nil))
@@ -438,6 +474,10 @@
   t ; return t
 )
 
+; The following invocation would cause errors in Lispworks.  It probably isn't
+; needed for other Lisps either.  But it seems harmless to leave it in, which
+; has the advantage of testing reset-future-parallelism-variables during the
+; build.
 #-lispworks
 (reset-future-parallelism-variables)
 
@@ -969,6 +1009,28 @@
             (run-thread "Worker thread" 'eval-closures)))))
 
 (defun make-future-with-closure (closure)
+
+; The assertions below can fire if a long-running future is created before the
+; current index (*last-slot-saved*) of the *future-array* wraps around to 0 and
+; then back to the index of the long-running future.  This could happen in the
+; use of futures in the ACL2(p) code, i.e., for parallelizing the waterfall,
+; but only if very many subgoals (never seen as of April, 2012) are created
+; during a single call of the waterfall, so large in fact that a goal's future
+; remains active after creating *future-array-size* more futures.
+
+; The basic problem, of potentially overwriting an entry in an array after
+; wrapping around, could in principle be solved by just skipping over any such
+; indices until finding an available index.  Then an error would only occur if
+; all *future-array-size* entries are active.  However, David Rager has
+; explained that the current implementation relies upon incrementing the
+; current index by just 1, and in fact takes advantage of that in communication
+; between producers and consumers of futures.  If we change the implementation
+; to allow such skipping, we need to think about communication between
+; producers and consumers, and we should think about whether we will lose
+; efficiency.  And we might well lose efficiency, because we may need to lock
+; down the entire array as we look for a free index, rather than using atomic
+; increments (and avoiding locks entirely) as we do now.
+
   (let ((future (make-mt-future))
         (index (atomic-incf *last-slot-saved*)))
     (assert (not (faref *thread-array* index)))

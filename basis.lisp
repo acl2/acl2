@@ -2632,16 +2632,19 @@
        ,@*cons-term1-alist*
        (otherwise (cons fn args)))))
 
-(defun cons-term1 (fn args)
-  (cons-term1-body))
-
 (defun quote-listp (l)
   (declare (xargs :guard (true-listp l)))
   (cond ((null l) t)
         (t (and (quotep (car l))
                 (quote-listp (cdr l))))))
 
+(defun cons-term1 (fn args)
+  (declare (xargs :guard (and (pseudo-term-listp args)
+                              (quote-listp args))))
+  (cons-term1-body))
+
 (defun cons-term (fn args)
+  (declare (xargs :guard (pseudo-term-listp args)))
   (cond ((quote-listp args)
          (cons-term1 fn args))
         (t (cons fn args))))
@@ -12378,12 +12381,15 @@
        (otherwise (mv nil form)))))
 
 (defun cons-term1-mv2 (fn args form)
+  (declare (xargs :guard (and (pseudo-term-listp args)
+                              (quote-listp args))))
   (cons-term1-body-mv2))
 
 (mutual-recursion
 
 (defun sublis-var1 (alist form)
   (declare (xargs :guard (and (symbol-alistp alist)
+                              (pseudo-term-listp (strip-cdrs alist))
                               (pseudo-termp form))))
   (cond ((variablep form)
          (let ((a (assoc-eq form alist)))
@@ -12403,8 +12409,9 @@
 
 (defun sublis-var1-lst (alist l)
   (declare (xargs :guard (and (symbol-alistp alist)
+                              (pseudo-term-listp (strip-cdrs alist))
                               (pseudo-term-listp l))))
-  (cond ((null l)
+  (cond ((endp l)
          (mv nil nil))
         (t (mv-let (changedp1 term)
                    (sublis-var1 alist (car l))
@@ -12433,12 +12440,18 @@
 ;   The sublis-var below normalizes the explicit constant
 ;   constructors in evaled-hyp, e.g., (cons '1 '2) becomes '(1 . 2).
 
+  (declare (xargs :guard (and (symbol-alistp alist)
+                              (pseudo-term-listp (strip-cdrs alist))
+                              (pseudo-termp form))))
   (mv-let (changedp val)
           (sublis-var1 alist form)
           (declare (ignore changedp))
           val))
 
 (defun sublis-var-lst (alist l)
+  (declare (xargs :guard (and (symbol-alistp alist)
+                              (pseudo-term-listp (strip-cdrs alist))
+                              (pseudo-term-listp l))))
   (mv-let (changedp val)
           (sublis-var1-lst alist l)
           (declare (ignore changedp))

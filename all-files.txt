@@ -2176,6 +2176,8 @@ defpun.lisp
 dft-ex.acl2
 dft-ex.lisp
 dft.lisp
+disassemble.acl2
+disassemble.lisp
 doc-section.lisp
 dump-events.lisp
 equal-by-g.lisp
