@@ -6,6 +6,7 @@ Makefile
 Readme.lsp
 hl-addr-combine.lisp
 pseudo-good-worldp.lisp
+sublis-var.lisp
 too-many-ifs.lisp
 top.lisp
 verified-termination-and-guards.lisp
@@ -15,7 +16,8 @@ worldp-check.lisp
  )
  (:TITLE "System Books")
  (:AUTHOR/S
-  "Jared Davis for hl-addr-combine.lisp; Matt Kaufmann and J Moore for the rest")
+  "Jared Davis for hl-addr-combine.lisp; David Rager for
+   verified-termination-and-guards.lisp; Matt Kaufmann and J Moore for the rest")
  (:Keywords "Logical World")
  (:ABSTRACT
 
