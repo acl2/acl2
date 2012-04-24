@@ -5,7 +5,6 @@
 (include-book "centaur/gl/g-primitives-help" :dir :system)
 (include-book "centaur/gl/eval-g-base" :dir :system)
 (include-book "centaur/gl/g-if" :dir :system)
-(include-book "centaur/misc/hons-extra" :dir :system)
 (local (include-book "centaur/gl/eval-g-base-help" :dir :system))
 
 
