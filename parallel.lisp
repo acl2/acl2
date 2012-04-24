@@ -599,7 +599,11 @@
                             (hons-init-hook-unmemoizations)))
                      state)
                    (f-put-global 'waterfall-parallelism val state)
-                   (value val))))
+                   (progn$
+                    #-acl2-loop-only
+                    (funcall ; avoid undefined function warning
+                     'initialize-dmr-interval-used)
+                    (value val)))))
          #-acl2-par
 
 ; Once upon a time we issued an error here instead of an observation.  In
@@ -650,10 +654,9 @@
   General Forms:
   (set-waterfall-parallelism nil)        ; never parallelize (serial execution)
   (set-waterfall-parallelism :full)      ; always parallelize
-                                         ;   (recommended setting)
   (set-waterfall-parallelism :top-level) ; parallelize top-level subgoals
   (set-waterfall-parallelism             ; parallelize if sufficient resources
-    :resource-based)
+    :resource-based)                     ;   (recommended setting)
   (set-waterfall-parallelism             ; parallelize if sufficient resources
     :resource-and-timing-based           ;   and suggested by prior attempts
   (set-waterfall-parallelism             ; never parallelize but use parallel
@@ -671,8 +674,9 @@
   Note that not all ACL2 features are supported when waterfall-parallelism is
   set to non-nil (~pl[unsupported-waterfall-parallelism-features]).
 
-  ~c[:Full] waterfall parallelism typically achieves the best performance in
-  ACL2(p), so ~c[:full] is the recommended setting.
+  ~c[:Resource-based] waterfall parallelism typically achieves the best
+  performance in ACL2(p), while maintaining system stability, so
+  ~c[:resource-based] is the recommended setting.
 
   A value of ~c[nil] indicates that ACL2(p) should never prove subgoals in
   parallel.

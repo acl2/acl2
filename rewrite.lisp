@@ -8134,11 +8134,16 @@
   in ACL2 files ~c[interface-raw.lisp] and ~c[emacs/monitor.el] in order to
   customize their dmr environments.
 
-  Finally, in order to update the dmr file with the latest stack information,
-  interrupt ACL2 and then evaluate: ~c[(dmr-flush)].  In order to support
-  resumption of the interrupted proof (assuming your host Common Lisp supports
-  resumption), evaluation of ~c[(dmr-start)] automatically causes evaluation of
-  the form ~c[(set-debugger-enable t)]; ~pl[set-debugger-enable].~/
+  In order to update the dmr file with the latest stack information, interrupt
+  ACL2 and then evaluate: ~c[(dmr-flush)].  In order to support resumption of
+  the interrupted proof (assuming your host Common Lisp supports resumption),
+  evaluation of ~c[(dmr-start)] automatically causes evaluation of the form
+  ~c[(set-debugger-enable t)]; ~pl[set-debugger-enable].
+
+  Note for users of the experimental extension ACL2(p) (~pl[parallelism]): when
+  waterfall-parallelism has been set to a non-~c[nil] value
+  (~pl[set-waterfall-parallelism]), statistics about parallel execution are
+  printed instead of the usual information.~/
 
   :cited-by break-rewrite
   :cited-by accumulated-persistence")

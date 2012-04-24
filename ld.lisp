@@ -18874,6 +18874,22 @@
   defines can provide a lock when invoked inside a ~il[guard]-verified or
   ~c[:]~ilc[program] mode function.  Previously, this was only the case if the
   function definition was loaded from raw Lisp, typically via a compiled file.
+
+  The underlying implementation for waterfall parallelism
+  (~pl[set-waterfall-parallelism]) has been improved.  As a result, even the
+  largest proofs in the regression suite can be run efficiently in
+  ~c[:resource-based] waterfall parallelism mode.  Additionally,
+  ~c[:resource-based] is now the recommended mode for waterfall parallelism.
+
+  There is also a new flag for configuring the way waterfall parallelims
+  behaves once underlying system resource limits are reached.  This flag is
+  most relevant to ~c[:full] waterfall parallelism.
+  ~pl[set-total-parallelism-work-limit] for more information.
+
+  The ~ilc[dmr] utility has the same behavior in ACL2(p) as it has in ACL2
+  unless waterfall-parallelism has been set to a non-~c[nil] value
+  (~pl[set-waterfall-parallelism]), in which case statistics about parallel
+  execution are printed instead of the usual information.
   ~eq[]
 
   Among the enchancements for the HONS version (~pl[hons-and-memoization]) are
