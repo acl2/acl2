@@ -27169,7 +27169,7 @@
     (last-make-event-expansion . nil)
     (last-step-limit . -1) ; any number should be OK
     (ld-level . 0)
-    (ld-okp . :default) ; see :DOC ld-in-raw-lisp
+    (ld-okp . :default) ; see :DOC calling-ld-in-bad-contexts
     (ld-redefinition-action . nil)
     (ld-skip-proofsp . nil)
     (logic-fns-with-raw-code . ,*primitive-logic-fns-with-raw-code*)
