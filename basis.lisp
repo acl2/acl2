@@ -12458,11 +12458,11 @@
           val))
 
 (defun subcor-var1 (vars terms var)
-  (declare (xargs :guard (and (true-listp vars)
-                              (true-listp terms)
+  (declare (xargs :guard (and (symbol-listp vars)
+                              (pseudo-term-listp terms)
                               (equal (length vars) (length terms))
                               (variablep var))))
-  (cond ((null vars) var)
+  (cond ((endp vars) var)
         ((eq var (car vars)) (car terms))
         (t (subcor-var1 (cdr vars) (cdr terms) var))))
 
@@ -12470,10 +12470,14 @@
 
 (defun subcor-var (vars terms form)
 
-; "Subcor" stands for "substitute corresponding elements".  Vars and terms
-; are in 1:1 correspondence and we substitute terms for corresponding vars
-; into form.  This function was called sub-pair-var in nqthm.
+; "Subcor" stands for "substitute corresponding elements".  Vars and terms are
+; in 1:1 correspondence, and we substitute terms for corresponding vars into
+; form.  This function was called sub-pair-var in nqthm.
 
+  (declare (xargs :guard (and (symbol-listp vars)
+                              (pseudo-term-listp terms)
+                              (equal (length vars) (length terms))
+                              (pseudo-termp form))))
   (cond ((variablep form)
          (subcor-var1 vars terms form))
         ((fquotep form) form)
@@ -12481,7 +12485,11 @@
                       (subcor-var-lst vars terms (fargs form))))))
 
 (defun subcor-var-lst (vars terms forms)
-  (cond ((null forms) nil)
+  (declare (xargs :guard (and (symbol-listp vars)
+                              (pseudo-term-listp terms)
+                              (equal (length vars) (length terms))
+                              (pseudo-term-listp forms))))
+  (cond ((endp forms) nil)
         (t (cons (subcor-var vars terms (car forms))
                  (subcor-var-lst vars terms (cdr forms))))))
 

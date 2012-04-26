@@ -8967,7 +8967,9 @@
   (progn-fn1 ev-lst nil nil state))
 
 (defun progn!-fn (ev-lst bindings state)
-  (state-global-let* ((acl2-raw-mode-p (f-get-global 'acl2-raw-mode-p state)))
+  (state-global-let* ((acl2-raw-mode-p (f-get-global 'acl2-raw-mode-p state))
+                      (ld-okp (let ((old (f-get-global 'ld-okp state)))
+                                (if (eq old :default) nil old))))
                      (progn-fn1 ev-lst t bindings state)))
 
 (defun make-event-ctx (event-form)

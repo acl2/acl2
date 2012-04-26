@@ -1760,7 +1760,11 @@
 ;  :hints (("Goal" :do-not '(preprocess))))
 
   #-acl2-loop-only
-  (cond ((= *ld-level* 0)
+  (cond (*load-compiled-stack*
+         (error "It is illegal to call LD while loading a compiled book, in ~
+                 this case:~%~a .~%See :DOC calling-ld-in-bad-contexts."
+                (caar *load-compiled-stack*)))
+        ((= *ld-level* 0)
          (return-from
           ld-fn
           (let ((complete-flg nil))
@@ -1781,7 +1785,11 @@
                      *standard-co*
                      state
                      nil)))))))
-  (ld-fn0 alist state bind-flg))
+  (cond ((not (f-get-global 'ld-okp state))
+         (er soft 'ld
+             "It is illegal to call LD in this context.  See DOC ~
+              calling-ld-in-bad-contexts."))
+        (t (ld-fn0 alist state bind-flg))))
 
 (defmacro ld (standard-oi
               &key
@@ -2084,6 +2092,45 @@
                  nil)))
     state
     t))
+
+(defdoc calling-ld-in-bad-contexts
+  ":Doc-Section ld
+
+  errors caused by calling ~ilc[ld] in inappropriate contexts~/
+
+  The macro ~ilc[ld] was designed to be called directly in the top-level ACL2
+  loop, although there may be a few occasions for calling it from functions.
+  ACL2 cannot cope with invocations of ~ilc[ld] during the process of loading a
+  compiled file for a book, so this is an error.
+
+  To see how that can happen, consider the following book, where file
+  ~c[const.lsp] contains the single form ~c[(defconst *foo* '(a b))].
+  ~bv[]
+    (in-package \"ACL2\")
+    (defttag t)
+    (progn! (ld \"const.lsp\"))
+  ~ev[]
+  An attempt to certify this book will cause an error, but that particular
+  error can be avoided, as discussed below.  If the book is certified, however,
+  with production of a corresponding compiled file (which is the default
+  behavior for ~ilc[certify-book]), then any subsequent call of
+  ~ilc[include-book] that loads this compiled file will cause an error.
+  Again, this error is necessary because of how ACL2 is designed; specifically,
+  this ~ilc[ld] call would interfere with tracking of constant definitions when
+  loading the compiled file for the book.
+
+  Because including such a book (with a compiled file) causes an error, then as
+  a courtesy to the user, ACL2 arranges that the certification will fail (thus
+  avoiding a surprise later when trying to include the book).  The error in
+  that case will look as follows.
+  ~bv[]
+    ACL2 Error in LD:  It is illegal to call LD in this context.  See DOC
+    calling-ld-in-bad-contexts.
+  ~ev[]
+  If you really think it is OK to avoid this error, you can get around it by
+  setting ~il[state] global variable ~c[ld-okp] to t:  ~c[(assign ld-okp t)].
+  You can then certify the book in the example above, but you will still not be
+  able to include it with a compiled file.~/~/")
 
 (defmacro quick-test nil
 
@@ -18351,7 +18398,8 @@
 ; the existing warning could be improved.
 
 ; Updated guards for sublis-var and sublis-var-lst, and some ancestor
-; functions, to support guard verification (in books/system/sublis-var.lisp).
+; functions, to support guard verification (in new books distributed in
+; books/system/).
 
   :doc
   ":Doc-Section release-notes
@@ -18527,6 +18575,10 @@
 
   Gag-mode now is initially set to ~c[:goals], suppressing proof commentary
   other than key checkpoints; ~pl[set-gag-mode].
+
+  An error now occurs if ~ilc[ld] is called while loading a compiled book.
+  ~l[calling-ld-in-bad-contexts].  Thanks to David Rager for reporting a
+  low-level assertion failure that led us to make this change.
 
   ~st[NEW FEATURES]
 
