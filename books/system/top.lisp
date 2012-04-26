@@ -7,3 +7,4 @@
 (include-book "too-many-ifs")
 (include-book "verified-termination-and-guards")
 (include-book "sublis-var")
+(include-book "subcor-var")
