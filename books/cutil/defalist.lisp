@@ -517,7 +517,7 @@ each value satisfies @(see " (symbol-name valp) ")."))))
 
        (defthm ,(mksym valp '-of-cdr-of-hons-assoc-equal-when- name)
          (implies (,name ,@formals)
-                  (equal (,valp (cdr (hons-assoc-equal ,a ,x)))
+                  (equal (,valp ,@(subst `(cdr (hons-assoc-equal ,a ,x)) x val-formals))
                          ,(cond ((eq valp-of-nil t)
                                  t)
                                 ((eq valp-of-nil nil)

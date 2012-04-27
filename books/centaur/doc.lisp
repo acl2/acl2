@@ -67,6 +67,8 @@
 (include-book "misc/make-list")
 (include-book "misc/seed-random")
 (include-book "misc/equal-by-nths")
+(include-book "misc/load-stobj")
+(include-book "misc/load-stobj-tests")
 
 (include-book "tutorial/intro")
 (include-book "tutorial/alu16-book")

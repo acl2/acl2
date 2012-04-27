@@ -51,9 +51,6 @@
 
 (include-book "intro")
 
-; This will allow us to use the waveform debugging features
-(install-vcd-dump)
-
 ; The PLEV (print level) tool lets you control how much output ACL2 prints when
 ; it tries to print an object.  It is very important to be able to control the
 ; print level when you want to inspect things like translations, hardware
@@ -242,6 +239,7 @@
            (b  . 3))
          :quiet t)
 
+(i-am-here)
 ; If you have installed GTKWave and configured your PATH so that you can run
 ; it by typing "gtkwave", then you can also generate a waveform:
 

@@ -23,9 +23,11 @@
 
 (in-package "ACL2")
 (include-book "stv-compile")
+(include-book "esim-vcd")
 (include-book "steps")
+(include-book "centaur/misc/date" :dir :system)
+(include-book "centaur/misc/tshell" :dir :system)
 (include-book "centaur/4v-sexpr/bitspecs" :dir :system)
-(include-book "../vcd/vcd")
 (include-book "centaur/gl/gl-util" :dir :system)
 (local (include-book "centaur/vl/util/arithmetic" :dir :system))
 
@@ -416,6 +418,14 @@ different STVs that target the same module for the same numbers of steps.</p>"
 
   (memoize 'stv-fully-general-in-alist-n)
 
+  (local (defthm c0
+           (vl::cons-listp (pairlis$ x y))
+           :hints(("Goal" :in-theory (enable pairlis$)))))
+
+  (defthm cons-listp-of-stv-fully-general-in-alist-n
+    (vl::cons-listp (stv-fully-general-in-alist-n n flat-ins))
+    :hints(("Goal" :in-theory (enable stv-fully-general-in-alist-n))))
+
   (defund stv-fully-general-in-alists-aux (n flat-ins acc)
     (declare (xargs :guard (and (symbol-listp flat-ins)
                                 (natp n))))
@@ -424,14 +434,92 @@ different STVs that target the same module for the same numbers of steps.</p>"
           acc
         (stv-fully-general-in-alists-aux (- n 1) flat-ins acc))))
 
+  (defthm len-stv-fully-general-in-alists-aux
+    (equal (len (stv-fully-general-in-alists-aux n flat-ins acc))
+           (+ 1 (nfix n) (len acc)))
+    :hints(("Goal" :in-theory (enable stv-fully-general-in-alists-aux))))
+
+  (defthm cons-list-listp-of-stv-fully-general-in-alists-aux
+    (implies (vl::cons-list-listp acc)
+             (vl::cons-list-listp (stv-fully-general-in-alists-aux n flat-ins acc)))
+    :hints(("Goal" :in-theory (enable stv-fully-general-in-alists-aux))))
+
   (defund stv-fully-general-in-alists (n mod)
     (declare (xargs :guard (posp n)))
     (b* ((ins      (gpl :i mod))
-         (flat-ins (pat-flatten ins nil))
+         (flat-ins (pat-flatten1 ins))
+         ((when (mbe :logic (not (posp n)) :exec nil))
+          nil)
          ((unless (symbol-listp flat-ins))
           (er hard? 'stv-fully-general-in-alists
-              "Expected :i for ~x0 to be a symbol pattern." (gpl :n mod))))
-      (stv-fully-general-in-alists-aux (- n 1) flat-ins nil))))
+              "Expected :i for ~x0 to be a symbol pattern." (gpl :n mod))
+          (ec-call (stv-fully-general-in-alists-aux (- n 1) flat-ins nil))))
+      (stv-fully-general-in-alists-aux (- n 1) flat-ins nil)))
+
+  (defthm len-stv-fully-general-in-alists
+    (equal (len (stv-fully-general-in-alists n mod))
+           (nfix n))
+    :hints(("Goal" :in-theory (enable stv-fully-general-in-alists))))
+
+  (defthm cons-list-listp-of-stv-fully-general-in-alists
+    (vl::cons-list-listp (stv-fully-general-in-alists n mod))
+    :hints(("Goal" :in-theory (enable stv-fully-general-in-alists)))))
+
+
+
+(local
+ (defsection basic-esim-lemmas
+
+   (defthm true-list-listp-4v-sexpr-restrict-with-rw-alists
+     (true-list-listp (4v-sexpr-restrict-with-rw-alists x al)))
+
+   (defthm cons-listp-4v-sexpr-restrict-with-rw-alist
+     (vl::cons-listp (4v-sexpr-restrict-with-rw-alist x al)))
+
+   (defthm cons-list-listp-of-4v-sexpr-restrict-with-rw-alists
+     (vl::cons-list-listp (4v-sexpr-restrict-with-rw-alists x al)))
+
+   (defthm len-of-4v-sexpr-restrict-with-rw-alists
+     (equal (len (4v-sexpr-restrict-with-rw-alists x al))
+            (len x)))
+
+   (local (in-theory (enable esim-sexpr-simp-new-probe-steps)))
+
+   (defthm len-of-esim-sexpr-simp-new-probe-steps-0
+     (equal (len (mv-nth 0 (esim-sexpr-simp-new-probe-steps mod ins st)))
+            (len ins)))
+
+   (defthm len-of-esim-sexpr-simp-new-probe-steps-1
+     (equal (len (mv-nth 1 (esim-sexpr-simp-new-probe-steps mod ins st)))
+            (len ins)))
+
+   (defthm len-of-esim-sexpr-simp-new-probe-steps-2
+     (equal (len (mv-nth 2 (esim-sexpr-simp-new-probe-steps mod ins st)))
+            (len ins)))
+
+   (defthm cons-listp-4v-sexpr-compose-with-rw-alist
+     (vl::cons-listp (4v-sexpr-compose-with-rw-alist x al)))
+
+   (defthm cons-listp-of-esim-sexpr-simp-nst
+     (vl::cons-listp (esim-sexpr-simp-nst mod ins st))
+     :hints(("Goal" :in-theory (enable esim-sexpr-simp-nst))))
+
+   (defthm cons-listp-of-esim-sexpr-simp-out
+     (vl::cons-listp (esim-sexpr-simp-out mod ins st))
+     :hints(("Goal" :in-theory (enable esim-sexpr-simp-out))))
+
+   (defthm cons-listp-of-esim-sexpr-simp-int
+     (vl::cons-listp (esim-sexpr-simp-int mod ins st))
+     :hints(("Goal" :in-theory (enable esim-sexpr-simp-int))))
+
+   (defthm cons-listp-of-esim-sexpr-simp-new-probe-steps-0
+     (vl::cons-list-listp (mv-nth 0 (esim-sexpr-simp-new-probe-steps mod ins st))))
+
+   (defthm cons-listp-of-esim-sexpr-simp-new-probe-steps-1
+     (vl::cons-list-listp (mv-nth 1 (esim-sexpr-simp-new-probe-steps mod ins st))))
+
+   (defthm cons-listp-of-esim-sexpr-simp-new-probe-steps-2
+     (vl::cons-list-listp (mv-nth 2 (esim-sexpr-simp-new-probe-steps mod ins st))))))
 
 
 
@@ -512,7 +600,28 @@ of individual steps, instead of memoizing the whole thing.</p>"
           (ec-call (esim-sexpr-simp-new-probe-steps mod in-alists init-st-alist))))
       (mv init-st-alist in-alists nsts outs internals)))
 
-  (memoize 'stv-fully-general-simulation-debug :aokp t))
+  (memoize 'stv-fully-general-simulation-debug :aokp t)
+
+  (local (in-theory (enable stv-fully-general-simulation-debug)))
+
+  (defthm len-of-stv-fully-general-simulation-debug-1
+    (equal (len (mv-nth 1 (stv-fully-general-simulation-debug nphases mod)))
+           (nfix nphases)))
+
+  (defthm len-of-stv-fully-general-simulation-debug-2
+    (equal (len (mv-nth 2 (stv-fully-general-simulation-debug nphases mod)))
+           (nfix nphases)))
+
+  (defthm len-of-stv-fully-general-simulation-debug-3
+    (equal (len (mv-nth 3 (stv-fully-general-simulation-debug nphases mod)))
+           (nfix nphases)))
+
+  (defthm len-of-stv-fully-general-simulation-debug-4
+    (equal (len (mv-nth 4 (stv-fully-general-simulation-debug nphases mod)))
+           (nfix nphases)))
+
+  (defthm cons-list-listp-of-stv-fully-general-simulation-debug-1
+    (vl::cons-list-listp (mv-nth 1 (stv-fully-general-simulation-debug nphases mod)))))
 
 
 
@@ -559,15 +668,10 @@ evaluated by @(see stv-run).</li>
 
 </ul>"
 
-;; We no longer include snapshots, because they can make stv-run a lot slower
-;; during GL proofs because they are huge, and GL has to check if the STV has
-;; any special GL keywords in it in the gl-concrete-lite check.
-
-;; <li>The <tt>snapshots</tt> are ordinarily <tt>nil</tt>, but if
-;; <tt>stv-process</tt> is invoked with <tt>:debug t</tt> flag, then they will be
-;; a list of alists generated by @(see mod-vcd-snapshot) using pre-restricted
-;; in-bindings, out-bindings, and int-bindings.  These alists are ready to be
-;; evaluated and handed off to @(see vcd-dump).</li>
+; Historically we could optionally pre-compute snapshots for debugging, but we
+; took that out because it could make stv-run a lot slower during GL proofs,
+; because the snapshots were huge, and GL has to make sure the whole STV is
+; free of special GL keywords with its gl-concrete-lite check.
 
   :require ((compiled-stv-p-of-processed-stv->compiled-stv
              (compiled-stv-p compiled-stv))))
@@ -630,22 +734,6 @@ and naming them with the output simulation variable bit names.</p>"
 
 
 
-(defund stv-make-snapshots (mod in-alists out-alists int-alists)
-  (declare (xargs :guard (good-esim-modulep mod)))
-  (b* (((when (or (atom in-alists)
-                  (atom out-alists)
-                  (atom int-alists)))
-        nil)
-       (ins1     (car in-alists))
-       (outs1    (car out-alists))
-       (ints1    (car int-alists))
-       (template (with-fast-alists (ins1 outs1 ints1)
-                   (mod-vcd-snapshot mod ins1 outs1 ints1))))
-    (cons template
-          (stv-make-snapshots mod (cdr in-alists) (cdr out-alists) (cdr int-alists)))))
-
-
-
 (defsection stv-process
   :parents (symbolic-test-vectors)
   :short "Process a symbolic test vector and prepare it to be run."
@@ -678,12 +766,6 @@ of processing the STV using @(see defconsts).  You can't use an ordinary
 <tt>defconst</tt> because of subtle issues having to do with memoization and
 @(see defattach).</p>"
 
-;; <p>The optional <tt>:debug</tt> flag can be set if you want to pre-compute
-;; debugging snapshots.  This can add a considerable amount of time to STV
-;; processing, but it pre-computes debugging snapshots so that your first call
-;; of @(see stv-debug) is not so slow.</p>
-
-
   (defund stv-process-fn (stv mod)
     (declare (xargs :guard (good-esim-modulep mod)))
     (b* ((cstv (time$ (stv-compile stv mod)
@@ -704,14 +786,11 @@ of processing the STV using @(see defconsts).  You can't use an ordinary
 
          (need-internals
           ;; We can avoid computing the internal signals if we didn't ask for
-          ;; any and we aren't debugging.  This is kind of silly, but it can
-          ;; save a lot of time if you don't care about the internals at all.
-          (or 
-           ;; Removed debug.
-           ;; debug
-           ;; This isn't ideal, better would be to mark the CSTV with some
-           ;; flag that says whether it needs any int-out bits.
-           (consp cstv.expanded-ints)))
+          ;; any.  This is kind of silly, but it can save a lot of time if you
+          ;; don't care about the internals at all.  This isn't ideal, better
+          ;; would be to mark the CSTV with some flag that says whether it
+          ;; needs any int-out bits.
+          (consp cstv.expanded-ints))
 
          ((mv ?init-st-general
               ?in-alists-general
@@ -758,30 +837,14 @@ of processing the STV using @(see defconsts).  You can't use an ordinary
           ;; (2) replaces certain general input variables with the names of the
           ;; bits of the input simulation variables.
           (time$ (4v-sexpr-restrict-with-rw-alist relevant-signals-general
-                                               cstv.restrict-alist)
+                                                  cstv.restrict-alist)
                  :msg "; stv-process specialization: ~st sec, ~sa bytes.~%"
-                 :mintime 1/2))
-
-         ;; (snapshots
-         ;;  ;; If we're debugging, make the snapshot templates.  This is
-         ;;  ;; potentially quite expensive, so by default we leave :debug nil.
-         ;;  (time$
-         ;;   (and debug
-         ;;        (stv-make-snapshots
-         ;;         mod
-         ;;         (4v-sexpr-restrict-with-rw-alists in-alists-general  cstv.restrict-alist)
-         ;;         (4v-sexpr-restrict-with-rw-alists out-alists-general cstv.restrict-alist)
-         ;;         (4v-sexpr-restrict-with-rw-alists int-alists-general cstv.restrict-alist)))
-         ;;   :msg "; stv-process debugging templates: ~st sec, ~sa bytes.~%"
-         ;;   :mintime 1/2))
-         )
+                 :mintime 1/2)))
 
       (make-processed-stv :mod              mod
                           :user-stv         stv
                           :compiled-stv     cstv
-                          :relevant-signals relevant-signals-specialized
-                          ;; :snapshots        snapshots
-                          )))
+                          :relevant-signals relevant-signals-specialized)))
 
   (defmacro stv-process (stv mod)
     `(stv-process-fn ,stv ,mod))
@@ -795,49 +858,64 @@ of processing the STV using @(see defconsts).  You can't use an ordinary
              nil))))
 
 
-(defund stv-get-or-make-snapshots (pstv)
+(defsection stv-make-snapshots
 
-;; BOZO misnamed now -- we always make them.
+  (defund stv-combine-into-snapshots (in-alists out-alists int-alists)
+    (declare (xargs :guard (and (vl::same-lengthp in-alists out-alists)
+                                (vl::same-lengthp in-alists int-alists)
+                                (true-list-listp in-alists)
+                                (true-list-listp out-alists)
+                                (true-list-listp int-alists))))
+    (if (atom in-alists)
+        nil
+      (let ((snapshot1 (append (car in-alists)
+                               (car out-alists)
+                               (car int-alists))))
+        (cons snapshot1 (stv-combine-into-snapshots (cdr in-alists)
+                                                    (cdr out-alists)
+                                                    (cdr int-alists))))))
 
-  (declare (xargs :guard (processed-stv-p pstv)))
-  (b* (((processed-stv pstv) pstv)
+  (local (defthm c0
+           (implies (and (vl::cons-list-listp in-alists)
+                         (vl::cons-list-listp out-alists)
+                         (vl::cons-list-listp int-alists))
+                    (vl::cons-list-listp
+                     (stv-combine-into-snapshots in-alists out-alists int-alists)))
+           :hints(("Goal" :in-theory (enable stv-combine-into-snapshots)))))
 
-       ;; ((when pstv.snapshots)
-       ;;  ;; Already computed, the user must have called process-stv with :debug t,
-       ;;  ;; so just use what's there.
-       ;;  pstv.snapshots)
+  (defund stv-make-snapshots (pstv)
+    (declare (xargs :guard (processed-stv-p pstv)))
+    (b* (((processed-stv pstv) pstv)
 
-       ((compiled-stv cstv) pstv.compiled-stv)
-       (nphases (nfix cstv.nphases))
-       ((unless (posp nphases))
-        (er hard? 'stv-process "STV has no phases?"))
+         ((compiled-stv cstv) pstv.compiled-stv)
+         (nphases (nfix cstv.nphases))
+         ((unless (posp nphases))
+          (er hard? 'stv-process "STV has no phases?"))
 
-       ;; Else, we need to compute the debugging alists as if the :debug t had
-       ;; been provided.
-       ((mv ?init-st-general
-            in-alists-general
-            ?nst-alists-general
-            out-alists-general
-            int-alists-general)
-        (time$ (stv-fully-general-simulation-debug nphases pstv.mod)
-               :msg "; stv debug simulation: ~st sec, ~sa bytes.~%"
-               :mintime 1/2))
+         ((mv ?init-st-general
+              in-alists-general
+              ?nst-alists-general
+              out-alists-general
+              int-alists-general)
+          (time$ (stv-fully-general-simulation-debug nphases pstv.mod)
+                 :msg "; stv debug simulation: ~st sec, ~sa bytes.~%"
+                 :mintime 1/2))
 
-       (snapshots
-        (time$
-         (ec-call
-          (stv-make-snapshots
-           pstv.mod
-           (4v-sexpr-restrict-with-rw-alists in-alists-general  cstv.restrict-alist)
-           (4v-sexpr-restrict-with-rw-alists out-alists-general cstv.restrict-alist)
-           (4v-sexpr-restrict-with-rw-alists int-alists-general cstv.restrict-alist)))
-         :msg "; stv debug snapshots: ~st sec, ~sa bytes.~%")))
-    snapshots))
+         (snapshots
+          (time$ (stv-combine-into-snapshots
+                  (4v-sexpr-restrict-with-rw-alists in-alists-general cstv.restrict-alist)
+                  (4v-sexpr-restrict-with-rw-alists out-alists-general cstv.restrict-alist)
+                  (4v-sexpr-restrict-with-rw-alists int-alists-general cstv.restrict-alist))
+                 :msg "; stv-debug general snapshots: ~st sec, ~sa bytes.~%"
+                 :mintime 1/2)))
+      snapshots))
 
-(memoize 'stv-get-or-make-snapshots
-         :aokp t
-         ;; :condition '(not (processed-stv->snapshots pstv))
-         )
+  (memoize 'stv-make-snapshots :aokp t)
+
+  (defthm cons-list-listp-of-stv-make-snapshots
+    (vl::cons-list-listp (stv-make-snapshots pstv))
+    :hints(("Goal" :in-theory (enable stv-make-snapshots)))))
+
 
 
 
@@ -1190,6 +1268,10 @@ nil</tt>.</p>"
 ;
 ; -----------------------------------------------------------------------------
 
+(defttag writes-okp)
+(remove-untouchable acl2::writes-okp nil)
+
+
 (defsection stv-debug
   :parents (symbolic-test-vectors)
   :short "Evaluate a symbolic test vector at particular, concrete inputs, and
@@ -1197,11 +1279,8 @@ generate a waveform."
 
   :long "<p>This macro is an extended version of @(see stv-run).  In addition
 to building an alist of the output simulation variables, it also writes out a
-waveform that can be viewed in a VCD viewer.</p>
-
-<p>Debugging can be very slow, especially the first time.  A good part of the
-computation can be offloaded onto @(see stv-process) by supplying the
-<tt>:debug t</tt> flag.</p>"
+waveform that can be viewed in a VCD viewer.  Note that debugging can be slow,
+especially the first time before things are memoized.</p>"
 
   (defun stv-debug-fn (pstv input-alist filename viewer state)
     "Returns (MV OUT-ALIST STATE)"
@@ -1213,7 +1292,7 @@ computation can be offloaded onto @(see stv-process) by supplying the
           ((compiled-stv cstv) pstv.compiled-stv)
 
           (snapshots
-           (time$ (stv-get-or-make-snapshots pstv)
+           (time$ (stv-make-snapshots pstv)
                   :mintime 1/2
                   :msg "; stv-debug snapshots: ~st sec, ~sa bytes.~%"))
 
@@ -1249,7 +1328,27 @@ computation can be offloaded onto @(see stv-process) by supplying the
 
           (- (fast-alist-free evaled-out-bits))
 
-          (state (vl::vcd-dump-fn filename evaled-snapshots viewer nil state)))
+          ;; Actual VCD generation
+          ((mv date state) (acl2::date state))
+          (dump (vl::vcd-dump-main pstv.mod evaled-snapshots date))
+
+          ((mv & & state) (assign acl2::writes-okp t))
+          (state (time$ (vl::with-ps-file filename
+                           (vl::vl-ps-update-rchars dump))
+                        :mintime 1/2
+                        :msg "; vcd-dump file generation: ~st seconds, ~sa bytes.~%"))
+
+          ;; Maybe launch a VCD viewer, but not if we're certifying books
+          (certifying-book-p (acl2::f-get-global 'acl2::certify-book-info state))
+
+          ;; BOZO we aren't really escaping filenames right or anything like that
+          (- (if (and viewer (not certifying-book-p))
+                 (b* ((cmd (str::cat viewer " " filename)))
+                   (cw "; vcd-dump launching \"~s0\".~%" cmd)
+                   (acl2::tshell-ensure)
+                   (acl2::tshell-run-background cmd))
+               nil)))
+
        (mv assembled-outs state))
      :msg "; stv-debug: ~st sec, ~sa bytes.~%"
      :mintime 1))
@@ -1257,7 +1356,7 @@ computation can be offloaded onto @(see stv-process) by supplying the
   (defmacro stv-debug (pstv input-alist
                             &key
                             (filename '"stv.debug")
-                            (viewer   '"/n/fv2/bin/gtkwave"))
+                            (viewer   '"gtkwave"))
     `(stv-debug-fn ,pstv ,input-alist ,filename ,viewer state)))
 
 
