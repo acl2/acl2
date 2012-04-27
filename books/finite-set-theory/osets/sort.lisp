@@ -15,7 +15,7 @@
 ; sort.lisp -- a mergesort for constructing sets
 
 (in-package "SETS")
-(include-book "outer")
+(include-book "union")
 (local (include-book "unicode/app" :dir :system))
 (local (include-book "unicode/rev" :dir :system))
 (local (include-book "tools/mv-nth" :dir :system))
@@ -206,13 +206,8 @@ really we could avoid that by just being a bit smarter, like in defsort.</p>"
                            (mergesort-exec part2)
                            nil)))))
 
-  (local (defthm fast-union-is-union
-           (implies (and (setp x)
-                         (setp y))
-                    (equal (fast-union x y nil)
-                           (union x y)))
-           :hints(("Goal" :in-theory (enable fast-union-set
-                                             fast-union-membership)))))
+  (local (in-theory (enable fast-union-set
+                            fast-union-membership)))
 
   (defthm mergesort-exec-set
     (setp (mergesort-exec x)))

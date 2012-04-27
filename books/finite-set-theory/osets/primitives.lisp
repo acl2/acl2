@@ -282,7 +282,7 @@ always returns <tt>nil</tt> for ill-formed sets.</p>"
            (tail X))))
 
 
-(defthm head-tail-same
+(defthmd head-tail-same
   ;; BOZO probably expensive
   (implies (and (equal (head X) (head Y))
                 (equal (tail X) (tail Y))
@@ -290,7 +290,6 @@ always returns <tt>nil</tt> for ill-formed sets.</p>"
                 (not (empty Y)))
            (equal (equal X Y)
                   t)))
-
 
 (defsection insert
   :parents (primitives)
@@ -316,6 +315,15 @@ following loop:</p>
                (setq acc (sets::insert i acc)))))
 </code>"
 
+  (local (in-theory (disable nonempty-means-set
+                             empty-set-unique
+                             head-when-empty
+                             tail-when-empty
+                             sfix-when-empty
+                             default-car
+                             default-cdr
+                             )))
+
   (defun insert (a X)
     (declare (xargs :guard (setp X)
                     :verify-guards nil))
@@ -334,7 +342,9 @@ following loop:</p>
                (t (cons (car X) (cons (cadr X) (insert a (cddr X))))))))
 
   (verify-guards insert
-    :hints(("Goal" :in-theory (enable <<))))
+    :hints(("Goal" :in-theory (e/d (<<)
+                                   (<<-trichotomy
+                                    <<-implies-lexorder)))))
 
   (defthm insert-produces-set
     (setp (insert a X)))
@@ -400,14 +410,64 @@ following loop:</p>
                  ((equal a (head X)) (tail X))
                  (t (insert a (tail X))))))
 
-  (defthm insert-insert
-    (equal (insert a (insert b X))
-           (insert b (insert a X)))
-    :rule-classes ((:rewrite :loop-stopper ((a b)))))
+  (encapsulate
+    ()
+    (local (defthm l0
+             (IMPLIES (AND (NOT (<< ACL2::Y ACL2::X))
+                           (NOT (EQUAL ACL2::X ACL2::Y)))
+                      (<< ACL2::X ACL2::Y))
+             :rule-classes ((:rewrite :backchain-limit-lst 0))))
 
-  (defthm repeated-insert
-    (equal (insert a (insert a X))
-           (insert a X)))
+    (local (defthm l1
+             (IMPLIES (<< x y)
+                      (not (<< y x)))
+             :rule-classes ((:rewrite :backchain-limit-lst 0))))
+
+    (local (in-theory (disable sfix-set-identity
+                               insert-when-empty
+                               (:definition insert)
+                               <<-trichotomy
+                               <<-asymmetric)))
+
+    (local (defthm l2
+             (implies (and (<< b (car x))
+                           (setp x))
+                      (equal (cons b (insert (car x) x))
+                             (insert b (insert (car x) x))))
+             :rule-classes ((:rewrite :backchain-limit-lst 0))
+             :hints(("Goal" :expand ((:free (x) (insert b x)))))))
+
+    (local (defthm l3
+             (implies (and (<< b (car l))
+                           (not (equal b a))
+                           (not (<< a b)))
+                      (<< b (car (insert a l))))
+             :rule-classes ((:rewrite :backchain-limit-lst 0))
+             :hints(("goal" :expand (insert a l)))))
+
+    (local (in-theory (disable head-insert
+                               tail-insert)))
+
+    (defthm repeated-insert
+      (equal (insert a (insert a X))
+             (insert a X))
+      :hints(("Goal"
+              :induct t
+              :expand ((insert a nil)
+                       (insert a x)
+                       (insert (car x) x)
+                       (:free (k1 k2) (insert a (cons k1 k2)))))))
+
+    (defthm insert-insert
+      (equal (insert a (insert b X))
+             (insert b (insert a X)))
+      :rule-classes ((:rewrite :loop-stopper ((a b))))
+      :hints(("Goal"
+              :induct t
+              :expand ((insert a x)
+                       (insert b x)
+                       (:free (k1) (insert k1 nil))
+                       (:free (k1 k2 k3) (insert k1 (cons k2 k3))))))))
 
   (defthm insert-head
     (implies (not (empty X))

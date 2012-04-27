@@ -835,7 +835,6 @@ right-hand side, but not in the left-hand side.</p>
                              subset-of-union
                              sets::expand-cardinality-of-union
                              sets::expand-cardinality-of-difference
-                             sets::intersect-cardinality-subset
                              vl-modulelist-complete-p)))
 
   (local (defthm cardinalty-<-by-proper-subset
@@ -1286,7 +1285,6 @@ run.  See @(see vl-fast-necessary-modules) for a faster alternative which use a
                              subset-of-union
                              sets::expand-cardinality-of-union
                              sets::expand-cardinality-of-difference
-                             sets::intersect-cardinality-subset
                              vl-modulelist-complete-p)))
 
   (local (defthm cardinalty-<-by-proper-subset

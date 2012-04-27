@@ -38,9 +38,8 @@
 (include-book "centaur/misc/hons-extra" :dir :system)
 (include-book "str/top" :dir :system)
 (include-book "str/fast-cat" :dir :system)
-(local (include-book "arithmetic/top" :dir :system))
+(local (include-book "arithmetic/top-with-meta" :dir :system))
 (local (include-book "data-structures/list-defthms" :dir :system))
-(local (include-book "arithmetic"))
 
 
 (defxdoc undocumented
@@ -821,7 +820,7 @@ such that <tt>p</tt> is a prefix of every list in <tt>x</tt>."
          (b* ((fal (make-fal alist (len alist)))
               (ret (look-up-each-fast x fal))
               (-   (fast-alist-free fal)))
-             ret)))
+           ret)))
 
   (local (in-theory (enable look-up-each look-up-each-fast)))
 
@@ -829,9 +828,14 @@ such that <tt>p</tt> is a prefix of every list in <tt>x</tt>."
     (equal (look-up-each-fast x alist)
            (look-up-each x alist)))
 
-  (local (defthm lemma
+  (local (defthm l0
+           (equal (hons-assoc-equal a (make-fal x y))
+                  (or (hons-assoc-equal a x)
+                      (hons-assoc-equal a y)))))
+
+  (local (defthm l1
            (implies (atom tail)
-                    (equal (look-up-each x (acl2::make-fal alist tail))
+                    (equal (look-up-each x (make-fal alist tail))
                            (look-up-each x alist)))))
 
   (verify-guards look-up-each)
@@ -897,6 +901,7 @@ and return a symbol in the ACL2 package, e.g., <tt>ACL2::*foo*</tt>."
   (defthm symbolp-of-vl-starname
     (symbolp (vl-starname name))
     :rule-classes :type-prescription))
+
 
 
 (defsection longer-than-p

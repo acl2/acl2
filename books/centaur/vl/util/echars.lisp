@@ -20,8 +20,7 @@
 
 (in-package "VL")
 (include-book "defs")
-(include-book "unicode/take" :dir :system)
-(include-book "make-event/assert" :dir :system)
+(include-book "misc/assert" :dir :system)
 (local (include-book "arithmetic"))
 
 
@@ -553,25 +552,32 @@ character list <tt>x</tt> as a base-<tt>radix</tt> number, or returns
   (local (in-theory (enable vl-echarlist-unsigned-value)))
 
   (encapsulate
-   ()
-   (local (defthm lemma
-            (implies (and (integerp radix)
-                          (<= 0 radix)
-                          (equal n (len x))
-                          (vl-echarlist-unsigned-value-aux x radix n))
-                     (natp (vl-echarlist-unsigned-value-aux x radix n)))
-            :hints(("Goal" :in-theory (enable vl-echarlist-unsigned-value-aux)))))
+    ()
+    (local (defthm natp-expt
+             (implies (and (natp a)
+                           (natp b))
+                      (natp (expt a b)))
+             :rule-classes :type-prescription))
 
-   (defthm natp-of-vl-echarlist-unsigned-value-aux
-     (implies (vl-echarlist-unsigned-value x radix)
-              (and (natp (vl-echarlist-unsigned-value x radix))
-                   (integerp (vl-echarlist-unsigned-value x radix))
-                   (<= 0 (vl-echarlist-unsigned-value x radix))))
-     :rule-classes ((:rewrite)
-                    (:type-prescription
-                     :corollary (or (not (vl-echarlist-unsigned-value x radix))
-                                    (and (integerp (vl-echarlist-unsigned-value x radix))
-                                         (<= 0 (vl-echarlist-unsigned-value x radix))))))))
+    (local (defthm lemma
+             (implies (and (integerp radix)
+                           (<= 0 radix)
+                           (equal n (len x))
+                           (vl-echarlist-unsigned-value-aux x radix n))
+                      (natp (vl-echarlist-unsigned-value-aux x radix n)))
+             :hints(("Goal" :in-theory (e/d (vl-echarlist-unsigned-value-aux)
+                                            (expt))))))
+
+    (defthm natp-of-vl-echarlist-unsigned-value-aux
+      (implies (vl-echarlist-unsigned-value x radix)
+               (and (natp (vl-echarlist-unsigned-value x radix))
+                    (integerp (vl-echarlist-unsigned-value x radix))
+                    (<= 0 (vl-echarlist-unsigned-value x radix))))
+      :rule-classes ((:rewrite)
+                     (:type-prescription
+                      :corollary (or (not (vl-echarlist-unsigned-value x radix))
+                                     (and (integerp (vl-echarlist-unsigned-value x radix))
+                                          (<= 0 (vl-echarlist-unsigned-value x radix))))))))
 
   (defthm vl-echarlist-unsigned-value-when-not-consp
     (implies (not (consp x))

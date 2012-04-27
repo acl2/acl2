@@ -214,7 +214,8 @@ check in the future to obtain something along these lines.</p>"
     (implies (in a X)
              (equal (insert a X) X))
     :hints(("Goal"
-            :in-theory (enable (:ruleset order-rules)))))
+            :in-theory (enable head-tail-same
+                               (:ruleset order-rules)))))
 
   (defthm in-insert
     (equal (in a (insert b X))
@@ -746,8 +747,8 @@ directed by @(see accumulated-persistence).</p>"
   (local (defthmd double-containment-lemma-in-tail
 	   (implies (and (subset X Y)
 			 (subset Y X))
-		    (implies (in a (tail X))     ; could be "equal" instead,
-			     (in a (tail Y))))   ; but that makes loops.
+		    (implies (in a (tail X))   ; could be "equal" instead,
+			     (in a (tail Y)))) ; but that makes loops.
 	   :hints(("Goal"
 		   :in-theory (enable (:ruleset order-rules))
 		   :use ((:instance in-tail-expand (a a) (X X))
@@ -781,6 +782,7 @@ directed by @(see accumulated-persistence).</p>"
 			 (SUBSET Y X))
 		    (EQUAL (EQUAL X Y) T))
 	   :hints(("Goal"
+                   :in-theory (enable head-tail-same)
 		   :use ((:instance double-containment-lemma-tail
 				    (X X) (Y Y))
 			 (:instance double-containment-lemma-tail
@@ -794,15 +796,19 @@ directed by @(see accumulated-persistence).</p>"
 			 (subset X Y)
 			 (subset Y X))
 		    (equal (equal X Y) t))
-	   :hints(("Goal" :induct (double-tail-induction X Y)))))
+	   :hints(("Goal"
+                   :in-theory (enable head-tail-same)
+                   :induct (double-tail-induction X Y)))))
 
   (defthm double-containment
-    ;; BOZO often expensive.  Consider backchain limits.
+    ;; I added backchain limits to this because targetting equal is so expensive.
+    ;; Even so it is possibly very expensive.
     (implies (and (setp X)
 		  (setp Y))
 	     (equal (equal X Y)
 		    (and (subset X Y)
 			 (subset Y X))))
+    :rule-classes ((:rewrite :backchain-limit-lst 1))
     :hints(("Goal" :use (:instance double-containment-is-equality)))))
 
 
@@ -812,3 +818,70 @@ directed by @(see accumulated-persistence).</p>"
 (in-theory (disable head-minimal head-minimal-2))
 
 
+
+
+
+
+;; [Jared] I moved a few things here from what used to be fast.lisp, so they can
+;; be shared across the new union/intersection/difference files
+
+; I've tried various approaches to exposing the set order.  My current strategy
+; is to open all primitives, convert IN to MEMBER, and convert SUBSET to
+; SUBSETP (list subset).  BOZO discuss the other, lifting approach.
+
+(encapsulate
+  ()
+  (local (in-theory (enable (:ruleset primitive-rules)
+                            (:ruleset order-rules))))
+
+  (defthm setp-of-cons
+    (equal (setp (cons a X))
+           (and (setp X)
+                (or (<< a (head X))
+                    (empty X)))))
+
+  (defthm in-to-member
+    (implies (setp X)
+             (equal (in a X)
+                    (if (member a x)
+                        t
+                      nil))))
+
+  (defthm not-member-when-smaller
+    (implies (and (<< a (car x))
+                  (setp x))
+             (not (member a x))))
+
+  (defthm subset-to-subsetp
+    (implies (and (setp x)
+                  (setp y))
+             (equal (subset x y)
+                    (subsetp x y))))
+
+  (defthm lexorder-<<-equiv
+    ;; This lets us optimize << into just lexorder when we've already
+    ;; checked equality.
+    (implies (not (equal a b))
+             (equal (equal (<< a b) (lexorder a b))
+                    t))
+    :hints(("Goal" :in-theory (enable <<)))))
+
+(def-ruleset low-level-rules
+  '(setp-of-cons
+    in-to-member
+    not-member-when-smaller
+    subset-to-subsetp
+    lexorder-<<-equiv
+    (:ruleset primitive-rules)
+    (:ruleset order-rules)))
+
+(in-theory (disable (:ruleset low-level-rules)))
+
+
+
+; These fast versions recur on one or both of their arguments, but not always
+; the same argument.  Hence, we need to introduce a more flexible measure to
+; prove that they terminate.  Fortunately, this is still relatively simple:
+
+(defun fast-measure (X Y)
+  (+ (acl2-count X) (acl2-count Y)))

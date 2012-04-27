@@ -51,7 +51,6 @@
 
 (local (include-book "primitives"))
 (local (include-book "membership"))
-(local (include-book "fast"))
 (local (include-book "outer"))
 (local (include-book "sort"))
 
@@ -401,7 +400,8 @@ from the accompanying talk.</p>")
                 (setp Y))
            (equal (equal X Y)
                   (and (subset X Y)
-                       (subset Y X)))))
+                       (subset Y X))))
+  :rule-classes ((:rewrite :backchain-limit-lst 1)))
 
 
 
@@ -771,6 +771,18 @@ from the accompanying talk.</p>")
 (defthm union-subset-Y
   (subset Y (union X Y)))
 
+(defthm union-with-subset-left
+  (implies (subset X Y)
+           (equal (union X Y)
+                  (sfix Y)))
+  :rule-classes ((:rewrite :backchain-limit-lst 1)))
+
+(defthm union-with-subset-right
+  (implies (subset X Y)
+           (equal (union Y X)
+                  (sfix Y)))
+  :rule-classes ((:rewrite :backchain-limit-lst 1)))
+
 (defthm union-self
   (equal (union X X) (sfix X)))
 
@@ -830,6 +842,18 @@ from the accompanying talk.</p>")
 
 (defthm intersect-subset-Y
   (subset (intersect X Y) Y))
+
+(defthm intersect-with-subset-left
+  (implies (subset X Y)
+           (equal (intersect X Y)
+                  (sfix X)))
+  :rule-classes ((:rewrite :backchain-limit-lst 1)))
+
+(defthm intersect-with-subset-right
+  (implies (subset X Y)
+           (equal (intersect Y X)
+                  (sfix X)))
+  :rule-classes ((:rewrite :backchain-limit-lst 1)))
 
 (defthm intersect-self
   (equal (intersect X X) (sfix X)))
@@ -976,20 +1000,12 @@ from the accompanying talk.</p>")
 (defthm expand-cardinality-of-union
   (equal (cardinality (union X Y))
          (- (+ (cardinality X) (cardinality Y))
-            (cardinality (intersect X Y))))
-  :rule-classes (:rewrite :linear))
+            (cardinality (intersect X Y)))))
 
 (defthm expand-cardinality-of-difference
   (equal (cardinality (difference X Y))
          (- (cardinality X)
-            (cardinality (intersect X Y))))
-  :rule-classes (:rewrite :linear))
-
-(defthm intersect-cardinality-subset
-  (implies (subset X Y)
-           (equal (cardinality (intersect X Y))
-                  (cardinality X)))
-  :rule-classes (:rewrite :linear))
+            (cardinality (intersect X Y)))))
 
 (defthm intersect-cardinality-non-subset
   (implies (not (subset x y))

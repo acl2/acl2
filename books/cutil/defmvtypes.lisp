@@ -20,7 +20,6 @@
 
 (in-package "CUTIL")
 (include-book "deflist")
-(include-book "str/natstr" :dir :system)
 
 (defxdoc defmvtypes
   :parents (cutil)
@@ -84,7 +83,8 @@ argument is provided.  For instance,</p>
   (if (not spec)
       nil
     (let* ((thmname (intern-in-package-of-symbol
-                     (str::cat (symbol-name fn) "-MVTYPES-" (str::natstr place))
+                     (str::cat (symbol-name fn) "-MVTYPES-"
+                               (coerce (explode-atom place 10) 'string))
                      fn))
            (x       (intern-in-package-of-symbol "X" fn))
            (rval    `(mv-nth ,place (,fn . ,args)))

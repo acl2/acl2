@@ -73,6 +73,24 @@
 (include-book "tutorial/intro")
 (include-book "tutorial/alu16-book")
 
+
+
+
+
+#||
+
+;; This really doesn't belong here, but I want it out of cutil/top to improve
+;; the critical path.  This just tricks the dependency scanner into building these
+;; books.
+
+(include-book "cutil/deflist-tests" :dir :system)
+(include-book "cutil/defalist-tests" :dir :system)
+(include-book "cutil/defmapappend-tests" :dir :system)
+(include-book "cutil/defprojection-tests" :dir :system)
+||#
+
+
+
 (make-event
 ; xdoc::save is an event, so we might have just called it directly.  But for
 ; reasons Jared doesn't understand this is screwing up the extended manual we

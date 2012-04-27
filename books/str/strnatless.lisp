@@ -206,6 +206,17 @@ position in the string after the number.</p>
 number from the start of a character list.  This function also serves as part
 of our logical definition.</p>"
 
+  (local (in-theory (disable acl2::nth-when-bigger
+                             acl2::negative-when-natp
+                             default-+-2
+                             default-+-1
+                             default-<-2
+                             commutativity-of-+
+                             default-<-1
+                             ACL2::|x < y  =>  0 < y-x|
+                             )))
+
+
   (defund parse-nat-from-string (x val len n xl)
     (declare (type string x)
              (type integer val)
@@ -263,12 +274,14 @@ of our logical definition.</p>"
   (defthm natp-of-val-of-parse-nat-from-string
     (and (integerp (mv-nth 0 (parse-nat-from-string x val len n xl)))
          (<= 0 (mv-nth 0 (parse-nat-from-string x val len n xl))))
-    :rule-classes :type-prescription)
+    :rule-classes :type-prescription
+    :hints(("Goal" :in-theory (disable nth nfix))))
 
   (defthm natp-of-len-of-parse-nat-from-string
     (and (integerp (mv-nth 1 (parse-nat-from-string x val len n xl)))
          (<= 0 (mv-nth 1 (parse-nat-from-string x val len n xl))))
-    :rule-classes :type-prescription)
+    :rule-classes :type-prescription
+    :hints(("Goal" :in-theory (disable nth nfix))))
 
   (defthm progress-of-parse-nat-from-string
     ;; If there's a digit there, we read at least one character.
@@ -277,7 +290,8 @@ of our logical definition.</p>"
                       (digitp (char x (nfix n)))))
              (< 0 (mv-nth 1 (parse-nat-from-string x val len n xl))))
     :rule-classes ((:rewrite) (:linear))
-    :hints(("Goal" :induct (parse-nat-from-string x val len n xl))))
+    :hints(("Goal"
+            :induct (parse-nat-from-string x val len n xl))))
 
   (defthm val-of-parse-nat-from-string
     (implies (and (stringp x)
@@ -343,6 +357,22 @@ string such as \"x0\" is considered to be less than \"x00\", etc.</p>
 
 <p>See also @(see strnat<) and @(see icharlist<).</p>"
 
+  (local (in-theory (disable acl2::nth-when-bigger
+                             acl2::negative-when-natp
+                             default-+-2
+                             default-+-1
+                             default-<-2
+                             commutativity-of-+
+                             default-<-1
+                             ACL2::|x < y  =>  0 < y-x|
+                             char<-trichotomy-strong
+                             char<-antisymmetric
+                             char<-trichotomy-weak
+                             char<-transitive
+                             expt
+                             default-car
+                             default-cdr)))
+
   (defund charlistnat< (x y)
     (declare (xargs :guard (and (character-listp x)
                                 (character-listp y))
@@ -388,48 +418,52 @@ string such as \"x0\" is considered to be less than \"x00\", etc.</p>
 
   (defthm charlistnat<-antisymmetric
     (implies (charlistnat< x y)
-             (not (charlistnat< y x))))
+             (not (charlistnat< y x)))
+    :hints(("goal" :in-theory (enable char<-antisymmetric))))
 
   (encapsulate
     ()
-    (local (defthm char<-nonsense-1
-             (implies (and (not (char< x z))
-                           (char< x y))
-                      (not (char< y z)))
-             :hints(("Goal" :in-theory (enable char<)))))
-
     (local (defthm char<-nonsense-2
              (implies (and (char< a y)
                            (not (digitp a))
                            (digitp y)
                            (digitp z))
                       (char< a z))
+             :rule-classes ((:rewrite :backchain-limit-lst 0))
              :hints(("Goal" :in-theory (enable char< digitp)))))
 
     (local (defthm char<-nonsense-3
              (implies (and (char< y a)
+                           (not (digitp a))
                            (digitp x)
-                           (digitp y)
-                           (not (digitp a)))
+                           (digitp y))
                       (char< x a))
+             :rule-classes ((:rewrite :backchain-limit-lst 0))
              :hints(("Goal" :in-theory (enable char< digitp)))))
 
     (local (defthm char<-nonsense-4
-             (implies (and (digitp x)
-                           (digitp z)
-                           (char< x y)
-                           (not (digitp y)))
+             (implies (and (char< x y)
+                           (not (digitp y))
+                           (digitp x)
+                           (digitp z))
                       (not (char< y z)))
+             :rule-classes ((:rewrite :backchain-limit-lst 0))
              :hints(("Goal" :in-theory (enable digitp char<)))))
+
+
 
     (defthm charlistnat<-transitive
       (implies (and (charlistnat< x y)
                     (charlistnat< y z))
                (charlistnat< x z))
-      :hints(("Goal" :in-theory (e/d ((:induction charlistnat<))
+      :hints(("Goal" :in-theory (e/d ((:induction charlistnat<)
+                                      char<-trichotomy-strong
+                                      char<-transitive)
                                      (expt charlistnat<-antisymmetric
                                            take-leading-digits-when-digit-listp
-                                           default-+-2 default-+-1))
+                                           default-+-2 default-+-1
+                                           BOUND-OF-LEN-OF-TAKE-LEADING-DIGITS
+                                           LEN-OF-PARSE-NAT-FROM-CHARLIST))
               :induct t
               :expand ((:free (y) (charlistnat< x y))
                        (:free (z) (charlistnat< y z)))))))
@@ -529,19 +563,19 @@ string such as \"x0\" is considered to be less than \"x00\", etc.</p>
                nil)))
 
     (local (defthm lemma-2
-             (implies (and
-                       (character-listp x)
-                       (character-listp y)
-                       (digit-listp x)
-                       (digit-listp y)
-                       (equal (len x) (len y)))
+             (implies (and (equal (len x) (len y))
+                           (character-listp x)
+                           (character-listp y)
+                           (digit-listp x)
+                           (digit-listp y))
                       (equal (equal (digit-list-value x)
                                     (digit-list-value y))
                              (equal x y)))
              :hints(("Goal"
                      :induct (my-induction x y)
                      :in-theory (enable digit-listp
-                                        digit-list-value)))))
+                                        digit-list-value
+                                        commutativity-of-+)))))
 
     (local (defthm lemma-3
              (implies (and (equal (len (take-leading-digits y))
@@ -561,13 +595,20 @@ string such as \"x0\" is considered to be less than \"x00\", etc.</p>
       (implies (and (not (charlistnat< x y))
                     (not (charlistnat< y x)))
                (equal (charlisteqv x y)
-                      t))))
+                      t))
+      :hints(("Goal" :in-theory (e/d (char<-trichotomy-strong)
+                                     (BOUND-OF-LEN-OF-TAKE-LEADING-DIGITS
+                                      TAKE-LEADING-DIGITS-WHEN-DIGIT-LISTP
+                                      ACL2::RIGHT-CANCELLATION-FOR-+
+                                      CHARLISTNAT<-ANTISYMMETRIC
+                                      CHARLISTNAT<-IRREFLEXIVE
+                                      )))))
 
-  (defthm charlistnat<-trichotomy-strong
-    (equal (charlistnat< x y)
-           (and (not (charlisteqv x y))
-                (not (charlistnat< y x))))
-    :rule-classes ((:rewrite :loop-stopper ((x y))))))
+    (defthm charlistnat<-trichotomy-strong
+      (equal (charlistnat< x y)
+             (and (not (charlisteqv x y))
+                  (not (charlistnat< y x))))
+      :rule-classes ((:rewrite :loop-stopper ((x y)))))))
 
 
 
@@ -583,6 +624,30 @@ two strings that are our current positions.</p>
 
 <p>BOZO why do we have XN and YN separately?  It seems like we should only need
 one index.</p>"
+
+  (local (in-theory (disable acl2::nth-when-bigger
+                             acl2::negative-when-natp
+                             default-+-2
+                             default-+-1
+                             default-<-2
+                             commutativity-of-+
+                             default-<-1
+                             ACL2::|x < y  =>  0 < y-x|
+                             ACL2::|x < y  =>  0 < -x+y|
+                             char<-trichotomy-strong
+                             char<-antisymmetric
+                             char<-trichotomy-weak
+                             char<-transitive
+                             acl2::negative-when-natp
+                             acl2::natp-rw
+                             expt
+                             default-car
+                             default-cdr
+                             default-coerce-1
+                             default-coerce-2
+                             (:rewrite PROGRESS-OF-PARSE-NAT-FROM-STRING)
+                             )))
+
 
   (defund strnat<-aux (x y xn yn xl yl)
     (declare (type string x)
@@ -731,7 +796,16 @@ one index.</p>"
                                acl2::nthcdr-when-not-natp
                                acl2::nthcdr-when-non-consp
                                ACL2::|x < y  =>  0 < -x+y|
-                               nthcdr len nth not)))
+                               nthcdr len nth not
+                               strnat<-aux
+;                               char-code-linear
+                               acl2::natp-fc-1
+                               acl2::natp-fc-2
+                               (:FORWARD-CHAINING CHARACTER-LISTP-COERCE)
+                               (:FORWARD-CHAINING EQLABLE-LISTP-FORWARD-TO-ATOM-LISTP)
+                               (:FORWARD-CHAINING CHARACTER-LISTP-FORWARD-TO-EQLABLE-LISTP)
+                               (:FORWARD-CHAINING ATOM-LISTP-FORWARD-TO-TRUE-LISTP)
+                               )))
     (verify-guards strnat<-aux
       :hints((and stable-under-simplificationp
                   '(:in-theory (enable digitp
@@ -762,7 +836,9 @@ one index.</p>"
             :expand ((charlistnat< (nthcdr xn (coerce x 'list))
                                    (nthcdr yn (coerce y 'list)))
                      (:free (xl yl) (strnat<-aux x y xn yn xl yl)))
-            :in-theory (e/d (charlistnat<)
+            :in-theory (e/d (charlistnat<
+                             commutativity-of-+
+                             )
                             (charlistnat<-antisymmetric
                              charlistnat<-trichotomy-strong
                              take-leading-digits-when-digit-listp

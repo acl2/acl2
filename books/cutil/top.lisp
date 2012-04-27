@@ -28,15 +28,6 @@
 (include-book "defprojection")
 (include-book "defsection")
 
-#||
-;; Fool the dependency scanner into also building the test files, even though
-;; they're not needed.
-(include-book "deflist-tests")
-(include-book "defalist-tests")
-(include-book "defmapappend-tests")
-(include-book "defprojection-tests")
-||#
-
 (defxdoc cutil
   :short "Centaur Utility Library"
 
