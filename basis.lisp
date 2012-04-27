@@ -5266,11 +5266,39 @@
             '(5 7 nil)))
      (t evisc-tuple))))
 
+(defmacro gag-mode ()
+
+  ":Doc-Section Miscellaneous
+
+  verbosity of proof output~/
+
+  Please ~pl[set-gag-mode] for an explanation of gag-mode, which can take any
+  of the following values:
+  ~bv[]
+  (gag-mode) ; generally evaluates to t, nil, or :goals
+  ~ev[]~/~/"
+
+  '(f-get-global 'gag-mode state))
+
+(defun gag-mode-evisc-tuple (state)
+  (and (gag-mode)
+       (let ((evisc-tuple (f-get-global 'gag-mode-evisc-tuple state)))
+         (cond
+          ((eq evisc-tuple :default)
+           (evisc-tuple 6 ; print-level
+                        7 ; print-length
+                        nil ; alist
+                        nil ; hiding-cars
+                        ))
+          ((eq evisc-tuple t)
+           t)
+          (t evisc-tuple)))))
+
 (defun default-evisc-tuple (state)
   (prog2$ (cw "NOTE: default-evisc-tuple has been deprecated.  Please use ~
                abbrev-evisc-tuple instead.  If you are seeing this message ~
                then you are probably using the acl2-books google repository; ~
-               please email Matt Kaufmann to find out out to eliminate this ~
+               please email Matt Kaufmann to find out how to eliminate this ~
                message.~|~%")
           (abbrev-evisc-tuple state)))
 
@@ -8047,20 +8075,6 @@
 
   (declare (ignore commentp))
   `(io? ,token t ,@rst))
-
-(defmacro gag-mode ()
-
-  ":Doc-Section Miscellaneous
-
-  verbosity of proof output~/
-
-  Please ~pl[set-gag-mode] for an explanation of gag-mode, which can take any
-  of the following values:
-  ~bv[]
-  (gag-mode) ; generally evaluates to t, nil, or :goals
-  ~ev[]~/~/"
-
-  '(f-get-global 'gag-mode state))
 
 (defmacro io?-prove (vars body &rest keyword-args)
 

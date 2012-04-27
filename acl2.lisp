@@ -470,6 +470,12 @@
 #+ccl
 (setq ccl::*record-source-file* nil)
 
+; The following avoids errors from extra right parentheses, but we leave it
+; commented out since it doesn't seem important enough to merit messing around
+; at this low level, and for just one Lisp.
+; #+ccl
+; (setq ccl::*ignore-extra-close-parenthesis* t)
+
 ; We have tried to build under ECL (Embeddable Common-Lisp), and with some
 ; modifications, we made progress -- except there appears (as of Sept. 2011) to
 ; be no good way for us to save an executable image.  Specifically, it appears
@@ -548,7 +554,7 @@
 ;;; #+ecl
 ;;; (ext:package-lock "COMMON-LISP" nil)
 
-; Finally, consider thee additional notes.
+; Finally, consider these additional notes.
 
 ;;; We need (require "cmp") if we're to use c:build-program.
 

@@ -18573,12 +18573,31 @@
   argument of an ~ilc[include-book] or ~ilc[certify-book] command will be
   converted to corresponding keywords.  ~l[defttag].
 
-  Gag-mode now is initially set to ~c[:goals], suppressing proof commentary
-  other than key checkpoints; ~pl[set-gag-mode].
+  There have been several changes to ~il[gag-mode].  It is now is initially set
+  to ~c[:goals], suppressing most proof commentary other than key checkpoints;
+  ~pl[set-gag-mode].  Also, top-level induction schemes are once again printed
+  when gag-mode is enabled.  Printing of large induction schemes is abbreviated
+  by default, but this may be modified, and such printing can even be
+  suppressed; ~pl[set-evisc-tuple], in particular the discussion there of
+  ~c[:GAG-MODE].  Finally, the commentary printed within ~il[gag-mode] that is
+  related to ~il[forcing-round]s is now less verbose.
 
   An error now occurs if ~ilc[ld] is called while loading a compiled book.
   ~l[calling-ld-in-bad-contexts].  Thanks to David Rager for reporting a
   low-level assertion failure that led us to make this change.
+
+  The ~il[proof-checker] interactive loop is more robust: most errors will
+  leave you in that loop, rather than kicking you out of the proof-checker and
+  thus back to the main ACL2 read-eval-print loop.  Thanks to David Hardin for
+  suggesting this improvement in the case of errors arising from extra right
+  parentheses.
+
+  The summary at the end of a proof now prints the following note when
+  appropriate:
+  ~bv[]
+  [NOTE: A goal of NIL was generated.  See :DOC nil-goal.]
+  ~ev[]
+  ~l[nil-goal].
 
   ~st[NEW FEATURES]
 
@@ -18942,10 +18961,20 @@
   unless waterfall-parallelism has been set to a non-~c[nil] value
   (~pl[set-waterfall-parallelism]), in which case statistics about parallel
   execution are printed instead of the usual information.
+
+  The user can now build the regression suite using waterfall ~il[parallelism].
+  See the distributed file ~c[acl2-customization-files/README] for details, and
+  ~pl[unsupported-waterfall-parallelism-features] for a disclaimer related to
+  building the regression suite using waterfall parallelism.
+
+  When building ACL2 with both the hons and parallelism extensions (what is
+  called ``ACL2(hp)''), the functions that are automatically memoized by the
+  hons extension are now automatically unmemoized and memoized when the user
+  toggles waterfall parallelism on and off, respectively.
   ~eq[]
 
-  Among the enchancements for the HONS version (~pl[hons-and-memoization]) are
-  the following.~bq[]
+  Among the enchancements for the HONS extension (~pl[hons-and-memoization])
+  are the following.~bq[]
 
   The compact-print code has been replaced by new serialization routines
   contributed by Jared Davis.  This may improve performance when including
@@ -24792,6 +24821,45 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
 
   '(print-saved-output nil nil state))
 
+(defdoc nil-goal
+  ":Doc-Section Miscellaneous
+
+  how to proceed when the prover generates a goal of ~c[nil]~/
+
+  At the end of a failed proof, one typically sees so-called ``key
+  checkpoints'' (~pl[set-gag-mode]).  These may be annotated as follows.
+  ~bv[]
+  [NOTE: A goal of NIL was generated.  See :DOC nil-goal.]
+  ~ev[]
+  This ~il[documentation] topic gives some ideas about how to think about the
+  situation described by that message: some goal has reduced to ~c[nil].
+
+  Suppose then that you see the above NOTE.  If you look back at the proof log,
+  even with ~il[gag-mode] enabled, you will see a message saying that a goal of
+  ~c[NIL] ``has been generated''.  This may indicate that the original goal is
+  not a theorem, since most of the prover's activity is to replace a goal by an
+  equivalent conjunction of its child subgoals.  However, if some ancestor of
+  the ~c[nil] goal has undergone a process other than simplification or
+  destructor elimination ~-[] fertilization (heuristic use of equalities),
+  generalization, or elimination of irrelevance ~-[] then it is quite possible
+  that the prover got to the ~c[nil] goal by replacing a goal by a
+  stronger (and perhaps false) conjunction of child subgoals.
+
+  At present, if you are using ~il[gag-mode] (the default) then you will need
+  to issue the command ~c[:]~ilc[pso] (``Print Saved Output'') if you want to
+  see whether the situation above has occurred.  However, that might not be
+  necessary.  A good rule of thumb is that if the ~c[nil] goal is under more
+  level of induction (e.g., with a prefix ``*i.j'' such as ``Subgoal
+  *1.1/2.2''), then there is some likelihood that the situation above did
+  indeed occur, and you can spend your time and energy looking at the key
+  checkpoints printed in the summary to see if they suggest useful ~il[rewrite]
+  rules to prove.  On the other hand, if the ~c[nil] goal is at the top
+  level (e.g. with a name not starting with ``*'', such as ``Subgoal 3.2''),
+  then the original conjecture is probably not a theorem.  If you do not
+  quickly see why that is the case, then you might find it useful to issue the
+  command ~c[:]~ilc[pso] to see which case reduced to ~c[nil], in order to get
+  insight about how the theorem might be falsified.~/~/")
+
 (defmacro set-saved-output (save-flg inhibit-flg)
 
   ":Doc-Section switches-parameters-and-modes
@@ -25259,6 +25327,13 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
 
 (defun-for-state set-abbrev-evisc-tuple (val state))
 
+(defun set-gag-mode-evisc-tuple (val state)
+  (set-evisc-tuple val
+                   :sites :gag-mode
+                   :iprint :same))
+
+(defun-for-state set-gag-mode-evisc-tuple (val state))
+
 (defun set-term-evisc-tuple (val state)
   (set-evisc-tuple val
                    :sites :term
@@ -25269,6 +25344,7 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
 (defun without-evisc-fn (form state)
   (state-global-let*
    ((abbrev-evisc-tuple nil set-abbrev-evisc-tuple-state)
+    (gag-mode-evisc-tuple nil set-gag-mode-evisc-tuple-state)
     (term-evisc-tuple   nil set-term-evisc-tuple-state))
    (er-progn (ld (list form)
                  :ld-verbose nil
@@ -25290,12 +25366,13 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
   expressions are printed in full for the ensuing output, regardless of the
   current evisc-tuples (~pl[set-evisc-tuple]).  ~l[set-iprint] for an example.
 
-  More precisely, ~c[without-evisc] binds the term-evisc-tuple, ld-evisc-tuple,
-  and abbrev-evisc-tuple to ~c[nil] (~pl[set-evisc-tuple]).  It does not modify
-  the trace evisc-tuple, so trace output is not modified by ~c[without-evisc].
-  Also note that calls of printing functions such as ~ilc[fmt] that include
-  explicit evisc-tuples will not have those evisc-tuples overridden.  The
-  following example illustrates this point.
+  More precisely, ~c[without-evisc] binds each of the term-evisc-tuple,
+  ld-evisc-tuple, abbrev-evisc-tuple and gag-mode-evisc-tuple to
+  ~c[nil] (~pl[set-evisc-tuple]).  It does not modify the trace evisc-tuple, so
+  trace output is not modified by ~c[without-evisc].  Also note that calls of
+  printing functions such as ~ilc[fmt] that include explicit evisc-tuples will
+  not have those evisc-tuples overridden.  The following example illustrates
+  this point.
   ~bv[]
   ACL2 !>(without-evisc
           (fms \"~~x0~~%\"

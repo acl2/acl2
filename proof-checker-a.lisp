@@ -1108,66 +1108,109 @@
 
 (defconst *pc-complete-signal* 'acl2-pc-complete)
 
+(defmacro catch-throw-to-local-top-level (form)
+  #+acl2-loop-only
+  `(mv-let (cttltl-erp cttltl-val state)
+           (read-acl2-oracle state)
+           (cond ((or cttltl-erp cttltl-val)
+                  (mv 'thrown-to-local-top-level
+                      (or cttltl-erp cttltl-val)
+                      state))
+                 (t (check-vars-not-free
+                     (cttltl-erp cttltl-val)
+                     ,form))))
+  #-acl2-loop-only
+  (let ((thrown-var (gensym)))
+    `(let* ((,thrown-var t)
+            (trip (catch 'local-top-level
+                    (prog1
+                        (multiple-value-list ,form)
+                      (setq ,thrown-var nil)))))
+       (cond (,thrown-var
+              (mv 'thrown-to-local-top-level trip state))
+             (t (assert$ (eq *the-live-state*
+                             (caddr trip))
+                         (mv (car trip) (cadr trip) state)))))))
+
 (defun pc-main-loop (instr-list quit-conditions last-value
                                 pc-print-prompt-and-instr-flg state)
-  ;; Returns an error triple whose state has
-  ;; the new state-stack "installed".  Here instr-list is a (true) list of
-  ;; instructions or else is a non-NIL atom, probably *standard-oi*,
-  ;; from which the instructions are to be read.  Notice that by
-  ;; taking (append instrs <stream>), one is able to get the system to read
-  ;; from the instr-list input until there are no more instructions,
-  ;; and then to read from the stream.
-  ;;    quit-conditions indicates when we want to quit; it is a list
-  ;; of atoms.  'signal means that we quit when
-  ;; there's a signal, while 'value means that we quit when the
-  ;; value is nil.  If quit-conditions is empty (nil) then we keep
-  ;; going, no matter what.  However, a signal to quit (i.e. *pc-complete-signal*)
-  ;; is always obeyed if 'exit is a quit-condition.
-  ;;  This only returns non-nil if we exit successfully,
-  ;; or if all instructions succeed (null erp, non-nil value) without error.
+
+; Returns an error triple whose state has the new state-stack "installed".
+; Here instr-list is a (true) list of instructions or else is a non-NIL atom,
+; probably *standard-oi*, from which the instructions are to be read.  Notice
+; that by taking (append instrs <stream>), one is able to get the system to
+; read from the instr-list input until there are no more instructions, and then
+; to read from the stream.
+
+; Quit-conditions indicates when we want to quit; it is a list of atoms.
+; 'signal means that we quit when there's a signal, while 'value means that we
+; quit when the value is nil.  If quit-conditions is empty (nil) then we keep
+; going, no matter what.  However, a signal to quit (i.e. *pc-complete-signal*)
+; is always obeyed if 'exit is a quit-condition.
+
+; This only returns non-nil if we exit successfully, or if all instructions
+; succeed (null erp, non-nil value) without error.
 
   (if (null instr-list)
       (mv nil last-value state)
-    (mv-let (col state)
-            (if pc-print-prompt-and-instr-flg
-                (print-pc-prompt state)
-              (mv 0 state))
-            (mv-let (erp instr state)
-                    (if (consp instr-list)
-                        (pprogn (if pc-print-prompt-and-instr-flg
-                                    (io? proof-checker nil state
-                                         (col instr-list)
-                                         (fms0 "~y0~|"
-                                               (list (cons #\0
-                                                           (car instr-list)))
-                                               col))
-                                  state)
-                                (value (car instr-list)))
-                      (state-global-let*
-                       ((infixp nil))
-                       (read-object instr-list state)))
-                    (declare (ignore erp))
-                    (mv-let (signal val state)
-                            (pc-single-step (make-official-pc-instr instr state) state) 
-                            (cond
-                             ((and signal
-                                   (or (member-eq 'signal quit-conditions)
-                                       (and (equal signal *pc-complete-signal*)
-                                            (member-eq 'exit quit-conditions))))
-                              (mv signal val state))
-                             ((and (null val) (member-eq 'value quit-conditions))
-                              (mv signal val state))
-                             (t (pc-main-loop
-                                 (if (consp instr-list)
-                                     (cdr instr-list)
-                                   instr-list)
-                                 quit-conditions
-                                 ;; We ultimately "succeed" if and only if every instruction "succeeds".
-                                 ;; If that decision is changed, then change documentation in CATCH
-                                 ;; meta command.
-                                 (and last-value (null signal) val)
-                                 pc-print-prompt-and-instr-flg
-                                 state))))))))
+    (mv-let
+     (col state)
+     (if pc-print-prompt-and-instr-flg
+         (print-pc-prompt state)
+       (mv 0 state))
+     (mv-let
+      (erp instr state)
+      (if (consp instr-list)
+          (pprogn (if pc-print-prompt-and-instr-flg
+                      (io? proof-checker nil state
+                           (col instr-list)
+                           (fms0 "~y0~|"
+                                 (list (cons #\0
+                                             (car instr-list)))
+                                 col))
+                    state)
+                  (value (car instr-list)))
+        (state-global-let*
+         ((infixp nil))
+         (catch-throw-to-local-top-level
+          (read-object instr-list state))))
+      (cond
+       (erp ; read error
+        (pprogn
+         (io? proof-checker nil state nil
+              (fms0
+               "~|~%~
+                /----------------------------------------------------\\~%~
+                |        NOTE: Read error -- input discarded.        |~%~
+                | Submit EXIT if you want to exit the proof-checker. |~%~
+                \\----------------------------------------------------/~%"))
+         (pc-main-loop instr-list quit-conditions last-value
+                       pc-print-prompt-and-instr-flg state)))
+       (t (mv-let
+           (signal val state)
+           (catch-throw-to-local-top-level
+            (pc-single-step
+             (make-official-pc-instr instr state)
+             state))
+           (cond
+            ((and signal
+                  (or (member-eq 'signal quit-conditions)
+                      (and (eq signal *pc-complete-signal*)
+                           (member-eq 'exit quit-conditions))))
+             (mv signal val state))
+            ((and (null val) (member-eq 'value quit-conditions))
+             (mv signal val state))
+            (t (pc-main-loop
+                (if (consp instr-list)
+                    (cdr instr-list)
+                  instr-list)
+                quit-conditions
+
+; We ultimately "succeed" if and only if every instruction "succeeds".
+
+                (and last-value (null signal) val)
+                pc-print-prompt-and-instr-flg
+                state))))))))))
 
 (defun make-initial-goal (term)
   (make goal

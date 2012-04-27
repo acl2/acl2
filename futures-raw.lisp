@@ -947,7 +947,7 @@
       (progn (setf thrown-tag 'time-limit5-tag) (setf thrown-val tclet-result))
       (progn (setf thrown-tag 'step-limit-tag) (setf thrown-val tclet-result))))
 
-; The following does not need to be inside an unwindprotect-cleanup because
+; The following does not need to be inside an unwind-protect-cleanup because
 ; set-thread-check-for-abort-and-funcall also removes the pointer to this
 ; thread in *thread-array*.
 

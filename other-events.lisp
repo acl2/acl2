@@ -11923,13 +11923,11 @@
             (include-book-er
              file1 file2
              (cons "~x0 was apparently certified with ~sa.  The inclusion of ~
-                      this book in the current ACL2 may render this ACL2 ~
-                      sesion unsound!  We recommend you recertify the book ~
-                      with the current version, ~sb.  See :DOC version.  No ~
-                      compiled file will be loaded with this book."
-                   (list (cons #\a (if (eq version :begin-portcullis-cmds)
-                                       "ACL2 Version 1.8"
-                                     version))
+                    this book in the current ACL2 may render this ACL2 sesion ~
+                    unsound!  We recommend you recertify the book with the ~
+                    current version, ~sb.  See :DOC version.  No compiled ~
+                    file will be loaded with this book."
+                   (list (cons #\a version)
                          (cons #\b (f-get-global 'acl2-version state))))
              :uncertified-okp
              suspect-book-action-alist
@@ -27921,7 +27919,7 @@
 ; We develop code for setting evisc-tuples.
 
 (defconst *evisc-tuple-sites*
-  '(:TERM :LD :TRACE :ABBREV))
+  '(:TERM :LD :TRACE :ABBREV :GAG-MODE))
 
 (defun set-site-evisc-tuple (site evisc-tuple ctx state)
 
@@ -27933,11 +27931,14 @@
   (declare (xargs :guard (and (member-eq site *evisc-tuple-sites*)
                               (or (null evisc-tuple)
                                   (eq evisc-tuple :default)
+                                  (and (eq site :gag-mode)
+                                       (eq evisc-tuple t))
                                   (standard-evisc-tuplep evisc-tuple))
                               (state-p state))))
   (case site
     (:TERM     (f-put-global 'term-evisc-tuple evisc-tuple state))
     (:ABBREV   (f-put-global 'abbrev-evisc-tuple evisc-tuple state))
+    (:GAG-MODE (f-put-global 'gag-mode-evisc-tuple evisc-tuple state))
     (:LD       (f-put-global 'ld-evisc-tuple
                              (if (eq evisc-tuple :default) nil evisc-tuple)
                              state))
@@ -28027,12 +28028,41 @@
 
 ; This function checks standard-evisc-tuplep, so it need not be untouchable.
 
-  (let ((ctx 'set-evisc-tuple))
+  (let ((ctx 'set-evisc-tuple)
+        (fail-string "The legal values for :SITES are :ALL and either members ~
+                      or subsets of the list ~x0.  The :SITES ~x1 is thus ~
+                      illegal.  See :DOC set-evisc-tuple."))
     (cond
-     ((and (eq evisc-tuple t)
-           (or (eq sites :trace) (equal sites '(:trace))))
-      (pprogn (set-trace-evisc-tuple t state)
-              (value '(:trace))))
+     ((eq evisc-tuple t)
+      (cond ((null sites)
+             (er soft ctx
+                 "The :SITES argument is required for set-evisc-tuple when a ~
+                  value of T is specified, in which case :SITES should ~
+                  specify :TRACE and/or :GAG-MODE.~ ~ See :DOC ~
+                  set-evisc-tuple."))
+            ((not (or (and (true-listp sites)
+                           (subsetp-eq sites *evisc-tuple-sites*))
+                      (member-eq sites *evisc-tuple-sites*)))
+             (er soft ctx
+                 fail-string
+                 *evisc-tuple-sites*
+                 sites))
+            (t (let ((sites (if (symbolp sites) (list sites) sites)))
+                 (cond ((not (subsetp-eq sites '(:trace :gag-mode)))
+                        (er soft ctx
+                            "You have called set-evisc-tuple with an ~
+                             `evisc-tuple' of T.  The only :SITES for which ~
+                             this is legal are :TRACE and :GAG-MODE, but you ~
+                             have supplied ~&0."
+                            sites))
+                       (t (pprogn
+                           (cond ((member-eq :TRACE sites)
+                                  (set-trace-evisc-tuple t state))
+                                 (t state))
+                           (cond ((member-eq :GAG-MODE sites)
+                                  (f-put-global 'gag-mode-evisc-tuple t state))
+                                 (t state))
+                           (value sites))))))))
      (t
       (er-progn
        (chk-evisc-tuple evisc-tuple ctx state)
@@ -28053,9 +28083,7 @@
               (set-evisc-tuple-lst (list sites) evisc-tuple nil ctx state))
              (t
               (er soft ctx
-                  "The legal values for :SITES are :ALL and either members or ~
-                   subsets of the list ~x0.  The :SITES ~x1 is thus illegal.  ~
-                   See :DOC set-evisc-tuple."
+                  fail-string
                   *evisc-tuple-sites*
                   sites))))))))
 
@@ -28140,6 +28168,13 @@
   warnings, and queries.  Initially, the alist abbreviates the ACL2
   ~c[world], print-level is 5, and print-level is 7.  The accessor is
   ~c[(abbrev-evisc-tuple state)].
+
+  o ~c[:GAG-MODE] ~-[] used at times for printing during ~il[gag-mode], in
+  particular for induction schemes.  Initially: this evisc-tuple is ~c[nil] if
+  gag-mode is off, i.e., if ~c[(gag-mode)] is ~c[nil]; and otherwise, the
+  print-level is 6 and the print-length is 7.  A special value of ~c[t]
+  indicates that no printing should be done during gag-mode when this
+  evisc-tuple would be used.  The accessor is ~c[(gag-mode-evisc-tuple state)].
 
   o ~c[:LD] ~-[] used by the ACL2 read-eval-print loop.  The accessor is
   ~c[(]~ilc[ld-evisc-tuple]~c[ state)].

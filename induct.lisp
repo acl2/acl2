@@ -2450,12 +2450,9 @@
 ; Warning: This function should be called under (io? prove ...).
 
   (cond
-   ((gag-mode)
-
-; If we decide to print induction schemes after all, then still continue not to
-; print them if (cdr pool-lst) is true, and also, in print-gag-state1,
-; eliminate the printing of "(see :DOC pso to view induction schemes)".
-
+   ((and (gag-mode)
+         (or (eq (gag-mode-evisc-tuple state) t)
+             (cdr pool-lst)))
     state)
    (t
     (pprogn
@@ -2508,7 +2505,7 @@
           If we let ~pp denote ~@n above then the induction scheme ~
           we'll use is~|~
 
-          ~qs.~
+          ~Qsy.~
 
           This induction is justified by the same argument used ~
           to admit ~xj.  ~
@@ -2547,6 +2544,7 @@
                   (cons #\5 (- len-merged-candidates
                                len-unvetoed-candidates))
                   (cons #\q len-unvetoed-candidates)
+                  (cons #\y (gag-mode-evisc-tuple state))
                   (cons #\r (zero-one-or-more len-unvetoed-candidates))
                   (cons #\6 (if (int= (- len-merged-candidates
                                          len-unvetoed-candidates)

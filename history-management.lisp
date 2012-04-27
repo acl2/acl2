@@ -3217,6 +3217,14 @@
                    (print-gag-stack-rev (cdr lst) (and limit (1- limit))
                                         orig-limit msg chan state)))))
 
+(defun maybe-print-nil-goal-generated (gag-state chan state)
+  (cond ((eq (access gag-state gag-state :abort-stack)
+             'empty-clause)
+         (fms "[NOTE: A goal of ~x0 was generated.  See :DOC nil-goal.]~|"
+              (list (cons #\0 nil))
+              chan state nil))
+        (t (newline chan state))))
+
 (defun print-gag-state1 (gag-state state)
   (cond
    ((eq (f-get-global 'checkpoint-summary-limit state) t)
@@ -3226,7 +3234,7 @@
            (abort-stack
             (access gag-state gag-state :abort-stack))
            (top-stack0 (access gag-state gag-state :top-stack))
-           (top-stack (or abort-stack top-stack0))
+           (top-stack (if (consp abort-stack) abort-stack top-stack0))
            (sub-stack (access gag-state gag-state :sub-stack))
            (some-stack (or sub-stack
 
@@ -3266,10 +3274,13 @@
                                    state))))
                   (pprogn
                    (fms "*** Key checkpoint~#0~[~/s~] ~#1~[before reverting ~
-                         to proof by induction~/at the top level~]: ***~|"
+                         to proof by induction~/at the top level~]: ***"
                         (list (cons #\0 top-stack)
-                              (cons #\1 (if abort-stack 0 1)))
+                              (cons #\1 (if (consp abort-stack) 0 1)))
                         chan state nil)
+                   (cond
+                    (sub-stack (newline chan state))
+                    (t (maybe-print-nil-goal-generated gag-state chan state)))
                    (print-gag-stack-rev
                     (reverse top-stack)
                     limit limit "before induction" chan
@@ -3280,18 +3291,11 @@
                                    'checkpoint-summary-limit
                                    state))))
                   (pprogn
-                   (cond
-                    ((gag-mode)
-                     (fms "*** Key checkpoint~#0~[~/s~] under a top-level ~
-                           induction ***~|*** (see :DOC pso to view induction ~
-                           scheme~#0~[~/s~]):   ***~|"
-                          (list (cons #\0 sub-stack))
-                          chan state nil))
-                    (t
-                     (fms "*** Key checkpoint~#0~[~/s~] under a top-level ~
-                           induction: ***~|"
-                          (list (cons #\0 sub-stack))
-                          chan state nil)))
+                   (fms "*** Key checkpoint~#0~[~/s~] under a top-level ~
+                         induction ***"
+                        (list (cons #\0 sub-stack))
+                        chan state nil)
+                   (maybe-print-nil-goal-generated gag-state chan state)
                    (print-gag-stack-rev
                     (reverse sub-stack)
                     limit
@@ -17123,6 +17127,7 @@
                                        ;;;   (e.g. misc/hons-help.lisp)
             term-evisc-tuple           ;;; see just above
             abbrev-evisc-tuple         ;;; see just above
+            gag-mode-evisc-tuple       ;;; see just above
             slow-array-action          ;;; see just above
             iprint-ar                  ;;; see just above
             iprint-soft-bound          ;;; see just above

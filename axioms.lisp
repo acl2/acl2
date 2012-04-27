@@ -17569,7 +17569,49 @@
   Time:  0.00 seconds (prove: 0.00, print: 0.00, other: 0.00)
    54
   ACL2 !>
-  ~ev[]~/
+  ~ev[]
+
+  Note that the theory being defined depends on the context.  For example,
+  consider the following (contrived) example book.
+  ~bv[]
+    (in-package \"ACL2\")
+    (defund foo (x) (consp x)) ; defund disables foo
+    (local (in-theory (enable foo)))
+    (deftheory my-theory (current-theory :here))
+    (in-theory (disable foo))
+    (defthm foo-property
+      (implies (consp x)
+               (foo x))
+      :hints ((\"Goal\" :in-theory (enable my-theory))))
+  ~ev[]
+  At the time ~c[foo-property] is proved admissible during book certification
+  (~pl[certify-book]), the ~ilc[local] ~ilc[in-theory] event has previously
+  been evaluated, so the ~il[definition] of ~c[foo] is ~il[enable]d.  Thus, the
+  ~c[:in-theory] hint on ~c[foo-property] will ~il[enable] ~c[foo], and the
+  theorem proves.  HOWEVER, when the book is later included
+  (~pl[include-book]), the ~ilc[local] event is skipped, so the definition of
+  ~c[foo] is ~il[disable]d at the time the ~il[theory] ~c[my-theory] is
+  defined.  Hence, unlike the case for the admissibility pass of the book's
+  certification, that theory does not include the definition of ~c[foo] when
+  the book is included.
+
+  There is, however, a way to ensure that a ~il[theory] defined in a book is
+  the same at ~ilc[include-book] time as it was during the admissibility pass
+  of the book's certification.  The following form illustrates how this works,
+  by serving as a replacement for the ~c[deftheory] event in the example
+  above.  To see why this works, ~pl[make-event]; also, a summary is below.
+  ~bv[]
+  (make-event
+   `(deftheory my-theory
+      ',(let ((world (w state)))
+          (current-theory :here))))
+  ~ev[]
+  In short, the ~c[make-event] call above first evaluates the backquoted
+  ~c[deftheory] call by evaluating ~c[(current-theory :here)] with ~c[world]
+  bound to the current ACL2 logical ~il[world].  The result is a form
+  ~c[(deftheory my-theory '(...))] where ``~c[(...)]'' is a list of all
+  ~il[rune]s in current theory.  This ~c[deftheory] form is stored in the
+  book's certificate, and is used when the book is included later.~/
 
   :cited-by Theories"
 
@@ -26735,6 +26777,7 @@
     state-global-let* ; raw Lisp version for efficiency
     with-reckless-readtable
     with-lock
+    catch-throw-to-local-top-level
     ))
 
 (defmacro with-live-state (form)
@@ -27145,6 +27188,7 @@
     (fmt-hard-right-margin . 77)
     (fmt-soft-right-margin . 65) ; same as proof-tree-buffer-width
     (gag-mode . nil) ; set in lp
+    (gag-mode-evisc-tuple . :default)
     (gag-state . nil)
     (gag-state-saved . nil) ; saved when gag-state is set to nil
     (global-enabled-structure . nil) ; initialized in enter-boot-strap-mode
@@ -34557,6 +34601,7 @@
 ;   ld-evisc-tuple ; already mentioned above
     term-evisc-tuple
     abbrev-evisc-tuple
+    gag-mode-evisc-tuple
     serialize-character
 
 ; others

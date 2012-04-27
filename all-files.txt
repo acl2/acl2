@@ -3764,6 +3764,7 @@ Readme.lsp
 hl-addr-combine.lisp
 pcert
 pseudo-good-worldp.lisp
+subcor-var.lisp
 sublis-var.lisp
 too-many-ifs.acl2
 too-many-ifs.lisp
