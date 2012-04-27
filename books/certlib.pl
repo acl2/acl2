@@ -36,7 +36,7 @@ my $cache_version_code = 3;
 # using
 #       carp "Description of the error\n";
 # and you get a backtrace as well.
-# use Carp;
+use Carp;
 
 sub human_time {
 
@@ -47,7 +47,7 @@ sub human_time {
     my $secs = shift;
     my $shortp = shift;
 
-    if ($secs < 0.0) {
+    if (! defined($secs) || $secs < 0.0) {
 	return "[Error]";
     }
 
@@ -377,6 +377,13 @@ sub compute_cost_paths_aux {
     $costs->{$target} = 0;
 
     my $certtime = $basecosts->{$target};
+    if (! defined $certtime) {
+	# Probably the .lisp file doesn't exist
+	my %entry = ( "totaltime" => 0.0,
+		      "maxpath" => "ERROR" );
+	$costs->{$target} = \%entry;
+	return $costs->{$target};
+    }
     
     my $targetdeps;
     if ($pcert) {
@@ -462,6 +469,11 @@ sub compute_cost_paths_aux {
 
 	($most_expensive_dep, $most_expensive_dep_total) = find_most_expensive($targetdeps, $costs);
     }
+    # if (! defined $most_expensive_dep_total) {
+    # 	carp("Most_expensive_dep undefined for $target\n");
+    # } elsif (! defined $certtime) {
+    # 	carp("Certtime undefined for $target\n");
+    # }
     my %entry = ( "totaltime" => $most_expensive_dep_total + $certtime, 
 		  "maxpath" => $most_expensive_dep );
     $costs->{$target} = \%entry;
