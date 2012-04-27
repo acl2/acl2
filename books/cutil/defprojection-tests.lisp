@@ -61,6 +61,13 @@
     :result-type integer-listp
     :optimize nil)
 
+  (defprojection slow-square-list-with-result-type-and-parallelism (x)
+    (square x)
+    :guard (integer-listp x)
+    :result-type integer-listp
+    :optimize nil
+    :parallelize t)
+
   ))
 
 

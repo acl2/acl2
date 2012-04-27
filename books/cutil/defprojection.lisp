@@ -51,6 +51,7 @@ list.</p>
         parents                 ; '(acl2::undocumented) by default
         short                   ; nil by default
         long                    ; nil by default
+        parallelize             ; nil by default
         )
 </code>
 
@@ -114,7 +115,11 @@ are as in @(see defxdoc).  Typically you only need to specify
 <tt>:parents</tt>, and suitable documentation will be automatically generated
 for <tt>:short</tt> and <tt>:long</tt>.  If you don't like this documentation,
 you can supply your own <tt>:short</tt> and/or <tt>:long</tt> to override
-it.</p>")
+it.</p>
+
+<p>The optional <tt>:parallelize</tt> keyword should be set to non-<tt>nil</tt>
+when the user wishes to parallelize the execution of the defined
+function.</p>")
 
 (defthmd defprojection-append-of-nil
   (implies (true-listp a)
@@ -128,7 +133,7 @@ it.</p>")
                               nil-preservingp already-definedp
                               guard verify-guards
                               mode optimize result-type
-                              parents short long)
+                              parents short long parallelize)
   (declare (xargs :mode :program))
   (b* (((unless (symbolp name))
         (er hard? 'defprojection "Name must be a symbol, but is ~x0." name))
@@ -243,13 +248,18 @@ it.</p>")
                    (declare (xargs :guard ,guard
                                    :mode ,mode
                                    :verify-guards nil))
-                   (mbe :logic
-                        (if (consp ,x)
-                            (cons (,elem-fn ,@(subst `(car ,x) x elem-args))
-                                  (,list-fn ,@(subst `(cdr ,x) x list-args)))
-                          nil)
-                        :exec
-                        (reverse (,exec-fn ,@list-args nil)))))))
+                   ,(if parallelize
+                        `(if (consp ,x)
+                             (pargs (cons (,elem-fn ,@(subst `(car ,x) x elem-args))
+                                          (,list-fn ,@(subst `(cdr ,x) x list-args))))
+                           nil)
+                      `(mbe :logic
+                            (if (consp ,x)
+                                (cons (,elem-fn ,@(subst `(car ,x) x elem-args))
+                                      (,list-fn ,@(subst `(cdr ,x) x list-args)))
+                              nil)
+                            :exec
+                            (reverse (,exec-fn ,@list-args nil))))))))
 
        (ndef      `(defun ,list-fn (,@list-args)
                      (nreverse (,exec-fn ,@list-args nil))))
@@ -437,10 +447,11 @@ it.</p>")
                               mode
                               (parents '(acl2::undocumented))
                               (short 'nil)
-                              (long 'nil))
+                              (long 'nil)
+                              (parallelize 'nil))
   `(make-event (let ((mode (or ',mode (default-defun-mode (w state)))))
                  (defprojection-fn ',name ',formals ',element
                    ',nil-preservingp ',already-definedp
                    ',guard ',verify-guards
                    mode ',optimize ',result-type
-                   ',parents ',short ',long))))
+                   ',parents ',short ',long ',parallelize))))
