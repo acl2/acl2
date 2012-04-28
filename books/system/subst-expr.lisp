@@ -78,9 +78,6 @@
 
 (verify-termination subst-expr-error)
 
-; The following two calls can be uncommented once the issue concerning the
-; definition and guard for subst-expr-error is settled.
+(verify-guards subst-expr-error)
 
-; (verify-guards subst-expr-error)
-
-; (verify-termination subst-expr)
+(verify-termination subst-expr)
