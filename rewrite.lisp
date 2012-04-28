@@ -1007,6 +1007,7 @@
 )
 
 (defun subst-expr-error (const)
+  (declare (xargs :guard nil))
   (er hard 'subst-expr-error
       "An attempt was made to substitute for the explicit value ~x0.  ~
        The substitution functions were optimized to disallow this."
@@ -1015,7 +1016,8 @@
 (defun subst-expr (new old term)
   (declare (xargs :guard (and (pseudo-termp new)
                               (pseudo-termp old)
-                              (not (fquotep old))
+                              (not (and (nvariablep old)
+                                        (fquotep old)))
                               (pseudo-termp term))))
   (cond ((variablep old) (subst-var new old term))
         ((fquotep old) (subst-expr-error old))

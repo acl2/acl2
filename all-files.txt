@@ -600,6 +600,7 @@ esim-sexpr-support-thms.lisp
 esim-sexpr-support.lisp
 esim-sexpr.lisp
 esim-spec.lisp
+esim-vcd.lisp
 esim-vl.lisp
 local-theory.lisp
 packages.lsp
@@ -710,6 +711,8 @@ hons-extra.lisp
 hons-remove-dups.lisp
 hons-sets.lisp
 interp-function-lookup.lisp
+load-stobj-tests.lisp
+load-stobj.lisp
 ls.lisp
 make-list.lisp
 memory-mgmt-logic.lisp
@@ -1942,10 +1945,13 @@ COPYING
 Makefile
 README
 acl2-customization.lsp
+cardinality.lisp
 cert.acl2
 computed-hints.lisp
-fast.lisp
+delete.lisp
+difference.lisp
 instance.lisp
+intersect.lisp
 map-tests.lisp
 map.lisp
 membership.lisp
@@ -1957,6 +1963,7 @@ quantify.lisp
 sets.defpkg
 sets.lisp
 sort.lisp
+union.lisp
 
 books/fix-cert:
 Makefile
@@ -3764,8 +3771,11 @@ Readme.lsp
 hl-addr-combine.lisp
 pcert
 pseudo-good-worldp.lisp
+pseudo-termp-lemmas.lisp
 subcor-var.lisp
 sublis-var.lisp
+subst-expr.lisp
+subst-var.lisp
 too-many-ifs.acl2
 too-many-ifs.lisp
 top.lisp
