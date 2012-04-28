@@ -197,20 +197,22 @@
 (defun non-recursive-fnnames (term ens wrld)
   (cond ((variablep term) nil)
         ((fquotep term) nil)
-        ((or (flambda-applicationp term)
-             (let ((def-body (def-body (ffn-symb term) wrld)))
-               (and def-body
-                    (enabled-numep (access def-body def-body :nume)
-                                   ens)
-                    (not (access def-body def-body :recursivep)))))
+        ((flambda-applicationp term)
+         (add-to-set-equal (ffn-symb term)
+                           (non-recursive-fnnames-lst (fargs term) ens wrld)))
+        ((let ((def-body (def-body (ffn-symb term) wrld)))
+           (and def-body
+                (enabled-numep (access def-body def-body :nume)
+                               ens)
+                (not (access def-body def-body :recursivep))))
          (add-to-set-eq (ffn-symb term)
                         (non-recursive-fnnames-lst (fargs term) ens wrld)))
         (t (non-recursive-fnnames-lst (fargs term) ens wrld))))
 
 (defun non-recursive-fnnames-lst (lst ens wrld)
   (cond ((null lst) nil)
-        (t (union-eq (non-recursive-fnnames (car lst) ens wrld)
-                     (non-recursive-fnnames-lst (cdr lst) ens wrld)))))
+        (t (union-equal (non-recursive-fnnames (car lst) ens wrld)
+                        (non-recursive-fnnames-lst (cdr lst) ens wrld)))))
 
 )
 

@@ -987,6 +987,9 @@
 (mutual-recursion
 
 (defun subst-expr1 (new old term)
+  (declare (xargs :guard (and (pseudo-termp new)
+                              (pseudo-termp old)
+                              (pseudo-termp term))))
   (cond ((equal term old) new)
         ((variablep term) term)
         ((fquotep term) term)
@@ -994,10 +997,12 @@
                       (subst-expr1-lst new old (fargs term))))))
 
 (defun subst-expr1-lst (new old args)
-  (cond ((null args) nil)
+  (declare (xargs :guard (and (pseudo-termp new)
+                              (pseudo-termp old)
+                              (pseudo-term-listp args))))
+  (cond ((endp args) nil)
         (t (cons (subst-expr1 new old (car args))
                  (subst-expr1-lst new old (cdr args))))))
-
 
 )
 
@@ -1008,6 +1013,10 @@
       const))
 
 (defun subst-expr (new old term)
+  (declare (xargs :guard (and (pseudo-termp new)
+                              (pseudo-termp old)
+                              (not (fquotep old))
+                              (pseudo-termp term))))
   (cond ((variablep old) (subst-var new old term))
         ((fquotep old) (subst-expr-error old))
         (t (subst-expr1 new old term))))

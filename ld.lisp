@@ -18397,9 +18397,15 @@
 ; :doc topic, using-enabled-rules.  Thanks to David Rager for pointing out how
 ; the existing warning could be improved.
 
-; Updated guards for sublis-var and sublis-var-lst, and some ancestor
-; functions, to support guard verification (in new books distributed in
-; books/system/).
+; To support guard verification (in new books distributed in books/system/):
+; Updated several guards and termination conditions (to endp).  Functions
+; affected include sublis-var and sublis-var-lst and some ancestors; subst-var
+; and subst-var-lst; and subst-expr1 and subst-expr1-lst and subst-expr.
+; Thanks to David Rager for his part in this effort, including his addition of
+; books that verify guards for these functions.
+
+; Fixed ill-guarded calls of eq and union-eq in non-recursive-fnnames and
+; non-recursive-fnnames-lst, respectively.
 
   :doc
   ":Doc-Section release-notes
@@ -18599,6 +18605,9 @@
   ~ev[]
   ~l[nil-goal].
 
+  Improved ~ilc[dmr] to show the function being called in the case of
+  explicit evaluation: ``~c[(EV-FNCALL function-being-called)]''.
+
   ~st[NEW FEATURES]
 
   A new ``tau system'' provides a kind of ``type checker.''  ~l[tau-system].
@@ -18702,9 +18711,10 @@
 
   A new top-level utility has been provided that shows the assembly language
   for a defined function symbol; ~pl[disassemble$].  Thanks to Jared Davis for
-  requesting such a utility.  Note that it uses the distributed book
-  ~c[books/misc/disassemble.lisp], which users are welcome to modify (see
-  ~url[http://www.cs.utexas.edu/users/moore/acl2/]).
+  requesting such a utility and to Shilpi Goel for pointing out an
+  inconvenience with the initial implementation.  Note that it uses the
+  distributed book ~c[books/misc/disassemble.lisp], which users are welcome to
+  modify (see ~url[http://www.cs.utexas.edu/users/moore/acl2/]).
 
   The macro ~c[set-accumulated-persistence] is an alias for
   ~ilc[accumulated-persistence].  Thanks to Robert Krug for suggesting this

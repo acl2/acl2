@@ -2182,7 +2182,7 @@
 (defvar *dmr-array*
   (make-array 10000)) ; start with default length of cw-gstack
 
-(defun reverse-into-array (lst)
+(defun reverse-into-dmr-array (lst)
   (let ((len-1 (1- (length lst))))
     (when (< (length *dmr-array*) len-1)
       (setq *dmr-array*
@@ -2387,13 +2387,15 @@
   (setf (fill-pointer *dmr-reusable-string*) 0)
   (let* ((pstk-tokens (loop for x in *pstk-stack*
                             with result = nil
-                            do (push (if (eq (car x) 'waterfall)
-                                         (car (nthcdr 8 x)) ; ctx
-                                       (car x))
+                            do (push (cond ((eq (car x) 'waterfall)
+                                            (car (nthcdr 8 x))) ; ctx
+                                           ((eq (car x) 'ev-fncall)
+                                            (list (car x) (cadr x)))
+                                           (t (car x)))
                                      result)
                             finally (return result))) ; reversed
          (pstk-tokens-tail pstk-tokens)
-         (len-1 (reverse-into-array *deep-gstack*))
+         (len-1 (reverse-into-dmr-array *deep-gstack*))
          (calling-sys-fn 'start)
          (*print-pretty* nil)
          (counter 0)

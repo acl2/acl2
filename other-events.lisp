@@ -24773,7 +24773,8 @@
                        (ubt! ',label)))
                     :ld-verbose nil
                     :ld-prompt nil
-                    :ld-post-eval-print nil))
+                    :ld-post-eval-print nil
+                    :ld-error-action :error))
                (value :invisible))))
 
 (defmacro trace! (&rest fns)

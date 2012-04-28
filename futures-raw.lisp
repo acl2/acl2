@@ -366,11 +366,20 @@
 
 (define-atomically-modifiable-counter *unassigned-and-active-future-count*
 
+; We count the number of futures that are in the unassigned or active
+; (including both started and resumed) state.  Thus, we are not including
+; futures that are in the pending state.  See also *total-future-count*.
+
 ; We treat the initial thread as an active future.
   
   1)
 
 (define-atomically-modifiable-counter *total-future-count*
+
+; We count the total number of futures, each of which is in the unassigned,
+; active (including both started and resumed), or pending state.  See also
+; *unassigned-and-active-future-count*, which does not count those in the
+; pending state.
 
 ; An invariant is that the value of this counter is always less than the value
 ; of ACL2 state global 'total-parallelism-work-limit.
@@ -489,6 +498,9 @@
   (format t "Done resetting parallelism and futures variables.~%"))
 
 (defun futures-parallelism-buffer-has-space-available ()
+
+; This test is used only to implement resource-based parallelism for futures.
+
   (< (atomically-modifiable-counter-read *unassigned-and-active-future-count*)
      *unassigned-and-active-work-count-limit*))
 
@@ -577,13 +589,14 @@
 ; cleanup-form cannot be interrupted.  Note that CCL's implementation already
 ; disables interrupts during cleanup.
 
-; Parallelism wart: we should specify a Lispworks compile-time definition (as
-; we did for CCL and SBCL).
-
   #+ccl
   `(unwind-protect ,body-form ,@cleanup-forms)
   #+sb-thread
   `(unwind-protect ,body-form (without-interrupts ,@cleanup-forms))
+
+; Parallelism wart: we should specify a Lispworks compile-time definition (as
+; we did for CCL and SBCL).
+
   #-(or ccl sb-thread)
   `(unwind-protect ,body-form ,@cleanup-forms))
 
@@ -604,6 +617,14 @@
   0)
 
 (defun claim-starting-core ()
+
+; Parallelism wart: consider the possibility that the atomic-incf completes,
+; and then a control-c causes an interrupt before the unwind-protect is entered
+; -- so we leave *threads-waiting-for-starting-core* incremented, and its value
+; creeps up this way during the ACL2 session.  A solution may be to have a flag
+; that is set when the atomic-incf is completed, and set that flag within a
+; without-interrupts.
+
   (atomic-incf *threads-waiting-for-starting-core*)
   (let ((notification (make-semaphore-notification)))
     (unwind-protect-disable-interrupts-during-cleanup
@@ -620,7 +641,7 @@
 
 (defun claim-resumptive-core ()
 
-; Parallelism blemish: the following script showcases a bug where the
+; Parallelism blemish: the following script provokes a bug where the
 ; *idle-resumptive-core* semaphore signal isn't being appropriately
 ; received... most likely because it's not being signaled (otherwise it would
 ; be a CCL issue).
@@ -657,13 +678,19 @@
        (atomic-decf *idle-future-resumptive-core-count*)))))
 
 (defun free-allocated-core ()
+
+; This function frees an allocated core only if there is one!  Thus, it is
+; perfectly safe to call this function even when a core has not been allocated
+; to the current thread.  This notion is thread-local, as is the special
+; variable *allocated-core*.
+
   (without-interrupts
-   (cond ((equal *allocated-core* *starting-core*)
+   (cond ((eq *allocated-core* *starting-core*)
           (atomic-incf *idle-future-core-count*)
           (signal-semaphore *idle-core*)
           (setf *allocated-core* nil))
          
-         ((equal *allocated-core* *resumptive-core*)
+         ((eq *allocated-core* *resumptive-core*)
           (atomic-incf *idle-future-resumptive-core-count*)
           (signal-semaphore *idle-resumptive-core*)
           (setf *allocated-core* nil))
@@ -675,25 +702,31 @@
 (defun early-terminate-children (index)
 
 ; With the current design, it is assumed that only one thread will be issuing
-; early termination orders -- the thread that generated the future stored at
-; the given index.  It's possible to change the design, but it would require
-; more locking.
+; an early termination order to any given future -- the thread that generated
+; the future stored at the given index.  It's possible to change the design,
+; but it would require more locking.
 
 ; Due to this more specific design, the function is named
 ; "early-terminate-children.  A more general function could be named
 ; "early-terminate-relatives".
 
   (abort-future-indexes (faref *future-dependencies* index))
-  (setf (faref *future-dependencies* index) nil)
-)
+  (setf (faref *future-dependencies* index) nil))
 
+; Debug variables:
 (defvar *aborted-futures-via-flag* 0)
 (defvar *aborted-futures-total* 0)
 
+; Debug variables:
 (defvar *futures-resources-available-count* 0)
 (defvar *futures-resources-unavailable-count* 0)
 
 (defun set-thread-check-for-abort-and-funcall (future)
+
+; This function sets the current index in *thread-array* to the current thread,
+; checks whether the given future has been marked as aborted, and if not then
+; executes the closure field of the given future.
+
   (let* ((index (mt-future-index future))
          (closure (mt-future-closure future))
 ; Bind thread-local versions of special variables here.
@@ -703,9 +736,14 @@
          (early-terminated t))
     (unwind-protect-disable-interrupts-during-cleanup
      (progn
-       (claim-starting-core)
+
+; It might not be necessary to claim a starting core until after we check
+; whether the future has been marked as aborted.  But David Rager believes that
+; he had a reason for doing things in this order, and the resulting
+; inefficiency seems very minor, so we leave this as is.
+
+       (claim-starting-core) ; It is common to wait here.
        (setf (faref *thread-array* index) (current-thread))
-       ;; (setf *current-thread-index* index) ; redundant
        (if (mt-future-aborted future)
            (incf *aborted-futures-via-flag*)
          (progn ;(format t "starting index ~s~%" *current-thread-index*)
