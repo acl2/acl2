@@ -60,6 +60,86 @@ message in source file acl2-init.lisp.")
 ; functionality of the ACL2 system proper (i.e., without the experimental
 ; extension for parallelism).
 
+; The implementation of the multi-threading primitives -- futures, spec-mv-let,
+; plet, pargs, pand, and por -- has a dependency structure shown as follows.
+; For example, mult-threading primitives are at the base of everything, futures
+; and plet/pargs/pand/por are built on top of these primitives, and so forth,
+; as indicated by the indentations.
+
+; multi-threading primitives (semaphores, locks, condition variables, etc)
+;   futures
+;     spec-mv-let
+;       waterfall parallelism
+;       user-level program parallelism (no examples as of April 2012)
+;   plet, pargs, pand, por
+;     user-level program parallelism (e.g., books/parallel/fibonacci.lisp) 
+
+; This dependency structure roughly correlates to the following file structure.
+
+; #+acl2-par
+; multi-threading-raw.lisp (defines multi-threading primitives)
+;   parallel-raw.lisp  (provides raw Lisp defs. of plet, pargs, pand, and por)
+;     futures-raw.lisp (defines futures and uses some helper functions
+;                       from parallel-raw.lisp)
+;       parallel.lisp
+; #-acl2-par
+; parallel.lisp
+
+; One might wonder how we use threads to execute pieces of parallelism work
+; (where "pieces of parallelism work" can mean either futures, bindings of
+; plet, arguments of calls surrounded by pargs, or arguments given to pand or
+; por).  For futures, the story is as follows.
+
+; (1) A primitive adds a piece of parallelism work to one of the two
+;     parallelism queues (either *future-array* or *work-queue*, as
+;     appropriate).
+;
+; (2) The primitive checks to see if there are enough threads already in
+;     existence to process that piece of parallelism work.  If so, the
+;     primitive returns and execution continues until the result of the
+;     parallelized computation is needed.  If not, the primitive creates one to
+;     many "worker threads" to consume pieces of parallelism work.
+;
+; (3) The primitive may eventually need the result from the piece of
+;     parallelism work.  In this case, it will read the value from the piece of
+;     parallelism work (once it is available) and use it as appropriate.  In
+;     the case that the primitive does not need the value (as can happen with a
+;     pand/por or a spec-mv-let, when the speculative computation is determined
+;     to be useless), the primitive will abort (or early terminate) the
+;     parallel execution of the piece of parallelism work.
+;
+; When a worker thread is created, it performs the following sequence of
+; steps.
+;
+; (A) Waits until there is a piece of parallelism work to consume.  A worker
+;     thread will wait between 10 and 120 seconds before "giving up", unwinding
+;     itself, and freeing itself as a resource for the operating system to
+;     collect.  The reader might be tempted to assume that there would
+;     immediately be work, but this is not guaranteed to be the case (because,
+;     for efficiency reasons, we typically create a handful more threads than
+;     are needed).
+;
+; (B) Waits until there is an idle CPU core available, as determined by our
+;     resource management using the multi-threading primitives available to us
+;     in the Lisp (as opposed to trying to tell the operating system how to
+;     schedule our threads).  There is no timeout associated with this wait.
+;
+; (C) Making it to (C) requires that the thread first made it through (A) and
+;     then also made it through (B).  Thus, the thread has both a piece of
+;     parallelism work and a CPU core.  At this point, the thread executes that
+;     piece of parallelism work.
+;
+; (D) Perhaps the piece of parallelism work itself encounters a parallelism
+;     primitive and decides to further parallelize execution.  In this case,
+;     the worker thread will do (1), (2), and (3), as explained above.
+;
+; (E) At this point, the worker thread has finished executing the piece of
+;     parallelism work and stores the result of that execution in the
+;     appropriate place (e.g., for futures, it stores the execution result in
+;     the "value" slot of the future).
+;
+; (F) After performing some cleanup, the thread goes back to (A).
+
 ; We use the phrase "Parallelism wart:" to label comments about known issues
 ; for the #+acl2-par build of ACL2 that we would like to fix, time permitting.
 ; We also use the phrase "Parallelism blemish:" to identify known issues for

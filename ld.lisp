@@ -18537,16 +18537,6 @@
   called without a ~c[:ttagsx] argument supplied, then the value of ~c[:ttagsx]
   defaults to the (explicit or default) value of the ~c[:ttags] argument.
 
-  Improvements have been made related to the reading of characters.  In
-  particular, checks are now done for ASCII encoding and for the expected
-  ~ilc[char-code] values for ~c[Space], ~c[Tab], ~c[Newline], ~c[Page], and
-  ~c[Rubout].  Also, an error no longer occurs with certain uses of
-  non-standard characters.  For example, it had caused an error to certify a
-  book after a single ~il[portcullis] ~il[command] of
-  ~c[(make-event `(defconst *my-null* ,(code-char 0)))]; but this is no longer
-  an issue.  Thanks to Jared Davis for helpful correspondence that led us to
-  make these improvements.
-
   The ~c[:]~ilc[pl] and ~c[:]~ilc[pl2] ~il[command]s can now accept ~il[term]s
   that had previously been rejected.  For example, the command
   ~c[:pl (member a (append x y))] had caused an error, but now it works as one
@@ -18586,7 +18576,9 @@
   by default, but this may be modified, and such printing can even be
   suppressed; ~pl[set-evisc-tuple], in particular the discussion there of
   ~c[:GAG-MODE].  Finally, the commentary printed within ~il[gag-mode] that is
-  related to ~il[forcing-round]s is now less verbose.
+  related to ~il[forcing-round]s is now less verbose.  Thanks to Dave Greve and
+  David Rager for discussions leading to the change in the printing of
+  induction schemes under gag-mode.
 
   An error now occurs if ~ilc[ld] is called while loading a compiled book.
   ~l[calling-ld-in-bad-contexts].  Thanks to David Rager for reporting a
@@ -18904,13 +18896,29 @@
   It is now an error to include a ~il[stobj] name in the ~c[:renaming] alist
   (~pl[defstobj]).
 
+  Some bogus warnings about non-recursive function symbols have been eliminated
+  for rules of class ~c[:]~ilc[type-prescription].
+
   ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]
 
-  The character encoding has been fixed at iso-8859-1.
+  Improvements have been made related to the reading of characters.  In
+  particular, checks are now done for ASCII encoding and for the expected
+  ~ilc[char-code] values for ~c[Space], ~c[Tab], ~c[Newline], ~c[Page], and
+  ~c[Rubout].  Also, an error no longer occurs with certain uses of
+  non-standard characters.  For example, it had caused an error to certify a
+  book after a single ~il[portcullis] ~il[command] of
+  ~c[(make-event `(defconst *my-null* ,(code-char 0)))]; but this is no longer
+  an issue.  Thanks to Jared Davis for helpful correspondence that led us to
+  make these improvements.
+
+  The character encoding for reading from files has been fixed at iso-8859-1.
   ~l[character-encoding].  Thanks to Jared Davis for bringing this portability
   issue to our attention (as this change arose in order to deal with a change
   in the default character encoding for the host Lisp, CCL), and pointing us in
-  the right direction for dealing with it.
+  the right direction for dealing with it.  In many cases, the character
+  encoding for reading from the terminal is also iso-8859-1; but this is not
+  guaranteed.  In particular, when the host Lisp is SBCL this may not be the
+  case.
 
   Although the HTML documentation is distributed with ACL2, it had not been
   possible for users to build that documentation without omitting graphics, for

@@ -29630,8 +29630,8 @@
   In order to help guarantee the portability of files (including ~il[books]),
   ACL2 installs a common character encoding for reading files, often known as
   iso-8859-1 or latin-1.  For some host Lisps this character encoding is also
-  used for reading from the terminal (but, sadly, this doesn't seem to be
-  possible for all host Lisps).
+  used for reading from the terminal; but, sadly, this may not hold for all
+  host Lisps, and may not even be possible for some of them.
 
   The use of the above encoding could in principle cause problems if one's
   editor produces files using an encoding other than iso-8859-1, at least if

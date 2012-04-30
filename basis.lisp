@@ -5280,20 +5280,6 @@
 
   '(f-get-global 'gag-mode state))
 
-(defun gag-mode-evisc-tuple (state)
-  (and (gag-mode)
-       (let ((evisc-tuple (f-get-global 'gag-mode-evisc-tuple state)))
-         (cond
-          ((eq evisc-tuple :default)
-           (evisc-tuple 6 ; print-level
-                        7 ; print-length
-                        nil ; alist
-                        nil ; hiding-cars
-                        ))
-          ((eq evisc-tuple t)
-           t)
-          (t evisc-tuple)))))
-
 (defun default-evisc-tuple (state)
   (prog2$ (cw "NOTE: default-evisc-tuple has been deprecated.  Please use ~
                abbrev-evisc-tuple instead.  If you are seeing this message ~
@@ -5330,6 +5316,22 @@
           (flg ;;; (evisc-tuple 3 4 nil nil)
            '(nil 3 4 nil))
           (t nil))))
+
+(defun gag-mode-evisc-tuple (state)
+  (cond ((gag-mode)
+         (let ((evisc-tuple (f-get-global 'gag-mode-evisc-tuple state)))
+           (cond
+            ((eq evisc-tuple :default)
+             (or (term-evisc-tuple nil state)
+                 (evisc-tuple 6 ; print-level
+                              7 ; print-length
+                              nil ; alist
+                              nil ; hiding-cars
+                              )))
+            ((eq evisc-tuple t)
+             t)
+            (t evisc-tuple))))
+        (t (term-evisc-tuple nil state))))
 
 (defun ld-evisc-tuple (state)
 

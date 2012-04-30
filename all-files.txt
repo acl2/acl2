@@ -2162,7 +2162,6 @@ assert.lisp
 bash.lisp
 beta-reduce.lisp
 callers-and-ancestors.lisp
-character-encoding-test.acl2
 character-encoding-test.lisp
 check-acl2-exports.lisp
 computed-hint-rewrite.lisp

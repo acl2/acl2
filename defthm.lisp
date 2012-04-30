@@ -7301,6 +7301,64 @@
                              wrld))
               wrld)))))
 
+(defun strong-compound-recognizer-p (fn recognizer-alist ens)
+  (cond ((endp recognizer-alist) nil)
+        ((let ((recog-tuple (car recognizer-alist)))
+           (and (eq fn (access recognizer-tuple recog-tuple :fn))
+                (access recognizer-tuple recog-tuple :strongp)
+                (enabled-numep (access recognizer-tuple recog-tuple :nume)
+                               ens)))
+         t)
+        (t (strong-compound-recognizer-p fn (cdr recognizer-alist) ens))))
+
+(defun warned-non-rec-fns-for-tp (term recognizer-alist ens wrld)
+  (cond ((or (variablep term)
+             (fquotep term))
+         nil)
+        ((flambdap (ffn-symb term))
+         (cons (ffn-symb term)
+               (non-recursive-fnnames-lst (fargs term) ens wrld)))
+        ((eq (ffn-symb term) 'if)
+
+; Type-set and assume-true-false explore the top-level IF structure in such a
+; way that NOT and strong compound recognizers aren't problems.
+
+         (union-equal
+          (warned-non-rec-fns-for-tp
+           (fargn term 1) recognizer-alist ens wrld)
+          (union-equal
+           (warned-non-rec-fns-for-tp
+            (fargn term 2) recognizer-alist ens wrld)
+           (warned-non-rec-fns-for-tp
+            (fargn term 3) recognizer-alist ens wrld))))
+        ((eq (ffn-symb term) 'not)
+         (warned-non-rec-fns-for-tp (fargn term 1) recognizer-alist ens wrld))
+        ((strong-compound-recognizer-p (ffn-symb term) recognizer-alist ens)
+         (non-recursive-fnnames-lst (fargs term) ens wrld))
+        (t (non-recursive-fnnames term ens wrld))))
+
+(defun warned-non-rec-fns-tp-hyps1 (hyps recognizer-alist ens wrld acc)
+  (cond ((endp hyps) acc)
+        (t (warned-non-rec-fns-tp-hyps1
+            (cdr hyps)
+            recognizer-alist ens wrld
+            (let ((hyp (if (and (nvariablep (car hyps))
+;                               (not (fquotep (car hyps))) ; implied by:
+                                (member-eq (ffn-symb (car hyps))
+                                           '(force case-split)))
+                           (fargn (car hyps) 1)
+                         (car hyps))))
+              (cond (acc (union-equal (warned-non-rec-fns-for-tp
+                                       hyp recognizer-alist ens wrld)
+                                      acc))
+                    (t (warned-non-rec-fns-for-tp
+                        hyp recognizer-alist ens wrld))))))))
+
+(defun warned-non-rec-fns-tp-hyps (hyps ens wrld)
+  (warned-non-rec-fns-tp-hyps1 hyps
+                               (global-val 'recognizer-alist wrld)
+                               ens wrld nil))
+
 (defun chk-acceptable-type-prescription-rule (name typed-term term
                                                    backchain-limit-lst
                                                    ctx ens wrld state)
@@ -7354,10 +7412,7 @@
            (t state))
           (let* ((warned-non-rec-fns
                   (and (not (warning-disabled-p "Non-rec"))
-                       (non-recursive-fnnames-lst 
-                        (strip-top-level-nots-and-forces hyps)
-                        ens
-                        wrld)))
+                       (warned-non-rec-fns-tp-hyps hyps ens wrld)))
                  (warned-free-vars
                   (and (not (warning-disabled-p "Free"))
                        (free-vars-in-hyps hyps

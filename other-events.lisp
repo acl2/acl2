@@ -28170,12 +28170,14 @@
   ~c[world], print-level is 5, and print-level is 7.  The accessor is
   ~c[(abbrev-evisc-tuple state)].
 
-  o ~c[:GAG-MODE] ~-[] used at times for printing during ~il[gag-mode], in
-  particular for induction schemes.  Initially: this evisc-tuple is ~c[nil] if
-  gag-mode is off, i.e., if ~c[(gag-mode)] is ~c[nil]; and otherwise, the
-  print-level is 6 and the print-length is 7.  A special value of ~c[t]
-  indicates that no printing should be done during gag-mode when this
-  evisc-tuple would be used.  The accessor is ~c[(gag-mode-evisc-tuple state)].
+  o ~c[:GAG-MODE] ~-[] used for some printing when ~il[gag-mode] is on, in
+  particular for induction schemes.  By default, or if ~c[set-evisc-tuple] has
+  set the value to ~c[:default], or if gag-mode is off, the value used for this
+  ~il[evisc-tuple] is ~c[(term-evisc-tuple flg state)] if that value is
+  non-~c[nil], else ~c[(evisc-tuple 6 7 nil nil)] ~-[] print-level 6,
+  print-length 7.  A special value of ~c[t] indicates that no printing should
+  be done during gag-mode when this evisc-tuple would be used.  Otherwise, the
+  value is an evisc-tuple.  The accessor is ~c[(gag-mode-evisc-tuple state)].
 
   o ~c[:LD] ~-[] used by the ACL2 read-eval-print loop.  The accessor is
   ~c[(]~ilc[ld-evisc-tuple]~c[ state)].
