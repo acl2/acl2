@@ -3767,6 +3767,7 @@ triangle-def.lisp
 books/system:
 Makefile
 Readme.lsp
+convert-normalized-term-to-pairs.lisp
 hl-addr-combine.lisp
 pcert
 pseudo-good-worldp.lisp
