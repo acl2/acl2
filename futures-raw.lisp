@@ -772,13 +772,14 @@
 
 (defvar *throwable-future-worker-thread*
 
-; Used for checking whether the thread receiving a :result-no-longer-needed
-; throw would have any meaning.  So, if *throwable-future-worker-thread* is
-; nil, then there's no point in throwing said tag, because there wouldn't be
-; any work to abort.
+; A given thread may be interrupted and told to throw the tag
+; :result-no-longer-needed, as a means to abort a future.  However, it will
+; ignore that request if and only if this (thread-local) variable is nil.  In
+; the case that this variable is nil, there's no point in throwing said tag,
+; because there is no work to abort.
 ;
 ; *Throwable-future-worker-thread* is unrelated to tag
-; *:worker-thread-no-longer-needed.
+; :worker-thread-no-longer-needed.
 
 ; Parallelism blemish: pick a name that makes it more obvious that this
 ; variable is unrelated to variable *throwable-worker-thread*.
@@ -786,9 +787,40 @@
  nil)
 
 (defun wait-for-a-closure ()
+
+; To understand this function, first consider *last-slot-saved* and
+; *last-slot-taken*.  These are indices into *future-array*, where
+; *last-slot-saved* is the maximum index at which a future produced to be
+; executed was placed, while *last-slot-taken* is the maximum index from which
+; a future has been consumed by a worker thread.  So when taken < saved, the
+; indices inbetween hold futures that are awaiting execution.  Thus, when taken
+; >= saved, there is no work waiting to be started.  Note that these "indices"
+; actually can grow without bound; function faref comprehends the wrap-around
+; nature of *future-array*, converting them to actual indices.
+
   (loop while (>= (atomically-modifiable-counter-read *last-slot-taken*)
                   (atomically-modifiable-counter-read *last-slot-saved*))
         do
+
+; There is no work to be done, so wait on a semaphore that signals the
+; placement of a new future in *future-array*.  The code below returns when
+; either there is a timeout during that wait, or else a new future has been
+; added to *future-array*.  In the latter case, *last-slot-saved* will have
+; been increased.  Typically, *last-slot-taken* will not yet have been
+; increased -- the current thread will increment it soon after returning from
+; this function.  (Note that the increment happens before execution of the new
+; future by this thread, which will take place when a core becomes available --
+; and that may take awhile).
+
+; Why are we in a while loop?  Even though *last-slot-saved* has been increased
+; and the current thread has not yet increased *last-slot-taken*, it is
+; possible for some other thread to increase *last-slot-taken*.  That can
+; happen when another thread comes along just after the semaphore notification
+; comes to the current thread, below, and the other thread sees the test above
+; as false -- so for that thread, the present function does nothing and that
+; thread goes on to increment *last-slot-taken*.
+
+; But how long do we wait on the semaphore, below, before timing out?
 
 ; As of Feb 19, 2012, instead of picking a somewhat random duration to wait, we
 ; would always wait 15 seconds.  This was fine, except that a proof done by
@@ -829,11 +861,19 @@
         (let ((random-amount-of-time (+ 10 (random 110.0))))
           (when (not (wait-on-semaphore *future-added* 
                                         :timeout random-amount-of-time))
+
+; Then we timed out.  (If the semaphore had been obtained, then the above call
+; of wait-on-semaphore would have returned t.)
+
             (throw :worker-thread-no-longer-needed nil)))))
 
+; Debug variables:
 (defvar *busy-wait-var* 0)
 (defvar *current-waiting-thread* nil)
 (defvar *fresh-waiting-threads* 0)
+
+; We now develop support for our throw-catch-let macro.  Note that "tclet"
+; abbreviates "throw-catch-let".
 
 (defun make-tclet-thrown-symbol1 (tags first-tag)
   (if (endp tags)
@@ -897,54 +937,59 @@
 ; Cleanups is a list of forms, one of which will be executed in the event that
 ; the corresponding tag is thrown.  The tags and cleanup forms are given their
 ; association with each other by their order.  So, if tag 'x-tag is the third
-; element in tags, the cleanup form for 'x-tag should also be the third form in
-; cleanups.
+; element in tags, the cleanup form for 'x-tag should similarly be the third
+; form in cleanups.
 
 ; This macro does not support throwing multiple-values as a throw's return
-; value.
+; value.  (Probably it could, however, by replacing prog1 by
+; multiple-value-prog1.)
 
-; Here is an example of what we expect throw-catch-let to automatically do for
-; us.  We let throw-catch-let worry about the details.  Some examples of such
-; details are: (1) whether we have the right order for checking one-thrown,
-; one-or-two-thrown, et al. (2) whether our catches are in the right order, (3)
-; whether the value returned by the catches is the right value (which is why we
-; have to use prog1).  Note that this form is missing some of the detail (e.g.,
-; the aforementioned prog1).
+; Consider the following example.
 
-;; (let ((one-thrown 't)
-;;       (one-or-two-thrown 't)
-;;       (one-or-two-or-three-thrown 't))
-;;   (catch 'one
-;;     (catch 'two
-;;       (catch 'three
-;;         (arbitrary-code-here)
-;;         ;; (if X
-;;         ;;     (throw 'one)
-;;         ;;   (if Y
-;;         ;;       (throw 'two)
-;;         ;;     (if Z
-;;         ;;         (throw 'three)
-;;         ;;       nil)))
-;;         (setq one-or-two-or-three-thrown nil))
-;;       (setq one-or-two-thrown nil))
-;;     (setq one-thrown nil))
-;;   (cond
-;;    (one-thrown (handle-one))
-;;    (one-or-two-thrown (handle-two))
-;;    (one-or-two-or-three-thrown (handle-three))))
+;   (throw-catch-let
+;    (one two three)
+;    ; The following might invoke (throw 'one), (throw 'two), and/or
+;    ; (throw 'three).
+;    (arbitrary-code-here)
+;    ((handle-one)
+;     (handle-two)
+;     (handle-three)))
 
-; Here is an example use of throw-catch-let.
+; Here is the single-step macroexpansion of the above example.
+
+;   (let ((one-thrown t)
+;         (one-thrown-or-two-thrown t)
+;         (one-thrown-or-two-thrown-or-three-thrown t))
+;     (let ((tclet-result
+;            (catch 'one
+;              (prog1 (catch 'two
+;                       (prog1 (catch 'three
+;                                (prog1
+;                                 (arbitrary-code-here)
+;                                 (setq
+;                                  one-thrown-or-two-thrown-or-three-thrown
+;                                  nil)))
+;                              (setq one-thrown-or-two-thrown nil)))
+;                     (setq one-thrown nil)))))
+;       (prog2 (cond (one-thrown (handle-one))
+;                    (one-thrown-or-two-thrown (handle-two))
+;                    (one-thrown-or-two-thrown-or-three-thrown
+;                     (handle-three))
+;                    (t nil))
+;              tclet-result)))
+
+; Here is a more concrete example use of throw-catch-let.
        
-;; (throw-catch-let
-;;  (x y)
-;;  (cond ((equal *flg* 3) (throw 'x 10))
-;;        ((equal *flg* 4) (throw 'y 11))
-;;        (t 7))  
-;;  ((setq *x-thrown* t)
-;;   (setq *y-thrown* t)))
+;   (throw-catch-let
+;    (x y)
+;    (cond ((equal *flg* 3) (throw 'x 10))
+;          ((equal *flg* 4) (throw 'y 11))
+;          (t 7))  
+;    ((setq *x-thrown* t)
+;     (setq *y-thrown* t)))
 
-; While Rager wrote this macro, Nathan Wetzler has his gratitude for helping
-; derive the main ideas.
+; While Rager wrote this macro, he thanks Nathan Wetzler for co-development of
+; the main ideas.
 
   (let* ((thrown-tags (make-tclet-thrown-tags tags)))    
     `(let ,(make-tclet-bindings tags)

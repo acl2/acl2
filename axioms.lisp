@@ -22407,7 +22407,26 @@
   ~l[type-spec] for a discussion of the legal type
   specifications.~/
 
-  ~c[The] is defined in Common Lisp.  See any Common Lisp documentation
+  The following remark is for those who verify guards for their
+  functions (~pl[guard] and ~pl[verify-guards]).  We remark that a call of
+  ~c[(the TYPE EXPR)] in the body of a function definition generates a guard
+  proof obligation that the type, ~c[TYPE], holds for the value of the
+  expression, ~c[EXPR].  Consider the following example.
+  ~bv[]
+  (defun f (x)
+    (declare (xargs :guard (p1 x)))
+    (if (p2 x)
+        (the integer x)
+      17))
+  ~ev[]
+  The ~il[guard] proof obligation generated for the ~c[THE] expression above is
+  as follows.
+  ~bv[]
+  (implies (and (p1 x) (p2 x))
+           (integerp x))
+  ~ev[]
+
+  ~c[THE] is defined in Common Lisp.  See any Common Lisp documentation
   for more information.~/"
 
   (declare (xargs :guard (translate-declaration-to-guard x 'var nil)))

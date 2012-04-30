@@ -60,11 +60,18 @@ message in source file acl2-init.lisp.")
 ; functionality of the ACL2 system proper (i.e., without the experimental
 ; extension for parallelism).
 
+; At the lowest level, parallel computation is carried out by Lisp threads,
+; which provide Lisp-level abstractions of OS threads.  A thread can be running
+; or blocked (e.g., waiting for a semaphore signal).  Threads can create other
+; threads.  We manage the creation and use of threads to reflect the resources
+; we have available, for example the number of available cpu cores according to
+; our own tracking.
+
 ; The implementation of the multi-threading primitives -- futures, spec-mv-let,
 ; plet, pargs, pand, and por -- has a dependency structure shown as follows.
-; For example, mult-threading primitives are at the base of everything, futures
-; and plet/pargs/pand/por are built on top of these primitives, and so forth,
-; as indicated by the indentations.
+; For example, multi-threading primitives are at the base of everything,
+; futures and plet/pargs/pand/por are built on top of these primitives, and so
+; forth, as indicated by the indentations.
 
 ; multi-threading primitives (semaphores, locks, condition variables, etc)
 ;   futures
