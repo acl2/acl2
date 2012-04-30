@@ -16,8 +16,10 @@ worldp-check.lisp
  )
  (:TITLE "System Books")
  (:AUTHOR/S
-  "Jared Davis for hl-addr-combine.lisp; David Rager for
-   verified-termination-and-guards.lisp; Matt Kaufmann and J Moore for the rest")
+  "Jared Davis for hl-addr-combine.lisp;
+   David Rager for verified-termination-and-guards.lisp,
+     pseudo-termp-lemmas.lisp,subst-expr.lisp, and subcor-var.lisp;
+   Matt Kaufmann and J Moore for the rest")
  (:Keywords "Logical World")
  (:ABSTRACT
 
