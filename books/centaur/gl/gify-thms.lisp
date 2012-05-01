@@ -10,76 +10,91 @@
 (local (include-book "hyp-fix-logic"))
 (include-book "unicode/two-nats-measure" :dir :system)
 
-;;(defthm gobjectp-g-apply
-;;  (implies (and (symbolp fn)
-;;                (gobjectp args))
-;;           (gobjectp (g-apply fn args))))
+;; These events are included here redundantly to avoid having to include all
+;; the above (locally-included) books everywhere we want a GL clause processor.
 
-;;(defthm gobjectp-gl-cons
-;;  (gobjectp (gl-cons x y)))
+(defthm gobjectp-g-apply
+  (implies (and (symbolp fn)
+                (gobjectp args))
+           (gobjectp (g-apply fn args))))
 
-;;(defthm gobjectp-mk-g-concrete
-;;  (gobjectp (mk-g-concrete x))
-;;  :hints (("goal" :in-theory
-;;           (enable gobjectp gobject-hierarchy mk-g-concrete
-;;                   concrete-gobjectp-def))))
+(defthm gobjectp-gl-cons
+  (gobjectp (gl-cons x y)))
 
+(defthm gobjectp-mk-g-concrete
+  (gobjectp (mk-g-concrete x))
+  :hints (("goal" :in-theory
+           (enable gobjectp gobject-hierarchy mk-g-concrete
+                   concrete-gobjectp-def))))
 
-;;(defthm gobjectp-gobj-fix
-;;  (gobjectp (gobj-fix x)))
+(defthm gobjectp-g-concrete-quote
+  (gobjectp (g-concrete-quote x))
+  :hints (("goal" :in-theory
+           (enable gobjectp gobject-hierarchy g-concrete-quote))))
 
-;;(defthm mk-g-ite-correct
-;;  (equal (generic-geval (mk-g-ite c x y) b)
-;;         (if (generic-geval c b)
-;;             (generic-geval x b)
-;;           (generic-geval y b))))
+(defthm gobjectp-gobj-fix
+  (gobjectp (gobj-fix x)))
 
-;;(defthm mk-g-boolean-correct
-;;  (equal (generic-geval (mk-g-boolean x) env)
-;;         (bfr-eval x (car env)))
-;;  :hints(("Goal" :in-theory (enable mk-g-boolean))))
+(defthm mk-g-ite-correct
+  (equal (generic-geval (mk-g-ite c x y) b)
+         (if (generic-geval c b)
+             (generic-geval x b)
+           (generic-geval y b))))
 
-;;(defthm mk-g-concrete-correct
-;;  (equal (generic-geval (mk-g-concrete x) b)
-;;         x))
+(defthm mk-g-boolean-correct
+  (equal (generic-geval (mk-g-boolean x) env)
+         (bfr-eval x (car env)))
+  :hints(("Goal" :in-theory (enable mk-g-boolean))))
 
-;;(defthm gobj-fix-when-gobjectp
-;;  (implies (gobjectp x)
-;;           (equal (gobj-fix x) x))
-;;  :hints(("Goal" :in-theory (enable gobj-fix))))
+(defthm mk-g-concrete-correct
+  (equal (generic-geval (mk-g-concrete x) b)
+         x))
 
-;;(defthm generic-geval-gl-cons
-;;  (equal (generic-geval (gl-cons x y) env)
-;;         (cons (generic-geval x env)
-;;               (generic-geval y env))))
+(defthm g-concrete-quote-correct
+  (equal (generic-geval (g-concrete-quote x) b)
+         x)
+  :hints(("Goal" :in-theory
+          (enable eval-concrete-gobjectp
+                  concrete-gobjectp-def
+                  g-concrete-quote))))
+
+(defthm gobj-fix-when-gobjectp
+  (implies (gobjectp x)
+           (equal (gobj-fix x) x))
+  :hints(("Goal" :in-theory (enable gobj-fix))))
+
+(defthm generic-geval-gl-cons
+  (equal (generic-geval (gl-cons x y) env)
+         (cons (generic-geval x env)
+               (generic-geval y env))))
 
 (defthm generic-geval-nil
   (equal (generic-geval nil env) nil))
 
-;;(defthm generic-geval-non-cons
-;;  (implies (not (consp x))
-;;           (equal (generic-geval x env) x))
-;;  :rule-classes ((:rewrite :backchain-limit-lst 0)))
+(defthm generic-geval-non-cons
+  (implies (not (consp x))
+           (equal (generic-geval x env) x))
+  :rule-classes ((:rewrite :backchain-limit-lst 0)))
 
-;;(defthm generic-geval-g-apply
-;;  (implies (gobjectp (g-apply fn args))
-;;           (equal (generic-geval (g-apply fn args) env)
-;;                  (apply-stub fn (generic-geval args env)))))
+(defthm generic-geval-g-apply
+  (implies (gobjectp (g-apply fn args))
+           (equal (generic-geval (g-apply fn args) env)
+                  (apply-stub fn (generic-geval args env)))))
 
-;;(defthm generic-geval-gobj-fix
-;;  (equal (generic-geval (gobj-fix x) env)
-;;         (generic-geval x env)))
+(defthm generic-geval-gobj-fix
+  (equal (generic-geval (gobj-fix x) env)
+         (generic-geval x env)))
 
-;;(defthm general-concrete-obj-correct-gobj-fix
-;;  (implies (general-concretep (gobj-fix x))
-;;           (equal (general-concrete-obj (gobj-fix x))
-;;                  (generic-geval x env)))
-;;  :rule-classes ((:rewrite :backchain-limit-lst 0)))
+(defthm general-concrete-obj-correct-gobj-fix
+  (implies (general-concretep (gobj-fix x))
+           (equal (general-concrete-obj (gobj-fix x))
+                  (generic-geval x env)))
+  :rule-classes ((:rewrite :backchain-limit-lst 0)))
 
-;;(defthmd general-concrete-obj-correct
-;;  (implies (general-concretep x)
-;;           (equal (generic-geval x env)
-;;                  (general-concrete-obj x))))
+(defthmd general-concrete-obj-correct
+  (implies (general-concretep x)
+           (equal (generic-geval x env)
+                  (general-concrete-obj x))))
 
 (defthm hyp-fix-bfr-p
   (bfr-p (hyp-fix x hyp)))
