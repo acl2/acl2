@@ -10,6 +10,7 @@ defconsts.lisp
 defevaluator-fast.lisp
 define-keyed-function.lisp
 defined-const.lisp
+defmacfun.lisp
 defsum.lisp
 deftuple.lisp
 do-not.lisp
@@ -100,6 +101,10 @@ if none of the cases are matched.
 saved-errors.lisp provides a way of customizing error messages for
 complex generated events.
 
+defmacfun.lisp provides a macro defmacfun, which saves work when writing
+a function intended to be called through a macro to provide an interface
+with optional/keyword arguments, etc.
+
 defsum and deftuple.lisp provide macros for defining product types
 with constructors, accessors, recognizers, and appropriate theorems
 for reasoning about them without reference to the underlying cons
@@ -138,10 +143,10 @@ David L. Rager <ragerdl@cs.utexas.edu>.
 {plev,plev-ccl}.* were originally in misc/hons-help and are presumably
 copyright (C) Bob Boyer and Warren Hunt.
 
-{def-functional-instance,defconsts,flag,oracle-eval,safe-case,include-raw,
+{def-functional-instance,defconsts,defmacfun,flag,oracle-eval,safe-case,include-raw,
  fake-event}.lisp
 copyright
-2008-2011 by Centaur Technology
+2008-2012 by Centaur Technology
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License as
