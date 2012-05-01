@@ -4045,6 +4045,7 @@ defconsts.lisp
 defevaluator-fast.lisp
 define-keyed-function.lisp
 defined-const.lisp
+defmacfun.lisp
 defsum.lisp
 deftuple.lisp
 do-not.lisp
