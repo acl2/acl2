@@ -46,9 +46,12 @@
               (acl2::msg "GLCP:  The unquoted atom ~x0 is not a term~%"
                             x)))
 
-            ;; X is a quoted (concrete) object.  mk-g-concrete creates a
-            ;; constant-valued symbolic object.
-            ((eq (car x) 'quote) (glcp-value (mk-g-concrete
+            ;; X is a quoted (concrete) object.  g-concrete-quote creates a
+            ;; constant-valued symbolic object.  We used to call mk-g-concrete
+            ;; here but that scans through the whole cons tree which can be
+            ;; expensive.  G-concrete-quote just wraps a g-concrete around the
+            ;; object unless it's a non-g-keyword atom.
+            ((eq (car x) 'quote) (glcp-value (g-concrete-quote
                                               (car (cdr x)))))
 
             ;; X is a lambda application; interpret each of the actuals, pair up

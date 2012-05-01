@@ -309,6 +309,12 @@
     :hints (("goal" :in-theory
              (e/d** (glcp-generic-geval mk-g-concrete-correct)))))
 
+  (defthm glcp-generic-geval-g-concrete-quote-correct
+    (equal (glcp-generic-geval (g-concrete-quote x) env)
+           x)
+    :hints (("goal" :in-theory
+             (e/d** (glcp-generic-geval g-concrete-quote-correct)))))
+
   (defthm glcp-generic-geval-general-concrete-obj-correct
     (implies (general-concretep x)
              (equal (glcp-generic-geval x env)
@@ -650,6 +656,7 @@
                                  bfr-p-bfr-not
                                  bfr-p-bfr-binary-or
                                  gobjectp-mk-g-concrete
+                                 gobjectp-g-concrete-quote
                                  hyp-fix-bfr-p
                                  gl-aside gl-ignore gl-error-is-nil
                                  gobjectp-of-atomic-constants
@@ -829,6 +836,7 @@
                        bfr-p-bfr-not
                        bfr-p-bfr-binary-or
                        gobjectp-mk-g-concrete
+                       gobjectp-g-concrete-quote
                        hyp-fix-bfr-p
                        pseudo-termp-car-last-of-pseudo-term-listp
                        gl-aside gl-ignore gl-error-is-nil
@@ -1049,6 +1057,7 @@
                          bfr-p-bfr-not
                          bfr-p-bfr-binary-or
                          gobjectp-mk-g-concrete
+                         gobjectp-g-concrete-quote
                          pseudo-termp-car-last
                          car-last-when-length-4
                          hyp-fix-bfr-p
@@ -1122,6 +1131,7 @@
                          hyp-fix-correct
                          glcp-generic-geval-gtests-obj-correct
                          glcp-generic-geval-mk-g-concrete-correct
+                         glcp-generic-geval-g-concrete-quote-correct
                          glcp-generic-geval-gobj-fix
                          gobjectp-of-atomic-constants)
                         ())))

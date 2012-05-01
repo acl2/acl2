@@ -232,6 +232,16 @@
 (in-theory (disable mk-g-concrete))
 
 
+;; Doesn't do the hierarchical check, only avoids consing when the input is an
+;; atom
+(defn g-concrete-quote (x)
+  (if (and (atom x)
+           (not (g-keyword-symbolp x)))
+      x
+    (g-concrete x)))
+
+(in-theory (disable g-concrete-quote))
+
 
 ;; -------------------------
 ;; ITE

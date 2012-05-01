@@ -557,6 +557,7 @@
                        ,(f-i-thmname 'shape-spec-to-gobj-eval-env geval)
                        ,(f-i-thmname 'mk-g-boolean-correct geval)
                        ,(f-i-thmname 'mk-g-concrete-correct geval)
+                       ,(f-i-thmname 'g-concrete-quote-correct geval)
                        ,(f-i-thmname 'mk-g-ite-correct geval)
                        ,(f-i-thmname 'generic-geval-non-cons geval)
                        ,(f-i-thmname 'generic-geval-gobj-fix geval)

@@ -101,6 +101,11 @@
            (enable gobjectp gobject-hierarchy mk-g-concrete
                    concrete-gobjectp-def))))
 
+(defthm gobjectp-g-concrete-quote
+  (gobjectp (g-concrete-quote x))
+  :hints (("goal" :in-theory
+           (enable gobjectp gobject-hierarchy g-concrete-quote))))
+
 
 (defthm gobjectp-g-concrete
   (gobjectp (g-concrete x))
@@ -113,6 +118,14 @@
   :hints(("Goal" :in-theory
           (enable eval-concrete-gobjectp
                   mk-g-concrete))))
+
+(defthm g-concrete-quote-correct
+  (equal (generic-geval (g-concrete-quote x) b)
+         x)
+  :hints(("Goal" :in-theory
+          (enable eval-concrete-gobjectp
+                  concrete-gobjectp-def
+                  g-concrete-quote))))
 
 
 

@@ -127,6 +127,12 @@
  ((apply-stub apply-base)
   (generic-geval eval-g-base)))
 
+(acl2::def-functional-instance
+ g-concrete-quote-correct-for-eval-g-base
+ g-concrete-quote-correct
+ ((apply-stub apply-base)
+  (generic-geval eval-g-base)))
+
 
 
 
