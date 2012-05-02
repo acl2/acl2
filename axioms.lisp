@@ -6215,14 +6215,15 @@
   until the successful completion of the main goal.
   ~l[forcing-round].
 
-  Forcing should only be used on hypotheses that are always expected
-  to be true, such as the ~il[guard]s of functions.  All the power of the
-  theorem prover is brought to bear on a forced hypothesis and no
-  backtracking is possible.  If the ~c[:]~ilc[executable-counterpart] of the
-  function ~c[force] is ~il[disable]d, then no hypothesis is forced.
-  ~l[enable-forcing] and ~pl[disable-forcing].  Forced goals can be
-  attacked immediately (~pl[immediate-force-modep]) or in a subsequent
-  forcing round (~pl[forcing-round]).  Also ~pl[case-split].~/
+  Forcing should only be used on hypotheses that are always expected to be
+  true, as is commonly the case for ~il[guard]s of functions.  All the power of
+  the theorem prover is brought to bear on a forced hypothesis and no
+  backtracking is possible.  Forced goals can be attacked immediately
+  (~pl[immediate-force-modep]) or in a subsequent forcing round
+  (~pl[forcing-round]).  Also ~pl[case-split] for a related utility.  If the
+  ~c[:]~ilc[executable-counterpart] of the function ~c[force] is ~il[disable]d,
+  then no hypothesis is forced.  For more on enabling and disabling forcing,
+  ~pl[enable-forcing] and ~pl[disable-forcing].~/
 
   It sometimes happens that a conditional rule is not applied because
   some hypothesis, ~c[hyp], could not be relieved, even though the
@@ -6454,11 +6455,12 @@
   which are inhibited by this command.~/
 
   ~c[Disable-forcing] is actually a macro that ~il[disable]s the executable
-  counterpart of the function symbol ~c[force]; ~pl[force].  When
-  you want to use ~il[hints] to turn off forced case splits, use a form such
-  as:
+  counterpart of the function symbol ~c[force]; ~pl[force].  When you want to
+  use ~il[hints] to turn off forced case splits, use a form such as one of the
+  following (these are equivalent).
   ~bv[]
   :in-theory (disable (:executable-counterpart force))
+  :in-theory (disable (force))
   ~ev[]
   "
   '(in-theory (disable (:executable-counterpart force))))
@@ -6477,10 +6479,12 @@
   turn them off.)~/
 
   ~c[Enable-forcing] is actually a macro that ~il[enable]s the executable
-  counterpart of the function symbol ~c[force]; ~pl[force].  When
-  you want to use ~il[hints] to turn on forced case splits, use a form such as:
+  counterpart of the function symbol ~c[force]; ~pl[force].  When you want to
+  use ~il[hints] to turn on forced case splits, use a form such as one of the
+  following (these are equivalent).
   ~bv[]
   :in-theory (enable (:executable-counterpart force))
+  :in-theory (enable (force))
   ~ev[]
   "
 
@@ -6501,10 +6505,12 @@
   ~il[force]d case splits.~/
 
   Disable-immediate-force-modep is a macro that ~il[disable]s the executable
-  counterpart of the function symbol ~ilc[immediate-force-modep].  When
-  you want to ~il[disable] this mode in ~il[hints], use a form such as:
+  counterpart of the function symbol ~ilc[immediate-force-modep].  When you
+  want to ~il[disable] this mode in ~il[hints], use a form such as one of the
+  following (these are equivalent).
   ~bv[]
   :in-theory (disable (:executable-counterpart immediate-force-modep))
+  :in-theory (disable (immediate-force-modep))
   ~ev[]
   "
 
@@ -6525,10 +6531,12 @@
   ~pl[force] for a discussion of ~il[force]d case splits.~/
 
   Enable-immediate-force-modep is a macro that ~il[enable]s the executable
-  counterpart of the function symbol ~ilc[immediate-force-modep].  When
-  you want to ~il[enable] this mode in ~il[hints], use a form such as:
+  counterpart of the function symbol ~ilc[immediate-force-modep].  When you
+  want to ~il[enable] this mode in ~il[hints], use a form such as one of the
+  following (these are equivalent).
   ~bv[]
   :in-theory (enable (:executable-counterpart immediate-force-modep))
+  :in-theory (enable (immediate-force-modep))
   ~ev[]
   "
 
