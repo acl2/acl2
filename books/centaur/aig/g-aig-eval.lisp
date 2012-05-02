@@ -425,7 +425,9 @@
   (let ((x (mbe :logic (gl::gobj-fix x) :exec x))
         (al (mbe :logic (gl::gobj-fix al) :exec al))
         (hyp (mbe :logic (gl::bfr-fix hyp) :exec hyp))
-        (tries (gl::general-concrete-obj tries)))
+        (tries (if (gl::general-concretep tries)
+                   (gl::general-concrete-obj tries)
+                 (er hard? 'aig-eval-list-symbolic "Expected tries to be concrete~%"))))
     (if (and (atom-key-gobj-val-alistp al)
              (gl::general-concretep x))
         (b* (((mv bfr-al badp) (gobj-alist-to-bfr-alist al hyp))
@@ -483,6 +485,7 @@
     (x al tries maybe-wash-args hyp clk)
     (declare (xargs :guard (and (gl::gobjectp x)
                                 (gl::gobjectp al)
+                                (gl::gobjectp tries)
                                 (gl::bfr-p hyp))))
     (aig-eval-list-symbolic x al tries maybe-wash-args hyp clk)))
 
