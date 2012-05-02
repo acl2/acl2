@@ -11141,8 +11141,8 @@
   ~ilc[defthm]), and some may introduce many (e.g., ~ilc[encapsulate] ).
 
   ACL2 typically completes processing of an event by printing a summary that
-  includes a breakdown of time used and, unless proofs are skipped
-  (~pl[ld-skip-proofsp]) or summary output is inhibited
+  includes a breakdown of runtime (cpu time) used and, unless proofs are
+  skipped (~pl[ld-skip-proofsp]) or summary output is inhibited
   (~pl[set-inhibit-output-lst]), information about the proof attempt
   (if any) including a list of rules used, a summary of warnings, and the
   number of ``prover steps'' (if any; ~pl[with-prover-step-limit]).  A detail:

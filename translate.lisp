@@ -4986,6 +4986,18 @@
                            new-stobjs-in
                            (apply-symbol-alist alist stobjs-out nil)))))))))
 
+(defun non-trivial-stobj-binding (stobj-flags bindings)
+  (declare (xargs :guard (and (symbol-listp stobj-flags)
+                              (symbol-doublet-listp bindings)
+                              (eql (length stobj-flags)
+                                   (length bindings)))))
+  (cond ((endp stobj-flags) nil)
+        ((or (null (car stobj-flags))
+             (assert$ (eq (car stobj-flags) (caar bindings))
+                      (eq (car stobj-flags) (cadar bindings))))
+         (non-trivial-stobj-binding (cdr stobj-flags) (cdr bindings)))
+        (t (car stobj-flags))))
+
 (mutual-recursion
 
 (defun translate11-flet-alist (form fives stobjs-out bindings known-stobjs
@@ -6297,169 +6309,170 @@
                         "The form ~x0 is an improper let expression ~
                          because it attempts to bind ~x1, which ~@2."
                         x culprit explan)))
-     ((and (not (eq stobjs-out t))
-           (not (equal 1 (length (cadr x))))
-           (not (all-nils (compute-stobj-flags (strip-cars (cadr x))
-                                               known-stobjs
-                                               wrld))))
-      (trans-er ctx
-                "A single-threaded object name, such as ~x0, may be ~
-                 LET-bound only when it is the only binding in the ~
-                 LET, but ~x1 binds more than one variable."
-                (car
-                 (collect-non-x nil
-                                (compute-stobj-flags (strip-cars (cadr x))
-                                                     known-stobjs
-                                                     wrld)))
-                x))
-     (t (let* ((bound-vars (strip-cars (cadr x)))
-               (stobjs-bound
-                (collect-non-x nil (compute-stobj-flags bound-vars
-                                                        known-stobjs
-                                                        wrld)))
-               (body (car (last x))))
-          (mv-let
-           (erp edcls)
-           (collect-declarations-cmp (butlast (cddr x) 1)
-                                     bound-vars 'let ctx wrld state-vars)
-           (cond
-            (erp (mv erp edcls bindings))
-            (t
-             (trans-er-let*
-              ((value-forms
-                (cond ((and (not (eq stobjs-out t))
-                            stobjs-bound)
+     (t
+      (let* ((bound-vars (strip-cars (cadr x)))
+             (multiple-bindings-p (consp (cdr bound-vars)))
+             (stobj-flags
+              (and (not (eq stobjs-out t))
+                   (compute-stobj-flags bound-vars known-stobjs wrld)))
+             (stobjs-bound (and stobj-flags ; optimization
+                                (collect-non-x nil stobj-flags)))
+             (body (car (last x))))
+        (cond
+         ((and stobj-flags ; optimization (often false)
+               multiple-bindings-p
+               (non-trivial-stobj-binding stobj-flags (cadr x)))
+          (trans-er ctx
+                    "A single-threaded object name, such as ~x0, may be ~
+                     LET-bound to other than itself only when it is the only ~
+                     binding in the LET, but ~x1 binds more than one variable."
+                    (non-trivial-stobj-binding stobj-flags (cadr x))
+                    x))
+         (t (mv-let
+             (erp edcls)
+             (collect-declarations-cmp (butlast (cddr x) 1)
+                                       bound-vars 'let ctx wrld state-vars)
+             (cond
+              (erp (mv erp edcls bindings))
+              (t
+               (trans-er-let*
+                ((value-forms
+                  (cond ((and stobjs-bound ; hence (not (eq stobjs-out t))
+                              (not multiple-bindings-p))
 
 ; In this case, we know that the only variable of the LET is a stobj name.
 ; Note that (list (car bound-vars)) is thus a stobjs-out specifying
 ; a single result consisting of that stobj.
 
-                       (trans-er-let*
-                        ((val (translate11 (cadr (car (cadr x)))
-                                           (list (car bound-vars))
-                                           bindings known-stobjs flet-alist
-                                           x ctx wrld state-vars)))
-                        (trans-value (list val))))
-                      (t (translate11-lst (strip-cadrs (cadr x))
-                                          (if (eq stobjs-out t)
-                                              t
-                                            nil) ;;; '(nil ... nil)
-                                          bindings known-stobjs
-                                          "in a LET binding (or ~
-                                           LAMBDA application)"
-                                          flet-alist x ctx wrld state-vars))))
-               (tbody
-                (translate11 body stobjs-out bindings known-stobjs
-                             flet-alist x ctx wrld state-vars))
-               (tdcls (translate11-lst
-                       (translate-dcl-lst edcls wrld)
-                       (if (eq stobjs-out t)
-                           t
-                         nil) ;;; '(nil ... nil)
-                       bindings known-stobjs
-                       "in a DECLARE form in a LET (or LAMBDA)"
-                       flet-alist x ctx wrld state-vars)))
-              (let ((used-vars (union-eq (all-vars tbody)
-                                         (all-vars1-lst tdcls nil)))
-                    (ignore-vars (ignore-vars edcls))
-                    (ignorable-vars (ignorable-vars edcls))
-                    (stobjs-out (translate-deref stobjs-out bindings)))
-                (cond 
-                 ((and (not (eq stobjs-out t))
-                       stobjs-bound
-                       (not (consp stobjs-out)))
-                  (unknown-binding-msg-er x ctx stobjs-bound
-                                          "a LET" "the LET" "the LET"))
-                 ((and (not (eq stobjs-out t))
-                       stobjs-bound
-                       (not (subsetp-eq stobjs-bound
-                                        (collect-non-x nil stobjs-out))))
-                  (let ((stobjs-returned (collect-non-x nil stobjs-out)))
-                    (trans-er+ x ctx
-                               "The single-threaded object~#0~[ ~&0 has~/s ~
-                                ~&0 have~] been bound in a LET.  It is a ~
-                                requirement that ~#0~[this object~/these ~
-                                objects~] be among the outputs of the LET, ~
-                                but ~#0~[it is~/they are~] not.  The LET ~
-                                returns ~#1~[no single-threaded objects~/the ~
-                                single-threaded object ~&2~/the ~
-                                single-threaded objects ~&2~]."
-                               (set-difference-eq stobjs-bound stobjs-returned)
-                               (zero-one-or-more stobjs-returned)
-                               stobjs-returned)))
-                 ((intersectp-eq used-vars ignore-vars)
-                  (trans-er+ x ctx
-                             "Contrary to the declaration that ~#0~[it ~
-                              is~/they are~] IGNOREd, the variable~#0~[ ~&0 ~
-                              is~/s ~&0 are~] used in the body of the LET ~
-                              expression that binds ~&1."
-                             (intersection-eq used-vars ignore-vars)
-                             bound-vars))
-                 (t
-                  (let* ((ignore-vars (augment-ignore-vars bound-vars
-                                                           value-forms
-                                                           ignore-vars))
-                         (diff (set-difference-eq
-                                bound-vars
-                                (union-eq used-vars
-                                          (union-eq ignorable-vars
-                                                    ignore-vars))))
-                         (ignore-ok
-                          (if (null diff)
-                              t
-                            (cdr (assoc-eq
-                                  :ignore-ok
-                                  (table-alist 'acl2-defaults-table wrld))))))
-                    (cond
-                     ((null ignore-ok)
+                         (trans-er-let*
+                          ((val (translate11 (cadr (car (cadr x)))
+                                             (list (car bound-vars))
+                                             bindings known-stobjs flet-alist
+                                             x ctx wrld state-vars)))
+                          (trans-value (list val))))
+                        (t (translate11-lst (strip-cadrs (cadr x))
+                                            (if (eq stobjs-out t)
+                                                t
+                                              stobj-flags)
+                                            bindings known-stobjs
+                                            "in a LET binding (or LAMBDA ~
+                                             application)"
+                                            flet-alist x ctx wrld
+                                            state-vars))))
+                 (tbody
+                  (translate11 body stobjs-out bindings known-stobjs
+                               flet-alist x ctx wrld state-vars))
+                 (tdcls (translate11-lst
+                         (translate-dcl-lst edcls wrld)
+                         (if (eq stobjs-out t)
+                             t
+                           nil) ;;; '(nil ... nil)
+                         bindings known-stobjs
+                         "in a DECLARE form in a LET (or LAMBDA)"
+                         flet-alist x ctx wrld state-vars)))
+                (let ((used-vars (union-eq (all-vars tbody)
+                                           (all-vars1-lst tdcls nil)))
+                      (ignore-vars (ignore-vars edcls))
+                      (ignorable-vars (ignorable-vars edcls))
+                      (stobjs-out (translate-deref stobjs-out bindings)))
+                  (cond 
+                   ((and stobjs-bound ; hence (not (eq stobjs-out t))
+                         (not (consp stobjs-out)))
+                    (unknown-binding-msg-er x ctx stobjs-bound
+                                            "a LET" "the LET" "the LET"))
+                   ((and
+                     stobjs-bound              ; hence (not (eq stobjs-out t))
+                     (not multiple-bindings-p) ; possible stobj mod in bindings
+                     (not (eq (caar (cadr x))
+                              (cadar (cadr x)))) ; stobj mod in bindings
+                     (assert$ (null (cdr stobjs-bound))
+                              (not (member-eq (car stobjs-bound) stobjs-out))))
+                    (let ((stobjs-returned (collect-non-x nil stobjs-out)))
                       (trans-er+ x ctx
-                                 "The variable~#0~[ ~&0 is~/s ~&0 are~] not ~
-                                  used in the body of the LET expression that ~
-                                  binds ~&1.  But ~&0 ~#0~[is~/are~] not ~
-                                  declared IGNOREd or IGNORABLE.  See :DOC ~
-                                  set-ignore-ok."
-                                 diff
-                                 bound-vars))
-                     (t
-                      (prog2$
-                       (cond
-                        ((eq ignore-ok :warn)
-                         (warning$-cw1 ctx "Ignored-variables"
-                                       "The variable~#0~[ ~&0 is~/s ~&0 are~] ~
-                                        not used in the body of the LET ~
-                                        expression that binds ~&1.  But ~&0 ~
-                                        ~#0~[is~/are~] not declared IGNOREd ~
-                                        or IGNORABLE.  See :DOC set-ignore-ok."
-                                       diff
-                                       bound-vars))
-                        (t nil))
-                       (let* ((tbody
-                               (cond
-                                (tdcls
-                                 (let ((guardian (dcl-guardian tdcls)))
-                                   (cond ((equal guardian *t*)
+                                 "The single-threaded object ~x0 has been ~
+                                  bound in a LET.  It is a requirement that ~
+                                  this object be among the outputs of the ~
+                                  LET, but it is not.  The LET returns ~
+                                  ~#1~[no single-threaded objects~/the ~
+                                  single-threaded object ~&2~/the ~
+                                  single-threaded objects ~&2~]."
+                                 (car stobjs-bound)
+                                 (zero-one-or-more stobjs-returned)
+                                 stobjs-returned)))
+                   ((intersectp-eq used-vars ignore-vars)
+                    (trans-er+ x ctx
+                               "Contrary to the declaration that ~#0~[it ~
+                                is~/they are~] IGNOREd, the variable~#0~[ ~&0 ~
+                                is~/s ~&0 are~] used in the body of the LET ~
+                                expression that binds ~&1."
+                               (intersection-eq used-vars ignore-vars)
+                               bound-vars))
+                   (t
+                    (let* ((ignore-vars (augment-ignore-vars bound-vars
+                                                             value-forms
+                                                             ignore-vars))
+                           (diff (set-difference-eq
+                                  bound-vars
+                                  (union-eq used-vars
+                                            (union-eq ignorable-vars
+                                                      ignore-vars))))
+                           (ignore-ok
+                            (if (null diff)
+                                t
+                              (cdr (assoc-eq
+                                    :ignore-ok
+                                    (table-alist 'acl2-defaults-table wrld))))))
+                      (cond
+                       ((null ignore-ok)
+                        (trans-er+ x ctx
+                                   "The variable~#0~[ ~&0 is~/s ~&0 are~] not ~
+                                    used in the body of the LET expression ~
+                                    that binds ~&1.  But ~&0 ~#0~[is~/are~] ~
+                                    not declared IGNOREd or IGNORABLE.  See ~
+                                    :DOC set-ignore-ok."
+                                   diff
+                                   bound-vars))
+                       (t
+                        (prog2$
+                         (cond
+                          ((eq ignore-ok :warn)
+                           (warning$-cw1 ctx "Ignored-variables"
+                                         "The variable~#0~[ ~&0 is~/s ~&0 ~
+                                          are~] not used in the body of the ~
+                                          LET expression that binds ~&1.  But ~
+                                          ~&0 ~#0~[is~/are~] not declared ~
+                                          IGNOREd or IGNORABLE.  See :DOC ~
+                                          set-ignore-ok."
+                                         diff
+                                         bound-vars))
+                          (t nil))
+                         (let* ((tbody
+                                 (cond
+                                  (tdcls
+                                   (let ((guardian (dcl-guardian tdcls)))
+                                     (cond ((equal guardian *t*)
 
 ; See the comment about THE in dcl-guardian.
 
-                                          tbody)
-                                         (t (prog2$-call guardian tbody)))))
-                                (t tbody)))
-                              (body-vars (all-vars tbody))
-                              (extra-body-vars (set-difference-eq
-                                                body-vars
-                                                bound-vars)))
-                         (trans-value
-                          (cons (make-lambda
-                                 (append bound-vars extra-body-vars)
-                                 tbody)
+                                            tbody)
+                                           (t (prog2$-call guardian tbody)))))
+                                  (t tbody)))
+                                (body-vars (all-vars tbody))
+                                (extra-body-vars (set-difference-eq
+                                                  body-vars
+                                                  bound-vars)))
+                           (trans-value
+                            (cons (make-lambda
+                                   (append bound-vars extra-body-vars)
+                                   tbody)
 
 ; See the analogous line in the handling of MV-LET for an explanation
 ; of hide-ignored-actuals.
 
-                                (append
-                                 (hide-ignored-actuals
-                                  ignore-vars bound-vars value-forms)
-                                 extra-body-vars)))))))))))))))))))
+                                  (append
+                                   (hide-ignored-actuals
+                                    ignore-vars bound-vars value-forms)
+                                   extra-body-vars)))))))))))))))))))))
    ((eq (car x) 'flet) ; (flet bindings form)
     (translate11-flet x stobjs-out bindings known-stobjs flet-alist ctx
                       wrld state-vars))
