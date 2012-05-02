@@ -1109,6 +1109,10 @@
 (defconst *pc-complete-signal* 'acl2-pc-complete)
 
 (defmacro catch-throw-to-local-top-level (form)
+
+; Form should evaluate to (mv erp val state) or else throw to
+; 'local-top-level.
+
   #+acl2-loop-only
   `(mv-let (cttltl-erp cttltl-val state)
            (read-acl2-oracle state)
@@ -1124,7 +1128,7 @@
     `(let* ((,thrown-var t)
             (trip (catch 'local-top-level
                     (prog1
-                        (multiple-value-list ,form)
+                        (mv-list 3 ,form)
                       (setq ,thrown-var nil)))))
        (cond (,thrown-var
               (mv 'thrown-to-local-top-level trip state))

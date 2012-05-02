@@ -396,12 +396,8 @@
 
 ; We also do the following for clisp, since we set the encoding on the command
 ; line (see comment above) but we want to be able to read our own source files
-; during the build.  Without this, the build breaks with the following string
-; (note the accented "i" in Martin, below):
-;   Francisco J. Martín Mateos
-; With this, we do not need an explicit :external-format argument for the call
-; of with-open-file in acl2-check.lisp that opens a stream for
-; "acl2-characters".
+; during the build.  See the comment in (defdoc character-encoding ...) in
+; axioms.lisp.
 #+clisp
 (setq custom:*default-file-encoding*
       (ext:make-encoding :charset 'charset:iso-8859-1
@@ -1308,10 +1304,18 @@ ACL2 from scratch.")
 #+sbcl ; turn off compiler notes (noisy)
 (declaim (sb-ext:muffle-conditions sb-ext:compiler-note))
 
+; The Allegro CL documentation tells us that the following variable is
+; "Initially true only if speed is 3 and safety is 0", and that it allows the
+; compiler to assume that the sum of two declared fixnums is a fixnum, etc.  We
+; hope that by setting this variable to nil we avoid seeing occasional checksum
+; errors during include-book when certifying the regression suite.
 #+allegro
-(eval (read-from-string "
-  (SETQ COMPILER::DECLARED-FIXNUMS-REMAIN-FIXNUMS-SWITCH
-        #'(LAMBDA (X Y Z #+(VERSION>= 4 1) D) NIL)) "))
+(setf comp:declared-fixnums-remain-fixnums-switch nil)
+
+; Previous value for the above:
+; (eval (read-from-string "
+;   (SETQ COMPILER::DECLARED-FIXNUMS-REMAIN-FIXNUMS-SWITCH
+;         #'(LAMBDA (X Y Z #+(VERSION>= 4 1) D) NIL)) "))
 
 ; The following appears to allow tail recursion elimination for functions
 ; locally defined using LABELS.  This is important for efficiency since we

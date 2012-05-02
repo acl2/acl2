@@ -18906,6 +18906,11 @@
   Some bogus warnings about non-recursive function symbols have been eliminated
   for rules of class ~c[:]~ilc[type-prescription].
 
+  (Allegro CL host Lisp only) Fixed an obsolete setting of compiler variable
+  ~c[comp:declared-fixnums-remain-fixnums-switch], which may have been
+  responsible for intermittent (and infrequent) checksum errors encountered
+  while including books during certification of the regression suite.
+
   ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]
 
   Improvements have been made related to the reading of characters.  In
