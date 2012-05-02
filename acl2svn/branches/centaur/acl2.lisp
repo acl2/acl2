@@ -236,7 +236,7 @@
 ; use of ACL2, the only effect (other than performance) being to cause errors
 ; when those checks fail.
 
-; (push acl2-extra-checks *features*)
+; (push :acl2-extra-checks *features*)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                               FILES
@@ -396,9 +396,9 @@
 
 ; We also do the following for clisp, since we set the encoding on the command
 ; line (see comment above) but we want to be able to read our own source files
-; during the build.  Without this, the build breaks because of a string in :doc
-; note-4-4.  You can search for it this way in Emacs, from the top of ld.lisp:
-; (re-search-forward "Mart[^i]n Mateos")
+; during the build.  Without this, the build breaks with the following string
+; (note the accented "i" in Martin, below):
+;   Francisco J. Martín Mateos
 ; With this, we do not need an explicit :external-format argument for the call
 ; of with-open-file in acl2-check.lisp that opens a stream for
 ; "acl2-characters".
@@ -474,6 +474,12 @@
 ; isn't typically exploited by ACL2 users.
 #+ccl
 (setq ccl::*record-source-file* nil)
+
+; The following avoids errors from extra right parentheses, but we leave it
+; commented out since it doesn't seem important enough to merit messing around
+; at this low level, and for just one Lisp.
+; #+ccl
+; (setq ccl::*ignore-extra-close-parenthesis* t)
 
 ; We have tried to build under ECL (Embeddable Common-Lisp), and with some
 ; modifications, we made progress -- except there appears (as of Sept. 2011) to
@@ -553,7 +559,7 @@
 ;;; #+ecl
 ;;; (ext:package-lock "COMMON-LISP" nil)
 
-; Finally, consider thee additional notes.
+; Finally, consider these additional notes.
 
 ;;; We need (require "cmp") if we're to use c:build-program.
 

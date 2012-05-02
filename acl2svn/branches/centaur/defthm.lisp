@@ -197,20 +197,22 @@
 (defun non-recursive-fnnames (term ens wrld)
   (cond ((variablep term) nil)
         ((fquotep term) nil)
-        ((or (flambda-applicationp term)
-             (let ((def-body (def-body (ffn-symb term) wrld)))
-               (and def-body
-                    (enabled-numep (access def-body def-body :nume)
-                                   ens)
-                    (not (access def-body def-body :recursivep)))))
+        ((flambda-applicationp term)
+         (add-to-set-equal (ffn-symb term)
+                           (non-recursive-fnnames-lst (fargs term) ens wrld)))
+        ((let ((def-body (def-body (ffn-symb term) wrld)))
+           (and def-body
+                (enabled-numep (access def-body def-body :nume)
+                               ens)
+                (not (access def-body def-body :recursivep))))
          (add-to-set-eq (ffn-symb term)
                         (non-recursive-fnnames-lst (fargs term) ens wrld)))
         (t (non-recursive-fnnames-lst (fargs term) ens wrld))))
 
 (defun non-recursive-fnnames-lst (lst ens wrld)
   (cond ((null lst) nil)
-        (t (union-eq (non-recursive-fnnames (car lst) ens wrld)
-                     (non-recursive-fnnames-lst (cdr lst) ens wrld)))))
+        (t (union-equal (non-recursive-fnnames (car lst) ens wrld)
+                        (non-recursive-fnnames-lst (cdr lst) ens wrld)))))
 
 )
 
@@ -7299,6 +7301,64 @@
                              wrld))
               wrld)))))
 
+(defun strong-compound-recognizer-p (fn recognizer-alist ens)
+  (cond ((endp recognizer-alist) nil)
+        ((let ((recog-tuple (car recognizer-alist)))
+           (and (eq fn (access recognizer-tuple recog-tuple :fn))
+                (access recognizer-tuple recog-tuple :strongp)
+                (enabled-numep (access recognizer-tuple recog-tuple :nume)
+                               ens)))
+         t)
+        (t (strong-compound-recognizer-p fn (cdr recognizer-alist) ens))))
+
+(defun warned-non-rec-fns-for-tp (term recognizer-alist ens wrld)
+  (cond ((or (variablep term)
+             (fquotep term))
+         nil)
+        ((flambdap (ffn-symb term))
+         (cons (ffn-symb term)
+               (non-recursive-fnnames-lst (fargs term) ens wrld)))
+        ((eq (ffn-symb term) 'if)
+
+; Type-set and assume-true-false explore the top-level IF structure in such a
+; way that NOT and strong compound recognizers aren't problems.
+
+         (union-equal
+          (warned-non-rec-fns-for-tp
+           (fargn term 1) recognizer-alist ens wrld)
+          (union-equal
+           (warned-non-rec-fns-for-tp
+            (fargn term 2) recognizer-alist ens wrld)
+           (warned-non-rec-fns-for-tp
+            (fargn term 3) recognizer-alist ens wrld))))
+        ((eq (ffn-symb term) 'not)
+         (warned-non-rec-fns-for-tp (fargn term 1) recognizer-alist ens wrld))
+        ((strong-compound-recognizer-p (ffn-symb term) recognizer-alist ens)
+         (non-recursive-fnnames-lst (fargs term) ens wrld))
+        (t (non-recursive-fnnames term ens wrld))))
+
+(defun warned-non-rec-fns-tp-hyps1 (hyps recognizer-alist ens wrld acc)
+  (cond ((endp hyps) acc)
+        (t (warned-non-rec-fns-tp-hyps1
+            (cdr hyps)
+            recognizer-alist ens wrld
+            (let ((hyp (if (and (nvariablep (car hyps))
+;                               (not (fquotep (car hyps))) ; implied by:
+                                (member-eq (ffn-symb (car hyps))
+                                           '(force case-split)))
+                           (fargn (car hyps) 1)
+                         (car hyps))))
+              (cond (acc (union-equal (warned-non-rec-fns-for-tp
+                                       hyp recognizer-alist ens wrld)
+                                      acc))
+                    (t (warned-non-rec-fns-for-tp
+                        hyp recognizer-alist ens wrld))))))))
+
+(defun warned-non-rec-fns-tp-hyps (hyps ens wrld)
+  (warned-non-rec-fns-tp-hyps1 hyps
+                               (global-val 'recognizer-alist wrld)
+                               ens wrld nil))
+
 (defun chk-acceptable-type-prescription-rule (name typed-term term
                                                    backchain-limit-lst
                                                    ctx ens wrld state)
@@ -7352,10 +7412,7 @@
            (t state))
           (let* ((warned-non-rec-fns
                   (and (not (warning-disabled-p "Non-rec"))
-                       (non-recursive-fnnames-lst 
-                        (strip-top-level-nots-and-forces hyps)
-                        ens
-                        wrld)))
+                       (warned-non-rec-fns-tp-hyps hyps ens wrld)))
                  (warned-free-vars
                   (and (not (warning-disabled-p "Free"))
                        (free-vars-in-hyps hyps
@@ -10466,7 +10523,8 @@
                           (mv :error rst))
                          (t (let* ((next (car lst))
                                    (fn (deref-macro-name next macro-aliases)))
-                              (cond ((not (function-symbolp fn wrld))
+                              (cond ((not (and (symbolp fn)
+                                               (function-symbolp fn wrld)))
                                      (mv :error
                                          (msg "contains ~x0"
                                               next)))
@@ -10758,9 +10816,22 @@
                  ((atom (cadr alist))
                   (er soft ctx
                       "The :TRIGGER-FNS component of a :META rule class must ~
-                       be a non-empty true-list of function symbols.  but ~x0 ~
+                       be a non-empty true-list of function symbols.  But ~x0 ~
                        is empty.  See :DOC meta."
                       (cadr alist)))
+                 ((eq (car (cadr alist)) 'quote)
+                  (er soft ctx
+                      "The :TRIGGER-FNS component of a :META rule class must ~
+                       be a non-empty true-list of function symbols.  You ~
+                       specified ~x0 for this component, but the list is not ~
+                       to be quoted.~@1  See :DOC meta."
+                      (cadr alist)
+                      (cond ((and (consp (cdr (cadr alist)))
+                                  (symbol-listp (cadr (cadr alist)))
+                                  (null (cddr (cadr alist))))
+                             (msg "  Perhaps you intended ~x0 instead."
+                                  (cadr (cadr alist))))
+                            (t ""))))
                  (t (mv-let (flg lst)
                             (eliminate-macro-aliases (cadr alist)
                                                      (macro-aliases wrld)
@@ -10771,7 +10842,7 @@
                                         rule class must be a non-empty ~
                                         true-list of function symbols, but ~
                                         ~x0 ~@1.  See :DOC meta."
-                                       lst))
+                                       (cadr alist) lst))
                                   (t (value lst)))))))
                (:TRIGGER-TERMS
                 (cond
@@ -13921,6 +13992,8 @@
          (ld-skip-proofsp (ld-skip-proofsp state)))
      (pprogn
       (warn-on-inappropriate-defun-mode ld-skip-proofsp event-form ctx state)
+      #+acl2-par
+      (erase-acl2p-checkpoints-for-summary state)
       (with-waterfall-parallelism-timings
        name
        (er-progn

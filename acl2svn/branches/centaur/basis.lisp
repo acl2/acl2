@@ -2632,16 +2632,19 @@
        ,@*cons-term1-alist*
        (otherwise (cons fn args)))))
 
-(defun cons-term1 (fn args)
-  (cons-term1-body))
-
 (defun quote-listp (l)
   (declare (xargs :guard (true-listp l)))
   (cond ((null l) t)
         (t (and (quotep (car l))
                 (quote-listp (cdr l))))))
 
+(defun cons-term1 (fn args)
+  (declare (xargs :guard (and (pseudo-term-listp args)
+                              (quote-listp args))))
+  (cons-term1-body))
+
 (defun cons-term (fn args)
+  (declare (xargs :guard (pseudo-term-listp args)))
   (cond ((quote-listp args)
          (cons-term1 fn args))
         (t (cons fn args))))
@@ -5263,11 +5266,25 @@
             '(5 7 nil)))
      (t evisc-tuple))))
 
+(defmacro gag-mode ()
+
+  ":Doc-Section Miscellaneous
+
+  verbosity of proof output~/
+
+  Please ~pl[set-gag-mode] for an explanation of gag-mode, which can take any
+  of the following values:
+  ~bv[]
+  (gag-mode) ; generally evaluates to t, nil, or :goals
+  ~ev[]~/~/"
+
+  '(f-get-global 'gag-mode state))
+
 (defun default-evisc-tuple (state)
   (prog2$ (cw "NOTE: default-evisc-tuple has been deprecated.  Please use ~
                abbrev-evisc-tuple instead.  If you are seeing this message ~
                then you are probably using the acl2-books google repository; ~
-               please email Matt Kaufmann to find out out to eliminate this ~
+               please email Matt Kaufmann to find out how to eliminate this ~
                message.~|~%")
           (abbrev-evisc-tuple state)))
 
@@ -5299,6 +5316,22 @@
           (flg ;;; (evisc-tuple 3 4 nil nil)
            '(nil 3 4 nil))
           (t nil))))
+
+(defun gag-mode-evisc-tuple (state)
+  (cond ((gag-mode)
+         (let ((evisc-tuple (f-get-global 'gag-mode-evisc-tuple state)))
+           (cond
+            ((eq evisc-tuple :default)
+             (or (term-evisc-tuple nil state)
+                 (evisc-tuple 6 ; print-level
+                              7 ; print-length
+                              nil ; alist
+                              nil ; hiding-cars
+                              )))
+            ((eq evisc-tuple t)
+             t)
+            (t evisc-tuple))))
+        (t (term-evisc-tuple nil state))))
 
 (defun ld-evisc-tuple (state)
 
@@ -8044,20 +8077,6 @@
 
   (declare (ignore commentp))
   `(io? ,token t ,@rst))
-
-(defmacro gag-mode ()
-
-  ":Doc-Section Miscellaneous
-
-  verbosity of proof output~/
-
-  Please ~pl[set-gag-mode] for an explanation of gag-mode, which can take any
-  of the following values:
-  ~bv[]
-  (gag-mode) ; generally evaluates to t, nil, or :goals
-  ~ev[]~/~/"
-
-  '(f-get-global 'gag-mode state))
 
 (defmacro io?-prove (vars body &rest keyword-args)
 
@@ -12375,12 +12394,15 @@
        (otherwise (mv nil form)))))
 
 (defun cons-term1-mv2 (fn args form)
+  (declare (xargs :guard (and (pseudo-term-listp args)
+                              (quote-listp args))))
   (cons-term1-body-mv2))
 
 (mutual-recursion
 
 (defun sublis-var1 (alist form)
   (declare (xargs :guard (and (symbol-alistp alist)
+                              (pseudo-term-listp (strip-cdrs alist))
                               (pseudo-termp form))))
   (cond ((variablep form)
          (let ((a (assoc-eq form alist)))
@@ -12400,8 +12422,9 @@
 
 (defun sublis-var1-lst (alist l)
   (declare (xargs :guard (and (symbol-alistp alist)
+                              (pseudo-term-listp (strip-cdrs alist))
                               (pseudo-term-listp l))))
-  (cond ((null l)
+  (cond ((endp l)
          (mv nil nil))
         (t (mv-let (changedp1 term)
                    (sublis-var1 alist (car l))
@@ -12430,23 +12453,29 @@
 ;   The sublis-var below normalizes the explicit constant
 ;   constructors in evaled-hyp, e.g., (cons '1 '2) becomes '(1 . 2).
 
+  (declare (xargs :guard (and (symbol-alistp alist)
+                              (pseudo-term-listp (strip-cdrs alist))
+                              (pseudo-termp form))))
   (mv-let (changedp val)
           (sublis-var1 alist form)
           (declare (ignore changedp))
           val))
 
 (defun sublis-var-lst (alist l)
+  (declare (xargs :guard (and (symbol-alistp alist)
+                              (pseudo-term-listp (strip-cdrs alist))
+                              (pseudo-term-listp l))))
   (mv-let (changedp val)
           (sublis-var1-lst alist l)
           (declare (ignore changedp))
           val))
 
 (defun subcor-var1 (vars terms var)
-  (declare (xargs :guard (and (true-listp vars)
-                              (true-listp terms)
+  (declare (xargs :guard (and (symbol-listp vars)
+                              (pseudo-term-listp terms)
                               (equal (length vars) (length terms))
                               (variablep var))))
-  (cond ((null vars) var)
+  (cond ((endp vars) var)
         ((eq var (car vars)) (car terms))
         (t (subcor-var1 (cdr vars) (cdr terms) var))))
 
@@ -12454,10 +12483,14 @@
 
 (defun subcor-var (vars terms form)
 
-; "Subcor" stands for "substitute corresponding elements".  Vars and terms
-; are in 1:1 correspondence and we substitute terms for corresponding vars
-; into form.  This function was called sub-pair-var in nqthm.
+; "Subcor" stands for "substitute corresponding elements".  Vars and terms are
+; in 1:1 correspondence, and we substitute terms for corresponding vars into
+; form.  This function was called sub-pair-var in nqthm.
 
+  (declare (xargs :guard (and (symbol-listp vars)
+                              (pseudo-term-listp terms)
+                              (equal (length vars) (length terms))
+                              (pseudo-termp form))))
   (cond ((variablep form)
          (subcor-var1 vars terms form))
         ((fquotep form) form)
@@ -12465,7 +12498,11 @@
                       (subcor-var-lst vars terms (fargs form))))))
 
 (defun subcor-var-lst (vars terms forms)
-  (cond ((null forms) nil)
+  (declare (xargs :guard (and (symbol-listp vars)
+                              (pseudo-term-listp terms)
+                              (equal (length vars) (length terms))
+                              (pseudo-term-listp forms))))
+  (cond ((endp forms) nil)
         (t (cons (subcor-var vars terms (car forms))
                  (subcor-var-lst vars terms (cdr forms))))))
 

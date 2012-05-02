@@ -987,6 +987,9 @@
 (mutual-recursion
 
 (defun subst-expr1 (new old term)
+  (declare (xargs :guard (and (pseudo-termp new)
+                              (pseudo-termp old)
+                              (pseudo-termp term))))
   (cond ((equal term old) new)
         ((variablep term) term)
         ((fquotep term) term)
@@ -994,20 +997,27 @@
                       (subst-expr1-lst new old (fargs term))))))
 
 (defun subst-expr1-lst (new old args)
-  (cond ((null args) nil)
+  (declare (xargs :guard (and (pseudo-termp new)
+                              (pseudo-termp old)
+                              (pseudo-term-listp args))))
+  (cond ((endp args) nil)
         (t (cons (subst-expr1 new old (car args))
                  (subst-expr1-lst new old (cdr args))))))
-
 
 )
 
 (defun subst-expr-error (const)
+  (declare (xargs :guard nil))
   (er hard 'subst-expr-error
       "An attempt was made to substitute for the explicit value ~x0.  ~
        The substitution functions were optimized to disallow this."
       const))
 
 (defun subst-expr (new old term)
+  (declare (xargs :guard (and (pseudo-termp new)
+                              (pseudo-termp old)
+                              (not (quotep old))
+                              (pseudo-termp term))))
   (cond ((variablep old) (subst-var new old term))
         ((fquotep old) (subst-expr-error old))
         (t (subst-expr1 new old term))))
@@ -8134,11 +8144,16 @@
   in ACL2 files ~c[interface-raw.lisp] and ~c[emacs/monitor.el] in order to
   customize their dmr environments.
 
-  Finally, in order to update the dmr file with the latest stack information,
-  interrupt ACL2 and then evaluate: ~c[(dmr-flush)].  In order to support
-  resumption of the interrupted proof (assuming your host Common Lisp supports
-  resumption), evaluation of ~c[(dmr-start)] automatically causes evaluation of
-  the form ~c[(set-debugger-enable t)]; ~pl[set-debugger-enable].~/
+  In order to update the dmr file with the latest stack information, interrupt
+  ACL2 and then evaluate: ~c[(dmr-flush)].  In order to support resumption of
+  the interrupted proof (assuming your host Common Lisp supports resumption),
+  evaluation of ~c[(dmr-start)] automatically causes evaluation of the form
+  ~c[(set-debugger-enable t)]; ~pl[set-debugger-enable].
+
+  Note for users of the experimental extension ACL2(p) (~pl[parallelism]): when
+  waterfall-parallelism has been set to a non-~c[nil] value
+  (~pl[set-waterfall-parallelism]), statistics about parallel execution are
+  printed instead of the usual information.~/
 
   :cited-by break-rewrite
   :cited-by accumulated-persistence")

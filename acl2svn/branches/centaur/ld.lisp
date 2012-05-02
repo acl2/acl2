@@ -1760,7 +1760,11 @@
 ;  :hints (("Goal" :do-not '(preprocess))))
 
   #-acl2-loop-only
-  (cond ((= *ld-level* 0)
+  (cond (*load-compiled-stack*
+         (error "It is illegal to call LD while loading a compiled book, in ~
+                 this case:~%~a .~%See :DOC calling-ld-in-bad-contexts."
+                (caar *load-compiled-stack*)))
+        ((= *ld-level* 0)
          (return-from
           ld-fn
           (let ((complete-flg nil))
@@ -1781,7 +1785,11 @@
                      *standard-co*
                      state
                      nil)))))))
-  (ld-fn0 alist state bind-flg))
+  (cond ((not (f-get-global 'ld-okp state))
+         (er soft 'ld
+             "It is illegal to call LD in this context.  See DOC ~
+              calling-ld-in-bad-contexts."))
+        (t (ld-fn0 alist state bind-flg))))
 
 (defmacro ld (standard-oi
               &key
@@ -1844,7 +1852,8 @@
   ~c[(mv erp val state)] as explained below.  (For much more on error triples,
   ~pl[programming-with-state].)
 
-  ~l[rebuild] for a variant of ~c[ld] that skips proofs.
+  ~l[rebuild] for a variant of ~c[ld] that skips proofs.  ~l[output-to-file]
+  for examples showing how to redirect output to a file.
 
   The arguments to ~c[ld], except for ~c[:dir], all happen to be global
   variables in ~ilc[state] (~pl[state] and ~pl[programming-with-state]).  For
@@ -2083,6 +2092,45 @@
                  nil)))
     state
     t))
+
+(defdoc calling-ld-in-bad-contexts
+  ":Doc-Section ld
+
+  errors caused by calling ~ilc[ld] in inappropriate contexts~/
+
+  The macro ~ilc[ld] was designed to be called directly in the top-level ACL2
+  loop, although there may be a few occasions for calling it from functions.
+  ACL2 cannot cope with invocations of ~ilc[ld] during the process of loading a
+  compiled file for a book, so this is an error.
+
+  To see how that can happen, consider the following book, where file
+  ~c[const.lsp] contains the single form ~c[(defconst *foo* '(a b))].
+  ~bv[]
+    (in-package \"ACL2\")
+    (defttag t)
+    (progn! (ld \"const.lsp\"))
+  ~ev[]
+  An attempt to certify this book will cause an error, but that particular
+  error can be avoided, as discussed below.  If the book is certified, however,
+  with production of a corresponding compiled file (which is the default
+  behavior for ~ilc[certify-book]), then any subsequent call of
+  ~ilc[include-book] that loads this compiled file will cause an error.
+  Again, this error is necessary because of how ACL2 is designed; specifically,
+  this ~ilc[ld] call would interfere with tracking of constant definitions when
+  loading the compiled file for the book.
+
+  Because including such a book (with a compiled file) causes an error, then as
+  a courtesy to the user, ACL2 arranges that the certification will fail (thus
+  avoiding a surprise later when trying to include the book).  The error in
+  that case will look as follows.
+  ~bv[]
+    ACL2 Error in LD:  It is illegal to call LD in this context.  See DOC
+    calling-ld-in-bad-contexts.
+  ~ev[]
+  If you really think it is OK to avoid this error, you can get around it by
+  setting ~il[state] global variable ~c[ld-okp] to t:  ~c[(assign ld-okp t)].
+  You can then certify the book in the example above, but you will still not be
+  able to include it with a compiled file.~/~/")
 
 (defmacro quick-test nil
 
@@ -3710,6 +3758,63 @@
                            (wet! ,form ,@kwd-args))
                           (cond (erp (mv "WET failed!" nil state))
                                 (t (value `(value-triple ,val)))))))))
+
+(defmacro disassemble$ (fn &rest args
+                           &key (recompile ':default)
+
+; And, in case books/misc/disassemble.lisp changes between releases:
+
+                           &allow-other-keys)
+
+  ":Doc-Section Other
+
+  disassemble a function~/
+
+  The macro ~c[disassemble$] provides a convenient interface to the underlying
+  ~c[disassemble] utility of the host Common Lisp implementation, which prints
+  assembly code for a given function symbol at the terminal.  It works by
+  including the distributed book ~c[books/misc/disassemble.lisp], which defines
+  the supporting function ~c[disassemble$-fn], and then by calling that
+  function.  Note that the arguments to ~c[disassemble$] are evaluated.  Also
+  note that ~c[disassemble$] is intended as a top-level utility for the ACL2
+  loop, not to be called in code; for such a purpose, include the above book
+  and call ~c[disassemble$-fn] directly.
+
+  ~bv[]
+  Example Forms:
+
+  (disassemble$ 'foo)
+  (disassemble$ 'foo :recompile t)~/
+
+  General Forms:
+  (disassemble$ form)
+  (disassemble$ form :recompile flg)
+  ~ev[]
+  where ~c[form] evaluates to a function symbol and ~c[flg] evaluates to any
+  value.  If ~c[flg] is ~c[nil], then the existing definition of that function
+  symbol is disassembled.  But if ~c[flg] is supplied and has a value other
+  than ~c[nil] or ~c[:default], and if that function symbol is defined in the
+  ACL2 loop (not merely in raw Lisp; for example, ~pl[set-raw-mode]), then the
+  disassembly will be based on a recompilation of that ACL2 definition.
+  Normally this recompilation is not necessary, but for some host Lisps, it may
+  be useful; in particular, for CCL the above book arranges that source code
+  information is saved, so that the output is annotated with such information.
+  When recompilation takes place, the previous definition is restored after
+  disassembly is complete.  Finally, if ~c[flg] is omitted or has the value
+  ~c[:default] ~-[] i.e., in the default case ~-[] then recompilation may take
+  place or not, depending on the host Lisp.  The values of ~c[(@ host-lisp)]
+  for which recompilation takes place by default may be found by looking at the
+  above book, or by including it and evaluating the constant
+  ~c[*host-lisps-that-recompile-by-default*].  As of this writing, CCL is the
+  only such Lisp (because that is the one for which we can obtain source
+  annotation in the output by recompiling).~/"
+
+  `(with-ubt!
+    (with-output
+     :off (event expansion summary proof-tree)
+     (progn
+       (include-book "misc/disassemble" :dir :system :ttags '(:disassemble$))
+       (value-triple (disassemble$-fn ,fn ,recompile (list ,@args)))))))
 
 (deflabel release-notes
   :doc
@@ -18288,6 +18393,20 @@
 ; the previous functionality of interpret-term-as-rewrite-rule, except for
 ; removing lambdas.
 
+; Improved the :use hint warning by adding the goal name and pointing to a new
+; :doc topic, using-enabled-rules.  Thanks to David Rager for pointing out how
+; the existing warning could be improved.
+
+; To support guard verification (in new books distributed in books/system/):
+; Updated several guards and termination conditions (to endp).  Functions
+; affected include sublis-var and sublis-var-lst and some ancestors; subst-var
+; and subst-var-lst; and subst-expr1 and subst-expr1-lst and subst-expr.
+; Thanks to David Rager for his part in this effort, including his addition of
+; books that verify guards for these functions.
+
+; Fixed ill-guarded calls of eq and union-eq in non-recursive-fnnames and
+; non-recursive-fnnames-lst, respectively.
+
   :doc
   ":Doc-Section release-notes
 
@@ -18418,16 +18537,6 @@
   called without a ~c[:ttagsx] argument supplied, then the value of ~c[:ttagsx]
   defaults to the (explicit or default) value of the ~c[:ttags] argument.
 
-  Improvements have been made related to the reading of characters.  In
-  particular, checks are now done for ASCII encoding and for the expected
-  ~ilc[char-code] values for ~c[Space], ~c[Tab], ~c[Newline], ~c[Page], and
-  ~c[Rubout].  Also, an error no longer occurs with certain uses of
-  non-standard characters.  For example, it had caused an error to certify a
-  book after a single ~il[portcullis] ~il[command] of
-  ~c[(make-event `(defconst *my-null* ,(code-char 0)))]; but this is no longer
-  an issue.  Thanks to Jared Davis for helpful correspondence that led us to
-  make these improvements.
-
   The ~c[:]~ilc[pl] and ~c[:]~ilc[pl2] ~il[command]s can now accept ~il[term]s
   that had previously been rejected.  For example, the command
   ~c[:pl (member a (append x y))] had caused an error, but now it works as one
@@ -18459,6 +18568,44 @@
   provided).  Similarly, non-~c[nil] symbols occurring in the ~c[:ttags]
   argument of an ~ilc[include-book] or ~ilc[certify-book] command will be
   converted to corresponding keywords.  ~l[defttag].
+
+  There have been several changes to ~il[gag-mode].  It is now is initially set
+  to ~c[:goals], suppressing most proof commentary other than key checkpoints;
+  ~pl[set-gag-mode].  Also, top-level induction schemes are once again printed
+  when gag-mode is enabled.  Printing of large induction schemes is abbreviated
+  by default, but this may be modified, and such printing can even be
+  suppressed; ~pl[set-evisc-tuple], in particular the discussion there of
+  ~c[:GAG-MODE].  Finally, the commentary printed within ~il[gag-mode] that is
+  related to ~il[forcing-round]s is now less verbose.  Thanks to Dave Greve and
+  David Rager for discussions leading to the change in the printing of
+  induction schemes under gag-mode.
+
+  An error now occurs if ~ilc[ld] is called while loading a compiled book.
+  ~l[calling-ld-in-bad-contexts].  Thanks to David Rager for reporting a
+  low-level assertion failure that led us to make this change.
+
+  The ~il[proof-checker] interactive loop is more robust: most errors will
+  leave you in that loop, rather than kicking you out of the proof-checker and
+  thus back to the main ACL2 read-eval-print loop.  Thanks to David Hardin for
+  suggesting this improvement in the case of errors arising from extra right
+  parentheses.
+
+  The summary at the end of a proof now prints the following note when
+  appropriate:
+  ~bv[]
+  [NOTE: A goal of NIL was generated.  See :DOC nil-goal.]
+  ~ev[]
+  ~l[nil-goal].
+
+  Improved ~ilc[dmr] to show the function being called in the case of
+  explicit evaluation: ``~c[(EV-FNCALL function-being-called)]''.
+
+  It is now permitted to bind any number of ~il[stobjs] to themselves in the
+  bindings of a ~ilc[LET] expression.  But if any stobj is bound to other than
+  itself in ~ilc[LET] bindings, then there still must be only one binding in
+  that ~c[LET] expression.  The analogous relaxation holds for ~ilc[LAMBDA]
+  expressions.  Thanks to Sol Swords for requesting such a change, which was
+  needed for some code generated by macro calls.
 
   ~st[NEW FEATURES]
 
@@ -18525,7 +18672,7 @@
 
   Event summaries now show the names of events that were mentioned in
   ~il[hints] of type ~c[:use], ~c[:by], or ~c[:clause-processor].
-  ~l[set-inhibited-summary-types].  Thanks to Francisco J. Martín Mateos for
+  ~l[set-inhibited-summary-types].  Thanks to Francisco J. Martin Mateos for
   requesting such an enhancement (actually thanks to the community, as his
   request is the most recent but this has come up from time to time before).
 
@@ -18560,6 +18707,17 @@
   the new ~c[:congruent-to] keyword of ~c[defstobj].  Thanks to Sol Swords for
   requesting this enhancement and for useful discussions contributing to its
   design.
+
+  A new top-level utility has been provided that shows the assembly language
+  for a defined function symbol; ~pl[disassemble$].  Thanks to Jared Davis for
+  requesting such a utility and to Shilpi Goel for pointing out an
+  inconvenience with the initial implementation.  Note that it uses the
+  distributed book ~c[books/misc/disassemble.lisp], which users are welcome to
+  modify (see ~url[http://www.cs.utexas.edu/users/moore/acl2/]).
+
+  The macro ~c[set-accumulated-persistence] is an alias for
+  ~ilc[accumulated-persistence].  Thanks to Robert Krug for suggesting this
+  addition.
 
   ~st[HEURISTIC IMPROVEMENTS]
 
@@ -18732,13 +18890,38 @@
   minor variant of which is included in a comment in source function
   ~c[interpret-term-as-rewrite-rule] (file ~c[defthm.lisp]).
 
+  Fixed a bug in the ACL2 evaluator (source function ~c[raw-ev-fncall]), which
+  was unlikely to be exhibited in practice.
+
+  Fixed a hard Lisp error that could occur for ill-formed ~c[:]~ilc[meta]
+  ~il[rule-classes], e.g., ~c[(:meta :trigger-fns '(foo))].
+
+  It is now an error to include a ~il[stobj] name in the ~c[:renaming] alist
+  (~pl[defstobj]).
+
+  Some bogus warnings about non-recursive function symbols have been eliminated
+  for rules of class ~c[:]~ilc[type-prescription].
+
   ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]
 
-  The character encoding has been fixed at iso-8859-1.
+  Improvements have been made related to the reading of characters.  In
+  particular, checks are now done for ASCII encoding and for the expected
+  ~ilc[char-code] values for ~c[Space], ~c[Tab], ~c[Newline], ~c[Page], and
+  ~c[Rubout].  Also, an error no longer occurs with certain uses of
+  non-standard characters.  For example, it had caused an error to certify a
+  book after a single ~il[portcullis] ~il[command] of
+  ~c[(make-event `(defconst *my-null* ,(code-char 0)))]; but this is no longer
+  an issue.  Thanks to Jared Davis for helpful correspondence that led us to
+  make these improvements.
+
+  The character encoding for reading from files has been fixed at iso-8859-1.
   ~l[character-encoding].  Thanks to Jared Davis for bringing this portability
   issue to our attention (as this change arose in order to deal with a change
   in the default character encoding for the host Lisp, CCL), and pointing us in
-  the right direction for dealing with it.
+  the right direction for dealing with it.  In many cases, the character
+  encoding for reading from the terminal is also iso-8859-1; but this is not
+  guaranteed.  In particular, when the host Lisp is SBCL this may not be the
+  case.
 
   Although the HTML documentation is distributed with ACL2, it had not been
   possible for users to build that documentation without omitting graphics, for
@@ -18778,10 +18961,41 @@
   changes were made so that ~c[:]~ilc[ubt] and similar commands do not change
   the settings for waterfall-parallelism or waterfall-printing.  Thanks to
   David Rager for contributing an initial implementation of these changes.
+
+  The implementation of ~ilc[deflock] has been improved.  Now, the macro it
+  defines can provide a lock when invoked inside a ~il[guard]-verified or
+  ~c[:]~ilc[program] mode function.  Previously, this was only the case if the
+  function definition was loaded from raw Lisp, typically via a compiled file.
+
+  The underlying implementation for waterfall parallelism
+  (~pl[set-waterfall-parallelism]) has been improved.  As a result, even the
+  largest proofs in the regression suite can be run efficiently in
+  ~c[:resource-based] waterfall parallelism mode.  Additionally,
+  ~c[:resource-based] is now the recommended mode for waterfall parallelism.
+
+  There is also a new flag for configuring the way waterfall parallelims
+  behaves once underlying system resource limits are reached.  This flag is
+  most relevant to ~c[:full] waterfall parallelism.
+  ~pl[set-total-parallelism-work-limit] for more information.
+
+  The ~ilc[dmr] utility has the same behavior in ACL2(p) as it has in ACL2
+  unless waterfall-parallelism has been set to a non-~c[nil] value
+  (~pl[set-waterfall-parallelism]), in which case statistics about parallel
+  execution are printed instead of the usual information.
+
+  The user can now build the regression suite using waterfall ~il[parallelism].
+  See the distributed file ~c[acl2-customization-files/README] for details, and
+  ~pl[unsupported-waterfall-parallelism-features] for a disclaimer related to
+  building the regression suite using waterfall parallelism.
+
+  When building ACL2 with both the hons and parallelism extensions (what is
+  called ``ACL2(hp)''), the functions that are automatically memoized by the
+  hons extension are now automatically unmemoized and memoized when the user
+  toggles waterfall parallelism on and off, respectively.
   ~eq[]
 
-  Among the enchancements for the HONS version (~pl[hons-and-memoization]) are
-  the following.~bq[]
+  Among the enchancements for the HONS extension (~pl[hons-and-memoization])
+  are the following.~bq[]
 
   The compact-print code has been replaced by new serialization routines
   contributed by Jared Davis.  This may improve performance when including
@@ -18814,8 +19028,6 @@
   replaced by evaluation of a corresponding ~ilc[include-book] command).  This
   has been fixed.  Thanks to David Rager for pointing out the problem by
   sending an example.
-
-  ~il[Gag-mode] now is initially set to ~c[:goals] instead of ~c[t].
 
   An error now occurs when attempting to build the HONS version of ACL2 on a
   32-bit platform.  We have seen regression failures on such a (CCL) platform.
@@ -23690,7 +23902,9 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
   pre-processing and data base updates.  Despite the fact that ACL2 is an
   applicative language it is possible to measure time with ACL2 programs.  The
   ~ilc[state] ~warn[] contains a clock.  The times are printed in decimal
-  notation but are actually counted in integral units.
+  notation but are actually counted in integral units.  Note that each time is
+  a runtime, also known as a cpu time, as opposed to being a real time, also
+  known as a wall clock time.
 
   The final ~c[APP] is the value of the ~c[defun] command and was printed by
   the read-eval-print loop.  The fact that it is indented one space is a subtle
@@ -24630,6 +24844,45 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
 
   '(print-saved-output nil nil state))
 
+(defdoc nil-goal
+  ":Doc-Section Miscellaneous
+
+  how to proceed when the prover generates a goal of ~c[nil]~/
+
+  At the end of a failed proof, one typically sees so-called ``key
+  checkpoints'' (~pl[set-gag-mode]).  These may be annotated as follows.
+  ~bv[]
+  [NOTE: A goal of NIL was generated.  See :DOC nil-goal.]
+  ~ev[]
+  This ~il[documentation] topic gives some ideas about how to think about the
+  situation described by that message: some goal has reduced to ~c[nil].
+
+  Suppose then that you see the above NOTE.  If you look back at the proof log,
+  even with ~il[gag-mode] enabled, you will see a message saying that a goal of
+  ~c[NIL] ``has been generated''.  This may indicate that the original goal is
+  not a theorem, since most of the prover's activity is to replace a goal by an
+  equivalent conjunction of its child subgoals.  However, if some ancestor of
+  the ~c[nil] goal has undergone a process other than simplification or
+  destructor elimination ~-[] fertilization (heuristic use of equalities),
+  generalization, or elimination of irrelevance ~-[] then it is quite possible
+  that the prover got to the ~c[nil] goal by replacing a goal by a
+  stronger (and perhaps false) conjunction of child subgoals.
+
+  At present, if you are using ~il[gag-mode] (the default) then you will need
+  to issue the command ~c[:]~ilc[pso] (``Print Saved Output'') if you want to
+  see whether the situation above has occurred.  However, that might not be
+  necessary.  A good rule of thumb is that if the ~c[nil] goal is under more
+  level of induction (e.g., with a prefix ``*i.j'' such as ``Subgoal
+  *1.1/2.2''), then there is some likelihood that the situation above did
+  indeed occur, and you can spend your time and energy looking at the key
+  checkpoints printed in the summary to see if they suggest useful ~il[rewrite]
+  rules to prove.  On the other hand, if the ~c[nil] goal is at the top
+  level (e.g. with a name not starting with ``*'', such as ``Subgoal 3.2''),
+  then the original conjecture is probably not a theorem.  If you do not
+  quickly see why that is the case, then you might find it useful to issue the
+  command ~c[:]~ilc[pso] to see which case reduced to ~c[nil], in order to get
+  insight about how the theorem might be falsified.~/~/")
+
 (defmacro set-saved-output (save-flg inhibit-flg)
 
   ":Doc-Section switches-parameters-and-modes
@@ -24849,7 +25102,7 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
   ~bv[]
   Examples:
 
-  :set-gag-mode t      ; enable gag-mode
+  :set-gag-mode t      ; enable gag-mode, suppressing most proof commentary
   (set-gag-mode t)     ; same as above
   :set-gag-mode :goals ; same as above, but print names of goals when produced
   :set-gag-mode nil    ; disable gag-mode~/
@@ -24866,9 +25119,8 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
   ~bv[]
   (set-gag-mode t) ; or, (set-gag-mode :goals)
   ~ev[]
-  in your ACL2 customization file; ~pl[acl2-customization].  Future releases of
-  ACL2 may install this setting as the default.  Please contact the ACL2
-  implementors if you have suggestions for improving output in gag-mode.
+  in your ACL2 customization file; ~pl[acl2-customization].  The default value
+  is ~c[:goals].
 
   The basic idea of gag-mode is to focus attention on so-called ``key
   checkpoints''.  By default, a checkpoint is a goal that cannot be simplified.
@@ -25098,6 +25350,13 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
 
 (defun-for-state set-abbrev-evisc-tuple (val state))
 
+(defun set-gag-mode-evisc-tuple (val state)
+  (set-evisc-tuple val
+                   :sites :gag-mode
+                   :iprint :same))
+
+(defun-for-state set-gag-mode-evisc-tuple (val state))
+
 (defun set-term-evisc-tuple (val state)
   (set-evisc-tuple val
                    :sites :term
@@ -25108,6 +25367,7 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
 (defun without-evisc-fn (form state)
   (state-global-let*
    ((abbrev-evisc-tuple nil set-abbrev-evisc-tuple-state)
+    (gag-mode-evisc-tuple nil set-gag-mode-evisc-tuple-state)
     (term-evisc-tuple   nil set-term-evisc-tuple-state))
    (er-progn (ld (list form)
                  :ld-verbose nil
@@ -25129,12 +25389,13 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
   expressions are printed in full for the ensuing output, regardless of the
   current evisc-tuples (~pl[set-evisc-tuple]).  ~l[set-iprint] for an example.
 
-  More precisely, ~c[without-evisc] binds the term-evisc-tuple, ld-evisc-tuple,
-  and abbrev-evisc-tuple to ~c[nil] (~pl[set-evisc-tuple]).  It does not modify
-  the trace evisc-tuple, so trace output is not modified by ~c[without-evisc].
-  Also note that calls of printing functions such as ~ilc[fmt] that include
-  explicit evisc-tuples will not have those evisc-tuples overridden.  The
-  following example illustrates this point.
+  More precisely, ~c[without-evisc] binds each of the term-evisc-tuple,
+  ld-evisc-tuple, abbrev-evisc-tuple and gag-mode-evisc-tuple to
+  ~c[nil] (~pl[set-evisc-tuple]).  It does not modify the trace evisc-tuple, so
+  trace output is not modified by ~c[without-evisc].  Also note that calls of
+  printing functions such as ~ilc[fmt] that include explicit evisc-tuples will
+  not have those evisc-tuples overridden.  The following example illustrates
+  this point.
   ~bv[]
   ACL2 !>(without-evisc
           (fms \"~~x0~~%\"

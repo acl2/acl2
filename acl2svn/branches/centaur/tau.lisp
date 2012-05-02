@@ -680,7 +680,9 @@
 (mutual-recursion
 
 (defun subst-var (new old form)
-  (declare (xargs :guard (pseudo-termp form)))
+  (declare (xargs :guard (and (pseudo-termp new)
+                              (variablep old)
+                              (pseudo-termp form))))
   (cond ((variablep form)
          (cond ((eq form old) new)
                (t form)))
@@ -689,8 +691,10 @@
                       (subst-var-lst new old (fargs form))))))
 
 (defun subst-var-lst (new old l)
-  (declare (xargs :guard (pseudo-term-listp l)))
-  (cond ((null l) nil)
+  (declare (xargs :guard (and (pseudo-termp new)
+                              (variablep old)
+                              (pseudo-term-listp l))))
+  (cond ((endp l) nil)
         (t (cons (subst-var new old (car l))
                  (subst-var-lst new old (cdr l))))))
 

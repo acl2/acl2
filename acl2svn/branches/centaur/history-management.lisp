@@ -3217,6 +3217,14 @@
                    (print-gag-stack-rev (cdr lst) (and limit (1- limit))
                                         orig-limit msg chan state)))))
 
+(defun maybe-print-nil-goal-generated (gag-state chan state)
+  (cond ((eq (access gag-state gag-state :abort-stack)
+             'empty-clause)
+         (fms "[NOTE: A goal of ~x0 was generated.  See :DOC nil-goal.]~|"
+              (list (cons #\0 nil))
+              chan state nil))
+        (t (newline chan state))))
+
 (defun print-gag-state1 (gag-state state)
   (cond
    ((eq (f-get-global 'checkpoint-summary-limit state) t)
@@ -3226,7 +3234,7 @@
            (abort-stack
             (access gag-state gag-state :abort-stack))
            (top-stack0 (access gag-state gag-state :top-stack))
-           (top-stack (or abort-stack top-stack0))
+           (top-stack (if (consp abort-stack) abort-stack top-stack0))
            (sub-stack (access gag-state gag-state :sub-stack))
            (some-stack (or sub-stack
 
@@ -3266,10 +3274,13 @@
                                    state))))
                   (pprogn
                    (fms "*** Key checkpoint~#0~[~/s~] ~#1~[before reverting ~
-                         to proof by induction~/at the top level~]: ***~|"
+                         to proof by induction~/at the top level~]: ***"
                         (list (cons #\0 top-stack)
-                              (cons #\1 (if abort-stack 0 1)))
+                              (cons #\1 (if (consp abort-stack) 0 1)))
                         chan state nil)
+                   (cond
+                    (sub-stack (newline chan state))
+                    (t (maybe-print-nil-goal-generated gag-state chan state)))
                    (print-gag-stack-rev
                     (reverse top-stack)
                     limit limit "before induction" chan
@@ -3280,18 +3291,11 @@
                                    'checkpoint-summary-limit
                                    state))))
                   (pprogn
-                   (cond
-                    ((gag-mode)
-                     (fms "*** Key checkpoint~#0~[~/s~] under a top-level ~
-                           induction ***~|*** (see :DOC pso to view induction ~
-                           scheme~#0~[~/s~]):   ***~|"
-                          (list (cons #\0 sub-stack))
-                          chan state nil))
-                    (t
-                     (fms "*** Key checkpoint~#0~[~/s~] under a top-level ~
-                           induction: ***~|"
-                          (list (cons #\0 sub-stack))
-                          chan state nil)))
+                   (fms "*** Key checkpoint~#0~[~/s~] under a top-level ~
+                         induction ***"
+                        (list (cons #\0 sub-stack))
+                        chan state nil)
+                   (maybe-print-nil-goal-generated gag-state chan state)
                    (print-gag-stack-rev
                     (reverse sub-stack)
                     limit
@@ -3301,7 +3305,10 @@
                     state))))
                (t state))))
        (t ; no checkpoints; aborted
-        (fms "*** Note: No checkpoints to print. ***~|"
+        (fms #-acl2-par
+             "*** Note: No checkpoints to print. ***~|"
+             #+acl2-par
+             "*** Note: No checkpoints from gag-mode to print. ***~|"
              nil chan state nil)))))
    (t ; no checkpoints; proof never started
     state)))
@@ -3323,8 +3330,112 @@
          (pprogn (erase-gag-state state)
                  (print-gag-state1 gag-state state)))))
 
+#+acl2-par
+(defun clause-id-is-top-level (cl-id)
+  (and (null (access clause-id cl-id :pool-lst))
+       (equal (access clause-id cl-id :forcing-round) 0)))
+
+#+acl2-par
+(defun clause-id-is-induction-round (cl-id)
+  (and (access clause-id cl-id :pool-lst)
+       (equal (access clause-id cl-id :forcing-round) 0)))
+
+#+acl2-par
+(defun clause-id-is-forcing-round (cl-id)
+
+; Note that we do not have a recognizer for inductions that occur while
+; forcing.
+
+  (not (equal (access clause-id cl-id :forcing-round) 0)))
+
+#+acl2-par
+(defun print-acl2p-checkpoints1 (checkpoints top-level-banner-printed
+                                             induction-banner-printed
+                                             forcing-banner-printed)
+  (declare (ignorable top-level-banner-printed induction-banner-printed
+                      forcing-banner-printed))
+  (cond 
+   ((atom checkpoints)
+    nil)
+   (t (let* ((cl-id (caar checkpoints))
+             (prettyified-clause (cdar checkpoints))
+             (top-level-banner-printed
+              (or top-level-banner-printed
+                  (if (and (not top-level-banner-printed) 
+                           (clause-id-is-top-level cl-id))
+                      (prog2$ (cw "~%*** Key ACL2(p) checkpoint[s] at the ~
+                                   top-level: ***~%")
+                              t)
+                    top-level-banner-printed)))
+             (induction-banner-printed
+              (or induction-banner-printed
+                  (if (and (not induction-banner-printed) 
+                           (clause-id-is-induction-round cl-id))
+                      (prog2$ (cw "~%*** Key ACL2(p) checkpoint[s] under a ~
+                                   top-level induction: ***~%")
+                              t)
+                    induction-banner-printed)))
+
+             (forcing-banner-printed
+              (or forcing-banner-printed
+                  (if (and (not forcing-banner-printed) 
+                           (clause-id-is-forcing-round cl-id))
+                      (prog2$ (cw "~%*** Key ACL2(p) checkpoint[s] under a ~
+                                   forcing round (including any from ~
+                                   induction): ***~%")
+                              t)
+                    forcing-banner-printed))))                 
+        (progn$ (cw "~%~s0~%"
+                    (string-for-tilde-@-clause-id-phrase cl-id))
+                (cw "~x0~%" prettyified-clause)
+                (print-acl2p-checkpoints1 (cdr checkpoints)
+                                          top-level-banner-printed
+                                          induction-banner-printed
+                                          forcing-banner-printed))))))
+
+#+acl2-par
+(deflock *acl2p-checkpoint-saving-lock*)
+
+#+acl2-par
+(defun erase-acl2p-checkpoints-for-summary (state)
+  (with-acl2p-checkpoint-saving-lock
+   (f-put-global 'acl2p-checkpoints-for-summary nil state)))
+
+#+acl2-par
+(defun print-acl2p-checkpoints (state)
+  (with-acl2p-checkpoint-saving-lock
+
+; Technically, this lock acquisition is unnecessary, because we only print
+; acl2p checkpoints after we have finished the waterfall (ACL2(p) is operating
+; with only a single thread at that point).  However, we go ahead and do it
+; anyway, as an example of good programming practice.
+
+   (prog2$
+    (if (f-get-global 'waterfall-parallelism state)
+        (prog2$
+         (cw "~%~%Printing the key ACL2(p) checkpoints that were encountered ~
+            during the proof attempt (and pushed for induction or ~
+            sub-induction).  Note that some of these checkpoints may have ~
+            been later proven by induction or sub-induction.  Thus, the user ~
+            must decide for themselves which of these checkpoints are ~
+            relevant to debugging their proof.~%~%")
+         (print-acl2p-checkpoints1 
+          (reverse (f-get-global 'acl2p-checkpoints-for-summary
+                                 state))
+          nil nil nil))
+      nil)
+  
+; At first we followed the precedent set by erase-gag-state and tried only
+; clearing the set of ACL2(p) checkpoints to print whenever this function is
+; called.  However, we noticed that succesful proof attempts then do not clear
+; the saved checkpoints.  As such, we also clear the checkpoints in defthm-fn1.
+  
+    (erase-acl2p-checkpoints-for-summary state))))
+
 (defun print-failure (ctx state)
   (pprogn (print-gag-state state)
+          #+acl2-par
+          (print-acl2p-checkpoints state)
           (io? error nil state
                (ctx)
                (let ((channel (proofs-co state)))
@@ -17016,6 +17127,7 @@
                                        ;;;   (e.g. misc/hons-help.lisp)
             term-evisc-tuple           ;;; see just above
             abbrev-evisc-tuple         ;;; see just above
+            gag-mode-evisc-tuple       ;;; see just above
             slow-array-action          ;;; see just above
             iprint-ar                  ;;; see just above
             iprint-soft-bound          ;;; see just above

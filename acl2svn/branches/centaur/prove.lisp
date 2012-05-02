@@ -1197,6 +1197,21 @@
           (t ttree))))
 
 #+acl2-par
+(defun save-acl2p-checkpoint-for-summary (cl-id prettyified-clause state)
+
+; We almost note that we are changing the global state of the program by
+; returning a modified state.  However, we manually ensure that this global
+; change is thread-safe by calling with-acl2p-checkpoint-saving-lock, and so
+; instead, we give ourselves the Okay to call f-put-global@par.
+
+  (declare (ignorable cl-id prettyified-clause state))
+  (with-acl2p-checkpoint-saving-lock
+   (f-put-global@par 'acl2p-checkpoints-for-summary
+                     (cons (cons cl-id prettyified-clause)
+                           (f-get-global 'acl2p-checkpoints-for-summary state))
+                     state)))
+
+#+acl2-par
 (defun find-the-first-checkpoint (h checkpoint-processors)
 
 ; "H" is the history reversed, which really means h is in the order that the
@@ -1238,12 +1253,12 @@
         cl))
    (t
     (let* ((hist-entry 
-          (find-the-first-checkpoint
-                (reverse hist) 
-                (f-get-global 'checkpoint-processors state)))
+            (find-the-first-checkpoint
+             (reverse hist) 
+             (f-get-global 'checkpoint-processors state)))
 
-         (checkpoint-clause 
-          (or (access history-entry hist-entry :clause)
+           (checkpoint-clause 
+            (or (access history-entry hist-entry :clause)
 
 ; We should be able to add an assertion that, if the hist-entry is nil (and
 ; thus, the :clause field of hist-entry is also nil), cl always has the same
@@ -1251,19 +1266,22 @@
 ; have access to the original conjecture in this function, we avoid such an
 ; assertion.
 
-              cl))
-         (cl-id (access history-entry hist-entry :cl-id))
-         (cl-id (if cl-id cl-id *initial-clause-id*))
-         (forcing-round (access clause-id cl-id :forcing-round))
-         (old-pspv-pool-lst
-          (pool-lst (cdr (access prove-spec-var pspv :pool)))))
-    (with-output-lock
-     (progn$
-       (cw "~%~%([ A key ACL2(p) checkpoint:~%~%~s0~%"
-           (string-for-tilde-@-clause-id-phrase cl-id))
-       (cw "~x0" (prettyify-clause checkpoint-clause 
-                                 (let*-abstractionp state) 
-                                 wrld))
+                cl))
+           (cl-id (access history-entry hist-entry :cl-id))
+           (cl-id (if cl-id cl-id *initial-clause-id*))
+           (forcing-round (access clause-id cl-id :forcing-round))
+           (old-pspv-pool-lst
+            (pool-lst (cdr (access prove-spec-var pspv :pool))))
+           (prettyified-clause (prettyify-clause checkpoint-clause 
+                                                 (let*-abstractionp state) 
+                                                 wrld)))
+      (prog2$
+       (save-acl2p-checkpoint-for-summary cl-id prettyified-clause state)
+       (with-output-lock
+        (progn$
+         (cw "~%~%([ A key ACL2(p) checkpoint:~%~%~s0~%"
+             (string-for-tilde-@-clause-id-phrase cl-id))
+         (cw "~x0" prettyified-clause)
 
 ; Parallelism no-fix: we are encountering a problem that we've known about from
 ; within the first few months of looking at parallelizing the waterfall.  When
@@ -1285,15 +1303,15 @@
 ; (thm (equal (append x (append y z)) (append (append x y) z))
 ;      :hints (("Goal" :do-not-induct t)))
 
-       (cw "~%~%The above subgoal may cause a goal to be pushed for proof by ~
+         (cw "~%~%The above subgoal may cause a goal to be pushed for proof by ~
             induction.  The pushed goal's new name might be ~@0.  Note that ~
             we may instead decide (either now or later) to prove the original ~
             conjecture by induction.  Also note that if a hint indicates that ~
             this subgoal or the original conjecture should not be proved by ~
             induction, the proof attempt will halt.~%~%])~%~%"
-           (tilde-@-pool-name-phrase
-            forcing-round
-            old-pspv-pool-lst))))))))
+             (tilde-@-pool-name-phrase
+              forcing-round
+              old-pspv-pool-lst)))))))))
 
 (defun@par push-clause (cl hist pspv wrld state)
 
@@ -3089,6 +3107,9 @@
           (mv (cond ((equal (tagged-objects 'abort-cause ttree)
                             '(revert))
                      (change gag-state gagst :abort-stack new-stack))
+                    ((equal (tagged-objects 'abort-cause ttree)
+                            '(empty-clause))
+                     (change gag-state gagst :abort-stack 'empty-clause))
                     (t gagst))
               (and msg-p
                    (msg "~@0~@1"
@@ -5605,7 +5626,82 @@
           (add-to-set-equal x (enabled-lmi-names ens (cdr lmi-lst) wrld)))
          (t (enabled-lmi-names ens (cdr lmi-lst) wrld)))))))
 
-(defun@par maybe-warn-for-use-hint (pspv ctx wrld state)
+(defdoc using-enabled-rules
+  ":Doc-Section Miscellaneous
+
+  avoiding ~c[:use] ~il[hints] for ~il[enable]d ~c[:]~ilc[rewrite] rules~/
+
+  Consider the following (admittedly silly) example.
+  ~bv[]
+  (thm (equal (append (append x y) z) (append x y z))
+       :hints ((\"Subgoal *1/1\" :use cdr-cons)))
+  ~ev[]
+  ACL2's output includes the following warning.
+  ~bv[]
+  ACL2 Warning [Use] in ( THM ...):  It is unusual to :USE an enabled
+  :REWRITE or :DEFINITION rule, so you may want to consider disabling
+  (:REWRITE CDR-CONS) in the hint provided for Subgoal *1/1.
+  ~ev[]
+  The warning is saying that if you leave the rewrite rule enabled, ACL2 may
+  simplify away the hypothesis added by the ~c[:use] hint.  We now explain this
+  danger in more detail and show how disabling the rule can solve this
+  problem.~/
+
+  Recall (~pl[hints]) how ~c[:use] ~il[hints] work.  Such a hint specifies a
+  formula, ~c[F], which is based on an existing lemma.  Then the indicated
+  goal, ~c[G], is replaced by the implication ~c[(implies F G)].  The intention
+  is that the truth of ~c[F] will help in the simplification of ~c[G] to
+  ~c[T] (true).  The ``[Use]'' warning shown above is telling us of the danger
+  that ~c[F] may be rewritten to ~c[T], reducing the implication above to
+  ~c[(implies T G)] ~-[] thus, sadly, ~c[F] has disappeared and is not
+  available to help with the simplification of ~c[G].
+
+  Consider the following tiny example.
+  ~bv[]
+    (defun p (x) (cons x x))
+    (defthm car-p
+       (equal (car (p x)) x))
+    (in-theory (disable p (:type-prescription p)))
+    (thm (implies (equal (p x1) (p x2))
+                  (equal x1 x2))
+         :hints ((\"Goal\"
+                  :use ((:instance car-p (x x1))
+                        (:instance car-p (x x2))))))
+  ~ev[]
+  The proof of the final ~ilc[thm] form fails, because the new hypotheses are
+  rewritten to ~c[t] using the ~c[:]~ilc[rewrite] rule ~c[CAR-P], in the manner
+  described above.  The following proof log shows the new hypotheses and their
+  disappearance via rewriting.
+  ~bv[]
+    We augment the goal with the hypotheses provided by the :USE hint.
+    These hypotheses can be derived from CAR-P via instantiation.  We are
+    left with the following subgoal.
+
+    Goal'
+    (IMPLIES (AND (EQUAL (CAR (P X1)) X1)
+                  (EQUAL (CAR (P X2)) X2))
+             (IMPLIES (EQUAL (P X1) (P X2))
+                      (EQUAL X1 X2))).
+
+    By the simple :rewrite rule CAR-P we reduce the conjecture to
+
+    Goal''
+    (IMPLIES (EQUAL (P X1) (P X2))
+             (EQUAL X1 X2)).
+  ~ev[]
+  When we disable the rule ~c[CAR-P] as follows, the proof succeeds.
+  ~bv[]
+    (thm (implies (equal (p x1) (p x2))
+                  (equal x1 x2))
+         :hints ((\"Goal\"
+                  :use ((:instance car-p (x x1))
+                        (:instance car-p (x x2)))
+                  :in-theory (disable car-p))))
+  ~ev[]
+  In general, then, a solution is to disable the rewrite rule that you are
+  supplying in a ~c[:use] hint.~/")
+
+(defun@par maybe-warn-for-use-hint (pspv cl-id ctx wrld state)
   (cond
    ((warning-disabled-p "Use")
     (state-mac@par))
@@ -5622,8 +5718,10 @@
        (enabled-lmi-names
         (warning$@par ctx ("Use")
           "It is unusual to :USE an enabled :REWRITE or :DEFINITION rule, so ~
-           you may want to consider disabling ~&0."
-          enabled-lmi-names))
+           you may want to consider disabling ~&0 in the hint provided for ~
+           ~@1.  See :DOC using-enabled-rules."
+          enabled-lmi-names
+          (tilde-@-clause-id-phrase cl-id)))
        (t (state-mac@par)))))))
 
 (defun@par maybe-warn-about-theory-simple (ens1 ens2 ctx wrld state)
@@ -6749,7 +6847,7 @@
       (erp (mv@par step-limit 'error pspv nil state))
       (t
        (pprogn@par
-        (maybe-warn-for-use-hint@par new-pspv-1 ctx wrld state)
+        (maybe-warn-for-use-hint@par new-pspv-1 cl-id ctx wrld state)
         (maybe-warn-about-theory-from-rcnsts@par
          (access prove-spec-var pspv :rewrite-constant)
          (access prove-spec-var new-pspv-1 :rewrite-constant)
@@ -7642,7 +7740,6 @@
         (mv-let 
          (first-half-clauses second-half-clauses len-first-half)
          (halves-with-length clauses)
-
          (spec-mv-let 
 
 ; Here, we perform the speculative call of waterfall1-lst@par, which is the
@@ -8555,12 +8652,13 @@
        (n0 forcing-round n pairs)
        (pprogn
         (fms
-         "Modulo the following~#0~[~/ ~n1~]~#2~[~/ newly~] forced ~
-          goal~#0~[~/s~], that completes ~#2~[the proof of the input ~
+         "Modulo~#g~[ the following~/ one~/~]~#0~[~/ ~n1~]~#2~[~/ newly~] ~
+          forced goal~#0~[~/s~], that completes ~#2~[the proof of the input ~
           Goal~/Forcing Round ~x3~].~#4~[~/  For what it is worth, the~#0~[~/ ~
           ~n1~] new goal~#0~[ was~/s were~] generated by cleaning up ~n5 ~
           forced hypotheses.~]  See :DOC forcing-round.~%"
-         (list (cons #\0 (if (cdr pairs) 1 0))
+         (list (cons #\g (if (gag-mode) (if (cdr pairs) 2 1) 0))
+               (cons #\0 (if (cdr pairs) 1 0))
                (cons #\1 n)
                (cons #\2 (if (= forcing-round 0) 0 1))
                (cons #\3 forcing-round)
@@ -8570,10 +8668,11 @@
          (proofs-co state)
          state
          nil)
-        (process-assumptions-msg1 forcing-round
-                                  (if (= n 1) nil n)
-                                  pairs
-                                  state)
+        (cond ((gag-mode) state)
+              (t (process-assumptions-msg1 forcing-round
+                                           (if (= n 1) nil n)
+                                           pairs
+                                           state)))
         (fms "We now undertake Forcing Round ~x0.~%"
              (list (cons #\0 (1+ forcing-round)))
              (proofs-co state)

@@ -2106,7 +2106,9 @@
 ; gstack before *dmr-file-name* is written.
 ; If you set this, consider also setting Emacs Lisp variable
 ; *acl2-timer-display-interval*.
-(defvar *dmr-interval* #-acl2-par 1000 #+acl2-par 300000)
+(defvar *dmr-interval* 1000)
+(defvar *dmr-interval-acl2-par-hack* 300000)
+(defvar *dmr-interval-used*)
 
 ; This variable's positive integer value indicates the maximum indentation for
 ; each line in the display.  Lines that otherwise would exceed this indentation
@@ -2145,13 +2147,26 @@
 
   0)
 
+#+acl2-par
+(defun dmr-acl2-par-hack-p ()
+  (f-get-global 'waterfall-parallelism *the-live-state*))
+
 (defun dmr-stop-fn-raw ()
   (when *dmr-stream*
     (let ((str *dmr-stream*))
       (setq *dmr-stream* nil)
       (close str))))
 
+(defun initialize-dmr-interval-used ()
+  (setq *dmr-interval-used*
+        #+acl2-par
+        (cond ((dmr-acl2-par-hack-p) *dmr-interval-acl2-par-hack*)
+              (t *dmr-interval*))
+        #-acl2-par
+        *dmr-interval*))
+
 (defun dmr-start-fn-raw (state)
+  (initialize-dmr-interval-used)
   (or (boundp '*dmr-file-name*)
       (setq *dmr-file-name* (dmr-file-name)))
   (setq *dmr-stream*
@@ -2167,7 +2182,7 @@
 (defvar *dmr-array*
   (make-array 10000)) ; start with default length of cw-gstack
 
-(defun reverse-into-array (lst)
+(defun reverse-into-dmr-array (lst)
   (let ((len-1 (1- (length lst))))
     (when (< (length *dmr-array*) len-1)
       (setq *dmr-array*
@@ -2359,23 +2374,28 @@
 
   "delete-from-here-to-end-of-buffer")
 
-#-acl2-par
 (defun dmr-string ()
+  #+acl2-par
+  (when (dmr-acl2-par-hack-p)
+    (return-from dmr-string
+                 (print-interesting-parallelism-variables-str)))
   (when (null *pstk-stack*)
-    (setq *dmr-counter* *dmr-interval*) ; will flush next time
+    (setq *dmr-counter* *dmr-interval-used*) ; will flush next time
     (setq *saved-deep-gstack* nil)
     (setq *deep-gstack* nil)
     (return-from dmr-string *dmr-delete-string*))
   (setf (fill-pointer *dmr-reusable-string*) 0)
   (let* ((pstk-tokens (loop for x in *pstk-stack*
                             with result = nil
-                            do (push (if (eq (car x) 'waterfall)
-                                         (car (nthcdr 8 x)) ; ctx
-                                       (car x))
+                            do (push (cond ((eq (car x) 'waterfall)
+                                            (car (nthcdr 8 x))) ; ctx
+                                           ((eq (car x) 'ev-fncall)
+                                            (list (car x) (cadr x)))
+                                           (t (car x)))
                                      result)
                             finally (return result))) ; reversed
          (pstk-tokens-tail pstk-tokens)
-         (len-1 (reverse-into-array *deep-gstack*))
+         (len-1 (reverse-into-dmr-array *deep-gstack*))
          (calling-sys-fn 'start)
          (*print-pretty* nil)
          (counter 0)
@@ -2436,11 +2456,6 @@
       (princ *dmr-delete-string* s)))
   *dmr-reusable-string*)
 
-#+acl2-par
-(defun dmr-string ()
-  (print-interesting-parallelism-variables-str))
-
-#-acl2-par ; could inline for #+acl2-par, too
 (declaim (inline dmr-flush1))
 
 (defun dmr-flush1 (&optional reset-counter)
@@ -2462,26 +2477,26 @@
 
 (defun dmr-flush (&optional reset-counter)
   #+acl2-par
-  (declare (ignore reset-counter))
-  #-acl2-par
-  (dmr-flush1 reset-counter)
-  #+acl2-par
-  (cond ((> *dmr-counter*
-            *dmr-interval*)
-         (setq *dmr-counter* 0)
-         (with-lock *dmr-lock* (dmr-flush1)))
-        (t
-         (setq *dmr-counter* (1+ *dmr-counter*)))))
+  (when (dmr-acl2-par-hack-p)
+    (return-from dmr-flush
+                 (cond ((> *dmr-counter*
+                           *dmr-interval-used*)
+                        (setq *dmr-counter* 0)
+                        (with-lock *dmr-lock* (dmr-flush1)))
+                       (t
+                        (setq *dmr-counter* (1+ *dmr-counter*))))))
+  (dmr-flush1 reset-counter))
 
 (defun dmr-display ()
-  #-acl2-par
-  (cond ((> *dmr-counter*
-            *dmr-interval*)
-         (setq *dmr-counter* 0)
-         (dmr-flush))
-        (t
-         (setq *dmr-counter* (1+ *dmr-counter*))))
   #+acl2-par
+  (when (dmr-acl2-par-hack-p)
+    (return-from dmr-display
+                 (cond ((> *dmr-counter*
+                           *dmr-interval-used*)
+                        (setq *dmr-counter* 0)
+                        (dmr-flush))
+                       (t
+                        (setq *dmr-counter* (1+ *dmr-counter*))))))
   (dmr-flush))
 
 (defun cw-gstack-short ()
@@ -7459,6 +7474,7 @@ Missing functions:
              (f-put-global 'save-expansion-file t *the-live-state*))
            (when user-home-dir
              (f-put-global 'user-home-dir user-home-dir *the-live-state*)))
+         (set-gag-mode-fn :goals *the-live-state*)
          #-hons
 ; Hons users are presumably advanced enough to tolerate the lack of a
 ; "[RAW LISP]" prompt.

@@ -52,6 +52,11 @@
 
 ; End of Section "To Consider".
 
+; Parallelism wart: cleanup the implementation and documentation of deflock.
+
+; Parallelism wart: in the event that the just mentioned cleanup of deflock is
+; not finished, insert the script that Kaufmann sent Rager in email.
+
 (defdoc deflock
 
   ":Doc-Section ACL2::Parallel-programming
@@ -75,24 +80,65 @@
   ~c[with-<modified-lock-symbol>], where ~c[<modified-lock-symbol>] is the
   given symbol with the leading and trailing ~c[*] characters removed.  This
   newly defined macro will guarantee mutually exclusive execution when called
-  in the body of a ~il[guard]-verified or ~c[:]~ilc[program] mode function.
-  (To get around that restriction, ~pl[top-level].)
+  in the body of the raw Lisp definition of a function, as is typically the
+  case for ~il[guard]-verified functions, for ~c[:]~ilc[program] mode
+  functions, and for calls of macro ~ilc[top-level].
+  (~l[guard-evaluation-table] for details of how raw Lisp code might not be
+  invoked when guard-checking (~pl[set-guard-checking]) has value ~c[:none] or
+  ~c[:all].)
 
-  In the raw Lisp version of the code, the newly defined macro uses a lock,
-  with the given ~c[*symbol*] as its name.  This lock guarantees that for any
-  two forms that are each in the scope of a call of
-  ~c[with-<modified-lock-symbol>], the forms do not execute concurrently.
+  To see how mutual exclusion is guaranteed, consider the raw Lisp code
+  generated for the macro, ~c[with-<modified-lock-symbol>], that is introduced
+  by a call of ~c[deflock].  This code uses a lock (with the given ~c[*symbol*]
+  as its name), which guarantees that for any two forms that are each in the
+  scope of a call of ~c[with-<modified-lock-symbol>], the forms do not execute
+  concurrently.
 
-  An example script is as follows.
+  Note that a call of ~c[deflock] expands into the application of ~c[progn] to
+  two events, as illustrated below.
+  ~bv[]
+  ACL2 !>:trans1 (deflock *my-cw-lock*)
+   (PROGN (TABLE LOCK-TABLE '*MY-CW-LOCK* T)
+          (DEFMACRO WITH-MY-CW-LOCK (&REST ARGS)
+                    (LIST* 'WITH-LOCK '*MY-CW-LOCK* ARGS)))
+  ACL2 !>
+  ~ev[]
+  Thus, ~c[deflock] forms are legal embedded event forms
+  (~pl[embedded-event-form]) for ~il[books] as well as ~ilc[encapsulate] and
+  ~ilc[progn] ~il[events].
+
+  The following log shows a lock in action.  Recall that locks work as expected
+  in ~il[guard]-verified and ~c[:]~ilc[program] mode functions; they do not,
+  however, work in ~c[:]~ilc[logic] mode functions that have not been
+  guard-verified, as illustrated below.
 
   ~bv[]
-  (deflock *my-cw-lock*)
-  (defun foo ()
-    (declare (xargs :verify-guards t)) ; or :mode :program
-    (with-my-cw-lock
-     (cw \"No other use of ~~x0 can print concurrently with me!~~%\"
-         'with-my-cw-lock)))
-  (foo)
+  ACL2 !>(deflock *my-cw-lock*)
+  [[.. output omitted ..]]
+   WITH-MY-CW-LOCK
+  ACL2 !>(defun foo (n)
+           (declare (xargs :guard (natp n) :verify-guards nil))
+           (plet ((x1 (with-my-cw-lock (cw \"~~x0\" (make-list n))))
+                  (x2 (with-my-cw-lock (cw \"~~x0\" (make-list n)))))
+                 (and (null x1) (null x2))))
+  [[.. output omitted ..]]
+   FOO
+  ACL2 !>(foo 20)
+  (NIL NIL NIL NIL( NIL NIL NIL NIL NIL NILNIL  NIL NILNIL  NIL NILNIL 
+       NIL NILNIL NIL  NIL NILNIL  NIL NIL
+  NIL      NILNIL  NIL NILNIL )
+  NIL NIL NIL NIL NIL NIL NIL NIL)
+  T
+  ACL2 !>(verify-guards foo)
+  [[.. output omitted ..]]
+   FOO
+  ACL2 !>(foo 20)
+  (NIL NIL NIL NIL NIL NIL NIL NIL NIL NIL
+       NIL NIL NIL NIL NIL NIL NIL NIL NIL NIL)
+  (NIL NIL NIL NIL NIL NIL NIL NIL NIL NIL
+       NIL NIL NIL NIL NIL NIL NIL NIL NIL NIL)
+  T
+  ACL2 !>
   ~ev[]~/~/")
 
 (defdoc compiling-acl2p
@@ -513,7 +559,11 @@
                             (hons-init-hook-unmemoizations)))
                      state)
                    (f-put-global 'waterfall-parallelism val state)
-                   (value val))))
+                   (progn$
+                    #-acl2-loop-only
+                    (funcall ; avoid undefined function warning
+                     'initialize-dmr-interval-used)
+                    (value val)))))
          #-acl2-par
 
 ; Once upon a time we issued an error here instead of an observation.  In
@@ -564,10 +614,9 @@
   General Forms:
   (set-waterfall-parallelism nil)        ; never parallelize (serial execution)
   (set-waterfall-parallelism :full)      ; always parallelize
-                                         ;   (recommended setting)
   (set-waterfall-parallelism :top-level) ; parallelize top-level subgoals
   (set-waterfall-parallelism             ; parallelize if sufficient resources
-    :resource-based)
+    :resource-based)                     ;   (recommended setting)
   (set-waterfall-parallelism             ; parallelize if sufficient resources
     :resource-and-timing-based           ;   and suggested by prior attempts
   (set-waterfall-parallelism             ; never parallelize but use parallel
@@ -585,8 +634,9 @@
   Note that not all ACL2 features are supported when waterfall-parallelism is
   set to non-nil (~pl[unsupported-waterfall-parallelism-features]).
 
-  ~c[:Full] waterfall parallelism typically achieves the best performance in
-  ACL2(p), so ~c[:full] is the recommended setting.
+  ~c[:Resource-based] waterfall parallelism typically achieves the best
+  performance in ACL2(p), while maintaining system stability, so
+  ~c[:resource-based] is the recommended setting.
 
   A value of ~c[nil] indicates that ACL2(p) should never prove subgoals in
   parallel.
@@ -1942,9 +1992,6 @@
 
 #+(or acl2-loop-only (not acl2-par))
 (defmacro spec-mv-let (bindings computation body)
-
-; Parallelism wart: add pointers to this doc topic inside other parallelism doc
-; topics.
 
   ":Doc-Section Parallel-programming
 
