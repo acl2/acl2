@@ -191,7 +191,7 @@ or a form (variable term), which ~x0 isn't.~%" (car autos)))))
               (macfun-get-strings (cdr x)))
       (macfun-get-strings (cdr x)))))
 
-(defun defmacfun-fn (name formals doc-decl-body)
+(defun defmacfun-fn (name formals doc-decl-body type)
   (let* ((bodylst (last doc-decl-body))
          (doc-decl (butlast doc-decl-body 1))
          (docs (macfun-get-strings doc-decl))
@@ -204,12 +204,17 @@ or a form (variable term), which ~x0 isn't.~%" (car autos)))))
          (mac-formals (macfun-formals-to-macro-formals formals)))
     `(progn
        ;; define the macro first to check for syntax errors
+       (defun ,fnname ,fn-formals
+         ,@decls . ,bodylst)
+
        (defmacro ,name ,mac-formals
          ,@docs
-         (list ',fnname . ,fn-actuals))
-
-       (defun ,fnname ,fn-formals
-         ,@decls . ,bodylst))))
+         ,(case type
+            (function `(list ',fnname . ,fn-actuals))
+            (macro `(,fnname . ,fn-actuals)))))))
 
 (defmacro defmacfun (name formals &rest doc-decl-body)
-  (defmacfun-fn name formals doc-decl-body))
+  (defmacfun-fn name formals doc-decl-body 'function))
+
+(defmacro deffunmac (name formals &rest doc-decl-body)
+  (defmacfun-fn name formals doc-decl-body 'macro))
