@@ -416,6 +416,7 @@
   (x al tries maybe-wash-args hyp clk)
   (declare (xargs :guard (and (gl::gobjectp x)
                               (gl::gobjectp al)
+                              (gl::gobjectp tries)
                               (gl::bfr-p hyp))
                   :guard-hints (("goal" :in-theory
                                  (e/d (gl::tag) ((force)
@@ -423,7 +424,8 @@
            (ignore clk))
   (let ((x (mbe :logic (gl::gobj-fix x) :exec x))
         (al (mbe :logic (gl::gobj-fix al) :exec al))
-        (hyp (mbe :logic (gl::bfr-fix hyp) :exec hyp)))
+        (hyp (mbe :logic (gl::bfr-fix hyp) :exec hyp))
+        (tries (gl::general-concrete-obj tries)))
     (if (and (atom-key-gobj-val-alistp al)
              (gl::general-concretep x))
         (b* (((mv bfr-al badp) (gobj-alist-to-bfr-alist al hyp))
