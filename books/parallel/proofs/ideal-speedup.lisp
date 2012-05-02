@@ -24,33 +24,58 @@
 
 ; call (set-waterfall-parallelism :full) to execute these proofs in parallel
 
-(defun countdown (n acc)
- (declare (xargs :guard (and (natp n)
-                             (integerp acc))))
- (if (or (zp n) (<= n 0))
-     acc
-   (countdown (1- n) (1+ acc))))
-
+(defun countdown (n1 n2 n2-top acc)
+  (declare (type (unsigned-byte 26) n1 n2 n2-top)
+           (type (integer 0 100) acc)
+           (xargs :measure (cons (cons (1+ (nfix n1)) 1) (nfix n2))))
+  (cond ((mbe :logic (zp n1)
+              :exec (eql n1 0))
+         (cond ((mbe :logic (zp n2)
+                     :exec (eql n2 0))
+                acc)
+               (t (countdown n1
+                             (the (unsigned-byte 26) (1- n2))
+                             n2-top
+                             (if (< acc 100)
+                                 (the (integer 0 100)
+                                      (1+ acc))
+                               0)))))
+        ((mbe :logic (zp n2)
+              :exec (eql n2 0))
+         (countdown (the (unsigned-byte 26) (1- n1))
+                    n2-top
+                    n2-top
+                    (if (< acc 100)
+                        (the (integer 0 100)
+                             (1+ acc))
+                      0)))
+        (t (countdown n1
+                      (the (unsigned-byte 26) (1- n2))
+                      n2-top
+                      (if (< acc 100)
+                          (the (integer 0 100)
+                               (1+ acc))
+                        0)))))
 
 (defun countdown-wrapper-4-way (x)
   (if (equal x 1)
-      (countdown (* 2000000 *4-way-duration-factor*) 0)
-    (countdown (* 2000001 *4-way-duration-factor*) 0)))
+      (countdown 2000000 *4-way-duration-factor* *4-way-duration-factor* 0)
+    (countdown 2000001 *4-way-duration-factor* *4-way-duration-factor* 0)))
 
 (defun countdown-wrapper-8-way (x)
   (if (equal x 1)
-      (countdown (* 2000000 *8-way-duration-factor*) 0)
-    (countdown (* 2000001 *8-way-duration-factor*) 0)))
+      (countdown 2000000 *8-way-duration-factor* *8-way-duration-factor* 0)
+    (countdown 2000001 *8-way-duration-factor* *8-way-duration-factor* 0)))
 
 (defun countdown-wrapper-20-way (x)
   (if (equal x 1)
-      (countdown (* 2000000 *20-way-duration-factor*) 0)
-    (countdown (* 2000001 *20-way-duration-factor*) 0)))
+      (countdown 2000000 *20-way-duration-factor* *20-way-duration-factor* 0)
+    (countdown 2000001 *20-way-duration-factor* *20-way-duration-factor* 0)))
 
 (defun countdown-wrapper-40-way (x)
   (if (equal x 1)
-      (countdown (* 2000000 *40-way-duration-factor*) 0)
-    (countdown (* 2000001 *40-way-duration-factor*) 0)))
+      (countdown 2000000 *40-way-duration-factor* *40-way-duration-factor* 0)
+    (countdown 2000001 *40-way-duration-factor* *40-way-duration-factor* 0)))
 
 (defun p1-4-way (n) (not (equal (countdown-wrapper-4-way n) 11)))
 (defun p2-4-way (n) (not (equal (countdown-wrapper-4-way n) 12)))
