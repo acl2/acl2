@@ -130,15 +130,11 @@
   `(toggle-pc-macro-fn ',(make-official-pc-command name) ',new-tp state))
 
 (defmacro define-pc-primitive (raw-name formals &rest body)
-  ;; I want to store the instruction automatically unless it's stored explicitly.
-  ;; What I'll do is store the instruction at the end, unless there's already
-  ;; one stored.  So, I'll store NIL as a starting point.  To implement this simply,
-  ;; I'll impose the invariant that primitive commands never look at the instruction
-  ;; field of the current state.
-  ;;    Note that if I put add-pc-command on the untouchables list, then I prevent
-  ;; the user from defining new primitive commands.  That's good, because I have
-  ;; no control over what they do, since state-stack is only modified in the case
-  ;; by the single stepper, and I allow that.
+
+; Primitive command definitions should never look at the instruction field of
+; the current state, since it is stored automatically after the instruction
+; otherwise completes; see pc-primitive-defun-form.
+
   (let ((name (make-official-pc-command raw-name)))
     (mv-let
      (doc body)
@@ -1497,14 +1493,14 @@
    (initialize-brr-stack state)
    (er-let* ((ttree
               (let ((pspv (initial-pspv term displayed-goal otf-flg ens wrld))
-                    (clause (list (list term))))
+                    (clauses (list (list term))))
                 (if (f-get-global 'in-verify-flg state) ;interactive
                     (state-global-let*
                      ((saved-output-p t)
                       (saved-output-token-lst :all))
                      (pprogn (f-put-global 'saved-output-reversed nil state)
-                             (prove-loop clause pspv hints ens wrld ctx state)))
-                  (prove-loop clause pspv hints ens wrld ctx state)))))
+                             (prove-loop clauses pspv hints ens wrld ctx state)))
+                  (prove-loop clauses pspv hints ens wrld ctx state)))))
             (er-progn
              (chk-assumption-free-ttree ttree ctx state)
              (value ttree)))))

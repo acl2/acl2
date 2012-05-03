@@ -18783,6 +18783,11 @@
   ~c[nil] appears in a comment in the ACL2 sources, in
   ~c[(deflabel note-4-4 ...)].
 
+  Fixed a soundness bug that allowed users to define new ~il[proof-checker]
+  primitive commands.  Before this fix, a book proving ~c[nil] could be
+  certified, as shown in a comment now in the introduction of the ~il[table]
+  ~c[pc-command-table] in source file ~c[proof-checker-a.lisp].
+
   (Technical change, primarily related to ~ilc[make-event]:) Plugged a security
   hole that allowed ~il[books]' ~il[certificate]s to be out-of-date with
   respect to ~ilc[make-event] expansions, but not recognized as such.  The

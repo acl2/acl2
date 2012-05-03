@@ -179,13 +179,9 @@
 (defmacro depends-on (&optional ss-supplied-p)
   `(access goal (car (goals ,ss-supplied-p)) :depends-on))
 
-(defmacro make-official-pc-command (sym &optional pre-package)
-  (if pre-package
-      `(intern-in-package-of-symbol
-        (symbol-name ,sym)
-        (caar (table-alist 'pc-command-table (w state))))
-    `(intern-in-package-of-symbol (symbol-name ,sym)
-                                  'acl2-pc::any-symbol)))
+(defmacro make-official-pc-command (sym)
+  `(intern-in-package-of-symbol (symbol-name ,sym)
+                                'acl2-pc::acl2-pkg-witness))
 
 (defun intern-in-keyword-package (sym)
   (declare (xargs :guard (symbolp sym)))
@@ -210,7 +206,7 @@
 (defmacro change-pc-state (pc-s &rest args)
   (list* 'change 'pc-state pc-s args))
 
-(defun make-official-pc-instr (instr state)
+(defun make-official-pc-instr (instr)
 
 ; This function always returns a syntactically legal instruction, i.e., a true
 ; list whose car is a symbol in the ACL2-PC package
@@ -218,14 +214,14 @@
   (if (consp instr)
       (if (and (symbolp (car instr))
                (true-listp (cdr instr)))
-          (cons (make-official-pc-command (car instr) t) (cdr instr))
-        (list (make-official-pc-command 'illegal t) instr))
+          (cons (make-official-pc-command (car instr)) (cdr instr))
+        (list (make-official-pc-command 'illegal) instr))
     (if (symbolp instr)
-        (list (make-official-pc-command instr t))
+        (list (make-official-pc-command instr))
       (if (and (integerp instr)
                (> instr 0))
-          (list (make-official-pc-command 'dv t) instr)
-        (list (make-official-pc-command 'illegal t) instr)))))
+          (list (make-official-pc-command 'dv) instr)
+        (list (make-official-pc-command 'illegal) instr)))))
 
 (defun check-formals-length (formals args fn ctx state)
   (declare (xargs :guard (and (symbol-listp formals)
@@ -425,6 +421,29 @@
            (cons ',raw-name args)
            ,(let-form-for-pc-state-vars (car (last body)))))))))
 
+(table pc-command-table nil nil
+       :guard
+
+; Before adding this table guard after Version_4.3, we were able to certify the
+; following book.
+
+;   (in-package "ACL2")
+;   (program)
+;   (set-state-ok t)
+;   (define-pc-primitive foo (&rest rest-args)
+;     (declare (ignore rest-args))
+;     (mv (change-pc-state pc-state :goals (cdr goals))
+;         state))
+;   (logic)
+;   (defthm bug
+;     nil
+;     :instructions (:foo)
+;     :rule-classes nil)
+
+       (and (function-symbolp key world)
+            (or (not (eq val 'primitive))
+                (global-val 'boot-strap-flg world))))
+
 (defmacro add-pc-command (name command-type)
   `(table pc-command-table ',name ,command-type))
 
@@ -560,7 +579,7 @@
 ; Notice that unlike Lisp macros, the global Lisp state is available for the
 ; expansion.  Hence we can query the ACL2 database etc.
 
-  (let ((instr (make-official-pc-instr raw-instr state)))
+  (let ((instr (make-official-pc-instr raw-instr)))
 
 ; Notice that instr is syntactically valid, i.e. is a true-listp headed by a
 ; symbol in the acl2-pc package -- even if raw-instr isn't of this form.
@@ -901,12 +920,13 @@
                                    state))))
                             (pprogn (io? proof-checker nil state
                                          (instr goal-name)
-                                         (fms0 "~|AHA!  A contradiction has been ~
-                                             discovered in the hypotheses of ~
-                                             goal ~x0 in the course of ~
-                                             executing instruction ~x1, in ~
-                                             the process of preparing to deal ~
-                                             with forced assumptions.~|"
+                                         (fms0 "~|AHA!  A contradiction has ~
+                                                been discovered in the ~
+                                                hypotheses of goal ~x0 in the ~
+                                                course of executing ~
+                                                instruction ~x1, in the ~
+                                                process of preparing to deal ~
+                                                with forced assumptions.~|"
                                                (list (cons #\0 goal-name)
                                                      (cons #\0 instr))
                                                0 nil))
@@ -949,9 +969,9 @@
                                  (io? proof-checker nil state
                                       (forced-goals)
                                       (fms0
-                                       "~|NOTE (forcing):  Creating ~n0 ~
-                                             new ~#1~[~/goal~/goals~] due to ~
-                                             forcing assumptions.~%"
+                                       "~|NOTE (forcing):  Creating ~n0 new ~
+                                        ~#1~[~/goal~/goals~] due to forcing ~
+                                        assumptions.~%"
                                        (list
                                         (cons #\0 (length forced-goals))
                                         (cons #\1
@@ -974,8 +994,8 @@
 (defun maybe-print-macroexpansion (instr raw-instr state)
   (let ((pc-print-macroexpansion-flg (pc-print-macroexpansion-flg)))
     (if (and pc-print-macroexpansion-flg
-             (not (eq (car instr) (make-official-pc-command 'lisp t)))
-             (not (equal instr (make-official-pc-instr raw-instr state))))
+             (not (eq (car instr) (make-official-pc-command 'lisp)))
+             (not (equal instr (make-official-pc-instr raw-instr))))
         (io? proof-checker nil state
              (pc-print-macroexpansion-flg instr)
              (fms0 ">> ~x0~|" (list (cons #\0 instr)) 0
@@ -1194,7 +1214,7 @@
            (signal val state)
            (catch-throw-to-local-top-level
             (pc-single-step
-             (make-official-pc-instr instr state)
+             (make-official-pc-instr instr)
              state))
            (cond
             ((and signal

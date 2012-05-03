@@ -10352,7 +10352,7 @@
 ; Now we stub out the proof checker's sense of "instructions."
 
 (defun primitive-instructionp (instr state)
-  (let* ((cmd (car (make-official-pc-instr instr state)))
+  (let* ((cmd (car (make-official-pc-instr instr)))
          (typ (pc-command-type cmd)))
     (and (member-eq typ '(primitive atomic-macro))
          (acl2-system-namep
