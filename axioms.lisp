@@ -39595,10 +39595,9 @@
   create ~il[books] that extend the functionality of ACL2 in ways not allowed
   without a so-called ``active trust tag''.  A trust tag thus represents a
   contract: The writer of such a book is guaranteeing that the book extends
-  ACL2 in a ``correct'' way as defined by the writer of the book ~-[] often
-  simply in a sound way ~-[].  The writer of the book will often have a small
-  section of the book in the scope of an active trust tag that can be
-  inspected by potential users of that book:
+  ACL2 in a ``correct'' way as defined by the writer of the book.  The writer
+  of the book will often have a small section of the book in the scope of an
+  active trust tag that can be inspected by potential users of that book:
   ~bv[]
   <initial part of book, which does not use trust tags>
   (defttag :some-ttag) ; install :some-ttag as an active trust tag
@@ -39607,7 +39606,7 @@
   <initial part of book, which does not use trust tags>
   ~ev[]
 
-  Why may trust tags be needed?  The evaluation of certain functions can
+  Why might trust tags be needed?  The evaluation of certain functions can
   introduce bugs and even unsoundness, but can be useful in restricted ways
   that avoid such issues.  For example, ~ilc[sys-call] can be used in an unsafe
   way, for example to overwrite files, or worse; ~pl[sys-call] for a
@@ -39713,19 +39712,19 @@
   ~pl[set-deferred-ttag-notes]).
 
   ~st[Active ttags.]  Suppose ~c[tag-name] is a non-~c[nil] symbol.  Then
-  ~c[(defttag :tag-name)] sets ~c[:tag-name] to be the ``active ttag.''  There
-  must be an active ttag in order for there to be any mention of certain
-  function and macro symbols, including ~ilc[sys-call]; evaluate the form
-  ~c[(strip-cars *ttag-fns-and-macros*)] to see the full list of such symbols.
-  On the other hand, ~c[(defttag nil)] removes the active ttag, if any; there
-  is then no active ttag.  The scope of a ~c[defttag] form in a book being
-  certified or included is limited to subsequent forms in the same book before
-  the next ~c[defttag] (if any) in that book.  Similarly, if a ~c[defttag] form
-  is evaluated in the top-level loop, then its effect is limited to subsequent
-  forms in the top-level loop before the next ~c[defttag] in the top-level loop
-  (if any).  Moreoever, ~ilc[certify-book] is illegal when a ttag is active; of
-  course, in such a circumstance one can execute ~c[(defttag nil)] in order to
-  allow book certification.
+  ~c[(defttag :tag-name)] sets ~c[:tag-name] to be the (unique) ``active
+  ttag.''  There must be an active ttag in order for there to be any mention of
+  certain function and macro symbols, including ~ilc[sys-call]; evaluate the
+  form ~c[(strip-cars *ttag-fns-and-macros*)] to see the full list of such
+  symbols.  On the other hand, ~c[(defttag nil)] removes the active ttag, if
+  any; there is then no active ttag.  The scope of a ~c[defttag] form in a book
+  being certified or included is limited to subsequent forms in the same book
+  before the next ~c[defttag] (if any) in that book.  Similarly, if a
+  ~c[defttag] form is evaluated in the top-level loop, then its effect is
+  limited to subsequent forms in the top-level loop before the next ~c[defttag]
+  in the top-level loop (if any).  Moreoever, ~ilc[certify-book] is illegal
+  when a ttag is active; of course, in such a circumstance one can execute
+  ~c[(defttag nil)] in order to allow book certification.
 
   ~st[Ttag notes and the ``certifier.'']  When a ~c[defttag] is executed with
   an argument other than ~c[nil], output is printed, starting on a fresh line
