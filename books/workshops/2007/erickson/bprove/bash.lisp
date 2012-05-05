@@ -22,6 +22,14 @@
 
 ; October, 2006
 
+; [Note added by Matt Kaufmann on May 5, 2012: I believe that this book, in
+; John Erickson's books/workshops/2007/erickson/bprove/, was based on a version
+; of my books/misc/bash.lisp book.  I see a modification to
+; simplify-with-prover that comments out fertilize and eliminate-destructors.
+; I don't know if anything else was modified, but for now I'll just keep this
+; book as it currently stands rather than trying to bring it up to date with
+; books/misc/bash.lisp.]
+
 ; In a nutshell:
 
 ; If you submit (bash term), then the result is a list of goals to which ACL2
@@ -101,6 +109,12 @@ ACL2 !>
 
 (set-state-ok t)
 
+; The following appears in the ACL2 source code, but is included temporarily
+; for a few days pending some users updating to a sufficiently recent
+; development snapshot.
+(defun unproved-pc-prove-clauses (ttree)
+  (reverse-strip-cdrs (tagged-objects :bye ttree) nil))
+
 (defun simplify-with-prover (form hints ctx state)
 
 ; This is patterned after (define-pc-primitive prove ...).
@@ -134,7 +148,7 @@ ACL2 !>
      (mv-let (erp ttree state)
              (pc-prove tterm form thints t ens wrld ctx state)
              (cond (erp (mv t nil state))
-                   (t (let ((clauses (unproved-pc-prove-terms ttree)))
+                   (t (let ((clauses (unproved-pc-prove-clauses ttree)))
                         (cond ((and (eql (length clauses) 1)
                                     (eql (length (car clauses)) 1)
                                     (eql (caar clauses) tterm))
@@ -174,7 +188,7 @@ ACL2 !>
      (mv-let (erp ttree state)
              (pc-prove tterm form thints t ens wrld ctx state)
              (cond (erp (mv t nil state))
-                   (t (let ((clauses (unproved-pc-prove-terms ttree)))
+                   (t (let ((clauses (unproved-pc-prove-clauses ttree)))
                         (cond ((and (eql (length clauses) 1)
                                     (eql (length (car clauses)) 1)
                                     (eql (caar clauses) tterm))
