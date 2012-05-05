@@ -157,9 +157,10 @@
 ; < depends-on.
 
 (defrec goal
-  (conc (hyps . current-addr)
-        (goal-name . depends-on))
-  nil)
+  (conc depends-on
+        (hyps . current-addr)
+        goal-name)
+  t)
 
 (defconst *goal-fields*
   '(conc hyps current-addr goal-name depends-on))
@@ -441,8 +442,11 @@
 ;     :rule-classes nil)
 
        (and (function-symbolp key world)
-            (or (not (eq val 'primitive))
-                (global-val 'boot-strap-flg world))))
+            (or (eq val 'macro)
+                (eq val 'atomic-macro)
+                (eq val 'meta)
+                (and (eq val 'primitive)
+                     (global-val 'boot-strap-flg world)))))
 
 (defmacro add-pc-command (name command-type)
   `(table pc-command-table ',name ,command-type))
@@ -763,18 +767,27 @@
   (if forced-goals
       (if goal-unproved-p
           (cons (if known-assumptions
-                    (change goal (car remaining-goals)
-                            :hyps
-                            (append (access goal (car remaining-goals) :hyps)
-                                    known-assumptions))
-                    (car remaining-goals))
+                    (if forced-goals
+                        (change goal (car remaining-goals)
+                                :hyps
+                                (append (access goal (car remaining-goals) :hyps)
+                                        known-assumptions)
+                                :depends-on (+ (access goal
+                                                       (car remaining-goals)
+                                                       :depends-on)
+                                               (length forced-goals)))
+                      (change goal (car remaining-goals)
+                              :hyps
+                              (append (access goal (car remaining-goals) :hyps)
+                                      known-assumptions)))
+                  (car remaining-goals))
                 (append forced-goals (cdr remaining-goals)))
-          (append forced-goals remaining-goals))
+        (append forced-goals remaining-goals))
 
 ; Otherwise, we assume that since forced-goals is nil, assns is nil.
 ; This saves us the cons above.
 
-      remaining-goals))
+    remaining-goals))
 
 (defun unproved-goals (pc-state)
   (let ((goals (access pc-state pc-state :goals)))
@@ -817,16 +830,17 @@
    (let* ((goals (goals))
           (wrld (w state))
           (old-tag-tree (tag-tree)))
-     (if (null goals)
-         (pprogn (print-all-goals-proved-message state)
-                 (mv nil nil state))
+     (cond
+      ((null goals)
+       (pprogn (print-all-goals-proved-message state)
+               (mv nil nil state)))
+      (t
        (mv-let
         (erp stobjs-out/vals state)
         (trans-eval (list (car instr)
                           (list 'quote (cdr instr))
                           'state)
-                    'pc-single-step
-                    state t)
+                    'pc-single-step state t)
         (let ((vals (cdr stobjs-out/vals)))
 
 ; Vals is (x replaced-state), where x is a pc-state or nil.
@@ -875,71 +889,73 @@
                               (cons #\1 (access assumnote assumnote :target)))))
                      (mv nil nil state)))
                    (t
-                    (let* ((remaining-goals (unproved-goals (car vals)))
-
-; Just what is the invariant on primitive instructions?  Can they leave a goal
-; with conclusion *t* other than the top one being operated upon?
-
-                           (goal-name (goal-name))
+                    (let* ((returned-pc-state (car vals))
+                           (remaining-goals (unproved-goals returned-pc-state))
+                           (goal-name (goal-name)) ; original goal-name
                            (goal-unproved-p
                             (and remaining-goals
                                  (equal goal-name
-                                        (access goal (car remaining-goals) :goal-name))))
-                           (hyps (hyps))
-                           (depends-on (depends-on)))
+                                        (access goal (car remaining-goals)
+                                                :goal-name))))
+                           (hyps (hyps)) ; original hyps
+                           (returned-goal
+                            (let* ((goals (access pc-state returned-pc-state
+                                                  :goals)))
+                              (and goals
+                                   (equal goal-name
+                                          (access goal (car goals) :goal-name))
+                                   (car goals))))
+                           (depends-on
+                            (cond (returned-goal (access goal returned-goal
+                                                         :depends-on))
+                                  (t ; goal has disappeared; use old depends-on
+                                   (depends-on)))))
                       (mv-let
                        (cl-set assns ttree state)
                        (pc-process-assumptions pc-ens ttree wrld state)
                        (mv-let
                         (contradictionp hyps-type-alist ttree0)
-                        (if (and assns goal-unproved-p)
-                            (type-alist-clause (dumb-negate-lit-lst hyps)
-                                               nil nil nil pc-ens wrld
-                                               nil nil)
-                          ;; else don't bother here
-                          (mv nil nil nil))
+                        (cond ((and assns goal-unproved-p)
+                               (type-alist-clause (dumb-negate-lit-lst hyps)
+                                                  nil nil nil pc-ens wrld nil
+                                                  nil))
+                              (t ; else don't bother
+                               (mv nil nil nil)))
                         (cond
                          (contradictionp
                           (er-let*
-                              ((new-pc-state
-                                (let ((local-ttree (cons-tag-trees ttree ttree0)))
-                                  (accumulate-ttree-in-pc-state
-                                   (change-pc-state
-                                    (car vals)
-                                    :goals
-                                    (cdr goals)
-                                    :tag-tree
-
-; We are concerned about the comment in note-2-8-bug-fixes about the
-; proof-checker running slowly because of tag-trees.  So we play it safe here
-; by avoiding duplication.
-
-                                    (cons-tag-trees local-ttree old-tag-tree)
-                                    :local-tag-tree
-                                    local-ttree)
-                                   state))))
-                            (pprogn (io? proof-checker nil state
-                                         (instr goal-name)
-                                         (fms0 "~|AHA!  A contradiction has ~
-                                                been discovered in the ~
-                                                hypotheses of goal ~x0 in the ~
-                                                course of executing ~
-                                                instruction ~x1, in the ~
-                                                process of preparing to deal ~
-                                                with forced assumptions.~|"
-                                               (list (cons #\0 goal-name)
-                                                     (cons #\0 instr))
-                                               0 nil))
-                                    (io? proof-checker nil state
-                                         (goals)
-                                         (maybe-print-proved-goal-message
-                                          (car goals) goals (cdr goals) state))
-                                    (pc-assign
-                                     state-stack
-                                     (cons
-                                      new-pc-state
-                                      (state-stack)))
-                                    (value new-pc-state))))
+                           ((new-pc-state
+                             (let ((local-ttree (cons-tag-trees ttree ttree0)))
+                               (accumulate-ttree-in-pc-state
+                                (change-pc-state
+                                 (car vals)
+                                 :goals
+                                 (cdr goals)
+                                 :tag-tree
+                                 (cons-tag-trees local-ttree old-tag-tree)
+                                 :local-tag-tree
+                                 local-ttree)
+                                state))))
+                           (pprogn (io? proof-checker nil state
+                                        (instr goal-name)
+                                        (fms0 "~|AHA!  A contradiction has ~
+                                               been discovered in the ~
+                                               hypotheses of goal ~x0 in the ~
+                                               course of executing ~
+                                               instruction ~x1, in the ~
+                                               process of preparing to deal ~
+                                               with forced assumptions.~|"
+                                              (list (cons #\0 goal-name)
+                                                    (cons #\0 instr))
+                                              0 nil))
+                                   (io? proof-checker nil state
+                                        (goals)
+                                        (maybe-print-proved-goal-message
+                                         (car goals) goals (cdr goals) state))
+                                   (pc-assign state-stack
+                                              (cons new-pc-state
+                                                    (state-stack)))
+                                   (value new-pc-state))))
                          (t
                           (let* ((termlist
                                   (cl-set-to-implications cl-set))
@@ -963,33 +979,32 @@
                                        (accumulate-ttree-in-pc-state
                                         pc-state-1
                                         state)))
-                              (pprogn
-                               (cond
-                                (forced-goals
-                                 (io? proof-checker nil state
-                                      (forced-goals)
-                                      (fms0
-                                       "~|NOTE (forcing):  Creating ~n0 new ~
-                                        ~#1~[~/goal~/goals~] due to forcing ~
-                                        assumptions.~%"
-                                       (list
-                                        (cons #\0 (length forced-goals))
-                                        (cons #\1
-                                              (zero-one-or-more
-                                               (length forced-goals)))))))
-                                (t state))
-                               (io? proof-checker nil state
-                                    (new-goals goals)
-                                    (maybe-print-proved-goal-message
-                                     (car goals) goals new-goals state))
-                               (pc-assign
-                                state-stack
-                                (cons
-                                 new-pc-state
-                                 (state-stack)))
-                               (value new-pc-state))))))))))))))
+                                     (pprogn
+                                      (cond
+                                       (forced-goals
+                                        (io? proof-checker nil state
+                                             (forced-goals)
+                                             (fms0
+                                              "~|~%NOTE (forcing):  Creating ~
+                                               ~n0 new ~#1~[~/goal~/goals~] ~
+                                               due to FORCE or CASE-SPLIT ~
+                                               hypotheses of rules.~%"
+                                              (list
+                                               (cons #\0 (length forced-goals))
+                                               (cons #\1
+                                                     (zero-one-or-more
+                                                      (length forced-goals)))))))
+                                       (t state))
+                                      (io? proof-checker nil state
+                                           (new-goals goals)
+                                           (maybe-print-proved-goal-message
+                                            (car goals) goals new-goals state))
+                                      (pc-assign
+                                       state-stack
+                                       (cons new-pc-state (state-stack)))
+                                      (value new-pc-state))))))))))))))
               (t
-               (mv nil nil state))))))))))))
+               (mv nil nil state)))))))))))))
 
 (defun maybe-print-macroexpansion (instr raw-instr state)
   (let ((pc-print-macroexpansion-flg (pc-print-macroexpansion-flg)))

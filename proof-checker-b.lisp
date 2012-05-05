@@ -131,9 +131,19 @@
 
 (defmacro define-pc-primitive (raw-name formals &rest body)
 
+; Define-pc-primitive defines a new primitive for the proof-checker.  That
+; primitive is always a function returning (mv pc-state state), where the
+; (pc-value state-stack) has not been changed for state.
+
 ; Primitive command definitions should never look at the instruction field of
-; the current state, since it is stored automatically after the instruction
-; otherwise completes; see pc-primitive-defun-form.
+; the current state; see pc-primitive-defun-form.
+
+; We generally rely in pc-single-step-primitive on the following property: a
+; primitive leaves the top goal on the top of the :goals stack of the pc-state,
+; adjusted as necessary, with its depends-on field reflecting all new subgoals
+; added to that stack.  However, if the top goal is proved and no forced
+; hypotheses are stored in the tag tree (see pc-single-step-primitive), then we
+; may drop a proved goal.
 
   (let ((name (make-official-pc-command raw-name)))
     (mv-let
@@ -596,7 +606,7 @@
                                                (car (nthcdr (1- m) state-stack))
                                                :instruction)))))
                 (pc-assign state-stack
-                                 (nthcdr m state-stack))
+                           (nthcdr m state-stack))
                 (if (consp (cdr (state-stack)))
                     state
                   (io? proof-checker nil state
@@ -1535,7 +1545,7 @@
       (union-equal (find-?-fn (car x))
                    (find-?-fn (cdr x))))))
 
-(defun unproved-pc-prove-terms (ttree)
+(defun unproved-pc-prove-clauses (ttree)
   (reverse-strip-cdrs (tagged-objects :bye ttree) nil))
 
 (defun prover-call (comm term-to-prove rest-args pc-state state)
@@ -1670,30 +1680,49 @@
                        be empty or a list of even length with keywords in the odd ~
                        positions.  See the documentation for examples and details."))
    (t
-    (mv-let (erp ttree state)
-            (prover-call
-             :prove (make-implication hyps conc) rest-args pc-state state)
-            (if erp
-                (mv nil state)
-              (let* ((new-terms
-                      (unproved-pc-prove-terms ttree))
-                     (new-goals
-                      (make-new-goals new-terms goal-name depends-on)))
-                (if (and (equal (length new-terms)
-                                1)
-                         (same-goal (car new-goals)
-                                    (car goals)))
-                    (print-no-change2 "Exactly one new goal was created by your PROVE ~
-                                       command, and it has exactly the same hypotheses ~
-                                       and conclusion as did the current goal.")
-                  (mv
-                   (change-pc-state
-                    pc-state
-                    :goals
-                    (append new-goals (cdr goals))
-                    :local-tag-tree
-                    (remove-byes-from-tag-tree ttree))
-                   state))))))))
+    (mv-let
+     (erp ttree state)
+     (prover-call
+      :prove (make-implication hyps conc) rest-args pc-state state)
+     (cond
+      (erp (mv nil state))
+      (t
+       (let* ((new-clauses
+               (unproved-pc-prove-clauses ttree))
+              (new-goals
+               (make-new-goals new-clauses goal-name depends-on))
+              (len-new-goals (length new-goals)))
+         (cond
+          ((and (equal len-new-goals 1)
+                (same-goal (car new-goals)
+                           (car goals)))
+           (print-no-change2 "Exactly one new goal was created by your PROVE ~
+                              command, and it has exactly the same hypotheses ~
+                              and conclusion as did the current goal."))
+          ((tagged-objects 'assumption ttree)
+
+; See the comment in define-pc-primitive about leaving the top goal on the top
+; of the :goals stack.
+
+           (mv (change-pc-state
+                pc-state
+                :goals
+                (cons (change goal (car goals)
+                              :conc *t*
+                              :depends-on (+ (access goal (car goals)
+                                                     :depends-on)
+                                             len-new-goals))
+                      (append new-goals (cdr goals)))
+                :local-tag-tree
+                (remove-byes-from-tag-tree ttree))
+               state))
+          (t (mv (change-pc-state
+                  pc-state
+                  :goals
+                  (append new-goals (cdr goals))
+                  :local-tag-tree
+                  (remove-byes-from-tag-tree ttree))
+                 state))))))))))
 
 (defun add-string-val-pair-to-string-val-alist (key key1 val alist)
 
@@ -5182,13 +5211,15 @@
   corresponding new subgoal.  In that case, the current goal will have
   all such new hypotheses added to the list of top-level hypotheses."
 
-  (if (not (keyword-value-listp args))
-      (print-no-change2
-       "The argument list to S must be a KEYWORD-VALUE-LISTP, i.e. a list of ~
-        the form (:kw-1 val-1 ... :kw-n val-n), where each of the arguments ~
-        :kw-i is a keyword.  Your argument list ~x0 does not have this ~
-        property.  Try (HELP S)."
-       (list (cons #\0 args)))
+  (cond
+   ((not (keyword-value-listp args))
+    (print-no-change2
+     "The argument list to S must be a KEYWORD-VALUE-LISTP, i.e. a list of ~
+      the form (:kw-1 val-1 ... :kw-n val-n), where each of the arguments ~
+      :kw-i is a keyword.  Your argument list ~x0 does not have this ~
+      property.  Try (HELP S)."
+     (list (cons #\0 args))))
+   (t
     (let ((comm (make-official-pc-command 's))
           (w (w state))
           (current-term (fetch-term conc current-addr))
@@ -5234,51 +5265,67 @@
               (key-alist new-rst)
               (pair-keywords '(:in-theory :hands-off :expand) rst)
               (declare (ignore key-alist))
-              (if new-rst
-                  (print-no-change2
-                   "The arguments to the S command must all be &KEY arguments, ~
-                    which should be among ~&0.  Your argument list ~x1 ~
-                    violates this requirement."
-                   (list (cons #\0 '(:rewrite :normalize :backchain-limit
-                                              :repeat :in-theory :hands-off
-                                              :expand))
-                         (cons #\1 args)))
+              (cond
+               (new-rst
+                (print-no-change2
+                 "The arguments to the S command must all be &KEY arguments, ~
+                  which should be among ~&0.  Your argument list ~x1 violates ~
+                  this requirement."
+                 (list (cons #\0 '(:rewrite :normalize :backchain-limit
+                                            :repeat :in-theory :hands-off
+                                            :expand))
+                       (cons #\1 args))))
+               (t
                 (mv-let
                  (erp hint-settings state)
                  (translate-hint-settings
                   comm "Goal" rst
                   (if args (cons comm (car args)) comm)
                   w state)
-                 (if erp
-                     (print-no-change2 "S failed.")
+                 (cond
+                  (erp (print-no-change2 "S failed."))
+                  (t
                    (mv-let
                     (flg hyps-type-alist ttree)
                     (hyps-type-alist assumptions pc-ens w state)
-                    (if flg
-                        (if (or (null current-addr) ; optimization
-                                (equal assumptions hyps)
-                                (mv-let (flg hyps-type-alist ttree)
-                                        (hyps-type-alist hyps pc-ens w state)
-                                        (declare (ignore hyps-type-alist
-                                                         ttree))
-                                        flg))
-                            (pprogn
-                             (io? proof-checker nil state
-                                  nil
-                                  (fms0 "~|Goal proved:  Contradiction in the ~
-                                         hypotheses!~|"))
-                             (mv (change-pc-state
-                                  pc-state
-                                  :goals (cdr goals)
-                                  :local-tag-tree ttree)
-                                 state))
-                          (print-no-change2
-                           "A contradiction was found in the current context ~
-                            using both the top-level hypotheses and the IF ~
-                            tests governing the current term, but not using ~
-                            the top-level hypotheses alone.  You may want to ~
-                            issue the TOP command and then issue s-prop to ~
-                            prune some branches of the conclusion."))
+                    (cond
+                     (flg
+                      (cond
+                       ((or (null current-addr) ; optimization
+                            (equal assumptions hyps)
+                            (mv-let (flg hyps-type-alist ttree)
+                                    (hyps-type-alist hyps pc-ens w state)
+                                    (declare (ignore hyps-type-alist
+                                                     ttree))
+                                    flg))
+                        (pprogn
+                         (io? proof-checker nil state
+                              nil
+                              (fms0 "~|Goal proved:  Contradiction in the ~
+                                     hypotheses!~|"))
+                         (mv (change-pc-state
+                              pc-state
+                              :goals
+                              (cond ((tagged-objects 'assumption ttree)
+
+; See the comment in define-pc-primitive about leaving the top goal on the top
+; of the :goals stack.
+
+                                     (cons (change goal (car goals)
+                                                   :conc *t*)
+                                           (cdr goals)))
+                                    (t (cdr goals)))
+                              :local-tag-tree ttree)
+                             state)))
+                       (t
+                        (print-no-change2
+                         "A contradiction was found in the current context ~
+                          using both the top-level hypotheses and the IF ~
+                          tests governing the current term, but not using the ~
+                          top-level hypotheses alone.  You may want to issue ~
+                          the TOP command and then issue s-prop to prune some ~
+                          branches of the conclusion."))))
+                     (t
                       (let* ((base-rcnst
                               (and rewrite
                                    (change
@@ -5332,7 +5379,7 @@
                                      :goals
                                      (cons new-goal (cdr goals))
                                      :local-tag-tree new-ttree)
-                                    state)))))))))))))))))))))))
+                                    state)))))))))))))))))))))))))))
 
 ;; The proof-checker's enabled state will be either the global enabled
 ;; state or else a local one.  The proof-checker command :IN-THEORY

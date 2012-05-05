@@ -18407,6 +18407,44 @@
 ; Fixed ill-guarded calls of eq and union-eq in non-recursive-fnnames and
 ; non-recursive-fnnames-lst, respectively.
 
+; Here is an example of the proof-checker "bug that could result in duplicate
+; goal names in the case of forced hypotheses".  The log shown was created by
+; using Version_4.3 to execute the six events just below.
+
+;   (defstub f (x) t)
+;   (defstub g (x) t)
+;   (defstub h (x) t)
+;   (defstub k (x) t)
+;  
+;   (defaxiom prop
+;     (implies (and (f x) (g x))
+;              (h x)))
+;  
+;   (defaxiom prop-ts
+;     (implies (force (k x)) (f x))
+;     :rule-classes :type-prescription)
+;
+; The log promised above is then as follows.
+;
+;   ACL2 !>(verify (h x))
+;   ->: (r 1)
+;   Rewriting with PROP.
+;   --NOTE-- Using the following runes in addition to the indicated rule:
+;     ((:TYPE-PRESCRIPTION PROP-TS)).
+;   NOTE (forcing):  Creating one new goal due to forcing assumptions.
+;   
+;   Creating two new goals:  (MAIN . 1) and (MAIN . 1).
+;   
+;   The proof of the current goal, MAIN, has been completed.  However,
+;   the following subgoals remain to be proved:
+;     (MAIN . 1) and (MAIN . 1).
+;   Now proving (MAIN . 1).
+;   ->: goals
+;   
+;   (MAIN . 1)
+;   (MAIN . 1)
+;   ->: 
+
   :doc
   ":Doc-Section release-notes
 
@@ -18915,6 +18953,10 @@
   ~c[comp:declared-fixnums-remain-fixnums-switch], which may have been
   responsible for intermittent (and infrequent) checksum errors encountered
   while including books during certification of the regression suite.
+
+  Fixed a ~il[proof-checker] bug that could result in duplicate goal names in
+  the case of forced hypotheses.  An example showing this bug, before the fix,
+  appears in a comment in the ACL2 sources, in ~c[(deflabel note-4-4 ...)].
 
   ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]
 

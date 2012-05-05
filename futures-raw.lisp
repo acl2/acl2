@@ -1004,9 +1004,15 @@
          (thrown-val nil)
          (future nil))
 
-; Hopefully very rarely, we busy wait for the future to arrive.
+; Hopefully very rarely, we busy wait for the future to arrive.  That can
+; happen because *last-slot-saved* is incremented before the future is actually
+; put there.
 
     (loop while (not (faref *future-array* index)) do
+
+; Set debugging variables *busy-wait-var*, *current-waiting-thread*, and
+; *fresh-waiting-threads*.
+
           (incf *busy-wait-var*)
           (when (not (equal (current-thread) *current-waiting-thread*))
             (setf *current-waiting-thread* (current-thread))
@@ -1041,17 +1047,33 @@
             (cons thrown-tag thrown-val))
 
 ; A future that threw a tag is still a legal future to read.  In fact, the
-; throw does not re-occur until the future is read.
+; throw does not re-occur until the future is read; see the throw in
+; mt-future-read.
 
       (broadcast-barrier (mt-future-valid future)))))
 
 (defun eval-closures ()
-  ;; (atomic-incf *idle-future-thread-count*) ; done inside the spawner
+
+; Worker threads are initialized to run this function; see the call of
+; run-thread in spawn-closure-consumers.
+
+; The following is done inside the spawner, spawn-closure-consumers.
+; (atomic-incf *idle-future-thread-count*)
+
   (catch :worker-thread-no-longer-needed
-    (let ((*throwable-worker-thread* t))
+
+; The catch of a somewhat analogous tag :result-no-longer-needed, is performed
+; inside eval-a-closure (called below).
+
+    (let ((*throwable-worker-thread*
+
+; Note that at the place we consider throwing to
+; :worker-thread-no-longer-needed, we check that *throwable-worker-thread* is t
+; as an indicator that the corresponding catcher is set up.
+
+           t))
       (loop 
        (wait-for-a-closure)
-; the catch of tag :result-no-longer-needed is performed inside eval-a-closure
        (eval-a-closure))))
 ; The following decrement will always execute, unless the user terminates the
 ; thread in some manual raw Lisp way.
