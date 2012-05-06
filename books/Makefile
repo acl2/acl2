@@ -158,9 +158,10 @@ cutil: xdoc tools str misc finite-set-theory/osets defsort unicode
 # so we figured we might as well include taspi here.
 taspi: misc arithmetic-3
 
-# Let us wait for everything else before workshops, except we currrently
-# (as of v3-6, at least) don't need to wait for coi (that may change).
-workshops: $(DIRS1) $(DIRS2_EXCEPT_WK_COI)
+# Let us wait for everything else before workshops.  Starting after
+# Version_4.3 we include the coi books, because of
+# workshops/2006/pike-shields-matthews/.
+workshops: $(DIRS1) $(DIRS2_EXCEPT_WK)
 
 $(DIRS1):
 	@if [ -f $@/Makefile ]; then cd $@ ; $(MAKE) ; fi
