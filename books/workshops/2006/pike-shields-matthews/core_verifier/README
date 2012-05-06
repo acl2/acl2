@@ -11,6 +11,7 @@
 
   cert.sh
   dir.mk
+  */*.acl2
 
 End of Note.]
 
