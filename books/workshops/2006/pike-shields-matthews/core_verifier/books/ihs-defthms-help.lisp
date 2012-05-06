@@ -9,8 +9,9 @@
 
 (include-book "source_shallow")
 
-(include-book "super-ihs" :dir :super-ihs)
-
+; Edited by Matt K.:
+; (include-book "super-ihs" :dir :super-ihs)
+(include-book "coi/super-ihs/super-ihs" :dir :system)
 
 
 (defun log-rep-hlp (x i)

@@ -34,8 +34,9 @@
 ;; computed hints
 (include-book "computed-hints") 
 
-;; Rockwell Collins' ihs books
-(include-book "super-ihs" :dir :super-ihs)
+; Edited by Matt K.:
+; (include-book "super-ihs" :dir :super-ihs)
+(include-book "coi/super-ihs/super-ihs" :dir :system)
 ;; --------------------------------------------------------
 
 
@@ -368,9 +369,6 @@
 
      (make-inv-inst-thms  arg-lst inv-name index-names n-lst itr-inst 
                           init-hist one-stream? branches))))
-
-
-)))
 
 (defun inv-expand (ind-name inv-name arg-lst n-lst index-names one-stream?)
   (declare (xargs :mode :program))

@@ -9,6 +9,7 @@
 # # 	sh ../cert.mk
 
 include ../../../../../Makefile-generic
+-include Makefile-deps
 
 BOOKS = fac-source-shallow-canon fac-source-shallow-flatten proof-fac
 

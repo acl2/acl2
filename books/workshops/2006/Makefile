@@ -20,14 +20,6 @@
 # Adding Parallelization Capabilities to ACL2.
 # Note: rager/support/ uses parallelism constructs
 
-# Lee Pike, Mark Shields, and John Matthews.
-# A Verifying Core for a Cryptographic Language Compiler
-# pike-shields-matthews/core_verifier/ needs super-ihs from Rockwell;
-# when we add this, consider using -include Makefile-deps in all
-# Makefiles under pike-shields-matthews/, or else add
-#   override ACL2_PCERT =
-# to avoid provisional certification.
-
 ##############################
 
 # Supporting materials that authors have said will be forthcoming:
@@ -62,6 +54,7 @@ DIRS =  cowles-gamboa-euclid/Euclid/fld-u-poly \
 	greve/nary \
 	hunt-reeber/support \
 	kaufmann-moore/support \
+	pike-shields-matthews/core_verifier \
 	ray/tail \
 	schmaltz-borrione/GeNoC-support \
 	swords-cook/lcsoundness

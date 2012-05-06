@@ -6,7 +6,9 @@
 
 (in-package "ACL2")
 
-(include-book "make-theorems" :dir :books)
+; Edited by Matt K.:
+; (include-book "make-theorems" :dir :books)
+(include-book "../books/make-theorems")
 
 ;; --------------------------------------------------------
 ;; COMPILER OUTPUT

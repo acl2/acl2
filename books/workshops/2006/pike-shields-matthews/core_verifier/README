@@ -1,3 +1,19 @@
+[Note from Matt Kaufmann, May 2012:
+
+  When these books were first submitted, a "super-ihs" book was not
+  available.  Now we have books/coi/super-ihs/super-ihs.lisp to
+  include.  So, a t long last, we are making this work certifiable with
+  ACL2.  I did a bit of editing in order to make this easy to
+  accomplish, to avoid nonstandard makefiles and to avoid (perhaps
+  just out of my laziness) dealing with add-include-book-dir and such.
+
+  In particular, the following files may be ignored:
+
+  cert.sh
+  dir.mk
+
+End of Note.]
+
 Lee Pike <leepike@galois.com>
 Galois Connections
 Feb. 2006

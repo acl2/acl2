@@ -1,8 +1,12 @@
 (IN-PACKAGE "ACL2")
 
-(INCLUDE-BOOK "source_shallow" :DIR :BOOKS)
+; Edited by Matt K.:
+; (INCLUDE-BOOK "source_shallow" :DIR :BOOKS)
+(INCLUDE-BOOK "../books/source_shallow")
 
-(INCLUDE-BOOK "computed-hints" :DIR :BOOKS)
+; Edited by Matt K.:
+; (INCLUDE-BOOK "computed-hints" :DIR :BOOKS)
+(INCLUDE-BOOK "../books/computed-hints")
 
 (DEFUN |$itr_0_typep| (X) (AND (NATP X) (< X 4294967296)))
 
