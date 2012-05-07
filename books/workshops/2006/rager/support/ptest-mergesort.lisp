@@ -1,37 +1,15 @@
-(in-package "ACL2")
+(in-package "SETS")
 
 ;;;;;;;;;;;;;;;; Tests for ACL2 parallelization paper ;;;;;;;;;;;;;
 
-(set-ld-redefinition-action '(:doit . :overwrite) state)
-(set-irrelevant-formals-ok t)
-
-
-(defpkg "INSTANCE"
-  (union-eq '()
-    (union-eq *acl2-exports*
-  	      *common-lisp-symbols-from-main-lisp-package*)))
-
-
-(defpkg "COMPUTED-HINTS"
-  (union-eq '(mfc-ancestors 
-	      mfc-clause
-	      string-for-tilde-@-clause-id-phrase
-	      INSTANCE::instance-rewrite)
-    (union-eq *acl2-exports*
-  	      *common-lisp-symbols-from-main-lisp-package*)))
-
-
-(defpkg "SETS"
-  (set-difference-equal (union-eq '(lexorder
-				    COMPUTED-HINTS::rewriting-goal-lit
-				    COMPUTED-HINTS::rewriting-conc-lit)
-                          (union-eq *acl2-exports*
-                            *common-lisp-symbols-from-main-lisp-package*))
-                        '(union delete find map)))
-
-
-; Note that we need version 0.91 of the sets library, which includes a tail
+; We originally needed version 0.91 of the sets library, which includes a tail
 ; recursive version of split-list.  This version is distributed with ACL2 3.0.
+;
+; We changed this book to use halve-list instead of split-list in 2012.
+;
+; This book shouldn't be included in any other book.  Beyond containing silly
+; definitions, it is probably unsound (see the definition of mergesort-exec-par
+; below).
 
 (include-book "finite-set-theory/osets/sets" :dir :system)
 
@@ -41,53 +19,51 @@
     (integers (1- n) (cons n acc))))
 
 
-(mv-let (erp val state) 
-        (assign *my-ints* (integers 2000000 nil))
-        (declare (ignore erp val)) 
-        state)
+(defconst *my-ints*
+  (integers 2000000 nil))
 
+; Non parallel version is in effect by default
 
-; Non parallel version
+#|
 (skip-proofs
  (defun SETS::mergesort-exec (x)
    (declare (xargs :guard t))
    (cond ((endp x) nil)
          ((endp (cdr x)) (SETS::insert (car x) nil))
          (t (mv-let (part1 part2)
-                    (SETS::split-list x nil nil)
-                    (SETS::union (SETS::mergesort-exec part1) (SETS::mergesort-exec part2)))))))
+                    (SETS::halve-list x)
+                    (SETS::union (SETS::mergesort-exec part1) 
+                                 (SETS::mergesort-exec part2)))))))
+|#
 
+;; (princ$ "Non parallel version is in effect" *standard-co* state)
 
-
-(princ$ "Non parallel version is in effect" *standard-co* state)
-
-(time$ (prog2$ (SETS::mergesort-exec (@ *my-ints*)) t))
-(time$ (prog2$ (SETS::mergesort-exec (@ *my-ints*)) t))
-(time$ (prog2$ (SETS::mergesort-exec (@ *my-ints*)) t))
-
-
-
-
+;; (time$ (prog2$ (SETS::mergesort-exec *my-ints*) t))
+;; (time$ (prog2$ (SETS::mergesort-exec *my-ints*) t))
+;; (time$ (prog2$ (SETS::mergesort-exec *my-ints*) t))
 
 (skip-proofs
- (defun SETS::mergesort-exec (x depth)
-   (declare (xargs :guard t))
+ (defun SETS::mergesort-exec-par (x depth)
+   (declare (xargs :guard 
+
+; This guard is insufficient, so the above skip-proofs is clearly unsound.
+
+                   t))
    (cond ((endp x) nil)
          ((endp (cdr x)) (SETS::insert (car x) nil))
          (t (mv-let (part1 part2)
-                    (SETS::split-list x nil nil)
-                    (ACL2::pcall 
-                     (declare (granularity-form (< depth 2)))
-                     (SETS::union (SETS::mergesort-exec part1
+                    (SETS::halve-list x)
+                    (ACL2::pargs ; was pcall in the paper 
+                     (declare (granularity (< depth 2)))
+                     (SETS::union (SETS::mergesort-exec-par part1
                                                         (1+ depth))
-                                  (SETS::mergesort-exec part2
+                                  (SETS::mergesort-exec-par part2
                                                         (1+ depth)))))))))
 
-(princ$ "Parallel version with depth granularity is in effect" *standard-co* state)
-(time$ (prog2$ (SETS::mergesort-exec (@ *my-ints*) 0) t))
-(time$ (prog2$ (SETS::mergesort-exec (@ *my-ints*) 0) t))
-(time$ (prog2$ (SETS::mergesort-exec (@ *my-ints*) 0) t))
-
+;; (princ$ "Parallel version with depth granularity is in effect" *standard-co* state)
+;; (time$ (prog2$ (SETS::mergesort-exec-par *my-ints* 0) t))
+;; (time$ (prog2$ (SETS::mergesort-exec-par *my-ints* 0) t))
+;; (time$ (prog2$ (SETS::mergesort-exec-par *my-ints* 0) t))
 
 #|
 
@@ -96,9 +72,9 @@
 ACL2 !>
 (princ$ "Non parallel version is in effect" *standard-co* state)
 
-(time$ (prog2$ (SETS::mergesort-exec (@ *my-ints*)) t))
-(time$ (prog2$ (SETS::mergesort-exec (@ *my-ints*)) t))
-(time$ (prog2$ (SETS::mergesort-exec (@ *my-ints*)) t))
+(time$ (prog2$ (SETS::mergesort-exec *my-ints*) t))
+(time$ (prog2$ (SETS::mergesort-exec *my-ints*) t))
+(time$ (prog2$ (SETS::mergesort-exec *my-ints*) t))
 Non parallel version is in effect<state>
 ACL2 !>
 (EV-REC (FARGN FORM 1) ALIST W (DECREMENT-BIG-N BIG-N) SAFE-MODE GC-OFF LATCHES HARD-ERROR-RETURNS-NILP) took 24,771 milliseconds (24.771 seconds) to run.
@@ -128,9 +104,9 @@ T
 ; snip: pasted the parallel version
 
 ACL2 !>(princ$ "Parallel version with depth granularity is in effect" *standard-co* state)
-(time$ (prog2$ (SETS::mergesort-exec (@ *my-ints*) 0) t))
-(time$ (prog2$ (SETS::mergesort-exec (@ *my-ints*) 0) t))
-(time$ (prog2$ (SETS::mergesort-exec (@ *my-ints*) 0) t))
+(time$ (prog2$ (SETS::mergesort-exec-par *my-ints* 0) t))
+(time$ (prog2$ (SETS::mergesort-exec-par *my-ints* 0) t))
+(time$ (prog2$ (SETS::mergesort-exec-par *my-ints* 0) t))
 
 Parallel version with depth granularity is in effect<state>
 ACL2 !>
@@ -155,6 +131,5 @@ Of that, 30,339 milliseconds (30.339 seconds) were spent in user mode
  48,000,392 bytes of memory allocated.
 T
 ACL2 !>
-
 
 |#
