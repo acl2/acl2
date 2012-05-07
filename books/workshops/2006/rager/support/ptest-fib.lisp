@@ -29,7 +29,7 @@
 
         (t
          (plet 
-          (declare (granularity-form (> x 27)))
+          (declare (granularity (> x 27)))
           
           ((a (pfib (- x 1)))
            (b (pfib (- x 2))))
@@ -49,7 +49,7 @@
 
         (t
          (pcall
-          (declare (granularity-form (> x 27)))
+          (declare (granularity (> x 27)))
           
           (binary-+ (pfib (- x 1))
                     (pfib (- x 2)))))))

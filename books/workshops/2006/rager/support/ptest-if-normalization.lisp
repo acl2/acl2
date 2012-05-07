@@ -709,11 +709,11 @@
           (if (booleanp left) left (list* left t nil))
 
         (if (atom test) 
-           (if (booleanp tes)
+           (if (booleanp test)
                 (if test
                     (pnorm-ifs left (1+ depth))
                   (pnorm-ifs right (1+ depth)))
-              (plet (declare (granularity-form (< depth 10)))
+              (plet (declare (granularity (< depth 10)))
                     ((new-left  (pnorm-ifs left (1+ depth)))
                      (new-right (pnorm-ifs right (1+ depth))))
                     (if (and (atom new-left)
@@ -767,7 +767,7 @@
                 (if (member test f-vars)
                     (pnorm-ifs-var right t-vars f-vars)
                   
-                  (plet (declare (granularity-form (and (nthcar left 3)
+                  (plet (declare (granularity (and (nthcar left 3)
                                                         (nthcar right 3))))
                         ((new-left  (pnorm-ifs-var left
                                                    (cons test t-vars) 
@@ -786,11 +786,6 @@
                                 (list* (cadr test) left right)
                                 (list* (cddr test) left right))
                          t-vars f-vars))))))
-
-:comp t
-
-
-
 
 
 (defmacro test2 ()
@@ -1020,6 +1015,8 @@
 #|
 
 ; Results
+
+; Make sure to compile before running these forms
 
 ACL2 !>
 (test-10bit)
