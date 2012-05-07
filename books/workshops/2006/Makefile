@@ -14,14 +14,6 @@
 
 ##############################
 
-# Supporting materials not yet certifiable:
-
-# David L. Rager.
-# Adding Parallelization Capabilities to ACL2.
-# Note: rager/support/ uses parallelism constructs
-
-##############################
-
 # Supporting materials that authors have said will be forthcoming:
 
 # Ruben Gamboa and John Cowles.
@@ -48,6 +40,10 @@
 
 ##############################
 
+# Note: rager/support/ uses parallelism constructs
+
+##############################
+
 DIRS =  cowles-gamboa-euclid/Euclid/fld-u-poly \
 	cowles-gamboa-euclid/Euclid \
 	gordon-hunt-kaufmann-reynolds/support \
@@ -55,6 +51,7 @@ DIRS =  cowles-gamboa-euclid/Euclid/fld-u-poly \
 	hunt-reeber/support \
 	kaufmann-moore/support \
 	pike-shields-matthews/core_verifier \
+	rager/support \
 	ray/tail \
 	schmaltz-borrione/GeNoC-support \
 	swords-cook/lcsoundness
