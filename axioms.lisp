@@ -18014,9 +18014,15 @@
   ~c[st2], and ~c[st3] will all be congruent to each other.
 
   When two stobjs are congruent, ACL2 allows you to substitute one for another
-  in a function call.  The following example shows how this works; for more
-  examples of how to take advantage of congruent stobjs, and also of how to
-  misuse them, see distributed book ~c[books/misc/congruent-stobjs-test.lisp].
+  in a function call.  Any number of stobjs may be replaced with congruent
+  stobjs in the call, provided no two get replaced with the same stobj.  The
+  return values are correspondingly modified: if stobj ~c[st1] is replaced by
+  ~c[st2] at an argument position, and if ~c[st1] is returned in the output
+  ~il[signature] of the function, then ~c[st2] is returned in place of ~c[st1].
+
+  The following example illustrates congruent stobjs.  For more examples of how
+  to take advantage of congruent stobjs, and also of how to misuse them, see
+  distributed book ~c[books/misc/congruent-stobjs-test.lisp].
   ~bv[]
   (defstobj st1 fld1)
   (defstobj st2 fld2 :congruent-to st1)
@@ -18030,7 +18036,8 @@
   (assert-event (equal (f st3 st2 st1) '(3 2 1)))
   ~ev[]
   The following example shows an error that occurs when stobj arguments are
-  repeated.  These must be distinct.
+  repeated, i.e., at least two stobj arguments (in this case, three) get
+  replaced by the same stobj.
   ~bv[]
   ACL2 !>(f st1 st1 st1)
 

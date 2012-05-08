@@ -16502,7 +16502,7 @@
   implementors.
 
   New utilities have been provided for certifying most of the distributed books
-  with more ~c[make]-level paralellism.  For example, we have obtained close to
+  with more ~c[make]-level parallelism.  For example, we have obtained close to
   a 12x reduction in time by using `~c[make -j 24 regression-fast]' on a
   24-processor machine.  For more information see ~c[books/make-targets], or to
   include the ~c[books/workshops] in the regression run, see

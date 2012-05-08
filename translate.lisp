@@ -4253,66 +4253,75 @@
 ; * which of its inputs was STATE
 ; * its multiplicity (how many results it returns)
 ; * which of its outputs was STATE
-; These were code on the property list in a somewhat optimized way
-; involving the four properties FORMALS, STATE-IN, MULTIPLICITY, and
-; STATE-OUT.  If STATE-IN was absent or NIL, then STATE was not a
-; formal.  Otherwise, STATE-IN indicated the position (1-based) of
-; STATE in the FORMALS.  If MULTIPLICITY was absent, it was implicitly
-; 1.  If STATE-OUT was T then multiplicity was 1 and STATE was the
-; single result.  We review these old characteristics because they were
-; generalized when we introduced single-threaded objects, or ``stobjs''.
+; These were coded on the property list in a somewhat optimized way involving
+; the four properties FORMALS, STATE-IN, MULTIPLICITY, and STATE-OUT.  If
+; STATE-IN was absent or NIL, then STATE was not a formal.  Otherwise, STATE-IN
+; indicated the position (1-based) of STATE in the FORMALS.  If MULTIPLICITY
+; was absent, it was implicitly 1.  If STATE-OUT was T then multiplicity was 1
+; and STATE was the single result.  We review these old characteristics because
+; they were generalized when we introduced single-threaded objects, or
+; ``stobjs''.
 
-; Now, every function has four aspects to its syntactic character:
+; Since the introduction of stobjs, every function has four aspects to its
+; syntactic character:
+
 ; * its arity
 ; * which of its inputs are stobjs
 ; * its multiplicity
 ; * which of its outputs are stobjs
 
-; This is coded on the property list as follows.  First, a ``STOBJ
-; flag'' is either NIL or the name of a stobj (including STATE).  A
-; list of n STOBJ flags can thus indicate which elements of another
-; list of length n are stobjs and which stobjs they are.
+; This is coded on the property list as follows.  First, a ``STOBJ flag'' is
+; either NIL or the name of a stobj (including STATE).  A list of n STOBJ flags
+; can thus indicate which elements of another list of length n are stobjs and
+; which stobjs they are.
 
 ; FORMALS gives the list of formals.
 
-; STOBJS-IN is a list of STOBJ flags that is interpreted in 1:1
-; correspondence with the formals.  Every function symbol must have
-; a STOBJS-IN property.  We do not support space-efficient coding
-; of any special cases.
+; STOBJS-IN is a list of STOBJ flags that is interpreted in 1:1 correspondence
+; with the formals.  Every function symbol must have a STOBJS-IN property.  We
+; do not support space-efficient coding of any special cases.  Each formal must
+; be the corresponding stobj.
 
-; STOBJS-OUT is a list of stobj flags indicating both the multiplicity
-; and which outputs are which stobjs and which stobjs are returned.
-; Every function must have a STOBJS-OUT property.  Note however that
-; return-last effectively has no such property -- an error is caused
-; if the function stobjs-out is applied to it -- as it always returns
-; its last argument (possibly a multiple value) and should generally
-; be considered as not having stobjs-out.
+; STOBJS-OUT is a list of stobj flags indicating both the multiplicity and
+; which outputs are stobjs, and the correspondence between output stobjs and
+; input stobjs.  For example, if the STOBJS-IN property is (nil $s1 $s2 nil)
+; and the STOBJS-OUT property is (nil $s2), then two values are returned, where
+; the second value returned is the same stobj as the third input (labeled $s2
+; above).  Every function must have a STOBJS-OUT property, with the effective
+; exception of return-last: an error is caused if the function stobjs-out is
+; applied to return-last, which always returns its last argument (possibly a
+; multiple value) and should generally be considered as not having STOBJS-OUT.
 
-; During translation we generally have a stobj flag associated with
-; the term we are translating, indicating the expected stobj, if any,
-; produced by the term.  Consider a stobj flag, $s, that is non-nil,
-; i.e., is a stobj name.  Then the term occupying the corresponding
-; slot MUST be the stobj name $s.  We think of the stobj flags as
-; meaning that the indicated stobj name is the only term that can be
-; passed into that slot.
+; We now consider translation performed on behalf of evaluation (as opposed to
+; translating only for the logic, as when translating proposed theorems).
+; During translation of each argument of a function call, we generally have a
+; stobj flag associated with the term we are translating, indicating the
+; expected stobj, if any, produced by the term.  Consider a stobj flag, $s,
+; that is non-nil, i.e., is a stobj name.  Then the term occupying the
+; corresponding slot MUST be the stobj name $s, except in the case that
+; congruent stobjs are involved (see below).  We think of the stobj flags as
+; meaning that the indicated stobj name is the only term that can be passed
+; into that slot.
 
-; But a function fn which takes in a stobj, $s, but which does not
-; return a modified $s, may in fact be called on any object.  Our
-; stobj primitives are all capable of computing on the logical objects
-; that represent stobjs.  But they give special treatment to the live
-; one.  There are two issues.  First, we do not want the live one ever
-; to get into a non-stobj slot because the rest of the functions do
-; not know how to handle it.  So if the actual is a stobj, the formal
-; must be a stobj.  But if the actual is not a stobj, the formal may
-; be a stobj...  Right?  Well, not quite.  The whole notion of
-; single-threadedness depends on the determination that the stobj you
-; get out is a modification of the stobj you put in and that the
-; modifications were carried out by a given sequence of such function
-; calls.  If a function returns a stobj, we INSIST that a stobj
-; (indeed, ``the stobj'') was supplied.  But if a function does not
-; return a stobj, then we don't care if the stobj went in or if some
-; random object went in.  Well, we say that... but after Version_4.1 we
-; eliminated the INCLP argument to functions in the translate11 nest.
+; We mentioned a relaxation above for the case of congruent stobjs.  (See :DOC
+; defstobj for an introduction to congruent stobjs.)  Consider again a function
+; call.  Each argument corresponding to a non-nil stobj flag should be
+; a stobj that is congruent to that flag (a stobj).  Moreoever, no two such
+; arguments may be the same.
+
+; We turn now from translation to evaluation in the logic (i.e., with *1*
+; functions that might or might not pass control to raw Lisp functions).
+
+; Our stobj primitives are all capable of computing on the logical objects that
+; represent stobjs.  But they give special treatment to the live ones.  There
+; are two issues.  First, we do not want a live one ever to get into a
+; non-stobj slot because the rest of the functions do not know how to handle
+; it.  So if the actual is a live stobj, the formal must be a stobj.  Second,
+; if the ith element of STOBJS-IN is a stobj, $s, and the jth element of
+; STOBJS-OUT is also $s, and the ith actual of a call is a live stobj, then the
+; jth return value from that call is that same live stobj.  This is the only
+; way that a live stobj can be found in the output (unless there is a call of a
+; creator function, which is untouchable).
 
 (defun compute-stobj-flags (lst known-stobjs w)
 

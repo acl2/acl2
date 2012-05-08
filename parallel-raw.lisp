@@ -1239,9 +1239,9 @@
              (list 'if (cons 'or remainder-forms) t nil))))))
 
 (defun signal-semaphores (sems)
-  (if (atom sems)
-      nil
-    (progn (signal-semaphore (car sems))
+  (cond ((endp sems)
+         nil)
+        (t (signal-semaphore (car sems))
            (signal-semaphores (cdr sems)))))
 
 (defmacro spec-mv-let (bindings computation body)

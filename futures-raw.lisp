@@ -274,6 +274,12 @@
 (define-atomically-modifiable-counter *last-slot-saved* 0)
 (define-atomically-modifiable-counter *last-slot-taken* 0)
 
+; The three arrays defined below all have the same length, *future-array-size*.
+; They correspond as follows: for a future F stored in the ith element of
+; *future-array*, the ith element of *thread-array* is the thread executing F,
+; and the ith element of *future-dependencies* is a list of all indices (in
+; *future-array*) of futures created by F.
+
 ; Perhaps we should be concerned that the array elements will be so close
 ; together, that they'll be in the same cache lines, and the CPU cores will get
 ; bogged down just keeping the writes to the cache "current".  The exact impact
@@ -282,12 +288,6 @@
 ; cache coherency schemes.)  Followup: After further thought, David Rager
 ; believes that this thrashing will be negligible when compared to the rest of
 ; the parallelism overhead.
-
-; The following three arrays all have the same length, *future-array-size*.
-; They correspond as follows: for a future F stored in the ith element of
-; *future-array*, the ith element of *thread-array* is the thread executing F,
-; and the ith element of *future-dependencies* is a list of all indices (in
-; *future-array*) of futures created by F.
 
 (defvar *future-array*)
 (defvar *thread-array*)
@@ -362,6 +362,8 @@
 (defvar *future-added* (make-semaphore))
 
 (defvar *idle-resumptive-core* (make-semaphore))
+
+; Debug variable:
 (defvar *threads-spawned* 0)
 
 (define-atomically-modifiable-counter *unassigned-and-active-future-count*
@@ -710,7 +712,7 @@
 ; "early-terminate-children.  A more general function could be named
 ; "early-terminate-relatives".
 
-  (abort-future-indexes (faref *future-dependencies* index))
+  (abort-future-indices (faref *future-dependencies* index))
   (setf (faref *future-dependencies* index) nil))
 
 ; Debug variables:
@@ -1072,48 +1074,67 @@
 ; as an indicator that the corresponding catcher is set up.
 
            t))
+
+; The following loop is exited by a throw to :worker-thread-no-longer-needed,
+; which is performed by wait-for-a-closure when there has been no closure to
+; execute for a random-amount-of-time (see wait-for-a-closure; currently from
+; 10 to 120 seconds).
+
       (loop 
        (wait-for-a-closure)
        (eval-a-closure))))
+
 ; The following decrement will always execute, unless the user terminates the
-; thread in some manual raw Lisp way.
+; thread in raw Lisp in an unsupported manner.
+
   (atomic-decf *idle-future-thread-count*))
 
 (defun number-of-idle-threads-and-threads-waiting-for-a-starting-core ()
-  (+ (atomically-modifiable-counter-read
+
+; See (A) and (B) in the Essay on Parallelism [etc.].
+
+  (+ (atomically-modifiable-counter-read ; (A)
       *idle-future-thread-count*)
-     (atomically-modifiable-counter-read
+     (atomically-modifiable-counter-read ; (B)
       *threads-waiting-for-starting-core*)))
 
 (defun spawn-closure-consumers ()
+
+; A call of a parallelism primitive invokes this function in order to ensure
+; that there are threads available to pick up the piece of work that it has
+; created (by adding a future to the work queue).  As far as we know, we could
+; get by just fine by spawning at most one thread, rather than spawning threads
+; to bring the total in the (A) or (B) state (see the Essay on Parallelism
+; [etc.]) up to *max-idle-thread-count*, as we do here.  But in case we have
+; missed something in our design that could cause us to have insufficient
+; threads ready to do work, we try to keep the number of threads in the (A) or
+; (B) state at the limit we have chosen, i.e., *max-idle-thread-count*.
+
   (without-interrupts
 
 ; Parallelism blemish: there may be a bug where *idle-future-thread-count* is
 ; incremented to 64 under early termination.
 
-; Once upon a time, we issued the following commented while loop to control
-; whether we spawned threads that evaluated futures.  This worked okay, but
-; what would happen is we would spawn the threads, they would immediately grab
-; the next piece of paralellism work from the queue, and then they would wait
-; for an idle CPU core.  This resulted in hundreds of threads waiting for an
-; idle CPU core.  Given we want to lessen the number of threads in existence,
-; we then changed (in April, 2012) the condition to what is uncommented.  By
-; using this condition, we lessen the number of threads in existence.  This
-; means that the value of *idle-future-thread-count* will often be zero.  But
-; this is okay, because there will still be many threads that have already
-; grabbed a piece of parallelism work and are just waiting for an idle core.
-
-;;   (loop while (< (atomically-modifiable-counter-read *idle-future-thread-count*) 
-;;                  *max-idle-thread-count*) 
+; We bring the number of threads in state (A) or (B), as described above, up to
+; our specified limit.  Why not count just those in state (A)?  In fact, we did
+; so up to April, 2012.  The problem was that this function could create
+; threads in state (A), which transition to (B) and wait for a core, and then
+; this function could continue to do this repeatedly, resulting in a huge
+; number of threads (in state (B)), which could swamp the system.  Our current
+; approach solves this problem.  Note that it can be common for
+; *idle-future-thread-count* to be 0, because the created threads have moved to
+; state (B) but not yet been allocated a core.
 
    (loop while (< (number-of-idle-threads-and-threads-waiting-for-a-starting-core)
                   *max-idle-thread-count*)
      do
      (progn (atomic-incf *idle-future-thread-count*)
-            (incf *threads-spawned*)
+            (incf *threads-spawned*) ; debug variable
             (run-thread "Worker thread" 'eval-closures)))))
 
 (defun make-future-with-closure (closure)
+
+; Create a future with the indicated closure.
 
 ; The assertions below can fire if a long-running future is created before the
 ; current index (*last-slot-saved*) of the *future-array* wraps around to 0 and
@@ -1143,13 +1164,17 @@
     (assert (not (faref *future-dependencies* index)))
     (setf (mt-future-index future) index)
     (setf (faref *future-dependencies* *current-thread-index*)
+
+; Add the index of the new future to the list of futures that must be aborted
+; if the current thread is aborted.
+
           (cons index (faref *future-dependencies* *current-thread-index*)))
     (setf (mt-future-closure future) closure)
     future))
 
 (defun add-future-to-queue (future)
 
-; Must be called with interrupts disabled
+; This function must be called with interrupts disabled.
 
   (setf (faref *future-array* (mt-future-index future))
         future)
@@ -1160,41 +1185,68 @@
   future)
 
 (defmacro mt-future (x)
+
+; Return a future whose closure, when executed, will execute the given form, x.
+; Note that (future x) macroexpands to (mt-future x).
+
   (let ((ld-level-sym (gensym))
         (ld-level-state-sym (gensym))
         (wormholep-sym (gensym))
         (local-safe-mode-sym (gensym))
         (local-gc-on-sym (gensym)))
-    `(if #-skip-resource-availability-test (not (futures-resources-available))
-       #+skip-resource-availability-test nil
-; need to return a "single-threaded" future, as in futures-st.lisp
-       (prog2 (incf *futures-resources-unavailable-count*)
-           (st-future ,x))
-       ;;     ,(multiple-value-list x)
-       (prog2 (incf *futures-resources-available-count*)
-           (let* ((,ld-level-sym *ld-level*)
-                  (,ld-level-state-sym
+    `(cond
+      (#-skip-resource-availability-test
+       (not (futures-resources-available))
+       #+skip-resource-availability-test
+       nil
+
+; need to return a "single-threaded" future
+
+       (incf *futures-resources-unavailable-count*)
+       (st-future ,x))
+      (t ; normal case
+       (incf *futures-resources-available-count*)
+
+; We need to set up bindings for some special variables to have appropriate
+; values when the future is executed.  Note that the current value of a special
+; variable is irrelevant for its value in a newly created thread, as
+; illustrated in the following log.
+
+;   ? [RAW LISP] (defvar foo 1)
+;   FOO
+;   ? [RAW LISP] (let ((foo 2))
+;                  (run-thread "asdf"
+;                              (lambda ()
+;                                (list (print foo)
+;                                      (print (symbol-value 'foo))))))
+;   #<PROCESS asdf(3) [Reset] #x302003CEE58D>
+;   ? [RAW LISP] 
+;   1 
+;   1 
+
+       (let* ((,ld-level-sym *ld-level*)
+              (,ld-level-state-sym
 
 ; We have discussed with David Rager whether it is an invariant of ACL2 that
 ; *ld-level* and (@ ld-level) have the same value, except perhaps when cleaning
 ; up with acl2-unwind-protect.  If it is, then David believes that it's also an
 ; invariant of ACL2(p).  We add an assertion here to check that.
                  
-                   (assert$ (equal *ld-level*
-                                   (f-get-global 'ld-level *the-live-state*))
-                            (f-get-global 'ld-level *the-live-state*)))
-
-; consider also *ev-shortcut-okp* *raw-guard-warningp*
-                  (acl2-unwind-protect-stack *acl2-unwind-protect-stack*)
-                  (,wormholep-sym *wormholep*)
-                  ;; (wormhole-cleanup-form *wormhole-cleanup-form*)
-                  (,local-safe-mode-sym (f-get-global 'safe-mode *the-live-state*))
-                  (,local-gc-on-sym (f-get-global 'guard-checking-on
-                                                  *the-live-state*)) 
+               (assert$ (equal *ld-level*
+                               (f-get-global 'ld-level *the-live-state*))
+                        (f-get-global 'ld-level *the-live-state*)))
+              (acl2-unwind-protect-stack *acl2-unwind-protect-stack*)
+              (,wormholep-sym *wormholep*)
+              (,local-safe-mode-sym (f-get-global 'safe-mode *the-live-state*))
+              (,local-gc-on-sym (f-get-global 'guard-checking-on
+                                              *the-live-state*))
 
 ; Parallelism no-fix: we have considered causing child threads to inherit
-; ld-specials from their parents, as the following comment from David Rager
-; suggests.  But this now seems too difficult to justify that effort.
+; ld-specials from their parents, or even other state globals such as
+; *ev-shortcut-okp* and *raw-guard-warningp*, as the following comment from
+; David Rager suggests.  But this now seems too difficult to justify that
+; effort, and we do not feel obligated to do so; see the "IMPORTANT NOTE" in
+; :doc parallelism.
 
 ;   At one point, in an effort to fix printing in parallel from within
 ;   wormholes, I tried rebinding the ld-specials.  I now know that my approach
@@ -1207,103 +1259,107 @@
 ;   bind *wormhole-cleanup-form* since we bind *wormholep*, but we haven't done
 ;   so.
 
-                  (closure (lambda () 
-                             (let ((*ld-level* ,ld-level-sym)
-                                   (*acl2-unwind-protect-stack*
-                                    acl2-unwind-protect-stack) 
-                                   (*wormholep* ,wormholep-sym))
-                               (state-free-global-let*
-                                ((ld-level ,ld-level-state-sym)
-                                 (safe-mode ,local-safe-mode-sym)
-                                 (guard-checking-on ,local-gc-on-sym))
-                                ,x)))))
-             (without-interrupts
-              (let ((future (make-future-with-closure closure)))
-                (without-interrupts (add-future-to-queue future))
-                future)))))))
+              (closure (lambda ()
+                         (let ((*ld-level* ,ld-level-sym)
+                               (*acl2-unwind-protect-stack*
+                                acl2-unwind-protect-stack) 
+                               (*wormholep* ,wormholep-sym))
+                           (state-free-global-let*
+                            ((ld-level ,ld-level-state-sym)
+                             (safe-mode ,local-safe-mode-sym)
+                             (guard-checking-on ,local-gc-on-sym))
+                            ,x)))))
+         (without-interrupts
+          (let ((future (make-future-with-closure closure)))
+            (without-interrupts ; probably not needed
+             (add-future-to-queue future))
+            future)))))))
 
 (defun mt-future-read (future)
   (cond ((st-future-p future)
          (st-future-read future))
         ((mt-future-p future)
-         (progn
-           (when (not (barrier-value (mt-future-valid future)))
-             (let ((notif nil))
-               (unwind-protect-disable-interrupts-during-cleanup
-                (progn
+         (when (not (barrier-value (mt-future-valid future)))
 
-; It's possible for (barrier-value (mt-future-valid future)) to be true.  It's a
-; race condition.  However, since testing the future for validity before
-; performing some waits is merely an optimization, there's no need to worry
-; about the race condition.  It's rare anyway.
+; Block until the value in the future is available (valid).
 
-                  (free-allocated-core)
+           (let ((notif nil))
+             (unwind-protect-disable-interrupts-during-cleanup
+              (progn
+                (without-interrupts 
+                 (free-allocated-core)
 
-; TODO: this may be broken under early termination, but I don't see how.
+; David Rager believes that at one time, he was concerned that the following
+; atomic decrement may be broken under early termination, though he didn't see
+; how.
 
-                  (without-interrupts 
-                   (atomic-decf *unassigned-and-active-future-count*)
-                   (setq notif t))
-                  (wait-on-barrier (mt-future-valid future))
+                 (atomic-decf *unassigned-and-active-future-count*)
+                 (setq notif t))
+
+; Although we are about to wait for the valid bit to be set, it's possible that
+; (barrier-value (mt-future-valid future)) has become true by now, so maybe
+; it's tempting to add such a test.  However, the call of wait-on-barrier below
+; is already doing such a test, and it would save little or no time to do it
+; explicitly before calling wait-on-barrier.
+
+                (wait-on-barrier (mt-future-valid future))
 
 ; The following claiming isn't necessary under early termination, and in fact,
-; it usually doesn't occur because it's in the the unprotected part of the
-; unwind-protect.  It's unnecessary because if we're terminating early, we
-; don't really care whether we "claim" the core.  In fact, we actually prefer
-; to leave the core unclaimed, because claiming the core would require
-; blocking until we temporarily receive a semaphore signal.
+; under early termination, the claiming usually doesn't occur because it's in
+; the unprotected part of the unwind-protect.  It's unnecessary because if
+; we're terminating early, we don't really care whether we "claim" the core.
+; In fact, we actually prefer to leave the core unclaimed, because claiming the
+; core would require blocking until we temporarily receive a semaphore signal.
 
-                  (claim-resumptive-core))
-                
-                (progn
-                  (when notif
-                    (atomic-incf *unassigned-and-active-future-count*))))))
-           (when (mt-future-thrown-tag future)
-             (throw (car (mt-future-thrown-tag future)) 
-                    (cdr (mt-future-thrown-tag future))))
-           (values-list (mt-future-value future))))
+                (claim-resumptive-core))
+              (when notif ; clean up
+                (atomic-incf *unassigned-and-active-future-count*)))))
+         (when (mt-future-thrown-tag future)
+           (throw (car (mt-future-thrown-tag future)) 
+                  (cdr (mt-future-thrown-tag future))))
+         (values-list (mt-future-value future)))
         (t
          (error "future-read was given a non-future argument"))))
 
+; Debug variables:
 (defvar *aborted-futures-via-throw* 0)
-
-(defvar *almost-aborted-future-count* 
-
-; TODO: document *almost-aborted-future-count*
-
-  0)
+(defvar *almost-aborted-future-count* 0)
 
 (defun mt-future-abort (future)
 
-; All calls to future-abort must be made by the parent of the future being
+; All calls to mt-future-abort must be made by the parent of the future being
 ; aborted.  This gives us some notion of single-threadedness, which removes the
 ; need for locking in some of the code below.  This means the aborting
 ; mechanism would not work for pand/por.
 
-; After further consideration, I'm not sure whether the above matters.  It'd be
-; nice to think that a thread can only be aborted once, but so long as we
-; conditionalize the throw correctly, it's probably even okay to throw abort a
-; future more than once
+; We might consider relaxing the above precondition, but we would need to think
+; first about whether we need to make corresponding changes, even beyond the
+; definition of this function.  For example, under the above precondition it is
+; impossible to interrupt the current thread more than once.  Without that
+; precondition, we might have two such interrupts, both of which are executing
+; code that potentially throws to tag :result-no-longer-needed.  As things
+; stand, we believe that probably only one such throw will actually take place,
+; since the actual throw is conditionalized on a variable that is only true
+; when a catcher is in place.  Still, if we do indeed relax the above
+; precondition, we should think this through carefully.
 
-; We do require that a future be "setup" before being thrown.  By this, we mean
-; that all events associated with storing it in the *future-array* before the
-; signaling are allowed to occur.
-
-; Woops, due to the reading and writing of slots in *future-dependencies*, only
-; one thread should be able to create and abort its children.  Otherwise those
+; But there is an even more serious problem with relaxing the precondition.
+; Due to the reading and writing of slots in *future-dependencies*, only one
+; thread should be able to create and abort its children.  Otherwise those
 ; slots could become corrupt.
 
 ; This abortion is non-blocking; i.e., it will issue an abort and return.  It
-; doesn't know when the abort will finish.
+; doesn't know when the abort will actually occur.
 
 ; It's possible that future will be nil.  This happens when the future has
-; already finished evluation and set its position in *future-array* to nil.  We
-; also don't abort if it's just a computed value.
+; already finished execution and set its position in *future-array* to nil.
 
   (incf *aborted-futures-total*)
   (cond ((st-future-p future)
          (st-future-abort future))
         ((mt-future-p future)
+
+; Parallelism wart: consider deleting the comment just below.
 
 ; It doesn't make sense to abort a future that's really just a value.  We
 ; assume that we can't return a future in a future... which may not be
@@ -1318,36 +1374,42 @@
               (when thread 
                 (interrupt-thread 
                  thread
-                 (lambda()
+                 (lambda ()
                    (if (equal (mt-future-index future)
                               *current-thread-index*)
+
+; Parallelism wart: review the comment below, perhaps clarifying it, that
+; explains how the equal test above could fail.  David thinks it has to do with
+; the six cases in how a future aborts computation.
+
+; *Almost-aborted-future-count* can be incremented when the
+; *current-thread-index* has fallen back to its default value, 0, for when the
+; thread is unassociated with any future.  It can also be incremented when the
+; thread has already picked up a new piece of work, but in practice this latter
+; occurrence will almost never happen.
+
                        (when *throwable-future-worker-thread*
                          (incf *aborted-futures-via-throw*)
                          (throw :result-no-longer-needed nil))
-                     
-; *Almost-aborted-future-count* can be incremented when the
-; *current-thread-index* has fallen back to its value for when the thread is
-; unassociated with any future (0).  It can also be incremented when the thread
-; has already picked up a new piece of work, but in practice this latter
-; occurence will almost never happen.
-                     
                      (incf *almost-aborted-future-count*)))))))))
         ((null future) t) ; future already removed from the future-array
         (t 
          (error "future-abort was given a non-future argument")))
   future)
 
-(defun abort-future-indexes (indexes)
+(defun abort-future-indices (indices)
+
+; Parallelism wart: clarify the following comment.
 
 ; Only call from future-abort, which has a theoretical read-lock on the value
-; of indexes (I quite literally mean "theoretical", as only by reasoning can we
-; deduce that the source of the argument "indexes", array
+; of indices (I quite literally mean "theoretical", as only by reasoning can we
+; deduce that the source of the argument "indices", array
 ; *future-dependencies*, is not changing underneath us).
 
-  (if (endp indexes)
+  (if (endp indices)
       t
-    (progn (mt-future-abort (faref *future-array* (car indexes)))
-           (abort-future-indexes (cdr indexes)))))
+    (progn (mt-future-abort (faref *future-array* (car indices)))
+           (abort-future-indices (cdr indices)))))
 
 (defun print-non-nils-in-array (array n) 
   (if (equal n (length array))
@@ -1371,7 +1433,7 @@
   (mt-future-abort x))
 
 (defun abort-futures (futures)
-  (if (atom futures)
-      t
-    (prog2 (future-abort (car futures))
-        (abort-futures (cdr futures)))))
+  (cond ((endp futures)
+         t)
+        (t (future-abort (car futures))
+           (abort-futures (cdr futures)))))
