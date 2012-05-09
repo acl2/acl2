@@ -1,0 +1,323 @@
+# Stuff for making proof outline:
+
+# Add proof-outline to the target.
+all: proof-outline
+
+tree.lisp:
+	@echo ';; This file was created via "make tree.lisp"' > tree.lisp
+	@echo '(in-package "ACL2")' >> tree.lisp
+	@echo '(defconst *dep-tree* (quote (' >> tree.lisp
+	@for book in $(BOOKS) ; \
+	do \
+	(egrep '^[^;]*\((include-book|INCLUDE-BOOK)[ \t]*\".*\"' \
+	`if [ -f $$book.acl2 ]; then echo "$$book.acl2"; fi` $$book.lisp) | \
+	sed "s/[^\"]*\"/($$book /" | sed 's/".*/"\)/' | \
+	sed 's/ /" . "/' | sed 's/(/("/' >> tree.lisp ;\
+	done
+	@for book in $(BOOKS) ; \
+	do \
+	(egrep '^[^;]*\((include-book|INCLUDE-BOOK)[ \t]*\(' \
+	`if [ -f $$book.acl2 ]; then echo "$$book.acl2"; fi` $$book.lisp) | \
+	sed 's/(:relative[ \t]*//' | \
+	sed 's-:back[ \t]*-../-g' | \
+	sed 's-" "-/-g' | sed 's/"//g' | \
+	sed 's/[.][.]/"../' | \
+	sed 's/)/"/' | \
+	sed 's/(local[ \t]*//' | \
+	sed 's/))/)/' | \
+	sed "s/include-book/\"$$book\" ./" >> tree.lisp ;\
+	done
+	@echo ")))" >> tree.lisp
+
+proof-outline.cert: tree.cert
+
+proof-outline: tree.cert proof-outline.cert
+	echo '(value :q) (lp) (include-book "proof-outline")' > workxxx
+	echo '(display-proof-outline-all "outline/outline" "fundamental-theorem-of-calculus")' >> workxxx
+	echo '(value :q)' >> workxxx
+	echo '(acl2::good-bye)' >> workxxx
+	rm -f outline/outline.*
+	$(ACL2) < workxxx
+
+clean: clean-more
+
+clean-more:
+	rm -f tree.lisp
+#	rm -rf outline/outline.*
+
+# Dependencies:
+
+between-i-close-implies-i-close.cert: between-i-close-implies-i-close.lisp
+between-i-close-implies-i-close.cert: nsa-lemmas.cert
+between-i-close-implies-i-close.cert: top-with-meta.cert
+between-i-close-implies-i-close.cert: defaxioms.cert
+
+between-limited-implies-limited.cert: between-limited-implies-limited.lisp
+between-limited-implies-limited.cert: nsa-lemmas.cert
+
+defaxioms.cert: defaxioms.lisp
+
+equal-riemann-rcfn-refinement-reduction.cert: equal-riemann-rcfn-refinement-reduction.lisp
+equal-riemann-rcfn-refinement-reduction.cert: riemann-defuns.cert
+equal-riemann-rcfn-refinement-reduction.cert: riemann-lemmas.cert
+equal-riemann-rcfn-refinement-reduction.cert: map-rcfn-refinement-cdr-co-member.cert
+
+ftoc-lemma.cert: ftoc-lemma.lisp
+ftoc-lemma.cert: riemann-defuns.cert
+ftoc-lemma.cert: make-partition.cert
+ftoc-lemma.cert: riemann-lemmas.cert
+ftoc-lemma.cert: integral-rcfn-lemmas.cert
+ftoc-lemma.cert: nsa-lemmas.cert
+ftoc-lemma.cert: max-and-min-attained.cert
+ftoc-lemma.cert: integral-rcfn.cert
+ftoc-lemma.cert: defaxioms.cert
+ftoc-lemma.cert: min-x-and-max-x-lemmas.cert
+ftoc-lemma.cert: integral-rcfn-quotient-between-non-classical.cert
+ftoc-lemma.cert: between-i-close-implies-i-close.cert
+
+fundamental-theorem-of-calculus.cert: fundamental-theorem-of-calculus.lisp
+fundamental-theorem-of-calculus.cert: riemann-defuns.cert
+fundamental-theorem-of-calculus.cert: make-partition.cert
+fundamental-theorem-of-calculus.cert: riemann-lemmas.cert
+fundamental-theorem-of-calculus.cert: integral-rcfn-lemmas.cert
+fundamental-theorem-of-calculus.cert: nsa-lemmas.cert
+fundamental-theorem-of-calculus.cert: integral-rcfn.cert
+fundamental-theorem-of-calculus.cert: split-integral-by-subintervals.cert
+fundamental-theorem-of-calculus.cert: ftoc-lemma.cert
+
+i-close-implies-abs-difference-small.cert: i-close-implies-abs-difference-small.lisp
+i-close-implies-abs-difference-small.cert: nsa-lemmas.cert
+
+i-limited-rcfn.cert: i-limited-rcfn.lisp
+i-limited-rcfn.cert: riemann-defuns.cert
+i-limited-rcfn.cert: nsa-lemmas.cert
+i-limited-rcfn.cert: defaxioms.cert
+
+i-small-maxlist-abslist-difflist-maps.cert: i-small-maxlist-abslist-difflist-maps.lisp
+i-small-maxlist-abslist-difflist-maps.cert: riemann-defuns.cert
+i-small-maxlist-abslist-difflist-maps.cert: riemann-lemmas.cert
+i-small-maxlist-abslist-difflist-maps.cert: nsa-lemmas.cert
+i-small-maxlist-abslist-difflist-maps.cert: maxlist-abslist-difflist-maps-lt.cert
+i-small-maxlist-abslist-difflist-maps.cert: two-times-r-is-not-less-than-standard-part.cert
+
+integral-rcfn-equal-if-i-close.cert: integral-rcfn-equal-if-i-close.lisp
+integral-rcfn-equal-if-i-close.cert: riemann-defuns.cert
+integral-rcfn-equal-if-i-close.cert: integral-rcfn.cert
+integral-rcfn-equal-if-i-close.cert: riemann-lemmas.cert
+integral-rcfn-equal-if-i-close.cert: integral-rcfn-lemmas.cert
+integral-rcfn-equal-if-i-close.cert: standard-part-equal-if-i-close.cert
+
+integral-rcfn-lemmas.cert: integral-rcfn-lemmas.lisp
+integral-rcfn-lemmas.cert: riemann-defuns.cert
+integral-rcfn-lemmas.cert: make-partition.cert
+integral-rcfn-lemmas.cert: top-with-meta.cert
+
+integral-rcfn-quotient-between-non-classical.cert: integral-rcfn-quotient-between-non-classical.lisp
+integral-rcfn-quotient-between-non-classical.cert: riemann-defuns.cert
+integral-rcfn-quotient-between-non-classical.cert: make-partition.cert
+integral-rcfn-quotient-between-non-classical.cert: riemann-lemmas.cert
+integral-rcfn-quotient-between-non-classical.cert: integral-rcfn-lemmas.cert
+integral-rcfn-quotient-between-non-classical.cert: nsa-lemmas.cert
+integral-rcfn-quotient-between-non-classical.cert: max-and-min-attained.cert
+integral-rcfn-quotient-between-non-classical.cert: riemann-rcfn-between.cert
+integral-rcfn-quotient-between-non-classical.cert: integral-rcfn.cert
+integral-rcfn-quotient-between-non-classical.cert: between-limited-implies-limited.cert
+integral-rcfn-quotient-between-non-classical.cert: defaxioms.cert
+integral-rcfn-quotient-between-non-classical.cert: standard-part-preserves-between.cert
+integral-rcfn-quotient-between-non-classical.cert: rcfn-standard-part.cert
+integral-rcfn-quotient-between-non-classical.cert: i-limited-rcfn.cert
+
+integral-rcfn.cert: integral-rcfn.lisp
+integral-rcfn.cert: make-partition.cert
+integral-rcfn.cert: standard-part-riemann-rcfn-is-standard.cert
+integral-rcfn.cert: nsa-lemmas.cert
+
+make-partition.cert: make-partition.lisp
+make-partition.cert: riemann-defuns.cert
+
+map-rcfn-close-to-map-rcfn-refinement.cert: map-rcfn-close-to-map-rcfn-refinement.lisp
+map-rcfn-close-to-map-rcfn-refinement.cert: riemann-defuns.cert
+map-rcfn-close-to-map-rcfn-refinement.cert: riemann-lemmas.cert
+map-rcfn-close-to-map-rcfn-refinement.cert: rcfn-next-gte-close.cert
+map-rcfn-close-to-map-rcfn-refinement.cert: i-close-implies-abs-difference-small.cert
+
+map-rcfn-refinement-cdr-co-member.cert: map-rcfn-refinement-cdr-co-member.lisp
+map-rcfn-refinement-cdr-co-member.cert: riemann-defuns.cert
+map-rcfn-refinement-cdr-co-member.cert: riemann-lemmas.cert
+
+max-and-min-attained.cert: max-and-min-attained.lisp
+max-and-min-attained.cert: riemann-defuns.cert
+max-and-min-attained.cert: riemann-lemmas.cert
+max-and-min-attained.cert: make-partition.cert
+max-and-min-attained.cert: nsa-lemmas.cert
+max-and-min-attained.cert: between-limited-implies-limited.cert
+max-and-min-attained.cert: integral-rcfn-lemmas.cert
+
+max-x-between.cert: max-x-between.lisp
+max-x-between.cert: max-and-min-attained.cert
+max-x-between.cert: standard-part-preserves-between.cert
+
+maxlist-abslist-difflist-maps-lt.cert: maxlist-abslist-difflist-maps-lt.lisp
+maxlist-abslist-difflist-maps-lt.cert: riemann-defuns.cert
+maxlist-abslist-difflist-maps-lt.cert: map-rcfn-close-to-map-rcfn-refinement.cert
+maxlist-abslist-difflist-maps-lt.cert: riemann-lemmas.cert
+
+min-max-x-rec-lemmas.cert: min-max-x-rec-lemmas.lisp
+min-max-x-rec-lemmas.cert: riemann-defuns.cert
+min-max-x-rec-lemmas.cert: make-partition.cert
+min-max-x-rec-lemmas.cert: nsa-lemmas.cert
+min-max-x-rec-lemmas.cert: max-and-min-attained.cert
+min-max-x-rec-lemmas.cert: i-limited-rcfn.cert
+
+min-x-and-max-x-lemmas.cert: min-x-and-max-x-lemmas.lisp
+min-x-and-max-x-lemmas.cert: max-and-min-attained.cert
+min-x-and-max-x-lemmas.cert: between-i-close-implies-i-close.cert
+min-x-and-max-x-lemmas.cert: min-x-between.cert
+min-x-and-max-x-lemmas.cert: max-x-between.cert
+
+min-x-between.cert: min-x-between.lisp
+min-x-between.cert: max-and-min-attained.cert
+min-x-between.cert: standard-part-preserves-between.cert
+
+next-gte-close.cert: next-gte-close.lisp
+next-gte-close.cert: riemann-defuns.cert
+next-gte-close.cert: riemann-lemmas.cert
+next-gte-close.cert: nsa-lemmas.cert
+
+# See Makefile for these:
+# nsa.cert: nsa.lisp
+# nsa.cert: ../../../../nonstd/nsa/nsa.cert
+
+nsa-lemmas.cert: nsa-lemmas.lisp
+nsa-lemmas.cert: nsa.cert
+
+partitions-give-i-close-riemann-sum.cert: partitions-give-i-close-riemann-sum.lisp
+partitions-give-i-close-riemann-sum.cert: riemann-defuns.cert
+partitions-give-i-close-riemann-sum.cert: refinement-makes-i-small-change.cert
+partitions-give-i-close-riemann-sum.cert: nsa-lemmas.cert
+
+rcfn-next-gte-close.cert: rcfn-next-gte-close.lisp
+rcfn-next-gte-close.cert: riemann-defuns.cert
+rcfn-next-gte-close.cert: nsa-lemmas.cert
+rcfn-next-gte-close.cert: riemann-lemmas.cert
+rcfn-next-gte-close.cert: next-gte-close.cert
+
+rcfn-standard-part.cert: rcfn-standard-part.lisp
+rcfn-standard-part.cert: riemann-defuns.cert
+rcfn-standard-part.cert: nsa-lemmas.cert
+rcfn-standard-part.cert: defaxioms.cert
+rcfn-standard-part.cert: i-limited-rcfn.cert
+
+refinement-makes-i-small-change-1.cert: refinement-makes-i-small-change-1.lisp
+refinement-makes-i-small-change-1.cert: riemann-defuns.cert
+refinement-makes-i-small-change-1.cert: riemann-lemmas.cert
+refinement-makes-i-small-change-1.cert: nsa-lemmas.cert
+refinement-makes-i-small-change-1.cert: i-small-maxlist-abslist-difflist-maps.cert
+
+refinement-makes-i-small-change.cert: refinement-makes-i-small-change.lisp
+refinement-makes-i-small-change.cert: riemann-defuns.cert
+refinement-makes-i-small-change.cert: riemann-lemmas.cert
+refinement-makes-i-small-change.cert: nsa-lemmas.cert
+refinement-makes-i-small-change.cert: riemann-bound.cert
+refinement-makes-i-small-change.cert: refinement-makes-i-small-change-1.cert
+refinement-makes-i-small-change.cert: riemann-rcfn-refinement-is-riemann-rcfn.cert
+
+riemann-bound.cert: riemann-bound.lisp
+riemann-bound.cert: riemann-lemmas.cert
+
+riemann-defuns.cert: riemann-defuns.lisp
+
+riemann-lemmas.cert: riemann-lemmas.lisp
+riemann-lemmas.cert: top-with-meta.cert
+riemann-lemmas.cert: riemann-defuns.cert
+
+riemann-rcfn-between.cert: riemann-rcfn-between.lisp
+riemann-rcfn-between.cert: riemann-defuns.cert
+riemann-rcfn-between.cert: make-partition.cert
+riemann-rcfn-between.cert: riemann-lemmas.cert
+riemann-rcfn-between.cert: integral-rcfn-lemmas.cert
+riemann-rcfn-between.cert: nsa-lemmas.cert
+riemann-rcfn-between.cert: max-and-min-attained.cert
+riemann-rcfn-between.cert: riemann-rcfn-upper-bound.cert
+riemann-rcfn-between.cert: riemann-rcfn-lower-bound.cert
+
+riemann-rcfn-lower-bound.cert: riemann-rcfn-lower-bound.lisp
+riemann-rcfn-lower-bound.cert: top-with-meta.cert
+riemann-rcfn-lower-bound.cert: riemann-defuns.cert
+riemann-rcfn-lower-bound.cert: make-partition.cert
+riemann-rcfn-lower-bound.cert: riemann-lemmas.cert
+riemann-rcfn-lower-bound.cert: nsa-lemmas.cert
+riemann-rcfn-lower-bound.cert: max-and-min-attained.cert
+
+riemann-rcfn-refinement-is-riemann-rcfn.cert: riemann-rcfn-refinement-is-riemann-rcfn.lisp
+riemann-rcfn-refinement-is-riemann-rcfn.cert: riemann-defuns.cert
+riemann-rcfn-refinement-is-riemann-rcfn.cert: riemann-lemmas.cert
+riemann-rcfn-refinement-is-riemann-rcfn.cert: equal-riemann-rcfn-refinement-reduction.cert
+
+riemann-rcfn-upper-bound.cert: riemann-rcfn-upper-bound.lisp
+riemann-rcfn-upper-bound.cert: top-with-meta.cert
+riemann-rcfn-upper-bound.cert: riemann-defuns.cert
+riemann-rcfn-upper-bound.cert: make-partition.cert
+riemann-rcfn-upper-bound.cert: riemann-lemmas.cert
+riemann-rcfn-upper-bound.cert: nsa-lemmas.cert
+riemann-rcfn-upper-bound.cert: max-and-min-attained.cert
+
+riemann-sum-approximates-integral-1.cert: riemann-sum-approximates-integral-1.lisp
+riemann-sum-approximates-integral-1.cert: defaxioms.cert
+riemann-sum-approximates-integral-1.cert: riemann-defuns.cert
+riemann-sum-approximates-integral-1.cert: riemann-lemmas.cert
+riemann-sum-approximates-integral-1.cert: integral-rcfn.cert
+riemann-sum-approximates-integral-1.cert: integral-rcfn-lemmas.cert
+riemann-sum-approximates-integral-1.cert: nsa-lemmas.cert
+riemann-sum-approximates-integral-1.cert: partitions-give-i-close-riemann-sum.cert
+
+riemann-sum-approximates-integral-2.cert: riemann-sum-approximates-integral-2.lisp
+riemann-sum-approximates-integral-2.cert: riemann-defuns.cert
+riemann-sum-approximates-integral-2.cert: riemann-sum-approximates-integral-1.cert
+
+riemann-sum-approximates-integral.cert: riemann-sum-approximates-integral.lisp
+riemann-sum-approximates-integral.cert: riemann-defuns.cert
+riemann-sum-approximates-integral.cert: integral-rcfn.cert
+riemann-sum-approximates-integral.cert: riemann-sum-approximates-integral-1.cert
+riemann-sum-approximates-integral.cert: riemann-sum-approximates-integral-2.cert
+
+riemann.cert: riemann.lisp
+riemann.cert: riemann-defuns.cert
+riemann.cert: riemann-lemmas.cert
+riemann.cert: integral-rcfn.cert
+riemann.cert: riemann-sum-approximates-integral.cert
+
+split-integral-by-subintervals.cert: split-integral-by-subintervals.lisp
+split-integral-by-subintervals.cert: riemann-defuns.cert
+split-integral-by-subintervals.cert: riemann-lemmas.cert
+split-integral-by-subintervals.cert: integral-rcfn.cert
+split-integral-by-subintervals.cert: nsa-lemmas.cert
+split-integral-by-subintervals.cert: riemann-sum-approximates-integral.cert
+split-integral-by-subintervals.cert: integral-rcfn-equal-if-i-close.cert
+split-integral-by-subintervals.cert: integral-rcfn-lemmas.cert
+
+standard-part-equal-if-i-close.cert: standard-part-equal-if-i-close.lisp
+standard-part-equal-if-i-close.cert: nsa-lemmas.cert
+standard-part-equal-if-i-close.cert: defaxioms.cert
+
+standard-part-preserves-between.cert: standard-part-preserves-between.lisp
+standard-part-preserves-between.cert: nsa-lemmas.cert
+standard-part-preserves-between.cert: defaxioms.cert
+
+standard-part-riemann-rcfn-is-standard.cert: standard-part-riemann-rcfn-is-standard.lisp
+standard-part-riemann-rcfn-is-standard.cert: riemann-defuns.cert
+standard-part-riemann-rcfn-is-standard.cert: make-partition.cert
+standard-part-riemann-rcfn-is-standard.cert: nsa-lemmas.cert
+standard-part-riemann-rcfn-is-standard.cert: max-and-min-attained.cert
+standard-part-riemann-rcfn-is-standard.cert: riemann-rcfn-between.cert
+standard-part-riemann-rcfn-is-standard.cert: min-max-x-rec-lemmas.cert
+standard-part-riemann-rcfn-is-standard.cert: riemann-lemmas.cert
+
+# See Makefile for these:
+# top-with-meta.cert: top-with-meta.lisp
+# top-with-meta.cert: ../../../../nonstd/arithmetic/top-with-meta.cert
+
+two-times-r-is-not-less-than-standard-part.cert: two-times-r-is-not-less-than-standard-part.lisp
+two-times-r-is-not-less-than-standard-part.cert: nsa-lemmas.cert
+two-times-r-is-not-less-than-standard-part.cert: top-with-meta.cert
+two-times-r-is-not-less-than-standard-part.cert: defaxioms.cert
