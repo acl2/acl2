@@ -2010,7 +2010,8 @@ original source code.)</p>"
                        (vl-pp-stmtlist stmts)
                        (vl-println "")
                        (vl-ps-span "vl_key"
-                                   (vl-print-str (if sequentialp "   end" "   join"))))))
+                                   (vl-print-str (if sequentialp "   end" "   join")))
+                       (vl-println ""))))
 
          ((:vl-forstmt)
           (let ((initlhs (vl-forstmt->initlhs x))

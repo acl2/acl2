@@ -253,8 +253,8 @@ driven instead of <tt>w</tt>.</li>
   :parents (vl-make-res-occs)
   :short "Generate a @(see 4v-res) expression to resolve a list of emodwires."
 
-  :long "<p>@(call vl-make-res-sexpr) generates a <see topic='@(see
-4v-sexprs)'>4v-sexpr</see> that joins together all of its arguments with @(see
+  :long "<p>@(call vl-make-res-sexpr) generates a <see topic='@(url
+4v-sexprs)'>4v-sexpr</see> that joins together all of its arguments with @(url
 4v-res) operations.</p>
 
 <p>Note that the RES operation is commutative and associative, so any nest of
