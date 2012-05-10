@@ -28252,34 +28252,39 @@
   ACL2 !>
   ~ev[]~/
 
-  Each argument of ~c[top-level] after the first should be a declare form or
-  documentation string, as the list of these extra arguments will be placed
-  before the first argument when forming the definition of ~c[top-level-fn].~/"
+  Each argument of ~c[top-level] after the first should be a ~ilc[declare] form
+  or ~il[documentation] string, as the list of these extra arguments will be
+  placed before the first argument when forming the definition of
+  ~c[top-level-fn].
 
-  `(ld '((with-output
-          :off :all
-          :on error
-          (defun top-level-fn (state)
-            (declare (xargs :mode :program :stobjs state)
-                     (ignorable state))
-            ,@declares
-            ,form))
-         (ld '((top-level-fn state))
-             :ld-post-eval-print :command-conventions
+  ~ilc[Top-level] generates a call of ~ilc[ld], so that the value returned is
+  printed in the normal way.  The call of ~ilc[top-level] itself actually
+  evaluates to ~c[(mv nil :invisible state)], which normally results in no
+  additional output.~/"
 
-; If top-level-fn causes an error, the default :ld-error-action of :return!
-; will return a value of the form (mv nil (:STOP-LD ...) state), which will be
-; passed up.  (See :DOC ld-error-action.)  The silent-error below will thus
-; never be executed, and hence we will not roll back top-level-fn.  So we
-; provide :ld-error-action :error here.
-
-             :ld-error-action :error)
-         (silent-error state))
-       :ld-pre-eval-print nil
-       :ld-post-eval-print nil
-       :ld-error-action :error
-       :ld-verbose nil
-       :ld-prompt nil))
+  `(mv-let (erp val state)
+           (ld '((with-output
+                  :off :all
+                  :on error
+                  (defun top-level-fn (state)
+                    (declare (xargs :mode :program :stobjs state)
+                             (ignorable state))
+                    ,@declares
+                    ,form))
+                 (ld '((top-level-fn state))
+                     :ld-post-eval-print :command-conventions
+                     :ld-error-action :continue)
+                 (with-output
+                  :off :all
+                  :on error
+                  (ubt! 'top-level-fn)))
+               :ld-pre-eval-print nil
+               :ld-post-eval-print nil
+               :ld-error-action :error ; in case top-level-fn fails
+               :ld-verbose nil
+               :ld-prompt nil)
+           (declare (ignore erp val))
+           (value :invisible)))
 
 ; Essay on Defattach
 
