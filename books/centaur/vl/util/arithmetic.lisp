@@ -1254,7 +1254,8 @@
     :hints(("Goal" :in-theory (enable simpler-take))))
 
   (defthm string-listp-of-butlast
-    (implies (string-listp x)
+    (implies (and (string-listp x)
+                  (natp n))
              (string-listp (butlast x n)))
     :hints(("Goal" :in-theory (enable butlast)))))
 
