@@ -64,17 +64,22 @@
      (otherwise `(progn ,@forms))))
 
  (defun-raw disassemble$-fn (sym recompile args)
-   (let ((state *the-live-state*)
-         (ctx 'disassemble$))
+   (let* ((state *the-live-state*)
+          (wrld (w state))
+          (ctx 'disassemble$))
      (when (and args
                 (not (and (eq (car args) :recompile)
                           (null (cddr args)))))
        (observation ctx
-                    "Note: Ignoring unimplemented keyword argument~#0~[~/s~] ~
+                    "Ignoring unimplemented keyword argument~#0~[~/s~] ~
                      ~&0.~|~%"
                     (remove1 :recompile (evens args))))
-     (cond ((not (and (fboundp sym)
-                      (not (macro-function sym))))
+     (cond ((not (symbolp sym))
+            (observation ctx
+                         "Error: ~x0 is not a symbol.~|~%"
+                         sym))
+           ((not (and (fboundp sym)
+                      (function-symbolp 'mem-tablei wrld)))
             (observation ctx
                          "Error: Symbol ~x0 is not defined as a function.~|~%"
                          sym))
@@ -82,8 +87,7 @@
                 (member-eq (f-get-global 'host-lisp state)
                            *host-lisps-that-recompile-by-default*)
               recompile)
-            (let* ((wrld (w state))
-                   (stobj-function (getprop sym 'stobj-function nil
+            (let* ((stobj-function (getprop sym 'stobj-function nil
                                             'current-acl2-world wrld))
                    (form (cltl-def-from-name sym stobj-function wrld)))
               (cond (form
@@ -92,17 +96,28 @@
                        (assert old-fn)
                        (unwind-protect
                            (with-source-info
-                            (with-open-file (str temp-file :direction :output)
-                                            (print form str))
+                            (with-open-file
+                             (str temp-file :direction :output)
+                             (print form str))
                             (load temp-file)
                             (disassemble sym))
                          (delete-file temp-file)
                          (setf (symbol-function sym)
                                old-fn)))
                      (return-from disassemble$-fn nil))
+                    ((and stobj-function
+                          (cltl-def-from-name1 sym stobj-function t wrld))
+                     (progn (observation ctx
+                                         "Not dissassembling ~x0, because it ~
+                                          is a macro in raw Lisp: the ~
+                                          defstobj event for ~x1 specified ~
+                                          :inline t.~|~%"
+                                         sym
+                                         stobj-function)
+                            (return-from disassemble$-fn nil)))
                     (t (observation ctx
-                                    "NOTE: Unable to find an ACL2 definition ~
-                                     for ~x0.  Disassembling the existing ~
+                                    "Unable to find an ACL2 definition for ~
+                                     ~x0.  Disassembling the existing ~
                                      definition.~|~%"
                                     sym)))
               (disassemble sym)))
