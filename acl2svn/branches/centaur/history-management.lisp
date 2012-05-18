@@ -7615,11 +7615,7 @@
   (cond
    ((or (null wrld1)
         (equal wrld1 wrld0))
-    (pprogn (if (and seen
-                     (not (f-get-global 'window-interfacep state)))
-                (newline (standard-co state) state)
-              state)
-            (value kept-commands)))
+    (value kept-commands))
    (t (mv-let
        (names wrld2)
        (command-block-names wrld1 '(:program))

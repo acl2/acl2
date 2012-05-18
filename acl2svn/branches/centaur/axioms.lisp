@@ -6215,14 +6215,15 @@
   until the successful completion of the main goal.
   ~l[forcing-round].
 
-  Forcing should only be used on hypotheses that are always expected
-  to be true, such as the ~il[guard]s of functions.  All the power of the
-  theorem prover is brought to bear on a forced hypothesis and no
-  backtracking is possible.  If the ~c[:]~ilc[executable-counterpart] of the
-  function ~c[force] is ~il[disable]d, then no hypothesis is forced.
-  ~l[enable-forcing] and ~pl[disable-forcing].  Forced goals can be
-  attacked immediately (~pl[immediate-force-modep]) or in a subsequent
-  forcing round (~pl[forcing-round]).  Also ~pl[case-split].~/
+  Forcing should only be used on hypotheses that are always expected to be
+  true, as is commonly the case for ~il[guard]s of functions.  All the power of
+  the theorem prover is brought to bear on a forced hypothesis and no
+  backtracking is possible.  Forced goals can be attacked immediately
+  (~pl[immediate-force-modep]) or in a subsequent forcing round
+  (~pl[forcing-round]).  Also ~pl[case-split] for a related utility.  If the
+  ~c[:]~ilc[executable-counterpart] of the function ~c[force] is ~il[disable]d,
+  then no hypothesis is forced.  For more on enabling and disabling forcing,
+  ~pl[enable-forcing] and ~pl[disable-forcing].~/
 
   It sometimes happens that a conditional rule is not applied because
   some hypothesis, ~c[hyp], could not be relieved, even though the
@@ -6454,11 +6455,12 @@
   which are inhibited by this command.~/
 
   ~c[Disable-forcing] is actually a macro that ~il[disable]s the executable
-  counterpart of the function symbol ~c[force]; ~pl[force].  When
-  you want to use ~il[hints] to turn off forced case splits, use a form such
-  as:
+  counterpart of the function symbol ~c[force]; ~pl[force].  When you want to
+  use ~il[hints] to turn off forced case splits, use a form such as one of the
+  following (these are equivalent).
   ~bv[]
   :in-theory (disable (:executable-counterpart force))
+  :in-theory (disable (force))
   ~ev[]
   "
   '(in-theory (disable (:executable-counterpart force))))
@@ -6477,10 +6479,12 @@
   turn them off.)~/
 
   ~c[Enable-forcing] is actually a macro that ~il[enable]s the executable
-  counterpart of the function symbol ~c[force]; ~pl[force].  When
-  you want to use ~il[hints] to turn on forced case splits, use a form such as:
+  counterpart of the function symbol ~c[force]; ~pl[force].  When you want to
+  use ~il[hints] to turn on forced case splits, use a form such as one of the
+  following (these are equivalent).
   ~bv[]
   :in-theory (enable (:executable-counterpart force))
+  :in-theory (enable (force))
   ~ev[]
   "
 
@@ -6501,10 +6505,12 @@
   ~il[force]d case splits.~/
 
   Disable-immediate-force-modep is a macro that ~il[disable]s the executable
-  counterpart of the function symbol ~ilc[immediate-force-modep].  When
-  you want to ~il[disable] this mode in ~il[hints], use a form such as:
+  counterpart of the function symbol ~ilc[immediate-force-modep].  When you
+  want to ~il[disable] this mode in ~il[hints], use a form such as one of the
+  following (these are equivalent).
   ~bv[]
   :in-theory (disable (:executable-counterpart immediate-force-modep))
+  :in-theory (disable (immediate-force-modep))
   ~ev[]
   "
 
@@ -6525,10 +6531,12 @@
   ~pl[force] for a discussion of ~il[force]d case splits.~/
 
   Enable-immediate-force-modep is a macro that ~il[enable]s the executable
-  counterpart of the function symbol ~ilc[immediate-force-modep].  When
-  you want to ~il[enable] this mode in ~il[hints], use a form such as:
+  counterpart of the function symbol ~ilc[immediate-force-modep].  When you
+  want to ~il[enable] this mode in ~il[hints], use a form such as one of the
+  following (these are equivalent).
   ~bv[]
   :in-theory (enable (:executable-counterpart immediate-force-modep))
+  :in-theory (enable (immediate-force-modep))
   ~ev[]
   "
 
@@ -18006,9 +18014,15 @@
   ~c[st2], and ~c[st3] will all be congruent to each other.
 
   When two stobjs are congruent, ACL2 allows you to substitute one for another
-  in a function call.  The following example shows how this works; for more
-  examples of how to take advantage of congruent stobjs, and also of how to
-  misuse them, see distributed book ~c[books/misc/congruent-stobjs-test.lisp].
+  in a function call.  Any number of stobjs may be replaced with congruent
+  stobjs in the call, provided no two get replaced with the same stobj.  The
+  return values are correspondingly modified: if stobj ~c[st1] is replaced by
+  ~c[st2] at an argument position, and if ~c[st1] is returned in the output
+  ~il[signature] of the function, then ~c[st2] is returned in place of ~c[st1].
+
+  The following example illustrates congruent stobjs.  For more examples of how
+  to take advantage of congruent stobjs, and also of how to misuse them, see
+  distributed book ~c[books/misc/congruent-stobjs-test.lisp].
   ~bv[]
   (defstobj st1 fld1)
   (defstobj st2 fld2 :congruent-to st1)
@@ -18022,7 +18036,8 @@
   (assert-event (equal (f st3 st2 st1) '(3 2 1)))
   ~ev[]
   The following example shows an error that occurs when stobj arguments are
-  repeated.  These must be distinct.
+  repeated, i.e., at least two stobj arguments (in this case, three) get
+  replaced by the same stobj.
   ~bv[]
   ACL2 !>(f st1 st1 st1)
 
@@ -29632,6 +29647,19 @@
 
 (defdoc character-encoding
 
+; Without the setting of custom:*default-file-encoding* for clisp in
+; acl2.lisp, the build breaks with the following string (note the accented "i"
+; in Martin, below):
+;   Francisco J. Martín Mateos
+; With that setting, we do not need an explicit :external-format argument for
+; the call of with-open-file in acl2-check.lisp that opens a stream for
+; "acl2-characters".
+
+; Because of the comment above, save an Emacs buffer connected to this file
+; after setting the necessary buffer-local variable as follows.
+
+; (setq save-buffer-coding-system 'iso-8859-1)
+
   ":Doc-Section IO
 
   how bytes are parsed into characters~/
@@ -39571,10 +39599,9 @@
   create ~il[books] that extend the functionality of ACL2 in ways not allowed
   without a so-called ``active trust tag''.  A trust tag thus represents a
   contract: The writer of such a book is guaranteeing that the book extends
-  ACL2 in a ``correct'' way as defined by the writer of the book ~-[] often
-  simply in a sound way ~-[].  The writer of the book will often have a small
-  section of the book in the scope of an active trust tag that can be
-  inspected by potential users of that book:
+  ACL2 in a ``correct'' way as defined by the writer of the book.  The writer
+  of the book will often have a small section of the book in the scope of an
+  active trust tag that can be inspected by potential users of that book:
   ~bv[]
   <initial part of book, which does not use trust tags>
   (defttag :some-ttag) ; install :some-ttag as an active trust tag
@@ -39583,7 +39610,7 @@
   <initial part of book, which does not use trust tags>
   ~ev[]
 
-  Why may trust tags be needed?  The evaluation of certain functions can
+  Why might trust tags be needed?  The evaluation of certain functions can
   introduce bugs and even unsoundness, but can be useful in restricted ways
   that avoid such issues.  For example, ~ilc[sys-call] can be used in an unsafe
   way, for example to overwrite files, or worse; ~pl[sys-call] for a
@@ -39689,19 +39716,19 @@
   ~pl[set-deferred-ttag-notes]).
 
   ~st[Active ttags.]  Suppose ~c[tag-name] is a non-~c[nil] symbol.  Then
-  ~c[(defttag :tag-name)] sets ~c[:tag-name] to be the ``active ttag.''  There
-  must be an active ttag in order for there to be any mention of certain
-  function and macro symbols, including ~ilc[sys-call]; evaluate the form
-  ~c[(strip-cars *ttag-fns-and-macros*)] to see the full list of such symbols.
-  On the other hand, ~c[(defttag nil)] removes the active ttag, if any; there
-  is then no active ttag.  The scope of a ~c[defttag] form in a book being
-  certified or included is limited to subsequent forms in the same book before
-  the next ~c[defttag] (if any) in that book.  Similarly, if a ~c[defttag] form
-  is evaluated in the top-level loop, then its effect is limited to subsequent
-  forms in the top-level loop before the next ~c[defttag] in the top-level loop
-  (if any).  Moreoever, ~ilc[certify-book] is illegal when a ttag is active; of
-  course, in such a circumstance one can execute ~c[(defttag nil)] in order to
-  allow book certification.
+  ~c[(defttag :tag-name)] sets ~c[:tag-name] to be the (unique) ``active
+  ttag.''  There must be an active ttag in order for there to be any mention of
+  certain function and macro symbols, including ~ilc[sys-call]; evaluate the
+  form ~c[(strip-cars *ttag-fns-and-macros*)] to see the full list of such
+  symbols.  On the other hand, ~c[(defttag nil)] removes the active ttag, if
+  any; there is then no active ttag.  The scope of a ~c[defttag] form in a book
+  being certified or included is limited to subsequent forms in the same book
+  before the next ~c[defttag] (if any) in that book.  Similarly, if a
+  ~c[defttag] form is evaluated in the top-level loop, then its effect is
+  limited to subsequent forms in the top-level loop before the next ~c[defttag]
+  in the top-level loop (if any).  Moreoever, ~ilc[certify-book] is illegal
+  when a ttag is active; of course, in such a circumstance one can execute
+  ~c[(defttag nil)] in order to allow book certification.
 
   ~st[Ttag notes and the ``certifier.'']  When a ~c[defttag] is executed with
   an argument other than ~c[nil], output is printed, starting on a fresh line

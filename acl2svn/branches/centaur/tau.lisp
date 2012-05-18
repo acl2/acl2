@@ -2065,9 +2065,11 @@
                 (mv t *tau-contradiction*))
                (t
                 (mv t (change tau tau :neg-pairs new-neg-pairs))))))))
-         (val ; recog evals to true; don't bother to store
+         ((eq val sign) ; same as (iff val sign), as val and sign are Boolean
+; recog evals as expected; don't bother to store
           (mv nil tau))
-         (t ; recog evals to false; signal contradiction
+         (t
+; recog evals to false; signal contradiction
           (mv t *tau-contradiction*)))))
      ((tau-pair-member recog
                        (if sign
