@@ -81,4 +81,3 @@
 
 (assert! (equal (MAP<plus> '(1 2 3) 1) '(2 3 4)))
 
-
