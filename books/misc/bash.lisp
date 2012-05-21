@@ -143,12 +143,6 @@ Then:
 
 (set-state-ok t)
 
-; The following appears in the ACL2 source code, but is included temporarily
-; for a few days pending some users updating to a sufficiently recent
-; development snapshot.
-(defun unproved-pc-prove-clauses (ttree)
-  (reverse-strip-cdrs (tagged-objects :bye ttree) nil))
-
 (defun simplify-with-prover (form hints ctx state)
 
 ; This is patterned after (define-pc-primitive prove ...).
