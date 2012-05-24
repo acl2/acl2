@@ -261,13 +261,13 @@ sub cert_to_pcert1 {
 sub cert_bookdeps {
     my ($cert, $depmap) = @_;
     my $entry = $depmap->{$cert};
-    return $entry ? $entry->[0] : [];
+    return $entry ? $entry->[0] ? $entry->[0] : [] : [];
 }
 
 sub cert_portdeps {
     my ($cert, $depmap) = @_;
     my $entry = $depmap->{$cert};
-    return $entry ? $entry->[1] : [];
+    return $entry ? $entry->[1] ? $entry->[1] : [] : [];
 }
 
 sub cert_deps {
@@ -903,7 +903,7 @@ sub get_cert_param {
 	    print "\nin $base:\n";
 	    print "Note: Though we still recognize the \";; two-pass certification\"\n";
 	    print "directive, it is deprecated in favor of:\n";
-	    print ";; cert_param (acl2x)\n\n";
+	    print ";; cert_param: (acl2x)\n\n";
 	}
 	push (@$events, [$cert_param_event, "acl2x", 1]);
 	return 1;
@@ -1373,17 +1373,22 @@ sub deps_dfs {
 sub add_deps {
     my ($target,$cache,$depmap,$sources,$tscache,$parent) = @_;
 
+    print "add_deps (check) $target\n" if $debugging;
+
     if ($target !~ /\.cert$/) {
+	print "not cert\n" if $debugging;
 	return;
     }
 
     if (exists $depmap->{$target}) {
 	# We've already calculated this file's dependencies.
+	print "depmap entry exists\n" if $debugging;
 	return;
     }
 
     if (excludep($target)) {
-    	$depmap->{$target} = [];
+    	# $depmap->{$target} = [];
+	print "excludep\n" if $debugging;
     	return;
     }
 

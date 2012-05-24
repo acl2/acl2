@@ -50,7 +50,7 @@ export TIME_CERT ?=
 # prefer to allow proof-skipping and ttags by default, since otherwise
 # adding a ttag or skipping a single proof in a widely-included book
 # could lead to a huge problem in updating all of the affected books.
-export COMPILE_FLG ?= t :ttags :all :skip-proofs-okp t
+export COMPILE_FLG ?= t :ttags :all :skip-proofs-okp t :defaxioms-okp t
 
 # Typically you want to inhibit most proof output during certification, since
 # this can greatly reduce the size of .out files.

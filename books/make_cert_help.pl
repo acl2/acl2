@@ -126,7 +126,10 @@ sub skip_certify_books {
     my $pos = 0;
     my @strs = ();
     while (1) {
-	my $next = index($str, "(certify-book", $pos);
+	my @match = $str =~ /(\((?:acl2::)?certify-book)/i;
+	if (! @match) { last; }
+	my $substr = $match[0];
+	my $next = index($str, $substr, $pos);
 	if ($next == -1) {
 	    push(@strs, substr($str,$pos));
 	    return join("", @strs);
