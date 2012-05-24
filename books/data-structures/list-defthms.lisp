@@ -553,17 +553,10 @@
          (len l)))
 
 (defthm len-put-seg
-  (implies (and (true-listp l)
-                (integerp i)
+  (implies (and (integerp i)
                 (not (< i 0)))
            (equal (len (put-seg i seg l))
-                  (len l)))
-  :hints (("Goal" :do-not-induct t
-           :in-theory (union-theories
-                       (set-difference-theories
-                        (current-theory :here)
-                        '((:definition put-seg)))
-                       '(put-seg-non-recursive)))))
+                  (len l))))
   
 (local
    (defthm occurrences-equal-ac+1
@@ -728,8 +721,7 @@
 
 
 (defthm butlast-append1
-    (implies (and (true-listp a)
-                  (true-listp b))
+    (implies (true-listp a)
              (equal (butlast (append a b) (len b))
                     a))
     :hints (("Goal" :do-not-induct t
@@ -918,12 +910,10 @@
 ; ------------------------------------------------------------
 
 (defthm initial-sublistp-equal-reflexive
-  (implies (true-listp l)
-           (initial-sublistp-equal l l)))
+  (initial-sublistp-equal l l))
 
 (defthm initial-sublistp-equal-nil
-  (implies (true-listp l)
-           (initial-sublistp-equal nil l)))
+  (initial-sublistp-equal nil l))
 
 
 ; ------------------------------------------------------------
@@ -939,8 +929,7 @@
 ; ------------------------------------------------------------
 
 (defthm nth-with-large-index 
-  (implies (and (<= (len l) (nfix n))
-                (true-listp l))
+  (implies (<= (len l) (nfix n))
            (equal (nth n l) nil)))
 
 (defthm nth-append
@@ -1040,11 +1029,8 @@
 
 (local
    (defthm car-nthcdr
-     (implies (and (true-listp l)
-                   (integerp n)
-                   (<= 0 n))
-              (equal (car (nthcdr n l))
-                     (nth n l)))))
+     (equal (car (nthcdr n l))
+            (nth n l))))
 
 (local
    (defthm cdr-nthcdr
@@ -1116,8 +1102,7 @@
 
 (local
    (defthm nth-put-seg-helper-1
-     (implies (and (true-listp l)
-                   (integerp i)
+     (implies (and (integerp i)
                    (integerp n)
                    (< (len l) i)
                    (not (< n (len l))))
@@ -1127,8 +1112,7 @@
               :in-theory (disable nth-with-large-index)))))
 
 (defthm nth-put-seg
-  (implies (and (true-listp l)
-                (integerp i)
+  (implies (and (integerp i)
                 (not (< i 0)))
            (equal (nth n (put-seg i seg l))
                   (if (< (nfix n) i)
@@ -1136,13 +1120,7 @@
                       (if (< (nfix n)
                              (+ i (min (max (- (len l) i) 0) (len seg))))
                           (nth (- (nfix n) i) seg)
-                          (nth n l)))))
-  :hints (("Goal" :do-not-induct t
-           :in-theory (union-theories
-                       (set-difference-theories
-                        (current-theory :here)
-                        '((:definition put-seg)))
-                       '(put-seg-non-recursive)))))
+                          (nth n l))))))
 
 (local
    (defthm nth-position-equal-ac
@@ -1433,10 +1411,9 @@
          1)))
 
 (defthm occurrences-equal-remove-duplicates-equal
-    (implies (true-listp l)
-             (<= (occurrences-equal x (remove-duplicates-equal l))
-                 1))
-    :rule-classes (:rewrite :linear))
+  (<= (occurrences-equal x (remove-duplicates-equal l))
+      1)
+  :rule-classes (:rewrite :linear))
 
 
 ; ------------------------------------------------------------
@@ -1559,8 +1536,7 @@
              (append a (update-nth (- n (len a)) v b)))))
 
 (defthm update-nth-nth 
-  (implies (and (true-listp l)
-                (integerp n)
+  (implies (and (integerp n)
                 (<= 0 n)
                 (< n (len l)))
            (equal (update-nth n (nth n l) l)
