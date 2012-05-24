@@ -34,6 +34,7 @@
 
 (include-book "../checkers/condcheck")
 (include-book "../checkers/duplicate-detect")
+(include-book "../checkers/dupeinst-check")
 (include-book "../checkers/duperhs")
 (include-book "../checkers/leftright")
 (include-book "../checkers/multidrive-detect")
@@ -179,6 +180,7 @@
        (- (cw "~%vl-lint: processing arguments, parameters...~%"))
        (mods (cwtime (vl-modulelist-elim-unused-regs mods)))
        (mods (cwtime (vl-modulelist-argresolve mods)))
+       (mods (cwtime (vl-modulelist-dupeinst-check mods)))
 
        ;; BOZO not exactly sure where this should go, maybe this will work.
        (mods (cwtime (vl-modulelist-expand-functions mods)))
@@ -439,10 +441,21 @@
         :vl-fussy-size-warning-3-complex
         ))
 
+(defconst *same-ports-warnings*
+  (list :vl-warn-same-ports
+        :vl-warn-same-inputs))
+
+(defconst *same-ports-minor-warnings*
+  (list :vl-warn-same-ports-minor
+        :vl-warn-same-inputs-minor))
+
 (defconst *fussy-size-minor-warnings*
   (list :vl-fussy-size-warning-1-minor
         :vl-fussy-size-warning-2-minor
         :vl-fussy-size-warning-3-minor))
+
+
+
 
 (defconst *warnings-covered*
 
@@ -459,7 +472,10 @@
           *multidrive-warnings*
           *multidrive-minor-warnings*
           *fussy-size-warnings*
-          *fussy-size-minor-warnings*))
+          *fussy-size-minor-warnings*
+          *same-ports-warnings*
+          *same-ports-minor-warnings*
+          ))
 
 (defconst *warnings-ignored*
 
@@ -679,11 +695,27 @@ wide addition instead of a 10-bit wide addition.")))
          (vl-ps-update-autowrap-col 68)
          (vl-lint-print-warnings "vl-smells-minor.txt" "Minor Code-Smell Warnings" *smell-minor-warnings* walist)))
 
-       (state
-        (with-ps-file
-         "vl-other.txt"
-         (vl-ps-update-autowrap-col 68)
-         (vl-lint-print-warnings "vl-other.txt" "Other/Unclassified" othertypes walist)))
+
+      (state
+       (with-ps-file "vl-same-ports.txt"
+                     (vl-ps-update-autowrap-col 68)
+                     (vl-lint-print-warnings "vl-same-ports.txt"
+                                             "Same-ports Warnings"
+                                             *same-ports-warnings*
+                                             walist)))
+      (state
+       (with-ps-file "vl-same-ports-minor.txt"
+                     (vl-ps-update-autowrap-col 68)
+                     (vl-lint-print-warnings "vl-same-ports-minor.txt"
+                                             "Minor same-ports Warnings"
+                                             *same-ports-minor-warnings*
+                                             walist)))
+
+      (state
+       (with-ps-file
+        "vl-other.txt"
+        (vl-ps-update-autowrap-col 68)
+        (vl-lint-print-warnings "vl-other.txt" "Other/Unclassified" othertypes walist)))
 
        (- (cw "~%")))
 

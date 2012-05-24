@@ -27,7 +27,7 @@
 
 
 (defsection vl-pgenstr
-  :parents (vl-namefactory-p)
+  :parents (vl-namedb-p)
   :short "@(call vl-pgenstr) creates the string \"<tt>prefix</tt>_<tt>n</tt>\"."
 
   :long "<p>We @(see hons-copy) the result because generated names are
@@ -42,7 +42,7 @@ vl-pgenstr->val).</p>"
 
 
 (defsection vl-pgenstr-p
-  :parents (vl-namefactory-p)
+  :parents (vl-namedb-p)
   :short "@(call vl-pgenstr-p) recognizes strings of the form
 \"<tt>prefix</tt>_n\"."
 
@@ -80,7 +80,7 @@ vl-pgenstr->val).</p>"
 
 
 (defsection vl-pgenstr->val
-  :parents (vl-namefactory-p)
+  :parents (vl-namedb-p)
   :short "@(call vl-pgenstr->val) retrieves <tt>n</tt> from the string
 <tt>str</tt>, which must have the form \"<tt>prefix</tt>_<tt>n</tt>\"; we
 return <tt>n</tt> as a natural number."
@@ -111,7 +111,7 @@ return <tt>n</tt> as a natural number."
 
 
 (defsection vl-pgenstr-highest
-  :parents (vl-namefactory-p)
+  :parents (vl-namedb-p)
   :short "@(call vl-pgenstr-highest) returns the largest <tt>n</tt> such
 that \"<tt>prefix</tt>_n\" occurs in <tt>names</tt>."
 
@@ -328,16 +328,24 @@ that \"<tt>prefix</tt>_n\" occurs in <tt>names</tt>."
   :long "<p>A <b>name db</b> allows you to easily and efficiently generate
 good, fresh names that are not being used elsewhere.</p>
 
+<p>Name DBs are a general-purpose construct that isn't Verilog specific.  When
+we want to generate fresh wire names for Verilog modules, we usually use a
+@(see vl-namefactory-p) instead.  A name factory is specific to Verilog
+modules, and often allows us to avoid constructing the list of all wire names
+for a module.</p>
+
+
 <h3>Using Name DBs</h3>
 
-<p>Typically, the user begins by constructing a
-name db using <tt>(@(see vl-starting-namedb))</tt>.</p>
+<p>Typically, the user begins by constructing a name db using <tt>(@(see
+vl-starting-namedb names))</tt>, where <tt>names</tt> are just a list of the
+strings that are \"in use.\"</p>
 
-<p>Once constructed, name DBs must be used in a single-threaded
-discipline.  That is, the functions for generating names actually return
-<tt>(mv fresh-name db-prime)</tt>, and to ensure that a sequence of
-generated names are unique, one must always use the most recently returned
-db to generate subsequent names.</p>
+<p>Once constructed, name DBs must be used in a single-threaded discipline.
+That is, the functions for generating names actually return <tt>(mv fresh-name
+db-prime)</tt>, and to ensure that a sequence of generated names are unique,
+one must always use the most recently returned db to generate subsequent
+names.</p>
 
 <p>Two functions are provided for generating names:</p>
 
@@ -351,92 +359,39 @@ number <tt>n</tt> such that the name <tt>prefix_n</tt> is not in use.</p>
 produce a name with <tt>vl-namedb-indexed-name</tt>.</p>
 
 <p>We use these functions for different purposes.  We think that @(see
-vl-namedb-indexed-name) should be used for \"throwaway\" names that don't
-need to be reliable or understandable, such as the names of temporary wires to
-be generated for split-up expressions.  Meanwhile, @(see
-vl-namedb-plain-name) should be used for splitting up instance names or in
-any other cases where a reliable name is desired.</p>
+vl-namedb-indexed-name) should be used for \"throwaway\" names that don't need
+to be reliable or understandable, such as the names of temporary wires to be
+generated for split-up expressions.  Meanwhile, @(see vl-namedb-plain-name)
+should be used for splitting up instance names or in any other cases where a
+reliable name is desired.</p>
 
-<p>Because name DBs make use of fast alists, they should be destroyed
-with <tt>(@(see vl-free-namedb) nf)</tt> when you are done using them.</p>
+<p>Because name DBs make use of fast alists, they should be destroyed with
+<tt>(@(see vl-free-namedb) nf)</tt> when you are done using them.</p>
 
 
 <h3>Freshness Guarantee</h3>
 
 <p>To establish that name DBs generate only fresh names, we introduce the
-function <tt>(@(see vl-namedb-allnames) nf)</tt>.  This function returns a
-list of all names that the name db currently considers to be in use.  We
-prove:</p>
+function <tt>(@(see vl-namedb-allnames) nf)</tt>.  This function returns a list
+of all names that the name db currently considers to be in use.  We prove:</p>
 
 <ul>
 
-<li>Every name in the @(see vl-module->modnamespace) of <tt>mod</tt> is among
-the <tt>allnames</tt> of the initial name db produced by
-<tt>(vl-starting-namedb mod).</tt></li>
+<li>Every name in <tt>names</tt> is among the <tt>allnames</tt> of the initial
+name db produced by <tt>(vl-starting-namedb names).</tt></li>
 
-<li>The <tt>fresh-name</tt>s returned by @(see vl-namedb-indexed-name) or
-@(see vl-namedb-plain-name) are not members of the <tt>allnames</tt> of
-the input db.</li>
+<li>The <tt>fresh-name</tt>s returned by @(see vl-namedb-indexed-name) or @(see
+vl-namedb-plain-name) are not members of the <tt>allnames</tt> of the input
+db.</li>
 
-<li>The <tt>allnames</tt> of the resulting <tt>db-prime</tt> include
-exactly the <tt>allnames</tt> of the input <tt>db</tt>, along with the
-generated <tt>fresh-name</tt>.</li>
-
-</ul>
-
-<p>Together, these theorems ensure that, when properly used, the name db
-will only give you fresh names.</p>
-
-<h3>Motivation and History</h3>
-
-<p>Name generation is a surprisingly important and difficult problem.  It needs
-to be very efficient: we have sometimes found that tens of thousands of fresh
-names are needed.  Toward this goal, our original approach was as follows:</p>
-
-<ul>
-
-<li>Our generated names always looked like <tt>_gen_1</tt>, <tt>_gen_2</tt>,
-etc.</li>
-
-<li>When the first name was needed, a transform would examine the module's
-namespace for the largest <tt>n</tt> such that <tt>_gen_n</tt> was already in
-use.  The name <tt>_gen_{n+1}</tt> would then be used as the first new
-name.</li>
-
-<li>Subsequently, any number of fresh names could then be generated by simply
-increasing the index.  That is, the second name fresh name would be
-<tt>_gen_{n+2}</tt>, the third <tt>_gen_{n+3}</tt>, and so on.</li>
+<li>The <tt>allnames</tt> of the resulting <tt>db-prime</tt> include exactly
+the <tt>allnames</tt> of the input <tt>db</tt>, along with the generated
+<tt>fresh-name</tt>.</li>
 
 </ul>
 
-<p>This scheme was highly efficient because the module's namespace only needed
-to be consulted when generating the first wire's name.  This meant that for
-large modules, generating thousands of names was not very expensive.  It also
-meant that if no fresh names were needed, then the module's namespace was never
-even computed.</p>
-
-<p>But a problem with this scheme is that the generated names are not very good
-or predictable.  This was particularly problematic when instance arrays
-like:</p>
-
-<code>
-basic_flop data [(width - 1):0] (q, ph1, d);
-</code>
-
-<p>would be transformed into something like:</p>
-
-<code>
-basic_flop _gen_19 (q[0], ph1, d[0]);
-basic_flop _gen_18 (q[1], ph1, d[1]);
-basic_flop _gen_17 (q[2], ph1, d[2]);
-</code>
-
-<p>that is, here the instance name <tt>data</tt> has been entirely lost and
-replaced with a bunch of unrelated, stupid names that might easily change when
-the module is translated in the future.</p>
-
-<p>Name DBs basically extend this scheme to allow much better names to be
-generated, while still being quite efficient.</p>
+<p>Together, these theorems ensure that, when properly used, the name db will
+only give you fresh names.</p>
 
 
 <h3>Implementation</h3>
@@ -504,44 +459,6 @@ vl-compatible-with-prefix-set-p) for details.</p>")
 
 
 
-;; (defsection vl-namedb-maybe-initialize
-
-;;   ;; Make sure that the modnamespace is computed, or generate it if it isn't
-;;   ;; available already.  We could do this as part of vl-starting-namedb
-;;   ;; instead, but this allows us to make vl-starting-namedb very cheap and
-;;   ;; avoid computing the modnamespace if it isn't used.
-
-;;   (defund vl-namedb-maybe-initialize (db)
-;;     (declare (xargs :guard (vl-namedb-p db)))
-;;     (if (vl-namedb->names db)
-;;         db
-;;       (let* ((mod   (vl-namedb->mod db))
-;;              (names (and mod
-;;                          (make-lookup-alist (vl-module->modnamespace mod)))))
-;;         (change-vl-namedb db :names names))))
-
-;;   (local (in-theory (enable vl-namedb-maybe-initialize)))
-
-;;   (defthm vl-namedb-p-of-vl-namedb-maybe-initialize
-;;     (implies (force (vl-namedb-p db))
-;;              (vl-namedb-p (vl-namedb-maybe-initialize db))))
-
-;;   (defthm vl-namedb->mod-of-vl-namedb-maybe-initialize
-;;     (equal (vl-namedb->mod (vl-namedb-maybe-initialize db))
-;;            (vl-namedb->mod db))
-;;     :hints(("Goal" :in-theory (disable (force)))))
-
-;;   (defthm subsetp-equal-of-modnamespace-and-vl-namedb-maybe-initialize
-;;     (implies (and (vl-namedb->mod db)
-;;                   (force (vl-namedb-p db)))
-;;              (subsetp-equal
-;;               (vl-module->modnamespace (vl-namedb->mod db))
-;;               (strip-cars (vl-namedb->names (vl-namedb-maybe-initialize db)))))
-;;     :rule-classes ((:rewrite)
-;;                    (:forward-chaining :trigger-terms
-;;                                       ((vl-namedb-maybe-initialize db))))))
-
-
 
 (defsection vl-namedb-allnames
   :parents (vl-namedb-p)
@@ -583,6 +500,32 @@ the freshness guarantee for name DBs, described in @(see vl-namedb-p).</p>"
   (defthm vl-namedb-allnames-of-vl-empty-namedb
     (equal (vl-namedb-allnames (vl-empty-namedb))
            nil)))
+
+
+
+(defsection vl-starting-namedb
+  :parents (vl-namedb-p)
+  :short "@(call vl-starting-namedb) creates a name database that regards
+<tt>names</tt> as already in use."
+
+  (defund vl-starting-namedb (names)
+    (declare (xargs :guard (string-listp names)))
+    (make-vl-namedb :names (make-lookup-alist names)
+                    :pmap nil
+                    :pset nil))
+
+  (in-theory (disable (:executable-counterpart vl-starting-namedb)))
+
+  (local (in-theory (enable vl-starting-namedb)))
+
+  (defthm vl-namedb-p-of-vl-starting-namedb
+    (implies (force (string-listp names))
+             (vl-namedb-p (vl-starting-namedb names))))
+
+  (defthm vl-namedb-allnames-of-vl-starting-namedb
+    (equal (vl-namedb-allnames (vl-starting-namedb names))
+           (list-fix names))
+    :hints(("Goal" :in-theory (enable vl-namedb-allnames)))))
 
 
 
@@ -934,11 +877,15 @@ since doing so will result in fast-alist discipline failures.</p>
 
 (defsection vl-namedb-plain-names
   :parents (vl-namedb-p)
-  :short "@(call vl-namedb-plain-names) returns <tt>(mv fresh-names
-db-prime)</tt>.  When possible, <tt>fresh-names</tt> are just <tt>names</tt>.
-If this is not possible due to name collisions, then some of the
-<tt>fresh_names</tt> may have additional indexes as in @(see
-vl-namedb-indexed-name) and some notes may be printed."
+  :short "Generate a list of fresh names."
+
+  :long "<p>@(call vl-namedb-plain-names) returns <tt>(mv fresh-names
+db-prime)</tt>.</p>
+
+<p>When possible, <tt>fresh-names</tt> are just <tt>names</tt>.  When this is
+not possible due to name collisions, some of the <tt>fresh_names</tt> may have
+additional indexes as in @(see vl-namedb-indexed-name), and notes may be
+printed.</p>"
 
   (defund vl-namedb-plain-names (names db)
     "Returns (MV NAMES' DB')"

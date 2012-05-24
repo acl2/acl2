@@ -50,14 +50,20 @@
   :short "Produces fresh names for a module."
 
   :long "<p>A <b>name factory</b> allows you to easily and efficiently generate
-good, fresh names that are not being used elsewhere in a module.</p>
+good, fresh names that are not being used elsewhere in a Verilog module.  They
+combine a name database (which is a general mechanism for generating fresh
+names; see @(see vl-namedb-p) for details) with a Verilog module in order to
+avoid computing the module's namespace until a name is actually needed.  This
+optimization often saves a lot of consing.</p>
 
 <h3>Using Name Factories</h3>
 
 <p>Typically, given some module <tt>mod</tt>, the user begins by constructing a
 name factory using <tt>(@(see vl-starting-namefactory) mod)</tt>.  Note that it
 is quite cheap to construct a name factory in this way; all expense is delayed
-until the first use of the factory.</p>
+until the first use of the factory.  It is also possible to create a name
+factory without a module using @(see vl-empty-namefactory), which is
+occasionally useful when generating new modules.</p>
 
 <p>Once constructed, name factories must be used in a single-threaded
 discipline.  That is, the functions for generating names actually return
@@ -96,6 +102,8 @@ prove:</p>
 
 <ul>
 
+<li>The <tt>allnames</tt> of the empty name factory is empty.</li>
+
 <li>Every name in the @(see vl-module->modnamespace) of <tt>mod</tt> is among
 the <tt>allnames</tt> of the initial name factory produced by
 <tt>(vl-starting-namefactory mod).</tt></li>
@@ -112,14 +120,6 @@ generated <tt>fresh-name</tt>.</li>
 
 <p>Together, these theorems ensure that, when properly used, the name factory
 will only give you fresh names.</p>
-
-
-<h3>Mod-free Namefactories</h3>
-
-<p>It is also possible to create a name factory without a module using @(see
-vl-empty-namefactory).  This is occasionally useful when generating new
-modules.  The freshness guarantee is that the <tt>allnames</tt> of the empty
-name factory is empty.</p>
 
 
 <h3>Motivation and History</h3>
@@ -176,49 +176,18 @@ generated, while still being quite efficient.</p>
 
 <h3>Implementation</h3>
 
-<p>A name factory has four fields:</p>
+<p>A name factory has two fields:</p>
 
 <ul>
 <li><tt>mod</tt>, the module that we are generating names for, or <tt>nil</tt>
 if there is no such module (e.g., for empty name factories).</li>
-<li><tt>modns</tt>, a fast alist that associates strings to <tt>t</tt>.</li>
-<li><tt>pmap</tt>, a fast alist that associates strings to natural numbers.</li>
-<li><tt>plist</tt>, a fast alist that associates strings to <tt>t</tt>.</li>
+<li><tt>namedb</tt> is an ordinary @(see vl-namedb-p) that we use to generate
+fresh names.</li>
 </ul>
 
-<p><u>Invariant A1</u>.  Either <tt>modns</tt> is <tt>nil</tt>, or, when
-<tt>mod</tt> is non-nil, every name in the @(see vl-module->modnamespace) of
-<tt>mod</tt> must be bound in it.</p>
-
-<p><u>Invariant B1</u>.  The <tt>pmap</tt> is empty whenever <tt>modns</tt> is
-empty.</p>
-
-<p><u>Invariant B2</u>.  Each <tt>prefix</tt> bound in <tt>pmap</tt> is bound
-to <tt>(@(see vl-pgenstr-highest) prefix (strip-cars modns))</tt>.</p>
-
-<p><u>Invariant C1</u>.  The <tt>plist</tt> binds exactly those
-<tt>prefix</tt>es that are bound in <tt>pmap</tt>.</p>
-
-<p>Intuitively, the <tt>modns</tt> represents the set of all names that are
-currently in use.  We use a fast-alist representation so that we can very
-quickly determine whether a plain name is available.</p>
-
-<p>Meanwhile, the <tt>pmap</tt> allows us to use something much like the
-\"historic scheme\" to quickly generate indexed names.  In particular, it binds
-some prefixes with their highest used index.  This way, we only need to scan
-the <tt>modns</tt> once per prefix.</p>
-
-<p>The <tt>plist</tt> is really just an optimization that allows us to avoid
-needing to shrink the plists.  See the discussion in @(see
-vl-compatible-with-prefix-set-p) for details.</p>")
-
-;; (defthm vl-namefactory->pmap-when-no-modns
-;;   (implies (and (not (vl-namefactory->modns x))
-;;                 (force (vl-namefactory-p x)))
-;;            (not (vl-namefactory->pmap x)))
-;;   :hints(("Goal"
-;;           :in-theory (disable vl-namefactory-okp-when-vl-namefactory-p)
-;;           :use ((:instance vl-namefactory-okp-when-vl-namefactory-p)))))
+<p>The invariant we maintain is that either the namedb is empty, or every name
+in the @(see vl-module->modnamespace) of <tt>mod</tt> must be bound in
+it.</p>")
 
 (defthm subsetp-equal-of-modnamespace-when-vl-namefactory-p
   (implies (and (vl-namedb->names (vl-namefactory->namedb x))
@@ -229,30 +198,6 @@ vl-compatible-with-prefix-set-p) for details.</p>")
   :hints(("Goal"
           :in-theory (disable vl-namefactory-okp-when-vl-namefactory-p)
           :use ((:instance vl-namefactory-okp-when-vl-namefactory-p)))))
-
-;; (defthm vl-namefactory->pset-under-set-equivp
-;;   (implies (force (vl-namefactory-p x))
-;;            (set-equivp (strip-cars (vl-namefactory->pset x))
-;;                           (strip-cars (vl-namefactory->pmap x))))
-;;   :hints(("Goal"
-;;           :in-theory (disable vl-namefactory-okp-when-vl-namefactory-p)
-;;           :use ((:instance vl-namefactory-okp-when-vl-namefactory-p)))))
-
-;; (defthm hons-assoc-equal-of-vl-namefactory->pmap
-;;   ;; This is better than HONS-ASSOC-EQUAL-WHEN-VL-PREFIX-MAP-CORRECT-P, because
-;;   ;; we avoid the free variable NAMES by explicitly saying to consider the cars
-;;   ;; of MODNS.
-;;   (implies (and (vl-namefactory-p factory)
-;;                 (hons-assoc-equal prefix (vl-namefactory->pmap factory)))
-;;            (equal (hons-assoc-equal prefix (vl-namefactory->pmap factory))
-;;                   (let ((names (strip-cars (vl-namefactory->modns factory))))
-;;                     (cons prefix (vl-pgenstr-highest prefix names)))))
-;;   :hints(("goal"
-;;           :in-theory (disable hons-assoc-equal-when-vl-prefix-map-correct-p)
-;;           :use ((:instance hons-assoc-equal-when-vl-prefix-map-correct-p
-;;                            (pmap (vl-namefactory->pmap factory))
-;;                            (names (strip-cars (vl-namefactory->modns factory))))))))
-
 
 
 (defsection vl-namefactory-maybe-initialize
@@ -268,12 +213,9 @@ vl-compatible-with-prefix-set-p) for details.</p>")
     (if (vl-namedb->names (vl-namefactory->namedb factory))
         factory
       (let* ((mod   (vl-namefactory->mod factory))
-             (modns (and mod
-                         (make-lookup-alist (vl-module->modnamespace mod)))))
+             (modns (and mod (vl-module->modnamespace mod))))
         (change-vl-namefactory factory :namedb
-                               (change-vl-namedb
-                                (vl-namefactory->namedb factory)
-                                :names modns)))))
+                               (vl-starting-namedb modns)))))
 
   (local (in-theory (enable vl-namefactory-maybe-initialize)))
 
@@ -334,6 +276,7 @@ vl-namefactory-p).</p>"
                   nil)))))
 
   (local (in-theory (enable vl-namefactory-allnames
+                            vl-starting-namedb
                             vl-namedb-allnames
                             vl-namefactory-maybe-initialize)))
 
@@ -371,6 +314,7 @@ vl-namefactory-p) for all name factory documentation.</p>"
              (equal (vl-namefactory-allnames (vl-starting-namefactory mod))
                     (vl-module->modnamespace mod)))
     :hints(("Goal" :in-theory (e/d (vl-namefactory-allnames
+                                    vl-starting-namedb
                                     vl-namedb-allnames
                                     vl-namefactory-maybe-initialize)
                                    ((force))))
@@ -431,30 +375,9 @@ looks like <tt>prefix_n</tt> for some natural number <tt>n</tt>, and returns
 
   (local (in-theory (enable vl-namefactory-indexed-name)))
 
-  ;; (local (defthm lemma
-  ;;          (implies (and (vl-prefix-map-correct-p-aux domain pmap names)
-  ;;                        (string-listp domain)
-  ;;                        (stringp prefix))
-  ;;                   (vl-prefix-map-correct-p-aux
-  ;;                    domain
-  ;;                    (cons (cons prefix (+ 1 (vl-pgenstr-highest prefix names))) pmap)
-  ;;                    (cons (vl-pgenstr prefix (+ 1 (vl-pgenstr-highest prefix names))) names)))
-  ;;          :hints(("Goal"
-  ;;                  :in-theory (enable vl-prefix-map-correct-p-aux)
-  ;;                  :do-not '(generalize fertilize)))))
-
   (local (defthm lemma2
            (implies (hons-assoc-equal prefix pmap)
                     (member-equal prefix (strip-cars pmap)))))
-
-  ;; (local (defthm lemma3
-  ;;          (implies (and (vl-prefix-map-correct-p pmap names)
-  ;;                        (vl-string-keys-p pmap)
-  ;;                        (stringp prefix))
-  ;;                   (vl-prefix-map-correct-p
-  ;;                    (cons (cons prefix (+ 1 (vl-pgenstr-highest prefix names))) pmap)
-  ;;                    (cons (vl-pgenstr prefix (+ 1 (vl-pgenstr-highest prefix names))) names)))
-  ;;          :hints(("goal" :in-theory (enable vl-prefix-map-correct-p)))))
 
   (verify-guards vl-namefactory-indexed-name)
 
@@ -476,6 +399,7 @@ looks like <tt>prefix_n</tt> for some natural number <tt>n</tt>, and returns
                      (vl-namefactory-allnames factory))))
     :hints (("Goal"
              :in-theory (enable vl-namefactory-maybe-initialize
+                                vl-starting-namedb
                                 vl-namefactory-allnames)
              :do-not-induct t))
     :otf-flg t)
@@ -487,114 +411,9 @@ looks like <tt>prefix_n</tt> for some natural number <tt>n</tt>, and returns
                    (mv-nth 0 (vl-namefactory-indexed-name prefix factory))
                    (vl-namefactory-allnames factory))))
     :hints(("Goal" :in-theory (enable vl-namefactory-allnames
+                                      vl-starting-namedb
                                       vl-namefactory-maybe-initialize)))))
 
-
-
-;; (defsection vl-unlike-any-prefix-p
-;;   :parents (vl-namefactory-p)
-;;   :short "@(call vl-unlike-any-prefix-p) determines whether for all <tt>p</tt>
-;; in <tt>prefixes</tt>, <tt>(@(see vl-pgenstr-p) p name)</tt> is false."
-
-;;   :long "<p>We use this function in the implementation of @(see
-;; vl-namefactory-plain-name).  When requesting a plain name, one might ask for a
-;; name like <tt>foo_3</tt>, which could screw up the prefix map if we are using
-;; <tt>foo</tt> as a prefix.</p>
-
-;; <p>One solution would be to fix up the prefix map when this occurs.  But we
-;; take the easier approach of just not allowing you to request any name that
-;; matches a current prefix.</p>
-
-;; @(def vl-unlike-any-prefix-p)"
-
-;;   (defund vl-unlike-any-prefix-p (name prefixes)
-;;     ;; Ensure that NAME does not look like a PGENSTR for any of these prefixes.
-;;     (declare (xargs :guard (and (stringp name)
-;;                                 (string-listp prefixes))))
-;;     (or (atom prefixes)
-;;         (and (not (vl-pgenstr-p (car prefixes) name))
-;;              (vl-unlike-any-prefix-p name (cdr prefixes)))))
-
-;;   (local (in-theory (enable vl-unlike-any-prefix-p)))
-
-;;   (defthm vl-unlike-any-prefix-p-when-atom
-;;     (implies (atom prefixes)
-;;              (vl-unlike-any-prefix-p name prefixes)))
-
-;;   (defthm vl-unlike-any-prefix-p-of-cons
-;;     (equal (vl-unlike-any-prefix-p name (cons a x))
-;;            (and (not (vl-pgenstr-p a name))
-;;                 (vl-unlike-any-prefix-p name x))))
-
-;;   (defthm vl-pgenstr-p-when-vl-unlike-any-prefix-p
-;;     (implies (and (member-equal key prefixes)
-;;                   (vl-unlike-any-prefix-p name prefixes))
-;;              (not (vl-pgenstr-p key name))))
-
-;;   (encapsulate
-;;    ()
-;;    (local (defthm lemma
-;;             (implies (and (subsetp-equal x y)
-;;                           (vl-unlike-any-prefix-p name y))
-;;                      (vl-unlike-any-prefix-p name x))
-;;             :hints(("Goal" :induct (len x)))))
-
-;;    (defcong set-equivp equal (vl-unlike-any-prefix-p name prefixes) 2
-;;      :hints(("Goal"
-;;              :in-theory (e/d (set-equivp)
-;;                              (vl-unlike-any-prefix-p))
-;;              :cases ((vl-unlike-any-prefix-p name prefixes))))))
-
-;;   (encapsulate
-;;    ()
-;;    (local (defthm lemma1
-;;             (implies (not (vl-pgenstr-p key name))
-;;                      (equal (vl-pgenstr-highest key (cons name modns))
-;;                             (vl-pgenstr-highest key modns)))
-;;             :hints(("Goal" :in-theory (enable vl-pgenstr-highest)))))
-
-;;    (local (defthm lemma2
-;;             (implies (and (hons-assoc-equal key pset)
-;;                           (vl-unlike-any-prefix-p name (strip-cars pset)))
-;;                      (equal (vl-pgenstr-highest key (cons name modns))
-;;                             (vl-pgenstr-highest key modns)))))
-
-;;    (local (defthm lemma3
-;;             ;; This might not be a terrible rule to have in general.
-;;             (implies (cdr (hons-assoc-equal a x))
-;;                      (hons-assoc-equal a x))
-;;             :rule-classes :forward-chaining))
-
-;;    (defthm vl-prefix-map-correct-p-aux-when-vl-unlike-any-prefix-p
-;;      (implies (and (vl-prefix-map-correct-p-aux domain pmap names)
-;;                    (vl-unlike-any-prefix-p name (strip-cars pmap)))
-;;               (vl-prefix-map-correct-p-aux domain pmap (cons name names)))
-;;      :hints(("Goal" :in-theory (enable vl-prefix-map-correct-p-aux)))))
-
-;;   (defthm vl-prefix-map-correct-p-when-vl-unlike-any-prefix-p
-;;     (implies (and (vl-prefix-map-correct-p pset modns)
-;;                   (vl-unlike-any-prefix-p name (strip-cars pset)))
-;;              (vl-prefix-map-correct-p pset (cons name modns)))
-;;     :hints(("Goal" :in-theory (enable vl-prefix-map-correct-p)))))
-
-
-
-;; (defun vl-unlike-any-prefix-p-of-strip-cars (name pmap)
-;;   (declare (xargs :guard (and (stringp name)
-;;                               (alistp pmap)
-;;                               (vl-string-keys-p pmap))
-;;                   :verify-guards nil))
-;;   (mbe :logic
-;;        (vl-unlike-any-prefix-p name (strip-cars pmap))
-;;        :exec
-;;        (or (atom pmap)
-;;            (and (not (vl-pgenstr-p (caar pmap) name))
-;;                 (vl-unlike-any-prefix-p-of-strip-cars name (cdr pmap))))))
-
-;; (verify-guards vl-unlike-any-prefix-p-of-strip-cars
-;;                ;; Again, can't give this directly as a :guard-hints...  stupid,
-;;                ;; stupid.
-;;                :hints(("Goal" :in-theory (enable vl-unlike-any-prefix-p))))
 
 
 

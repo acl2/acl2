@@ -465,3 +465,22 @@ as an <tt>inout</tt>, and add a warning that this case is very unusual.</p>"
            (vl-portlist-p (vl-ports-from-portdecls x)))
   :hints(("Goal" :in-theory (enable vl-ports-from-portdecls))))
 
+
+
+(defsection vl-portdecls-with-dir
+
+  (defund vl-portdecls-with-dir (dir x)
+    (declare (xargs :guard (and (vl-direction-p dir)
+                                (vl-portdecllist-p x))))
+    (cond ((atom x)
+           nil)
+          ((eq dir (vl-portdecl->dir (car x)))
+           (cons (car x) (vl-portdecls-with-dir dir (cdr x))))
+          (t
+           (vl-portdecls-with-dir dir (cdr x)))))
+
+  (local (in-theory (enable vl-portdecls-with-dir)))
+
+  (defthm vl-portdecllist-p-of-vl-portdecls-with-dir
+    (implies (vl-portdecllist-p x)
+             (vl-portdecllist-p (vl-portdecls-with-dir dir x)))))

@@ -1163,3 +1163,38 @@ vl-exprlist-p) and return them as a string list."
                 nil)
        :exec (vl-exprlist-has-ops (list :vl-funcall) x)))
 
+
+
+
+(defsection vl-partition-plainargs
+
+; BOZO probably need to find this a better home
+
+  (defund vl-partition-plainargs (x inputs outputs inouts unknowns)
+    "Returns (MV INPUTS OUTPUTS INOUTS UNKNOWNS)"
+    (declare (xargs :guard (vl-plainarglist-p x)))
+    (b* (((when (atom x))
+          (mv inputs outputs inouts unknowns))
+         (dir (vl-plainarg->dir (car x)))
+         ((when (eq dir :vl-input))
+          (vl-partition-plainargs (cdr x) (cons (car x) inputs) outputs inouts unknowns))
+         ((when (eq dir :vl-output))
+          (vl-partition-plainargs (cdr x) inputs (cons (car x) outputs) inouts unknowns))
+         ((when (eq dir :vl-inout))
+          (vl-partition-plainargs (cdr x) inputs outputs (cons (car x) inouts) unknowns)))
+      (vl-partition-plainargs (cdr x) inputs outputs inouts (cons (car x) unknowns))))
+
+  (local (in-theory (enable vl-partition-plainargs)))
+
+  (defthm vl-partition-plainarg-basics
+    (implies (and (force (vl-plainarglist-p x))
+                  (force (vl-plainarglist-p inputs))
+                  (force (vl-plainarglist-p outputs))
+                  (force (vl-plainarglist-p inouts))
+                  (force (vl-plainarglist-p unknowns)))
+             (b* (((mv inputs outputs inouts unknowns)
+                   (vl-partition-plainargs x inputs outputs inouts unknowns)))
+               (and (vl-plainarglist-p inputs)
+                    (vl-plainarglist-p outputs)
+                    (vl-plainarglist-p inouts)
+                    (vl-plainarglist-p unknowns))))))
