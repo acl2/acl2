@@ -125,22 +125,20 @@ sub skip_certify_books {
     my $str = shift;
     my $pos = 0;
     my @strs = ();
-    while (1) {
-	my @match = $str =~ /(\((?:acl2::)?certify-book)/i;
-	if (! @match) { last; }
-	my $substr = $match[0];
-	my $next = index($str, $substr, $pos);
-	if ($next == -1) {
-	    push(@strs, substr($str,$pos));
-	    return join("", @strs);
-	}
-	push (@strs, substr($str,$pos,$next-$pos));
-	my ($done, $depth, $newpos) = find_matching_parens($str, 1, $next+1);
+    my @match;
+    while ($str =~ m/(\((?:acl2::)?certify-book)/gi) {
+	my $beg = pos($str) - length($1);
+	my $end = pos($str);
+	push (@strs, substr($str,$pos,$beg-$pos));
+	my ($done, $depth, $newpos) = find_matching_parens($str, 1, $end);
 	if ($done) {
 	    return join("", @strs);
 	}
 	$pos = $newpos;
+	pos($str) = $pos;
     }
+    push (@strs, substr($str, $pos));
+    return join("", @strs);
 }
 
 
