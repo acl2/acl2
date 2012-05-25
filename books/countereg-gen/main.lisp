@@ -691,38 +691,24 @@ eg:n/a")
      (mv :vacuous A r. BE.))))
 
 (defrec run-hist% 
-  (((|#cts| . cts) (|#wts| . wts) (|#vacs| . vacs) |#dups|)
-   (init-A hyps concl vars)
-   (end-time start-time) type-alist elide-map . name)
-; end-time changes only at the very end of the search process
-; hyps/concl/vars, init-A are dpll intra-loop invariants, but change at the
-; start of each loop iteration.
-; elide-map,name and start dont change at all, they are subgoal invariants.
+  ((|#cts| . cts) (|#wts| . wts) (|#vacs| . vacs) . |#dups|)
+; each test run statistics/results are accumulated in run-hist%
   NIL)
 
 (defun run-hist%-p (v)
   (declare (xargs :guard T))
   (case-match v ;its a good thing I dont use case-match run-hist%
     ;anywhere else. The internal layout of run-hist% is thus hidden.
-    (('run-hist% ((|#cts| . cts) (|#wts| . wts) (|#vacs| . vacs) |#dups|)
-                 (init-A hyps concl vars)
-                 (end start) type-alist elide-map . name)
+    (('run-hist% (|#cts| . cts) (|#wts| . wts) (|#vacs| . vacs) . |#dups|)
+              
      (and (symbol-doublet-list-listp cts)
           (symbol-doublet-list-listp wts)
           (symbol-doublet-list-listp vacs)
-          (rationalp start)
-          (rationalp end)
           (unsigned-29bits-p |#wts|)
           (unsigned-29bits-p |#cts|)
           (unsigned-29bits-p |#vacs|)
-          (unsigned-29bits-p |#dups|)
-          (pseudo-term-listp hyps)
-          (pseudo-termp concl)
-          (symbol-doublet-listp init-A)
-          (symbol-alistp elide-map) ;actually symbol term alist
-          (symbol-alistp type-alist) ; ACL2 type alist
-          (stringp name)
-          (symbol-listp vars)))))
+          (unsigned-29bits-p |#dups|)))))
+          
 
 (defmacro run-hist-1+ (fld)
 "increments the number-valued fields of run-hist%"
@@ -1322,16 +1308,26 @@ enumerator call expression")
                                  (cons (cons x call) ans.)))))
     
 
+;bugfix May 24 '12
+;partial-A needs to be quoted to avoid being confused with function app
+(def kwote-symbol-doublet-list (A)
+  (decl :sig ((symbol-doublet-listp) -> quoted-constantp))
+  (if (endp A)
+      nil
+    (cons (list 'list (kwote (caar A)) (cadar A))
+          (kwote-symbol-doublet-list (cdr A)))))
 
-(def make-next-sigma-defun (name hyps concl ord-vs type-alist vl wrld ctx)
-  (decl :sig ((string pseudo-term-list pseudo-term symbol-list symbol-alist
-                                fixnum plist-worldp symbol) 
+(def make-next-sigma-defun (name hyps concl ord-vs partial-A type-alist vl wrld ctx)
+  (decl :sig ((string pseudo-term-list pseudo-term symbol-list 
+                      symbol-doublet-listp symbol-alist
+                      fixnum plist-worldp symbol) 
               -> all)
         :doc "return the defun form defining next-sigma function, given a
         list of hypotheses and conclusion (terms)")
   (f* ((defun-form ()
          `(defun next-sigma-current (sampling-method r. BE.)
-              "returns (mv A r. BE.)"
+            "returns (mv A r. BE.)"
+            (declare (ignorable sampling-method)) ;in case ord-vs is nil
               (declare (xargs :guard 
                               (and (member-eq sampling-method
                                               '(:random :be))
@@ -1348,7 +1344,8 @@ enumerator call expression")
                 var-enumcall-alist
 ; sigma will be output as a let-bindings i.e symbol-doublet-listp
                 `(mv ,(make-var-value-list-bindings 
-                       (strip-cars var-enumcall-alist) '())
+                       (strip-cars var-enumcall-alist) 
+                       (kwote-symbol-doublet-list partial-A))
                      r. BE.)))))
        
    (b* ((v-cs%-alst (collect-constraints% 
@@ -1377,6 +1374,7 @@ enumerator call expression")
   (decl :sig ((pseudo-term-list symbol-list) -> all)
         :doc "make the defun form for hypotheses-val defstub")
   `(defun hypotheses-val-current (A)
+     (declare (ignorable A))
      (declare (xargs :guard (symbol-doublet-listp A)))
      (let ,(make-let-binding-for-sigma ord-vars 'A)
        (declare (ignorable ,@ord-vars))
@@ -1386,6 +1384,7 @@ enumerator call expression")
   (decl :sig ((pseudo-term symbol-list) -> all)
         :doc "make the defun form for conclusion-val defstub")
   `(defun conclusion-val-current (A)
+     (declare (ignorable A))
      (declare (xargs :guard (symbol-doublet-listp A)))
      (let ,(make-let-binding-for-sigma ord-vars 'A)
        (declare (ignorable ,@ord-vars))
@@ -1409,7 +1408,29 @@ enumerator call expression")
      (er hard? ctx "~|gcs% being put in globals is of bad type~|")
      state)))
  
+(defrec s-hist-entry% (run-hist 
+                       (hyps vars . concl)
+                       (type-alist . elide-map)
+                       (start-time . end-time) . name) NIL)
 
+(defun s-hist-entry%-p (v)
+  (declare (xargs :guard T))
+  (case-match v ;internal layout hidden
+    (('s-hist-entry% run-hist
+                     (hyps vars . concl)
+                     (type-alist . elide-map)
+                     (start-time . end-time) . name)
+     (and (run-hist%-p run-hist)
+          (pseudo-term-listp hyps)
+          (pseudo-termp concl)
+          (symbol-listp vars)
+          (symbol-alistp elide-map) ;actually symbol term alist
+          (symbol-alistp type-alist) ; ACL2 type alist
+          (stringp name)
+          (rationalp start-time)
+          (rationalp end-time)))))
+          
+  
 (defun s-hist-p (v)
 "is a alist mapping strings to run-hist% records"
   (declare (xargs :guard T))
@@ -1417,7 +1438,7 @@ enumerator call expression")
       (null v)
     (and (consp (car v))
          (stringp (caar v))
-         (run-hist%-p (cdar v))
+         (s-hist-entry%-p (cdar v))
          (s-hist-p (cdr v)))))
 
 (defabbrev get-s-hist-global () 
@@ -1437,23 +1458,33 @@ enumerator call expression")
      state)))
 
 
-(def initial-run-hist% (name hyps concl vars init-A type-alist elide-map start)
-  (decl :sig ((string pseudo-term-list pseudo-term symbol-list 
-                      symbol-alist symbol-alist symbol-alist rational) 
-              -> run-hist%)
-        :doc "make initial run-hist% given args")
+(defconst *initial-run-hist%* 
   (acl2::make run-hist% 
-              :name name :hyps hyps :concl concl :vars vars 
-              :init-A init-A :type-alist type-alist :elide-map elide-map
-              :start-time start :end-time start
               :cts '() :wts '() :vacs '() 
               :|#wts| 0 :|#cts| 0 
               :|#vacs| 0 :|#dups| 0))
 
-(def simple-search (run-hist% gcs%
+(def initial-s-hist-entry% (name hyps concl vars 
+                                       type-alist elide-map start)
+  (decl :sig ((string pseudo-term-list pseudo-term symbol-list 
+                      symbol-alist symbol-alist rational) 
+              -> s-hist-entry%)
+        :doc "make initial s-hist-entry% given args")
+  (acl2::make s-hist-entry% 
+              :name name :hyps hyps :concl concl :vars vars 
+              :type-alist type-alist :elide-map elide-map
+              :start-time start :end-time start
+              :run-hist *initial-run-hist%*))
+          
+(def simple-search (name 
+                    hyps concl vars partial-A 
+                    type-alist
+                    run-hist% gcs%
                     N vl sm programp
                     ctx wrld state)
-  (decl :sig ((run-hist% gcs% fixnum fixnum keyword boolean
+  (decl :sig ((pseudo-term-list pseudo-term symbol-list 
+               symbol-doublet-listp symbol-alist
+               run-hist% gcs% fixnum fixnum keyword boolean
                symbol plist-world state) 
               -> (mv erp (list boolean run-hist% gcs%) state))
         :mode :program
@@ -1474,18 +1505,13 @@ Use :simple search strategy to find counterexamples and witnesses.
      returns (list stop? run-hist% gcs%) where stop? is T when
      stopping condition is satisfied.
 ")
-  (b* ((hyps   (access run-hist% hyps))
-       (concl  (access run-hist% concl))
-       (ord-vs (access run-hist% vars))
-       (acl2-type-alist (access run-hist% type-alist))
-       (name   (access run-hist% name))
-       (hyp-val-defun   (make-hypotheses-val-defun hyps ord-vs))
-       (concl-val-defun (make-conclusion-val-defun concl ord-vs))
+  (b* ((hyp-val-defun   (make-hypotheses-val-defun hyps vars))
+       (concl-val-defun (make-conclusion-val-defun concl vars))
        (- (cw? (debug-flag vl) 
-               "~%~%Subgoal ~x0  hyp/concl defuns: ~| ~x1 ~x2~|" 
+               "~%~%~x0  hyp/concl defuns: ~| ~x1 ~x2~|" 
                name hyp-val-defun concl-val-defun))
        (next-sigma-defun (make-next-sigma-defun name hyps concl 
-                                                ord-vs acl2-type-alist
+                                                vars partial-A type-alist
                                                 vl wrld ctx))
        (- (cw? (debug-flag vl) "next-sigma : ~| ~x0~|" next-sigma-defun))
        (rseed. (getseed state))
@@ -1494,7 +1520,7 @@ Use :simple search strategy to find counterexamples and witnesses.
         `(acl2::state-global-let*
           ((acl2::guard-checking-on ,(if programp :none nil)))
           (b* (((mv stop? rseed. run-hist% gcs%)
-                (run-tests. ,N ,sm ,vl ',ord-vs
+                (run-tests. ,N ,sm ,vl ',vars
                             ,rseed. ',run-hist% ',gcs%))
                (state (putseed rseed. state)))
            (prog2$ 
@@ -1551,8 +1577,8 @@ Use :simple search strategy to find counterexamples and witnesses.
     (mv erp (caddr trval) state))))
 
 
-(def select (hyps concl vars debug)
-  (decl :sig ((pseudo-term-list pseudo-term (and cons symbol-list) boolean) 
+(def select (terms debug)
+  (decl :sig ((pseudo-term-list boolean) 
               -> symbol)
         :doc "choose the variable with least dependency. Build a dependency
   graph, topologically sort it and return the first sink we find.")
@@ -1561,8 +1587,8 @@ Use :simple search strategy to find counterexamples and witnesses.
 ;SELECT Ideal Situation:: No variable should be picked before the variable it
 ;depends on has been selected and assigned
 
-  (b* ((nconcl (dumb-negate-lit concl))
-       (G (build-variable-dependency-graph (cons nconcl hyps) vars))
+  (b* ((vars (all-vars-lst terms))
+       (G (build-variable-dependency-graph terms vars))
 ;TODO: among the variables of a component, we should vary
 ;the order of selection of variables!!
        (var (car (last (approximate-topological-sort G debug))))
@@ -1679,24 +1705,6 @@ made to x already.")
   (assert$ (not (member-eq x vars)) (mv NIL (list shyps sconcl) state))))
                   
 
-
-
-
-;The following 3 abbreviations that are only used for making code more readable
-;and concise.
-
-;hyps, concl, vars and init-A change in every iteration of incremental search
-(defabbrev get-run-hist-dpll-loop-variants () 
-  (mv (access run-hist% hyps)
-      (access run-hist% concl)
-      (access run-hist% vars)
-      (access run-hist% init-A)))
-
-(defabbrev update-run-hist-dpll-loop-variants ()
-  (acl2::change run-hist% run-hist%
-                :hyps H~ :concl C~
-                :vars vars~ :init-A init-A~))
-
 (defun put-val-A (name val dlist)
   (declare (xargs :guard (symbol-doublet-listp dlist)))
   (cond ((endp dlist) (list (list name val)))
@@ -1705,55 +1713,33 @@ made to x already.")
         (t (cons (car dlist)
                  (put-val-A name val (cdr dlist))))))
 
-;I moved this out of a f* because I needed this function is at least 2 funs
-; May 14 '12: Added an extra parameter v-cs%-alst for optimization
-(defabbrev assign-propagate (x1 i cs%)
-  "assign a value to x1 and propagate his new information to obtain new a%"
-;NOTE: When assigning, I ignore nconcl constraint. This might change.
-;free variables: run-hist% gcs%  vl ctx wrld state
-  (b* (((mv H C vars init-A) (get-run-hist-dpll-loop-variants))
-       (- (cw? (debug-flag vl)
-"~|assign-propagate: cs% is ~x0~|" cs%))
-       (cs% (if cs% cs%
-              (assert$ (member-eq x1 vars)
-                       (cdr (assoc-eq x1 (collect-constraints% 
-                                          H vars (access run-hist% type-alist)
-                                          vl wrld))))))
-;NOTE: I am not taking into account type constraint from nconcl at the moment.
-       
-       ((mv erp (list a kind i) state) (assign-value x1 i cs%
-                                                   init-A vl 
-                                                   ctx wrld state))
-       (- (and erp (cw? (normal-output-flag vl)
-"~|Error: assign-value failed!")))
-       ((mv erp (list H~ C~) state)  (propagate x1 a H C vl state))
-       ((mv vars~ init-A~) (mv (vars-in-dependency-order H~ C~ vl wrld)
-                               (put-val-A x1 a init-A)));bugfix
-; init-A is a symbol-doublet-listp
-       (str (if erp 'ACL2::BAD 'ACL2::GOOD))
-       (- (cw? (verbose-flag vl)
-"~|Observation: Propagate assignment was ~x0.~|" str))
-       (run-hist%~ (if erp run-hist%
-; Bugfix: Updating a faulty propagation will result in unrecoverability
-; But do update i in a%
-                     (update-run-hist-dpll-loop-variants))))
-   (value (acl2::make a% 
-                      :run-hist run-hist%~ :gcs gcs%
-                      :inconsistent? erp :cs cs%
-                      :var x1 :val a :kind kind :i i))))
 
 
 
-; a% represents the snapshot of the result of one dpll loop
-(defrec a% (run-hist gcs inconsistent? (var cs val kind i)) NIL)
+
+; a% represents the snapshot of the beginning of the dpll do-while loop
+(defrec a% (;partial-A is the list of assigns made till now
+            (hyps concl partial-A) ;args to simple-search
+            (run-hist . gcs) ;accumulate in simple-search
+            ((var . cs) val kind i . inconsistent?) 
+;result of assign and propagate
+            ) 
+  NIL)
 ;Take special note of field names: run-hist and gcs, % is intentionally not
 ;used in these field names
 (defun a%-p (v)
   (declare (xargs :guard T))
   (case-match v
-    (('a% run-hist gcs inconsistent? (var cs val kind i))     
+    (('a% run-hist 
+          (hyps concl partial-A) 
+          (run-hist . gcs) 
+          ((var . cs) val kind i . inconsistent?))
+
      ;==>
-     (and (symbolp var)
+     (and (pseudo-term-listp hyps)
+          (pseudo-termp concl)
+          (symbol-doublet-listp partial-A)
+          (symbolp var)
           (pseudo-termp val)
           (member-eq kind (list :na :implied :decision))
           (natp i)
@@ -1762,21 +1748,112 @@ made to x already.")
           (run-hist%-p run-hist)
           (gcs%-p gcs)))))
                                    
-(defun a%-listp (v)
+(defun a%-listp (v) ;STACK
   (declare (xargs :guard T))
   (if (atom v)
       (null v)
     (and (a%-p (car v))
          (a%-listp (cdr v)))))
 
+
+; defabbrev was a BAD idea. I should make this a defun, to avoid variable
+; capture bugs. For example I was assigning .. :var x ... instead of :var x1
+; below, where x would have been the previously selected variable and unless I
+; tested carefully I would not have gotten hold of this simple programming err.
+; May 24th '12: making this into a defun
+(def assign-propagate (x1 i a%
+                          H C partial-A 
+                          run-hist% gcs%
+                          type-alist vl ctx wrld state)
+  (decl :sig ((symbol fixnum (oneof a% NIL)
+                      pseudo-term-list pseudo-term symbol-doublet-list
+                      run-hist% gcs% 
+                      symbol-alist fixnum symbol plist-world state)
+              -> (mv erp a% state))
+        :mode :program
+        :doc "assign a value to x1 and propagate this new info to obtain new a%
+if a% arg is NIL o.w obtain the updated a%")
+;NOTE: When assigning, I ignore nconcl constraint. This might change.
+  (b* ((vars (all-vars-lst (cons C H)))
+       (cs% (if a% (access a% cs)
+              (assert$ (member-eq x1 vars)
+                       (cdr (assoc-eq x1 (collect-constraints% 
+                                          H vars type-alist
+                                          vl wrld))))))
+;NOTE: I am not taking into account type constraint from nconcl at the moment.
+       
+       ((mv erp (list a kind i) state) (assign-value x1 i cs%
+                                                   partial-A vl 
+                                                   ctx wrld state))
+       (a% (or a% ;if null, we should make a new record
+               (acl2::make a% 
+                           :hyps H :concl C 
+                           :partial-A partial-A
+                           :run-hist run-hist% :gcs gcs%
+                           :inconsistent? erp :cs cs%
+                           :var x1 :val a :kind kind :i i)))
+       (- (and erp (cw? (normal-output-flag vl)
+"~|Error: assign-value failed!")))
+       ((mv erp (list H~ C~) state) (propagate x1 a H C vl state))
+       (partial-A~  (put-val-A x1 a partial-A));bugfix
+; partial-A is a symbol-doublet-listp
+       (str (if erp 'ACL2::BAD 'ACL2::GOOD))
+       (- (cw? (verbose-flag vl)
+"~|Observation: Propagate assignment was ~x0.~|" str)))
+; But do update i in a% always, and partial-A when consistent
+   (if erp 
+       (mv erp H~ C~ 
+           (acl2::change a% a% :inconsistent? T :i i) 
+           state)
+     (mv erp H~ C~ 
+         (acl2::change a% a%
+                       :inconsistent? NIL
+                       :partial-A partial-A~
+                       :val a :i i)
+         state))))
+
+; concise function call in at least 3 diff functions
+; But this still might be a bad idea, see the comment of (def assign-propagate )
+(defabbrev assign-propagate... (x i a%) 
+  (assign-propagate x i a%
+                    H C partial-A
+                    run-hist% gcs%
+                    type-alist 
+                    vl ctx wrld state))
+
 ;mutually tail-recursive incremental (dpll) search prodecure
 (defs 
-  (incremental-search (rem-vars. a% A. 
+  (incremental-search (rem-vars. H C a% A. 
+                                 name type-alist ;subgoal params
                                  N vl sm blimit programp
                                  ctx wrld state)
-; PREcondition: 1. rem-vars has at least one variable
-;               2. i in record a% is <= blimit
-    (decl :sig (((and consp true-listp) a%-p a%-listp 
+
+; INVARIANTS: 
+; - rem-vars has at least one variable
+; - i in record a% is <= blimit
+; - a%.x is in rem-vars, only when we push a% into A., do we remove its x field
+; from rem-vars
+; - H and C are the result of x=a(a%) propagation
+; - A. stores a list of consistent a% whose run-hist,gcs fields
+;   contain the sigma whose values agree with partial-A for
+;   the common variables
+;   
+
+; - a% stores the most recent select-assign-propagate result
+;   It stores apart from x,a,kind,i and inconsistent?, the
+;   snapshot of run-hist% and gcs% just before x was assigned 'a'
+;   The run-hist and gcs fields are update to reflect the simple-search result
+;   just before pushing a% in A.
+;   a% holds H and C snapshots *before* x was assigned! partial-A though is
+;   updated if we notice a consistent assignment x=a, i.e x=a is at the top of
+;   the stack partial-A. if x=a was inconsistent, we dont put it in
+;   partial-A. partial-A is this just an optimization, instead of recreating it
+;   from A. I simply store the whole partial assignment in the top entry of A. itself.
+
+; - rem-vars. is disjoint with vars of partial-A stored in top of A.
+    (decl :sig (((and consp true-listp) 
+                 pseudo-term-list pseudo-term a%-p a%-listp 
+                 string symbol-alist
                  fixnump fixnump (in :random :be :hybrid) fixnump booleanp
                  symbolp plist-worldp state) -> 
                 (mv erp (list boolean run-hist% gcs%) state))
@@ -1791,96 +1868,119 @@ last decision made in Assign. For more details refer to the FMCAD paper.")
 ; dont read them, go directly to the body of the function, refer to these
 ; abbreviations while reading the main code.
 ; NOTE: f* names have defun local scope and not across defuns/clique :(
-    (f* ((simple-search... () (simple-search (access a% run-hist) 
+
+    (f* ((simple-search... () (simple-search name H C 
+                                             (all-vars-lst (cons C H))
+                                             (access a% partial-A)
+                                             type-alist
+                                             (access a% run-hist) 
                                              (access a% gcs)
-                                             N vl sm programp ctx wrld state))
+                                             N vl sm programp 
+                                             ctx wrld state))
+         (backtrack... () (backtrack rem-vars. a% A.
+                                     name type-alist
+                                     N vl sm blimit programp
+                                     ctx wrld state))
          
-         (incremental-search... () (incremental-search rem-vars. a% A.
-                                                       N vl sm blimit programp
-                                                       ctx wrld state)))
+         (recurse... (H C) (incremental-search rem-vars. H C a% A.
+                                               name type-alist
+                                               N vl sm blimit programp
+                                               ctx wrld state)))
 
     (if (endp (cdr rem-vars.))
-; We have just one variable left in P, dont try anything fancy. 
-        (simple-search...)
+; We have just one variable left in P, dont try anything fancy.
+; bugfix May 25 '12: AND backtrack if you are inconsistent!!
+        (if (access a% inconsistent?)
+            (backtrack...)
+        (simple-search...))
 
-      (b* ((`(a% ,run-hist% & ,inconsistent? (,x & ,a ,kind ,i)) a%) 
-;ACHTUNG: a% defrec exposed
-           (- (cw? (debug-flag vl) 
-"~|DPLL: got x=~x0 a=~x1 i=~x2 kind=~x3 bad?=~x4~|" 
-                   x a i kind inconsistent?))
-           ((mv H C vars init-A) (get-run-hist-dpll-loop-variants))
-           (- (cw? (debug-flag vl) 
-"~|DPLL: H=~x0 C=~x1 vars=~x2 init-A=~x3~|" H C vars init-A)))
-           
 ;      in
-       (if (not inconsistent?)
+       (if (not (access a% inconsistent?))
            (b* (((mv erp (list stop? run-hist% gcs%) state)
                  (simple-search...))
                 ((when (or erp stop?))
 ; if theres an error or if we reach stopping condition, simply give up search
                  (mv erp (list stop? run-hist% gcs%) state))
+                ((mv x i) (mv (access a% var) (access a% i)))
+                (partial-A (access a% partial-A))
                 (- (cw? (verbose-flag vl)
 "~|DPLL: Consistent assign to ~x0 whose i = ~x1~|" x i)) 
-; ok lets set up variables for the next iteration
-; (keep in mind that we thread run-hist% and gcs thru the whole search%)
+
+; keep in mind that we thread run-hist% and gcs% thru the assignments to a
+; single variable. update them now. (Invariant 3)
+                (a% (change a% run-hist run-hist%))
+                (a% (change a% gcs gcs%))
                 (rem-vars. (remove-eq x rem-vars.))
                 (A.        (cons a% A.))
-                (x1        (select H C vars (debug-flag vl)))
-                ((er a%)   (assign-propagate x1 0 NIL)))
+; ok lets set up variables for the next iteration
+                (P         (cons (dumb-negate-lit C) H))
+                (x1        (select P (debug-flag vl)))
+; TODO: ignoring errors in assign/propagate fun
+;BUGFIX May 24, stupid type bug. The order of a% was wrong below
+                ((mv & H~ C~ a% state) (assign-propagate... x1 0 NIL)))
 ;           in
-            (incremental-search...))
+            (recurse... H~ C~))
 
 
 ;      ELSE inconsistent (i.e oops a contradiction found in hyps)
          
-         (backtrack rem-vars. a% A.
-                    N vl sm blimit programp
-                    ctx wrld state))))))
+         (backtrack...)))))
            
  
 ; sibling procedure in clique
-  (backtrack (rem-vars. a% A. 
+  (backtrack (rem-vars. a% A. name type-alist
                         N vl sm blimit programp
                         ctx wrld state)
 ;PREcondition: (or (eq kind :implied) (> i blimit))
     (decl :sig (((and consp true-listp) a%-p a%-listp 
+                 string symbol-alist
                  fixnum fixnum (in :random :be :hybrid) fixnum boolean
                  symbol plist-world state) 
                 -> (mv erp (list boolean run-hist% gcs%) state))
          :mode :program
          :doc "backtrack in dpll like search")
+   
     (if (or (eq (access a% kind) :implied) 
-            (> (access a% i) blimit))
+            (> (access a% i) blimit)) ;then throw away this a%
         (if (null A.)
 ;       THEN - error out if x0 exceeds blimit
-            (mv T (list NIL (access a% run-hist) (access a% gcs)) state)
+            (prog2$
+             (cw? (verbose-flag vl)
+"~|Incremental search failed to even satisfy the hypotheses.~|")
+            (mv T (list NIL (access a% run-hist) (access a% gcs)) state))
 ;       ELSE
           (b* ((a% (car A.))
                (x (access a% var))
                (- (cw? (verbose-flag vl)
 "~|DPLL: BACKTRACK to x = ~x0 whose i = ~x1~|" x (access a% i)))) 
            (backtrack (union-eq (list x) rem-vars.)
-                      a% (cdr A.)
+                      a% (cdr A.) 
+                      name type-alist
                       N vl sm blimit programp
                       ctx wrld state)))
+
 ;     ELSE a% has a decision which has not reached its backtrack limit
 ; i.e  we have on our hands a variable assigned an inconsistent decision
 ; that fortunately has not exceeded its backtrack limit yet
-      (b* ((`(a% ,run-hist% ,gcs% &  (,x ,cs% & & ,i)) a%) 
+      (b* ((`(a% ,LV & ((,x . &) & & ,i . &)) a%)
+;ACHTUNG: a% defrec exposed
+; H and C are the snapshot just before x was selected
+; partial-A though is the last consistent partial sigma
+           ((list H C partial-A) LV)
+           ((mv run-hist% gcs%) (mv (access a% run-hist) (access a% gcs)))
            (- (cw? (verbose-flag vl)
 "~|DPLL: Repeat assign propagate: x = ~x0 whose current i = ~x1~|" x i))
-           ((er a%) (assign-propagate x i cs%)))
-       (incremental-search rem-vars. a% A.
-                          N vl sm blimit programp
-                          ctx wrld state)))))
+           ((mv & H~ C~ a% state) (assign-propagate... x i a%)))
+       (incremental-search rem-vars. H~ C~ a% A. 
+                           name type-alist
+                           N vl sm blimit programp
+                           ctx wrld state)))))
 
 ;;; The Main counterexample/witness generation function           
-(def cts-wts-search (name hyps concl acl2-type-alist
-                          elide-map start 
+(def cts-wts-search (name H C type-alist elide-map
                           defaults programp 
                           ctx wrld state)
-  (decl :sig ((string pseudo-term-list pseudo-term symbol-alist
-                      symbol-alist rational
+  (decl :sig ((string pseudo-term-list pseudo-term symbol-alist symbol-alist 
                       symbol-alist boolean
                       symbol plist-world state)
               -> (mv erp boolean state))
@@ -1894,11 +1994,10 @@ last decision made in Assign. For more details refer to the FMCAD paper.")
 
 * Input parameters
   - name :: name of subgoal or 'top if run from test?
-  - hyps :: the list of terms constraining the cts and wts search
-  - concl :: term which evaluates to false for a cts and true for a wts
-  - acl2-type-alist :: types inferred by ACL2 forward-chain
+  - H :: hyps - the list of terms constraining the cts and wts search
+  - C :: conclusion
+  - type-alist :: types inferred by ACL2 forward-chain
   - elide-map :: elide-map[v] = term for each elided variable v
-  - start :: internal time at which cts-wts-search was called
   - defaults :: alist overiding the current acl2s-defaults
   - programp :: T when form has a program mode fun or we are in :program
                 Its only use is for efficiency. We use guard-checking :none
@@ -1916,19 +2015,23 @@ last decision made in Assign. For more details refer to the FMCAD paper.")
 
 * What it does
   1. if form has no free variables exit with appropriate return val
-  2. construct a new run-hist% and call simple or incremental search
+  2. construct a new s-hist-entry% and call simple or incremental search
      depending on the search-strategy set in defaults.
-  3. the resulting run-hist%,gcs% are recorded in globals
+  3. the resulting run-hist% (a field in s-hist-entry%), gcs% 
+     are recorded in globals @gcs and @s-hist.
   4. return error triple containing stop? (described in simple-search)
 ")
 
   (f* ((update-cts-search-globals ()
-         (b* ((s-hist (get-s-hist-global))
+         (b* ((s-hist-entry% (change s-hist-entry% run-hist run-hist%))
+              ((mv end state) (acl2::read-run-time state))
+              (s-hist-entry% (change s-hist-entry% end-time end))
+              (s-hist (get-s-hist-global))
 ;note that name is a string so we use equal instead of eq in put-assoc
-;put the pair (name . run-hist%) in a list (looks like a stack)
-                (s-hist (put-assoc-equal name run-hist% s-hist))
-                (state  (put-gcs%-global gcs%))
-                (state  (put-s-hist-global s-hist)))
+;put the pair (name . s-hist-entry%) in a list (looks like a stack)
+              (s-hist (put-assoc-equal name s-hist-entry% s-hist))
+              (state (put-s-hist-global s-hist))
+              (state  (put-gcs%-global gcs%)))
           state)))
                   
   (b* ((N (get-acl2s-default 'num-trials defaults 0)) ;shudnt it be 100?
@@ -1941,18 +2044,21 @@ last decision made in Assign. For more details refer to the FMCAD paper.")
        (sm (get-acl2s-default 'sampling-method defaults :random))
        (ss (get-acl2s-default 'search-strategy defaults :simple))
        (blimit (get-acl2s-default 'backtrack-limit defaults 2))
-       (form  `(implies ,hyps ,concl)))
+       ((mv start state) (acl2::read-run-time state))
+       (form  `(implies (and ,@H) ,C)))
 ;  in
-   (if (constant-value-expressionp form wrld)
+   (if (endp (all-vars-lst (cons C H)));(constant-value-expressionp form wrld)
        ;;dont even try trivial forms like constant expressions
        (b* (((mv erp c state)
              (trans-eval-single-value form ctx state))
-            (run-hist% (initial-run-hist% name hyps concl '() 
-                                          '() acl2-type-alist elide-map start))
+            (s-hist-entry% (initial-s-hist-entry% name H C '()
+                                                  type-alist elide-map start))
             (gcs% (get-gcs%-global))
             ((mv run-hist% gcs%)
              (record-testrun. (if c :witness :counterexample)
-                              '() run-hist% gcs%)))
+                              '() 
+                              (access s-hist-entry% run-hist)
+                              gcs%)))
 ;       in
         (prog2$
          (cw? (verbose-flag vl)
@@ -1962,14 +2068,19 @@ last decision made in Assign. For more details refer to the FMCAD paper.")
           (mv erp NIL state))))
 
 ;ELSE ATLEAST ONE VARIABLE
-     (b* ((vars       (vars-in-dependency-order hyps concl vl wrld))
-          (run-hist%  (initial-run-hist% name hyps concl vars 
-                                        '() acl2-type-alist elide-map start))
-          (gcs%       (get-gcs%-global)))
+     (b* ((vars (vars-in-dependency-order H C vl wrld))
+          (s-hist-entry% (initial-s-hist-entry% name H C vars 
+                                                type-alist elide-map start))
+          (run-hist% (access s-hist-entry% run-hist))
+          (gcs% (get-gcs%-global))
+          (partial-A '()))
 ;     in
       (case ss ;search strategy
         (:simple     (b* (((mv erp (list stop? run-hist% gcs%) state)
-                           (simple-search run-hist% gcs% 
+                           (simple-search name 
+                                          H C vars partial-A
+                                          type-alist
+                                          run-hist% gcs% 
                                           N vl sm programp
                                           ctx wrld state))
                           (state (update-cts-search-globals)))
@@ -1980,22 +2091,31 @@ last decision made in Assign. For more details refer to the FMCAD paper.")
 "~|Error occurred in simple-search.~|"))
                        (mv erp stop? state))))
 
-        (:incremental (b* (((mv H C vars &) (get-run-hist-dpll-loop-variants))
-                           ;;the above and following sets up a% for dpll
-                           (x0      (select H C vars (debug-flag vl)))
-                           ((er a%) (assign-propagate x0 0 NIL))
-
-                           ((mv erp (list stop? run-hist% gcs%) state)
-                            (incremental-search vars a% '()
-                                                N vl sm blimit programp
-                                                ctx wrld state))
+        (:incremental (b* (((mv erp (list stop? run-hist% gcs%) state)
+                            (if (endp (cdr vars))
+;bugfix 21 May '12 - if only one var, call simple search
+                                (simple-search name
+                                               H C vars partial-A
+                                               type-alist
+                                               run-hist% gcs% 
+                                               N vl sm programp
+                                               ctx wrld state)
+                          
+                              (b* ((P  (cons (dumb-negate-lit C) H))
+                                   (x0 (select P (debug-flag vl)))
+                                   ((mv & H~ C~ a% state) 
+                                    (assign-propagate... x0 0 NIL)))
+;                              in
+                               (incremental-search vars H~ C~ a% '()
+                                                   name type-alist
+                                                   N vl sm blimit programp
+                                                   ctx wrld state))))
                            (state (update-cts-search-globals)))
-;TODO - give a warning/error message if erp is true
                        (prog2$ 
-                       (and erp
-                            (cw? (normal-output-flag vl)
+                        (and erp
+                             (cw? (normal-output-flag vl)
 "~|Error occurred in incremental-search.~|"))
-                       (mv erp stop? state))))
+                        (mv erp stop? state))))
         (otherwise (prog2$ 
                     (cw? (normal-output-flag vl)
 "~|Error in search: Only simple & incremental search strategy are available~|")
@@ -2019,32 +2139,6 @@ last decision made in Assign. For more details refer to the FMCAD paper.")
 doesnt work on an make-event
 |#
 
-
-(defxdoc top-level-test?
-  :parents (ACL2::TESTING)
-  :short "Simple top-level random testing(No call to prover)"
-  :long "<tt>top-level-test?</tt> performs a single top-level random test
-  on a formula. It does not use the power of the ACL2 
-  theorem prover to simplify the form under test. This
-  can be used to do a quick and cheap test on a conjecture
-  before attempting a proof attempt.
-  
-  <code>
-   Examples:
-   (top-level-test? (equal (reverse (reverse x)) x))
-  </code>
-
-   top-level-test? will pick up any type-hypothesis explicit
-   mentioned in the form, so unlike in the previous example
-   only random instances of type true-list will be generated
-   by the random-testing code in the following example:
-  <code>
-   (top-level-test? (implies (true-listp x)
-                             (equal (reverse (reverse x)) x)))
-  
-   Usage:
-    (top-level-test? form)
-  </code>")
 
 (defun test-gen-checkpoint ()
   (declare (xargs :mode :program))
@@ -2085,8 +2179,6 @@ doesnt work on an make-event
          (initial-subseq-p (acl2::access acl2::clause-id parent :case-lst)
                            (acl2::access acl2::clause-id child :case-lst)))))
 
-
-
         
 #||    
 ; walk the table up to the parent and do intersection of the types
@@ -2123,7 +2215,7 @@ doesnt work on an make-event
                                                 current-vars wrld ans))))))
 ||#
 
-;---2 functions by Matt, to get elided variable replaced term information---
+;-- 2 functions by Matt, to get elided variable replaced term information --
 (defun get-dest-elim-replaced-terms (elim-sequence)
   (if (endp elim-sequence)
     nil
@@ -2165,137 +2257,6 @@ doesnt work on an make-event
                  (walk-to-ancestors-and-collect-replaced-terms
                   (cdr hist) (append ans1 ans))))))))
                  
-
-;Note: pspv and hist passed are for clause 
-;      not the ones returned by clause-processor in case of backrack hint
-;; (defun test-each-checkpoint (id cl processor pspv hist state)
-;; ;returns (mv erp val state ts$)
-;;   (declare (xargs :mode :program :stobjs (state)))
-  
-;;   (if (get-internal-acl2s-inside-defdata-flag)
-;; ;Dont do testing inside defdata events
-;;       (mv nil nil state)
-;;     (let* 
-;;         ((wrld (w state))
-;;          (term (acl2::prettyify-clause cl 
-;;                                  (acl2::let*-abstractionp state) wrld))
-;;          (fvars (get-free-vars1 term '()))
-;;          (vt-alst (extract-var-typ-alist-from-term term fvars wrld)))
-;; ; If we are at top-level-goal, then initialize a bunch of 
-;; ; per-proof globals
-;;       (er-progn
-;;        (if (equal id '((0) NIL . 0));"Goal"
-;; ;First store the type information available at the top-level goal.
-;; ;Most of the time, this is the strongest type information, since ACL2
-;; ;often throws away some type information. Also this captures custom types
-;; ;that might be expanded away.
-;;            (er-progn
-;;             ;;reset this if the current id is "Goal"
-;;             (set-acl2check-global-goal-var-info nil) 
-;; ;store top-level clause for top-goal, so that we can show output using them
-;;             (set-acl2check-global-top-clause term)
-;; ;this stupid flag is needed by test?
-;;             (set-acl2check-global-found-countereg nil)
-;; ; Data structure:
-;; ; goal-var-info is a alist with
-;; ; key:id of subgoal and val: var-typ-alist of that subgoal
-;;             (set-acl2check-global-goal-var-info (acons id vt-alst nil)))
-;;          (value nil))
-;; ; After the initialization now we see if the current subgoal is 
-;; ; a stable under simplification checkpoint, and we test such subgoals
-
-;; ;We only test subgoals that are stable under simplification
-;; ;i.e we only test the result of a settled-down-clause processor
-;;         (if (mem1 processor  
-;;                   '(;acl2::preprocess-clause
-;;                     ;;acl2::simplify-clause
-;;                     acl2::settled-down-clause 
-;;                     acl2::eliminate-destructors-clause
-;;                     acl2::fertilize-clause
-;;                     acl2::generalize-clause
-;;                     acl2::eliminate-irrelevance-clause
-;;                     acl2::push-clause
-;;                     ))
-;;           (b* ((ens 
-;;                 (acl2::access 
-;;                  acl2::rewrite-constant
-;;                  (acl2::access acl2::prove-spec-var pspv :rewrite-constant)
-;;                  :current-enabled-structure))
-
-;; ;Use forward-chain ACL2 system function to build the context
-;; ;This context, gives us the type-alist ACL2 inferred from the
-;; ;the current subgoal i.e. cl
-;;                ((mv & type-alist &)
-;;                 (acl2::forward-chain cl
-;;                                     (acl2::enumerate-elements cl 0)
-;;                                     nil ; do not force
-;;                                     nil ; do-not-reconsiderp
-;;                                     wrld
-;;                                     ens
-;;                                     (acl2::match-free-override wrld)
-;;                                     state))
-;; ;Here are the sequence of operations taking place
-;; ;1. Convert clause into a (implies hyps conclusion) term
-;; ;2. Get type-alist for the vars in term, by analysing type hypotheses in type
-;; ;3. Get information about elided variables.
-;; ;4. Get var-type-alist info from the ACL2 context into vt-acl2-alst
-;; ;5. Walk up the ancestors to collect strongest type information for 
-;; ;   the free variables of term in strongest-ancestor-subgoal-vt-alst
-;; ;6. Pick the stronger type information from vt-acl2-alst and
-;; ;   strongest-ancestor-subgoal-vt-alst and 
-;;                (GV (get-acl2check-global-goal-var-info))
-;;                (name (acl2::string-for-tilde-@-clause-id-phrase id))
-;;                (var-repl-terms-alst 
-;;                 (walk-to-ancestors-and-collect-replaced-terms hist nil))
-;;                (top-clause (get-acl2check-global-top-clause))
-;;                (vt-acl2-alst 
-;;                 (get-var-types-from-type-alist type-alist fvars nil))
-;;                (strongest-ancestor-subgoal-vt-alst
-;;                 (walk-to-parent-and-collect-type-info id GV fvars wrld vt-alst))
-;;                (final-vt-alst (union-vt-and 
-;;                                strongest-ancestor-subgoal-vt-alst
-;;                                vt-acl2-alst fvars wrld))
-;;                (top-level-outputp 
-;;                 (or (acl2s-defaults :get show-top-level-counterexample)
-;;                     (get-internal-acl2s-inside-test?-flag))))
-;;               (er-progn
-;; ;7. update global, so each goal's strongest type info var-type-alist
-;; ;   is up to date, so we dont walk the table all the way to top
-;;                (set-acl2check-global-goal-var-info 
-;;                 (acons id final-vt-alst GV))
-;; ;8. Test(randomly instantiate free vars and evaluate) clause cl
-;; ;   Print normalized(wrt top-level goal) output if either
-;; ;   global flag is set, or if the call happens inside a test? call.
-;;                (prog2$
-;;                 (cw-ifverbose 
-;;                  (< 3 (acl2s-defaults :get verbosity-level))
-;;                  "DEBUG: name:~x0 acl2-type-alist: ~x1 var-type-alist: ~x2 ~
-;;                   Goal-VT-alst:~x3~%"
-;;                  name vt-acl2-alst strongest-ancestor-subgoal-vt-alst
-;;                  (get-acl2check-global-goal-var-info))
-;;                 (value nil))
-;;                (mv-let 
-;;                 (erp res-of-test state)
-;;                 (run-tests-on-subgoal-and-summarise
-;;                    name term final-vt-alst
-;;                    (and top-level-outputp var-repl-terms-alst)
-;;                    (if top-level-outputp top-clause term)
-;;                    'test-each-checkpoint  state)
-                   
-;;                 (if (and erp (eq :counterexample-found res-of-test))
-;;                   (er-progn 
-;; ; store the fact that we found counterexample in a globalvar
-;;                    (set-acl2check-global-found-countereg t)
-;; ; raise error with nil(prover ABORTs when it returns from this function)
-;;                    (mv t nil state)) 
-;; ; otherwise ignore and pass nil to dummy backtrack hint
-;;                   (value nil)))))
-;; ; For all other subgoals(not stable under simplification) it a no-op
-;;           (value nil))
-        
-;;          ))))
-
-
 
 ;; The following 2 functions need to be revisited and rewritten if necessary
 (defun let-binding->dep-graph-alst (vt-lst ans)
@@ -2356,6 +2317,7 @@ doesnt work on an make-event
 (set-verify-guards-eagerness 0)
 (verify-termination acl2::subcor-var1)      
 (verify-termination subcor-var)
+
 ;expand-lambda : pseudo-termp -> pseudo-termp (without lambdas)
 (mutual-recursion
  (defun expand-lambda (term)
@@ -2542,28 +2504,24 @@ Please report to ACL2s maintainer the context in which this happened!~|")
 
 ;added a flag indicating wether we are printing counterexamples or witnesses
 (defun print-assignments (A-lst top-vars top-cl 
-                               prefix-A elided-var-map vl counteregp state)
+                               elided-var-map vl counteregp state)
 ;perfix-A is assignments made incrementally in dpll search
   (declare (xargs :stobjs (state)
                   :guard (and (symbol-alist-listp A-lst)
                               (symbol-listp top-vars)
                               (natp vl)
-                              (symbol-doublet-listp prefix-A)
                               (symbol-alistp elided-var-map)
                               (booleanp counteregp))))
    (if (endp A-lst)
      (value nil)
      (er-progn
-      (print-assignment (append prefix-A (car A-lst)) top-vars top-cl
+      (print-assignment (car A-lst) top-vars top-cl
                         elided-var-map vl counteregp state)
 ; (naive-print-bindings (convert-conspairs-to-listpairs (car bindings-lst))
 ;                       orig-vars vl)
       (print-assignments (cdr A-lst) top-vars top-cl
-                          prefix-A elided-var-map vl counteregp state))))
+                          elided-var-map vl counteregp state))))
 (logic)
-;----------------------------------------------------------------
-;                         PRINT end                             |
-;----------------------------------------------------------------
 
 
 
@@ -2575,18 +2533,20 @@ Please report to ACL2s maintainer the context in which this happened!~|")
         history alist")
   (if (endp s-hist)
       (value nil)
-    (b* (((cons name run-hist%) (car s-hist))
+    (b* (((cons name s-hist-entry%) (car s-hist))
+         (run-hist% (access s-hist-entry% run-hist))
          (A-lst (if cts-p 
                     (access run-hist% cts)
                   (access run-hist% wts)))
-         (init-A (access run-hist% init-A))
-         (elide-map (access run-hist% elide-map)))
-     (if (endp A-lst)
+         (elide-map (access s-hist-entry% elide-map)))
+     (if (endp A-lst) ;none found
          (print-cts/wts (cdr s-hist) cts-p top-vars top-form vl state)
        (er-progn
         (value (cw? (normal-output-flag vl) "~| [found in : ~x0]~%" name))
+        (value (cw? (debug-flag vl) 
+"~| A-lst:~x0 top-vars:~x1 elide-map:~x2~|" A-lst top-vars elide-map))
         (print-assignments A-lst top-vars top-form 
-                           init-A elide-map vl cts-p state)
+                           elide-map vl cts-p state)
         (print-cts/wts (cdr s-hist) cts-p top-vars top-form vl state))))))
 
 
@@ -2596,10 +2556,11 @@ Please report to ACL2s maintainer the context in which this happened!~|")
         :sig ((s-hist-p natp natp natp state) -> (mv erp all state))
         :doc "print counterexample and witnesses recorded in testing subgoal
 history s-hist.")
-  (b* (((cons '"top" run-hist%) (assoc-equal "top" s-hist))
-       (top-vars (access run-hist% vars))
-       (top-form `(implies (and ,@ (access run-hist% hyps)) 
-                          ,(access run-hist% concl)))
+  (b* (((cons & s-hist-entry%) (assoc-equal "top" s-hist))
+;replaceing & with "top" gives error. '"top" is fine
+       (top-vars (access s-hist-entry% vars))
+       (top-form `(implies (and ,@(access s-hist-entry% hyps)) 
+                          ,(access s-hist-entry% concl)))
        
        ((er &) (if (> num-cts 0)
                    (prog2$
@@ -2618,6 +2579,7 @@ history s-hist.")
 (logic)
 
   
+;for trace$ debugging - remove when satisfied 
 (defun my+ (a b) (+ a b))
 (defun my- (a b) (- a b))
 
@@ -2626,9 +2588,9 @@ history s-hist.")
         :doc "calculate testing time across subgoals")
   (if (endp s-hist)
       0
-    (b* (((cons & run-hist%) (car s-hist)))
-     (my+ (my- (access run-hist% end-time)
-               (access run-hist% start-time))
+    (b* (((cons & s-hist-entry%) (car s-hist)))
+     (my+ (my- (access s-hist-entry% end-time)
+               (access s-hist-entry% start-time))
           (total-time-spent-in-testing (cdr s-hist))))))
       
   
@@ -2656,7 +2618,7 @@ history s-hist.")
        )
    (case-match gcs%
      (('gcs% (total dups . vacs) (num-cts . num-wts) (& . &) (start . end) &)
-
+;ACHTUNG: gcs% defrec exposed
       (b* ((uniq-runs  (my+ num-wts num-cts))
            (sat-runs (my- total (my+ vacs dups)))
            (delta-t-total (my- end start))
@@ -2674,6 +2636,11 @@ history s-hist.")
            ((er &)  (print-s-hist s-hist num-cts num-wts vl state)))
        (value nil)))
      (& (value (cw? (normal-output-flag vl) "~|BAD gcs% found in globals"))))))
+
+;----------------------------------------------------------------
+;                         PRINT end                             |
+;----------------------------------------------------------------
+
 
 
 ;; The following function implements a callback function (computed hint)
@@ -2696,7 +2663,7 @@ history s-hist.")
 ;; This function uses override hint + backtrack hint combination.
 ;; On the top-level GOAL it initializes gcs% and s-hist. On SUBGOALS 
 ;; that are not checkpoints does no-op. On checkpoints it calls the 
-;; cts-wts-search procedure.
+;; cts/wts/search procedure.
 ;; ")
 ; RETURN either (mv t nil state) or (mv nil nil state) 
 ; PRECONDITION -
@@ -2733,8 +2700,8 @@ id processor hyps concl))
           (assign s-hist 
                   (acons "top" 
                         (b* ((vars (all-vars-lst cl))) ;CHECK
-                         (initial-run-hist% "top" hyps concl vars 
-                                            '() '() '() start))
+                         (initial-s-hist-entry% "top" hyps concl vars 
+                                                '() '() start))
                         '()))
           (value nil))))
 
@@ -2779,19 +2746,11 @@ id processor hyps concl))
        (vt-acl2-alst  (acl2::get-var-types-from-type-alist 
                        type-alist (all-vars-lst cl)))
        (- (cw? (debug-flag vl) "~|ACL2 type-alist: ~x0~|" vt-acl2-alst))
-       ((mv start-time state) (acl2::read-run-time state))
        
-       ((mv ?erp stop? state) (cts-wts-search name hyps concl vt-acl2-alst
-                                              ord-elide-map start-time
+       ((mv ?erp stop? state) (cts-wts-search name hyps concl 
+                                              vt-acl2-alst ord-elide-map
                                               (acl2s-defaults-alist) 
-                                              NIL ctx wrld state))
-       (s-hist (get-s-hist-global))
-       ((cons & run-hist%) (assoc-equal name s-hist))
-       ((mv end state) (acl2::read-run-time state))
-       (run-hist% (change run-hist% end-time end))
-       (s-hist (put-assoc-equal name run-hist% s-hist))
-       (state (put-s-hist-global s-hist))
-       )
+                                              NIL ctx wrld state)))
    
 ;  in  
    (if stop?
@@ -2801,7 +2760,7 @@ id processor hyps concl))
           (print-testing-summary-fn vl state))
         (assign print-summary-user-flag T) ;only for use in print-summary-user
         (mv t nil state))
-;ignore errors in cts-wts-search
+;ignore errors in cts search function
      (mv nil nil state))))
 
 
@@ -2930,20 +2889,10 @@ id processor hyps concl))
                     (debug-flag vl))
  "~|ACL2 type-alist for TOP : ~x0~|" vt-acl2-alst))
        ((mv erp ?stop? state) (cts-wts-search "top" hyps concl 
-                                              vt-acl2-alst
-                                              '() start-top
+                                              vt-acl2-alst '() 
                                               defaults programp
                                               ctx wrld state))
-       (s-hist (get-s-hist-global))
-       ;; This relies on the postcondition of cts-wts-search, that
-       ;; atleast one run-hist% is created and put in s-hist global
-       ((cons & run-hist%) (assoc-equal "top" s-hist))
-       ((mv end-top state) (acl2::read-run-time state))
-       (run-hist% (change run-hist% end-time end-top))
-       (s-hist (put-assoc-equal "top" run-hist% s-hist))
-       (state (put-s-hist-global s-hist))
-       
-       
+              
 ; abort b* if top-level-test? failed
 ; or  if form contains a program-mode function
 ; or if test? is called in program-mode
