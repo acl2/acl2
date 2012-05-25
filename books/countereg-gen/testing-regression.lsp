@@ -149,6 +149,7 @@ of which have not yet been verified.  See :DOC verify-guards.
                  (update a2 v2 (update a1 v1 m)))))
 
 ;Conjecture - version#3
+;TODO - I am not trying hard to refute conclusion in incremental
 (test?
  (implies (and (memoryp m)
                (natp a1)
@@ -181,6 +182,7 @@ of which have not yet been verified.  See :DOC verify-guards.
                      (<= b (* 4 c)))
                 (< (expt (- a 1) 2) (* b c))))
 
+;;TODO: C is being printed in quoted form in :incremental
 (thm (implies (and (real/rationalp a)
                      (real/rationalp b)
                      (real/rationalp c)
@@ -191,6 +193,7 @@ of which have not yet been verified.  See :DOC verify-guards.
                      (<= b (* 4 c)))
                 (< (expt (- a 1) 2) (* b c))))
 
+;not giving top-level counterexamples in :incremental
 (time$
 (test? (implies (and (real/rationalp a)
                      (real/rationalp b)
@@ -296,6 +299,8 @@ of which have not yet been verified.  See :DOC verify-guards.
   (equal (nnf (simplify f))
          (simplify (nnf f)))))
 
+; TODO: print-testing-summary should not appear after the summary when a new
+;form is called.
 
 ;; testcase 8 (Moore's example)
 (defun square-root1 (i ri)
@@ -395,14 +400,14 @@ of which have not yet been verified.  See :DOC verify-guards.
                (< n 15))
           (not (factor? k (f n)))))
 
-(acl2s-defaults :set num-trials 10000)
+(acl2s-defaults :set num-trials 100000)
  ;Rerunning the following test 2-3 times will get you atleast two
 ;counterexamples:
 ;-- (K 14) and (N 12)
 ;-- (K 10) and (N 5)
 
 
-(test? ;test? and thm both hang
+(test? 
  (implies (and (posp k)
                (posp n)
                (< n 15))
