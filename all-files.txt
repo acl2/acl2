@@ -711,6 +711,8 @@ hons-extra.lisp
 hons-remove-dups.lisp
 hons-sets.lisp
 interp-function-lookup.lisp
+introduce-var.acl2
+introduce-var.lisp
 load-stobj-tests.lisp
 load-stobj.lisp
 ls.lisp
@@ -814,6 +816,7 @@ acl2-customization.lsp
 cert.acl2
 checkers.lisp
 condcheck.lisp
+dupeinst-check.lisp
 duperhs.lisp
 duplicate-detect.lisp
 leftright.lisp
@@ -2186,6 +2189,7 @@ disassemble.acl2
 disassemble.lisp
 doc-section.lisp
 dump-events.lisp
+equal-by-g-help.lisp
 equal-by-g.lisp
 eval.lisp
 evalable-printing.lisp
