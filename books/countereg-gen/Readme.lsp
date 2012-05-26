@@ -29,7 +29,6 @@ switchnat.lisp
 testing-regression.lsp
 top.lisp
 type.lisp
-unversioned-files-extra.txt
 utilities.lisp
 with-timeout.lisp
 with-timeout-raw.lsp
