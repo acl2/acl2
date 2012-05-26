@@ -68,7 +68,8 @@ DIRS2_EXCEPT_WK_COI = ordinals data-structures bdd ihs arithmetic-2 arithmetic-3
 	data-structures/memories unicode str concurrent-programs/bakery \
 	concurrent-programs/german-protocol deduction/passmore clause-processors \
 	quadratic-reciprocity tools paco hacking security regex \
-        defsort hons-archive serialize wp-gen xdoc-impl system tutorial-problems cutil
+	defsort hons-archive serialize wp-gen xdoc-impl system tutorial-problems cutil \
+	countereg-gen
 DIRS2_EXCEPT_WK = $(DIRS2_EXCEPT_WK_COI) coi misc/misc2
 DIRS2 = $(DIRS2_EXCEPT_WK) workshops
 SHORTDIRS2 = ordinals data-structures bdd
@@ -149,6 +150,9 @@ wp-gen: ordinals
 xdoc-impl: xdoc str tools finite-set-theory/osets
 system: tools arithmetic arithmetic-5 misc
 cutil: xdoc tools str misc finite-set-theory/osets defsort unicode
+countereg-gen: xdoc arithmetic-5 tools defexec finite-set-theory/osets arithmetic-2 \
+	arithmetic-3 arithmetic ordinals
+
 # Note: There is no need to include values for "centaur:", since dependencies
 # are handled by cert.pl in that case.
 # There is also need to include taspi here -- after all, there is actually

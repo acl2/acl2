@@ -1,9 +1,10 @@
 ((:FILES "
 .:
-acl2s-lib.jar
+acl2-customization.lsp
 acl2s-parameter.lisp
 base.lisp
 basis.lisp
+cert.acl2
 certify-book.sh
 data.lisp
 graph.lisp
@@ -13,7 +14,9 @@ Makefile
 mv-proof.lisp
 num-list-fns.lisp
 num-list-thms.lisp
-pkg.lsp
+package.lsp
+portcullis.acl2
+portcullis.lisp
 random.lisp
 random-state-basis1.lisp
 random-state.lisp
