@@ -5918,7 +5918,7 @@
                        (strip-keyword-list fields (cddr lst)))))))
 
 (defun strip-dcls1 (fields lst)
-  (cond ((null lst) nil)
+  (cond ((endp lst) nil)
         ((member-eq (caar lst) '(type ignore ignorable))
          (cond ((member-eq (caar lst) fields) (strip-dcls1 fields (cdr lst)))
                (t (cons (car lst) (strip-dcls1 fields (cdr lst))))))
@@ -5935,7 +5935,7 @@
 ; part of it that specifies a value for one of the fields named.  The result
 ; satisfies plausible-dclsp.
 
-  (cond ((null lst) nil)
+  (cond ((endp lst) nil)
         ((stringp (car lst))
          (cond ((member-eq 'comment fields) (strip-dcls fields (cdr lst)))
                (t (cons (car lst) (strip-dcls fields (cdr lst))))))
@@ -5964,7 +5964,7 @@
                acc)))))
 
 (defun fetch-dcl-fields1 (field-names lst)
-  (cond ((null lst) nil)
+  (cond ((endp lst) nil)
         ((member-eq (caar lst) '(type ignore ignorable))
          (if (member-eq (caar lst) field-names)
              (cons (cdar lst) (fetch-dcl-fields1 field-names (cdr lst)))
@@ -5986,7 +5986,7 @@
 ; INTEGER X Y)) then our output will be (... (INTEGER X Y) ...) where the ...
 ; are the other TYPE entries.
 
-  (cond ((null lst) nil)
+  (cond ((endp lst) nil)
         ((stringp (car lst))
          (if (member-eq 'comment field-names)
              (cons (car lst) (fetch-dcl-fields field-names (cdr lst)))
