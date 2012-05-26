@@ -1,7 +1,7 @@
 #|$ACL2s-Preamble$;
 ;;Author - Harsh Raju Chamarthi (harshrc)
-(ld "pkg.lsp")
-(ld "finite-set-theory/osets/sets.defpkg" :dir :system)
+(ld ;; Newline to fool ACL2/cert.pl dependency scanner
+ "cert.acl2")
 (begin-book t :ttags :all);$ACL2s-Preamble$|#
 
 
@@ -17,12 +17,14 @@
 ;(include-book "testing-stobj")
 ;; (include-book "base")
 (include-book "acl2s-parameter")
-
+(include-book "simple-graph-array")
+(include-book "random-state")
+(include-book "tools/easy-simplify" :dir :system)
 
 ;For now TODO
 
 ;;;======================================================================
-;;;============ Build enumerator expression code ========================
+;;;============ Build enumerator expression code =================e=======
 ;;;======================================================================
 
 ;from the members of an union expression, get the constituents
@@ -276,8 +278,6 @@
                   '(acl2::= acl2::equal acl2::eq acl2::eql
                             acl2::< acl2::<= 
                             acl2::> acl2::>=))))))
-
-(include-book "simple-graph-array")
 
 ;hyp is of form (R term1 term2 ... termn)
 ;alst is basically the adjacency list rep of a graph
@@ -1390,8 +1390,6 @@ enumerator call expression")
        (declare (ignorable ,@ord-vars))
       ,term)))        
 
-(include-book "random-state")
-
 ;NOTE: interesting to note that I cant use defmacro instead of defabbrev
 (defabbrev get-gcs%-global () 
   (if (f-boundp-global 'gcs% state)
@@ -1628,7 +1626,6 @@ made to x already.")
        (value (list val-term :implied |#assigns|))
      (value (list val-term :decision (1+ |#assigns|))))))
 
-(include-book "tools/easy-simplify" :dir :system)
 (def simplify-term (term hyps state)
   (decl :sig ((pseudo-term pseudo-term-list state) 
               -> (mv erp pseudo-term state))

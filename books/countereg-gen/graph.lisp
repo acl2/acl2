@@ -1,5 +1,6 @@
 #|$ACL2s-Preamble$;
-(ld "pkg.lsp")
+(ld ;; Newline to fool ACL2/cert.pl dependency scanner
+ "cert.acl2")
 (acl2::begin-book);$ACL2s-Preamble$|#
 
 ;Author: harshrc

@@ -1,7 +1,7 @@
 #|$ACL2s-Preamble$;
-(ld "pkg.lsp")
+(ld ;; Newline to fool ACL2/cert.pl dependency scanner
+ "cert.acl2")
 (begin-book t);$ACL2s-Preamble$|#
-
 
 (in-package "DEFDATA")
 (set-verify-guards-eagerness 2)
@@ -537,8 +537,6 @@
 
 (defthm random-keyword-type
   (symbolp (car (random-keyword r)))
-  :hints (("Goal" :use (:instance random-symbol-same-package_expand-package 
-                        (sym :acl2-pkg-witness))))
   :rule-classes :type-prescription)
 
 (local (defthm keyword-package-intern

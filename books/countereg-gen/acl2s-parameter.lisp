@@ -1,6 +1,7 @@
 
 (in-package "ACL2")
 (include-book "utilities")
+(include-book "xdoc/top" :dir :system)
 
 ;;; Keep the following defconst synced with all the acl2s parameters
 (defconst *acl2s-parameters* '(num-trials
@@ -70,7 +71,7 @@ being lazy about documentation.
          :short ,short
          :long ,long))))
 
-(include-book "xdoc/top" :dir :system)    
+
   
 (add-acl2s-parameter 
  num-trials 1000

@@ -58,7 +58,8 @@
 
 ;;;;debug/print,trace,stats/log
 
-(ld "pkg.lsp")
+(ld ;; Newline to fool ACL2/cert.pl dependency scanner
+ "cert.acl2")
 (acl2::begin-book t);$ACL2s-Preamble$|#
 
 (in-package "DEFDATA")

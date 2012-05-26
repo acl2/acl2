@@ -1,6 +1,7 @@
 #|$ACL2s-Preamble$;
-(ld "pkg.lsp")
-(ld "finite-set-theory/osets/sets.defpkg" :dir :system)
+(ld ;; Newline to fool ACL2/cert.pl dependency scanner
+ "cert.acl2")
+
 ;;;;Main Author: Peter Dillinger
 ;;;;Extended by Harsh Raju C
 ;;;;Data definition Framework (ACL2 Sedan)
@@ -14,6 +15,8 @@
 
 (include-book "utilities" :load-compiled-file :comp)
 (include-book "acl2s-parameter")
+(include-book "splitnat")
+(include-book "switchnat")
 
 (set-verify-guards-eagerness 2)
 
@@ -2028,7 +2031,8 @@ X:rgbcolors = blue
    (and (posp x)
         (< x 4)))
  (defconst *foo1-values-testing* '(1 2))
- (include-book "graph")
+ (include-book ;; fool dependency scanners
+   "graph")
 (register-custom-type foo1 3 *foo1-values* foop nil)
 (defdata-testing foo1 :test-enumerator *foo1-values-testing*)
  |#
@@ -3800,8 +3804,6 @@ nor a predefined typename~%" dtexp)
                            :proper t)
 
 
-(include-book "splitnat")
-(include-book "switchnat")
 (define-enumeration-type boolean '(t nil))
 
 (set-verify-guards-eagerness 0)

@@ -1,6 +1,6 @@
 #|$ACL2s-Preamble$;
-(ld "pkg.lsp")
-
+(ld ;; Newline to fool ACL2/cert.pl dependency scanner
+ "cert.acl2")
 (acl2::begin-book);$ACL2s-Preamble$|#
 
 
@@ -11,6 +11,8 @@
 (include-book "num-list-fns" :load-compiled-file :comp)
 
 (local (include-book "num-list-thms"))
+(local (include-book "rem-and-floor"))
+(include-book "mv-proof")
 
 (defun weighted-switch-nat-find (rem-weights weights-idx rem-wchoice quotient-x)
   (declare (xargs :guard (and (pos-listp rem-weights)
@@ -123,8 +125,6 @@
                     (* quotient-x (sum-list rem-weights)))))
      :rule-classes (:rewrite :linear))))
  
-(local (include-book "rem-and-floor"))
-
 (defun weighted-switch-nat (weights x)
   (declare (xargs :guard (and (pos-listp weights)
                               (consp weights) ; len >= 1
@@ -251,8 +251,6 @@
                                          (nfix x)) ; help guard verification
                     
                     (mv (cons choice choice-lst) x)))));switched back to mv
-
-(include-book "mv-proof")
 
 (defthm mv-nth--to--my-mv-nth--weighted-switch-nat
   (equal (mv-nth n (weighted-switch-nat y x))

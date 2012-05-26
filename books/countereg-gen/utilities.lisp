@@ -1,5 +1,6 @@
 #|$ACL2s-Preamble$;
-(ld "pkg.lsp")
+(ld ;; Newline to fool ACL2/cert.pl dependency scanner
+ "cert.acl2")
 
 ;;Bunch of utility functions for use by datadef and test?
 ;;mostly copied from data.lisp and acl2-check.lisp

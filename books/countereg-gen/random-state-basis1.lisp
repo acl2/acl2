@@ -1,11 +1,13 @@
 #|$ACL2s-Preamble$;
-(ld "pkg.lsp")
+(ld ;; Newline to fool ACL2/cert.pl dependency scanner
+ "cert.acl2")
 (acl2::begin-book);$ACL2s-Preamble$|#
 
 
 (in-package "DEFDATA")
 (set-verify-guards-eagerness 2)
 (include-book "tools/bstar" :dir :system)
+(local (include-book "arithmetic-2/floor-mod/floor-mod" :dir :system))
 
 (defconst *M31* 2147483647);1 less than 2^31
 (defconst *P1* 16807)
@@ -25,8 +27,6 @@
         (the (unsigned-byte 31) s)
         0))
     0))
-
-(local (include-book "arithmetic-2/floor-mod/floor-mod" :dir :system))
 
 (defthm getseed-unsigned-byte31 
   (unsigned-byte-p 31 (getseed state))

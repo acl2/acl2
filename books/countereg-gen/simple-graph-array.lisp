@@ -1,14 +1,15 @@
 #|$ACL2s-Preamble$;
-(ld "pkg.lsp")
+(ld ;; Newline to fool ACL2/cert.pl dependency scanner
+ "cert.acl2")
 (acl2::begin-book);$ACL2s-Preamble$|#
 
 ;Author: Harsh Raju Chamarthi (harshrc)
 
-
 (in-package "DEFDATA")
 (include-book "tools/bstar" :dir :system)
 (include-book "utilities" :load-compiled-file :comp)
-             
+(include-book "ordinals/lexicographic-ordering-without-arithmetic" :dir :system)
+
 (defun make-n-upto-list (size ans)
 ;make a list of natural numbers upto (size-1)
 ;(make-n-upto-list 3 nil) ==> (0 1 2)
@@ -125,7 +126,6 @@ from alst. Assumption: (len alst) = number of vertices in graph and
                      g$
                      )))
 
-(include-book "ordinals/lexicographic-ordering-without-arithmetic" :dir :system)
 (set-well-founded-relation acl2::l<)
 
 

@@ -1,6 +1,5 @@
 #|$ACL2s-Preamble$;
-(begin-book t :ttags ((:acl2s-timeout) 
-                      ))
+(begin-book t :ttags ((:acl2s-timeout)))
 ;$ACL2s-Preamble$|#
 
 ;Author: Harsh Raju Chamarthi

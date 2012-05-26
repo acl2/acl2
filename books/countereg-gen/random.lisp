@@ -510,23 +510,44 @@
                         (sym :acl2-pkg-witness))))
   :rule-classes :type-prescription)
 
-(local (defthm keyword-package-intern
-         (implies (and (stringp str)
-                       (keywordp key))
-                  (equal (symbol-package-name
-                          (intern-in-package-of-symbol str key))
-                         "KEYWORD"))
-         :hints (("Goal" :use (:instance keyword-package (x str) (y key))))))
+(encapsulate
+  ()
 
-(defthm random-keyword-keyword
-  (equal (symbol-package-name (car (random-keyword r)))
-         "KEYWORD")
-  :hints (("Goal" :use (:instance random-symbol-same-package_expand-package 
-                        (sym :acl2-pkg-witness)))))
+; [Jared] Previously keyword-package-intern had the following hints:
+
+  ;; :hints (("Goal" :use (:instance keyword-package (x str) (y key))))))
+
+; But in my copy of ACL2 the keyword-package axiom doesn't seem to have any
+; variables, so I'm not sure what's going on.  I've fixed this up to work in
+; my copy, maybe this is right?
+
+  (local (defthm l0
+           (equal (member-symbol-name str nil)
+                  nil)
+           :hints(("Goal" :in-theory (enable member-symbol-name)))))
+
+  (local (defthm keyword-package-intern
+           (implies (and (stringp str)
+                         (keywordp key))
+                    (equal (symbol-package-name
+                            (intern-in-package-of-symbol str key))
+                           "KEYWORD"))
+           :hints(("Goal"
+                   :in-theory (disable keyword-package
+                                       SYMBOL-PACKAGE-NAME-INTERN-IN-PACKAGE-OF-SYMBOL)
+                   :use ((:instance keyword-package)
+                         (:instance SYMBOL-PACKAGE-NAME-INTERN-IN-PACKAGE-OF-SYMBOL
+                                    (x str)
+                                    (y key)))))
+           ))
+
+  (defthm random-keyword-keyword
+    (equal (symbol-package-name (car (random-keyword r)))
+           "KEYWORD")
+    :hints (("Goal" :use (:instance random-symbol-same-package_expand-package 
+                                    (sym :acl2-pkg-witness))))))
 
 (in-theory (disable random-keyword))
-
-
 
 
 

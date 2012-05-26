@@ -1,11 +1,11 @@
 #|$ACL2s-Preamble$;
-(ld "pkg.lsp")
+(ld ;; Newline to fool ACL2/cert.pl dependency scanner
+ "cert.acl2")
 
 (acl2::begin-book);$ACL2s-Preamble$|#
 
 
 (in-package "DEFDATA")
-;(in-package "ACL2")
 
 (set-verify-guards-eagerness 2)
 (set-state-ok t)

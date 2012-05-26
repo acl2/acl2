@@ -1,6 +1,7 @@
 #|$ACL2s-Preamble$;
 ;;Author - Harsh Raju Chamarthi (harshrc)
-(ld "pkg.lsp")
+(ld ;; Newline to fool ACL2/cert.pl dependency scanner
+ "cert.acl2")
 (begin-book t :ttags :all);$ACL2s-Preamble$|#
 
 ;; Note: I apologize for the use of ttags, but they are used for
