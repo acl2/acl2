@@ -27177,7 +27177,8 @@
         (key-formals (if (symbolp key)
                          (getprop key 'formals t 'current-acl2-world wrld)
                        t))
-        (key-class (symbol-class key wrld)))
+        (key-class (symbol-class key wrld))
+        (condition (and val (cdr (assoc-eq :condition-fn val)))))
     (let ((result
            (cond
             ((eq key-formals t)
@@ -27188,7 +27189,8 @@
              (er hard ctx
                  "~@0~x1 takes ACL2's STATE as an argument."
                  str key))
-            ((not (all-nils (stobjs-out key wrld)))
+            ((and condition
+                  (not (all-nils (stobjs-out key wrld))))
              (let ((stobj (find-first-non-nil (stobjs-out key wrld))))
                (er hard ctx
                    "~@0~x1 returns a stobj, ~x2."
@@ -27272,17 +27274,16 @@
 ; Finally, check conditions on the memoization condition function.
 
             (t
-             (let* ((condition (and val (cdr (assoc-eq :condition-fn val))))
-                    (val-formals (and condition
-                                      (if (symbolp condition)
-                                          (getprop condition 'formals t
-                                                   'current-acl2-world wrld)
-                                        t)))
-                    (val-guard (and condition
-                                    (if (symbolp condition)
-                                        (getprop condition 'guard *t*
-                                                 'current-acl2-world wrld)
-                                      t))))
+             (let ((val-formals (and condition
+                                     (if (symbolp condition)
+                                         (getprop condition 'formals t
+                                                  'current-acl2-world wrld)
+                                       t)))
+                   (val-guard (and condition
+                                   (if (symbolp condition)
+                                       (getprop condition 'guard *t*
+                                                'current-acl2-world wrld)
+                                     t))))
 
                (cond
                 ((or (eq val nil)
@@ -27291,7 +27292,7 @@
                 ((eq val-formals t)
                  (er hard ctx
                      "~@0The proposed memoization condition function, ~x1, is ~
-                      neither nil nor a function symbol known to ACL2."
+                      neither T, NIL, nor a function symbol known to ACL2."
                      str condition))
                 ((not (and (symbolp condition)
                            (or (eq key-class :program)
@@ -27321,18 +27322,20 @@
        (and val
             (let ((stobjs-in (stobjs-in key wrld)))
               (cond
-               ((find-first-non-nil stobjs-in)
-                (observation-cw
-                 ctx
-                 "The function ~x0 has input stobj~#1~[~/s~] ~&1.  The ~
-                  memoization table for ~x0 will be cleared whenever ~
-                  ~#2~[this stobj is~/either of these stobjs is~/any of these ~
-                  stobjs is~] updated.  Any update of a stobj may therefore ~
-                  be significantly slower, perhaps by a factor of 5 or 10, ~
-                  when it is an input of a memoized function."
-                 key
-                 (collect-non-x nil stobjs-in)
-                 (zero-one-or-more (cdr stobjs-in))))
+               ((and condition
+                     (find-first-non-nil stobjs-in))
+                (let ((input-stobjs (collect-non-x nil stobjs-in)))
+                  (observation-cw
+                   ctx
+                   "The function ~x0 has input stobj~#1~[~/s~] ~&1.  The ~
+                    memoization table for ~x0 will be cleared whenever ~
+                    ~#2~[this stobj is~/either of these stobjs is~/any of ~
+                    these stobjs is~] updated.  Any update of a stobj may ~
+                    therefore be significantly slower, perhaps by a factor of ~
+                    5 or 10, when it is an input of a memoized function."
+                   key
+                   input-stobjs
+                   (zero-one-or-more (cdr input-stobjs)))))
                (t nil))))
        result))))
 

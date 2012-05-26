@@ -19077,9 +19077,11 @@
   ~il[Stobj] array writes are perhaps twice as fast.
 
   It is now permitted to ~il[memoize] functions that take user-defined
-  ~il[stobj]s as inputs, provided that no ~il[stobj]s are returned.  Thanks to
-  Sol Swords for an observation that led to this improvement and useful
-  conversations.
+  ~il[stobj]s as inputs, provided that no ~il[stobj]s are returned.  Even if
+  stobjs are returned, memoization is permitted provided the condition is
+  ~c[nil], as when profiling (~pl[profile]).  Thanks to Sol Swords for an
+  observation that led to this improvement and for useful conversations,
+  including follow-up leading us to improve our initial implementation.
 
   Fixes have been made for memoizing with a non-~c[nil] value of
   ~c[:ideal-okp].  Errors had occurred when memoizing with a ~c[:condition]
