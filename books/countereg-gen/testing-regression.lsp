@@ -1,7 +1,7 @@
 ;; this regression file aims at testing the various features of 
 ;; counterexample generation in ACL2 Sedan
 
-(include-book "/home/harshrc/sources/acl2s/acl2s-modes/acl2-datadef/top")
+(include-book "top")
 
 ;++++++++++++++++testcase 1 [classic reverse example]++++++++++++++++++++++++++
 ;Define Reverse function
