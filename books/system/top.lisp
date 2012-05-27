@@ -10,3 +10,4 @@
 (include-book "subcor-var")
 (include-book "subst-expr")
 (include-book "convert-normalized-term-to-pairs")
+(include-book "gather-dcls")
