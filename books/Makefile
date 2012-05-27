@@ -150,7 +150,7 @@ wp-gen: ordinals
 xdoc-impl: xdoc str tools finite-set-theory/osets
 system: tools arithmetic arithmetic-5 misc
 cutil: xdoc tools str misc finite-set-theory/osets defsort unicode
-countereg-gen: xdoc arithmetic-5 tools defexec finite-set-theory/osets arithmetic-2 \
+countereg-gen: xdoc arithmetic-5 tools defexec finite-set-theory/osets \
 	arithmetic-3 arithmetic ordinals
 
 # Note: There is no need to include values for "centaur:", since dependencies

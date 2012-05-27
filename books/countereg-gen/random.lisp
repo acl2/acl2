@@ -79,7 +79,7 @@
         rand)))
 
 (encapsulate nil
- (local (include-book "arithmetic-2/floor-mod/floor-mod" :dir :system))
+ (local (include-book "arithmetic-3/floor-mod/floor-mod" :dir :system))
 
  (defthm genrandom-natural
    (natp (car (genrandom max rand)))

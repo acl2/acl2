@@ -7,7 +7,7 @@
 (in-package "DEFDATA")
 (set-verify-guards-eagerness 2)
 (include-book "tools/bstar" :dir :system)
-(local (include-book "arithmetic-2/floor-mod/floor-mod" :dir :system))
+(local (include-book "arithmetic-3/floor-mod/floor-mod" :dir :system))
 
 (defconst *M31* 2147483647);1 less than 2^31
 (defconst *P1* 16807)
@@ -69,9 +69,7 @@ current random seed is seed. and also returns the new seed."
         state)))
 
 (encapsulate nil
- (local (include-book "arithmetic-2/floor-mod/floor-mod" :dir :system))
 
- 
  (defthm lemma1
    (IMPLIES (and (posp max)
                  (natp x))
