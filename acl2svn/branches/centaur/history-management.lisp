@@ -22457,9 +22457,7 @@
                                                              nil
                                                              wrld)))
                      (condition (or (eq condition-fn t) ; hence t
-                                    (and condition-def
-                                         (or (car (last condition-def))
-                                             nil)))))
+                                    (car (last condition-def))))) ; maybe nil
                 `(memoize ,key ; fn
                           ,condition
                           ,(cdr (assoc-eq :inline val))

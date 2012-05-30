@@ -504,126 +504,133 @@
                         trace commutative forget memo-table-init-size aokp
                         ideal-okp)
   (declare (xargs :guard t))
-  (cond
-   ((and condition-fn (null condition-p))
-    `(progn (table memoize-table
-                   (deref-macro-name ,fn (macro-aliases world))
-                   (list* (cons :condition-fn ,condition-fn)
-                          (cons :inline ,inline)
-                          (cons :trace ,trace)
-                          (cons :commutative ,commutative)
-                          (cons :forget ,forget)
-                          (cons :memo-table-init-size
-                                ,(or memo-table-init-size
-                                     *mht-default-size*))
-                          (cons :aokp ,aokp)
-                          (and (not (eq ,ideal-okp :default))
-                               (list (cons :ideal-okp ,ideal-okp)))))
-            (value-triple (deref-macro-name
-                           ,fn
-                           (macro-aliases (w state))))))
-   ((and condition-p
-         (not (eq condition t))
-         (not (equal condition ''t)))
-    `(make-event
-      (let* ((wrld (w state))
-             (fn (deref-macro-name ,fn (macro-aliases wrld)))
-             (condition ,condition)
-             (formals
-              (and (symbolp fn) ; guard for getprop
-                   (getprop fn 'formals t
-                            'current-acl2-world wrld)))
-             (condition-fn (or ,condition-fn
-                               (intern-in-package-of-symbol
-                                (concatenate
-                                 'string
-                                 (symbol-name fn)
-                                 "-MEMOIZE-CONDITION")
-                                fn)))
-             (hints ,hints)
-             (otf-flg ,otf-flg)
-             (inline ,inline)
-             (trace ,trace)
-             (commutative ,commutative)
-             (forget ,forget)
-             (memo-table-init-size ,memo-table-init-size)
-             (aokp ,aokp)
-             (ideal-okp ,ideal-okp))
-        (cond ((not (and
-                     (symbolp fn)
-                     (not (eq t formals))
-                     (not (eq t (getprop fn 'stobjs-in t
-                                 'current-acl2-world wrld)))
-                     (not (eq t (getprop fn 'stobjs-out t
+  (let ((condition (cond ((equal condition ''t) t)
+                         ((equal condition ''nil) nil)
+                         (t condition))))
+    (cond
+     ((and condition-fn (null condition-p))
+      `(progn (table memoize-table
+                     (deref-macro-name ,fn (macro-aliases world))
+                     (list* (cons :condition-fn ,condition-fn)
+                            (cons :inline ,inline)
+                            (cons :trace ,trace)
+                            (cons :commutative ,commutative)
+                            (cons :forget ,forget)
+                            (cons :memo-table-init-size
+                                  ,(or memo-table-init-size
+                                       *mht-default-size*))
+                            (cons :aokp ,aokp)
+                            (and (not (eq ,ideal-okp :default))
+                                 (list (cons :ideal-okp ,ideal-okp)))))
+              (value-triple (deref-macro-name
+                             ,fn
+                             (macro-aliases (w state))))))
+     ((and condition-p
+           (not (eq condition t))
+           (not (eq condition nil)))
+      `(make-event
+        (let* ((wrld (w state))
+               (fn (deref-macro-name ,fn (macro-aliases wrld)))
+               (condition ,condition)
+               (formals
+                (and (symbolp fn) ; guard for getprop
+                     (getprop fn 'formals t
+                              'current-acl2-world wrld)))
+               (stobjs-in (getprop fn 'stobjs-in t
+                                   'current-acl2-world wrld))
+               (condition-fn (or ,condition-fn
+                                 (intern-in-package-of-symbol
+                                  (concatenate
+                                   'string
+                                   (symbol-name fn)
+                                   "-MEMOIZE-CONDITION")
+                                  fn)))
+               (hints ,hints)
+               (otf-flg ,otf-flg)
+               (inline ,inline)
+               (trace ,trace)
+               (commutative ,commutative)
+               (forget ,forget)
+               (memo-table-init-size ,memo-table-init-size)
+               (aokp ,aokp)
+               (ideal-okp ,ideal-okp))
+          (cond ((not (and
+                       (symbolp fn)
+                       (not (eq t formals))
+                       (not (eq t stobjs-in))
+                       (not (eq t (getprop fn 'stobjs-out t
 
 ; Normally we would avoid getting the stobjs-out of return-last.  But
 ; return-last will eventually be rejected for mamoization anyhow (by
 ; memoize-table-chk).
 
-                                 'current-acl2-world wrld)))
-                     (cltl-def-from-name fn nil wrld)))
-               (er hard 'memoize
-                   "The symbol ~x0 is not a known function symbol, and thus ~
+                                           'current-acl2-world wrld)))
+                       (cltl-def-from-name fn nil wrld)))
+                 (er hard 'memoize
+                     "The symbol ~x0 is not a known function symbol, and thus ~
                     it cannot be memoized."
-                   fn))
+                     fn))
 
 ; Certify-book seems to do things twice, so the following is commented out.
 
 ;             ((cdr (assoc-eq fn (table-alist 'memoize-table wrld)))
 ;              (er hard 'memoize "~x0 is already memoized." fn))
 
-              ((not (member-eq inline '(t nil)))
-               (er hard 'memoize
-                   "The value ~x0 for inline is illegal (must be ~x1 or ~x2)."
-                   inline t nil))
-              ((not (member-eq trace '(t nil)))
-               (er hard 'memoize
-                   "The value ~x0 for trace is illegal (must be ~x1 or ~x2)."
-                   trace t nil))
-              (t
-               `(progn
-                  (defun ,condition-fn ,formals
-                    (declare
-                     (ignorable ,@formals)
-                     (xargs :guard
-                            ,(getprop fn 'guard *t*
-                                      'current-acl2-world wrld)
-                            :verify-guards nil))
-                    ,condition)
-                  (verify-guards ,condition-fn
-                                 ,@(and hints `(:hints ,hints))
-                                 ,@(and otf-flg
-                                        `(:otf-flg ,otf-flg)))
-                  (table memoize-table
-                         ',fn
-                         (list* (cons :condition-fn ',condition-fn)
-                                (cons :inline ',inline)
-                                (cons :trace ',trace)
-                                (cons :commutative ',commutative)
-                                (cons :forget ',forget)
-                                (cons :memo-table-init-size
-                                      (or ,memo-table-init-size
-                                          *mht-default-size*))
-                                (cons :aokp ',aokp)
-                                (and (not (eq ',ideal-okp :default))
-                                     (list (cons :ideal-okp ',ideal-okp)))))
-                  (value-triple ',fn)))))))
-   (t `(progn (table memoize-table
-                     (deref-macro-name ,fn (macro-aliases world))
-                     (list* (cons :condition-fn t)
-                            (cons :inline ,inline)
-                            (cons :trace ,trace)
-                            (cons :commutative ,commutative)
-                            (cons :forget ,forget)
-                            (cons :memo-table-init-size
-                                  (or ,memo-table-init-size
-                                      *mht-default-size*))
-                            (cons :aokp ',aokp)
-                            (and (not (eq ',ideal-okp :default))
-                                 (list (cons :ideal-okp ',ideal-okp)))))
-              (value-triple (deref-macro-name
-                             ,fn
-                             (macro-aliases (w state))))))))
+                ((not (member-eq inline '(t nil)))
+                 (er hard 'memoize
+                     "The value ~x0 for inline is illegal (must be ~x1 or ~x2)."
+                     inline t nil))
+                ((not (member-eq trace '(t nil)))
+                 (er hard 'memoize
+                     "The value ~x0 for trace is illegal (must be ~x1 or ~x2)."
+                     trace t nil))
+                (t
+                 `(progn
+                    (defun ,condition-fn ,formals
+                      (declare
+                       (ignorable ,@formals)
+                       (xargs :guard
+                              ,(getprop fn 'guard *t*
+                                        'current-acl2-world wrld)
+                              :verify-guards nil
+                              ,@(let ((stobjs (remove nil stobjs-in)))
+                                  (and stobjs
+                                       `(:stobjs ,stobjs)))))
+                      ,condition)
+                    (verify-guards ,condition-fn
+                                   ,@(and hints `(:hints ,hints))
+                                   ,@(and otf-flg
+                                          `(:otf-flg ,otf-flg)))
+                    (table memoize-table
+                           ',fn
+                           (list* (cons :condition-fn ',condition-fn)
+                                  (cons :inline ',inline)
+                                  (cons :trace ',trace)
+                                  (cons :commutative ',commutative)
+                                  (cons :forget ',forget)
+                                  (cons :memo-table-init-size
+                                        (or ,memo-table-init-size
+                                            *mht-default-size*))
+                                  (cons :aokp ',aokp)
+                                  (and (not (eq ',ideal-okp :default))
+                                       (list (cons :ideal-okp ',ideal-okp)))))
+                    (value-triple ',fn)))))))
+     (t `(progn (table memoize-table
+                       (deref-macro-name ,fn (macro-aliases world))
+                       (list* (cons :condition-fn ,condition) ; t or nil
+                              (cons :inline ,inline)
+                              (cons :trace ,trace)
+                              (cons :commutative ,commutative)
+                              (cons :forget ,forget)
+                              (cons :memo-table-init-size
+                                    (or ,memo-table-init-size
+                                        *mht-default-size*))
+                              (cons :aokp ',aokp)
+                              (and (not (eq ',ideal-okp :default))
+                                   (list (cons :ideal-okp ',ideal-okp)))))
+                (value-triple (deref-macro-name
+                               ,fn
+                               (macro-aliases (w state)))))))))
 
 (defmacro memoize (fn &key
                       (condition 't condition-p)
@@ -691,12 +698,13 @@
            )
   ~ev[]
   where ~c[fn] evaluates to a user-defined function symbol; ~c[condition] is
-  either ~c[t] (the default) or ~c['t] or else evaluates to an expression whose
-  free variables are among the formal parameters of ~c[fn]; and
-  ~c[condition-fn] is either ~c[nil] (the default) or else evaluates to a legal
-  function symbol.  Further restrictions and options are discussed below.  Note
-  that all arguments are evaluated (but for the special handling of value ~c[t]
-  for ~c[:commutative], the argument must literally be ~c[t]; see below).
+  either ~c[t] (the default), ~c['t], ~c[nil], or ~c['nil], or else evaluates
+  to an expression whose free variables are among the formal parameters of
+  ~c[fn]; and ~c[condition-fn] is either ~c[nil] (the default) or else
+  evaluates to a legal function symbol.  Further restrictions and options are
+  discussed below.  Note that all arguments are evaluated (but for the special
+  handling of value ~c[t] for ~c[:commutative], the argument must literally be
+  ~c[t]; see below).
 
   Generally ~c[fn] must evaluate to a defined function symbol.  However, this
   value can be the name of a macro that is associated with such a function
@@ -724,7 +732,11 @@
   on the same parameters, and the lookup or table store described above are
   only performed if the result from the condition function call is non-~c[nil].
 
-  If however ~c[:condition] is supplied, then an attempt will be made to define
+  Suppose however that ~c[:condition] is supplied.  If the value supplied is
+  ~c[t] or ~c['t], then the lookup and table store described above are always
+  done.  If the value is ~c[nil] or ~c['nil], then this lookup and table store
+  are never done, although statistics may be gathered; ~pl[profile].  Now
+  consider other values for ~c[:condition].  An attempt will be made to define
   a condition function whose ~il[guard] and formal parameters list are the same
   as those of the memoized function, and whose body is the result, ~c[r], of
   evaluating the given ~c[condition].  The name of that condition function is
@@ -742,7 +754,7 @@
 
   Note that ~c[fn] can be either a ~c[:]~ilc[logic] mode function or a
   ~c[:]~ilc[program] mode function.  However, only the corresponding raw Lisp
-  function is actually memoized, so ~il[guard] violatations can defeat
+  function is actually memoized, so ~il[guard] violations can defeat
   memoization, and ~c[:]~ilc[logic] mode functions without their ~il[guard]s
   verified will only be memoized when called by ~c[:]~ilc[program] mode
   functions.  (~l[guards-and-evaluation] for more information about guards and
@@ -762,8 +774,8 @@
   illegal to convert the function from ~c[:]~ilc[program] to ~c[:]~ilc[logic]
   mode (~pl[verify-termination]).  To turn off memoization, ~pl[unmemoize].
 
-  ~c[Memoize] is illegal for a function whose arguments include ~c[state] or,
-  more generally, any ~il[stobj].  Also, ~c[memoize] never allows attachments
+  ~c[Memoize] is illegal for a function if its arguments include ~c[state] or
+  if it returns any ~il[stobj]s.  Also, ~c[memoize] never allows attachments
   to be used (~pl[defattach]); if an attachment is used during evaluation, then
   the evaluation result will not be stored.
 
@@ -1007,7 +1019,7 @@
   ~c[Profile] is just a macro that calls ~ilc[memoize] to do its work.
   ~c[Profile] gives the two keyword parameters ~c[:CONDITION] and ~c[:INLINE]
   of ~ilc[memoize] the value ~c[nil].  Other keyword parameters for
-  ~c[memoize], which must not include ~c[:CONDITION], ~c[:CONDITION-fn], or
+  ~c[memoize], which must not include ~c[:CONDITION], ~c[:CONDITION-FN], or
   ~c[:INLINE], are passed through.  To eliminate profiling, use
   ~ilc[unmemoize]; for example, to eliminate profiling for function ~c[fn],
   evaluate ~c[(unmemoize 'fn)].
