@@ -963,7 +963,6 @@
          (done (dtr-sym fn "-DONE"))
          (ret  (dtr-sym fn "-RET"))
          (next (dtr-sym fn "-NEXT"))
-         (body-fn (dtr-sym fn "-BODY"))
          (steps-clk  (dtr-sym fn "-STEPS"))
          (terminates (dtr-sym fn "-TERMINATES"))
          (terminates-witness (dtr-sym fn "-TERMINATES-WITNESS"))
@@ -978,7 +977,7 @@
                            (,ret . ,formals)
                          ,(bind formals
                                 `(,next . ,formals)
-                                `(,body-fn . ,formals)))
+                                `(,fn . ,formals)))
                      ,diverge))
          (func-inst `((pf-next       (lambda (st) ,(bind formals 'st `(,next . ,formals))))
                       (pf-done       (lambda (st) ,(bind formals 'st `(,done . ,formals))))
@@ -1096,21 +1095,16 @@
           
           (in-theory (disable ,measure ,terminates))
 
-          (defun-nx ,body-fn ,formals
-            (declare (xargs :measure (,measure . ,formals)))
-            ,fn-body)
-
           (defun ,fn ,formals
             (declare (xargs :measure (,measure . ,formals)
                             :verify-guards nil))
             (declare . ,decls)
-            (mbe :logic
-                 (,body-fn . ,formals)
+            (mbe :logic ,fn-body
                  :exec
                  ,orig-body))
 
-          (local (defthm ,(dtr-sym body-fn "-IS-EXEC")
-                   (equal (,body-fn . ,formals)
+          (local (defthm ,(dtr-sym fn "-REDEF")
+                   (equal (,fn . ,formals)
                           ,orig-body)
                    :hints (("goal" :use ((:instance
                                           (:functional-instance
@@ -1126,26 +1120,14 @@
                              
                              :do-not-induct t)
                            (use-by-computed-hint clause))
-                   :rule-classes ((:definition :clique (,body-fn)
-                                   :controller-alist ((,body-fn . ,controllers))))))
-
-          (local (in-theory (disable ,body-fn)))
+                   :rule-classes ((:definition :clique (,fn)
+                                   :controller-alist ((,fn . ,controllers))))))
 
           ,@(and verify-guardsp
                  `((verify-guards ,fn
-                     :hints ,guard-hints)))
-
-          (defthm ,(dtr-sym fn "-REDEF")
-            (equal (,fn . ,formals)
-                   ,orig-body)
-            :hints (("goal" :in-theory '(,fn ,(dtr-sym body-fn "-IS-EXEC"))))
-            :rule-classes ((:definition :clique (,fn)
-                            :controller-alist ((,fn . ,controllers)))))
-
-          (defthm ,(dtr-sym fn "-INDUCTION")
-            t
-            :rule-classes ((:induction :pattern (,fn . ,formals)
-                            :scheme (,body-fn . ,formals))))
+                     :hints ,(cons `'(:use ,(dtr-sym fn "-REDEF")
+                                      :in-theory (disable ,(dtr-sym fn "-REDEF")))
+                                   guard-hints))))
 
           (in-theory (disable ,fn)))))))
 
@@ -1157,6 +1139,9 @@
 (local
  (progn
    (defstobj sta (regs :type (array t (0)) :resizable t))
+
+   (defun-nx mk-sta ()
+     (create-sta))
 
    (defun my-step (pc prog sta)
      (declare (xargs :guard (and (natp pc) (true-listp prog))
@@ -1180,7 +1165,8 @@
          sta
        (mv-let (pc sta)
          (my-step pc prog sta)
-         (my-run pc prog sta))))
+         (my-run pc prog sta)))
+     :diverge (mk-sta))
 
    (def-tr my-run2 (pc prog sta)
      (declare (xargs :guard (and (natp pc) (true-listp prog))
@@ -1219,6 +1205,5 @@
                                   (1+ pc)
                                 (+ 2 pc))))
                      (my-run2 pc prog sta)))
-             (otherwise sta))))))))
-
-
+             (otherwise sta)))))
+     :diverge (mk-sta))))
