@@ -1103,25 +1103,25 @@
                  :exec
                  ,orig-body))
 
-          (local (defthm ,(dtr-sym fn "-REDEF")
-                   (equal (,fn . ,formals)
-                          ,orig-body)
-                   :hints (("goal" :use ((:instance
-                                          (:functional-instance
-                                           pf-run-is-loop
-                                           (pf-run (lambda (st)
-                                                     ,(bind formals 'st `(,fn . ,formals))))
-                                           . ,func-inst)
-                                          (st ,(fget formals)))))
-                           '(:clause-processor
-                             (tr-decomp-clause-proc
-                              clause
-                              '(,fn ,formals ,body ,done ,ret ,next))
-                             
-                             :do-not-induct t)
-                           (use-by-computed-hint clause))
-                   :rule-classes ((:definition :clique (,fn)
-                                   :controller-alist ((,fn . ,controllers))))))
+          (defthm ,(dtr-sym fn "-REDEF")
+            (equal (,fn . ,formals)
+                   ,orig-body)
+            :hints (("goal" :use ((:instance
+                                   (:functional-instance
+                                    pf-run-is-loop
+                                    (pf-run (lambda (st)
+                                              ,(bind formals 'st `(,fn . ,formals))))
+                                    . ,func-inst)
+                                   (st ,(fget formals)))))
+                    '(:clause-processor
+                      (tr-decomp-clause-proc
+                       clause
+                       '(,fn ,formals ,body ,done ,ret ,next))
+                      
+                      :do-not-induct t)
+                    (use-by-computed-hint clause))
+            :rule-classes ((:definition :clique (,fn)
+                            :controller-alist ((,fn . ,controllers)))))
 
           ,@(and verify-guardsp
                  `((verify-guards ,fn
