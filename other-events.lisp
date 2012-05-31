@@ -20025,7 +20025,7 @@
                the use of the same name for two different functions.  ~
                The duplicated name~#0~[ is~/s are~] ~&0.  You must ~
                change the component names so that no conflict occurs. ~
-                You may then wish to use the :RENAMING option to ~
+               ~ You may then wish to use the :RENAMING option to ~
                introduce your own names for these functions.  See ~
                :DOC defstobj."
               (duplicates default-names)))
@@ -20265,16 +20265,31 @@
   (mv-let
    (erp field-descriptors key-alist)
    (partition-rest-and-keyword-args args *defstobj-keywords*)
-   (cons (if erp
-             (if storep
-                 (er hard 'defstobj-redundancy-bundle
-                     "Implementation error: ~x0 returned an error when ~
+   (list* (if erp
+              (if storep
+                  (er hard 'defstobj-redundancy-bundle
+                      "Implementation error: ~x0 returned an error when ~
                       storing the redundancy-bundle for defstobj.  Please ~
                       contact the implementors."
-                     `(defstobj-redundancy-bundle ,name ,args ,storep))
-               'error)
-           field-descriptors)
-         (cdr (assoc-eq :renaming key-alist)))))
+                      `(defstobj-redundancy-bundle ,name ,args ,storep))
+                'error)
+            field-descriptors)
+          (cdr (assoc-eq :renaming key-alist))
+
+; We include the :congruent-to field, for example to avoid errors like the
+; following.
+
+;   (defstobj st1 fld1)
+;   
+;   (encapsulate
+;    ()
+;    (local (defstobj st2 fld2 fld3))
+;    (defstobj st2 fld2 fld3 :congruent-to st1))
+;   
+;   ; Raw lisp error!
+;   (fld3 st1)
+
+          (cdr (assoc-eq :congruent-to key-alist)))))
 
 (defun redundant-defstobjp (name args wrld)
 
@@ -20343,8 +20358,7 @@
         ((not (booleanp inline))
          (er soft ctx
              "DEFSTOBJ requires the :INLINE keyword argument to have a Boolean ~
-              value.  See :DOC defstobj."
-             (list* 'defstobj name args)))
+              value.  See :DOC defstobj."))
         ((and congruent-to
               (not (stobjp congruent-to t wrld)))
          (er soft ctx
@@ -20527,20 +20541,19 @@
 ; Note: Wrld may be a world, nil, or (in raw Lisp only) the symbol :raw-lisp.
 ; See fix-stobj-array-type.
 
-; We unpack the args to get the renamed field descriptors.  We return
-; a list of the form (namep create-name fields doc inline), where:
-; namep is the name of the recognizer for the single-threaded object;
-; create-name is the name of the constructor for the stobj; fields is
-; a list corresponding to the field descriptors, but normalized with
-; respect to the renaming, types, etc.; doc is the doc string, or
-; nil if no doc string is supplied; and inline is t if :inline t was
-; specified in the defstobj event, else nil.  A field in fields is of
-; the form (recog-name type init accessor-name updater-name
-; length-name resize-name resizable).  The last three fields are nil
-; unless type has the form (ARRAY ptype (n)), in which case ptype is a
-; primitive type and n is a positive integer.  Init is the evg of a
-; constant term, i.e., should be quoted to be a treated as a term.
-; Doc is the value of the :doc keyword arg in args.
+; We unpack the args to get the renamed field descriptors.  We return a list of
+; the form (namep create-name fields doc inline congruent-to), where: namep is
+; the name of the recognizer for the single-threaded object; create-name is the
+; name of the constructor for the stobj; fields is a list corresponding to the
+; field descriptors, but normalized with respect to the renaming, types, etc.;
+; doc is the doc string, or nil if no doc string is supplied; and inline is t
+; if :inline t was specified in the defstobj event, else nil.  A field in
+; fields is of the form (recog-name type init accessor-name updater-name
+; length-name resize-name resizable).  The last three fields are nil unless
+; type has the form (ARRAY ptype (n)), in which case ptype is a primitive type
+; and n is a positive integer.  Init is the evg of a constant term, i.e.,
+; should be quoted to be a treated as a term.  Doc is the value of the :doc
+; keyword arg in args.
 
   (mv-let
    (erp field-descriptors key-alist)
@@ -21278,8 +21291,7 @@
      (msg "( DEFSTOBJ ~x0 ...)" name))
    (let ((event-form (or event-form (list* 'defstobj name args)))
          (wrld0 (w state)))
-     (er-let*
-       ((wrld1 (chk-acceptable-defstobj name args ctx wrld0 state)))
+     (er-let* ((wrld1 (chk-acceptable-defstobj name args ctx wrld0 state)))
        (cond
         ((eq wrld1 'redundant)
          (stop-redundant-event ctx state))
@@ -21382,16 +21394,16 @@
                  (let* ((wrld2 (w state))
                         (wrld3 (update-doc-data-base
                                 name doc doc-pair
-
-; Here I declare that name is Common Lisp compliant.  Below I
-; similarly declare the-live-var.  All elements of the namex list of
-; an event must have the same symbol-class.
-
                                 (putprop
                                  name
                                  'congruent-stobj-rep
                                  (congruent-stobj-rep congruent-to wrld2)
                                  (putprop
+
+; Here I declare that name is Common Lisp compliant.  Below I similarly declare
+; the-live-var.  All elements of the namex list of an event must have the same
+; symbol-class.
+
                                   name 'symbol-class :common-lisp-compliant
                                   (put-stobjs-in-and-outs
                                    name template

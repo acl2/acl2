@@ -568,7 +568,7 @@
                        (cltl-def-from-name fn nil wrld)))
                  (er hard 'memoize
                      "The symbol ~x0 is not a known function symbol, and thus ~
-                    it cannot be memoized."
+                      it cannot be memoized."
                      fn))
 
 ; Certify-book seems to do things twice, so the following is commented out.

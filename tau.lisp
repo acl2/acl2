@@ -4149,7 +4149,7 @@
 ; were introduced).
 
 ; DEFSTOBJ introduces function symbols, some of which are even monadic
-; Booleans.  But we ignore DFESTOBJ here.  Why?  Because all of the functions
+; Booleans.  But we ignore DEFSTOBJ here.  Why?  Because all of the functions
 ; introduced by defstobj are introduced by embedded defun events and so we will
 ; find defun event-tuples for each.
 

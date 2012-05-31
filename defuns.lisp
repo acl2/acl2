@@ -8770,7 +8770,7 @@
 ; Note: At the moment, defstobj does not introduce any mutually
 ; recursive functions.  So every name is handled separately by
 ; defuns-fns.  Hence, names, here, is always a singleton, though we do
-; not exploit that. Also, embedded-event-lst is always a list
+; not exploit that.  Also, embedded-event-lst is always a list
 ; ee-entries, each being a cons with the name of some superevent like
 ; ENCAPSULATE, INCLUDE-BOOK, or DEFSTOBJ, in the car.  The ee-entry
 ; for the most immediate superevent is the first on the list.  At the
