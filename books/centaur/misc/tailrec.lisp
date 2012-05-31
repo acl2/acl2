@@ -912,7 +912,22 @@
         (remove-keyword-pairs (cddr lst))
       (cons (car lst) (remove-keyword-pairs (cdr lst))))))
 
+(defun mv-binding-list (n formals obj)
+  (if (atom formals)
+      nil
+    (cons `(,(car formals) (mv-nth ,n ,obj))
+          (mv-binding-list (1+ n) (cdr formals) obj))))
 
+
+(defun denormalize-thm-fn (fn thmname rest world)
+  (b* ((unnorm-body (getprop fn 'unnormalized-body nil 'current-acl2-world
+                             world))
+       (formals (getprop fn 'formals nil 'current-acl2-world world)))
+    `(defthm ,thmname
+       (equal (,fn . ,formals)
+              ,unnorm-body)
+       :hints (("goal" :by ,fn))
+       . ,rest)))
 
 (defun def-tr-fn (fn formals decl-body state)
   (declare (xargs :mode :program :stobjs state))
@@ -931,6 +946,12 @@
          (tuple (list (list* fn formals decl-body)))
          ((er (list (list fn formals ?doc ?decls orig-body)))
           (chk-defuns-tuples tuple nil 'def-tr-fn world state))
+         ;; Using chk-acceptable-defuns will fail if we're doing this
+         ;; redundantly and redefinition is disallowed.  So we temporarily set
+         ;; the ld-redefinition-action and then set it back to its original
+         ;; value.
+         (redef-action (ld-redefinition-action state))
+         ((er &) (set-ld-redefinition-action '(:doit! . :overwrite) state))
          ((er (list & ;; 'chk-acceptable-defuns
                     & ;; fn names
                     & ;; fn formals
@@ -950,9 +971,10 @@
                     & ;; normalizeps
                     & ;; reclassifying
                     & ;; world
-                    & ;; non-executablep
+                    non-execp
                     ?guard-debug))
           (chk-acceptable-defuns tuple 'def-tr-fn world state))
+         ((er &) (set-ld-redefinition-action redef-action state))
          (- (cw "symbol-class: ~x0~%" symbol-class))
          ((mv err done-term ret-term next-term)
           (done-retval-next-from-body fn (len formals) body))
@@ -972,13 +994,16 @@
          (controllers (or (cdr (assoc :controllers keyal))
                           (subset-mask (all-vars done-term)
                                        formals)))
-         (fn-body `(if (,terminates . ,formals)
-                       (if (,done . ,formals)
-                           (,ret . ,formals)
-                         ,(bind formals
-                                `(,next . ,formals)
-                                `(,fn . ,formals)))
-                     ,diverge))
+         ;;(fn-body `(if (,terminates . ,formals)
+         ;;              ,orig-body
+         ;;            ,diverge))
+         (simp-body `(if (,terminates . ,formals)
+                         (if (,done . ,formals)
+                             (,ret . ,formals)
+                           ,(bind formals
+                                  `(,next . ,formals)
+                                  `(,fn . ,formals)))
+                       ,diverge))
          (func-inst `((pf-next       (lambda (st) ,(bind formals 'st `(,next . ,formals))))
                       (pf-done       (lambda (st) ,(bind formals 'st `(,done . ,formals))))
                       (pf-retval     (lambda (st) ,(bind formals 'st `(,ret . ,formals))))
@@ -1006,7 +1031,7 @@
           (defun-nx ,next ,formals
             ,next-term)
 
-          (in-theory (disable ,next ,done))
+          (local (in-theory (disable ,next ,done)))
 
 
           (defun-nx ,steps-clk (tr-clk . ,formals)
@@ -1095,14 +1120,38 @@
           
           (in-theory (disable ,measure ,terminates))
 
-          (defun ,fn ,formals
+          (,(if non-execp 'defun-nx 'defun) ,fn ,formals
             (declare (xargs :measure (,measure . ,formals)
+                            :hints (("goal" :in-theory '(,(dtr-sym measure "-NATP")
+                                                         o< o-finp o-p natp
+                                                         ,next ,done)
+                                     :expand ((:with ,(dtr-sym measure "-REDEF")
+                                               (,measure . ,formals))
+                                              (:with ,(dtr-sym terminates "-REDEF")
+                                               (,terminates . ,formals)))))
                             :verify-guards nil))
             (declare . ,decls)
-            (mbe :logic ,fn-body
+            (mbe :logic ,simp-body
                  :exec
                  ,orig-body))
 
+          ;;(local (make-event (denormalize-thm-fn
+          ;;                    ',fn
+          ;;                    ',(dtr-sym fn "-DENORM")
+          ;;                    '(:rule-classes nil)
+          ;;                    (w state))))
+          ;;(local (defthm ,(dtr-sym fn "-SIMPLE-TR")
+          ;;         (equal (,fn . ,formals)
+          ;;                ,simp-body)
+          ;;         :hints (("goal" :use ,(dtr-sym fn "-DENORM"))
+          ;;                 '(:clause-processor
+          ;;                   (tr-decomp-clause-proc
+          ;;                    clause
+          ;;                    '(,fn ,formals ,body ,done ,ret ,next))
+                             
+          ;;                   :do-not-induct t)
+          ;;                 (use-by-computed-hint clause))
+          ;;         :rule-classes nil))
           (defthm ,(dtr-sym fn "-REDEF")
             (equal (,fn . ,formals)
                    ,orig-body)
@@ -1113,11 +1162,14 @@
                                               ,(bind formals 'st `(,fn . ,formals))))
                                     . ,func-inst)
                                    (st ,(fget formals)))))
+                    ;;'(:use ((:instance ,(dtr-sym fn "-SIMPLE-TR")
+                    ;;         . ,(if (< 1 (len formals))
+                    ;;                (mv-binding-list 0 formals 'st)
+                    ;;              `((,(car formals) st))))))
                     '(:clause-processor
                       (tr-decomp-clause-proc
                        clause
                        '(,fn ,formals ,body ,done ,ret ,next))
-                      
                       :do-not-induct t)
                     (use-by-computed-hint clause))
             :rule-classes ((:definition :clique (,fn)
@@ -1129,7 +1181,7 @@
                                       :in-theory (disable ,(dtr-sym fn "-REDEF")))
                                    guard-hints))))
 
-          (in-theory (disable ,fn)))))))
+          (in-theory (disable (:definition ,fn))))))))
 
 (defmacro def-tr (fn formals &rest decl-body)
   `(make-event
@@ -1207,3 +1259,4 @@
                      (my-run2 pc prog sta)))
              (otherwise sta)))))
      :diverge (mk-sta))))
+
