@@ -79,7 +79,7 @@
                          "Error: ~x0 is not a symbol.~|~%"
                          sym))
            ((not (and (fboundp sym)
-                      (function-symbolp 'mem-tablei wrld)))
+                      (function-symbolp sym wrld)))
             (observation ctx
                          "Error: Symbol ~x0 is not defined as a function.~|~%"
                          sym))
