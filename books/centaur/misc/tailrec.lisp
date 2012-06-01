@@ -994,9 +994,9 @@
          (controllers (or (cdr (assoc :controllers keyal))
                           (subset-mask (all-vars done-term)
                                        formals)))
-         ;;(fn-body `(if (,terminates . ,formals)
-         ;;              ,orig-body
-         ;;            ,diverge))
+         (fn-body `(if (,terminates . ,formals)
+                       ,orig-body
+                     ,diverge))
          (simp-body `(if (,terminates . ,formals)
                          (if (,done . ,formals)
                              (,ret . ,formals)
@@ -1131,27 +1131,27 @@
                                                (,terminates . ,formals)))))
                             :verify-guards nil))
             (declare . ,decls)
-            (mbe :logic ,simp-body
+            (mbe :logic ,fn-body
                  :exec
                  ,orig-body))
 
-          ;;(local (make-event (denormalize-thm-fn
-          ;;                    ',fn
-          ;;                    ',(dtr-sym fn "-DENORM")
-          ;;                    '(:rule-classes nil)
-          ;;                    (w state))))
-          ;;(local (defthm ,(dtr-sym fn "-SIMPLE-TR")
-          ;;         (equal (,fn . ,formals)
-          ;;                ,simp-body)
-          ;;         :hints (("goal" :use ,(dtr-sym fn "-DENORM"))
-          ;;                 '(:clause-processor
-          ;;                   (tr-decomp-clause-proc
-          ;;                    clause
-          ;;                    '(,fn ,formals ,body ,done ,ret ,next))
+          (local (make-event (denormalize-thm-fn
+                              ',fn
+                              ',(dtr-sym fn "-DENORM")
+                              '(:rule-classes nil)
+                              (w state))))
+          (local (defthm ,(dtr-sym fn "-SIMPLE-TR")
+                   (equal (,fn . ,formals)
+                          ,simp-body)
+                   :hints (("goal" :use ,(dtr-sym fn "-DENORM"))
+                           '(:clause-processor
+                             (tr-decomp-clause-proc
+                              clause
+                              '(,fn ,formals ,body ,done ,ret ,next))
                              
-          ;;                   :do-not-induct t)
-          ;;                 (use-by-computed-hint clause))
-          ;;         :rule-classes nil))
+                             :do-not-induct t)
+                           (use-by-computed-hint clause))
+                   :rule-classes nil))
           (defthm ,(dtr-sym fn "-REDEF")
             (equal (,fn . ,formals)
                    ,orig-body)
@@ -1162,10 +1162,10 @@
                                               ,(bind formals 'st `(,fn . ,formals))))
                                     . ,func-inst)
                                    (st ,(fget formals)))))
-                    ;;'(:use ((:instance ,(dtr-sym fn "-SIMPLE-TR")
-                    ;;         . ,(if (< 1 (len formals))
-                    ;;                (mv-binding-list 0 formals 'st)
-                    ;;              `((,(car formals) st))))))
+                    '(:use ((:instance ,(dtr-sym fn "-SIMPLE-TR")
+                             . ,(if (< 1 (len formals))
+                                    (mv-binding-list 0 formals 'st)
+                                  `((,(car formals) st))))))
                     '(:clause-processor
                       (tr-decomp-clause-proc
                        clause
