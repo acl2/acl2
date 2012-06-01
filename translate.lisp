@@ -3760,7 +3760,7 @@
                          entry))
                 ((not (true-listp entry))
                  (er-cmp ctx
-                         "Each element of a declartion must end in NIL but ~
+                         "Each element of a declaration must end in NIL but ~
                           ~x0 does not.  See :DOC declare." entry))
                 (t
                  (case

@@ -728,6 +728,8 @@ patterns.lisp
 seed-random.lisp
 sneaky-load.lisp
 suffixp.lisp
+tailrec.acl2
+tailrec.lisp
 top.lisp
 tshell-raw.lsp
 tshell.lisp
@@ -3807,6 +3809,7 @@ books/system:
 Makefile
 Readme.lsp
 convert-normalized-term-to-pairs.lisp
+gather-dcls.lisp
 hl-addr-combine.lisp
 pcert
 pseudo-good-worldp.lisp
