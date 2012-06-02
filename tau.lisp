@@ -3380,8 +3380,9 @@
                         ((and (nvariablep e)
                               (not (fquotep e))
                               (symbolp (ffn-symb e))
-                              (symbol-listp (fargs e))       ; faster than arglistp 
-                              (no-duplicatesp-eq (fargs e))) ; for a list of terms.
+                              (symbol-listp (fargs e)) ; faster than arglistp
+                              (no-duplicatesp-eq (fargs e)) ; for a term-listp
+                              (subsetp (all-vars1-lst hyps nil) (fargs e)))
                          2)
                         (t nil))))
                     (t nil)))
@@ -3389,8 +3390,9 @@
                         (nvariablep e)
                         (not (fquotep e))
                         (symbolp (ffn-symb e))
-                        (symbol-listp (fargs e))       ; faster than arglistp
-                        (no-duplicatesp-eq (fargs e))) ; for a list of terms.
+                        (symbol-listp (fargs e)) ; faster than arglistp
+                        (no-duplicatesp-eq (fargs e)) ; for a temp-listp
+                        (subsetp (all-vars1-lst hyps nil) (fargs e)))
                    1)
                   (t nil))))
         (t nil)))
@@ -3621,11 +3623,18 @@
                (variablep x)
                (variablep y)
                (not (eq x y))))
+         (('EQUAL ('MV-NTH x y) (fn x y))
+          (and (not (flambdap fn))
+               (variablep x)
+               (variablep y)
+               (not (eq x y))))               
          (& nil))))
 
 (defun add-tau-mv-nth-synonym-rule (rune hyps concl wrld)
   (declare (ignore hyps))
-  (let* ((fn (ffn-symb (fargn concl 1)))
+  (let* ((fn (if (eq (ffn-symb (fargn concl 1)) 'mv-nth)
+                 (ffn-symb (fargn concl 2))
+                 (ffn-symb (fargn concl 1))))
          (fns (global-val 'tau-mv-nth-synonyms wrld)))
     (cond ((member-eq fn fns)
            wrld)
@@ -3634,10 +3643,19 @@
                                         (cons fn fns)
                                         wrld))))))
 
-; Now we define the functions for checking and adding tau rules
+; Now we define the functions for checking and adding tau rules.
+
+(defun strip-force-and-case-split (lst)
+  (cond ((endp lst) nil)
+        (t (let* ((hyp (car lst))
+                  (rest (strip-force-and-case-split (cdr lst))))
+             (case-match hyp
+               (('force hyp) (cons hyp rest))
+               (('case-split hyp) (cons hyp rest))
+               (& (cons hyp rest)))))))
 
 (defun acceptable-tau-rulep (pair wrld)
-  (let ((hyps (car pair))
+  (let ((hyps (strip-force-and-case-split (car pair)))    ; <----- Insert call here
         (concl (cdr pair)))
     (cond
      ((tau-boolean-formp hyps concl wrld) 'BOOLEAN)
@@ -3730,17 +3748,17 @@
 ; coded as a tau rule.  If lost-rune-action is IGNORE, we quietly ignore such
 ; terms.  If lost-rune-action is REPORT, we return a non-nil error message.
 ; This can happen if we're in the second pass of an encapsulate and discover
-; that a predicate that was Boolean during the first pass is no longer known to
-; be Boolean.  If lost-rune-action is ACCUMULATE then we add the rune of the lost
-; rule to the 'tau-lost-runes list in wrld.
+; that a function that was Boolean during the first pass is no longer known to
+; be Boolean.  If lost-rune-action is ACCUMULATE then we add the rune of the
+; lost rule to the 'tau-lost-runes list in wrld.
 
   (cond
    ((endp pairs) (mv nil wrld))
    (t (mv-let
        (msgp wrld)
-       (let ((hyps (car (car pairs)))
-             (concl (cdr (car pairs)))
-             (kind (acceptable-tau-rulep (car pairs) wrld)))
+       (let* ((hyps (strip-force-and-case-split (car (car pairs))))
+              (concl (cdr (car pairs)))
+              (kind (acceptable-tau-rulep (cons hyps concl) wrld)))
          (case kind
            (BOOLEAN (mv nil (add-tau-boolean-rule rune hyps concl wrld)))
            (SIMPLE (mv nil (add-tau-simple-rule rune hyps concl wrld)))

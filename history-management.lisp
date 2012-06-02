@@ -22438,7 +22438,7 @@
 ; nil in that case, which is why we roll back to the previous command, not
 ; event.  We might consider rolling back to the previous event in all cases,
 ; not just when certifying or including a book.  But perhaps that's risky,
-; since one can execute non-events like defuns-fn in the look that one cannot
+; since one can execute non-events like defuns-fn in the loop that one cannot
 ; execute in a book without a trust tag (or in make-event; hmmmm...).)
 
 ; See add-trip for a call of memoize-fn using the arguments indicated below.

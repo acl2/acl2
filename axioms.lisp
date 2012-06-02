@@ -7697,10 +7697,9 @@
   ~c[(not (eq op 'SKIP))] are tau predicates.  The tau system recognizes several
   variants of ~ilc[EQUAL].
 
-  The tau algorithm is a decision procedure for the logical theory described (only)
-  by the rules in the data base.  The decision procedure can be enabled or
-  disabled.  It is disabled by default, for backwards compability with the books
-  in ACL2's regression suite.
+  The tau algorithm is a decision procedure for the logical theory
+  described (only) by the rules in the data base.  The decision procedure can
+  be enabled or disabled.  It is enabled by default.
 
   The data base contains rules derived from theorems stated by the user.
   Unlike a type system, the tau system cannot automatically infer relations
@@ -7809,18 +7808,19 @@
   (implies (and (p1 v) ... (pk v)) (q v)), ; Here k must exceed 1.
 
   ~i[Signature Form 1]:
-  (implies (and (p1 x1) (p2 x2) ...)       ; See Note below
+  (implies (and (p1 x1) (p2 x2) ...)       ; See Note below.
            (q (fn x1 x2 ...)))
 
   ~i[Signature Form 2]:
-  (implies (and (p1 x1) (p2 x2) ...)       ; See Note below
+  (implies (and (p1 x1) (p2 x2) ...)       ; See Note below.
            (q (mv-nth 'n (fn x1 x2 ...))))
 
   ~i[Big Switch]:
-  (equal (fn . formals) body),              ; See Note below.
+  (equal (fn . formals) body),             ; See Note below.
 
-  ~i[MV-NTH Synonym]:
-  (equal (fn x y) (mv-nth x y))
+  ~i[MV-NTH Synonym]:                          ; Extend Signature Form 2 to
+  (equal (nth-alt x y) (mv-nth x y)) or    ; apply not only to mv-nth, but when
+  (equal (mv-nth x y) (nth-alt x y))       ; mv-nth is replaced by nth-alt.
   ~ev[]
 
   Note on the Boolean Form: When a ~c[:tau-system] rule of this form is proved,
@@ -7845,6 +7845,8 @@
   expression in which a variable is compared successively to a sequence of
   symbols.  Only the ~i[first] big switch equation for a given function symbol
   ~c[fn] is stored!
+
+  Note on the MV-NTH Synonym Forms: These forms 
 
   To see what the tau system ``knows'' about a given function symbol
   ~pl[tau-data].  To see the entire tau data base, ~pl[tau-data-base].
@@ -16348,8 +16350,10 @@
     (value-triple '(:defund NAME))).
   ~ev[]
   Only the ~c[:]~ilc[definition] rule (and, for recursively defined functions,
-  the ~c[:]~ilc[induction] rule) for the function are disabled, and the summary
-  for the ~ilc[in-theory] event is suppressed.
+  the ~c[:]~ilc[induction] rule) for the function are disabled.  In particular,
+  ~c[defund] does not disable either the ~c[:]~ilc[type-prescription] or the
+  ~c[:]~ilc[executable-counterpart] rule.  Also, the summary for the
+  ~ilc[in-theory] event is suppressed.
 
   Note that ~c[defund] commands are never redundant (~pl[redundant-events]).
   If the function has already been defined, then the ~ilc[in-theory] event
@@ -39552,16 +39556,16 @@
   Automatic mode just means that some ~c[:tau-system] rules may be created
   also.
 
-  Of course, if the tau system is in automatic mode and a ~c[defthm] event
-  explicitly specifies a ~c[:tau-system] rule class, that tau rule is created
-  from the proved formula (or the specified ~c[:corollary]) or else an error is
-  caused.  But if the tau system is in automatic mode and a ~c[defthm] event
-  explicitly creates other classes of rules, the system quietly checks whether
-  the formula can be stored as a tau rule and stores it that way if possible,
-  in addition to the specified ways.  It is the shape of the proved formula --
-  not some ~c[:corollary] of some non-~c[:tau-system] rule class -- that
-  determines whether a tau rule is generated.  Of course, no error is signalled
-  if a proved formula of some non-~c[:tau-system] rule class fails to be of an
+  Of course, if a ~c[defthm] event explicitly specifies a ~c[:tau-system] rule
+  class, then even if the tau system is in automatic mode, that tau rule is
+  created from the proved formula (or the specified ~c[:corollary]) or else an
+  error is caused.  But if the tau system is in automatic mode and a ~c[defthm]
+  event doesn't explicitly specify a ~c[:tau-system] rule class, then the
+  system quietly checks each specified ~c[:corollary] ~-[] or, in the absence
+  of any ~c[:corollary], it checks the proved formula ~-[] for whether it can
+  be stored as a tau rule.  If so, then the system stores a tau rule, in
+  addition to storing the specified rule.  Of course, no error is signalled if
+  a proved formula of some non-~c[:tau-system] rule class fails to be of an
   appropriate shape for the tau system.
 
   Recall that the use of tau rules is controlled by the rune
