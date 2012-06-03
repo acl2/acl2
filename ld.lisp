@@ -19015,6 +19015,14 @@
 
   ~st[EXPERIMENTAL VERSIONS]
 
+  For the version supporting the reals, ACL2(r) (~pl[real]), the supporting
+  function ~c[floor1] has been defined in raw Lisp.  This avoids an error
+  such as in the following case.
+  ~bv[]
+  (defun f () (declare (xargs :guard t)) (floor1 8/3))
+  (f) ; had caused raw Lisp error, before the fix
+  ~ev[]
+
   Among the enchancements for the parallel version, ACL2(p) (~pl[parallelism]),
   are the following.~bq[]
 

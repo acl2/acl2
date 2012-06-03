@@ -912,11 +912,12 @@
 (defun-*1* equal (x y)
   (equal x y))
 
+#+:non-standard-analysis
+(defun-*1* floor1 (x)
+
 ;; RAG - I added this function to evaluate the special floor1
 ;; function, which computes floor with a modulus of 1.
 
-#+:non-standard-analysis
-(defun-*1* floor1 (x)
   (if (rationalp x)
       (floor x 1)
     (gv floor1 (x) 0)))

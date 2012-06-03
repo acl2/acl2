@@ -13886,6 +13886,14 @@
         (list 'quote r)
         'state))
 
+#+(and :non-standard-analysis (not acl2-loop-only))
+(defun floor1 (x)
+
+; See "RAG" comment in the definition of floor for an explanation of why we
+; need this function.
+
+  (floor x 1))
+
 #+acl2-loop-only
 (progn
 
@@ -13928,6 +13936,8 @@
   interested in learning more about ACL2(r).  Gamboa's dissertation
   may also be helpful.~/")
 
+(defun floor (i j)
+
 ;; RAG - This function had to be modified in a major way.  It was
 ;; originally defined only for rationals, and it used the fact that
 ;; the floor of "p/q" could be found by repeatedly subtracting "q"
@@ -13938,8 +13948,6 @@
 ;; equal to it or smaller to it by no more than 1.  Using this
 ;; function, we can define the more general floor function offered
 ;; below.
-
-(defun floor (i j)
 
   ":Doc-Section ACL2::ACL2-built-ins
 
