@@ -164,6 +164,10 @@
 				     (icfn-domain (lambda nil (idfn-domain)))
 				     (icfn-range (lambda nil (idfn-range)))
 				     (icfn-inv-interval idfn-inv-interval)))
+
+; Change for tau (after Version  4.3) by Matt K.:
+; previously, hints without tau (works if we disable (tau-system)):
+#||
 	  ("Subgoal 5"
 	   :use ((:instance idfn-inv-interval-correctness)))
 	  ("Subgoal 4"
@@ -172,6 +176,18 @@
 	   :use ((:instance idfn-range-non-trivial)))
 	  ("Subgoal 1"
 	   :use ((:instance idfn-domain-non-trivial)))
+||#
+; now, hints with tau:
+          ("Subgoal 8"
+           :use ((:instance idfn-inv-interval-correctness)))
+          ("Subgoal 6"
+           :use ((:instance idfn-range-non-trivial)))
+          ("Subgoal 5"
+           :use ((:instance idfn-domain-non-trivial)))
+          ("Subgoal 3"
+           :use ((:instance idfn-domain-non-trivial)))
+          ("Subgoal 2"
+           :use ((:instance idfn-domain-non-trivial)))
 	  )
   :rule-classes nil)
 
