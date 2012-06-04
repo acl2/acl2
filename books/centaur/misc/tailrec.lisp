@@ -239,7 +239,8 @@
    (mv-nth n x)
    (equal x y)
    (use-by-hint x)
-   (not x)))
+   (not x)
+   (use-these-hints x)))
 
 
 (defun normalize-sym-alist (keys x)
@@ -542,12 +543,11 @@
 ;; = (eval `(if ,done ,retval (,fnname . ,(get-nths arity next))) al).
 
 (defun done-retval-next-from-body (fnname arity x)
-  (declare (xargs :guard (and (symbolp fnname)
-                              (pseudo-termp x))
+  (declare (xargs :guard (pseudo-termp x)
                   :verify-guards nil))
   (cond ((atom x)           (mv nil *t* (or x *nil*) *nil*))
         ((quotep x)         (mv nil *t* x *nil*))
-        ((eq (first x) fnname) 
+        ((equal (first x) fnname) 
          (if (equal (len (rest x)) arity)
              (mv nil *nil* nil (if (= 1 arity)
                                    (car (rest x))
@@ -759,8 +759,7 @@
 
 
 (defun partial-norm-body (fnname formals x donefn retfn nextfn)
-  (declare (xargs :guard (and (pseudo-termp x)
-                              (symbolp fnname))))
+  (declare (xargs :guard (pseudo-termp x)))
   (b* ((arity (len formals))
        ((mv err done ret next)
         (done-retval-next-from-body fnname arity x))
@@ -809,18 +808,21 @@
               (pseudo-term-listp (get-mv-nths start by term))))))
 
 
+
 (defun tr-decomp-clause-proc (clause hints)
   (declare (xargs :guard (pseudo-term-listp clause)))
   (b* (((unless (equal (len hints) 6))
         (cw "wrong shape of clause proc hints~%")
         (list clause))
        ((list fn formals body donefn retfn nextfn) hints)
-       ((unless (and (symbolp fn)
-                     (not (eq fn 'quote))
+       ((unless (and (not (eq fn 'quote))
                      (pseudo-termp body)
-                     (symbolp donefn)  (not (eq donefn 'quote))
-                     (symbolp retfn)   (not (eq retfn 'quote))
-                     (symbolp nextfn)  (not (eq nextfn 'quote))))
+                     ;;(symbolp donefn)
+                     (not (eq donefn 'quote))
+                     ;;(symbolp retfn)
+                     (not (eq retfn 'quote))
+                     ;;(symbolp nextfn)
+                     (not (eq nextfn 'quote))))
         (cw "wrong types of clause proc hints~%")
         (list clause))
        ((mv err new-body clauses)
@@ -878,6 +880,457 @@
   :otf-flg t
   :rule-classes :clause-processor)
 
+
+;; Functional substitution into a recursive structure
+;; (eval (fsubst-into-tail-recursion basefn tailfn fnname formals extras x) al)
+;; = (eval `(if ,done ,basefn (,tailfn . ,(get-nths arity next))) al)
+;; (approximately) where done and next are from done-retval-next-from-body.
+;; base -- term to return in the base case, may use the extras
+;; tailfn -- function to apply on tail recursive calls
+;; fnname -- name of the original function
+;; formals -- original formals of the recursion
+;; extras -- additional formals used by the new function
+;; returns: body, recp -- where recp says whether there was a tail call
+(defun fsubst-into-tail-recursion (base tailfn fnname extras x)
+  (declare (xargs :guard (and (pseudo-termp x)
+                              (symbol-listp extras))))
+  (cond ((or (atom x)
+             (eq (car x) 'quote)
+             (and (not (consp (car x)))
+                  (not (eq (car x) 'if))
+                  (not (equal (car x) fnname))))
+         (mv base nil))
+        ((equal (first x) fnname)
+         (mv `(,tailfn ,@extras . ,(cdr x)) t))
+        ((eq (first x) 'if)
+         (b* (((mv then-body then-recp)
+               (fsubst-into-tail-recursion base tailfn fnname extras
+                                           (third x)))
+              ((mv else-body else-recp)
+               (fsubst-into-tail-recursion base tailfn fnname extras
+                                           (fourth x)))
+              (test (second x))
+              ((when (and (not then-recp)
+                          (not else-recp)))
+               (mv base nil)))
+           (mv `(if ,test ,then-body ,else-body) t)))
+        (t
+         ;; lambda.  substitute into the body.
+         (b* (((mv body recp)
+               (fsubst-into-tail-recursion
+                base tailfn fnname extras (third (car x))))
+              ((when (not recp)) (mv base nil)))
+           (mv `((lambda ,(append extras (second (car x)))
+                   ,body)
+                 ,@extras . ,(cdr x))
+               t)))))
+
+
+(local
+ (progn
+   (defun has-tail-call (fnname x)
+     (declare (xargs :guard (pseudo-termp x)))
+     (cond ((or (atom x)
+                (eq (car x) 'quote)
+                (and (not (consp (car x)))
+                     (not (eq (car x) 'if))
+                     (not (equal (car x) fnname))))
+            nil)
+           ((equal (first x) fnname) t)
+           ((eq (first x) 'if)
+            (or (has-tail-call fnname (third x))
+                (has-tail-call fnname (fourth x))))
+           (t (has-tail-call fnname (third (car x))))))
+
+   (defthm fsubst-into-tail-recursion-is-has-tail-call
+     (equal (mv-nth 1 (fsubst-into-tail-recursion base tailfn fnname extras x))
+            (has-tail-call fnname x)))
+
+   (defun fsubst-into-tail-recursion-body (base tailfn fnname extras x)
+     (declare (xargs :guard (and (pseudo-termp x)
+                                 (symbol-listp extras))))
+     (cond ((not (has-tail-call fnname x))
+            base)
+           ((equal (first x) fnname)
+            `(,tailfn ,@extras . ,(cdr x)))
+           ((eq (first x) 'if)
+            (b* ((then-body
+                  (fsubst-into-tail-recursion-body base tailfn fnname extras
+                                                   (third x)))
+                 (else-body
+                  (fsubst-into-tail-recursion-body base tailfn fnname extras
+                                                   (fourth x)))
+                 (test (second x)))
+              `(if ,test ,then-body ,else-body)))
+           (t
+            ;; lambda.  substitute into the body.
+            (b* ((body
+                  (fsubst-into-tail-recursion-body
+                   base tailfn fnname extras (third (car x)))))
+              `((lambda ,(append extras (second (car x)))
+                  ,body)
+                ,@extras . ,(cdr x))))))
+
+   (defthm fsubst-into-tail-recursion-is-fsubst-body
+     (equal (mv-nth 0 (fsubst-into-tail-recursion base tailfn fnname extras x))
+            (fsubst-into-tail-recursion-body base tailfn fnname extras x)))
+
+   (in-theory (disable fsubst-into-tail-recursion))
+
+   (defun fsubst-into-tail-ind (fnname extras x al)
+     (declare (ignorable al))
+     (cond ((atom x)           nil)
+           ((quotep x)         nil)
+           ((eq (first x) fnname) nil)
+           ((eq (first x) 'if)
+            (list (fsubst-into-tail-ind fnname extras (third x) al)
+                  (fsubst-into-tail-ind fnname extras (fourth x) al)))
+           ((atom (first x))   nil)
+           (t ;; lambda
+            (b* ((vars (second (first x)))
+                 (body (third (first x)))
+                 (args (rest x)))
+              (fsubst-into-tail-ind
+               fnname extras body
+               (pairlis$ (append extras vars)
+                         (partial-ev-lst (append extras args) al)))))))
+
+   (defthm-flag-term-vars
+     (defthm eval-under-identity-alist-containing-all-vars1
+       (implies (and (subsetp-equal (term-vars x) keys)
+                     (pseudo-termp x))
+                (equal (partial-ev x (pairlis$ (append keys vars)
+                                               (partial-ev-lst (append keys vals) al)))
+                       (partial-ev x al)))
+       :hints ('(:expand (term-vars x))
+               (and stable-under-simplificationp
+                    '(:in-theory (enable partial-ev-constraint-0))))
+       :flag term)
+     
+     (defthm eval-list-under-identity-alist-containing-all-vars1
+       (implies (and (subsetp-equal (term-vars-list x) keys)
+                     (pseudo-term-listp x))
+                (equal (partial-ev-lst x (pairlis$ (append keys vars)
+                                                   (partial-ev-lst (append keys vals) al)))
+                       (partial-ev-lst x al)))
+       :hints ('(:expand (term-vars-list x)))
+       :flag list))))
+
+
+;; clause processor for the terminates-redef proof.
+;; clause is of the form:
+;; `((equal (,terminates . ,formals)
+;;         ,(fsubst-into-tail-recursion-body
+;;            ''0
+;;            `(lambda ,formals
+;;               ((lambda (termp) (if termp (binary-+ '1 termp) 'nil))
+;;                (terminates . ,formals)))
+;;             fn
+;;             nil fn-body)
+;; We produce clauses:
+;;  ((not (use-these-hints '(:functional-instance ...)))
+;;   (equal (terminates . formals)
+;;          (if (,done . ,formals)
+;;              '0
+;;            ((lambda (mv)
+;;              ((lambda ,formals
+;;                ((lambda (termp) (if termp (binary-+ '1 termp) 'nil))
+;;                  (terminates . ,formals)))
+;;               . ,(get-mv-nths 0 (len formals) 'mv)))
+;;             (,next . ,formals)))))
+;;
+;;  ((not (use-by-hint ',done))
+;;   (equal (,done . ,formals) ,done-term)
+;;
+;;  ((not (use-by-hint ',next))
+;;   (equal (,next . ,formals) ,next-term))
+
+
+;;;; collects all used vars, not just free ones
+;;(mutual-recursion
+;; (defun used-vars (x)
+;;   (declare (Xargs :guard (pseudo-termp x)))
+;;   (cond ((atom x) (list x))
+;;         ((eq (car x) 'quote) nil)
+;;         ((consp (car x))
+;;          (append (used-vars (third (car x)))
+;;                  (used-vars-list (cdr x))))
+;;         (t (used-vars-list (cdr x)))))
+
+;; (defun used-vars-list (x)
+;;   (declare (Xargs :guard (pseudo-term-listp x)))
+;;   (if (atom x)
+;;       nil
+;;     (append (used-vars (car x))
+;;             (used-vars-list (cdr x))))))
+
+;;(local (defthm member-append
+;;         (iff (member a (append b c))
+;;              (or (member a b)
+;;                  (member a c)))))
+
+;;(defthm intersectp-append
+;;  (iff (intersectp a (append b c))
+;;       (or (intersectp a b)
+;;           (intersectp a c))))
+
+;;(defthm used-vars-of-clean-lambdas
+;;  (subsetp-equal (used-vars (clean-lambda vars body args))
+;;                 (append (used-vars body)
+;;                         (used-vars-list args)))
+;;  :hints(("Goal" :in-theory (enable clean-lambda clean-lambda1 clean-lambda2))))
+
+;;(defthm done-retval-next-from-body-used-vars
+;;  (b* (((mv err done retval next)
+;;        (done-retval-next-from-body fn arity x)))
+;;    (implies (not err)
+;;             (and (subsetp-equal (used-vars done) (used-vars x))
+;;                  (subsetp-equal (used-vars retval) (used-vars x))
+;;                  (subsetp-equal (used-vars next) (used-vars x))))))
+
+(local
+ (progn
+   (defthm-flag-term-vars
+     (defthm eval-when-term-vars-empty
+       (implies (and (syntaxp (not (equal al ''nil)))
+                     (atom (term-vars x)))
+                (equal (partial-ev x al)
+                       (partial-ev x nil)))
+       :hints ('(:expand (term-vars x))
+               (and stable-under-simplificationp
+                    '(:in-theory (enable partial-ev-constraint-0)
+                      :use ((:instance partial-ev-constraint-0 (a nil))))))
+       :flag term)
+     
+     (defthm eval-list-when-term-vars-empty
+       (implies (and (syntaxp (not (equal al ''nil)))
+                     (atom (term-vars-list x)))
+                (equal (partial-ev-lst x al)
+                       (partial-ev-lst x nil)))
+       :hints ('(:expand (term-vars-list x)))
+       :flag list))
+
+   (defthm len-is-0-rw
+     (equal (equal (len x) 0)
+            (atom x)))
+
+   (defthm kwote-lst-of-partial-ev-lst-when-len-1
+     (implies (equal (len x) 1)
+              (equal (kwote-lst (partial-ev-lst x al))
+                     (list (list 'quote (partial-ev (car x) al))))))
+
+   (defthm fsubst-into-tail-recursion-body-when-no-tail-call
+     (implies (not (has-tail-call fnname x))
+              (equal (fsubst-into-tail-recursion-body
+                      base tailfn fnname extras x)
+                     base)))
+
+   (defthm done-retval-next-from-body-when-no-tail-call
+     (implies (and (not (has-tail-call fnname x))
+                   (not (mv-nth 0 (done-retval-next-from-body fnname arity x))))
+              (equal (mv-nth 1 (done-retval-next-from-body fnname arity x))
+                     *t*)))
+
+   (encapsulate nil
+     (local (in-theory (disable fsubst-into-tail-recursion-body
+                                done-retval-next-from-body
+                                partial-ev-constraint-9
+                                partial-ev-constraint-8
+                                partial-ev-constraint-7
+                                partial-ev-constraint-11
+                                partial-ev-constraint-10
+                                partial-ev-constraint-0-rewrite
+                                default-car default-cdr len
+                                term-vars-when-symbolp
+                                term-vars-list-of-cons
+                                append-to-nil
+                                default-coerce-1
+                                default-coerce-2
+                                not
+                                TRUE-LISTP-OF-FLAG-TERM-VARS-TERM
+                                (:type-prescription pseudo-termp)
+                                (:type-prescription term-vars)
+                                (:type-prescription has-tail-call)
+                                (:type-prescription pseudo-term-listp)
+                                get-mv-nths
+                                symbol-listp
+                                has-tail-call
+                                (:type-prescription
+                                 fsubst-into-tail-recursion-body))))
+
+     (defthm fsubst-into-tail-recursion-correct
+       (b* (((mv err done ?ret next)
+             (done-retval-next-from-body fnname arity x))
+            (new-body (fsubst-into-tail-recursion-body base tailfn fnname extras
+                                                       x)))
+         (implies (and (not err)
+                       (not (eq fnname 'quote))
+                       (not (eq tailfn 'quote))
+                       (pseudo-termp x)
+                       (natp arity)
+                       (not (term-vars base))
+                       (equal extras nil)
+                       (pseudo-termp base))
+                  (equal (partial-ev new-body al)
+                         (partial-ev `(if ,done
+                                          ,base
+                                        ((lambda (mv)
+                                           (,tailfn ,@extras
+                                                    . ,(if (equal arity 1)
+                                                           '(mv)
+                                                         (get-mv-nths 0 arity
+                                                                      'mv))))
+                                         ,next))
+                                     al))))
+       :hints (("goal" :induct (fsubst-into-tail-ind fnname extras x al)
+                :do-not-induct t)
+               '(:cases ((has-tail-call fnname x)))
+               (and stable-under-simplificationp
+                    '(:expand ((:free (fnname arity) (done-retval-next-from-body fnname arity x))
+                               (:free (base tailfn fnname)
+                                (fsubst-into-tail-recursion-body base tailfn fnname nil
+                                                                 x)))))
+               (and stable-under-simplificationp
+                    '(:in-theory (e/d (partial-ev-constraint-0))))
+               (and stable-under-simplificationp
+                    '(:in-theory (enable has-tail-call))))))))
+
+
+
+
+
+(defun terminates-redef-cp (clause hints)
+  (declare (xargs :guard (pseudo-term-listp clause)))
+  (b* (((unless (= (len hints) 7))
+        (er hard? 'terminates-redef-cp "wrong number of hints")
+        (list clause))
+       ((list body formals terminates-fn done-fn next-fn fn finst-hint) hints)
+       ((unless (and (pseudo-termp body)
+                     (symbol-listp formals)
+                     (symbolp terminates-fn) (not (eq terminates-fn 'quote))
+                     (symbolp done-fn) (not (eq done-fn 'quote))
+                     (symbolp next-fn) (not (eq next-fn 'quote))
+                     (symbolp fn) (not (eq fn 'quote))))
+        (er hard? 'terminates-redef-cp "bad hints")
+        (list clause))
+       (term-lambda
+        `(lambda ,formals
+           ((lambda (termp)
+              (if termp (binary-+ '1 termp) 'nil))
+            (,terminates-fn . ,formals))))
+       ((mv termp-body &)
+        (fsubst-into-tail-recursion ''0 term-lambda fn nil body))
+       ((mv err done & next)
+        (done-retval-next-from-body fn (len formals) body))
+       ((when err)
+        (er hard? 'terminates-redef-cp err)
+        (list clause))
+       (clause-should-be `((equal (,terminates-fn . ,formals) ,termp-body)))
+       ((unless (equal clause clause-should-be))
+        (er hard? 'terminates-redef-cp "bad clause: ~x0~%should be:~%~x1~%"
+            clause clause-should-be)
+        (list clause)))
+    (list `((not (use-these-hints ',finst-hint))
+            (equal (,terminates-fn . ,formals)
+                   (if (,done-fn . ,formals)
+                       '0
+                     ((lambda (mv)
+                        (,term-lambda
+                         . ,(if (equal (len formals) 1)
+                                '(mv)
+                              (get-mv-nths 0 (len formals) 'mv))))
+                      (,next-fn . ,formals)))))
+          `((not (use-by-hint ',next-fn))
+            (equal (,next-fn . ,formals)
+                   ,next))
+          `((not (use-by-hint ',done-fn))
+            (equal (,done-fn . ,formals)
+                   ,done)))))
+
+
+(defthm terminates-redef-cp-correct
+  (implies (and (pseudo-term-listp clause)
+                (alistp a)
+                (partial-ev (conjoin-clauses
+                             (terminates-redef-cp clause hints))
+                            a))
+           (partial-ev (disjoin clause) a))
+  :hints (("goal" :do-not-induct t
+           :in-theory (disable done-retval-next-from-body
+                               has-tail-call
+                               fsubst-into-tail-recursion-body
+                               default-car default-cdr)))
+  :otf-flg t
+  :rule-classes :clause-processor)
+
+
+
+(defun measure-redef-cp (clause hints)
+  (declare (xargs :guard (pseudo-term-listp clause)))
+  (b* (((unless (= (len hints) 8))
+        (er hard? 'measure-redef-cp "wrong number of hints")
+        (list clause))
+       ((list body formals measure-fn terminates-fn done-fn next-fn fn finst-hint) hints)
+       ((unless (and (pseudo-termp body)
+                     (symbol-listp formals)
+                     (symbolp measure-fn) (not (eq measure-fn 'quote))
+                     (symbolp terminates-fn) (not (eq terminates-fn 'quote))
+                     (symbolp done-fn) (not (eq done-fn 'quote))
+                     (symbolp next-fn) (not (eq next-fn 'quote))
+                     (symbolp fn) (not (eq fn 'quote))))
+        (er hard? 'measure-redef-cp "bad hints")
+        (list clause))
+       (measure-lambda
+        `(lambda ,formals
+           (binary-+ '1 (,measure-fn . ,formals))))
+       ((mv measure-body &)
+        (fsubst-into-tail-recursion ''0 measure-lambda fn nil body))
+       ((mv err done & next)
+        (done-retval-next-from-body fn (len formals) body))
+       ((when err)
+        (er hard? 'measure-redef-cp err)
+        (list clause))
+       (clause-should-be `((equal (,measure-fn . ,formals)
+                                  (if (,terminates-fn . ,formals)
+                                      ,measure-body
+                                    '0))))
+       ((unless (equal clause clause-should-be))
+        (er hard? 'measure-redef-cp "bad clause: ~x0~%should be:~%~x1~%"
+            clause clause-should-be)
+        (list clause)))
+    (list `((not (use-these-hints ',finst-hint))
+            (equal (,measure-fn . ,formals)
+                   (if (,terminates-fn . ,formals)
+                       (if (,done-fn . ,formals)
+                           '0
+                         ((lambda (mv)
+                            (,measure-lambda
+                             . ,(if (equal (len formals) 1)
+                                    '(mv)
+                                  (get-mv-nths 0 (len formals) 'mv))))
+                          (,next-fn . ,formals)))
+                     '0)))
+          `((not (use-by-hint ',next-fn))
+            (equal (,next-fn . ,formals)
+                   ,next))
+          `((not (use-by-hint ',done-fn))
+            (equal (,done-fn . ,formals)
+                   ,done)))))
+
+(defthm measure-redef-cp-correct
+  (implies (and (pseudo-term-listp clause)
+                (alistp a)
+                (partial-ev (conjoin-clauses
+                             (measure-redef-cp clause hints))
+                            a))
+           (partial-ev (disjoin clause) a))
+  :hints (("goal" :do-not-induct t
+           :in-theory (disable done-retval-next-from-body
+                               has-tail-call
+                               fsubst-into-tail-recursion-body
+                               default-car default-cdr)))
+  :otf-flg t
+  :rule-classes :clause-processor)
 
 
 (defun subset-mask (subset lst)
@@ -994,6 +1447,14 @@
          (controllers (or (cdr (assoc :controllers keyal))
                           (subset-mask (all-vars done-term)
                                        formals)))
+         (terminates-lambda
+          `(lambda ,formals
+             ((lambda (termp)
+                (if termp (binary-+ '1 termp) 'nil))
+              (,terminates . ,formals))))
+         (measure-lambda
+          `(lambda ,formals
+             (binary-+ '1 (,measure . ,formals))))
          (fn-body `(if (,terminates . ,formals)
                        ,orig-body
                      ,diverge))
@@ -1038,6 +1499,16 @@
             (declare (xargs :measure (nfix tr-clk)
                             :hints (("goal" :in-theory
                                      '(nfix zp o-p o-finp natp o<)))))
+            ;;(if (zp tr-clk)
+            ;;    nil
+            ;;  (let ((tr-clk (1- tr-clk)))
+            ;;    ,(subst `(lambda
+            ;;               ,formals
+            ;;               (let ((__def-tr-steps__
+            ;;                      (,steps-clk tr-clk . ,formals)))
+            ;;                 (and __def-tr-steps__
+            ;;                      (+ 1 __def-tr-steps__))))
+            ;;            fn orig-body))))
             (cond ((zp tr-clk)           nil)
                   ((,done . ,formals)    0)
                   (t ,(bind formals
@@ -1073,50 +1544,133 @@
             :rule-classes
             (:type-prescription :rewrite))
 
+          ;;(local (defthm steps-clk-functional-instance
+          ;;         t
+          ;;         :rule-classes nil
+          ;;         :hints (("goal" :use ((:functional-instance
+          ;;                                pf-steps-clk
+          ;;                                . ,func-inst;; (pf-steps-clk (lambda (clk st)
+          ;;                               ;;                ,(bind formals 'st
+          ;;                                ;;                       `(,steps-clk
+          ;;                                ;;                         clk . ,formals))))
+          ;;                                ;;(pf-done (lambda (st) ,(bind formals 'st `(,done . ,formals))))
+          ;;                                ;;(pf-next (lambda (st) ,(bind formals 'st `(,next . ,formals))))
+          ;;                                ))
+          ;;                  :in-theory '(my-run2-steps)))))
+
           (defthm ,(dtr-sym terminates "-REDEF")
             (equal (,terminates . ,formals)
-                   (if (,done . ,formals)
-                       0
-                     ,(bind formals `(,next . ,formals)
-                            `(let ((next (,terminates . ,formals)))
-                               (and next (1+ next))))))
-            :hints (("goal" :use ((:instance
-                                   (:functional-instance
-                                    pf-terminates-redef
-                                    . ,func-inst)
-                                   (st ,(fget formals))))
-                     :do-not-induct t
-                     :in-theory '(,terminates-suff))
+                   ,(b* (((mv body &)
+                          (fsubst-into-tail-recursion
+                           ''0 terminates-lambda fn nil body)))
+                      body)
+                   ;;,(untranslate1
+                   ;;  (b* (((mv body &)
+                   ;;        (fsubst-into-tail-recursion
+                   ;;         ''0 terminates-lambda fn nil body)))
+                   ;;    body)
+                   ;;  nil (binop-table world) nil nil)
+                   )
+                   ;;(if (,done . ,formals)
+                   ;;    0
+                   ;;  ,(bind formals `(,next . ,formals)
+                   ;;         `(let ((next (,terminates . ,formals)))
+                   ;;            (and next (1+ next))))))
+            :hints (("goal"
+                     :clause-processor
+                     (terminates-redef-cp
+                      clause
+                      '(,body ,formals ,terminates ,done ,next ,fn
+                              ('(:use ((:instance
+                                        (:functional-instance
+                                         pf-terminates-redef
+                                         . ,func-inst)
+                                        (st ,(fget formals))))))))
+                     :in-theory nil)
+                    (use-by-computed-hint clause)
+                    (use-these-hints-hint clause)
                     (and stable-under-simplificationp
-                         '(:in-theory '(,terminates)))
-                    (and stable-under-simplificationp
-                         '(:in-theory (theory 'minimal-theory)
-                           :expand ((:free ,formals
-                                     (,steps-clk clk . ,formals))))))
+                         '(:in-theory (enable ,terminates)))
+                     ;; :use ((:instance
+                    ;;               (:functional-instance
+                    ;;                pf-terminates-redef
+                    ;;                . ,func-inst)
+                    ;;               (st ,(fget formals))))
+                    ;; :do-not-induct t
+                    ;; :in-theory '(,terminates-suff))
+                    ;;(and stable-under-simplificationp
+                    ;;     '(:in-theory '(,terminates)))
+                    ;;(and stable-under-simplificationp
+                    ;;     '(:in-theory (theory 'minimal-theory)
+                    ;;       :expand ((:free ,formals
+                    ;;                 (,steps-clk clk . ,formals)))))
+                    )
             :otf-flg t
             :rule-classes ((:definition
                             :clique (,terminates)
                             :controller-alist ((,terminates . ,controllers)))))
 
-
           (defthm ,(dtr-sym measure "-REDEF")
             (equal (,measure . ,formals)
-                   (if (or (not (,terminates . ,formals))
-                           (,done . ,formals))
-                       0
-                     ,(bind formals `(,next . ,formals)
-                            `(1+ (,measure . ,formals)))))
-            :hints (("goal" :use ((:instance
-                                   (:functional-instance
-                                    pf-measure-redef
-                                    . ,func-inst)
-                                   (st ,(fget formals))))
-                     :do-not-induct t
-                     :in-theory '(,measure)))
+                   (if (,terminates . ,formals)
+                       ,(b* (((mv body &)
+                              (fsubst-into-tail-recursion
+                               ''0 measure-lambda fn nil body)))
+                          body)
+                     0))
+            :hints (("goal"
+                     :clause-processor
+                     (measure-redef-cp
+                      clause
+                      '(,body ,formals ,measure ,terminates ,done ,next ,fn
+                              ('(:use ((:instance
+                                        (:functional-instance
+                                         pf-measure-redef
+                                         . ,func-inst)
+                                        (st ,(fget formals))))))))
+                     :in-theory nil)
+                    (use-by-computed-hint clause)
+                    (use-these-hints-hint clause)
+                    (and stable-under-simplificationp
+                         '(:in-theory (enable ,measure)))
+                     ;; :use ((:instance
+                    ;;               (:functional-instance
+                    ;;                pf-terminates-redef
+                    ;;                . ,func-inst)
+                    ;;               (st ,(fget formals))))
+                    ;; :do-not-induct t
+                    ;; :in-theory '(,terminates-suff))
+                    ;;(and stable-under-simplificationp
+                    ;;     '(:in-theory '(,terminates)))
+                    ;;(and stable-under-simplificationp
+                    ;;     '(:in-theory (theory 'minimal-theory)
+                    ;;       :expand ((:free ,formals
+                    ;;                 (,steps-clk clk . ,formals)))))
+                    )
             :otf-flg t
             :rule-classes ((:definition
                             :clique (,measure)
                             :controller-alist ((,measure . ,controllers)))))
+
+
+          ;;(defthm ,(dtr-sym measure "-REDEF")
+          ;;  (equal (,measure . ,formals)
+          ;;         (if (or (not (,terminates . ,formals))
+          ;;                 (,done . ,formals))
+          ;;             0
+          ;;           ,(bind formals `(,next . ,formals)
+          ;;                  `(1+ (,measure . ,formals)))))
+          ;;  :hints (("goal" :use ((:instance
+          ;;                         (:functional-instance
+          ;;                          pf-measure-redef
+          ;;                          . ,func-inst)
+          ;;                         (st ,(fget formals))))
+          ;;           :do-not-induct t
+          ;;           :in-theory '(,measure)))
+          ;;  :otf-flg t
+          ;;  :rule-classes ((:definition
+          ;;                  :clique (,measure)
+          ;;                  :controller-alist ((,measure . ,controllers)))))
           
           (in-theory (disable ,measure ,terminates))
 
@@ -1222,6 +1776,8 @@
 
    (def-tr my-run2 (pc prog sta)
      (declare (xargs :guard (and (natp pc) (true-listp prog))
+                     :guard-hints ('(:in-theory (disable my-run2 my-run2-redef)
+                                     :expand ((:with my-run2 (my-run2 pc prog sta)))))
                      :stobjs sta))
      (if (< (len prog) pc)
          sta
