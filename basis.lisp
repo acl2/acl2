@@ -2510,197 +2510,6 @@
     #+:non-standard-analysis
     standardp))
 
-(defconst *0* (quote (quote 0)))
-
-(defconst *1* (quote (quote 1)))
-
-(defconst *-1* (quote (quote -1)))
-
-;; RAG - To keep in sync with *primitive-formals-and-guards*, I
-;; changed the primitive guard for the < function, and the complex
-;; function.  Added the functions complexp, realp, and floor1.
-
-(defconst *cons-term1-alist*
-
-; Keep this in sync with *primitive-formals-and-guards*.  In particular, every
-; fn mentioned in that list must be handled here identically if it is handled
-; here at all.  We handle fn = 'NOT here as well, just so that substitution
-; functions never create (NOT 'T).  But with the exception of NOT, every
-; function dealt with here must also appear in *primitive-formals-and-guards*.
-; It is legal to omit functions here.  For example, we omit bad-atom<= and,
-; even with #+:non-standard-analysis, we omit i-large-integer, because there is
-; no legal ACL2 evg to which these evaluate.
-
-  '((acl2-numberp (kwote (acl2-numberp x)))
-    (binary-* (kwote (* (fix x)
-                        (fix y))))
-    (binary-+ (kwote (+ (fix x)
-                        (fix y))))
-    (unary-- (kwote (- (fix x))))
-    (unary-/ (cond ((and (acl2-numberp x) (not (equal x 0)))
-                    (kwote (/ x)))
-                   (t *0*)))
-    (< (cond ((and (real/rationalp x) (real/rationalp y))
-              (kwote (< x y)))
-             (t (kwote (let ((x (fix x))
-                             (y (fix y)))
-                         (or (< (realpart x)
-                                (realpart y))
-                             (and (= (realpart x)
-                                     (realpart y))
-                                  (< (imagpart x)
-                                     (imagpart y)))))))))
-    (car (cond ((consp x)
-                (kwote (car x)))
-               (t *nil*)))
-    (cdr (cond ((consp x)
-                (kwote (cdr x)))
-               (t *nil*)))
-    (char-code (cond ((characterp x)
-                      (kwote (char-code x)))
-                     (t *0*)))
-    (characterp (kwote (characterp x)))
-    (code-char (cond ((and (integerp x) (<= 0 x) (< x 256))
-                      (kwote (code-char x)))
-                     (t (kwote (code-char 0)))))
-    (complex (kwote (complex (if (real/rationalp x) x 0)
-                             (if (real/rationalp y) y 0))))
-    (complex-rationalp (kwote (complex-rationalp x)))
-    #+:non-standard-analysis
-    (complexp (kwote (complexp x)))
-    (coerce (cond ((equal y 'list)
-                   (if (stringp x)
-                       (kwote (coerce x 'list))
-                     *nil*))
-                  ((character-listp x)
-                   (kwote (coerce x 'string)))
-                  (t (kwote (coerce (make-character-list x) 'string)))))
-    (cons (kwote (cons x y)))
-    (consp (kwote (consp x)))
-    (denominator (cond ((rationalp x)
-                        (kwote (denominator x)))
-                       (t *1*)))
-    (equal (kwote (equal x y)))
-    #+:non-standard-analysis
-    (floor1 (kwote (floor x 1)))
-    (if (kwote (if x y (cadr (caddr args)))))
-    (imagpart (cond ((complex-rationalp x) ; could be acl2-numberp
-                     (kwote (imagpart x)))
-                    (t *0*)))
-    (integerp (kwote (integerp x)))
-    (intern-in-package-of-symbol
-     (cond ((and (stringp x)
-                 (symbolp y))
-            (kwote (intern-in-package-of-symbol x y)))
-           (t *nil*)))
-    (numerator (cond ((rationalp x)
-                      (kwote (numerator x)))
-                     (t *0*)))
-
-; We need to obtain (known-package-alist state) in order to evaluate
-; pkg-witness and pkg-imports, so we do not give them any special treatment.
-
-    (rationalp (kwote (rationalp x)))
-    #+:non-standard-analysis
-    (realp (kwote (realp x)))
-    (realpart (cond ((acl2-numberp x)
-                     (kwote (realpart x)))
-                    (t *0*)))
-    (stringp (kwote (stringp x)))
-    (symbol-name (cond ((symbolp x)
-                        (kwote (symbol-name x)))
-                       (t (kwote ""))))
-    (symbol-package-name
-     (cond ((symbolp x)
-
-; We do not let symbols satisfying bad-lisp-objectp into ACL2.  But
-; symbol-package-name would raise an error if it ran into such a symbol here.
-
-            (kwote (symbol-package-name x)))
-           (t (kwote ""))))
-    (symbolp (kwote (symbolp x)))
-    #+:non-standard-analysis
-    (standardp (kwote t))
-    #+:non-standard-analysis
-    (standard-part (kwote x))
-    (not (kwote (not x)))))
-
-(defmacro cons-term1-body ()
-  `(let ((x (cadr (car args)))
-         (y (cadr (cadr args))))
-     (case fn
-       ,@*cons-term1-alist*
-       (otherwise (cons fn args)))))
-
-(defun quote-listp (l)
-  (declare (xargs :guard (true-listp l)))
-  (cond ((null l) t)
-        (t (and (quotep (car l))
-                (quote-listp (cdr l))))))
-
-(defun cons-term1 (fn args)
-  (declare (xargs :guard (and (pseudo-term-listp args)
-                              (quote-listp args))))
-  (cons-term1-body))
-
-(defun cons-term (fn args)
-  (declare (xargs :guard (pseudo-term-listp args)))
-  (cond ((quote-listp args)
-         (cons-term1 fn args))
-        (t (cons fn args))))
-
-(defmacro cons-term* (fn &rest args)
-  `(cons-term ,fn (list ,@args)))
-
-(defmacro mcons-term (fn args)
-
-; The "m" in "mcons-term" is for "maybe fast".  Some calls of this macro can
-; probably be replaced with fcons-term.
-
-  `(cons-term ,fn ,args))
-
-(defmacro mcons-term* (fn &rest args)
-
-; The "m" in "mcons-term*" is for "maybe fast".  Some of calls of this macro
-; can probably be replaced with fcons-term*.
-
-  `(cons-term* ,fn ,@args))
-
-(defmacro fcons-term (fn args)
-
-; ; Start experimental code mod, to check that calls of fcons-term are legitimate
-; ; shortcuts in place of the corresponding known-correct calls of cons-term.
-;   #-acl2-loop-only
-;   `(let* ((fn-used-only-in-fcons-term ,fn)
-;           (args-used-only-in-fcons-term ,args)
-;           (result (cons fn-used-only-in-fcons-term
-;                         args-used-only-in-fcons-term)))
-;      (assert$ (equal result (cons-term fn-used-only-in-fcons-term
-;                                        args-used-only-in-fcons-term))
-;               result))
-;   #+acl2-loop-only
-; ; End experimental code mod.
-
-  (list 'cons fn args))
-
-(defun fargn1 (x n)
-  (declare (xargs :guard (and (integerp n)
-                              (> n 0))))
-  (cond ((eql n 1) (list 'cdr x))
-        (t (list 'cdr (fargn1 x (- n 1))))))
-
-(defmacro fargn (x n)
-  (list 'car (fargn1 x n)))
-
-(defun cdr-nest (n v)
-  (cond ((equal n 0) v)
-        (t (fargn1 v n))))
-
-(defun all-but-last (l)
-  (cond ((endp l) nil)
-        ((endp (cdr l)) nil)
-        (t (cons (car l) (all-but-last (cdr l))))))
-
 (defun equal-x-constant (x const)
 
 ; x is an arbitrary term, const is a quoted constant, e.g., a list of
@@ -2888,6 +2697,123 @@
   must return ~c[7] in that case, we have to add as the final pattern the
   ~c[&], which always matches anything."
   (cons 'cond (match-clause-list (car args) (cdr args))))
+
+(defun cons-term1-cases (alist)
+
+; Initially, alist is *primitive-formals-and-guards*.
+
+  (cond ((endp alist) nil)
+        ((member-eq (caar alist)
+                    '(if ; IF is handled directly in cons-term1-body.
+                         bad-atom<= pkg-imports pkg-witness))
+         (cons-term1-cases (cdr alist)))
+        (t (cons (let* ((trip (car alist))
+                        (fn (car trip))
+                        (formals (cadr trip))
+                        (guard (caddr trip)))
+                   (list
+                    fn
+                    (cond ((equal guard *t*)
+                           `(kwote (,fn ,@formals)))
+                          ((or (equal formals '(x))
+                               (equal formals '(x y)))
+                           `(and ,guard
+                                 (kwote (,fn ,@formals))))
+                          (t (case-match formals
+                               ((f1)
+                                `(let ((,f1 x))
+                                   (and ,guard
+                                        (kwote (,fn ,@formals)))))
+                               ((f1 f2)
+                                `(let ((,f1 x)
+                                       (,f2 y))
+                                   (and ,guard
+                                        (kwote (,fn ,@formals)))))
+                               (& (er hard! 'cons-term1-cases
+                                      "Unexpected formals, ~x0"
+                                      formals)))))))
+                 (cons-term1-cases (cdr alist))))))
+
+(defconst *cons-term1-alist*
+  (cons-term1-cases *primitive-formals-and-guards*))
+
+(defmacro cons-term1-body ()
+  `(let ((x (unquote (car args)))
+         (y (unquote (cadr args))))
+     (or (case fn
+           ,@*cons-term1-alist*
+           (if (kwote (if x y (unquote (caddr args)))))
+           (not (kwote (not x))))
+         (cons fn args))))
+
+(defun quote-listp (l)
+  (declare (xargs :guard (true-listp l)))
+  (cond ((null l) t)
+        (t (and (quotep (car l))
+                (quote-listp (cdr l))))))
+
+(defun cons-term1 (fn args)
+  (declare (xargs :guard (and (pseudo-term-listp args)
+                              (quote-listp args))))
+  (cons-term1-body))
+
+(defun cons-term (fn args)
+  (declare (xargs :guard (pseudo-term-listp args)))
+  (cond ((quote-listp args)
+         (cons-term1 fn args))
+        (t (cons fn args))))
+
+(defmacro cons-term* (fn &rest args)
+  `(cons-term ,fn (list ,@args)))
+
+(defmacro mcons-term (fn args)
+
+; The "m" in "mcons-term" is for "maybe fast".  Some calls of this macro can
+; probably be replaced with fcons-term.
+
+  `(cons-term ,fn ,args))
+
+(defmacro mcons-term* (fn &rest args)
+
+; The "m" in "mcons-term*" is for "maybe fast".  Some of calls of this macro
+; can probably be replaced with fcons-term*.
+
+  `(cons-term* ,fn ,@args))
+
+(defmacro fcons-term (fn args)
+
+; ; Start experimental code mod, to check that calls of fcons-term are legitimate
+; ; shortcuts in place of the corresponding known-correct calls of cons-term.
+;   #-acl2-loop-only
+;   `(let* ((fn-used-only-in-fcons-term ,fn)
+;           (args-used-only-in-fcons-term ,args)
+;           (result (cons fn-used-only-in-fcons-term
+;                         args-used-only-in-fcons-term)))
+;      (assert$ (equal result (cons-term fn-used-only-in-fcons-term
+;                                        args-used-only-in-fcons-term))
+;               result))
+;   #+acl2-loop-only
+; ; End experimental code mod.
+
+  (list 'cons fn args))
+
+(defun fargn1 (x n)
+  (declare (xargs :guard (and (integerp n)
+                              (> n 0))))
+  (cond ((eql n 1) (list 'cdr x))
+        (t (list 'cdr (fargn1 x (- n 1))))))
+
+(defmacro fargn (x n)
+  (list 'car (fargn1 x n)))
+
+(defun cdr-nest (n v)
+  (cond ((equal n 0) v)
+        (t (fargn1 v n))))
+
+(defun all-but-last (l)
+  (cond ((endp l) nil)
+        ((endp (cdr l)) nil)
+        (t (cons (car l) (all-but-last (cdr l))))))
 
 ; Essay on Evisceration
 
@@ -12375,26 +12301,15 @@
                                        (cadar alist)
                                        wrld)))))
 
-(defun cons-term1-alist-mv2 (alist)
-  (declare (xargs :guard (alistp alist)))
-  (cond ((endp alist) nil)
-        (t (cons (let ((entry (car alist)))
-                   (case-match entry
-                     ((fn term)
-                      `(,fn (mv t ,term)))
-                     (& (er hard? 'cons-term1-alist-mv2
-                            "Unexpected case!"))))
-                 (cons-term1-alist-mv2 (cdr alist))))))
-
-(defconst *cons-term1-alist-mv2*
-  (cons-term1-alist-mv2 *cons-term1-alist*))
-
 (defmacro cons-term1-body-mv2 ()
-  `(let ((x (cadr (car args)))
-         (y (cadr (cadr args))))
-     (case fn
-       ,@*cons-term1-alist-mv2*
-       (otherwise (mv nil form)))))
+  `(let ((x (unquote (car args)))
+         (y (unquote (cadr args))))
+     (let ((evg (case fn
+                  ,@*cons-term1-alist*
+                  (if (kwote (if x y (unquote (caddr args)))))
+                  (not (kwote (not x))))))
+       (cond (evg (mv t evg))
+             (t (mv nil form))))))
 
 (defun cons-term1-mv2 (fn args form)
   (declare (xargs :guard (and (pseudo-term-listp args)

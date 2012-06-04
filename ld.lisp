@@ -18450,6 +18450,9 @@
 ; Made a small change to newline printing in ubt-ubu-query and ubt-ubu-fn1 in
 ; support of the change to top-level (to avoid a bogus newline).
 
+; While fixing the cons-term bug, we improved the efficiency of kwote a bit,
+; avoiding some unnecessary consing.
+
   :doc
   ":Doc-Section release-notes
 
@@ -18843,6 +18846,27 @@
   change is to include the so-called expansion-alist in the certificate's
   checksum.  An example appears in a comment in the ACL2 sources, in
   ~c[(deflabel note-4-4 ...)].
+
+  Fixed a bug in ~il[guard] verification due to expanding calls of primitives
+  when translating user-level terms to internal form, so called ``translated
+  terms'' (~pl[term]).  While we have not observed a soundness hole due to this
+  bug, we have not ruled it out.  Before the bug fix, the following event was
+  admissible, as guard verification succeeded (but clearly should not have).
+  ~bv[]
+  (defun f ()
+    (declare (xargs :guard t))
+    (car (identity 3)))
+  ~ev[]
+  For those who want details about this bug, we analyze how ACL2 generates
+  ~il[guard] proof obligations for this example.  During that process, it
+  evaluates ground subexpressions.  Thus, ~c[(identity '3)] is first simplified
+  to ~c['3]; so a term must be built from the application of ~c[car] to ~c['3].
+  Guard-checking is always turned on when generating guard proof obligations,
+  so now, ACL2 refuses to simplify ~c[(car '3)] to ~c['nil].  However, before
+  this bug fix, when ACL2 was building a term by applying ~c[car] to argument
+  ~c['3], it did so directly without checking guards; source code function
+  ~c[cons-term] is `smart' that way.  After the fix, such term-building
+  reduction is only performed when the primitive's guard is met.
 
   While calls of many event macros had been prohibited inside executable code,
   others should have been but were not.  For example, the following was

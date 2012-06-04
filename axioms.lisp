@@ -12841,6 +12841,12 @@
   (and (consp x)
        (eq (car x) 'quote)))
 
+(defconst *t* (quote (quote t)))
+(defconst *nil* (quote (quote nil)))
+(defconst *0* (quote (quote 0)))
+(defconst *1* (quote (quote 1)))
+(defconst *-1* (quote (quote -1)))
+
 (defun kwote (x)
 
   ":Doc-Section ACL2::ACL2-built-ins
@@ -12854,7 +12860,21 @@
   To see the ACL2 definition of this function, ~pl[pf].~/~/"
 
   (declare (xargs :guard t))
-  (list 'quote x))
+  (mbe :logic
+
+; Theorem ev-lambda-clause-correct in
+; books/centaur/misc/evaluator-metatheorems.lisp goes out to lunch if we use
+; the :exec term below as the definition.  So we keep the :logic definition
+; simple.
+
+       (list 'quote x)
+       :exec ; save conses
+       (cond ((eq x nil) *nil*)
+             ((eq x t) *t*)
+             ((eql x 0) *0*)
+             ((eql x 1) *1*)
+             ((eql x -1) *-1*)
+             (t (list 'quote x)))))
 
 (defun kwote-lst (lst)
 
@@ -44443,10 +44463,6 @@ Lisp definition."
 
     (return-from mod-expt (si::powm base exp mod)))
   (mod (expt base exp) mod))
-
-(defconst *t* (quote (quote t)))
-
-(defconst *nil* (quote (quote nil)))
 
 (defmacro fcons-term* (&rest x)
 
