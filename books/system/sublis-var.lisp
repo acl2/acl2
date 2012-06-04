@@ -9,8 +9,6 @@
 
 (verify-termination cons-term) ; and guards
 
-(verify-termination cons-term1-alist-mv2) ; and guards
-
 (verify-termination cons-term1-mv2) ; and guards
 
 (verify-termination sublis-var1

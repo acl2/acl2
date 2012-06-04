@@ -4,9 +4,16 @@
 .:
 Makefile
 Readme.lsp
+convert-normalized-term-to-pairs.lisp
+gather-dcls.lisp
 hl-addr-combine.lisp
 pseudo-good-worldp.lisp
+pseudo-termp-lemmas.lisp
+subcor-var.lisp
 sublis-var.lisp
+subst-expr.lisp
+subst-var.lisp
+too-many-ifs.acl2
 too-many-ifs.lisp
 top.lisp
 verified-termination-and-guards.lisp
@@ -17,8 +24,13 @@ worldp-check.lisp
  (:TITLE "System Books")
  (:AUTHOR/S
   "Jared Davis for hl-addr-combine.lisp;
-   David Rager for verified-termination-and-guards.lisp,
-     pseudo-termp-lemmas.lisp,subst-expr.lisp, and subcor-var.lisp;
+   David Rager for:
+     gather-dcls.lisp
+     pseudo-termp-lemmas.lisp
+     subcor-var.lisp
+     subst-expr.lisp
+     subst-var.lisp
+     verified-termination-and-guards.lisp
    Matt Kaufmann and J Moore for the rest")
  (:Keywords "Logical World")
  (:ABSTRACT
