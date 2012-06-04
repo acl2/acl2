@@ -2411,10 +2411,10 @@
 
 (defconst *primitive-formals-and-guards*
 
-; Keep this in sync with ev-fncall-rec-logical, *cons-term1-alist*, and
-; type-set-primitive, and with the documentation and "-completion" axioms of
-; the primitives.  Also be sure to define a *1* function for each function in
-; this list that is not a member of *oneify-primitives*.
+; Keep this in sync with ev-fncall-rec-logical and type-set-primitive, and with
+; the documentation and "-completion" axioms of the primitives.  Also be sure
+; to define a *1* function for each function in this list that is not a member
+; of *oneify-primitives*.
 
 ; WARNING: for each primitive below, primordial-world puts a 'stobjs-in that is
 ; a list of nils of the same length as its formals, and a 'stobjs-out of
