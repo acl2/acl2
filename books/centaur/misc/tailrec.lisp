@@ -1333,6 +1333,9 @@
   :rule-classes :clause-processor)
 
 
+
+
+
 (defun subset-mask (subset lst)
   (declare (xargs :guard (eqlable-listp subset)))
   (if (atom lst)
@@ -1590,7 +1593,7 @@
                     (use-by-computed-hint clause)
                     (use-these-hints-hint clause)
                     (and stable-under-simplificationp
-                         '(:in-theory (enable ,terminates)))
+                         '(:in-theory '(,terminates ,steps-clk ,terminates-suff)))
                      ;; :use ((:instance
                     ;;               (:functional-instance
                     ;;                pf-terminates-redef
@@ -1632,7 +1635,7 @@
                     (use-by-computed-hint clause)
                     (use-these-hints-hint clause)
                     (and stable-under-simplificationp
-                         '(:in-theory (enable ,measure)))
+                         '(:in-theory '(,measure)))
                      ;; :use ((:instance
                     ;;               (:functional-instance
                     ;;                pf-terminates-redef
@@ -1677,8 +1680,9 @@
           (,(if non-execp 'defun-nx 'defun) ,fn ,formals
             (declare (xargs :measure (,measure . ,formals)
                             :hints (("goal" :in-theory '(,(dtr-sym measure "-NATP")
-                                                         o< o-finp o-p natp
-                                                         ,next ,done)
+                                                         o< o-finp o-p natp);; )
+                                   ;;(and stable-under-simplificationp
+                                    ;;     '(
                                      :expand ((:with ,(dtr-sym measure "-REDEF")
                                                (,measure . ,formals))
                                               (:with ,(dtr-sym terminates "-REDEF")
@@ -1697,35 +1701,45 @@
           (local (defthm ,(dtr-sym fn "-SIMPLE-TR")
                    (equal (,fn . ,formals)
                           ,simp-body)
-                   :hints (("goal" :use ,(dtr-sym fn "-DENORM"))
+                   :hints (("goal" :use ,(dtr-sym fn "-DENORM")
+                            :in-theory nil)
                            '(:clause-processor
                              (tr-decomp-clause-proc
                               clause
                               '(,fn ,formals ,body ,done ,ret ,next))
-                             
                              :do-not-induct t)
                            (use-by-computed-hint clause))
                    :rule-classes nil))
           (defthm ,(dtr-sym fn "-REDEF")
             (equal (,fn . ,formals)
                    ,orig-body)
-            :hints (("goal" :use ((:instance
+            :hints (("goal" :clause-processor
+                      (tr-decomp-clause-proc
+                       clause
+                       '(,fn ,formals ,body ,done ,ret ,next))
+                      :do-not-induct t
+                     :in-theory nil)
+                    (use-by-computed-hint clause)
+                    '(:use ((:instance
                                    (:functional-instance
                                     pf-run-is-loop
                                     (pf-run (lambda (st)
                                               ,(bind formals 'st `(,fn . ,formals))))
                                     . ,func-inst)
                                    (st ,(fget formals)))))
-                    '(:use ((:instance ,(dtr-sym fn "-SIMPLE-TR")
-                             . ,(if (< 1 (len formals))
-                                    (mv-binding-list 0 formals 'st)
-                                  `((,(car formals) st))))))
-                    '(:clause-processor
-                      (tr-decomp-clause-proc
-                       clause
-                       '(,fn ,formals ,body ,done ,ret ,next))
-                      :do-not-induct t)
-                    (use-by-computed-hint clause))
+                    (and (= (len clause) 1)
+                         (consp (car clause))
+                         (eq (caar clause) 'equal)
+                         '(:use ((:instance ,(dtr-sym fn "-SIMPLE-TR")
+                                  . ,(if (< 1 (len formals))
+                                         (mv-binding-list 0 formals 'st)
+                                       `((,(car formals) st)))))))
+                    ;;'(:clause-processor
+                    ;;  (tr-decomp-clause-proc
+                    ;;   clause
+                    ;;   '(,fn ,formals ,body ,done ,ret ,next))
+                    ;;  :do-not-induct t)
+                    )
             :rule-classes ((:definition :clique (,fn)
                             :controller-alist ((,fn . ,controllers)))))
 
@@ -1813,6 +1827,12 @@
                                   (1+ pc)
                                 (+ 2 pc))))
                      (my-run2 pc prog sta)))
-             (otherwise sta)))))
+             (otherwise (prog2$ (cw "bad instruction: ~x0~%" (car instr))
+                                sta))))))
      :diverge (mk-sta))))
+
+
+
+
+
 
