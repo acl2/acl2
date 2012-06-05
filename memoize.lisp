@@ -656,7 +656,7 @@
 
   ":Doc-Section Events
 
-  turn on memoization for one function~/
+  turn on memoization for a specified function~/
 
   This ~il[documentation] topic relates to an experimental extension of ACL2
   under development by Bob Boyer and Warren Hunt.  ~l[hons-and-memoization] for
@@ -863,7 +863,8 @@
   ~c[nil], then it must be ~c[t], which causes all memoization done for a
   top-level call of ~c[fn] to be forgotten when that top-level call exits.~/
 
-  :cite hons-and-memoization"
+  :cite hons-and-memoization
+  :cited-by hons-and-memoization"
 
   (declare (xargs :guard t)
            (ignorable condition-p condition condition-fn hints otf-flg inline
@@ -958,7 +959,15 @@
 
   Calls of this macro generate events of the form
   ~c[(table memoize-table fn nil)].  When successful, the returned
-  value is of the form ~c[(mv nil function-symbol state)]."
+  value is of the form ~c[(mv nil function-symbol state)].
+
+  To remove the effects of all ~ilc[memoize] ~il[events], evaluate:
+  ~c[(clear-memo-table)].  To save and restore memoization,
+  ~pl[save-and-clear-memoization-settings] and
+  ~pl[restore-memoization-settings].~/
+
+  :cite hons-and-memoization
+  :cited-by hons-and-memoization"
 
   (declare (xargs :guard t))
   #-acl2-loop-only
@@ -968,9 +977,8 @@
 ; example).
 
             (warning$ 'unmemoize nil
-                      "No change for function ~x0: Unmemoization ~
-                       requests are ignored in raw Lisp.  In raw ~
-                       Lisp, use unmemoize-fn."
+                      "No change for function ~x0: Unmemoization requests are ~
+                       ignored in raw Lisp.  In raw Lisp, use unmemoize-fn."
                       ',fn))
           (value-triple nil))
   #+acl2-loop-only

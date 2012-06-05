@@ -552,12 +552,7 @@
   #+lispworks
   (mp:make-condition-variable)
   #-(or ccl sb-thread lispworks)
-
-; We may wish to have assertions that evaluation of (make-condition-variable)
-; is non-nil.  So we return t, even though as of this writing there are no such
-; assertions.
-
-  t)
+  nil)
 
 (defmacro signal-condition-variable (cv)
   #-(or ccl sb-thread lispworks)
@@ -575,8 +570,8 @@
   `(sb-thread:condition-notify ,cv)
   #+lispworks
   `(mp:condition-variable-signal ,cv)
-  #-(or ccl sb-thread lispworks)
-  t)
+
+  nil)
 
 (defmacro broadcast-condition-variable (cv)
   #-(or sb-thread lispworks)
@@ -587,8 +582,8 @@
   `(sb-thread:condition-broadcast ,cv)
   #+lispworks
   `(mp:condition-variable-broadcast ,cv)
-  #-(or ccl sb-thread lispworks)
-  t)
+
+  nil)
 
 (defun wait-on-condition-variable (cv lock &key timeout)
 
@@ -600,15 +595,15 @@
   #-(or sb-thread lispworks)
   (declare (ignore cv lock timeout))
   #+ccl
-  (error "Waiting on condition variables with locks is unsupported in CCL")
+  (error "Waiting on a condition variable is unsupported in CCL")
   #+sb-thread
   (with-potential-timeout
    (sb-thread:condition-wait cv lock)
    :timeout timeout)
   #+lispworks
   (mp:condition-variable-wait cv lock :timeout timeout)
-  #-(or ccl sb-thread lispworks)
-  nil) ; the default is to never receive a signal
+
+  t)
 
 #+sb-thread
 (defstruct acl2-semaphore
@@ -782,8 +777,8 @@
     (incf (acl2-semaphore-count semaphore))
     (signal-condition-variable (acl2-semaphore-cv semaphore))))
   #+(and sb-thread sbcl-sno-patch)
-  (sb-thread:signal-semaphore semaphore)  
-  #-(or ccl sb-thread lispworks)
+  (sb-thread:signal-semaphore semaphore)
+
   nil)
 
 ; Once upon a time, we optimized the manual allocation and deallocation of
@@ -817,9 +812,11 @@
   (declare (ignore semaphore notification timeout))
 
   #+ccl
-  (if timeout
-      (ccl:timed-wait-on-semaphore semaphore timeout notification)
-    (ccl:wait-on-semaphore semaphore notification))
+  (progn 
+    (if timeout
+        (ccl:timed-wait-on-semaphore semaphore timeout notification)
+      (ccl:wait-on-semaphore semaphore notification))
+    t)
 
   #+(or (and sb-thread (not sbcl-sno-patch)) lispworks)
   (let ((received-signal nil))
@@ -887,9 +884,10 @@
 
           (signal-condition-variable (acl2-semaphore-cv semaphore))))))
   #+(and sb-thread sbcl-sno-patch)
-  (sb-thread:wait-on-semaphore semaphore 
-                               :timeout timeout
-                               :notification notification) 
+  (progn (sb-thread:wait-on-semaphore semaphore 
+                                      :timeout timeout
+                                      :notification notification)
+         t)
   #-(or ccl sb-thread lispworks)
   t) ; default is to receive a semaphore/lock
 
@@ -941,10 +939,10 @@
        (sb-thread:interrupt-thread-error
         ()
 
-; Parallelism no-fix: turns out that this error is common.  And since we think
-; that the error is caused by the thread being finished by the time we get
-; around to interrupting it, we do not print the following warning.  The error
-; message we are trying to avoid is:
+; Parallelism no-fix: it turns out that this error is common.  And since we
+; think that the error is caused by the thread being finished by the time we
+; get around to interrupting it, we do not print the following warning.  The
+; error message we are trying to avoid is:
 
 ; debugger invoked on a SB-THREAD:INTERRUPT-THREAD-ERROR in thread #<THREAD
 ;                                                                    "initial thread" RUNNING

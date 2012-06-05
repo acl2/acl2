@@ -27826,7 +27826,7 @@
 ; enforces the rule that a function may receive STATE only in a slot
 ; whose STOBJS-IN flag is STATE.  And, with only one exception, the
 ; STOBJS-IN setting is always calculated by noting which formal is
-; called STATE.  So by giving written-files ST and never reseting its
+; called STATE.  So by giving written-files ST and never resetting its
 ; STOBJS-IN, we prevent it from being fed the live state (or any
 ; state) in code (such as defuns and top-level commands) where we are
 ; checking the use of state.  (In theorems, anything goes.)  As noted,
@@ -27878,7 +27878,7 @@
 ; states but which (b) can only be logically defined in terms of calls
 ; to the primitive state accessors and updaters are (i) defined with
 ; STATE-STATE as a formal parameter, (ii) have their property list
-; smashed appropriately for STOBJS-IN and STOBJS-OUT right right after
+; smashed appropriately for STOBJS-IN and STOBJS-OUT right after
 ; their admission, to reflect their true state character, and (iii)
 ; are operationally defined with raw lisp at some level between the
 ; defun and the use of the primitive state accessors and updaters.

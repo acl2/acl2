@@ -464,9 +464,13 @@
   effort to be helpful to the user, the functions automatically memoized by
   ACL2(h) are unmemoized when setting waterfall parallelism to anything but
   ~c[nil].  Those exact functions are again memoized once waterfall parallelism
-  is disabled.  Note that no functions other than these exact functions are
-  treated in this way, so all user-defined memoizations must be handled by the
-  user.~/~/")
+  is disabled.  Additionally, any functions memoized within the ACL2 loop (by a
+  call of ~ilc[memoize]) are also unmemoized when enabling waterfall
+  parallelism and once again memoized when disabling waterfall parallelism.
+  This is implemented by returning the memoization state to what it was before
+  enabling waterfall parallelism.  As such, the user should be aware that any
+  changes made to the memoization state while waterfall parallelism is enabled
+  will be lost once waterfall parallelism is disabled.~/~/")
 
 (defdoc unsupported-parallelism-features
 
@@ -492,7 +496,12 @@
 
   Memoization is not supported when executing in parallel.
   ~l[Unsupported-waterfall-parallelism-features] for memoization details
-  related to waterfall parallelism.~/~/")
+  related to waterfall parallelism.
+
+  Since, as of April 2012, garbage collection is inherently sequential, ACL2(p)
+  minimizes the use of garbage collection by setting a high garbage collection
+  threshold.  As a result, ACL2(p) is not expected to perform well on machines
+  with less memory than this threshold (1 gigabyte, as of April 2012).~/~/")
 
 (defdoc waterfall-printing
 
@@ -535,9 +544,13 @@
            (otherwise ; :resource-based
             "Parallelizing the proof of every subgoal, as long as CPU core ~
              resources are available."))))
+
+; Keep the following ending "~%" in sync with set-waterfall-parallelism.
+
     (observation nil
                  "~@0  Setting waterfall-parallelism to ~s1.  Setting ~
-                  waterfall-printing to ~s2 (see :DOC set-waterfall-printing)."
+                  waterfall-printing to ~s2 (see :DOC ~
+                  set-waterfall-printing).~%"
                  str
                  (symbol-name val)
                  (symbol-name print-val))))
@@ -584,18 +597,8 @@
            (pprogn #+(and hons (not acl2-loop-only))
                    (progn
                      (cond ((null val)
-                            (observation 'set-waterfall-parallelism
-                                         "Unmemoizing the functions that are ~
-                                          memoized by default as part of ~
-                                          ACL2(h) (see :DOC ~
-                                          unsupported-waterfall-parallelism-features).")
                             (hons-init-hook-memoizations))
                            (t 
-                            (observation 'set-waterfall-parallelism
-                                         "Memoizing the functions that are ~
-                                        memoized by default as part of ~
-                                        ACL2(h) (see :DOC ~
-                                        unsupported-waterfall-parallelism-features).")
                             (hons-init-hook-unmemoizations)))
                      state)
                    (f-put-global 'waterfall-parallelism val state)
@@ -640,6 +643,119 @@
 ; priority, since it can easily be added as a book later -- though maybe it
 ; would be nice to have this as an event constructor, like with-output.  But
 ; while doing proofs with ACL2(hp), Rager would have found this convenient.
+
+(defmacro set-waterfall-parallelism1 (val)
+  `(let* ((val ,val)
+          (ctx 'set-waterfall-parallelism))
+     (er-progn
+      (check-for-no-override-hints ctx state)
+      (er-let* ((val (set-waterfall-parallelism-fn val ctx state)))
+               (cond ((eq val :ignored)
+                      (value val))
+                     (t (let ((print-val
+                               (waterfall-printing-value-for-parallelism-value
+                                val)))
+                          (pprogn
+                           (print-set-waterfall-parallelism-notice
+                            val print-val state)
+                           (er-progn
+                            (set-waterfall-printing-fn print-val ctx state)
+                            (value (list val print-val)))))))))))
+
+(table saved-memoize-table nil nil
+       :guard
+
+; It is tempting to install a table guard of (memoize-table-chk key val world).
+; However, that won't work, for example because it will prohibit adding an
+; entry to this table for a function that is currently memoized -- an act that
+; is the point of this table!  So instead we rely solely on the checks done
+; when putting entries in memoize-table.
+
+       t)
+
+(defmacro save-memo-table ()
+  '(with-output
+    :off (summary event)
+    (table saved-memoize-table
+           nil
+           (table-alist 'memoize-table world)
+           :clear)))
+
+(defun clear-memo-table-events (alist acc)
+  (declare (xargs :guard (true-list-listp alist)))
+  (cond ((endp alist) acc)
+        (t (clear-memo-table-events
+            (cdr alist)
+            (cons `(table memoize-table ',(caar alist) nil)
+                  acc)))))
+
+(defmacro clear-memo-table ()
+  `(with-output
+    :off (summary event)
+    (make-event
+     (let ((alist (table-alist 'memoize-table (w state))))
+       (cons 'progn
+             (clear-memo-table-events alist nil))))))
+
+(defmacro save-and-clear-memoization-settings ()
+
+  ":Doc-Section Events
+
+  save and remove the current memoization settings~/
+
+  For background on memoization, ~pl[memoize].
+
+  ~bv[]
+  General Form:
+  (save-and-clear-memoization-settings)
+  ~ev[]
+
+  Calls of this macro achieve two changes.  The first copies the current
+  memoization settings into an ACL2 ~il[table], and the second unmemoizes all
+  functions that were memoized by calls of ~ilc[memoize].  Also
+  ~pl[restore-memoization-settings].~/~/
+
+  :cite hons-and-memoization
+  :cited-by hons-and-memoization"
+
+  '(with-output
+    :off (summary event)
+    (progn (save-memo-table)
+           (clear-memo-table))))
+
+(defun set-memo-table-events (alist acc)
+  (declare (xargs :guard (true-list-listp alist)))
+  (cond ((endp alist) acc)
+        (t (set-memo-table-events
+            (cdr alist)
+            (cons `(table memoize-table ',(caar alist) ',(cdar alist))
+                  acc)))))
+
+(defmacro restore-memoization-settings ()
+
+  ":Doc-Section Events
+
+  restore the saved memoization settings~/
+
+  For background on memoization, ~pl[memoize].
+
+  ~bv[]
+  General Form:
+  (restore-memoization-settings)
+  ~ev[]
+
+  Calls of this macro restore the memoization settings saved by
+  ~ilc[save-and-clear-memoization-settings].~/~/
+
+  :cite hons-and-memoization
+  :cited-by hons-and-memoization"
+
+  `(with-output
+    :off (summary event)
+    (make-event
+     (let ((alist (table-alist 'saved-memoize-table (w state))))
+       (cons 'progn
+             (set-memo-table-events alist nil))))))
 
 (defmacro set-waterfall-parallelism (val)
 
@@ -720,6 +836,14 @@
   comprehensible output from tracing (~pl[trace$]) the ~c[@par] versions of the
   waterfall functions.
 
+  The following remark pertains to those using the `HONS' experimental
+  extension of ACL2 (~pl[hons-and-memoization]; in particular, ~pl[memoize]).
+  Since memoization is not supported when waterfall parallelism is enabled
+  (~pl[unsupported-waterfall-parallelism-features]), then when
+  ~c[set-waterfall-parallelism] is called with a non-~c[nil] value, all
+  memoized functions are unmemoized.  When ~c[set-waterfall-parallelism] is
+  again called with a ~c[nil] value, those memoization settings are restored.
+
   Note that this form cannot be used at the top level of a book, or of a
   ~ilc[progn] or ~ilc[encapsulate] event.  Here is a workaround for use in such
   contexts; of course, you may replace ~c[:full] with any other legal argument
@@ -744,22 +868,48 @@
 
   :cited-by parallel-proof"
 
-  `(let* ((val ,val)
-          (ctx 'set-waterfall-parallelism))
-     (er-progn
-      (check-for-no-override-hints ctx state)
-      (er-let* ((val (set-waterfall-parallelism-fn val ctx state)))
-               (cond ((eq val :ignored)
-                      (value val))
-                     (t (let ((print-val
-                               (waterfall-printing-value-for-parallelism-value
-                                val)))
-                          (pprogn
-                           (print-set-waterfall-parallelism-notice
-                            val print-val state)
-                           (er-progn
-                            (set-waterfall-printing-fn print-val ctx state)
-                            (value (list val print-val)))))))))))
+  `(with-output
+    :off (summary event)
+    (make-event
+     (let ((old-val (f-get-global 'waterfall-parallelism state)))
+       (declare (ignorable old-val))
+       (er-let*
+        ((new-val (set-waterfall-parallelism1 ,val)))
+        (cond
+         #+hons
+         ((and (null old-val) (car new-val))
+          (pprogn
+           (observation
+            'set-waterfall-parallelism
+
+; Here and below, we start with a "~%" so that the messages printed when
+; enabling and disabling waterfall parallelism have the same amount of space
+; between the messages and the return value.  This "~%" is paired with the one
+; at the end of the observation in print-set-waterfall-parallelism-notice.
+
+            "~%Unmemoizing the functions that are memoized by default as part ~
+             of ACL2(h) and all that have been memoized by calling memoize ~
+             (see :DOC unsupported-waterfall-parallelism-features).~%")
+
+; The functions that are memoized by default as part of hons are
+; memoized/unmemoized inside set-waterfall-parallelism-fn.  We do it there,
+; instead of as part of this macro, because those memoizations only occur in
+; raw Lisp and have nothing to do with table events.  Since this macro is an
+; ACL2-loop macro, it does not have access to hons-init-hook-memoizations and
+; hons-init-hook-unmemoizations.
+
+           (value '(save-and-clear-memoization-settings))))
+         #+hons
+         ((and old-val (null (car new-val)))
+          (pprogn
+           (observation
+            'set-waterfall-parallelism
+            "~%Memoizing the functions that are memoized by default as part ~
+             of ACL2(h) and that were memoized before disabling ~
+             waterfall-parallelism (see :DOC ~
+             unsupported-waterfall-parallelism-features).~%")
+           (value'(restore-memoization-settings))))
+         (t (value '(value-triple nil)))))))))
 
 (defun set-waterfall-printing-fn (val ctx state)
   (cond ((member-eq val *waterfall-printing-values*)
