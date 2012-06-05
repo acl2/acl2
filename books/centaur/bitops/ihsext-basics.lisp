@@ -1366,3 +1366,5 @@
 
   ;; ihs rule with unnecessary type hyps
   (in-theory (disable signed-byte-p-logext)))
+
+

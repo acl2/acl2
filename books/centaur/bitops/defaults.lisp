@@ -22,7 +22,8 @@
 (include-book "cutil/defsection" :dir :system)
 (include-book "ihs/logops-definitions" :dir :system)
 (local (include-book "ihs/logops-lemmas" :dir :system))
-(local (include-book "arithmetic-3/floor-mod/floor-mod" :dir :system))
+; (local (include-book "arithmetic-3/floor-mod/floor-mod" :dir :system))
+(local (include-book "ihsext-basics"))
 (local (in-theory (disable floor mod logbitp evenp oddp ash)))
 (local (in-theory (disable logcons logcar logcdr integer-length)))
 (local (in-theory (disable expt logior logand lognot)))
@@ -134,7 +135,7 @@ their inputs are ill-formed.")
     (implies (not (integerp y))
              (equal (ash x y)
                     (ifix x)))
-    :hints(("Goal" :in-theory (enable ash)))))
+    :hints(("Goal" :in-theory (enable ash*)))))
 
 
 (defsection logxor-defaults
@@ -151,4 +152,3 @@ their inputs are ill-formed.")
              (equal (logxor x y)
                     (logxor x 0)))
     :hints(("Goal" :in-theory (enable logxor)))))
-

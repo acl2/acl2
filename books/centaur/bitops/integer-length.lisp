@@ -160,8 +160,24 @@
                (dec-floor2-induct (- a 1)
                                   (floor x 2)))))
 
-    (local (include-book "arithmetic-3/floor-mod/floor-mod" :dir :system))
-    (local (in-theory (disable functional-commutativity-of-minus-*-left)))
+    (local (include-book "ihsext-basics"))
+    ;; (local (include-book "arithmetic-3/floor-mod/floor-mod" :dir :system))
+    ;; (local (in-theory (disable functional-commutativity-of-minus-*-left)))
+
+    (local (defthm floor-2
+             (implies (integerp i)
+                      (equal (floor i 2)
+                             (logcdr i)))
+             :hints (("goal" :use ((:instance floor-to-logtail (n 1)))
+                      :in-theory (e/d (logtail**)
+                                      (floor-to-logtail logtail))))))
+
+    (local (defthm ash-<-logcdr-lemma
+             (implies (and (< a (ash 1 n))
+                           (posp n)
+                           (integerp a))
+                      (< (logcdr a) (ash 1 (+ -1 n))))
+             :hints (("goal" :expand ((:with ash* (ash 1 n)))))))
 
     (defthm integer-length-bounded-by-expt
       (implies (and (< a (expt 2 n))
@@ -171,13 +187,15 @@
       :rule-classes ((:rewrite) (:linear))
       :hints(("Goal"
               :nonlinearp t
+              :in-theory (enable expt-2-is-ash)
               :induct (dec-floor2-induct n a)
-              :in-theory (enable integer-length))))
+              :expand ((:with integer-length* (integer-length a))))))
 
     (defthm |(integer-length (mod a (expt 2 n)))|
       (implies (and (natp a)
                     (natp n))
                (< (integer-length (mod a (expt 2 n)))
                   (+ 1 n)))
+      :hints(("Goal" :in-theory (enable* ihsext-arithmetic)))
       :rule-classes ((:rewrite) (:linear)))))
 

@@ -29,7 +29,8 @@
 (local (include-book "integer-length"))
 (local (in-theory (disable floor mod logbitp evenp oddp)))
 (local (in-theory (disable logcons logcar logcdr integer-length)))
-
+(local (include-book "ihsext-basics"))
+(local (include-book "arithmetic/top-with-meta" :dir :system))
 
 (local (defthm equal-of-logcdrs-when-equal-of-logcars
          (implies (and (integerp i)
@@ -39,25 +40,17 @@
                          (equal i j)))))
 
 (local
- (encapsulate
-   ()
-   (local (include-book "arithmetic/top-with-meta" :dir :system))
-   (defthm logbitp-of-increment
-     (implies (and (natp i)
-                   (integerp j))
-              (equal (logbitp (+ 1 i) j)
-                     (logbitp i (logcdr j))))
-     :hints(("Goal" :in-theory (enable logbitp*))))))
+ (defthm logbitp-of-increment
+   (implies (and (natp i)
+                 (integerp j))
+            (equal (logbitp (+ 1 i) j)
+                   (logbitp i (logcdr j))))))
 
 (local
- (encapsulate
-   ()
-   (local (include-book "arithmetic-3/floor-mod/floor-mod" :dir :system))
-   (defthm logcar-possibilities
-     (or (equal (logcar a) 0)
-         (equal (logcar a) 1))
-     :rule-classes ((:forward-chaining :trigger-terms ((logcar a))))
-     :hints(("Goal" :in-theory (enable logcar))))))
+ (defthm logcar-possibilities
+   (or (equal (logcar a) 0)
+       (equal (logcar a) 1))
+   :rule-classes ((:forward-chaining :trigger-terms ((logcar a))))))
 
 (local (defthm lemma1
          (implies (integerp a)
@@ -128,7 +121,6 @@ it's also occasionally useful as a witness in other theorems.</p>"
 
   (encapsulate
     ()
-    (local (include-book "arithmetic/top-with-meta" :dir :system))
 
     (local (defthm lemma
              (implies (and (integerp a)
@@ -137,7 +129,7 @@ it's also occasionally useful as a witness in other theorems.</p>"
                       (not (equal (logbitp (logbitp-mismatch* a b) a)
                                   (logbitp (logbitp-mismatch* a b) b))))
              :hints(("Goal"
-                     :in-theory (enable logbitp-mismatch* logbitp*)
+                     :in-theory (enable logbitp-mismatch* logbitp**)
                      :induct (logbitp-mismatch* a b)))))
 
     (defthm logbitp-mismatch-correct

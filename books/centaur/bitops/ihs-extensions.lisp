@@ -436,6 +436,19 @@
                      (ifix r2))))
   :hints(("Goal" :in-theory (e/d (logcons) (equal-logcons)))))
 
+(defthm logcar-of-+
+  (implies (and (integerp a)
+                (integerp b))
+           (equal (logcar (+ a b))
+                  (logxor (logcar a) (logcar b)))))
+
+(defthm logcdr-of-+
+  (implies (and (integerp a)
+                (integerp b))
+           (equal (logcdr (+ a b))
+                  (+ (logcdr a) (logcdr b)
+                     (b-and (logcar a) (logcar b))))))
+
 (encapsulate nil
 
   ;;(local (include-book "arithmetic-3/extra/top-ext" :dir :system))
@@ -531,7 +544,41 @@
 
 
 (encapsulate nil
-  (local (include-book "arithmetic-3/extra/top-ext" :dir :system))
+  ; (local (include-book "arithmetic-3/extra/top-ext" :dir :system))
+
+  (local (defthm lemma1
+           (implies (and (integerp x)
+                         (<= 1 x)
+                         (<= 0 (ifix n)))
+                    (integerp (expt x n)))
+           :hints(("Goal" :in-theory (enable expt)))))
+
+  (local (defthm lemma2-1
+           (implies (and (rationalp x)
+                         (< 1 x))
+                    (and (< 0 (/ x))
+                         (< (/ x) 1)))
+           :hints (("goal" :nonlinearp t))
+           :rule-classes (:rewrite :linear)))
+
+  (local (defthm lemma2
+           (implies (and (rationalp x)
+                         (< 1 x)
+                         (< (ifix n) 0))
+                    (and (< 0 (expt x n))
+                         (< (expt x n) 1)))
+           :hints(("Goal" :in-theory (enable expt))
+                  (and stable-under-simplificationp
+                       '(:nonlinearp t)))
+           :rule-classes (:rewrite :linear)))
+
+  (local (defthm lemma3
+           (implies (and (rationalp x)
+                         (< 1 x)
+                         (< (ifix n) 0))
+                    (not (integerp (expt x n))))
+           :hints (("goal" :use lemma2
+                    :in-theory (disable lemma2)))))
 
   (defthmd |(integerp (expt x n))|
     (implies (and (integerp x)
@@ -612,14 +659,109 @@
 
 
 (encapsulate nil
-  (local (local (include-book "arithmetic-3/extra/top-ext" :dir :system)))
+  ; (local (local (include-book "arithmetic-3/extra/top-ext" :dir :system)))
+  (local (include-book "arithmetic/top-with-meta" :dir :system))
 
-  (defthmd |(mod a (expt 2 n)) < (expt 2 n)|
-    (implies (integerp a)
-             (< (mod a (expt 2 n))
-                (expt 2 n)))
-    :rule-classes ((:rewrite) (:linear)))
+  (local (defthm nonneg-integer-quotient-bound
+           (implies (and (natp x) (posp y))
+                    (< (- (/ x y) 1)
+                       (nonnegative-integer-quotient x y)))
+           :rule-classes (:rewrite :linear)))
 
+  (local (defthm nonneg-integer-quotient-bound2
+           (implies (and (natp x) (posp y))
+                    (<= (nonnegative-integer-quotient x y)
+                        (/ x y)))
+           :rule-classes (:rewrite :linear)))
+
+  (local (defthm rw-less-1
+           (implies (and (rationalp x)
+                         (rationalp m))
+                    (equal (< (+ x (- (* m (nonnegative-integer-quotient a b)))) m)
+                           (< (- x m) (* m (nonnegative-integer-quotient a b)))))
+           :hints(("Goal" :in-theory (disable nonnegative-integer-quotient)
+                   :use ((:instance <-on-others
+                          (x (+ x (- (* m (nonnegative-integer-quotient a b)))))
+                          (y m))
+                         (:instance <-on-others
+                          (x (+ x (- m)))
+                          (y (* m (nonnegative-integer-quotient a b)))))))))
+
+  (local (defthm rw-less-2
+           (implies (and (rationalp x)
+                         (rationalp m))
+                    (equal (< (+ x (* m (nonnegative-integer-quotient a b))) 0)
+                           (< x (* (- m) (nonnegative-integer-quotient a b)))))
+           :hints(("Goal" :in-theory (disable nonnegative-integer-quotient)
+                   :use ((:instance <-on-others
+                          (x x)
+                          (y (* (- m) (nonnegative-integer-quotient a b)))))))))
+
+  (local (defthm rw-less-3
+           (implies (and (rationalp x)
+                         (rationalp m)
+                         (< 0 m))
+                    (equal (< x
+                              (* m (nonnegative-integer-quotient a b)))
+                           (< (/ x m) (nonnegative-integer-quotient a b))))
+           :hints (("goal" :in-theory (disable nonnegative-integer-quotient)
+                    :nonlinearp t))))
+
+  (local (defthm rw-less-4-1
+           (implies (and (rationalp x)
+                         (rationalp m)
+                         (< 0 m))
+                    (equal (> x
+                              (* m (nonnegative-integer-quotient a b)))
+                           (> (/ x m) (nonnegative-integer-quotient a b))))
+           :hints (("goal" :in-theory (disable nonnegative-integer-quotient)
+                    :nonlinearp t))))
+
+  (local (defthm negation-switches-order
+           (iff (< x (- y))
+                (< y (- x)))))
+
+  (local (defthm rw-less-4
+           (implies (and (rationalp x)
+                         (rationalp m)
+                         (< 0 m))
+                    (equal (< x
+                              (- (* m (nonnegative-integer-quotient a b))))
+                           (< (nonnegative-integer-quotient a b) (- (/ x m)))))
+           :hints (("goal" :in-theory (disable nonnegative-integer-quotient
+                                               rw-less-4-1)
+                    :use ((:instance rw-less-4-1
+                           (x (- x))))
+                    :nonlinearp t))))
+
+  (defthmd mod-positive-bound
+    (implies (and (rationalp m)
+                  (< 0 m)
+                  (rationalp x))
+             (< (mod x m) m))
+    :hints(("Goal" :in-theory (e/d (mod floor natp)
+                                   (nonneg-integer-quotient-bound
+                                    nonneg-integer-quotient-bound2
+                                    <-*-/-left-commuted))
+            :use ((:instance nonneg-integer-quotient-bound
+                   (x (numerator (/ x m)))
+                   (y (denominator (/ x m))))
+                  (:instance nonneg-integer-quotient-bound
+                   (x (- (numerator (/ x m))))
+                   (y (denominator (/ x m))))
+                  (:instance nonneg-integer-quotient-bound2
+                   (x (numerator (/ x m)))
+                   (y (denominator (/ x m))))
+                  (:instance nonneg-integer-quotient-bound2
+                   (x (- (numerator (/ x m))))
+                   (y (denominator (/ x m))))))
+           (and stable-under-simplificationp
+                '(:nonlinearp t)))
+    :otf-flg t
+    :rule-classes (:rewrite :linear)))
+
+(encapsulate nil
+  (local (include-book "arithmetic/top-with-meta" :dir :system))
   (defthmd expt-2-monotonic
     (implies (and (< a b)
                   (integerp a)
@@ -628,13 +770,13 @@
                 (expt 2 b)))
     :rule-classes ((:rewrite) (:linear))))
 
-(local (in-theory (enable |(mod a (expt 2 n)) < (expt 2 n)|)))
+(local (in-theory (enable mod-positive-bound)))
 (local (in-theory (enable expt-2-monotonic)))
 
 
 
 (encapsulate nil
-  (local (local (include-book "arithmetic-3/extra/top-ext" :dir :system)))
+  (local (local (include-book "arithmetic/top-with-meta" :dir :system)))
 
   (defthmd |(logbitp n (+ (expt 2 n) a))|
     (implies (and (integerp a)
@@ -647,7 +789,10 @@
                                   (natp n))
                              (equal (logbitp n (+ a (expt 2 n)))
                                     (not (logbitp n a))))))
-    :hints(("Goal" :in-theory (enable logbitp evenp oddp)))))
+    :hints(("Goal" :in-theory (e/d* (ihsext-arithmetic
+                                     ihsext-recursive-redefs
+                                     ihsext-inductions)
+                                    (ash-1-removal))))))
 
 (local (in-theory (enable |(logbitp n (+ (expt 2 n) a))|)))
 
@@ -656,7 +801,7 @@
     |(logcdr (expt 2 n))|
     |(logcar (expt 2 n))|
     logand-with-2^n-is-logbitp
-    |(mod a (expt 2 n)) < (expt 2 n)|
+    mod-positive-bound
     expt-2-monotonic
     |(logbitp n (+ (expt 2 n) a))|))
   

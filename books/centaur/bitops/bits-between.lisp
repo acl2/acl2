@@ -25,7 +25,7 @@
 (local (include-book "ihs-extensions"))
 (local (include-book "unicode/rev" :dir :system))
 (local (include-book "unicode/append" :dir :system))
-(local (include-book "arithmetic-3/extra/top-ext" :dir :system))
+; (local (include-book "arithmetic-3/extra/top-ext" :dir :system))
 
 
 
@@ -165,6 +165,8 @@ bitset-members).</p>"
                  nil
                (my-induct (+ (nfix n) 1) m))))
 
+    (local (include-book "arithmetic/top-with-meta" :dir :system))
+
     (defthm bits-between-of-right-shift
       (implies (and (natp n)
                     (natp m)
@@ -201,15 +203,15 @@ bitset-members).</p>"
 
   (encapsulate
     ()
-    (local (in-theory (disable
-                       expt-is-increasing-for-base->-1
-                       expt-is-weakly-increasing-for-base->-1
-                       expt->-1-one
-                       expt-type-prescription-positive-base
-                       expt-type-prescription-integerp-base
-                       expt-type-prescription-nonnegative-base
-                       expt-type-prescription-rationalp-base
-                       expt-type-prescription-nonpositive-base-odd-exponent)))
+    ;; (local (in-theory (disable
+    ;;                    expt-is-increasing-for-base->-1
+    ;;                    expt-is-weakly-increasing-for-base->-1
+    ;;                    expt->-1-one
+    ;;                    expt-type-prescription-positive-base
+    ;;                    expt-type-prescription-integerp-base
+    ;;                    expt-type-prescription-nonnegative-base
+    ;;                    expt-type-prescription-rationalp-base
+    ;;                    expt-type-prescription-nonpositive-base-odd-exponent)))
 
     (local (defthm l0
              (implies (and (natp n)
@@ -233,11 +235,11 @@ bitset-members).</p>"
 
   (encapsulate
     ()
-    (local (in-theory (disable
-                       expt-is-increasing-for-base->-1
-                       |(expt x (if a b c))|
-                       expt-is-weakly-increasing-for-base->-1
-                       expt->-1-one)))
+    ;; (local (in-theory (disable
+    ;;                    expt-is-increasing-for-base->-1
+    ;;                    |(expt x (if a b c))|
+    ;;                    expt-is-weakly-increasing-for-base->-1
+    ;;                    expt->-1-one)))
     (local (defthm l0
              (implies (and (natp a)
                            (natp b))
@@ -305,13 +307,13 @@ bitset-members).</p>"
          '(true-listp-append
            logbitp-default-2
            bits-between-upper
-           reduce-integerp-+
-           integerp-minus-x
+           ; reduce-integerp-+
+           ; integerp-minus-x
            append not
            logbitp-default-1
            sets::double-containment
-           normalize-terms-such-as-a/a+b-+-b/a+b
-           normalize-addends
+           ; normalize-terms-such-as-a/a+b-+-b/a+b
+           ; normalize-addends
            default-+-1 default-+-2
            logcar-default default-car default-cdr
            normalize-logbitp-when-mods-equal
@@ -386,6 +388,7 @@ benefit.</p>"
               :expand ((:free (a b c) (append (cons a b) c))
                        (:free (c) (append nil c)))))))
 
+  (local (include-book "arithmetic/top-with-meta" :dir :system))
   (defthm bits-0-31-redef
     (implies (natp offset)
              (equal (bits-0-31 offset x acc)
@@ -483,6 +486,7 @@ the following loops, this is about 3.6x faster than bits-between.</p>
               :expand ((:free (a b c) (append (cons a b) c))
                        (:free (c) (append nil c)))))))
 
+  (local (include-book "arithmetic/top-with-meta" :dir :system))
   (defthm 60bits-0-59-redef
     (implies (natp offset)
              (equal (60bits-0-59 offset x acc)
