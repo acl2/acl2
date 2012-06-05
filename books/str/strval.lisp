@@ -281,6 +281,70 @@ can tolerate non-hex digits after the number.</p>"
     (and (stringp x)
          (bit-digit-listp (coerce x 'list)))))
 
+(defsection parse-bits-from-charlist
+  :parents (numbers)
+  :short "Parse a binary number from the beginning of a character list."
+  :long "<p>This is like @(call parse-nat-from-charlist), but deals with binary
+digits (#\0 and #\1) and returns their binary value.</p>"
+
+  (defund parse-bits-from-charlist (x val len)
+    (declare (type integer val)
+             (type integer len)
+             (xargs :guard (and (character-listp x)
+                                (natp val)
+                                (natp len))))
+    (cond ((atom x)
+           (mv (mbe :logic (nfix val) :exec val)
+               (mbe :logic (nfix len) :exec len)
+               nil))
+          ((eql (car x) #\0)
+           (parse-bits-from-charlist
+            (cdr x)
+            (mbe :logic (* 2 (nfix val)) :exec (ash val 1))
+            (+ 1 (mbe :logic (nfix len) :exec len))))
+          ((eql (car x) #\1)
+           (parse-bits-from-charlist
+            (cdr x)
+            (+ 1 (mbe :logic (* 2 (nfix val)) :exec (ash val 1)))
+            (+ 1 (mbe :logic (nfix len) :exec len))))
+          (t
+           (mv (mbe :logic (nfix val) :exec val)
+               (mbe :logic (nfix len) :exec len)
+               x))))
+
+  (defthm natp-of-parse-bits-from-charlist
+    (implies (natp val)
+             (natp (mv-nth 0 (parse-bits-from-charlist x val len))))
+    :rule-classes :type-prescription
+    :hints(("Goal" :in-theory (enable parse-bits-from-charlist)))))
+
+(defsection bit-digit-list-value
+  :parents (numbers)
+  :short "Coerces a list of bit digits into a natural number."
+  :long "<p>@(call bit-digit-list-value) is like @(see digit-list-value) but
+for bit numbers.</p>
+
+<p>See also @(see parse-bits-from-charlist) for a more flexible function that
+can tolerate non-bit digits after the number.</p>"
+
+  (defund bit-digit-list-value (x)
+    (declare (xargs :guard (and (character-listp x)
+                                (bit-digit-listp x))))
+    (b* (((mv val ?len ?rest)
+          (parse-bits-from-charlist x 0 0)))
+      val))
+
+  (defthm natp-of-bit-digit-list-value
+    (natp (bit-digit-list-value x))
+    :rule-classes :type-prescription
+    :hints(("Goal" :in-theory (enable bit-digit-list-value))))
+
+  (local (assert! (and (equal (bit-digit-list-value (coerce "0" 'list)) #b0)
+                       (equal (bit-digit-list-value (coerce "1" 'list)) #b1)
+                       (equal (bit-digit-list-value (coerce "01" 'list)) #b01)
+                       (equal (bit-digit-list-value (coerce "0101011101" 'list))
+                              #b0101011101)))))
+
 
 
 
@@ -346,5 +410,24 @@ string has any non-hex digit characters, we return <tt>nil</tt>.</p>"
         (not (strval16 x)))
     :rule-classes :type-prescription
     :hints(("Goal" :in-theory (enable strval16)))))
+
+(defsection strval2
+  :parents (numbers)
+  :short "Interpret a string as a binary number."
+  :long "<p>@(call strval2) is like @(see strval) but for binary instead
+of decimal numbers.  For example, <tt>(strval16 \"10\")</tt> is 2.  If the
+string has any non-binary digit characters, we return <tt>nil</tt>.</p>"
+
+  (defund strval2 (x)
+    (declare (type string x))
+    (let ((chars (coerce x 'list)))
+      (and (bit-digit-listp chars)
+           (bit-digit-list-value chars))))
+
+  (defthm type-of-strval2
+    (or (natp (strval2 x))
+        (not (strval2 x)))
+    :rule-classes :type-prescription
+    :hints(("Goal" :in-theory (enable strval2)))))
 
 
