@@ -104,7 +104,17 @@
       :hints(("Goal"
               :induct (my-induct n)
               :do-not '(generalize fertilize)
-              :in-theory (enable integer-length*)))))
+              :in-theory (enable integer-length*))))
+
+    (defthm |(integer-length (1- (expt 2 n)))|
+      (implies (natp n)
+               (equal (integer-length (+ -1 (expt 2 n)))
+                      n))
+      :hints(("Goal"
+              :induct (my-induct n)
+              :do-not '(generalize fertilize)
+              :in-theory (enable integer-length* expt)))))
+
 
 
   (defthm |(integer-length (floor n 2))|

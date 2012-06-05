@@ -27,6 +27,7 @@
 (include-book "ihs-extensions")
 (include-book "integer-length")
 (include-book "sbitsets")
+(include-book "part-select")
 
 (defxdoc bitops
   :short "Centaur Bitops Library"
