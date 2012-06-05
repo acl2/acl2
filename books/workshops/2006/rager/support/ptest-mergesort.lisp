@@ -18,6 +18,7 @@
       (reverse acc)
     (integers (1- n) (cons n acc))))
 
+(comp t)
 
 (defconst *my-ints*
   (integers 2000000 nil))
