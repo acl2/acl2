@@ -3550,7 +3550,7 @@
   ~ilc[consp]s, then ~c[x] may be bound to the wrong one of them.  For much
   more information on free variables, ~pl[free-variables].
 
-  ~b[E4. Obtaining information]
+  ~b[E4. Obtaining information]~nl[]
   Use ~c[:]~ilc[pl] ~c[foo] to inspect ~il[rewrite] rules whose left hand sides are
   applications of the function ~c[foo].  Another approach to seeing
   which ~il[rewrite] rules apply is to enter the ~il[proof-checker] with

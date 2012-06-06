@@ -3898,24 +3898,23 @@
 ; See also guard-clauses+, which is a wrapper for guard-clauses that eliminates
 ; ground subexpressions.
 
-; We return two results.  The first is a set of clauses whose
-; conjunction establishes that all of the guards in term are
-; satisfied.  The second result is a ttree justifying the
-; simplification we do and extending ttree.  Stobj-optp indicates
-; whether we are to optimize away stobj recognizers.  Call this with
-; stobj-optp = t only when it is known that the term in question has
-; been translated with full enforcement of the stobj rules.  Clause is
-; the list of accumulated, negated tests passed so far on this branch.
-; It is maintained in reverse order, but reversed before we return it.
+; We return two results.  The first is a set of clauses whose conjunction
+; establishes that all of the guards in term are satisfied.  The second result
+; is a ttree justifying the simplification we do and extending ttree.
+; Stobj-optp indicates whether we are to optimize away stobj recognizers.  Call
+; this with stobj-optp = t only when it is known that the term in question has
+; been translated with full enforcement of the stobj rules.  Clause is the list
+; of accumulated, negated tests passed so far on this branch.  It is maintained
+; in reverse order, but reversed before we return it.
 
 ; We do not add the definition rune for *extra-info-fn* in ttree.  The caller
 ; should be content with failing to report that rune.  Prove-guard-clauses is
 ; ultimately the caller, and is happy not to burden the user with mention of
 ; that rune.
 
-; Note: Once upon a time, this function took an additional argument,
-; alist, and was understood to be generating the guards for term/alist.
-; Alist was used to carry the guard generation process into lambdas.
+; Note: Once upon a time, this function took an additional argument, alist, and
+; was understood to be generating the guards for term/alist.  Alist was used to
+; carry the guard generation process into lambdas.
 
   (cond ((variablep term) (mv nil ttree))
         ((fquotep term) (mv nil ttree))
@@ -3930,8 +3929,8 @@
                           debug-info
                           stobj-optp
 
-; We pass in the empty clause here, because we do not want it involved
-; in wrapping up the lambda term that we are about to create.
+; We pass in the empty clause here, because we do not want it involved in
+; wrapping up the lambda term that we are about to create.
 
                           nil
                           wrld ttree)
@@ -3968,8 +3967,8 @@
                             debug-info
                             stobj-optp
 
-; But the additions we make to the two branches is based on the
-; simplified test.
+; But the additions we make to the two branches is based on the simplified
+; test.
 
                             (add-literal-smart (dumb-negate-lit test)
                                                clause
@@ -4001,14 +4000,14 @@
 ; <body> of the lambda has been translated despite its occurrence inside a
 ; quoted lambda.  The <name-dropper-term> is always of the form 'NIL or a
 ; variable symbol or a PROG2$ nest of variable symbols and thus has a guard of
-; T.  Furthermore, translate insures that the free variables of the lambda
-; are those of the <name-dropper-term>.  Thus, all the variables we encounter in
+; T.  Furthermore, translate insures that the free variables of the lambda are
+; those of the <name-dropper-term>.  Thus, all the variables we encounter in
 ; <body> are variables known in the current context, except <whs>.  By the way,
 ; ``whs'' stands for ``wormhole status'' and if it is the lambda formal we know
 ; it occurs in <body>.
 
-; The raw lisp macroexpansion of the first wormhole-eval form above is
-; (modulo the name of var)
+; The raw lisp macroexpansion of the first wormhole-eval form above is (modulo
+; the name of var)
 
 ; (let* ((<whs> (cdr (assoc-equal '<name> *wormhole-status-alist*)))
 ;        (val <body>))
@@ -4038,28 +4037,40 @@
                               body
                             (subst-var new-var whs body))))
            (guard-clauses new-body debug-info stobj-optp clause wrld ttree)))
+        ((throw-nonexec-error-p term :non-exec nil)
 
-; At one time we optimized away the guards on (nth 'n MV) if n is an
-; integerp and MV is bound in (former parameter) alist to a call of a
-; multi-valued function that returns more than n values.  Later we
-; changed the way mv-let is handled so that we generated calls of
-; mv-nth instead of nth, but we inadvertently left the code here
-; unchanged.  Since we have not noticed resulting performance
-; problems, and since this was the only remaining use of alist when we
-; started generating lambda terms as guards, we choose for
+; It would be sound to replace the test above by (throw-nonexec-error-p term
+; nil nil).  However, through Version_4.3 we have always generated guard proof
+; obligations for defun-nx, and indeed for any form (prog2$
+; (throw-nonexec-error 'fn ...) ...).  So we restrict this special treatment to
+; forms (prog2$ (throw-nonexec-error :non-exec ...) ...), as may be generated
+; by calls of the macro, non-exec.  The corresponding translated term is of the
+; form (return-last 'progn (throw-non-exec-error ':non-exec ...) targ3); then
+; only the throw-non-exec-error call needs to be considered for guard
+; generation, not targ3.
+
+         (guard-clauses (fargn term 2) debug-info stobj-optp clause wrld ttree))
+
+; At one time we optimized away the guards on (nth 'n MV) if n is an integerp
+; and MV is bound in (former parameter) alist to a call of a multi-valued
+; function that returns more than n values.  Later we changed the way mv-let is
+; handled so that we generated calls of mv-nth instead of nth, but we
+; inadvertently left the code here unchanged.  Since we have not noticed
+; resulting performance problems, and since this was the only remaining use of
+; alist when we started generating lambda terms as guards, we choose for
 ; simplicity's sake to eliminate this special optimization for mv-nth.
 
         (t
 
-; Here we generate the conclusion clauses we must prove.  These
-; clauses establish that the guard of the function being called is
-; satisfied.  We first convert the guard into a set of clause
-; segments, called the guard-concl-segments.
+; Here we generate the conclusion clauses we must prove.  These clauses
+; establish that the guard of the function being called is satisfied.  We first
+; convert the guard into a set of clause segments, called the
+; guard-concl-segments.
 
-; We optimize stobj recognizer calls to true here.  That is, if the
-; function traffics in stobjs (and is not non-executablep!), then it
-; was so translated and we know that all those stobj recognizer calls
-; are true.
+; We optimize stobj recognizer calls to true here.  That is, if the function
+; traffics in stobjs (and is not non-executablep!), then it was so translated
+; (except in cases handled by the throw-nonexec-error-p case above), and we
+; know that all those stobj recognizer calls are true.
 
 ; Once upon a time, we normalized the 'guard first.  Is that important?
 
@@ -4068,15 +4079,15 @@
                                              stobj-optp
                                              wrld)
 
-; Warning:  It might be tempting to pass in the assumptions of clause into
-; the second argument of clausify.  That would be wrong!  The guard has not
-; yet been instantiated and so the variables it mentions are not the same
-; ones in clause!
+; Warning: It might be tempting to pass in the assumptions of clause into the
+; second argument of clausify.  That would be wrong!  The guard has not yet
+; been instantiated and so the variables it mentions are not the same ones in
+; clause!
 
                                       nil
 
-; Should we expand lambdas here?  I say ``yes,'' but only to be
-; conservative with old code.  Perhaps we should change the t to nil?
+; Should we expand lambdas here?  I say ``yes,'' but only to be conservative
+; with old code.  Perhaps we should change the t to nil?
 
                                       t
 

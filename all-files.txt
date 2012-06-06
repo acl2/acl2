@@ -588,6 +588,7 @@ equal-by-logbitp.lisp
 ihs-extensions.lisp
 ihsext-basics.lisp
 integer-length.lisp
+part-select.lisp
 sbitsets.lisp
 top.lisp
 

@@ -18659,6 +18659,43 @@
   call of ~c[top-level].  Thanks to Jared Davis for bringing this issue to our
   attention.
 
+  It is no longer the case that when you specify ~ilc[xargs] keyword
+  ~c[:non-executable t] in a ~ilc[defun] form rather than using ~ilc[defun-nx],
+  then the form of the body need match only the shape
+  ~c[(prog2$ (throw-nonexec-error ... ...) ...)].  We now require that the body
+  of the definition of a function symbol, ~c[fn], with formals ~c[(x1 ... xk)],
+  be of the form ~c[(prog2$ (throw-nonexec-error 'fn (list x1 ... xk)) ...)].
+  This fixes the following odd behavior, which could be considered a bug.
+  Consider a book that contains the following two events.
+  ~bv[]
+  (defun foo (x)
+    (declare (xargs :guard t :non-executable t :mode :logic))
+    (prog2$ (throw-nonexec-error 'bar (list x))
+            (cons 3 x)))
+  (defn h (x)
+    (foo x))
+  ~ev[]
+  After certifying this book and then including it in a new session, the
+  behavior occurred that is displayed below; notice the mention of ~c[BAR].
+  However, if the two forms were submitted directly in the loop, then the error
+  message had mentioned ~c[FOO] instead of ~c[BAR].  This discrepancy has been
+  eliminated, by rejecting the proposed definition of ~c[foo] because the name
+  in the first argument of ~c[throw-nonexec-error] was ~c['bar] where now it
+  must be ~c['foo].
+  ~bv[]
+  ACL2 !>(h 3)
+
+
+  ACL2 Error in TOP-LEVEL:  ACL2 cannot ev the call of undefined function
+  BAR on argument list:
+
+  (3)
+
+  To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
+
+  ACL2 !>
+  ~ev[]
+
   ~st[NEW FEATURES]
 
   A new ``tau system'' provides a kind of ``type checker.''  ~l[tau-system].
@@ -18709,6 +18746,10 @@
          :exec (let ((val (fld foo)))
                  (update-fld val foo))))
   ~ev[]
+
+  A new macro, ~ilc[non-exec], allows the use of non-executable code, for
+  example inside ordinary function definitions.  Thanks to Sol Swords for
+  requesting this enhancement.
 
   A new ``provisional certification'' process is supported that can allow
   ~il[books] to be certified before their included sub-books have been

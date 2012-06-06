@@ -115,49 +115,46 @@
                                           ctx wrld state-vars)))
                    (trans-value (cons x y))))))))))
 
-(defun throw-nonexec-error-p (body)
+(defun chk-non-executable-bodies (names arglists bodies non-executablep ctx
+                                        state)
 
-; We recognize terms that could result from translating (prog2$
-; (throw-nonexec-error 'name ...) ...), i.e., terms of the form
-; (return-last 'progn (throw-non-exec-error ...) ...).
-
-  (and (not (variablep body))
-;      (not (fquotep body))
-       (eq (ffn-symb body) 'return-last)
-       (quotep (fargn body 1))
-       (eq (unquote (fargn body 1)) 'progn)
-       (let ((prog2$-arg1 (fargn body 2)))
-         (and (not (variablep prog2$-arg1))
-;             (not (fquotep prog2$-arg1))
-              (eq (ffn-symb prog2$-arg1)
-                  'throw-nonexec-error)))))
-
-(defun chk-non-executable-bodies (names bodies ctx state)
-
-; Note that bodies are untranslated.
+; Note that bodies are in translated form.
 
   (cond ((endp bodies)
          (value nil))
-        (t (let ((body (car bodies)))
+        (t (let ((name (car names))
+                 (body (car bodies))
+                 (formals (car arglists)))
 
-; Body should be, in essence, (prog2$ (throw-nonexec-error 'name (list
-; . formals)) ...) -- as laid down by defun-nx-fn.  But we do not insist on the
-; use of name and formals in the arguments to throw-nonexec-error, since the
-; choice of those arguments does not affect soundness.
+; The body should be a translated form of (prog2$ (throw-nonexec-error 'name
+; (list . formals)) ...), as laid down by defun-nx-fn.  Normally we insist on
+; the use of name and formals in the arguments to throw-nonexec-error, so that
+; results are as predicted by ev-fncall-rec-logical.  We loosen up that
+; requirement for defproxy, i.e. (eq non-executablep :program), since it won't
+; be true and we don't care that it be true, as we have a program-mode function
+; that does a throw.
 
-             (cond ((throw-nonexec-error-p body)
-                    (chk-non-executable-bodies (cdr names) (cdr bodies) ctx
-                                               state))
+             (cond ((throw-nonexec-error-p body
+                                           (and (not (eq non-executablep
+                                                         :program))
+                                                name)
+                                           formals)
+                    (chk-non-executable-bodies
+                     (cdr names) (cdr arglists) (cdr bodies)
+                     non-executablep ctx state))
                    (t (er soft ctx
                           "The body of a defun that is marked :non-executable ~
                            (perhaps implicitly, by the use of defun-nx) must ~
-                           be of the form (prog2$ (throw-nonexec-error ...).  ~
-                           The definition of ~x0 is thus illegal.  See :DOC ~
-                           defun-nx."
-                          (car names))))))))
+                           be of the form (prog2$ (throw-nonexec-error ...) ~
+                           ...)~@1.  The definition of ~x0 is thus illegal.  ~
+                           See :DOC defun-nx."
+                          (car names)
+                          (if (eq non-executablep :program)
+                              ""
+                            " that is laid down by defun-nx"))))))))
 
-(defun translate-bodies (non-executablep names bodies known-stobjs-lst ctx wrld
-                                         state)
+(defun translate-bodies (non-executablep names arglists bodies known-stobjs-lst
+                                         ctx wrld state)
 
 ; Translate the bodies given and return a pair consisting of their translations
 ; and the final bindings from translate.  Note that non-executable :program
@@ -177,7 +174,8 @@
            (cond (erp ; erp is a ctx, lst is a msg
                   (er soft erp "~@0" lst))
                  (non-executablep
-                  (chk-non-executable-bodies names lst ctx state))
+                  (chk-non-executable-bodies names arglists lst
+                                             non-executablep ctx state))
                  (t (value nil)))
            (cond ((eq non-executablep t)
                   (value (cons lst (pairlis-x2 names '(nil)))))
@@ -7768,6 +7766,7 @@
          ((bodies-and-bindings
            (translate-bodies non-executablep ; t or :program
                              names
+                             arglists
                              (get-bodies fives)
                              stobjs-in-lst ; see "slight abuse" comment below
                              ctx wrld2 state)))
@@ -8137,7 +8136,8 @@
   the definitional body has a certain form, we suggest using the macro
   ~c[defun-nx] or ~c[defund-nx]; ~pl[defun-nx].  A third value of
   ~c[:non-executable] for advanced users is ~c[:program], which is generated by
-  expansion of ~c[defproxy] forms; ~pl[defproxy].
+  expansion of ~c[defproxy] forms; ~pl[defproxy].  For another way to deal with
+  non-executability, ~pl[non-exec].
 
   ~c[:NORMALIZE]~nl[]
   Value is a flag telling ~ilc[defun] whether to propagate ~ilc[if] tests

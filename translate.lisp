@@ -414,12 +414,25 @@
         (t "")))
 
 (defun ev-fncall-null-body-er-msg (ignored-attachment fn args)
-  (msg "ACL2 cannot ev the call of undefined function ~x0 on argument ~
-        list:~|~%~x1~@2~|~%~@3"
-       fn
-       args
-       (ignored-attachment-msg ignored-attachment)
-       (error-trace-suggestion nil)))
+  (cond
+   ((eq fn :non-exec)
+
+; This is a special case for calls of (non-exec form), where in this case, args
+; is form.
+
+    (assert$
+     (null ignored-attachment) ; This case has nothing to do with attachments.
+     (msg "ACL2 has been instructed to cause an error because of an attempt ~
+           to evaluate the following form (see :DOC non-exec):~|~%  ~
+           ~x0.~|~%~@1"
+          args ; actually, the form
+          (error-trace-suggestion nil))))
+   (t (msg "ACL2 cannot ev the call of undefined function ~x0 on argument ~
+            list:~|~%~x1~@2~|~%~@3"
+           fn
+           args
+           (ignored-attachment-msg ignored-attachment)
+           (error-trace-suggestion nil)))))
 
 (defun ev-fncall-null-body-er (ignored-attachment fn args latches)
   (mv t
@@ -1707,6 +1720,11 @@
 
          
                 (mv t (illegal-msg) latches))
+               ((eq fn 'throw-nonexec-error)
+                (ev-fncall-null-body-er nil
+                                        (car args)  ; fn
+                                        (cadr args) ; args
+                                        latches))
                ((member-eq fn '(pkg-witness pkg-imports))
                 (mv t (unknown-pkg-error-msg fn (car args)) latches))
                (attachment
@@ -5007,6 +5025,53 @@
          (non-trivial-stobj-binding (cdr stobj-flags) (cdr bindings)))
         (t (car stobj-flags))))
 
+(defun formalized-varlistp (varlist formal-lst)
+  (declare (xargs :guard (and (symbol-listp varlist)
+                              (pseudo-termp formal-lst))))
+  (cond ((endp varlist)
+         (equal formal-lst *nil*))
+        ((variablep formal-lst)
+         nil)
+        (t (and ; (not (fquotep formal-lst))
+            (eq (ffn-symb formal-lst) 'cons)
+            (eq (car varlist) (fargn formal-lst 1))
+            (formalized-varlistp (cdr varlist) (fargn formal-lst 2))))))
+
+(defun throw-nonexec-error-p1 (targ1 targ2 name formals)
+
+; Consider a term (return-last targ1 targ2 ...).  We recognize when this term
+; is of the form (return-last 'progn (throw-non-exec-error x ...) ...), with
+; some additional requirements as explained in a comment in
+; throw-nonexec-error-p.
+
+  (and (quotep targ1)
+       (eq (unquote targ1) 'progn)
+       (nvariablep targ2)
+;      (not (fquotep targ2))
+       (eq (ffn-symb targ2) 'throw-nonexec-error)
+       (or (null name)
+           (let ((qname (fargn targ2 1)))
+             (and (quotep qname)
+                  (if (eq name :non-exec)
+                      (eq (unquote qname) :non-exec)
+                    (and (eq (unquote qname) name)
+                         (formalized-varlistp formals (fargn targ2 2)))))))))
+
+(defun throw-nonexec-error-p (body name formals)
+
+; We recognize terms that could result from translating (prog2$
+; (throw-nonexec-error x ...) ...), i.e., terms of the form (return-last 'progn
+; (throw-non-exec-error x ...) ...).  If name is nil, then there are no further
+; requirements.  If name is :non-exec, then we require that x be (quote
+; :non-exec).  Otherwise, we require that x be (quote name) and that the second
+; argument of throw-non-exec-error be (cons v1 (cons v2 ... (cons vk nil)
+; ...)), where formals is (v1 v2 ... vk).
+
+  (and (nvariablep body)
+;      (not (fquotep body))
+       (eq (ffn-symb body) 'return-last)
+       (throw-nonexec-error-p1 (fargn body 1) (fargn body 2) name formals)))
+
 (mutual-recursion
 
 (defun translate11-flet-alist (form fives stobjs-out bindings known-stobjs
@@ -6803,6 +6868,21 @@
                  (declare (ignore targ2-bindings))
                  (cond
                   (erp (mv erp targ2 bindings))
+                  ((throw-nonexec-error-p1 targ1 targ2 :non-exec nil)
+                   (mv-let
+                    (erp targ3 targ3-bindings)
+                    (translate11
+                     (nth 3 x)
+                     t ; stobjs-out
+                     bindings
+                     nil ; known-stobjs is irrelevant
+                     flet-alist x ctx wrld state-vars)
+                    (declare (ignore targ3-bindings))
+                    (cond
+                     (erp (mv erp targ3 bindings))
+                     (t (trans-value
+                         (fcons-term* 'return-last
+                                      targ1 targ2 targ3))))))
                   (t
                    (trans-er-let*
                     ((targ3 (translate11

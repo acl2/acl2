@@ -5978,6 +5978,97 @@
   (declare (xargs :guard t))
   `(ec-call1 nil ,x))
 
+(defmacro non-exec (x)
+
+  ":Doc-Section ACL2::ACL2-built-ins
+
+  mark code as non-executable~/
+
+  ~c[Non-exec] is a macro such that logically, ~c[(non-exec x)] is equal to
+  ~c[x].  However, the argument to a call of ~c[non-exec] need not obey the
+  usual syntactic restrictions for executable code, and indeed, evaluation of a
+  call of ~c[non-exec] will result in an error.  Moreover, for any form
+  occurring in the body of a function (~pl[defun]) that is a call of
+  ~c[non-exec], no guard proof obligations are generated for that form.
+
+  The following example, although rather contrived, illustrates the use of
+  ~c[non-exec].  One can imagine a less contrived example that efficiently
+  computes return values for a small number of fixed inputs and, for other
+  inputs, returns something logically ``consistent'' with those return values.
+  ~bv[]
+  (defun double (x)
+    (case x
+      (1 2)
+      (2 4)
+      (3 6)
+      (otherwise (non-exec (* 2 x)))))
+  ~ev[]
+  We can prove that ~c[double] is compliant with Common Lisp (~pl[guard]) and
+  that it always computes ~c[(* 2 x)].
+  ~bv[]
+  (verify-guards double)
+  (thm (equal (double x) (* 2 x)))
+  ~ev[]
+  We can evaluate double on the specified arguments.  But a call of
+  ~c[non-exec] results in an error message that reports the form that was
+  supplied to ~c[non-exec].
+  ~bv[]
+  ACL2 !>(double 3)
+  6
+  ACL2 !>(double 10)
+
+
+  ACL2 Error in TOP-LEVEL:  ACL2 has been instructed to cause an error
+  because of an attempt to evaluate the following form (see :DOC non-exec):
+
+    (* 2 X).
+
+  To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
+
+  ACL2 !>
+  ~ev[]~/
+
+  During proofs, the error is silent; it is ``caught'' by the proof mechanism
+  and generally results in the introduction of a call of ~ilc[hide] during a
+  proof.
+
+  Also ~pl[defun-nx] for a utility that makes every call of a function
+  non-executable, rather than a specified form.  The following examples
+  contrast ~c[non-exec] with ~ilc[defun-nx], in particular illustratating the
+  role of ~ilc[non-exec] in avoiding guard proof obligations.
+  ~bv[]
+  ; Guard verification fails, but instead succeeds if the :guard is (consp x):
+  (defun-nx f1 (x)
+    (declare (xargs :guard t))
+    (car x))
+
+  ; Guard verification succeeds:
+  (defun f2 (x)
+    (declare (xargs :guard t))
+    (non-exec (car x)))
+
+  ; Evaluating (g1) prints \"Hello\" before signaling an error.
+  (defun g1 ()
+    (f1 (cw \"Hello\")))
+
+  ; Evaluating (g2) does not print before signaling an error.
+  (defun g2 ()
+    (non-exec (cw \"Hello\")))
+
+  ; Evaluating (h1) gives a guard violation for taking reciprocal of 0.
+  (defun h1 ()
+    (f1 (/ 1 0)))
+
+  ; Evaluating (h2) does not take a reciprocal, hence there is no guard
+  ; violation for that; we just get the error expected from using non-exec.
+  (defun h2 ()
+    (non-exec (/ 0)))
+  ~ev[]"
+
+  (declare (xargs :guard t))
+  `(prog2$ (throw-nonexec-error :non-exec ',x)
+           ,x))
+
 #+acl2-loop-only
 (defmacro / (x &optional (y 'nil binary-casep))
 
@@ -12336,7 +12427,20 @@
 ; Begin support for defun-nx.
 
 (defun throw-nonexec-error (fn actuals)
-  (declare (xargs :guard t
+  (declare (xargs :guard
+
+; An appropriate guard would seem to be the following.
+
+;                 (if (keywordp fn)
+;                     (eq fn :non-exec)
+;                   (and (symbolp fn)
+;                        (true-listp actuals)))
+
+; However, we want to be sure that the raw Lisp code is evaluated even if
+; guard-checking has been set to :none.  A simple fix is to replace the actuals
+; if they are ill-formed, and that is what we do.
+
+                  t
                   :verify-guards nil)
            #+acl2-loop-only
            (ignore fn actuals))
@@ -12353,7 +12457,13 @@
 
             nil
             fn
-            (print-list-without-stobj-arrays actuals)))
+            (if (eq fn :non-exec)
+                actuals
+              (print-list-without-stobj-arrays
+               (if (true-listp actuals)
+                   actuals
+                 (error "Unexpected case: Ill-formed actuals for ~
+                         throw-nonexec-error!"))))))
 
 ; Just in case throw-raw-ev-fncall doesn't throw -- though it always should.
 
@@ -12400,9 +12510,11 @@
   single-threadedness (~pl[stobj]) and multiple-values passing (~pl[mv] and
   ~pl[mv-let]).  After such a definition is admitted, the usual syntactic rules
   for ~ilc[state] and user-defined ~il[stobj]s are relaxed for calls of the
-  function it defines.
+  function it defines.  Also ~pl[non-exec] for a way to designate subterms of
+  function bodies, or subterms of code to be executed at the top level, as
+  non-executable.
 
-  The syntax is identical to that of ~ilc[defun].  A form
+  The syntax of ~c[defun-nx] is identical to that of ~ilc[defun].  A form
   ~bv[]
   (defun-nx name (x1 ... xk) ... body)
   ~ev[]
@@ -12416,14 +12528,6 @@
   ~ev[]
   Note that because of the insertion of the above call of
   ~c[throw-nonexec-error], no formal is ignored when using ~c[defun-nx].~/
-
-  If you prefer to avoid the use of ~c[defun-nx] for non-executable function
-  definitions in ~c[:]~ilc[logic] mode, you can use an ~ilc[xargs]
-  ~c[:non-executable t] ~ilc[declare] form, provided the body has the form
-  ~c[(prog2$ (throw-nonexec-error ...) ...)].  The function
-  ~c[throw-nonexec-error] is guaranteed to cause an error, though the
-  ~c[:non-executable] keyword will lay down code such that an error generally
-  occurs when calling ~c[name] without calling ~c[throw-nonexec-error].
 
   During proofs, the error is silent; it is ``caught'' by the proof mechanism
   and generally results in the introduction of a call of ~ilc[hide] during a
@@ -12441,6 +12545,13 @@
   Note that ~c[defund-nx] is also available.  It has an effect identical to
   that of ~c[defun-nx] except that as with ~ilc[defund], it leaves the function
   disabled.
+
+  If you use guards (~pl[guard]), please be aware that even though syntactic
+  restrictions are relaxed for ~c[defun-nx], guard verification proceeds
+  exactly as for ~ilc[defun].  If you want ACL2 to skip a form for purposes of
+  generating guard proof obligations, use the macro ~ilc[non-exec], which
+  generates a call of ~c[throw-nonexec-error] that differs somewhat from the
+  one displayed above.  ~l[non-exec].
 
   ~l[defun] for documentation of ~c[defun]."
 
