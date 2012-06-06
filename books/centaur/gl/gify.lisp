@@ -118,7 +118,7 @@ be gified.  If not, implement this case.  Culprit (in function ~x0): ~x1~%"
            (gify-term-list (cdr x) fn)))))
 
 (defun gify-body (x fn)
-  (let ((body (cond ((acl2::throw-nonexec-error-p x)
+  (let ((body (cond ((acl2::throw-nonexec-error-p x nil nil)
                      (car (last x)))
                     (t x))))
     (gify-term body fn)))

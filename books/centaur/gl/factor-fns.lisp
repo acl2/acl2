@@ -225,7 +225,7 @@
        (mv (cons a d) (union-eq dvars avars) fnacc memo)))))
 
 (defun fn-factor-body (x fn events world)
-  (let ((body (cond ((acl2::throw-nonexec-error-p x)
+  (let ((body (cond ((acl2::throw-nonexec-error-p x nil nil)
                      (car (last x)))
                     (t x))))
     (fn-factor-term (hons-copy body) fn 1 events nil world)))
