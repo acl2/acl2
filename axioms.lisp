@@ -6019,7 +6019,8 @@
 
 
   ACL2 Error in TOP-LEVEL:  ACL2 has been instructed to cause an error
-  because of an attempt to evaluate the following form (see :DOC non-exec):
+  because of an attempt to evaluate the following form (see :DOC non-
+  exec):
 
     (* 2 X).
 
@@ -6037,9 +6038,14 @@
   contrast ~c[non-exec] with ~ilc[defun-nx], in particular illustratating the
   role of ~ilc[non-exec] in avoiding guard proof obligations.
   ~bv[]
-  ; Guard verification fails, but instead succeeds if the :guard is (consp x):
+  ; Guard verification fails:
   (defun-nx f1 (x)
     (declare (xargs :guard t))
+    (car x))
+
+  ; Guard verification succeeds after changing the guard above:
+  (defun-nx f1 (x)
+    (declare (xargs :guard (consp x)))
     (car x))
 
   ; Guard verification succeeds:
