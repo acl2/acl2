@@ -18450,6 +18450,9 @@
 ; Made a small change to newline printing in ubt-ubu-query and ubt-ubu-fn1 in
 ; support of the change to top-level (to avoid a bogus newline).
 
+; While fixing the cons-term bug, we improved the efficiency of kwote a bit,
+; avoiding some unnecessary consing.
+
   :doc
   ":Doc-Section release-notes
 
@@ -18656,6 +18659,43 @@
   call of ~c[top-level].  Thanks to Jared Davis for bringing this issue to our
   attention.
 
+  It is no longer the case that when you specify ~ilc[xargs] keyword
+  ~c[:non-executable t] in a ~ilc[defun] form rather than using ~ilc[defun-nx],
+  then the form of the body need match only the shape
+  ~c[(prog2$ (throw-nonexec-error ... ...) ...)].  We now require that the body
+  of the definition of a function symbol, ~c[fn], with formals ~c[(x1 ... xk)],
+  be of the form ~c[(prog2$ (throw-nonexec-error 'fn (list x1 ... xk)) ...)].
+  This fixes the following odd behavior, which could be considered a bug.
+  Consider a book that contains the following two events.
+  ~bv[]
+  (defun foo (x)
+    (declare (xargs :guard t :non-executable t :mode :logic))
+    (prog2$ (throw-nonexec-error 'bar (list x))
+            (cons 3 x)))
+  (defn h (x)
+    (foo x))
+  ~ev[]
+  After certifying this book and then including it in a new session, the
+  behavior occurred that is displayed below; notice the mention of ~c[BAR].
+  However, if the two forms were submitted directly in the loop, then the error
+  message had mentioned ~c[FOO] instead of ~c[BAR].  This discrepancy has been
+  eliminated, by rejecting the proposed definition of ~c[foo] because the name
+  in the first argument of ~c[throw-nonexec-error] was ~c['bar] where now it
+  must be ~c['foo].
+  ~bv[]
+  ACL2 !>(h 3)
+
+
+  ACL2 Error in TOP-LEVEL:  ACL2 cannot ev the call of undefined function
+  BAR on argument list:
+
+  (3)
+
+  To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
+
+  ACL2 !>
+  ~ev[]
+
   ~st[NEW FEATURES]
 
   A new ``tau system'' provides a kind of ``type checker.''  ~l[tau-system].
@@ -18706,6 +18746,10 @@
          :exec (let ((val (fld foo)))
                  (update-fld val foo))))
   ~ev[]
+
+  A new macro, ~ilc[non-exec], allows the use of non-executable code, for
+  example inside ordinary function definitions.  Thanks to Sol Swords for
+  requesting this enhancement.
 
   A new ``provisional certification'' process is supported that can allow
   ~il[books] to be certified before their included sub-books have been
@@ -18843,6 +18887,27 @@
   change is to include the so-called expansion-alist in the certificate's
   checksum.  An example appears in a comment in the ACL2 sources, in
   ~c[(deflabel note-4-4 ...)].
+
+  Fixed a bug in ~il[guard] verification due to expanding calls of primitives
+  when translating user-level terms to internal form, so called ``translated
+  terms'' (~pl[term]).  While we have not observed a soundness hole due to this
+  bug, we have not ruled it out.  Before the bug fix, the following event was
+  admissible, as guard verification succeeded (but clearly should not have).
+  ~bv[]
+  (defun f ()
+    (declare (xargs :guard t))
+    (car (identity 3)))
+  ~ev[]
+  For those who want details about this bug, we analyze how ACL2 generates
+  ~il[guard] proof obligations for this example.  During that process, it
+  evaluates ground subexpressions.  Thus, ~c[(identity '3)] is first simplified
+  to ~c['3]; so a term must be built from the application of ~c[car] to ~c['3].
+  Guard-checking is always turned on when generating guard proof obligations,
+  so now, ACL2 refuses to simplify ~c[(car '3)] to ~c['nil].  However, before
+  this bug fix, when ACL2 was building a term by applying ~c[car] to argument
+  ~c['3], it did so directly without checking guards; source code function
+  ~c[cons-term] is `smart' that way.  After the fix, such term-building
+  reduction is only performed when the primitive's guard is met.
 
   While calls of many event macros had been prohibited inside executable code,
   others should have been but were not.  For example, the following was
@@ -19010,6 +19075,14 @@
   ~st[EMACS SUPPORT]
 
   ~st[EXPERIMENTAL VERSIONS]
+
+  For the version supporting the reals, ACL2(r) (~pl[real]), the supporting
+  function ~c[floor1] has been defined in raw Lisp.  This avoids an error
+  such as in the following case.
+  ~bv[]
+  (defun f () (declare (xargs :guard t)) (floor1 8/3))
+  (f) ; had caused raw Lisp error, before the fix
+  ~ev[]
 
   Among the enchancements for the parallel version, ACL2(p) (~pl[parallelism]),
   are the following.~bq[]

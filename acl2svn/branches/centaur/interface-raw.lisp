@@ -912,11 +912,12 @@
 (defun-*1* equal (x y)
   (equal x y))
 
+#+:non-standard-analysis
+(defun-*1* floor1 (x)
+
 ;; RAG - I added this function to evaluate the special floor1
 ;; function, which computes floor with a modulus of 1.
 
-#+:non-standard-analysis
-(defun-*1* floor1 (x)
   (if (rationalp x)
       (floor x 1)
     (gv floor1 (x) 0)))
@@ -1627,7 +1628,7 @@
 ; *the-live-state*), which produces a mismatch with *the-live-foo*.
 
 ; However, no such error occurs.  At some point we may spend the energy to
-; convince ourselves that it is save to remove this code, but for now, it seems
+; convince ourselves that it is safe to remove this code, but for now, it seems
 ; harmless enough to leave it here, since super-stobjs-chk is a fast test.
 
                                      `((when ,super-stobjs-chk
@@ -5320,7 +5321,7 @@
 ; name.  If we re-install that code, then the next line of code also needs to
 ; be re-installed.
 
-;               (maybe-push-undo-stack 'defconst name)
+;           (maybe-push-undo-stack 'defconst name)
             (install-for-add-trip `(defparameter ,the-live-name ,init) nil t)
 
 ; Memoize-flush expects the variable (st-lst name) to be bound.  We take care
@@ -5340,10 +5341,10 @@
 
 ; At one point we executed the following form.  But now we see that this is not
 ; necessary, since trans-eval binds stobj names anyhow using *user-stobj-alist*
-; and even acl2-raw-eval uses *user-stobj-alist* to bind stobj names.  If this
-; code is re-installed, then also re-install the code (maybe-push-undo-stack
-; 'defconst name) above.
-;               (setf (symbol-value name) (symbol-value the-live-name))
+; and even acl2-raw-eval uses *user-stobj-alist* to bind stobj names.  If the
+; following code is re-installed (uncommented), then also re-install the code
+; (maybe-push-undo-stack 'defconst name) above.
+;           (setf (symbol-value name) (symbol-value the-live-name))
 
 ; The following assignment to *user-stobj-alist* is structured to keep
 ; new ones at the front, so we can more often exploit the optimization

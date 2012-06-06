@@ -4310,6 +4310,9 @@ the calls took.")
   "(UNMEMOIZE-ALL) unmemoizes all currently memoized functions,
   including all profiled functions."
 
+; WARNING: ACL2 users should probably avoid this function, using
+; (clear-memo-table) in the ACL2 loop instead.
+
 ; A warning to would-be code improvers.  It would be a bad idea to
 ; redefine UNMEMOIZE-ALL to MAPHASH over *MEMOIZE-INFO-HT* because of
 ; the ANSI rules restricting which hash table entries may be modified
