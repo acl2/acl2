@@ -81,13 +81,6 @@ selects.</p>"
          (vl-fast-constint-p (vl-atom->guts x)))))
 
 
-(deflist vl-exprlist-resolved-p (x)
-  (vl-expr-resolved-p x)
-  :guard (vl-exprlist-p x)
-  :elementp-of-nil nil
-  :parents (expr-tools))
-
-
 (defsection vl-resolved->val
   :parents (expr-tools)
   :short "Get the value from a resolved expression."
@@ -105,6 +98,23 @@ selects.</p>"
   (defthm natp-of-vl-resolved->val
     (natp (vl-resolved->val x))
     :rule-classes :type-prescription))
+
+(deflist vl-exprlist-resolved-p (x)
+  (vl-expr-resolved-p x)
+  :guard (vl-exprlist-p x)
+  :elementp-of-nil nil
+  :parents (expr-tools))
+
+(defprojection vl-exprlist-resolved->vals (x)
+  (vl-resolved->val x)
+  :guard (and (vl-exprlist-p x)
+              (vl-exprlist-resolved-p x))
+  :nil-preservingp nil
+  :parents (expr-tools))
+
+(defthm nat-listp-of-vl-exprlist-resolved->vals
+  (nat-listp (vl-exprlist-resolved->vals x))
+  :hints(("Goal" :induct (len x))))
 
 
 
@@ -1198,3 +1208,4 @@ vl-exprlist-p) and return them as a string list."
                     (vl-plainarglist-p outputs)
                     (vl-plainarglist-p inouts)
                     (vl-plainarglist-p unknowns))))))
+

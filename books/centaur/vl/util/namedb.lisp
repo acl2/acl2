@@ -856,6 +856,30 @@ When this is not possible, a note is printed and <tt>fresh-name</tt> looks like
                                    (prefix name)))))))))
 
 
+(defun vl-namedb-plain-name-quiet (name db)
+    "Returns (MV FRESH-NAME DB-PRIME)"
+    (declare (xargs :guard (and (stringp name)
+                                (vl-namedb-p db))
+                    :guard-hints(("Goal" :in-theory (enable vl-namedb-plain-name)))))
+    (mbe :logic (vl-namedb-plain-name name db)
+         :exec
+         (b* ((names   (vl-namedb->names db))
+              (pset    (vl-namedb->pset db))
+
+              ((when (hons-get name names))
+               (mv-let (fresh db)
+                 (vl-namedb-indexed-name name db)
+                 (mv fresh db)))
+
+              ((unless (vl-unlike-any-prefix-p-of-strip-cars name pset))
+               (mv-let (fresh db)
+                 (vl-namedb-indexed-name name db)
+                 (mv fresh db)))
+
+              (names   (hons-acons name t names))
+              (db (change-vl-namedb db :names names)))
+           (mv name db))))
+
 
 (defsection vl-free-namedb
   :parents (vl-namedb-p)

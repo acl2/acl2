@@ -2618,12 +2618,21 @@ warnings."
          (|are|       (if pluralp "are" "is"))
          (|they|      (if pluralp "they" "it"))
 
+         (summary-line
+          ;; New summary line for Terry
+          (cat (natstr (len wires))
+               (cond (usedp " unset bit")
+                     (setp  " unused bit")
+                     (t     " spurious bit"))
+               (if pluralp "s.  " ".  ")))
+
          (warning
           (make-vl-warning
            :type (cond (usedp :use-set-warn-unset)
                        (setp  :use-set-warn-unused)
                        (t     :use-set-warn-spurious))
-           :msg (cond (usedp
+           :msg (cat summary-line
+                     (cond (usedp
                        (if fsetp
                            "In ~m0, even though it looks like the following ~
                             ~s1 ~s2 driven by submodules, ~s3 ~s2 actually ~
@@ -2643,7 +2652,7 @@ warnings."
                             ~s1 ~s2 ~s6 by submodules, ~s3 ~s2 actually never ~
                             used or set: ~&4. (mask ~x5)"
                          "In ~m0, the following ~s1 ~s2 never used/set: ~
-                          ~&4 (mask: ~x5)")))
+                          ~&4 (mask: ~x5)"))))
            :args (list modname
                        |wire(s)|
                        |are|
@@ -3008,5 +3017,8 @@ warnings."
                (and (vl-modulelist-p (mv-nth 0 ret))
                     (us-dbalist-p (mv-nth 1 ret)))))
     :hints(("Goal" :in-theory (enable us-analyze-mods)))))
+
+
+
 
 

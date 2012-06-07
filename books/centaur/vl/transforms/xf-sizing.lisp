@@ -619,6 +619,149 @@ implementation, we just regard the size of <tt>$random</tt> as 32.</p>"
 
 
 
+
+
+(defsection vl-expr-interesting-size-atoms
+
+; This is used to tweak fussy size warnings.  See below.
+;
+; Our basic goal is to gather all the atoms throughout an expression that are
+; sort of meaningful to the current self-size computation.  Obviously you
+; should never use this for anything semantically meaningful, it's only meant
+; as a heuristic for warning generation.
+
+  (mutual-recursion
+
+   (defund vl-expr-interesting-size-atoms (x)
+     (declare (xargs :guard (vl-expr-p x)
+                     :measure (two-nats-measure (acl2-count x) 1)
+                     :verify-guards nil))
+     (b* (((when (vl-fast-atom-p x))
+           (list x))
+          (op (vl-nonatom->op x))
+          (args (vl-nonatom->args x)))
+       (case op
+         ((:vl-bitselect :vl-unary-bitand :vl-unary-nand :vl-unary-bitor
+                         :vl-unary-nor :vl-unary-xor :vl-unary-xnor :vl-unary-lognot
+                         :vl-binary-logand :vl-binary-logor
+                         :vl-binary-eq :vl-binary-neq :vl-binary-ceq :vl-binary-cne
+                         :vl-binary-lt :vl-binary-lte :vl-binary-gt :vl-binary-gte
+                         :vl-partselect-colon :vl-partselect-pluscolon :vl-partselect-minuscolon
+                         :vl-syscall :vl-funcall :vl-mintypmax :vl-hid-dot :vl-hid-arraydot
+                         :vl-array-index)
+          ;; Don't gather anything from here.
+          nil)
+
+         ((:vl-binary-power
+           :vl-unary-plus :vl-unary-minus :vl-unary-bitnot
+           :vl-binary-shl :vl-binary-shr :vl-binary-ashl :vl-binary-ashr)
+          ;; Second arg doesn't affect selfsize
+          (vl-expr-interesting-size-atoms (first args)))
+
+         ((:vl-qmark :vl-multiconcat)
+          ;; First arg is special, don't consider it
+          (vl-exprlist-interesting-size-atoms (cdr args)))
+
+         ((:vl-binary-plus :vl-binary-minus :vl-binary-times :vl-binary-div :vl-binary-rem
+                           :vl-binary-bitand :vl-binary-bitor :vl-binary-xor :vl-binary-xnor
+                           :vl-concat)
+          ;; All args affect size
+          (vl-exprlist-interesting-size-atoms args))
+
+         (otherwise
+          ;; To make us account for all ops
+          (er hard 'vl-expr-interesting-size-atoms
+              "Impossible")))))
+
+   (defund vl-exprlist-interesting-size-atoms (x)
+     (declare (xargs :guard (vl-exprlist-p x)
+                     :measure (two-nats-measure (acl2-count x) 0)))
+     (if (consp x)
+         (append (vl-expr-interesting-size-atoms (car x))
+                 (vl-exprlist-interesting-size-atoms (cdr x)))
+       nil)))
+
+  (defthm true-listp-of-vl-expr-interesting-size-atoms
+    (true-listp (vl-expr-interesting-size-atoms x))
+    :rule-classes :type-prescription)
+
+  (defthm true-listp-of-vl-exprlist-interesting-size-atoms
+    (true-listp (vl-exprlist-interesting-size-atoms x))
+    :rule-classes :type-prescription)
+
+  (FLAG::make-flag vl-flag-expr-interesting-size-atoms
+                   vl-expr-interesting-size-atoms
+                   :flag-mapping ((vl-expr-interesting-size-atoms . expr)
+                                  (vl-exprlist-interesting-size-atoms . list)))
+
+  (verify-guards vl-expr-interesting-size-atoms
+    :hints(("Goal"
+            :use ((:instance vl-op-p-of-vl-nonatom->op (x x)))
+            :in-theory (e/d (vl-op-p vl-op-arity)
+                            (vl-op-p-of-vl-nonatom->op)))))
+
+  (defthm-vl-flag-expr-interesting-size-atoms
+    (defthm vl-atomlist-p-of-vl-expr-interesting-size-atoms
+      (implies (force (vl-expr-p x))
+               (vl-atomlist-p (vl-expr-interesting-size-atoms x)))
+      :flag expr)
+    (defthm vl-atomlist-p-of-vl-exprlist-interesting-size-atoms
+      (implies (force (vl-exprlist-p x))
+               (vl-atomlist-p (vl-exprlist-interesting-size-atoms x)))
+      :flag list)
+    :hints(("Goal"
+            :expand ((vl-expr-interesting-size-atoms x)
+                     (vl-exprlist-interesting-size-atoms x)))))
+
+  (defthm-vl-flag-expr-interesting-size-atoms
+    (defthm vl-exprlist-p-of-vl-expr-interesting-size-atoms
+      (implies (force (vl-expr-p x))
+               (vl-exprlist-p (vl-expr-interesting-size-atoms x)))
+      :flag expr)
+    (defthm vl-exprlist-p-of-vl-exprlist-interesting-size-atoms
+      (implies (force (vl-exprlist-p x))
+               (vl-exprlist-p (vl-exprlist-interesting-size-atoms x)))
+      :flag list)
+    :hints(("Goal"
+            :expand ((vl-expr-interesting-size-atoms x)
+                     (vl-exprlist-interesting-size-atoms x))))))
+
+
+
+(defsection vl-collect-unsized-ints
+
+  (defund vl-collect-unsized-ints (x)
+    (declare (xargs :guard (vl-exprlist-p x)))
+    (cond ((atom x)
+           nil)
+          ((and (vl-fast-atom-p (car x))
+                (vl-fast-constint-p (vl-atom->guts (car x)))
+                (vl-constint->wasunsized (vl-atom->guts (car x))))
+           (cons (car x) (vl-collect-unsized-ints (cdr x))))
+          (t
+           (vl-collect-unsized-ints (cdr x)))))
+
+  (defthm vl-exprlist-p-of-vl-collect-unsized-ints
+    (implies (vl-exprlist-p x)
+             (vl-exprlist-p (vl-collect-unsized-ints x)))
+    :hints(("Goal" :in-theory (enable vl-collect-unsized-ints))))
+
+  (defthm vl-exprlist-resolved-p-of-vl-collect-unsized-ints
+    (implies (vl-exprlist-p x)
+             (vl-exprlist-resolved-p (vl-collect-unsized-ints x)))
+    :hints(("Goal" :in-theory (enable vl-expr-resolved-p vl-collect-unsized-ints)))))
+
+
+(defund nats-below-p (max x)
+  (declare (xargs :guard (and (natp max)
+                              (nat-listp x))))
+  (if (atom x)
+      t
+    (and (< (car x) max)
+         (nats-below-p max (cdr x)))))
+
+
+
 (defsection vl-tweak-fussy-warning-type
 
 ; This function is called when we've just noticed that A and B have different
@@ -652,73 +795,56 @@ implementation, we just regard the size of <tt>$random</tt> as 32.</p>"
                                 (natp asize)
                                 (natp bsize)
                                 (vl-op-p op))))
-    (b* ((a32p (= asize 32))
-         (b32p (= bsize 32))
-
-         ((unless (or a32p b32p))
-          ;; I tried always warning in this case.  But there are many cases
-          ;; where one argument or the other is a sized constant and the size
-          ;; is just not quite right, but not exactly wrong.  For instance, if
-          ;; foo was once a three-bit wire but now is a five-bit wire, we might
-          ;; run into an expression like "foo == 3'b7," which isn't really any
-          ;; kind of problem.  So, now I try to suppress warnings in this
-          ;; common case.
-          (if (and (or (and (vl-expr-resolved-p a)
-                            (< (vl-resolved->val a) (ash 1 bsize)))
-                       (and (vl-expr-resolved-p b)
-                            (< (vl-resolved->val b) (ash 1 asize))))
-                   (member op '(:vl-binary-eq :vl-binary-neq :vl-binary-ceq :vl-binary-cne
-                                :vl-binary-lt :vl-binary-lte :vl-binary-gt :vl-binary-gte
-                                :vl-binary-xnor :vl-qmark)))
-              nil
-            type))
-
-         ;; Figure out which one is 32-bit and which one is not.  We assume they
-         ;; aren't both 32 bits, since otherwise we shouldn't be called.
-         ((mv expr-32 size-other) (if a32p (mv a bsize) (mv b asize)))
-
-         ((when (vl-expr-resolved-p expr-32))
-          (b* ((val-32 (vl-resolved->val expr-32))
-               (max    (ash 1 size-other)))
-            (if (< val-32 max)
-                ;; The value seems to fit in the size of the other argument, so
-                ;; this case seems to be particularly minor.  After glancing through
-                ;; thousands of these warnings, I think we don't want to even issue
-                ;; a minor warning or anything here.
-                nil
-              ;; The value was too large for the other arg, so this is actually a
-              ;; particularly interesting case.  Give it a new type.
-              (intern-in-package-of-symbol (cat (symbol-name type) "-CONST-TOOBIG") type))))
-
-; If we get this far, then the 32-bit argument isn't just a plain integer.  A
-; particularly insidious source of extra warnings is when we have an expression
-; like:
-;
-;      case0 ? ans1[3:0]
-;    : case1 ? ans2[3:0]
-;    ...
-;    : caseN ? ansN[3:0]
-;    : 0
-;
-; If we just naively go through this, we'll end up with N warnings, one for the
-; final case, (caseN ? ansN[3:0] : 0), then one for the N-1 case because the
-; whole expression (caseN ? ansN[3:0] : 0) will now be 32-bits and won't be the
-; same size as ans{N-1}[3:0], etc.  So, even though this could possibly cause
-; us to miss some things, if the 32-bit expression is a ?: operator, I don't
-; want to create a warning at all.  We'll get the warning for caseN, but not
-; for the other cases.
-
-         ((when (and (not (vl-fast-atom-p expr-32))
-                     (eq (vl-nonatom->op expr-32) :vl-qmark)))
+    (b* (((when (and (or (and (vl-expr-resolved-p a)
+                              (< (vl-resolved->val a) (ash 1 bsize)))
+                         (and (vl-expr-resolved-p b)
+                              (< (vl-resolved->val b) (ash 1 asize))))
+                     (member op '(:vl-binary-eq :vl-binary-neq :vl-binary-ceq :vl-binary-cne
+                                  :vl-binary-lt :vl-binary-lte :vl-binary-gt :vl-binary-gte
+                                  :vl-binary-xnor :vl-qmark))))
+          ;; Always suppress warnings in the case where one argument or the
+          ;; other is a constant and even though its size isn't quite right, it
+          ;; is not *really* wrong.  For instance, if foo was once a three-bit
+          ;; wire but now is a five-bit wire, we might run into an expression
+          ;; like "foo == 3'b7," which isn't really any kind of problem.
           nil)
 
-; Adding and subtracting constant integers always leads to a lot of confusion,
-; let's mark anything with these operations as minor.
+         (a32p (= asize 32))
+         (b32p (= bsize 32))
+         ((unless (or a32p b32p))
+          ;; Neither op is 32 bits, so this doesn't seem like it's related to
+          ;; unsized numbers, go ahead and warn.
+          type)
 
-         ((when (vl-expr-has-ops '(:vl-binary-plus :vl-binary-minus) expr-32))
+         ;; Figure out which one is 32-bit and which one is not.  We assume
+         ;; they aren't both 32 bits, since otherwise we shouldn't be called.
+         ((mv expr-32 size-other) (if a32p (mv a bsize) (mv b asize)))
+
+         ;; Collect up interesting unsized ints in the 32-bit expression.  If
+         ;; it has unsized ints, they're probably the reason it's 32 bits.
+         ;; After collecting them, see if they fit into the size of the other
+         ;; expr.
+         (atoms         (vl-expr-interesting-size-atoms expr-32))
+         (unsized       (vl-collect-unsized-ints atoms))
+         (unsized-fit-p (nats-below-p (ash 1 size-other)
+                                      (vl-exprlist-resolved->vals unsized)))
+         ((unless unsized-fit-p)
+          ;; Well, hrmn, there's some integer here that doesn't fit into the
+          ;; size of the other argument.  This is especially interesting
+          ;; because there's likely to be some kind of truncation here.  Give
+          ;; it a new type.
+          (intern-in-package-of-symbol (cat (symbol-name type) "-CONST-TOOBIG") type))
+
+         ((when (consp unsized))
+          ;; What does this mean?  Well, there are at least some unsized
+          ;; numbers in positions that are affecting our selfsize, and every
+          ;; such unsized number does fit into the new size we're going into,
+          ;; so it seems pretty safe to make this a minor warning.
           (intern-in-package-of-symbol (cat (symbol-name type) "-MINOR") type)))
 
-      (intern-in-package-of-symbol (cat (symbol-name type) "-COMPLEX") type)))
+      ;; Otherwise, we didn't find any unsized atoms, so just go ahead and do the
+      ;; warning.
+      type))
 
   (local (in-theory (enable vl-tweak-fussy-warning-type)))
 
