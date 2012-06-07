@@ -341,3 +341,27 @@ sneakily saved values.~/~/"
 
 
 
+
+(defun sneaky-pop-mutator (stored-vals name)
+  (declare (xargs :guard (consp stored-vals)
+                  :guard-debug t))
+  (b* ((old-val (car stored-vals))
+       ((when (atom old-val))
+        (cw "; Sneaky-pop of empty ~x0: ~x1~%" name old-val)
+        (list (cons name nil)))
+       (new-val (cdr old-val)))
+    (list (cons name new-val))))
+
+(defun sneaky-pop (name)
+  (declare (xargs :guard t))
+  (sneaky-mutate 'sneaky-pop-mutator (list name) name))
+
+
+(defun sneaky-cw-mutator (stored-vals name)
+  (declare (xargs :guard (consp stored-vals))
+           (ignorable name))
+  (cw "~x0" (car stored-vals)))
+
+(defun sneaky-cw (name)
+  (declare (xargs :guard t))
+  (sneaky-mutate 'sneaky-cw-mutator (list name) name))

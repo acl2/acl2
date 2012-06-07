@@ -174,7 +174,7 @@
                                 ((stringp var) var)
                                 (t             "VAR")))
        ((mv fresh-name namedb)
-        (vl::vl-namedb-indexed-name preferred-varname namedb))
+        (vl::vl-namedb-plain-name-quiet preferred-varname namedb))
        (fresh-sym (intern$ fresh-name current-pkg))
        ((mv rest namedb)
         (uniquify-introduce-var-alist current-pkg (cdr alist) namedb)))
@@ -250,3 +250,69 @@
  :hints((introduce-vars)))
 
 ||#
+
+
+
+
+; TRICK.
+;
+; It may be pretty easy to fiddle with the introduce-var that you've introduced
+; before the clause processor gets to it.  Here's a funny example that rewrites
+; (ST-GET KEY (INTRODUCE-VAR 'FOO ...)) to (INTRODUCE-VAR FOO[KEY] ...).  This
+; could be pretty nice, but it might be a little bit risky because you'll lose
+; information (e.g., types) about what ST-GET returns, but you could maybe fix
+; this up with an appropriate fixing function around the new introduce-var.  It
+; also might be somehow more likely when using this trick that you'd
+; accidentally abstract some term into two different variables?
+
+(local
+ (progn
+
+   (defstub run (n program st)
+     ;; Suppose this is the RUN function for a processor model
+     st)
+
+   (defstub st-get (key rec)
+     ;; Suppose this is a GET function for a field of the model
+     t)
+
+   (defun make-var-for-st-get-of-introduce-var (key var mfc state)
+     (declare (xargs :stobjs state :mode :program)
+              (ignore mfc))
+     (and (quotep key)
+          (quotep var)
+          (let* ((var (cadr var))
+                 (key (cadr key))
+                 (varname (cond ((symbolp var) (symbol-name var))
+                                ((stringp var) var)
+                                (t             "VAR")))
+                 (keyname (cond ((symbolp key) (symbol-name key))
+                                ((stringp key) key)
+                                ((natp key)    (str::natstr key))
+                                (t             "KEY")))
+                 (name (intern-in-package-of-symbol
+                        (str::cat varname "[" keyname "]")
+                        (pkg-witness (current-package state)))))
+            `((newvar . ',name)))))
+
+   (defthm move-introduce-vars-over-st-get
+     (implies (bind-free (make-var-for-st-get-of-introduce-var key var mfc state)
+                         (newvar))
+              (equal (st-get key (introduce-var var st))
+                     (introduce-var newvar (hide (st-get key st)))))
+     :hints(("Goal"
+             :in-theory (enable introduce-var)
+             :expand ((:free (x) (hide x))))))
+
+   (defund prop (x) (declare (ignore x)) t)
+   (in-theory (disable (:type-prescription prop)))
+   (in-theory (disable (:executable-counterpart tau-system)))
+
+   (defthm example
+     ;; Look at the proof here and you'll see that we introduce ST[FOO],
+     ;; which is pretty neat.
+     (prop (st-get :foo (introduce-var 'st (hide (run 11 prog st)))))
+     :hints((and stable-under-simplificationp
+                 (introduce-vars))
+            (and stable-under-simplificationp
+                 '(:in-theory (enable prop)))))))
