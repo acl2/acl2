@@ -18696,6 +18696,13 @@
   ACL2 !>
   ~ev[]
 
+  A tautology checker used in the ACL2 sources (function ~c[if-tautologyp]) has
+  been limited somewhat in the effort it makes to recognize a tautology.  While
+  we expect it to be rare for the effect of this change to be noticeable, we
+  thank Sol Swords for sending us an example that motiviated this change: a
+  ~il[guard] verification that took about 5 seconds in Version_4.3 now takes,
+  on the same machine, about 0.07 seconds.
+
   ~st[NEW FEATURES]
 
   A new ``tau system'' provides a kind of ``type checker.''  ~l[tau-system].

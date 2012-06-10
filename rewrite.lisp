@@ -2411,131 +2411,142 @@
 
 (defun if-interp (instrs stack frame-ptr-stack assumptions ac pflg)
 
-; We return the set of clauses extracted from instrs, together with those
-; already in ac.  If pflg is t then we quit as soon as we know that there will
-; be at least one clause.  When we so quit, we return t rather than a set of
-; clauses.  Thus, if this fn returns a first result of nil when pflg is t, then
-; the term encoded in instrs is a tautology.
+; First consider the case that pflg is nil.  Then we return the set of clauses
+; extracted from instrs, together with those already in ac.
 
+; Otherwise pflg is a natural number, and we quit as soon as we know that there
+; will be at least one clause.  When we so quit, we return t.  Otherwise we
+; return pflg, which counts down as steps are taken.  Thus if we return 0, then
+; there might or might not be at least one clause, but if we return a positive
+; integer, then the term encoded in instrs is a tautology.
+
+  (declare (type (or null (unsigned-byte 29)) pflg))
   (cond ((null instrs)
          (let ((v (car stack)))
-           (cond ((quotep v)
-                  (cond ((equal v *nil*)
-                         (if-interp-add-clause assumptions nil ac pflg))
-                        (t ac)))
-                 (t (let ((assumed-val (if-interp-assumed-value v assumptions)))
-                      (cond ((eq assumed-val t) ac)
-                            ((eq assumed-val 'f)
+           (or (cond ((quotep v)
+                      (cond ((equal v *nil*)
                              (if-interp-add-clause assumptions nil ac pflg))
-                            (t (if-interp-add-clause assumptions (list v) ac pflg))))))))
-        (t (let ((caarinstrs (caar instrs)))
+                            (t ac)))
+                     (t (let ((assumed-val (if-interp-assumed-value v assumptions)))
+                          (cond ((eq assumed-val t) ac)
+                                ((eq assumed-val 'f)
+                                 (if-interp-add-clause assumptions nil ac pflg))
+                                (t (if-interp-add-clause assumptions (list v) ac pflg))))))
+               pflg)))
+        ((and pflg (zpf pflg))
+         0)
+        (t (let ((caarinstrs (caar instrs))
+                 (pflg (and pflg (1-f pflg))))
+             (declare (type (or null (unsigned-byte 29)) pflg))
              (case caarinstrs
-                   (push (if-interp (cdr instrs)
-                                    (cons (cdr (car instrs))
-                                          stack)
-                                    frame-ptr-stack
-                                    assumptions
-                                    ac
-                                    pflg))
-                   (push-local (if-interp (cdr instrs)
-                                          (cons (nth (cdr (car instrs))
-                                                     (car frame-ptr-stack))
-                                                stack)
-                                          frame-ptr-stack
+               (push (if-interp (cdr instrs)
+                                (cons (cdr (car instrs))
+                                      stack)
+                                frame-ptr-stack
+                                assumptions
+                                ac
+                                pflg))
+               (push-local (if-interp (cdr instrs)
+                                      (cons (nth (cdr (car instrs))
+                                                 (car frame-ptr-stack))
+                                            stack)
+                                      frame-ptr-stack
+                                      assumptions
+                                      ac
+                                      pflg))
+               (push-frame-ptr (if-interp (cdr instrs)
+                                          stack
+                                          (cons stack frame-ptr-stack)
                                           assumptions
                                           ac
                                           pflg))
-                   (push-frame-ptr (if-interp (cdr instrs)
-                                             stack
-                                             (cons stack frame-ptr-stack)
-                                             assumptions
-                                             ac
-                                             pflg))
-                   (ret (if-interp (cdr instrs)
-                                   (cons (car stack)
-                                         (ret-stack (cdr (car instrs)) (cdr stack)))
-                                   (cdr frame-ptr-stack)
-                                   assumptions
-                                   ac
-                                   pflg))
-                   (call (if-interp (cdr instrs)
-                                    (call-stack (cadr (car instrs))
-                                                (cddr (car instrs))
+               (ret (if-interp (cdr instrs)
+                               (cons (car stack)
+                                     (ret-stack (cdr (car instrs)) (cdr stack)))
+                               (cdr frame-ptr-stack)
+                               assumptions
+                               ac
+                               pflg))
+               (call (if-interp (cdr instrs)
+                                (call-stack (cadr (car instrs))
+                                            (cddr (car instrs))
+                                            stack
+                                            assumptions
+                                            nil)
+                                frame-ptr-stack
+                                assumptions
+                                ac
+                                pflg))
+               (test (let* ((v (car stack))
+                            (stack (cdr stack)))
+                       (cond ((quotep v)
+                              (cond ((equal v *nil*)
+                                     (if-interp (cdr (car instrs))
                                                 stack
+                                                frame-ptr-stack
                                                 assumptions
-                                                nil)
-                                    frame-ptr-stack
-                                    assumptions
-                                    ac
-                                    pflg))
-                   (test (let* ((v (car stack))
-                                (stack (cdr stack)))
-                           (cond ((quotep v)
-                                  (cond ((equal v *nil*)
-                                         (if-interp (cdr (car instrs))
-                                                    stack
-                                                    frame-ptr-stack
-                                                    assumptions
-                                                    ac
-                                                    pflg))
-                                        (t (if-interp (cdr instrs)
-                                                      stack
-                                                      frame-ptr-stack
-                                                      assumptions
-                                                      ac
-                                                      pflg))))
-                                 (t (let ((temp (if-interp-assumed-value
-                                                 v
-                                                 assumptions)))
-                                      (cond
-                                       ((eq temp 'f)
-                                        (if-interp (cdr (car instrs))
-                                                   stack
-                                                   frame-ptr-stack
-                                                   assumptions
-                                                   ac
-                                                   pflg))
-                                       ((eq temp t)
-                                        (if-interp (cdr instrs)
-                                                   stack
-                                                   frame-ptr-stack
-                                                   assumptions
-                                                   ac
-                                                   pflg))
-                                       (pflg
-                                        (let ((assumptions
-                                               (if-interp-assume-true
-                                                nil
-                                                v
-                                                assumptions)))
-                                          (or (if-interp (cdr instrs)
-                                                         stack
-                                                         frame-ptr-stack
-                                                         assumptions
-                                                         ac
-                                                         pflg)
-                                              (if-interp (cdr (car instrs))
-                                                         stack
-                                                         frame-ptr-stack
-                                                         (if-interp-switch
-                                                          assumptions)
-                                                         ac
-                                                         pflg))))
-                                       (t
-                                        (let ((assumptions
-                                               (if-interp-assume-true
-                                                nil v assumptions)))
-                                          (if-interp (cdr instrs)
-                                                     stack
-                                                     frame-ptr-stack
-                                                     assumptions
-                                                     (if-interp (cdr (car instrs))
-                                                                stack
-                                                                frame-ptr-stack
-                                                                (if-interp-switch assumptions)
-                                                                ac
-                                                                pflg)
-                                                     pflg))))))))))))))
+                                                ac
+                                                pflg))
+                                    (t (if-interp (cdr instrs)
+                                                  stack
+                                                  frame-ptr-stack
+                                                  assumptions
+                                                  ac
+                                                  pflg))))
+                             (t (let ((temp (if-interp-assumed-value
+                                             v
+                                             assumptions)))
+                                  (cond
+                                   ((eq temp 'f)
+                                    (if-interp (cdr (car instrs))
+                                               stack
+                                               frame-ptr-stack
+                                               assumptions
+                                               ac
+                                               pflg))
+                                   ((eq temp t)
+                                    (if-interp (cdr instrs)
+                                               stack
+                                               frame-ptr-stack
+                                               assumptions
+                                               ac
+                                               pflg))
+                                   (pflg
+                                    (let ((assumptions
+                                           (if-interp-assume-true
+                                            nil
+                                            v
+                                            assumptions)))
+                                      (let ((pflg (if-interp (cdr instrs)
+                                                             stack
+                                                             frame-ptr-stack
+                                                             assumptions
+                                                             ac
+                                                             pflg)))
+                                        (cond
+                                         ((eq pflg t) t)
+                                         (t (if-interp (cdr (car instrs))
+                                                       stack
+                                                       frame-ptr-stack
+                                                       (if-interp-switch
+                                                        assumptions)
+                                                       ac
+                                                       pflg))))))
+                                   (t
+                                    (let ((assumptions
+                                           (if-interp-assume-true
+                                            nil v assumptions)))
+                                      (if-interp (cdr instrs)
+                                                 stack
+                                                 frame-ptr-stack
+                                                 assumptions
+                                                 (if-interp (cdr (car instrs))
+                                                            stack
+                                                            frame-ptr-stack
+                                                            (if-interp-switch assumptions)
+                                                            ac
+                                                            pflg)
+                                                 pflg))))))))))))))
 
 (defun splice-instrs1 (instrs ans alist)
   (declare (xargs :guard (instr-listp instrs)))
@@ -3868,8 +3879,15 @@
 ; if-tautology, but (IF (equiv A B) (equiv B A) 'T) for any symbol
 ; equiv other than EQUAL and IFF is not.
 
-  (not (if-interp (splice-instrs (if-compile term t nil nil))
-                  nil nil nil nil t)))
+  (posp (if-interp (splice-instrs (if-compile term t nil nil))
+                   nil nil nil nil
+
+; The choice of 100000 below is rather arbitrary, determined by
+; experimentation.  It is the limit for the number of if-interp steps.  It is
+; probably fair to view this limit as a hack, but after all, Boolean
+; decidability is NP-hard.
+
+                   100000)))
 
 (mutual-recursion
 
@@ -18140,15 +18158,13 @@
 
   Non-linear Arithmetic~/~/
 
-  This documentation topic is divided into two parts.  We first
-  discuss the practical aspect of how to use the non-linear arithmetic
-  extension to ACL2,
-  and then the theory behind it.  We assume that the reader is
-  familiar with the material in ~ilc[linear-arithmetic] and that on
-  ~c[:]~ilc[linear] rules.
+  This documentation topic is divided into two parts.  We first discuss the
+  practical aspect of how to use the non-linear arithmetic extension to ACL2,
+  and then the theory behind it.  We assume that the reader is familiar with
+  the material in ~ilc[linear-arithmetic] and that on ~c[:]~ilc[linear] rules.
 
-  We begin our discussion of how to use non-linear arithmetic with
-  a simple example.  Assume that we wish to prove:
+  We begin our discussion of how to use non-linear arithmetic with a simple
+  example.  Assume that we wish to prove:
   ~bv[]
   (thm
    (implies (and (rationalp x)
@@ -18159,10 +18175,10 @@
             (< (floor x y) z)))
   ~ev[]
 
-  Note that ~c[(floor x y) <= (/ x y)].  Note also that if we
-  divide both sides of ~c[x < (* y z)] by ~c[y], since ~c[0 < y], we
-  obtain ~c[(/ x y) < z].  By chaining these two inequalities
-  together, we get the inequality we desired to prove.
+  Note that ~c[(floor x y) <= (/ x y)].  Note also that if we divide both sides
+  of ~c[x < (* y z)] by ~c[y], since ~c[0 < y], we obtain ~c[(/ x y) < z].  By
+  chaining these two inequalities together, we get the inequality we desired to
+  prove.
 
   We now proceed with our example session:
 
@@ -18253,11 +18269,11 @@
   ~ev[]
 
   The above example illustrates the two practical requirements for using
-  non-linear arithmetic in ACL2.  First, one must set up an
-  arithmetic-theory.  Usually, one would not set up an
-  arithmetic-theory on one's own but would instead load a library book or books
-  which do so.  Second, one must turn the non-linear arithmetic extension
-  on.  This one must do explicitly ~-[] no book can do this for you.
+  non-linear arithmetic in ACL2.  First, one must set up an arithmetic-theory.
+  Usually, one would not set up an arithmetic-theory on one's own but would
+  instead load a library book or books which do so.  Second, one must turn the
+  non-linear arithmetic extension on.  This one must do explicitly ~-[] no book
+  can do this for you.
 
   For a brief discussion of why this is so, even though ~c[(set-non-linearp t)]
   is an embeddable event, ~pl[acl2-defaults-table] (in particular, the final
@@ -18290,14 +18306,12 @@
                                                 hist pspv)))
   ~ev[]
 
-  This has proven to be a helpful strategy which allows faster proof
-  times.
+  This has proven to be a helpful strategy which allows faster proof times.
 
-  We now proceed to briefly describe the theory behind the non-linear
-  extension to ACL2.  In ~ilc[linear-arithmetic] it was stated that,
-  ``[L]inear polynomial inequalities can be combined by
-  cross-multiplication and addition to permit the deduction of a third
-  inequality....''  That is, if
+  We now proceed to briefly describe the theory behind the non-linear extension
+  to ACL2.  In ~ilc[linear-arithmetic] it was stated that, ``[L]inear
+  polynomial inequalities can be combined by cross-multiplication and addition
+  to permit the deduction of a third inequality....''  That is, if
   ~bv[]
   0 < poly1,
   0 < poly2,
@@ -18313,10 +18327,10 @@
   ~ev[]
 
   In the linear arithmetic case, we are taking advantage of the facts that
-  multiplication by a positive rational constant does not change the
-  sign of a polynomial and that the sum of two positive polynomials is
-  itself positive.  In the non-linear arithmetic case, we are using the
-  fact that the product of two positive polynomials is itself positive.
+  multiplication by a positive rational constant does not change the sign of a
+  polynomial and that the sum of two positive polynomials is itself positive.
+  In the non-linear arithmetic case, we are using the fact that the product of
+  two positive polynomials is itself positive.
 
   For example, suppose we have the three assumptions:
   ~bv[]
@@ -18331,33 +18345,31 @@
   ~ev[]
   and looking for a contradiction.
 
-  There are no cancellations which can be performed by linear arithmetic
-  in the above situation.  (Recall that two polynomials are cancelled
-  against each other only when they have the same largest unknown.)
-  However, ~c[p1] has a product as its largest unknown, and for each of
-  the factors of that product there is a poly that has that factor as
-  a largest unknown.  When non-linear arithmetic is enabled, ACL2
-  will therefore multiply ~c[p1'] and ~c[p2'] obtaining
+  There are no cancellations which can be performed by linear arithmetic in the
+  above situation.  (Recall that two polynomials are cancelled against each
+  other only when they have the same largest unknown.)  However, ~c[p1] has a
+  product as its largest unknown, and for each of the factors of that product
+  there is a poly that has that factor as a largest unknown.  When non-linear
+  arithmetic is enabled, ACL2 will therefore multiply ~c[p1'] and ~c[p2']
+  obtaining
   ~bv[]
   p5:            0 < 3 + -2*x + -3*y + 2*x*y.
   ~ev[]
-  The addition of this polynomial will allow cancelation to continue
-  and, in this case, we will prove our goal.  Thus, just as ACL2
-  adds two polynomials together when they have the same largest
-  unknown of opposite signs in order to create a new ``smaller''
-  polynomial; so ACL2 multiplies polynomials together when the
-  product of their largest unknowns is itself the largest unknown
-  of another polynomial.  As the use of ~c[:]~ilc[linear] lemmas
-  to further seed the arithmetic data base may allow cancellation to
-  proceed, so may the use of non-linear arithmetic.
+  The addition of this polynomial will allow cancelation to continue and, in
+  this case, we will prove our goal.  Thus, just as ACL2 adds two polynomials
+  together when they have the same largest unknown of opposite signs in order
+  to create a new ``smaller'' polynomial; so ACL2 multiplies polynomials
+  together when the product of their largest unknowns is itself the largest
+  unknown of another polynomial.  As the use of ~c[:]~ilc[linear] lemmas to
+  further seed the arithmetic data base may allow cancellation to proceed, so
+  may the use of non-linear arithmetic.
 
-  This multiplication of polynomials is the other situation in which
-  terms are rewritten under the arithmetic-theory rather than the
-  normal one.  Because this may be done so often, and because the
-  individual factors have presumably already been rewritten, it is
+  This multiplication of polynomials is the motivation for an arithmetic-theory
+  distinct from than the normal one.  Because this may be done so often, and
+  because the individual factors have presumably already been rewritten, it is
   important that this be done in an efficient way.  The use of a small,
-  specialized, theory helps avoid the repeated application of rewrite
-  rules to already stabilized terms.~/"
+  specialized, theory helps avoid the repeated application of rewrite rules to
+  already stabilized terms.~/"
 
   (declare (ignore obj geneqv ttree)
            (type (unsigned-byte 29) rdepth)

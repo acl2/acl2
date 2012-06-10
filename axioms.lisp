@@ -18280,7 +18280,13 @@
 
   ":Doc-Section Events
 
-  designate ``current'' theory for some rewriting done in linear arithmetic~/
+  designate theory for some rewriting done for non-linear arithmetic~/
+
+  We assume familiarity with ~il[theories]; in particular, ~pl[in-theory] for
+  the normal way to set the current theory.  Here, we discuss an analogous
+  event that pertains only to non-linear arithmetic
+  (~pl[non-linear-arithmetic]).
+
   ~bv[]
   Example:
   (in-arithmetic-theory '(lemma1 lemma2))~/
@@ -18294,10 +18300,8 @@
   variable ~ilc[world], ~c[term] must contain no free variables.  ~c[Term] is
   evaluated with the variable ~ilc[world] bound to the current ~il[world] to
   obtain a theory and the corresponding runic theory
-  (~pl[theories]) is then made the current theory.  Thus,
-  immediately after the ~c[in-arithmetic-theory], a rule is ~il[enable]d
-  iff its rule name is a member of the runic interpretation (~pl[theories])
-  of some member of the value of ~c[term].
+  (~pl[theories]) is then used by non-linear arithmetic
+  (~pl[non-linear-arithmetic]).
 
   Warning:  If ~c[term] involves macros such as ~ilc[ENABLE] and ~ilc[DISABLE]
   you will probably not get what you expect!  Those macros are defined
