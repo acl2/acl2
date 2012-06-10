@@ -10257,3 +10257,349 @@
   Workshops'' on the ACL2 home page.
 
   ~/~/")
+
+(deflabel advanced-features
+
+; We omit some of the more obscure features that users are unlikely to use,
+; such as SET-RW-CACHE-STATE and SET-TAU-AUTO-MODE.
+
+  :doc
+  ":Doc-Section ACL2-Tutorial
+
+  some advanced features of ACL2~/
+
+  Maybe you've been using ACL2 for awhile, and you wonder if there are
+  lesser-known features that you might find useful.  Then this topic is for
+  you.  We present below a ``laundry list'' of some such features, with brief
+  descriptions and links to ~il[documentation] topics.
+
+  Although the list below is long, it is not intended to be complete, and
+  indeed some topics have been deliberately excluded.  Some have fallen out of
+  use, perhaps for good reason, such as ~il[NU-REWRITER] and ~il[OBDD].  Others
+  are already likely to be discovered when needed, such as ~ilc[GETENV$] and
+  perhaps ~ilc[DOUBLE-REWRITE].  Some topics are referenced by documentation
+  for others in the list, such as ~ilc[MBT], which is referenced by ~ilc[MBE].
+  Some utilities such as ~ilc[PSTACK] and ~ilc[VERBOSE-PSTACK] seem too
+  low-level to be worthy of inclusion below.~/
+
+  For an extensive introduction to using the prover, which may include some
+  aspects new to you, ~pl[INTRODUCTION-TO-THE-THEOREM-PROVER].  A shorter topic
+  contains highlights for efficient prover usage: ~pl[TIPS].  Also
+  ~pl[ACL2-SEDAN] for an extension of ACL2 (written by others), ACL2s, that
+  includes an Eclipse-based interface, more powerful and automatic termination
+  reasoning, and other features.
+
+  We now move on to the list.
+
+  ~bv[]
+  ========================================
+  Top-level commands and utilities:
+  ========================================
+  ~ev[]~bq[]
+  o ~l[A!] and ~pl[P!] to abort or pop.
+
+  o ~l[ACL2-CUSTOMIZATION] for initial commands to run at startup.
+
+  o ~l[KEYWORD-COMMANDS] for how keyword commands are processed.
+
+  o ~l[LD] for many ways to control the top-level loop.
+
+  o ~l[COMPILATION] for a discussion of ~c[set-compiler-enabled] and other
+  compiler-related utilities.
+
+  o For useful reader macros `~c[#!]', `~c[#.]', and `~c[#u]',
+  ~pl[SHARP-BANG-READER], ~pl[SHARP-DOT-READER], and ~pl[SHARP-U-READER].
+
+  o To save and use an ACL2 executable, ~pl[ACL2-AS-STANDALONE-PROGRAM] and
+  ~pl[SAVE-EXEC].
+
+  o For utilities related to timing, ~pl[TIME$], ~pl[WITH-PROVER-TIME-LIMIT],
+  ~pl[WITH-PROVER-STEP-LIMIT], and ~pl[SET-PROVER-STEP-LIMIT].
+
+  o To query and manage the database, ~pl[HISTORY] (which discusses many useful
+  utilities, such as ~c[:]~ilc[PBT] and ~c[:]~ilc[PL]), and ~pl[DEAD-EVENTS].
+
+  o ~l[ADD-INCLUDE-BOOK-DIR] for linking keyword for ~c[:dir] argument of
+  ~ilc[LD] and ~ilc[INCLUDE-BOOK].
+
+  o ~l[REBUILD] for a fast way to load a file without waiting for proofs.
+
+  o For parallel certification, ~pl[BOOK-MAKEFILES] (~c[-j] option of
+  `~c[make]') and ~pl[PROVISIONAL-CERTIFICATION].
+  ~eq[]~bv[]
+  ========================================
+  Some relatively less common events:
+  ========================================
+  ~ev[]~bq[]
+  o ~l[RESET-PREHISTORY] to reset the prehistory.
+
+  o ~l[ASSERT-EVENT] to assert that a given form returns a non-nil value.
+
+  o ~l[DEFATTACH] to execute constrained functions using corresponding attached
+  functions.
+
+  o ~l[DEFUN-SK] to define a function whose body has an outermost quantifier.
+
+  o ~l[DEFCHOOSE] to define a Skolem (witnessing) function.
+
+  o For efficiency consider using ~c[defconst-fast]; ~pl[DEFCONST].
+
+  o ~l[SET-VERIFY-GUARDS-EAGERNESS] to specify when ~il[guard] verification is
+  tried by default.
+  ~eq[]~bv[]
+  ========================================
+  Output and its control (~pl[IO] for additional information):
+  ========================================
+  ~ev[]~bq[]
+  o ~l[WITH-OUTPUT] to suppress or turn on specified output for an event.
+
+  o ~l[EVISC-TABLE] for support for abbreviated output.
+
+  o ~l[NTH-ALIASES-TABLE] for a table used to associate names for
+  ~ilc[NTH]/~ilc[UPDATE-NTH] printing.
+
+  o ~l[OUTPUT-TO-FILE] to redirect output to a file.
+
+  o ~l[PRINT-CONTROL] to control ACL2 printing.
+
+  o ~l[SET-EVISC-TUPLE] to control suppression of details when printing.
+
+  o ~l[SET-INHIBIT-OUTPUT-LST] to control output by type.
+
+  o ~l[SET-IPRINT] to allow abbreviated output to be read back in.
+
+  o ~l[SET-PRINT-BASE] to control the radix in which numbers are printed.
+
+  o ~l[SET-PRINT-CASE] to control whether symbols are printed in upper case or
+  in lower case.
+  ~eq[]~bv[]
+  ========================================
+  On proving termination for definitions:
+  ========================================
+  ~ev[]~bq[]
+  o ~l[ORDINALS] for a discussion of ordinals in ACL2.
+
+  o ~l[RULER-EXTENDERS] for a control on ACL2's termination and induction
+  analyses.
+
+  o ~l[SET-WELL-FOUNDED-RELATION] to set the default well-founded relation for
+  termination analysis.
+  ~eq[]~bv[]
+  ========================================
+  Proof debugging and output control:
+  ========================================
+  ~ev[]~bq[]
+  o ~l[ACCUMULATED-PERSISTENCE] to get statistics on which runes are being
+  tried.
+
+  o ~l[ADD-BINOP] and ~pl[ADD-MACRO-ALIAS] to associate a function name with a
+  macro name.
+
+  o ~l[BREAK-REWRITE] for how to monitor rewrite rules.
+
+  o ~l[DMR] for dynamic monitoring of rewriting and other prover activity.
+
+  o ~l[FORWARD-CHAINING-REPORTS] to see reports about the forward chaining
+  process.
+
+  o ~l[GUARD-DEBUG] to generate markers to indicate sources of ~il[guard] proof
+  obligations.
+
+  o ~l[PROOF-CHECKER] for support for low-level interaction.
+
+  o ~l[REDO-FLAT] for redo on failure of a ~ilc[PROGN], ~ilc[ENCAPSULATE], or
+  ~ilc[CERTIFY-BOOK].
+
+  o ~l[SET-GAG-MODE] and ~pl[PSO] to abbreviate or restore proof output.
+
+  o ~l[SET-INHIBIT-OUTPUT-LST], ~pl[SET-INHIBIT-WARNINGS], and
+  ~pl[SET-INHIBITED-SUMMARY-TYPES] to inhibit various types of output.
+
+  o ~l[SET-RAW-PROOF-FORMAT] to make proof output display lists of ~il[rune]s.
+
+  o ~l[SKIP-PROOFS] to skip proofs for a given form.
+  ~eq[]~bv[]
+  ========================================
+  Program debugging:
+  ========================================
+  ~ev[]~bq[]
+  o ~l[BREAK$] to cause an immediate Lisp break.
+
+  o ~l[BREAK-ON-ERROR] to break when encountering a hard or soft error caused
+  by ACL2.
+
+  o ~l[DISASSEMBLE$] to disassemble a function.
+
+  o ~l[PRINT-GV] to print a form whose evaluation caused a guard violation.
+
+  o ~l[PROFILE] to turn on profiling for one function.
+
+  o ~l[TRACE$] and ~pl[OPEN-TRACE-FILE] to ~il[trace] function evaluations,
+  possibly sending trace output to a file.
+
+  o ~l[WET] to evaluate a form and print a subsequent error trace.
+  ~eq[]~bv[]
+  ========================================
+  Programming and evaluation idioms, support, utilities (also ~pl[PROGRAMMING]
+  for more utilities, e.g., ~ilc[RANDOM$])
+  ========================================
+  ~ev[]~bq[]
+  o ~l[ARRAYS] and ~l[DEFSTOBJ] for introductions to ACL2 arrays and
+  single-threaded objects (stobjs), respectively, each of which provides
+  efficient destructive operations in an applicative setting.  Also
+  ~pl[WITH-LOCAL-STOBJ] for a way to create local stobjs.
+
+  o ~l[ASSERT$] to cause a hard error if the given test is false.
+
+  o ~l[CANONICAL-PATHNAME] to obtain the true absolute filename, with soft
+  links resolved.
+
+  o ~l[CASE-MATCH] for a utility providing pattern matching and destructuring.
+
+  o ~l[DEFPUN] to define a tail-recursive function symbol.
+
+  o ~l[EC-CALL] to execute a call in the ACL2 logic instead of raw Lisp.
+
+  o ~l[ER] to print an error message and ``cause an error''.
+
+  o ~l[FLET] to provide local binding of function symbols.
+
+  o ~l[GC$] to invoke the garbage collector.
+
+  o ~l[MBE] to attach code for execution.
+
+  o ~l[MV-LIST] to convert a multiple-valued result to a single-valued list.
+
+  o ~l[MV?] to return one or more values.
+
+  o For non-executable code, ~pl[DEFUN-NX] and ~pl[NON-EXEC].
+
+  o ~l[PROG2$] and ~pl[PROGN$] to execute two or more forms and return the
+  value of the last one.
+
+  o ~l[PROGRAMMING-WITH-STATE] for how to program using the von Neumannesque
+  ACL2 ~il[state] object.
+
+  o ~l[TOP-LEVEL] to evaluate a top-level form as a function body.
+
+  o ~l[WITH-GUARD-CHECKING] to suppress or enable guard-checking for a form.
+
+  o For ways to fake access to the state ~pl[WORMHOLE], ~pl[WITH-LOCAL-STATE],
+  ~pl[CW], ~pl[CW!], ~pl[PRINTING-TO-STRINGS], ~pl[OBSERVATION-CW],
+  and (dangerous!) ~pl[WITH-LIVE-STATE].
+  ~eq[]~bv[]
+  ========================================
+  Connecting with the underlying host Lisp, and doing other evil:
+  ========================================
+  ~ev[]~bq[]
+  o ~l[DEFTTAG] to introduce a trust tag (ttag).
+
+  o ~l[DEFMACRO-LAST] to define a macro that returns its last argument, but
+  with side effects.
+
+  o ~l[PROGN!] to evaluate forms that are not necessarily ~il[events].
+
+  o ~l[RETURN-LAST] to return the last argument, perhaps with side effects.
+
+  o ~l[SET-RAW-MODE] to enter or exit ``raw mode,'' a raw Lisp environment.
+
+  o ~l[SYS-CALL] to make a system call to the host operating system.
+  ~eq[]~bv[]
+  ========================================
+  Macros and related utilities:
+  ========================================
+  ~ev[]~bq[]
+  o ~l[DEFABBREV] for a convenient form of macro definition for simple
+  expansions.
+
+  o ~l[MACRO-ARGS] for the formals list of a macro definition (~pl[DEFMACRO]).
+
+  o ~l[MAKE-EVENT] for a sort of extension of ~ilc[DEFMACRO] that allows access
+  to the ~il[state], by evaluating (expanding) a given form and then evaluate
+  the result of that expansion.
+
+  o ~l[TRANS], ~pl[TRANS!], and  ~pl[TRANS1] to print the macroexpansion of a
+  form.
+  ~eq[]~bv[]
+  ========================================
+  Experimental extensions:
+  ========================================
+  ~ev[]~bq[]
+  o ~l[HONS-AND-MEMOIZATION] for ACL2(h); in particular, ~pl[MEMOIZE] for efficient
+  function memoization and ~pl[PROFILE] for profiling.
+
+  o ~l[REAL] for ACL2(r), which supports the real numbers.
+
+  o ~l[PARALLELISM] for ACL2(p), which supports parallel evaluation and proof.
+  ~eq[]~bv[]
+  ========================================
+  Database control and query:
+  ========================================
+  ~ev[]~bq[]
+  o ~l[DISABLEDP] to determine whether a given name or rune is disabled.
+
+  o For redefinition support ~pl[REDEF], ~pl[REDEF!], ~pl[REDEF+], ~pl[REDEF-],
+  and ~pl[REDEFINED-NAMES].
+
+  o ~l[TABLE] for user-managed tables.
+
+  o ~l[VERIFY-GUARDS-FORMULA] to view a guard proof obligation without doing
+  the proof.
+  ~eq[]~bv[]
+  ========================================
+  Prover control
+  ========================================
+  ~ev[]~bq[]
+  o For congruence-based reasoning ~pl[DEFCONG], ~pl[CONGRUENCE],
+  ~pl[EQUIVALENCE], ~pl[DEFEQUIV], and ~pl[DEFREFINEMENT].
+
+  o For meta rules and clause processors ~pl[META], ~pl[DEFEVALUATOR],
+  ~pl[CLAUSE-PROCESSOR], ~pl[DEFINE-TRUSTED-CLAUSE-PROCESSOR] (for connecting
+  with external tools, such as SAT solvers), and
+  ~l[EXTENDED-METAFUNCTIONS] (for ~il[state] and context-sensitive
+  metafunctions).
+
+  o For theory control, ~pl[THEORIES] for detailed information, but in
+  particular ~pl[DEFTHEORY], ~pl[THEORY-FUNCTIONS],
+  ~pl[IN-ARITHMETIC-THEORY] (and ~pl[NON-LINEAR-ARITHMETIC]), and
+  ~pl[THEORY-INVARIANT].
+
+  o ~l[HINTS] for a complete list of prover hints, including some of the more
+  obscure ones such as ~c[:restrict], ~c[:]~ilc[clause-processor],
+  ~c[:nonlinearp], ~c[:backchain-limit-rw], ~c[:reorder], and ~c[:backtrack].
+  Also ~pl[HINTS-AND-THE-WATERFALL] for an explanation of how hints interact
+  with the ACL2 proof process.  For other topics related to hints,
+  ~pl[OVERRIDE-HINTS], ~pl[ADD-CUSTOM-KEYWORD-HINT], ~pl[DEFAULT-HINTS], and
+  ~pl[COMPUTED-HINTS] (also ~pl[USING-COMPUTED-HINTS] and for other topics
+  ~c[USING-COMPUTED-HINTS-xxx] ~pl[MISCELLANEOUS].
+    
+  o ~l[BIND-FREE] to bind ~il[free-variables] of a ~il[rewrite] or ~il[linear]
+  rule.
+
+  o ~l[CASE-SPLIT] for a utility like ~ilc[FORCE] that immediately splits the
+  top-level goal on the indicated hypothesis.
+
+  o ~l[CASE-SPLIT-LIMITATIONS] for a way to the number of cases produced at once
+
+  o ~l[DEFAULT-BACKCHAIN-LIMIT] to specify the backchain limit for a rule.
+
+  o ~l[FORCE] for an identity function used to force a hypothesis.
+
+  o ~l[OTF-FLG] for a way to push more than one initial subgoal for induction. 
+
+  o ~l[RULE-CLASSES] to add various kinds of rules to the data base, including
+  more unusual sorts such as ~c[:]~ilc[built-in-clause] rules and
+  ~c[:]~ilc[induction] rules.
+
+  o ~l[SET-BACKCHAIN-LIMIT] to set the backchain-limit used by the type-set and
+  rewriting mechanisms.
+
+  o ~l[SET-BODY] to set an alternate definition body for ~c[:expand]
+  ~il[hints].
+
+  o ~l[SET-REWRITE-STACK-LIMIT] to set the ~il[rewrite] stack depth used by the
+  rewriter.
+
+  o ~l[SYNTAXP] to attach a heuristic filter on a ~c[:]~ilc[rewrite],
+  ~c[:]~ilc[meta], or ~c[:]~ilc[linear] rule.
+  ~eq[]~/")

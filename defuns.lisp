@@ -126,13 +126,11 @@
                  (body (car bodies))
                  (formals (car arglists)))
 
-; The body should be a translated form of (prog2$ (throw-nonexec-error 'name
-; (list . formals)) ...), as laid down by defun-nx-fn.  Normally we insist on
-; the use of name and formals in the arguments to throw-nonexec-error, so that
-; results are as predicted by ev-fncall-rec-logical.  We loosen up that
-; requirement for defproxy, i.e. (eq non-executablep :program), since it won't
-; be true and we don't care that it be true, as we have a program-mode function
-; that does a throw.
+; The body should generally be a translated form of (prog2$
+; (throw-nonexec-error 'name (list . formals)) ...), as laid down by
+; defun-nx-fn.  But we make an exception for defproxy, i.e. (eq non-executablep
+; :program), since it won't be true in that case and we don't care that it be
+; true, as we have a program-mode function that does a throw.
 
              (cond ((throw-nonexec-error-p body
                                            (and (not (eq non-executablep

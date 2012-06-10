@@ -5708,7 +5708,8 @@
   execute two forms and return the value of the second one~/
 
   ~l[hard-error], ~pl[illegal], and ~pl[cw] for examples of functions to call
-  in the first argument of ~c[prog2$].~/
+  in the first argument of ~c[prog2$].  Also ~pl[progn$] for an extension of
+  ~c[prog2$] that handles than two arguments.~/
 
   Semantically, ~c[(Prog2$ x y)] equals ~c[y]; the value of ~c[x] is ignored.
   However, ~c[x] is first evaluated for side effect.  Since the ACL2
@@ -25376,7 +25377,7 @@
 
   ":Doc-Section ACL2::ACL2-built-ins
 
-  returning a single value~/
+  return one or more values~/
 
   ~c[Mv?] is designed to work with ~c[mv?-let], generalizing how ~ilc[mv] works
   with ~ilc[mv-let] by allowing the binding of a single variable.  For example,
@@ -30330,7 +30331,7 @@
 
   ":Doc-Section IO
 
-  control radix in which number are printed~/
+  control radix in which numbers are printed~/
 
   By default, integers and ratios are printed in base 10.  ACL2 also supports
   printing in radix 2, 8, or 16 by calling set-print-base with the desired
@@ -38083,7 +38084,9 @@
 
   The car is used to limit backchaining used by the ACL2 type-set mechanism,
   while the cdr is used to limit backchaining used by the rewriting mechanism.
-  ~l[backchain-limit] for details about how backchain-limits are used.~/
+  ~l[backchain-limit] for details about how backchain-limits are used.  Rewrite
+  backchain limits may also be installed at the level of hints; ~pl[hints] for
+  a discussion of ~c[:backchain-limit-rw].~/
 
   ~bv[]
   :set-backchain-limit nil  ; do not impose any additional limits
@@ -39465,7 +39468,7 @@
 
   ":Doc-Section switches-parameters-and-modes
 
-  associate directory to keyword for ~ilc[include-book]'s ~c[:dir] argument~/
+  link keyword for ~c[:dir] argument of ~ilc[ld] and ~ilc[include-book]~/
   ~bv[]
   Example Form:
   (add-include-book-dir :smith \"/u/smith/\")
@@ -39477,12 +39480,12 @@
   where ~c[kwd] is a ~ilc[keywordp] and ~c[dir] is the ~il[pathname] of a
   directory.  (If the final '~c[/]' is missing, ACL2 will add it for you.)  The
   effect of this event is to modify the meaning of the ~c[:dir] keyword
-  argument of ~ilc[include-book] as indicated by the examples above, namely by
-  associating the indicated directory with the indicated keyword for purposes
-  of the ~ilc[include-book] ~c[:dir] argument.  By the ``indicated directory''
-  we mean, in the case that the pathname is a relative pathname, the directory
-  relative to the current connected book directory; ~pl[cbd].
-  ~l[delete-include-book-dir] for how to undo this effect.
+  argument of ~ilc[include-book] as indicated by the examples above, and
+  similarly for ~ilc[ld], namely by associating the indicated directory with
+  the indicated keyword for purposes of the ~c[:dir] argument.  By the
+  ``indicated directory'' we mean, in the case that the pathname is a relative
+  pathname, the directory relative to the current connected book directory;
+  ~pl[cbd].  ~l[delete-include-book-dir] for how to undo this effect.
 
   A keyword that is already associated with a directory string by an existing
   invocation of ~c[add-include-book-dir] cannot be associated with a different
@@ -39523,7 +39526,7 @@
 
   ":Doc-Section switches-parameters-and-modes
 
-  remove association of keyword for ~ilc[include-book]'s ~c[:dir] argument~/
+  unlink keyword for ~c[:dir] argument of ~ilc[ld] and ~ilc[include-book]~/
   ~bv[]
   Example Forms:
   (delete-include-book-dir :smith)
@@ -39533,11 +39536,12 @@
   (delete-include-book-dir kwd)
   ~ev[]
   where ~c[kwd] is a ~ilc[keywordp].  The effect of this event is to modify the
-  meaning of the ~c[:dir] keyword argument of ~ilc[include-book] as indicated
-  by the examples above, namely by removing association of any directory with
-  the indicated keyword for purposes of the ~ilc[include-book] ~c[:dir]
-  argument.  Normally one would instead use ~ilc[add-include-book-dir] to
-  associate a new directory with that keyword; ~pl[add-include-book-dir].
+  meaning of the ~c[:dir] keyword argument of ~ilc[include-book] and ~ilc[ld]
+  as indicated by the examples above, namely by removing association of any
+  directory with the indicated keyword for purposes of the ~ilc[include-book]
+  (and ~ilc[ld]) ~c[:dir] argument.  Normally one would instead use
+  ~ilc[add-include-book-dir] to associate a new directory with that keyword;
+  ~pl[add-include-book-dir].
 
   Note: This is an event!  It does not print the usual event summary
   but nevertheless changes the ACL2 logical ~il[world] and is so recorded.

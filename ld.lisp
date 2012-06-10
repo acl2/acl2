@@ -18812,6 +18812,11 @@
   ~ilc[accumulated-persistence].  Thanks to Robert Krug for suggesting this
   addition.
 
+  A new ~il[documentation] topic lists lesser-known and advanced ACL2 features,
+  intended for those with prior ACL2 experience who wish to extend their
+  knowledge of ACL2 capabilities.  ~l[advanced-features].  Thanks to Warren
+  Hunt and Anna Slobodova for requesting such information.
+
   ~st[HEURISTIC IMPROVEMENTS]
 
   Reading of ACL2 ~ilc[arrays] (~pl[aref1], ~pl[aref2]) has been made more

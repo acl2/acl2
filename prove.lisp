@@ -1731,7 +1731,7 @@
   :doc
   ":Doc-Section Miscellaneous
 
-  pushing all the initial subgoals~/
+  allow more than one initial subgoal to be pushed for induction~/
 
   The value of this flag is normally ~c[nil].  If you want to prevent the
   theorem prover from abandoning its initial work upon pushing the
