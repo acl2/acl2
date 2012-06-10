@@ -19046,6 +19046,21 @@
   the case of forced hypotheses.  An example showing this bug, before the fix,
   appears in a comment in the ACL2 sources, in ~c[(deflabel note-4-4 ...)].
 
+  We fixed a bug in a prover routine involved in ~il[type-set] computations
+  involving linear arithmetic.  This bug has been around since at least as far
+  back as Version_3.3 (released November, 2007).  We are not aware of any
+  resulting unsoundness, though it did have the potential to weaken the prover.
+  For example, the following is proved now, but was not proved before the bug
+  was fixed.
+  ~bv[]
+  (thm
+   (implies (and (rationalp x)
+                 (rationalp y)
+                 (integerp (+ (* 1/3 y) x)))
+            (integerp (+ y (* 3 x))))
+   :hints ((\"Goal\" :in-theory (disable commutativity-of-+))))
+  ~ev[]
+
   ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]
 
   Improvements have been made related to the reading of characters.  In

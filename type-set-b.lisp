@@ -5262,33 +5262,35 @@
 (defun normalize-linear-sum-3 (const term)
 
 ; Return a term equal to (* const term).  We focus our simplification on the
-; case that term is an addend of a sum.
+; case that term is an addend of a sum.  Note that const is a non-zero
+; rational, not a term.
 
   (cond ((variablep term)
-         (cons-term* 'BINARY-* const term))
+         (cons-term* 'BINARY-* (kwote const) term))
         ((fquotep term)
          (if (rationalp (unquote term))
              (kwote (* (unquote term) const))
-           (cons-term* 'BINARY-* const term)))
+           (cons-term* 'BINARY-* (kwote const) term)))
         ((flambda-applicationp term)
-         (cons-term* 'BINARY-* const term))
+         (cons-term* 'BINARY-* (kwote const) term))
         ((eq (ffn-symb term) 'UNARY--)
-         (cons-term* 'BINARY-* (- const) (fargn term 1)))
+         (cons-term* 'BINARY-* (kwote (- const)) (fargn term 1)))
         ((eq (ffn-symb term) 'BINARY-*)
-         (if (and (quotep (fargn term 1)) ; (* a x)
+         (if (and (quotep (fargn term 1)) ; term is of the form (* 'a x)
                   (rationalp (unquote (fargn term 1))))
              (let ((new-coef (* (unquote (fargn term 1)) const)))
                (if (eql new-coef 1)
                    (fargn term 2)
-                 (cons-term* 'BINARY-* new-coef (fargn term 2))))
-           (cons-term* 'BINARY-* const term)))
+                 (cons-term* 'BINARY-* (kwote new-coef) (fargn term 2))))
+           (cons-term* 'BINARY-* (kwote const) term)))
         (t
-         (cons-term* 'BINARY-* const term))))
+         (cons-term* 'BINARY-* (kwote const) term))))
 
 (defun normalize-linear-sum-2 (const term)
 
 ; Return a term equal to (* const term).  We focus our simplification on the
-; case that term is a sum.
+; case that term is a sum.  Note that const is a non-zero
+; rational, not a term.
 
   (if (eq (fn-symb term) 'BINARY-+)
       (cons-term* 'BINARY-+
@@ -5322,7 +5324,7 @@
                     (rationalp (unquote (fargn arg1 1)))
                     (not (eql (unquote (fargn arg1 1)) 0)))
 
-; So term is (+ x (b * y)) where b is a non-zero rational.
+; So term is (+ (b * y) x) where b is a non-zero rational.
 
                (let ((multiplicative-constant (unquote (fargn arg1 1))))
                  (mv additive-constant
