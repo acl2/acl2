@@ -16,7 +16,7 @@
           logbitp logior logand lognot logxor
           logcons logcar logcdr loghead
           integer-length
-          logmaskp logext))
+          logmaskp logext logapp))
 
 (make-event
  (prog2$ (cw "Note (from ihs-extensions): disabling ~&0.~%~%"
@@ -759,6 +759,57 @@
   ;;  :rule-classes ((:definition :clique (ash)
   ;;                  :controller-alist ((ash nil t)))))
 
+  ;; This splits the difference on its recursion scheme, in one case recurring
+  ;; on (logcdr i) and in the other case just i.
+
+  ;; This suggests two other possible definitions...
+
+
+
+  (defun ash*-ind (i count)
+    (declare (xargs :measure (abs (ifix count))))
+    (cond ((zip count) (ifix i))
+          ((< count 0)
+           (ash*-ind (logcdr i) (1+ count)))
+          (t (logcons 0 (ash*-ind i (1- count))))))
+
+
+  (local (in-theory (enable* ash*
+                             ihsext-recursive-redefs
+                             ihsext-inductions
+                             ihsext-advanced-thms)))
+
+  (local (defthm ash-of-logcons
+           (implies (<= 0 (ifix count))
+                    (equal (ash (logcons 0 i) count)
+                           (logcons 0 (ash i count))))
+           :hints (("goal" :induct (ash*-ind i count)))))
+
+  (local (defthm ash-of-logcdr
+           (implies (<= (ifix count) 0)
+                    (equal (ash (logcdr i) count)
+                           (logcdr (ash i count))))
+           :hints (("goal" :induct (ash*-ind i count)))))
+
+  (defthmd ash$$
+    (equal (ash i count)
+           (cond ((zip count) (ifix i))
+                 ((< count 0) (logcdr    (ash i (1+ count))))
+                 (t           (logcons 0 (ash i (1- count))))))
+    :hints (("goal" :expand ((ash i count))))
+    :rule-classes
+    ((:definition :clique (ash)
+      :controller-alist ((ash nil t)))))
+
+  (defthmd ash**
+    (equal (ash i count)
+           (cond ((zip count) (ifix i))
+                 ((< count 0) (ash (logcdr i)    (1+ count)))
+                 (t           (ash (logcons 0 i) (1- count)))))
+    :rule-classes
+    ((:definition :clique (ash)
+      :controller-alist ((ash nil t)))))
+
   (add-to-ruleset ihsext-recursive-redefs '(ash*))
   (add-to-ruleset ihsext-redefs '(ash*))
 
@@ -776,6 +827,29 @@
                     :scheme (ash-ind i count))))
 
   (add-to-ruleset ihsext-inductions '(ash-induct))
+
+
+  (defun ash$$-ind (i count)
+    (cond ((zip count) (ifix i))
+          ((< count 0) (logcdr    (ash$$-ind i (1+ count))))
+          (t           (logcons 0 (ash$$-ind i (1- count))))))
+
+  (defthmd ash$$-induct
+    t
+    :rule-classes ((:induction
+                    :pattern (ash i count)
+                    :scheme (ash$$-ind i count))))
+
+  (defun ash**-ind (i count)
+    (cond ((zip count) (ifix i))
+          ((< count 0) (ash**-ind (logcdr i)    (1+ count)))
+          (t           (ash**-ind (logcons 0 i) (1- count)))))
+
+  (defthmd ash**-induct
+    t
+    :rule-classes ((:induction
+                    :pattern (ash i count)
+                    :scheme (ash**-ind i count))))
 
   (in-theory (disable ash))
   
@@ -1250,6 +1324,122 @@
                     i)))
 
   (add-to-ruleset ihsext-basic-thms logbitp-of-logtail))
+
+
+(defsection logapp**
+  
+  (local (in-theory (enable* ihsext-recursive-redefs
+                             ihsext-inductions
+                             ihsext-bounds-thms
+                             ihsext-advanced-thms
+                             ihsext-arithmetic
+                             logapp*
+                             )))
+
+  (local (defthm logapp-fixes
+           (equal (logapp size i j)
+                  (logapp (nfix size) (ifix i) (ifix j)))
+           :hints(("Goal" :in-theory (enable logapp)))
+           :rule-classes nil))
+
+  (defthm logapp**
+    (equal (logapp size i j)
+           (if (zp size)
+               (ifix j)
+             (logcons (logcar i)
+                      (logapp (1- size) (logcdr i) j))))
+    :hints (("goal" :use (logapp-fixes
+                          (:instance logapp-fixes
+                           (size (1- size)) (i (logcdr i))))
+             :in-theory (disable logapp (force))))
+    :rule-classes ((:definition
+                    :clique (logapp)
+                    :controller-alist ((logapp t nil nil)))))
+
+  (add-to-ruleset ihsext-recursive-redefs '(logapp**))
+  (add-to-ruleset ihsext-redefs '(logapp**))
+
+  (local (in-theory (enable logapp**)))
+
+  (defthmd logapp-induct
+    t
+    :rule-classes ((:induction
+                    :pattern (logapp size i j)
+                    :scheme (logbitp-ind size i))))
+
+  (add-to-ruleset ihsext-inductions '(logapp-induct))
+
+  (defthmd logapp-when-zp
+    (implies (zp size)
+             (equal (logapp size i j) (ifix j))))
+
+  (defthmd logapp-when-zip
+    (implies (zip i)
+             (equal (logapp size i j)
+                    (ash j (nfix size))))
+    :hints(("Goal" :in-theory (e/d (logapp** logapp-induct)
+                                   (logapp logapp*)))))
+
+  (add-to-ruleset ihsext-bad-type-thms '(logapp-when-zp
+                                         logapp-when-zip))
+
+  (local (in-theory (disable logapp)))
+
+  (defthm logcar-of-logapp
+    (equal (logcar (logapp size i j))
+           (if (zp size) (logcar j) (logcar i)))
+    :hints (("goal" :expand ((logapp size i j)))))
+
+  (add-to-ruleset ihsext-advanced-thms '(logcar-of-logapp))
+
+  (defthmd logcdr-of-logapp
+    (equal (logcdr (logapp size i j))
+           (if (zp size)
+               (logcdr j)
+             (logapp (1- size) (logcdr i) j)))
+    :hints (("goal" :expand ((logapp size i j)))))
+
+  (add-to-ruleset ihsext-advanced-thms logcdr-of-logapp)
+
+  (local (in-theory (enable* ihsext-recursive-redefs
+                             ihsext-inductions)))
+
+  (local (in-theory (disable logbitp-logapp)))
+
+  (defthm logbitp-of-logapp
+    (equal (logbitp pos (logapp size i j))
+           (if (< (nfix pos) (nfix size))
+               (logbitp pos i)
+             (logbitp (- (nfix pos) (nfix size)) j))))
+
+  (add-to-ruleset ihsext-basic-thms logbitp-of-logapp)
+
+  (local (defun ind (size1 size i j)
+           (if (zp size)
+               (list size1 size i j)
+             (ind (1- size1) (1- size) (logcdr i) j))))
+
+  (defthm unsigned-byte-p-of-logapp
+    (implies (and (integerp size1)
+                  (<= (nfix size) size1)
+                  (unsigned-byte-p (- size1 (nfix size)) j))
+             (unsigned-byte-p size1 (logapp size i j)))
+    :hints (("goal" :induct (ind size1 size i j)
+             :in-theory (disable unsigned-byte-p
+                                 minus-to-lognot))))
+
+  (defthm signed-byte-p-of-logapp
+    (implies (and (integerp size1)
+                  (<= (nfix size) size1)
+                  (signed-byte-p (- size1 (nfix size)) j))
+             (signed-byte-p size1 (logapp size i j)))
+    :hints (("goal" :induct (ind size1 size i j)
+             :in-theory (disable signed-byte-p
+                                 minus-to-lognot))))
+
+  (add-to-ruleset ihsext-basic-thms '(unsigned-byte-p-of-logapp
+                                      signed-byte-p-of-logapp)))
+
 
 
 (defsection mod

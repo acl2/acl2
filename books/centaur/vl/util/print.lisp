@@ -606,7 +606,9 @@ commands.  For instance,</p>
       nil))
 
   (defmacro vl-ps-seq (&rest args)
-    (list 'let* (vl-ps-seq-pairs args) 'ps)))
+    (if (atom args)
+        'ps
+      (list* 'let* (vl-ps-seq-pairs (butlast args 1)) (last args)))))
 
 
 

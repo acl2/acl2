@@ -902,12 +902,13 @@ of processing the STV using @(see defconsts).  You can't use an ordinary
                  :mintime 1/2))
 
          (snapshots
-          (time$ (stv-combine-into-snapshots
-                  (4v-sexpr-restrict-with-rw-alists in-alists-general cstv.restrict-alist)
-                  (4v-sexpr-restrict-with-rw-alists out-alists-general cstv.restrict-alist)
-                  (4v-sexpr-restrict-with-rw-alists int-alists-general cstv.restrict-alist))
-                 :msg "; stv-debug general snapshots: ~st sec, ~sa bytes.~%"
-                 :mintime 1/2)))
+          (with-fast-alist cstv.restrict-alist
+            (time$ (stv-combine-into-snapshots
+                    (4v-sexpr-restrict-with-rw-alists in-alists-general cstv.restrict-alist)
+                    (4v-sexpr-restrict-with-rw-alists out-alists-general cstv.restrict-alist)
+                    (4v-sexpr-restrict-with-rw-alists int-alists-general cstv.restrict-alist))
+                   :msg "; stv-debug general snapshots: ~st sec, ~sa bytes.~%"
+                   :mintime 1/2))))
       snapshots))
 
   (memoize 'stv-make-snapshots :aokp t)
@@ -1230,7 +1231,7 @@ nil</tt>.</p>"
 
           ;; Evaluate the non-skipped signals.
           (evaled-out-bits
-           (time$ (make-fast-alist (4v-sexpr-eval-alist sigs ev-alist))
+           (time$ (make-fast-alist (4v-sexpr-simp-and-eval-alist sigs ev-alist))
                   :mintime 1/2
                   :msg "; stv-run out-bits: ~st sec, ~sa bytes.~%"))
 

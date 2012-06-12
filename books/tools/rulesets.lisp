@@ -128,6 +128,16 @@
     (let* ((world (w state))
            (name ',name)
            (rules ,(ruleset-form-preprocess form)))
+      (if (is-ruleset name world)
+          (add-to-ruleset-core name rules world state)
+        (def-ruleset-core name rules world state)))))
+
+(defmacro set-ruleset! (name form)
+  (declare (xargs :guard (symbolp name)))
+  `(make-event
+    (let* ((world (w state))
+           (name ',name)
+           (rules ,(ruleset-form-preprocess form)))
       (def-ruleset-core name rules world state))))
 
 (defmacro add-to-ruleset! (name form)
