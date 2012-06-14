@@ -18562,6 +18562,14 @@
   the ~ilc[IF] branches if necessary.)  We thank Sol Swords for contributing a
   version of the above example and requesting this improvement.
 
+  It is no longer the case that ~ilc[break-on-error] causes a Lisp break when
+  encountering an error during translation of user input into internal
+  (translated) form (~pl[term]).  The reason is that an improvement to the
+  translation process, specifically the one described in the preceding
+  paragraph, allows certain backtracking from ``errors'', which are intended to
+  be silent rather than causing breaks into raw Lisp.  Thanks to Jared Davis
+  for sending an example leading to this change.
+
   (CCL and SBCL only) When the host Lisp is CCL or SBCL, then since all
   functions are compiled, a ~ilc[certify-book] command will no longer load the
   newly-compiled file (and similarly for ~ilc[include-book] with argument
