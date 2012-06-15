@@ -18562,6 +18562,14 @@
   the ~ilc[IF] branches if necessary.)  We thank Sol Swords for contributing a
   version of the above example and requesting this improvement.
 
+  It is no longer the case that ~ilc[break-on-error] causes a Lisp break when
+  encountering an error during translation of user input into internal
+  (translated) form (~pl[term]).  The reason is that an improvement to the
+  translation process, specifically the one described in the preceding
+  paragraph, allows certain backtracking from ``errors'', which are intended to
+  be silent rather than causing breaks into raw Lisp.  Thanks to Jared Davis
+  for sending an example leading to this change.
+
   (CCL and SBCL only) When the host Lisp is CCL or SBCL, then since all
   functions are compiled, a ~ilc[certify-book] command will no longer load the
   newly-compiled file (and similarly for ~ilc[include-book] with argument
@@ -18696,6 +18704,13 @@
   ACL2 !>
   ~ev[]
 
+  A tautology checker used in the ACL2 sources (function ~c[if-tautologyp]) has
+  been limited somewhat in the effort it makes to recognize a tautology.  While
+  we expect it to be rare for the effect of this change to be noticeable, we
+  thank Sol Swords for sending us an example that motiviated this change: a
+  ~il[guard] verification that took about 5 seconds in Version_4.3 now takes,
+  on the same machine, about 0.07 seconds.
+
   ~st[NEW FEATURES]
 
   A new ``tau system'' provides a kind of ``type checker.''  ~l[tau-system].
@@ -18811,6 +18826,11 @@
   The macro ~c[set-accumulated-persistence] is an alias for
   ~ilc[accumulated-persistence].  Thanks to Robert Krug for suggesting this
   addition.
+
+  A new ~il[documentation] topic lists lesser-known and advanced ACL2 features,
+  intended for those with prior ACL2 experience who wish to extend their
+  knowledge of ACL2 capabilities.  ~l[advanced-features].  Thanks to Warren
+  Hunt and Anna Slobodova for requesting such information.
 
   ~st[HEURISTIC IMPROVEMENTS]
 
@@ -19029,6 +19049,21 @@
   Fixed a ~il[proof-checker] bug that could result in duplicate goal names in
   the case of forced hypotheses.  An example showing this bug, before the fix,
   appears in a comment in the ACL2 sources, in ~c[(deflabel note-4-4 ...)].
+
+  We fixed a bug in a prover routine involved in ~il[type-set] computations
+  involving linear arithmetic.  This bug has been around since at least as far
+  back as Version_3.3 (released November, 2007).  We are not aware of any
+  resulting unsoundness, though it did have the potential to weaken the prover.
+  For example, the following is proved now, but was not proved before the bug
+  was fixed.
+  ~bv[]
+  (thm
+   (implies (and (rationalp x)
+                 (rationalp y)
+                 (integerp (+ (* 1/3 y) x)))
+            (integerp (+ y (* 3 x))))
+   :hints ((\"Goal\" :in-theory (disable commutativity-of-+))))
+  ~ev[]
 
   ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]
 

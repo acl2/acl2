@@ -3280,10 +3280,18 @@
             (t (mv nil msg-or-val extra-value)))))
 
 (defun er-cmp-fn (ctx msg)
+
+; Warning: Keep in sync with trans-er.  For an explanation, see the
+; corresponding warning in trans-er.
+
   (declare (xargs :guard t))
   (mv ctx msg))
 
 (defmacro er-cmp (ctx str &rest args)
+
+; Warning: Keep in sync with trans-er.  For an explanation, see the
+; corresponding warning in trans-er.
+
   `(er-cmp-fn ,ctx (msg ,str ,@args)))
 
 (defmacro value-cmp (x)
@@ -4152,23 +4160,37 @@
 
 (defmacro trans-er (&rest args)
 
+; Warning: Keep in sync with er-cmp (see commented-out call below) and
+; er-cmp-fn.  We avoid using er-cmp because we don't want break-on-error to
+; break on translate errors, since we know that sometimes translate errors are
+; benign -- for example, in translate11 we backtrack if there is an error in
+; translating the term tbr in (IF tst tbr fbr), to translate fbr first.
+
 ; Like er-cmp but returns 3 values, the additional one being the current value
 ; of bindings.  See also trans-er+ and trans-er+?.
 
   `(mv-let (ctx msg-or-val)
-           (er-cmp ,@args)
+;          (er-cmp ,@args) ; See "keep in sync" comment above.
+           (mv ,(car args) (msg ,(cadr args) ,@(cddr args)))
            (mv ctx msg-or-val bindings)))
 
 (defmacro trans-er+ (form ctx str &rest args)
+
+; Warning: Keep in sync with er-cmp (see commented-out call below) and
+; er-cmp-fn.  For an explanation, see the corresponding warning in trans-er.
 
 ; This macro is like trans-er, but it also prints the offending context, form,
 ; which could be the untranslated term or a surrounding term, etc.
 
   `(mv-let (ctx msg-or-val)
-           (er-cmp ,ctx
-                   "~@0  Note:  this error occurred in the context ~x1."
-                   (msg ,str ,@args)
-                   ,form)
+;          (er-cmp ,ctx ; See "keep in sync" comment above.
+;                  "~@0  Note:  this error occurred in the context ~x1."
+;                  (msg ,str ,@args)
+;                  ,form)
+           (mv ,ctx
+               (msg "~@0  Note:  this error occurred in the context ~x1."
+                    (msg ,str ,@args)
+                    ,form))
            (mv ctx msg-or-val bindings)))
 
 (defmacro trans-er+? (cform x ctx str &rest args)

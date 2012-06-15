@@ -3679,6 +3679,7 @@ demo.lsp
 diffie-helman.lisp
 encryption.lisp
 jfkr.lisp
+make-etags.sh
 package.lsp
 random.lisp
 
