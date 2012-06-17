@@ -12865,6 +12865,9 @@
 
 (defun get-guards (lst wrld)
 
+; Warning: see :DOC guard-miscellany for a specification of how conjuncts are
+; ordered when forming the guard from :xargs and type declarations.
+
 ; Each element of lst is a 5-tuple (name args doc edcls body).  We return
 ; a list in 1:1 correspondence with lst.  Each element is the
 ; untranslated guard expression extracted from the edcls of the

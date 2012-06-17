@@ -18453,6 +18453,9 @@
 ; While fixing the cons-term bug, we improved the efficiency of kwote a bit,
 ; avoiding some unnecessary consing.
 
+; Improved several :doc topics by clarifying the role of type declarations in
+; specifying the guard of a function.
+
   :doc
   ":Doc-Section release-notes
 

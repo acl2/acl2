@@ -4884,7 +4884,9 @@
   ~c[:guard-debug], which has the same effect as in ~ilc[verify-guards]
   (~pl[guard-debug]).  Apply ~c[verify-guards-formula] to a name just as you
   would use ~ilc[verify-guards], but when you only want to view the formula
-  rather than creating an event.  If the first argument is not a symbol
+  rather than creating an event.  If the first argument is not a symbol, then
+  it is treated as the body of a ~ilc[defthm] event for which you want the
+  guard proof obligation.
 
   ~l[guard-obligation] if you want to obtain guard proof obligations for use in
   a program.~/~/"

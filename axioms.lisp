@@ -16792,7 +16792,7 @@
   Before discussing the ~c[verify-guards] event, we first discuss guard
   verification, which can take place at definition time or, later, using
   ~c[verify-guards].  Typically, guard verification takes place at definition
-  time if a ~c[:guard] has been supplied explicitly unless
+  time if a guard (or type, or ~il[stobjs]) has been supplied explicitly unless
   ~c[:verify-guards nil] has been specified; ~pl[defun] and ~pl[xargs], and
   ~pl[set-verify-guards-eagerness] for how to change this default.  The point
   of guard verification is to ensure that during evaluation of an expression

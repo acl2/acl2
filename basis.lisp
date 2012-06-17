@@ -10466,8 +10466,10 @@
   accepted by ACL2, and novices are often best served by avoiding guards.
   However, guards can be useful as a specification device or for increasing
   execution efficiency.  To make such a restriction, use the ~c[:guard]
-  keyword; ~pl[xargs].  The general issue of guards and guard verification is
-  discussed in the topics listed below.~/
+  keyword (~pl[xargs]) or, especially if you want the host Lisp compiler to use
+  this information, use ~c[type] declarations (~pl[declare]).  The general
+  issue of guards and guard verification is discussed in the topics listed
+  below.~/
 
   To begin further discussion of guards, ~pl[guard-introduction].  That section
   directs the reader to further sections for more details.  To see just a
@@ -10615,14 +10617,12 @@
 
   ~em[Effect]
 
-  Guards on definitions are checked at execution time (except for
-  guards on subsidiary calls of recursive or mutually recursive
-  functions).
+  Guards on definitions are checked at execution time (except for guards on
+  subsidiary calls of recursive or mutually recursive functions).
 
   ~em[When does it happen]
 
-  By default, guards are checked for all forms submitted at the top
-  level.
+  By default, guards are checked for all forms submitted at the top level.
 
   ~em[To disable]~nl[]
   ~c[:set-guard-checking nil]   ; skip raw Lisp if there is a guard violation
@@ -10637,43 +10637,47 @@
 
   ~em[Effect]
 
-  A proof is attempted of the obligations arising from the guards of
-  subsidiary functions in a ~ilc[defun], ~ilc[defthm], or ~ilc[defaxiom] event.
-  In the case of a ~c[defun], the guard itself is also verified (under an
-  implicit guard of ~c[t]).
+  A proof is attempted of the obligations arising from the guards of subsidiary
+  functions in a ~ilc[defun], ~ilc[defthm], or ~ilc[defaxiom] event.  In the
+  case of a ~c[defun], the guard itself is also verified (under an implicit
+  guard of ~c[t]).
 
   ~em[When does it happen]
 
   Only names of defined functions, ~ilc[defthm]s, and ~ilc[defaxiom]s are
-  subject to guard verification.  Guard verification may occur when
-  functions are defined (using ~ilc[defun]), but it requires an explicit
-  call of ~ilc[verify-guards] in order to verify guards for ~ilc[defthm]s
-  and ~ilc[defaxiom]s.  Constrained functions (~pl[encapsulate]) may
-  not have their guards verified.
+  subject to guard verification.  Guard verification may occur when functions
+  are defined (using ~ilc[defun]), but it requires an explicit call of
+  ~ilc[verify-guards] in order to verify guards for ~ilc[defthm]s and
+  ~ilc[defaxiom]s.  Constrained functions (~pl[encapsulate]) may not have their
+  guards verified.
 
   ~c[(verify-guards foo ...)]~nl[]
-  causes guard verification for the ~ilc[defun], ~ilc[defthm], or ~ilc[defaxiom] named
-  by ~c[foo], if it has not already been successfully done.  The default
-  ~il[defun-mode] (~pl[default-defun-mode]) must be ~c[:]~ilc[logic], or else
-  this event is ignored.
+  causes guard verification for the ~ilc[defun], ~ilc[defthm], or
+  ~ilc[defaxiom] named by ~c[foo], if it has not already been successfully
+  done.  The default ~il[defun-mode] (~pl[default-defun-mode]) must be
+  ~c[:]~ilc[logic], or else this event is ignored.
 
   ~c[(defun foo ...)]~nl[]
-  causes guard verification of ~c[foo] if and only if the following
-  conditions are both met.  (However,
-  ~pl[set-verify-guards-eagerness] for how to change this
-  behavior.)
+  causes guard verification of ~c[foo] if and only if the following two
+  conditions are both met.  First, foo is processed in ~c[:]~ilc[logic]
+  mode (either by setting mode ~c[:]~ilc[logic] globally, or by including
+  ~c[:mode :logic] in the ~ilc[xargs] declaration).  Second, at least one of
+  the following sub-conditions is met.  Also ~pl[xargs], and
+  ~pl[set-verify-guards-eagerness] for how to change this behavior.
   ~bq[]
-  1. Foo is processed in ~c[:]~ilc[logic] mode (either by setting mode ~c[:]~ilc[logic]
-  globally, or by including ~c[:mode :logic] in the ~ilc[xargs] declaration).
+  1. The ~ilc[xargs] declaration specifies a ~c[:]~ilc[guard].
 
-  2. The ~ilc[xargs] declaration (~pl[xargs]) either specifies ~c[:]~ilc[guard] or
-  specifies ~c[:]~ilc[verify-guards] ~c[t] (or both).
+  2. There is at least one ~c[type] declaration (~pl[declare]).
+
+  3. The ~ilc[xargs] declaration specifies ~c[:]~ilc[stobj]~c[s].
+
+  4. The ~ilc[xargs] declaration specifies ~c[:]~ilc[verify-guards] ~c[t].
   ~eq[]
 
   ~c[(verify-termination foo ...)]~nl[]
   causes guard verification of ~c[foo] if ~c[foo] is a function currently
-  defined in ~c[:]~ilc[program] mode and the appropriate ~ilc[xargs] are supplied, as
-  discussed for the case of ~ilc[defun] above.  The default ~il[defun-mode]
+  defined in ~c[:]~ilc[program] mode and the criteria for guard verification of
+  a ~ilc[defun] form are met, as discussed above.  The default ~il[defun-mode]
   (~pl[default-defun-mode]) must be ~c[:]~ilc[logic], or else this event is
   ignored.")
 
@@ -10692,7 +10696,9 @@
   The guard on a function symbol is a formula about the formals of the
   function.  To see the guard on a function, use the keyword command
   ~c[:]~ilc[args].  ~l[args].  To specify the guard on a function at
-  ~c[defun-time], use the ~c[:]~ilc[guard] ~c[xarg].  ~l[xargs].
+  ~c[defun-time], use the ~c[:]~ilc[guard] ~c[xarg] (~l[xargs]) or ~c[type]
+  declarations (~pl[declare]).  The latter may be preferable if you want the
+  host Lisp compiler to use this information.
 
   Guards can be seen as having either of two roles: (a) they are a
   specification device allowing you to characterize the kinds of
@@ -11166,14 +11172,15 @@
   ~ilc[set-verify-guards-eagerness], ~ilc[set-guard-checking], and
   ~ilc[verify-guards].~/
 
-  ~ilc[Defun] can be made to try to verify the guards on a function.
-  This is controlled by the ``~il[defun-mode]'' of the ~ilc[defun];
-  ~pl[defun-mode].  The ~il[defun-mode] is either as specified with the
-  ~c[:mode] ~c[xarg] of the ~ilc[defun] or else defaults to the default
-  ~il[defun-mode].  ~l[default-defun-mode].  If the ~il[defun-mode] of the
-  ~ilc[defun] is ~c[:]~ilc[logic] and either a ~c[:]~ilc[guard] is specified or
-  ~c[:]~ilc[verify-guards] ~c[t] is specified in the ~ilc[xargs], then we attempt to
-  verify the guards of the function.  Otherwise we do not.
+  ~ilc[Defun] can be made to try to verify the guards on a function.  This is
+  controlled by the ``~il[defun-mode]'' of the ~ilc[defun]; ~pl[defun-mode].
+  The ~il[defun-mode] is either as specified with the ~c[:mode] ~c[xarg] of the
+  ~ilc[defun] or else defaults to the default ~il[defun-mode].
+  ~l[default-defun-mode].  If the ~il[defun-mode] of the ~ilc[defun] is
+  ~c[:]~ilc[logic] and either a ~il[guard] is specified explicitly or
+  ~c[:]~ilc[verify-guards] ~c[t] is specified in the ~ilc[xargs], then we
+  attempt to verify the guards of the function.  Otherwise we do not.
+  (But ~pl[set-verify-guards-eagerness] for how to modify this behavior.)
 
   It is sometimes impossible for the system to verify the guards of a
   recursive function at definition time.  For example, the guard
