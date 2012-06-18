@@ -22,6 +22,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
+(include-book "str/hexify" :dir :system)
 (include-book "stv-compile")
 (include-book "esim-vcd")
 (include-book "steps")
@@ -1056,46 +1057,6 @@ output is X.</p>"
 
 
 
-
-
-(defun insert-underscores (x)
-  (declare (xargs :guard t))
-  (cond ((atom x)
-         x)
-        ((equal (mod (len x) 4) 0)
-         (list* #\_ (car x) (insert-underscores (cdr x))))
-        (t
-         (list* (car x) (insert-underscores (cdr x))))))
-
-(defthm character-listp-of-insert-underscores
-  (implies (force (character-listp x))
-           (character-listp (insert-underscores x))))
-
-(defun hexify (x)
-  ;; Dumb printing utility.  X can be a natural number or the symbol 'X.  We
-  ;; turn it into a hexadecimal string.  Such a string can be printed with ~s0
-  ;; or similar in calls of cw.
-  (declare (xargs :guard t
-                  :guard-debug t))
-  (cond ((natp x)
-         (b* ((chars (explode-atom x 16)) ;; looks like #xBEEF...
-              ((unless (and (equal (take 2 chars) '(#\# #\x))
-                            (characterp (third chars))))
-               (er hard? 'hexify "explode-atom is broken"))
-              (nice-chars (list* #\# #\x (third chars)
-                                 (insert-underscores (nthcdr 3 chars)))))
-           (coerce nice-chars 'string)))
-        ((equal x 'x)
-         "X")
-        ((not x)
-         ;; Jared: extending this to allow NIL since it's just a printing
-         ;; utility and this is convenient sometimes in the IU stuff, where
-         ;; a particular signal might not be bound in an input alist.
-         "NIL")
-        (t
-         (prog2$ (er hard? 'hexify "Unexpected argument ~x0.~%" x)
-                 ""))))
-
 (defun stv-print-alist (x)
   ;; Dumb printing utility.  X is expected to be an alist binding symbols to
   ;; values.  We print them out hexified and indented in a nice way.
@@ -1111,7 +1072,7 @@ output is X.</p>"
         (er hard? 'stv-print-alist
             "Malformed alist: name is not a symbolp.~%"
             (car x)))
-       (- (cw "  ~s0:~t1~s2~%" key 20 (hexify val))))
+       (- (cw "  ~s0:~t1~s2~%" key 20 (str::hexify val))))
     (stv-print-alist (cdr x))))
 
 
