@@ -27,6 +27,7 @@
 (include-book "../mlib/lvalues")
 (include-book "../mlib/warnings")
 (include-book "../util/cwtime")
+(include-book "use-set-ignore")
 (include-book "centaur/bitops/bitsets" :dir :system)
 (local (include-book "../util/arithmetic"))
 (local (include-book "../util/osets"))
@@ -2616,7 +2617,6 @@ warnings."
          (pluralp     (vl-plural-p wires))
          (|wire(s)|   (if pluralp "wires" "wire"))
          (|are|       (if pluralp "are" "is"))
-         (|they|      (if pluralp "they" "it"))
 
          (summary-line
           ;; New summary line for Terry
@@ -2628,42 +2628,23 @@ warnings."
 
          (warning
           (make-vl-warning
-           :type (cond (usedp :use-set-warn-unset)
-                       (setp  :use-set-warn-unused)
-                       (t     :use-set-warn-spurious))
+           :type (cond (usedp (if fsetp
+                                  :use-set-warn-1-unset-tricky
+                                :use-set-warn-1-unset))
+                       (setp  (if fusedp
+                                  :use-set-warn-2-unused-tricky
+                                :use-set-warn-2-unused))
+                       (t     (if (or fusedp fsetp)
+                                  :use-set-warn-3-spurious-tricky
+                                :use-set-warn-3-spurious)))
            :msg (cat summary-line
-                     (cond (usedp
-                       (if fsetp
-                           "In ~m0, even though it looks like the following ~
-                            ~s1 ~s2 driven by submodules, ~s3 ~s2 actually ~
-                            never set: ~&4. (mask ~x5)"
-                         "In ~m0, the following ~s1 ~s2 never set: ~&4. (mask ~
-                          ~x5)"))
-                      (setp
-                       (if fusedp
-                           "In ~m0, even though it looks like the following ~
-                            ~s1 ~s2 used by submodules, ~s3 ~s2 actually ~
-                            never used: ~&4. (mask ~x5)"
-                         "In ~m0, the following ~s1 ~s2 never used: ~&4. ~
-                          (mask ~x5)"))
-                      (t
-                       (if (or fusedp fsetp)
-                           "In ~m0, even though it looks like the following ~
-                            ~s1 ~s2 ~s6 by submodules, ~s3 ~s2 actually never ~
-                            used or set: ~&4. (mask ~x5)"
-                         "In ~m0, the following ~s1 ~s2 never used/set: ~
-                          ~&4 (mask: ~x5)"))))
-           :args (list modname
-                       |wire(s)|
+                     (cond (usedp "These ~s0 ~s1 never set: ~&2.")
+                           (setp  "These ~s0 ~s1 never used: ~&2.")
+                           (t     "These ~s0 ~s1 never used or set: ~&2.")))
+           :args (list |wire(s)|
                        |are|
-                       |they|
                        (cwtime (vl-verilogify-emodwirelist wires)
-                               :mintime 1/2)
-                       mask
-                       (cond ((and fusedp fsetp) "used/set")
-                             (fusedp "used")
-                             (fsetp "set")
-                             (t "")))
+                               :mintime 1/2))
            :fatalp nil
            :fn 'us-warn-nonport-results)))
 
@@ -2754,10 +2735,21 @@ warnings."
          ;; Crucial: shrink the database to remove shadowed elements
          (db (hons-shrink-alist db nil))
 
-         ;; ignore vbna, vbpa, vss0, vdd0 since they're common and stupid
+         (ialist (vl-moditem-alist x))
+         ((mv warnings ignore-bits)
+          (us-analyze-commentmap x.comments x ialist walist warnings))
+         (- (fast-alist-free ialist))
+
          ((mv ?ignore-db1 db)
           (us-filter-db-by-names
-           #!ACL2 '(|vbna| |vbpa| |vss0| |vdd0|)
+           (append
+            #!ACL2 '(;; always ignore vbna, vbpa, vss0, vdd0 since they're common and stupid
+                     |vbna| |vbpa| |vss0| |vdd0|
+                     ;; also ignore certain clocks...
+                     |d1ph1| |d2ph1| |d3ph1| |e1ph1| |e2ph1| |e3ph1|
+                     )
+            ;; bits to ignore from use_set_ignore(...); directives
+            ignore-bits)
            db))
 
          ;; ignore hids since they'll look undriven

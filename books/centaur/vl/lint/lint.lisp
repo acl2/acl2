@@ -359,9 +359,13 @@
   (list :use-set-fudging
         :use-set-trainwreck
         :use-set-future-trainwreck
-        :use-set-warn-unset
-        :use-set-warn-unused
-        :use-set-warn-spurious
+        :use-set-warn-1-unset
+        :use-set-warn-1-unset-tricky
+        :use-set-warn-2-unused
+        :use-set-warn-2-unused-tricky
+        :use-set-warn-3-spurious
+        :use-set-warn-3-spurious-tricky
+        :use-set-syntax-error
         :vl-collect-wires-approx
         :vl-collect-wires-fail
         :vl-dropped-always

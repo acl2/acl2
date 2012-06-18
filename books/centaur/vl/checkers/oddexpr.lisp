@@ -49,7 +49,7 @@
 ; makes it useful for simple linting.
 
   (defconst *fake-modelement*
-    (make-vl-netdecl :name "Fake module element"
+    (make-vl-netdecl :name "Fake_Module_Element"
                      :type :vl-wire
                      :loc *vl-fakeloc*))
 
