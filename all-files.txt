@@ -585,6 +585,7 @@ bitsets-opt-raw.lsp
 cert.acl2
 defaults.lisp
 equal-by-logbitp.lisp
+extra-defs.lisp
 ihs-extensions.lisp
 ihsext-basics.lisp
 integer-length.lisp
@@ -843,6 +844,7 @@ check-case.lisp
 check-namespace.lisp
 disconnected.lisp
 lint.lisp
+use-set-ignore.lisp
 xf-drop-missing-submodules.lisp
 xf-drop-unresolved-submodules.lisp
 xf-lint-stmt-rewrite.lisp
@@ -3740,6 +3742,7 @@ fast-cat.acl2
 fast-cat.lisp
 firstn-chars.lisp
 gpl.txt
+hexify.lisp
 html-encode.lisp
 ieqv.lisp
 iless.lisp
