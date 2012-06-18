@@ -28,6 +28,7 @@
 (include-book "integer-length")
 (include-book "sbitsets")
 (include-book "part-select")
+(include-book "extra-defs")
 
 (defxdoc bitops
   :short "Centaur Bitops Library"
