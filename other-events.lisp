@@ -21344,10 +21344,8 @@
                                           (pairlis-x1 'defun ax-def-lst)
                                           defconsts
 
-; It is important to disable the executable counterpart of the creator
-; function, so as not to expose the live stobj during proofs.  We ensure in
-; function chk-theory-expr-value1 that the :executable-counterpart rune below
-; will never be enabled.
+; We disable the executable counterpart of the creator function since its *1*
+; function always does a throw, which is not useful during proofs.
 
                                           `((encapsulate
                                              ()
