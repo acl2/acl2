@@ -11738,9 +11738,9 @@
   ~ev[]
 
   ~c[(Set-difference$ l1 l2)] equals a list that contains the ~ilc[member]s of
-  ~c[x] that are not ~ilc[member]s of ~c[y].  More precisely, the resulting
-  list is the same as one gets by deleting the members of ~c[y] from ~c[x],
-  leaving the remaining elements in the same order as in ~c[x].  The optional
+  ~c[l1] that are not ~ilc[member]s of ~c[l2].  More precisely, the resulting
+  list is the same as one gets by deleting the members of ~c[l2] from ~c[l1],
+  leaving the remaining elements in the same order as in ~c[l1].  The optional
   keyword, ~c[:TEST], has no effect logically, but provides the test (default
   ~ilc[eql]) used for comparing members of the two lists.~/
 
@@ -11753,11 +11753,11 @@
   ~l[equality-variants] for a discussion of the relation between
   ~c[set-difference$] and its variants:
   ~bq[]
-  ~c[(set-difference-eq x lst)] is equivalent to
-  ~c[(set-difference$ x lst :test 'eq)];
+  ~c[(set-difference-eq l1 l2)] is equivalent to
+  ~c[(set-difference$ l1 l2 :test 'eq)];
 
-  ~c[(set-difference-equal x lst)] is equivalent to
-  ~c[(set-difference$ x lst :test 'equal)].
+  ~c[(set-difference-equal l1 l2)] is equivalent to
+  ~c[(set-difference$ l1 l2 :test 'equal)].
   ~eq[]
   In particular, reasoning about any of these primitives reduces to reasoning
   about the function ~c[set-difference-equal].
