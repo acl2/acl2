@@ -270,7 +270,8 @@ this value as an ACL2 integer.  The answer is in [-2^63, 2^63-1]."
 
 
 
-(defun abs-diff (a b)
+(defund abs-diff (a b) ;; Disabled since abs-diff-correct is nicer for reasoning.
+
   "(ABS-DIFF A B) is provably equal to (ABS (- (IFIX A) (IFIX B))).
 
 ABS-DIFF performs better than (ABS (- A B)) for symbolic simulation with GL: it
@@ -284,6 +285,8 @@ seconds."
     (declare (xargs :guard (and (integerp a)
                                 (integerp b))))
     (mbe :logic
+         ;; Don't be tempted to change the :logic definition to (abs (- (ifix
+         ;; a) (ifix b))).  GL uses :logic definitions!
          (let ((a (ifix a))
                (b (ifix b)))
            (if (<= b a)
@@ -296,7 +299,8 @@ seconds."
 
 (defthm abs-diff-correct
   (equal (abs-diff a b)
-         (abs (- (ifix a) (ifix b)))))
+         (abs (- (ifix a) (ifix b))))
+  :hints(("Goal" :in-theory (enable abs-diff))))
 
 (defthm natp-of-abs-diff
   (natp (abs-diff a b))
@@ -386,7 +390,7 @@ seconds."
               (< (ash src -1) src))
      :hints(("Goal" :in-theory (disable logtail))))))
 
-(defun bitscan-fwd (src)
+(defund bitscan-fwd (src)
   "(BITSCAN-FWD SRC) returns the bit position of the least significant bit in
 SRC that is set, or 0 when SRC is zero (and hence has no such bit)."
   (declare (xargs :guard (natp src)
@@ -468,3 +472,177 @@ SRC that is set, or 0 when SRC is zero (and hence has no such bit)."
   (natp (bitscan-rev src))
   :rule-classes :type-prescription)
 
+
+
+
+(local (in-theory (disable loghead expt-minus exponents-add)))
+
+
+(local
+ (encapsulate
+   ()
+   ;; bozo yucky dependency... maybe rewrite rotate-left/rotate-right to avoid
+   ;; using mod
+   (local (include-book "arithmetic-3/floor-mod/floor-mod" :dir :system))
+
+   (defthm integerp-mod
+     (implies (and (integerp m)
+                   (integerp n))
+              (integerp (mod m n)))
+     :rule-classes (:rewrite :type-prescription))
+
+   (defthm upper-bound-mod
+     (implies (and (integerp x)
+                   (posp y))
+              (< (mod x y) y))
+     :rule-classes :linear
+     :hints(("Goal" :use ((:instance mod-bounds-1)))))
+
+   (defthm natp-of-mod
+     (implies (and (natp x)
+                   (natp y))
+              (natp (mod x y)))
+     :rule-classes :type-prescription)))
+
+
+
+(defund rotate-left (x width places)
+  "Rotates X, a vector of some WIDTH, by PLACES places to the left.
+
+Note that PLACES can be larger than WIDTH.  We automatically reduce the number
+of places modulo the width, which makes sense: rotating WIDTH-many times is the
+same as not rotating at all."
+
+  (declare (xargs :guard (and (natp x)
+                              (posp width)
+                              (natp places))))
+
+  ;; Running example to help understand the code.  Suppose X is some 16-bit
+  ;; number, say 16'b AAAA_BBBB_CCCC_DDDD, so the width is 16, and suppose we
+  ;; want to rotate left by 20 places.
+
+  (let* ((x          (mbe :logic (nfix x) :exec x))
+         (width      (mbe :logic (nfix width) :exec width))
+         (places     (mbe :logic (nfix places) :exec places))
+         (places     (mod places width))       ; e.g., 20 places --> 4 places
+         (low-num    (- width places))         ; e.g., 12
+         (mask       (1- (ash 1 low-num)))     ; e.g., 0000_1111_1111_1111
+         (xl         (logand x mask))          ; e.g., 0000_BBBB_CCCC_DDDD
+         (xh         (logand x (lognot mask))) ; e.g., AAAA_0000_0000_0000
+         (xh-shift   (ash xh (- low-num)))     ; e.g., 0000_0000_0000_AAAA
+         (xl-shift   (ash xl places))          ; e.g., BBBB_CCCC_DDDD_0000
+         (ans        (logior xl-shift xh-shift))) ; e.g., BBBB_CCCC_DDDD_AAAA
+    ans))
+
+(local (defthm rotate-left-examples
+         (and (equal (rotate-left #b11110000 8 0) #b11110000)
+              (equal (rotate-left #b11110000 8 1) #b11100001)
+              (equal (rotate-left #b11110000 8 2) #b11000011)
+              (equal (rotate-left #b11110000 8 3) #b10000111)
+              (equal (rotate-left #b11110000 8 4) #b00001111)
+              (equal (rotate-left #b11110000 8 5) #b00011110)
+              (equal (rotate-left #b11110000 8 6) #b00111100)
+              (equal (rotate-left #b11110000 8 7) #b01111000)
+              (equal (rotate-left #b11110000 8 8) #b11110000)
+              (equal (rotate-left #b11110000 8 9)  #b11100001)
+              (equal (rotate-left #b11110000 8 10) #b11000011)
+              (equal (rotate-left #b11110000 8 11) #b10000111)
+              (equal (rotate-left #b11110000 8 12) #b00001111)
+              (equal (rotate-left #b11110000 8 13) #b00011110)
+              (equal (rotate-left #b11110000 8 14) #b00111100)
+              (equal (rotate-left #b11110000 8 15) #b01111000)
+              (equal (rotate-left #b11110000 8 16) #b11110000)
+
+              (equal (rotate-left #b1111000011001010 16 0)   #b1111000011001010)
+              (equal (rotate-left #b1111000011001010 16 1)   #b1110000110010101)
+              (equal (rotate-left #b1111000011001010 16 2)   #b1100001100101011)
+              (equal (rotate-left #b1111000011001010 16 3)   #b1000011001010111)
+              (equal (rotate-left #b1111000011001010 16 4)   #b0000110010101111)
+              (equal (rotate-left #b1111000011001010 16 5)   #b0001100101011110)
+              (equal (rotate-left #b1111000011001010 16 6)   #b0011001010111100)
+              (equal (rotate-left #b1111000011001010 16 7)   #b0110010101111000)
+              (equal (rotate-left #b1111000011001010 16 8)   #b1100101011110000)
+              (equal (rotate-left #b1111000011001010 16 9)   #b1001010111100001)
+              (equal (rotate-left #b1111000011001010 16 10)  #b0010101111000011)
+              (equal (rotate-left #b1111000011001010 16 11)  #b0101011110000110)
+              (equal (rotate-left #b1111000011001010 16 12)  #b1010111100001100)
+              (equal (rotate-left #b1111000011001010 16 13)  #b0101111000011001)
+              (equal (rotate-left #b1111000011001010 16 14)  #b1011110000110010)
+              (equal (rotate-left #b1111000011001010 16 15)  #b0111100001100101)
+              (equal (rotate-left #b1111000011001010 16 16)  #b1111000011001010))
+         :rule-classes nil))
+
+(defthm natp-of-rotate-left
+  (natp (rotate-left x width places))
+  :rule-classes :type-prescription
+  :hints(("Goal" :in-theory (enable rotate-left))))
+
+
+
+(defun rotate-right (x width places)
+  "Rotate X, a vector of some WIDTH, by PLACES places to the right.
+
+Note that PLACES can be larger than WIDTH.  We automatically reduce the number
+of places modulo the width, which makes sense: rotating WIDTH-many times is the
+same as not rotating at all."
+
+  (declare (xargs :guard (and (natp x)
+                              (posp width)
+                              (natp places))))
+
+    ;; Running example to help understand the code: suppose X is some 16-bit
+    ;; number, say 16'b AAAA_BBBB_CCCC_DDDD, so the width is 16, and suppose we
+    ;; want to rotate by 20 places.
+    (let* ((x          (mbe :logic (nfix x) :exec x))
+           (width      (mbe :logic (nfix width) :exec width))
+           (places     (mbe :logic (nfix places) :exec places))
+           (places     (mod places width))          ; e.g., 20 places --> 4 places
+           (mask       (1- (ash 1 places)))         ; e.g., 0000_0000_0000_1111
+           (xl         (logand x mask))             ; e.g., 0000_0000_0000_DDDD
+           (xh-shift   (ash x (- places)))          ; e.g., 0000_AAAA_BBBB_CCCC
+           (high-num   (- width places))            ; e.g., 12
+           (xl-shift   (ash xl high-num))           ; e.g., DDDD_0000_0000_0000
+           (ans        (logior xl-shift xh-shift))) ; e.g., DDDD_AAAA_BBBB_CCCC
+      ans))
+
+(local (defthm rotate-right-examples
+         (and (equal (rotate-right #b11110000 8 0)  #b11110000)
+              (equal (rotate-right #b11110000 8 1)  #b01111000)
+              (equal (rotate-right #b11110000 8 2)  #b00111100)
+              (equal (rotate-right #b11110000 8 3)  #b00011110)
+              (equal (rotate-right #b11110000 8 4)  #b00001111)
+              (equal (rotate-right #b11110000 8 5)  #b10000111)
+              (equal (rotate-right #b11110000 8 6)  #b11000011)
+              (equal (rotate-right #b11110000 8 7)  #b11100001)
+              (equal (rotate-right #b11110000 8 8)  #b11110000)
+              (equal (rotate-right #b11110000 8 9)  #b01111000)
+              (equal (rotate-right #b11110000 8 10) #b00111100)
+              (equal (rotate-right #b11110000 8 11) #b00011110)
+              (equal (rotate-right #b11110000 8 12) #b00001111)
+              (equal (rotate-right #b11110000 8 13) #b10000111)
+              (equal (rotate-right #b11110000 8 14) #b11000011)
+              (equal (rotate-right #b11110000 8 15) #b11100001)
+
+              (equal (rotate-right #b1111000011001010 16 0)   #b1111000011001010)
+              (equal (rotate-right #b1111000011001010 16 1)   #b0111100001100101)
+              (equal (rotate-right #b1111000011001010 16 2)   #b1011110000110010)
+              (equal (rotate-right #b1111000011001010 16 3)   #b0101111000011001)
+              (equal (rotate-right #b1111000011001010 16 4)   #b1010111100001100)
+              (equal (rotate-right #b1111000011001010 16 5)   #b0101011110000110)
+              (equal (rotate-right #b1111000011001010 16 6)   #b0010101111000011)
+              (equal (rotate-right #b1111000011001010 16 7)   #b1001010111100001)
+              (equal (rotate-right #b1111000011001010 16 8)   #b1100101011110000)
+              (equal (rotate-right #b1111000011001010 16 9)   #b0110010101111000)
+              (equal (rotate-right #b1111000011001010 16 10)  #b0011001010111100)
+              (equal (rotate-right #b1111000011001010 16 11)  #b0001100101011110)
+              (equal (rotate-right #b1111000011001010 16 12)  #b0000110010101111)
+              (equal (rotate-right #b1111000011001010 16 13)  #b1000011001010111)
+              (equal (rotate-right #b1111000011001010 16 14)  #b1100001100101011)
+              (equal (rotate-right #b1111000011001010 16 15)  #b1110000110010101)
+              (equal (rotate-right #b1111000011001010 16 16)  #b1111000011001010))
+         :rule-classes nil))
+
+(defthm natp-of-rotate-right
+  (natp (rotate-right x width places))
+  :rule-classes :type-prescription
+  :hints(("Goal" :in-theory (enable rotate-right))))
