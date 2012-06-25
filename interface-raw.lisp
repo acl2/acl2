@@ -2721,20 +2721,24 @@
 ; undo-trip; see the comment there.
 
          (cond
-          ((macro-function name)
-           (push `(setf (macro-function ',name)
-                        ',(macro-function name))
-                 (get name '*undo-stack*)))
           ((fboundp name)
-           (let ((oneified-name (*1*-symbol name)))
+           (let ((oneified-name (*1*-symbol name))
+                 (macro-p (macro-function name)))
              (push `(progn
-                      (maybe-untrace! ',name) ; untrace new function
-                      #+hons (maybe-unmemoize ',name)
+                      ,@(and (not macro-p)
+                             `((maybe-untrace! ',name) ; untrace new function
+                               #+hons (maybe-unmemoize ',name)))
                       ,@(if (eq extra 'reclassifying)
-                            `((setf (symbol-function ',oneified-name)
-                                    ',(symbol-function oneified-name)))
-                          `((setf (symbol-function ',name)
-                                  ',(symbol-function name))
+                            (assert$
+                             (not macro-p)
+                             `((setf (symbol-function ',oneified-name)
+                                     ',(symbol-function oneified-name))))
+                          `(,(cond (macro-p
+                                    `(setf (macro-function ',name)
+                                           ',(macro-function name)))
+                                   (t
+                                    `(setf (symbol-function ',name)
+                                           ',(symbol-function name))))
                             ,(cond
                               ((fboundp oneified-name)
                                `(setf (symbol-function ',oneified-name)

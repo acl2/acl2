@@ -19088,6 +19088,18 @@
    :hints ((\"Goal\" :in-theory (disable commutativity-of-+))))
   ~ev[]
 
+  Although all bets are off when using
+  redefinition (~pl[ld-redefinition-action]), we wish to minimize negative
+  effects of its use, especially raw Lisp errors.  The example below had caused
+  a raw Lisp error because of how undoing was managed, but this has been fixed.
+  ~bv[]
+  (defstobj st fld :inline t)
+  (redef!)
+  (defstobj st new0 fld)
+  (u)
+  (fld st) ; previously an error, which is now fixed
+  ~ev[]
+
   ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]
 
   Improvements have been made related to the reading of characters.  In
