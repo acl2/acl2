@@ -5255,86 +5255,110 @@
 ; found that to be exceedingly expensive.
 
 ; We now develop the code for normalize-linear-sum and then the code for
-; type-set-finish-1.
+; type-set-finish-1.  The sorting done by normalize-linear-sum-2 was added
+; after Version_4.3; an example in normalize-linear-sum illustrates what that
+; adds.
 
 ; End of Essay on Type-set Deductions for Integerp.
 
-(defun normalize-linear-sum-3 (const term)
+(defun map-multiply-car (multiplicative-constant x)
+ (cond ((endp x) nil)
+       (t (cons (cons (* multiplicative-constant (car (car x)))
+                      (cdr (car x)))
+                (map-multiply-car multiplicative-constant (cdr x))))))
 
-; Return a term equal to (* const term).  We focus our simplification on the
-; case that term is an addend of a sum.  Note that const is a non-zero
-; rational, not a term.
+(defun normalize-addend (addend)
 
-  (cond ((variablep term)
-         (cons-term* 'BINARY-* (kwote const) term))
-        ((fquotep term)
-         (if (rationalp (unquote term))
-             (kwote (* (unquote term) const))
-           (cons-term* 'BINARY-* (kwote const) term)))
-        ((flambda-applicationp term)
-         (cons-term* 'BINARY-* (kwote const) term))
-        ((eq (ffn-symb term) 'UNARY--)
-         (cons-term* 'BINARY-* (kwote (- const)) (fargn term 1)))
-        ((eq (ffn-symb term) 'BINARY-*)
-         (if (and (quotep (fargn term 1)) ; term is of the form (* 'a x)
-                  (rationalp (unquote (fargn term 1))))
-             (let ((new-coef (* (unquote (fargn term 1)) const)))
-               (if (eql new-coef 1)
-                   (fargn term 2)
-                 (cons-term* 'BINARY-* (kwote new-coef) (fargn term 2))))
-           (cons-term* 'BINARY-* (kwote const) term)))
+; Addend is a term.  We return a pair (multiplicative-constant
+; . rest-of-addend), where multiplicative-constant is a rational (not a term)
+; and rest-of-addend is a term, such that addend = multiplicative-constant *
+; rest-of-addend.  The intent is for rest-of-addend to have a coefficient of 1,
+; though we do not rely on this for correctness.
+
+  (cond ((variablep addend)
+         (cons 1 addend))
+        ((fquotep addend)
+         (cons 1 addend))
+        ((flambda-applicationp addend)
+         (cons 1 addend))
+        ((eq (ffn-symb addend) 'UNARY--)
+         (cons -1 (fargn addend 1)))
+        ((eq (ffn-symb addend) 'BINARY-*)
+         (cond ((and (quotep (fargn addend 1)) ; Addend is of the form (* a x).
+                     (rationalp (unquote (fargn addend 1))))
+                (cons (unquote (fargn addend 1)) (fargn addend 2)))
+               (t (cons 1 addend))))
         (t
-         (cons-term* 'BINARY-* (kwote const) term))))
+         (cons 1 addend))))
 
-(defun normalize-linear-sum-2 (const term)
+(defun insert-cdr-term-order (item list)
+  (cond ((endp list)
+	 (list item))
+	((term-order (cdr (car list)) (cdr item))
+	 (cons (car list)
+	       (insert-cdr-term-order item (cdr list))))
+	(t
+	 (cons item list))))
 
-; Return a term equal to (* const term).  We focus our simplification on the
-; case that term is a sum.  Note that const is a non-zero
-; rational, not a term.
+(defun normalize-linear-sum-2 (term)
 
-  (if (eq (fn-symb term) 'BINARY-+)
-      (cons-term* 'BINARY-+
-                  (normalize-linear-sum-3 const (fargn term 1))
-                  (normalize-linear-sum-2 const (fargn term 2)))
-    (normalize-linear-sum-3 const term)))
+; Term is (at least initially) a sum.  We return a list of pairs
+; (multiplicative-constant . rest-of-addend), one pair for each addend of term.
+; Furthermore, these pairs are sorted by term-order on rest-of-addend.
+
+  (cond ((eq (fn-symb term) 'BINARY-+)
+         (insert-cdr-term-order
+          (normalize-addend (fargn term 1))
+          (normalize-linear-sum-2 (fargn term 2))))
+        (t (list (normalize-addend term)))))
 
 (defun normalize-linear-sum-1 (additive-constant term)
 
 ; Given a rational number, additive-constant, and a term, we return (mv a b x)
-; where: a and b are rational numbers, x is a term, and additive-constant +
-; term = a + b * x.
+; where: a and b are rational numbers, x is a term (but see below), and
+; additive-constant + term = a + b * x.
+;
+; The preceding is almost correct.  When x would be a sum, it is instead
+; represented as a list of pairs --- (multiplicative-constant
+; . rest-of-addend), one pair for each addend.  Note that there is no
+; possibility for confusion, i.e., if two calls produce the same x, then either
+; each x represents a term or each x represents a list of pairs of the form
+; above.  To see this, note that if x is a term of the form ((u . v) . w) then
+; u is the symbol LAMBDA, not a number:
+; (thm (implies (pseudo-termp (cons (cons u v) w)) (equal u 'lambda))).
 
   (cond ((variablep term)
          (mv additive-constant 1 term))
-        ((fquotep term)
-         (mv additive-constant 1 term))
+        ((fquotep term) ; degenerate case; any sound result might be fine
+         (cond ((rationalp (unquote term))
+                (mv (+ additive-constant (unquote term)) 1 *0*))
+               (t
+                (mv additive-constant 1 term))))
         ((flambda-applicationp term)
          (mv additive-constant 1 term))
         ((eq (ffn-symb term) 'UNARY--)
          (mv additive-constant -1 (fargn term 1)))
         ((eq (ffn-symb term) 'BINARY-*)
-         (if (and (quotep (fargn term 1))
-                  (rationalp (unquote (fargn term 1))))
-             (mv additive-constant (unquote (fargn term 1)) (fargn term 2))
-           (mv additive-constant 1 term)))
+         (cond ((and (quotep (fargn term 1))
+                     (rationalp (unquote (fargn term 1))))
+                (mv additive-constant (unquote (fargn term 1)) (fargn term 2)))
+               (t
+                (mv additive-constant 1 term))))
         ((eq (ffn-symb term) 'BINARY-+)
-         (let ((arg1 (fargn term 1)))
-           (if (and (eq (fn-symb arg1) 'BINARY-*)
-                    (quotep (fargn arg1 1))
-                    (rationalp (unquote (fargn arg1 1)))
-                    (not (eql (unquote (fargn arg1 1)) 0)))
+         (let* ((temp-1 (normalize-linear-sum-2 term))
 
-; So term is (+ (b * y) x) where b is a non-zero rational.
+; Temp-1 is a list of pairs --- (multiplicative-constant . rest-of-addend).
+; These pairs are sorted by term order on rest-of-addend.
 
-               (let ((multiplicative-constant (unquote (fargn arg1 1))))
-                 (mv additive-constant
-                     multiplicative-constant
-                     (cons-term*
-                      'BINARY-+
-                      (fargn arg1 2)
-                      (normalize-linear-sum-2 (/ multiplicative-constant)
-                                              (fargn term 2)))))
-             (mv additive-constant 1 term))))
+		(multiplicative-constant (car (car temp-1))))
+	   (cond ((or (eql multiplicative-constant 0) ; degenerate case
+                      (eql multiplicative-constant 1))
+                  (mv additive-constant 1 temp-1))
+                 (t
+                  (let ((temp-2
+                         (map-multiply-car (/ multiplicative-constant)
+                                           temp-1)))
+                    (mv additive-constant multiplicative-constant temp-2))))))
         (t
          (mv additive-constant 1 term))))
 
@@ -5364,6 +5388,26 @@
 ; not satisfy these assumptions, but he tells us that the code rapidly became
 ; unwieldy and he found no natural stopping point for that process.
 
+; The following example shows why we sort using normalize-linear-sum-2.
+; Without sorting, the conclusion doesn't reduce to (foo t).
+
+; (defstub foo (x) t)
+; (thm ; should reduce conclusion to (foo t)
+;  (implies (and (rationalp x)
+;                (rationalp y)
+;                (integerp (+ x (* 1/3 y))))
+;           (foo (integerp (+ y (* 3 x))))))
+
+; The following similar example shows why we need to consider terms that aren't
+; sums.  As above, that is needed in order for the conclusion to simplify to
+; (foo t).
+
+; (thm ; should reduce conclusion to (foo t)
+;  (implies (and (rationalp x)
+;                (rationalp y)
+;                (integerp (* 1/3 y)))
+;           (foo (integerp y))))
+
   (cond ((variablep term)
          (mv 0 1 term))
         ((fquotep term) ; not needed due to the first invariant on type-alists
@@ -5373,18 +5417,57 @@
         ((eq (ffn-symb term) 'UNARY--)
          (mv 0 -1 (fargn term 1)))
         ((eq (ffn-symb term) 'BINARY-*)
-         (if (and (quotep (fargn term 1))
-                  (rationalp (unquote (fargn term 1))))
-             (mv 0 (unquote (fargn term 1)) (fargn term 2))
-           (mv 0 1 term)))
+         (cond ((and (quotep (fargn term 1))
+                     (rationalp (unquote (fargn term 1))))
+                (mv 0 (unquote (fargn term 1)) (fargn term 2)))
+               (t
+                (mv 0 1 term))))
         ((eq (ffn-symb term) 'BINARY-+)
-         (if (and (quotep (fargn term 1))
-                  (rationalp (unquote (fargn term 1))))
-             (normalize-linear-sum-1 (unquote (fargn term 1))
-                                     (fargn term 2))
-           (normalize-linear-sum-1 0 term)))
+         (cond ((and (quotep (fargn term 1))
+                     (rationalp (unquote (fargn term 1))))
+                (normalize-linear-sum-1 (unquote (fargn term 1))
+                                        (fargn term 2)))
+               (t
+                (normalize-linear-sum-1 0 term))))
         (t
          (mv 0 1 term))))
+
+(defun normalize-linear-sum-p1 (stripped-term term-to-match)
+  (cond ((null stripped-term) nil)
+        ((and (nvariablep term-to-match)
+;             (not (fquotep term-to-match))
+              (eq (ffn-symb term-to-match) 'BINARY-+))
+         (normalize-linear-sum-p1 (cdr stripped-term)
+                                  (fargn term-to-match 2)))
+        (t (null (cdr stripped-term)))))
+
+(defun normalize-linear-sum-p (stripped-term term-to-match)
+
+; This function is a heuristic filter.  It is desirable to return nil if and
+; only if there is clearly no hope that there is a match, using the algorithm
+; in type-set-finish-1, between the results of normalizing a given term into (&
+; & stripped-term) and the result of normalizing a second term, term-to-match.
+; Note that stripped-term is either a term or is an alist associating numbers
+; with terms.
+
+  (let ((term ; strip additive constant
+         (cond ((and (nvariablep term-to-match)
+;                    (not (fquotep term-to-match))
+                     (eq (ffn-symb term-to-match) 'BINARY-+)
+                     (quotep (fargn term-to-match 1)))
+                (fargn term-to-match 2))
+               (t term-to-match))))
+    (cond ((and (consp stripped-term)
+                (consp (car stripped-term))
+                (acl2-numberp (caar stripped-term)))
+
+; Stripped-term is an alist with entries (number . term).
+
+           (normalize-linear-sum-p1 stripped-term term))
+          (t ; Stripped-term is a term.
+           (not (and (nvariablep term)
+;                    (not (fquotep term))
+                     (eq (ffn-symb term) 'BINARY-+)))))))
 
 (defun type-set-finish-1 (additive-const multiplicative-const stripped-term
                                          ts ttree type-alist)
@@ -5406,8 +5489,10 @@
 
   (cond ((null type-alist)
          (mv ts ttree))
-        ((or (ts-subsetp (cadr (car type-alist)) *ts-integer*)
-             (ts-subsetp (cadr (car type-alist)) *ts-ratio*))
+        ((and (or (ts-subsetp (cadr (car type-alist)) *ts-integer*)
+                  (ts-subsetp (cadr (car type-alist)) *ts-ratio*))
+              (normalize-linear-sum-p stripped-term
+                                      (car (car type-alist))))
          (let ((term-to-match (car (car type-alist)))
                (type-to-match (cadr (car type-alist)))
                (ttree-to-match (cddr (car type-alist))))
@@ -5415,8 +5500,9 @@
                     typed-multiplicative-const
                     stripped-term-to-match)
                    (normalize-linear-sum term-to-match)
-                   (if (and (equal stripped-term stripped-term-to-match)
-                            (not (eql typed-multiplicative-const 0))) 
+                   (cond
+                    ((and (equal stripped-term stripped-term-to-match)
+                          (not (eql typed-multiplicative-const 0))) 
 
 ; We have found a typed-term of the desired form, described above.  We merge
 ; the constant appropriately --- see the thm and let-binding immediately below.
@@ -5441,20 +5527,20 @@
 ;                         (/ typed-multiplicative-const)
 ;                         typed-term)))))
 
-                       (let* ((merged-multiplicative-const
-                               (* multiplicative-const
-                                  (/ typed-multiplicative-const)))
-                              (merged-additive-const
-                               (- additive-const
-                                  (* merged-multiplicative-const
-                                     typed-additive-const))))
-                         (cond ((and (not (eql merged-additive-const 0))
-                                     (not (eql merged-multiplicative-const 1)))
-                                (let* ((merged-multiplicative-const-ts
-                                        (type-set-quote
-                                         merged-multiplicative-const))
-                                       (merged-additive-const-ts
-                                        (type-set-quote merged-additive-const))
+                     (let* ((merged-multiplicative-const
+                             (* multiplicative-const
+                                (/ typed-multiplicative-const)))
+                            (merged-additive-const
+                             (- additive-const
+                                (* merged-multiplicative-const
+                                   typed-additive-const))))
+                       (cond ((and (not (eql merged-additive-const 0))
+                                   (not (eql merged-multiplicative-const 1)))
+                              (let* ((merged-multiplicative-const-ts
+                                      (type-set-quote
+                                       merged-multiplicative-const))
+                                     (merged-additive-const-ts
+                                      (type-set-quote merged-additive-const))
 
 ; We have have the following type information:
 ; ts:
@@ -5477,103 +5563,103 @@
 ; computed type with the original one, ts.  If this final type is strong
 ; enough, we return.  Otherwise we continue our search.
 ;
-                                       (new-ts1 (aref2 'type-set-binary-*-table
-                                                       *type-set-binary-*-table*
-                                                       merged-multiplicative-const-ts
-                                                       type-to-match))
-                                       (new-ts2 (aref2 'type-set-binary-+-table
-                                                       *type-set-binary-+-table*
-                                                       merged-additive-const-ts
-                                                       new-ts1))
-                                       (new-ts3 (ts-intersection ts new-ts2)))
-                                  (if (or (ts-subsetp new-ts3 *ts-integer*)
-                                          (ts-subsetp new-ts3 *ts-ratio*))
-                                      (mv new-ts3
-                                          (puffert (cons-tag-trees ttree
-                                                                   ttree-to-match)))
-                                    (type-set-finish-1 additive-const
-                                                       multiplicative-const
-                                                       stripped-term
-                                                       ts
-                                                       ttree
-                                                       (cdr type-alist)))))
-                               ((not (eql merged-additive-const 0))
+                                     (new-ts1 (aref2 'type-set-binary-*-table
+                                                     *type-set-binary-*-table*
+                                                     merged-multiplicative-const-ts
+                                                     type-to-match))
+                                     (new-ts2 (aref2 'type-set-binary-+-table
+                                                     *type-set-binary-+-table*
+                                                     merged-additive-const-ts
+                                                     new-ts1))
+                                     (new-ts3 (ts-intersection ts new-ts2)))
+                                (if (or (ts-subsetp new-ts3 *ts-integer*)
+                                        (ts-subsetp new-ts3 *ts-ratio*))
+                                    (mv new-ts3
+                                        (puffert
+                                         (cons-tag-trees ttree
+                                                         ttree-to-match)))
+                                  (type-set-finish-1 additive-const
+                                                     multiplicative-const
+                                                     stripped-term
+                                                     ts
+                                                     ttree
+                                                     (cdr type-alist)))))
+                             ((not (eql merged-additive-const 0))
 
 ; orig-term = merged-additive-const + typed-term.
 ;
 ; This is just like the above, but since merged-multiplicative-const
 ; is 1, we skip typing merged-multiplicative-const * stripped-term-to-match.
 
-                                (let* ((merged-additive-const-ts
-                                        (type-set-quote merged-additive-const))
-                                       (new-ts1 (aref2 'type-set-binary-+-table
-                                                       *type-set-binary-+-table*
-                                                       merged-additive-const-ts
-                                                       type-to-match))
-                                       (new-ts2 (ts-intersection ts new-ts1)))
-                                  (if (or (ts-subsetp new-ts2 *ts-integer*)
-                                          (ts-subsetp new-ts2 *ts-ratio*))
-                                      (mv new-ts2
-                                          (puffert (cons-tag-trees ttree
-                                                                   ttree-to-match)))
-                                    (type-set-finish-1 additive-const
-                                                       multiplicative-const
-                                                       stripped-term
-                                                       ts
-                                                       ttree
-                                                       (cdr type-alist)))))
-                               ((not (eql merged-multiplicative-const 1))
+                              (let* ((merged-additive-const-ts
+                                      (type-set-quote merged-additive-const))
+                                     (new-ts1 (aref2 'type-set-binary-+-table
+                                                     *type-set-binary-+-table*
+                                                     merged-additive-const-ts
+                                                     type-to-match))
+                                     (new-ts2 (ts-intersection ts new-ts1)))
+                                (if (or (ts-subsetp new-ts2 *ts-integer*)
+                                        (ts-subsetp new-ts2 *ts-ratio*))
+                                    (mv new-ts2
+                                        (puffert (cons-tag-trees ttree
+                                                                 ttree-to-match)))
+                                  (type-set-finish-1 additive-const
+                                                     multiplicative-const
+                                                     stripped-term
+                                                     ts
+                                                     ttree
+                                                     (cdr type-alist)))))
+                             ((not (eql merged-multiplicative-const 1))
 
 ; orig-term = merged-multiplicative-const * typed-term.
 ;
 ; Similar to the above, but here we take advantage of the fact that
 ; merged-additive-const is known to be 0.
 
-                                (let* ((merged-multiplicative-const-ts
-                                        (type-set-quote
-                                         merged-multiplicative-const))
-                                       (new-ts1 (aref2 'type-set-binary-*-table
-                                                       *type-set-binary-*-table*
-                                                       merged-multiplicative-const-ts
-                                                       type-to-match))
-                                       (new-ts2 (ts-intersection ts new-ts1)))
-                                  (if (or (ts-subsetp new-ts2 *ts-integer*)
-                                          (ts-subsetp new-ts2 *ts-ratio*))
-                                      (mv new-ts2
-                                          (puffert (cons-tag-trees ttree
-                                                                   ttree-to-match)))
-                                    (type-set-finish-1 additive-const
-                                                       multiplicative-const
-                                                       stripped-term
-                                                       ts
-                                                       ttree
-                                                       (cdr type-alist)))))
-                               (t
+                              (let* ((merged-multiplicative-const-ts
+                                      (type-set-quote
+                                       merged-multiplicative-const))
+                                     (new-ts1 (aref2 'type-set-binary-*-table
+                                                     *type-set-binary-*-table*
+                                                     merged-multiplicative-const-ts
+                                                     type-to-match))
+                                     (new-ts2 (ts-intersection ts new-ts1)))
+                                (if (or (ts-subsetp new-ts2 *ts-integer*)
+                                        (ts-subsetp new-ts2 *ts-ratio*))
+                                    (mv new-ts2
+                                        (puffert (cons-tag-trees ttree
+                                                                 ttree-to-match)))
+                                  (type-set-finish-1 additive-const
+                                                     multiplicative-const
+                                                     stripped-term
+                                                     ts
+                                                     ttree
+                                                     (cdr type-alist)))))
+                             (t
 
 ; orig-term = typed-term
 ;
 ; Presumably ts is at least as strong as type-to-match, but at any rate, this
 ; isn't a case we care to consider, so we simply recur.
 
-                                (type-set-finish-1 additive-const
-                                                   multiplicative-const
-                                                   stripped-term
-                                                   ts
-                                                   ttree
-                                                   (cdr type-alist)))))
-                     (type-set-finish-1 additive-const
-                                        multiplicative-const
-                                        stripped-term
-                                        ts
-                                        ttree
-                                        (cdr type-alist))))))
-        (t
-         (type-set-finish-1 additive-const
-                            multiplicative-const
-                            stripped-term
-                            ts
-                            ttree
-                            (cdr type-alist)))))
+                              (type-set-finish-1 additive-const
+                                                 multiplicative-const
+                                                 stripped-term
+                                                 ts
+                                                 ttree
+                                                 (cdr type-alist))))))
+                    (t (type-set-finish-1 additive-const
+                                          multiplicative-const
+                                          stripped-term
+                                          ts
+                                          ttree
+                                          (cdr type-alist)))))))
+        (t (type-set-finish-1 additive-const
+                              multiplicative-const
+                              stripped-term
+                              ts
+                              ttree
+                              (cdr type-alist)))))
 
 (defun type-set-finish (x ts0 ttree0 ts1 ttree1 type-alist)
 

@@ -18859,9 +18859,25 @@
   including an example of a loop that no longer occurs, may be found in source
   function ~c[expand-permission-result].
 
-  Slightly strengthened ~il[type-set] reasoning.  See the comment in ACL2
-  source function ~c[rewrite-atm] about the ``use of dwp = t'' for an example
-  of a theorem provable only after this change.
+  Slightly strengthened ~il[type-set] reasoning at the level of literals (i.e.,
+  top-level hypotheses and conclusions).  See the comment in ACL2 source
+  function ~c[rewrite-atm] about the ``use of dwp = t'' for an example of a
+  theorem provable only after this change.
+
+  Strengthened the ability of ~il[type-set] reasoning to make deductions about
+  terms being integers or non-integer rationals.  The following example
+  illustrates the enhancement: before the change, no simplification was
+  performed, but after the change, the conclusion simplifies to ~c[(foo t)].
+  Thanks to Robert Krug for conveying the problem to us and outlining a
+  solution.
+  ~bv[]
+  (defstub foo (x) t)
+  (thm ; should reduce conclusion to (foo t)
+   (implies (and (rationalp x)
+                 (rationalp y)
+                 (integerp (+ x (* 1/3 y))))
+            (foo (integerp (+ y (* 3 x))))))
+  ~ev[]
 
   ~st[BUG FIXES]
 
