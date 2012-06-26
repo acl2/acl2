@@ -89,7 +89,7 @@
               recompile)
             (let* ((stobj-function (getprop sym 'stobj-function nil
                                             'current-acl2-world wrld))
-                   (form (cltl-def-from-name sym stobj-function wrld)))
+                   (form (cltl-def-from-name1 sym stobj-function nil wrld)))
               (cond (form
                      (let ((old-fn (symbol-function sym))
                            (temp-file "temp-disassemble.lsp"))
