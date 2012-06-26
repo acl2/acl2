@@ -22388,17 +22388,17 @@
                   (not (member-equal *stobj-inline-declare* def)))
               (cons 'defun def)))))
 
-(defun cltl-def-from-name (fn stobj-function wrld)
+(defun cltl-def-from-name (fn wrld)
 
-; If fn does not have a 'stobj-function property in wrld, then this function
-; returns the raw Lisp definition of fn, which is also the definition that is
-; oneified to create the corresponding *1* function.
+; This function returns the raw Lisp definition of fn.  If fn does not have a
+; 'stobj-function property in wrld, then the returned definition is also the
+; definition that is oneified to create the corresponding *1* function.
 
-; But suppose that fn does have a 'stobj-function property in wrld.  If
-; stobj-function is non-nil, it should be that property, and we use it to
-; return the raw Lisp definition of fn.
-
-  (cltl-def-from-name1 fn stobj-function nil wrld))
+  (cltl-def-from-name1 fn
+                       (getprop fn 'stobj-function nil 'current-acl2-world
+                                wrld)
+                       nil
+                       wrld))
 
 (defun table-cltl-cmd (name key val op ctx wrld)
 
@@ -22457,7 +22457,6 @@
                      (condition-def (and condition-fn
                                          (not (eq condition-fn t))
                                          (cltl-def-from-name condition-fn
-                                                             nil
                                                              wrld)))
                      (condition (or (eq condition-fn t) ; hence t
                                     (car (last condition-def))))) ; maybe nil
@@ -22465,7 +22464,7 @@
                           ,condition
                           ,(cdr (assoc-eq :inline val))
                           ,(cdr (assoc-eq :trace val))
-                          ,(cltl-def-from-name key nil wrld) ; cl-defun
+                          ,(cltl-def-from-name key wrld) ; cl-defun
                           ,(getprop key 'formals t 'current-acl2-world
                                     wrld) ; formals
                           ,(getprop key 'stobjs-in t 'current-acl2-world
@@ -22480,7 +22479,7 @@
                                 condition
                                 (not (eq condition t))
                                 (cltl-def-from-name
-                                 condition nil wrld)) ; condition-defun
+                                 condition wrld)) ; condition-defun
                           ,(and (cdr (assoc-eq :commutative val)) t)
                           ,(cdr (assoc-eq :forget val))
                           ,(cdr (assoc-eq :memo-table-init-size val))

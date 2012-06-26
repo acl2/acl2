@@ -565,7 +565,7 @@
 ; memoize-table-chk).
 
                                            'current-acl2-world wrld)))
-                       (cltl-def-from-name fn nil wrld)))
+                       (cltl-def-from-name fn wrld)))
                  (er hard 'memoize
                      "The symbol ~x0 is not a known function symbol, and thus ~
                       it cannot be memoized."

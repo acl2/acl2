@@ -24043,7 +24043,7 @@
                                                   'current-acl2-world
                                                   wrld))
                          (defun+def
-                           (cltl-def-from-name fn stobj-function wrld)))
+                           (cltl-def-from-name1 fn stobj-function nil wrld)))
                     (cond (defun+def (cdr defun+def))
                           ((and stobj-function
                                 (cltl-def-from-name1 fn stobj-function t wrld))
@@ -27209,7 +27209,7 @@
              (er hard ctx
                  "~@0~x1 is a HONS primitive."
                  str key))
-            ((not (cltl-def-from-name key nil wrld))
+            ((not (cltl-def-from-name key wrld))
              (er hard ctx
                  "~@0~x1 is not a defined ACL2 function."
                  str key))

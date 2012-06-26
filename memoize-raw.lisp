@@ -3742,7 +3742,7 @@ the calls took.")
                   (ofe "MEMOIZE-FN: ** ~a is undefined."
                        fn))
 
-                 ((cltl-def-from-name fn nil wrld))
+                 ((cltl-def-from-name fn wrld))
 
                  ((function-lambda-expression
                    (symbol-function fn)))
@@ -3856,7 +3856,7 @@ the calls took.")
                 ((symbolp condition)
                  ;; Bizarre thing where the condition can be just the name of an ACL2 function,
                  ;; see the documentation above
-                 (car (last (cltl-def-from-name condition nil wrld))))
+                 (car (last (cltl-def-from-name condition wrld))))
                 (t condition)))
 
          (dcls (dcls (cdddr (butlast cl-defun))))
@@ -7091,13 +7091,13 @@ next GC.~%"
      (t (let* ((tem nil)
                (found nil)
                (w (w state))
-               (def (first-string (cltl-def-from-name x nil w))))
+               (def (first-string (cltl-def-from-name x w))))
           (cond
            (def
 
 ; 2. Else, for an ACL2 function symbol with a DOC string, print it.
 
-            (oft "~%(first-string (cltl-def-from-name '~a nil (w ~
+            (oft "~%(first-string (cltl-def-from-name '~a (w ~
                    *the-live-state*))) =>~%~a"
                  x def))
            (t

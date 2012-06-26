@@ -19455,9 +19455,7 @@
                (assoc-eq fn (f-get-global 'trace-specs state))))
           (when trace-spec
             (untrace$-fn (list fn) state))
-          (let* ((stobj-function (getprop fn 'stobj-function nil
-                                          'current-acl2-world wrld))
-                 (form (cltl-def-from-name fn stobj-function wrld))
+          (let* ((form (cltl-def-from-name fn wrld))
                  (*1*fn (*1*-symbol fn))
                  (raw-only-p  (and (consp fn0) (eq (car fn0) :raw)))
                  (exec-only-p (and (consp fn0) (eq (car fn0) :exec))))
