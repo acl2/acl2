@@ -62,7 +62,7 @@
               ((unless (and (equal (take 2 chars) '(#\# #\x))
                             (characterp (third chars))))
                (er hard? 'hexify "explode-atom is broken"))
-              (nice-chars (list* #\# #\x (third chars)
+              (nice-chars (list* #\# #\u #\x (third chars)
                                  (insert-underscores (nthcdr 3 chars)))))
            (coerce nice-chars 'string)))
         ((symbolp x)

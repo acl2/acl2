@@ -1404,7 +1404,52 @@
   (defthm unsigned-byte-p-of-loghead
     (implies (and (integerp size1)
                   (<= (nfix size) size1))
-             (unsigned-byte-p size1 (loghead size i)))))
+             (unsigned-byte-p size1 (loghead size i))))
+
+  ;; replaces LOGHEAD-LEQ, which forces integerp/natp hyps
+  (defthmd loghead-<=-i
+    (implies (<= 0 (ifix i))
+             (<= (loghead size i) (ifix i)))
+    :rule-classes ((:linear :trigger-terms ((loghead size i)))))
+
+  (in-theory (disable loghead-leq))
+
+  (add-to-ruleset ihsext-bounds-thms loghead-<=-i)
+
+  ;; collectively replace loghead-loghead
+  (defthm loghead-of-loghead-1
+    (implies (<= (nfix m) (nfix n))
+             (equal (loghead m (loghead n x))
+                    (loghead m x)))
+    :hints (("goal" :in-theory (e/d* (ihsext-recursive-redefs
+                                      ihsext-inductions)
+                                     (loghead-identity
+                                      loghead-upper-bound
+                                      logcons-when-zip
+                                      logcons-when-not-bit
+                                      logcdr-<-const))
+             :induct (loghead n b)
+             :expand ((:free (b) (loghead n b))
+                      (:free (a b) (loghead m (logcons a b)))
+                      (:free (a b) (lognot (logcons a b)))))))
+
+  (defthm loghead-of-loghead-2
+    (implies (<= (nfix n) (nfix m))
+             (equal (loghead m (loghead n x))
+                    (loghead n x)))
+    :hints (("goal" :in-theory (e/d* (ihsext-recursive-redefs
+                                      ihsext-inductions)
+                                     (loghead-identity
+                                      loghead-upper-bound
+                                      logcons-when-zip
+                                      logcons-when-not-bit
+                                      logcdr-<-const))
+             :induct (loghead n b)
+             :expand ((:free (b) (loghead n b))
+                      (:free (a b) (loghead m (logcons a b)))
+                      (:free (a b) (lognot (logcons a b)))))))
+
+  (in-theory (disable loghead-loghead)))
 
 (defsection logtail**
 
