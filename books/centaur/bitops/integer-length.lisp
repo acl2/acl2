@@ -180,15 +180,20 @@
              :hints (("goal" :expand ((:with ash* (ash 1 n)))))))
 
     (defthm integer-length-bounded-by-expt
-      (implies (and (syntaxp (or (not (quotep n))
-                                 ;; safety valve to keep this rule from
-                                 ;; exploding Lisp
-                                 (< (cadr n) 1000)))
-                    (< a (expt 2 n))
+      (implies (and (< a (expt 2 n))
                     (natp a)
                     (natp n))
                (< (integer-length a) (+ 1 n)))
-      :rule-classes ((:rewrite) (:linear))
+      :rule-classes ((:rewrite :corollary
+                      (implies (and (syntaxp (or (not (quotep n))
+                                                 ;; safety valve to keep this rule from
+                                                 ;; exploding Lisp
+                                                 (< (cadr n) 1000)))
+                                    (< a (expt 2 n))
+                                    (natp a)
+                                    (natp n))
+                               (< (integer-length a) (+ 1 n))))
+                     (:linear))
       :hints(("Goal"
               :nonlinearp t
               :in-theory (enable expt-2-is-ash)
