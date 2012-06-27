@@ -10384,6 +10384,9 @@
 
   o ~l[SET-WELL-FOUNDED-RELATION] to set the default well-founded relation for
   termination analysis.
+
+  o ~l[ACL2-SEDAN] for a related tool that provides extra automation for
+  termination proofs.
   ~eq[]~bv[]
   ========================================
   Proof debugging and output control:

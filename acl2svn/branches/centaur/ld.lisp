@@ -18453,6 +18453,9 @@
 ; While fixing the cons-term bug, we improved the efficiency of kwote a bit,
 ; avoiding some unnecessary consing.
 
+; Improved several :doc topics by clarifying the role of type declarations in
+; specifying the guard of a function.
+
   :doc
   ":Doc-Section release-notes
 
@@ -18856,9 +18859,25 @@
   including an example of a loop that no longer occurs, may be found in source
   function ~c[expand-permission-result].
 
-  Slightly strengthened ~il[type-set] reasoning.  See the comment in ACL2
-  source function ~c[rewrite-atm] about the ``use of dwp = t'' for an example
-  of a theorem provable only after this change.
+  Slightly strengthened ~il[type-set] reasoning at the level of literals (i.e.,
+  top-level hypotheses and conclusions).  See the comment in ACL2 source
+  function ~c[rewrite-atm] about the ``use of dwp = t'' for an example of a
+  theorem provable only after this change.
+
+  Strengthened the ability of ~il[type-set] reasoning to make deductions about
+  terms being integers or non-integer rationals.  The following example
+  illustrates the enhancement: before the change, no simplification was
+  performed, but after the change, the conclusion simplifies to ~c[(foo t)].
+  Thanks to Robert Krug for conveying the problem to us and outlining a
+  solution.
+  ~bv[]
+  (defstub foo (x) t)
+  (thm ; should reduce conclusion to (foo t)
+   (implies (and (rationalp x)
+                 (rationalp y)
+                 (integerp (+ x (* 1/3 y))))
+            (foo (integerp (+ y (* 3 x))))))
+  ~ev[]
 
   ~st[BUG FIXES]
 
@@ -19063,6 +19082,18 @@
                  (integerp (+ (* 1/3 y) x)))
             (integerp (+ y (* 3 x))))
    :hints ((\"Goal\" :in-theory (disable commutativity-of-+))))
+  ~ev[]
+
+  Although all bets are off when using
+  redefinition (~pl[ld-redefinition-action]), we wish to minimize negative
+  effects of its use, especially raw Lisp errors.  The example below had caused
+  a raw Lisp error because of how undoing was managed, but this has been fixed.
+  ~bv[]
+  (defstobj st fld :inline t)
+  (redef!)
+  (defstobj st new0 fld)
+  (u)
+  (fld st) ; previously an error, which is now fixed
   ~ev[]
 
   ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]
@@ -19420,9 +19451,7 @@
                (assoc-eq fn (f-get-global 'trace-specs state))))
           (when trace-spec
             (untrace$-fn (list fn) state))
-          (let* ((stobj-function (getprop fn 'stobj-function nil
-                                          'current-acl2-world wrld))
-                 (form (cltl-def-from-name fn stobj-function wrld))
+          (let* ((form (cltl-def-from-name fn wrld))
                  (*1*fn (*1*-symbol fn))
                  (raw-only-p  (and (consp fn0) (eq (car fn0) :raw)))
                  (exec-only-p (and (consp fn0) (eq (car fn0) :exec))))
