@@ -506,7 +506,25 @@
            (and (< (ifix x) 0)
                 (< (ifix y) 0))))
 
-  (add-to-ruleset ihsext-bounds-thms '(logand-<-0)))
+  (add-to-ruleset ihsext-bounds-thms '(logand-<-0))
+
+
+  (local (defthm logand-of-noninteger-right
+           (implies (not (integerp j))
+                    (equal (logand i j)
+                           0))
+           :hints(("Goal" :in-theory (enable logand)))))
+
+  (in-theory (disable logand-upper-bound)) ;; nonlocal because we're replacing it
+
+  (defthm logand-upper-bound-better
+    (implies (>= i 0)
+             (<= (logand i j) i))
+    :rule-classes ((:linear :corollary (implies (>= i 0) (<= (logand i j) i)))
+                   (:linear :corollary (implies (>= i 0) (<= (logand j i) i))))
+    :hints(("Goal" :use ((:instance logand-upper-bound)))))
+
+  (add-to-ruleset ihsext-bounds-thms '(logand-upper-bound-better)))
 
 
 
