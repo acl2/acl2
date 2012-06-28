@@ -2733,7 +2733,17 @@
                              (not macro-p)
                              `((setf (symbol-function ',oneified-name)
                                      ',(symbol-function oneified-name))))
-                          `(,(cond (macro-p
+                          `(,@(if (not (iff (eq fn 'defmacro) macro-p))
+
+; Avoid errors in (at least) CCL, as in this example.
+
+; (redef!)
+; (defun foo (x) x)
+; (defmacro foo (x) `(quote ,x))
+; (u)
+
+                                  `((fmakunbound! ',name)))
+                            ,(cond (macro-p
                                     `(setf (macro-function ',name)
                                            ',(macro-function name)))
                                    (t
@@ -4943,7 +4953,8 @@
           (defuns
             (let ((ignorep (caddr cltl-cmd))
                   (defun-mode (cadr cltl-cmd))
-                  (new-defs nil))
+                  (new-defs nil)
+                  (new-*1*-defs nil))
               (dolist
                 (def (cdddr cltl-cmd))
                 (cond ((and (consp ignorep)
@@ -4953,15 +4964,15 @@
                        (or ignorep
                            (setq new-defs (cons (cons 'defun def)
                                                 new-defs)))
-                       (setq new-defs
+                       (setq new-*1*-defs
                              (cons (list* 'oneify-cltl-code
                                           defun-mode
                                           def
                                           (if (consp ignorep)
                                               (cdr ignorep)
                                             nil))
-                                   new-defs)))))
-              (install-defs-for-add-trip new-defs
+                                   new-*1*-defs)))))
+              (install-defs-for-add-trip (nconc new-defs new-*1*-defs)
                                          (eq ignorep 'reclassifying)
                                          wrld t nil)))
           (defstobj
@@ -5155,7 +5166,8 @@
 ; (although proclaiming may be a no-op in some Lisps), then make all the
 ; definitions, and finally do the compilation as appropriate.
 
-                 nil))
+                 nil)
+                (new-*1*-defs nil))
             (dolist
               (def (cdddr (cddr trip)))
               (cond ((and boot-strap-flg
@@ -5185,7 +5197,7 @@
 ; see the comments in their defun-*1* forms.
 
                                     '(mv-list return-last wormhole-eval))
-                         (setq new-defs
+                         (setq new-*1*-defs
                                (cons (list* 'oneify-cltl-code
                                             defun-mode
                                             def
@@ -5195,7 +5207,7 @@
                                             (if (consp ignorep)
                                                 (cdr ignorep)
                                               nil))
-                                     new-defs))))
+                                     new-*1*-defs))))
                     ((and (not ignorep)
                           (equal *main-lisp-package-name*
                                  (symbol-package-name (car def))))
@@ -5225,7 +5237,7 @@
 
                        (or ignorep
                            (setq new-defs (cons (cons 'defun def) new-defs)))
-                       (setq new-defs
+                       (setq new-*1*-defs
                              (cons (list* 'oneify-cltl-code
                                           defun-mode
                                           def
@@ -5235,7 +5247,7 @@
                                           (if (consp ignorep)
                                               (cdr ignorep)
                                             nil))
-                                   new-defs)))))
+                                   new-*1*-defs)))))
             (dolist (def new-defs)
 
 ; Remove the documentation string potentially stored in raw Lisp, if a copy is
@@ -5244,6 +5256,7 @@
               (when (and (eq (car def) 'defun)
                          (doc-stringp (documentation (cadr def) 'function)))
                 (setf (documentation (cadr def) 'function) nil)))
+            (setq new-defs (nconc new-defs new-*1*-defs))
             (install-defs-for-add-trip new-defs
                                        (eq ignorep 'reclassifying)
                                        wrld

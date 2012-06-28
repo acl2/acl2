@@ -37835,10 +37835,10 @@
   warning types and ~pl[set-inhibited-summary-types] for how to inhibit
   individual parts of the summary.
 
-  Printing of events on behalf of ~ilc[certify-book], ~ilc[encapsulate],
-  or ~ilc[defstobj] is inhibited when both ~c['event] and ~c['prove]
-  belong to ~c[lst].  Otherwise, printing of events is controlled by
-  the ~ilc[ld] special ~ilc[ld-pre-eval-print].
+  Printing of events on behalf of ~ilc[certify-book] and ~ilc[encapsulate], is
+  inhibited when both ~c['event] and ~c['prove] belong to ~c[lst].  Otherwise,
+  printing of events is controlled by the ~ilc[ld] special
+  ~ilc[ld-pre-eval-print].
 
   ~em[Note for advanced users.]  By including ~c[warning!] in ~c[lst], you are
   automatically including ~c[warning] as well: all warnings will be inhibited.

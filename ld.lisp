@@ -18456,6 +18456,9 @@
 ; Improved several :doc topics by clarifying the role of type declarations in
 ; specifying the guard of a function.
 
+; We eliminated some needless property names from renew-name/overwrite, and
+; added a comment clarifying why it is only called on function symbols.
+
   :doc
   ":Doc-Section release-notes
 
@@ -18713,6 +18716,19 @@
   thank Sol Swords for sending us an example that motiviated this change: a
   ~il[guard] verification that took about 5 seconds in Version_4.3 now takes,
   on the same machine, about 0.07 seconds.
+
+  The behavior of backquote (~c[`]) has been changed slightly to be compatible
+  with its behavior in raw Lisp.  The change is to allow the use of
+  comma-atsign (~c[,@]) at the end of a list, as in the following example.
+  ~bv[]
+  (let ((x 3) (y 2) (z 7)) `(,x ,y ,@z))
+  ~ev[]
+  Formerly, evaluation of this form had caused a guard violation in the ACL2
+  loop unless guard-checking was off (i.e., ~ilc[set-guard-checking] was
+  involked with ~c[nil] or ~c[:none]), in which case it returned ~c[(3 2)].
+  But we observed evaluation of this form to return ~c[(3 2 . 7)] in every host
+  Lisp on which ACL2 runs (Allegro CL, CCL, CLISP, CMUCL, GCL, LispWorks, and
+  SBCL).  Now, ACL2 behaves like these Lisps.
 
   ~st[NEW FEATURES]
 
@@ -19090,14 +19106,25 @@
 
   Although all bets are off when using
   redefinition (~pl[ld-redefinition-action]), we wish to minimize negative
-  effects of its use, especially raw Lisp errors.  The example below had caused
-  a raw Lisp error because of how undoing was managed, but this has been fixed.
+  effects of its use, especially raw Lisp errors.  The example belows had
+  caused raw Lisp errors, but no longer.
   ~bv[]
   (defstobj st fld :inline t)
   (redef!)
   (defstobj st new0 fld)
   (u)
   (fld st) ; previously an error, which is now fixed
+
+  ; Fresh ACL2 session:
+  (redef!)
+  (defun foo (x) x)
+  (defmacro foo (x) `(quote ,x))
+  (u)
+
+  ; Fresh ACL2 session:
+  (redef!)
+  (defmacro foo (x) (cons 'list x))
+  (defun foo (x) x)
   ~ev[]
 
   ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]
