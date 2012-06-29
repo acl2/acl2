@@ -18851,6 +18851,12 @@
   knowledge of ACL2 capabilities.  ~l[advanced-features].  Thanks to Warren
   Hunt and Anna Slobodova for requesting such information.
 
+  A new macro, ~ilc[deftheory-static], provides a variant of ~ilc[deftheory]
+  such that the resulting theory is the same at ~ilc[include-book] time as it
+  was at ~ilc[certify-book] time.  Thanks to Robert Krug for helpful
+  discussions on this new feature and for updating his ~c[books/arithmetic-5/]
+  distributed books to use this feature.
+
   ~st[HEURISTIC IMPROVEMENTS]
 
   Reading of ACL2 ~ilc[arrays] (~pl[aref1], ~pl[aref2]) has been made more

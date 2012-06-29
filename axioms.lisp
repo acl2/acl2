@@ -17755,21 +17755,7 @@
 
   There is, however, a way to ensure that a ~il[theory] defined in a book is
   the same at ~ilc[include-book] time as it was during the admissibility pass
-  of the book's certification.  The following form illustrates how this works,
-  by serving as a replacement for the ~c[deftheory] event in the example
-  above.  To see why this works, ~pl[make-event]; also, a summary is below.
-  ~bv[]
-  (make-event
-   `(deftheory my-theory
-      ',(let ((world (w state)))
-          (current-theory :here))))
-  ~ev[]
-  In short, the ~c[make-event] call above first evaluates the backquoted
-  ~c[deftheory] call by evaluating ~c[(current-theory :here)] with ~c[world]
-  bound to the current ACL2 logical ~il[world].  The result is a form
-  ~c[(deftheory my-theory '(...))] where ``~c[(...)]'' is a list of all
-  ~il[rune]s in current theory.  This ~c[deftheory] form is stored in the
-  book's certificate, and is used when the book is included later.~/
+  of the book's certification; ~pl[deftheory-static].~/
 
   :cited-by Theories"
 
@@ -17781,6 +17767,84 @@
         'state
         (list 'quote doc)
         (list 'quote event-form)))
+
+(defmacro deftheory-static (name theory)
+
+  ":Doc-Section Events
+
+  define a `static' theory (to ~il[enable] or ~il[disable] a set of rules)~/
+
+  This macro provides a variant of ~ilc[deftheory], such that the resulting
+  theory is the same at ~ilc[include-book] time as it was at ~ilc[certify-book]
+  time.
+
+  We assume that the reader is familiar with ~il[theories]; ~pl[deftheory].  We
+  begin here by illustrating how ~c[deftheory-static] differs from
+  ~ilc[deftheory].  Suppose for example that the following events are the first
+  two events in a book, where that book is certified in the initial ACL2
+  ~il[world] (~pl[ground-zero]).
+  ~bv[]
+  (deftheory my-theory
+    (current-theory :here))
+  (deftheory-static my-static-theory
+    (current-theory :here))
+  ~ev[]
+  Now suppose we include that book after executing the following event.
+  ~bv[]
+  (in-theory (disable car-cons))
+  ~ev[]
+  Suppose that later we execute ~c[(in-theory (theory 'my-theory))].  Then the
+  rule ~c[car-cons] will be disabled, because it was disabled at the time the
+  expression ~c[(current-theory :here)] was evaluated when processing the
+  ~c[deftheory] of ~c[my-theory] while including the book.  However, if we
+  execute ~c[(in-theory (theory 'my-static-theory))], then the rule
+  ~c[car-cons] will be enabled, because the value of the theory
+  ~c[my-static-theory] was saved at the time the book was certified.~/
+
+  ~bv[]
+  General Form:
+  (deftheory-static name term :doc doc-string)
+  ~ev[]
+  The arguments are handled the same as for ~ilc[deftheory].  Thus, ~c[name] is
+  a new symbolic name (~pl[name]), ~c[term] is a term that when evaluated will
+  produce a theory (~pl[theories]), and ~ilc[doc-string] is an optional
+  ~il[documentation] string (~pl[doc-string]).  Except for the variable
+  ~ilc[world], ~c[term] must contain no free variables.  ~c[Term] is evaluated
+  with ~ilc[world] bound to the current world (~pl[world]) and the resulting
+  theory is then converted to a ~em[runic theory] (~pl[theories]) and
+  associated with ~c[name].  Henceforth, this runic theory is returned as the
+  value of the theory expression ~c[(theory name)].
+
+  As for ~ilc[deftheory], the value returned is the length of the resulting
+  theory.
+
+  We conclude with an optional discussion about the implementation of
+  ~c[deftheory-static], for those familiar with ~ilc[make-event].  The
+  following macroexpansion of the ~c[deftheory-static] form above shows how
+  this works (~pl[trans1]).
+  ~bv[]
+  ACL2 !>:trans1 (deftheory-static my-static-theory
+                   (current-theory :here))
+   (MAKE-EVENT (LET ((WORLD (W STATE)))
+                    (LIST 'DEFTHEORY
+                          'MY-STATIC-THEORY
+                          (LIST 'QUOTE (CURRENT-THEORY :HERE)))))
+  ACL2 !>
+  ~ev[]
+
+  The idea is that upon evaluation of this ~c[make-event] form, the first step
+  is to evaluate the indicated ~ilc[LET] expression to obtain a form
+  ~c[(deftheory my-theory '(...))], where ``~c[(...)]'' is a list of all
+  ~il[rune]s in current theory.  If this form is in a book being certified,
+  then the resulting ~c[deftheory] form is stored in the book's certificate,
+  and is used when the book is included later.~/
+
+  :cited-by Theories"
+
+  `(make-event
+    (let ((world (w state)))
+      (list 'deftheory ',name
+         (list 'quote ,theory)))))
 
 #+acl2-loop-only
 (defmacro defstobj (&whole event-form name &rest args)
