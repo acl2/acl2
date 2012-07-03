@@ -56,6 +56,14 @@
     :rule-classes :type-prescription
     :hints(("Goal" :in-theory (enable integer-length))))
 
+  (defthm integer-length-type-prescription-strong-negative
+    (implies (and (integerp n)
+                  (< n -1))
+             (and (integerp (integer-length n))
+                  (< 0 (integer-length n))))
+    :rule-classes :type-prescription
+    :hints(("Goal" :in-theory (enable integer-length))))
+
   (defthm integer-length-expt-upper-bound-n
     (implies (integerp n)
              (< n (expt 2 (integer-length n))))

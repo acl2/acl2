@@ -21,13 +21,16 @@
 (in-package "ACL2")
 (local (include-book "ihsext-basics"))
 (local (include-book "arithmetic/top" :dir :system))
+(include-book "centaur/misc/arith-equivs" :dir :system)
+(include-book "ihs/logops-definitions" :dir :system)
+(include-book "xdoc/top" :dir :system)
 
 ; extra-defs.lisp
 ;
 ; These are some functions I wanted when writing specs for integer and
 ; packed-integer instructions.
 
-; BOZO consider using RDB instead?
+(local (in-theory (enable* arith-equiv-forwarding)))
 
 (defun nth-slice2 (n x)
   "Extract the Nth 2-bit slice of the integer X."
@@ -38,6 +41,9 @@
        :exec
        (logand (ash x (* n -2)) #x3)))
 
+(defcong nat-equiv equal (nth-slice2 n x) 1)
+(defcong int-equiv equal (nth-slice2 n x) 2)
+
 (defun nth-slice8 (n x)
   "Extract the Nth 8-bit slice of the integer X."
   (declare (xargs :guard (and (natp n)
@@ -46,6 +52,9 @@
        (logand (ash (ifix x) (* (nfix n) -8)) (1- (expt 2 8)))
        :exec
        (logand (ash x (* n -8)) #xFF)))
+
+(defcong nat-equiv equal (nth-slice8 n x) 1)
+(defcong int-equiv equal (nth-slice8 n x) 2)
 
 (defun nth-slice16 (n x)
   "Extract the Nth 16-bit slice of the integer X."
@@ -56,6 +65,10 @@
        :exec
        (logand (ash x (* n -16)) #xFFFF)))
 
+(defcong nat-equiv equal (nth-slice16 n x) 1)
+(defcong int-equiv equal (nth-slice16 n x) 2)
+
+
 (defun nth-slice32 (n x)
   "Extract the Nth 32-bit slice of the integer X."
   (declare (xargs :guard (and (natp n)
@@ -65,6 +78,10 @@
        :exec
        (logand (ash x (* n -32)) #ux_FFFF_FFFF)))
 
+(defcong nat-equiv equal (nth-slice32 n x) 1)
+(defcong int-equiv equal (nth-slice32 n x) 2)
+
+
 (defun nth-slice64 (n x)
   "Extract the Nth 64-bit slice of the integer X."
   (declare (xargs :guard (and (natp n)
@@ -73,6 +90,10 @@
        (logand (ash (ifix x) (* (nfix n) -64)) (1- (expt 2 64)))
        :exec
        (logand (ash x (* n -64)) #ux_FFFF_FFFF_FFFF_FFFF)))
+
+(defcong nat-equiv equal (nth-slice64 n x) 1)
+(defcong int-equiv equal (nth-slice64 n x) 2)
+
 
 
 (defthm natp-of-nth-slice2
@@ -108,6 +129,9 @@ instance, (negate-slice8 3) = 253."
        :exec
        (logand (+ 1 (lognot x)) #xFF)))
 
+(defcong nat-equiv equal (negate-slice8 x) 1)
+
+
 (defun negate-slice16 (x)
   "X is a 16-bit natural.  Treat it as a signed, 16-bit value.  Compute the
    two's complement negation of X and return it as a 16-bit natural."
@@ -116,6 +140,8 @@ instance, (negate-slice8 3) = 253."
        (logand (+ 1 (lognot (nfix x))) (1- (expt 2 16)))
        :exec
        (logand (+ 1 (lognot x)) #xFFFF)))
+
+(defcong nat-equiv equal (negate-slice16 x) 1)
 
 (defun negate-slice32 (x)
   "X is a 32-bit natural.  Treat it as a signed, 32-bit value.  Compute the
@@ -126,6 +152,8 @@ two's complement negation of X and return it as a 32-bit natural."
        :exec
        (logand (+ 1 (lognot x)) #ux_FFFF_FFFF)))
 
+(defcong nat-equiv equal (negate-slice32 x) 1)
+
 (defun negate-slice64 (x)
   "X is a 64-bit natural.  Treat it as a signed, 64-bit value.  Compute the
 two's complement negation of X and return it as a 64-bit natural."
@@ -134,6 +162,8 @@ two's complement negation of X and return it as a 64-bit natural."
        (logand (+ 1 (lognot (nfix x))) (1- (expt 2 64)))
        :exec
        (logand (+ 1 (lognot x)) #ux_FFFF_FFFF_FFFF_FFFF)))
+
+(defcong nat-equiv equal (negate-slice64 x) 1)
 
 (defthm natp-of-negate-slice8
   (natp (negate-slice8 x))
@@ -167,87 +197,79 @@ two's complement negation of X and return it as a 64-bit natural."
                         (:type-prescription))
          :hints(("Goal" :in-theory (enable expt)))))
 
+;; (defun signed-val-of-nat (width x)
+;;   "X is a natural number; it may be of any size because we only consider the
+;; bits of X[WIDTH-1:0].  We interpret these bits as a WIDTH-bit 2's complement
+;; integer.  The resulting value is an integer in [-2^{width-1}, 2^{width-1}-1]."
+;;   (declare (xargs :guard (and (posp width)
+;;                               (natp x))))
+;;   (mbe :logic
+;;        (let* ((width (nfix width))
+;;               (x     (nfix x))
+;;               (mask  (1- (expt 2 width)))
+;;               (x     (logand x mask)))
+;;          (if (logbitp (- width 1) x)
+;;              (- (logand (+ 1 (lognot x)) mask))
+;;            x))
+;;        :exec
+;;        (let* ((mask (1- (expt 2 width)))
+;;               (x    (logand x mask)))
+;;          (if (logbitp (- width 1) x)
+;;              (- (logand (+ 1 (lognot x)) mask))
+;;            x))))
+
 (defun signed-val-of-nat (width x)
-  "X is a natural number; it may be of any size because we only consider the
-bits of X[WIDTH-1:0].  We interpret these bits as a WIDTH-bit 2's complement
-integer.  The resulting value is an integer in [-2^{width-1}, 2^{width-1}-1]."
   (declare (xargs :guard (and (posp width)
                               (natp x))))
-  (mbe :logic
-       (let* ((width (nfix width))
-              (x     (nfix x))
-              (mask  (1- (expt 2 width)))
-              (x     (logand x mask)))
-         (if (logbitp (- width 1) x)
-             (- (logand (+ 1 (lognot x)) mask))
-           x))
-       :exec
-       (let* ((mask (1- (expt 2 width)))
-              (x    (logand x mask)))
-         (if (logbitp (- width 1) x)
-             (- (logand (+ 1 (lognot x)) mask))
-           x))))
+  (logext width (nfix x)))
 
 (defthm integerp-of-signed-val-of-nat
   (integerp (signed-val-of-nat width x))
   :rule-classes :type-prescription)
 
+(defcong nat-equiv equal (signed-val-of-nat width x) 1)
+(defcong nat-equiv equal (signed-val-of-nat width x) 2)
+
+;; (local
+;;  (defthm logbitp-of-signed-val-of-nat-split
+;;    (equal (logbitp n (signed-val-of-nat width x))
+;;           (if (< (nfix n) (nfix width))
+;;               (logbitp n x)
+;;             (logbitp (1- width) x)))
+;;    :hints(("Goal" :in-theory (enable logbitp**)))))
 
 (defun signed-val-of-slice8 (x)
   "X is an 8-bit natural.  Interpret it as a signed, 8-bit value and return
 this value as an ACL2 integer.  The answer is in [-128, 127]."
   (declare (xargs :guard (natp x)))
-  (mbe :logic
-       (let ((x (nfix x)))
-         (if (logbitp 7 x)
-             (- (logand (+ 1 (lognot x)) (1- (expt 2 8))))
-           x))
-       :exec
-       (if (logbitp 7 x)
-           (- (logand (+ 1 (lognot x)) #xFF))
-         x)))
+  (signed-val-of-nat 8 x))
+
+(defcong nat-equiv equal (signed-val-of-slice8 x) 1)
+
 
 (defun signed-val-of-slice16 (x)
   "X is a 16-bit natural.  Interpret it as a signed, 16-bit value and return
 this value as an ACL2 integer.  The answer is in [-32768, 32767]."
   (declare (xargs :guard (natp x)))
-  (mbe :logic
-       (let ((x (nfix x)))
-         (if (logbitp 15 x)
-             (- (logand (+ 1 (lognot x)) (1- (expt 2 16))))
-           x))
-       :exec
-       (if (logbitp 15 x)
-           (- (logand (+ 1 (lognot x)) #xFFFF))
-         x)))
+  (signed-val-of-nat 16 x))
+
+(defcong nat-equiv equal (signed-val-of-slice16 x) 1)
 
 (defun signed-val-of-slice32 (x)
   "X is a 32-bit natural.  Interpret it as a signed, 32-bit value and return
 this value as an ACL2 integer.  The answer is in [-2^31, 2^31-1]."
   (declare (xargs :guard (natp x)))
-  (mbe :logic
-       (let ((x (nfix x)))
-         (if (logbitp 31 x)
-             (- (logand (+ 1 (lognot x)) (1- (expt 2 32))))
-           x))
-       :exec
-       (if (logbitp 31 x)
-           (- (logand (+ 1 (lognot x)) #ux_FFFF_FFFF))
-         x)))
+  (signed-val-of-nat 32 x))
+
+(defcong nat-equiv equal (signed-val-of-slice32 x) 1)
 
 (defun signed-val-of-slice64 (x)
   "X is a 64-bit natural.  Interpret it as a signed, 64-bit value and return
 this value as an ACL2 integer.  The answer is in [-2^63, 2^63-1]."
   (declare (xargs :guard (natp x)))
-  (mbe :logic
-       (let ((x (nfix x)))
-         (if (logbitp 63 x)
-             (- (logand (+ 1 (lognot x)) (1- (expt 2 64))))
-           x))
-       :exec
-       (if (logbitp 63 x)
-           (- (logand (+ 1 (lognot x)) #ux_FFFF_FFFF_FFFF_FFFF))
-         x)))
+  (signed-val-of-nat 64 x))
+
+(defcong nat-equiv equal (signed-val-of-slice64 x) 1)
 
 (defthm integerp-of-signed-val-of-slice8
   (integerp (signed-val-of-slice8 x))
@@ -319,6 +341,9 @@ seconds."
        :exec
        (logior (ash 1 n) x)))
 
+(defcong nat-equiv equal (setbit n x) 1)
+(defcong int-equiv equal (setbit n x) 2)
+
 (defthm integerp-of-setbit
   (integerp (setbit n x))
   :rule-classes :type-prescription)
@@ -335,6 +360,9 @@ seconds."
        :exec
        (logand (lognot (ash 1 n)) x)))
 
+(defcong nat-equiv equal (clearbit n x) 1)
+(defcong int-equiv equal (clearbit n x) 2)
+
 (defthm integerp-of-clearbit
   (integerp (clearbit n x))
   :rule-classes :type-prescription)
@@ -349,6 +377,11 @@ seconds."
       (setbit n to)
     (clearbit n to)))
 
+(defcong nat-equiv equal (copybit n x y) 1)
+(defcong int-equiv equal (copybit n x y) 2)
+(defcong int-equiv equal (copybit n x y) 3)
+
+
 (defthm integerp-of-copybit
   (integerp (copybit n from to))
   :rule-classes :type-prescription)
@@ -361,6 +394,9 @@ seconds."
   (if (logbitp n x)
       (clearbit n x)
     (setbit n x)))
+
+(defcong nat-equiv equal (notbit n x) 1)
+(defcong int-equiv equal (notbit n x) 2)
 
 (defthm integerp-of-notbit
   (integerp (notbit n x))
@@ -408,6 +444,9 @@ SRC that is set, or 0 when SRC is zero (and hence has no such bit)."
   (natp (bitscan-fwd src))
   :rule-classes :type-prescription)
 
+(defcong nat-equiv equal (bitscan-fwd src) 1
+  :hints(("Goal" :in-theory (enable bitscan-fwd))))
+
 
 (defund bitscan-rev (src)
   "(BITSCAN-REV SRC) returns the bit position of the most significant bit in
@@ -420,6 +459,9 @@ SRC that is set, or 0 when SRC is zero (and hence has no such bit)."
       (if (= next 0)
           0
         (+ 1 (bitscan-rev next))))))
+
+(defcong nat-equiv equal (bitscan-rev src) 1
+  :hints(("Goal" :in-theory (enable bitscan-rev))))
 
 (local (defthmd bitscan-rev-examples
          ;; This is just to try to "validate the spec" by showing it produces the
@@ -467,7 +509,9 @@ SRC that is set, or 0 when SRC is zero (and hence has no such bit)."
    ()
    ;; bozo yucky dependency... maybe rewrite rotate-left/rotate-right to avoid
    ;; using mod
-   (local (include-book "arithmetic-3/floor-mod/floor-mod" :dir :system))
+   (local (include-book "ihs/quotient-remainder-lemmas" :dir :system))
+
+   (local (in-theory (disable (force))))
 
    (defthm integerp-mod
      (implies (and (integerp m)
@@ -479,8 +523,7 @@ SRC that is set, or 0 when SRC is zero (and hence has no such bit)."
      (implies (and (integerp x)
                    (posp y))
               (< (mod x y) y))
-     :rule-classes :linear
-     :hints(("Goal" :use ((:instance mod-bounds-1)))))
+     :rule-classes :linear)
 
    (defthm natp-of-mod
      (implies (and (natp x)
@@ -489,90 +532,95 @@ SRC that is set, or 0 when SRC is zero (and hence has no such bit)."
      :rule-classes :type-prescription)))
 
 
-
-(defund rotate-left (x width places)
-  "Rotates X, a vector of some WIDTH, by PLACES places to the left.
-
-Note that PLACES can be larger than WIDTH.  We automatically reduce the number
-of places modulo the width, which makes sense: rotating WIDTH-many times is the
-same as not rotating at all."
-
-  (declare (xargs :guard (and (natp x)
-                              (posp width)
-                              (natp places))))
-
-  ;; Running example to help understand the code.  Suppose X is some 16-bit
-  ;; number, say 16'b AAAA_BBBB_CCCC_DDDD, so the width is 16, and suppose we
-  ;; want to rotate left by 20 places.
-
-  (let* ((x          (mbe :logic (nfix x) :exec x))
-         (width      (mbe :logic (nfix width) :exec width))
-         (places     (mbe :logic (nfix places) :exec places))
-         (places     (mod places width))       ; e.g., 20 places --> 4 places
-         (low-num    (- width places))         ; e.g., 12
-         (mask       (1- (ash 1 low-num)))     ; e.g., 0000_1111_1111_1111
-         (xl         (logand x mask))          ; e.g., 0000_BBBB_CCCC_DDDD
-         (xh         (logand x (lognot mask))) ; e.g., AAAA_0000_0000_0000
-         (xh-shift   (ash xh (- low-num)))     ; e.g., 0000_0000_0000_AAAA
-         (xl-shift   (ash xl places))          ; e.g., BBBB_CCCC_DDDD_0000
-         (ans        (logior xl-shift xh-shift))) ; e.g., BBBB_CCCC_DDDD_AAAA
-    ans))
-
-(local (defthm rotate-left-examples
-         (and (equal (rotate-left #b11110000 8 0) #b11110000)
-              (equal (rotate-left #b11110000 8 1) #b11100001)
-              (equal (rotate-left #b11110000 8 2) #b11000011)
-              (equal (rotate-left #b11110000 8 3) #b10000111)
-              (equal (rotate-left #b11110000 8 4) #b00001111)
-              (equal (rotate-left #b11110000 8 5) #b00011110)
-              (equal (rotate-left #b11110000 8 6) #b00111100)
-              (equal (rotate-left #b11110000 8 7) #b01111000)
-              (equal (rotate-left #b11110000 8 8) #b11110000)
-              (equal (rotate-left #b11110000 8 9)  #b11100001)
-              (equal (rotate-left #b11110000 8 10) #b11000011)
-              (equal (rotate-left #b11110000 8 11) #b10000111)
-              (equal (rotate-left #b11110000 8 12) #b00001111)
-              (equal (rotate-left #b11110000 8 13) #b00011110)
-              (equal (rotate-left #b11110000 8 14) #b00111100)
-              (equal (rotate-left #b11110000 8 15) #b01111000)
-              (equal (rotate-left #b11110000 8 16) #b11110000)
-
-              (equal (rotate-left #b1111000011001010 16 0)   #b1111000011001010)
-              (equal (rotate-left #b1111000011001010 16 1)   #b1110000110010101)
-              (equal (rotate-left #b1111000011001010 16 2)   #b1100001100101011)
-              (equal (rotate-left #b1111000011001010 16 3)   #b1000011001010111)
-              (equal (rotate-left #b1111000011001010 16 4)   #b0000110010101111)
-              (equal (rotate-left #b1111000011001010 16 5)   #b0001100101011110)
-              (equal (rotate-left #b1111000011001010 16 6)   #b0011001010111100)
-              (equal (rotate-left #b1111000011001010 16 7)   #b0110010101111000)
-              (equal (rotate-left #b1111000011001010 16 8)   #b1100101011110000)
-              (equal (rotate-left #b1111000011001010 16 9)   #b1001010111100001)
-              (equal (rotate-left #b1111000011001010 16 10)  #b0010101111000011)
-              (equal (rotate-left #b1111000011001010 16 11)  #b0101011110000110)
-              (equal (rotate-left #b1111000011001010 16 12)  #b1010111100001100)
-              (equal (rotate-left #b1111000011001010 16 13)  #b0101111000011001)
-              (equal (rotate-left #b1111000011001010 16 14)  #b1011110000110010)
-              (equal (rotate-left #b1111000011001010 16 15)  #b0111100001100101)
-              (equal (rotate-left #b1111000011001010 16 16)  #b1111000011001010))
-         :rule-classes nil))
-
-(defthm natp-of-rotate-left
-  (natp (rotate-left x width places))
-  :rule-classes :type-prescription
-  :hints(("Goal" :in-theory (enable rotate-left))))
-
-
-
-(defun rotate-right (x width places)
-  "Rotate X, a vector of some WIDTH, by PLACES places to the right.
+(defsection rotate-left
+  (defund rotate-left (x width places)
+    "Rotates X, a vector of some WIDTH, by PLACES places to the left.
 
 Note that PLACES can be larger than WIDTH.  We automatically reduce the number
 of places modulo the width, which makes sense: rotating WIDTH-many times is the
 same as not rotating at all."
 
-  (declare (xargs :guard (and (natp x)
-                              (posp width)
-                              (natp places))))
+    (declare (xargs :guard (and (natp x)
+                                (posp width)
+                                (natp places))))
+
+    ;; Running example to help understand the code.  Suppose X is some 16-bit
+    ;; number, say 16'b AAAA_BBBB_CCCC_DDDD, so the width is 16, and suppose we
+    ;; want to rotate left by 20 places.
+
+    (let* ((x          (mbe :logic (nfix x) :exec x))
+           (width      (mbe :logic (nfix width) :exec width))
+           (places     (mbe :logic (nfix places) :exec places))
+           (places     (mod places width))       ; e.g., 20 places --> 4 places
+           (low-num    (- width places))         ; e.g., 12
+           (mask       (1- (ash 1 low-num)))     ; e.g., 0000_1111_1111_1111
+           (xl         (logand x mask))          ; e.g., 0000_BBBB_CCCC_DDDD
+           (xh         (logand x (lognot mask))) ; e.g., AAAA_0000_0000_0000
+           (xh-shift   (ash xh (- low-num)))     ; e.g., 0000_0000_0000_AAAA
+           (xl-shift   (ash xl places))          ; e.g., BBBB_CCCC_DDDD_0000
+           (ans        (logior xl-shift xh-shift))) ; e.g., BBBB_CCCC_DDDD_AAAA
+      ans))
+  (local (in-theory (enable rotate-left)))
+
+  (defcong nat-equiv equal (rotate-left x width places) 1)
+  (defcong nat-equiv equal (rotate-left x width places) 2)
+  (defcong nat-equiv equal (rotate-left x width places) 3)
+
+  (local (defthm rotate-left-examples
+           (and (equal (rotate-left #b11110000 8 0) #b11110000)
+                (equal (rotate-left #b11110000 8 1) #b11100001)
+                (equal (rotate-left #b11110000 8 2) #b11000011)
+                (equal (rotate-left #b11110000 8 3) #b10000111)
+                (equal (rotate-left #b11110000 8 4) #b00001111)
+                (equal (rotate-left #b11110000 8 5) #b00011110)
+                (equal (rotate-left #b11110000 8 6) #b00111100)
+                (equal (rotate-left #b11110000 8 7) #b01111000)
+                (equal (rotate-left #b11110000 8 8) #b11110000)
+                (equal (rotate-left #b11110000 8 9)  #b11100001)
+                (equal (rotate-left #b11110000 8 10) #b11000011)
+                (equal (rotate-left #b11110000 8 11) #b10000111)
+                (equal (rotate-left #b11110000 8 12) #b00001111)
+                (equal (rotate-left #b11110000 8 13) #b00011110)
+                (equal (rotate-left #b11110000 8 14) #b00111100)
+                (equal (rotate-left #b11110000 8 15) #b01111000)
+                (equal (rotate-left #b11110000 8 16) #b11110000)
+
+                (equal (rotate-left #b1111000011001010 16 0)   #b1111000011001010)
+                (equal (rotate-left #b1111000011001010 16 1)   #b1110000110010101)
+                (equal (rotate-left #b1111000011001010 16 2)   #b1100001100101011)
+                (equal (rotate-left #b1111000011001010 16 3)   #b1000011001010111)
+                (equal (rotate-left #b1111000011001010 16 4)   #b0000110010101111)
+                (equal (rotate-left #b1111000011001010 16 5)   #b0001100101011110)
+                (equal (rotate-left #b1111000011001010 16 6)   #b0011001010111100)
+                (equal (rotate-left #b1111000011001010 16 7)   #b0110010101111000)
+                (equal (rotate-left #b1111000011001010 16 8)   #b1100101011110000)
+                (equal (rotate-left #b1111000011001010 16 9)   #b1001010111100001)
+                (equal (rotate-left #b1111000011001010 16 10)  #b0010101111000011)
+                (equal (rotate-left #b1111000011001010 16 11)  #b0101011110000110)
+                (equal (rotate-left #b1111000011001010 16 12)  #b1010111100001100)
+                (equal (rotate-left #b1111000011001010 16 13)  #b0101111000011001)
+                (equal (rotate-left #b1111000011001010 16 14)  #b1011110000110010)
+                (equal (rotate-left #b1111000011001010 16 15)  #b0111100001100101)
+                (equal (rotate-left #b1111000011001010 16 16)  #b1111000011001010))
+           :rule-classes nil))
+
+  (defthm natp-of-rotate-left
+    (natp (rotate-left x width places))
+    :rule-classes :type-prescription
+    :hints(("Goal" :in-theory (enable rotate-left)))))
+
+
+(defsection rotate-right
+  (defund rotate-right (x width places)
+    "Rotate X, a vector of some WIDTH, by PLACES places to the right.
+
+Note that PLACES can be larger than WIDTH.  We automatically reduce the number
+of places modulo the width, which makes sense: rotating WIDTH-many times is the
+same as not rotating at all."
+
+    (declare (xargs :guard (and (natp x)
+                                (posp width)
+                                (natp places))))
 
     ;; Running example to help understand the code: suppose X is some 16-bit
     ;; number, say 16'b AAAA_BBBB_CCCC_DDDD, so the width is 16, and suppose we
@@ -589,44 +637,50 @@ same as not rotating at all."
            (ans        (logior xl-shift xh-shift))) ; e.g., DDDD_AAAA_BBBB_CCCC
       ans))
 
-(local (defthm rotate-right-examples
-         (and (equal (rotate-right #b11110000 8 0)  #b11110000)
-              (equal (rotate-right #b11110000 8 1)  #b01111000)
-              (equal (rotate-right #b11110000 8 2)  #b00111100)
-              (equal (rotate-right #b11110000 8 3)  #b00011110)
-              (equal (rotate-right #b11110000 8 4)  #b00001111)
-              (equal (rotate-right #b11110000 8 5)  #b10000111)
-              (equal (rotate-right #b11110000 8 6)  #b11000011)
-              (equal (rotate-right #b11110000 8 7)  #b11100001)
-              (equal (rotate-right #b11110000 8 8)  #b11110000)
-              (equal (rotate-right #b11110000 8 9)  #b01111000)
-              (equal (rotate-right #b11110000 8 10) #b00111100)
-              (equal (rotate-right #b11110000 8 11) #b00011110)
-              (equal (rotate-right #b11110000 8 12) #b00001111)
-              (equal (rotate-right #b11110000 8 13) #b10000111)
-              (equal (rotate-right #b11110000 8 14) #b11000011)
-              (equal (rotate-right #b11110000 8 15) #b11100001)
+  (local (in-theory (enable rotate-right)))
 
-              (equal (rotate-right #b1111000011001010 16 0)   #b1111000011001010)
-              (equal (rotate-right #b1111000011001010 16 1)   #b0111100001100101)
-              (equal (rotate-right #b1111000011001010 16 2)   #b1011110000110010)
-              (equal (rotate-right #b1111000011001010 16 3)   #b0101111000011001)
-              (equal (rotate-right #b1111000011001010 16 4)   #b1010111100001100)
-              (equal (rotate-right #b1111000011001010 16 5)   #b0101011110000110)
-              (equal (rotate-right #b1111000011001010 16 6)   #b0010101111000011)
-              (equal (rotate-right #b1111000011001010 16 7)   #b1001010111100001)
-              (equal (rotate-right #b1111000011001010 16 8)   #b1100101011110000)
-              (equal (rotate-right #b1111000011001010 16 9)   #b0110010101111000)
-              (equal (rotate-right #b1111000011001010 16 10)  #b0011001010111100)
-              (equal (rotate-right #b1111000011001010 16 11)  #b0001100101011110)
-              (equal (rotate-right #b1111000011001010 16 12)  #b0000110010101111)
-              (equal (rotate-right #b1111000011001010 16 13)  #b1000011001010111)
-              (equal (rotate-right #b1111000011001010 16 14)  #b1100001100101011)
-              (equal (rotate-right #b1111000011001010 16 15)  #b1110000110010101)
-              (equal (rotate-right #b1111000011001010 16 16)  #b1111000011001010))
-         :rule-classes nil))
+  (defcong nat-equiv equal (rotate-right x width places) 1)
+  (defcong nat-equiv equal (rotate-right x width places) 2)
+  (defcong nat-equiv equal (rotate-right x width places) 3)
 
-(defthm natp-of-rotate-right
-  (natp (rotate-right x width places))
-  :rule-classes :type-prescription
-  :hints(("Goal" :in-theory (enable rotate-right))))
+  (local (defthm rotate-right-examples
+           (and (equal (rotate-right #b11110000 8 0)  #b11110000)
+                (equal (rotate-right #b11110000 8 1)  #b01111000)
+                (equal (rotate-right #b11110000 8 2)  #b00111100)
+                (equal (rotate-right #b11110000 8 3)  #b00011110)
+                (equal (rotate-right #b11110000 8 4)  #b00001111)
+                (equal (rotate-right #b11110000 8 5)  #b10000111)
+                (equal (rotate-right #b11110000 8 6)  #b11000011)
+                (equal (rotate-right #b11110000 8 7)  #b11100001)
+                (equal (rotate-right #b11110000 8 8)  #b11110000)
+                (equal (rotate-right #b11110000 8 9)  #b01111000)
+                (equal (rotate-right #b11110000 8 10) #b00111100)
+                (equal (rotate-right #b11110000 8 11) #b00011110)
+                (equal (rotate-right #b11110000 8 12) #b00001111)
+                (equal (rotate-right #b11110000 8 13) #b10000111)
+                (equal (rotate-right #b11110000 8 14) #b11000011)
+                (equal (rotate-right #b11110000 8 15) #b11100001)
+
+                (equal (rotate-right #b1111000011001010 16 0)   #b1111000011001010)
+                (equal (rotate-right #b1111000011001010 16 1)   #b0111100001100101)
+                (equal (rotate-right #b1111000011001010 16 2)   #b1011110000110010)
+                (equal (rotate-right #b1111000011001010 16 3)   #b0101111000011001)
+                (equal (rotate-right #b1111000011001010 16 4)   #b1010111100001100)
+                (equal (rotate-right #b1111000011001010 16 5)   #b0101011110000110)
+                (equal (rotate-right #b1111000011001010 16 6)   #b0010101111000011)
+                (equal (rotate-right #b1111000011001010 16 7)   #b1001010111100001)
+                (equal (rotate-right #b1111000011001010 16 8)   #b1100101011110000)
+                (equal (rotate-right #b1111000011001010 16 9)   #b0110010101111000)
+                (equal (rotate-right #b1111000011001010 16 10)  #b0011001010111100)
+                (equal (rotate-right #b1111000011001010 16 11)  #b0001100101011110)
+                (equal (rotate-right #b1111000011001010 16 12)  #b0000110010101111)
+                (equal (rotate-right #b1111000011001010 16 13)  #b1000011001010111)
+                (equal (rotate-right #b1111000011001010 16 14)  #b1100001100101011)
+                (equal (rotate-right #b1111000011001010 16 15)  #b1110000110010101)
+                (equal (rotate-right #b1111000011001010 16 16)  #b1111000011001010))
+           :rule-classes nil))
+
+  (defthm natp-of-rotate-right
+    (natp (rotate-right x width places))
+    :rule-classes :type-prescription
+    :hints(("Goal" :in-theory (enable rotate-right)))))
