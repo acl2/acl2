@@ -22,7 +22,7 @@
 (include-book "bits-between")
 (include-book "bitsets")
 (include-book "bitsets-opt")
-(include-book "defaults")
+;; (include-book "defaults")
 (include-book "equal-by-logbitp")
 (include-book "ihs-extensions")
 (include-book "integer-length")

@@ -28,7 +28,7 @@
 ; global theory such as disabling floor, mod, expt, etc.
 
 (include-book "ihsext-basics")
-(include-book "defaults")
+;; (include-book "defaults")
 (include-book "integer-length")
 
 ; (local (include-book "arithmetic-3/extra/top-ext" :dir :system))
@@ -36,7 +36,7 @@
 
 ; (local (in-theory (disable expt-between-one-and-two)))
 
-
+(local (in-theory (enable* arith-equiv-forwarding)))
 
 
 (local (defun dec-induct (n)
@@ -69,10 +69,10 @@
                                      (logcdr y)))))
 
 
-(defthm ash-zero
-  (equal (ash x 0)
-         (ifix x))
-  :hints(("Goal" :in-theory (enable ash* ash-induct))))
+;; (defthm ash-zero
+;;   (equal (ash x 0)
+;;          (ifix x))
+;;   :hints(("Goal" :in-theory (enable ash* ash-induct))))
 
 (defthm ash-1-removal
   (equal (ash 1 n)
@@ -81,7 +81,8 @@
                  (expt 2 n)
                0)
            1))
-  :hints(("Goal" :in-theory (enable expt-2-is-ash ash*))))
+  :hints(("Goal" :in-theory (e/d (expt-2-is-ash ash**)
+                                 (right-shift-to-logtail)))))
 
 (theory-invariant (not (and (active-runep '(:rewrite ash-1-removal))
                             (active-runep '(:rewrite expt-2-is-ash)))))
@@ -92,26 +93,10 @@
   :rule-classes ((:forward-chaining :trigger-terms ((logcar a))))
   :hints(("Goal" :use logcar-type)))
 
-(defthm |(logbitp 0 x)|
-  (equal (logbitp 0 x)
-         (equal (logcar x) 1))
-  :hints(("Goal" :in-theory (enable logbitp**))))
-
-(encapsulate
-  ()
-  ;; The following theorems improve logbitp-0-minus-1 by eliminating
-  ;; the unnecessary hyps.
-
-  (defthm |(logbitp a 0)|
-    (equal (logbitp a 0) nil))
-
-  (defthm |(logbitp a -1)|
-    (equal (logbitp a -1) t)
-    :hints(("Goal"
-            :induct (dec-induct a)
-            :in-theory (enable logbitp**))))
-
-  (in-theory (disable logbitp-0-minus-1)))
+;; (defthm |(logbitp 0 x)|
+;;   (equal (logbitp 0 x)
+;;          (equal (logcar x) 1))
+;;   :hints(("Goal" :in-theory (enable logbitp**))))
 
 
 
@@ -165,158 +150,158 @@
 ;;          :expand (logxor x y)
 ;;          :in-theory (enable logxor**))))
 
-(defthm |(< (lognot a) 0)|
-  (equal (< (lognot a) 0)
-         (if (integerp a)
-             (<= 0 a)
-           t))
-  :rule-classes ((:rewrite)
-                 (:type-prescription :corollary
-                                     (implies (natp a)
-                                              (and (integerp (lognot a))
-                                                   (< (lognot a) 0))))
-                 (:type-prescription :corollary
-                                     (implies (and (integerp a)
-                                                   (< a 0))
-                                              (and (integerp (lognot a))
-                                                   (<= 0 (lognot a)))))
-                 (:linear :corollary
-                          (implies (natp a)
-                                   (< (lognot a) 0)))
-                 (:linear :corollary
-                          (implies (and (integerp a)
-                                        (< a 0))
-                                   (<= 0 (lognot a)))))
-  :hints(("Goal" :in-theory (enable lognot))))
+;; (defthm |(< (lognot a) 0)|
+;;   (equal (< (lognot a) 0)
+;;          (if (integerp a)
+;;              (<= 0 a)
+;;            t))
+;;   :rule-classes ((:rewrite)
+;;                  (:type-prescription :corollary
+;;                                      (implies (natp a)
+;;                                               (and (integerp (lognot a))
+;;                                                    (< (lognot a) 0))))
+;;                  (:type-prescription :corollary
+;;                                      (implies (and (integerp a)
+;;                                                    (< a 0))
+;;                                               (and (integerp (lognot a))
+;;                                                    (<= 0 (lognot a)))))
+;;                  (:linear :corollary
+;;                           (implies (natp a)
+;;                                    (< (lognot a) 0)))
+;;                  (:linear :corollary
+;;                           (implies (and (integerp a)
+;;                                         (< a 0))
+;;                                    (<= 0 (lognot a)))))
+;;   :hints(("Goal" :in-theory (enable lognot ifix))))
 
-(defthm |(equal (lognot a) 0)|
-  ;; This isn't really necessary since cancel-equal-lognot can get it instead.
-  ;; On the other hand, this can be an abbreviation rule.
-  (equal (equal (lognot a) 0)
-         (equal a -1)))
-
-
-(defthm |(<= 0 (logand a b))|
-  (equal (< (logand a b) 0)
-         (not (or (not (integerp a))
-                  (not (integerp b))
-                  (<= 0 a)
-                  (<= 0 b))))
-  :rule-classes ((:rewrite)
-                 (:linear :corollary (implies (natp a)
-                                              (<= 0 (logand a b))))
-                 (:linear :corollary (implies (natp b)
-                                              (<= 0 (logand a b))))
-                 (:linear :corollary (implies (and (< a 0)
-                                                   (< b 0)
-                                                   (integerp a)
-                                                   (integerp b))
-                                              (< (logand a b) 0)))
-                 (:type-prescription :corollary (implies (natp a)
-                                                         (and (integerp (logand a b))
-                                                              (<= 0 (logand a b)))))
-                 (:type-prescription :corollary (implies (natp b)
-                                                         (and (integerp (logand a b))
-                                                              (<= 0 (logand a b)))))
-                 (:type-prescription :corollary (implies (and (< a 0)
-                                                              (< b 0)
-                                                              (integerp a)
-                                                              (integerp b))
-                                                         (and (integerp (logand a b))
-                                                              (< (logand a b) 0)))))
-  :hints(("Goal" :in-theory (enable logand))))
-
-(defthm |(< (logior a b) 0)|
-  (equal (< (logior a b) 0)
-         (or (and (integerp a)
-                  (< a 0))
-             (and (integerp b)
-                  (< b 0))))
-  :rule-classes ((:rewrite)
-                 (:linear :corollary
-                          (implies (and (natp a)
-                                        (natp b))
-                                   (<= 0 (logior a b))))
-                 (:type-prescription :corollary
-                                     (implies (and (natp a)
-                                                   (natp b))
-                                              (and (integerp (logior a b))
-                                                   (<= 0 (logior a b)))))
-                 (:linear :corollary
-                          (implies (and (integerp a)
-                                        (< a 0))
-                                   (< (logior a b) 0)))
-                 (:type-prescription :corollary
-                                     (implies (and (integerp a)
-                                                   (< a 0))
-                                              (and (integerp (logior a b))
-                                                   (< (logior a b) 0))))
-                 (:linear :corollary
-                          (implies (and (integerp b)
-                                        (< b 0))
-                                   (< (logior a b) 0)))
-                 (:type-prescription :corollary
-                                     (implies (and (integerp b)
-                                                   (< b 0))
-                                              (and (integerp (logior a b))
-                                                   (< (logior a b) 0)))))
-  :hints(("Goal" :in-theory (enable logior))))
+;; (defthm |(equal (lognot a) 0)|
+;;   ;; This isn't really necessary since cancel-equal-lognot can get it instead.
+;;   ;; On the other hand, this can be an abbreviation rule.
+;;   (equal (equal (lognot a) 0)
+;;          (equal a -1)))
 
 
-(defthm |(< (logxor a b) 0)|
-  (equal (< (logxor a b) 0)
-         (if (< (ifix a) 0)
-             (not (< (ifix b) 0))
-           (< (ifix b) 0)))
-  :rule-classes ((:rewrite)
-                 (:linear :corollary
-                          (implies (and (natp a)
-                                        (natp b))
-                                   (<= 0 (logxor a b))))
-                 (:type-prescription :corollary
-                                     (implies (and (natp a)
-                                                   (natp b))
-                                              (and (integerp (logxor a b))
-                                                   (<= 0 (logxor a b)))))
-                 (:linear :corollary
-                          (implies (and (< a 0)
-                                        (integerp a)
-                                        (natp b))
-                                   (< (logxor a b) 0)))
-                 (:type-prescription :corollary
-                                     (implies (and (< a 0)
-                                                   (integerp a)
-                                                   (natp b))
-                                              (and (integerp (logxor a b))
-                                                   (< (logxor a b) 0))))
+;; (defthm |(<= 0 (logand a b))|
+;;   (equal (< (logand a b) 0)
+;;          (not (or (not (integerp a))
+;;                   (not (integerp b))
+;;                   (<= 0 a)
+;;                   (<= 0 b))))
+;;   :rule-classes ((:rewrite)
+;;                  (:linear :corollary (implies (natp a)
+;;                                               (<= 0 (logand a b))))
+;;                  (:linear :corollary (implies (natp b)
+;;                                               (<= 0 (logand a b))))
+;;                  (:linear :corollary (implies (and (< a 0)
+;;                                                    (< b 0)
+;;                                                    (integerp a)
+;;                                                    (integerp b))
+;;                                               (< (logand a b) 0)))
+;;                  (:type-prescription :corollary (implies (natp a)
+;;                                                          (and (integerp (logand a b))
+;;                                                               (<= 0 (logand a b)))))
+;;                  (:type-prescription :corollary (implies (natp b)
+;;                                                          (and (integerp (logand a b))
+;;                                                               (<= 0 (logand a b)))))
+;;                  (:type-prescription :corollary (implies (and (< a 0)
+;;                                                               (< b 0)
+;;                                                               (integerp a)
+;;                                                               (integerp b))
+;;                                                          (and (integerp (logand a b))
+;;                                                               (< (logand a b) 0)))))
+;;   :hints(("Goal" :in-theory (enable logand))))
 
-                 (:linear :corollary
-                          (implies (and (< b 0)
-                                        (integerp b)
-                                        (natp a))
-                                   (< (logxor a b) 0)))
-                 (:type-prescription :corollary
-                                     (implies (and (< b 0)
-                                                   (integerp b)
-                                                   (natp a))
-                                              (and (integerp (logxor a b))
-                                                   (< (logxor a b) 0))))
+;; (defthm |(< (logior a b) 0)|
+;;   (equal (< (logior a b) 0)
+;;          (or (and (integerp a)
+;;                   (< a 0))
+;;              (and (integerp b)
+;;                   (< b 0))))
+;;   :rule-classes ((:rewrite)
+;;                  (:linear :corollary
+;;                           (implies (and (natp a)
+;;                                         (natp b))
+;;                                    (<= 0 (logior a b))))
+;;                  (:type-prescription :corollary
+;;                                      (implies (and (natp a)
+;;                                                    (natp b))
+;;                                               (and (integerp (logior a b))
+;;                                                    (<= 0 (logior a b)))))
+;;                  (:linear :corollary
+;;                           (implies (and (integerp a)
+;;                                         (< a 0))
+;;                                    (< (logior a b) 0)))
+;;                  (:type-prescription :corollary
+;;                                      (implies (and (integerp a)
+;;                                                    (< a 0))
+;;                                               (and (integerp (logior a b))
+;;                                                    (< (logior a b) 0))))
+;;                  (:linear :corollary
+;;                           (implies (and (integerp b)
+;;                                         (< b 0))
+;;                                    (< (logior a b) 0)))
+;;                  (:type-prescription :corollary
+;;                                      (implies (and (integerp b)
+;;                                                    (< b 0))
+;;                                               (and (integerp (logior a b))
+;;                                                    (< (logior a b) 0)))))
+;;   :hints(("Goal" :in-theory (enable logior))))
 
-                 (:linear :corollary
-                          (implies (and (< a 0)
-                                        (< b 0)
-                                        (integerp a)
-                                        (integerp b))
-                                   (<= 0 (logxor a b))))
-                 (:type-prescription :corollary
-                                     (implies (and (< a 0)
-                                                   (< b 0)
-                                                   (integerp a)
-                                                   (integerp b))
-                                              (and (integerp (logxor a b))
-                                                   (<= 0 (logxor a b)))))
-                 )
-  :hints(("Goal" :in-theory (enable logxor))))
+
+;; (defthm |(< (logxor a b) 0)|
+;;   (equal (< (logxor a b) 0)
+;;          (if (< (ifix a) 0)
+;;              (not (< (ifix b) 0))
+;;            (< (ifix b) 0)))
+;;   :rule-classes ((:rewrite)
+;;                  (:linear :corollary
+;;                           (implies (and (natp a)
+;;                                         (natp b))
+;;                                    (<= 0 (logxor a b))))
+;;                  (:type-prescription :corollary
+;;                                      (implies (and (natp a)
+;;                                                    (natp b))
+;;                                               (and (integerp (logxor a b))
+;;                                                    (<= 0 (logxor a b)))))
+;;                  (:linear :corollary
+;;                           (implies (and (< a 0)
+;;                                         (integerp a)
+;;                                         (natp b))
+;;                                    (< (logxor a b) 0)))
+;;                  (:type-prescription :corollary
+;;                                      (implies (and (< a 0)
+;;                                                    (integerp a)
+;;                                                    (natp b))
+;;                                               (and (integerp (logxor a b))
+;;                                                    (< (logxor a b) 0))))
+
+;;                  (:linear :corollary
+;;                           (implies (and (< b 0)
+;;                                         (integerp b)
+;;                                         (natp a))
+;;                                    (< (logxor a b) 0)))
+;;                  (:type-prescription :corollary
+;;                                      (implies (and (< b 0)
+;;                                                    (integerp b)
+;;                                                    (natp a))
+;;                                               (and (integerp (logxor a b))
+;;                                                    (< (logxor a b) 0))))
+
+;;                  (:linear :corollary
+;;                           (implies (and (< a 0)
+;;                                         (< b 0)
+;;                                         (integerp a)
+;;                                         (integerp b))
+;;                                    (<= 0 (logxor a b))))
+;;                  (:type-prescription :corollary
+;;                                      (implies (and (< a 0)
+;;                                                    (< b 0)
+;;                                                    (integerp a)
+;;                                                    (integerp b))
+;;                                               (and (integerp (logxor a b))
+;;                                                    (<= 0 (logxor a b)))))
+;;                  )
+;;   :hints(("Goal" :in-theory (enable logxor))))
 
 
 
@@ -331,7 +316,8 @@
   (defthm logbitp-of-expt-2
     (implies (natp b)
              (equal (logbitp a (expt 2 b))
-                    (equal (nfix a) b)))))
+                    (equal (nfix a) b)))
+    :hints (("goal" :induct (dec-dec-induct a b)))))
 
 
 (defthm expt-2-lower-bound-by-logbitp
@@ -425,7 +411,7 @@
                                             (b-and b1 b2)))
                               (ifix r1)
                               (ifix r2)))))
-  :hints(("Goal" :in-theory (enable logcons))))
+  :hints(("Goal" :in-theory (enable logcons b-ior b-and b-xor))))
 
 (defthm +-of-logcons
   (equal (+ (logcons b1 r1)
@@ -434,7 +420,8 @@
                   (+ (b-and b1 b2)
                      (ifix r1)
                      (ifix r2))))
-  :hints(("Goal" :in-theory (e/d (logcons) (equal-logcons)))))
+  :hints(("Goal" :use ((:instance +-of-logcons-with-cin
+                        (cin 0))))))
 
 (defthm logcar-of-+
   (implies (and (integerp a)
@@ -475,10 +462,10 @@
                           ((< a (expt 2 (+ 1 n)))
                            a))))
     :hints(("Goal" :induct (logbitp-ind n a)
-            :in-theory (disable ash*)
+            :in-theory (disable ash**)
             :do-not-induct t)
            (and stable-under-simplificationp
-                '(:in-theory (enable ash*)))))
+                '(:in-theory (enable ash**)))))
 
   (defthm small-mods
     (implies (integerp n)
@@ -499,10 +486,10 @@
              (equal (+ (expt 2 n) (mod a (expt 2 n)))
                     (mod a (expt 2 (+ 1 n)))))
     :hints(("Goal" :induct (logbitp-ind n a)
-            :in-theory (disable ash*)
+            :in-theory (disable ash**)
             :do-not-induct t)
            (and stable-under-simplificationp
-                '(:in-theory (enable ash*))))))
+                '(:in-theory (enable ash**))))))
 
 (in-theory (disable small-mods))
 (local (in-theory (enable small-mods)))
@@ -518,11 +505,8 @@
            (< (logior x y) (expt 2 n)))
   :rule-classes ((:rewrite) (:linear))
   :hints(("Goal"
-          :in-theory (disable unsigned-byte-p-logior)
-          :use ((:instance unsigned-byte-p-logior
-                           (i x)
-                           (j y)
-                           (size n))))))
+          :in-theory (disable unsigned-byte-p-of-logior)
+          :use ((:instance unsigned-byte-p-of-logior)))))
 
 (defthm upper-bound-of-logxor-for-naturals
   (implies (and (< x (expt 2 n))
@@ -532,12 +516,13 @@
                 (posp n))
            (< (logxor x y) (expt 2 n)))
   :rule-classes ((:rewrite) (:linear))
-  :hints(("Goal"
-          :in-theory (disable unsigned-byte-p-logxor)
-          :use ((:instance unsigned-byte-p-logxor
-                           (i x)
-                           (j y)
-                           (size n))))))
+  :hints(("Goal" :in-theory (e/d* (ihsext-inductions
+                                   ihsext-redefs
+                                   expt-2-is-ash)
+                                  (ash-1-removal
+                                   logcons-negp))
+          :induct (and (logbitp n x)
+                       (logbitp n y)))))
 
 
 
@@ -587,6 +572,7 @@
                     (<= 0 (ifix n))))
     :hints(("Goal" :in-theory (enable expt)))))
 
+
 (local (in-theory (enable |(integerp (expt x n))|)))
 
 (defthmd |(logcdr (expt 2 n))|
@@ -595,10 +581,11 @@
              (expt 2 (1- n))
            0))
   :hints(("Goal" :in-theory (e/d* (ihsext-arithmetic)
-                                  (ash-1-removal))
-          :cases ((= 0 n)
-                  (and (not (equal 0 n))
-                       (integerp n))))))
+                                  (ash-1-removal
+                                   |(integerp (expt x n))|))
+          :use ((:instance |(integerp (expt x n))|
+                 (x 2))))
+         '(:cases ((zip n)))))
 
 (local (in-theory (enable |(logcdr (expt 2 n))|)))
 
@@ -607,12 +594,12 @@
          (if (= (ifix n) 0)
              1
            0))
-  :hints(("Goal" :in-theory (e/d* (ihsext-arithmetic
-                                   logcar-of-ash)
-                                  (ash-1-removal))
-          :cases ((<= 0 n)
-                  (and (< n 0)
-                       (integerp n))))))
+  :hints(("Goal" :in-theory (e/d* (ihsext-arithmetic)
+                                  (ash-1-removal
+                                   |(integerp (expt x n))|))
+          :use ((:instance |(integerp (expt x n))|
+                 (x 2)))
+          :cases ((natp n)))))
 
 (local (in-theory (enable  |(logcar (expt 2 n))|)))
 
@@ -635,7 +622,9 @@
                              (equal (equal (logand (expt 2 n) x) 0)
                                     (not (logbitp n x))))))
     :hints(("Goal"
-            :in-theory (enable logand$ logbitp**)
+            :in-theory (e/d* (ihsext-arithmetic
+                              ash** loghead** logand$ logbitp**)
+                             (ash-1-removal))
             :induct (dec-logcdr-induct n x)))))
 
 (local (in-theory (enable logand-with-2^n-is-logbitp)))

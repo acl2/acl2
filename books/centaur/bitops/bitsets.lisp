@@ -319,6 +319,7 @@ details.</p>"
              (implies (posp x)
                       (bitset-members x))
              :hints(("Goal"
+                     :in-theory (enable natp)
                      :use ((:instance in-of-bitset-members
                                       (a (logbitp-mismatch x 0))))))))
 
@@ -377,11 +378,11 @@ function into an array access.</p>"
   (defthm unsigned-byte-p-of-bignum-extract
     (unsigned-byte-p 32 (bignum-extract x slice))
     :hints(("Goal"
-            :in-theory (disable unsigned-byte-p-logand)
-            :use ((:instance unsigned-byte-p-logand
-                             (size 32)
-                             (i (1- (expt 2 32)))
-                             (j (ash (ifix x) (* -32 (nfix slice)))))))))
+            :in-theory (disable unsigned-byte-p-of-logand-1)
+            :use ((:instance unsigned-byte-p-of-logand-1
+                   (n 32)
+                   (x (1- (expt 2 32)))
+                   (y (ash (ifix x) (* -32 (nfix slice)))))))))
 
   (make-event
    `(defthm upper-bound-of-bignum-extract
@@ -416,7 +417,8 @@ function into an array access.</p>"
                                                x))))
     :hints(("Goal"
             :in-theory (e/d (loghead)
-                            (bits-between-of-increment-right-index))))))
+                            (bits-between-of-increment-right-index
+                             right-shift-to-logtail))))))
 
 
 
@@ -543,7 +545,8 @@ almost 5x faster than a regular version.  Here's the testing code I used:</p>
                                           (* (+ 1 slice) 32)
                                           x)
                             acc)))
-    :hints(("Goal" :in-theory (enable ttag-bitset-members-aux bignum-extract))))
+    :hints(("Goal" :in-theory (e/d (ttag-bitset-members-aux bignum-extract)
+                                   (right-shift-to-logtail)))))
 
   (defund ttag-bitset-members (x)
     (declare (xargs :guard (natp x)
@@ -974,7 +977,7 @@ like @(see bitset-intersect) and @(see bitset-difference).</p>"
                         (:instance logbitp-mismatch-correct
                                    (a (nfix a))
                                    (b (nfix b))))
-           :in-theory (e/d (in-of-bitset-members)
+           :in-theory (e/d (in-of-bitset-members natp)
                            (sets::double-containment
                             logbitp-mismatch-correct))))
   :rule-classes nil)
@@ -1193,33 +1196,33 @@ X))</tt>.  We could have used this as the <tt>:logic</tt> definition, but the
 ; ordered set that contains all of the positions of 1-bits in X.  This is the
 ; same set computed by BITSET-MEMBERS, hence its length is the same.
 
-  (local (defthm c0
-           (implies (natp x)
-                    (equal (nonnegative-integer-quotient x 2)
-                           (logcdr x)))
-           :hints(("Goal" :in-theory (enable logcdr)))))
+  ;; (local (defthm c0
+  ;;          (implies (natp x)
+  ;;                   (equal (nonnegative-integer-quotient x 2)
+  ;;                          (logcdr x)))
+  ;;          :hints(("Goal" :in-theory (enable logcdr)))))
 
-  (local (defthm c1
-           (implies (natp x)
-                    (equal (evenp x)
-                           (= (logcar x) 0)))
-           :hints(("Goal" :in-theory (enable logcar evenp)))))
+  ;; (local (defthm c1
+  ;;          (implies (natp x)
+  ;;                   (equal (evenp x)
+  ;;                          (= (logcar x) 0)))
+  ;;          :hints(("Goal" :in-theory (enable logcar evenp)))))
 
-  (local (defthm logcount-when-positive
-           (implies (natp x)
-                    (equal (logcount x)
-                           (cond ((zp x)
-                                  0)
-                                 ((= (logcar x) 1)
-                                  (+ 1 (logcount (logcdr x))))
-                                 (t
-                                  (logcount (logcdr x))))))
-           :rule-classes ((:definition :clique (logcount) :controller-alist ((logcount t))))
-           :hints(("Goal"
-                   :induct (logcount x)
-                   :in-theory (enable logcar logcount logcar)))))
+  ;; (local (defthm logcount-when-positive
+  ;;          (implies (natp x)
+  ;;                   (equal (logcount x)
+  ;;                          (cond ((zp x)
+  ;;                                 0)
+  ;;                                ((= (logcar x) 1)
+  ;;                                 (+ 1 (logcount (logcdr x))))
+  ;;                                (t
+  ;;                                 (logcount (logcdr x))))))
+  ;;          :rule-classes ((:definition :clique (logcount) :controller-alist ((logcount t))))
+  ;;          :hints(("Goal"
+  ;;                  :induct (logcount x)
+  ;;                  :in-theory (enable logcar logcount logcar)))))
 
-  (local (in-theory (disable logcount)))
+  ;; (local (in-theory (disable logcount)))
 
   (local (defund lsb-bits (n x)
            (if (zp x)
@@ -1233,7 +1236,7 @@ X))</tt>.  We could have used this as the <tt>:logic</tt> definition, but the
            (implies (natp x)
                     (equal (logcount x)
                            (len (lsb-bits n x))))
-           :hints(("Goal" :in-theory (enable lsb-bits)))))
+           :hints(("Goal" :in-theory (enable lsb-bits logcount**)))))
 
   (local (defthm member-equal-lsb-bits
            (iff (member-equal a (lsb-bits n x))

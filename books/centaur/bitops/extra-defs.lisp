@@ -369,26 +369,10 @@ seconds."
 
 
 (local
- (encapsulate
-   ()
-   (local (defun my-induct (x n)
-            (if (zp n)
-                x
-              (my-induct (logcdr x) (- n 1)))))
-
-   (local (defthm ash-to-logtail
-            (implies (natp n)
-                     (equal (ash x (- n))
-                            (logtail n x)))
-            :hints(("Goal"
-                    :induct (my-induct x n)
-                    :in-theory (e/d* (logtail** ash*)
-                                     (logtail))))))
-
-   (defthm shift-right-smaller
-     (implies (not (zp src))
-              (< (ash src -1) src))
-     :hints(("Goal" :in-theory (disable logtail))))))
+ (defthm shift-right-smaller
+   (implies (not (zp src))
+            (< (logtail 1 src) src))
+   :hints(("Goal" :in-theory (e/d (logtail**))))))
 
 (defund bitscan-fwd (src)
   "(BITSCAN-FWD SRC) returns the bit position of the least significant bit in

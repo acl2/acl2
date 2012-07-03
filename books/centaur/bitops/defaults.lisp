@@ -21,7 +21,6 @@
 (in-package "ACL2")
 (include-book "cutil/defsection" :dir :system)
 (include-book "ihs/logops-definitions" :dir :system)
-(local (include-book "ihs/logops-lemmas" :dir :system))
 ; (local (include-book "arithmetic-3/floor-mod/floor-mod" :dir :system))
 (local (include-book "ihsext-basics"))
 (local (in-theory (disable floor mod logbitp evenp oddp ash)))
@@ -33,6 +32,7 @@
   :short "Basic theorems about the \"default\" behavior of bit operations when
 their inputs are ill-formed.")
 
+(local (in-theory (enable* arith-equiv-forwarding)))
 
 (defsection logbitp-defaults
   :parents (bitops/defaults logbitp)
@@ -41,13 +41,15 @@ their inputs are ill-formed.")
     (implies (not (natp a))
              (equal (logbitp a x)
                     (logbitp 0 x)))
-    :hints(("Goal" :in-theory (enable logbitp))))
+    :hints(("Goal" :in-theory (enable logbitp**)))
+    :rule-classes ((:rewrite :backchain-limit-lst 0)))
 
   (defthm logbitp-default-2
     (implies (not (integerp x))
              (equal (logbitp a x)
-                    (logbitp a 0)))
-    :hints(("Goal" :in-theory (enable logbitp oddp evenp)))))
+                    nil))
+    :hints(("Goal" :in-theory (enable logbitp**)))
+    :rule-classes ((:rewrite :backchain-limit-lst 0))))
 
 
 (defsection lognot-default
@@ -57,7 +59,8 @@ their inputs are ill-formed.")
     (implies (not (integerp x))
              (equal (lognot x)
                     -1))
-    :hints(("Goal" :in-theory (enable lognot)))))
+    :hints(("Goal" :in-theory (enable lognot**)))
+    :rule-classes ((:rewrite :backchain-limit-lst 0))))
 
 
 
@@ -68,13 +71,15 @@ their inputs are ill-formed.")
     (implies (not (integerp x))
              (equal (logand x y)
                     (logand 0 y)))
-    :hints(("Goal" :in-theory (enable logand))))
+    :hints(("Goal" :in-theory (enable logand**)))
+    :rule-classes ((:rewrite :backchain-limit-lst 0)))
 
   (defthm logand-default-2
     (implies (not (integerp y))
              (equal (logand x y)
                     (logand x 0)))
-    :hints(("Goal" :in-theory (e/d (logand) ((force)))))))
+    :hints(("Goal" :in-theory (e/d (logand**))))
+    :rule-classes ((:rewrite :backchain-limit-lst 0))))
 
 
 (defsection logior-defaults
@@ -84,13 +89,15 @@ their inputs are ill-formed.")
     (implies (not (integerp x))
              (equal (logior x y)
                     (logior 0 y)))
-    :hints(("Goal" :in-theory (enable logior))))
+    :hints(("Goal" :in-theory (enable logior**)))
+    :rule-classes ((:rewrite :backchain-limit-lst 0)))
 
   (defthm logior-default-2
     (implies (not (integerp y))
              (equal (logior x y)
                     (logior x 0)))
-    :hints(("Goal" :in-theory (enable logior)))))
+    :hints(("Goal" :in-theory (enable logior**)))
+    :rule-classes ((:rewrite :backchain-limit-lst 0))))
 
 
 (defsection logcar-default
@@ -100,7 +107,7 @@ their inputs are ill-formed.")
     (implies (not (integerp x))
              (equal (logcar x)
                     0))
-    :hints(("Goal" :in-theory (enable logcar)))))
+    :rule-classes ((:rewrite :backchain-limit-lst 0))))
 
 
 (defsection logcdr-default
@@ -110,7 +117,7 @@ their inputs are ill-formed.")
     (implies (not (integerp x))
              (equal (logcdr x)
                     0))
-    :hints(("Goal" :in-theory (enable logcdr)))))
+    :rule-classes ((:rewrite :backchain-limit-lst 0))))
 
 
 
@@ -120,7 +127,8 @@ their inputs are ill-formed.")
   (defthm integer-length-default
     (implies (not (integerp x))
              (equal (integer-length x)
-                    0))))
+                    0))
+    :rule-classes ((:rewrite :backchain-limit-lst 0))))
 
 
 (defsection ash-defaults
@@ -129,13 +137,15 @@ their inputs are ill-formed.")
   (defthm ash-default-1
     (implies (not (integerp x))
              (equal (ash x y)
-                    0)))
+                    0))
+    :rule-classes ((:rewrite :backchain-limit-lst 0)))
 
   (defthm ash-default-2
     (implies (not (integerp y))
              (equal (ash x y)
                     (ifix x)))
-    :hints(("Goal" :in-theory (enable ash*)))))
+    :hints(("Goal" :in-theory (enable ash**)))
+    :rule-classes ((:rewrite :backchain-limit-lst 0))))
 
 
 (defsection logxor-defaults
@@ -145,10 +155,12 @@ their inputs are ill-formed.")
     (implies (not (integerp x))
              (equal (logxor x y)
                     (logxor 0 y)))
-    :hints(("Goal" :in-theory (enable logxor))))
+    :hints(("Goal" :in-theory (enable logxor**)))
+    :rule-classes ((:rewrite :backchain-limit-lst 0)))
 
   (defthm logxor-default-2
     (implies (not (integerp y))
              (equal (logxor x y)
                     (logxor x 0)))
-    :hints(("Goal" :in-theory (enable logxor)))))
+    :hints(("Goal" :in-theory (enable logxor**)))
+    :rule-classes ((:rewrite :backchain-limit-lst 0))))

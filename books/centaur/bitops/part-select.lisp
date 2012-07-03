@@ -44,42 +44,24 @@
 ; complicated.
 
 
-;; BOZO do we want something like this in general?
-(local
- (encapsulate
-   ()
-   (local (defun my-induct (x n)
-            (if (zp n)
-                x
-              (my-induct (logcdr x) (- n 1)))))
+;; ;; this might be generally useful
+;; (local
+;;  (encapsulate
+;;    ()
+;;    (local (defun my-induct (x n)
+;;             (if (zp n)
+;;                 x
+;;               (my-induct (logcdr x) (- n 1)))))
 
-   (defthm ash-to-logtail
-     (implies (natp n)
-              (equal (ash x (- n))
-                     (logtail n x)))
-     :hints(("Goal"
-             :induct (my-induct x n)
-             :in-theory (e/d* (logtail** ash*)
-                              (logtail)))))))
-
-;; Same, this might be generally useful
-(local
- (encapsulate
-   ()
-   (local (defun my-induct (x n)
-            (if (zp n)
-                x
-              (my-induct (logcdr x) (- n 1)))))
-
-   (defthm logand-with-full-mask-to-logtail
-     (implies (and (natp width)
-                   (integerp x))
-              (equal (logand (+ -1 (ash 1 width)) x)
-                     (loghead width x)))
-     :hints(("Goal"
-             :induct (my-induct x width)
-             :in-theory (e/d* (loghead* ash* logand** logcons)
-                              (loghead logand ash)))))))
+;;    (defthm logand-with-full-mask-to-logtail
+;;      (implies (and (natp width)
+;;                    (integerp x))
+;;               (equal (logand (+ -1 (ash 1 width)) x)
+;;                      (loghead width x)))
+;;      :hints(("Goal"
+;;              :induct (my-induct x width)
+;;              :in-theory (e/d* (loghead* ash* logand** logcons)
+;;                               (loghead logand ash)))))))
 
 
 (defun part-select-width-low (x width low)

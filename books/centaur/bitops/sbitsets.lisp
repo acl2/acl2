@@ -386,6 +386,12 @@ optimized version of @(see sbitset-pair-members).</p>"
                     :in-theory (disable integer-length-bounded-by-expt)
                     :use ((:instance integer-length-bounded-by-expt (a x)))))))
 
+   (local (defthm l4
+            (implies (posp x)
+                     (natp (logbitp-mismatch x 0)))
+            :hints(("Goal" :in-theory (enable natp)))
+            :rule-classes ((:rewrite) (:type-prescription))))
+
    (defthm consp-of-bits-between
      (implies (and (< block (expt 2 n))
                    (posp block)

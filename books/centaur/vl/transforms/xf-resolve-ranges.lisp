@@ -263,11 +263,13 @@ concatenations.</p>")
                    :msb (make-honsed-vl-atom
                          :guts (make-honsed-vl-constint :origwidth 32
                                                         :origtype :vl-signed
-                                                        :value msb-val))
+                                                        :value msb-val
+                                                        :wasunsized t))
                    :lsb (make-honsed-vl-atom
                          :guts (make-honsed-vl-constint :origwidth 32
                                                         :origtype :vl-signed
-                                                        :value lsb-val))))
+                                                        :value lsb-val
+                                                        :wasunsized t))))
 
             ;; Failure, just return the unreduced range.
             (mv (cons (make-vl-warning
@@ -493,12 +495,16 @@ we try to evaluate expressions within it, e.g., replacing <tt>6-1</tt> with
                         :fn 'vl-op-selresolve)
                        warnings)
                  args))
-            (msb (make-vl-atom :guts (make-vl-constint :origwidth 32
-                                                       :origtype :vl-signed
-                                                       :value val1)))
-            (lsb  (make-vl-atom :guts (make-vl-constint :origwidth 32
-                                                        :origtype :vl-signed
-                                                        :value val2))))
+            (msb (make-honsed-vl-atom
+                  :guts (make-honsed-vl-constint :origwidth 32
+                                                 :origtype :vl-signed
+                                                 :value val1
+                                                 :wasunsized t)))
+            (lsb  (make-honsed-vl-atom
+                   :guts (make-honsed-vl-constint :origwidth 32
+                                                  :origtype :vl-signed
+                                                  :value val2
+                                                  :wasunsized t))))
          (mv warnings (list from msb lsb))))
 
       (:vl-bitselect
@@ -516,9 +522,11 @@ we try to evaluate expressions within it, e.g., replacing <tt>6-1</tt> with
                         :fn 'vl-op-selresolve)
                        warnings)
                  args))
-            (atom (make-vl-atom :guts (make-vl-constint :origwidth 32
-                                                        :origtype :vl-signed
-                                                        :value val))))
+            (atom (make-honsed-vl-atom 
+                   :guts (make-honsed-vl-constint :origwidth 32
+                                                  :origtype :vl-signed
+                                                  :value val
+                                                  :wasunsized t))))
          (mv warnings (list from atom))))
 
       (:vl-multiconcat
@@ -534,9 +542,11 @@ we try to evaluate expressions within it, e.g., replacing <tt>6-1</tt> with
                         :fn 'vl-op-selresolve)
                        warnings)
                  args))
-            (atom (make-vl-atom :guts (make-vl-constint :origwidth 32
-                                                        :origtype :vl-signed
-                                                        :value val))))
+            (atom (make-honsed-vl-atom
+                   :guts (make-honsed-vl-constint :origwidth 32
+                                                  :origtype :vl-signed
+                                                  :value val
+                                                  :wasunsized t))))
          (mv warnings (list atom kitty))))
 
       (otherwise

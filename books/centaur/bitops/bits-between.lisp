@@ -27,7 +27,7 @@
 (local (include-book "unicode/append" :dir :system))
 ; (local (include-book "arithmetic-3/extra/top-ext" :dir :system))
 
-
+(local (in-theory (enable* arith-equiv-forwarding)))
 
 (defsection add-to-each
   :parents (bitops)
@@ -92,6 +92,7 @@ bitset-members).</p>"
                                 (natp m)
                                 (<= n m)
                                 (integerp x))
+                    :hints(("Goal" :in-theory (enable nfix)))
                     :measure (nfix (- (nfix m) (nfix n)))))
     (let* ((n (mbe :logic (nfix n) :exec n))
            (m (mbe :logic (nfix m) :exec m)))
@@ -160,7 +161,8 @@ bitset-members).</p>"
   (encapsulate
     ()
     (local (defun my-induct (n m)
-             (declare (xargs :measure (nfix (- (nfix m) (nfix n)))))
+             (declare (xargs :measure (nfix (- (nfix m) (nfix n)))
+                             :hints(("Goal" :in-theory (enable nfix)))))
              (if (zp (- (nfix m) (nfix n)))
                  nil
                (my-induct (+ (nfix n) 1) m))))
@@ -189,7 +191,7 @@ bitset-members).</p>"
                     (bits-between n m x)))
     :hints(("Goal"
             :induct (bits-between n m x)
-            :in-theory (e/d (bits-between) (|(logbitp 0 x)|)))))
+            :in-theory (e/d (bits-between nfix)))))
 
   (make-event
    ;; Stupid copy of the above to avoid problems unifying with (expt 2 k)
@@ -305,17 +307,15 @@ bitset-members).</p>"
 
 (local (deftheory slow-rules
          '(true-listp-append
-           logbitp-default-2
            bits-between-upper
            ; reduce-integerp-+
            ; integerp-minus-x
            append not
-           logbitp-default-1
            sets::double-containment
            ; normalize-terms-such-as-a/a+b-+-b/a+b
            ; normalize-addends
            default-+-1 default-+-2
-           logcar-default default-car default-cdr
+           default-car default-cdr
            normalize-logbitp-when-mods-equal
            (:type-prescription logcar-type)
            (:type-prescription logcar)
@@ -364,7 +364,9 @@ benefit.</p>"
       acc))
 
   (defund bits-0-31 (offset x acc)
-    (declare (xargs :guard (natp offset))
+    (declare (xargs :guard (natp offset)
+                    :guard-hints (("goal" :in-theory
+                                   (disable unsigned-byte-p))))
              (type (unsigned-byte 32) x))
     (b* (((when (= (the (unsigned-byte 32) x) 0))
           ;; Maybe an optimization when dealing with sparse data
@@ -394,7 +396,8 @@ benefit.</p>"
              (equal (bits-0-31 offset x acc)
                     (append (add-to-each offset (bits-between 0 32 x))
                             acc)))
-    :hints(("Goal" :in-theory (enable bits-0-31 append)))))
+    :hints(("Goal" :in-theory (e/d (bits-0-31 append)
+                                   (right-shift-to-logtail))))))
 
 
 
@@ -492,5 +495,6 @@ the following loops, this is about 3.6x faster than bits-between.</p>
              (equal (60bits-0-59 offset x acc)
                     (append (add-to-each offset (bits-between 0 60 x))
                             acc)))
-    :hints(("Goal" :in-theory (enable 60bits-0-59 append)))))
+    :hints(("Goal" :in-theory (e/d (60bits-0-59 append)
+                                   (right-shift-to-logtail))))))
 

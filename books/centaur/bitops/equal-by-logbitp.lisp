@@ -180,7 +180,7 @@ it's also occasionally useful as a witness in other theorems.</p>"
                (< (logbitp-mismatch a b)
                   (max (integer-length a)
                        (integer-length b))))
-      :rule-classes ((:rewrite) (:linear))
+      :rule-classes ((:rewrite) (:linear :trigger-terms ((logbitp-mismatch a b))))
       :hints(("Goal" :use ((:instance lemma))))))
 
 

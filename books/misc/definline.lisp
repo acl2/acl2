@@ -67,7 +67,7 @@
    (let* ((wrld (w state))
           (def (cltl-def-from-name name wrld)))
      (unless def
-       (er hard? 'redefine-inline-fn "~x0 does not appear to be defined."))
+       (er hard? 'redefine-inline-fn "~x0 does not appear to be defined." name))
      (eval `(proclaim '(inline ,name)))
      (eval def))
    name))
