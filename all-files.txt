@@ -694,6 +694,7 @@ books/centaur/misc:
 alist-defs.lisp
 alist-equiv.lisp
 ap.lisp
+arith-equivs.lisp
 date.acl2
 date.lisp
 defapply.lisp
@@ -4090,6 +4091,7 @@ cws.lisp
 def-functional-instance.lisp
 defconsts.lisp
 defevaluator-fast.lisp
+defredundant.lisp
 define-keyed-function.lisp
 defined-const.lisp
 defmacfun.lisp
