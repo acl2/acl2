@@ -20256,8 +20256,9 @@
   ~c[Value] is a list ~c[(kwd-val-listp-1 ... kwd-val-listp-k)], where each
   ~c[kwd-val-listp-i] is a list satisfying ~ilc[keyword-value-listp], i.e., an
   alternating list of keywords and values.  This hint causes an attempt to
-  prove the specified goal using hints kwd-val-listp-1 in turn, until the first
-  of these succeeds.  If none succeeds, then the prover proceeds after
+  prove the specified goal using hints ~c[kwd-val-listp-i] in sequence (first
+  ~c[kwd-val-listp-1], then ~c[kwd-val-listp-2], and so on), until the first of
+  these succeeds.  If none succeeds, then the prover proceeds after
   heuristically choosing the ``best'' result, taking into account the goals
   pushed in each case for proof by induction.
 
