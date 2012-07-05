@@ -18857,6 +18857,19 @@
   discussions on this new feature and for updating his ~c[books/arithmetic-5/]
   distributed books to use this feature.
 
+  A new event, ~ilc[defabsstobj], provides a new way to introduce
+  single-threaded objects (~pl[stobj] and ~pl[defstobj]).  These so-called
+  ``abstract ~il[stobj]s'' permit user-provided logical definitions for
+  primitive operations on stobjs, for example using an alist-based
+  representation instead of a list-based representation for array fields.
+  Moreover, the proof obligations guarantee that the recognizer is preserved;
+  hence the implementation avoids executing the recognizer, which may be an
+  arbitrarily complex invariant that otherwise would be an expensive part of
+  ~il[guard] checks.  Thanks to Warren Hunt for a request leading us to design
+  and implement this new feature, and thanks to Rob Sumners for a request
+  leading us to implement a related utility, ~ilc[defabsstobj-missing-events].
+  ~l[defabsstobj].
+
   ~st[HEURISTIC IMPROVEMENTS]
 
   Reading of ACL2 ~ilc[arrays] (~pl[aref1], ~pl[aref2]) has been made more
@@ -19110,10 +19123,10 @@
    :hints ((\"Goal\" :in-theory (disable commutativity-of-+))))
   ~ev[]
 
-  Although all bets are off when using
-  redefinition (~pl[ld-redefinition-action]), we wish to minimize negative
-  effects of its use, especially raw Lisp errors.  The example belows had
-  caused raw Lisp errors, but no longer.
+  Although all bets are off when using redefinition
+  (~pl[ld-redefinition-action]), we wish to minimize negative effects of its
+  use, especially raw Lisp errors.  The examples below had caused raw Lisp
+  errors, but no longer.
   ~bv[]
   (defstobj st fld :inline t)
   (redef!)

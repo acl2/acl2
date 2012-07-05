@@ -1321,8 +1321,8 @@
 ; This function is called when add-trip encounters a 'cltl-command triple,
 ; which is laid down by install-event after the triple for the symbol-class is
 ; laid down.  Thus, the symbol-class for the function at hand has already been
-; stored.  Stobj-flag is the name of the stobj, if any, that the given
-; definition supports.
+; stored.  Stobj-flag is the name of the stobj (whether from defstobj or
+; defabsstobj), if any, that the given definition supports.
 
 ; See the template above for detailed comments, which however are not
 ; necessarily kept fully up-to-date.
@@ -1413,7 +1413,7 @@
                             ;; defthm-std ; calls defthm-fn, above
                             defaxiom-fn
                             defconst-fn
-                            defstobj-fn
+                            defstobj-fn defabsstobj-fn
                             defpkg-fn
                             deflabel-fn
                             defdoc-fn
@@ -1475,7 +1475,8 @@
              (super-stobjs-in ; At a "leaf" of a stobj-based computation?
               (if stobj-flag
 
-; Then we are looking at a function introduced by a defstobj event.
+; Then we are looking at a function introduced by a defstobj or defabsstobj
+; event.
 
                   (let ((temp (super-defstobj-wart-stobjs-in formals
                                                              stobj-flag)))
@@ -1578,16 +1579,16 @@
              (live-stobjp-test (create-live-user-stobjp-test declared-stobjs))
              (declare-stobj-special
 
-; Without a special declaration for the live stobj, a defstobj event will
-; introduce *1* functions in add-trip, via a defuns trip, before the defstobj
-; trip introduces the live stobj variable as special.  This might not be a big
-; deal unless we compile, by which time (at the end of processing the defstobj
-; trip) the live stobj variable has been introduced with defparameter, thus
-; globally declaring it special.  However, CCL complains because
-; compilation is done when the *1* function is first introduced.  It seems
-; appropriate to declare the live stobj variable special as soon as it is
-; referenced, in such *1* functions, even though CCL might be the only Lisp
-; that could need this done.
+; Without a special declaration for the live stobj, a defstobj or defabsstobj
+; event will introduce *1* functions in add-trip, via a defuns trip, before the
+; defstobj or defabsstobj trip introduces the live stobj variable as special.
+; This might not be a big deal unless we compile, by which time (at the end of
+; processing the defstobj or defabsstobj trip) the live stobj variable has been
+; introduced with defparameter, thus globally declaring it special.  However,
+; CCL complains because compilation is done when the *1* function is first
+; introduced.  It seems appropriate to declare the live stobj variable special
+; as soon as it is referenced, in such *1* functions, even though CCL might be
+; the only Lisp that could need this done.
 
               (and stobj-flag
                    `(declare (special ,(the-live-var stobj-flag)))))
@@ -1737,9 +1738,52 @@
                            `((if ,live-stobjp-test
                                  ,(if stobj-flag
 
-; We disallow attachments during evaluation of the stobj updater.  The
-; following example, which is a slight modification of one provided by Jared
-; Davis, shows why.
+; Essay on Stobj Guard Attachments
+
+; We disallow attachments during evaluation of guards on behalf of any stobj
+; updater.  The example below, which is a slight modification of one provided
+; by Jared Davis, shows why this is important for defstobj.  The idea is that
+; in order to preserve the invariant that the stobj recognizer holds, it
+; suffices that the initial stobj satisfies that recognizer and that the guard
+; holds for each call of an updater.  But suppose for example that an
+; attachment is used in evaluating the guard for the first update.  If later
+; (perhaps after many more updates) we change that attachment, then that guard
+; now may be false, and thus the recognizer may fail to hold after the first
+; update and thus fail to hold currently.  On the other hand, if such guard
+; evaluation never involves attachments, then since the initial stobj provably
+; satisfies the recognizer, then since each updater guard holds (in fact,
+; provably holds), the resulting stobjs all satisfy the recognizer.
+
+; The discussion above applies not only in the case of defstobj but also in the
+; case of defabsstobj.  Consider an abstract function exported from a
+; defabsstobj event that updates a stobj.  The avoidance of attachments
+; guarantees that every abstract stobj update satisfies the abstract function's
+; guard and hence, by the {preserved} theorems, results in an abstract stobj
+; that satisfies the abstract predicate -- provably, since we are dealing with
+; ground terms.  Moreover, because of the {guard-thm} theorems we know that the
+; concrete predicate provably holds as well, and hence won't be "revoked" as in
+; the preceding paragraph.
+
+; Why do we care about guards on concrete stobjs?  For all we know, failure to
+; respect those guards could result in corruption of the Lisp process.  An
+; obvious case would be if a stobj field is an array of bits, laid out
+; compactly according to that spec, and we update with an arbitrary object
+; (say, a cons).  Although it seems that only a SATISFIES type declaration
+; could result in a attachments being used for guard evaluation, we are
+; conservative here.  After all, adding a binding of *aokp* is cheap in the
+; context of evaluating just the guard.
+
+; Note that it is not sufficient to ensure for an abstract stobj that the
+; corresponding concrete stobj always satisfies its recognizer.  It is easy to
+; imagine a defabsstobj :export field that specifies the identify function for
+; its :logic component, returning the stobj unchanged, but for the :exec
+; component makes an ill-guarded call to update the stobj, corrupting the Lisp
+; imagine, before restoring the stobj.  In raw Lisp, this could really happen
+; because the export is a macro that calls the :exec function directly; the
+; only guard that need be met before this happens is a variant of the :logic
+; function's guard, at the level of *1* function of the export.
+
+; Finally, here is the example promised above.
 
 ; (progn
 ;   (defstub foop (x) t)
@@ -2710,15 +2754,14 @@
         ((defun defmacro)
 
 ; In Common Lisp, a symbol can be either a macro or function, but the
-; symbol-function cell is used in both cases to store the associated
-; code.  Therefore, if we are about to smash the symbol-function cell,
-; e.g., in response to a DEFUN event, then we are obliged to remember
-; whether it was previously defined as a macro.
+; symbol-function cell is used in both cases to store the associated code.
+; Therefore, if we are about to smash the symbol-function cell, e.g., in
+; response to a DEFUN event, then we are obliged to remember whether it was
+; previously defined as a macro.
 
-; Notice that :inlined stobj functions are handled fine here, since
-; in such cases, fn will be defun and the code below is fine for
-; macros (even if defined with defabbrev).  We rely on this fact in
-; undo-trip; see the comment there.
+; Notice that we are dealing properly here with :inlined stobj functions as
+; well as defabsstobj raw Lisp macros.  See also the comment about this in
+; undo-trip.
 
          (cond
           ((fboundp name)
@@ -3464,9 +3507,9 @@
 ; (Version_3.2.1).  We take further advantage of these expansion files by
 ; putting forms into them to implement the plan outlined above.  Note that we
 ; handle certain events that create 'cltl-command properties, as processed by
-; add-trip: defun, defstobj, defconst, and defmacro, but not memoize and
-; unmemoize, even in the #+hons case.  Extra forms near the top of the
-; expansion file will be evaluated when loading the compiled file, to store
+; add-trip: defun, defstobj, defabsstobj, defconst, and defmacro, but not
+; memoize and unmemoize, even in the #+hons case.  Extra forms near the top of
+; the expansion file will be evaluated when loading the compiled file, to store
 ; values in hash tables for later use, when add-trip deals with 'cltl-command
 ; properties.  Those extra forms are based on information deduced during the
 ; include-book phase of book certification, at which time Lisp global
@@ -3670,17 +3713,17 @@
 ; A stobj may be defined during evaluation of the raw Lisp definition of
 ; include-book.  In that case, the-live-name for that stobj is an add-trip
 ; symbol, and hence its value is stored in *hcomp-const-ht*.  However, the raw
-; Lisp definition of defstobj also assigns to *user-stobj-alist*, which we
-; expect will associate the-live-name of a stobj with its Lisp relevant value.
-; Now imagine subsequent processing of events by the same include-book.  When
-; defstobj is encountered, add-trip obtains the value of the-live-name of that
-; stobj from *hcomp-const-ht*, and uses that value to update *user-stobj-alist*
-; just as it would if it were updating without benefit of *hcomp-const-ht*.
-; The only tricky bit here is that we need to ensure that add-trip, along with
-; undo-trip and flush-trip, are the only functions that update
-; *user-stobj-alist*.  Therefore, we bind *user-stobj-alist* to itself when
-; doing an early load of the compiled file or expansion file; see
-; include-book-raw.
+; Lisp definition of defstobj or defabsstobj also assigns to
+; *user-stobj-alist*, which we expect will associate the-live-name of a stobj
+; with its Lisp relevant value.  Now imagine subsequent processing of events by
+; the same include-book.  When defstobj or defabsstobj is encountered, add-trip
+; obtains the value of the-live-name of that stobj from *hcomp-const-ht*, and
+; uses that value to update *user-stobj-alist* just as it would if it were
+; updating without benefit of *hcomp-const-ht*.  The only tricky bit here is
+; that we need to ensure that add-trip, along with undo-trip and flush-trip,
+; are the only functions that update *user-stobj-alist*.  Therefore, we bind
+; *user-stobj-alist* to itself when doing an early load of the compiled file or
+; expansion file; see include-book-raw.
 
 ; If the compiled file or certificate is missing, or else if the compiled file
 ; is older than the certificate, we may print a warning and go on, assigning
@@ -4975,12 +5018,11 @@
               (install-defs-for-add-trip (nconc new-defs new-*1*-defs)
                                          (eq ignorep 'reclassifying)
                                          wrld t nil)))
-          (defstobj
+          ((defstobj defabsstobj)
             (let ((name (nth 1 cltl-cmd))
                   (the-live-name (nth 2 cltl-cmd))
                   (init (nth 3 cltl-cmd))
                   (raw-defs (nth 4 cltl-cmd))
-                  ;;(template (nth 5 cltl-cmd))
                   (ax-defs (nth 6 cltl-cmd))
                   (new-defs nil))
               (install-for-add-trip `(defparameter ,the-live-name ,init)
@@ -4988,18 +5030,18 @@
                                     nil)
               (dolist
                 (def raw-defs)
-                (let ((def (if (member-equal *stobj-inline-declare* def)
-                               (cons 'defabbrev
-                                     (remove-stobj-inline-declare def))
-                             (cons 'defun def))))
-                  (setq new-defs (cons def new-defs))))
+                (push (cond ((eq (car cltl-cmd) 'defabsstobj)
+                             (cons 'defmacro def))
+                            ((member-equal *stobj-inline-declare* def)
+                             (cons 'defabbrev
+                                   (remove-stobj-inline-declare def)))
+                            (t (cons 'defun def)))
+                      new-defs))
               (dolist
                 (def ax-defs)
-                (setq new-defs (cons (list* 'oneify-cltl-code :logic def
-                                            name)
-                                     new-defs)))
-              (setq new-defs
-                    (nreverse new-defs))
+                (push (list* 'oneify-cltl-code :logic def name)
+                      new-defs))
+              (setq new-defs (nreverse new-defs))
               (install-defs-for-add-trip new-defs nil wrld t nil)))
           (defconst
             (install-for-add-trip `(defparameter ,(cadr cltl-cmd)
@@ -5128,32 +5170,29 @@
 ;                   We still write a *1* definition in this case.
 ; (defstobj . stobj)
 ;                -- meaning the names being introduced are actually being
-;                   defun'd under (defstobj stobj ...).  We don't want
-;                   to store the code generated by defun for these
-;                   names because defstobj will generate a
-;                   CLTL-COMMAND containing the made-to-order raw
+;                   defun'd under (defstobj stobj ...) or (defabsstobj stobj
+;                   ...).  We don't want to store the code generated by defun
+;                   for these names because defstobj and defabsstobj will
+;                   generate a CLTL-COMMAND containing the made-to-order raw
 ;                   defs.  We also do not store the *1* definition in this
-;                   case, because in CCL (at least) this would cause a
-;                   problem since the *1* code calls the raw Lisp function,
-;                   which has not yet been defined and in the :inline case is
-;                   actually a macro.  (See also the comment in
-;                   defstobj-functionsp.)
+;                   case, because in CCL (at least) this would cause a problem
+;                   since the *1* code calls the raw Lisp function, which has
+;                   not yet been defined and in the :inline case is actually a
+;                   macro.  (See also the comment in defstobj-functionsp.)
 
-; Why do we need the stobj name in the case of ignorep = '(defstobj
-; . stobj)?  The reason is that when we generate the *1* code for the
-; function, fn, we must generate a throw to handle a guard violation
-; and the argument to that throw is an object which includes, among
-; other things, the stobjs-in of fn so we will know how to print them.
-; You might think we would get the stobjs-in of fn from the world.
-; But we can't because this defun is being done under, and as part of,
-; a defstobj and the defstobj will later declare stobj to be a stobj
-; name.  So the stobjs-in of fn in the world right now is wrong.  The
-; stobjs-in we need is built into the object thrown and so won't be
-; overwritten when defstobj gets around to declaring stobj a stobj.
-; So oneify-cltl-code, called below, takes the stobj name as its input
-; and computes the appropriate stobjs-in from the formals.  This is a
-; problem analogous to the one addressed by the super-defun-wart
-; table.
+; Why do we need the stobj name in the case of ignorep = '(defstobj . stobj)?
+; The reason is that when we generate the *1* code for the function, fn, we
+; must generate a throw to handle a guard violation and the argument to that
+; throw is an object which includes, among other things, the stobjs-in of fn so
+; we will know how to print them.  You might think we would get the stobjs-in
+; of fn from the world.  But we can't because this defun is being done under,
+; and as part of, a defstobj or defabsstobj event, and the event will later
+; declare stobj to be a stobj name.  So the stobjs-in of fn in the world right
+; now is wrong.  The stobjs-in we need is built into the object thrown and so
+; won't be overwritten when the event gets around to declaring stobj a stobj.
+; So oneify-cltl-code, called below, takes the stobj name as its input and
+; computes the appropriate stobjs-in from the formals.  This is a problem
+; analogous to the one addressed by the super-defun-wart table.
 
           (let ((ignorep (caddr (cddr trip)))
                 (defun-mode (cadr (cddr trip)))
@@ -5217,13 +5256,14 @@
                     ((and (consp ignorep)
                           (eq (car ignorep) 'defstobj))
 
-; We wait for the cltl-command from the defstobj (which is laid down last by
-; defstobj-fn, using install-event) before defining/compiling the *1*
-; functions, in order to avoid potential "undefined" warnings and, more
-; importantly, to avoid defining *1* functions in terms of undefined macros
-; (for the :inline case), which confuses CCL as described in a comment in
-; defstobj-functionsp.  We still save the existing values (if any) of the
-; current def and the current *1* def; see the next comment about ignorep.
+; We wait for the cltl-command from the defstobj or defabsstobj (which is laid
+; down last by defstobj-fn or defabsstobj-fn, using install-event) before
+; defining/compiling the *1* functions, in order to avoid potential "undefined"
+; warnings and, more importantly, to avoid defining *1* functions in terms of
+; undefined macros (for the :inline case of defstobj and for defabsstobj),
+; which confuses CCL as described in a comment in defstobj-functionsp.  We
+; still save the existing values (if any) of the current def and the current
+; *1* def; see the next comment about ignorep.
 
                      (maybe-push-undo-stack 'defun (car def) ignorep))
                     (t (maybe-push-undo-stack 'defun (car def) ignorep)
@@ -5306,22 +5346,24 @@
                                                    add-trip, ~x0"
                                                   def)))))
                         (eval `(compile ',name)))))))))
-        (defstobj
+        ((defstobj defabsstobj)
 
-; (cddr trip) is of the form 
+; (cddr trip) is of one of the forms
 
-; (DEFSTOBJ name the-live-name init raw-defs template axiomatic-defs).
+; (DEFSTOBJ name the-live-name init raw-defs template axiomatic-defs) or
+; (DEFABSSTOBJ name the-live-name init raw-defs event axiomatic-defs).
 
 ; Init is a form to eval to obtain the initial setting for the live variable.
 ; Each def in raw-defs and in axiomatic-defs is of the form (name args dcl
-; body), where dcl may be omitted.  We defun each raw-def and the oneification
-; of each axiomatic-def.
+; body), where dcl may be omitted.  We make a function or macro definition for
+; each raw-def, and we make a defun for the oneification of each axiomatic-def.
 
-          (let ((name (nth 1 (cddr trip)))
+          (let ((absp (eq (car (cddr trip)) 'defabsstobj))
+                (name (nth 1 (cddr trip)))
                 (the-live-name (nth 2 (cddr trip)))
                 (init (nth 3 (cddr trip)))
                 (raw-defs (nth 4 (cddr trip)))
-                (template (nth 5 (cddr trip)))
+                (discrim (nth 5 (cddr trip)))
                 (ax-defs (nth 6 (cddr trip)))
                 (new-defs
 
@@ -5349,12 +5391,13 @@
                      (or (boundp var)
                          (eval `(defg ,var nil))))
 
-; As with defconst we want to make it look like we eval'd this defstobj
-; in raw lisp, so we set up the redundancy stuff:
+; As with defconst we want to make it look like we eval'd this defstobj or
+; defabsstobj in raw lisp, so we set up the redundancy stuff:
 
             (setf (get the-live-name 'redundant-raw-lisp-discriminator)
-                  (list* 'defstobj (car template) (cadr template)
-                         (caddr template)))
+                  (cond (absp discrim)
+                        (t (list* 'defstobj (car discrim) (cadr discrim)
+                                  (caddr discrim)))))
 
 ; At one point we executed the following form.  But now we see that this is not
 ; necessary, since trans-eval binds stobj names anyhow using *user-stobj-alist*
@@ -5379,8 +5422,8 @@
                                  *user-stobj-alist*))))
 
 ; We eval and compile the raw lisp definitions first, some of which may be
-; macros (because :inline t was supplied), before dealing with the *1*
-; functions.
+; macros (because :inline t was supplied for defstobj, or because we are
+; handling defabsstobj), before dealing with the *1* functions.
 
             (dolist
               (def raw-defs)
@@ -5403,10 +5446,13 @@
                       (car def)))
 
 ; We don't do maybe-push-undo-stack for defuns (whether inlined or not) under
-; the defstobj CLTL-COMMAND, because we did it for their defuns.
+; the defstobj or defabsstobj CLTL-COMMAND, because we did it for their
+; defuns.
 
                     (t
-                     (let ((def (if (member-equal *stobj-inline-declare* def)
+                     (let ((def (cond
+                                 (absp (cons 'defmacro def))
+                                 ((member-equal *stobj-inline-declare* def)
 
 ; We now handle the case where we are going to inline the function calls by
 ; defining the function as a defabbrev.  Note that this is allowed for
@@ -5414,8 +5460,8 @@
 ; speed is often a requirement for efficiency.
 
                                     (cons 'defabbrev
-                                          (remove-stobj-inline-declare def))
-                                  (cons 'defun def))))
+                                          (remove-stobj-inline-declare def)))
+                                 (t (cons 'defun def)))))
                        (setq new-defs (cons def new-defs))))))
             (dolist
               (def ax-defs)
@@ -5441,7 +5487,8 @@
 
                  def
                  (let ((name (cond ((or (eq (car def) 'defun)
-                                        (eq (car def) 'defabbrev))
+                                        (eq (car def) 'defabbrev)
+                                        (eq (car def) 'defmacro))
                                     (cadr def))
                                    ((eq (car def) 'oneify-cltl-code)
                                     (car (caddr def)))
@@ -5453,7 +5500,8 @@
 ; Toy on June 9, 2004 suggests that this appears to be a bug that exists in
 ; CMUCL 18e sources.
 
-                   #+cmu (cond ((not (eq (car def) 'defabbrev))
+                   #+cmu (cond ((and (not (eq (car def) 'defabbrev))
+                                     (not (eq (car def) 'defmacro)))
                                 (eval `(compile ',name))))
                    #-cmu (eval `(compile ',name))))))))
         (defpkg
@@ -5633,15 +5681,17 @@
     (case (car (cddr trip))
           (defuns
 
-; Note that :inlined stobj functions are processed by eval-event-lst
-; as though they are ordinary defuns.  We are relying on the fact that
-; maybe-push-undo-stack handled defun and defmacro the same, so that
-; the form eveluated by maybe-pop-undo-stack will be appropriate even
-; though the "function" is actually a macro (defined by defabbrev).
+; Note that :inlined defstobj functions as well as defabsstobj exported
+; functions are processed by eval-event-lst as though they are ordinary defuns,
+; even though they correspond to macros in raw Lisp (defined by defabbrev and
+; defmacro, respectively).  We are relying on the fact that
+; maybe-push-undo-stack handled defun and defmacro the same, so that the form
+; eveluated by maybe-pop-undo-stack will be appropriate even though the
+; "function" is actually a macro.
 
             (dolist (tuple (cdddr (cddr trip)))
                     (maybe-pop-undo-stack (car tuple))))
-          (defstobj
+          ((defstobj defabsstobj)
             (let ((name (nth 1 (cddr trip)))
                   (the-live-name (nth 2 (cddr trip))))
               (maybe-pop-undo-stack name)
@@ -5671,7 +5721,7 @@
 
             (dolist (tuple (cdddr (cddr trip)))
                     (flush-undo-stack (car tuple))))
-          (defstobj
+          ((defstobj defabsstobj)
             (let ((name (nth 1 (cddr trip)))
                   (the-live-name (nth 2 (cddr trip))))
               (flush-undo-stack name)
@@ -7801,7 +7851,10 @@ Missing functions:
 
 ; (cddr trip) is of the form 
 ; (DEFSTOBJ name the-live-name init raw-defs template)
-; and x here is one of the raw-defs.
+; and x here is one of the raw-defs.  Note that since raw Lisp definitions for
+; defabsstobj are defmacros, we do not deal with defabsstobj, just as we skip
+; the defstobj case when defabbrev is used for raw Lisp definitions, as
+; determined by (member-equal *stobj-inline-declare* x) as shown below.
 
                       (cond
                        ((and (not (gethash (car x) seen))

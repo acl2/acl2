@@ -1837,6 +1837,8 @@
 ;           defthm                   name
 ;           defconst                 name
 ;           defstobj                 (name the-live-var fn1 ... fnk)
+;             [Note: defstobj is the type used for both defstobj and
+;              defabsstobj events.]
 ;           defmacro                 name
 ;           defpkg                   "name"
 ;           deflabel                 name
@@ -5470,7 +5472,8 @@
   A ~ilc[defstobj] is redundant if there is already a ~c[defstobj] event with
   the same name that has exactly the same field descriptors (~pl[defstobj]), in
   the same order, and with the same ~c[:renaming] value if ~c[:renaming] is
-  supplied for either event.
+  supplied for either event.  A ~ilc[defabsstobj] is redundant if there is
+  already an identical ~c[defabsstobj] event.
 
   A ~ilc[defmacro] is redundant if there is already a macro defined with the
   same name and syntactically identical arguments, ~il[guard], and body.

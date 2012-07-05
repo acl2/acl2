@@ -6656,7 +6656,7 @@
      #+:non-standard-analysis defthm-std
      defaxiom
      defconst
-     defstobj
+     defstobj defabsstobj
      defpkg
      deflabel
      defdoc
@@ -10331,9 +10331,9 @@
 
 (defun get-stobj-recognizer (stobj wrld)
 
-; If stobj is a stobj name, return the name of its recognizer; else nil.
-; The value of the 'stobj property is always (*the-live-var* recog ...),
-; for all user defined stobj names.  The value is '(*the-live-state*) for
+; If stobj is a stobj name, return the name of its recognizer; else nil.  The
+; value of the 'stobj property is always (*the-live-var* recognizer creator
+; ...), for all user defined stobj names.  The value is '(*the-live-state*) for
 ; STATE and is nil for all other names.
 
   (cond ((eq stobj 'state)

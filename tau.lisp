@@ -4166,10 +4166,10 @@
 ; name, or 0 indicating the names introduced by the event (0 means no names
 ; were introduced).
 
-; DEFSTOBJ introduces function symbols, some of which are even monadic
-; Booleans.  But we ignore DEFSTOBJ here.  Why?  Because all of the functions
-; introduced by defstobj are introduced by embedded defun events and so we will
-; find defun event-tuples for each.
+; DEFSTOBJ and DEFABSSTOBJ introduce function symbols, some of which are even
+; monadic Booleans.  But we ignore DEFSTOBJ and DEFABSSTOBJ here.  Why?
+; Because all of the functions that they introduce are introduced by embedded
+; defun events and so we will find defun event-tuples for each.
 
 ; ENCAPSULATE introduces function symbols, some of which may be monadic
 ; Booleans or have other tau properties.  But all these properties are

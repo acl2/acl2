@@ -5667,12 +5667,11 @@
   (cond ((endp lst) (value nil))
         ((not (stobjp (car lst) t wrld))
          (er soft ctx
-             "Every name used as a stobj (whether declared explicitly ~
-              via the :STOBJ keyword argument or implicitly via ~
-              *-notation) must have been previously defined as a ~
-              single-threaded object with defstobj.  ~x0 is used as ~
-              stobj name ~#1~[~/in ~@1 ~]but has not been defined as ~
-              a stobj."
+             "Every name used as a stobj (whether declared explicitly via the ~
+              :STOBJ keyword argument or implicitly via *-notation) must have ~
+              been previously defined as a single-threaded object with ~
+              defstobj or defabsstobj.  ~x0 is used as stobj name ~#1~[~/in ~
+              ~@1 ~]but has not been defined as a stobj."
              (car lst)
              msg))
         (t (chk-all-stobj-names (cdr lst) msg ctx wrld state))))
@@ -8151,17 +8150,18 @@
 
   ~c[:STOBJS]~nl[]
   ~c[Value] is either a single ~ilc[stobj] name or a true list of stobj names
-  (~pl[stobj] and ~pl[defstobj]).  Every stobj name among the formals of the
-  function must be listed, if the corresponding actual is to be treated as a
-  stobj.  That is, if a function uses a stobj name as a formal parameter but
-  the name is not declared among the ~c[:stobjs] then the corresponding
-  argument is treated as ordinary.  The only exception to this rule is
-  ~ilc[state]: whether you include it or not, ~c[state] is always treated as a
-  single-threaded object.  This declaration has two effects.  One is to enforce
-  the syntactic restrictions on single-threaded objects.  The other is to
-  strengthen the ~ilc[guard] of the function being defined so that it includes
-  conjuncts specifying that each declared single-threaded object argument
-  satisfies the recognizer for the corresponding single-threaded object.
+  (~pl[stobj] and ~pl[defstobj], and perhaps ~pl[defabsstobj]).  Every stobj
+  name among the formals of the function must be listed, if the corresponding
+  actual is to be treated as a stobj.  That is, if a function uses a stobj name
+  as a formal parameter but the name is not declared among the ~c[:stobjs] then
+  the corresponding argument is treated as ordinary.  The only exception to
+  this rule is ~ilc[state]: whether you include it or not, ~c[state] is always
+  treated as a single-threaded object.  This declaration has two effects.  One
+  is to enforce the syntactic restrictions on single-threaded objects.  The
+  other is to strengthen the ~ilc[guard] of the function being defined so that
+  it includes conjuncts specifying that each declared single-threaded object
+  argument satisfies the recognizer for the corresponding single-threaded
+  object.
 
   ~c[:]~ilc[VERIFY-GUARDS]~nl[]
   ~c[Value] is ~c[t] or ~c[nil], indicating whether or not ~il[guard]s are to be
@@ -8733,25 +8733,26 @@
 
 (defun defstobj-functionsp (names embedded-event-lst)
 
-; This function determines whether all the names in names are being
-; defined as part of a defstobj event.  If so, it returns the
-; name of the stobj; otherwise, nil.
+; This function determines whether all the names in names are being defined as
+; part of a defstobj or defabsstobj event.  If so, it returns the name of the
+; stobj; otherwise, nil.
 
-; Explanation of the context: Defstobj uses defun to define the recognizers,
-; accessors and updaters.  But defstobj must install its own versions of the
-; raw lisp code for these functions, to take advantage of the
-; single-threadedness of their use.  So what happens when defstobj executes
-; (defun name ...), where name is say an updater?  Defuns-fn is run on the
-; singleton list '(name) and the axiomatic def of name.  At the end of the
-; normal processing, defuns-fn computes a CLTL-COMMAND for name.  When this
-; command is installed by add-trip, it sets the symbol-function of name to the
-; given body.  Add-trip also installs a *1*name definition by oneifying the
-; given body.  But in the case of a defstobj function we do not want the first
-; thing to happen: defstobj will compute a special body for the name and
-; install it with its own CLTL-COMMAND.  So to handle defstobj, defuns-fn tells
-; add-trip not to set the symbol-function.  This is done by setting the ignorep
-; flag in the defun CLTL-COMMAND.  So the question arises: how does defun know
-; that the name it is defining is being introduced by defstobj?  This function
+; Explanation of the context: Defstobj and defabsstobj use defun to define the
+; recognizers, accessors and updaters.  But these events must install their own
+; versions of the raw lisp code for these functions, to take advantage of the
+; single-threadedness of their use.  So what happens when defstobj or
+; defabsstobj executes (defun name ...), where name is say an updater?
+; Defuns-fn is run on the singleton list '(name) and the axiomatic def of name.
+; At the end of the normal processing, defuns-fn computes a CLTL-COMMAND for
+; name.  When this command is installed by add-trip, it sets the
+; symbol-function of name to the given body.  Add-trip also installs a *1*name
+; definition by oneifying the given body.  But in the case of a defstobj (or
+; defabsstobj) function we do not want the first thing to happen: we will
+; compute a special body for the name and install it with its own CLTL-COMMAND.
+; So to handle defstobj and defabsstobj, defuns-fn tells add-trip not to set
+; the symbol-function.  This is done by setting the ignorep flag in the defun
+; CLTL-COMMAND.  So the question arises: how does defun know that the name it
+; is defining is being introduced by defstobj or defabsstobj?  This function
 ; answers that question.
 
 ; Note that *1*name should still be defined as the oneified axiomatic body, as
@@ -8772,19 +8773,18 @@
 ;
 ;   (update-progc 3 tiny-state)
 
-; Note: At the moment, defstobj does not introduce any mutually
-; recursive functions.  So every name is handled separately by
-; defuns-fns.  Hence, names, here, is always a singleton, though we do
-; not exploit that.  Also, embedded-event-lst is always a list
-; ee-entries, each being a cons with the name of some superevent like
-; ENCAPSULATE, INCLUDE-BOOK, or DEFSTOBJ, in the car.  The ee-entry
-; for the most immediate superevent is the first on the list.  At the
-; moment, defstobj does not use encapsulate or other structuring
-; mechanisms.  Thus, the defstobj ee-entry will be first on the list.
-; But we look up the list, just in case.  The ee-entry for a defstobj
-; is of the form (defstobj name names) where name is the name of the
-; stobj and names is the list of recognizers, accessors and updaters
-; and their helpers.
+; Note: At the moment, defstobj and defabsstobj do not introduce any mutually
+; recursive functions.  So every name is handled separately by defuns-fns.
+; Hence, names, here, is always a singleton, though we do not exploit that.
+; Also, embedded-event-lst is always a list ee-entries, each being a cons with
+; the name of some superevent like ENCAPSULATE, INCLUDE-BOOK, or DEFSTOBJ
+; (which is also used for DEFABSSTOBJ), in the car.  The ee-entry for the most
+; immediate superevent is the first on the list.  At the moment, defstobj and
+; defabsstobj do not use encapsulate or other structuring mechanisms.  Thus,
+; the defstobj ee-entry will be first on the list.  But we look up the list,
+; just in case.  The ee-entry for a defstobj or defabsstobj is of the form
+; (defstobj name names) where name is the name of the stobj and names is the
+; list of recognizers, accessors and updaters and their helpers.
 
   (let ((temp (assoc-eq 'defstobj embedded-event-lst)))
     (cond ((and temp

@@ -1853,6 +1853,9 @@
 
 (defmacro defstobj (name &rest args)
 
+; Warning: If you change this definition, consider the possibility of making
+; corresponding changes to the #-acl2-loop-only definition of defabsstobj.
+
 ; This function is run when we evaluate (defstobj name . args) in raw lisp.
 ; A typical such form is
 
@@ -17862,7 +17865,9 @@
   Note: Novices are advised to avoid ~c[defstobj], perhaps instead using
   distributed book ~c[books/data-structures/structures.lisp].  At the least,
   consider using ~c[(]~ilc[set-verify-guards-eagerness]~c[ 0)] to avoid
-  ~il[guard] verification.
+  ~il[guard] verification.  On the other hand, after you learn to use
+  ~c[defstobj], ~pl[defabsstobj] for another way to introduce single-threaded
+  objects.
 
   ~bv[]
   Example:
@@ -25765,7 +25770,8 @@
   can be passed into only certain functions in certain slots, and must be
   returned by those functions that ``modify'' it.  Henceforth, we do not
   discuss single-threaded objects in general (which the user can introduce
-  with ~ilc[defstobj]) but one in particular, namely ACL2's ~c[state] object.
+  with ~ilc[defstobj] and ~ilc[defabsstobj]) but one in particular, namely
+  ACL2's ~c[state] object.
 
   The ~i[global table] is perhaps the most visible portion of the state
   object.  Using the interface functions ~c[@] and ~c[assign], a user
@@ -26982,7 +26988,7 @@
     rewrite-entry skip-proofs f-boundp-global
     make-event set-verify-guards-eagerness
     wormhole verify-termination-boot-strap start-proof-tree
-    f-decrement-big-clock defstobj defund defttag
+    f-decrement-big-clock defabsstobj defstobj defund defttag
     defdoc push-gframe defthmd f-get-global
     set-nu-rewriter-mode
 
@@ -37899,7 +37905,7 @@
   warning types and ~pl[set-inhibited-summary-types] for how to inhibit
   individual parts of the summary.
 
-  Printing of events on behalf of ~ilc[certify-book] and ~ilc[encapsulate], is
+  Printing of events on behalf of ~ilc[certify-book] and ~ilc[encapsulate] is
   inhibited when both ~c['event] and ~c['prove] belong to ~c[lst].  Otherwise,
   printing of events is controlled by the ~ilc[ld] special
   ~ilc[ld-pre-eval-print].

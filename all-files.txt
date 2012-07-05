@@ -2213,6 +2213,8 @@ computed-hint.lisp
 congruent-stobjs-test.lisp
 csort.lisp
 dead-events.lisp
+defabsstobj-example-1.lisp
+defabsstobj-example-2.lisp
 defattach-bang.lisp
 defattach-example.lisp
 definline.acl2

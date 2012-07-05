@@ -3889,9 +3889,15 @@ the calls took.")
                (remove-duplicates-eq
                 (loop for x in (union stobjs-in stobjs-out)
                       when x
-                      collect (assert$ (not (and condition
-                                                 (eq x 'state))) ; see memoize-table-chk
-                                       (st-lst (congruent-stobj-rep x wrld)))))))
+                      collect
+                      (assert$
+                       (not (and condition
+                                 (eq x 'state))) ; see memoize-table-chk
+                       (st-lst (congruent-stobj-rep
+                                (or (getprop x 'concrete-stobj nil
+                                             'current-acl2-world wrld)
+                                    x)
+                                wrld)))))))
 
          ;; Number of arguments.  Specials only matter for common lisp functions, see the notes above in memoize-fn.
          ;; Basically if the function reads from specials we want to count them as args.

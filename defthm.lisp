@@ -9506,7 +9506,7 @@
   The ~il[signature] of a clause-processor function, ~c[CL-PROC], must have
   one of the following forms.  Here, each ~c[st_i] is a ~il[stobj] (possibly
   ~c[state]) while the other parameters and results are not stobjs
-  (~pl[defstobj]).  Note that there need not be input stobjs in [3] ~-[] i.e.,
+  (~pl[stobj]).  Note that there need not be input stobjs in [3] ~-[] i.e.,
   ~c[k] can be 0 ~-[] and even if there are, there need not be output stobjs.
   ~bv[]
   [1]  ((CL-PROC cl) => cl-list)
