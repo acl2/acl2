@@ -718,7 +718,7 @@ eg:n/a")
     `(change run-hist% ,fld-nm
              (acl2::|1+F| (access run-hist% ,fld-nm)))))
 
-
+;;;CHANGE:07/05/12:trivially true/false formulas recorded exceptionally.
 (def record-testrun. (test-assignment-was A run-hist% gcs%)
   (decl :sig ((keyword symbol-doublet-listp run-hist%-p gcs%-p)
               ->
@@ -739,7 +739,7 @@ eg:n/a")
                              (gcs% (gcs-1+ cts))
                              (m    (access run-hist% |#cts|))
                              (run-hist% ;TODO:per subgoal num-cts stored??
-                              (if (< m num-cts)
+                              (if (and A (< m num-cts))
                                   (change run-hist% cts (cons A A-cts) )
                                 run-hist%));dont store extra 
                              (run-hist%   (run-hist-1+ cts)))
@@ -753,7 +753,7 @@ eg:n/a")
                              (gcs% (gcs-1+ wts))
                              (m    (access run-hist% |#wts|))
                              (run-hist%   
-                              (if (< m num-wts)
+                              (if (and A (< m num-wts))
                                   (change run-hist% wts (cons A A-wts))
                                 run-hist%));dont store extra
                              (run-hist%   (run-hist-1+ wts)))
@@ -2536,8 +2536,11 @@ Please report to ACL2s maintainer the context in which this happened!~|")
                     (access run-hist% cts)
                   (access run-hist% wts)))
          (elide-map (access s-hist-entry% elide-map)))
-     (if (endp A-lst) ;none found
-         (print-cts/wts (cdr s-hist) cts-p top-vars top-form vl state)
+     (if (endp A-lst) ;none found, yet it claims to be a cts/wts!
+         (prog2$
+          (cw? (normal-output-flag vl) 
+"~| formula is a constant, trivially ~x0.~|" (if cts-p "false" "true"))
+         (print-cts/wts (cdr s-hist) cts-p top-vars top-form vl state))
        (er-progn
         (value (cw? (normal-output-flag vl) "~| [found in : ~x0]~%" name))
         (value (cw? (debug-flag vl) 
@@ -2638,6 +2641,28 @@ history s-hist.")
 ;                         PRINT end                             |
 ;----------------------------------------------------------------
 
+(mutual-recursion
+(defun all-functions-definedp (term wrld)
+  "are all the functions used in term executable?"
+  (declare (xargs :mode :program
+                  :guard (and (pseudo-termp term)
+                              (plist-worldp wrld))))
+  (if (atom term) 
+      T ;vacuously true
+    (let ((fn (ffn-symb term))
+          (args (fargs term)))
+     (and (acl2::logical-namep fn wrld)
+          (all-functions-definedp-lst args wrld)))))
+(defun all-functions-definedp-lst (terms wrld)
+  (declare (xargs :mode :program
+                  :guard (and (pseudo-term-listp terms)
+                              (plist-worldp wrld))))
+  (if (endp terms)
+      T
+    (and (all-functions-definedp (car terms) wrld)
+         (all-functions-definedp-lst (cdr terms) wrld)))))
+              
+        
 
 
 ;; The following function implements a callback function (computed hint)
@@ -2670,6 +2695,11 @@ history s-hist.")
   (b* ((ctx 'acl2::test-checkpoint)
 ;TODObug: test? defaults should be the one to be used
        (vl (acl2s-defaults :get verbosity-level)) 
+;27 June 2012 - Fixed bug, in CCG, some lemmas are non-executable, since they
+;involve calling the very function being defined. We should avoid testing
+;anything that is not executable.
+       ((unless (all-functions-definedp-lst cl (w state)))
+        (value nil))
        ((mv hyps concl) (clause-mv-hyps-concl cl))
        (- (cw? (debug-flag vl)
 "test-checkpoint: id=~x0 and processor=~x1~ hyps=~x2 concl=~x3 ~|" 
