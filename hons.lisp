@@ -117,8 +117,8 @@ supporting hash cons, fast alists, and memoization; ~pl[hons-and-memoization].
 In the logic, ~c[hons-copy] is just the identity function; we leave it enabled
 and would think it odd to ever prove a theorem about it.
 
-Under the hood, ~c[hons-copy] does whatever is necessary to produce a normed
-version of X.~/
+Under the hood, ~c[hons-copy] does whatever is necessary to produce a
+~il[normed] version of X.~/
 
 What might this involve?
 
@@ -180,7 +180,7 @@ In the logic, ~c[hons] is just ~ilc[cons]; we leave it enabled and would think
 it odd to ever prove a theorem about it.
 
 Under the hood, ~c[hons] does whatever is necessary to ensure that its result
-is normed.~/
+is ~il[normed].~/
 
 What might this involve?
 
@@ -219,9 +219,8 @@ recursively checking large cons structures for equality.~/
 Note.  If ~c[hons-equal] is given arguments that do not contain many normed
 objects, it can actually be much slower than ~ilc[equal]!  This is because it
 checks to see whether its arguments are normed at each recursive step, and so
-you are repeatedly paying the price of such checks.  See also
-~ilc[hons-equal-lite], which only checks at the top level whether its arguments
-are normed."
+you are repeatedly paying the price of such checks.  Also ~pl[hons-equal-lite],
+which only checks at the top level whether its arguments are normed."
 
   ;; Has an under-the-hood implementation
   (equal x y))
@@ -268,7 +267,7 @@ it odd to ever prove a theorem about it.
 Under the hood, ~c[hons-clear] brutally (1) clears all the tables that govern
 which conses are ~il[normed], then (2) optionally garbage collects, per the
 ~c[gc] argument, then finally (3) re-norms the keys of ~ilc[fast-alists] and
-persistently normed conses; see ~ilc[hons-copy-persistent].~/
+persistently normed conses; ~pl[hons-copy-persistent].~/
 
 Note.  The hash tables making up the Hons Space retain their sizes after being
 cleared.  If you want to shrink them, see ~ilc[hons-resize].
@@ -339,7 +338,7 @@ the sizes of the tables in the Hons Space.~/
 This information may be useful for deciding if you want to garbage collect
 using functions such as ~ilc[hons-clear] or ~ilc[hons-wash].  It may also be
 useful for determining good initial sizes for the Hons Space hash tables for
-your particular computation; see ~ilc[hons-resize]."
+your particular computation; ~pl[hons-resize]."
 
   ;; Has an under-the-hood implementation
   nil)
@@ -398,7 +397,7 @@ more appropriate initial size may help to reduce this overhead.
 2.  Reducing Memory Usage by Resizing Down
 
 Resizing can also be used to shrink the hash tables.  This might possibly be
-useful immediately after a ~c[hons-clear] to free up memory taken by the hash
+useful immediately after a ~ilc[hons-clear] to free up memory taken by the hash
 tables themselves.  (Of course, the tables will grow again as you create new
 normed objects.)
 
@@ -431,6 +430,70 @@ soon after a ~ilc[hons-clear]."
                    fal-ht persist-ht))
   ;; Has an under-the-hood implementation
   nil)
+
+(defdoc hons-note
+  ":Doc-Section Hons-and-Memoization
+
+notes about ~il[HONS], especially pertaining to expensive resizing operations~/
+
+This ~il[documentation] topic relates to the experimental extension of ACL2
+supporting hash cons, fast alists, and memoization; ~pl[hons-and-memoization].
+
+Certain ``Hons-Notes'' are printed to the terminal to report
+implementation-level information about the management of ~il[HONS] structures.
+Some of these may be low-level and of interest mainly to system developers.
+But below we discuss what users can learn from a particular hons-note,
+``ADDR-LIMIT reached''.  In short: If you are seeing a lot of such hons-notes,
+then you may be using a lot of memory.  (Maybe you can reduce that memory; for
+certain BDD operations, for example (as defined in distributed books
+~c[books/centaur/ubdds/]), variable ordering can make a big difference.)~/
+
+By way of background:
+
+~bq[]
+The ADDR-HT is the main hash table that lets us look up ~il[normed] conses,
+i.e., ~il[hons]es.  It is an ordinary Common Lisp hash table, so when it starts
+to get too full the Lisp will grow it.  It can get really big.  (It has been
+seen to take more than 10 GB of memory just for the hash table's array, not to
+mention the actual conses!)
+
+Hons-Notes may be printed when the ADDR-HT is getting really full.  This growth
+can be expensive and can lead to memory problems.  Think about what it takes to
+resize a hash table:
+
+  (1) allocate a new, bigger array~nl[]
+  (2) rehash elements, copying them into the new array~nl[]
+  (3) free the old array
+
+Until you reach step (3) and a garbage collection takes place, you have to have
+enough memory to have both the old and new arrays allocated.  If the old array
+was 10 GB and we want to allocate a new one that's 15 GB, this can get pretty
+bad.  Also, rehashing the elements is expensive time-wise when there are lots
+of elements.
+
+Since resizing a hash table is expensive, we want to avoid it.  There's a
+~ilc[hons-resize] command for this.  You may want your books to start with
+something like the following.
+
+~bv[]
+  (value-triple (set-max-mem (* 30 (expt 2 30))))      ; 30 GB heap
+  (value-triple (hons-resize :addr-ht #u_100_000_000)) ; 100M honses
+~ev[]
+
+Basically, if you roughly know how many honses your book will need, you can
+just get them up front and then never to resize.~eq[]
+
+The Hons-Notes about ``ADDR-LIMIT reached'' are basically there to warn you
+that the ADDR-HT is being resized.  This can help you realize that your
+~ilc[hons-resize] command had too small of an ADDR-HT size, or might suggest
+that your book should have a ~ilc[hons-resize] command.  There are also
+commands like ~c[(]~ilc[hons-summary]~c[)] and, defined in distributed book
+~c[books/centaur/misc/memory-mgmt-logic.lisp], ~c[(hons-analyze-memory nil)].
+These can show you how many honses you currently have, how much space they are
+taking, and that sort of thing.  (A nice trick is to call ~ilc[hons-summary] at
+the end of a book, to get an idea of how many honses you should ask for in your
+~ilc[hons-resize] command).
+")
 
 (defdoc fast-alists
   ":Doc-Section Hons-and-Memoization
@@ -528,8 +591,8 @@ break (an error from which you can continue) ensues.  For instance:
  (set-slow-alist-action nil)       ; do not warn or break
 ~ev[]
 
-The above forms expand to table events, so they can be embedded in encapsulates
-and books, wrapped in ~ilc[local], and so on.")
+The above forms expand to ~ilc[table] ~il[events], so they can be embedded in
+~ilc[encapsulate]s and ~il[books], wrapped in ~ilc[local], and so on.")
 
 (table hons 'slow-alist-warning :warning)
 
@@ -747,8 +810,7 @@ Logically, ~c[hons-shrink-alist] is defined as follows:
         (hons-shrink-alist (cdr alist) (cons (car alist) ans))))
 ~ev[]
 
-The alist argument need not be a fast alist, and it is not modified by the
-shrink.
+The alist argument need not be a fast alist.
 
 Typically ans is set to nil or some other atom.  In this case, shrinking
 produces a new, fast alist which is like alist except that (1) any
@@ -858,7 +920,7 @@ would think it odd to ever prove a theorem about it.
 
 Under the hood, this function gathers and prints some basic statistics about
 the current fast alists.  It may be useful for identifying fast alists that
-should have been freed with ~ilc[fast-alist-free]~/~/"
+should have been freed with ~ilc[fast-alist-free].~/~/"
 
   ;; Has an under-the-hood implementation
   nil)
@@ -924,7 +986,7 @@ deprecated feature~/
 This ~il[documentation] topic relates to the experimental extension of ACL2
 supporting hash cons, fast alists, and memoization; ~pl[hons-and-memoization].
 
-Deprecated.  Alias for ~ilc[fast-alist-free]~/~/"
+Deprecated.  Alias for ~ilc[fast-alist-free].~/~/"
 
   (fast-alist-free alist))
 

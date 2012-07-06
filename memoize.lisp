@@ -175,42 +175,31 @@
   will execute without error.
   ~bv[]
   ACL2 !>(time$ (fib 40))
-
-  ... took 2,641 milliseconds (2.641 seconds) to run with 8 available
-  CPU cores.  During that period, 2,644 milliseconds (2.644 seconds)
-  were spent in user mode 0 milliseconds (0.000 seconds) were spent in
-  system mode 16 bytes of memory allocated.  102334155 ACL2 !>(memoize
-  'fib)
+  ; (EV-REC *RETURN-LAST-ARG3* ...) took 
+  ; 0.99 seconds realtime, 0.98 seconds runtime
+  ; (1,296 bytes allocated).
+  102334155
+  ACL2 !>(memoize 'fib)
 
   Summary
   Form:  ( TABLE MEMOIZE-TABLE ...)
   Rules: NIL
-  Warnings:  None
-  Time:  0.04 seconds (prove: 0.00, print: 0.00, other: 0.04)
+  Time:  0.01 seconds (prove: 0.00, print: 0.00, other: 0.01)
 
   Summary
   Form:  ( PROGN (TABLE MEMOIZE-TABLE ...) ...)
   Rules: NIL
-  Warnings:  None
-  Time:  0.04 seconds (prove: 0.00, print: 0.00, other: 0.04)
+  Time:  0.01 seconds (prove: 0.00, print: 0.00, other: 0.01)
    FIB
   ACL2 !>(time$ (fib 40))
-
-  ... took 19 milliseconds (0.019 seconds) to run with 8 available CPU
-  cores.  During that period, 20 milliseconds (0.020 seconds) were
-  spent in user mode 0 milliseconds (0.000 seconds) were spent in
-  system mode
-   539,088 bytes of memory allocated.
-   193 minor page faults, 0 major page faults, 0 swaps.
+  ; (EV-REC *RETURN-LAST-ARG3* ...) took 
+  ; 0.00 seconds realtime, 0.00 seconds runtime
+  ; (2,864 bytes allocated).
   102334155
   ACL2 !>(time$ (fib 100))
-
-  ... took 0 milliseconds (0.000 seconds) to run with 8 available CPU
-  cores.  During that period, 0 milliseconds (0.000 seconds) were
-  spent in user mode 0 milliseconds (0.000 seconds) were spent in
-  system mode
-   5,760 bytes of memory allocated.
-   3 minor page faults, 0 major page faults, 0 swaps.
+  ; (EV-REC *RETURN-LAST-ARG3* ...) took 
+  ; 0.00 seconds realtime, 0.00 seconds runtime
+  ; (7,024 bytes allocated).
   354224848179261915075
   ACL2 !>(unmemoize 'fib)
   ~ev[]
@@ -305,19 +294,19 @@
 
   We next discuss the fast lookup operation for association lists.
   When a pair is added to an association list using the functions
-  ~c[hons-acons] or ~c[hons-acons!], the system also records the
+  ~ilc[hons-acons] or ~ilc[hons-acons!], the system also records the
   key-value pair in an associated hash table.  As long as a user only
   used these two functions when placing key-value pairs on an
   association list, the key-value pairs in the corresponding hash
   table will be synchronized with the key-value pairs in the
-  association list.  Later, if ~c[hons-get] is used to look up a key,
+  association list.  Later, if ~ilc[hons-get] is used to look up a key,
   then instead of performing a linear search of the association list
   we consult the associated hash table.  If a user does not strictly
   follow this discipline, then a linear search may be required.  In
   some sense, these association lists are much like ACL2 arrays, but
   without the burden of explicitly naming the arrays.  The ACL2 array
   ~ilc[compress1] function is analogous to the functions
-  ~c[hons-shrink-alist] and ~c[hons-shrink-alist!].  There are
+  ~ilc[hons-shrink-alist] and ~ilc[hons-shrink-alist!].  There are
   user-level ACL2 functions that allow the associated hash tables to
   be cleared and removed.
 
@@ -341,6 +330,16 @@
 
      cd ccl
      svn update
+
+   Whether obtaining a fresh CCL or just updating, finally issue these
+   commands.
+
+     ./lx86cl64
+     (rebuild-ccl :full t)
+     (quit)
+     ./lx86cl64
+     (rebuild-ccl :full t)
+     (quit)
 
   ~ev[]
 
@@ -443,7 +442,7 @@
   This ~il[documentation] topic relates to the experimental extension of ACL2
   supporting hash cons, fast alists, and memoization; ~pl[hons-and-memoization].
 
-  This macro is abbreviation for ~ilc[memoize-summary].  Logically, it just
+  This macro is an abbreviation for ~ilc[memoize-summary].  Logically, it just
   returns ~c[nil].~/~/"
 
   '(memoize-summary))
