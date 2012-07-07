@@ -653,6 +653,11 @@
 ; that we do exactly what we would normally do for condition except
 ; that we use the name condition-fn.
 
+; Parallelism blemish: when waterfall parallelism is enabled (detected by
+; seeing whether ACL2 global 'waterfall-parallelism is non-nil), memoize and
+; unmemoize should be changed to modify the 'saved-memoize-table instead of
+; 'memoize-table.
+
   ":Doc-Section Events
 
   turn on memoization for a specified function~/

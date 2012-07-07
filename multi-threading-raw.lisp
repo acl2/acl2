@@ -788,10 +788,16 @@
 
 (defun wait-on-semaphore (semaphore &key notification timeout)
 
-; This function is guaranteed to return t when it has received the signal.  Its
-; return value when the signal has not been received is unspecified.  As such,
-; we provide the semaphore notification object as a means for determining
-; whether a signal was actually received.
+; This function is guaranteed to return t when there is no timeout provided and
+; the function call received the signal.  Its return value when the signal has
+; not been received is unspecified.  As such, we provide the semaphore
+; notification object as a means for determining whether a signal was actually
+; received.
+
+; Parallelism blemish: if a timeout is included, then it is our intent that a
+; call of this function that times-out should return nil.  This is known to be
+; the case in CCL, but while we have written the code for SBCL and LispWorks,
+; we have not actually tested the code for this property.
 
 ; This function only returns normally after receiving a signal for the given
 ; semaphore, setting the notification status of notification (if supplied and
@@ -812,11 +818,10 @@
   (declare (ignore semaphore notification timeout))
 
   #+ccl
-  (progn 
-    (if timeout
-        (ccl:timed-wait-on-semaphore semaphore timeout notification)
-      (ccl:wait-on-semaphore semaphore notification))
-    t)
+  (if timeout
+      (ccl:timed-wait-on-semaphore semaphore timeout notification)
+    (progn (ccl:wait-on-semaphore semaphore notification)
+           t))
 
   #+(or (and sb-thread (not sbcl-sno-patch)) lispworks)
   (let ((received-signal nil))
@@ -882,12 +887,17 @@
 ; variable portion of the semaphore every time a timeout occurs.  However, that
 ; is the cost of a "live" implementation ("live" loosely means "makes progress").
 
-          (signal-condition-variable (acl2-semaphore-cv semaphore))))))
+        (signal-condition-variable (acl2-semaphore-cv semaphore)))))
+    (if timeout received-signal t))
   #+(and sb-thread sbcl-sno-patch)
-  (progn (sb-thread:wait-on-semaphore semaphore 
-                                      :timeout timeout
-                                      :notification notification)
-         t)
+  (if timeout
+      (sb-thread:wait-on-semaphore semaphore
+                                   :timeout timeout
+                                   :notification notification)
+    (progn (sb-thread:wait-on-semaphore semaphore
+                                        :timeout timeout
+                                        :notification notification)
+           t))
   #-(or ccl sb-thread lispworks)
   t) ; default is to receive a semaphore/lock
 
