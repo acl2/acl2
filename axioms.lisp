@@ -14043,14 +14043,32 @@
 
   ACL2(r) support for real numbers~/
 
-  ACL2 supports rational numbers but not real numbers.  However,
-  starting with Version  2.5, a variant of ACL2 called ``ACL2(r)''
-  supports the real numbers by way of non-standard analysis.  ACL2(r)
-  was conceived and first implemented by Ruben Gamboa in his Ph.D.
-  dissertation work, supervised by Bob Boyer with active participation
-  by Matt Kaufmann.  The Makefile provided with ACL2 has target
-  ~c[large-acl2r] for building ACL2(r) images.  To see
-  which image you have, see if the prompt includes the string ``~c[(r)]'',
+  ACL2 supports rational numbers but not real numbers.  However, starting with
+  Version 2.5, a variant of ACL2 called ``ACL2(r)'' supports the real numbers
+  by way of non-standard analysis.  ACL2(r) was conceived and first implemented
+  by Ruben Gamboa in his Ph.D.  dissertation work, supervised by Bob Boyer with
+  active participation by Matt Kaufmann.
+
+  ACL2(r) has the same source files as ACL2.  After you download ACL2, you can
+  build ACL2(r) by executing the following command on the command line in your
+  acl2-sources directory, replacing ~c[<your_lisp>] with a path to your Lisp
+  executable:
+  ~bv[]
+  make large-acl2r LISP=<your_lisp>
+  ~ev[]
+  This will create an executable in your acl2-sources directory named
+  ~c[saved_acl2r].
+
+  Note that you should also download the `nonstd' books, from
+  ~url[http://www.cs.utexas.edu/users/moore/acl2/current/distrib/acl2-sources/books/nonstd.tar.gz]
+  and then certify them from your acl2-sources directory, shown here as
+  ~c[<DIR>]:
+  ~bv[]
+  make regression-nonstd ACL2=<DIR>/saved_acl2r
+  ~ev[]
+
+  To check that you are running ACL2(r), see if the prompt includes the string
+  ``~c[(r)]'',
   e.g.:
   ~bv[]
   ACL2(r) !>
@@ -14060,22 +14078,17 @@
   In ACL2 (as opposed to ACL2(r)), when we say ``real'' we mean
   ``rational.''~/
 
-  Caution:  ACL2(r) should be considered experimental as of Version
-  2.5: although we (Kaufmann and Moore) have carefully completed
-  Gamboa's integration of the reals into the ACL2 source code, our
-  primary concern to date has been to ensure unchanged behavior when
-  ACL2 is compiled in the default manner, i.e., without the
-  non-standard extensions.  As for every release of ACL2, at the time
-  of this release we are unaware of soundness bugs in ACL2 Version  2.5.
-  We are confident that ACL2(r) will behave much as it does now and will
-  ultimately be sound; but we have not yet argued the soundness of
-  every detail of the integration.
+  Caution: ACL2(r) should be considered experimental: although we (Kaufmann and
+  Moore) have carefully completed Gamboa's integration of the reals into the
+  ACL2 source code, our primary concern has been to ensure unchanged behavior
+  when ACL2 is compiled in the default manner, i.e., without the non-standard
+  extensions.  As for every release of ACL2, at the time of a release we are
+  unaware of soundness bugs in ACL2 or ACL2(r).
 
-  There is only limited documentation on the non-standard features of
-  ACL2(r).  We hope to provide more documentation for such features in
-  future releases.  Please feel free to query the authors if you are
-  interested in learning more about ACL2(r).  Gamboa's dissertation
-  may also be helpful.~/")
+  There is only limited documentation on the non-standard features of ACL2(r).
+  We hope to provide more documentation for such features in future releases.
+  Please feel free to query the authors if you are interested in learning more
+  about ACL2(r).  Gamboa's dissertation may also be helpful.~/")
 
 (defun floor (i j)
 
@@ -27446,7 +27459,7 @@
     (fmt-hard-right-margin . 77)
     (fmt-soft-right-margin . 65) ; same as proof-tree-buffer-width
     (gag-mode . nil) ; set in lp
-    (gag-mode-evisc-tuple . :default)
+    (gag-mode-evisc-tuple . nil)
     (gag-state . nil)
     (gag-state-saved . nil) ; saved when gag-state is set to nil
     (global-enabled-structure . nil) ; initialized in enter-boot-strap-mode

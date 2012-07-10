@@ -5245,18 +5245,10 @@
 
 (defun gag-mode-evisc-tuple (state)
   (cond ((gag-mode)
-         (let ((evisc-tuple (f-get-global 'gag-mode-evisc-tuple state)))
-           (cond
-            ((eq evisc-tuple :default)
-             (or (term-evisc-tuple nil state)
-                 (evisc-tuple 6 ; print-level
-                              7 ; print-length
-                              nil ; alist
-                              nil ; hiding-cars
-                              )))
-            ((eq evisc-tuple t)
-             t)
-            (t evisc-tuple))))
+         (let ((val (f-get-global 'gag-mode-evisc-tuple state)))
+           (if (eq val :DEFAULT)
+               nil
+             val)))
         (t (term-evisc-tuple nil state))))
 
 (defun ld-evisc-tuple (state)

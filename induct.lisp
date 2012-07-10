@@ -2544,7 +2544,7 @@
                   (cons #\5 (- len-merged-candidates
                                len-unvetoed-candidates))
                   (cons #\q len-unvetoed-candidates)
-                  (cons #\y (gag-mode-evisc-tuple state))
+                  (cons #\y (gag-mode-evisc-tuple state)) ; is not t
                   (cons #\r (zero-one-or-more len-unvetoed-candidates))
                   (cons #\6 (if (int= (- len-merged-candidates
                                          len-unvetoed-candidates)

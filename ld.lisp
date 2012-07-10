@@ -18632,9 +18632,8 @@
   There have been several changes to ~il[gag-mode].  It is now is initially set
   to ~c[:goals], suppressing most proof commentary other than key checkpoints;
   ~pl[set-gag-mode].  Also, top-level induction schemes are once again printed
-  when gag-mode is enabled.  Printing of large induction schemes is abbreviated
-  by default, but this may be modified, and such printing can even be
-  suppressed; ~pl[set-evisc-tuple], in particular the discussion there of
+  when gag-mode is on, though these can be suppressed with a new
+  ~il[evisc-tuple]; ~pl[set-evisc-tuple], in particular the discussion there of
   ~c[:GAG-MODE].  Finally, the commentary printed within ~il[gag-mode] that is
   related to ~il[forcing-round]s is now less verbose.  Thanks to Dave Greve and
   David Rager for discussions leading to the change in the printing of
