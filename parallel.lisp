@@ -876,6 +876,8 @@
        (er-let*
         ((new-val (set-waterfall-parallelism1 ,val)))
         (cond
+         ((eq new-val :IGNORED)
+          (value '(value-triple :IGNORED)))
          #+hons
          ((and (null old-val) (car new-val))
           (pprogn
