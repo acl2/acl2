@@ -1097,11 +1097,6 @@
 ;
 ; ----------------------------------------------------------------------------
 
-(deflist cons-list-listp (x)
-  (cons-listp x)
-  :elementp-of-nil t
-  :guard t)
-
 (defsection vcd-dump-snapshots-loop
 
 ; BOZO if we start using parallelism, this loop could be split up and

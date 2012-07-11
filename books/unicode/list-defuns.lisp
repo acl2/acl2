@@ -20,6 +20,7 @@
 (local (include-book "append"))
 (local (include-book "list-fix"))
 (local (include-book "flatten"))
+(local (include-book "final-cdr"))
 (local (include-book "prefixp"))
 (local (include-book "take"))
 (local (include-book "repeat"))
@@ -108,3 +109,9 @@
                   nil
                 (cons x (repeat x (- n 1))))
        :exec (make-list n :initial-element x)))
+
+(defund final-cdr (x)
+  (declare (xargs :guard t))
+  (if (atom x)
+      x
+    (final-cdr (cdr x))))

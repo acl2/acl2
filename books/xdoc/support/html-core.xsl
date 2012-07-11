@@ -215,6 +215,18 @@
   </xsl:for-each>
 </xsl:template>
 
+<xsl:template match="stv_internals">
+  <xsl:for-each select="stv_line">
+   <tr class="stv_internal_line"><xsl:apply-templates/></tr>
+  </xsl:for-each>
+</xsl:template>
+
+<xsl:template match="stv_initials">
+  <xsl:for-each select="stv_line">
+   <tr class="stv_initial_line"><xsl:apply-templates/></tr>
+  </xsl:for-each>
+</xsl:template>
+
 <xsl:template match="stv_name">
   <th class="stv_name"><xsl:apply-templates/></th>
 </xsl:template>

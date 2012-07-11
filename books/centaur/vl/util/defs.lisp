@@ -1092,6 +1092,11 @@ behavior in cases like:</p>
   (consp x)
   :elementp-of-nil nil)
 
+(deflist cons-list-listp (x)
+  (cons-listp x)
+  :elementp-of-nil t)
+
+
 
 
 

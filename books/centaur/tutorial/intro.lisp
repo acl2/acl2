@@ -62,8 +62,8 @@
 (include-book "centaur/vl/top" :dir :system)
 (include-book "centaur/gl/gl" :dir :system)
 (include-book "centaur/aig/g-aig-eval" :dir :system)
-(include-book "centaur/esim/esim-sexpr-correct" :dir :system)
-(include-book "centaur/esim/stv" :dir :system)
+(include-book "centaur/esim/stv/stv-top" :dir :system)
+(include-book "centaur/esim/stv/stv-debug" :dir :system)
 (include-book "centaur/4v-sexpr/top" :dir :system)
 (include-book "tools/plev-ccl" :dir :system)
 (include-book "centaur/misc/memory-mgmt-raw" :dir :system)
@@ -75,6 +75,18 @@
 
 (def-gl-clause-processor my-glcp nil)
 
+
+(defxdoc esim-tutorial
+  :parents (esim)
+  :short "Placeholder topic for tutorial-related things."
+
+  :long "<p>To see the centaur books tutorial, please go to this file:</p>
+
+<code>
+centaur/tutorial/intro.lisp
+</code>
+
+<p>in your ACL2 books directory (sometimes called <tt>:dir :system</tt>).</p>")
 
 
 ; NEXT STEP:

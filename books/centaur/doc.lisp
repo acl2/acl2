@@ -49,7 +49,8 @@
 
 (include-book "4v-sexpr/top")
 
-(include-book "esim/stv")
+(include-book "esim/stv/stv-top")
+(include-book "esim/stv/stv-debug")
 (include-book "esim/esim-sexpr-correct")
 
 
@@ -72,6 +73,7 @@
 
 (include-book "tutorial/intro")
 (include-book "tutorial/alu16-book")
+(include-book "tutorial/counter")
 
 
 

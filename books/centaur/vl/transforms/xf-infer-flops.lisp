@@ -956,7 +956,10 @@ the module.</li>
                                    :range nil
                                    :paramargs (vl-arguments nil nil)
                                    :portargs portargs
-                                   ;; atts?
+                                   :atts (list (cons (if (eq type :flop)
+                                                         "VL_FLOP_GUTS"
+                                                       "VL_LATCH_GUTS")
+                                                     (make-vl-atom :guts (vl-string lhs-name))))
                                    :loc loc)))
 
         (mv t warnings reg inst addmods

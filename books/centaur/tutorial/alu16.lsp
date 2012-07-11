@@ -29,10 +29,11 @@
 ; there is a bug in its COUNT operation.
 ;
 ; This is a .lsp file instead of a .lisp file because we have several
-; non-embeddable events.  But you could take them out, or put them in
-; value-triple forms, or similar in order to turn this into a proper book that
-; can be certified by ACL2 as usual.  (Usually our proof scripts are
-; certifiable books, so we can just use cert.pl to run them.)
+; non-embeddable events.  You could take these out, or put them in value-triple
+; forms, or similar in order to turn this into a proper book that can be
+; certified by ACL2 as usual; we've done this in alu16-book.lisp, but it's
+; better to read this .lsp file because the book version is missing lots of
+; comments.
 
 (in-package "ACL2")
 
@@ -82,7 +83,8 @@
 ;
 ; -----------------------------------------------------------------------------
 
-; The file alu16.v contains a very simple ALU module that we will verify.
+; The file alu16.v contains a very simple ALU module that we will verify.  You
+; should probably look at it now, and then come back.
 ;
 ; Our first task is to build a model of this Verilog code.  A convenient way to
 ; do this is with VL's DEFMODULES command.  This command has many options
@@ -101,7 +103,7 @@
 ; If you ask ACL2 to print *translation*, you will see that several parts of it
 ; are hidden.  This is because of the (plev) command we issued above, and it is
 ; really a very good thing.  If you disable plev, e.g., by typing (plev-max),
-; and ask ACL2 to print *translation*, then you will end up with over 100,000
+; and ask ACL2 to print *translation*, then you will end up with over 100,000]
 ; lines of output, and it will probably take over a minute.  PLEV protects you
 ; from this kind of thing.
 ;
@@ -187,7 +189,7 @@
 ; cycles).  But we will use them anyway, because they are easy and convenient.
 ; In this case, our STV is just:
 
-(defstv *test-vector*       ;; name for this test vector
+(defstv test-vector         ;; name for this test vector
   :mod *alu16*              ;; the module this vector pertains to
   :inputs
   '(("opcode" op)           ;; verilog name --> inputs we are going to supply
@@ -198,14 +200,20 @@
   :outputs                  ;; verilog name --> variable names we will use
   '(("out"    res)))
 
+; This DEFSTV command introduces several things, but among them is a 0-ary
+; function, (test-vector), that is a "processed STV" object.
+
 
 ; With this STV defined, we can try running it on concrete inputs.  But we will
-; need to supply the right opcodes.  For this tutorial, we'll just manually
-; recreate the list of opcodes that are in alu16.v.
+; need to supply the right opcodes.
 ;
-; If we were doing a more serious verification project, we could extract the
-; `defines from the Verilog automatically.  The *translation* object records
-; the defines that were encountered; see also :XDOC VL::VL-DEFINES-P.
+; If this was not just a tutorial but were instead a serious ALU that we cared
+; about and that logic designers were updating, we could extract the `defines
+; from the Verilog automatically.  The *translation* object records the defines
+; that were encountered; see also :XDOC VL::VL-DEFINES-P.
+;
+; But let's keep things easy and just manually recreate the opcode list,
+; instead.
 
 (defconst *op-plus*    0)
 (defconst *op-minus*   1)
@@ -220,7 +228,7 @@
 ; input alists need to give values for the input variables of the vector, i.e.,
 ; OP, A, and B.
 
-(stv-run *test-vector*
+(stv-run (test-vector)
          `((op . ,*op-plus*)
            (a  . 5)
            (b  . 3)))
@@ -233,17 +241,17 @@
 ; is very useful in theorems.  But when we're just doing concrete runs, this
 ; output can be irritating.  You can turn it off by adding :quiet t, like this:
 
-(stv-run *test-vector*
+(stv-run (test-vector)
          `((op . ,*op-mult*)
            (a  . 5)
            (b  . 3))
          :quiet t)
 
-(i-am-here)
-; If you have installed GTKWave and configured your PATH so that you can run
-; it by typing "gtkwave", then you can also generate a waveform:
 
-(stv-debug *test-vector*
+; Now, if you have installed GTKWave and configured your PATH so that you can
+; run it by typing "gtkwave", then you can also generate a waveform.  
+
+(stv-debug (test-vector)
            `((op . ,*op-min*)
              (a  . 5)
              (b  . 3)))
@@ -251,7 +259,7 @@
 ; Note that you can also supply X values, and that X values can propagate
 ; through the circuit.  For instance, this produces the result X:
 
-(stv-run *test-vector*
+(stv-run (test-vector)
          `((op . ,*op-plus*)
            (a  . X)
            (b  . 3)))
@@ -260,14 +268,14 @@
 ; operation pays no attention to its B bus, so you can send an X in, and still
 ; it will count the 8 bits of A:
 
-(stv-run *test-vector*
+(stv-run (test-vector)
          `((op . ,*op-count*)
            (a  . #xFF00)
            (b  . X)))
 
 ; Leaving out an input is equivalent to setting it to X:
 
-(stv-run *test-vector*
+(stv-run (test-vector)
          `((op . ,*op-count*)
            (a  . #xFF00)))
 
@@ -280,16 +288,8 @@
 ; -----------------------------------------------------------------------------
 
 ; Now let's do some proofs to show that ALU16 carries out its operations
-; correctly.  We'll make use of an auxilliary function for recognizing n-bit
-; natural numbers "vectors":
-
-(defun vecp (n x)
-  (and (natp x)
-       (<= 0 x)
-       (< x (expt 2 n))))
-
-; We are going to use GL to do these proofs.  You can read an introduction to
-; GL in the following paper:
+; correctly.  We are going to use GL to do these proofs.  You can read an
+; introduction to GL in the following paper:
 ;
 ;   Sol Swords and Jared Davis.  Bit-Blasting ACL2 Theorems.  ACL2 Workshop
 ;   2011.  November, 2011.  EPTCS 70.  Pages 84--102.
@@ -306,9 +306,9 @@
 
   ;; Hypothesis: OP, A, and B are bit-vectors of the appropriate sizes, and
   ;; furthermore OP is the PLUS opcode.
-  :hyp (and (vecp 3 op)
-            (vecp 16 a)
-            (vecp 16 b)
+  :hyp (and (unsigned-byte-p 3 op)
+            (unsigned-byte-p 16 a)
+            (unsigned-byte-p 16 b)
             (equal op *op-plus*))
 
   ;; Conclusion: Suppose we construct an IN-ALIST from OP, A, and B, and run
@@ -317,7 +317,7 @@
   :concl (let* ((in-alist (list (cons 'op op)
                                 (cons 'a  a)
                                 (cons 'b  b)))
-                (out-alist (stv-run *test-vector* in-alist))
+                (out-alist (stv-run (test-vector) in-alist))
                 (res       (cdr (assoc 'res out-alist))))
            (equal res (mod (+ a b) (expt 2 16))))
 
@@ -339,16 +339,16 @@
 (def-gl-thm better-proof-that-alu16-adds
 
   ;; Same as above.
-  :hyp (and (vecp 3 op)
-            (vecp 16 a)
-            (vecp 16 b)
+  :hyp (and (unsigned-byte-p 3 op)
+            (unsigned-byte-p 16 a)
+            (unsigned-byte-p 16 b)
             (equal op *op-plus*))
 
   ;; Same as above.
   :concl (let* ((in-alist (list (cons 'op op)
                                 (cons 'a  a)
                                 (cons 'b  b)))
-                (out-alist (stv-run *test-vector* in-alist))
+                (out-alist (stv-run (test-vector) in-alist))
                 (res       (cdr (assoc 'res out-alist))))
            (equal res (mod (+ a b) (expt 2 16))))
 
@@ -360,30 +360,58 @@
 
 
 ; At this point we'd like to verify the rest of the operations.  The proofs
-; share so much in common that macros become very useful:
+; share so much in common that macros become very useful.
+
+; For one, it'd be nice to have a macro that fills in these simple type
+; hypothese.  We might write something like this:
+
+;; (defmacro alu16-type-hyps ()
+;;   `(and (unsigned-byte-p 3 op)
+;;         (unsigned-byte-p 16 a)
+;;         (unsigned-byte-p 16 b)))
+
+; But the DEFSTV command above actually already defined this macro for us!
+; To see what else it did, you can run:
+
+(pcb 'test-vector)  ;;   or equivalently and more commonly, :pcb test-vector
+
+; The particular macro we want here is (test-vector-autohyps)
+(pe 'test-vector-autohyps)
 
 
-(defmacro alu16-type-hyps ()
-  `(and (vecp 3 op)
-        (vecp 16 a)
-        (vecp 16 b)))
+; Next, it'd be nice to automate the call of stv-run and the extraction of the
+; result.  The DEFSTV command gives us a macro that can generate the input
+; alist for us:
+
+(pe 'test-vector-autoins)
+
+; But maybe we'd like to do a bit more.  Here's a nice macro that runs the STV
+; and extracts RES from the output alist:
+
+(defmacro alu16-basic-result ()
+  `(let* ((in-alist  (test-vector-autoins))
+          (out-alist (stv-run (test-vector) in-alist))
+          (res       (cdr (assoc 'res out-alist))))
+     res))
+
+
+; Finally, we'd like to reuse the same G bindings across lots of proofs.  The
+; DEFSTV command gave us a (test-vector-autobinds) macro, but it has the "bad"
+; bindings.  We'd rather use the "good" bindings where A and B are mixed most
+; of the time.
 
 (defmacro alu16-default-bindings ()
   `(gl::auto-bindings (:nat op 3)
                       (:mix (:nat a 16)
                             (:nat b 16))))
 
-(defmacro alu16-basic-result ()
-  `(let* ((in-alist (list (cons 'op op)
-                          (cons 'a  a)
-                          (cons 'b  b)))
-          (out-alist (stv-run *test-vector* in-alist))
-          (res       (cdr (assoc 'res out-alist))))
-     res))
+
+; Putting it all together, we can come up with a pretty decent macro for doing
+; proofs about the alu16 module.
 
 (defmacro alu16-thm (name &key opcode spec (g-bindings '(alu16-default-bindings)))
   `(def-gl-thm ,name
-     :hyp (and (alu16-type-hyps)
+     :hyp (and (test-vector-autohyps)
                (equal op ,opcode))
      :concl (equal (alu16-basic-result) ,spec)
      :g-bindings ,g-bindings))
@@ -454,7 +482,7 @@
 ; You can now easily copy/paste this "STV Raw Inputs" alist and give it to
 ; stv-debug:
 
-(stv-debug *test-vector*
+(stv-debug (test-vector)
            '((OP . 6) (A . 62963) (B . 31362)))
 
 ; This will bring up GTKWave or some other waveform viewer and let you explore
@@ -469,11 +497,11 @@
 
 (defmacro fancier-alu16-thm (name &key opcode spec (g-bindings '(alu16-default-bindings)))
   `(def-gl-thm ,name
-     :hyp (and (alu16-type-hyps)
+     :hyp (and (test-vector-autohyps)
                (equal op ,opcode))
      :concl (b* ((impl (alu16-basic-result))
                  (spec ,spec))
-              (cw "Spec: ~s0~%" (hexify spec))
+              (cw "Spec: ~s0~%" (str::hexify spec))
               (equal impl spec))
      :g-bindings ,g-bindings))
 
@@ -493,7 +521,8 @@
 
 ; As your spec gets more elaborate, you can include important intermediate
 ; values, etc., to make debugging easier.  I suppose you could even get it
-; to launch the waveform viewer automatically, if that's what you wanted.
+; to launch the waveform viewer automatically, if that's what you wanted,
+; but I think that'd be more awkward than beneficial.
 
 
 ; The last operation is multiplication.
@@ -522,3 +551,14 @@
 ; using our BDD package with this particular ordering.  In general, when you
 ; start to hit a performance problem, you will have to find a better tool, or
 ; do something clever to simplify or split up the proof.
+
+
+
+
+; NEXT STEP:
+;
+; You might like to see alu16-book.lisp, for the cleaned up version of this
+; file.
+;
+; Then, continue to counter.lisp, where we look at a simple counter module
+; with some state.

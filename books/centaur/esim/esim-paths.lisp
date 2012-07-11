@@ -415,3 +415,44 @@ a path is valid.</p>"
 (defmvtypes fast-canonicalize-paths
   (booleanp true-listp))
 
+
+
+(defsection follow-esim-path
+  :parents (mod-internal-paths)
+  :short "Walk down a list of instance names (or a path) and retrieve the ESIM
+module it points to."
+
+  :long "<p>@(call follow-esim-path) returns an ESIM module on success, or
+<tt>nil</tt> for failure.</p>
+
+<p>We are given <tt>instnames</tt>, which should be a list of instance names,
+and <tt>mod</tt>, which should be a good @(see esim) module.  We try to follow
+these names down through the occurrences of <tt>mod</tt> and return the
+submodule they point to.</p>
+
+<p>Note that <tt>instnames</tt> need not be a true-listp, so you can use this
+function to look up the module associated with an ESIM path without needing to
+list-fix the path or similar.</p>"
+
+  (defund follow-esim-path (instnames mod)
+    "Returns SUBMOD or NIL."
+    (declare (xargs :guard t))
+    (b* (((when (atom instnames))
+          mod)
+         (name1 (car instnames))
+         (occ   (cdr (hons-get name1 (occmap mod)))))
+      (and occ
+           (follow-esim-path (cdr instnames) (gpl :op occ)))))
+
+  (local (in-theory (enable follow-esim-path)))
+
+  (defthm good-esim-modulep-of-follow-esim-path
+    (implies (good-esim-modulep mod)
+             (good-esim-modulep (follow-esim-path instnames mod)))
+    :hints(("Goal"
+            :induct (follow-esim-path instnames mod)
+            :in-theory (disable good-esim-modulep)))))
+
+
+
+

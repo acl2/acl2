@@ -388,6 +388,23 @@ function with optimized EQ/EQL/EQUAL testing.</p>"
                       (member-equal-of-pat-flatten-aux a pat))))))
 
 
+(defsection subsetp-of-pat-flatten
+  :parents (patterns)
+  :short "@(call subsetp-of-pat-flatten) is an optimized way to ask if
+<tt>x</tt> is a subset of <tt>(pat-flatten1 pat)</tt>."
+
+  :long "<p>This just avoids flattening the pattern.  Don't expect it to be
+super fast; it's still O(n^2).</p>"
+
+  (defun subsetp-of-pat-flatten (x pat)
+    (declare (xargs :guard t))
+    (mbe :logic (subsetp-equal x (pat-flatten1 pat))
+         :exec (if (atom x)
+                   t
+                 (and (member-of-pat-flatten (car x) pat)
+                      (subsetp-of-pat-flatten (cdr x) pat))))))
+
+
 (defsection assoc-pat->al
   :parents (patterns)
   :short "@(call assoc-pat->al) is an optimized way to look up a particular
