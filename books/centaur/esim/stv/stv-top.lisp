@@ -585,9 +585,12 @@ used in the <tt>:g-bindings</tt> of a @(see def-gl-thm) about your STV.</dd>
 some kind of ALU then we probably want to <tt>:mix</tt> the <tt>abus</tt> and
 <tt>bbus</tt>.  But the generated bindings just use whatever variable order is
 suggested by the initial and input lines, and doesn't smartly mix together
-signals.  If your module is small or you're using @(see gl-aig-mode), then this
-may be fine and very convenient.  For more complex modules, you'll probably
-want to write your own binding macros.</dd>
+signals.</dd>
+
+<dd>If your module is small or you're using @(see gl-aig-mode), then this may
+be fine and very convenient.  For more complex modules, you'll probably want to
+write your own binding macros.  See @(see stv-easy-bindings) for a high-level
+way to describe most kind of bindings.</dd>
 
 </dl>"
 
@@ -740,4 +743,79 @@ acl2::defstv).</p>"
                      ,labels ',parents ,short ,long)))
         event))))
 
+
+(defsection stv-easy-bindings
+  :parents (symbolic-test-vectors)
+  :short "Generating G-bindings from an STV in a particular way."
+
+  :long "<p>@(call stv-easy-bindings) returns a list of G-bindings.  That is,
+you can write something like:</p>
+
+<code>
+ (def-gl-thm foo
+    ...
+    :g-bindings
+    (stv-easy-bindings (my-stv) '(opcode size special (:mix a b) c)))
+</code>
+
+<p>The format of <tt>x</tt> is simple: you can list out STV inputs and also use
+<tt>(:mix a b c ...)</tt> where <tt>a</tt>, <tt>b</tt>, <tt>c</tt>, ... are all
+STV inputs.</p>
+
+<p>Bindings will be generated in the order specified, e.g., in the above
+example the <tt>opcode</tt> will have the smallest indices, then <tt>size</tt>
+next, etc.</p>
+
+<p>You do <b>not</b> have to mention all of the STV variables.  All unmentioned
+variables will be assigned indices after mentioned variables.</p>
+
+<p>An especially nice feature of easy-bindings is that they automatically
+adjust when inputs to the STV are resized, when new inputs are added, and when
+irrelevant inputs are removed.</p>"
+
+  (defund stv-easy-bindings-inside-mix (x stv)
+    (declare (xargs :guard (processed-stv-p stv)))
+    (cond ((atom x)
+           nil)
+          ((symbolp (car x))
+           ;; Should be an STV input.
+           (cons `(:nat ,(car x) ,(stv-in->width (car x) stv))
+                 (stv-easy-bindings-inside-mix (cdr x) stv)))
+          (t
+           ;; Anything else is illegal inside mix.
+           (er hard? 'stv-easy-bindings-inside-mix
+               "Inside a :mix you can only have symbols (the names of stv
+              inputs), ~ so ~x0 is illegal." (car x)))))
+
+  (defund stv-easy-bindings-main (x stv)
+    (declare (xargs :guard (processed-stv-p stv)))
+    (cond ((atom x)
+           nil)
+          ((symbolp (car x))
+           ;; Should be an STV input.
+           (cons `(:nat ,(car x) ,(stv-in->width (car x) stv))
+                 (stv-easy-bindings-main (cdr x) stv)))
+          ((and (consp (car x))
+                (equal (caar x) :mix))
+           (let ((things-to-mix (cdar x)))
+             (if (consp things-to-mix)
+                 (cons `(:mix . ,(stv-easy-bindings-inside-mix things-to-mix stv))
+                       (stv-easy-bindings-main (cdr x) stv))
+               (er hard? 'stv-easy-bindings-main
+                   ":MIX with no arguments? ~x0" (car x)))))
+          (t
+           (er hard? 'stv-easy-bindings-main
+               "Arguments to stv-easy-bindings should be input names or ~
+              (:mix input-name-list), so ~x0 is illegal." (car x)))))
+
+  (defun stv-easy-bindings (stv x)
+    (declare (xargs :guard (processed-stv-p stv)
+                    :mode :program))
+    (b* ((binds   (stv-easy-bindings-main x stv))
+         (unbound (set-difference-equal (stv->ins stv)
+                                        (pat-flatten1 binds))))
+      (gl::auto-bindings-fn
+       (append binds
+               ;; bozo ugly, but workable enough...
+               (stv-easy-bindings-inside-mix unbound stv))))))
 
