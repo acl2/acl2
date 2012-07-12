@@ -7827,17 +7827,11 @@
 
   ~i[Technical Details]
 
-  The tau system's decision procedure is disabled by default, for backwards
-  compatibility.  To enable it globally do
-  ~bv[]
-  (in-theory (enable (:executable-counterpart tau-system)))
-  ~ev[]
-  Alternatively, ~pl[tau-status].  Note therefore that there are two ``modes''
-  controlling the tau system: one controls whether or not the algorithm is
-  employed in theorem proving, the other controls whether the data base is
-  built only from ~c[:tau-system] rules (``manual'' mode) or from any rule of
-  suitable form (``automatic'' mode).  Both modes may be set by
-  ~ilc[tau-status].
+  There are two ``modes'' controlling the tau system: one controls whether or
+  not the algorithm is employed in theorem proving, the other controls whether
+  the data base is built only from ~c[:tau-system] rules (``manual'' mode) or
+  from any rule of suitable form (``automatic'' mode).  Both modes may be set
+  by ~c[tau-status]; ~pl[tau-status].
 
   However, to be effective, the tau system must be ``programmed'' with rules.
   These rules are generally either statements of establishing that one monadic

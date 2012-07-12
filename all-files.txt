@@ -605,15 +605,27 @@ esim-sexpr.lisp
 esim-spec.lisp
 esim-vcd.lisp
 esim-vl.lisp
+follow-backwards.lisp
 local-theory.lisp
 packages.lsp
 plist.lisp
 portcullis.acl2
 portcullis.lisp
 steps.lisp
+stv
+
+books/centaur/esim/stv:
+acl2-customization.lsp
+cert.acl2
 stv-compile.lisp
+stv-debug.lisp
+stv-doc.lisp
 stv-expand.lisp
-stv.lisp
+stv-run.lisp
+stv-sim.lisp
+stv-top.lisp
+stv-util.lisp
+stv-widen.lisp
 
 books/centaur/gl:
 always-equal-prep.lisp
@@ -748,6 +760,8 @@ alu16-book.lisp
 alu16.lsp
 alu16.v
 cert.acl2
+counter.lisp
+counter.v
 intro.lisp
 
 books/centaur/ubdds:
@@ -912,6 +926,7 @@ comment-writer.lisp
 context.lisp
 ctxexprs.lisp
 expr-building.lisp
+expr-parse.lisp
 expr-slice.lisp
 expr-tools.lisp
 filter.lisp
@@ -4150,6 +4165,7 @@ consless-listp.lisp
 explode-atom.lisp
 explode-nonnegative-integer.lisp
 file-measure.lisp
+final-cdr.lisp
 flatten.lisp
 intern-in-package-of-symbol.lisp
 list-defuns.lisp
