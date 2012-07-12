@@ -18867,7 +18867,8 @@
   ~il[guard] checks.  Thanks to Warren Hunt for a request leading us to design
   and implement this new feature, and thanks to Rob Sumners for a request
   leading us to implement a related utility, ~ilc[defabsstobj-missing-events].
-  ~l[defabsstobj].
+  ~l[defabsstobj].  Also thanks to Sol Swords for sending an example exhibiting
+  a bug in the initial implementation, which has been fixed.
 
   ~st[HEURISTIC IMPROVEMENTS]
 
