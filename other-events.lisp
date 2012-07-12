@@ -22904,11 +22904,11 @@
                                    (formula guard-thm nil wrld))))
                         (cond
                          (taut-p nil)
+                         ((null old-guard-thm-formula)
+                          `(,guard-thm ,expected-guard-thm-formula))
                          ((one-way-unify-p old-guard-thm-formula
                                            expected-guard-thm-formula)
                           nil)
-                         ((null old-guard-thm-formula)
-                          `(,guard-thm ,expected-guard-thm-formula))
                          (t `(,guard-thm
                               ,expected-guard-thm-formula
                               ,@old-guard-thm-formula)))))))
