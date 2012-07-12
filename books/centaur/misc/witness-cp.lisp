@@ -41,7 +41,7 @@
 ;; various sets of rules to do "witnessing" transformations.  Taking set-based
 ;; reasoning as an example,  we might want to look at hypotheses of the form
 ;; (subsetp-equal a b) and conclude specific examples such as
-;; (or (not (member-equal k a)) (member-equal k b)) for various k.  We might
+;; (implies (member-equal k a) (member-equal k b)) for various k.  We might
 ;; also want to look at hypotheses of the form (not (subsetp-equal c d)) and
 ;; conclude (and (member-equal j c) (not (member-equal j d))) for some witness
 ;; j.
@@ -49,18 +49,19 @@
 ;; There are thus four steps to this transformation:
 ;; 1. Introduce witnesses for negative occurrences of universally-quantified
 ;; predicates and positive occurrences of existentially-quantified ones.
+;; 1a. Optionally, generalize newly introduced witness terms into fresh
+;; variables, for readability.
 ;; 2. Find the set of examples with which to instantiate positive
-;; of universally-quantified and negative existentially-quantified predicates.
+;; universally-quantified and negative existentially-quantified predicates.
 ;; 3. Instantiate these predicates with these examples.
-;; 4. (Not yet implemented.) Optionally, generalize newly introduced witness
-;; terms into fresh variables, for readability.
 
 ;; The clause processor needs two types of information to accomplish this:
 ;; - what predicates are to be taken as universal/existential quantifiers and
 ;;   what they mean; i.e. how to introduce witnesses/instantiate.
 ;; - what examples to use when doing the instantiation.
 
-;; The witness-introduction and instantiation may both be lossy.
+;; The witness-introduction and instantiation may both be lossy, i.e. result
+;; in a formula that isn't a theorem even if the original formula is one.
 
 ;; To set up witnessing for not-subsetp-equal hypotheses:
 
@@ -69,45 +70,97 @@
 ;;   :expr (and (member-equal (subsetp-equal-witness a b) a)
 ;;              (not (member-equal (subsetp-equal-witness a b) b)))
 ;;   :generalize (((subsetp-equal-witness a b) . ssew)
-;;   :hint ('(:in-theory (e/d (subsetp-equal-witness-correct)
-;;                            (subsetp-equal member-equal)))))
+;;   :hints ('(:in-theory '(subsetp-equal-witness-correct))))
 
 ;; This means that in the witnessing phase, we search for hypotheses of the
 ;; form (not (subsetp-equal a b)) and for each such hypothesis, we add the
 ;; hypothesis
-;; (let ((k (car (set-difference-equal a b))))
-;;    (and (member-equal k a) (not (member-equal k b))))
-;; incurring the proof obligation:
+;; (and (member-equal (subsetp-equal-witness a b) a)
+;;      (not (member-equal (subsetp-equal-witness a b) b)))
+;; but then generalize away the term (subsetp-equal-witness a b) to a fresh
+;; variable from the set SSEW0, SSEW1, ... yielding new hyps:
+;;     (member-equal ssew0 a)
+;;     (not (member-equal ssew0 b))
+;; So effectively we've taken an existential assumption and introduced a fresh
+;; variable witnessing it.  We wrap (hide ...) around the original hyp to leave
+;; a trace of what we've done (otherwise it would likely be rewritten away,
+;; since the two hyps we've introduced imply its truth).
+
+;; We add these new hypotheses to our main formula.  To ensure that this is
+;; sound, the clause processor produces an additional proof obligation:
 ;; (implies (not (subsetp-equal a b))
-;;          (let ((k (car (set-difference-equal a b))))
-;;            (and (member-equal k a)
-;;                 (not (member-equal k b))))).
-;;
+;;          (and (member-equal (subsetp-equal-witness a b) a)
+;;               (not (member-equal (subsetp-equal-witness a b) b))))
+;; To ensure that we'll be able to satisfy this, the defwitness event tries to
+;; prove this using the computed hints provided by the :hint argument to
+;; defwitness.  In this case, this puts ACL2 into a theory containing only the
+;; subsetp-equal-witness-correct rule.  If the proof works, then the witness-cp
+;; hint will arrange for this same computed hint to be provided when the clause
+;; processor produces this proof obligation, and it's a fair bet that ACL2 will
+;; also be able to prove it then.  The hint provided is a good one because it
+;; puts ACL2 into a known theory (not dependent on the ambient theory); a :by
+;; hint is another good candidate.
 
 ;; To set up instantiation of subsetp-equal hypotheses:
 
-;; (definstantiate subsetp-equal-instance
+;; (definstantiate subsetp-equal-instancing
 ;;   :predicate (subsetp-equal a b)
-;;   :witness-var k
+;;   :vars (k)
 ;;   :expr (implies (member-equal k a)
-;;                  (member-equal k b)))
+;;                  (member-equal k b))
+;;   :hints ('(:in-theory '(subsetp-equal-member))))
 
-;; This will mean that for each  subsetp-equal hypothesis we find, we'll add
+;; This will mean that for each subsetp-equal hypothesis we find, we'll add
 ;; hypotheses of the form (implies (member-equal k a) (member-equal k b)) for
-;; some set of k.  However, we need to collect a list of such k.  To define
-;; examples, we use defexample:
+;; each of (possibly) several k.  The terms we use to instantiate k are
+;; determined by defexample; see below.
+;; To make it sound to add these hypotheses, the clause processor again
+;; introduces a proof obligation:
+;;  (implies (subsetp-equal a b)
+;;           (implies (member-equal k a)
+;;                    (member-equal k b)))
+;; Again, the :hints argument is used to prove this, both (as a test) when the
+;; definstantiate form is submitted and when it is used.
 
-;;  (defexample subsetp-equal-instance
-;;   :expr (member-equal k a)
-;;   :witness-var k)
+;; The terms used to instantiate k above are determined by defexample rules,
+;; like the following:
+;;  (defexample subsetp-equal-member-template
+;;   :pattern (member-equal k a)
+;;   :templates (k)
+;;   :instance-rulename subsetp-equal-instancing)
 
-;; This means that in phase 2, we'll look throughout the clause for expressions
-;; (member-equal k a) and include k in the list of witnesses to use for
-;; instantiating using the subsetp-equal-instance rule.
+;; This means that in phase 2, we'll look through the clause for expressions
+;; (member-equal k a) and whenever we find one, include k in the list of
+;; witnesses to use for instantiating using the subsetp-equal-instance rule.
+;; Defexample doesn't require any proof obligation; it's just a heuristic that
+;; adds to the set of terms used to instantiate universal quantifiers.
 
-;; This will cause :witness expressions introduced by subset-equal-witness,
-;; i.e. (car (set-difference-equal a b)), to be replaced by variable names
-;; generated starting from the root SSWIT.
+;; To use the scheme we've introduced for reasoning about subsetp-equal, we can
+;; introduce a witness ruleset:
+
+;; (def-witness-ruleset subsetp-equal-witnessing-rules
+;;   '(subsetp-equal-witnessing
+;;     subsetp-equal-instancing
+;;     subsetp-equal-member-template))
+
+;; Then when we want to use this reasoning strategy, we can provide a computed
+;; hint:
+;; :hints ((witness :ruleset subsetp-equal-witnessing-rules))
+
+;; This implicitly waits til the formula is stable-under-simplification and
+;; invokes the witness-cp clause processor, allowing it to use the
+;; witnessing/instancing/example rules listed.  It also sets things up so that
+;; the right hints will be provided to the extra proof obligations produced by
+;; applying defwitness and definstantiate rules.  You can also define a macro
+;; so that you don't have to remember this syntax:
+
+;; (defmacro subset-reasoning () '(witness :ruleset subsetp-equal-witnessing-rules))
+;; (defthm foo
+;;   ...
+;;  :hints (("goal" ...)
+;;          (subset-reasoning)))
+
+
 
 (local (in-theory (disable true-listp default-car default-cdr
                            alistp default-+-2 default-+-1
