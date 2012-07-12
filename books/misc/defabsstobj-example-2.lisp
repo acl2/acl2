@@ -268,6 +268,10 @@
         (IMPLIES (AND (MEMO$AP MEMO) (NATP N))
                  (MEMO$AP (MV-NTH 1 (FIB2$A N MEMO)))))
 
+(DEFTHM FIB2{GUARD-THM}
+        (IMPLIES (AND (MEMO$CORR MEMO$C MEMO) (NATP N))
+                 (AND (NATP N) (GOOD-MEMO$CP MEMO$C))))
+
 ; Finally we introduce our abstract stobj, memo.  We use the most compact form
 ; of defabsstobj; for example, :concrete is implicitly memo$c, obtained by
 ; putting the suffix "$C" on the symbol, memo.
