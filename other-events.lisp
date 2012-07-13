@@ -21766,10 +21766,21 @@
          (creator-name (if (consp creator)
                            (car creator)
                          creator))
-         (fields (list* recognizer creator exports)))
+         (fields (list* recognizer
+
+; Recognizer must be first: the call below of simple-translate-absstobj-fields
+; returns methods that are passed to defabsstobj-raw-defs, which requires the
+; first method to be for the recognizer.
+
+                        creator exports)))
     (mv-let
      (erp methods)
-     (simple-translate-absstobj-fields name st$c fields)
+     (simple-translate-absstobj-fields name st$c
+
+; See the comment above about the first field being for the recognizer, and the
+; first returned method being for the recognizer.
+
+                                       fields)
      (cond
       (erp (interface-er "~@0" methods))
       (t
@@ -21803,7 +21814,11 @@
 
               ,@(mapcar (function (lambda (def)
                                     (cons 'DEFMACRO def)))
-                        (defabsstobj-raw-defs methods))
+
+; See the comment above in the binding of fields, about a guarantee that the
+; first method must be for the recognizer.
+
+                        (defabsstobj-raw-defs name methods))
               (defparameter ,the-live-name
                 ,(defabsstobj-raw-init creator-name methods))
               (setf (get ',the-live-name 'redundant-raw-lisp-discriminator)
@@ -22814,6 +22829,11 @@
                           :PRESERVED preserved)))))))))))))))))
 
 (defun simple-translate-absstobj-fields (st st$c fields)
+
+; Warning: Return methods in the same order as fields.  See the comments about
+; simple-translate-absstobj-fields in the #-acl2-loop-only definition of
+; defabsstobj.
+
   (cond ((endp fields) (mv nil nil))
         (t (er-let*-cmp
             ((method (translate-absstobj-field
@@ -23040,7 +23060,9 @@
 
 ; Keep the recognizer and creator first and second in our call to
 ; chk-acceptable-defabsstobj1.  See the comment about
-; chk-acceptable-defabsstobj1 in defabsstobj-fn1.
+; chk-acceptable-defabsstobj1 in defabsstobj-fn1, and also note that the first
+; method must be for the recognizer in defabsstobj-raw-defs, which is called in
+; defabsstobj-fn1, where it consumes the methods we return here.
 
                                     (list* recognizer creator exports)
                                     (list* :RECOGNIZER :CREATOR nil)
@@ -23066,11 +23088,9 @@
                               (,logic ,@formals))))
             (defabsstobj-axiomatic-defs st$c (cdr methods))))))
 
-(defun defabsstobj-raw-defs (methods)
+(defun defabsstobj-raw-defs-rec (methods)
 
-; We define the bodies of macros.  By defining macros instead of functions, not
-; only do we get better runtime efficiency, but also we avoid having to grab
-; formals for the :EXEC function from the world.
+; See defabsstobj-raw-defs.
 
   (cond ((endp methods) nil)
         (t (cons (let* ((method (car methods))
@@ -23078,7 +23098,33 @@
                         (exec (access absstobj-method method :EXEC))
                         (args (if (eq exec 'args) 'args0 'args)))
                    `(,name (&rest ,args) (cons ',exec ,args)))
-                 (defabsstobj-raw-defs (cdr methods))))))
+                 (defabsstobj-raw-defs-rec (cdr methods))))))
+
+(defun defabsstobj-raw-defs (st-name methods)
+
+; Warning: The first method in methods should be for the recognizer.  See
+; comments about that where defabsstobj-raw-defs is called.
+
+; We define the bodies of macros.  By defining macros instead of functions, not
+; only do we get better runtime efficiency, but also we avoid having to grab
+; formals for the :EXEC function from the world.
+
+; We pass in st-name because when we call defabsstobj-raw-defs from the
+; #-acl2-loop-only definition of defabsstobj, we have methods that have nil for
+; their :LOGIC components, and we need st-name to generate the :LOGIC
+; recognizer name.
+
+  (cons ; first, the recognizer definition
+   (let* ((method (car methods)) ; for the recognizer
+          (name (access absstobj-method method :NAME))
+          (logic (or (access absstobj-method method :LOGIC)
+                     (absstobj-name st-name :RECOGNIZER-LOGIC))))
+     `(,name (x)
+             (list 'let
+                   (list (list 'y x))
+                   '(cond ((live-stobjp y) t)
+                          (t (,logic y))))))
+   (defabsstobj-raw-defs-rec (cdr methods))))
 
 (defun expand-recognizer (st-name recognizer see-doc ctx state)
   (cond ((null recognizer)
@@ -23202,7 +23248,13 @@
           (let* ((methods (cadr missing/methods/wrld1))
                  (wrld1 (cddr missing/methods/wrld1))
                  (ax-def-lst (defabsstobj-axiomatic-defs st$c methods))
-                 (raw-def-lst (defabsstobj-raw-defs methods))
+                 (raw-def-lst
+
+; The first method in methods is for the recognizer, as is guaranteed by
+; chk-acceptable-defabsstobj (as explained in a comment there that refers to
+; the present function, defabsstobj-fn1).
+
+                  (defabsstobj-raw-defs st-name methods))
                  (names (strip-cars ax-def-lst))
                  (the-live-var (the-live-var st-name)))
             (er-progn
