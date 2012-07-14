@@ -22404,15 +22404,21 @@
 ; rather than the raw Lisp definition.
 
   (and (function-symbolp fn wrld)
-       (let* ((event-number (getprop (or stobj-function fn) 'absolute-event-number
-                                     nil 'current-acl2-world wrld))
-              (wrld (and event-number
-                         (lookup-world-index 'event event-number wrld)))
-              (def (and wrld
-                        (cltl-def-from-name2 fn stobj-function axiomatic-p wrld))))
+       (let* ((event-number
+               (getprop (or stobj-function fn) 'absolute-event-number nil
+                        'current-acl2-world wrld))
+              (wrld
+               (and event-number
+                    (lookup-world-index 'event event-number wrld)))
+              (def
+               (and wrld
+                    (cltl-def-from-name2 fn stobj-function axiomatic-p wrld))))
          (and def
               (or (null stobj-function)
-                  (not (member-equal *stobj-inline-declare* def)))
+                  (and (not (member-equal *stobj-inline-declare* def))
+                       (or axiomatic-p
+                           (not (getprop stobj-function 'concrete-stobj nil
+                                         'current-acl2-world wrld)))))
               (cons 'defun def)))))
 
 (defun cltl-def-from-name (fn wrld)

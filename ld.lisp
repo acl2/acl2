@@ -19146,6 +19146,21 @@
   (defun foo (x) x)
   ~ev[]
 
+  Fixed a bug that could cause hard Lisp errors in an ~ilc[encapsulate] event.
+  Thanks to Sol Swords for sending an example that exhibited this bug.  Here is
+  a simpler such example; the bug was in how it was checked whether the
+  ~il[guard] for a guard-verified function (here, ~c[g]) depends on some
+  function introduced in the ~il[signature] of the ~ilc[encapsulate] (here, the
+  function ~c[f]).
+  ~bv[]
+  (encapsulate
+   ((f (x) t))
+   (local (defun f (x) (declare (xargs :guard t)) x))
+   (defun g (x)
+     (declare (xargs :guard (if (integerp x) (f x) t)))
+     x))
+  ~ev[]
+
   ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]
 
   Improvements have been made related to the reading of characters.  In

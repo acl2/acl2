@@ -20245,7 +20245,11 @@
   to the user is printed, reminding the user that the book is in fact
   incomplete and possibly inconsistent.  This warning is in fact an error if
   ~c[:skip-proofs-okp] is ~c[nil] in the ~ilc[include-book] form;
-  ~pl[include-book].~/"
+  ~pl[include-book].
+
+  We conclude with a technical note.  ~c[Skip-proofs] works by binding the
+  ~ilc[ld] special ~ilc[ld-skip-proofsp] to ~c[t] unless it is already bound to
+  a non-~c[nil] value; ~pl[ld-skip-proofsp].~/"
 
   `(state-global-let*
     ((ld-skip-proofsp (or (f-get-global 'ld-skip-proofsp state)
@@ -31490,14 +31494,24 @@
                        (cond ((eq file-name :string)
                               (make-string-output-stream))
                              (t (open os-file-name :direction :output
-                                      :if-exists :supersede))))
+                                      :if-exists :supersede
+
+; In ACL2(p) using CCL, we have seen an error caused when standard-co was
+; connected to a file.  Specifically, waterfall-print-clause-id@par was
+; printing to standard-co -- i.e., to that file -- and CCL complained because
+; the default is for a file stream to be private to the thread that created it.
+
+                                      #+(and acl2-par ccl) :sharing
+                                      #+(and acl2-par ccl) :lock))))
                       (:byte
                        (cond ((eq file-name :string)
                               (make-string-output-stream
                                :element-type '(unsigned-byte 8)))
                              (t (open os-file-name :direction :output
                                       :if-exists :supersede
-                                      :element-type '(unsigned-byte 8)))))
+                                      :element-type '(unsigned-byte 8)
+                                      #+(and acl2-par ccl) :sharing
+                                      #+(and acl2-par ccl) :lock))))
                       (otherwise
                        (interface-er "Illegal output-type ~x0." typ))))
                    (channel (make-output-channel file-name *file-clock*)))

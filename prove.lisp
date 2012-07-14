@@ -3546,6 +3546,11 @@
 (defun@par waterfall-print-clause (suppress-print cl-id clause state)
   (cond ((or suppress-print (equal cl-id *initial-clause-id*))
          (state-mac@par))
+        ((serial-first-form-parallel-second-form@par
+          nil
+          (member-equal (f-get-global 'waterfall-printing state)
+                        '(:limited :very-limited)))
+         (state-mac@par))
         (t (pprogn@par
             (if (and (or (gag-mode)
                          (member-eq 'prove
@@ -6818,13 +6823,8 @@
 ; set to :limited, the need to print the clause on a checkpoint is taken care
 ; of inside waterfall-msg@par.
            
-           (cond ((serial-first-form-parallel-second-form@par
-                   nil
-                   (member-equal (f-get-global 'waterfall-printing state)
-                                 '(:limited :very-limited)))
-                  (state-mac@par))
-                 (t (waterfall-print-clause@par suppress-print cl-id clause
-                                                state)))
+           (waterfall-print-clause@par suppress-print cl-id clause
+                                       state)
            (waterfall0@par ledge cl-id clause hist pspv hints ens wrld ctx
                            state step-limit)))
          (t (waterfall0-with-hint-settings@par

@@ -7009,7 +7009,8 @@
 
               (or (member-eq (car names) exports-with-sig-ancestors)
                   (intersectp-eq sig-fns (instantiable-ancestors
-                                          (guard (car names) nil wrld)
+                                          (all-fnnames
+                                           (guard (car names) nil wrld))
                                           wrld
                                           nil))))
          (cons (car names)
@@ -22285,18 +22286,20 @@
   turn the call of ~c[defabsstobj] into a corresponding call of
   ~ilc[defabsstobj-missing-events].
 
-  Note that ~c[defabsstobj] event will fail if the required lemmas ~-[] that
+  Note that a ~c[defabsstobj] event will fail if the required lemmas ~-[] that
   is, those for valid keywords ~c[:CORRESPONDENCE], ~c[:GUARD-THM], and
-  ~c[:PRESERVED] ~-[] have not been proved, unless proofs are being skipped
-  (~pl[skip-proofs] and ~pl[ld-skip-proofsp]).  In particular, the exemption
-  when skipping proofs allows those supporting events to be ~ilc[local].  If
-  everything is acceptable except for missing lemmas, then before failing ACL2
-  will print the ~ilc[defthm] forms that must be admitted in order to complete
-  submission of the ~c[defabsstobj] event.  Advanced users may wish to
-  ~pl[defabsstobj-missing-events] for a utility that returns information for
-  the required ~il[events].
-
-  There are a few additional restrictions, as follows.
+  ~c[:PRESERVED] ~-[] have not been proved, unless proofs are being skipped.
+  Note that the exemption when skipping proofs allows the supporting lemmas to
+  be ~ilc[local] to ~il[books] and ~ilc[encapsulate] ~il[events].  If the
+  ~ilc[ld] special ~ilc[ld-skip-proofsp] is ~c[t], then the missing ~il[events]
+  are printed with a warning before the ~c[defabsstobj] event is admitted; but
+  if ~c[ld-skip-proofsp] is the symbol ~c[INCLUDE-BOOK], then that warning is
+  omitted.  (Also ~pl[skip-proofs] and ~pl[ld-skip-proofsp].)  If however
+  proofs are not being skipped, then the ~c[defabsstobj] event will fail after
+  printing the missing events.  Advanced users may wish to
+  ~pl[defabsstobj-missing-events] for a utility that returns a data structure
+  containing the missing lemmas.  There are a few additional restrictions, as
+  follows.
 
   ~bq[]
   All exported function names must be new (unless redefinition is on;
@@ -25895,13 +25898,13 @@
          (trace-options (cdr trace-spec))
          (native (cadr (assoc-keyword :native trace-options)))
          (wrld (w state))
+         (stobj-function
+          (and (not (assoc-keyword :def trace-options)) ; optimization
+               (getprop fn 'stobj-function nil 'current-acl2-world wrld)))
          #-acl2-loop-only (*inside-trace$* t)
          (def (or (cadr (assoc-keyword :def trace-options))
-                  (let* ((stobj-function (getprop fn 'stobj-function nil
-                                                  'current-acl2-world
-                                                  wrld))
-                         (defun+def
-                           (cltl-def-from-name1 fn stobj-function nil wrld)))
+                  (let ((defun+def
+                          (cltl-def-from-name1 fn stobj-function nil wrld)))
                     (cond (defun+def (cdr defun+def))
                           ((and stobj-function
                                 (cltl-def-from-name1 fn stobj-function t wrld))
@@ -25929,12 +25932,22 @@
           (getprop fn 'predefined nil 'current-acl2-world wrld)))
     (cond
      ((eq def :macro)
-      (er very-soft ctx
-          "~x0 cannot be traced, because it is a macro in raw Lisp: its ~
-           introducing defstobj event (for stobj ~x1) was supplied with ~
-           :INLINE T."
-          fn
-          (getprop fn 'stobj-function nil 'current-acl2-world wrld)))
+      (assert$
+       stobj-function
+       (cond
+        ((getprop stobj-function 'concrete-stobj nil 'current-acl2-world wrld)
+         (er very-soft ctx
+             "~x0 cannot be traced, because it is a macro in raw Lisp, ~
+              introduced with the defabsstobj event for abstract stobj ~x1."
+             fn
+             stobj-function))
+        (t
+         (er very-soft ctx
+             "~x0 cannot be traced, because it is a macro in raw Lisp: its ~
+              introducing defstobj event (for stobj ~x1) was supplied with ~
+              :INLINE T."
+             fn
+             stobj-function)))))
      ((eq formals-default t)
       (er very-soft ctx
           "~@0 this symbol does not have an ACL2 function definition.  ~
