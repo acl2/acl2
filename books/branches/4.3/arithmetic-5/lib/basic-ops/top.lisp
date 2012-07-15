@@ -64,6 +64,15 @@
 (deftheory minimal-start-a
   (current-theory :here))
 
+(defmacro deftheory-static (name theory)
+  `(make-event
+    (let ((world (w state)))
+      (list 'deftheory ',name
+         (list 'quote ,theory)))))
+
+(deftheory-static arithmetic-5-minimal-start-a
+  (current-theory :here))
+
 (include-book "mini-theories")
 
 (include-book "numerator-and-denominator")
@@ -87,6 +96,9 @@
 (deftheory minimal-end-a
   (current-theory :here))
 
+(deftheory-static arithmetic-5-minimal-end-a
+  (current-theory :here))
+
 (include-book "collect")
 
 (include-book "remove-weak-inequalities")
@@ -96,6 +108,9 @@
 (include-book "types")
 
 (deftheory minimal-start-b
+  (current-theory :here))
+
+(deftheory-static arithmetic-5-minimal-start-b
   (current-theory :here))
 
 (include-book "simple-equalities-and-inequalities")
@@ -109,15 +124,19 @@
 (deftheory minimal-end-b
   (current-theory :here))
 
+(deftheory-static arithmetic-5-minimal-end-b
+  (current-theory :here))
+
 (deftheory full 
   (current-theory :here))
 
 (deftheory minimal-arithmetic-theory 
-   (union-theories (theory 'base)
-                   (union-theories (set-difference-theories (theory 'minimal-end-a)
-							    (theory 'minimal-start-a))
-				   (set-difference-theories (theory 'minimal-end-b)
-							    (theory 'minimal-start-b)))))
+   (union-theories
+    (theory 'base)
+    (union-theories (set-difference-theories (theory 'minimal-end-a)
+					     (theory 'minimal-start-a))
+		    (set-difference-theories (theory 'minimal-end-b)
+					     (theory 'minimal-start-b)))))
 
 (deftheory natp-posp-theory
   (set-difference-theories (theory 'natp-posp-end)
