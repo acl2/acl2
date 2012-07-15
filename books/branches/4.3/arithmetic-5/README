@@ -123,13 +123,13 @@ Note 1: If you are having difficulty proving a ``simple'' theorem
 and the arithemtic book's rules seem to be getting in the way, You can
 execute
 
-(set-minimal-arithmetic-theory)
+(set-minimal-arithmetic-5-theory)
 
 This will disable almost all of the arithmetic book's rules, leaving
 you with a small set.
 
-Execute (set-default-arithmetic-theory) to return to the default
-starting point of the arithemtic books.
+Execute (set-default-arithmetic-5-theory) to return to the default
+starting point of the arithmetic books.
 
 Note 2: If you encounter a theorem for which arithmetic-5 is being
 too slow, there are two techniques which can help you to determine
@@ -143,7 +143,7 @@ users is that arithmetic-5 can cause excessive case-splits.
 These have two sources --- first it is very eager to split on
 the types of operands to arithmetic operations, if it cannot
 determine (via type reasoning) the the operand is of the correct
-type.  These rules have names such asdefault-plus-1.  Disabling
+type.  These rules have names such as default-plus-1.  Disabling
 these rules may lead to strange behaviour.  The second source
 is rules for if normalization.  I have found these rules very
 usefull at times, but they can be expensive.  These rules have
