@@ -30755,8 +30755,8 @@
 
   (declare (xargs :guard (and (true-listp str-args)
                               (member-symbol-name (symbol-name severity)
-                                                  '(hard hard? hard! soft
-                                                         very-soft))
+                                                  '(hard hard? hard! hard?!
+                                                         soft very-soft))
                               (<= (length str-args) 10))))
 
 ; Note: We used to require (stringp str) but then we started writing such forms
@@ -30848,6 +30848,10 @@
            #+acl2-loop-only (list 'illegal context str alist)
            #-acl2-loop-only `(let ((*hard-error-returns-nilp* nil))
                               (illegal ,context ,str ,alist)))
+          ((equal severity-name "HARD?!")
+           #+acl2-loop-only (list 'hard-error context str alist)
+           #-acl2-loop-only `(let ((*hard-error-returns-nilp* nil))
+                              (hard-error ,context ,str ,alist)))
           (t
 
 ; The final case should never happen.

@@ -18459,6 +18459,9 @@
 ; We eliminated some needless property names from renew-name/overwrite, and
 ; added a comment clarifying why it is only called on function symbols.
 
+; Added new severity option HARD?! for er, so that the guard of theory-fn can
+; be t (avoiding the expense of doing the theory-namep check twice).
+
   :doc
   ":Doc-Section release-notes
 
@@ -18728,6 +18731,10 @@
   But we observed evaluation of this form to return ~c[(3 2 . 7)] in every host
   Lisp on which ACL2 runs (Allegro CL, CCL, CLISP, CMUCL, GCL, LispWorks, and
   SBCL).  Now, ACL2 behaves like these Lisps.
+
+  A call of the ~ilc[theory] macro had previously returned ~c[nil] when applied
+  to other than the name of name of a previously executed ~ilc[deftheory]
+  event.  Now, a hard error occurs.
 
   ~st[NEW FEATURES]
 

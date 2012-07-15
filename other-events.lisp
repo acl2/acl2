@@ -3084,8 +3084,13 @@
 
 ; We deliver the value of the defined theory named name.
 
-  (declare (xargs :guard (theory-namep name wrld)))
-  (getprop name 'theory nil 'current-acl2-world wrld))
+  (declare (xargs :guard t))
+  (cond ((theory-namep name wrld)
+         (getprop name 'theory nil 'current-acl2-world wrld))
+        (t (er hard?! 'theory
+               "The alleged theory name, ~x0, is not the name of a previously ~
+                executed deftheory event.  See :DOC theory."
+               name))))
 
 (defmacro theory (name)
 
@@ -3105,13 +3110,13 @@
   General Form:
   (theory name)
   ~ev[]
-  where ~c[name] is the name of a previously executed ~ilc[deftheory] event.
-  Returns the named theory.  ~l[theories].
+  where ~c[name] is the name of a previously executed ~ilc[deftheory] event
+  (otherwise a hard error occurs).  Returns the named theory.  ~l[theories].
 
-  This ``function'' is actually a macro that expands to a term
-  mentioning the single free variable ~ilc[world].  When theory expressions
-  are evaluated by ~ilc[in-theory] or the ~c[:]~ilc[in-theory] hint, ~ilc[world] is bound to
-  the current ACL2 ~il[world].~/
+  This ``function'' is actually a macro that expands to a term mentioning the
+  single free variable ~ilc[world].  When theory expressions are evaluated by
+  ~ilc[in-theory] or the ~c[:]~ilc[in-theory] hint, ~ilc[world] is bound to the
+  current ACL2 ~il[world].~/
 
   :cited-by theory-functions"
 
