@@ -3860,6 +3860,8 @@ cert.acl2
 elide-test.lisp
 mid.acl2
 mid.lisp
+pkg-test.acl2
+pkg-test.lisp
 sub.lisp
 top.acl2
 top.lisp

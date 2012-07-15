@@ -10987,15 +10987,29 @@
     (include-book-er1 file1 file2 msg warning-summary ctx state)))
 
 (defun post-alist-from-channel (x y ch state)
+
+; We assume that all necessary packages exist so that we can read the
+; certificate file for full-book-name, without errors caused by unknown package
+; names in symbols occurring in the porcullis commands or make-event
+; expansions.  If that assumption may not hold, consider using
+; post-alist-from-pcert1 instead.
+
   (mv-let (eofp obj state)
-          (cond ((member-eq y ; last object read
-                            '(:expansion-alist :begin-portcullis-cmds))
+          (cond ((eq y ; last object read
+                     ':EXPANSION-ALIST)
+
+; We really don't need this special case, given the assumptions expressed in
+; the comment above.  But we might as well use read-object-suppress here, since
+; maybe it does less consing.  However, we cannot do the same for
+; :BEGIN-PORTCULLIS-CMDS, because an indefinite number of event forms follows
+; that keyword (until :END-PORTCULLIS-CMDS).
+
                  (mv-let (eofp state)
                          (read-object-suppress ch state)
                          (mv eofp nil state)))
                 (t (read-object ch state)))
           (cond ((or eofp
-                     (eq obj :pcert-info))
+                     (eq obj :PCERT-INFO))
                  (mv x state))
                 (t (post-alist-from-channel y obj ch state)))))
 
@@ -11051,6 +11065,10 @@
                          (mv ch cert-name :convert-pcert state)))))))))))
 
 (defun cert-annotations-and-checksum-from-cert-file (full-book-name state)
+
+; See the requirement in post-alist-from-channel, regarding necessary packages
+; existing.
+
   (mv-let
    (ch cert-name pcert-op state)
    (certificate-file-and-input-channel full-book-name
@@ -11059,7 +11077,7 @@
                                            :create-pcert
                                          nil)
                                        state)
-   (declare  (ignore cert-name pcert-op))
+   (declare (ignore cert-name pcert-op))
    (cond (ch (mv-let (x state)
                      (post-alist-from-channel nil nil ch state)
                      (pprogn (close-input-channel ch state)
@@ -15487,27 +15505,98 @@
                       (t (cons full-book-name acc)))
                 state)))))))
 
-(defun certificate-post-alist (pcert1-file cert-file full-book-name ctx state)
+(defun count-forms-in-channel (ch state n)
+  (mv-let (eofp state)
+          (read-object-suppress ch state)
+          (cond (eofp (mv n state))
+                (t (count-forms-in-channel ch state (1+ n))))))
+
+(defun skip-forms-in-channel (n ch state)
+  (cond ((zp n) (mv nil state))
+        (t (mv-let (eofp state)
+                   (read-object-suppress ch state)
+                   (cond (eofp (mv eofp state))
+                         (t (skip-forms-in-channel (1- n) ch state)))))))
+
+(defun post-alist-from-pcert1-1 (n first-try-p pcert1-file msg ctx state)
+
+; The post-alist is at zero-based position n or, if first-try-p is true,
+; position n-2.
+
   (mv-let
    (chan state)
    (open-input-channel pcert1-file :object state)
    (cond
     ((null chan)
-     (er soft ctx
-         "Unable to open file ~x0 for input, hence cannot complete its ~
-          renaming to ~x1."
-         pcert1-file cert-file))
-    (t (mv-let (val state)
-               (post-alist-from-channel nil nil chan state)
-               (pprogn
-                (close-input-channel chan state)
-                (cond ((equal (caar val) full-book-name)
-                       (value val))
-                      (t (er soft ctx
-                             "Ill-formed post-alist encountered: expected its ~
-                              caar to be the full-book-name ~x0, but the ~
-                              post-alist encountered was ~x1."
-                             full-book-name val)))))))))
+     (er soft ctx "~@0" msg))
+    (t
+     (mv-let
+      (eofp state)
+      (skip-forms-in-channel n chan state)
+      (cond
+       (eofp ; How can this be?  We just read n forms!
+        (pprogn
+         (close-input-channel chan state)
+         (er soft ctx
+             "Implementation error: Unexpected end of file, reading ~x0 forms ~
+              from file ~x1.  Please contact the ACL2 implementors."
+             n pcert1-file)))
+       (t
+        (mv-let
+         (eofp post-alist state)
+         (read-object chan state)
+         (cond
+          (eofp
+           (er soft ctx
+               "Implementation error: Unexpected end of file, reading ~x0 forms ~
+              and then one more form from file ~x1.  Please contact the ACL2 ~
+              implementors."
+               n pcert1-file))
+          ((eq post-alist :PCERT-INFO) ; then try again
+           (pprogn
+            (close-input-channel chan state)
+            (cond
+             (first-try-p
+              (post-alist-from-pcert1-1 (- n 2) nil pcert1-file msg ctx state))
+             (t (er soft ctx
+                    "Implementation error: Unexpectedly we appear to have two ~
+                     occurrences of :PCERT-INFO at the top level of file ~x0, ~
+                     at positions ~x1 and ~x2."
+                    pcert1-file (+ n 2) n)))))
+          (t (value post-alist)))))))))))
+
+(defun post-alist-from-pcert1 (pcert1-file msg ctx state)
+  (mv-let
+   (chan state)
+   (open-input-channel pcert1-file :object state)
+   (cond
+    ((null chan)
+     (er soft ctx "~@0" msg))
+    (t
+     (mv-let
+      (len state)
+      (count-forms-in-channel chan state 0)
+      (pprogn
+       (close-input-channel chan state)
+       (assert$
+        (<= 2 len) ; len should even be at least 7
+        (post-alist-from-pcert1-1 (- len 2) t pcert1-file msg ctx state))))))))
+
+(defun certificate-post-alist (pcert1-file cert-file full-book-name ctx state)
+  (er-let* ((post-alist
+             (post-alist-from-pcert1
+              pcert1-file
+              (msg "Unable to open file ~x0 for input, hence cannot complete ~
+                    its renaming to ~x1."
+                   pcert1-file cert-file)
+              ctx state)))
+           (cond ((equal (caar post-alist) full-book-name)
+                  (value post-alist))
+                 (t (er soft ctx
+                        "Ill-formed post-alist encountered: expected its caar ~
+                         to be the full-book-name ~x0, but the post-alist ~
+                         encountered was ~x1."
+                        full-book-name post-alist)))))
 
 (defun certify-book-finish-complete (full-book-name ctx state)
   (let ((pcert0-file
