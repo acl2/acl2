@@ -25406,7 +25406,11 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
   multiple value of the form ~c[(mv erp val state)].  All output to channels
   ~ilc[standard-co] and ~ilc[proofs-co] will be directed to the indicated
   file.  It is acceptable to replace ~c[filename] with
-  ~c[(quote filename)].~/"
+  ~c[(quote filename)].
+
+  Note that so-called comment-window output (~pl[cw] and ~pl[observation-cw])
+  is not redirected by ~c[wof] to a file, nor is printing from a
+  ~il[wormhole].~/"
 
   `(with-standard-co-and-proofs-co-to-file ,filename ,form))
 

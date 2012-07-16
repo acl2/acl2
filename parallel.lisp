@@ -391,12 +391,25 @@
   updated around March 23, 2011 to fix this problem, so if you get
   segfaults (for example) with CCL, try updating your CCL installation.
 
-  The standard process for book certification will not use
+  Book certification should generally work but may present some issues,
+  including the following.
+  ~bq[]
+  o The standard ~c[make]-based process for book certification will not use
   ~il[waterfall-parallelism], which is disabled by default (even when
   ~il[compiling-acl2p] by using the ~c[ACL2_PAR] flag).  ~l[book-makefiles],
   which explains that ~il[acl2-customization] files are ignored during that
   process unless specified explicitly on the command line or in the
   environment.
+
+  o A book certified with ACL2(p) might subsequently cause an error when
+  included with ACL2.  As of this writing, however, we have only seen this for
+  a book in which ~ilc[deftheory-static] is used.
+
+  o In general, ACL2(p) is primarily intended to support more rapid interactive
+  development.  While we are unaware of an unsoundness likely to affect an
+  ACL2(p) user, we suggest using ACL2 for final book certification, rather than
+  ACL2(p), to lower the risk of unsound book certification.
+  ~eq[]
 
   Proof output can contain repeated printing of the same subgoal name.
 

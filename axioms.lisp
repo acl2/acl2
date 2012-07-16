@@ -46929,8 +46929,13 @@ Lisp definition."
      waterfall0-with-hint-settings
      waterfall1)))
 
-#-acl2-par
 (defun make-identity-for-@par-mappings (mappings)
+
+; Although this is only used for #-acl2-par, we define it unconditionally so
+; that its rune is available in both ACL2 and ACL2(p).  Robert Krug used
+; arithmetic-5, which employs deftheory-static, and hence was bitten when this
+; rune was missing.
+
   (declare (xargs :guard (alistp mappings)))
   (cond ((endp mappings) nil)
         (t (cons `(defmacro ,(caar mappings) (&rest rst)
