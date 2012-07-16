@@ -2483,7 +2483,8 @@
     #+:non-standard-analysis
     (standardp (x) 't)
     #+:non-standard-analysis
-    (standard-part (x) (acl2-numberp x))
+    (standard-part (x) ; If (x) is changed here, change cons-term1-cases.
+                   (acl2-numberp x))
     #+:non-standard-analysis
     (i-large-integer () 't)))
 
@@ -2698,6 +2699,12 @@
   ~c[&], which always matches anything."
   (cons 'cond (match-clause-list (car args) (cdr args))))
 
+#+:non-standard-analysis
+(defconst *non-standard-primitives*
+  '(standardp
+    standard-part
+    i-large-integer))
+
 (defun cons-term1-cases (alist)
 
 ; Initially, alist is *primitive-formals-and-guards*.
@@ -2713,7 +2720,19 @@
                         (guard (caddr trip)))
                    (list
                     fn
-                    (cond ((equal guard *t*)
+                    (cond #+:non-standard-analysis
+                          ((eq fn 'i-large-integer)
+                           nil) ; fall through in cons-term1-body
+                          #+:non-standard-analysis
+                          ((eq fn 'standardp)
+                           *t*)
+                          #+:non-standard-analysis
+                          ((eq fn 'standard-part)
+                           (assert$
+                            (eq (car formals) 'x)
+                            `(and ,guard ; a term in variable x
+                                  (kwote ,@formals))))
+                          ((equal guard *t*)
                            `(kwote (,fn ,@formals)))
                           ((or (equal formals '(x))
                                (equal formals '(x y)))
@@ -6936,12 +6955,6 @@
         (list 'er 'soft nil
               "The form ~x0 was supposed to match the pattern ~x1."
               x (kwote pat))))
-
-#+:non-standard-analysis
-(defconst *non-standard-primitives*
-  '(standardp
-    standard-part
-    i-large-integer))
 
 (defun def-basic-type-sets1 (lst i)
   (declare (xargs :guard (and (integerp i)

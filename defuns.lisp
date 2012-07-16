@@ -4857,7 +4857,13 @@
                   (cons #\2 (if (nth 4 simp-phrase) 1 0))
                   (cons #\3 simp-phrase)
                   (cons #\4 displayed-goal)
-                  (cons #\5 (term-evisc-tuple nil state)))
+                  (cons #\5 (or (term-evisc-tuple nil state)
+                                (and (gag-mode)
+                                     (let ((tuple
+                                            (gag-mode-evisc-tuple state)))
+                                       (cond ((eq tuple t)
+                                              (term-evisc-tuple t state))
+                                             (t tuple)))))))
             (proofs-co state)
             state
             nil)

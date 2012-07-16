@@ -18634,13 +18634,16 @@
 
   There have been several changes to ~il[gag-mode].  It is now is initially set
   to ~c[:goals], suppressing most proof commentary other than key checkpoints;
-  ~pl[set-gag-mode].  Also, top-level induction schemes are once again printed
-  when gag-mode is on, though these can be suppressed with a new
-  ~il[evisc-tuple]; ~pl[set-evisc-tuple], in particular the discussion there of
-  ~c[:GAG-MODE].  Finally, the commentary printed within ~il[gag-mode] that is
-  related to ~il[forcing-round]s is now less verbose.  Thanks to Dave Greve and
-  David Rager for discussions leading to the change in the printing of
-  induction schemes under gag-mode.
+  ~pl[set-gag-mode].  (As before, ~pl[pso] for how to recover the proof
+  output.)  Also, top-level induction schemes are once again printed when
+  gag-mode is on, though these as well as printing of guard conjectures can be
+  abbreviated (``eviscerated'') with a new ~il[evisc-tuple];
+  ~pl[set-evisc-tuple], in particular the discussion there of ~c[:GAG-MODE].
+  Finally, the commentary printed within ~il[gag-mode] that is related to
+  ~il[forcing-round]s is now less verbose.  Thanks to Dave Greve and David
+  Rager for discussions leading to the change in the printing of induction
+  schemes under gag-mode, and thanks to Warren Hunt for an email that led us to
+  similar handling for printing of guard conjectures.
 
   An error now occurs if ~ilc[ld] is called while loading a compiled book.
   ~l[calling-ld-in-bad-contexts].  Thanks to David Rager for reporting a
@@ -18876,6 +18879,12 @@
   leading us to implement a related utility, ~ilc[defabsstobj-missing-events].
   ~l[defabsstobj].  Also thanks to Sol Swords for sending an example exhibiting
   a bug in the initial implementation, which has been fixed.
+
+  A new command, ~c[:psof <filename>], is like ~c[:pso] but directs proof
+  replay output to the specified file.  For large proofs, ~c[:]~ilc[psof] may
+  complete much more quickly than ~c[:]~ilc[pso].  ~pl[psof].  More generally,
+  a new utility, ~ilc[wof] (an acronym for ``With Output File''), directs
+  standard output and proofs output to a file; ~pl[wof].
 
   ~st[HEURISTIC IMPROVEMENTS]
 
@@ -25336,6 +25345,105 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
                  (list 'quote flg)
                flg)))
     `(f-put-global 'print-clause-ids ,flg state)))
+
+(defun set-standard-co-state (val state)
+  (declare (xargs :stobjs state :mode :program))
+  (mv-let (erp x state)
+          (set-standard-co val state)
+          (declare (ignore x))
+          (prog2$ (and erp (er hard? 'set-standard-co-state
+                               "See above for error message."))
+                  state)))
+
+(defun set-proofs-co-state (val state)
+  (declare (xargs :stobjs state :mode :program))
+  (mv-let (erp x state)
+          (set-proofs-co val state)
+          (declare (ignore x))
+          (prog2$ (and erp (er hard? 'set-proofs-co-state
+                               "See above for error message."))
+                  state)))
+
+(defmacro with-standard-co-and-proofs-co-to-file (filename form)
+  `(mv-let
+    (wof-chan state)
+    (open-output-channel ,filename :character state)
+    (cond
+     ((null wof-chan)
+      (er soft 'with-standard-co-and-proofs-co-to-file
+          "Unable to open file ~x0 for output."
+          ,filename))
+     (t
+      (pprogn
+       (princ$ "-*- Mode: auto-revert -*-" wof-chan state)
+       (newline wof-chan state)
+       (state-global-let*
+        ((standard-co wof-chan set-standard-co-state)
+         (proofs-co wof-chan set-proofs-co-state))
+        (mv-let (erp val state)
+                (check-vars-not-free
+                 (wof-chan)
+                 ,form)
+                (pprogn (close-output-channel wof-chan state)
+                        (cond (erp (silent-error state))
+                              (t (value val)))))))))))
+
+(defmacro wof (filename form) ; Acronym: With Output File
+
+  ":Doc-Section Other
+
+  direct standard output and proofs output to a file~/
+
+  ~bv[]
+  Example Form:
+  (wof \"tmp\" (pso)) ; same as (psof \"tmp\")~/
+
+  General Form:
+  (wof filename form)
+  ~ev[]
+  where ~c[filename] is a writable filename and ~c[form] is any form that
+  evaluates to an error triple (~pl[programming-with-state]), that is, a
+  multiple value of the form ~c[(mv erp val state)].  All output to channels
+  ~ilc[standard-co] and ~ilc[proofs-co] will be directed to the indicated
+  file.  It is acceptable to replace ~c[filename] with
+  ~c[(quote filename)].~/"
+
+  `(with-standard-co-and-proofs-co-to-file ,filename ,form))
+
+(defmacro psof (filename)
+
+  ":Doc-Section Other
+
+  show the most recently saved output~/
+
+  For a similar utility, ~pl[pso].  Like ~c[:pso], the ~c[:psof] command prints
+  output that was generated in an environment where output was being saved,
+  typically ~ilc[gag-mode]; also ~pl[set-saved-output].  But unlike ~c[:pso],
+  ~c[:psof] takes a filename argument and saves output to that file, instead of
+  to the terminal.  For large proofs, ~c[:]~ilc[psof] may complete more quickly
+  than ~c[:]~ilc[pso].  Note that as with ~c[:pso], ~il[proof-tree] output will
+  be suppressed.
+
+  The first line of output from ~c[:psof] directs the Emacs editor to use
+  auto-revert mode.  You can change the frequency of auto-reverting the buffer
+  connected to a file by evaluating a suitable command in Emacs.  For example,
+  the command ~c[(setq auto-revert-interval .1)] arranges for auto-revert mode
+  to update as needed every 1/10 of a second.~/~/"
+
+  (declare (xargs :guard (or (stringp filename)
+                             (and (consp filename)
+                                  (consp (cdr filename))
+                                  (null (cddr filename))
+                                  (eq (car filename) 'quote)
+                                  (stringp (cadr filename))))))
+  `(cond #+acl2-par
+         ((f-get-global 'waterfall-parallelism state)
+          (er hard 'psof
+              "The PSOF command is disabled with waterfall-parallelism ~
+               enabled, because in that case most prover output is printed to ~
+               *standard-co* (using wormholes), so cannot be redirected."))
+         (t (wof ,(if (consp filename) (cadr filename) filename)
+                 (pso)))))
 
 (defun set-gag-mode-fn (action state)
 

@@ -30153,9 +30153,12 @@
   the value used for this ~il[evisc-tuple] is ~c[(term-evisc-tuple nil state)].
   But if gag-mode is on (i.e., ~c[(gag-mode)] evaluates to a non-~c[nil]
   value), then with one exception, the value is an evisc-tuple or ~c[nil], to
-  be used for printing of induction schemes in gag-mode.  The exceptional value
-  is ~c[t], which indicates that no printing of induction schemes should be
-  done in gag-mode.  The accessor is ~c[(gag-mode-evisc-tuple state)].
+  be used in gag-mode for printing of induction schemes and, during proofs, the
+  ``The non-trivial part of the guard conjecture''.  The exceptional value is
+  ~c[t], which indicates that in gag-mode, no printing of induction schemes
+  should be and the guard conjecture should be printed using
+  ~c[(term-evisc-tuple t state)].  The accessor is
+  ~c[(gag-mode-evisc-tuple state)].
 
   o ~c[:LD] ~-[] used by the ACL2 read-eval-print loop.  The accessor is
   ~c[(]~ilc[ld-evisc-tuple]~c[ state)].
