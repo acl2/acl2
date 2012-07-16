@@ -76,14 +76,17 @@
 ;; [Jared]: I turned these into defconstants instead of defgs, since they are
 ;; never written, to further separate this from the memoize code.
 
-(defconstant hread-close-paren-obj '(#\)))
-(defconstant hread-dot-obj         '(#\.))
+;; [Jared]: hrmn, well, sbcl seems to gripe about them being redeclared.  I don't
+;; understand why.  I'll make them parameters instead
+
+(defparameter hread-close-paren-obj '(#\)))
+(defparameter hread-dot-obj         '(#\.))
 
 ;; [Jared]: note that these get reinitialized in hons-readtable-init
 (defg *hons-readtable*        (copy-readtable *acl2-readtable*))
 (defg *hacked-acl2-readtable* (copy-readtable *acl2-readtable*))
 
-(defparameter *compact-print-file-ht* nil)
+(defvar *compact-print-file-ht*)
 (declaim (hash-table *compact-print-file-ht*))
 
 (defparameter *hons-read-ht* nil) ; bound sometimes
