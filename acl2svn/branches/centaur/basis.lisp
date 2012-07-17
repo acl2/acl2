@@ -2483,7 +2483,8 @@
     #+:non-standard-analysis
     (standardp (x) 't)
     #+:non-standard-analysis
-    (standard-part (x) (acl2-numberp x))
+    (standard-part (x) ; If (x) is changed here, change cons-term1-cases.
+                   (acl2-numberp x))
     #+:non-standard-analysis
     (i-large-integer () 't)))
 
@@ -2698,6 +2699,12 @@
   ~c[&], which always matches anything."
   (cons 'cond (match-clause-list (car args) (cdr args))))
 
+#+:non-standard-analysis
+(defconst *non-standard-primitives*
+  '(standardp
+    standard-part
+    i-large-integer))
+
 (defun cons-term1-cases (alist)
 
 ; Initially, alist is *primitive-formals-and-guards*.
@@ -2713,7 +2720,19 @@
                         (guard (caddr trip)))
                    (list
                     fn
-                    (cond ((equal guard *t*)
+                    (cond #+:non-standard-analysis
+                          ((eq fn 'i-large-integer)
+                           nil) ; fall through in cons-term1-body
+                          #+:non-standard-analysis
+                          ((eq fn 'standardp)
+                           *t*)
+                          #+:non-standard-analysis
+                          ((eq fn 'standard-part)
+                           (assert$
+                            (eq (car formals) 'x)
+                            `(and ,guard ; a term in variable x
+                                  (kwote ,@formals))))
+                          ((equal guard *t*)
                            `(kwote (,fn ,@formals)))
                           ((or (equal formals '(x))
                                (equal formals '(x y)))
@@ -5245,18 +5264,10 @@
 
 (defun gag-mode-evisc-tuple (state)
   (cond ((gag-mode)
-         (let ((evisc-tuple (f-get-global 'gag-mode-evisc-tuple state)))
-           (cond
-            ((eq evisc-tuple :default)
-             (or (term-evisc-tuple nil state)
-                 (evisc-tuple 6 ; print-level
-                              7 ; print-length
-                              nil ; alist
-                              nil ; hiding-cars
-                              )))
-            ((eq evisc-tuple t)
-             t)
-            (t evisc-tuple))))
+         (let ((val (f-get-global 'gag-mode-evisc-tuple state)))
+           (if (eq val :DEFAULT)
+               nil
+             val)))
         (t (term-evisc-tuple nil state))))
 
 (defun ld-evisc-tuple (state)
@@ -6656,7 +6667,7 @@
      #+:non-standard-analysis defthm-std
      defaxiom
      defconst
-     defstobj
+     defstobj defabsstobj
      defpkg
      deflabel
      defdoc
@@ -6944,12 +6955,6 @@
         (list 'er 'soft nil
               "The form ~x0 was supposed to match the pattern ~x1."
               x (kwote pat))))
-
-#+:non-standard-analysis
-(defconst *non-standard-primitives*
-  '(standardp
-    standard-part
-    i-large-integer))
 
 (defun def-basic-type-sets1 (lst i)
   (declare (xargs :guard (and (integerp i)
@@ -10328,9 +10333,9 @@
 
 (defun get-stobj-recognizer (stobj wrld)
 
-; If stobj is a stobj name, return the name of its recognizer; else nil.
-; The value of the 'stobj property is always (*the-live-var* recog ...),
-; for all user defined stobj names.  The value is '(*the-live-state*) for
+; If stobj is a stobj name, return the name of its recognizer; else nil.  The
+; value of the 'stobj property is always (*the-live-var* recognizer creator
+; ...), for all user defined stobj names.  The value is '(*the-live-state*) for
 ; STATE and is nil for all other names.
 
   (cond ((eq stobj 'state)

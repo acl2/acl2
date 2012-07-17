@@ -1837,6 +1837,8 @@
 ;           defthm                   name
 ;           defconst                 name
 ;           defstobj                 (name the-live-var fn1 ... fnk)
+;             [Note: defstobj is the type used for both defstobj and
+;              defabsstobj events.]
 ;           defmacro                 name
 ;           defpkg                   "name"
 ;           deflabel                 name
@@ -2674,16 +2676,45 @@
 
 (defun renew-name/overwrite (name old-getprops wrld)
 
-; Name is a function symbol, old-getprops is the list returned by getprops
-; on name, i.e., an alist dotting properties to values.  We map over that
-; list and "unbind" those properties of name in wrld that were stored by
-; the event introducing name.
+; Name is a function symbol, old-getprops is the list returned by getprops on
+; name, i.e., an alist dotting properties to values.  We map over that list and
+; "unbind" those properties of name in wrld that were stored by the event
+; introducing name.
 
-; Note: Even when the ld-redefinition-action specifies :overwrite we
-; sometimes change it to :erase (see maybe-coerce-overwrite-to-erase).
-; Thus, this function is actually only called on function symbols, not
-; constants or stobjs or stobj-live-vars.  The erase version, above,
-; is called on those redefinable non-functions.
+; Note: Even when the ld-redefinition-action specifies :overwrite we sometimes
+; change it to :erase (see maybe-coerce-overwrite-to-erase).  Thus, this
+; function is actually only called on function symbols, not constants or stobjs
+; or stobj-live-vars.  The erase version, above, is called on those redefinable
+; non-functions.
+
+; Finally, we back up our claim that name must be a function symbol.  The
+; reason is that renew-name is the only place that calls renew-name/overwrite
+; and it only does that when the renewal-mode is :overwrite or
+; :reclassifying-overwrite.  Now renew-name is only called by
+; chk-redefineable-namep which sets the renewal-mode using
+; redefinition-renewal-mode.
+
+; Finally, if you inspect redefinition-renewal-mode you can see that it only
+; returns :overwrite or :reclassifying-overwrite on functions.  The proof of
+; this for the :overwrite cases is tedious but pretty straightforward.  Most
+; branches through redefinition-renewal-mode signal an error prohibiting the
+; redefinition attempt, a few explicitly return :erase, and the normal cases in
+; which :overwrite could be returned are all coming out of calls to
+; maybe-coerce-overwrite-to-erase, which returns :erase unless the old and new
+; type of the event is FUNCTION.
+
+; The harder part of the proof (that only functions get renewal-mode :overwrite
+; or :reclassifying-overwrite) is when we return :reclassifying-overwrite.
+; Whether redefinition-renewal-mode does that depends on the argument
+; reclassifyingp supplied by chk-redefineable-namep, which in turn depends on
+; what value of reclassifyingp is supplied to chk-redefineable-namep by its
+; only caller, chk-just-new-name, which in turn just passes in the value it is
+; supplied by its callers, of which there are many.  However, all but
+; chk-acceptable-defuns1 supply reclassifyingp of nil.
+
+; So we know that we reclassify only function symbols and we know that only
+; function symbols get :overwrite or :reclassifying-overwrite for their
+; renewal-modes.
 
   (cond
    ((null old-getprops) wrld)
@@ -2716,6 +2747,9 @@
                  TYPE-PRESCRIPTIONS
                  GUARD
                  ABSOLUTE-EVENT-NUMBER
+
+; It is tempting to add CONGRUENT-STOBJ-REP to this list.  But it is a property
+; of stobjs, not functions, so that isn't necessary.
 
 ; Note: If you delete RUNIC-MAPPING-PAIRS from this list you must reconsider
 ; functions like current-theory-fn which assume that if a name has the
@@ -2752,26 +2786,21 @@
               wrld)))
    ((member-eq (caar old-getprops)
 
-; As of this writing, the property in question must be one of the following:
+; As of this writing, the property in question must be one of the following,
+; since name is a function symbol.  Note that these are not created by the
+; introductory event of name (which must have been a defun or constrain) and
+; hence are left untouched here.
 
                '(GLOBAL-VALUE
-                 LABEL
                  LINEAR-LEMMAS
                  FORWARD-CHAINING-RULES
                  ELIMINATE-DESTRUCTORS-RULE
                  COARSENINGS
                  CONGRUENCES
                  INDUCTION-RULES
-                 THEOREM
                  DEFCHOOSE-AXIOM
-                 UNTRANSLATED-THEOREM
-                 CLASSES
-                 CONST
-                 THEORY
-                 TABLE-GUARD
-                 TABLE-ALIST
-                 MACRO-BODY
-                 MACRO-ARGS
+                 TABLE-GUARD ; functions names can also be table names
+                 TABLE-ALIST ; functions names can also be table names
                  PREDEFINED
                  DEFAXIOM-SUPPORTER
                  ATTACHMENT ; see Essay on Defattach re: :ATTACHMENT-DISALLOWED
@@ -2784,10 +2813,6 @@
                  SIGNATURE-RULES-FORM-2
                  BIG-SWITCH
                  ))
-
-; and these are not created by the introductory event of name (which must have
-; been a defun or constrain) and hence are left untouched here.
-
    (renew-name/overwrite
     name
     (cdr old-getprops)
@@ -5447,7 +5472,8 @@
   A ~ilc[defstobj] is redundant if there is already a ~c[defstobj] event with
   the same name that has exactly the same field descriptors (~pl[defstobj]), in
   the same order, and with the same ~c[:renaming] value if ~c[:renaming] is
-  supplied for either event.
+  supplied for either event.  A ~ilc[defabsstobj] is redundant if there is
+  already an identical ~c[defabsstobj] event.
 
   A ~ilc[defmacro] is redundant if there is already a macro defined with the
   same name and syntactically identical arguments, ~il[guard], and body.
@@ -20233,8 +20259,9 @@
   ~c[Value] is a list ~c[(kwd-val-listp-1 ... kwd-val-listp-k)], where each
   ~c[kwd-val-listp-i] is a list satisfying ~ilc[keyword-value-listp], i.e., an
   alternating list of keywords and values.  This hint causes an attempt to
-  prove the specified goal using hints kwd-val-listp-1 in turn, until the first
-  of these succeeds.  If none succeeds, then the prover proceeds after
+  prove the specified goal using hints ~c[kwd-val-listp-i] in sequence (first
+  ~c[kwd-val-listp-1], then ~c[kwd-val-listp-2], and so on), until the first of
+  these succeeds.  If none succeeds, then the prover proceeds after
   heuristically choosing the ``best'' result, taking into account the goals
   pushed in each case for proof by induction.
 
@@ -22377,15 +22404,21 @@
 ; rather than the raw Lisp definition.
 
   (and (function-symbolp fn wrld)
-       (let* ((event-number (getprop (or stobj-function fn) 'absolute-event-number
-                                     nil 'current-acl2-world wrld))
-              (wrld (and event-number
-                         (lookup-world-index 'event event-number wrld)))
-              (def (and wrld
-                        (cltl-def-from-name2 fn stobj-function axiomatic-p wrld))))
+       (let* ((event-number
+               (getprop (or stobj-function fn) 'absolute-event-number nil
+                        'current-acl2-world wrld))
+              (wrld
+               (and event-number
+                    (lookup-world-index 'event event-number wrld)))
+              (def
+               (and wrld
+                    (cltl-def-from-name2 fn stobj-function axiomatic-p wrld))))
          (and def
               (or (null stobj-function)
-                  (not (member-equal *stobj-inline-declare* def)))
+                  (and (not (member-equal *stobj-inline-declare* def))
+                       (or axiomatic-p
+                           (not (getprop stobj-function 'concrete-stobj nil
+                                         'current-acl2-world wrld)))))
               (cons 'defun def)))))
 
 (defun cltl-def-from-name (fn wrld)

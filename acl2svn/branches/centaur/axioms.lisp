@@ -1853,6 +1853,9 @@
 
 (defmacro defstobj (name &rest args)
 
+; Warning: If you change this definition, consider the possibility of making
+; corresponding changes to the #-acl2-loop-only definition of defabsstobj.
+
 ; This function is run when we evaluate (defstobj name . args) in raw lisp.
 ; A typical such form is
 
@@ -7824,17 +7827,11 @@
 
   ~i[Technical Details]
 
-  The tau system's decision procedure is disabled by default, for backwards
-  compatibility.  To enable it globally do
-  ~bv[]
-  (in-theory (enable (:executable-counterpart tau-system)))
-  ~ev[]
-  Alternatively, ~pl[tau-status].  Note therefore that there are two ``modes''
-  controlling the tau system: one controls whether or not the algorithm is
-  employed in theorem proving, the other controls whether the data base is
-  built only from ~c[:tau-system] rules (``manual'' mode) or from any rule of
-  suitable form (``automatic'' mode).  Both modes may be set by
-  ~ilc[tau-status].
+  There are two ``modes'' controlling the tau system: one controls whether or
+  not the algorithm is employed in theorem proving, the other controls whether
+  the data base is built only from ~c[:tau-system] rules (``manual'' mode) or
+  from any rule of suitable form (``automatic'' mode).  Both modes may be set
+  by ~c[tau-status]; ~pl[tau-status].
 
   However, to be effective, the tau system must be ``programmed'' with rules.
   These rules are generally either statements of establishing that one monadic
@@ -14040,14 +14037,32 @@
 
   ACL2(r) support for real numbers~/
 
-  ACL2 supports rational numbers but not real numbers.  However,
-  starting with Version  2.5, a variant of ACL2 called ``ACL2(r)''
-  supports the real numbers by way of non-standard analysis.  ACL2(r)
-  was conceived and first implemented by Ruben Gamboa in his Ph.D.
-  dissertation work, supervised by Bob Boyer with active participation
-  by Matt Kaufmann.  The Makefile provided with ACL2 has target
-  ~c[large-acl2r] for building ACL2(r) images.  To see
-  which image you have, see if the prompt includes the string ``~c[(r)]'',
+  ACL2 supports rational numbers but not real numbers.  However, starting with
+  Version 2.5, a variant of ACL2 called ``ACL2(r)'' supports the real numbers
+  by way of non-standard analysis.  ACL2(r) was conceived and first implemented
+  by Ruben Gamboa in his Ph.D.  dissertation work, supervised by Bob Boyer with
+  active participation by Matt Kaufmann.
+
+  ACL2(r) has the same source files as ACL2.  After you download ACL2, you can
+  build ACL2(r) by executing the following command on the command line in your
+  acl2-sources directory, replacing ~c[<your_lisp>] with a path to your Lisp
+  executable:
+  ~bv[]
+  make large-acl2r LISP=<your_lisp>
+  ~ev[]
+  This will create an executable in your acl2-sources directory named
+  ~c[saved_acl2r].
+
+  Note that you should also download the `nonstd' books, from
+  ~url[http://www.cs.utexas.edu/users/moore/acl2/current/distrib/acl2-sources/books/nonstd.tar.gz]
+  and then certify them from your acl2-sources directory, shown here as
+  ~c[<DIR>]:
+  ~bv[]
+  make regression-nonstd ACL2=<DIR>/saved_acl2r
+  ~ev[]
+
+  To check that you are running ACL2(r), see if the prompt includes the string
+  ``~c[(r)]'',
   e.g.:
   ~bv[]
   ACL2(r) !>
@@ -14057,22 +14072,17 @@
   In ACL2 (as opposed to ACL2(r)), when we say ``real'' we mean
   ``rational.''~/
 
-  Caution:  ACL2(r) should be considered experimental as of Version
-  2.5: although we (Kaufmann and Moore) have carefully completed
-  Gamboa's integration of the reals into the ACL2 source code, our
-  primary concern to date has been to ensure unchanged behavior when
-  ACL2 is compiled in the default manner, i.e., without the
-  non-standard extensions.  As for every release of ACL2, at the time
-  of this release we are unaware of soundness bugs in ACL2 Version  2.5.
-  We are confident that ACL2(r) will behave much as it does now and will
-  ultimately be sound; but we have not yet argued the soundness of
-  every detail of the integration.
+  Caution: ACL2(r) should be considered experimental: although we (Kaufmann and
+  Moore) have carefully completed Gamboa's integration of the reals into the
+  ACL2 source code, our primary concern has been to ensure unchanged behavior
+  when ACL2 is compiled in the default manner, i.e., without the non-standard
+  extensions.  As for every release of ACL2, at the time of a release we are
+  unaware of soundness bugs in ACL2 or ACL2(r).
 
-  There is only limited documentation on the non-standard features of
-  ACL2(r).  We hope to provide more documentation for such features in
-  future releases.  Please feel free to query the authors if you are
-  interested in learning more about ACL2(r).  Gamboa's dissertation
-  may also be helpful.~/")
+  There is only limited documentation on the non-standard features of ACL2(r).
+  We hope to provide more documentation for such features in future releases.
+  Please feel free to query the authors if you are interested in learning more
+  about ACL2(r).  Gamboa's dissertation may also be helpful.~/")
 
 (defun floor (i j)
 
@@ -17755,21 +17765,7 @@
 
   There is, however, a way to ensure that a ~il[theory] defined in a book is
   the same at ~ilc[include-book] time as it was during the admissibility pass
-  of the book's certification.  The following form illustrates how this works,
-  by serving as a replacement for the ~c[deftheory] event in the example
-  above.  To see why this works, ~pl[make-event]; also, a summary is below.
-  ~bv[]
-  (make-event
-   `(deftheory my-theory
-      ',(let ((world (w state)))
-          (current-theory :here))))
-  ~ev[]
-  In short, the ~c[make-event] call above first evaluates the backquoted
-  ~c[deftheory] call by evaluating ~c[(current-theory :here)] with ~c[world]
-  bound to the current ACL2 logical ~il[world].  The result is a form
-  ~c[(deftheory my-theory '(...))] where ``~c[(...)]'' is a list of all
-  ~il[rune]s in current theory.  This ~c[deftheory] form is stored in the
-  book's certificate, and is used when the book is included later.~/
+  of the book's certification; ~pl[deftheory-static].~/
 
   :cited-by Theories"
 
@@ -17781,6 +17777,84 @@
         'state
         (list 'quote doc)
         (list 'quote event-form)))
+
+(defmacro deftheory-static (name theory)
+
+  ":Doc-Section Events
+
+  define a `static' theory (to ~il[enable] or ~il[disable] a set of rules)~/
+
+  This macro provides a variant of ~ilc[deftheory], such that the resulting
+  theory is the same at ~ilc[include-book] time as it was at ~ilc[certify-book]
+  time.
+
+  We assume that the reader is familiar with ~il[theories]; ~pl[deftheory].  We
+  begin here by illustrating how ~c[deftheory-static] differs from
+  ~ilc[deftheory].  Suppose for example that the following events are the first
+  two events in a book, where that book is certified in the initial ACL2
+  ~il[world] (~pl[ground-zero]).
+  ~bv[]
+  (deftheory my-theory
+    (current-theory :here))
+  (deftheory-static my-static-theory
+    (current-theory :here))
+  ~ev[]
+  Now suppose we include that book after executing the following event.
+  ~bv[]
+  (in-theory (disable car-cons))
+  ~ev[]
+  Suppose that later we execute ~c[(in-theory (theory 'my-theory))].  Then the
+  rule ~c[car-cons] will be disabled, because it was disabled at the time the
+  expression ~c[(current-theory :here)] was evaluated when processing the
+  ~c[deftheory] of ~c[my-theory] while including the book.  However, if we
+  execute ~c[(in-theory (theory 'my-static-theory))], then the rule
+  ~c[car-cons] will be enabled, because the value of the theory
+  ~c[my-static-theory] was saved at the time the book was certified.~/
+
+  ~bv[]
+  General Form:
+  (deftheory-static name term :doc doc-string)
+  ~ev[]
+  The arguments are handled the same as for ~ilc[deftheory].  Thus, ~c[name] is
+  a new symbolic name (~pl[name]), ~c[term] is a term that when evaluated will
+  produce a theory (~pl[theories]), and ~ilc[doc-string] is an optional
+  ~il[documentation] string (~pl[doc-string]).  Except for the variable
+  ~ilc[world], ~c[term] must contain no free variables.  ~c[Term] is evaluated
+  with ~ilc[world] bound to the current world (~pl[world]) and the resulting
+  theory is then converted to a ~em[runic theory] (~pl[theories]) and
+  associated with ~c[name].  Henceforth, this runic theory is returned as the
+  value of the theory expression ~c[(theory name)].
+
+  As for ~ilc[deftheory], the value returned is the length of the resulting
+  theory.
+
+  We conclude with an optional discussion about the implementation of
+  ~c[deftheory-static], for those familiar with ~ilc[make-event].  The
+  following macroexpansion of the ~c[deftheory-static] form above shows how
+  this works (~pl[trans1]).
+  ~bv[]
+  ACL2 !>:trans1 (deftheory-static my-static-theory
+                   (current-theory :here))
+   (MAKE-EVENT (LET ((WORLD (W STATE)))
+                    (LIST 'DEFTHEORY
+                          'MY-STATIC-THEORY
+                          (LIST 'QUOTE (CURRENT-THEORY :HERE)))))
+  ACL2 !>
+  ~ev[]
+
+  The idea is that upon evaluation of this ~c[make-event] form, the first step
+  is to evaluate the indicated ~ilc[LET] expression to obtain a form
+  ~c[(deftheory my-theory '(...))], where ``~c[(...)]'' is a list of all
+  ~il[rune]s in current theory.  If this form is in a book being certified,
+  then the resulting ~c[deftheory] form is stored in the book's certificate,
+  and is used when the book is included later.~/
+
+  :cited-by Theories"
+
+  `(make-event
+    (let ((world (w state)))
+      (list 'deftheory ',name
+         (list 'quote ,theory)))))
 
 #+acl2-loop-only
 (defmacro defstobj (&whole event-form name &rest args)
@@ -17798,7 +17872,9 @@
   Note: Novices are advised to avoid ~c[defstobj], perhaps instead using
   distributed book ~c[books/data-structures/structures.lisp].  At the least,
   consider using ~c[(]~ilc[set-verify-guards-eagerness]~c[ 0)] to avoid
-  ~il[guard] verification.
+  ~il[guard] verification.  On the other hand, after you learn to use
+  ~c[defstobj], ~pl[defabsstobj] for another way to introduce single-threaded
+  objects.
 
   ~bv[]
   Example:
@@ -20169,7 +20245,11 @@
   to the user is printed, reminding the user that the book is in fact
   incomplete and possibly inconsistent.  This warning is in fact an error if
   ~c[:skip-proofs-okp] is ~c[nil] in the ~ilc[include-book] form;
-  ~pl[include-book].~/"
+  ~pl[include-book].
+
+  We conclude with a technical note.  ~c[Skip-proofs] works by binding the
+  ~ilc[ld] special ~ilc[ld-skip-proofsp] to ~c[t] unless it is already bound to
+  a non-~c[nil] value; ~pl[ld-skip-proofsp].~/"
 
   `(state-global-let*
     ((ld-skip-proofsp (or (f-get-global 'ld-skip-proofsp state)
@@ -25701,7 +25781,8 @@
   can be passed into only certain functions in certain slots, and must be
   returned by those functions that ``modify'' it.  Henceforth, we do not
   discuss single-threaded objects in general (which the user can introduce
-  with ~ilc[defstobj]) but one in particular, namely ACL2's ~c[state] object.
+  with ~ilc[defstobj] and ~ilc[defabsstobj]) but one in particular, namely
+  ACL2's ~c[state] object.
 
   The ~i[global table] is perhaps the most visible portion of the state
   object.  Using the interface functions ~c[@] and ~c[assign], a user
@@ -26917,7 +26998,7 @@
     rewrite-entry skip-proofs f-boundp-global
     make-event set-verify-guards-eagerness
     wormhole verify-termination-boot-strap start-proof-tree
-    f-decrement-big-clock defstobj defund defttag
+    f-decrement-big-clock defabsstobj defstobj defund defttag
     defdoc push-gframe defthmd f-get-global
     set-nu-rewriter-mode
 
@@ -27373,7 +27454,7 @@
     (fmt-hard-right-margin . 77)
     (fmt-soft-right-margin . 65) ; same as proof-tree-buffer-width
     (gag-mode . nil) ; set in lp
-    (gag-mode-evisc-tuple . :default)
+    (gag-mode-evisc-tuple . nil)
     (gag-state . nil)
     (gag-state-saved . nil) ; saved when gag-state is set to nil
     (global-enabled-structure . nil) ; initialized in enter-boot-strap-mode
@@ -30671,8 +30752,8 @@
 
   (declare (xargs :guard (and (true-listp str-args)
                               (member-symbol-name (symbol-name severity)
-                                                  '(hard hard? hard! soft
-                                                         very-soft))
+                                                  '(hard hard? hard! hard?!
+                                                         soft very-soft))
                               (<= (length str-args) 10))))
 
 ; Note: We used to require (stringp str) but then we started writing such forms
@@ -30764,6 +30845,10 @@
            #+acl2-loop-only (list 'illegal context str alist)
            #-acl2-loop-only `(let ((*hard-error-returns-nilp* nil))
                               (illegal ,context ,str ,alist)))
+          ((equal severity-name "HARD?!")
+           #+acl2-loop-only (list 'hard-error context str alist)
+           #-acl2-loop-only `(let ((*hard-error-returns-nilp* nil))
+                              (hard-error ,context ,str ,alist)))
           (t
 
 ; The final case should never happen.
@@ -31410,14 +31495,24 @@
                        (cond ((eq file-name :string)
                               (make-string-output-stream))
                              (t (open os-file-name :direction :output
-                                      :if-exists :supersede))))
+                                      :if-exists :supersede
+
+; In ACL2(p) using CCL, we have seen an error caused when standard-co was
+; connected to a file.  Specifically, waterfall-print-clause-id@par was
+; printing to standard-co -- i.e., to that file -- and CCL complained because
+; the default is for a file stream to be private to the thread that created it.
+
+                                      #+(and acl2-par ccl) :sharing
+                                      #+(and acl2-par ccl) :lock))))
                       (:byte
                        (cond ((eq file-name :string)
                               (make-string-output-stream
                                :element-type '(unsigned-byte 8)))
                              (t (open os-file-name :direction :output
                                       :if-exists :supersede
-                                      :element-type '(unsigned-byte 8)))))
+                                      :element-type '(unsigned-byte 8)
+                                      #+(and acl2-par ccl) :sharing
+                                      #+(and acl2-par ccl) :lock))))
                       (otherwise
                        (interface-er "Illegal output-type ~x0." typ))))
                    (channel (make-output-channel file-name *file-clock*)))
@@ -37832,10 +37927,10 @@
   warning types and ~pl[set-inhibited-summary-types] for how to inhibit
   individual parts of the summary.
 
-  Printing of events on behalf of ~ilc[certify-book], ~ilc[encapsulate],
-  or ~ilc[defstobj] is inhibited when both ~c['event] and ~c['prove]
-  belong to ~c[lst].  Otherwise, printing of events is controlled by
-  the ~ilc[ld] special ~ilc[ld-pre-eval-print].
+  Printing of events on behalf of ~ilc[certify-book] and ~ilc[encapsulate] is
+  inhibited when both ~c['event] and ~c['prove] belong to ~c[lst].  Otherwise,
+  printing of events is controlled by the ~ilc[ld] special
+  ~ilc[ld-pre-eval-print].
 
   ~em[Note for advanced users.]  By including ~c[warning!] in ~c[lst], you are
   automatically including ~c[warning] as well: all warnings will be inhibited.

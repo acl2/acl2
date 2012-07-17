@@ -776,7 +776,9 @@ notation causes an error and (b) the use of ,. is not permitted."
                (backquote-lst (cdr l))))
         ((and (consp (car l))
               (eq (caar l) *comma-atsign*))
-         (list 'append (cadr (car l)) (backquote-lst (cdr l))))
+         (cond ((null (cdr l))
+                (cadr (car l)))
+               (t (list 'append (cadr (car l)) (backquote-lst (cdr l))))))
         (t
          (list 'cons
                (backquote (car l))

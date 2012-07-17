@@ -18456,6 +18456,12 @@
 ; Improved several :doc topics by clarifying the role of type declarations in
 ; specifying the guard of a function.
 
+; We eliminated some needless property names from renew-name/overwrite, and
+; added a comment clarifying why it is only called on function symbols.
+
+; Added new severity option HARD?! for er, so that the guard of theory-fn can
+; be t (avoiding the expense of doing the theory-namep check twice).
+
   :doc
   ":Doc-Section release-notes
 
@@ -18628,14 +18634,16 @@
 
   There have been several changes to ~il[gag-mode].  It is now is initially set
   to ~c[:goals], suppressing most proof commentary other than key checkpoints;
-  ~pl[set-gag-mode].  Also, top-level induction schemes are once again printed
-  when gag-mode is enabled.  Printing of large induction schemes is abbreviated
-  by default, but this may be modified, and such printing can even be
-  suppressed; ~pl[set-evisc-tuple], in particular the discussion there of
-  ~c[:GAG-MODE].  Finally, the commentary printed within ~il[gag-mode] that is
-  related to ~il[forcing-round]s is now less verbose.  Thanks to Dave Greve and
-  David Rager for discussions leading to the change in the printing of
-  induction schemes under gag-mode.
+  ~pl[set-gag-mode].  (As before, ~pl[pso] for how to recover the proof
+  output.)  Also, top-level induction schemes are once again printed when
+  gag-mode is on, though these as well as printing of guard conjectures can be
+  abbreviated (``eviscerated'') with a new ~il[evisc-tuple];
+  ~pl[set-evisc-tuple], in particular the discussion there of ~c[:GAG-MODE].
+  Finally, the commentary printed within ~il[gag-mode] that is related to
+  ~il[forcing-round]s is now less verbose.  Thanks to Dave Greve and David
+  Rager for discussions leading to the change in the printing of induction
+  schemes under gag-mode, and thanks to Warren Hunt for an email that led us to
+  similar handling for printing of guard conjectures.
 
   An error now occurs if ~ilc[ld] is called while loading a compiled book.
   ~l[calling-ld-in-bad-contexts].  Thanks to David Rager for reporting a
@@ -18713,6 +18721,23 @@
   thank Sol Swords for sending us an example that motiviated this change: a
   ~il[guard] verification that took about 5 seconds in Version_4.3 now takes,
   on the same machine, about 0.07 seconds.
+
+  The behavior of backquote (~c[`]) has been changed slightly to be compatible
+  with its behavior in raw Lisp.  The change is to allow the use of
+  comma-atsign (~c[,@]) at the end of a list, as in the following example.
+  ~bv[]
+  (let ((x 3) (y 2) (z 7)) `(,x ,y ,@z))
+  ~ev[]
+  Formerly, evaluation of this form had caused a guard violation in the ACL2
+  loop unless guard-checking was off (i.e., ~ilc[set-guard-checking] was
+  involked with ~c[nil] or ~c[:none]), in which case it returned ~c[(3 2)].
+  But we observed evaluation of this form to return ~c[(3 2 . 7)] in every host
+  Lisp on which ACL2 runs (Allegro CL, CCL, CLISP, CMUCL, GCL, LispWorks, and
+  SBCL).  Now, ACL2 behaves like these Lisps.
+
+  A call of the ~ilc[theory] macro had previously returned ~c[nil] when applied
+  to other than the name of name of a previously executed ~ilc[deftheory]
+  event.  Now, a hard error occurs.
 
   ~st[NEW FEATURES]
 
@@ -18834,6 +18859,32 @@
   intended for those with prior ACL2 experience who wish to extend their
   knowledge of ACL2 capabilities.  ~l[advanced-features].  Thanks to Warren
   Hunt and Anna Slobodova for requesting such information.
+
+  A new macro, ~ilc[deftheory-static], provides a variant of ~ilc[deftheory]
+  such that the resulting theory is the same at ~ilc[include-book] time as it
+  was at ~ilc[certify-book] time.  Thanks to Robert Krug for helpful
+  discussions on this new feature and for updating his ~c[books/arithmetic-5/]
+  distributed books to use this feature.
+
+  A new event, ~ilc[defabsstobj], provides a new way to introduce
+  single-threaded objects (~pl[stobj] and ~pl[defstobj]).  These so-called
+  ``abstract ~il[stobj]s'' permit user-provided logical definitions for
+  primitive operations on stobjs, for example using an alist-based
+  representation instead of a list-based representation for array fields.
+  Moreover, the proof obligations guarantee that the recognizer is preserved;
+  hence the implementation avoids executing the recognizer, which may be an
+  arbitrarily complex invariant that otherwise would be an expensive part of
+  ~il[guard] checks.  Thanks to Warren Hunt for a request leading us to design
+  and implement this new feature, and thanks to Rob Sumners for a request
+  leading us to implement a related utility, ~ilc[defabsstobj-missing-events].
+  ~l[defabsstobj].  Also thanks to Sol Swords for sending an example exhibiting
+  a bug in the initial implementation, which has been fixed.
+
+  A new command, ~c[:psof <filename>], is like ~c[:pso] but directs proof
+  replay output to the specified file.  For large proofs, ~c[:]~ilc[psof] may
+  complete much more quickly than ~c[:]~ilc[pso].  ~pl[psof].  More generally,
+  a new utility, ~ilc[wof] (an acronym for ``With Output File''), directs
+  standard output and proofs output to a file; ~pl[wof].
 
   ~st[HEURISTIC IMPROVEMENTS]
 
@@ -19084,16 +19135,42 @@
    :hints ((\"Goal\" :in-theory (disable commutativity-of-+))))
   ~ev[]
 
-  Although all bets are off when using
-  redefinition (~pl[ld-redefinition-action]), we wish to minimize negative
-  effects of its use, especially raw Lisp errors.  The example below had caused
-  a raw Lisp error because of how undoing was managed, but this has been fixed.
+  Although all bets are off when using redefinition
+  (~pl[ld-redefinition-action]), we wish to minimize negative effects of its
+  use, especially raw Lisp errors.  The examples below had caused raw Lisp
+  errors, but no longer.
   ~bv[]
   (defstobj st fld :inline t)
   (redef!)
   (defstobj st new0 fld)
   (u)
   (fld st) ; previously an error, which is now fixed
+
+  ; Fresh ACL2 session:
+  (redef!)
+  (defun foo (x) x)
+  (defmacro foo (x) `(quote ,x))
+  (u)
+
+  ; Fresh ACL2 session:
+  (redef!)
+  (defmacro foo (x) (cons 'list x))
+  (defun foo (x) x)
+  ~ev[]
+
+  Fixed a bug that could cause hard Lisp errors in an ~ilc[encapsulate] event.
+  Thanks to Sol Swords for sending an example that exhibited this bug.  Here is
+  a simpler such example; the bug was in how it was checked whether the
+  ~il[guard] for a guard-verified function (here, ~c[g]) depends on some
+  function introduced in the ~il[signature] of the ~ilc[encapsulate] (here, the
+  function ~c[f]).
+  ~bv[]
+  (encapsulate
+   ((f (x) t))
+   (local (defun f (x) (declare (xargs :guard t)) x))
+   (defun g (x)
+     (declare (xargs :guard (if (integerp x) (f x) t)))
+     x))
   ~ev[]
 
   ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]
@@ -25264,6 +25341,105 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
                  (list 'quote flg)
                flg)))
     `(f-put-global 'print-clause-ids ,flg state)))
+
+(defun set-standard-co-state (val state)
+  (declare (xargs :stobjs state :mode :program))
+  (mv-let (erp x state)
+          (set-standard-co val state)
+          (declare (ignore x))
+          (prog2$ (and erp (er hard? 'set-standard-co-state
+                               "See above for error message."))
+                  state)))
+
+(defun set-proofs-co-state (val state)
+  (declare (xargs :stobjs state :mode :program))
+  (mv-let (erp x state)
+          (set-proofs-co val state)
+          (declare (ignore x))
+          (prog2$ (and erp (er hard? 'set-proofs-co-state
+                               "See above for error message."))
+                  state)))
+
+(defmacro with-standard-co-and-proofs-co-to-file (filename form)
+  `(mv-let
+    (wof-chan state)
+    (open-output-channel ,filename :character state)
+    (cond
+     ((null wof-chan)
+      (er soft 'with-standard-co-and-proofs-co-to-file
+          "Unable to open file ~x0 for output."
+          ,filename))
+     (t
+      (pprogn
+       (princ$ "-*- Mode: auto-revert -*-" wof-chan state)
+       (newline wof-chan state)
+       (state-global-let*
+        ((standard-co wof-chan set-standard-co-state)
+         (proofs-co wof-chan set-proofs-co-state))
+        (mv-let (erp val state)
+                (check-vars-not-free
+                 (wof-chan)
+                 ,form)
+                (pprogn (close-output-channel wof-chan state)
+                        (cond (erp (silent-error state))
+                              (t (value val)))))))))))
+
+(defmacro wof (filename form) ; Acronym: With Output File
+
+  ":Doc-Section Other
+
+  direct standard output and proofs output to a file~/
+
+  ~bv[]
+  Example Form:
+  (wof \"tmp\" (pso)) ; same as (psof \"tmp\")~/
+
+  General Form:
+  (wof filename form)
+  ~ev[]
+  where ~c[filename] is a writable filename and ~c[form] is any form that
+  evaluates to an error triple (~pl[programming-with-state]), that is, a
+  multiple value of the form ~c[(mv erp val state)].  All output to channels
+  ~ilc[standard-co] and ~ilc[proofs-co] will be directed to the indicated
+  file.  It is acceptable to replace ~c[filename] with
+  ~c[(quote filename)].~/"
+
+  `(with-standard-co-and-proofs-co-to-file ,filename ,form))
+
+(defmacro psof (filename)
+
+  ":Doc-Section Other
+
+  show the most recently saved output~/
+
+  For a similar utility, ~pl[pso].  Like ~c[:pso], the ~c[:psof] command prints
+  output that was generated in an environment where output was being saved,
+  typically ~ilc[gag-mode]; also ~pl[set-saved-output].  But unlike ~c[:pso],
+  ~c[:psof] takes a filename argument and saves output to that file, instead of
+  to the terminal.  For large proofs, ~c[:]~ilc[psof] may complete more quickly
+  than ~c[:]~ilc[pso].  Note that as with ~c[:pso], ~il[proof-tree] output will
+  be suppressed.
+
+  The first line of output from ~c[:psof] directs the Emacs editor to use
+  auto-revert mode.  You can change the frequency of auto-reverting the buffer
+  connected to a file by evaluating a suitable command in Emacs.  For example,
+  the command ~c[(setq auto-revert-interval .1)] arranges for auto-revert mode
+  to update as needed every 1/10 of a second.~/~/"
+
+  (declare (xargs :guard (or (stringp filename)
+                             (and (consp filename)
+                                  (consp (cdr filename))
+                                  (null (cddr filename))
+                                  (eq (car filename) 'quote)
+                                  (stringp (cadr filename))))))
+  `(cond #+acl2-par
+         ((f-get-global 'waterfall-parallelism state)
+          (er hard 'psof
+              "The PSOF command is disabled with waterfall-parallelism ~
+               enabled, because in that case most prover output is printed to ~
+               *standard-co* (using wormholes), so cannot be redirected."))
+         (t (wof ,(if (consp filename) (cadr filename) filename)
+                 (pso)))))
 
 (defun set-gag-mode-fn (action state)
 

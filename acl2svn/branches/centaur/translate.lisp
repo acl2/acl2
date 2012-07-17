@@ -806,19 +806,17 @@
 
 (defun stobjp (x known-stobjs w)
 
-; We recognize whether x is to be treated as a stobj name.
-; Known-stobjs is a list of all such names, or else T, standing for
-; all stobj names in w.  During translation, only a subset of the
-; known stobjs in w are considered stobjs, as per the user's :stobjs
-; declare xargs.  If you want to know whether x has been defstobj'd in
-; w, use known-stobjs = t.
+; We recognize whether x is to be treated as a stobj name.  Known-stobjs is a
+; list of all such names, or else T, standing for all stobj names in w.  During
+; translation, only certain known stobjs in w are considered stobjs, as per the
+; user's :stobjs declare xargs.  If you want to know whether x has been defined
+; as a stobj in w, use known-stobjs = t.
 
-; Slight abuse permitted: Sometimes known-stobjs will be a list of
-; stobj flags!  E.g., we might supply (NIL NIL STATE NIL $S) where
-; (STATE $S) is technically required.  But we should never ask if NIL
-; is a stobj because we only ask this of variable symbols.  But just
-; to make this an ironclad guarantee, we include the first conjunct
-; below.
+; Slight abuse permitted: Sometimes known-stobjs will be a list of stobj flags!
+; E.g., we might supply (NIL NIL STATE NIL $S) where (STATE $S) is technically
+; required.  But we should never ask if NIL is a stobj because we only ask this
+; of variable symbols.  But just to make this an ironclad guarantee, we include
+; the first conjunct below.
 
   (and x
        (symbolp x)
@@ -2465,7 +2463,7 @@
 ; This case occurs if we attempt to execute the call of a "oneified" function
 ; on a live stobj (including state) when the guard of the fn is not satisfied,
 ; where the function is either a primitive listed in *super-defun-wart-table*
-; or is defined by defstobj.
+; or is defined by defstobj or defabsstobj.
 
 ; Warning: Before removing this error, consider that in general guard-checking
 ; may be defeated by :set-guard-checking :none, so we may be relying on this
@@ -4401,11 +4399,12 @@
 
 (defun defstobj-supporterp (name wrld)
 
-; If name is supportive of a single-threaded object implementation, we
-; return the name of the defstobj.  Otherwise, we return nil.  By
-; "supportive" we mean name is the object name, the live var, a
-; recognizer, accessor, updater, helper, resizer, or length function,
-; or a constant introduced by the defstobj.
+; If name is supportive of a single-threaded object implementation, we return
+; the name of the stobj.  Otherwise, we return nil.  By "supportive" we mean
+; name is the object name, the live var, a recognizer, accessor, updater,
+; helper, resizer, or length function, or a constant introduced by the
+; defstobj, or in the case of defabsstobj, a recognizer, accessor, or (other)
+; exported function.
 
   (cond
    ((getprop name 'stobj nil 'current-acl2-world wrld)
@@ -6130,7 +6129,7 @@
                       defconst
                       defdoc
                       deflabel
-                      defstobj
+                      defstobj defabsstobj
                       deftheory
                       defthm
                       defuns
@@ -7444,30 +7443,27 @@
 
 (defun put-assoc-eq-alist (alist1 alist2)
 
-; Setting: A form has been evaluated, producing a state with alist1 as
-; its user-stobj-alist.  The evaluation also produced some latches,
-; which are alist2.  We wish to merge the latches into the
-; user-stobj-alist of the state and this is the workhorse.  We know
-; that the form returns at least one user stobj (and so, we know the
-; form is not a DEFSTOBJ or its undo or redo).  Given this knowledge,
-; we wish to store the new stobjs in latches back into the
-; user-stobj-alist.
+; Setting: A form has been evaluated, producing a state with alist1 as its
+; user-stobj-alist.  The evaluation also produced some latches, which are
+; alist2.  We wish to merge the latches into the user-stobj-alist of the state
+; and this is the workhorse.  We know that the form returns at least one user
+; stobj (and so, we know the form is not a DEFSTOBJ or DEFABSSTOBJ or its undo
+; or redo).  Given this knowledge, we wish to store the new stobjs in latches
+; back into the user-stobj-alist.
 
-; Spec for this function: Both arguments are duplicate-free symbol
-; alists.  For every (key . val) in alist2 we a put-assoc-eq of key
-; and val into alist1.
+; Spec for this function: Both arguments are duplicate-free symbol alists.  For
+; every (key . val) in alist2 we a put-assoc-eq of key and val into alist1.
 
   (cond ((endp alist2) alist1)
 
-; The following clause is an optimization.  If alist1 and alist2 are
-; equal and we continued as though this clause weren't here, then we
-; would store each (key . val) pair of alist2 into an already
-; identical pair of alist1, affecting no change of alist1.  So we can
-; stop and return alist1 now.  (Note that if the two alists contained
-; duplicate keys, this would not be an optimization: alist1 = alist2 =
-; '((a . 1) (a . 2)) would yeild '((a . 1) (a . 2)) with this
-; optimization in place but would yeild '((a . 2) (a . 2)) without
-; this optimization.)  This optimization increases the efficiency of
+; The following clause is an optimization.  If alist1 and alist2 are equal and
+; we continued as though this clause weren't here, then we would store each
+; (key . val) pair of alist2 into an already identical pair of alist1,
+; affecting no change of alist1.  So we can stop and return alist1 now.  (Note
+; that if the two alists contained duplicate keys, this would not be an
+; optimization: alist1 = alist2 = '((a . 1) (a . 2)) would yeild '((a . 1) (a
+; . 2)) with this optimization in place but would yeild '((a . 2) (a . 2))
+; without this optimization.)  This optimization increases the efficiency of
 ; trans-eval's handling of latches.  See the Essay on the Handling of
 ; User-Stobj-Alist in Trans-Eval.
 
@@ -7530,16 +7526,15 @@
      (erp val latches)
      (ev trans alist state alist nil aok)
 
-; The first state binding below is the state produced by the
-; evaluation of the form.  The second state is the first, but with the
-; user-stobj-alist of that state (possibly) updated to contain the
-; modified latches.  Note that we don't bother to modify the
-; user-stobj-alist if the form's output signature does not involve a
-; user-defined stobj.  The particular forms we have in mind for this
-; case are DEFSTOBJ forms and their ``undoers'' and ``re-doers''.
-; They compute the state they mean and we shouldn't mess with the
-; user-stobj-alist of their results, else we risk overturning
-; carefully computed answers by restoring old stobjs.
+; The first state binding below is the state produced by the evaluation of the
+; form.  The second state is the first, but with the user-stobj-alist of that
+; state (possibly) updated to contain the modified latches.  Note that we don't
+; bother to modify the user-stobj-alist if the form's output signature does not
+; involve a user-defined stobj.  The particular forms we have in mind for this
+; case are DEFSTOBJ and DEFABSSTOBJ forms and their ``undoers'' and
+; ``re-doers''.  They compute the state they mean and we shouldn't mess with
+; the user-stobj-alist of their results, else we risk overturning carefully
+; computed answers by restoring old stobjs.
 
      (let ((state
             (coerce-object-to-state (cdr (car latches)))))
@@ -7554,11 +7549,10 @@
          (cond
           (erp
 
-; If ev caused an error, then val is a pair (str . alist) explaining
-; the error.  We will process it here (as we have already processed the
-; translate errors that might have arisen) so that all the errors that
-; might be caused by this translation and evaluation are handled within
-; this function.
+; If ev caused an error, then val is a pair (str . alist) explaining the error.
+; We will process it here (as we have already processed the translate errors
+; that might have arisen) so that all the errors that might be caused by this
+; translation and evaluation are handled within this function.
 
            (error1 ctx (car val) (cdr val) state))
           (t (mv nil

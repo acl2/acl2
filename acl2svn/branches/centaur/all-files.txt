@@ -605,15 +605,27 @@ esim-sexpr.lisp
 esim-spec.lisp
 esim-vcd.lisp
 esim-vl.lisp
+follow-backwards.lisp
 local-theory.lisp
 packages.lsp
 plist.lisp
 portcullis.acl2
 portcullis.lisp
 steps.lisp
+stv
+
+books/centaur/esim/stv:
+acl2-customization.lsp
+cert.acl2
 stv-compile.lisp
+stv-debug.lisp
+stv-doc.lisp
 stv-expand.lisp
-stv.lisp
+stv-run.lisp
+stv-sim.lisp
+stv-top.lisp
+stv-util.lisp
+stv-widen.lisp
 
 books/centaur/gl:
 always-equal-prep.lisp
@@ -694,6 +706,7 @@ books/centaur/misc:
 alist-defs.lisp
 alist-equiv.lisp
 ap.lisp
+arith-equivs.lisp
 date.acl2
 date.lisp
 defapply.lisp
@@ -747,6 +760,8 @@ alu16-book.lisp
 alu16.lsp
 alu16.v
 cert.acl2
+counter.lisp
+counter.v
 intro.lisp
 
 books/centaur/ubdds:
@@ -911,6 +926,7 @@ comment-writer.lisp
 context.lisp
 ctxexprs.lisp
 expr-building.lisp
+expr-parse.lisp
 expr-slice.lisp
 expr-tools.lisp
 filter.lisp
@@ -2212,6 +2228,8 @@ computed-hint.lisp
 congruent-stobjs-test.lisp
 csort.lisp
 dead-events.lisp
+defabsstobj-example-1.lisp
+defabsstobj-example-2.lisp
 defattach-bang.lisp
 defattach-example.lisp
 definline.acl2
@@ -3842,6 +3860,8 @@ cert.acl2
 elide-test.lisp
 mid.acl2
 mid.lisp
+pkg-test.acl2
+pkg-test.lisp
 sub.lisp
 top.acl2
 top.lisp
@@ -4090,6 +4110,7 @@ cws.lisp
 def-functional-instance.lisp
 defconsts.lisp
 defevaluator-fast.lisp
+defredundant.lisp
 define-keyed-function.lisp
 defined-const.lisp
 defmacfun.lisp
@@ -4146,6 +4167,7 @@ consless-listp.lisp
 explode-atom.lisp
 explode-nonnegative-integer.lisp
 file-measure.lisp
+final-cdr.lisp
 flatten.lisp
 intern-in-package-of-symbol.lisp
 list-defuns.lisp
