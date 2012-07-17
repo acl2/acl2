@@ -3294,7 +3294,7 @@ or <tt>negedge</tt> applied to a Verilog expression.</p>
   :short "Representation of an event controller like <tt>@@(posedge clk)</tt> or
 <tt>@@(a or b)</tt>."
 
-  :short "<p>Event controls are described in Section 9.7.  We represent each
+  :long "<p>Event controls are described in Section 9.7.  We represent each
 event controller as a <tt>vl-eventcontrol-p</tt> aggregates.</p>
 
 <p>If the <tt>starp</tt> flag is <tt>T</tt>, then this event control represents

@@ -35,9 +35,9 @@
 ; We look for certain strings to know when the program's output ends.  This is
 ; gross, but in practice it should work.
 
-(defconstant tshell-exit-line   "HORRIBLE_STRING_TO_DETECT_END_OF_TSHELL_COMMAND")
-(defconstant tshell-status-line "HORRIBLE_STRING_TO_DETECT_TSHELL_EXIT_STATUS")
-(defconstant tshell-pid-line    "TSHELL_PID")
+(defparameter *tshell-exit-line*   "HORRIBLE_STRING_TO_DETECT_END_OF_TSHELL_COMMAND")
+(defparameter *tshell-status-line* "HORRIBLE_STRING_TO_DETECT_TSHELL_EXIT_STATUS")
+(defparameter *tshell-pid-line*    "TSHELL_PID")
 
 
 ; We actually use two bash processes.  *tshell* runs the programs.
@@ -54,48 +54,63 @@
 
 (defun tshell-stop ()
   ;; Stops any tshell processes that are running.
-  (ignore-errors
-    (when *tshell*
-      (tshell-debug "TSHELL-STOP: stopping *tshell*~%")
-      (ccl::signal-external-process *tshell* 9)
-      (setq *tshell* nil)))
-  (ignore-errors
-    (when *tshell-killer*
-      (tshell-debug "TSHELL-STOP: stopping *tshell-killer*~%")
-      (ccl::signal-external-process *tshell-killer* 9)
-      (setq *tshell-killer* nil)))
-  (ignore-errors
-   (when *tshell-bg*
-     (tshell-debug "TSHELL-STOP: stopping *tshell-bg*~%")
-      (ccl::signal-external-process *tshell-bg* 9)
-      (setq *tshell-bg* nil)))
-  nil)
+
+  #-Clozure
+  ;; BOZO maybe eventually add support for other Lisps
+  nil
+
+  #+Clozure
+  (progn (ignore-errors
+           (when *tshell*
+             (tshell-debug "TSHELL-STOP: stopping *tshell*~%")
+             (ccl::signal-external-process *tshell* 9)
+             (setq *tshell* nil)))
+         (ignore-errors
+           (when *tshell-killer*
+             (tshell-debug "TSHELL-STOP: stopping *tshell-killer*~%")
+             (ccl::signal-external-process *tshell-killer* 9)
+             (setq *tshell-killer* nil)))
+         (ignore-errors
+           (when *tshell-bg*
+             (tshell-debug "TSHELL-STOP: stopping *tshell-bg*~%")
+             (ccl::signal-external-process *tshell-bg* 9)
+             (setq *tshell-bg* nil)))
+         nil))
 
 (defun tshell-start ()
   ;; Stops any tshell processes and starts new ones.
-  (tshell-debug "TSHELL-START: killing old processes~%")
-  (tshell-stop)
-  (tshell-debug "TSHELL-START: starting *tshell*~%")
-  (setf *tshell* (ccl::run-program "/bin/bash" nil
-                                   :wait nil
-                                   :input :stream
-                                   :output :stream
-                                   :error :stream))
-  (tshell-debug "TSHELL-START: starting *tshell-killer*~%")
-  (setf *tshell-killer* (ccl::run-program "/bin/bash" nil
+
+  #-Clozure
+  ;; BOZO maybe eventually add support for other Lisps
+  nil
+
+  #+Clozure
+  (progn (tshell-debug "TSHELL-START: killing old processes~%")
+         (tshell-stop)
+         (tshell-debug "TSHELL-START: starting *tshell*~%")
+         (setf *tshell* (ccl::run-program "/bin/bash" nil
                                           :wait nil
                                           :input :stream
                                           :output :stream
                                           :error :stream))
-  (tshell-debug "TSHELL-START: starting *tshell-bg*~%")
-  (setf *tshell-bg* (ccl::run-program "/bin/bash" nil
-                                      :wait nil
-                                      :input :stream
-                                      :output nil
-                                      :error nil))
-  nil)
+         (tshell-debug "TSHELL-START: starting *tshell-killer*~%")
+         (setf *tshell-killer* (ccl::run-program "/bin/bash" nil
+                                                 :wait nil
+                                                 :input :stream
+                                                 :output :stream
+                                                 :error :stream))
+         (tshell-debug "TSHELL-START: starting *tshell-bg*~%")
+         (setf *tshell-bg* (ccl::run-program "/bin/bash" nil
+                                             :wait nil
+                                             :input :stream
+                                             :output nil
+                                             :error nil))
+         nil))
 
 (defun tshell-check ()
+  #-Clozure
+  t
+  #+Clozure
   (and (ccl::external-process-p *tshell*)
        (ccl::external-process-p *tshell-killer*)
        (ccl::external-process-p *tshell-bg*)
@@ -105,6 +120,10 @@
 
 (defun tshell-ensure ()
   ;; Stops any tshell processes and starts new ones.
+  #-Clozure
+  ;; BOZO eventually add support for other Lisps
+  nil
+  #+Clozure
   (unless (tshell-check)
     (tshell-debug "TSHELL-START: starting *tshell*~%")
     (setf *tshell* (ccl::run-program "/bin/bash" nil
@@ -129,22 +148,23 @@
 (defun tshell-parse-status-line (line)
   ;; If it's an exit line, parse the status and return it as an
   ;; integer. Otherwise, return nil.
-  (if (str::strprefixp tshell-status-line line)
+  (if (str::strprefixp *tshell-status-line* line)
       (multiple-value-bind (val pos)
-          (parse-integer (subseq line (+ 1 (length tshell-status-line))))
+          (parse-integer (subseq line (+ 1 (length *tshell-status-line*))))
         (declare (ignore pos))
         val)
     nil))
 
 (defun tshell-parse-pid-line (line)
   ;; Given a line like TSHELL_PID 1234, we return 1234.
-  (unless (str::strprefixp tshell-pid-line line)
+  (unless (str::strprefixp *tshell-pid-line* line)
     (error "TSHELL error: bad pid line: ~a." line))
   (multiple-value-bind (val pos)
-      (parse-integer (subseq line (+ 1 (length tshell-pid-line))))
+      (parse-integer (subseq line (+ 1 (length *tshell-pid-line*))))
     (declare (ignore pos))
     val))
 
+#+Clozure
 (defun tshell-kill (pid)
   ;; Use the tshell-killer process to try to kill process PID.
   (tshell-debug "TSHELL-KILL: killing ~a.~%" pid)
@@ -162,7 +182,6 @@
     (format killer-in "NOT_PARENT=`pgrep -g $PARENT | grep -v $PARENT`~%")
     (format killer-in "kill -9 $NOT_PARENT~%")
     (force-output killer-in)))
-
 
 (defun tshell-echo (line buf stream)
 
@@ -220,6 +239,10 @@
   (unless (tshell-check)
     (error "Invalid *tshell*, *tshell-killer*, or *tshell-bg* -- did you call (tshell-start)?"))
 
+  #-Clozure
+  (error "Oops, TSHELL isn't implemented for this Lisp.")
+
+  #+Clozure
   (let* ((tshell-in     (ccl::external-process-input-stream *tshell*))
          (tshell-out    (ccl::external-process-output-stream *tshell*))
          (tshell-err    (ccl::external-process-error-stream *tshell*))
@@ -256,12 +279,12 @@
 
          (nl  (coerce (list #\Newline) 'string))
          (cmd (concatenate 'string
-               "(" cmd " < /dev/null 2>&1 ; echo " tshell-status-line " $? ) &" nl
+               "(" cmd " < /dev/null 2>&1 ; echo " *tshell-status-line* " $? ) &" nl
 ;               cmd " < /dev/null 2>&1 & " nl
-               "echo " tshell-pid-line " $! 1>&2" nl
+               "echo " *tshell-pid-line* " $! 1>&2" nl
                "wait" nl
-               "echo " tshell-exit-line nl
-               "echo " tshell-exit-line " 1>&2" nl)))
+               "echo " *tshell-exit-line* nl
+               "echo " *tshell-exit-line* " 1>&2" nl)))
 
     (tshell-debug "TSHELL_RUN~%~a~%" cmd)
 
@@ -279,7 +302,7 @@
           (loop do
               (setq line (read-line tshell-out))
               (setq code (tshell-parse-status-line line))
-              (cond ((equal line tshell-exit-line)
+              (cond ((equal line *tshell-exit-line*)
                      (progn
                        (tshell-debug "TSHELL_EXIT on STDOUT~%")
                        (setq stdout-exit t)
@@ -298,7 +321,7 @@
           ;; Read stderr until we find the exit line.
           (loop do
                 (setq line (read-line tshell-err))
-                (when (equal line tshell-exit-line)
+                (when (equal line *tshell-exit-line*)
                   (tshell-debug "TSHELL_EXIT on STDERR~%")
                   (setq stderr-exit t)
                   (loop-finish))
@@ -311,7 +334,7 @@
           (tshell-kill pid)
           (loop do
                 (setq line (read-line tshell-out))
-                (when (equal line tshell-exit-line)
+                (when (equal line *tshell-exit-line*)
                   (tshell-debug "TSHELL_RECOVER: TSHELL_EXIT on STDOUT.~%")
                   (loop-finish))
                 (tshell-debug "TSHELL_RECOVER: Skip ~a.~%" line)))
@@ -319,7 +342,7 @@
         (when (not stderr-exit)
           (loop do
                 (setq line (read-line tshell-err))
-                (when (equal line tshell-exit-line)
+                (when (equal line *tshell-exit-line*)
                   (tshell-debug "TSHELL_RECOVER: TSHELL_EXIT on STDERR.~%")
                   (loop-finish))
                 (tshell-debug "TSHELL_RECOVER: Skip ~a on stderr.~%" line)))))
@@ -335,12 +358,18 @@
 (defun tshell-run-background (cmd)
   (unless (tshell-check)
     (error "Invalid *tshell*, *tshell-killer*, or *tshell-bg* -- did you call (tshell-start)?"))
+
+  #-Clozure
+  (error "Oops, TSHELL isn't implemented on this Lisp.")
+
+  #+Clozure
   (let* ((tshell-bg-in (ccl::external-process-input-stream *tshell*))
          (nl  (coerce (list #\Newline) 'string))
          (cmd (concatenate 'string "(" cmd ") &" nl)))
     (tshell-debug "TSHELL_BG~%~a~%" cmd)
     (write-line cmd tshell-bg-in)
     (finish-output tshell-bg-in))
+
   nil)
 
 

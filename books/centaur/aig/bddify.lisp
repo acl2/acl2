@@ -232,15 +232,25 @@
                (setf (gethash dx *count-branches-to-memo-table*) mem)
                ans)))))))
 
-; BOZO really profile this?
+ ;; BOZO really profile this?
+
+ #+Clozure
+ ;; [Jared]: I had to add this #+Clozure here because otherwise SBCL can't
+ ;; include-book this book.  It can still certify it, but I guess that somehow
+ ;; at load-time it doesn't have the function compiled yet and hence can't
+ ;; figure out how many arguments it has or something?  This might also be
+ ;; somehow related to function-lambda-expression not working on SBCL.  BOZO
+ ;; is this something we even need to do?
  (profile-fn 'count-branches-to)
 
+ #+Clozure
  ;; Dirty hack so as to clear the count-branches-to memoize table whenever
- ;; clearing the other memoize tables.
+ ;; clearing the other memoize tables.  BOZO is this something we need to do?
  (setf (gethash 'count-branches-to *memoize-info-ht*)
        (change memoize-info-ht-entry
                (gethash 'count-branches-to *memoize-info-ht*)
-               :tablename '*count-branches-to-memo-table*)))
+               :tablename '*count-branches-to-memo-table*))
+ )
 (defttag nil)
 
 (defthm integerp-count-bdd-branches-to

@@ -42,10 +42,16 @@
 (progn!
  (set-raw-mode t)
 
- (defparameter *vl-gc-previously-used* 0)
+ (defparameter *vl-gc-previously-used*
+   ;; Originally this was 0, but now I've upped it to 1 GB.  This only affects
+   ;; the initial GC.  This is probably better than assuming the whole system
+   ;; uses no memory.
+   (expt 2 30))
 
  (defun vl-gc ()
-   (let* ((currently-used (acl2::pkc ccl %usedbytes))
+
+   #+Clozure
+   (let* ((currently-used (ccl::%usedbytes))
           (allocated      (- currently-used *vl-gc-previously-used*)))
 ;     (cw "vl-gc: currently used: ~x0~%" currently-used)
 ;     (cw "vl-gc: previously used: ~x0~%" *vl-gc-previously-used*)
@@ -53,7 +59,9 @@
      (when (> allocated (expt 2 30))
        (finish-output)
        (acl2::hl-system-gc)
-       (setq *vl-gc-previously-used* (acl2::pkc ccl %usedbytes)))
-     nil))
+       (setq *vl-gc-previously-used* (ccl::%usedbytes)))
+     nil)
 
- (defttag nil))
+   nil))
+
+(defttag nil)

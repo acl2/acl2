@@ -1101,7 +1101,7 @@ term.  The attempted binding of~|~% ~p1~%~%is not of this form."
          (acc  (str::revappend-chars "<p>Source link: @(srclink " acc))
          (acc  (str::revappend-chars (string-downcase (symbol-name name)) acc))
          (acc  (str::revappend-chars ")</p>" acc))
-         (acc  (str::revappend-chars long acc))
+         (acc  (str::revappend-chars (or long "") acc))
          (acc  (da-main-autodoc-for-requirements require acc))
          (long (coerce (reverse acc) 'string)))
     `(defxdoc ,foop
