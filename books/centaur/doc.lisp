@@ -75,9 +75,7 @@
 (include-book "tutorial/alu16-book")
 (include-book "tutorial/counter")
 
-
-
-
+(include-book "defrstobj/defrstobj")
 
 #||
 
@@ -85,6 +83,7 @@
 ;; the critical path.  This just tricks the dependency scanner into building these
 ;; books.
 
+(include-book "defrstobj/basic-tests")
 (include-book "cutil/deflist-tests" :dir :system)
 (include-book "cutil/defalist-tests" :dir :system)
 (include-book "cutil/defmapappend-tests" :dir :system)
