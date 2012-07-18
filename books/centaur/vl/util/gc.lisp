@@ -20,48 +20,9 @@
 
 (in-package "VL")
 (include-book "centaur/misc/memory-mgmt-raw" :dir :system)
-
-; Originally, I added (vl-gc) because calling (gc$) directly could sometimes
-; lead to bad printing confusion.  (vl-gc) avoided this by calling "our-gc"
-; from hons-raw.lisp, which sleeps until the GC actually happens.
-;
-; I later found that I wanted to GC less frequently in some cases.  So, now
-; vl-gc only tries to garbage collect if more than 1 GB has been allocated
-; since the last time it was called.  In some cases this might not quite work.
-; In particular, intervening (gc$) calls and ordinary GC might cause the
-; *vl-gc-previously-used* variable to have the "wrong" value.  But, I think
-; that in the cases that (vl-gc) is called, it's called frequently enough that
-; this shouldn't typically be that much of a problem.
-
-(defun vl-gc ()
-  (declare (xargs :guard t))
-  nil)
+(include-book "tools/include-raw" :dir :system)
+;; (depends-on "gc-raw.lsp")
 
 (defttag vl-gc)
+(acl2::include-raw "gc-raw.lsp")
 
-(progn!
- (set-raw-mode t)
-
- (defparameter *vl-gc-previously-used*
-   ;; Originally this was 0, but now I've upped it to 1 GB.  This only affects
-   ;; the initial GC.  This is probably better than assuming the whole system
-   ;; uses no memory.
-   (expt 2 30))
-
- (defun vl-gc ()
-
-   #+Clozure
-   (let* ((currently-used (ccl::%usedbytes))
-          (allocated      (- currently-used *vl-gc-previously-used*)))
-;     (cw "vl-gc: currently used: ~x0~%" currently-used)
-;     (cw "vl-gc: previously used: ~x0~%" *vl-gc-previously-used*)
-;     (cw "vl-gc: allocated since last: ~x0~%" allocated)
-     (when (> allocated (expt 2 30))
-       (finish-output)
-       (acl2::hl-system-gc)
-       (setq *vl-gc-previously-used* (ccl::%usedbytes)))
-     nil)
-
-   nil))
-
-(defttag nil)
