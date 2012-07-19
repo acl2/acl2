@@ -3273,19 +3273,11 @@
                             (convert-tau-like-terms-to-tau (cdr terms) wrld)
                             wrld)
 
-; Note: We use add-to-tau1 because we are not interested in the implicants of the
-; terms, just the terms themselves.
+; Note: We use add-to-tau1 because we are not interested in the implicants of
+; the terms, just the terms themselves.
 
                (declare (ignore changedp))
-               (cond ((eq tau *tau-contradiction*)
-
-; If we get a contradiction from assuming all the terms in terms it is because
-; it is a propositional impossibility, e.g., (p & q & -p).  This happens if we
-; try to produce a conjunctive rule from a tautology like (p & q) -> p.  We
-; just ignore these.
-
-                      *tau-empty*)
-                     (t tau)))))))
+               tau)))))
 
 (defun add-tau-conjunctive-rule (rune hyps concl wrld)
 
@@ -3307,12 +3299,17 @@
 ; more than just add or strip a NOT.
 
               wrld)))
-    (if (equal tau *tau-empty*)
+
+; If we get a contradiction it is because hyps --> concl is a tau-detectable
+; tautology and we just ignore it.
+
+    (if (equal tau *tau-contradiction*)
         wrld
         (set-tau-runes nil rune
                        (global-set 'tau-conjunctive-rules
                                    (cons tau
-                                         (global-val 'tau-conjunctive-rules wrld))
+                                         (global-val 'tau-conjunctive-rules
+                                                     wrld))
                                    wrld)))))
 
 (defun tau-signature-formp (hyps concl wrld)
