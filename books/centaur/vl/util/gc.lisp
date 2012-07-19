@@ -23,6 +23,11 @@
 (include-book "tools/include-raw" :dir :system)
 ;; (depends-on "gc-raw.lsp")
 
+(defun vl-gc ()
+  "Has an under-the-hood definition"
+  (declare (xargs :guard t))
+  nil)
+
 (defttag vl-gc)
 (acl2::include-raw "gc-raw.lsp")
 

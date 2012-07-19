@@ -32,10 +32,6 @@
 ; that in the cases that (vl-gc) is called, it's called frequently enough that
 ; this shouldn't typically be that much of a problem.
 
-(defun vl-gc ()
-  (declare (xargs :guard t))
-  nil)
-
 (defparameter *vl-gc-previously-used*
   ;; Originally this was 0, but now I've upped it to 1 GB.  This only affects
   ;; the initial GC.  This is probably better than assuming the whole system
