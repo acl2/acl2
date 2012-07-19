@@ -879,29 +879,29 @@
 		 (equal (rcfn (find-zero a b z))
 			z)))
    :hints (("Goal"
+; Changed by Matt K. after v4-3 to put every :use hint on "Goal".  The first
+; change was to accommodate tau.  The second change was sometime later, and I
+; don't know why it was necessary.
+; Originally for "Subgoal 3", but deleted now:
+;           :in-theory (disable subinterval-interval-closed-closed inside-trivial-interval)
 	    :use ((:functional-instance weak-intermediate-value-theorem
 					(rcfn-domain (lambda () (if (and (< a b)
 									   (inside-interval-p a (rcfn-domain))
 									   (inside-interval-p b (rcfn-domain))) 
 								      (interval a b)
-								      (interval (+ 1 (realfix x)) (+ 2 (realfix x)))))))))
-	   ("Subgoal 4" ; changed after v4-3 from "Subgoal 5", for tau system
-	    :use ((:instance inside-interval-p-contains-left-endpoint
+								      (interval (+ 1 (realfix x)) (+ 2 (realfix x)))))))
+                  (:instance inside-interval-p-contains-left-endpoint
 			     (interval (interval a b)))
 		  (:instance inside-interval-p-contains-right-endpoint
-			     (interval (interval a b))))
-	    )
-	   ("Subgoal 3" ; changed after v4-3 from "Subgoal 4", for tau system
-	    :use ((:instance subinterval-interval-closed-closed
+			     (interval (interval a b)))
+                  (:instance subinterval-interval-closed-closed
 			     (a a)
 			     (b b)
 			     (interval (rcfn-domain)))
 		  (:instance inside-trivial-interval
 			     (a y)
-			     (b x)))
-	    :in-theory (disable subinterval-interval-closed-closed inside-trivial-interval))
-	   ("Subgoal 2" ; changed after v4-3 from "Subgoal 3", for tau system
-	    :use ((:instance rcfn-domain-non-trivial)))
+			     (b x))
+                  (:instance rcfn-domain-non-trivial)))
 	   ))
 
 ;; Now, what happens when f(a)>z and f(b)<z.  First, we find the root.

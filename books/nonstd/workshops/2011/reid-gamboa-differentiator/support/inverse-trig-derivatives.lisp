@@ -97,7 +97,7 @@
                  (:instance sine-acos-positive)
                  (:instance reciprocal-minus
                             (x (acl2-sqrt (- 1 (* x x)))))))
-          ("Subgoal 10"
+          ("Subgoal 7" ; changed after v4-3 from "Subgoal 10" by Matt K. for tau-system
            :use (:instance acl2-acos-continuous)
            :in-theory (enable interval-definition-theory))
           ("Subgoal 4"

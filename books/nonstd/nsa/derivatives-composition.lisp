@@ -746,6 +746,8 @@
 	    (i-close (dc-fn1+fn2 x) (dc-fn1+fn2 y)))
 
   :hints (("Goal"
+; Added after v4-3 by Matt K.:
+           :in-theory (disable (tau-system))
 	   :by (:functional-instance rdfn-continuous
 				     (rdfn dc-fn1+fn2)
 				     (rdfn-domain dc-fn-domain)))
@@ -894,6 +896,8 @@
 	    (i-close (dc-minus-fn1 x) (dc-minus-fn1 y)))
 
   :hints (("Goal"
+; Added after v4-3 by Matt K.:
+           :in-theory (disable (tau-system))
 	   :by (:functional-instance rdfn-continuous
 				     (rdfn dc-minus-fn1)
 				     (rdfn-domain dc-fn-domain)))
@@ -1257,6 +1261,8 @@
 	    (i-close (dc-fn1*fn2 x) (dc-fn1*fn2 y)))
 
   :hints (("Goal"
+; Added after v4-3 by Matt K.:
+           :in-theory (disable (tau-system))
 	   :by (:functional-instance rdfn-continuous
 				     (rdfn dc-fn1*fn2)
 				     (rdfn-domain dc-fn-domain)))
@@ -1715,6 +1721,8 @@
 	    (i-close (dc-/-fnz x) (dc-/-fnz y)))
 
   :hints (("Goal"
+; Added after v4-3 by Matt K.:
+           :in-theory (disable (tau-system))
 	   :by (:functional-instance rdfn-continuous
 				     (rdfn dc-/-fnz)
 				     (rdfn-domain dc-fn-domain)))

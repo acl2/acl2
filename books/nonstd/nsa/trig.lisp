@@ -995,7 +995,10 @@
 	    :by (:functional-instance limited-find-zero-2-body
 					(rcfn (lambda (x) (acl2-cosine (realfix x))))
 					(rcfn-domain (lambda () (interval nil nil)))
-					(find-zero-n-2 find-zero-cos-n-2)))
+					(find-zero-n-2 find-zero-cos-n-2))
+; Added after v4-3 by Matt K.:
+            :in-theory (disable (tau-system))
+            )
 	   ("Subgoal 4"
 	    :in-theory (disable acl2-cosine))
 	   ("Subgoal 3"

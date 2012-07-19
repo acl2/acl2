@@ -1739,7 +1739,9 @@
 	   :by (:functional-instance find-max-rdfn-x-n-limited
 				     (find-max-rdfn-x-n find-max-rdfn2-x-n)
 				     (rdfn rdfn2))
-	   :in-theory (disable find-max-rdfn-x-n-limited))
+	   :in-theory (disable find-max-rdfn-x-n-limited
+; Added after v4-3 by Matt K.:
+                               (tau-system)))
 	  ("Subgoal 3"
 	   :in-theory '(find-max-rdfn2-x-n rdfn2))
 	  ("Subgoal 2"
