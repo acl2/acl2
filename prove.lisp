@@ -1279,7 +1279,7 @@
        (save-acl2p-checkpoint-for-summary cl-id prettyified-clause state)
        (with-output-lock
         (progn$
-         (cw "~%~%([ A key ACL2(p) checkpoint:~%~%~s0~%"
+         (cw "~%~%([ An ACL2(p) checkpoint:~%~%~s0~%"
              (string-for-tilde-@-clause-id-phrase cl-id))
          (cw "~x0" prettyified-clause)
 
@@ -1353,13 +1353,13 @@
   (prog2$
 
 ; Every branch of the cond below, with the exception of when cl is null,
-; results in a key ACL2(p) checkpoint.  As such, it is reasonable to print the
+; results in an ACL2(p) checkpoint.  As such, it is reasonable to print the
 ; checkpoint at the very beginning of this function.
 ; Acl2p-push-clause-printing contains code that handles the case where cl is
 ; nil.
 
-; Parallelism blemish: create a :doc topic on key ACL2(p) checkpoints and
-; reference it in the above comment.
+; Parallelism blemish: create a :doc topic on ACL2(p) checkpoints and reference
+; it in the above comment.
 
    (parallel-only@par (acl2p-push-clause-printing cl hist pspv wrld state))
    (let ((pool (access prove-spec-var pspv :pool))
@@ -1370,7 +1370,7 @@
       ((null cl)
 
 ; The empty clause was produced.  Stop the waterfall by aborting.  Produce the
-; ttree that expains the abort.  Drop the clause set containing the empty
+; ttree that explains the abort.  Drop the clause set containing the empty
 ; clause into the pool so that when we look for the next goal we see it and
 ; quit.
 
@@ -9280,6 +9280,10 @@
            (mv erp val state))))
 
 (defun print-pstack-and-gag-state (state)
+
+; Parallelism blemish: don't print the pstack when waterfall parallelism is
+; enabled.  It ends up being long and, as far as Rager knows, unhelpful.
+
   (prog2$
    (cw
     "Here is the current pstack [see :DOC pstack]:")

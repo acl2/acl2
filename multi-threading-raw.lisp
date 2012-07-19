@@ -571,7 +571,17 @@
   #+lispworks
   `(mp:condition-variable-signal ,cv)
 
-  nil)
+; Parallelism wart: we would like for signal-condition-variable to return nil
+; to signify that this macro is only evaluated for side-effects.  However, it
+; appears that this macro's return value is actually needed, because the
+; theorem prover hangs consistently in SBCL and LispWorks when we do return nil
+; here.  As such, we currently remove the returning of nil.  But, this is a
+; hotfix.  A much better solution is to change the reliance upon this macro's
+; return value and then uncomment the following nil.
+
+; nil
+
+)
 
 (defmacro broadcast-condition-variable (cv)
   #-(or sb-thread lispworks)
@@ -587,10 +597,24 @@
 
 (defun wait-on-condition-variable (cv lock &key timeout)
 
+; This is only executed for side-effect.
+
 ; A precondition to this function is that the current thread "owns" lock.  This
 ; is a well-known part of how condition variables work.  This is also
 ; documented in the SBCL manual in section 12.5 entitled "Waitqueue/condition
 ; variables."
+
+; Parallelism blemish: when timeout is provided, the return value of t can be
+; misleading.  This isn't a huge problem, because condition variables are only
+; used for signaling, and so, assuming the programmer is following the
+; discipline associated with using condition variables, any thread waiting on a
+; condition variable should check the state of the program for the property it
+; needs anyway.  And, if that property is not provided, the thread will just
+; rewait on the condition variable.  So, the only real penalty should be a
+; slight loss of performance.  Of course, this small penalty depends on the
+; following the discipline of using condition variables correctly.  We may not
+; wish to rely upon the programmer's ability to follow this discipline, so we
+; leave it as a parallelism blemish.
 
   #-(or sb-thread lispworks)
   (declare (ignore cv lock timeout))
