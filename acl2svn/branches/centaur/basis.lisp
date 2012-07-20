@@ -2725,7 +2725,7 @@
                            nil) ; fall through in cons-term1-body
                           #+:non-standard-analysis
                           ((eq fn 'standardp)
-                           *t*)
+                           '(kwote t))
                           #+:non-standard-analysis
                           ((eq fn 'standard-part)
                            (assert$

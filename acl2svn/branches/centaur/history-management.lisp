@@ -3388,7 +3388,7 @@
               (or top-level-banner-printed
                   (if (and (not top-level-banner-printed) 
                            (clause-id-is-top-level cl-id))
-                      (prog2$ (cw "~%*** Key ACL2(p) checkpoint[s] at the ~
+                      (prog2$ (cw "~%*** ACL2(p) checkpoint[s] at the ~
                                    top-level: ***~%")
                               t)
                     top-level-banner-printed)))
@@ -3396,8 +3396,8 @@
               (or induction-banner-printed
                   (if (and (not induction-banner-printed) 
                            (clause-id-is-induction-round cl-id))
-                      (prog2$ (cw "~%*** Key ACL2(p) checkpoint[s] under a ~
-                                   top-level induction: ***~%")
+                      (prog2$ (cw "~%*** ACL2(p) checkpoint[s] under ~
+                                   induction: ***~%")
                               t)
                     induction-banner-printed)))
 
@@ -3405,9 +3405,8 @@
               (or forcing-banner-printed
                   (if (and (not forcing-banner-printed) 
                            (clause-id-is-forcing-round cl-id))
-                      (prog2$ (cw "~%*** Key ACL2(p) checkpoint[s] under a ~
-                                   forcing round (including any from ~
-                                   induction): ***~%")
+                      (prog2$ (cw "~%*** ACL2(p) checkpoint[s] under a ~
+                                   forcing round: ***~%")
                               t)
                     forcing-banner-printed))))                 
         (progn$ (cw "~%~s0~%"
@@ -3438,12 +3437,12 @@
    (prog2$
     (if (f-get-global 'waterfall-parallelism state)
         (prog2$
-         (cw "~%~%Printing the key ACL2(p) checkpoints that were encountered ~
-            during the proof attempt (and pushed for induction or ~
-            sub-induction).  Note that some of these checkpoints may have ~
-            been later proven by induction or sub-induction.  Thus, the user ~
-            must decide for themselves which of these checkpoints are ~
-            relevant to debugging their proof.~%~%")
+         (cw "~%~%Printing the ACL2(p) checkpoints that were encountered ~
+              during the proof attempt (and pushed for induction or ~
+              sub-induction).  Note that some of these checkpoints may have ~
+              been later proven by induction or sub-induction.  Thus, you ~
+              must decide for yourself which of these checkpoints are ~
+              relevant to debugging your proof.~%~%")
          (print-acl2p-checkpoints1 
           (reverse (f-get-global 'acl2p-checkpoints-for-summary
                                  state))
