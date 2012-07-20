@@ -1019,7 +1019,8 @@
                     (alist-vals (sexpr-fixpoints update-fns))))))
   :hints (("goal" :do-not-induct t
            :in-theory (e/d (sexpr-fixpoints)
-                           (find-sexpr-least-fixpoint))))
+                           (find-sexpr-least-fixpoint
+                            append-of-nil))))
   :otf-flg t)
 
 (defthm not-member-vars-of-hons-shrink-alist-when-not-member-vars-alist

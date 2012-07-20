@@ -146,11 +146,11 @@
   (defthm b-ior-bound
     (<= (b-ior x y) 1)
     :rule-classes :linear)
-  
+
   (defthm b-and-bound
     (<= (b-and x y) 1)
     :rule-classes :linear)
-  
+
   (defthm b-xor-bound
     (<= (b-xor x y) 1)
     :rule-classes :linear)
@@ -163,10 +163,17 @@
   ;;   (implies (and (natp x)
   ;;                 (<= x 1))
   ;;            (bitp x)))
-  
+
   ;; simplify-bit-functions does a bunch of simplifications on these
   ;; bit-functions-type has bitp rewrite and natp type prescrips
-  )
+
+  (defthm b-not-b-not
+    (equal (b-not (b-not x))
+           (bfix x)))
+
+  (defthm b-not-equal-0
+    (equal (equal 0 (b-not x))
+           (equal 1 x))))
 
 
 
@@ -490,7 +497,12 @@
     (implies (negp x)
              (negp (logcons b x)))
     :hints(("Goal" :in-theory (enable negp)))
-    :rule-classes :type-prescription))
+    :rule-classes :type-prescription)
+
+  (defthm logcar-minus-a
+    (equal (logcar (- a))
+           (logcar a))
+    :hints(("Goal" :in-theory (enable logcar ifix)))))
 
 
 (defsection bool->bit
@@ -524,7 +536,11 @@
 
   (defthm bool->bit-bound
     (< (bool->bit x) 2)
-    :rule-classes :linear))
+    :rule-classes :linear)
+
+  (defthm bool->bit-equal-0
+    (equal (equal (bool->bit x) 0)
+           (not x))))
 
 
 
@@ -958,7 +974,7 @@
 
   ;; Integer-length* is already defined this same way in logops-lemmas;
   ;; we rename it for consistency.
-  (defthm integer-length**
+  (defthmd integer-length**
    (equal (integer-length i)
           (cond ((zip i) 0)
                 ((equal i -1) 0)
@@ -1035,6 +1051,11 @@
                     :controller-alist ((lognot t)))))
 
   (add-to-ruleset ihsext-redefs '(lognot**))
+
+  (defthm lognot-of-logcons
+    (equal (lognot (logcons a b))
+           (logcons (b-not a) (lognot b)))
+    :hints(("Goal" :in-theory (enable lognot**))))
 
   (defthmd lognot$
     (equal (lognot i)
@@ -1153,6 +1174,19 @@
                                       lognot-equal-const)))
 
 
+
+(defun logcdr-3-ind (a b c)
+  (declare (xargs :measure (+ (integer-length a)
+                              (integer-length b)
+                              (integer-length c))
+                  :hints(("Goal" :in-theory (enable integer-length**)))))
+  (if (and (or (zip a) (= a -1))
+           (or (zip b) (= b -1))
+           (or (zip c) (= c -1)))
+      (list a b c)
+    (logcdr-3-ind (logcdr a) (logcdr b) (logcdr c))))
+
+
 (defsection logand**
 
   (local (in-theory (enable logand)))
@@ -1188,6 +1222,18 @@
       :controller-alist ((binary-logand t t)))))
 
   (add-to-ruleset ihsext-redefs '(logand**))
+
+  (defthm logand-of-logcons-left
+    (equal (logand (logcons a b) c)
+           (logcons (b-and a (logcar c))
+                    (logand b (logcdr c))))
+    :hints(("Goal" :in-theory (enable logand**))))
+
+  (defthm logand-of-logcons-right
+    (equal (logand c (logcons a b))
+           (logcons (b-and a (logcar c))
+                    (logand b (logcdr c))))
+    :hints(("Goal" :in-theory (enable logand**))))
 
   (defthmd logand$
     ;; Bozo maybe we should have a version that only terminates based on one
@@ -1331,7 +1377,28 @@
     (implies (or (not (integerp y))
                  (<= 0 y))
              (natp (logand x y)))
-    :rule-classes :type-prescription))
+    :rule-classes :type-prescription)
+
+    (defthm associativity-of-logand
+    (equal (logand (logand a b) c)
+           (logand a b c))
+    :hints (("goal" :induct (logcdr-3-ind a b c)
+             :in-theory (e/d (logand**)
+                             (zip-open
+                              logand$)))))
+
+  (defthm commutativity-2-of-logand
+    (equal (logand a b c)
+           (logand b a c))
+    :hints (("goal" :induct (logcdr-3-ind a b c)
+             :in-theory (e/d (logand**)
+                             (zip-open
+                              logand$)))))
+
+  (defthm logand-fold-consts
+    (implies (syntaxp (and (quotep a) (quotep b)))
+             (equal (logand a b c)
+                    (logand (logand a b) c)))))
 
 
 (defsection logior**
@@ -1363,6 +1430,20 @@
       :controller-alist ((binary-logior t t)))))
 
   (add-to-ruleset ihsext-redefs '(logior**))
+
+  (defthm logior-of-logcons-left
+    (equal (logior (logcons a b) c)
+           (logcons (b-ior a (logcar c))
+                    (logior b (logcdr c))))
+    :hints(("Goal" :in-theory (enable logior**
+                                      b-not b-and b-ior))))
+
+  (defthm logior-of-logcons-right
+    (equal (logior c (logcons a b))
+           (logcons (b-ior a (logcar c))
+                    (logior b (logcdr c))))
+    :hints(("Goal" :in-theory (enable logior**
+                                      b-not b-and b-ior))))
 
   (defthmd logior$
     ;; Bozo maybe we should have a version that only terminates based on one
@@ -1503,7 +1584,29 @@
                   (or (not (integerp b))
                       (<= 0 b)))
              (natp (logior a b)))
-    :rule-classes :type-prescription))
+    :rule-classes :type-prescription)
+
+
+  (defthm associativity-of-logior
+    (equal (logior (logior a b) c)
+           (logior a b c))
+    :hints (("goal" :induct (logcdr-3-ind a b c)
+             :in-theory (e/d (logior**)
+                             (zip-open
+                              logior$)))))
+
+  (defthm commutativity-2-of-logior
+    (equal (logior a b c)
+           (logior b a c))
+    :hints (("goal" :induct (logcdr-3-ind a b c)
+             :in-theory (e/d (logior**)
+                             (zip-open
+                              logior$)))))
+
+  (defthm logior-fold-consts
+    (implies (syntaxp (and (quotep a) (quotep b)))
+             (equal (logior a b c)
+                    (logior (logior a b) c)))))
 
 
 (defsection logxor**
@@ -1521,9 +1624,23 @@
                     (logxor (logcdr i) (logcdr j))))
     :rule-classes
     ((:definition :clique (binary-logxor)
-      :controller-alist ((binary-logxor t t)))))
+                  :controller-alist ((binary-logxor t t)))))
 
   (add-to-ruleset ihsext-redefs '(logxor**))
+
+  (defthm logxor-of-logcons-left
+    (equal (logxor (logcons a b) c)
+           (logcons (b-xor a (logcar c))
+                    (logxor b (logcdr c))))
+    :hints(("Goal" :in-theory (enable logxor**
+                                      b-not b-and b-xor))))
+
+  (defthm logxor-of-logcons-right
+    (equal (logxor c (logcons a b))
+           (logcons (b-xor a (logcar c))
+                    (logxor b (logcdr c))))
+    :hints(("Goal" :in-theory (enable logxor**
+                                      b-not b-and b-xor))))
 
   (local (in-theory (enable* ihsext-recursive-redefs)))
   (local (in-theory (disable bfix zbp)))
@@ -1542,7 +1659,7 @@
                              (logxor (logcdr i) (logcdr j))))))
     :rule-classes
     ((:definition :clique (binary-logxor)
-      :controller-alist ((binary-logxor t t)))))
+                  :controller-alist ((binary-logxor t t)))))
 
   ;; (defthm logxor-of-ifix-1
   ;;   (equal (logxor (ifix a) b)
@@ -1683,8 +1800,26 @@
                   (integerp y)
                   (< y 0))
              (natp (logxor x y)))
-    :rule-classes :type-prescription))
+    :rule-classes :type-prescription)
 
+  (defthm associativity-of-logxor
+    (equal (logxor (logxor a b) c)
+           (logxor a b c))
+    :hints (("goal" :induct (logcdr-3-ind a b c)
+             :in-theory (e/d (logxor** b-xor)
+                             (zip-open logxor$)))))
+
+  (defthm commutativity-2-of-logxor
+    (equal (logxor a b c)
+           (logxor b a c))
+    :hints (("goal" :induct (logcdr-3-ind a b c)
+             :in-theory (e/d (logxor** b-xor)
+                             (zip-open logxor$)))))
+
+  (defthm logxor-fold-consts
+    (implies (syntaxp (and (quotep a) (quotep b)))
+             (equal (logxor a b c)
+                    (logxor (logxor a b) c)))))
 
 
 (defsection ash**
@@ -1987,7 +2122,41 @@
     (implies (or (not (integerp x))
                  (<= 0 x))
              (natp (ash x y)))
-    :rule-classes :type-prescription))
+    :rule-classes :type-prescription)
+
+  (defthm loghead-of-ash-same
+    (implies (natp n)
+             (equal (loghead n (ash x n))
+                    0))
+    :hints(("Goal" :in-theory (e/d* (ihsext-inductions
+                                     ihsext-recursive-redefs)))))
+
+  (local (defun ind (n m x)
+           (cond ((zip m) (list n x))
+                 ((< m 0) (ind (1+ n) (1+ m) x))
+                 (t (ind (1- n) (1- m) x)))))
+
+  (defthmd loghead-of-ash
+    (equal (loghead n (ash x m))
+           (ash (loghead (nfix (- (nfix n) (ifix m))) x) m))
+    :hints(("Goal" :in-theory (e/d* (ihsext-recursive-redefs
+                                    ihsext-inductions
+                                    nfix ifix zip
+                                    ash**)
+                                   (bitp
+                                    loghead-identity
+                                    logcdr-of-ash))
+            :induct (ind n m x)
+            :do-not-induct t)))
+
+  (add-to-ruleset ihsext-advanced-thms loghead-of-ash)
+
+  (defthm integer-length-of-ash
+    (implies (not (zip n))
+             (equal (integer-length (ash n m))
+                    (nfix (+ (ifix m) (integer-length n)))))
+    :hints(("Goal" :in-theory (enable* ihsext-recursive-redefs
+                                       ihsext-inductions nfix ifix)))))
 
 (defsection expt
 
@@ -2006,9 +2175,7 @@
   (add-to-ruleset ihsext-basic-thms expt-of-ifix))
 
 
-
 (defsection unsigned-byte-p**
-
 
   (local (in-theory (enable* ihsext-recursive-redefs
                              ihsext-inductions)))
@@ -2126,7 +2293,42 @@
     (implies (and (unsigned-byte-p n x)
                   (natp m)
                   (<= n m))
-             (unsigned-byte-p m x))))
+             (unsigned-byte-p m x)))
+
+  (encapsulate
+    nil
+    (local (defun ind (n m x)
+             (cond ((zip m) (list n x))
+                   ((< m 0) (ind (1+ n) (1+ m) x))
+                   (t (ind (1- n) (1- m) x)))))
+
+    (local (defthm help1
+             (implies (unsigned-byte-p n x)
+                      (natp n))))
+
+
+    (local (defthm unsigned-byte-p-of-ash-worse
+             ;; "worse" because of the natp hyp, which we'll eliminate in a moment
+             (implies (and (unsigned-byte-p (- n (ifix m)) x)
+                           (natp n))
+                      (unsigned-byte-p n (ash x m)))
+             :hints(("Goal" :in-theory (e/d* (acl2::ihsext-recursive-redefs
+                                              acl2::ihsext-inductions
+                                              nfix ifix zip)
+                                             (unsigned-byte-p))
+                     :induct (ind n m x)
+                     :do-not-induct t)
+                    (and stable-under-simplificationp
+                         '(:expand ((ash x m)))))
+             :otf-flg t))
+
+    (defthm unsigned-byte-p-of-ash
+      (implies (unsigned-byte-p (- n (ifix m)) x)
+               (equal (unsigned-byte-p n (ash x m))
+                      (natp n)))
+      :hints(("Goal"
+              :in-theory (disable unsigned-byte-p)
+              :cases ((natp n)))))))
 
 
 
@@ -2270,7 +2472,7 @@
                   (logapp (nfix size) (ifix i) (ifix j)))
            :rule-classes nil))
 
-  (defthm logapp**
+  (defthmd logapp**
     (equal (logapp size i j)
            (if (zp size)
                (ifix j)
@@ -2532,7 +2734,8 @@
 
   (defthm logext-of-0-i-when-logcar-1
     (implies (equal (logcar i) 1)
-             (equal (logext 0 i) -1)))
+             (equal (logext 0 i) -1))
+    :hints(("Goal" :in-theory (enable logapp**))))
 
   (defthm logext-of-0-i-when-logcar-0
     (implies (equal (logcar i) 0)
@@ -2553,7 +2756,7 @@
     (equal (logext size -1) -1))
            
 
-  (defthm logext**
+  (defthmd logext**
     (equal (logext size i)
            (cond ((or (zp size)
                       (= size 1))
@@ -2627,7 +2830,7 @@
 
   (defcong int-equiv equal (bitmaskp i) 1)
 
-  (defthm bitmaskp**
+  (defthmd bitmaskp**
     (equal (bitmaskp i)
            (cond ((zip i) t)
                  ((= i -1) nil)
@@ -2714,7 +2917,28 @@
     :hints (("goal"
              :in-theory (enable* ihsext-inductions
                                  ihsext-recursive-redefs)
-             :induct (logand mask i)))))
+             :induct (logand mask i))))
+
+  (defthm logbitp-when-bitmaskp
+    (implies (bitmaskp x)
+             (equal (logbitp n x)
+                    (< (nfix n) (integer-length x))))
+    :hints (("goal" :in-theory (enable* logbitp** integer-length** bitmaskp**
+                                        ihsext-inductions)
+             :induct (logbitp n x))
+            (and stable-under-simplificationp
+                 '(:cases ((logbitp (+ -1 n) (logcdr x)))))))
+
+  (defthmd loghead-of-negative-one
+    (equal (loghead n -1)
+           (1- (ash 1 (nfix n))))
+    :hints (("goal" :induct (loghead n a)
+             :do-not-induct t
+             :in-theory (e/d* (logcons ihsext-inductions nfix)
+                              (loghead-identity))
+             :expand ((:free (a) (loghead n a))
+                      (ash 1 n))))))
+
 
 
 (defsection logcount**

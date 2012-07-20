@@ -31,7 +31,7 @@
 
 (set-default-hints '('(:do-not-induct t)))
 
-
+(local (in-theory (disable append-of-nil)))
 
 
 ;; BOZO probably move all of this stuff into libraries ---------------------

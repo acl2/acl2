@@ -193,18 +193,40 @@
                    (<= (expt 2 x) 1)))
      :rule-classes nil)))
 
+
+(local (defthm lousy-lemma-1
+           (IMPLIES (AND (< (FLOOR (* 1/2 N) 1)
+                            (- (* 1/2 (EXPT 2 (+ -1 LEN)))))
+                         (<= (- (EXPT 2 (+ -1 LEN))) N)
+                         (INTEGERP N)
+                         (natp len)
+                         (< 1 LEN))
+                    (EQUAL (+ 1
+                              (* 2
+                                 (V-TO-INT (INT-TO-V (FLOOR (* 1/2 N) 1)
+                                                     (+ -1 LEN)))))
+                           N))
+           :hints(("Goal"
+                   :use ((:instance product-integer-lower-bound-floor
+                                    (n n)
+                                    (k (- (expt 2 (+ -1 len))))
+                                    (f 1/2)))))))
+
+(local (defthm lousy-lemma-2
+         (IMPLIES (AND (ZP LEN)
+                       (INTEGERP N)
+                       (<= (- (* 1/2 (EXPT 2 LEN))) N)
+                       (< (* 2 N) (EXPT 2 LEN)))
+                  (equal (EQUAL 0 N)
+                         t))
+         :hints(("goal"
+                 :use ((:instance expt-2-lte-zero (x len)))))))
+
 (defthm v-to-int-int-to-v
   (implies (and (integerp n)
                 (<= (- (expt 2 (1- (ifix len)))) n)
                 (< n (expt 2 (1- (ifix len)))))
-           (equal (v-to-int (int-to-v n len)) n))
-  :hints (("Subgoal *1/4.2''"
-           :use ((:instance product-integer-lower-bound-floor
-                            (n n)
-                            (k (- (expt 2 (+ -1 len))))
-                            (f 1/2))))
-          ("Subgoal *1/1'"
-           :use ((:instance expt-2-lte-zero (x len))))))
+           (equal (v-to-int (int-to-v n len)) n)))
 
 
 (defthm int-to-v-v-to-nat
@@ -285,20 +307,27 @@
 
 
 
+(local (defthm lousy-lemma-3
+         (IMPLIES (AND (< (FLOOR (* 1/2 N) 1) (- (* 1/2 (EXPT 2 (+ -1 LEN)))))
+                       (<= (- (EXPT 2 (+ -1 LEN))) N)
+                       (< 1 LEN)
+                       (natp len)
+                       (INTEGERP N))
+                  (EQUAL (+ 1
+                            (* 2
+                               (FV-TO-INT (INT-TO-FV (FLOOR (* 1/2 N) 1)
+                                                     (+ -1 LEN)))))
+                         N))
+         :hints(("Goal" :use ((:instance product-integer-lower-bound-floor
+                                         (n n)
+                                         (k (- (expt 2 (+ -1 len))))
+                                         (f 1/2)))))))
+
 (defthm fv-to-int-int-to-fv
   (implies (and (integerp n)
                 (<= (- (expt 2 (1- (ifix len)))) n)
                 (< n (expt 2 (1- (ifix len)))))
-           (equal (fv-to-int (int-to-fv n len)) n))
-  :hints (("Subgoal *1/4.1.2"
-           :use
-           ((:instance product-integer-lower-bound-floor
-                       (n n)
-                       (k (- (expt 2 (+ -1 len))))
-                       (f 1/2))))
-          ("Subgoal *1/1'"
-           :use ((:instance expt-2-lte-zero (x len))))))
-
+           (equal (fv-to-int (int-to-fv n len)) n)))
 
 (defthm int-to-fv-fv-to-nat
   (implies (and (fv-const-bool-listp lst)

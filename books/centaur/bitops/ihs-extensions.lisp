@@ -786,44 +786,6 @@
 (local (in-theory (enable |(logbitp n (+ (expt 2 n) a))|)))
 
 
-(encapsulate
-  nil
-
-  (local (include-book "arithmetic/top-with-meta" :dir :system))
-  (local (defun ind (n m x)
-           (cond ((zip m) (list n x))
-                 ((< m 0) (ind (1+ n) (1+ m) x))
-                 (t (ind (1- n) (1- m) x)))))
-
-
-  (defthm unsigned-byte-p-of-ash
-    (implies (and (unsigned-byte-p (- n (ifix m)) x)
-                  (natp n))
-             (unsigned-byte-p n (ash x m)))
-    :hints(("Goal" :in-theory (e/d* (ihsext-recursive-redefs
-                                     ihsext-inductions
-                                     nfix ifix zip)
-                                    (unsigned-byte-p))
-            :induct (ind n m x)
-            :do-not-induct t)
-           (and stable-under-simplificationp
-                '(:expand ((ash x m)))))
-    :otf-flg t)
-
-  (defthmd loghead-of-ash
-    (equal (loghead n (ash x m))
-           (ash (loghead (nfix (- (nfix n) (ifix m))) x) m))
-    :hints(("Goal" :in-theory (e/d* (ihsext-recursive-redefs
-                                     ihsext-inductions
-                                     nfix ifix zip
-                                     acl2::ash**)
-                                    (bitp
-                                     loghead-identity
-                                     logcdr-of-ash))
-            :induct (ind n m x)
-            :do-not-induct t))))
-
-
 
 (def-ruleset ihs-ext-disabled-rules
   '(|(integerp (expt x n))|
@@ -832,6 +794,4 @@
     logand-with-2^n-is-logbitp
     mod-positive-bound
     expt-2-monotonic
-    |(logbitp n (+ (expt 2 n) a))|
-    loghead-of-ash))
-  
+    |(logbitp n (+ (expt 2 n) a))|))

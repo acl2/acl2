@@ -257,8 +257,7 @@
                     (:free (a b) (v2i (cons a b)))
                     (:free (a b) (bfr-eval-list (cons a b) env))
                     (bfr-eval-list v1 env)
-                    (bfr-eval-list v2 env)))
-          ("Subgoal *1/3" :in-theory (enable bfr-eval-list))))
+                    (bfr-eval-list v2 env)))))
 
 (local (bfr-reasoning-mode nil))
 
@@ -777,9 +776,9 @@
      (implies (and (integerp n)
                    (< 1 n))
               (not (integerp (/ n))))
-     :hints (("goal" :cases ((equal (denominator (/ n)) 1)))
-             ("subgoal 2" :in-theory (disable denominator-of-unary-/)))
-     :otf-flg t)
+     :hints (("goal"
+              :use ((:instance denominator-of-unary-/))
+              :in-theory (disable denominator-of-unary-/))))
 
    (defthm integer-and-integer-recip
      (implies (and (integerp n)

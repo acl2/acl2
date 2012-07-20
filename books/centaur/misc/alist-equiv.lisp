@@ -166,14 +166,22 @@
 
   (local (in-theory (enable alist-equiv alists-agree)))
 
-  (defthmd alist-equiv-means-all-keys-agree
-    (implies (alist-equiv x y)
-             (alists-agree keys x y))
-    :hints (("subgoal *1/3"
-             :use ((:instance sub-alistp-hons-assoc-equal
-                              (x (car keys)) (a x) (b y))
-                   (:instance sub-alistp-hons-assoc-equal
-                              (x (car keys)) (a y) (b x))))))
+  (encapsulate
+    ()
+    (local (defthm l0
+             (implies (and (not (equal (hons-assoc-equal a x)
+                                       (hons-assoc-equal a y)))
+                           (sub-alistp x y))
+                      (not (sub-alistp y x)))
+             :hints(("Goal"
+                     :use ((:instance sub-alistp-hons-assoc-equal
+                                      (x a) (a x) (b y))
+                           (:instance sub-alistp-hons-assoc-equal
+                                      (x a) (a y) (b x)))))))
+
+    (defthmd alist-equiv-means-all-keys-agree
+      (implies (alist-equiv x y)
+               (alists-agree keys x y))))
 
   (defequiv alist-equiv
     :hints(("Goal" :in-theory (enable sub-alistp-trans))))
@@ -191,27 +199,31 @@
     (not (equal (hons-assoc-equal bg al1)
                 (hons-assoc-equal bg al2))))
 
-  (defthmd alists-agree-when-agree-on-alist-equiv-bad-guy
-    (implies (let ((bg (alist-equiv-bad-guy al1 al2)))
-               (equal (hons-assoc-equal bg al1)
-                      (hons-assoc-equal bg al2)))
-             (alists-agree keys al1 al2))
-    :hints(("Goal" :in-theory (enable alists-agree)
-            :induct (len keys))
-           ("Subgoal *1/1"
-            :use ((:instance alist-equiv-bad-guy
-                             (bg (car keys)))))))
+  (encapsulate
+    ()
+    (local (defthm l0
+             (implies (and (equal (hons-assoc-equal (alist-equiv-bad-guy al1 al2) al1)
+                                  (hons-assoc-equal (alist-equiv-bad-guy al1 al2) al2)))
+                      (equal (hons-assoc-equal a al1)
+                             (hons-assoc-equal a al2)))
+             :hints(("goal" :use ((:instance alist-equiv-bad-guy (bg a)))))))
 
-  (defthmd alists-agree-when-agree-on-alist-equiv-bad-guy1
-    (implies (let ((bg (alist-equiv-bad-guy al1 al2)))
-               (equal (hons-assoc-equal bg al1)
-                      (hons-assoc-equal bg al2)))
-             (alists-agree keys al2 al1))
-    :hints(("Goal" :in-theory (enable alists-agree)
-            :induct (len keys))
-           ("Subgoal *1/1"
-            :use ((:instance alist-equiv-bad-guy
-                             (bg (car keys)))))))
+    (defthmd alists-agree-when-agree-on-alist-equiv-bad-guy
+      (implies (let ((bg (alist-equiv-bad-guy al1 al2)))
+                 (equal (hons-assoc-equal bg al1)
+                        (hons-assoc-equal bg al2)))
+               (alists-agree keys al1 al2))
+      :hints(("Goal"
+              :in-theory (enable alists-agree)
+              :induct (len keys))))
+
+    (defthmd alists-agree-when-agree-on-alist-equiv-bad-guy1
+      (implies (let ((bg (alist-equiv-bad-guy al1 al2)))
+                 (equal (hons-assoc-equal bg al1)
+                        (hons-assoc-equal bg al2)))
+               (alists-agree keys al2 al1))
+      :hints(("Goal" :in-theory (enable alists-agree)
+              :induct (len keys)))))
 
   (defthmd sub-alistp-when-agree-on-alist-equiv-bad-guy
     (implies (let ((bg (alist-equiv-bad-guy al1 al2)))

@@ -265,6 +265,11 @@
     zp-implies-ifix-nonpositive))
 
 
+(defthm negative-forward-to-nat-equiv-0
+  (implies (< n 0)
+           (nat-equiv n 0))
+  :rule-classes :forward-chaining)
+
 (defthm not-integerp-forward-to-int-equiv-0
   (implies (not (integerp x))
            (int-equiv x 0))
@@ -324,7 +329,8 @@
 
 
 (def-ruleset! arith-equiv-forwarding
-  '(not-integerp-forward-to-int-equiv-0
+  '(negative-forward-to-nat-equiv-0
+    not-integerp-forward-to-int-equiv-0
     not-natp-forward-to-int-equiv-0
     not-bitp-forward-to-int-equiv-0
     equal-ifix-foward-to-int-equiv

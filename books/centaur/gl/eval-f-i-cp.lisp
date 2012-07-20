@@ -155,17 +155,26 @@
               (not (equal fn2 fn)))))
   :rule-classes nil)
 
-(defthm apply-cond-of-assoc-is-eval-conds
-  (implies (and (no-duplicate-condsp lst)
-                (hons-assoc-equal cond lst)
-                (apply-cond-ev cond al))
-           (equal (mv-nth 1 (eval-conds lst al))
-                  (apply-cond-ev (cdr (hons-assoc-equal cond lst))
-                                 al)))
-  :hints(("Subgoal *1/2.4"
-          :use ((:instance no-conds-with-same-fn-and-hons-assoc-equal
-                           (fn (cdr (assoc-eq 'f al)))
-                           (lst (cdr lst)))))))
+(encapsulate
+  ()
+  (local (defthm l0
+           (implies (and (no-conds-with-same-fn (cdr (assoc-equal 'f al)) (cdr lst))
+                         (hons-assoc-equal cond (cdr lst))
+                         (apply-cond-ev cond al))
+                    (equal (apply-cond-ev (cdar lst) al)
+                           (apply-cond-ev (cdr (hons-assoc-equal cond (cdr lst))) al)))
+           :hints(("Goal"
+                   :use ((:instance no-conds-with-same-fn-and-hons-assoc-equal
+                                    (fn (cdr (assoc-eq 'f al)))
+                                    (lst (cdr lst))))))))
+
+  (defthm apply-cond-of-assoc-is-eval-conds
+    (implies (and (no-duplicate-condsp lst)
+                  (hons-assoc-equal cond lst)
+                  (apply-cond-ev cond al))
+             (equal (mv-nth 1 (eval-conds lst al))
+                    (apply-cond-ev (cdr (hons-assoc-equal cond lst))
+                                   al)))))
 
 (defun hons-alist-keys-subset (lst1 lst2)
   (or (atom lst1)
