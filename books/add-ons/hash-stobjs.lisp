@@ -41,17 +41,17 @@
 ;; we care more about ease of proving guard conjectures than we do
 ;; about how well they perform in the logic.
 
-(defun remove-assoc (x al)
+(defun hons-remove-assoc (x al)
   (declare (xargs :guard t))
   (if (atom al)
       nil
     (if (and (consp (car al))
              (equal x (caar al)))
-        (remove-assoc x (cdr al))
-      (cons (car al) (remove-assoc x (cdr al))))))
+        (hons-remove-assoc x (cdr al))
+      (cons (car al) (hons-remove-assoc x (cdr al))))))
 
-(defthm remove-assoc-acl2-count-weak
-  (<= (acl2-count (remove-assoc x al)) (acl2-count al))
+(defthm hons-remove-assoc-acl2-count-weak
+  (<= (acl2-count (hons-remove-assoc x al)) (acl2-count al))
   :rule-classes :linear)
 
 (defun count-keys (al)
@@ -59,29 +59,29 @@
   (if (atom al)
       0
     (if (consp (car al))
-        (+ 1 (count-keys (remove-assoc (caar al) (cdr al))))
+        (+ 1 (count-keys (hons-remove-assoc (caar al) (cdr al))))
       (count-keys (cdr al)))))
 
-(defthm not-assoc-remove-assoc
-  (not (hons-assoc-equal k (remove-assoc k al))))
+(defthm not-assoc-hons-remove-assoc
+  (not (hons-assoc-equal k (hons-remove-assoc k al))))
 
-(defthm assoc-remove-assoc-diff
+(defthm assoc-hons-remove-assoc-diff
   (implies (not (equal j k))
-           (equal (hons-assoc-equal k (remove-assoc j al))
+           (equal (hons-assoc-equal k (hons-remove-assoc j al))
                   (hons-assoc-equal k al))))
 
-(defthm remove-assoc-repeat
-  (equal (remove-assoc k (remove-assoc k al))
-         (remove-assoc k al)))
+(defthm hons-remove-assoc-repeat
+  (equal (hons-remove-assoc k (hons-remove-assoc k al))
+         (hons-remove-assoc k al)))
 
-(defthm remove-assoc-commutes
-  (equal (remove-assoc j (remove-assoc k al))
-         (remove-assoc k (remove-assoc j al))))
+(defthm hons-remove-assoc-commutes
+  (equal (hons-remove-assoc j (hons-remove-assoc k al))
+         (hons-remove-assoc k (hons-remove-assoc j al))))
 
 (local (include-book "arithmetic-3/top" :dir :system))
 
-(defthm count-keys-remove-assoc
-  (equal (count-keys (remove-assoc k al))
+(defthm count-keys-hons-remove-assoc
+  (equal (count-keys (hons-remove-assoc k al))
          (if (consp (hons-assoc-equal k al))
              (1- (count-keys al))
            (count-keys al))))
@@ -103,7 +103,7 @@
 
 (defun tabp
   (declare (xargs :guard t))
-  ;; Because we made the guards on hons-assoc-equal and remove-assoc T, we
+  ;; Because we made the guards on hons-assoc-equal and hons-remove-assoc T, we
   ;; don't need to constrain what tabp is logically.
   t)
 
@@ -151,7 +151,7 @@
   (declare (xargs :guard (and (htablep htable)
                               ;; eqlablep only in EQL version
                               (eqlablep k))))
-  (update-nth 0 (remove-assoc k (nth 0 htable)) htable))
+  (update-nth 0 (hons-remove-assoc k (nth 0 htable)) htable))
 
 ;; COUNT, logic:
 (defun tab-count (htable)
@@ -756,7 +756,7 @@ EQL or EQUAL.~%")))
                                                 (eqlablep k))
                                         `(,top-recog ,var))
                               :verify-guards t))
-              (update-nth ,n (remove-assoc k (nth ,n ,var)) ,var))
+              (update-nth ,n (hons-remove-assoc k (nth ,n ,var)) ,var))
              (,count-name
               (,var)
               (declare (xargs :guard (,top-recog ,var)))

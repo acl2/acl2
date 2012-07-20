@@ -196,11 +196,49 @@
               (< x 0)))
   :rule-classes :compound-recognizer)
 
-(defthm negp-rw
+(defthm negp-when-integerp
   (implies (integerp x)
            (equal (negp x)
                   (< x 0)))
-  :hints(("Goal" :in-theory (enable negp))))
+  :hints(("Goal" :in-theory (enable negp)))
+  :rule-classes ((:rewrite :backchain-limit-lst (1))))
+
+(defthm negp-when-less-than-0
+  (implies (< x 0)
+           (equal (negp x)
+                  (integerp x)))
+  :hints(("Goal" :in-theory (enable negp)))
+  :rule-classes ((:rewrite :backchain-limit-lst (1))))
+
+(defthm natp-when-integerp
+  (implies (integerp x)
+           (equal (natp x)
+                  (<= 0 x)))
+  :hints(("Goal" :in-theory (enable negp)))
+  :rule-classes ((:rewrite :backchain-limit-lst (1))))
+
+(defthm natp-when-gte-0
+  (implies (<= 0 x)
+           (equal (natp x)
+                  (integerp x)))
+  :hints(("Goal" :in-theory (enable negp)))
+  :rule-classes ((:rewrite :backchain-limit-lst (1))))
+
+
+(defthm zp-when-integerp
+  (implies (integerp x)
+           (equal (zp x)
+                  (<= x 0)))
+  :hints(("Goal" :in-theory (enable negp)))
+  :rule-classes ((:rewrite :backchain-limit-lst (1))))
+
+(defthm zp-when-gt-0
+  (implies (< 0 x)
+           (equal (zp x)
+                  (not (integerp x))))
+  :hints(("Goal" :in-theory (enable negp)))
+  :rule-classes ((:rewrite :backchain-limit-lst (1))))
+
 
 (defthm negp-fc-1
   (implies (negp x)
