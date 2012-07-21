@@ -18886,6 +18886,11 @@
   a new utility, ~ilc[wof] (an acronym for ``With Output File''), directs
   standard output and proofs output to a file; ~pl[wof].
 
+  The new macro ~ilc[defnd] defines a function with ~c[:]~ilc[guard] ~c[t] and
+  ~il[disable]s that function, in analogy to how ~ilc[defund] defines with
+  ~ilc[defun] and then ~il[disable]s.  Thanks to Shilpi Goel for requesting
+  this feature.
+
   ~st[HEURISTIC IMPROVEMENTS]
 
   Reading of ACL2 ~ilc[arrays] (~pl[aref1], ~pl[aref2]) has been made more
@@ -25442,7 +25447,7 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
                                   (stringp (cadr filename))))))
   `(cond #+acl2-par
          ((f-get-global 'waterfall-parallelism state)
-          (er hard 'psof
+          (er soft 'psof
               "The PSOF command is disabled with waterfall-parallelism ~
                enabled, because in that case most prover output is printed to ~
                *standard-co* (using wormholes), so cannot be redirected."))

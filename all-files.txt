@@ -589,8 +589,10 @@ equal-by-logbitp.lisp
 extra-defs.lisp
 ihs-extensions.lisp
 ihsext-basics.lisp
+install-bit.lisp
 integer-length.lisp
 part-select.lisp
+rotate.lisp
 sbitsets.lisp
 top.lisp
 
@@ -1856,6 +1858,7 @@ portcullis.lisp
 top-opt.acl2
 top-opt.lisp
 top.lisp
+wizard.lisp
 
 books/data-structures:
 Makefile

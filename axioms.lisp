@@ -7800,7 +7800,13 @@
 
   The tau algorithm is a decision procedure for the logical theory
   described (only) by the rules in the data base.  The decision procedure can
-  be enabled or disabled.  It is enabled by default.
+  be enabled or disabled.  It is enabled by default.  You can disable it
+  globally using either of the following equivalent forms (~pl[theories], in
+  particular the discussion of runic designators).
+  ~bv[]
+  (in-theory (disable (:executable-counterpart tau-system)))
+  (in-theory (disable (tau-system)))
+  ~ev[]
 
   The data base contains rules derived from theorems stated by the user.
   Unlike a type system, the tau system cannot automatically infer relations

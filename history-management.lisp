@@ -14175,9 +14175,10 @@
                          (er@par soft ctx
                            "We do not allow :do-not-induct hint values in the ~
                             keyword package whose name starts with \"OTF\", ~
-                            unless the value is :OTF-FLG-OVERRIDE, because we ~
-                            suspect you intended :OTF-FLG-OVERRIDE in this ~
-                            case.  The value ~x0 is thus illegal."
+                            unless the value is :OTF or :OTF-FLG-OVERRIDE, ~
+                            because we suspect you intended :OTF or ~
+                            :OTF-FLG-OVERRIDE in this case.  The value ~x0 is ~
+                            thus illegal."
                            arg))
                         (t (value@par arg)))))
                (t (value@par arg))))
@@ -19811,10 +19812,10 @@
   ~c[value] is ~c[t] or ~c[:otf-flg-override], then the attempt to apply
   ~il[induction] to the indicated goal or any subgoal under the indicated goal
   will immediately cause the theorem prover to report ~il[failure], except that
-  if ~c[:otf-flg] is specified (~pl[otf-flg]) and ~c[value] is ~c[t], then the
-  proof will continue until the time at which the goal pushed for induction is
-  finally considered.  The latter behavior is also what occurs if ~c[value] is
-  ~c[:otf].  Thus, any non-~c[nil] value requires the indicated goal to be
+  if ~c[:otf-flg t] is specified (~pl[otf-flg]) and ~c[value] is ~c[t], then
+  the proof will continue until the time at which the goal pushed for induction
+  is finally considered.  The latter behavior is also what occurs if ~c[value]
+  is ~c[:otf].  Thus, any non-~c[nil] value requires the indicated goal to be
   proved entirely by simplification, destructor elimination, and the other
   ``waterfall'' processes.  ~il[Induction] to prove the indicated goal (or any
   subgoal) is not permitted.  See however the ~c[:induct] hint below.  If
