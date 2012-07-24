@@ -41,6 +41,86 @@
 
 (program)
 
+(defun evfast-symname-lst (syms)
+  (if (atom syms)
+      nil
+    (cons `(symbol-name ,(car syms))
+          (evfast-symname-lst (cdr syms)))))
+
+(defmacro evfast-thmname (evfn &rest rest-syms)
+  `(intern-in-package-of-symbol
+    (concatenate 'string . ,(evfast-symname-lst (cons evfn rest-syms)))
+    ,evfn))
+                 
+
+(defun defevaluator-fast-form/defthm-for-fnsym (evfn fn-args)
+  (let* ((thmname (evfast-thmname evfn '-of- (car fn-args) '-call))
+         (thm-body (prettyify-clause (evaluator-clause evfn fn-args) nil nil)))
+    `((defthm ,thmname
+        ,thm-body
+        :hints (("goal" :expand
+                 ((,evfn x a)
+                  (:free (x) (hide x))
+                  (:free (fn args)
+                   (apply-for-defevaluator fn args))))))
+      (local (in-theory (disable ,thmname))))))
+
+(defun defevaluator-fast-form/defthms-for-fnsyms (evfn fn-args-list)
+  (declare (xargs :mode :program))
+  (if (endp fn-args-list)
+      nil
+    (append
+     (defevaluator-fast-form/defthm-for-fnsym evfn (car fn-args-list))
+     (defevaluator-fast-form/defthms-for-fnsyms evfn (cdr fn-args-list)))))
+
+
+(defun defevaluator-fast-form/defthms-named (evfn evfn-lst fn-args-list)
+  (declare (xargs :mode :program))
+  (let* ((base-clauses (prettyify-clause-lst (evaluator-clauses evfn evfn-lst
+                                                                nil) nil nil)))
+    `((defthmd ,(evfast-thmname evfn '-of-fncall-args)
+        ,(nth 0 base-clauses)
+        :hints (("Goal" :expand
+                 ((:free (x) (hide x))
+                  (,evfn x a)
+                  (:free (args)
+                   (,evfn (cons (car x)
+                                args) nil)))
+                 :in-theory '(eval-list-kwote-lst
+                              fix-true-list-ev-lst
+                              car-cons cdr-cons))))
+      (local (in-theory (disable ,(evfast-thmname evfn '-of-fncall-args))))
+
+      (defthm ,(evfast-thmname evfn '-of-variable)
+        ,(nth 1 base-clauses)
+        :hints (("goal" :expand ((,evfn x a)))))
+      (local (in-theory (disable ,(evfast-thmname evfn '-of-variable))))
+
+      (defthm ,(evfast-thmname evfn '-of-quote)
+        ,(nth 2 base-clauses)
+        :hints (("goal" :expand ((,evfn x a)))))
+      (local (in-theory (disable ,(evfast-thmname evfn '-of-quote))))
+      
+      (defthm ,(evfast-thmname evfn '-of-lambda)
+        ,(nth 3 base-clauses)
+        :hints (("goal" :expand ((,evfn x a)))))
+      (local (in-theory (disable ,(evfast-thmname evfn '-of-lambda))))
+
+      (defthm ,(evfast-thmname evfn-lst '-of-atom)
+        ,(nth 4 base-clauses)
+        :hints (("goal" :expand ((,evfn-lst x-lst a)))))
+      (local (in-theory (disable ,(evfast-thmname evfn-lst '-of-atom))))
+
+      (defthm ,(evfast-thmname evfn-lst '-of-cons)
+        ,(nth 5 base-clauses)
+        :hints (("goal" :expand ((,evfn-lst x-lst a)))))
+      (local (in-theory (disable ,(evfast-thmname evfn-lst '-of-cons))))
+
+      . ,(defevaluator-fast-form/defthms-for-fnsyms evfn fn-args-list))))
+
+
+
+
 (defun defevaluator-fast-form/defthms (evfn evfn-lst prefix i clauses)
   (declare (xargs :mode :program))
   (cond ((null clauses) nil)
@@ -111,6 +191,9 @@
               (defevaluator-fast-form/defthms evfn evfn-lst prefix (1+ i)
                 (cdr clauses)))))))
 
+
+
+
 (defun evaluator-fast-clause/arglist (formals x)
   (if (atom formals)
       nil
@@ -149,15 +232,17 @@
 ;;             (:type-prescription acl2-count)
             )))
 
-(defun defevaluator-fast-form (evfn evfn-lst fn-args-lst)
+(defun defevaluator-fast-form (evfn evfn-lst namedp fn-args-lst)
   (declare (xargs :mode :program))
-  (let* ((clauses (evaluator-clauses evfn evfn-lst fn-args-lst))
-         (fns-clauses (defevaluator-fast-form/fns-clauses fn-args-lst))
-         (defthms (defevaluator-fast-form/defthms
-                    evfn evfn-lst
-                    (symbol-name (pack2 evfn '-constraint-))
-                    0
-                    clauses)))
+  (let* ((fns-clauses (defevaluator-fast-form/fns-clauses fn-args-lst))
+         (defthms (if namedp
+                      (defevaluator-fast-form/defthms-named
+                        evfn evfn-lst fn-args-lst)
+                    (defevaluator-fast-form/defthms
+                      evfn evfn-lst
+                      (symbol-name (pack2 evfn '-constraint-))
+                      0
+                      (evaluator-clauses evfn evfn-lst fn-args-lst)))))
     `(encapsulate
       (((,evfn * *) => *)
        ((,evfn-lst * *) => *))
@@ -236,7 +321,7 @@
                         :in-theory (enable default-cdr)))))
             . defthms)))))
 
-(defmacro defevaluator-fast (&whole x evfn evfn-lst fn-args-lst)
+(defmacro defevaluator-fast (&whole x evfn evfn-lst fn-args-lst &key namedp)
 
 ; Note: It might be nice to allow defevaluator to take a :DOC string, but that
 ; would require allowing encapsulate to take such a string!
@@ -256,10 +341,16 @@
      ((g1 x1 ... xn_1)
       ...
       (gk x1 ... xn_k))
+     :namedp flg)
   ~ev[]
   where ~c[ev] and ~c[ev]-list are new function symbols and ~c[g1], ..., ~c[gk] are
   old function symbols with the indicated number of formals, i.e.,
   each ~c[gi] has ~c[n_i] formals.
+
+  The namedp argument is a flag that defaults to nil.  If nil, the theorems
+  constraining the evaluator are named the same way as in defevaluator, i.e.,
+  [evname]-constraint-[index].  If t, the theorems are given more descriptive
+  names, such as [evname]-of-[fnname]-call, [evname]-of-quote, etc.
 
   ~l[defevaluator] for more.  Defevaluator-fast is a reimplementation of
   defevaluator, designed to handle larger numbers of recognized functions."
@@ -275,7 +366,7 @@
           However, ~x0 does not have this form."
          ',x))
    (t
-    (defevaluator-fast-form evfn evfn-lst fn-args-lst))))
+    (defevaluator-fast-form evfn evfn-lst namedp fn-args-lst))))
 
 
 
@@ -345,6 +436,74 @@
                     (conjoin-clauses (stupid-cp cl))
                     a))
               (foo-ev
+               (disjoin cl) a))
+     :rule-classes :clause-processor)))
+
+(local
+ ;; A test to show that ACL2 recognizes evaluators defined with
+ ;; DEFEVALUATOR-FAST as valid evaluators for meta-reasoning:
+ (progn
+   (defevaluator-fast foo2-ev foo2-ev-lst
+     ((XXXJOIN FN ARGS)
+      (INTEGER-ABS X)
+      (OR-MACRO LST)
+      (AND-MACRO LST)
+      (LIST-MACRO LST)
+      (TRUE-LISTP X)
+      (EQ X Y)
+      (REWRITE-EQUIV X)
+      (HIDE X)
+      (NOT P)
+      (IMPLIES P Q)
+      (BOOLEANP X)
+      (XOR P Q)
+      (IFF P Q)
+      (O< X Y)
+      (O-P X)
+      (SYMBOLP X)
+      (SYMBOL-PACKAGE-NAME X)
+      (SYMBOL-NAME X)
+      (STRINGP X)
+      (REALPART X)
+      (RATIONALP X)
+      (PKG-WITNESS PKG)
+      (NUMERATOR X)
+      (INTERN-IN-PACKAGE-OF-SYMBOL STR SYM)
+      (INTEGERP X)
+      (IMAGPART X)
+      (IF X Y Z)
+      (EQUAL X Y)
+      (DENOMINATOR X)
+      (CONSP X)
+      (CONS X Y)
+      (COERCE X Y)
+      (COMPLEX-RATIONALP X)
+      (COMPLEX X Y)
+      (CODE-CHAR X)
+      (CHARACTERP X)
+      (CHAR-CODE X)
+      (CDR X)
+      (CAR X)
+      (< X Y)
+      (UNARY-/ X)
+      (UNARY-- X)
+      (BINARY-+ X Y)
+      (BINARY-* X Y)
+      (BAD-ATOM<= X Y)
+      (ACL2-NUMBERP X))
+     :namedp t)
+
+   (defun stupid-cp2 (x)
+     (list x))
+
+   ;; ACL2 recognizes FOO-EV as a valid evaluator:
+   (defthm stupid-cp2-correct
+     (implies (and (pseudo-term-listp cl)
+                   (alistp a)
+                   (foo2-ev
+                    (conjoin-clauses (stupid-cp cl))
+                    a))
+              (foo2-ev
                (disjoin cl) a))
      :rule-classes :clause-processor)))
 

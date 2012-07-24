@@ -239,41 +239,37 @@
                              (arbitrary-values (cadr (qs-subset-badguy (qs-subset-lhs)
                                                                        (qs-subset-rhs)))))))))
 
-  (defun qs-subset-by-eval-bdds-hint (id clause hist pspv ctx stable world state)
-    (declare (xargs :mode :program :stobjs state)
-             (ignorable id hist ctx))
-    (if (not stable)
-        (value nil)
+  (defun qs-subset-by-eval-bdds-hint (clause pspv stable world)
+    (declare (xargs :mode :program))
+    (and stable
       (let* ((rcnst (access prove-spec-var pspv :rewrite-constant))
              (ens   (access rewrite-constant rcnst :current-enabled-structure)))
-        (if (not (enabled-numep (fnume '(:rewrite qs-subset-by-eval-bdds) world) ens))
-            (value nil)
-          (let ((conclusion (car (last clause))))
-            (if (not (and (consp conclusion)
-                          (eq (car conclusion) 'qs-subset)))
-                (value nil)
-              (let ((lhs  (second conclusion))
-                    (rhs  (third conclusion))
-                    (hyps (dumb-negate-lit-lst (butlast clause 1))))
-                ;; We always think they are normp's if we're asking about qs-subset, so
-                ;; we don't consult the rewriter.
-                (let ((hint `(:use (:functional-instance qs-subset-by-eval-bdds
-                                                         (qs-subset-hyps (lambda () (and ,@hyps)))
-                                                         (qs-subset-lhs  (lambda () ,lhs))
-                                                         (qs-subset-rhs  (lambda () ,rhs))))))
-                  (prog2$
-                   ;; And tell the user what's happening.
-                   (cw "~|~%We now appeal to ~s0 in an attempt to show that ~x1 is a ~
+        (and (enabled-numep (fnume '(:rewrite qs-subset-by-eval-bdds) world) ens)
+             (let ((conclusion (car (last clause))))
+               (and (consp conclusion)
+                    (eq (car conclusion) 'qs-subset)
+                    (let* ((lhs  (second conclusion))
+                           (rhs  (third conclusion))
+                           (hyps (dumb-negate-lit-lst (butlast clause 1)))
+                           ;; We always think they are normp's if we're asking about qs-subset, so
+                           ;; we don't consult the rewriter.
+                           (hint `(:use (:functional-instance qs-subset-by-eval-bdds
+                                          (qs-subset-hyps (lambda () (and ,@hyps)))
+                                          (qs-subset-lhs  (lambda () ,lhs))
+                                          (qs-subset-rhs  (lambda () ,rhs))))))
+                      (prog2$
+                       ;; And tell the user what's happening.
+                       (cw "~|~%We now appeal to ~s0 in an attempt to show that ~x1 is a ~
                           qs-subset of ~x2.  (You can disable ~s0 to avoid this.)  ~
                           The hint we give is: ~x3~|~%"
-                       'qs-subset-by-eval-bdds
-                       (untranslate lhs nil world)
-                       (untranslate rhs nil world)
-                       hint)
-                   (value hint))))))))))
+                           'qs-subset-by-eval-bdds
+                           (untranslate lhs nil world)
+                           (untranslate rhs nil world)
+                           hint)
+                       hint))))))))
 
   (add-default-hints!
-   '((qs-subset-by-eval-bdds-hint id clause hist pspv ctx stable-under-simplificationp world state))))
+   '((qs-subset-by-eval-bdds-hint clause pspv stable-under-simplificationp world))))
 
 
 

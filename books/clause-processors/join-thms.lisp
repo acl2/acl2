@@ -130,31 +130,60 @@
 ;; rune nume hyps equiv lhs rhs subclass heuristic-info backchain-limit-lst
 ;; var-info match-free
 
-(defun ev-find-if-rule1 (ev lemmas)
+
+(defun find-matching-rule (hyps equiv lhs rhs lemmas)
   (if (atom lemmas)
       nil
-    (or (and (equal (access rewrite-rule (car lemmas) :hyps)
-                    '((consp x) (equal (car x) 'if)))
-             (let* ((equiv (access rewrite-rule (car lemmas) :equiv))
-                    (lhs (access rewrite-rule (car lemmas) :lhs))
-                    (rhs (access rewrite-rule (car lemmas) :rhs))
-                    (rune (access rewrite-rule (car lemmas) :rune))
-                    (subclass (access rewrite-rule (car lemmas) :subclass))
-                    (backchain (access rewrite-rule (car lemmas) :backchain-limit-lst)))
-               (and (eq equiv 'equal)
-                    (case-match lhs ((!ev . '(x a)) t))
-                    (case-match rhs (('if (!ev . '((car (cdr x)) a))
-                                         (!ev . '((car (cdr (cdr x))) a))
-                                       (!ev . '((car (cdr (cdr (cdr x)))) a)))
-                                     t))
-                    (eq subclass 'backchain)
-                    (eq backchain nil)
-                    (eq (car rune) :rewrite)
-                    rune)))
-        (ev-find-if-rule1 ev (cdr lemmas)))))
+    (or (let* ((rune  (access rewrite-rule (car lemmas) :rune))
+               (rhyps  (access rewrite-rule (car lemmas) :hyps))
+               (rlhs   (access rewrite-rule (car lemmas) :lhs))
+               (rrhs   (access rewrite-rule (car lemmas) :rhs))
+               (requiv (access rewrite-rule (car lemmas) :equiv)))
+          (and (or (not hyps)  (equal rhyps hyps))
+               (or (not lhs)   (equal rlhs lhs))
+               (or (not rhs)   (equal rrhs rhs))
+               (or (not equiv) (equal requiv equiv))
+               rune))
+        (find-matching-rule hyps equiv lhs rhs (cdr lemmas)))))
 
-(defun ev-find-if-rule (ev world)
-  (ev-find-if-rule1 ev (fgetprop ev 'lemmas nil world)))
+;; (defun ev-find-fncall-rule1 (ev fn lemmas)
+;;   (if (atom lemmas)
+;;       nil
+;;     (or (and (let* ((equiv (access rewrite-rule (car lemmas) :equiv))
+;;                     (hyps (access rewrite-rule (car lemmas) :hyps))
+;;                     (lhs (access rewrite-rule (car lemmas) :lhs))
+;;                     (rhs (access rewrite-rule (car lemmas) :rhs))
+;;                     (rune (access rewrite-rule (car lemmas) :rune))
+;;                     (subclass (access rewrite-rule (car lemmas) :subclass))
+;;                     (backchain (access rewrite-rule (car lemmas) :backchain-limit-lst)))
+;;                (and (case-match hyps (('(consp x) ('equal '(car x) ('quote !fn))) t))
+;;                     (eq equiv 'equal)
+;;                     (case-match lhs ((!ev . '(x a)) t))
+;;                     (case-match rhs ((!fn . &) t))
+;;                     (eq subclass 'backchain)
+;;                     (eq backchain nil)
+;;                     (eq (car rune) :rewrite)
+;;                     rune)))
+;;         (ev-find-fncall-rule1 ev fn (cdr lemmas)))))
+
+(defun ev-find-fncall-rule-in-lemmas (ev fn lemmas)
+  (find-matching-rule
+   `((consp x) (equal (car x) ',fn))        ;; hyps
+   'equal
+   `(,ev x a)                               ;; lhs
+   nil
+   lemmas))
+
+(defun ev-find-fncall-rule (ev fn world)
+  (find-matching-rule
+   `((consp x) (equal (car x) ',fn))        ;; hyps
+   'equal
+   `(,ev x a)                               ;; lhs
+   nil
+   (fgetprop ev 'lemmas nil world)))
+
+
+
 
 (defun ev-mk-rulename (ev name)
   (intern-in-package-of-symbol
@@ -168,30 +197,33 @@
     (cons (cons (car names) (ev-mk-rulename ev (car names)))
           (ev-pair-rulenames ev (cdr names)))))
 
-(defmacro def-join-thms (ev &key if-rule)
-  (let ((alist `(,@(and if-rule
-                        `((if-rule . ,if-rule)))
-                   (quote-rule . ,(ev-mk-rulename ev 'constraint-2))
-                   (ev . ,ev)
-                   . ,(ev-pair-rulenames ev '(disjoin-cons
-                                              disjoin-when-consp
-                                              disjoin-atom
-                                              disjoin-append
-                                              conjoin-cons
-                                              conjoin-when-consp
-                                              conjoin-atom
-                                              conjoin-append
-                                              conjoin-clauses-cons
-                                              conjoin-clauses-when-consp
-                                              conjoin-clauses-atom
-                                              conjoin-clauses-append)))))
-    (if if-rule
-        (sublis alist *def-join-thms-body*)
-      `(make-event
-        (let* ((if-rule (ev-find-if-rule ',ev (w state)))
-               (alist (cons (cons 'if-rule if-rule) ',alist)))
-          (if if-rule
-              (value (sublis alist *def-join-thms-body*))
-            (er soft 'def-join-thms (msg "~
-Unable to find a rewrite rule for (~x0 X A) when (CAR X) is IF~%" ',ev))))))))
+(defmacro def-join-thms (ev)
+  (let ((alist `((ev . ,ev)
+                 . ,(ev-pair-rulenames ev '(disjoin-cons
+                                            disjoin-when-consp
+                                            disjoin-atom
+                                            disjoin-append
+                                            conjoin-cons
+                                            conjoin-when-consp
+                                            conjoin-atom
+                                            conjoin-append
+                                            conjoin-clauses-cons
+                                            conjoin-clauses-when-consp
+                                            conjoin-clauses-atom
+                                            conjoin-clauses-append)))))
+    `(make-event
+      (let* ((if-rule (ev-find-fncall-rule ',ev 'if (w state)))
+             (quote-rule (ev-find-fncall-rule ',ev 'quote (w state)))
+             (alist (list* (cons 'if-rule if-rule)
+                           (cons 'quote-rule quote-rule)
+                           ',alist)))
+        (cond ((not if-rule)
+               (er soft 'def-join-thms
+                   (msg "Unable to find a rewrite rule for (~x0 X A) when ~
+                         (CAR X) is IF~%" ',ev)))
+              ((not quote-rule)
+               (er soft 'def-join-thms
+                   (msg "Unable to find a rewrite rule for (~x0 X A) when ~
+                         (CAR X) is QUOTE~%" ',ev)))
+              (t (value (sublis alist *def-join-thms-body*))))))))
 

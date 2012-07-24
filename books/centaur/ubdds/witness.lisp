@@ -462,31 +462,38 @@
 
 ;; computed hint to use this clause processor when stable under
 ;; simplification.  If or-hint is t, alternatively provide no hint.
+;; (defmacro bdd-reasoning (&key or-hint)
+;;   `(if stable-under-simplificationp
+;;        (er-progn
+;;         ;; This just lets us collect the clauses on which this hint is used.
+;;         ,'(assign eval-bdd-cp-clauses
+;;                   (cons clause
+;;                         (and (boundp-global
+;;                               'eval-bdd-cp-clauses state)
+;;                              (@ eval-bdd-cp-clauses))))
+;;         ,(let ((cphint '(eval-bdd-cp-hint clause (bdd-patterns))))
+;;            `(value ,(if or-hint
+;;                         ``(:or (,,cphint
+;;                                 (:no-thanks t)))
+;;                       cphint))))
+;;      (value nil)))
+
 (defmacro bdd-reasoning (&key or-hint)
-  `(if stable-under-simplificationp
-       (er-progn
-        ;; This just lets us collect the clauses on which this hint is used.
-        ,'(assign eval-bdd-cp-clauses
-                  (cons clause
-                        (and (boundp-global
-                              'eval-bdd-cp-clauses state)
-                             (@ eval-bdd-cp-clauses))))
+  `(and stable-under-simplificationp
         ,(let ((cphint '(eval-bdd-cp-hint clause (bdd-patterns))))
-           `(value ,(if or-hint
-                        ``(:or (,,cphint
-                                (:no-thanks t)))
-                      cphint))))
-     (value nil)))
+           (if or-hint
+               ``(:or (,,cphint
+                       (:no-thanks t)))
+             cphint))))
 
 (defmacro eval-bdd-cp-default-hint ()
-  `(if (and stable-under-simplificationp
-            (let* ((rcnst (access prove-spec-var pspv :rewrite-constant))
-                   (ens   (access rewrite-constant rcnst
-                                  :current-enabled-structure)))
-              (enabled-numep (fnume '(:definition eval-bdd-cp-hint) world)
-                             ens)))
-       (bdd-reasoning :or-hint t)
-     (value nil)))
+  `(and stable-under-simplificationp
+        (let* ((rcnst (access prove-spec-var pspv :rewrite-constant))
+               (ens   (access rewrite-constant rcnst
+                              :current-enabled-structure)))
+          (enabled-numep (fnume '(:definition eval-bdd-cp-hint) world)
+                         ens))
+        (bdd-reasoning :or-hint t)))
 
 
 (def-ruleset q-witness-mode-rules '((:definition eval-bdd-cp-hint)))
