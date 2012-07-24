@@ -1345,6 +1345,9 @@
 ; concern to the user whether we implement + as a macro or a
 ; function.)
 
+#-acl2-loop-only
+(declaim (inline acl2-numberp))
+
 (defun-one-output acl2-numberp (x)
   (numberp x))
 
@@ -2166,6 +2169,7 @@
   See any documentation for Common Lisp for more details on many of these
   functions.~/")
 
+
 (deflabel miscellaneous
   :doc
   ":Doc-Section Miscellaneous
@@ -2202,7 +2206,6 @@
 
 ; x/=y -> (equal x y) = NIL
 
-
 ;                               LOGIC
 
 #+acl2-loop-only
@@ -2220,6 +2223,10 @@
 
   "T, a symbol, represents the true truth value in Common Lisp.")
 
+
+#-acl2-loop-only
+(declaim (inline iff))
+
 (defun iff (p q)
 
   ":Doc-Section ACL2::ACL2-built-ins
@@ -2235,6 +2242,9 @@
   (declare (xargs :guard t))
   (if p (if q t nil) (if q nil t)))
 
+#-acl2-loop-only
+(declaim (inline xor))
+
 (defun xor (p q)
 
   ":Doc-Section ACL2::ACL2-built-ins
@@ -2248,6 +2258,37 @@
 
   (declare (xargs :guard t))
   (if p (if q nil t) (if q t nil)))
+
+#+acl2-loop-only
+(defun eq (x y)
+
+  ":Doc-Section ACL2::ACL2-built-ins
+
+  equality of symbols~/
+
+  ~c[Eq] is the function for determining whether two objects are
+  identical (i.e., have the exact same store address in the current
+  von Neumann implementation of Common Lisp).  It is the same as
+  ~ilc[equal] in the ACL2 logic.~/
+
+  ~c[Eq] is a Common Lisp function.  In order to ensure conformance
+  with Common Lisp, the ACL2 ~il[guard] on ~c[eq] requires at least one of
+  the arguments to ~c[eq] to be a symbol.  Common Lisp guarantees that
+  if ~c[x] is a symbol, then ~c[x] is ~c[eq] to ~c[y] if and only if ~c[x]
+  is ~ilc[equal] to ~c[y].  Thus, the ACL2 user should think of ~c[eq] as
+  nothing besides a fast means for checking ~ilc[equal] when one argument
+  is known to be a symbol.  In particular, it is possible that an
+  ~c[eq] test will not even require the cost of a function call but
+  will be as fast as a single machine instruction.~/"
+
+  (declare (xargs :guard (if (symbolp x)
+                             t
+                           (symbolp y))
+                  :mode :logic :verify-guards t))
+  (equal x y))
+
+#-acl2-loop-only
+(declaim (inline booleanp))
 
 (defun booleanp (x)
 
@@ -2264,9 +2305,9 @@
   To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard t))
-  (if (equal x t)
+  (if (eq x t)
       t
-    (equal x nil)))
+    (eq x nil)))
 
 ; We do not want to try to define defequiv at this point, so we use the
 ; expansion of (defequiv iff).
@@ -2278,6 +2319,9 @@
        (implies (and (iff x y) (iff y z))
                 (iff x z)))
   :rule-classes (:equivalence))
+
+#-acl2-loop-only
+(declaim (inline implies))
 
 (defun implies (p q)
 
@@ -2488,34 +2532,6 @@
 ; Comments labeled "RAG" are from Ruben Gamboa, pertaining to his work
 ; in creating ACL2(r) (see :doc real).
 
-#+acl2-loop-only
-(defun eq (x y)
-
-  ":Doc-Section ACL2::ACL2-built-ins
-
-  equality of symbols~/
-
-  ~c[Eq] is the function for determining whether two objects are
-  identical (i.e., have the exact same store address in the current
-  von Neumann implementation of Common Lisp).  It is the same as
-  ~ilc[equal] in the ACL2 logic.~/
-
-  ~c[Eq] is a Common Lisp function.  In order to ensure conformance
-  with Common Lisp, the ACL2 ~il[guard] on ~c[eq] requires at least one of
-  the arguments to ~c[eq] to be a symbol.  Common Lisp guarantees that
-  if ~c[x] is a symbol, then ~c[x] is ~c[eq] to ~c[y] if and only if ~c[x]
-  is ~ilc[equal] to ~c[y].  Thus, the ACL2 user should think of ~c[eq] as
-  nothing besides a fast means for checking ~ilc[equal] when one argument
-  is known to be a symbol.  In particular, it is possible that an
-  ~c[eq] test will not even require the cost of a function call but
-  will be as fast as a single machine instruction.~/"
-
-  (declare (xargs :guard (if (symbolp x)
-                             t
-                           (symbolp y))
-                  :mode :logic :verify-guards t))
-  (equal x y))
-
 (defun true-listp (x)
 
   ":Doc-Section ACL2::ACL2-built-ins
@@ -2697,6 +2713,9 @@
 ; the defun of acl2-count below we get that the type-prescription for
 ; acl2-count is a nonnegative integer.
 
+#-acl2-loop-only
+(declaim (inline integer-abs))
+
 (defun integer-abs (x)
   (declare (xargs :guard t))
   (if (integerp x)
@@ -2746,7 +2765,7 @@
    (declare (type fixnum acc))
    (the fixnum ; to assist in ACL2's proclaiming
         (cond ((atom x) acc)
-              ((eql (the fixnum acc) most-positive-fixnum)
+              ((= (the fixnum acc) most-positive-fixnum)
                #+(or gcl ccl allegro sbcl cmu
                      (and lispworks lispworks-64bit))
 
@@ -2766,6 +2785,9 @@
                        most-positive-fixnum!")
                -1)
               (t (len1 (cdr x) (the fixnum (+ (the fixnum acc) 1)))))))
+
+#-acl2-loop-only
+(declaim (inline len))
 
 (defun len (x)
 
@@ -2788,7 +2810,7 @@
   #-acl2-loop-only
   (return-from len
                (let ((val (len1 x 0)))
-                 (if (eql val -1)
+                 (if (= val -1)
                      (len2 x 0)
                    val)))
   (if (consp x)
@@ -2818,6 +2840,9 @@
   (if (stringp x)
       (len (coerce x 'list))
       (len x)))
+
+#-acl2-loop-only
+(declaim (inline complex-rationalp))
 
 #-acl2-loop-only
 (defun-one-output complex-rationalp (x)
@@ -2935,6 +2960,9 @@
 ; in order to support the definition of eql, which is in
 ; *expandable-boot-strap-non-rec-fns* and hence needs to be
 ; :common-lisp-compliant.
+
+#-acl2-loop-only
+(declaim (inline eqlablep))
 
 (defun eqlablep (x)
 
@@ -3563,6 +3591,9 @@
         (t (reverse-strip-cars (cdr x)
                                (cons (car (car x)) a)))))
 
+#-acl2-loop-only
+(declaim (inline strip-cars))
+
 (defun strip-cars (x)
 
   ":Doc-Section ACL2::ACL2-built-ins
@@ -3593,6 +3624,9 @@
   (cond ((endp x) a)
         (t (reverse-strip-cdrs (cdr x)
                                (cons (cdr (car x)) a)))))
+
+#-acl2-loop-only
+(declaim (inline strip-cdrs))
 
 (defun strip-cdrs (x)
 
@@ -4816,6 +4850,9 @@
         ((eql x (car lst)) lst)
         (t (member-eql-exec x (cdr lst)))))
 
+#-acl2-loop-only
+(declaim (inline member-equal))
+
 (defun member-equal (x lst)
   (declare (xargs :guard (true-listp lst)))
   #-acl2-loop-only ; for assoc-equal, Jared Davis found native assoc efficient
@@ -5414,6 +5451,10 @@
         (if (integerp i) i (list 'the 'integer i))
         (if (integerp j) j (list 'the 'integer j))))
 
+
+#-acl2-loop-only
+(declaim (inline zp))
+
 #+acl2-loop-only
 (defun zp (x)
   (declare (xargs :mode :logic
@@ -5498,6 +5539,10 @@
                     t))))
 
 (in-theory (disable zp))
+
+
+#-acl2-loop-only
+(declaim (inline zip))
 
 #+acl2-loop-only
 (defun zip (x)
@@ -6130,6 +6175,10 @@
 
 (defaxiom Commutativity-of-+
   (equal (+ x y) (+ y x)))
+
+
+#-acl2-loop-only
+(declaim (inline fix))
 
 (defun fix (x)
 
@@ -9083,6 +9132,10 @@
                 (< i (len x)))
            (characterp (nth i x))))
 
+
+#-acl2-loop-only
+(declaim (inline ifix))
+
 (defun ifix (x)
 
   ":Doc-Section ACL2::ACL2-built-ins
@@ -9101,6 +9154,10 @@
 
   (declare (xargs :guard t))
   (if (integerp x) x 0))
+
+
+#-acl2-loop-only
+(declaim (inline rfix))
 
 (defun rfix (x)
 
@@ -9131,6 +9188,10 @@
 ; Since the next function, realfix, is referred to by other :doc topics, do not
 ; make it conditional upon #+:non-standard-analysis.
 
+
+#-acl2-loop-only
+(declaim (inline realfix))
+
 (defun realfix (x)
 
   ":Doc-Section ACL2::ACL2-built-ins
@@ -9149,6 +9210,10 @@
 
   (declare (xargs :guard t))
   (if (real/rationalp x) x 0))
+
+
+#-acl2-loop-only
+(declaim (inline nfix))
 
 (defun nfix (x)
 
@@ -9319,6 +9384,10 @@
    these functions, see the documentation at the end of
    ~c[books/ordinals/e0-ordinal.lisp].")
 
+
+#-acl2-loop-only
+(declaim (inline natp))
+
 (defun natp (x)
 
   ":Doc-Section ACL2::ACL2-built-ins
@@ -9343,6 +9412,10 @@
          (and (integerp x)
               (<= 0 x)))
   :rule-classes :compound-recognizer)
+
+
+#-acl2-loop-only
+(declaim (inline posp))
 
 (defun posp (x)
   ":Doc-Section ACL2::ACL2-built-ins
@@ -12846,6 +12919,11 @@
 
 ; Add-to-set
 
+#-acl2-loop-only
+(declaim (inline add-to-set-eq-exec
+                 add-to-set-eql-exec
+                 add-to-set-equal))
+
 (defun add-to-set-eq-exec (x lst)
   (declare (xargs :guard (if (symbolp x)
                              (true-listp lst)
@@ -12951,6 +13029,9 @@
 
 (defmacro fquotep (x) (list 'eq ''quote (list 'car x)))
 
+#-acl2-loop-only
+(declaim (inline quotep))
+
 (defun quotep (x)
   (declare (xargs :guard t))
   (and (consp x)
@@ -13009,6 +13090,9 @@
 (defmacro unquote (x) (list 'cadr x))
 
 (defmacro ffn-symb (x) (list 'car x))
+
+#-acl2-loop-only
+(declaim (inline fn-symb))
 
 (defun fn-symb (x)
   (declare (xargs :guard t))
@@ -15322,6 +15406,9 @@
   (if (equal str1 str2)
       (length str1)
     (string> str1 str2)))
+
+#-acl2-loop-only
+(declaim (inline symbol-<))
 
 (defun symbol-< (x y)
 
@@ -28770,6 +28857,9 @@
 ; local), but since types are involved with guards, that seems dicey -- so we
 ; just wait till here.
 
+#-acl2-loop-only
+(declaim (inline integer-range-p))
+
 (defun integer-range-p (lower upper x)
 
 ; Notice the strict inequality for upper.  This function was introduced in
@@ -28796,16 +28886,24 @@
 ; the bodies of the definitions, an approach that seems at least as
 ; reasonable.
 
+#-acl2-loop-only
+(declaim (inline signed-byte-p))
+
 (defun signed-byte-p (bits x)
   (declare (xargs :guard t))
+  ;; BOZO mbe-optimize
   (and (integerp bits)
        (< 0 bits)
        (integer-range-p (- (expt 2 (1- bits)))
                         (expt 2 (1- bits))
                         x)))
 
+#-acl2-loop-only
+(declaim (inline unsigned-byte-p))
+
 (defun unsigned-byte-p (bits x)
   (declare (xargs :guard t))
+  ;; BOZO mbe-optimize
   (and (integerp bits)
        (<= 0 bits)
        (integer-range-p 0
@@ -28840,9 +28938,13 @@
   (list 'the '(signed-byte 30) n))
 
 #-acl2-loop-only
+(declaim (inline zpf))
+
+#-acl2-loop-only
 (defun-one-output zpf (x)
   (declare (type (unsigned-byte 29) x))
   (eql (the-fixnum x) 0))
+
 #+acl2-loop-only
 (defun zpf (x)
   (declare (type (unsigned-byte 29) x))
@@ -32213,6 +32315,9 @@
             (eql (the character ,ch)
                  (the character (code-char code)))))))
 
+#-acl2-loop-only
+(declaim (inline read-char$))
+
 (defun read-char$ (channel state-state)
 
 ; read-char$ differs from read-char in several ways.  It returns an
@@ -32248,6 +32353,9 @@
                    (open-input-channels state-state))
          state-state))))
 
+#-acl2-loop-only
+(declaim (inline peek-char$))
+
 (defun peek-char$ (channel state-state)
 
 ; Wart: We use state-state instead of state because of a bootstrap problem.
@@ -32273,6 +32381,9 @@
                   (t ch))))))
   (let ((entry (cdr (assoc-eq channel (open-input-channels state-state)))))
     (car (cdr entry))))
+
+#-acl2-loop-only
+(declaim (inline read-byte$))
 
 (defun read-byte$ (channel state-state)
 
@@ -33759,6 +33870,9 @@
                 this host Common Lisp, please contact the ACL2 ~%~
                 implementors.")))
   nil)
+
+#-acl2-loop-only
+(declaim (inline random$))
 
 (defun random$ (limit state)
 
