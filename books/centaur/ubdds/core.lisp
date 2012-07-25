@@ -728,15 +728,15 @@
     ;; bdd-fns.
     (declare (xargs :mode :program :stobjs state))
     (cond ((atom term)
-           (er-let* ((term-and-ttree
-                      (computed-hint-rewrite
-                       `(normp ,term) hyps t whole hist pspv world ctx state)))
-                    (value (equal (car term-and-ttree) *t*))))
+           (let ((term-and-ttree
+                  (computed-hint-rewrite
+                   `(normp ,term) hyps t whole hist pspv world ctx state)))
+             (equal (car term-and-ttree) *t*)))
           ((eq (car term) 'quote)
            ;; !!! Note to Sol: Jared changed this to normp from booleanp.
-           (value (normp (cadr term))))
+           (normp (cadr term)))
           (t
-           (value (member-eq (car term) (bdd-fns))))))
+           (member-eq (car term) (bdd-fns)))))
 
   (defun equal-by-eval-bdds-hint-fn (id clause hist pspv ctx stable world state)
     (declare (xargs :mode :program :stobjs state)
@@ -744,19 +744,19 @@
     (if (not stable)
         ;; Don't suggest anything until the goal is stable.  This gives other
         ;; rules a chance to fire.
-        (value nil)
+        nil
       (let* ((rcnst (access prove-spec-var pspv :rewrite-constant))
              (ens   (access rewrite-constant rcnst :current-enabled-structure)))
         (if (not (enabled-numep (fnume '(:rewrite equal-by-eval-bdds) world) ens))
             ;; Don't suggest anything if equal-by-eval-bdds is
             ;; disabled.  This gives the user an easy way to turn off
             ;; the strategy.
-            (value nil)
+            nil
           (let ((conclusion (car (last clause))))
             (if (not (and (consp conclusion)
                           (or (eq (car conclusion) 'equal)
                               (eq (car conclusion) 'not))))
-                (value nil)
+                nil
               ;; We look for conclusions of the form (equal lhs rhs)
               ;; or (not lhs).  We think of (not lhs) as the same as
               ;; (equal lhs nil).
@@ -765,14 +765,14 @@
                     (hyps (dumb-negate-lit-lst (butlast clause 1))))
                 ;; We only want to apply the hint if we believe lhs
                 ;; and rhs are normp objects.
-                (mv-let (erp lhs-okp state)
-                  (term-is-bdd lhs hyps clause hist pspv world ctx state)
-                  (if (or erp (not lhs-okp))
-                      (value nil)
-                    (mv-let (erp rhs-okp state)
-                      (term-is-bdd rhs hyps clause hist pspv world ctx state)
-                      (if (or erp (not rhs-okp))
-                          (value nil)
+                (let ((lhs-okp
+                       (term-is-bdd lhs hyps clause hist pspv world ctx state)))
+                  (if (not lhs-okp)
+                      nil
+                    (let ((rhs-okp
+                           (term-is-bdd rhs hyps clause hist pspv world ctx state)))
+                      (if (not rhs-okp)
+                          nil
                         ;; We think LHS and RHS are normp's.  Go ahead
                         ;; and give the hint.
                         (let ((hint `(:use (:functional-instance
@@ -793,7 +793,7 @@
                                (untranslate rhs nil world)
                                'eval-bdd
                                'equal-by-eval-bdds)
-                           (value hint))))))))))))))
+                           hint)))))))))))))
 
   (defmacro equal-by-eval-bdds-hint ()
     `(equal-by-eval-bdds-hint-fn id clause hist pspv ctx
@@ -834,13 +834,13 @@
         (let ((conclusion (car clause)))
           (mv-let (sense lhs rhs)
             (lit-find-equality conclusion)
-            (mv-let (erp lhs-okp state)
-              (term-is-bdd lhs hyps whole hist pspv world ctx state)
-             (if (or erp (not lhs-okp))
-                 (mv eqs ineqs (cons (dumb-negate-lit conclusion) remhyps) state)
-               (mv-let (erp rhs-okp state)
-                 (term-is-bdd rhs hyps whole hist pspv world ctx state)
-                 (if (or erp (not rhs-okp))
+            (let ((lhs-okp
+                   (term-is-bdd lhs hyps whole hist pspv world ctx state)))
+              (if (not lhs-okp)
+                  (mv eqs ineqs (cons (dumb-negate-lit conclusion) remhyps) state)
+                (let ((rhs-okp
+                       (term-is-bdd rhs hyps whole hist pspv world ctx state)))
+                 (if (not rhs-okp)
                      (mv eqs ineqs (cons (dumb-negate-lit conclusion) remhyps) state)
                    (case sense
                      (eq    (mv (cons (cons lhs rhs) eqs) ineqs

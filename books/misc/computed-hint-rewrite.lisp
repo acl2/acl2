@@ -87,7 +87,7 @@
     (mv-let
      (flg hyps-type-alist ttree)
      (hyps-type-alist hyps ens wrld state)
-     (cond (flg (er soft ctx
+     (cond (flg (er hard ctx
                     "~x0 found a contradiction in the hypotheses."
                     'computed-hint-rewrite))
            (t (sl-let (new-term new-ttree)
@@ -106,7 +106,7 @@
                        :gstack gstack
                        :ttree ttree)
                       (declare (ignorable step-limit))
-                      (value (cons new-term new-ttree))))))))
+                      (cons new-term new-ttree)))))))
 
 ; Silly example:
 
