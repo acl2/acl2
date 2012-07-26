@@ -529,8 +529,7 @@ almost 5x faster than a regular version.  Here's the testing code I used:</p>
         (bits-0-31 (ash slice 5)
                    (bignum-extract x slice)
                    acc)
-      (ttag-bitset-members-aux (mbe :logic (- (nfix slice) 1)
-                                    :exec (- slice 1))
+      (ttag-bitset-members-aux (- (lnfix slice) 1)
                                x
                                (bits-0-31 (ash slice 5)
                                           (bignum-extract x slice)
@@ -574,10 +573,7 @@ GL).</p>"
   (definlined bitset-memberp (a x)
     (declare (xargs :guard (and (natp a)
                                 (natp x))))
-    (mbe :logic
-         (logbitp a (nfix x))
-         :exec
-         (logbitp a x)))
+    (logbitp a (lnfix x)))
 
   (defthm bitset-memberp-removal
     (equal (bitset-memberp a x)
@@ -595,8 +591,7 @@ GL).</p>"
 
   (definlined bitset-singleton (a)
     (declare (xargs :guard (natp a)))
-    (mbe :logic (ash 1 (nfix a))
-         :exec (ash 1 a)))
+    (ash 1 (lnfix a)))
 
   (local (in-theory (enable bitset-singleton)))
 
@@ -643,10 +638,7 @@ like @(see bitset-union).</p>"
   (definlined bitset-insert (a x)
     (declare (xargs :guard (and (natp a)
                                 (natp x))))
-    (mbe :logic
-         (logior (ash 1 (nfix a)) (nfix x))
-         :exec
-         (logior (ash 1 a) x)))
+    (logior (ash 1 (lnfix a)) (lnfix x)))
 
   (local (in-theory (enable bitset-insert)))
 
@@ -704,10 +696,7 @@ like @(see bitset-intersect) and @(see bitset-difference).</p>"
   (definlined bitset-delete (a x)
     (declare (xargs :guard (and (natp a)
                                 (natp x))))
-    (mbe :logic
-         (logandc1 (ash 1 (nfix a)) (nfix x))
-         :exec
-         (logandc1 (ash 1 a) x)))
+    (logandc1 (ash 1 (lnfix a)) (lnfix x)))
 
   (local (in-theory (enable bitset-delete)))
 
@@ -758,10 +747,7 @@ like @(see bitset-intersect) and @(see bitset-difference).</p>"
   (definlined bitset-union (x y)
     (declare (xargs :guard (and (natp x)
                                 (natp y))))
-    (mbe :logic
-         (logior (nfix x) (nfix y))
-         :exec
-         (logior x y)))
+    (logior (lnfix x) (lnfix y)))
 
   (local (in-theory (enable bitset-union)))
 
@@ -813,10 +799,7 @@ like @(see bitset-intersect) and @(see bitset-difference).</p>"
   (definlined bitset-intersect (x y)
     (declare (xargs :guard (and (natp x)
                                 (natp y))))
-    (mbe :logic
-         (logand (nfix x) (nfix y))
-         :exec
-         (logand x y)))
+    (logand (lnfix x) (lnfix y)))
 
   (local (in-theory (enable bitset-intersect)))
 
@@ -865,10 +848,7 @@ like @(see bitset-intersect) and @(see bitset-difference).</p>"
   (definlined bitset-difference (x y)
     (declare (xargs :guard (and (natp x)
                                 (natp y))))
-    (mbe :logic
-         (logandc1 (nfix y) (nfix x))
-         :exec
-         (logandc1 y x)))
+    (logandc1 (lnfix y) (lnfix x)))
 
   (local (in-theory (enable bitset-difference)))
 
@@ -1052,10 +1032,7 @@ subset of <tt>Y</tt>."
   (definlined bitset-subsetp (x y)
     (declare (xargs :guard (and (natp x)
                                 (natp y))))
-    (mbe :logic
-         (= 0 (bitset-difference x y))
-         :exec
-         (= 0 (bitset-difference x y))))
+    (= 0 (bitset-difference x y)))
 
   (local (in-theory (enable bitset-subsetp)))
 
@@ -1123,10 +1100,7 @@ actually construct the intersection.</p>"
   (definlined bitset-intersectp (x y)
     (declare (xargs :guard (and (natp x)
                                 (natp y))))
-    (mbe :logic
-         (logtest (nfix x) (nfix y))
-         :exec
-         (logtest x y)))
+    (logtest (lnfix x) (lnfix y)))
 
   (local (in-theory (enable bitset-intersectp)))
 
@@ -1186,8 +1160,7 @@ X))</tt>.  We could have used this as the <tt>:logic</tt> definition, but the
 
   (defund bitset-cardinality (x)
     (declare (xargs :guard (natp x)))
-    (mbe :logic (logcount (nfix x))
-         :exec (logcount x)))
+    (logcount (lnfix x)))
 
 ; The correctness proof is tricky because logcount is effectively is defined in
 ; a logcar/logcdr style, while bitset-members is defined in a logbitp

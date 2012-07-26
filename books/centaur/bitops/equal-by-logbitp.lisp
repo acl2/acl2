@@ -102,7 +102,7 @@ it's also occasionally useful as a witness in other theorems.</p>"
     :hints(("Goal"
             :in-theory (enable logbitp-mismatch logbitp**)
             :induct (logbitp-mismatch a b))))
-  
+
 
   (defthm logbitp-mismatch-upper-bound
     (implies (logbitp-mismatch a b)
@@ -372,7 +372,7 @@ can generate the appropriate <tt>:functional-instance</tt> automatically.</p>"
             (t (or (and (<= nbit start)
                         (> nbit next))
                    (bit-scan-rec nbit next nil n))))))
-  
+
   (local
    (progn
      (defcong nat-equiv equal (bit-scan-rec bit start curr-val n) 1
@@ -519,7 +519,7 @@ can generate the appropriate <tt>:functional-instance</tt> automatically.</p>"
      :hints(("Goal" :in-theory (enable logbitp-of-const-split
                                        bit-scan-rec)))
      :otf-flg t)
-    
+
 
 ||#
 
@@ -571,179 +571,179 @@ add this to the @(see default-hints).</p>"
 
 
 
-;; (defsection open-logbitp-of-const-meta
-;;   :parents (logbitp)
-;;   :short "Rewrite terms like <tt>(logbitp foo 7)</tt> to <tt>(or (not (natp
-;; foo)) (member-equal foo '(0 1 2)))</tt>."
+(defsection open-logbitp-of-const-meta
+  :parents (logbitp)
+  :short "Rewrite terms like <tt>(logbitp foo 7)</tt> to <tt>(or (not (natp
+foo)) (member-equal foo '(0 1 2)))</tt>."
 
-;;   :long "<p>This meta rule targets terms of the form</p>
+  :long "<p>This meta rule targets terms of the form</p>
 
-;; <code>
-;;  (logbitp term const)
-;; </code>
+<code>
+ (logbitp term const)
+</code>
 
-;; <p>where <tt>const</tt> is a quoted constant, typically a number.  We know that
-;; such a term can only be true when <tt>term</tt> happens to be one of the bit
-;; positions that has a <tt>1</tt> bit set in <tt>const</tt>, so we can split into
-;; cases based on which bits of <tt>const</tt> are set.</p>
+<p>where <tt>const</tt> is a quoted constant, typically a number.  We know that
+such a term can only be true when <tt>term</tt> happens to be one of the bit
+positions that has a <tt>1</tt> bit set in <tt>const</tt>, so we can split into
+cases based on which bits of <tt>const</tt> are set.</p>
 
-;; <p>Note that this rule basically is going to split into <tt>n</tt> cases, where
-;; <tt>n</tt> is the number of <tt>1</tt> bits in <tt>const</tt>!  Because of this
-;; we keep it disabled.  But if you see a <tt>logbitp</tt> term applied to a
-;; constant, you might want to consider enabling this rule.</p>"
+<p>Note that this rule basically is going to split into <tt>n</tt> cases, where
+<tt>n</tt> is the number of <tt>1</tt> bits in <tt>const</tt>!  Because of this
+we keep it disabled.  But if you see a <tt>logbitp</tt> term applied to a
+constant, you might want to consider enabling this rule.</p>"
 
-;;   (defevaluator lbpc-ev lbpc-ev-lst
-;;     ((logbitp a b)
-;;      (not a)
-;;      (if a b c)
-;;      (equal a b)
-;;      (natp a)
-;;      (zp a)
-;;      (member-equal a x)))
+  (defevaluator lbpc-ev lbpc-ev-lst
+    ((logbitp a b)
+     (not a)
+     (if a b c)
+     (equal a b)
+     (natp a)
+     (zp a)
+     (member-equal a x)))
 
-;;   (defund bits-between (n m x)
-;;     ;; bozo redundant with bits-between.lisp
-;;     (declare (xargs :guard (and (natp n)
-;;                                 (natp m)
-;;                                 (<= n m)
-;;                                 (integerp x))
-;;                     :hints(("Goal" :in-theory (enable nfix)))
-;;                     :measure (nfix (- (nfix m) (nfix n)))))
-;;     (let* ((n (mbe :logic (nfix n) :exec n))
-;;            (m (mbe :logic (nfix m) :exec m)))
-;;       (cond ((mbe :logic (zp (- m n))
-;;                   :exec (= m n))
-;;              nil)
-;;             ((logbitp n x)
-;;              (cons n (bits-between (+ n 1) m x)))
-;;             (t
-;;              (bits-between (+ n 1) m x)))))
+  (defund bits-between (n m x)
+    ;; bozo redundant with bits-between.lisp
+    (declare (xargs :guard (and (natp n)
+                                (natp m)
+                                (<= n m)
+                                (integerp x))
+                    :hints(("Goal" :in-theory (enable nfix)))
+                    :measure (nfix (- (nfix m) (nfix n)))))
+    (let* ((n (lnfix n))
+           (m (lnfix m)))
+      (cond ((mbe :logic (zp (- m n))
+                  :exec (= m n))
+             nil)
+            ((logbitp n x)
+             (cons n (bits-between (+ n 1) m x)))
+            (t
+             (bits-between (+ n 1) m x)))))
 
-;;   (local (defthm member-equal-of-bits-between
-;;            (iff (member-equal a (bits-between n m x))
-;;                 (and (natp a)
-;;                      (<= (nfix n) a)
-;;                      (< a (nfix m))
-;;                      (logbitp a x)))
-;;            :hints(("Goal"
-;;                    :in-theory (enable bits-between)
-;;                    :induct (bits-between n m x)))))
+  (local (defthm member-equal-of-bits-between
+           (iff (member-equal a (bits-between n m x))
+                (and (natp a)
+                     (<= (nfix n) a)
+                     (< a (nfix m))
+                     (logbitp a x)))
+           :hints(("Goal"
+                   :in-theory (enable bits-between)
+                   :induct (bits-between n m x)))))
 
-;;   (defund enumerate-logbitps (x)
-;;     (declare (xargs :guard (integerp x)))
-;;     (bits-between 0 (integer-length x) x))
+  (defund enumerate-logbitps (x)
+    (declare (xargs :guard (integerp x)))
+    (bits-between 0 (integer-length x) x))
 
-;;   (local (defun ind (n x)
-;;            (if (zp n)
-;;                (list n x)
-;;              (ind (- n 1)
-;;                   (logcdr x)))))
+  (local (defun ind (n x)
+           (if (zp n)
+               (list n x)
+             (ind (- n 1)
+                  (logcdr x)))))
 
-;;   (local (defthm crock
-;;            (implies (and (natp x)
-;;                          (<= (integer-length x) (nfix n)))
-;;                     (not (logbitp n x)))
-;;            :hints(("Goal"
-;;                    :induct (ind n x)
-;;                    :in-theory (enable* logbitp** integer-length**)))))
+  (local (defthm crock
+           (implies (and (natp x)
+                         (<= (integer-length x) (nfix n)))
+                    (not (logbitp n x)))
+           :hints(("Goal"
+                   :induct (ind n x)
+                   :in-theory (enable* logbitp** integer-length**)))))
 
-;;   (local (defthm member-equal-of-enumerate-logbitps-for-naturals
-;;            (implies (and (natp x)
-;;                          (natp a))
-;;                     (iff (member-equal a (enumerate-logbitps x))
-;;                          (logbitp a x)))
-;;            :hints(("Goal" :in-theory (enable enumerate-logbitps)))))
+  (local (defthm member-equal-of-enumerate-logbitps-for-naturals
+           (implies (and (natp x)
+                         (natp a))
+                    (iff (member-equal a (enumerate-logbitps x))
+                         (logbitp a x)))
+           :hints(("Goal" :in-theory (enable enumerate-logbitps)))))
 
-;;   (defund open-logbitp-of-const (term)
-;;     (declare (xargs :guard (pseudo-termp term)))
-;;     (case-match term
-;;       (('logbitp x ('quote const . &) . &)
-;;        (cond ((or (not (integerp const))
-;;                   (= const 0))
-;;               ''nil)
-;;              ((= const -1) ''t)
-;;              ((natp const)
-;;               `(if (natp ,x)
-;;                    (if (member-equal ,x ',(enumerate-logbitps const))
-;;                        't
-;;                      'nil)
-;;                  ',(logbitp 0 const)))
-;;              (t
-;;               `(if (natp ,x)
-;;                    (not (member-equal ,x ',(enumerate-logbitps (lognot const))))
-;;                  ',(logbitp 0 const)))))
-;;       (&
-;;        term)))
+  (defund open-logbitp-of-const (term)
+    (declare (xargs :guard (pseudo-termp term)))
+    (case-match term
+      (('logbitp x ('quote const . &) . &)
+       (cond ((or (not (integerp const))
+                  (= const 0))
+              ''nil)
+             ((= const -1) ''t)
+             ((natp const)
+              `(if (natp ,x)
+                   (if (member-equal ,x ',(enumerate-logbitps const))
+                       't
+                     'nil)
+                 ',(logbitp 0 const)))
+             (t
+              `(if (natp ,x)
+                   (not (member-equal ,x ',(enumerate-logbitps (lognot const))))
+                 ',(logbitp 0 const)))))
+      (&
+       term)))
 
-;;   (defthmd open-logbitp-of-const-meta
-;;     (equal (lbpc-ev x a)
-;;            (lbpc-ev (open-logbitp-of-const x) a))
-;;     :rule-classes ((:meta :trigger-fns (logbitp)))
-;;     :hints(("Goal" :in-theory (enable* open-logbitp-of-const
-;;                                        arith-equiv-forwarding))))
+  (defthmd open-logbitp-of-const-meta
+    (equal (lbpc-ev x a)
+           (lbpc-ev (open-logbitp-of-const x) a))
+    :rule-classes ((:meta :trigger-fns (logbitp)))
+    :hints(("Goal" :in-theory (enable* open-logbitp-of-const
+                                       arith-equiv-forwarding))))
 
 
-;;   (local (defthm logbitp-of-ash-free-lemma
-;;            (implies (equal x (ash 1 y))
-;;                     (equal (logbitp n x)
-;;                            (equal (nfix n) (ifix y))))
-;;            :hints(("Goal" :in-theory (enable logbitp-of-ash-split)))))
+  (local (defthm logbitp-of-ash-free-lemma
+           (implies (equal x (ash 1 y))
+                    (equal (logbitp n x)
+                           (equal (nfix n) (ifix y))))
+           :hints(("Goal" :in-theory (enable logbitp-of-ash-split)))))
 
-;;   (local (in-theory (enable* arith-equiv-forwarding)))
+  (local (in-theory (enable* arith-equiv-forwarding)))
 
-;;   (local (defthm logbitp-of-ash-free-lemma2
-;;            (implies (and (equal (lognot x) (ash 1 y))
-;;                          (natp y))
-;;                     (equal (logbitp n x)
-;;                            (not (equal (nfix n) (ifix y)))))
-;;            :hints(("Goal" :in-theory (e/d ()
-;;                                           (logbitp-of-ash-free-lemma))
-;;                    :use ((:instance logbitp-of-ash-free-lemma
-;;                                     (x (lognot x))))))))
+  (local (defthm logbitp-of-ash-free-lemma2
+           (implies (and (equal (lognot x) (ash 1 y))
+                         (natp y))
+                    (equal (logbitp n x)
+                           (not (equal (nfix n) (ifix y)))))
+           :hints(("Goal" :in-theory (e/d ()
+                                          (logbitp-of-ash-free-lemma))
+                   :use ((:instance logbitp-of-ash-free-lemma
+                                    (x (lognot x))))))))
 
-;;   (local (defthm logbitp-of-ash-free-lemma3
-;;            (equal (logbitp n -2)
-;;                   (not (zp n)))
-;;            :hints(("Goal" :in-theory (e/d* (logbitp**))))))
+  (local (defthm logbitp-of-ash-free-lemma3
+           (equal (logbitp n -2)
+                  (not (zp n)))
+           :hints(("Goal" :in-theory (e/d* (logbitp**))))))
 
-;;   (defund open-logbitp-of-const-lite (term)
-;;     ;; Lighter weight version whose meta rule we'll leave enabled by default --
-;;     ;; only applies when we can simplify (logbitp term const) without
-;;     ;; introducing case splits.
-;;     (declare (xargs :guard (pseudo-termp term)))
-;;     (case-match term
-;;       (('logbitp x ('quote const . &) . &)
-;;        (cond ((or (not (integerp const))
-;;                   (= const 0))
-;;               ''nil)
-;;              ((= const -1) ''t)
-;;              ((natp const)
-;;               ;; These cases are pretty convoluted, but the benefit of the
-;;               ;; weird IFs here is that the new term we generate has no case
-;;               ;; splits
-;;               (let ((len (1- (integer-length const))))
-;;                 (if (equal const (ash 1 len))
-;;                     (if (= len 0)
-;;                         `(zp ,x)
-;;                       `(equal ,x ',len))
-;;                   term)))
-;;              (t
-;;               (let* ((const (lognot const))
-;;                      (len (1- (integer-length const))))
-;;                 (if (equal const (ash 1 len))
-;;                     (if (= len 0)
-;;                         `(not (zp ,x))
-;;                       `(not (equal ,x ',len)))
-;;                   term)))))
-;;       (&
-;;        term)))
+  (defund open-logbitp-of-const-lite (term)
+    ;; Lighter weight version whose meta rule we'll leave enabled by default --
+    ;; only applies when we can simplify (logbitp term const) without
+    ;; introducing case splits.
+    (declare (xargs :guard (pseudo-termp term)))
+    (case-match term
+      (('logbitp x ('quote const . &) . &)
+       (cond ((or (not (integerp const))
+                  (= const 0))
+              ''nil)
+             ((= const -1) ''t)
+             ((natp const)
+              ;; These cases are pretty convoluted, but the benefit of the
+              ;; weird IFs here is that the new term we generate has no case
+              ;; splits
+              (let ((len (1- (integer-length const))))
+                (if (equal const (ash 1 len))
+                    (if (= len 0)
+                        `(zp ,x)
+                      `(equal ,x ',len))
+                  term)))
+             (t
+              (let* ((const (lognot const))
+                     (len (1- (integer-length const))))
+                (if (equal const (ash 1 len))
+                    (if (= len 0)
+                        `(not (zp ,x))
+                      `(not (equal ,x ',len)))
+                  term)))))
+      (&
+       term)))
 
-;;   (defthm open-logbitp-of-const-lite-meta
-;;     (equal (lbpc-ev x a)
-;;            (lbpc-ev (open-logbitp-of-const-lite x) a))
-;;     :rule-classes ((:meta :trigger-fns (logbitp)))
-;;     :hints(("Goal"
-;;             :in-theory (e/d* (open-logbitp-of-const-lite
-;;                               arith-equiv-forwarding
-;;                               nfix ifix))))))
+  (defthm open-logbitp-of-const-lite-meta
+    (equal (lbpc-ev x a)
+           (lbpc-ev (open-logbitp-of-const-lite x) a))
+    :rule-classes ((:meta :trigger-fns (logbitp)))
+    :hints(("Goal"
+            :in-theory (e/d* (open-logbitp-of-const-lite
+                              arith-equiv-forwarding
+                              nfix ifix))))))
 

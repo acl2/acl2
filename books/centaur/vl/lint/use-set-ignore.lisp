@@ -104,7 +104,7 @@ locations in the resulting echars are therefore also somewhat unreliable!</p>"
          ;; result type theorem, which is nice.
          (filename (mbe :logic (string-fix loc.filename) :exec loc.filename))
          (line     (mbe :logic (if (posp loc.line) loc.line 1) :exec loc.line))
-         (col      (mbe :logic (nfix loc.col) :exec loc.col)))
+         (col      (lnfix loc.col)))
       (vl-echarlist-from-str x
                              :filename filename
                              :line line

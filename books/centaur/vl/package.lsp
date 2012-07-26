@@ -55,6 +55,9 @@
       prefixp
       set-equivp
       set-reasoning
+      lnfix
+      lifix
+      lbfix
 
       cutil::mksym
       cutil::mksym-package-symbol

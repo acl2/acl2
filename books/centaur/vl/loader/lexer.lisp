@@ -1274,7 +1274,7 @@ case.</li>
     (b* ((actual-len  (len bits))
          (unsizedp    (not width))
          (desired-len (if width
-                          (mbe :logic (nfix width) :exec width)
+                          (lnfix width)
                         32))
 
          ((when (= actual-len 0))

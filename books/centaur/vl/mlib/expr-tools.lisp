@@ -90,8 +90,7 @@ selects.</p>"
     (declare (xargs :guard (and (vl-expr-p x)
                                 (vl-expr-resolved-p x))
                     :guard-hints (("Goal" :in-theory (enable vl-expr-resolved-p)))))
-    (mbe :logic (nfix (vl-constint->value (vl-atom->guts x)))
-         :exec (vl-constint->value (vl-atom->guts x))))
+    (lnfix (vl-constint->value (vl-atom->guts x))))
 
   (local (in-theory (enable vl-resolved->val)))
 

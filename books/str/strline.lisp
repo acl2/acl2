@@ -66,13 +66,9 @@
                      :exec (= n xl))
                 nil)
                ((eql (char x n) char)
-                (mbe :logic (nfix n)
-                     :exec n))
+                (lnfix n))
                (t
-                (charpos-aux x
-                             (mbe :logic (+ 1 (nfix n)) :exec (+ 1 n))
-                             xl
-                             char)))))
+                (charpos-aux x (+ 1 (lnfix n)) xl char)))))
 
   (local (in-theory (enable charpos-aux position-equal-ac)))
 
@@ -102,11 +98,9 @@
                 :exec (= n xl))
            nil)
           ((= curr goal)
-           (mbe :logic (nfix n) :exec n))
+           (lnfix n))
           (t
-           (go-to-line x
-                       (mbe :logic (+ 1 (nfix n)) :exec (+ 1 n))
-                       xl
+           (go-to-line x (+ 1 (lnfix n)) xl
                        (if (eql (char x n) #\Newline)
                            (+ 1 curr)
                          curr)

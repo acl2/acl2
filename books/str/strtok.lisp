@@ -55,8 +55,7 @@
       (let* ((char1  (char x n))
              (matchp (member char1 delimiters)))
         (strtok-aux (the string x)
-                    (mbe :logic (+ (nfix n) 1)
-                         :exec (the integer (+ (the integer n) 1)))
+                    (+ 1 (lnfix n))
                     (the integer xl)
                     delimiters
                     (if matchp nil (cons char1 curr))

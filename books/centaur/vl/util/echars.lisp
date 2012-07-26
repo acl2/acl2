@@ -397,7 +397,7 @@ Also note that we actually use <tt>nreverse</tt> here.</p>"
         acc
       (let ((char (char (the string x) n)))
         (vl-echarlist-from-str-aux (the string x)
-                                   (mbe :logic (+ 1 (nfix n)) :exec (+ 1 n))
+                                   (+ 1 (lnfix n))
                                    xl
                                    filename
                                    (if (eql char #\Newline) (+ 1 line) line)

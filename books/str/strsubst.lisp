@@ -54,17 +54,11 @@
 
           ((strprefixp-impl old x 0 n oldl xl)
            (let ((acc (revappend-chars new acc)))
-             (strsubst-aux old new x
-                           (mbe :logic (+ oldl (nfix n))
-                                :exec (+ oldl n))
-                           xl oldl acc)))
+             (strsubst-aux old new x (+ oldl (lnfix n)) xl oldl acc)))
 
           (t
            (let ((acc (cons (char x n) acc)))
-             (strsubst-aux old new x
-                           (mbe :logic (+ 1 (nfix n))
-                                :exec (+ 1 n))
-                           xl oldl acc)))))
+             (strsubst-aux old new x (+ 1 (lnfix n)) xl oldl acc)))))
 
   (local (in-theory (enable strsubst-aux)))
 

@@ -265,9 +265,7 @@ Well, at least we're better when no work needs to be done:</p>
                        (declare (type (unsigned-byte 8) code))
                        (and (<= (little-a) code)
                             (<= code (little-z)))))
-          (string-has-some-down-alpha-p x
-                                        (+ 1 (mbe :logic (nfix n) :exec n))
-                                        xl))))
+          (string-has-some-down-alpha-p x (+ 1 (lnfix n)) xl))))
 
 
 
@@ -295,10 +293,7 @@ Well, at least we're better when no work needs to be done:</p>
                                       (code-char (the (unsigned-byte 8)
                                                    (- code (case-delta))))
                                     char)))))
-        (upcase-string-aux x
-                           (+ 1 (mbe :logic (nfix n) :exec n))
-                           xl
-                           (cons upchar acc)))))
+        (upcase-string-aux x (+ 1 (lnfix n)) xl (cons upchar acc)))))
 
   (defund upcase-string (x)
     (declare (type string x)
@@ -391,9 +386,7 @@ make this fast.</p>"
                        (declare (type (unsigned-byte 8) code))
                        (and (<= (big-a) code)
                             (<= code (big-z)))))
-          (string-has-some-up-alpha-p x
-                                      (+ 1 (mbe :logic (nfix n) :exec n))
-                                      xl))))
+          (string-has-some-up-alpha-p x (+ 1 (lnfix n)) xl))))
 
   (defund downcase-string-aux (x n xl acc)
     (declare (type string x)
@@ -419,10 +412,7 @@ make this fast.</p>"
                                         (code-char (the (unsigned-byte 8)
                                                      (+ code (case-delta))))
                                       char)))))
-        (downcase-string-aux x
-                             (+ 1 (mbe :logic (nfix n) :exec n))
-                             xl
-                             (cons downchar acc)))))
+        (downcase-string-aux x (+ 1 (lnfix n)) xl (cons downchar acc)))))
 
   (defund downcase-string (x)
     (declare (type string x)

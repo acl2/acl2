@@ -143,8 +143,8 @@
     (declare (xargs :guard (and (vl-expr-p expr)
                                 (natp msb)
                                 (natp lsb))))
-    (b* ((msb  (mbe :logic (nfix msb) :exec msb))
-         (lsb  (mbe :logic (nfix lsb) :exec lsb))
+    (b* ((msb  (lnfix msb))
+         (lsb  (lnfix lsb))
          (left-right-p (>= msb lsb))
          (low  (if left-right-p lsb msb))
          (high (if left-right-p msb lsb))
@@ -224,8 +224,8 @@
                                 (natp lsb))))
 
 
-    (b* ((msb       (mbe :logic (nfix msb) :exec msb))
-         (lsb       (mbe :logic (nfix lsb) :exec lsb))
+    (b* ((msb (lnfix msb))
+         (lsb (lnfix lsb))
 
          ((when (> lsb msb))
           (er hard? 'vl-make-partselect "LSB, ~x0, is larger than MSB, ~x1." lsb msb)

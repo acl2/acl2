@@ -335,7 +335,7 @@
                                 (natp n)
                                 (vl-printedlist-p ostream))))
     (b* (((when (atom walist))
-          (mv acc (mbe :logic (nfix n) :exec n) ostream))
+          (mv acc (lnfix n) ostream))
          (name   (caar walist))
          (wires  (cdar walist))
 
@@ -413,7 +413,7 @@
                                  (vl-printedlist-p ostream))
                      :measure (two-nats-measure (acl2-count occs) 1)))
      (b* (((when (atom occs))
-           (mv acc (mbe :logic (nfix n) :exec n) ostream))
+           (mv acc (lnfix n) ostream))
           ((mv acc n ostream)
            (vcd-vectors-for-occ base-path (car occs) top-mod n acc ostream)))
        (vcd-vectors-for-occs base-path (cdr occs) top-mod n acc ostream)))
@@ -432,21 +432,21 @@
            (er hard? 'vcd-vectors-for-occ
                "At path ~x0, instance name ~x1 is not an emodwire?"
                base-path instname)
-           (mv acc (mbe :logic (nfix n) :exec n) ostream))
+           (mv acc (lnfix n) ostream))
 
           ((unless (esim-vl-designwires op))
            ;; If we don't do something special here, we end up with a ton of
            ;; empty scopes for VL-generated modules.  So, look and see if there
            ;; are actually any design-visible wires in the submodule, and if
            ;; not just exit without printing scope stuff.
-           (mv acc (mbe :logic (nfix n) :exec n) ostream))
+           (mv acc (lnfix n) ostream))
 
           (ostream (vcd-startmodule instname ostream))
           (base-path (append base-path (list instname)))
           ((mv acc n ostream)
            (vcd-vectors-for-mod base-path op top-mod n acc ostream))
           (ostream (vcd-endmodule ostream)))
-       (mv acc (mbe :logic (nfix n) :exec n) ostream))))
+       (mv acc (lnfix n) ostream))))
 
   (flag::make-flag flag-vcd-vectors-for-mod
                    vcd-vectors-for-mod

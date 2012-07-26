@@ -71,18 +71,14 @@ digits and returns their octal value.</p>"
                                 (natp val)
                                 (natp len))))
     (cond ((atom x)
-           (mv (mbe :logic (nfix val) :exec val)
-               (mbe :logic (nfix len) :exec len)
-               nil))
+           (mv (lnfix val) (lnfix len) nil))
           ((octal-digitp (car x))
            (let ((digit-val (digit-val (car x))))
              (parse-octal-from-charlist (cdr x)
-                                        (+ digit-val (* 8 (mbe :logic (nfix val) :exec val)))
-                                        (+ 1 (mbe :logic (nfix len) :exec len)))))
+                                        (+ digit-val (* 8 (lnfix val)))
+                                        (+ 1 (lnfix len)))))
           (t
-           (mv (mbe :logic (nfix val) :exec val)
-               (mbe :logic (nfix len) :exec len)
-               x))))
+           (mv (lnfix val) (lnfix len) x))))
 
   (defthm natp-of-parse-octal-from-charlist
     (implies (natp val)
@@ -204,18 +200,14 @@ hex digits and returns their hexadecimal value.</p>"
                                 (natp val)
                                 (natp len))))
     (cond ((atom x)
-           (mv (mbe :logic (nfix val) :exec val)
-               (mbe :logic (nfix len) :exec len)
-               nil))
+           (mv (lnfix val) (lnfix len) nil))
           ((hex-digitp (car x))
            (let ((digit-val (hex-digit-val (car x))))
              (parse-hex-from-charlist (cdr x)
-                                      (+ digit-val (* 16 (mbe :logic (nfix val) :exec val)))
-                                      (+ 1 (mbe :logic (nfix len) :exec len)))))
+                                      (+ digit-val (* 16 (lnfix val)))
+                                      (+ 1 (lnfix len)))))
           (t
-           (mv (mbe :logic (nfix val) :exec val)
-               (mbe :logic (nfix len) :exec len)
-               x))))
+           (mv (lnfix val) (lnfix len) x))))
 
   (defthm natp-of-parse-hex-from-charlist
     (implies (natp val)
@@ -294,23 +286,19 @@ digits (#\0 and #\1) and returns their binary value.</p>"
                                 (natp val)
                                 (natp len))))
     (cond ((atom x)
-           (mv (mbe :logic (nfix val) :exec val)
-               (mbe :logic (nfix len) :exec len)
-               nil))
+           (mv (lnfix val) (lnfix len) nil))
           ((eql (car x) #\0)
            (parse-bits-from-charlist
             (cdr x)
             (mbe :logic (* 2 (nfix val)) :exec (ash val 1))
-            (+ 1 (mbe :logic (nfix len) :exec len))))
+            (+ 1 (lnfix len))))
           ((eql (car x) #\1)
            (parse-bits-from-charlist
             (cdr x)
             (+ 1 (mbe :logic (* 2 (nfix val)) :exec (ash val 1)))
-            (+ 1 (mbe :logic (nfix len) :exec len))))
+            (+ 1 (lnfix len))))
           (t
-           (mv (mbe :logic (nfix val) :exec val)
-               (mbe :logic (nfix len) :exec len)
-               x))))
+           (mv (lnfix val) (lnfix len) x))))
 
   (defthm natp-of-parse-bits-from-charlist
     (implies (natp val)

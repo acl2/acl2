@@ -49,8 +49,7 @@
                                        (the integer n)
                                        (the integer xl)
                                        (the integer yl)))
-           (mbe :logic (nfix n)
-                :exec n))
+           (lnfix n))
           ((mbe :logic (zp (- (nfix yl) (nfix n)))
                 :exec (= (the integer n)
                          (the integer yl)))
@@ -58,8 +57,7 @@
           (t
            (strpos-fast (the string x)
                         (the string y)
-                        (mbe :logic (+ (nfix n) 1)
-                             :exec (the integer (+ (the integer n) 1)))
+                        (+ 1 (lnfix n))
                         (the integer xl)
                         (the integer yl)))))
 

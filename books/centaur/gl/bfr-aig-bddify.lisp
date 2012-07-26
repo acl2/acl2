@@ -10,7 +10,7 @@
 
 (defun vars-to-bdd-bindings (x n)
   (declare (xargs :guard (natp n)))
-  (let ((n (mbe :logic (nfix n) :exec n)))
+  (let ((n (lnfix n)))
     (if (atom x)
         nil
       (hons-acons (car x) (qv n)

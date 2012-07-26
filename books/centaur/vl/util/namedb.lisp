@@ -97,8 +97,7 @@ return <tt>n</tt> as a natural number."
           (str::parse-nat-from-string str 0 0
                                       (+ 1 (length prefix))
                                       (length str))))
-      (mbe :logic (nfix val)
-           :exec val)))
+      (lnfix val)))
 
   (defthm vl-pgenstr->val-of-vl-pgenstr
     (implies (and (force (stringp prefix))

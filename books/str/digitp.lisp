@@ -342,10 +342,7 @@ can tolerate non-numeric characters after the number.</p>"
                   (declare (type (unsigned-byte 8) code))
                   (and (<= (the (unsigned-byte 8) 48) (the (unsigned-byte 8) code))
                        (<= (the (unsigned-byte 8) code) (the (unsigned-byte 8) 57)))))
-           (digit-string-p-aux x
-                               (mbe :logic (+ 1 (nfix n))
-                                    :exec (the integer (+ 1 (the integer n))))
-                               xl))))
+           (digit-string-p-aux x (+ 1 (lnfix n)) xl))))
 
   (verify-guards digit-string-p-aux
     :hints(("Goal" :in-theory (enable digitp))))

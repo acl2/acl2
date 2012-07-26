@@ -246,6 +246,13 @@
   (declare (xargs :guard t))
   (if (equal b 1) 1 0))
 
+(defmacro lbfix (x)
+  ":doc-section logops-definitions
+   (LBFIX b) is logically (BFIX b), but requires (BITP b) as a guard and expands
+   to just b.
+   ~/~/~/"
+  `(mbe :logic (bfix ,x) :exec ,x))
+
 (defun zbp (x)
   ":doc-section logops-definitions
   (ZBP x) tests for `zero bits'.  Any object other than 1 is considered a

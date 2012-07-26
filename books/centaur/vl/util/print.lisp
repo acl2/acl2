@@ -1052,8 +1052,7 @@ printed.</li>
 ; BOZO can this possibly be right?  What about tabs?
 
   (cond ((atom chars)
-         (mbe :logic (nfix col)
-              :exec col))
+         (lnfix col))
         ((eql (car chars) #\Newline)
          (vl-col-after-printing-chars 0 (cdr chars)))
         (t
@@ -1076,17 +1075,11 @@ printed.</li>
            (type string x))
   (cond ((mbe :logic (zp (- (nfix xl) (nfix n)))
               :exec (= n xl))
-         (mbe :logic (nfix col)
-              :exec col))
+         (lnfix col))
         ((eql (char x n) #\Newline)
-         (vl-col-after-printing-string-aux 0 x
-                                           (mbe :logic (+ 1 (nfix n)) :exec (+ 1 n))
-                                           xl))
+         (vl-col-after-printing-string-aux 0 x (+ 1 (lnfix n)) xl))
         (t
-         (vl-col-after-printing-string-aux (+ 1 col)
-                                           x
-                                           (mbe :logic (+ 1 (nfix n)) :exec (+ 1 n))
-                                           xl))))
+         (vl-col-after-printing-string-aux (+ 1 col) x (+ 1 (lnfix n)) xl))))
 
 (defthm vl-col-after-printing-string-aux-correct
   (implies (and (natp col)
@@ -1205,9 +1198,7 @@ character lists.</p>"
           (eql char #\&)
           (eql char #\")
           (eql char #\Tab)
-          (vl-string-needs-html-encoding-p x
-                                           (+ (mbe :logic (nfix n) :exec n) 1)
-                                           xl)))))
+          (vl-string-needs-html-encoding-p x (+ 1 (lnfix n)) xl)))))
 
 
 
@@ -1689,12 +1680,9 @@ may eventually extend the printer to allow them.</p>")
 
     (if (mbe :logic (zp (- (nfix xl) (nfix n)))
              :exec (= n xl))
-        (mv (mbe :logic (nfix col) :exec col)
-            acc)
+        (mv (lnfix col) acc)
       (let ((char (char x n)))
-        (vl-ppr-escape-slashes x
-                               (mbe :logic (+ 1 (nfix n)) :exec (+ 1 n))
-                               xl
+        (vl-ppr-escape-slashes x (+ 1 (lnfix n)) xl
                                slash-char
                                (if (eql char #\Newline)
                                    0
@@ -1750,8 +1738,7 @@ may eventually extend the printer to allow them.</p>")
         (mv-let (col acc)
                 (vl-ppr-escape-slashes name 0 (length name) #\| (+ 1 col) (cons #\| acc))
                 (mv (+ 1 col) (cons #\| acc)))
-      (mv (+ (mbe :logic (nfix col) :exec col)
-             (length name))
+      (mv (+ (lnfix col) (length name))
           (str::revappend-chars name acc))))
 
   (local (in-theory (enable vl-ppr-explode-symbol-aux)))
@@ -1872,21 +1859,15 @@ may eventually extend the printer to allow them.</p>")
           ((acl2-numberp x)
            (let* ((explode (explode-atom x base))
                   (len     (len explode)))
-             (mv (+ (mbe :logic (nfix col) :exec col) len) (revappend explode acc))))
+             (mv (+ (lnfix col) len) (revappend explode acc))))
           ((characterp x)
            (case x
-             (#\Space   (mv (+ (mbe :logic (nfix col) :exec col) 7)
-                            (str::revappend-chars "#\\Space" acc)))
-             (#\Newline (mv (+ (mbe :logic (nfix col) :exec col) 9)
-                            (str::revappend-chars "#\\Newline" acc)))
-             (#\Tab     (mv (+ (mbe :logic (nfix col) :exec col) 5)
-                            (str::revappend-chars "#\\Tab" acc)))
-             (#\Rubout  (mv (+ (mbe :logic (nfix col) :exec col) 8)
-                            (str::revappend-chars "#\\Rubout" acc)))
-             (#\Page    (mv (+ (mbe :logic (nfix col) :exec col) 6)
-                            (str::revappend-chars "#\\Page" acc)))
-             (otherwise (mv (+ (mbe :logic (nfix col) :exec col) 3)
-                            (list* x #\\ #\# acc)))))
+             (#\Space   (mv (+ (lnfix col) 7) (str::revappend-chars "#\\Space" acc)))
+             (#\Newline (mv (+ (lnfix col) 9) (str::revappend-chars "#\\Newline" acc)))
+             (#\Tab     (mv (+ (lnfix col) 5) (str::revappend-chars "#\\Tab" acc)))
+             (#\Rubout  (mv (+ (lnfix col) 8) (str::revappend-chars "#\\Rubout" acc)))
+             (#\Page    (mv (+ (lnfix col) 6) (str::revappend-chars "#\\Page" acc)))
+             (otherwise (mv (+ (lnfix col) 3) (list* x #\\ #\# acc)))))
           (t
            (prog2$ (er hard? 'vl-ppr-explode-atom "Bad atom: ~x0." x)
                    (mv (+ (nfix col) 10) (str::revappend-chars "<bad atom>" acc))))))
@@ -1936,8 +1917,7 @@ may eventually extend the printer to allow them.</p>")
               (vl-stupid-ppr1 (car x) pkg base rmargin nil (+ 1 col) (cons #\( acc))))
 
            ((when (not (cdr x)))
-            (mv (+ 1 (mbe :logic (nfix col) :exec col))
-                (if in-listp acc (cons #\) acc))))
+            (mv (+ 1 (lnfix col)) (if in-listp acc (cons #\) acc))))
 
            ;; "Maybe break"
            ((mv col acc) (if (< col rmargin)
@@ -1949,8 +1929,7 @@ may eventually extend the printer to allow them.</p>")
               (b* (((mv col acc)
                     (vl-stupid-ppr1 (cdr x) pkg base rmargin t (+ 1 col) (cons #\Space acc))))
 
-                  (mv (mbe :logic (+ 1 (nfix col))
-                           :exec (+ 1 col))
+                  (mv (+ 1 (lnfix col))
                       (if in-listp acc (cons #\) acc))))
 
             ;; End element, need a dot.
@@ -1965,8 +1944,7 @@ may eventually extend the printer to allow them.</p>")
                  ((mv col acc)
                   (vl-stupid-ppr1 (cdr x) pkg base rmargin t col acc)))
 
-                (mv (mbe :logic (+ 1 (nfix col))
-                         :exec (+ 1 col))
+                (mv (+ 1 (lnfix col))
                     (if in-listp acc (cons #\) acc))))))))
 
   (local (in-theory (enable vl-stupid-ppr1)))
@@ -2012,18 +1990,14 @@ may eventually extend the printer to allow them.</p>")
                     :measure (nfix (- (nfix xl) (nfix n)))))
     (if (mbe :logic (zp (- (nfix xl) (nfix n)))
              :exec (= n xl))
-        (mbe :logic (nfix n)
-             :exec n)
+        (lnfix n)
       (let ((char (char x n)))
         (if (or (eql char #\Space)
                 (eql char #\Newline)
                 (eql char #\Tab)
                 (eql char #\Page))
-            (vl-skip-ws x
-                        (+ (mbe :logic (nfix n) :exec n) 1)
-                        xl)
-          (mbe :logic (nfix n)
-               :exec n)))))
+            (vl-skip-ws x (+ 1 (lnfix n)) xl)
+          (lnfix n)))))
 
   (local (in-theory (enable vl-skip-ws)))
 
@@ -2060,12 +2034,12 @@ may eventually extend the printer to allow them.</p>")
 ; directives, we return char2 as TYPE and char3 as VAL.
 
     (declare (xargs :guard (and (stringp x)
-                              (natp n)
-                              (natp xl)
-                              (= xl (length x))
-                              (< n xl))))
-    (b* ((n  (mbe :logic (nfix n) :exec n))
-         (xl (mbe :logic (nfix xl) :exec xl))
+                                (natp n)
+                                (natp xl)
+                                (= xl (length x))
+                                (< n xl))))
+    (b* ((n  (lnfix n))
+         (xl (lnfix xl))
          (char1 (char x n))
          ((when (not (eql char1 #\~)))
           (mv :normal char1 (+ n 1)))

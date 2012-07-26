@@ -29,7 +29,7 @@
      bfr-p-of-bfr-iff
      bfr-p-of-bfr-or
      bfr-p-of-q-implies
-
+     lnfix lifix lbfix
 
      mv-nth-cons-meta
 

@@ -1608,7 +1608,7 @@ try to enforce this restriction since it is somewhat awkward to do so.</p>"
                   (vl-preprocess-loop (append insert remainder)
                                       defines istack activep include-dirs
                                       acc
-                                      (- (mbe :logic (nfix n) :exec n) 1)
+                                      (- (lnfix n) 1)
                                       state))))))
 
          ((when (eql (vl-echar->char (car prefix)) #\\))

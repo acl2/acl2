@@ -53,8 +53,8 @@ into a character list and then coerce it back into a string at the end.</p>"
                                 (= xl (length x))
                                 (stringp prefix))
                     :measure (nfix (- (nfix xl) (nfix n)))))
-    (let ((n (mbe :logic (nfix n) :exec n))
-          (xl (mbe :logic (nfix xl) :exec xl)))
+    (let ((n  (lnfix n))
+          (xl (lnfix xl)))
       (if (mbe :logic (zp (- xl n))
                :exec (= n xl))
           acc

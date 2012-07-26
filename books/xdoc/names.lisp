@@ -26,6 +26,7 @@
 ; XDOC topics.
 
 (in-package "XDOC")
+(include-book "base")
 (program)
 
 
@@ -124,11 +125,7 @@
   (if (mbe :logic (zp (- (nfix xl) (nfix n)))
            :exec (= n xl))
       y
-    (revappend-chars-aux x
-                         (mbe :logic (+ (nfix n) 1)
-                              :exec (+ n 1))
-                         xl
-                         (cons (char x n) y))))
+    (revappend-chars-aux x (+ 1 (lnfix n)) xl (cons (char x n) y))))
 
 (defund revappend-chars (x y)
   ;; YUCK, copy from string library to avoid str/ dependency
@@ -168,16 +165,10 @@
          nil)
         ((eql (the character (char x xn))
               (the character (char y yn)))
-         (mbe :logic (strprefixp-impl x y
-                                      (+ (nfix xn) 1)
-                                      (+ (nfix yn) 1)
-                                      xl yl)
-              :exec  (strprefixp-impl (the string x)
-                                      (the string y)
-                                      (the integer (+ (the integer xn) 1))
-                                      (the integer (+ (the integer yn) 1))
-                                      (the integer xl)
-                                      (the integer yl))))
+         (strprefixp-impl x y
+                          (+ (lnfix xn) 1)
+                          (+ (lnfix yn) 1)
+                          xl yl))
         (t
          nil)))
 
@@ -208,17 +199,11 @@
 
         ((strprefixp-impl old x 0 n oldl xl)
          (let ((acc (revappend-chars new acc)))
-           (strsubst-aux old new x
-                           (mbe :logic (+ oldl (nfix n))
-                                :exec (+ oldl n))
-                           xl oldl acc)))
+           (strsubst-aux old new x (+ oldl (lnfix n)) xl oldl acc)))
 
         (t
          (let ((acc (cons (char x n) acc)))
-           (strsubst-aux old new x
-                           (mbe :logic (+ 1 (nfix n))
-                                :exec (+ 1 n))
-                           xl oldl acc)))))
+           (strsubst-aux old new x (+ 1 (lnfix n)) xl oldl acc)))))
 
 (defund strsubst (old new x)
   ;; YUCK, copy from string library to avoid str/ dependency

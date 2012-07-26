@@ -19,6 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "VL")
+(include-book "xdoc/top" :dir :system)
 (local (include-book "make-event/assert" :dir :system))
 (local (include-book "arithmetic"))
 
@@ -132,10 +133,7 @@
       acc
     (let* ((char     (char x n))
            (encoding (aref1 'vl-url-encode-array *vl-url-encode-array* (char-code char))))
-      (vl-url-encode-string-aux x
-                                (mbe :logic (+ 1 (nfix n)) :exec (+ 1 n))
-                                xl
-                                (revappend encoding acc)))))
+      (vl-url-encode-string-aux x (+ 1 (lnfix n)) xl (revappend encoding acc)))))
 
 (defthm character-listp-of-vl-url-encode-string-aux
   (implies (and (stringp x)

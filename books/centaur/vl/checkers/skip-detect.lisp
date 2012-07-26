@@ -139,7 +139,7 @@ a wire name, and accumulates them into <tt>acc</tt>."
                                 (= xl (length x))
                                 (sd-keylist-p acc))
                     :measure (nfix (- (length (string-fix x)) (nfix n)))))
-    (b* ((n  (mbe :logic (nfix n) :exec n))
+    (b* ((n  (lnfix n))
          (x  (mbe :logic (string-fix x) :exec x))
          (xl (mbe :logic (length x) :exec xl))
          ((when (>= n xl))

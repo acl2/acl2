@@ -101,8 +101,7 @@ encoding of <tt>X</tt> in reverse.</p>"
                                 (posp tabsize)
                                 (character-listp acc))))
     (if (atom x)
-        (mv (mbe :logic (nfix col) :exec col)
-            acc)
+        (mv (lnfix col) acc)
       (let ((char1 (car x)))
         (html-encode-chars-aux
          (cdr x)
@@ -172,12 +171,11 @@ should typically be 0 to begin with.</li>
              (type integer n xl col tabsize))
     (if (mbe :logic (zp (- (nfix xl) (nfix n)))
              :exec (= n xl))
-        (mv (mbe :logic (nfix col) :exec col)
-            acc)
+        (mv (lnfix col) acc)
       (let ((char1 (char x n)))
         (html-encode-string-aux
          x
-         (mbe :logic (+ 1 (nfix n)) :exec (+ 1 n))
+         (+ 1 (lnfix n))
          xl
          (cond ((eql char1 #\Newline)
                 0)

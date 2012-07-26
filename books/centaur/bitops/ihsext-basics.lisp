@@ -505,43 +505,6 @@
     :hints(("Goal" :in-theory (enable logcar ifix)))))
 
 
-(defsection bool->bit
-
-  (defund bool->bit (x)
-    (declare (xargs :guard t))
-    (if x 1 0))
-
-  (local (in-theory (enable bool->bit)))
-
-  ;; (bit->bool x) would just be the same as (equal x 1).  So we just use this
-  ;; as our bit->bool.
-
-  (defthm equal-1-of-bool->bit
-    (iff (equal 1 (bool->bit x))
-         x))
-
-  (defthm bool->bit-of-equal-1
-    (equal (bool->bit (equal 1 x))
-           (bfix x)))
-
-  (defthm bool->bit-of-not-equal-1
-    (equal (bool->bit (not (equal 1 x)))
-           (b-not x))
-    :hints(("Goal" :in-theory (enable b-not))))
-
-  (defcong iff equal (bool->bit x) 1)
-
-  (defthm bitp-of-bool->bit
-    (bitp (bool->bit x)))
-
-  (defthm bool->bit-bound
-    (< (bool->bit x) 2)
-    :rule-classes :linear)
-
-  (defthm bool->bit-equal-0
-    (equal (equal (bool->bit x) 0)
-           (not x))))
-
 
 
 (defsection logbitp**

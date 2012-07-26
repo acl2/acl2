@@ -403,7 +403,7 @@
 
 (defun bfr-var (n)
   (declare (xargs :guard (natp n)))
-  (let ((n (mbe :logic (nfix n) :exec n)))
+  (let ((n (lnfix n)))
     (bfr-case :bdd (acl2::qv n)
               :aig n)))
 
@@ -416,7 +416,7 @@
 
 (defun  bfr-lookup (n env)
   (declare (xargs :guard (natp n)))
-  (let ((n (mbe :logic (nfix n) :exec n)))
+  (let ((n (lnfix n)))
     (bfr-case :bdd (and (acl2::with-guard-checking nil (ec-call (nth n env))) t)
               :aig (let ((look (hons-get n env)))
                      (if look
@@ -434,7 +434,7 @@
 
 (defun bfr-set-var (n val env)
   (declare (xargs :guard (natp n)))
-  (let ((n (mbe :logic (nfix n) :exec n)))
+  (let ((n (lnfix n)))
     (bfr-case :bdd (acl2::with-guard-checking
                     nil
                     (ec-call (update-nth n (and val t) env)))

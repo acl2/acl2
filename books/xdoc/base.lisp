@@ -24,6 +24,19 @@
 
 (in-package "XDOC")
 
+#!ACL2
+(defmacro lnfix (x)
+  "Logical NFIX"
+  ;; BOZO this very much doesn't belong here, but I want it everywhere.
+  `(mbe :logic (nfix ,x) :exec ,x))
+
+#!ACL2
+(defmacro lifix (x)
+  "Logical IFIX"
+  ;; BOZO this very much doesn't belong here, but I want it everywhere.
+  `(mbe :logic (ifix ,x) :exec ,x))
+
+
 (make-event
  `(defconst *xdoc-dir* ,(cbd)))
 

@@ -55,8 +55,8 @@ same as not rotating at all."
     ;; number, say 16'b AAAA_BBBB_CCCC_DDDD, so the width is 16, and suppose we
     ;; want to rotate left by 20 places.
 
-    (let* ((width      (mbe :logic (nfix width) :exec width))
-           (places     (mbe :logic (nfix places) :exec places))
+    (let* ((width      (lnfix width))
+           (places     (lnfix places))
            (x          (logand x (1- (ash 1 width)))) ; chop x down to size
            (places     (mod places width))            ; e.g., 20 places --> 4 places
            (low-num    (- width places))              ; e.g., 12
@@ -248,6 +248,7 @@ same as not rotating at all."
                   (:instance case-split-mod-of-decrement-l1))))))
 
 
+
 (defsection rotate-left**
 
   (local (in-theory (e/d (case-split-mod-of-decrement)
@@ -275,22 +276,7 @@ same as not rotating at all."
     :hints((equal-by-logbitp-hint)
            (and stable-under-simplificationp
                 '(:in-theory (e/d (logbitp-of-rotate-left-1-split
-                                   logbitp-of-rotate-left-split)))))))
-
-
-(defsection rotate-left**-tr
-
-  (local (in-theory (e/d (case-split-mod-of-decrement)
-                         (max natp nfix ifix floor-mod-elim))))
-
-  (local (defthm integerp-of-/-when-posp
-           (implies (posp width)
-                    (equal (integerp (/ width))
-                           (equal width 1)))
-           :hints(("Goal"
-                   :in-theory (disable inverse-of-* equal-*-/-2)
-                   :use ((:instance inverse-of-* (x width)))
-                   :nonlinearp t))))
+                                   logbitp-of-rotate-left-split))))))
 
   (defthmd rotate-left**-tr
     (equal (rotate-left x width places)
@@ -309,11 +295,9 @@ same as not rotating at all."
                                    logbitp-of-rotate-left-split)))))))
 
 
-(local (in-theory (disable loghead expt-minus exponents-add)))
-
-
 
 (defsection rotate-right
+
   (defund rotate-right (x width places)
     "Rotate X, a vector of some WIDTH, by PLACES places to the right.
 
@@ -328,9 +312,9 @@ same as not rotating at all."
     ;; Running example to help understand the code: suppose X is some 16-bit
     ;; number, say 16'b AAAA_BBBB_CCCC_DDDD, so the width is 16, and suppose we
     ;; want to rotate by 20 places.
-    (let* ((width      (mbe :logic (nfix width) :exec width))
+    (let* ((width      (lnfix width))
            (x          (loghead width x))
-           (places     (mbe :logic (nfix places) :exec places))
+           (places     (lnfix places))
            (places     (mod places width))          ; e.g., 20 places --> 4 places
            (mask       (1- (ash 1 places)))         ; e.g., 0000_0000_0000_1111
            (xl         (logand x mask))             ; e.g., 0000_0000_0000_DDDD
@@ -385,4 +369,143 @@ same as not rotating at all."
 
   (defthm natp-of-rotate-right
     (natp (rotate-right x width places))
-    :rule-classes :type-prescription))
+    :rule-classes :type-prescription)
+
+  (local (defthm logbitp-of-rotate-right-1
+           (implies (and (>= n width)
+                         (natp n)
+                         (natp width))
+                    (equal (logbitp n (rotate-right x width places))
+                           nil))
+           :hints(("Goal" :in-theory (enable logbitp-of-ash-split
+                                             logbitp-of-loghead-split)))))
+
+  (local (defthm logbitp-of-rotate-right-2
+           (implies (and (< n (- width (mod places width)))
+                         (natp n)
+                         (natp places)
+                         (natp width))
+                    (equal (logbitp n (rotate-right x width places))
+                           (logbitp (+ n (mod places width)) x)))))
+
+  (local (defthm logbitp-of-rotate-right-3
+           (implies (and (< n width)
+                         (>= n (- width (mod places width)))
+                         (natp n)
+                         (natp places)
+                         (natp width))
+                    (equal (logbitp n (rotate-right x width places))
+                           (logbitp (+ n (mod places width) (- width)) x)))))
+
+  (defthmd logbitp-of-rotate-right-split
+    (let ((lhs (logbitp n (rotate-right x width places))))
+      (equal lhs
+             (b* ((n      (nfix n))
+                  (width  (nfix width))
+                  (places (mod (nfix places) width)))
+               (cond ((>= n width)
+                      nil)
+                     ((>= n (- width places))
+                      (logbitp (+ n places (- width)) x))
+                     (t
+                      (logbitp (+ n places) x))))))
+    :hints(("Goal" :in-theory (e/d (nfix) (rotate-right)))))
+
+  (local (in-theory (disable max)))
+
+  (defthm rotate-right-by-zero
+    (equal (rotate-right x width 0)
+           (loghead width x))
+    :hints ((equal-by-logbitp-hint)
+            (and stable-under-simplificationp
+                 '(:in-theory (enable logbitp-of-loghead-split
+                                      logbitp-of-ash-split))))))
+
+
+
+
+(defsection rotate-right-1
+
+  (defund rotate-right-1 (x width)
+    (declare (xargs :guard (and (integerp x)
+                                (posp width))))
+    (cond ((zp width)
+           0)
+          ((equal width 1)
+           ;; Rotating a one-bit thing does nothing.
+           (loghead 1 x))
+          (t
+           ;; Gaah, this is ugly
+           (let ((x (loghead width x)))
+             (logior (ash (logbit 0 x) (1- width))
+                     (ash x -1))))))
+
+  (local (in-theory (enable rotate-right-1)))
+
+  (defcong int-equiv equal (rotate-right-1 x width) 1)
+  (defcong nat-equiv equal (rotate-right-1 x width) 2)
+
+  (defthm natp-of-rotate-right-1
+    (natp (rotate-right-1 x width))
+    :rule-classes :type-prescription)
+
+  (defthmd logbitp-of-rotate-right-1-split
+    (equal (logbitp n (rotate-right-1 x width))
+           (b* ((n      (nfix n))
+                (width  (nfix width)))
+             (cond ((>= n width)          nil)
+                   ((equal n (- width 1)) (logbitp 0 x))
+                   (t                     (logbitp (+ 1 n) x)))))
+    :hints(("Goal" :in-theory (enable logbitp-of-loghead-split)))))
+
+
+
+
+(defsection rotate-right**
+
+  (local (in-theory (e/d (case-split-mod-of-decrement)
+                         (max natp nfix ifix floor-mod-elim))))
+
+  (local (defthm integerp-of-/-when-posp
+           (implies (posp width)
+                    (equal (integerp (/ width))
+                           (equal width 1)))
+           :hints(("Goal"
+                   :in-theory (disable inverse-of-* equal-*-/-2)
+                   :use ((:instance inverse-of-* (x width)))
+                   :nonlinearp t))))
+
+  (defthmd rotate-right**
+    (equal (rotate-right x width places)
+           (if (zp places)
+               (loghead width x)
+             (rotate-right-1 (rotate-right x width (- places 1))
+                             width)))
+    :rule-classes ((:definition
+                    :clique (rotate-right)
+                    :controller-alist
+                    ((rotate-right nil nil t))))
+    :hints((equal-by-logbitp-hint)
+           (and stable-under-simplificationp
+                '(:in-theory (e/d (logbitp-of-rotate-right-1-split
+                                   logbitp-of-rotate-right-split
+                                   logbitp-of-ash-split
+                                   logbitp-of-loghead-split
+                                   bool->bit b-ior))))))
+
+  (defthmd rotate-right**-tr
+    (equal (rotate-right x width places)
+           (if (zp places)
+               (loghead width x)
+             (rotate-right (rotate-right-1 x width)
+                           width
+                           (- places 1))))
+    :rule-classes ((:definition
+                    :clique (rotate-right)
+                    :controller-alist
+                    ((rotate-right nil nil t))))
+    :hints((equal-by-logbitp-hint)
+           (and stable-under-simplificationp
+                '(:in-theory (e/d (logbitp-of-rotate-right-1-split
+                                   logbitp-of-rotate-right-split)))))))
+

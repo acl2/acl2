@@ -394,11 +394,9 @@ the replacements.  This should not be too confusing since, e.g., in Verilog
                      :exec (= high low)))
           acc))
       (vl-emodwires-from-high-to-low-aux name
-                                (mbe :logic (nfix high)
-                                     :exec high)
-                                (mbe :logic (+ 1 (nfix low))
-                                     :exec (+ 1 low))
-                                acc)))
+                                         (lnfix high)
+                                         (+ 1 (lnfix low))
+                                         acc)))
 
   (definlined vl-emodwires-from-high-to-low-aux-fixnum (name high low acc)
     ;; Fixnum and otherwise optimized version of the above.
@@ -424,12 +422,11 @@ the replacements.  This should not be too confusing since, e.g., in Verilog
                               (the (unsigned-byte 32) low))))
           acc))
       (vl-emodwires-from-high-to-low-aux-fixnum name
-                                       (mbe :logic (nfix high)
-                                            :exec high)
-                                       (mbe :logic (+ 1 (nfix low))
-                                            :exec (the (unsigned-byte 32)
-                                                       (+ low 1)))
-                                       acc)))
+                                                (lnfix high)
+                                                (mbe :logic (+ 1 (nfix low))
+                                                     :exec (the (unsigned-byte 32)
+                                                             (+ low 1)))
+                                                acc)))
 
   (local (defthm vl-emodwires-from-high-to-low-aux-fixnum-removal
            (equal (vl-emodwires-from-high-to-low-aux-fixnum name high low acc)

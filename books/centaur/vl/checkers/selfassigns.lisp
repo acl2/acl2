@@ -117,7 +117,7 @@ handle problems with collecting bits.</p>"
              :exec (= high low))
         (list (vl-selfassign-bit name low))
       (cons (vl-selfassign-bit name low)
-            (vl-selfassign-bits name (+ (mbe :logic (nfix low) :exec low) 1) high))))
+            (vl-selfassign-bits name (+ (lnfix low) 1) high))))
 
   (mutual-recursion
 

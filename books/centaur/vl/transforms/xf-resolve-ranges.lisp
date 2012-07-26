@@ -118,11 +118,10 @@ concatenations.</p>")
                 (equal (vl-constint->origwidth guts) 32)
                 (vl-constint->wasunsized guts)
                 (< (vl-constint->value guts) (expt 2 31))
-                ;; This mbe is a stupid hack that gives us an unconditional
+                ;; This lnfix is a stupid hack that gives us an unconditional
                 ;; type prescription rule.  We "know" that the value is an
                 ;; natural nubmer as long as x is indeed an expression.
-                (mbe :logic (nfix (vl-constint->value guts))
-                     :exec (vl-constint->value guts)))))
+                (lnfix (vl-constint->value guts)))))
 
         (t
          ;; The only operations we permit here are plus, minus, and times.

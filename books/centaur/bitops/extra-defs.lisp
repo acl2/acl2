@@ -334,12 +334,9 @@ seconds."
   "Set X[n] := 1"
   (declare (xargs :guard (and (natp n)
                               (integerp x))))
-  (mbe :logic
-       (let ((n (nfix n))
-             (x (ifix x)))
-         (logior (ash 1 n) x))
-       :exec
-       (logior (ash 1 n) x)))
+  (let ((n (lnfix n))
+        (x (lifix x)))
+    (logior (ash 1 n) x)))
 
 (defcong nat-equiv equal (setbit n x) 1)
 (defcong int-equiv equal (setbit n x) 2)
@@ -353,12 +350,9 @@ seconds."
   "Set X[n] := 0"
   (declare (xargs :guard (and (natp n)
                               (integerp x))))
-  (mbe :logic
-       (let ((n (nfix n))
-             (x (ifix x)))
-         (logand (lognot (ash 1 n)) x))
-       :exec
-       (logand (lognot (ash 1 n)) x)))
+  (let ((n (lnfix n))
+        (x (lifix x)))
+    (logand (lognot (ash 1 n)) x)))
 
 (defcong nat-equiv equal (clearbit n x) 1)
 (defcong int-equiv equal (clearbit n x) 2)

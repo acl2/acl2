@@ -213,11 +213,7 @@ for more details.</p>"
     (if (mbe :logic (zp (- (nfix xl) (nfix n)))
              :exec (= n xl))
         y
-      (revappend-chars-aux x
-                           (mbe :logic (+ (nfix n) 1)
-                                :exec (+ n 1))
-                           xl
-                           (cons (char x n) y))))
+      (revappend-chars-aux x (+ 1 (lnfix n)) xl (cons (char x n) y))))
 
   (defthm revappend-chars-aux-correct
     (implies (and (stringp x)

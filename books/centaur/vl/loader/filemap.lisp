@@ -158,7 +158,7 @@ if such a location is not in <tt>x</tt>.</p>
         (cond
          ((< cline tline)
           ;; Not even at the right line yet.  Don't bother maintaining ccol.
-          (let ((new-n     (mbe :logic (+ 1 (nfix n)) :exec  (+ 1 n)))
+          (let ((new-n     (+ 1 (lnfix n)))
                 (new-cline (if (eql curr #\Newline) (+ 1 cline) cline)))
             (vl-string-findloc-aux x new-n xl new-cline 0 tline tcol)))
 
@@ -168,13 +168,13 @@ if such a location is not in <tt>x</tt>.</p>
 
          ((< ccol tcol)
           ;; Right line, not the right char yet.
-          (let ((new-n     (mbe :logic (+ 1 (nfix n)) :exec  (+ 1 n)))
+          (let ((new-n     (+ 1 (lnfix n)))
                 (new-cline (if (eql curr #\Newline) (+ 1 cline) cline))
                 (new-ccol  (if (eql curr #\Newline) 0 (+ 1 ccol))))
             (vl-string-findloc-aux x new-n xl new-cline new-ccol tline tcol)))
 
          ((= ccol tcol)
-          (mbe :logic (nfix n) :exec n))
+          (lnfix n))
 
          (t
           ;; Right line, but went too far.

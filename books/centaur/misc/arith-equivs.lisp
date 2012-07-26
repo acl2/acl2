@@ -393,13 +393,13 @@
 ;;   (implies (zbp x)
 ;;            (equal (bfix x) 0)))
 
-           
+
 ;; (defthm int-equiv-to-equal-ifix
 ;;   (implies (integerp a)
 ;;            (equal (int-equiv a b)
 ;;                   (equal a (ifix b))))
 ;;   :rule-classes ((:rewrite)
-;;                  (:rewrite :corollary 
+;;                  (:rewrite :corollary
 ;;                   (implies (integerp a)
 ;;                            (equal (int-equiv b a)
 ;;                                   (equal a (ifix b)))))))
@@ -409,7 +409,7 @@
 ;;            (equal (nat-equiv a b)
 ;;                   (equal a (nfix b))))
 ;;   :rule-classes ((:rewrite)
-;;                  (:rewrite :corollary 
+;;                  (:rewrite :corollary
 ;;                   (implies (natp a)
 ;;                            (equal (nat-equiv b a)
 ;;                                   (equal a (nfix b)))))))
@@ -419,7 +419,7 @@
 ;;            (equal (bit-equiv a b)
 ;;                   (equal a (bfix b))))
 ;;   :rule-classes ((:rewrite)
-;;                  (:rewrite :corollary 
+;;                  (:rewrite :corollary
 ;;                   (implies (bitp a)
 ;;                            (equal (bit-equiv b a)
 ;;                                   (equal a (bfix b)))))))
@@ -533,6 +533,47 @@
   :hints(("Goal" :in-theory (e/d (ifix) (logbitp logapp expt)))))
 
 (defcong nat-equiv equal (logmask n) 1)
+
+
+
+(encapsulate
+  ()
+
+  (defund bool->bit (x)
+    (declare (xargs :guard t))
+    (if x 1 0))
+
+  (local (in-theory (enable bool->bit)))
+
+  ;; (bit->bool x) would just be the same as (equal x 1).  So we just use this
+  ;; as our bit->bool.
+
+  (defthm equal-1-of-bool->bit
+    (iff (equal 1 (bool->bit x))
+         x))
+
+  (defthm bool->bit-of-equal-1
+    (equal (bool->bit (equal 1 x))
+           (bfix x)))
+
+  (defthm bool->bit-of-not
+    (equal (bool->bit (not x))
+           (b-not (bool->bit x)))
+    :hints(("Goal" :in-theory (enable b-not))))
+
+  (defcong iff equal (bool->bit x) 1)
+
+  (defthm bitp-of-bool->bit
+    (bitp (bool->bit x)))
+
+  (defthm bool->bit-bound
+    (< (bool->bit x) 2)
+    :rule-classes :linear)
+
+  (defthm bool->bit-equal-0
+    (equal (equal (bool->bit x) 0)
+           (not x))))
+
 
 
 

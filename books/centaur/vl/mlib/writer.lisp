@@ -99,9 +99,7 @@ violated.</p>"
              :exec (= i len))
         t
       (and (vl-simple-id-tail-p (char x i))
-           (vl-simple-id-tail-string-p x
-                                       (+ 1 (mbe :logic (nfix i) :exec i))
-                                       len))))
+           (vl-simple-id-tail-string-p x (+ 1 (lnfix i)) len))))
 
   (defund vl-maybe-escape-identifier (x)
     (declare (xargs :guard (stringp x)))
@@ -354,10 +352,7 @@ displays.  The module browser's web pages are responsible for defining the
            :exec (= i len))
       (reverse acc)
     (let ((car (char x i)))
-      (vl-maybe-escape-string x
-                              (mbe :logic (+ 1 (nfix i))
-                                   :exec (+ 1 i))
-                              len
+      (vl-maybe-escape-string x (+ 1 (lnfix i)) len
                               (case car
                                 (#\Newline (list* #\n #\\ acc))
                                 (#\Tab     (list* #\t #\\ acc))

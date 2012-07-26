@@ -157,8 +157,8 @@
                                 (natp b)
                                 (<= a b))
                     :measure (nfix (- (nfix b) (nfix a)))))
-    (let ((a (mbe :logic (nfix a) :exec a))
-          (b (mbe :logic (nfix b) :exec b)))
+    (let ((a (lnfix a))
+          (b (lnfix b)))
       (if (mbe :logic (zp (- b a))
                :exec (= a b))
           nil

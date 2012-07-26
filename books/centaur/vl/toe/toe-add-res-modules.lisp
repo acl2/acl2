@@ -110,7 +110,7 @@ generated names.</p>"
                                 (vl-emodwirelist-p (alist-keys mds))
                                 (vl-res-sigma-p sigma))
                     :verify-guards nil))
-    (b* ((idx (mbe :logic (nfix idx) :exec idx))
+    (b* ((idx (lnfix idx))
 
          ((when (not pat))
           (mv pat idx sigma))
@@ -221,7 +221,7 @@ driven instead of <tt>w</tt>.</li>
                                 (vl-emodwirelist-p (alist-keys mds))
                                 (vl-res-sigma-p sigma))))
     (b* (((when (atom occs))
-          (mv nil (mbe :logic (nfix idx) :exec idx) sigma))
+          (mv nil (lnfix idx) sigma))
          ((mv car idx sigma) (vl-res-rewrite-occ (car occs) mds idx sigma))
          ((mv cdr idx sigma) (vl-res-rewrite-occs (cdr occs) mds idx sigma)))
       (mv (cons car cdr) idx sigma)))
@@ -467,7 +467,7 @@ resolution of W1...Wn, for each such W.</p>"
     "Returns (MV OCCS IDX')"
     (declare (xargs :guard (and (natp idx)
                                 (vl-res-sigma-p sigma))))
-    (b* ((idx (mbe :logic (nfix idx) :exec idx))
+    (b* ((idx (lnfix idx))
          ((when (atom sigma))
           (mv nil idx))
          (out1  (caar sigma))

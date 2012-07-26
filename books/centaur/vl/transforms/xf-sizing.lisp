@@ -936,8 +936,7 @@ expression-sizing).</p>"
         :vl-unary-plus :vl-unary-minus :vl-unary-bitnot
         :vl-binary-shl :vl-binary-shr :vl-binary-ashl :vl-binary-ashr)
        ;; All of these operations keep the size of their first operands.
-       (mv warnings (mbe :logic (nfix (first arg-sizes))
-                         :exec (first arg-sizes))))
+       (mv warnings (lnfix (first arg-sizes))))
 
       ((:vl-binary-plus :vl-binary-minus :vl-binary-times :vl-binary-div :vl-binary-rem)
        ;; All of these operations take the max size of either operand.
@@ -945,20 +944,16 @@ expression-sizing).</p>"
        ;; operators.  However, plus and minus are common.  We probably do not
        ;; want to issue any size warnings in the case of plus or minus, since
        ;; one argument or the other often needs to be expanded.
-       (mv warnings (mbe :logic (max (nfix (first arg-sizes))
-                                     (nfix (second arg-sizes)))
-                         :exec (max (first arg-sizes)
-                                    (second arg-sizes)))))
+       (mv warnings (max (lnfix (first arg-sizes))
+                         (lnfix (second arg-sizes)))))
 
       ((:vl-binary-bitand :vl-binary-bitor :vl-binary-xor :vl-binary-xnor)
        ;; All of these operations take the max size of either operand.  But
        ;; this is a place where implicit widening could be bad.  I mean, you
        ;; probably don't want to be doing A & B when A and B are different
        ;; sizes, right?
-       (b* ((max (mbe :logic (max (nfix (first arg-sizes))
-                                  (nfix (second arg-sizes)))
-                      :exec (max (first arg-sizes)
-                                 (second arg-sizes))))
+       (b* ((max (max (lnfix (first arg-sizes))
+                      (lnfix (second arg-sizes))))
             (type (and (/= (first arg-sizes) (second arg-sizes))
                        (vl-tweak-fussy-warning-type :vl-fussy-size-warning-2
                                                     (first args)
@@ -986,10 +981,8 @@ expression-sizing).</p>"
        ;; The conditional takes the max size of its true and false branches.
        ;; We now warn if the branches don't agree on their size and hence will
        ;; be widened.
-       (b* ((max (mbe :logic (max (nfix (second arg-sizes))
-                                  (nfix (third arg-sizes)))
-                      :exec (max (second arg-sizes)
-                                 (third arg-sizes))))
+       (b* ((max (max (lnfix (second arg-sizes))
+                      (lnfix (third arg-sizes))))
             (type (and (/= (second arg-sizes) (third arg-sizes))
                        (vl-tweak-fussy-warning-type :vl-fussy-size-warning-3
                                                     (second args)
@@ -2038,10 +2031,8 @@ is needed, we just return <tt>x</tt> unchanged.</p>"
                                 (natp finalwidth)
                                 (vl-modelement-p elem)
                                 (vl-warninglist-p warnings))))
-    (b* ((finalwidth (mbe :logic (nfix finalwidth)
-                          :exec finalwidth))
-         (x.finalwidth (mbe :logic (nfix (vl-expr->finalwidth x))
-                            :exec (vl-expr->finalwidth x)))
+    (b* ((finalwidth   (lnfix finalwidth))
+         (x.finalwidth (lnfix (vl-expr->finalwidth x)))
 
          ((when (> x.finalwidth finalwidth))
           (b* ((w (make-vl-warning

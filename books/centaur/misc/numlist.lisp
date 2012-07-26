@@ -1,11 +1,6 @@
 
 (in-package "ACL2")
 
-
-;; "logical nfix"
-(defmacro lnfix (x)
-  `(mbe :logic (nfix ,x) :exec ,x))
-
 ;; This function crops up all over the place.
 
 (defun numlist (start by n)
@@ -14,7 +9,7 @@
                               (natp n))))
   (if (mbe :logic (zp n) :exec (= n 0))
       nil
-    (cons start (numlist (+ start by) by (1- (lnfix n))))))
+    (cons start (numlist (+ start by) by (1- n)))))
 
 
 (defthm len-numlist
