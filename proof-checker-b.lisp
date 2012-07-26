@@ -4431,8 +4431,8 @@
   This command displays ~il[linear] rules with a trigger term that matches the
   current subterm, and shows how they can be applied.  This command is
   analogous to the ~c[show-rewrites] ~il[proof-checker] command; see its
-  ~il[documentation] for details.  Also ~pl[apply-linear] for how to apply
-  linear rules."
+  ~il[documentation] for details.  Also see the ~il[documentation] for
+  proof-checker command ~c[apply-linear] for how to apply linear rules."
 
   (when-goals
    (let ((conc (conc t))
