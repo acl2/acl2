@@ -4397,10 +4397,11 @@
            (abbreviations (abbreviations t))
            (term-id-iff (term-id-iff conc current-addr t))
            (all-hyps (union-equal (hyps t) (governors conc current-addr))))
-       (show-rewrites-fn rule-id enabled-only-flg ens current-term
-                         abbreviations term-id-iff all-hyps
-                         (geneqv-at-subterm-top conc current-addr ens w)
-                         nil state)))))
+       (show-rewrites-linears-fn
+        'show-rewrites rule-id enabled-only-flg ens current-term
+        abbreviations term-id-iff all-hyps
+        (geneqv-at-subterm-top conc current-addr ens w)
+        nil state)))))
 
 (define-pc-macro sr (&rest args)
 
@@ -4416,6 +4417,67 @@
   are identical."
 
   (value (cons :show-rewrites args)))
+
+(define-pc-help show-linears (&optional rule-id enabled-only-flg)
+
+  "display the applicable ~il[linear] rules~/
+  ~bv[]
+  Example:
+  show-rewrites~/
+
+  General Form:
+  (show-rewrites &optional rule-id enabled-only-flg)
+  ~ev[]
+  This command displays ~il[rewrite] rules whose left-hand side matches the
+  current subterm, and shows how that command can be applied.  For each rule
+  displayed, hypotheses are shown that would need to be proved after the rule
+  is applied.  Note that hypotheses are omitted from the display when the
+  system can trivially verify that they hold; to see all hypotheses for each
+  rule in a display that is independent of the arguments of the current
+  subterm, use the ~c[pl] or ~c[pr] command.
+
+  Here are details on the arguments and the output.  If ~c[rule-id] is supplied
+  and is a name (non-~c[nil] symbol) or a ~c[:]~ilc[rewrite] or
+  ~c[:]~ilc[definition] ~il[rune], then only the corresponding rewrite rule(s)
+  will be displayed, while if ~c[rule-id] is a positive integer ~c[n], then
+  only the ~c[n]th rule that would be in the list is displayed.  In each case,
+  the display will point out when a rule is currently disabled (in the
+  interactive environment), except that if ~c[enabled-only-flg] is supplied and
+  not ~c[nil], then disabled rules will not be displayed at all.  Finally,
+  among the free variables of any rule (~pl[free-variables]), those that would
+  remain free if the rule were applied will be displayed.  Also ~pl[rewrite]."
+
+  (when-goals
+   (let ((conc (conc t))
+         (current-addr (current-addr t))
+         (w (w state)))
+     (let ((ens (make-pc-ens (pc-ens t) state))
+           (current-term (fetch-term conc current-addr))
+           (abbreviations (abbreviations t))
+           (term-id-iff (term-id-iff conc current-addr t)) ; irrelevant?
+           (all-hyps (union-equal (hyps t) (governors conc current-addr))))
+       (show-rewrites-linears-fn
+        'show-linears rule-id enabled-only-flg ens current-term
+        abbreviations term-id-iff all-hyps
+        (geneqv-at-subterm-top conc current-addr ens w) ; irrelevant?
+        nil state)))))
+
+(define-pc-macro sls (&rest args)
+
+  "same as SHOW-LINEARS~/
+  ~bv[]
+  Example:
+  srs~/
+
+  General Form:
+  (srs &optional rule-id enabled-only-flg)
+  ~ev[]
+  See the documentation for ~c[show-linears], as ~c[sls] and ~c[show-linears]
+  are identical.  NOTE: In analogy to the ~c[sr] abbreviation for
+  ~c[show-rewrites], one might expect this command to be ~c[sl]; but that name
+  was taken (``simplify with lemmas'') before ~c[sls] was implemented.~/"
+
+  (value (cons :show-linears args)))
 
 (define-pc-macro pl (&optional x)
 
@@ -4616,6 +4678,8 @@
 
 (define-pc-primitive rewrite (&optional rule-id raw-sub instantiate-free)
 
+; Warning: Keep this in sync with the proof-checker apply-linear command.
+
   "apply a rewrite rule~/
   ~bv[]
   Examples:
@@ -4639,9 +4703,12 @@
   General Form:
   (rewrite &optional rule-id substitution instantiate-free)
   ~ev[]
-  Replace the current subterm with a new term by applying a rewrite or
-  definition rule.  The replacement will be done according to the information
-  provided by the ~c[show-rewrites] (~c[sr]) command.
+  Replace the current subterm with a new term by applying a ~il[rewrite] or
+  ~il[definition] rule.  The replacement will be done according to the
+  information provided by the ~c[show-rewrites] (~c[sr]) command.
+
+  See also the ~c[linear] command, for an analogous command to use with
+  ~il[linear] rules.
 
   If ~c[rule-id] is a positive integer ~c[n], then the ~c[n]th rule as
   displayed by ~c[show-rewrites] is the one that is applied.  If ~c[rule-id] is
@@ -4652,14 +4719,14 @@
   and describe the other optional arguments, below.
 
   Consider first the following example.  Suppose that the current subterm is
-  ~c[(reverse (reverse y))] and that there is a rewrite rule called
+  ~c[(reverse (reverse y))] and that there is a ~il[rewrite] rule called
   ~c[reverse-reverse] of the form
   ~bv[]
   (implies (true-listp x)
            (equal (reverse (reverse x)) x)) .
   ~ev[]
-  Then the instruction ~c[(rewrite reverse-reverse)] would cause the current
-  subterm to be replaced by ~c[y] and would create a new goal with conclusion
+  Then the instruction ~c[(rewrite reverse-reverse)] causes the current
+  subterm to be replaced by ~c[y] and creates a new goal with conclusion
   ~c[(true-listp y)].  An exception is that if the top-level hypotheses imply
   ~c[(true-listp y)] using only ``trivial reasoning''
   (more on this below), then no new goal is created.
@@ -4667,7 +4734,7 @@
   If the ~c[rule-id] argument is a number or is not supplied, then the system
   will store an instruction of the form ~c[(rewrite name ...)], where ~c[name]
   is the name of a rewrite rule; this is in order to make it easier to replay
-  instructions when there have been changes to the history.  Actually, instead
+  instructions when there have been changes to the history.  Except: instead
   of the name (whether the name is supplied or calculated), the system stores
   the ~il[rune] if there is any chance of ambiguity.  (Formally, ``ambiguity''
   here means that the rune being applied is of the form
@@ -4675,9 +4742,9 @@
 
   Speaking in general, then, a ~c[rewrite] instruction works as follows:
 
-  First, a rewrite or definition rule is selected according to the arguments of
-  the ~c[rewrite] instruction.  The selection is made as explained under
-  ``General Form'' above.
+  First, a ~il[rewrite] or ~il[definition] rule is selected according to the
+  arguments of the ~c[rewrite] instruction.  The selection is made as explained
+  under ``General Form'' above.
 
   Next, the left-hand side of the rule is matched with the current subterm,
   i.e., a substitution ~c[unify-subst] is found such that if one instantiates
@@ -4769,7 +4836,8 @@
                       (print-no-change2
                        "There are fewer than ~x0 applicable rewrite rules.~%"
                        (list (cons #\0 index)))
-                    (print-no-change2 "There are no applicable rewrite rules.~%"))
+                    (print-no-change2
+                     "There are no applicable rewrite rules.~%"))
                 (let* ((sar (car app-rewrite-rules))
                        (lemma (access sar sar :lemma))
                        (start-alist (access sar sar :alist))
@@ -4777,7 +4845,7 @@
                        (rhs (access rewrite-rule lemma :rhs))
                        (lemma-hyps (access rewrite-rule lemma :hyps))
                        (lemma-rune (access rewrite-rule lemma :rune))
-                       (lemma-name (cadr lemma-rune))
+                       (lemma-name (base-symbol lemma-rune))
                        (lemma-id (if (cddr lemma-rune) lemma-rune lemma-name))
                        (non-free (union-eq (intersection-domains sub
                                                                  start-alist)
@@ -4799,7 +4867,8 @@
                                       hyps-type-alist instantiate-free w
                                       state pc-ens nil)
                      (pprogn
-                      (let ((extra-alist (alist-difference-eq unify-subst alist)))
+                      (let ((extra-alist (alist-difference-eq unify-subst
+                                                              alist)))
                         (if extra-alist
                             (io? proof-checker nil state
                                  (abbreviations extra-alist sub
@@ -4837,7 +4906,7 @@
                                                         goal-name
                                                         depends-on)))
                         (mv-let
-                         (new-goal state)
+                         (changed-goal state)
                          (deposit-term-in-goal
                           (car goals) conc current-addr
                           (sublis-var unify-subst
@@ -4850,13 +4919,283 @@
                            (make-rewrite-instr lemma-id raw-sub
                                                instantiate-free)
                            :goals
-                           (cons (change goal new-goal
+                           (cons (change goal changed-goal
                                          :depends-on
                                          (+ depends-on (length new-goals)))
                                  (append new-goals (cdr goals)))
                            :local-tag-tree
                            (push-lemma lemma-rune ttree2))
                           state)))))))))))))))))
+
+(defun applicable-linear-rules (current-term target-name-or-rune
+                                             target-index wrld)
+
+; See applicable-rewrite-rules for the analogous function for rewrite rules.
+
+  (declare (xargs :guard (not (or (variablep current-term)
+                                  (fquotep current-term)
+                                  (flambdap (ffn-symb current-term))))))
+  (applicable-linear-rules1
+   current-term
+   (getprop (ffn-symb current-term) 'linear-lemmas nil 'current-acl2-world
+            wrld)
+   1 target-name-or-rune target-index))
+
+(defun make-linear-instr (lemma-id raw-subst instantiate-free)
+  (list* (make-pretty-pc-command :linear)
+         lemma-id
+         (cond (instantiate-free (list raw-subst instantiate-free))
+               (raw-subst (list raw-subst))
+               (t nil))))
+
+(define-pc-primitive apply-linear (&optional rule-id raw-sub instantiate-free)
+
+; Warning: Keep this in sync with the proof-checker rewrite command.
+
+  "apply a linear rule~/
+  ~bv[]
+  Examples:
+  (apply-linear foo)
+     -- apply the linear rule `foo'
+  (apply-linear (:linear foo))
+     -- same as above
+  (apply-linear 2)
+     -- apply the second linear rule, as displayed by show-linears
+  rewrite
+     -- apply the first rewrite rule, as displayed by show-rewrites
+  (apply-linear foo ((y 7)))
+     -- apply the linear rule foo with the substitution
+        that associates 7 to the ``free variable'' y
+  (apply-linear foo ((x 2) (y 3)) t)
+     -- apply the linear rule foo by substituting 2 and 3 for free
+        variables x and y, respectively, and also binding all other
+        free variables possible by using the current context
+        (hypotheses and governors)~/
+
+  General Form:
+  (apply-linear &optional rule-id substitution instantiate-free)
+  ~ev[]
+  Add a new top-level hypothesis by applying a ~il[linear] rule to the current
+  subterm.  The new hypothesis will be created according to the information
+  provided by the ~c[show-linears] (~c[sls]) command.
+
+  We assume familiarity with the ~il[proof-checker]'s ~c[rewrite] (~c[r])
+  command.  In brief, the ~c[apply-linear] command is an analogue of the
+  ~c[rewrite] command, but for ~il[linear] rules in place of ~il[rewrite]
+  rules.  There is a significant difference: for the ~c[apply-linear] command,
+  instead of rewriting the current subterm as is done by the ~c[rewrite]
+  command, the conclusion of the applicable linear rule, suitably instantiated,
+  is added as a new (and last) top-level hypothesis of the goal.  Below, we
+  refer freely to the ~il[documentation] for the proof-checker's ~c[rewrite]
+  command.
+
+  The ~c[rule-id] is treated just as it is by the ~c[rewrite] command.  If
+  ~c[rule-id] is a positive integer ~c[n], then the ~c[n]th rule as displayed
+  by ~c[show-linears] is the one that is applied.  If ~c[rule-id] is ~c[nil] or
+  is not supplied, then it is treated as the number 1.  Otherwise, ~c[rule-id]
+  should be either a symbol or else a ~c[:linear] ~il[rune].  If a symbol is
+  supplied, then any ~il[linear] rule of that name may be used.
+
+  Consider the following example.  Suppose that the current subterm is
+  ~c[(< (g (h y)) y)] and that ~c[foo] is the name of the following linear
+  rule.
+  ~bv[]
+  (implies (true-listp x)
+           (< (g x) 15))
+  ~ev[]
+
+  Then the instruction ~c[(apply-linear foo)] applies ~c[foo] by adding a new
+  hypothesis ~c[(< (g (h y)) 15)].  In addition, a new goal with conclusion
+  ~c[(true-listp y)] is created unless the current context (top-level
+  hypotheses and governors) implies ~c[(true-listp y)] using only ``trivial
+  reasoning'', just as for the ~c[rewrite] command.
+
+  If the ~c[rule-id] argument is a number or is not supplied, then the system
+  will store an instruction of the form ~c[(apply-linear name ...)], where
+  ~c[name] is the name of a ~il[linear] rule; this is in order to make it
+  easier to replay instructions when there have been changes to the history.
+  Except: instead of the name (whether the name is supplied or calculated), the
+  system stores the ~il[rune] if there is any chance of ambiguity.  (Formally,
+  ``ambiguity'' here means that the rune being applied is of the form
+  ~c[(:rewrite name . index)], where index is not ~c[nil].)
+
+  Speaking in general, then, an ~c[apply-linear] instruction works as follows.
+
+  First, a ~il[linear] rule is selected according to the arguments of the
+  instruction.  The selection is made as explained under ``General Form''
+  above.
+
+  Next, a trigger term of the rule (~pl[linear]) is matched with the current
+  subterm, i.e., a substitution ~c[unify-subst] is found such that if one
+  instantiates that trigger term of the rule with ~c[unify-subst], then one
+  obtains the current subterm.  If this match fails, then the instruction
+  fails.
+
+  Next, an attempt is made to relieve (discharge) the hypotheses, possibly
+  handling free variables (~pl[free-variables]), exactly as is done with
+  hypotheses when applying the ~il[proof-checker] command, ~c[rewrite] (~c[r]).
+
+  Finally, the instruction is applied exactly as the ~c[rewrite] instruction is
+  applied, except instead of replacing the current subterm, the rule's
+  instantiated conclusion is added to the end of the list of top-level
+  hypotheses of the goal.
+
+  Note that as for the ~c[rewrite] command, the substitution argument should be
+  a list whose elements have the form ~c[(variable term)], where ~c[term] may
+  contain abbreviations."
+
+  (mv-let
+   (erp sub state)
+   (translate-subst-abb raw-sub abbreviations state)
+   (if erp
+       (print-no-change2 "~x0 failed."
+                         (list (cons #\0 (cons :rewrite args))))
+     (let ((name (and (symbolp rule-id) rule-id))
+           (rune (and (consp rule-id)
+                      (member-eq (car rule-id) '(:linear))
+                      rule-id))
+           (index (if (and (integerp rule-id) (< 0 rule-id))
+                      rule-id
+                    (if rule-id
+                        nil
+                      1)))
+           (pc-ens (make-pc-ens pc-ens state))
+           (w (w state))
+           (current-term (fetch-term conc current-addr))
+           (assumptions (union-equal hyps (governors conc current-addr))))
+       (cond
+        ((or (variablep current-term)
+             (fquotep current-term)
+             (flambdap (ffn-symb current-term)))
+         (print-no-change2
+          "It is only possible to apply linear rules to terms that are not ~
+           variables, (quoted) constants, or applications of lambda ~
+           expressions.  However, the current term is:~%~ ~ ~y0.~|"
+          (list (cons #\0 current-term))))
+        ((not (or name index rune))
+         (print-no-change2
+          "The rule-id argument to REWRITE must be a name, a positive ~
+           integer, or a :linear rune, but ~x0 is none of these.~|"
+          (list (cons #\0 rule-id))))
+        (t
+         (mv-let
+          (flg hyps-type-alist ttree)
+          (hyps-type-alist assumptions pc-ens w state)
+          (declare (ignore ttree))
+          (if flg
+              (print-no-change2
+               "Contradiction in the hypotheses!~%The S command should ~
+                complete this goal.~|")
+            (let ((app-linear-rules
+                   (applicable-linear-rules
+                    current-term (or name rune) index w)))
+              (if (null app-linear-rules)
+                  (if (and index (> index 1))
+                      (print-no-change2
+                       "There are fewer than ~x0 applicable linear rules.~%"
+                       (list (cons #\0 index)))
+                    (print-no-change2 "There are no applicable linear rules.~%"))
+                (let* ((sar (car app-linear-rules))
+                       (lemma (access sar sar :lemma))
+                       (start-alist (access sar sar :alist))
+                       (alist (append start-alist sub))
+                       (lemma-concl (access linear-lemma lemma :concl))
+                       (lemma-hyps (access linear-lemma lemma :hyps))
+                       (lemma-rune (access linear-lemma lemma :rune))
+                       (lemma-name (base-symbol lemma-rune))
+                       (lemma-id (if (cddr lemma-rune) lemma-rune lemma-name))
+                       (non-free (union-eq (intersection-domains sub
+                                                                 start-alist)
+                                           (set-difference-eq
+                                            (strip-cars sub)
+                                            (append (all-vars lemma-concl)
+                                                    (all-vars1-lst lemma-hyps
+                                                                   nil))))))
+                  (if non-free
+                      (print-no-change2
+                       "The variable~#0~[~/~/s~] ~&1 supplied by the ~
+                        substitution in this instruction ~#0~[~/is~/are~] not ~
+                        free for instantiation in the current context.~|"
+                       (list (cons #\0 (zero-one-or-more (length non-free)))
+                             (cons #\1 non-free)))
+                    (mv-let
+                     (subst-hyps unify-subst ttree2)
+                     (unrelieved-hyps lemma-rune lemma-hyps alist
+                                      hyps-type-alist instantiate-free w
+                                      state pc-ens nil)
+                     (pprogn
+                      (let ((extra-alist (alist-difference-eq unify-subst
+                                                              alist)))
+                        (if extra-alist
+                            (io? proof-checker nil state
+                                 (abbreviations extra-alist sub
+                                                lemma-id)
+                                 (fms0 "~|Apply linear rule ~x0 under the ~
+                                        following extension of the the ~
+                                        substitution generated by matching ~
+                                        that rule's trigger term with the ~
+                                        current term ~#1~[ (after extending ~
+                                        it with the substitution ~x2 supplied ~
+                                        in the instruction)~/~]:  ~x3.~|"
+                                       (list (cons #\0 lemma-id)
+                                             (cons #\1 (if sub 0 1))
+                                             (cons #\2 sub)
+                                             (cons #\3 (untranslate-subst-abb
+                                                        extra-alist
+                                                        abbreviations
+                                                        state)))))
+                          (io? proof-checker nil state
+                               (lemma-id)
+                               (fms0 "~|Applying linear rule ~x0.~|"
+                                     (list (cons #\0 lemma-id))))))
+                      (let ((runes (all-runes-in-ttree ttree2 nil)))
+                        (if runes
+                            (io? proof-checker nil state
+                                 (runes)
+                                 (fms0 "~|--NOTE-- Using the following runes ~
+                                        in addition to the indicated rule:~%  ~
+                                        ~x0.~|"
+                                       (list (cons #\0 runes))))
+                          state))
+                      (let ((new-goals
+                             (make-new-goals-fixed-hyps subst-hyps
+                                                        assumptions
+                                                        goal-name
+                                                        depends-on)))
+                        (let ((changed-goal
+                               (change goal (car goals)
+                                       :hyps
+                                       (append hyps
+                                               (list
+                                                (sublis-var unify-subst
+                                                            lemma-concl)))
+                                       :depends-on
+                                       (+ depends-on (length new-goals)))))
+                          (mv 
+                           (change-pc-state
+                            pc-state
+                            :instruction
+                            (make-linear-instr lemma-id raw-sub
+                                               instantiate-free)
+                            :goals
+                            (cons changed-goal
+                                  (append new-goals (cdr goals)))
+                            :local-tag-tree
+                            (push-lemma lemma-rune ttree2))
+                           state)))))))))))))))))
+
+(define-pc-macro al (&rest args)
+
+  "same as apply-linear~/
+  ~bv[]
+  Example:
+  (al 3)~/
+
+  ~ev[]
+  See the documentation for ~c[apply-linear], as ~c[al] and ~c[apply-linear]
+  are identical."
+
+  (value (cons :apply-linear args)))
 
 (defun pc-help-fn (name state)
   ;; Adapted in part from doc-fn.

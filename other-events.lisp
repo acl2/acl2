@@ -27713,56 +27713,114 @@
 (defun applicable-rewrite-rules1 (term geneqv lemmas current-index
                                        target-name-or-rune target-index wrld)
 
+; Warning: If you change this function, consider changing related function
+; applicable-linear-rules1.
+
 ; Call this initially with current-index equal to 1.
 
   (declare (xargs :guard (or (null target-index) (integerp target-index))))
-  (if (consp lemmas)
-      (let ((lemma (car lemmas)))
-        ;; if the lemma needs to be considered, consder it
-        (if (and (or (null target-name-or-rune)
-                     (if (symbolp target-name-or-rune)
-                         (equal target-name-or-rune
-                                (cadr (access rewrite-rule lemma :rune)))
-                       (equal target-name-or-rune
-                              (access rewrite-rule lemma :rune))))
-                 (member (access rewrite-rule lemma :subclass)
-                         '(backchain abbreviation definition))
-                 (or (eq geneqv :none)
-                     (geneqv-refinementp (access rewrite-rule lemma :equiv)
-                                         geneqv
-                                         wrld)))
-            (mv-let (flg alist)
-                    (one-way-unify (access rewrite-rule lemma :lhs) term)
-                    (if flg
-                        (if target-index
-                            (if (eql target-index current-index)
-                                (list (make sar
-                                            :index current-index
-                                            :lemma lemma
-                                            :alist alist
-                                            :equiv (access rewrite-rule lemma
-                                                           :equiv)))
-                              (applicable-rewrite-rules1
-                               term geneqv (cdr lemmas) (1+ current-index)
-                               target-name-or-rune target-index wrld))
-                          (cons (make sar
-                                      :index (if target-name-or-rune
-                                                 nil
-                                               current-index)
-                                      :lemma lemma
-                                      :alist alist
-                                      :equiv (access rewrite-rule lemma
-                                                     :equiv))
-                                (applicable-rewrite-rules1
-                                 term geneqv (cdr lemmas) (1+ current-index)
-                                 target-name-or-rune target-index wrld)))
-                      (applicable-rewrite-rules1
-                       term geneqv (cdr lemmas) current-index
-                       target-name-or-rune target-index wrld)))
-          (applicable-rewrite-rules1
+  (cond
+   ((consp lemmas)
+    (let ((lemma (car lemmas)))
+      (cond
+       ((and (or (null target-name-or-rune)
+                 (if (symbolp target-name-or-rune)
+                     (equal target-name-or-rune
+                            (cadr (access rewrite-rule lemma :rune)))
+                   (equal target-name-or-rune
+                          (access rewrite-rule lemma :rune))))
+             (member (access rewrite-rule lemma :subclass)
+                     '(backchain abbreviation definition))
+             (or (eq geneqv :none)
+                 (geneqv-refinementp (access rewrite-rule lemma :equiv)
+                                     geneqv
+                                     wrld)))
+        (mv-let
+         (flg alist)
+         (one-way-unify (access rewrite-rule lemma :lhs) term)
+         (cond
+          (flg
+           (if target-index
+               (if (eql target-index current-index)
+                   (list (make sar
+                               :index current-index
+                               :lemma lemma
+                               :alist alist
+                               :equiv (access rewrite-rule lemma
+                                              :equiv)))
+                 (applicable-rewrite-rules1
+                  term geneqv (cdr lemmas) (1+ current-index)
+                  target-name-or-rune target-index wrld))
+             (cons (make sar
+                         :index (if target-name-or-rune
+                                    nil
+                                  current-index)
+                         :lemma lemma
+                         :alist alist
+                         :equiv (access rewrite-rule lemma
+                                        :equiv))
+                   (applicable-rewrite-rules1
+                    term geneqv (cdr lemmas) (1+ current-index)
+                    target-name-or-rune target-index wrld))))
+          (t (applicable-rewrite-rules1
+              term geneqv (cdr lemmas) current-index
+              target-name-or-rune target-index wrld)))))
+       (t (applicable-rewrite-rules1
            term geneqv (cdr lemmas) current-index
-           target-name-or-rune target-index wrld)))
-    nil))
+           target-name-or-rune target-index wrld)))))
+   (t nil)))
+
+(defun applicable-linear-rules1 (term lemmas current-index target-name-or-rune
+                                      target-index)
+
+; Warning: If you change this function, consider changing related function
+; applicable-rewrite-rules1.
+
+; Call this initially with current-index equal to 1.
+
+  (declare (xargs :guard (or (null target-index) (integerp target-index))))
+  (cond
+   ((consp lemmas)
+    (let ((lemma (car lemmas)))
+      (cond
+       ((or (null target-name-or-rune)
+            (if (symbolp target-name-or-rune)
+                (equal target-name-or-rune
+                       (cadr (access linear-lemma lemma :rune)))
+              (equal target-name-or-rune
+                     (access linear-lemma lemma :rune))))
+        (mv-let
+         (flg alist)
+         (one-way-unify (access linear-lemma lemma :max-term) term)
+         (cond
+          (flg
+           (cond
+            (target-index
+             (cond
+              ((eql target-index current-index)
+               (list (make sar ; omit :equiv, which is not needed
+                           :index current-index
+                           :lemma lemma
+                           :alist alist)))
+              (t (applicable-linear-rules1
+                  term (cdr lemmas) (1+ current-index)
+                  target-name-or-rune target-index))))
+            (t (cons (make sar ; omit :equiv, which is not needed
+                           :index (if target-name-or-rune
+                                      nil
+                                    current-index)
+                           :lemma lemma
+                           :alist alist)
+                     (applicable-linear-rules1
+                      term (cdr lemmas) (1+ current-index)
+                      target-name-or-rune target-index)))))
+          (t (applicable-linear-rules1
+              term (cdr lemmas) current-index
+              target-name-or-rune target-index)))))
+       (t (applicable-linear-rules1
+           term (cdr lemmas) current-index
+           target-name-or-rune target-index)))))
+   (t nil)))
 
 (defun pc-relieve-hyp (rune hyp unify-subst type-alist wrld state ens ttree)
 
@@ -27953,16 +28011,18 @@
             (untranslate-subst-abb (cdr sub) abbreviations state))
     nil))
 
-(defun show-rewrite (index col rune nume show-more subst-hyps subst-hyps-2
-                           unify-subst unify-subst-2 free free-2 rhs
-                           abbreviations term-id-iff ens enabled-only-flg
-                           equiv pl-p state)
+(defun show-rewrite-linear (caller index col rune nume show-more subst-hyps
+                                   subst-hyps-2 unify-subst unify-subst-2 free
+                                   free-2 rhs abbreviations term-id-iff ens
+                                   enabled-only-flg equiv pl-p state)
 
 ; Pl-p is true when we are calling this function on behalf of :pl, and is false
 ; when we are calling it on behalf of the proof-checker.
 
   (let ((enabledp (enabled-numep nume ens))
-        (subst-rhs (sublis-var unify-subst rhs)))
+        (subst-rhs (sublis-var unify-subst rhs))
+        (term-id-iff (and (eq caller 'show-rewrites)
+                          term-id-iff)))
     (if (and enabled-only-flg
              (not enabledp))
         state
@@ -27979,9 +28039,9 @@
                   (cons #\2 (if enabledp 0 1)))
             (standard-co state) state nil)
        (let ((fmt-string
-              "~ ~ New term: ~Y3t~|~
+              "~ ~ ~#c~[New term~/Conclusion~]: ~Y3t~|~
                ~ ~ Hypotheses: ~#b~[<none>~/~Y4t~]~|~
-               ~ ~ Equiv: ~ye~|~
+               ~#c~[~ ~ Equiv: ~ye~|~/~]~
                ~#s~[~/~ ~ Substitution: ~Yat~|~]~
                ~#5~[~/~
                     ~ ~ Remaining free variable: ~&6~/~
@@ -27994,7 +28054,8 @@
             state)
            (t
             (fms fmt-string
-                 (list (cons #\3 (untrans0 subst-rhs term-id-iff
+                 (list (cons #\c (if (eq caller 'show-rewrites) 0 1))
+                       (cons #\3 (untrans0 subst-rhs term-id-iff
                                            abbreviations))
                        (cons #\s (if pl-p 1 0))
                        (cons #\a (untranslate-subst-abb unify-subst
@@ -28040,67 +28101,78 @@
                        (standard-co state) state nil)))
                 (t state))))))))
 
-(defun show-rewrites (app-rewrite-rules col abbreviations term-id-iff ens
-                                        type-alist enabled-only-flg
-                                        pl-p w state)
+(defun show-rewrites-linears (caller app-rules col abbreviations
+                                     term-id-iff ens type-alist
+                                     enabled-only-flg pl-p w state)
 
 ; Pl-p is true when we are calling this function on behalf of :pl, and is false
 ; when we are calling it on behalf of the proof-checker.
 
-  (if (null app-rewrite-rules)
-      state
-    (pprogn (let ((sar (car app-rewrite-rules)))
-              (let ((lemma (access sar sar :lemma))
-                    (alist (access sar sar :alist))
-                    (index (access sar sar :index)))
-                (let ((hyps (access rewrite-rule lemma :hyps))
-                      (rhs (access rewrite-rule lemma :rhs))
-                      (rune (access rewrite-rule lemma :rune)))
-                  (mv-let (subst-hyps unify-subst ttree)
-                    (unrelieved-hyps rune hyps alist type-alist nil w state ens
-                                     nil)
-                    (declare (ignore ttree))
-                    (let* ((rhs-and-hyps-vars
-                            (union-eq (all-vars rhs)
-                                      (all-vars1-lst hyps nil)))
-                           (free (set-difference-assoc-eq
-                                  rhs-and-hyps-vars
-                                  unify-subst)))
-                      (mv-let (show-more subst-hyps-2 unify-subst-2)
-                        (cond ((and free subst-hyps)
+  (cond
+   ((null app-rules)
+    state)
+   (t
+    (pprogn
+     (let ((sar (car app-rules)))
+       (let ((lemma (access sar sar :lemma))
+             (alist (access sar sar :alist))
+             (index (access sar sar :index)))
+         (mv-let
+          (hyps result rune)
+          (cond
+           ((eq caller 'show-rewrites)
+            (mv (access rewrite-rule lemma :hyps)
+                (access rewrite-rule lemma :rhs)
+                (access rewrite-rule lemma :rune)))
+           (t
+            (mv (access linear-lemma lemma :hyps)
+                (access linear-lemma lemma :concl)
+                (access linear-lemma lemma :rune))))
+          (mv-let
+           (subst-hyps unify-subst ttree)
+           (unrelieved-hyps rune hyps alist type-alist nil w state ens nil)
+           (declare (ignore ttree))
+           (let* ((result-and-hyps-vars
+                   (union-eq (all-vars result)
+                             (all-vars1-lst hyps nil)))
+                  (free (set-difference-assoc-eq
+                         result-and-hyps-vars
+                         unify-subst)))
+             (mv-let
+              (show-more subst-hyps-2 unify-subst-2)
+              (cond ((and free subst-hyps)
 
 ; Then we try to find at least a partial extension of unify-subst that
 ; eliminates some hypotheses.
 
-                               (mv-let (subst-hyps-2 unify-subst-2 ttree)
-                                 (unrelieved-hyps rune hyps alist type-alist t
-                                                  w state ens nil)
-                                 (declare (ignore ttree))
-                                 (cond ((equal unify-subst-2 unify-subst)
-                                        (assert$
-                                         (equal subst-hyps-2 subst-hyps)
-                                         (mv nil subst-hyps unify-subst)))
-                                       (t
-                                        (mv t subst-hyps-2 unify-subst-2)))))
-                              (t (mv  nil subst-hyps unify-subst)))
-                        (show-rewrite index col
-                                      rune
-                                      (access rewrite-rule lemma :nume)
-                                      show-more
-                                      subst-hyps  subst-hyps-2
-                                      unify-subst unify-subst-2
-                                      free
-                                      (set-difference-assoc-eq
-                                       rhs-and-hyps-vars
-                                       unify-subst-2)
-                                      rhs abbreviations term-id-iff ens
-                                      enabled-only-flg
-                                      (access sar sar :equiv)
-                                      pl-p
-                                      state)))))))
-            (show-rewrites (cdr app-rewrite-rules) col abbreviations
-                           term-id-iff ens type-alist enabled-only-flg
-                           pl-p w state))))
+                     (mv-let (subst-hyps-2 unify-subst-2 ttree)
+                             (unrelieved-hyps rune hyps alist type-alist t
+                                              w state ens nil)
+                             (declare (ignore ttree))
+                             (cond ((equal unify-subst-2 unify-subst)
+                                    (assert$
+                                     (equal subst-hyps-2 subst-hyps)
+                                     (mv nil subst-hyps unify-subst)))
+                                   (t
+                                    (mv t subst-hyps-2 unify-subst-2)))))
+                    (t (mv nil subst-hyps unify-subst)))
+              (show-rewrite-linear
+               caller index col rune
+               (if (eq caller 'show-rewrites)
+                   (access rewrite-rule lemma :nume)
+                 (access linear-lemma lemma :nume))
+               show-more subst-hyps  subst-hyps-2 unify-subst unify-subst-2
+               free
+               (set-difference-assoc-eq
+                result-and-hyps-vars
+                unify-subst-2)
+               result abbreviations term-id-iff ens enabled-only-flg
+               (and (eq caller 'show-rewrites)
+                    (access sar sar :equiv))
+               pl-p state)))))))
+     (show-rewrites-linears
+      caller (cdr app-rules) col abbreviations term-id-iff ens type-alist
+      enabled-only-flg pl-p w state)))))
 
 (defun expand-assumptions-1 (term) 
   (case-match term
@@ -28141,9 +28213,9 @@
                      nil ; do-not-reconsiderp
                      wrld ens (match-free-override wrld) state))
 
-(defun show-rewrites-fn (rule-id enabled-only-flg ens current-term
-                                 abbreviations term-id-iff all-hyps geneqv
-                                 pl-p state)
+(defun show-rewrites-linears-fn (caller rule-id enabled-only-flg ens
+                                        current-term abbreviations term-id-iff
+                                        all-hyps geneqv pl-p state)
 
 ; Pl-p is true when we are calling this function on behalf of :pl, and is false
 ; when we are calling it on behalf of the proof-checker.
@@ -28153,68 +28225,93 @@
         (rune (and (consp rule-id)
                    (if pl-p
                        (keywordp (car rule-id))
-                     (member-eq (car rule-id) '(:rewrite :definition)))
+                     (member-eq (car rule-id)
+                                (cond ((eq caller 'show-rewrites)
+                                       '(:rewrite :definition))
+                                      (t :linear))))
                    rule-id))
         (w (w state)))
     (cond
      ((and (not pl-p) ; optimization -- check is already made by pl2-fn
            rule-id
            (not (or name index rune)))
-      (fms "The rule-id argument to SHOW-REWRITES must be a name, a positive ~
+      (fms "The rule-id argument to ~s0 must be a name, a positive ~
             integer, or a rune representing a rewrite or definition rule, but ~
-            ~x0 is none of these.~|"
-           (list (cons #\0 rule-id)) (standard-co state) state nil))
+            ~x1 is none of these.~|"
+           (list (cons #\0 (symbol-name caller))
+                 (cons #\1 rule-id))
+           (standard-co state) state nil))
      ((and (not pl-p) ; optimization -- check is already made by pl2-fn
            (or (variablep current-term)
                (fquotep current-term)
                (flambdap (ffn-symb current-term))))
-      (fms "It is only possible to apply rewrite rules to terms that are not ~
-            variables, (quoted) constants, or applications of lambda ~
-            expressions.  However, the current term is:~%~ ~ ~y0.~|"
-           (list (cons #\0 current-term)) (standard-co state) state
-           (term-evisc-tuple nil state)))
+      (fms "It is only possible to apply ~#0~[rewrite rules to terms~/linear ~
+            rules for triggers~] that are not variables, (quoted) constants, ~
+            or applications of lambda expressions.  However, the current term ~
+            is:~%~ ~ ~y1.~|"
+           (list (cons #\0 (if (eq caller 'show-rewrites) 0 1))
+                 (cons #\1 current-term))
+           (standard-co state) state (term-evisc-tuple nil state)))
      ((and (not pl-p) ; optimization -- check is already made by pl2-fn
            (eq (ffn-symb current-term) 'if))
-      (fms "It is only possible to apply rewrite rules to terms that are ~
-            applications of function symbols other than IF.  However, the ~
-            current term is~|~ ~ ~y0.~|"
-           (list (cons #\0 current-term)) (standard-co state) state
-           (term-evisc-tuple nil state)))
+      (fms "It is only possible to apply ~#0~[rewrite rules to terms~/linear ~
+            rules for triggers~] that are applications of function symbols ~
+            other than IF.  However, the current term is~|~ ~ ~y0.~|"
+           (list (cons #\0 (if (eq caller 'show-rewrites) 0 1))
+                 (cons #\1 current-term))
+           (standard-co state) state (term-evisc-tuple nil state)))
      (t
       (mv-let
        (flg hyps-type-alist ttree)
        (hyps-type-alist all-hyps ens w state)
        (declare (ignore ttree))
        (cond
-        (flg ; contradiction, so there are hyps, so we are in the proof-checker
+        (flg ; contradiction in hyps, so we are in the proof-checker
          (assert$
           (not pl-p)
           (fms "*** Contradiction in the hypotheses! ***~%The S command ~
                 should complete this goal.~|"
                nil (standard-co state) state nil)))
-        (t (let ((app-rewrite-rules
-                  (applicable-rewrite-rules1
-                   current-term
-                   geneqv
-                   (getprop (ffn-symb current-term) 'lemmas nil
-                            'current-acl2-world w)
-                   1 (or name rune) index w)))
+        (t (let ((app-rules
+                  (cond
+                   ((eq caller 'show-rewrites)
+                    (applicable-rewrite-rules1
+                     current-term
+                     geneqv
+                     (getprop (ffn-symb current-term) 'lemmas nil
+                              'current-acl2-world w)
+                     1 (or name rune) index w))
+                   (t
+                    (applicable-linear-rules1
+                     current-term
+                     (getprop (ffn-symb current-term) 'linear-lemmas nil
+                              'current-acl2-world w)
+                     1 (or name rune) index)))))
              (cond
-              ((null app-rewrite-rules)
+              ((null app-rules)
                (cond (pl-p state)
                      ((and index (> index 1))
-                      (fms "~|*** There are fewer than ~x0 applicable rewrite ~
+                      (fms "~|*** There are fewer than ~x0 applicable ~s1 ~
                             rules. ***~%"
-                           (list (cons #\0 index)) (standard-co state) state
+                           (list (cons #\0 index)
+                                 (cons #\1 (if (eq caller 'show-rewrites)
+                                               "rewrite"
+                                             "linear")))
+                           (standard-co state) state
                            nil))
-                     (t (fms "~|*** There are no applicable rewrite rules. ~
-                              ***~%"
-                             nil  (standard-co state) state nil))))
-              (t (show-rewrites app-rewrite-rules
-                                (floor (length app-rewrite-rules) 10)
-                                abbreviations term-id-iff
-                                ens hyps-type-alist
-                                enabled-only-flg pl-p w state)))))))))))
+                     (t (fms "~|*** There are no applicable ~s0 rules. ***~%"
+                             (list (cons #\0 (if (eq caller 'show-rewrites)
+                                                 "rewrite"
+                                               "linear")))
+                             (standard-co state) state nil))))
+              (t
+               (show-rewrites-linears
+                caller
+                app-rules
+                (floor (length app-rules) 10)
+                abbreviations term-id-iff
+                ens hyps-type-alist
+                enabled-only-flg pl-p w state)))))))))))
 
 (defun show-meta-lemmas1 (lemmas rule-id term wrld ens state)
   (cond
@@ -28444,8 +28541,12 @@
                                                                    (w state))))
                                       (standard-co state) state nil))
                             (t state))
-                      (show-rewrites-fn rule-id nil ens term nil nil nil :none t
-                                        state)
+                      (show-rewrites-linears-fn
+                       'show-rewrites rule-id nil ens term nil nil nil :none t
+                       state)
+                      (show-rewrites-linears-fn
+                       'show-linears rule-id nil ens term nil nil nil :none t
+                       state)
                       (show-meta-lemmas term rule-id state)
                       (show-type-prescription-rules term rule-id nil nil
                                                     ens state)
@@ -28553,10 +28654,11 @@
   ~c[Pl2] takes two arguments.  The first is a term.  The second is either
   ~c[nil] or a ``rule-id'' that is either a symbol or a ~il[rune].  The result
   is to print rules of class ~c[:]~ilc[rewrite], ~c[:]~ilc[definition],
-  ~c[:meta] and ~c[:]~ilc[type-prescription] that apply to the given term.
-  Indeed, ~c[:pl2] prints exactly what is printed by applying ~c[:]~ilc[pl] to
-  the first argument ~-[] ~pl[pl] ~-[] except that if the second argument is
-  not ~c[nil] then it is used to filter the rules printed, as follows.~bq[]
+  ~c[:meta], ~c[:]~ilc[linear], and ~c[:]~ilc[type-prescription] that apply to
+  the given term.  Indeed, ~c[:pl2] prints exactly what is printed by applying
+  ~c[:]~ilc[pl] to the first argument ~-[] ~pl[pl] ~-[] except that if the
+  second argument is not ~c[nil] then it is used to filter the rules printed,
+  as follows.~bq[]
 
   If the rule-id is a symbol, then only rules whose name is that symbol will be
   printed.

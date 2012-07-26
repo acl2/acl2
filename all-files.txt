@@ -1129,6 +1129,10 @@ ev-theoremp.lisp
 generalize.acl2
 generalize.lisp
 join-thms.lisp
+meta-cheat-ttag.acl2
+meta-cheat-ttag.lisp
+meta-cheat-user.acl2
+meta-cheat-user.lisp
 multi-env-trick.lisp
 null-fail-hints.lisp
 nvalues-thms.lisp
@@ -1858,6 +1862,7 @@ portcullis.lisp
 top-opt.acl2
 top-opt.lisp
 top.lisp
+wizard.acl2
 wizard.lisp
 
 books/data-structures:
