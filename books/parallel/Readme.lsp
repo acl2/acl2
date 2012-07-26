@@ -11,12 +11,13 @@ matrix-multiplication-setup.lisp
 proofs/ideal-speedup.lisp
 spec-mv-let.lisp
 syntax-tests.lisp
-stress-tests.lisp")
+stress-tests.lisp
+without-waterfall-parallelism")
  (:TITLE    "Simple examples and tests of parallelism primitives and proofs")
  (:AUTHOR/S "David Rager")
  (:KEYWORDS ; non-empty list of keywords, case-insensitive
    "parallelism" "parallel" "pand" "por" "plet" "pargs" "performance" "futures"
-   "spec-mv-let" "acl2(p)" "acl2p")
+   "spec-mv-let" "acl2(p)" "acl2p" "waterfall")
  (:ABSTRACT "Generally speaking, these files illustrate and check the use of
 parallelism primitives, including their use during the ACL2 proof process.
 ")

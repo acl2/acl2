@@ -3,7 +3,7 @@
 
 
 
-
+(include-book "parallel/without-waterfall-parallelism" :dir :system)
 (include-book "centaur/misc/defapply" :dir :system)
 (include-book "gify")
 (local (include-book "gify-thms"))
@@ -1007,10 +1007,12 @@ in DEF-GL-THM.~%"))
 (defun def-gl-thm-find-cp (name clause-proc clause-procp rest)
   (declare (xargs :mode :program))
   (if clause-procp
-      (def-gl-thm-fn name clause-proc rest)
-    `(make-event
-      (let ((clause-proc (latest-gl-clause-proc)))
-        (def-gl-thm-fn ',name clause-proc ',rest)))))
+      `(ACL2::without-waterfall-parallelism
+        ,(def-gl-thm-fn name clause-proc rest))
+    `(ACL2::without-waterfall-parallelism
+      (make-event
+       (let ((clause-proc (latest-gl-clause-proc)))
+         (def-gl-thm-fn ',name clause-proc ',rest))))))
 
 
 
