@@ -26,6 +26,22 @@
 (include-book "alist-defs")
 
 
+
+(defthm hons-assoc-equal-append
+  (equal (hons-assoc-equal x (append a b))
+         (or (hons-assoc-equal x a)
+             (hons-assoc-equal x b))))
+
+(defthm cons-key-cdr-hons-assoc-equal
+  (implies (hons-assoc-equal k a)
+           (equal (cons k (cdr (hons-assoc-equal k a)))
+                  (hons-assoc-equal k a))))
+
+(defthm car-hons-assoc-equal
+  (implies (hons-assoc-equal k a)
+           (equal (car (hons-assoc-equal k a))
+                  k)))
+
 (defsection alists-agree
   (local (in-theory (enable alists-agree)))
 
@@ -265,6 +281,170 @@
   (defcong alist-equiv alist-equiv (cons a b) 2
     :hints (("goal" :in-theory (e/d (alist-equiv-when-agree-on-bad-guy)
                                     (alist-equiv))))))
+
+
+(defsection alists-compatible
+
+  (defun alists-compatible-on-keys (keys a b)
+    (declare (xargs :guard t))
+    (or (atom keys)
+        (and (let ((alook (hons-get (car keys) a))
+                   (blook (hons-get (car keys) b)))
+               (or (not alook) (not blook) (equal alook blook)))
+             (alists-compatible-on-keys (cdr keys) a b))))
+  
+  (defund alists-compatible (a b)
+    (declare (xargs :guard t))
+    (alists-compatible-on-keys (alist-keys a) a b))
+
+  (local (defthm member-intersection
+           (iff (member x (intersection-equal a b))
+                (and (member x a)
+                     (member x b)))))
+
+  (defthmd alists-compatible-on-keys-in-terms-of-alists-agree
+    (equal (alists-compatible-on-keys keys a b)
+           (alists-agree (intersection-equal keys
+                                             (intersection-equal (alist-keys a)
+                                                                 (alist-keys b)))
+                         a b))
+    :hints(("Goal" :in-theory (enable alists-compatible-on-keys
+                                      alists-agree
+                                      alist-keys
+                                      intersection-equal)))
+    :rule-classes :definition)
+
+  (local (defthm intersection-equal-repeat-1
+           (implies (subsetp-equal a b)
+                    (equal (intersection-equal a (intersection-equal b c))
+                           (intersection-equal a c)))))
+
+  (local (defthm subsetp-equal-cons
+           (implies (subsetp-equal a b)
+                    (subsetp-equal a (cons x b)))))
+
+  (local (defthm subsetp-equal-refl
+           (subsetp-equal a a)))
+
+  (local (defthm intersection-equal-repeat
+           (equal (intersection-equal a (intersection-equal a c))
+                  (intersection-equal a c))))
+
+  (defthmd alists-compatible-in-terms-of-alists-agree
+    (equal (alists-compatible a b)
+           (alists-agree (intersection-equal (alist-keys a)
+                                             (alist-keys b))
+                         a b))
+    :hints(("Goal" :in-theory (enable alists-compatible
+                                      alists-compatible-on-keys-in-terms-of-alists-agree
+                                      alists-agree
+                                      alist-keys
+                                      intersection-equal)))
+    :rule-classes :definition)
+
+  (local (in-theory (enable alists-compatible-in-terms-of-alists-agree)))
+
+  (defund alists-incompatible-witness (a b)
+    (alists-disagree-witness
+     (intersection-equal (alist-keys a) (alist-keys b))
+     a b))
+
+  (local (in-theory (enable alists-incompatible-witness)))
+
+  (local (defthm member-intersection-equal
+           (iff (member x (intersection-equal a b))
+                (and (member x a) (member x b)))))
+
+  (defthmd alists-compatible-iff-agree-on-bad-guy
+    (iff (alists-compatible a b)
+         (let ((x (alists-incompatible-witness a b)))
+           (implies (and (hons-assoc-equal x a)
+                         (hons-assoc-equal x b))
+                    (equal (hons-assoc-equal x a)
+                           (hons-assoc-equal x b)))))
+    :hints(("Goal" :in-theory (enable alists-agree-iff-witness))))
+
+  (defthmd alists-compatible-iff-agree-on-bad-guy-concl
+    (implies (syntaxp (let ((a a)
+                            (b b)
+                            (mfc mfc)
+                            (state state))
+                        (declare (ignore state))
+                        (member-equal `(alists-compatible ,a ,b)
+                                      (mfc-clause mfc))))
+             (iff (alists-compatible a b)
+                  (let ((x (alists-incompatible-witness a b)))
+                    (implies (and (hons-assoc-equal x a)
+                                  (hons-assoc-equal x b))
+                             (equal (hons-assoc-equal x a)
+                                    (hons-assoc-equal x b))))))
+    :hints(("Goal" :in-theory (enable alists-agree-iff-witness))))
+
+  (defthmd alists-compatible-hons-assoc-equal
+    (implies (and (alists-compatible a b)
+                  (hons-assoc-equal x a)
+                  (hons-assoc-equal x b))
+             (equal (hons-assoc-equal x a)
+                    (hons-assoc-equal x b)))
+    :hints(("Goal" :in-theory (enable alists-agree-hons-assoc-equal))))
+
+  (local (in-theory (enable cons-key-cdr-hons-assoc-equal)))
+
+  (local (in-theory (disable alists-compatible-in-terms-of-alists-agree)))
+
+  (defthm alists-compatible-acons-1
+    (implies (alists-compatible a b)
+             (iff (alists-compatible (cons (cons key val) a) b)
+                  (or (not (hons-assoc-equal key b))
+                      (equal (cdr (hons-assoc-equal key b)) val))))
+    :hints(("Goal" :in-theory (e/d
+                               (alists-compatible-iff-agree-on-bad-guy-concl
+                                alists-compatible-hons-assoc-equal)
+                               (alists-incompatible-witness))
+            :use ((:instance alists-compatible-hons-assoc-equal
+                   (x key) (a (cons (cons key val) a)) (b b)))
+            :do-not-induct t))
+    :otf-flg t)
+
+  (defthm alists-compatible-acons-2
+    (implies (alists-compatible a b)
+             (iff (alists-compatible a (cons (cons key val) b))
+                  (or (not (hons-assoc-equal key a))
+                      (equal (cdr (hons-assoc-equal key a)) val))))
+    :hints(("Goal" :in-theory (e/d
+                               (alists-compatible-iff-agree-on-bad-guy-concl
+                                alists-compatible-hons-assoc-equal)
+                               (alists-incompatible-witness))
+            :use ((:instance alists-compatible-hons-assoc-equal
+                   (x key) (a (cons (cons key val) a)) (b b)))
+            :do-not-induct t))
+    :otf-flg t)
+
+  (defthm alists-compatible-append-1
+    (implies (alists-compatible a b)
+             (iff (alists-compatible (append c a) b)
+                  (alists-compatible c b)))
+    :hints(("Goal" :in-theory (e/d
+                               (alists-compatible-iff-agree-on-bad-guy-concl
+                                alists-compatible-hons-assoc-equal)
+                               (alists-incompatible-witness))
+            :use ((:instance alists-compatible-hons-assoc-equal
+                   (x (alists-incompatible-witness c b)) (a (append c a)) (b b)))
+            :do-not-induct t)))
+
+  (defthm alists-compatible-append-2
+    (implies (alists-compatible a b)
+             (iff (alists-compatible a (append c b))
+                  (alists-compatible a c)))
+    :hints(("Goal" :in-theory (e/d
+                               (alists-compatible-iff-agree-on-bad-guy-concl
+                                alists-compatible-hons-assoc-equal)
+                               (alists-compatible
+                                alists-incompatible-witness))
+            :use ((:instance alists-compatible-hons-assoc-equal
+                   (x (alists-incompatible-witness a c)) (a a) (b (append c b))))
+            :do-not-induct t))))
+  
 
 
 

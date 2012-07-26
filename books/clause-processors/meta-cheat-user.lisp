@@ -263,6 +263,20 @@
               (equal (nth (+ (len y) (- (len (member x y)))) y)
                      x)))))
 
+(defthm mcheat-lemma-term
+  (implies (and (member rule (getprop fn 'lemmas nil 'current-acl2-world (w state)))
+                (mcheat-ev-global-facts))
+           (mcheat-ev (rewrite-rule-term rule)
+                      a))
+  :hints(("Goal"
+          :use ((:instance mcheat-global-badguy-sufficient
+                 (obj (list :lemma fn
+                            (let ((lemmas
+                                   (getprop fn 'lemmas nil
+                                            'current-acl2-world (w state))))
+                              (- (len lemmas)
+                                 (len (member rule lemmas)))))))))))
+
 ;; Assuming (mcheat-ev-global-facts), each element of the lemmas property of a
 ;; symbol in the world is a correct rewrite rule.
 (defthm mcheat-lemma
@@ -433,6 +447,14 @@
      (def-functional-instance
        evfn-meta-cheat-formula
        mcheat-formula
+       ((mcheat-ev evfn)
+        (mcheat-ev-lst evlst-fn)
+        (mcheat-ev-falsify evfn-falsify)
+        (mcheat-global-badguy evfn-meta-cheat-global-badguy)))
+
+     (def-functional-instance
+       evfn-meta-cheat-lemma-term
+       mcheat-lemma-term
        ((mcheat-ev evfn)
         (mcheat-ev-lst evlst-fn)
         (mcheat-ev-falsify evfn-falsify)

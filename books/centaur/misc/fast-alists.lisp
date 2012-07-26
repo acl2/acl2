@@ -34,33 +34,9 @@
 ;; way we shouldn't ever need an alistp hyp.
 
 
-;; This book defines alist-equiv and alists-agree, which
-(include-book "alist-equiv")
-
+(include-book "alist-witness")
 (include-book "equal-sets")
 (include-book "universal-equiv")
-
-
-
-;; BOZO these were originally in 4v-sexprs/sexpr-equivs.lisp.  We might want to
-;; move this directly into the alist-equiv book?  But doing so requires
-;; depending on witness-cp, etc., earlier.
-
-(defwitness alist-equiv-witnessing
-  :predicate (not (alist-equiv al1 al2))
-  :expr (not (let ((bg (alist-equiv-bad-guy al1 al2)))
-               (equal (hons-assoc-equal bg al1)
-                      (hons-assoc-equal bg al2))))
-  :hints ('(:use alist-equiv-when-agree-on-bad-guy
-                 :in-theory nil))
-  :generalize (((alist-equiv-bad-guy al1 al2) . aeqkey)))
-
-(defexample keys-equiv-example
-  :pattern (member-equal a (alist-keys env))
-  :templates (a)
-  :instance-rulename keys-equiv-instancing)
-
-
 
 
 
@@ -94,10 +70,6 @@
          (append a (append b c))))
 
 
-(defthm hons-assoc-equal-append
-  (equal (hons-assoc-equal x (append a b))
-         (or (hons-assoc-equal x a)
-             (hons-assoc-equal x b))))
 
 (defthm alist-equiv-append-atom
   (implies (atom b)
@@ -134,7 +106,7 @@
 
 
 
-(defthm car-hons-assoc-equal
+(defthmd car-hons-assoc-equal-split
   (equal (car (hons-assoc-equal x a))
          (and (hons-assoc-equal x a) x))
   :hints(("Goal" :in-theory (disable hons-assoc-equal-iff-member-alist-keys))))
@@ -247,13 +219,15 @@
 
 
 
-(defun alists-compatible-on-keys (keys a b)
-  (declare (xargs :guard t))
-  (or (atom keys)
-      (and (let ((alook (hons-get (car keys) a))
-                 (blook (hons-get (car keys) b)))
-             (or (not alook) (not blook) (equal alook blook)))
-           (alists-compatible-on-keys (cdr keys) a b))))
+;; (defun alists-compatible-on-keys (keys a b)
+;;   (declare (xargs :guard t))
+;;   (or (atom keys)
+;;       (and (let ((alook (hons-get (car keys) a))
+;;                  (blook (hons-get (car keys) b)))
+;;              (or (not alook) (not blook) (equal alook blook)))
+;;            (alists-compatible-on-keys (cdr keys) a b))))
+
+(local (in-theory (enable alists-compatible-on-keys)))
 
 (defthm alists-compatible-on-keys-refl
   (alists-compatible-on-keys keys a a))
@@ -304,9 +278,11 @@
           :do-not-induct t)))
 
 
-(defun alists-compatible (a b)
-  (declare (xargs :guard t))
-  (alists-compatible-on-keys (alist-keys a) a b))
+;; (defun alists-compatible (a b)
+;;   (declare (xargs :guard t))
+;;   (alists-compatible-on-keys (alist-keys a) a b))
+
+(local (in-theory (enable alists-compatible)))
 
 (defthm alists-compatible-refl
   (alists-compatible a a))
@@ -319,15 +295,15 @@
            :in-theory (enable alists-compatible-on-keys-alist-keys
                               alists-compatible-on-keys-sym))))
 
-(defthmd alists-compatible-hons-assoc-equal
-  (implies (and (alists-compatible a b)
-                (hons-assoc-equal x a)
-                (hons-assoc-equal x b))
-           (equal (cdr (hons-assoc-equal x a))
-                  (cdr (hons-assoc-equal x b))))
-  :hints (("goal" :in-theory
-           (enable alists-compatible-on-keys-hons-assoc-equal)
-           :do-not-induct t)))
+;; (defthmd alists-compatible-hons-assoc-equal
+;;   (implies (and (alists-compatible a b)
+;;                 (hons-assoc-equal x a)
+;;                 (hons-assoc-equal x b))
+;;            (equal (cdr (hons-assoc-equal x a))
+;;                   (cdr (hons-assoc-equal x b))))
+;;   :hints (("goal" :in-theory
+;;            (enable alists-compatible-on-keys-hons-assoc-equal)
+;;            :do-not-induct t)))
 
 
 (defthm alists-compatible-on-keys-nil

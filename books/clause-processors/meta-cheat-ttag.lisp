@@ -8,6 +8,12 @@
 
 ;; EXPERIMENTAL, LIKELY UNSOUND (though not intentionally).
 
+;; NOTE:  Yes, this IS UNSOUND -- for example, mfc- functions may force
+;; hypotheses, in which case we will suppose that they were satisfied, but they
+;; won't be actually relieved later as they should be.  Hopefully this can be
+;; corrected.
+
+
 ;; The "cheat" is that you're allowed to assume some extra things when proving
 ;; the correcthess theorem for a :meta rule.  (We intend to extend this to
 ;; clause-processors, but have not yet.)  For :meta,
@@ -242,8 +248,7 @@
 
 
 ;; Rewrite-related functions:
-;; Term-subst applies a sigma to a term.  We prove that term-subst of an empty
-;; sigma preserves the term.
+;; Term-subst applies a sigma to a term.
 
 (mutual-recursion
  (defun term-subst (x al)
