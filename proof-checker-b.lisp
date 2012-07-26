@@ -4423,29 +4423,16 @@
   "display the applicable ~il[linear] rules~/
   ~bv[]
   Example:
-  show-rewrites~/
+  show-linears~/
 
   General Form:
-  (show-rewrites &optional rule-id enabled-only-flg)
+  (show-linears &optional rule-id enabled-only-flg)
   ~ev[]
-  This command displays ~il[rewrite] rules whose left-hand side matches the
-  current subterm, and shows how that command can be applied.  For each rule
-  displayed, hypotheses are shown that would need to be proved after the rule
-  is applied.  Note that hypotheses are omitted from the display when the
-  system can trivially verify that they hold; to see all hypotheses for each
-  rule in a display that is independent of the arguments of the current
-  subterm, use the ~c[pl] or ~c[pr] command.
-
-  Here are details on the arguments and the output.  If ~c[rule-id] is supplied
-  and is a name (non-~c[nil] symbol) or a ~c[:]~ilc[rewrite] or
-  ~c[:]~ilc[definition] ~il[rune], then only the corresponding rewrite rule(s)
-  will be displayed, while if ~c[rule-id] is a positive integer ~c[n], then
-  only the ~c[n]th rule that would be in the list is displayed.  In each case,
-  the display will point out when a rule is currently disabled (in the
-  interactive environment), except that if ~c[enabled-only-flg] is supplied and
-  not ~c[nil], then disabled rules will not be displayed at all.  Finally,
-  among the free variables of any rule (~pl[free-variables]), those that would
-  remain free if the rule were applied will be displayed.  Also ~pl[rewrite]."
+  This command displays ~il[linear] rules with a trigger term that matches the
+  current subterm, and shows how they can be applied.  This command is
+  analogous to the ~c[show-rewrites] ~il[proof-checker] command; see its
+  ~il[documentation] for details.  Also ~pl[apply-linear] for how to apply
+  linear rules."
 
   (when-goals
    (let ((conc (conc t))
@@ -4979,15 +4966,24 @@
   subterm.  The new hypothesis will be created according to the information
   provided by the ~c[show-linears] (~c[sls]) command.
 
+  A short name for this command is ~c[al].
+
   We assume familiarity with the ~il[proof-checker]'s ~c[rewrite] (~c[r])
   command.  In brief, the ~c[apply-linear] command is an analogue of the
   ~c[rewrite] command, but for ~il[linear] rules in place of ~il[rewrite]
   rules.  There is a significant difference: for the ~c[apply-linear] command,
   instead of rewriting the current subterm as is done by the ~c[rewrite]
   command, the conclusion of the applicable linear rule, suitably instantiated,
-  is added as a new (and last) top-level hypothesis of the goal.  Below, we
-  refer freely to the ~il[documentation] for the proof-checker's ~c[rewrite]
-  command.
+  is added as a new (and last) top-level hypothesis of the goal.  There is
+  another significant difference: the automatic application of ~il[linear]
+  rules in the theorem prover is somewhat more complex than the automatic
+  application of ~il[rewrite] rules, so the ~c[apply-linear] command may
+  not correspond as closely to the prover's automatic use of a linear rule as
+  the ~c[rewrite] command corresponds to the prover's automatic use of a
+  rewrite rule.
+
+  Below, we refer freely to the ~il[documentation] for the proof-checker's
+  ~c[rewrite] command.
 
   The ~c[rule-id] is treated just as it is by the ~c[rewrite] command.  If
   ~c[rule-id] is a positive integer ~c[n], then the ~c[n]th rule as displayed
