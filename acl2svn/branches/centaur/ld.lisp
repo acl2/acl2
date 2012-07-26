@@ -18886,6 +18886,19 @@
   a new utility, ~ilc[wof] (an acronym for ``With Output File''), directs
   standard output and proofs output to a file; ~pl[wof].
 
+  The new macro ~ilc[defnd] defines a function with ~c[:]~ilc[guard] ~c[t] and
+  ~il[disable]s that function, in analogy to how ~ilc[defund] defines with
+  ~ilc[defun] and then ~il[disable]s.  Thanks to Shilpi Goel for requesting
+  this feature.
+
+  The ~c[:]~ilc[pl2] command now shows ~c[:]~ilc[linear] rules; and a new
+  ~il[proof-checker] command, ~c[show-linears] (equivalently, ~c[sls]), is an
+  analogue of the ~il[proof-checker] ~c[show-rewrites] (~c[sr]) command, but
+  for ~il[linear] rules.  Thanks to Shilpi Goel for requesting this new
+  proof-checker command.  Finally, a corresponding new proof-checker command,
+  ~c[apply-linear] (~c[al]), is an analogue of the ~il[proof-checker]
+  ~c[rewrite] (~c[r]) command, but for ~il[linear] rules.
+
   ~st[HEURISTIC IMPROVEMENTS]
 
   Reading of ACL2 ~ilc[arrays] (~pl[aref1], ~pl[aref2]) has been made more
@@ -19172,6 +19185,10 @@
      (declare (xargs :guard (if (integerp x) (f x) t)))
      x))
   ~ev[]
+
+  Fixed a bug in ~c[mfc-relieve-hyp] that we believe could prohibit its use on
+  the last hypothesis.  Thanks to Sol Swords for reporting this bug and
+  providing a fix.
 
   ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]
 
@@ -24830,10 +24847,12 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
                          'mfc-relieve-hyp rune target (ffn-symb target))
                      (throw-raw-ev-fncall ev-fncall-val))
                     ((not (and (posp bkptr)
-                               (< bkptr
-                                  (length (if linearp
-                                              (access linear-lemma lemma :hyps)
-                                            (access rewrite-rule lemma :hyps))))))
+                               (<= bkptr
+                                   (length (if linearp
+                                               (access linear-lemma lemma
+                                                       :hyps)
+                                             (access rewrite-rule lemma
+                                                     :hyps))))))
                      (cw *meta-level-function-problem-1e*
                          'mfc-relieve-hyp
                          bkptr
@@ -25434,7 +25453,7 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
                                   (stringp (cadr filename))))))
   `(cond #+acl2-par
          ((f-get-global 'waterfall-parallelism state)
-          (er hard 'psof
+          (er soft 'psof
               "The PSOF command is disabled with waterfall-parallelism ~
                enabled, because in that case most prover output is printed to ~
                *standard-co* (using wormholes), so cannot be redirected."))

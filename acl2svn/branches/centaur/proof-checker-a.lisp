@@ -422,6 +422,18 @@
            (cons ',raw-name args)
            ,(let-form-for-pc-state-vars (car (last body)))))))))
 
+(defun pc-command-table-guard (key val wrld)
+
+; We wrap the pc-command-table guard into this function so that we can redefine
+; it when modifying the ACL2 system.
+
+  (and (function-symbolp key wrld)
+       (or (eq val 'macro)
+           (eq val 'atomic-macro)
+           (eq val 'meta)
+           (and (eq val 'primitive)
+                (global-val 'boot-strap-flg wrld)))))
+
 (table pc-command-table nil nil
        :guard
 
@@ -441,12 +453,7 @@
 ;     :instructions (:foo)
 ;     :rule-classes nil)
 
-       (and (function-symbolp key world)
-            (or (eq val 'macro)
-                (eq val 'atomic-macro)
-                (eq val 'meta)
-                (and (eq val 'primitive)
-                     (global-val 'boot-strap-flg world)))))
+       (pc-command-table-guard key val world))
 
 (defmacro add-pc-command (name command-type)
   `(table pc-command-table ',name ,command-type))

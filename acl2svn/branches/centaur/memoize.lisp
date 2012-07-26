@@ -44,6 +44,15 @@
 
   `(defun ,f ,a (declare (xargs :guard t)) ,@r))
 
+(defmacro defnd (f a &rest r)
+
+  ":Doc-Section Events
+   ~il[disable]d definition with ~il[guard] ~c[t]~/
+
+   ~c[Defnd] is ~ilc[defund] with ~il[guard] ~c[t].~/~/"
+
+  `(defund ,f ,a (declare (xargs :guard t)) ,@r))
+
 (defdoc hons-and-memoization
   ":Doc-Section Hons-and-Memoization
 

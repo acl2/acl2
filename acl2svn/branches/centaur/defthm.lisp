@@ -4830,7 +4830,7 @@
   However, the former takes an argument, ~c[alist], that binds variables to
   terms, and returns the result of rewriting ~c[term] under that ~c[alist],
   where this rewriting is as described for ~c[mfc-rw] above.  The function
-  ~c[mfc-rw+] can be more efficient than ~c[mfc-rw|], because the terms in the
+  ~c[mfc-rw+] can be more efficient than ~c[mfc-rw], because the terms in the
   binding alist have generally already been rewritten, and it can be
   inefficient to rewrite them again.  For example, consider a rewrite rule of
   the following form.

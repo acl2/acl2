@@ -515,6 +515,7 @@ books/centaur:
 aig
 bitops
 centaur-logo.jpg
+defrstobj
 doc.acl2
 doc.lisp
 esim
@@ -588,10 +589,41 @@ equal-by-logbitp.lisp
 extra-defs.lisp
 ihs-extensions.lisp
 ihsext-basics.lisp
+install-bit.lisp
 integer-length.lisp
 part-select.lisp
+rotate.lisp
 sbitsets.lisp
 top.lisp
+
+books/centaur/defrstobj:
+README
+acl2-customization.lsp
+array-lemmas.lisp
+basic-tests.lisp
+cert.acl2
+def-typed-record.lisp
+defrstobj.lisp
+fancy-worseguy.lisp
+g-delete-keys.lisp
+groundwork
+package.lsp
+portcullis.acl2
+portcullis.lisp
+typed-record-tests.lisp
+typed-records.lisp
+
+books/centaur/defrstobj/groundwork:
+acl2-customization.lsp
+array-rec.lisp
+cert.acl2
+demo1.lisp
+demo2.lisp
+demo3.lisp
+demo4.lisp
+demo5.lisp
+local.lisp
+typed-array-rec.lsp
 
 books/centaur/esim:
 acl2-customization.lsp
@@ -735,6 +767,7 @@ ls.lisp
 make-list.lisp
 memory-mgmt-logic.lisp
 memory-mgmt-raw.lisp
+mfc-utils.lisp
 nat-list-duplicates.lisp
 numlist.lisp
 osets-witnessing.acl2
@@ -1059,6 +1092,7 @@ defs.lisp
 defwellformed.lisp
 echars.lisp
 esim-lemmas.lisp
+gc-raw.lsp
 gc.lisp
 intersectp-equal.lisp
 namedb.lisp
@@ -1095,6 +1129,10 @@ ev-theoremp.lisp
 generalize.acl2
 generalize.lisp
 join-thms.lisp
+meta-cheat-ttag.acl2
+meta-cheat-ttag.lisp
+meta-cheat-user.acl2
+meta-cheat-user.lisp
 multi-env-trick.lisp
 null-fail-hints.lisp
 nvalues-thms.lisp
@@ -1824,6 +1862,8 @@ portcullis.lisp
 top-opt.acl2
 top-opt.lisp
 top.lisp
+wizard.acl2
+wizard.lisp
 
 books/data-structures:
 Makefile
