@@ -28073,10 +28073,13 @@
           (cond (show-more
                  (pprogn
                   (cond (pl-p state)
-                        (t (fms0 "  -- IF REWRITE is called with a third ~
-                                  argument of t: --")))
+                        (t (fms0 "  -- IF ~#c~[REWRITE~/APPLY-LINEAR~]: is ~
+                                  called with a third argument of t: --"
+                                 (list (cons #\c (if (eq caller 'show-rewrites)
+                                                     0 1))))))
                   (fms fmt-string
-                       (list (cons #\3 (untrans0
+                       (list (cons #\c (if (eq caller 'show-rewrites) 0 1))
+                             (cons #\3 (untrans0
                                         (sublis-var unify-subst-2 rhs)
                                         term-id-iff abbreviations))
                              (cons #\s (if pl-p 1 0))
