@@ -80,6 +80,16 @@
   `(syntaxp (rewriting-positive-literal-fn ,term mfc state)))
 
 
+(defun rewriting-negative-literal-fn (term mfc state)
+  (declare (xargs :stobjs state))
+  (and (or (equal (mfc-current-literal mfc state)
+                  (cons t term)))
+       (or (null (mfc-ancestors mfc)))))
+
+(defmacro rewriting-negative-literal (term)
+  `(syntaxp (rewriting-negative-literal-fn ,term mfc state)))
+
+
 ;; Arrgh, I'm not really sure how to craft theorems with must-fail/etc that
 ;; will ensure this is working properly, in case ACL2's MFC representation
 ;; changes.
