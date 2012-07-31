@@ -594,6 +594,7 @@ integer-length.lisp
 part-select.lisp
 rotate.lisp
 sbitsets.lisp
+sign-extend.lisp
 top.lisp
 
 books/centaur/defrstobj:
@@ -737,6 +738,7 @@ symbolic-arithmetic.lisp
 books/centaur/misc:
 alist-defs.lisp
 alist-equiv.lisp
+alist-witness.lisp
 ap.lisp
 arith-equivs.lisp
 date.acl2
@@ -1629,6 +1631,7 @@ books/coi/super-ihs:
 Makefile
 arithmetic.lisp
 ash.lisp
+basic-definitions.lisp
 basics.lisp
 bit-functions.lisp
 bit-twiddling-logops.lisp
@@ -1641,6 +1644,7 @@ evenp.lisp
 fast.lisp
 from-rtl.lisp
 hacks.lisp
+ihs-doc-topic.lisp
 inductions.lisp
 iter-sqrt.lisp
 logapp.lisp
@@ -2476,6 +2480,7 @@ proofs
 spec-mv-let.lisp
 stress-tests.lisp
 syntax-tests.lisp
+without-waterfall-parallelism.lisp
 
 books/parallel/proofs:
 Makefile
@@ -4146,6 +4151,7 @@ books/tools:
 Makefile
 Readme.lsp
 bstar.lisp
+case-splitting-rules.lisp
 cws.lisp
 def-functional-instance.lisp
 defconsts.lisp
