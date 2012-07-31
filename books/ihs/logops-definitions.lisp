@@ -42,10 +42,12 @@
 ;;;    Modified for ACL2 Version_2.7 by:
 ;;;    Matt Kaufmann, kaufmann@cs.utexas.edu
 ;;;
+;;;    Modified July 2012 by Jared Davis <jared@centtech.com>
+;;;    Moved many definitions into new basic-definitions.lisp file.
+;;;
 ;;;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 (in-package "ACL2")
-
 ;;;  Global rules.
 
 (include-book "ihs-init")
@@ -53,8 +55,6 @@
 
 (local (include-book "math-lemmas"))
 (local (include-book "quotient-remainder-lemmas"))
-
-(local (in-theory nil))
 
 ; From ihs-theories
 (local (in-theory (enable basic-boot-strap)))
@@ -65,201 +65,96 @@
 ; From integer-quotient-lemmas
 (local (in-theory (enable quotient-remainder-rules)))
 
+(local (in-theory (disable floor mod)))
 
-(deflabel logops
-  :doc ":doc-section ihs
+(deflabel begin-logops-definitions)
 
-   Definitions and lemmas about logical operations on integers.~/~/
-
-   The books \"logops-definitions\" and \"logops-lemmas\" contain a theory of
-   the logical operations on numbers defined by CLTL (Section 12.7), and a
-   portable implementation of the CLTL byte manipulation functions (Section
-   12.8).  These books also extend the CLTL logical operations and byte
-   manipulation theory with a few new definitions, lemmas supporting
-   those definitions, and useful macros.
-
-   These books were developed as a basis for the formal specification and
-   verification of hardware, where integers are used to represent binary
-   signals and busses.  These books should be general enough, however, to be
-   used as a basis for reasoning about packed data structures, bit-encoded
-   sets, and other applications of logical operations on integers.~/")
-
-(deflabel logops-definitions
-  :doc ":doc-section logops
-  A book a definitions of logical operations on numbers.
-  ~/
-
-  This book, along with \"logops-lemmas\", includes a theory of the Common Lisp
-  logical operations on numbers, a portable implementation of the Common Lisp
-  byte operations, extensions to those theories, and some useful macros.
-  This book contains only definitions, lemmas necessary to admit those
-  definitions, and selected type lemmas.  By `type lemmas' we mean any lemmas
-  about the logical operations that we have found necessary to admit
-  functions that use these operations as GOLD.  We have separated these `type
-  lemmas' from the large body of other lemmas in \"logops-lemmas\" to allow a
-  user to use this book to define GOLD functions without having to also
-  include the extensive theory in \"logops-lemmas\".
-  ~/
-
-  The standard Common Lisp logical operations on numbers are defined on the
-  signed integers, and return signed integers as appropriate.  This allows a
-  high level, signed interpretation of hardware operations if that is
-  appropriate for the specification at hand.  We also provide unsigned
-  versions of several of the standard logical operations for use in
-  specifications where fixed-length unsigned integers are used to model
-  hardware registers and busses.  This view of hardware is used, for example,
-  in Yuan Yu's Nqthm specification of the Motorola MC68020.~/")
+(include-book "basic-definitions")
 
 
-
-
 ;;;****************************************************************************
 ;;;
 ;;;    Local Lemmas.
 ;;;
 ;;;****************************************************************************
 
+(local (defthm x*y->-1
+         (implies (and (force (real/rationalp x))
+                       (force (real/rationalp y))
+                       (or (and (> x 1) (>= y 1))
+                           (and (>= x 1) (> y 1))))
+                  (> (* x y) 1))
+         :rule-classes :linear
+         :hints (("Goal"
+                  :in-theory (enable x*y>1-positive)
+                  :cases ((equal y 1)
+                          (equal x 1))))))
 
-(local
- (defthm x*y->-1
-   (implies
-    (and (force (real/rationalp x))
-         (force (real/rationalp y))
-         (or (and (> x 1) (>= y 1))
-             (and (>= x 1) (> y 1))))
-    (> (* x y) 1))
-   :rule-classes :linear
-   :hints (("Goal" :in-theory (enable x*y>1-positive)
-	    :cases ((equal y 1)
-		    (equal x 1))))))
+(local (defthm x*y->=-1
+         (implies (and (force (real/rationalp x))
+                       (force (real/rationalp y))
+                       (>= x 1)
+                       (>= y 1))
+                  (>= (* x y) 1))
+         :rule-classes :linear
+         :hints (("Goal" :in-theory (disable <-*-left-cancel
+                                             commutativity-of-*)
+                  :use ((:instance <-*-left-cancel (z y) (x 1) (y x)))))))
 
-(local
- (defthm x*y->=-1
-   (implies (and (force (real/rationalp x))
-		 (force (real/rationalp y))
-		 (>= x 1)
-		 (>= y 1))
-	    (>= (* x y) 1))
-   :rule-classes :linear
-   :hints (("Goal" :in-theory (disable <-*-left-cancel)
-     :use ((:instance <-*-left-cancel (z y) (x 1) (y x)))))))
+(local (defthm x-<-y*z
+         (implies (and (force (real/rationalp x))
+                       (force (real/rationalp y))
+                       (force (real/rationalp z))
+                       (or (and (<= 0 y) (< x y) (<= 1 z))
+                           (and (< 0 y) (<= x y) (< 1 z))))
+                  (and (< x (* y z))
+                       (< x (* z y))))
+         :hints (("Goal" :in-theory (disable <-*-left-cancel <-y-*-y-x)
+                  :use ((:instance <-*-left-cancel (z y) (x 1) (y z)))))))
 
-(local
- (defthm x-<-y*z
-   (implies (and (force (real/rationalp x))
-		 (force (real/rationalp y))
-		 (force (real/rationalp z))
-		 (or (and (<= 0 y) (< x y) (<= 1 z))
-		     (and (< 0 y) (<= x y) (< 1 z))))
-	    (and (< x (* y z))
-		 (< x (* z y))))
-   :hints (("Goal" :in-theory (disable <-*-left-cancel <-y-*-y-x)
-	    :use ((:instance <-*-left-cancel (z y) (x 1) (y z)))))))
+(local (defthm x-<=-y*z
+         (implies (and (force (real/rationalp x))
+                       (force (real/rationalp y))
+                       (force (real/rationalp z))
+                       (<= x y)
+                       (<= 0 y)
+                       (<= 1 z))
+                  (and (<= x (* y z))
+                       (<= x (* z y))))
+         :hints (("Goal" :in-theory (disable <-*-left-cancel <-y-*-y-x)
+                  :use ((:instance <-*-left-cancel (z y) (x 1) (y z)))))))
 
-(local
- (defthm x-<=-y*z
-   (implies (and (force (real/rationalp x))
-		 (force (real/rationalp y))
-		 (force (real/rationalp z))
-		 (<= x y)
-		 (<= 0 y)
-		 (<= 1 z))
-	    (and (<= x (* y z))
-		 (<= x (* z y))))
-   :hints (("Goal" :in-theory (disable <-*-left-cancel <-y-*-y-x)
-	    :use ((:instance <-*-left-cancel (z y) (x 1) (y z)))))))
+;; [Jared]: I eliminated the type-prescription rules saying logand, logandc1,
+;; and logandc2 produce integers, since ACL2 now automatically knows this.
 
-
-;;;****************************************************************************
-;;;
-;;;    Basic type lemmas for built-ins:
-;;;
-;;;  LOGAND i j
-;;;  LOGANDC1 i j
-;;;  LOGANDC2 i j
-;;;
-;;;  Note that these functions are all DISABLED at this point
-;;;
-;;;****************************************************************************
+;; [Jared]: I moved definitions like bitp, bfix, etc., into
+;; basic-definitions.lisp.
 
-(deflabel begin-logops-definitions)
-
-;;;  The system can't guess that LOGAND is always an integer, and thus
-;;;  LOGANDC1 and LOGANDC2 don't have good type precriptions either.
-
-(defthm logand-type
-  (integerp (logand i j))
-  :rule-classes :type-prescription
-  :hints
-  (("Goal"
-    :in-theory (enable logand)))
-  :doc ":doc-section logops
-  Type-Prescription: (INTEGERP (LOGAND I J)).
+(defthm bitp-forward
+  (implies (bitp i)
+           (and (integerp i)
+                (>= i 0)
+                (< i 2)))
+  :rule-classes :forward-chaining
+  :doc ":doc-section bitp
+  Forward: (BITP i) implies i is an integer and 0 <= i < 2.
   ~/~/~/")
 
-(defthm logandc1-type
-  (integerp (logandc1 i j))
-  :rule-classes :type-prescription
-  :hints
-  (("Goal"
-    :in-theory (enable logandc1)))
-  :doc ":doc-section logops
-  Type-Prescription: (INTEGERP (LOGANDC1 I J)).
-  ~/~/~/")
+(defthm bitp-mod-2
+  (implies (integerp i)
+           (bitp (mod i 2)))
+  :rule-classes ((:rewrite)
+                 (:generalize :corollary
+                              (implies (integerp i)
+                                       (or (equal (mod i 2) 0)
+                                           (equal (mod i 2) 1)))))
+  :hints (("Goal" :in-theory (enable linearize-mod)))
+  :doc ":doc-section bitp
+  Rewrite: (BITP (MOD i 2)).
+  ~/
+  This rule is also stored as a :GENERALIZE rule for MOD.~/~/")
 
-(defthm logandc2-type
-  (integerp (logandc2 i j))
-  :rule-classes :type-prescription
-  :hints
-  (("Goal"
-    :in-theory (enable logandc2)))
-  :doc ":doc-section logops
-  Type-Prescription: (INTEGERP (LOGANDC2 I J)).
-  ~/~/~/")
 
-
-;;;****************************************************************************
-;;;
-;;;    Definitions -- Round 1.
-;;;
-;;;  Type predicates and functions.
-;;;
-;;;  BITP b
-;;;  BFIX b
-;;;  ZBP x
-;;;  UNSIGNED-BYTE-P bits i
-;;;  SIGNED-BYTE-P bits i
-;;;
-;;;****************************************************************************
-
-(defun bitp (b)
-  ":doc-section logops-definitions
-  A predicate form of the type declaration (TYPE BIT b).
-  ~/~/~/"
-  (declare (xargs :guard t))
-  (or (equal b 0) (equal b 1)))
-
-(defun bfix (b)
-  ":doc-section logops-definitions
-  (BFIX b) coerces any object to a bit (0 or 1) by coercing non-1 objects to 0.
-  ~/~/~/"
-  (declare (xargs :guard t))
-  (if (equal b 1) 1 0))
-
-(defmacro lbfix (x)
-  ":doc-section logops-definitions
-   (LBFIX b) is logically (BFIX b), but requires (BITP b) as a guard and expands
-   to just b.
-   ~/~/~/"
-  `(mbe :logic (bfix ,x) :exec ,x))
-
-(defun zbp (x)
-  ":doc-section logops-definitions
-  (ZBP x) tests for `zero bits'.  Any object other than 1 is considered a
-  zero bit.
-  ~/~/~/"
-  (declare (xargs :guard (bitp x)))
-  (equal (bfix x) 0))
 
 #| Deleted by Matt K. for v2-7 as unsigned-byte-p becomes built-in in ACL2.
    Note that the documentation for unsigned-byte-p will be missing in
@@ -307,58 +202,7 @@
 
 (local (in-theory (enable unsigned-byte-p signed-byte-p integer-range-p)))
 
-;;;  Type rules for BITP.
-
-(defthm bitp-forward
-  (implies
-   (bitp i)
-   (and (integerp i)
-        (>= i 0)
-        (< i 2)))
-  :rule-classes :forward-chaining
-  :doc ":doc-section bitp
-  Forward: (BITP i) implies i is an integer and 0 <= i < 2.
-  ~/~/~/")
-
-(defthm bitp-bfix
-  (bitp (bfix b))
-  :doc ":doc-section bitp
-  Rewrite: (BITP (BFIX b)).
-  ~/~/~/")
-
-(defthm bitp-mod-2
-  (implies
-   (integerp i)
-   (bitp (mod i 2)))
-  :rule-classes
-  ((:rewrite)
-   (:generalize
-    :corollary
-    (implies
-     (integerp i)
-     (or (equal (mod i 2) 0)
-	 (equal (mod i 2) 1)))))
-  :hints
-  (("Goal" :in-theory (enable linearize-mod)))
-  :doc ":doc-section bitp
-  Rewrite: (BITP (MOD i 2)).
-  ~/
-  This rule is also stored as a :GENERALIZE rule for MOD.~/~/")
-
 (local (in-theory (disable bitp)))
-
-;;;  Type rules for BFIX
-
-(defthm bfix-bitp
-  (implies
-   (bitp b)
-   (equal (bfix b) b))
-  :hints
-  (("Goal"
-    :in-theory (enable bitp)))
-  :doc ":doc-section bfix
-  Rewrite: (BFIX b) = b, when b is a bit.
-  ~/~/~/")
 
 (local (in-theory (disable bfix)))
 
@@ -408,304 +252,15 @@
 
 (local (in-theory (disable signed-byte-p)))
 
-;;;****************************************************************************
-;;;
-;;;  Definition -- Round 2.
-;;;
-;;;  Extensions to the CLTL logical operations and byte functions.
-;;;
-;;;  IFLOOR i j
-;;;  IMOD i j
-;;;  EXPT2 n
-;;;
-;;;  LOGCAR i
-;;;  LOGCDR i
-;;;  LOGCONS b i
-;;;  LOGBIT pos i
-;;;  LOGMASK size
-;;;  LOGMASKP i
-;;;  LOGHEAD size i
-;;;  LOGTAIL pos i
-;;;  LOGAPP size i j
-;;;  LOGRPL size i j
-;;;  LOGEXT size i
-;;;  LOGREV size i
-;;;  LOGSAT size i
-;;;
-;;;  LOGEXTU final-size ext-size i
-;;;  LOGNOTU size i
-;;;  ASHU size i cnt
-;;;  LSHU size i cnt
-;;;
-;;;  After the definitions, we define a guard macro for each that has a
-;;;  non-trivial guard, and then define :TYPE-PRESCRIPTIONS for them.  We
-;;;  always define our own :TYPE-PRESCRIPTIONS in insure that we always have
-;;;  the strongest ones possible when this book is loaded.  Note that we
-;;;  consider IFLOOR, IMOD, and EXPT2 to be abbreviations.
-;;;
-;;;****************************************************************************
 
-(defun ifloor (i j)
-  ":doc-section logops-definitions
-  (IFLOOR i j) is the same as floor, except that it coerces its
-  arguments to integers.
-  ~/~/~/"
-  (declare (xargs :guard (and (integerp i)
-                              (integerp j)
-                              (not (= 0 j)))))
-  (floor (ifix i) (ifix j)))
+;; [Jared]: I moved definitions like ifloor, expt, logcar, logbit, etc., into
+;; basic-definitions.lisp.  I also moved the most basic type theorems.  But I
+;; didn't move various theorems about these functions, e.g., bounds theorems,
+;; and I didn't move the guard macros.
 
-(defun imod (i j)
-  ":doc-section logops-definitions
-  (IMOD i j) is the same as mod, except that it coerces its
-  arguments to integers.
-  ~/~/~/"
-  (declare (xargs :guard (and (integerp i)
-                              (integerp j)
-                              (not (= 0 j)))))
-  (mod (ifix i) (ifix j)))
-
-(defun expt2 (n)
-  ":doc-section logops-definitions
-  (EXPT2 n) is the same as 2^n, except that it coerces its
-  argument to a natural.
-  ~/~/~/"
-  (declare (xargs :guard (and (integerp n)
-                              (<= 0 n))))
-  (expt 2 (nfix n)))
-
-(defun logcar (i)
-  ":doc-section logops-definitions
-  (LOGCAR i) is the CAR of an integer conceptualized as a bit-vector.
-  ~/~/~/"
-  (declare (xargs :guard (integerp i)))
-  (imod i 2))
-
-(defun logcdr (i)
-  ":doc-section logops-definitions
-  (LOGCDR i) is the CDR of an integer conceptualized as a bit-vector.
-  ~/~/~/"
-  (declare (xargs :guard (integerp i)))
-  (ifloor i 2))
-
-(defun logcons (b i)
-  ":doc-section logops-definitions
-  (LOGCONS b i) is the CONS operation for integers conceptualized as
-  bit-vectors.
-  ~/
-  For clarity and efficiency, b is required to be BITP.~/~/"
-  (declare (xargs :guard (and (bitp b)
-                              (integerp i))))
-  (let ((b (bfix b))
-	(i (ifix i)))
-    (+ b (* 2 i))))
-
-(defun logbit (pos i)
-  ":doc-section logops-definitions
-  (LOGBIT pos i) returns the bit of i at bit-position pos.
-  ~/
-  This is a binary equivalent to the Common Lisp function (LOGBITP pos i).~/~/"
-  (declare (xargs :guard (and (integerp pos)
-                              (>= pos 0)
-                              (integerp i))))
-  (if (logbitp pos i) 1 0))
-
-(defun logmask (size)
-  ":doc-section logops-definitions
-  (LOGMASK size) creates a low-order, size-bit mask.
-  ~/~/~/"
-  (declare (xargs :guard (and (integerp size)
-                              (>= size 0))))
-  (- (expt2 size) 1))
-
-(defun logmaskp (i)
-  ":doc-section logops-definitions
-  (LOGMASKP i) recognizes positive masks.
-  ~/~/~/"
-  (declare (xargs :guard t))
-  (and (integerp i)
-       (>= i 0)
-       (equal i (- (expt2 (integer-length i)) 1))))
-
-(defun loghead (size i)
-  ":doc-section logops-definitions
-  (LOGHEAD size i) returns the size low-order bits of i.
-  ~/~/
-  By convention we define (LOGHEAD 0 i) as 0, but this definition is a bit
-  arbitrary.~/"
-  (declare (xargs :guard (and (integerp size)
-                              (>= size 0)
-                              (integerp i))))
-  (imod i (expt2 size)))
-
-(defun logtail (pos i)
-  ":doc-section logops-definitions
-  (LOGTAIL pos i) returns the high-order part of i starting at bit position
-  pos.
-  ~/~/~/"
-  (declare (xargs :guard (and (integerp pos)
-                              (>= pos 0)
-                              (integerp i))))
-  (ifloor i (expt2 pos)))
-
-(defun logapp (size i j)
-  ":doc-section logops-definitions
-  (LOGAPP size i j) is a binary append of i to j.
-  ~/~/
-  LOGAPP is a specification for merging integers.  Note that i is truncated
-  to size bits before merging with j.~/"
-  (declare (xargs :guard (and (integerp size)
-                              (>= size 0)
-                              (integerp i)
-                              (integerp j))))
-  (let ((j (ifix j)))
-    (+ (loghead size i) (* j (expt2 size)))))
-
-(defun logrpl (size i j)
-  ":doc-section logops-definitions
-  (LOGRPL size i j) replaces the size low-order bits of j with the size
-  low-order bits of i.
-  ~/
-  LOGRPL is a common specification for the result of storing short values into
-  long words, i.e., the short value simply replaces the head of the long
-  word.  This function is equivalent to (WRB i (BSP size 0) j).~/~/"
-  (declare (xargs :guard (and (integerp size)
-                              (>= size 0)
-                              (integerp i)
-                              (integerp j))))
-  (logapp size i (logtail size j)))
-
-(defun logext (size i)
-  ":doc-section logops-definitions
-  (LOGEXT size i) \"sign-extends\" i to an integer with size - 1 significant
-  bits.
-  ~/
-  LOGEXT coerces any integer i into a signed integer by `sign extending'
-  the bit at size - 1 to infinity.  We specify LOGEXT in terms of the `size'
-  of the result instead of as a bit position because we normally specify
-  integer subranges by the number of significant (including sign) bits.
-
-  Note that for consistency with SIGNED-BYTE-P, size must be strictly greater
-  than 0.~/~/"
-  (declare (xargs :guard (and (integerp size)
-                              (> size 0)
-                              (integerp i))))
-  (logapp (1- size) i (if (logbitp (1- size) i) -1 0)))
-
-(defun logrev1 (size i j)
-  ":doc-section logops-definitions
-  Helper function for LOGREV.
-  ~/~/~/"
-  (declare (xargs :guard (and (integerp size)
-                              (>= size 0)
-                              (integerp i)
-                              (integerp j))))
-  (if (zp size)
-      (ifix j)
-      (logrev1 (- size 1) (logcdr i) (logcons (logcar i) j))))
-
-(defun logrev (size i)
-  ":doc-section logops-definitions
-  (LOGREV size i) bit-reverses the size low-order bits of i, discarding the
-  high-order bits.
-  ~/~/
-  Normally we don't think of bit-reversing as a logical operation,
-  even though its hardware implementation is trivial: simply reverse the
-  wires leading from the source to the destination.  LOGREV is included as a
-  logical operation to support the specification of DSPs, which may
-  provide bit-reversing in their address generators to improve the
-  performance of the FFT.
-
-  LOGREV entails a recursive definition of bit-reversing via the helper
-  function LOGREV1.~/"
-  (declare (xargs :guard (and (integerp size)
-                              (>= size 0)
-                              (integerp i))))
-  (logrev1 size i 0))
-
-(defun logsat (size i)
-  ":doc-section logops-definitions
-  (LOGSAT size i) coerces i to a size-bit signed integer by saturation.
-  ~/~/
-  If i can be represented as a size-bit signed integer, then i is returned.
-  Otherwise, (LOGSAT size i) returns the size-bit signed integer closest to
-  i. For positive i, this will be 2^(size-1) - 1.  For negative i, this will
-  be -(2^(size - 1)).
-
-  Note that for consistency with SIGNED-BYTE-P, size must be strictly
-  greater than 0.~/"
-
-  (declare (xargs :guard (and (integerp size)
-			      (< 0 size)
-			      (integerp i))))
-
-  (let* ((i (ifix i))			;?
-	 (val (expt2 (1- size)))
-	 (maxval (1- val))
-	 (minval (- val)))
-
-    (if (>= i maxval)
-	maxval
-      (if (<= i minval)
-	  minval
-	i))))
-
-(defun logextu (final-size ext-size i)
-  ":doc-section logops-definitions
-  (LOGEXTU final-size ext-size i) \"sign-extends\" i with (LOGEXT ext-size i),
-  then truncates the result to final-size bits, creating an unsigned integer.
-  ~/~/~/"
-  (declare (xargs :guard (and (integerp final-size)
-                              (>= final-size 0)
-                              (integerp ext-size)
-                              (> ext-size 0)
-                              (integerp i))
-		  :guard-hints (("Goal" :in-theory (disable exponents-add)))))
-  (loghead final-size (logext ext-size i)))
-
-(defun lognotu (size i)
-  ":doc-section logops-definitions
-  (LOGNOTU size i) is an unsigned logical NOT, truncating (LOGNOT i) to size
-  bits.
-  ~/~/~/"
-  (declare (xargs :guard (and (integerp size)
-                              (>= size 0)
-                              (integerp i))))
-  (loghead size (lognot i)))
-
-(defun ashu (size i cnt)
-  ":doc-section logops-definitions
-  (ASHU size i cnt) is an unsigned version of ASH.
-  ~/
-  ASHU is a fixed-width version of ASH. The integer i is first coerced to a
-  signed integer by sign-extension, then shifted with ASH, and finally
-  truncated back to a size-bit unsigned integer.~/~/"
-  (declare (xargs :guard (and (integerp size)
-                              (> size 0)
-                              (integerp i)
-                              (integerp cnt))
-		  :guard-hints (("Goal" :in-theory (disable exponents-add)))))
-  (loghead size (ash (logext size i) cnt)))
-
-(defun lshu (size i cnt)
-  ":doc-section logops-definitions
-  (LSHU size i cnt) is an unsigned logical shift.
-  ~/
-  LSHU shifts i by cnt bits by first coercing i to an unsigned integer,
-  performing the shift, and coercing the result to an unsigned integer.
-  For cnt >= 0, (LSHU size i cnt) = (ASHU size i cnt).  This is a model
-  of a size-bit logical shift register.~/~/"
-  (declare (xargs :guard (and (integerp size)
-                              (>= size 0)
-                              (integerp i)
-                              (integerp cnt))))
-  (loghead size (ash (loghead size i) cnt)))
 
 ;;;Matt: You will find instances of these throughout "logops-lemmas". These
 ;;;should all be redundant now, but in case they aren't I'll leave them in.
-
-
-;;;  Guard macros
 
 (defmacro logbit-guard (pos i)
   ":doc-section logops-definitions
@@ -808,7 +363,6 @@
         (FORCE (INTEGERP ,i))
         (FORCE (INTEGERP ,cnt))))
 
-
 ;;;++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 ;;;
 ;;;    Type Lemmas for the new LOGOPS.  Each function is DISABLEd after we
@@ -820,63 +374,7 @@
 ;;;
 ;;;++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-;;; IFLOOR
-
-(defthm ifloor-type
-  (integerp (ifloor i j))
-  :rule-classes :type-prescription
-  :doc ":doc-section ifloor
-  Type-prescription: (INTEGERP (IFLOOR I J)).
-  ~/~/~/")
-
-;;; IMOD
-
-(defthm imod-type
-  (integerp (imod i j))
-  :rule-classes :type-prescription
-  :doc ":doc-section imod
-  Type-prescription: (INTEGERP (IMOD I J)).
-  ~/~/~/")
-
-;;; EXPT2
-
-(defthm expt2-type
-  (and (integerp (expt2 n))
-       (< 0 (expt2 n)))
-  :rule-classes :type-prescription
-  :doc ":doc-section expt2
-  Type-prescription: (AND (INTEGERP (EXPT2 N)) (< 0 (EXPT2 N))).
-  ~/~/~/")
-
-;;; LOGCAR
-
-(defthm logcar-type
-  (bitp (logcar i))
-  :rule-classes
-  ((:rewrite)
-   (:type-prescription
-    :corollary
-    (and (integerp (logcar i))
-	 (<= 0 (logcar i))))
-   (:generalize
-    :corollary
-    (or (equal (logcar i) 0) (equal (logcar i) 1))))
-  :doc ":doc-section logcar
-  Rewrite: (BITP (LOGCAR i)).
-  ~/
-  This rule is also stored as appropriate :TYPE-PRESCRIPTION and
-  :GENERALIZE rules.~/~/")
-
 (local (in-theory (disable logcar)))
-
-;;;  LOGCDR
-
-(defthm logcdr-type
-  (integerp (logcdr i))
-  :rule-classes :type-prescription
-  :doc ":doc-section logcdr
-  Type-Prescription: (INTEGERP (LOGCDR I)).
-  ~/~/~/")
 
 (defthm logcdr-<-0
   (equal (< (logcdr i) 0)
@@ -900,14 +398,6 @@
 
 (local (in-theory (disable logcdr)))
 
-;;;  LOGCONS
-
-(defthm logcons-type
-  (integerp (logcons b i))
-  :rule-classes :type-prescription
-  :doc ":doc-section logcons
-  Type-prescription: (INTEGERP (LOGCONS b i)).
-  ~/~/~/")
 
 (defthm logcons-<-0
   (equal (< (logcons b i) 0)
@@ -919,51 +409,10 @@
 
 (local (in-theory (disable logcons)))
 
-;;;  LOGBIT
 
-(defthm logbit-type
-  (bitp (logbit pos i))
-  :rule-classes
-  ((:rewrite)
-   (:type-prescription
-    :corollary
-    (and (integerp (logbit pos i))
-	 (>= (logbit pos i) 0))))
-  :doc ":doc-section logbit
-  Rewrite: (BITP (LOGBIT pos i)).
-  ~/
-  This rule is also stored as an appropriate :TYPE-PRESCRIPTION.~/~/")
-
-(local (in-theory (disable logbit)))
-
-;;;  LOGMASK
-
-(defthm logmask-type
-  (and (integerp (logmask i))
-       (>= (logmask i) 0))
-  :rule-classes :type-prescription
-  :doc ":doc-section logmask
-  Type-Prescription: (LOGMASK i) >= 0.
-  ~/~/~/")
-
-(local (in-theory (disable logmask)))
-
-;;;  LOGMASKP
-
-(local (in-theory (disable logmaskp)))          ;An obvious predicate.
+(local (in-theory (disable logmaskp)))
 
 ;;;  LOGHEAD
-
-(defthm loghead-type
-  (and (integerp (loghead size i))
-       (>= (loghead size i) 0))
-  :rule-classes :type-prescription
-  :hints
-  (("Goal"
-    :in-theory (enable imod)))
-  :doc ":doc-section loghead
-  Type-prescription: (LOGHEAD size i) >= 0.
-  ~/~/~/")
 
 (defthm unsigned-byte-p-loghead
   (implies
@@ -974,7 +423,8 @@
    (unsigned-byte-p size1 (loghead size i)))
   :hints
   (("Goal"
-    :in-theory (e/d (unsigned-byte-p) (expt-is-weakly-increasing-for-base>1))
+    :in-theory (e/d (unsigned-byte-p)
+                    (expt-is-weakly-increasing-for-base>1))
     :use ((:instance expt-is-weakly-increasing-for-base>1
 		     (r 2) (i size) (j size1)))))
   :doc ":doc-section loghead
@@ -990,25 +440,7 @@
 
 (local (in-theory (disable loghead)))
 
-;;;  LOGTAIL
-
-(defthm logtail-type
-  (integerp (logtail pos i))
-  :rule-classes :type-prescription
-  :doc ":doc-section logcons
-  Type-prescription: (INTEGERP (LOGTAIL POS I)).
-  ~/~/~/")
-
 (local (in-theory (disable logtail)))
-
-;;;  LOGAPP
-
-(defthm logapp-type
-  (integerp (logapp size i j))
-  :rule-classes :type-prescription
-  :doc ":doc-section logcons
-  Type-prescription: (INTEGERP (LOGAPP SIZE I J)).
-  ~/~/~/")
 
 (defthm logapp-<-0
   (implies
@@ -1027,25 +459,9 @@
 
 (local (in-theory (disable logapp)))
 
-;;;  LOGRPL
-
-(defthm logrpl-type
-  (integerp (logrpl size i j))
-  :rule-classes :type-prescription
-  :doc ":doc-section logcons
-  Type-prescription: (INTEGERP (LOGRPL SIZE I J)).
-  ~/~/~/")
 
 (local (in-theory (disable logrpl)))
 
-;;;  LOGEXT
-
-(defthm logext-type
-  (integerp (logext size i))
-  :rule-classes :type-prescription
-  :doc ":doc-section logext
-  Type-Prescription: (INTEGERP (LOGEXT size i)).
-  ~/~/~/")
 
 ;;;4 Misplaced Lemmas
 (defthm expt-with-violated-guards
@@ -1072,20 +488,15 @@
   (equal (* 0 x) 0))
 
 (defthm this-needs-to-be-added-to-quotient-remainder-lemmas
-  (implies
-   (zerop y)
-   (equal (mod x y)
-	  (fix x)))
-  :hints
-  (("Goal"
-    :in-theory (enable mod))))
+  (implies (zerop y)
+           (equal (mod x y)
+                  (fix x)))
+  :hints (("Goal" :in-theory (enable mod))))
 
 (defthm logext-bounds
-  (implies
-   (< 0 size)
-   (and
-    (>= (logext size i) (- (expt 2 size)))
-    (< (logext size i) (expt 2 size))))
+  (implies (< 0 size)
+           (and (>= (logext size i) (- (expt 2 size)))
+                (< (logext size i) (expt 2 size))))
   :rule-classes
   ((:linear :trigger-terms ((logext size i)))
    (:rewrite))
@@ -1118,27 +529,6 @@
   ~/~/~/")
 
 (local (in-theory (disable logext)))
-
-;;;  LOGREV
-
-(local
- (defthm logrev1-type
-  (implies
-   (>= j 0)
-   (and (integerp (logrev1 size i j))
-	(>= (logrev1 size i j) 0)))
-  :rule-classes :type-prescription
-  :hints
-  (("Goal"
-    :in-theory (enable logcons)))))
-
-(defthm logrev-type
-  (and (integerp (logrev size i))
-       (>= (logrev size i) 0))
-  :rule-classes :type-prescription
-  :doc ":doc-section logrev
-  Type-prescription: (LOGREV size i) >= 0.
-  ~/~/~/")
 
 (encapsulate ()
 
@@ -1186,13 +576,6 @@
 
 ;;;  LOGSAT
 
-(defthm logsat-type
-  (integerp (logsat size i))
-  :rule-classes :type-prescription
-  :doc ":doc-section logsat
-  Type-Prescription: (INTEGERP (LOGSAT size i)).
-  ~/~/~/")
-
 ; Added for Version_2.6.  Without it the following defthm appears to loop,
 ; though not within a single goal -- rather, by creating subgoal after subgoal
 ; after ....
@@ -1236,14 +619,6 @@
 
 ;;;  LOGEXTU
 
-(defthm logextu-type
-  (and (integerp (logextu final-size ext-size i))
-       (>= (logextu final-size ext-size i) 0))
-  :rule-classes :type-prescription
-  :doc ":doc-section logextu
-  Type-prescription: (LOGEXTU final-size ext-size i) >= 0.
-  ~/~/~/")
-
 (defthm unsigned-byte-p-logextu
   (implies
    (and (>= size1 final-size)
@@ -1260,14 +635,6 @@
 
 ;;;  LOGNOTU
 
-(defthm lognotu-type
-  (and (integerp (lognotu size i))
-       (>= (lognotu size i) 0))
-  :rule-classes :type-prescription
-  :doc ":doc-section lognotu
-  Type-prescription: (LOGNOTU size i) >= 0.
-  ~/~/~/")
-
 (defthm unsigned-byte-p-lognotu
   (implies
    (and (>= size1 size)
@@ -1282,14 +649,6 @@
 (local (in-theory (disable lognotu)))
 
 ;;;  ASHU
-
-(defthm ashu-type
-  (and (integerp (ashu size i cnt))
-       (>= (ashu size i cnt) 0))
-  :rule-classes :type-prescription
-  :doc ":doc-section ashu
-  Type-prescription: (ASHU size i cnt) >= 0.
-  ~/~/~/")
 
 (defthm unsigned-byte-p-ashu
   (implies
@@ -1306,14 +665,6 @@
 
 ;;;  LSHU
 
-(defthm lshu-type
-  (and (integerp (lshu size i cnt))
-       (>= (lshu size i cnt) 0))
-  :rule-classes :type-prescription
-  :doc ":doc-section lshu
-  Type-prescription: (LSHU size i cnt) >= 0.
-  ~/~/~/")
-
 (defthm unsigned-byte-p-lshu
   (implies
    (and (>= size1 size)
@@ -1327,7 +678,7 @@
 
 (local (in-theory (disable lshu)))
 
-
+
 ;;;****************************************************************************
 ;;;
 ;;;    DEFINITIONS -- Round 3.
@@ -1541,14 +892,11 @@
 ;;;  BSP-SIZE
 
 (defthm bsp-size-type
-  (implies
-   (bspp bsp)
-   (and (integerp (bsp-size bsp))
-        (>= (bsp-size bsp) 0)))
+  (implies (bspp bsp)
+           (and (integerp (bsp-size bsp))
+                (>= (bsp-size bsp) 0)))
   :rule-classes :type-prescription
-  :hints
-  (("Goal"
-    :in-theory (enable bspp)))
+  :hints (("Goal" :in-theory (enable bspp)))
   :doc ":doc-section bsp-size
   Type-prescription: (BSP-SIZE bsp) > 0.
   ~/~/~/")
@@ -1558,14 +906,11 @@
 ;;;  BSP-POSITION
 
 (defthm bsp-position-type
-  (implies
-   (bspp bsp)
-   (and (integerp (bsp-position bsp))
-        (>= (bsp-position bsp) 0)))
+  (implies (bspp bsp)
+           (and (integerp (bsp-position bsp))
+                (>= (bsp-position bsp) 0)))
   :rule-classes :type-prescription
-  :hints
-  (("Goal"
-    :in-theory (enable bspp)))
+  :hints (("Goal" :in-theory (enable bspp)))
   :doc ":doc-section bsp-position
   Type-prescription: (BSP-POSITION bsp) >= 0.
   ~/~/~/")
@@ -1583,32 +928,27 @@
   ~/~/~/")
 
 (defthm unsigned-byte-p-rdb
-  (implies
-   (and (>= size (bsp-size bsp))
-        (force (>= size 0))
-        (force (integerp size))
-	(force (bspp bsp)))
-   (unsigned-byte-p size (rdb bsp i)))
+  (implies (and (>= size (bsp-size bsp))
+                (force (>= size 0))
+                (force (integerp size))
+                (force (bspp bsp)))
+           (unsigned-byte-p size (rdb bsp i)))
   :doc ":doc-section rdb
   Rewrite: (UNSIGNED-BYTE-P size (RDB bsp i)), when size >= (BSP-SIZE bsp).
   ~/~/~/")
 
 (defthm rdb-upper-bound
-  (implies
-   (force (bspp bsp))
-   (< (rdb bsp i) (expt 2 (bsp-size bsp))))
+  (implies (force (bspp bsp))
+           (< (rdb bsp i) (expt 2 (bsp-size bsp))))
   :rule-classes (:linear :rewrite)
   :doc ":doc-section rdb
   Linear: (RDB bsp i) < 2**(bsp-size bsp).
   ~/~/~/")
 
 (defthm bitp-rdb-bsp-1
-  (implies
-   (equal (bsp-size bsp) 1)
-   (bitp (rdb bsp i)))
-  :hints
-  (("Goal"
-    :in-theory (enable bitp loghead)))
+  (implies (equal (bsp-size bsp) 1)
+           (bitp (rdb bsp i)))
+  :hints (("Goal" :in-theory (enable bitp loghead)))
   :doc ":doc-section rdb
   Rewrite: (BITP (RDB bsp i)), when (BSP-SIZE bsp) = 1.
   ~/~/~/")
@@ -1660,148 +1000,10 @@ function.
 
 (local (in-theory (disable wrb-field)))
 
-
-;;;****************************************************************************
-;;;
-;;;   Definitions -- Round 4.
-;;;
-;;;  Logical operations on single bits.
-;;;
-;;;  B-NOT i
-;;;  B-AND i j
-;;;  B-IOR i j
-;;;  B-XOR i j
-;;;  B-EQV i j
-;;;  B-NAND i j
-;;;  B-NOR i j
-;;;  B-ANDC1 i j
-;;;  B-ANDC2 i j
-;;;  B-ORC1 i j
-;;;  B-ORC2 i j
-;;;
-;;;****************************************************************************
 
-(deflabel logops-bit-functions
- :doc ":doc-section logops-definitions
- Versions of the standard logical operations that operate on single bits.
- ~/~/
+;; [Jared]: I moved the bit functions like B-NOT into basic-definitions.lisp.
 
- We provide versions of the non-trivial standard logical operations that
- operate on single bits.  The reason that it is necessary to introduce these
- operations separate from the standard operations is the fact that LOGNOT
- applied to a BITP object never returns a BITP.  All arguments to these
- functions must be BITP, and we prove that each returns a BITP integer.  We
- define each function explicitly in terms of 0 and 1 to simplify
- reasoning.~/")
 
-(defun b-not (i)
-  ":doc-section logops-bit-functions
-  B-NOT ~/~/~/"
-  (declare (xargs :guard (bitp i)))
-  (if (zbp i) 1 0))
-
-(defun b-and (i j)
-  ":doc-section logops-bit-functions
-  B-AND ~/~/~/"
-  (declare (xargs :guard (and (bitp i) (bitp j))))
-  (if (zbp i) 0 (if (zbp j) 0 1)))
-
-(defun b-ior (i j)
-  ":doc-section logops-bit-functions
-  B-IOR ~/~/~/"
-  (declare (xargs :guard (and (bitp i) (bitp j))))
-  (if (zbp i) (if (zbp j) 0 1) 1))
-
-(defun b-xor (i j)
-  ":doc-section logops-bit-functions
-  B-XOR ~/~/~/"
-  (declare (xargs :guard (and (bitp i) (bitp j))))
-  (if (zbp i) (if (zbp j) 0 1) (if (zbp j) 1 0)))
-
-(defun b-eqv (i j)
-  ":doc-section logops-bit-functions
-  B-EQV ~/~/~/"
-  (declare (xargs :guard (and (bitp i) (bitp j))))
-  (if (zbp i) (if (zbp j) 1 0) (if (zbp j) 0 1)))
-
-(defun b-nand (i j)
-  ":doc-section logops-bit-functions
-  B-NAND ~/~/~/"
-  (declare (xargs :guard (and (bitp i) (bitp j))))
-  (if (zbp i) 1 (if (zbp j) 1 0)))
-
-(defun b-nor (i j)
-  ":doc-section logops-bit-functions
-  B-NOR ~/~/~/"
-  (declare (xargs :guard (and (bitp i) (bitp j))))
-  (if (zbp i) (if (zbp j) 1 0) 0))
-
-(defun b-andc1 (i j)
-  ":doc-section logops-bit-functions
-  B-ANDC1 ~/~/~/"
-  (declare (xargs :guard (and (bitp i) (bitp j))))
-  (if (zbp i) (if (zbp j) 0 1) 0))
-
-(defun b-andc2 (i j)
-  ":doc-section logops-bit-functions
-  B-ANDC2 ~/~/~/"
-  (declare (xargs :guard (and (bitp i) (bitp j))))
-  (if (zbp i) 0 (if (zbp j) 1 0)))
-
-(defun b-orc1 (i j)
-  ":doc-section logops-bit-functions
-  B-ORC1 ~/~/~/"
-  (declare (xargs :guard (and (bitp i) (bitp j))))
-  (if (zbp i) 1 (if (zbp j) 0 1)))
-
-(defun b-orc2 (i j)
-  ":doc-section logops-bit-functions
-  B-ORC2 ~/~/~/"
-  (declare (xargs :guard (and (bitp i) (bitp j))))
-  (if (zbp i) (if (zbp j) 1 0) 1))
-
-(defthm bit-functions-type
-  (and (bitp (b-not i))
-       (bitp (b-and i j))
-       (bitp (b-ior i j))
-       (bitp (b-xor i j))
-       (bitp (b-eqv i j))
-       (bitp (b-nand i j))
-       (bitp (b-nor i j))
-       (bitp (b-andc1 i j))
-       (bitp (b-andc2 i j))
-       (bitp (b-orc1 i j))
-       (bitp (b-orc2 i j)))
-  :rule-classes
-  ((:rewrite)
-   (:type-prescription :corollary (and (integerp (b-not i))
-				       (>= (b-not i) 0)))
-   (:type-prescription :corollary (and (integerp (b-and i j))
-				       (>= (b-and i j) 0)))
-   (:type-prescription :corollary (and (integerp (b-ior i j))
-				       (>= (b-ior i j) 0)))
-   (:type-prescription :corollary (and (integerp (b-xor i j))
-				       (>= (b-xor i j) 0)))
-   (:type-prescription :corollary (and (integerp (b-eqv i j))
-				       (>= (b-eqv i j) 0)))
-   (:type-prescription :corollary (and (integerp (b-nand i j))
-				       (>= (b-nand i j) 0)))
-   (:type-prescription :corollary (and (integerp (b-nor i j))
-				       (>= (b-nor i j) 0)))
-   (:type-prescription :corollary (and (integerp (b-andc1 i j))
-				       (>= (b-andc1 i j) 0)))
-   (:type-prescription :corollary (and (integerp (b-andc2 i j))
-				       (>= (b-andc2 i j) 0)))
-   (:type-prescription :corollary (and (integerp (b-orc1 i j))
-				       (>= (b-orc1 i j) 0)))
-   (:type-prescription :corollary (and (integerp (b-orc2 i j))
-				       (>= (b-orc2 i j) 0))))
-  :doc ":doc-section logops-bit-functions
-  Rewrite: All of the bit functions return BITP integers
-  ~/
-  We also prove an appropriate :TYPE-PRESCRIPTION for each.~/~/")
-
-
 ;;;****************************************************************************
 ;;;
 ;;;    Theories
@@ -1853,7 +1055,6 @@ function.
   list *LOGOPS-FUNCTIONS* are DISABLEd.~/")
 
 
-
 ;;;****************************************************************************
 ;;;
 ;;;  DEFBYTETYPE name size s/u &key saturating-coercion doc.
@@ -1999,7 +1200,6 @@ function.
 			     ,@(when$ saturating-coercion
 				 (list sat-lemma))))))))
 
-
 ;;;****************************************************************************
 ;;;
 ;;;  DEFWORD
@@ -2140,7 +1340,6 @@ function.
        FORM VAL ARGS ',keyword-updater
        ',(defword-keyword-field-alist name set-conc-name field-names))))
 
-
 (defmacro defword (name struct &key conc-name set-conc-name keyword-updater
 			 doc)
   ":doc-section logops-definitions
@@ -2295,7 +1494,6 @@ Example:
 
 |#
 
-
 ;;;****************************************************************************
 ;;;
 ;;;  Word/Bit Macros
@@ -2350,7 +1548,7 @@ Example:
    (t `(LOGAPP 1 ,(car bits) (MAKE-WORD-FROM-BITS ,@(cdr bits))))))
 
 
-
+
 ;;;****************************************************************************
 ;;;
 ;;;    Efficiency Hack

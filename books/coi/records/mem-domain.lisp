@@ -587,7 +587,7 @@
 (DEFUN BITP (B)
   "Documentation available via :doc"
   (DECLARE (XARGS :GUARD T))
-  (OR (EQUAL B 0) (EQUAL B 1)))
+  (OR (eql B 0) (eql B 1)))
 
 (defun bit-listp (lst)
   (declare (xargs :guard t))

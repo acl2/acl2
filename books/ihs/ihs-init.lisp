@@ -34,16 +34,9 @@
 
 (in-package "ACL2")
 
+(include-book "ihs-doc-topic")
 (include-book "data-structures/utilities" :dir :system)
 
-(defdoc ihs
-  ":Doc-Section ihs
-Integer Hardware Specification (IHS) library.~/
-
-The IHS library is found in:
-~bv[]
-books/ihs/*.lisp
-~ev[]~/~/")
 
 (deflabel ihs-init
   :doc ":doc-section ihs
