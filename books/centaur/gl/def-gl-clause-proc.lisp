@@ -999,6 +999,18 @@ in DEF-GL-THM.~%"))
            'latest-greatest-gl-clause-proc
            (w state)))))
 
+
+;; just wraps with-output around all this stuff and invisiblifies the return value
+(defmacro without-waterfall-parallelism (form)
+  `(with-output :off :all :stack :push
+     (progn
+       (acl2::without-waterfall-parallelism
+        (with-output :stack :pop
+          ,form))
+       (value-triple :invisible))))
+  
+
+
 ;; If a clause-processor name is supplied, this creates a defthm event
 ;; using def-gl-thm-fn.  Otherwise, this creates a make-event which
 ;; looks up the most recently defined clause processor in the table
@@ -1007,12 +1019,12 @@ in DEF-GL-THM.~%"))
 (defun def-gl-thm-find-cp (name clause-proc clause-procp rest)
   (declare (xargs :mode :program))
   (if clause-procp
-      `(ACL2::without-waterfall-parallelism
-        ,(def-gl-thm-fn name clause-proc rest))
-    `(ACL2::without-waterfall-parallelism
-      (make-event
-       (let ((clause-proc (latest-gl-clause-proc)))
-         (def-gl-thm-fn ',name clause-proc ',rest))))))
+      `(without-waterfall-parallelism
+         ,(def-gl-thm-fn name clause-proc rest))
+    `(without-waterfall-parallelism
+       (make-event
+        (let ((clause-proc (latest-gl-clause-proc)))
+          (def-gl-thm-fn ',name clause-proc ',rest))))))
 
 
 
@@ -1229,13 +1241,15 @@ PARAM-BINDINGS must be provided in DEF-GL-PARAM-THM.~%"))
   (name clause-proc clause-procp rest)
   (declare (xargs :mode :program))
   (if clause-procp
-      (def-gl-param-thm-fn name clause-proc rest)
-    `(make-event
-      (let ((clause-proc
-             (caar (table-alist
-                    'latest-greatest-gl-clause-proc
-                    (w state)))))
-        (def-gl-param-thm-fn ',name clause-proc ',rest)))))
+      `(without-waterfall-parallelism
+         ,(def-gl-param-thm-fn name clause-proc rest))
+    `(without-waterfall-parallelism
+       (make-event
+        (let ((clause-proc
+               (caar (table-alist
+                      'latest-greatest-gl-clause-proc
+                      (w state)))))
+          (def-gl-param-thm-fn ',name clause-proc ',rest))))))
 
 
 (defmacro def-gl-param-thm
