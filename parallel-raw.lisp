@@ -387,9 +387,6 @@
 
 ; (b) Reset "most" of the parallelism variables.
 
-; Parallelism wart: this commented setting of *core-count* needs to be
-; reinstated once I stop playing around with the number of active threads.
-
   (when *reset-core-count-too*
 
 ; We reset *core-count* and related variable(s) in case the current platform
@@ -1318,27 +1315,16 @@
 ; At one point this was simply the difference between the *last-slot-saved* and
 ; the *last-slot-taken*.  However, since we grab work from the work queue
 ; before actually processing it with an idle cpu core, it is also necessary to
-; add the difference of *unassigned-and-active-future-count* and *core-count*.
-; Parallelism wart: The comment above says *core-count* but the corresopnding
-; code below says (number-of-active-threads).
+; include the number of threads taht are waiting for a starting core.
 
   (+ (- *last-slot-saved* *last-slot-taken*)
-
-; At one point I used the immediately following commented code to determine the
-; number of threads that had acquired the work but were waiting for a CPU core.
-; However, this often provided the wrong answer (and was unnoticeably slow
-; since it calls all-threads).  So, instead, I added a new variable,
-; *threads-waiting-for-starting-core*, and update it inside
-; claim-starting-core.  This gives me the exact information I need.
-
-     ;; (max 0 (- *unassigned-and-active-future-count*
-     ;;           (number-of-active-threads)))
      *threads-waiting-for-starting-core*
 
 ; I intentionally ignore the threads that have incremented *last-slot-taken*
 ; but not yet entered claim-starting-core.  I could come up with some mechanism
-; to track these, but there should be an insignificant number of them, and it's
-; not worth it right now.
+; to track these, but there should be an insignificant number of them (less
+; than the total number of hardware threads, as of 2012-07), and it's not worth
+; it right now.
 
      ))
 

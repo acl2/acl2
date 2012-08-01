@@ -8362,9 +8362,11 @@
 ;;; turn off parallelism.  I'd probably even make it illegal to have both
 ;;; waterfall-parallelism enabled and :brr t at the same time."
 
-; Parallelism wart: cause an error when a user tries to enable parallelism and
-; brr is enabled.  Also cause an error when enabling brr and 
-; waterfall-parallism is enabled.
+; Parallelism blemish: cause an error when a user tries to enable parallelism
+; and brr is enabled.  Also cause an error when enabling brr and
+; waterfall-parallism is enabled.  We do not label this a "wart", because we
+; have documented this lack of feature in
+; unsupported-waterfall-parallelism-features.
 
   (cond
    #+acl2-par ; test is always false anyhow when #-acl2-par

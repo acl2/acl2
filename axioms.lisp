@@ -47177,7 +47177,7 @@ Lisp definition."
   '(:full :limited :very-limited))
 
 (defconst *waterfall-parallelism-values*
-  '(nil :full :top-level :resource-based :resource-and-timing-based
+  '(nil t :full :top-level :resource-based :resource-and-timing-based
         :pseudo-parallel))
 
 ; This is needed in both boot-strap-pass-2.lisp and parallel.lisp, so we put it

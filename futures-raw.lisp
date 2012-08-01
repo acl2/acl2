@@ -34,8 +34,16 @@
 
 (in-package "ACL2")
 
-; Parallelism wart: create an "Essay on Futures" that should act as a guide to
-; this file.
+; Essay on Futures
+
+; This futures library provides three primitives for creating, reading, and
+; aborting futures.  We then use the futures library to implement
+; spec-mv-let.  Building spec-mv-let upon the futures library makes it more
+; easily maintained than if it were built directly upon the low-level
+; multi-threading interface.
+
+; Parallelism wart: add to the above "Essay on Futures", with the intent that
+; the essay should act as a guide to this file.
 
 ; Parallelism wart: clean up this file by removing blank lines that are
 ; inconsistent with the ACL2 style guide and making other improvements as
@@ -215,22 +223,23 @@
 
 (defstruct barrier
 
-; Parallelism wart: clarify the senses in which these uses of "barrier" and
-; "synchronization" are non-standard.
+; Our version of a barrier is a hybrid between a semaphore and a condition
+; variable.  What we need is something that once it's signaled once, any thread
+; that waits on it will be allowed to proceed.  
 
-; A barrier is a hybrid between a semaphore and a condition variable.  What we
-; need is something that once it's signaled once, any thread that waits on it
-; will be allowed to proceed.  
-
-; We could elaborate upon how it's the similar to and different from semaphores
-; and condition variables, but we instead rely upon our simple specification
-; and rely upon the reader's knowledge of semaphores and condition variables to
-; understand how our specification can not be met by either.
-
-; Our implementation of barriers also has the extra property that, a little bit
-; after the barrier is signaled (technically, after all CPU core caches
-; synchronize their value for variable barrier-value), any thread that waits on
-; the barrier will not have to obtain the lock to proceed past the barrier.
+; Point of clarification that is a little distracting: Our notion of barrier is
+; different from the traditional definition of a "multi-threaded programming
+; barrier" in the following way: in the traditional definition, a barrier is a
+; spot in the program's execution that _n_ threads will eventually reach.  Once
+; a thread reaches the barrier, it blocks (waits) until _n_ threads have
+; reached the barrier.  Once all of the _n_ threads have reached the barrier,
+; they are all given the green light to proceed.  Our notion of a barrier is
+; different from this, in that there is no "global wait by _n_ threads".  In
+; our notion of a barrier, any number of threads can wait on the barrier.  Each
+; of these threads will block until the barrier is signaled.  Once the barrier
+; is signaled, all of the blocked threads are allowed to proceed, and any
+; thread that waits upon the barrier in the future is also allowed to
+; immediately proceed.
 
   (value nil)
   (lock (make-lock))
@@ -535,29 +544,13 @@
 ; or disable the error by setting the global variable
 ; total-parallelism-work-limit to nil.  This is the default behavior.
 
-; Parallelism wart: shorten this error, probably suggesting instead that the
-; user just disable the check.  Then redirect the user to :doc topic
-; set-total-parallelism-work-limit for instructions on how to configure the
-; threshold that triggers this error and serial execution.
-
                     (er hard 'not-too-many-futures-already-in-existence
-                        "In order to allow the surprising behavior that ~
-                         serializes computation for the :full waterfall ~
-                         parallelism mode once a risky number of threads are ~
-                         required to continue executing, you must set ~
-                         total-parallelism-work-limit-error to nil. ~
-                         Alternatively, you may increase the threshold for ~
-                         the number of threads allowed into the system by ~
-                         setting total-parallelism-work-limit to a higher ~
-                         number. Also, you may set ~
-                         total-parallelism-work-limit to :none, which will ~
-                         always parallelize computation.  This setting will ~
-                         allow your machine to blow up.  The default setting ~
-                         for total-parallelism-work-limit-error is t, which ~
-                         will result in this error.  See :DOC ~
-                         set-total-parallelism-work-limit and :DOC ~
-                         set-total-parallelism-work-limit-error for more ~
-                         information."))
+                        "The system has encountered the limit placed upon the ~
+                         total amount of parallelism work allowed.  Either ~
+                         the limit must be increased, or this error must be ~
+                         disabled.  See :DOC set-total-parallelism-work-limit ~
+                         and :DOC set-total-parallelism-work-limit-error for ~
+                         more information."))
                    ((null total-parallelism-work-limit-error)
                     nil)
                    (t (er hard 'not-too-many-futures-already-in-existence
@@ -602,11 +595,6 @@
   #-(or ccl sb-thread)
   `(unwind-protect ,body-form ,@cleanup-forms))
 
-; Parallelism wart: Label the following comment as a wart, blemish, etc.,
-; and/or maybe give a bit more explanation.
-; Idea: have a queue for both the evaluation of closures and the abortion of
-; futures.  Give the abortion queue higher priority.
-
 (define-atomically-modifiable-counter *threads-waiting-for-starting-core* 
 
 ; Once upon a time this variable was only used for debugging purposes, so we
@@ -635,8 +623,9 @@
        (when (semaphore-notification-status notification)
          (setf *allocated-core* *starting-core*)
          (atomic-decf *idle-future-core-count*)
-; Parallelism wart: Label the following comment as a wart, blemish, etc.
-; Is this really the right place to do this?
+
+; Parallelism blemish: is this really the right place to do the following setf?
+
          (setf *decremented-idle-future-thread-count* t)
          (atomic-decf *idle-future-thread-count*))
        (atomic-decf *threads-waiting-for-starting-core*)))))

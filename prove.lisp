@@ -1279,7 +1279,7 @@
        (save-acl2p-checkpoint-for-summary cl-id prettyified-clause state)
        (with-output-lock
         (progn$
-         (cw "~%~%([ An ACL2(p) checkpoint:~%~%~s0~%"
+         (cw "~%~%([ An ACL2(p) key checkpoint:~%~%~s0~%"
              (string-for-tilde-@-clause-id-phrase cl-id))
          (cw "~x0" prettyified-clause)
 
@@ -1353,7 +1353,7 @@
   (prog2$
 
 ; Every branch of the cond below, with the exception of when cl is null,
-; results in an ACL2(p) checkpoint.  As such, it is reasonable to print the
+; results in an ACL2(p) key checkpoint.  As such, it is reasonable to print the
 ; checkpoint at the very beginning of this function.
 ; Acl2p-push-clause-printing contains code that handles the case where cl is
 ; nil.
@@ -3184,9 +3184,9 @@
 (defun waterfall-update-gag-state@par (cl-id clause proc signal ttree pspv state)
   (declare (ignore cl-id clause proc signal ttree pspv state))
 
-; Parallelism wart: consider causing an error when the user tries to enable gag
-; mode.  At the moment I'm unsure of the effects of returning two nils in this
-; case.
+; Parallelism blemish: consider causing an error when the user tries to enable
+; gag mode.  At the moment I'm unsure of the effects of returning two nils in
+; this case.
 
   (mv nil nil))
 
@@ -6652,10 +6652,14 @@
      (and (print-clause-id-okp cl-id)
           (with-output-lock
 
-; Parallelism wart: Kaufmann suggests that we need to skip printing clause-ids
-; that have already been printed.  Note that using the printing of clause-ids
-; to show that the prover is still making progress is no longer the default
-; setting (see :doc set-waterfall-printing).  Example:
+; Parallelism blemish: Kaufmann suggests that we need to skip printing
+; clause-ids that have already been printed.  Note that using the printing of
+; clause-ids to show that the prover is still making progress is no longer the
+; default setting (see :doc set-waterfall-printing).  This is a low-priority
+; blemish, because as of 2012-07, the main ACL2 users use the :very-limited
+; setting for waterfall-printing -- this setting only prints periods, not
+; clause-ids.  Example:
+
 ;   (set-waterfall-parallelism :pseudo-parallel)
 ;   (set-waterfall-printing :limited)
 ;   (thm (implies (equal x y) (equal u v)))
@@ -6671,11 +6675,7 @@
            (format t "At time ~,6f sec, starting: ~a~%"
                    (/ (- (get-internal-real-time)
                          *acl2p-starting-proof-time*)
-
-; Parallelism wart: call (get-internal-time-units) instead of hard-coding
-; 1000000.0.
-
-                      1000000.0)
+                      internal-time-units-per-second)
                    (string-for-tilde-@-clause-id-phrase cl-id)))))
     (:very-limited
      (with-output-lock
@@ -6702,7 +6702,7 @@
                  (format t "At time ~,6f sec, finished: ~a~%"
                          (/ (- (get-internal-real-time)
                                *acl2p-starting-proof-time*)
-                            1000000.0)
+                            internal-time-units-per-second)
                          (string-for-tilde-@-clause-id-phrase cl-id))))
                (t nil)))
          (t nil)))
@@ -9281,16 +9281,34 @@
 
 (defun print-pstack-and-gag-state (state)
 
-; Parallelism blemish: don't print the pstack when waterfall parallelism is
-; enabled.  It ends up being long and, as far as Rager knows, unhelpful.
+; When waterfall parallelism is enabled, and the user has to interrupt a proof
+; twice before it quits, the prover will attempt to print the gag state and
+; pstack.  Based on observation by Rager, the pstack tends to be long and
+; irrelevant in this case.  So, we disable the printing of the pstack when
+; waterfall parallelism is enabled and waterfall-printing is something other
+; than :full.  We considered not involving the current value for
+; waterfall-printing, but using the :full setting is a strange thing to begin
+; with.  So, we make the decision that if a user goes to the effort to use the
+; :full waterfall-printing mode, that maybe they'd like to see the pstack after
+; all.
 
-  (prog2$
-   (cw
-    "Here is the current pstack [see :DOC pstack]:")
-   (mv-let (erp val state)
-           (pstack)
-           (declare (ignore erp val))
-           (print-gag-state state))))
+; The below #+acl2-par change in definition also results in not printing
+; gag-state under these conditions.  However, this is effectively a no-op,
+; because the parallel waterfall does not save anything to gag-state anyway.
+
+  (cond 
+   #+acl2-par
+   ((and (f-get-global 'waterfall-parallelism state)
+         (not (eql (f-get-global 'waterfall-printing state) :full)))
+    state)
+   (t
+    (prog2$
+     (cw
+      "Here is the current pstack [see :DOC pstack]:")
+     (mv-let (erp val state)
+             (pstack)
+             (declare (ignore erp val))
+             (print-gag-state state))))))
 
 (defun prove-loop0 (clauses pspv hints ens wrld ctx state)
 

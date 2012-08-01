@@ -3388,15 +3388,15 @@
               (or top-level-banner-printed
                   (if (and (not top-level-banner-printed) 
                            (clause-id-is-top-level cl-id))
-                      (prog2$ (cw "~%*** ACL2(p) checkpoint[s] at the ~
-                                   top-level: ***~%")
+                      (prog2$ (cw "~%*** ACL2(p) key checkpoint[s] at the ~
+                                   top level: ***~%")
                               t)
                     top-level-banner-printed)))
              (induction-banner-printed
               (or induction-banner-printed
                   (if (and (not induction-banner-printed) 
                            (clause-id-is-induction-round cl-id))
-                      (prog2$ (cw "~%*** ACL2(p) checkpoint[s] under ~
+                      (prog2$ (cw "~%*** ACL2(p) key checkpoint[s] under ~
                                    induction: ***~%")
                               t)
                     induction-banner-printed)))
@@ -3405,7 +3405,7 @@
               (or forcing-banner-printed
                   (if (and (not forcing-banner-printed) 
                            (clause-id-is-forcing-round cl-id))
-                      (prog2$ (cw "~%*** ACL2(p) checkpoint[s] under a ~
+                      (prog2$ (cw "~%*** ACL2(p) key checkpoint[s] under a ~
                                    forcing round: ***~%")
                               t)
                     forcing-banner-printed))))                 
@@ -3435,9 +3435,10 @@
 ; anyway, as an example of good programming practice.
 
    (prog2$
-    (if (f-get-global 'waterfall-parallelism state)
+    (if (and (f-get-global 'waterfall-parallelism state)
+             (f-get-global 'acl2p-checkpoints-for-summary state))
         (prog2$
-         (cw "~%~%Printing the ACL2(p) checkpoints that were encountered ~
+         (cw "~%~%Printing the ACL2(p) key checkpoints that were encountered ~
               during the proof attempt (and pushed for induction or ~
               sub-induction).  Note that some of these checkpoints may have ~
               been later proven by induction or sub-induction.  Thus, you ~
@@ -3846,7 +3847,10 @@
                                             state)
                               (print-proof-tree state))))
                 (t state))))
-             (t state))
+             (t (pprogn
+                 #+acl2-par
+                 (erase-acl2p-checkpoints-for-summary state)
+                 state)))
        (prog2$ (print-summary-user state)
                (f-put-global 'proof-tree nil state)))))))
 
@@ -17242,6 +17246,10 @@
 ; Note that not all hint mechanisms rely upon this check.  For example,
 ; apply-override-hint@par and eval-clause-processor@par perform their own
 ; checks.
+
+; Parallelism wart: it should be possible to return (value@par term) when
+; waterfall-parallelism-hacks-enabled is non-nil.  This would allow more types
+; of hints to fire when waterfall-parallelism-hacks are enabled.
 
           (er@par soft ctx
             "Since we are translating a form in ACL2(p) intended to be ~

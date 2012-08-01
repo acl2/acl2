@@ -1006,6 +1006,16 @@
       (kill-thread (car thread-list))
       (kill-all-threads-in-list (cdr thread-list)))))
 
+(defun thread-name (thread)
+  #+ccl
+  (ccl:process-name thread)
+  #+sbcl
+  (sb-thread:thread-name thread)
+  #+lispworks
+  (mp:process-name thread)
+  #-(or ccl sbcl lispworks)
+  (error "Function thread-name is unimplemented in this Lisp."))
+
 #+(or ccl sbcl lispworks)
 (defun initial-threads1 (threads)
 
@@ -1055,7 +1065,10 @@
   #+sbcl
   (<= (length (all-threads)) 1)
   #-sbcl
-  (null (set-difference (all-threads) (initial-threads))))
+  (null (set-difference (all-threads) (initial-threads)))
+;;; Parallelism wart: define worker-threads.
+;;;  (null (worker-threads))
+)
 
 #+ccl
 (defun all-given-threads-are-reset (threads)
@@ -1066,12 +1079,14 @@
          (all-given-threads-are-reset (cdr threads)))))
 
 (defun all-threads-except-initial-threads-are-dead-or-reset ()
-  (format t "All-threads is ~s~%" (all-threads))
 
 ; CCL has a bug that if you try to throw a thread that is "reset" ("reset" is a
 ; CCL term), it ignores the throw (and the thread never expires).  As such, we
 ; do not let threads in the "reset" state prevent us from finishing the
 ; resetting of parallelism variables.
+
+;;; Parallelism wart: define worker-threads.
+;;;  (all-given-threads-are-reset (worker-threads))
 
   #+ccl
   (all-given-threads-are-reset 
@@ -1085,11 +1100,10 @@
 
 ; This function is evaluated only for side effect.
 
-  (let ((target-threads (set-difference (all-threads)
-                                        (initial-threads))))
-    (throw-all-threads-in-list target-threads)
-    (let ((round 0))
-      (loop do
+  (throw-all-threads-in-list (set-difference (all-threads)
+                                             (initial-threads)))
+  (let ((round 0))
+    (loop do
       
 ; We used to call "(thread-wait 'all-threads-except-initial-threads-are-dead)".
 ; However, we noticed a synchronization problem between what we might prefer
@@ -1102,18 +1116,20 @@
 ; this problem, we punt, and simply wait for one second before issuing a new
 ; throw.  In practice, this works just fine.
 
-            (when (equal (mod round 10) 0)
-              (throw-all-threads-in-list target-threads)
+          (when (equal (mod round 10) 0)
+            (throw-all-threads-in-list (set-difference (all-threads)
+                                                       (initial-threads)))
 
 ; The following commented code is only for debugging
 
 ;              (format t "Waiting for all non-initial threads to halt.~%")
 ;              (format t "Current threads are ~%~s~%~%" (all-threads))
 
-              )
-            (sleep 0.1)
-            (incf round)
-            while (not (all-threads-except-initial-threads-are-dead-or-reset))))))
+            )
+          (sleep 0.03)
+          (incf round)
+          while (not
+                 (all-threads-except-initial-threads-are-dead-or-reset)))))
 
 (defun kill-all-except-initial-threads ()
 
@@ -1133,11 +1149,6 @@
 ; the end of the multi-threading interface.
 
 (defun core-count-raw (&optional (ctx nil) default)
-
-; Parallelism wart: document in unsupported-parallelism-features that
-; core-count is hardcoded to 16 in sbcl and lispworks.  More generally, add a
-; disclaimer that sbcl and lispworks support are not expected to be nearly as
-; robust as ccl support.
 
 ; If ctx is supplied, then we cause an error using the given ctx.  Otherwise we
 ; return a suitable default value (see below).

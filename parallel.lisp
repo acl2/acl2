@@ -52,11 +52,6 @@
 
 ; End of Section "To Consider".
 
-; Parallelism wart: cleanup the implementation and documentation of deflock.
-
-; Parallelism wart: in the event that the just mentioned cleanup of deflock is
-; not finished, insert the script that Kaufmann sent Rager in email.
-
 (defdoc deflock
 
   ":Doc-Section ACL2::Parallel-programming
@@ -414,13 +409,17 @@
   Proof output can contain repeated printing of the same subgoal name.
 
   ~il[Gag-mode] isn't officially supported, although it has proved helpful to
-  use ACL2(p) in conjunction with ~c[(set-gag-mode t)].  This being said,
+  use ACL2(p) in conjunction with ~c[(set-gag-mode t)] (because this setting
+  suppresses the output that occurs outside the waterfall).  This being said,
   ACL2(p) also prints key checkpoints (for example
   ~pl[introduction-to-key-checkpoints]), but with a notion of ``key
   checkpoint'' that does not take into account whether the goal is later proved
-  by induction.
+  by induction.  ~l[acl2p-key-checkpoints] for further explanation of these
+  key checkpoints.  Note that ~ilc[pso] is also not supported.
 
   The ~c[:]~ilc[brr] utility is not supported.
+
+  The ~ilc[accumulated-persistence] utility is not supported.
 
   Time limits (~pl[with-prover-time-limit]) aren't supported.
 
@@ -514,7 +513,16 @@
   Since, as of April 2012, garbage collection is inherently sequential, ACL2(p)
   minimizes the use of garbage collection by setting a high garbage collection
   threshold.  As a result, ACL2(p) is not expected to perform well on machines
-  with less memory than this threshold (1 gigabyte, as of April 2012).~/~/")
+  with less memory than this threshold (1 gigabyte, as of April 2012).
+
+  In CCL, the underlying parallel execution engine is tuned for the number of
+  CPU cores (or hardware threads) actually available in the machine.  SBCL and
+  LispWorks are tuned for a machine with 16 CPU cores.
+
+  CCL is considered to be the ``flagship Lisp'' for parallel execution in ACL2.
+  The SBCL and LispWorks implementations are thought to be generally stable.
+  However, due to their relatively less common use, the SBCL and LispWorks
+  implementations are likely less robust than the CCL implementation.~/~/")
 
 (defdoc waterfall-printing
 
@@ -599,28 +607,37 @@
      (t (value nil)))))
 
 (defun set-waterfall-parallelism-fn (val ctx state)
-  (cond ((member-eq val *waterfall-parallelism-values*)
-         #+acl2-par
-         (cond 
-          ((null (f-get-global 'parallel-execution-enabled state))
-           (er soft ctx 
-               "Parallel execution must be enabled before enabling waterfall ~
-                parallelism.  See :DOC set-parallel-execution"))
-          (t
-           (pprogn #+(and hons (not acl2-loop-only))
-                   (progn
-                     (cond ((null val)
-                            (hons-init-hook-memoizations))
-                           (t 
-                            (hons-init-hook-unmemoizations)))
-                     state)
-                   (f-put-global 'waterfall-parallelism val state)
-                   (progn$
-                    #-acl2-loop-only
-                    (funcall ; avoid undefined function warning
-                     'initialize-dmr-interval-used)
-                    (value val)))))
-         #-acl2-par
+  (cond ((eq val (f-get-global 'waterfall-parallelism state))
+         (pprogn (observation ctx
+                              "Ignoring call to set-waterfall-parallelism ~
+                               since the new value is the same as the current ~
+                               value.~%~%")
+                 (value :ignored)))
+        ((member-eq val *waterfall-parallelism-values*)
+         (let ((val (if (eq val t) ; t is a alias for :resource-based
+                        :resource-based
+                      val)))
+           #+acl2-par
+           (cond 
+            ((null (f-get-global 'parallel-execution-enabled state))
+             (er soft ctx 
+                 "Parallel execution must be enabled before enabling ~
+                  waterfall parallelism.  See :DOC set-parallel-execution"))
+            (t
+             (pprogn #+(and hons (not acl2-loop-only))
+                     (progn
+                       (cond ((null val)
+                              (hons-init-hook-memoizations))
+                             (t 
+                              (hons-init-hook-unmemoizations)))
+                       state)
+                     (f-put-global 'waterfall-parallelism val state)
+                     (progn$
+                      #-acl2-loop-only
+                      (funcall ; avoid undefined function warning
+                       'initialize-dmr-interval-used)
+                      (value val)))))
+           #-acl2-par
 
 ; Once upon a time we issued an error here instead of an observation.  In
 ; response to feedback from Dave Greve, we have changed it to an observation so
@@ -628,23 +645,24 @@
 ; make-event) without causing their certification to stop when using #-acl2-par
 ; builds of ACL2.
 
-         (pprogn
-          (observation ctx
+           (pprogn
+            (observation ctx
       
 ; We make this an observation instead of a warning, because it's probably
 ; pretty obvious to the user whether they're using an image that was built with
 ; the acl2-par feature.
                      
-                       "Parallelism can only be enabled in CCL, threaded ~
-                        SBCL, or Lispworks.  Additionally, the feature ~
-                        :ACL2-PAR must be set when compiling ACL2 (for ~
-                        example, by using `make' with argument `ACL2_PAR=t'). ~
-                        ~ Either the current Lisp is neither CCL nor threaded ~
-                        SBCL nor Lispworks, or this feature is missing.  ~
-                        Consequently, this attempt to set ~
-                        waterfall-parallelism to ~x0 will be ignored.~%~%"
-                       val)
-          (value :ignored)))
+                         "Parallelism can only be enabled in CCL, threaded ~
+                          SBCL, or Lispworks.  Additionally, the feature ~
+                          :ACL2-PAR must be set when compiling ACL2 (for ~
+                          example, by using `make' with argument ~
+                          `ACL2_PAR=t'). ~ Either the current Lisp is neither ~
+                          CCL nor threaded SBCL nor Lispworks, or this ~
+                          feature is missing.  Consequently, this attempt to ~
+                          set waterfall-parallelism to ~x0 will be ~
+                          ignored.~%~%"
+                         val)
+            (value :ignored))))
         (t (er soft ctx
                "Illegal value for set-waterfall-parallelism: ~x0.  The legal ~
                 values are ~&1."
@@ -786,6 +804,7 @@
   (set-waterfall-parallelism :top-level) ; parallelize top-level subgoals
   (set-waterfall-parallelism             ; parallelize if sufficient resources
     :resource-based)                     ;   (recommended setting)
+  (set-waterfall-parallelism t)          ; alias for :resource-based
   (set-waterfall-parallelism             ; parallelize if sufficient resources
     :resource-and-timing-based           ;   and suggested by prior attempts
   (set-waterfall-parallelism             ; never parallelize but use parallel
@@ -829,6 +848,9 @@
   that ACL2(p) knows how to obtain the number of CPU cores from the operating
   system in CCL, but that, in SBCL and in Lispworks, a constant is used
   instead).
+
+  A value of ~c[t] is treated the same as a value of ~c[:resource-based] and
+  is provided for user convenience.
 
   During the first proof attempt of a given conjecture, a value of
   ~c[:resource-and-timing-based] results in the same behavior as with
@@ -975,16 +997,15 @@
   of ~c[nil] or ~c[:pseudo-parallel].
 
   A value of ~c[:limited] omits most of the output that occurs in the serial
-  version of the waterfall.  Instead, the proof attempt prints proof
-  checkpoints, similar to (but still distinct from) gag-mode
-  (~pl[set-gag-mode]).  The value of ~c[:limited] also prints messages that
-  indicate which subgoal is currently being proved, along with the wall-clock
-  time elapsed since the theorem began its proof; and if state global
-  ~c['waterfall-printing-when-finished] has a non-~c[nil] value, then such a
-  message will also be printed at the completion of each subgoal.  The function
-  ~c[print-clause-id-okp] may receive an attachment to limit such printing;
-  ~pl[set-print-clause-ids].  Naturally, these subgoal numbers can appear out
-  of order, because the subgoals can be proved in parallel.
+  version of the waterfall.  Instead, the proof attempt prints key
+  checkpoints (~pl[acl2p-key-checkpoints]).  The value of ~c[:limited] also
+  prints messages that indicate which subgoal is currently being proved, along
+  with the wall-clock time elapsed since the theorem began its proof; and if
+  state global ~c['waterfall-printing-when-finished] has a non-~c[nil] value,
+  then such a message will also be printed at the completion of each subgoal.
+  The function ~c[print-clause-id-okp] may receive an attachment to limit such
+  printing; ~pl[set-print-clause-ids].  Naturally, these subgoal numbers can
+  appear out of order, because the subgoals can be proved in parallel.
 
   A value of ~c[:very-limited] is treated the same as ~c[:limited], except that
   instead of printing subgoal numbers, the proof attempt prints a
@@ -2471,6 +2492,46 @@
   ACL2 !>
   ~ev[]
   ~/")
+
+(defdoc acl2p-key-checkpoints
+
+  ":Doc-Section Parallel-proof
+  key checkpoints in ACL2(p)~/
+
+  This ~il[documentation] topic relates to the experimental extension of ACL2
+  supporting parallel execution and proof; ~pl[parallelism].
+
+  For printing output, the parallel version of the waterfall follows the
+  precedent of ~ilc[gag-mode].  The idea behind gag mode is to print only the
+  subgoals most relevant to debugging a failed proof attempt.  These subgoals
+  are called 'key checkpoints' (~pl[set-gag-mode] for the definition of ``key''
+  and ``checkpoint''), and we restrict the default output mode for the parallel
+  version of the waterfall to printing checkpoints similar to these key
+  checkpoints.~/
+
+  As of this writing, we are aware of exactly one discrepancy between gag
+  mode's key checkpoints and the parallel version of the waterfall's
+  checkpoints.  This discrepancy occurs when using ``by'' hints (~pl[hints]).
+  As an example, take the following form, which attempts to prove a
+  non-theorem:
+
+  ~bv[]
+  (thm (equal (append x y z) (append z (append y x)))
+       :hints ((\"Subgoal *1/2'''\" :by nil)))
+
+  ~ev[]
+
+  With waterfall parallelism enabled, ~c[Subgoal *1/2''] will be printed as a
+  key checkpoint.  This is different from using ~ilc[gag-mode] while running
+  the serial version of the waterfall, which skips printing the subgoal as a
+  checkpoint.
+
+  For those familiar with the ACL2 waterfall, we note that that the parallel
+  version of the waterfall prints key checkpoints that are unproved in the
+  following sense: a subgoal is a key checkpoint if it leads, in the current
+  call of the waterfall, to a goal that is pushed for induction.~/
+
+  :cite set-waterfall-printing")
 
 ; Parallelism wart: it is still possible in ACL2(p) to receive an error at the
 ; Lisp-level when CCL cannot "create thread".  An example of a user (Kaufmann)
