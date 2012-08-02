@@ -3734,33 +3734,39 @@ the calls took.")
     (let*
       ((cl-defun
         ;; Magic code to try to look up the Common Lisp definition for this function.
-        (if (eq cl-defun :default)
-            (if inline
-                (cond
+        (cond ((eq cl-defun :default)
+               (if inline
+                   (cond
 
-                 ((not (fboundp fn))
-                  (ofe "MEMOIZE-FN: ** ~a is undefined."
-                       fn))
+                    ((not (fboundp fn))
+                     (ofe "MEMOIZE-FN: ** ~a is undefined."
+                          fn))
 
-                 ((cltl-def-from-name fn wrld))
+                    ((let ((def (cltl-def-from-name fn wrld)))
+                       (cond (def (assert (eq (car def) 'defun))
+                                  (cdr def)))))
 
-                 ((function-lambda-expression
-                   (symbol-function fn)))
+                    ((let ((def (function-lambda-expression
+                                 (symbol-function fn))))
+                       (cond (def (assert (eq (car def) 'lambda))
+                                  def))))
 
-                 (t
-                  #+Clozure
-                  (unless (and ccl::*save-source-locations*
-                               ccl::*fasl-save-definitions*)
-                    (ofd "~&; Check the settings of ~
+                    (t
+                     #+Clozure
+                     (unless (and ccl::*save-source-locations*
+                                  ccl::*fasl-save-definitions*)
+                       (ofd "~&; Check the settings of ~
                                    CCL::*SAVE-SOURCE-LOCATIONS* ~
                                    and ~
                                    CCL::*FASL-SAVE-DEFINITIONS*."))
-                  (ofe "MEMOIZE-FN: ** Cannot find a ~
+                     (ofe "MEMOIZE-FN: ** Cannot find a ~
                                       definition for ~a via ACL2 ~
                                       or ~
                                       FUNCTION-LAMBDA-EXPRESSION."
-                       fn))) nil)
-          cl-defun))
+                          fn))) nil))
+              ((eq (car cl-defun) 'defun)
+               (cdr cl-defun))
+              (t cl-defun)))
 
        (formals
         ;; Magic code to try to figure out what the formals of the function are.
@@ -3859,7 +3865,7 @@ the calls took.")
                  (car (last (cltl-def-from-name condition wrld))))
                 (t condition)))
 
-         (dcls (dcls (cdddr (butlast cl-defun))))
+         (dcls (dcls (cddr (butlast cl-defun))))
          (start-time (let ((v (hons-gentemp
                                (memoize-fn-suffix "START-TIME-" fn))))
                        (eval `(prog1 (defg ,v -1)
