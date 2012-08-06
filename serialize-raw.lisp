@@ -1566,26 +1566,3 @@
 
       ;; Return the top object.
       (svref arr final-obj))))
-
-
-
-
-; -----------------------------------------------------------------------------
-;
-;                           ACL2 INTEGRATION
-;
-; -----------------------------------------------------------------------------
-
-(defun ser-cons-reader-macro (stream subchar arg)
-  (declare (ignorable subchar arg))
-  ;; This is the reader macro for #z.  When it is called the #z part has
-  ;; already been read, so we just want to read the serialized object.
-  (ser-decode-from-stream nil :never stream))
-
-(defun ser-hons-reader-macro (stream subchar arg)
-  (declare (ignorable subchar arg))
-  ;; This is the reader macro for #Z.  When it is called the #Z part has
-  ;; already been read, so we just want to read the serialized object.
-  (ser-decode-from-stream nil :smart stream))
-
-

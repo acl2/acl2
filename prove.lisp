@@ -9367,8 +9367,8 @@
   #-acl2-loop-only
   (setq *deep-gstack* nil) ; in case we never call initial-gstack
   #+(and hons (not acl2-loop-only))
-  (when (memoizedp-raw 'worse-than)
-    (clear-memoize-table 'worse-than))
+  (when (memoizedp-raw 'worse-than-builtin)
+    (clear-memoize-table 'worse-than-builtin))
   (prog2$ (clear-pstk)
           (pprogn
            (increment-timer 'other-time state)
@@ -9380,11 +9380,15 @@
            (mv-let (erp ttree state)
                    (bind-acl2-time-limit ; make *acl2-time-limit* be let-bound
                     (prove-loop0 clauses pspv hints ens wrld ctx state))
-                   (pprogn
-                    (increment-timer 'prove-time state)
-                    (cond
-                     (erp (mv erp nil state))
-                     (t (value ttree))))))))
+                   (progn$
+                    #+(and hons (not acl2-loop-only))
+                    (when (memoizedp-raw 'worse-than-builtin)
+                      (clear-memoize-table 'worse-than-builtin))
+                    (pprogn
+                     (increment-timer 'prove-time state)
+                     (cond
+                      (erp (mv erp nil state))
+                      (t (value ttree)))))))))
 
 (defun rw-cache-state (wrld)
   (let ((pair (assoc-eq t (table-alist 'rw-cache-state-table wrld))))
@@ -9594,9 +9598,11 @@
                         (prin1 term str)
                         (terpri str)
                         (force-output str))))
-    (prog2$
-     (prog2$ (initialize-brr-stack state)
-             (initialize-fc-wormhole-sites))
+    (progn$
+     (initialize-brr-stack state)
+     (initialize-fc-wormhole-sites)
+     #+hons
+     (clear-memoize-table 'worse-than-builtin)
      (er-let* ((ttree1 (prove-loop (list (list term))
                                    (change prove-spec-var pspv
                                            :user-supplied-term term

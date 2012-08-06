@@ -35038,6 +35038,7 @@
   (f-get-global 'ld-skip-proofsp state))
 
 #-acl2-loop-only
+(save-def
 (defun-one-output bad-lisp-objectp (x)
 
 ; This routine does a root and branch exploration of x and guarantees that x is
@@ -35269,6 +35270,7 @@
              the ACL2 packages, and cons trees of such objects.  The object ~
              CLTL displays as ~s0 is thus illegal in ACL2."
             (list (cons #\0 (format nil "~s" x)))))))
+)
 
 #-acl2-loop-only
 (defun-one-output chk-bad-lisp-object (x)

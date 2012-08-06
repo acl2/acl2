@@ -230,7 +230,7 @@
   followed by their values to *STANDARD-OUTPUT*.  The values are first
   followed by =>, to indicate evaluation.
 
-  For example, (prinl a b (+ a b)) might print:  
+  For example, (prinl a b (+ a b)) might print:
     A => 1
     B => 2
     (+ A B) => 3
@@ -470,7 +470,6 @@
            (profiler-cond ((<= ,v (the mfixnum
                                     (- most-positive-mfixnum
                                        (the mfixnum ,inc))))
-                  
                        (setf (the mfixnum ,x)
                              (the mfixnum (+ ,v (the mfixnum ,inc))))
                        nil)
@@ -788,8 +787,9 @@
                                      :start (length pat))))))))))
    0))
 
+(save-def
 (defn1 physical-memory () (meminfo "MemTotal:"))
-
+)
 
 ; NUMBER OF ARGS AND RETURN VALUES
 
@@ -971,14 +971,20 @@
 ; list, (b) LENGTH may worry about the answer exceeding
 ; MOST-POSITIVE-FIXNUM, and (c) LENGTH must consider the possibility
 ; that its argument is a vector.
-  
+
   (loop (cond ((atom x) (return nil))
               ((eql n 0) (return t))
               (t (setq x (cdr x))
                  (setq n (the fixnum (1- n)))))))
 
-#+Clozure
 (defn1 mis-ordered-commutative-args (x y)
+  #-Clozure
+  ;; [Jared]: Lisps besides Clozure don't have static conses so we can't
+  ;; reorder arguments based on their indices.  It's possible we could do
+  ;; something like sort based on address, maybe, but I haven't thought about
+  ;; it.
+  nil
+  #+Clozure
   (cond ((eql x y) nil)
         (t (let ((idx (or (ccl::%staticp x)
                           (and (typep x 'fixnum) x))))
@@ -1020,356 +1026,356 @@
             memoize-summary-after-compute-calls-and-times
             watch-dump
             #+rdtsc ccl::rdtsc
-            * 
-            + 
-            - 
-            < 
-            <= 
-            = 
-            > 
-            >= 
-            abort 
-            adjoin 
-            adjust-array 
-            allocate-instance 
-            append 
-            apply 
-            apropos 
-            apropos-list 
-            aref 
-            arrayp 
-            assoc 
-            assoc-if 
-            assoc-if-not 
-            atan 
-            atom 
-            bit 
-            bit-and 
-            bit-andc1 
-            bit-andc2 
-            bit-eqv 
-            bit-ior 
-            bit-nand 
-            bit-nor 
-            bit-not 
-            bit-orc1 
-            bit-orc2 
-            bit-xor 
-            break 
-            butlast 
-            car 
-            cdr 
-            ceiling 
-            cerror 
-            change-class 
-            char-equal 
-            char-greaterp 
-            char-lessp 
-            char-not-equal 
-            char-not-greaterp 
-            char-not-lessp 
-            char/= 
-            char< 
-            char<= 
-            char= 
-            char> 
-            char>= 
-            clear-input 
-            clear-memoize-tables 
-            clear-output 
-            compile 
-            compile-file 
-            compile-file-pathname 
-            compiler-macro-function 
-            complex 
-            compute-restarts 
-            concatenate 
-            continue 
-            copy-pprint-dispatch 
-            copy-readtable 
-            copy-symbol 
-            count 
-            count-if 
-            count-if-not 
-            decode-universal-time 
-            delete 
-            delete-duplicates 
-            delete-if 
-            delete-if-not 
-            describe 
-            digit-char 
-            digit-char-p 
-            directory 
-            dribble 
-            ed 
-            encode-universal-time 
-            enough-namestring 
-            ensure-directories-exist 
-            ensure-generic-function 
-            eq 
-            eql 
-            error 
-            eval 
-            every 
-            export 
-            fboundp 
-            fceiling 
-            ffloor 
-            file-position 
-            fill 
-            find 
-            find-class 
-            find-if 
-            find-if-not 
-            find-method 
-            find-restart 
-            find-symbol 
-            finish-output 
-            fixnum-to-symbol 
-            float 
-            float-sign 
-            floor 
-            force-output 
-            format 
-            fresh-line 
-            fround 
-            ftruncate 
-            funcall 
-            gensym 
-            gentemp 
-            get 
-            get-dispatch-macro-character 
-            get-internal-real-time 
-            get-internal-run-time 
-            get-macro-character 
-            get-properties 
-            get-setf-expansion 
-            getf 
-            gethash 
-            if 
-            import 
-            initialize-instance 
-            intern 
-            internal-real-time 
-            intersection 
-            invalid-method-error 
-            invoke-restart 
-            last 
-            ld-fn 
-            len 
-            len1 
-            length 
-            lisp-implementation-type 
-            list 
-            list* 
-            listen 
-            load 
-            log 
-            macro-function 
-            macroexpand 
-            macroexpand-1 
-            make-array 
-            make-broadcast-stream 
-            make-concatenated-stream 
-            make-condition 
-            make-dispatch-macro-character 
-            make-hash-table 
-            make-instance 
-            make-list 
-            make-load-form 
-            make-load-form-saving-slots 
-            make-package 
-            make-pathname 
-            make-random-state 
-            make-sequence 
-            make-string 
-            make-string-input-stream 
-            make-string-output-stream 
-            map 
-            map-into 
-            mapc 
-            mapcan 
-            mapcar 
-            mapcon 
-            mapl 
-            maplist 
-            max 
-            member 
-            member-if 
-            member-if-not 
-            memoize-call-array-grow 
-            memoize-eval-compile 
-            memoize-fn 
-            merge 
-            merge-pathnames 
-            method-combination-error 
-            mf-1st-warnings 
-            mf-2nd-warnings 
-            mf-warnings 
-            mismatch 
-            muffle-warning 
-            nbutlast 
-            nconc 
-            nintersection 
-            no-applicable-method 
-            no-next-method 
-            not 
-            notany 
-            notevery 
-            nset-difference 
-            nset-exclusive-or 
-            nstring-capitalize 
-            nstring-downcase 
-            nstring-upcase 
-            nsublis 
-            nsubst 
-            nsubst-if 
-            nsubst-if-not 
-            nsubstitute 
-            nsubstitute-if 
-            nsubstitute-if-not 
-            null 
-            nunion 
-            open 
-            pairlis 
-            parse-integer 
-            parse-namestring 
-            pathname-device 
-            pathname-directory 
-            pathname-host 
-            pathname-name 
-            pathname-type 
-            peek-char 
-            position 
-            position-if 
-            position-if-not 
-            pprint 
-            pprint-dispatch 
-            pprint-fill 
-            pprint-indent 
-            pprint-linear 
-            pprint-newline 
-            pprint-tab 
-            pprint-tabular 
-            prin1 
-            princ 
-            princ-to-string 
-            print 
-            print-object 
+            *
+            +
+            -
+            <
+            <=
+            =
+            >
+            >=
+            abort
+            adjoin
+            adjust-array
+            allocate-instance
+            append
+            apply
+            apropos
+            apropos-list
+            aref
+            arrayp
+            assoc
+            assoc-if
+            assoc-if-not
+            atan
+            atom
+            bit
+            bit-and
+            bit-andc1
+            bit-andc2
+            bit-eqv
+            bit-ior
+            bit-nand
+            bit-nor
+            bit-not
+            bit-orc1
+            bit-orc2
+            bit-xor
+            break
+            butlast
+            car
+            cdr
+            ceiling
+            cerror
+            change-class
+            char-equal
+            char-greaterp
+            char-lessp
+            char-not-equal
+            char-not-greaterp
+            char-not-lessp
+            char/=
+            char<
+            char<=
+            char=
+            char>
+            char>=
+            clear-input
+            clear-memoize-tables
+            clear-output
+            compile
+            compile-file
+            compile-file-pathname
+            compiler-macro-function
+            complex
+            compute-restarts
+            concatenate
+            continue
+            copy-pprint-dispatch
+            copy-readtable
+            copy-symbol
+            count
+            count-if
+            count-if-not
+            decode-universal-time
+            delete
+            delete-duplicates
+            delete-if
+            delete-if-not
+            describe
+            digit-char
+            digit-char-p
+            directory
+            dribble
+            ed
+            encode-universal-time
+            enough-namestring
+            ensure-directories-exist
+            ensure-generic-function
+            eq
+            eql
+            error
+            eval
+            every
+            export
+            fboundp
+            fceiling
+            ffloor
+            file-position
+            fill
+            find
+            find-class
+            find-if
+            find-if-not
+            find-method
+            find-restart
+            find-symbol
+            finish-output
+            fixnum-to-symbol
+            float
+            float-sign
+            floor
+            force-output
+            format
+            fresh-line
+            fround
+            ftruncate
+            funcall
+            gensym
+            gentemp
+            get
+            get-dispatch-macro-character
+            get-internal-real-time
+            get-internal-run-time
+            get-macro-character
+            get-properties
+            get-setf-expansion
+            getf
+            gethash
+            if
+            import
+            initialize-instance
+            intern
+            internal-real-time
+            intersection
+            invalid-method-error
+            invoke-restart
+            last
+            ld-fn
+            len
+            len1
+            length
+            lisp-implementation-type
+            list
+            list*
+            listen
+            load
+            log
+            macro-function
+            macroexpand
+            macroexpand-1
+            make-array
+            make-broadcast-stream
+            make-concatenated-stream
+            make-condition
+            make-dispatch-macro-character
+            make-hash-table
+            make-instance
+            make-list
+            make-load-form
+            make-load-form-saving-slots
+            make-package
+            make-pathname
+            make-random-state
+            make-sequence
+            make-string
+            make-string-input-stream
+            make-string-output-stream
+            map
+            map-into
+            mapc
+            mapcan
+            mapcar
+            mapcon
+            mapl
+            maplist
+            max
+            member
+            member-if
+            member-if-not
+            memoize-call-array-grow
+            memoize-eval-compile
+            memoize-fn
+            merge
+            merge-pathnames
+            method-combination-error
+            mf-1st-warnings
+            mf-2nd-warnings
+            mf-warnings
+            mismatch
+            muffle-warning
+            nbutlast
+            nconc
+            nintersection
+            no-applicable-method
+            no-next-method
+            not
+            notany
+            notevery
+            nset-difference
+            nset-exclusive-or
+            nstring-capitalize
+            nstring-downcase
+            nstring-upcase
+            nsublis
+            nsubst
+            nsubst-if
+            nsubst-if-not
+            nsubstitute
+            nsubstitute-if
+            nsubstitute-if-not
+            null
+            nunion
+            open
+            pairlis
+            parse-integer
+            parse-namestring
+            pathname-device
+            pathname-directory
+            pathname-host
+            pathname-name
+            pathname-type
+            peek-char
+            position
+            position-if
+            position-if-not
+            pprint
+            pprint-dispatch
+            pprint-fill
+            pprint-indent
+            pprint-linear
+            pprint-newline
+            pprint-tab
+            pprint-tabular
+            prin1
+            princ
+            princ-to-string
+            print
+            print-object
             profile-fn
-            profile-acl2 
-            profile-all 
-            random 
-            rassoc 
-            rassoc-if 
-            rassoc-if-not 
-            read 
-            read-byte 
-            read-char 
-            read-char-no-hang 
-            read-delimited-list 
-            read-from-string 
-            read-line 
-            read-preserving-whitespace 
-            read-sequence 
-            reduce 
-            reinitialize-instance 
-            remove 
-            remove-duplicates 
-            remove-if 
-            remove-if-not 
-            rename-file 
-            rename-package 
-            replace 
-            require 
+            profile-acl2
+            profile-all
+            random
+            rassoc
+            rassoc-if
+            rassoc-if-not
+            read
+            read-byte
+            read-char
+            read-char-no-hang
+            read-delimited-list
+            read-from-string
+            read-line
+            read-preserving-whitespace
+            read-sequence
+            reduce
+            reinitialize-instance
+            remove
+            remove-duplicates
+            remove-if
+            remove-if-not
+            rename-file
+            rename-package
+            replace
+            require
             reverse-strip-cars
             reverse-strip-cdrs
-            room 
-            round 
-            sbit 
-            search 
-            set-difference 
-            set-dispatch-macro-character 
-            set-exclusive-or 
-            set-macro-character 
-            set-pprint-dispatch 
-            set-syntax-from-char 
-            shadow 
-            shadowing-import 
-            shared-initialize 
-            signal 
-            signum 
-            slot-missing 
-            some 
-            sort 
-            stable-sort 
-            store-value 
-            string-capitalize 
-            string-downcase 
-            string-equal 
-            string-greaterp 
-            string-lessp 
-            string-not-equal 
-            string-not-greaterp 
-            string-not-lessp 
-            string-upcase 
-            string/= 
-            string< 
-            string<= 
-            string= 
-            string> 
-            string>= 
-            stringp 
-            sublis 
-            subseq 
-            subsetp 
-            subst 
-            subst-if 
-            subst-if-not 
-            substitute 
-            substitute-if 
-            substitute-if-not 
-            subtypep 
-            svref 
-            symbol-to-fixnum 
-            symbol-to-fixnum-create 
-            symbolp 
-            sync-memoize-call-array 
-            sync-watch-array 
-            terpri 
+            room
+            round
+            sbit
+            search
+            set-difference
+            set-dispatch-macro-character
+            set-exclusive-or
+            set-macro-character
+            set-pprint-dispatch
+            set-syntax-from-char
+            shadow
+            shadowing-import
+            shared-initialize
+            signal
+            signum
+            slot-missing
+            some
+            sort
+            stable-sort
+            store-value
+            string-capitalize
+            string-downcase
+            string-equal
+            string-greaterp
+            string-lessp
+            string-not-equal
+            string-not-greaterp
+            string-not-lessp
+            string-upcase
+            string/=
+            string<
+            string<=
+            string=
+            string>
+            string>=
+            stringp
+            sublis
+            subseq
+            subsetp
+            subst
+            subst-if
+            subst-if-not
+            substitute
+            substitute-if
+            substitute-if-not
+            subtypep
+            svref
+            symbol-to-fixnum
+            symbol-to-fixnum-create
+            symbolp
+            sync-memoize-call-array
+            sync-watch-array
+            terpri
             time-of-last-watch-update
             time-since-watch-start
             translate-logical-pathname
-            translate-pathname 
-            tree-equal 
-            true-listp 
-            truncate 
-            typep 
-            unexport 
-            unintern 
-            union 
-            unread-char 
-            unuse-package 
-            update-instance-for-different-class 
-            update-instance-for-redefined-class 
-            upgraded-array-element-type 
-            upgraded-complex-part-type 
-            use-package 
-            use-value 
-            user-homedir-pathname 
-            values 
-            vector-push-extend 
-            warn 
-            watch-array-grow 
-            wild-pathname-p 
-            write 
-            write-byte 
-            write-char 
-            write-line 
-            write-sequence 
-            write-string 
-            write-to-string 
-            y-or-n-p 
+            translate-pathname
+            tree-equal
+            true-listp
+            truncate
+            typep
+            unexport
+            unintern
+            union
+            unread-char
+            unuse-package
+            update-instance-for-different-class
+            update-instance-for-redefined-class
+            upgraded-array-element-type
+            upgraded-complex-part-type
+            use-package
+            use-value
+            user-homedir-pathname
+            values
+            vector-push-extend
+            warn
+            watch-array-grow
+            wild-pathname-p
+            write
+            write-byte
+            write-char
+            write-line
+            write-sequence
+            write-string
+            write-to-string
+            y-or-n-p
             yes-or-no-p)
           do (setf (gethash x h) t))
     h))
@@ -1494,7 +1500,7 @@ the calls took.")
 
 (defg *memoize-call-array*
   (make-array 1 :element-type 'mfixnum :initial-element 0)
-  
+
   "*MEMOIZE-CALL-ARRAY*, 'ma' for short, is used for storage of the
   monitoring information for memoized functions.  ma has as its length
   4 times the square of the maximum number of memoized functions.
@@ -1525,7 +1531,7 @@ the calls took.")
   room for at least n more memoized functions.")
 
 (defg *compute-array* (make-array 0)
-  
+
   "*COMPUTE-ARRAY*, ca for short, is an array of proper lists.  At the
   end of a call of COMPUTE-CALLS-AND-TIMES, which is called by
   MEMOIZE-SUMMARY, (aref ca n) will contain the numbers of the
@@ -1564,32 +1570,6 @@ the calls took.")
 ; for initialization
 
 (defg *memoize-init-done* nil)
-
-
-; locals used in memoize-on and memoize-off
-
-(defconstant *mo-f* (make-symbol "F"))
-(defconstant *mo-h* (make-symbol "H"))
-(defconstant *mo-o* (make-symbol "O"))
-
-
-; locals used in functions generated by memoize-fn
-
-(defconstant *mf-old-caller* (make-symbol "OLD-CALLER"))
-(defconstant *mf-start-hons* (make-symbol "START-HONS"))
-(defconstant *mf-start-pons* (make-symbol "START-PONS"))
-(defconstant *mf-start-bytes* (make-symbol "START-BYTES"))
-(defconstant *mf-ans* (make-symbol "ANS"))
-(defconstant *mf-ans-p* (make-symbol "ANS-P"))
-(defconstant *mf-ma* (make-symbol "MA"))
-(defconstant *mf-args* (make-symbol "ARGS"))
-(defconstant *mf-2mmf* (make-symbol "MF-2MMF"))
-(defconstant *mf-2mmf-fnn* (make-symbol "MF-2MMF-FNN"))
-(defconstant *mf-count-loc* (make-symbol "MF-COUNT-LOC"))
-
-(defconstant *mf-cl-error-msg*
-  "~%; Redefining a function in the COMMON-LISP package ~
-   is forbidden.")
 
 (defg *caller* (* *ma-initial-max-symbol-to-fixnum* *2max-memoize-fns*)
   "When memoized functions are executing in parallel, the value of
@@ -2648,7 +2628,7 @@ the calls took.")
             zp)
           do (setf (gethash sym ht) t))
     ht)
-  
+
   "The user may freely add to the hash table
   *PROFILE-REJECT-HT*, which inhibits the collection of
   functions into lists of functions to be memoized and/or profiled.
@@ -2686,13 +2666,23 @@ the calls took.")
         ((not (fboundp fn)) "not fboundp.")
         ((eq (symbol-package fn) *main-lisp-package*)
          (ofn "~%;~10tin *main-lisp-package*."))
+        #-Clozure
+        ((multiple-value-bind
+          (sym foundp)
+          (find-symbol (symbol-name fn) *main-lisp-package*)
+          (declare (ignore sym))
+          foundp)
+; Avoid "cannot be printed readably" error in SBCL and perhaps other Lisps (but
+; since we haven't had this problem in CCL, we exclude the test for CCL).
+         (ofn "~%;~10tsymbol-name is found in *main-lisp-package*."))
         #+Clozure
         ((ccl::%advised-p fn)
          (ofn "~%;10tadvised, and it will so continue."))
         ((member fn (eval '(trace)))
          (ofn "~%;~10ta member of (trace), and it will so ~
                continue."))
-        ((member fn (eval '(old-trace)))
+        ((and (fboundp 'old-trace)
+              (member fn (eval '(old-trace))))
          (ofn "~%;~10ta member of (old-trace), and it will so ~
                continue."))
         ((eq fn 'return-last)
@@ -3157,6 +3147,7 @@ the calls took.")
 (defconstant most-negative-fudge (- (expt 2 24)))
 (defconstant -most-negative-fudge (- most-negative-fudge))
 
+#+Clozure
 (defn1 atom-case (s)
   (cond
    ((symbolp s)
@@ -3188,6 +3179,7 @@ the calls took.")
 (defmacro static-hons-shift ()
   (ceiling (/ (integer-length most-positive-fixnum) 2)))
 
+#+Clozure
 (defn1 addr-for (x y)
   (let ((idx (let ((n (ccl::%staticp x)))
                (cond (n (+ atom-case-fudge (the fixnum n)))
@@ -3204,7 +3196,7 @@ the calls took.")
                              (< (the fixnum idy) (sqmpf))) nil)
                        (t (setq large-case t))))
             (t (return-from addr-for nil)))
-    
+
 ; ADDR-FOR is 1-1, in a sense, for a two argument function, when not
 ; NIL.  That is, for all ACL2 objects x1, x2, y1, and y1, if (addr-for
 ; x1 y1) is not NIL and is equal to (addr-for x2 y2), then x1 is equal
@@ -3266,7 +3258,7 @@ the calls took.")
 
 ; Ignore the ht for the moment.  Suppose that
 ;    (equal (pons x (pons y z)) (pons x' (pons y' z'))).
-; 
+;
 ; It follows then that x=x', y=y', and z=z'.
 
   (let ((xval nil)
@@ -3451,7 +3443,7 @@ the calls took.")
                                     (eq d '?))
                                '?)
                               (t (cons a d))))))))))
-                                       
+
 (defun prine (obj &optional stream)
   (let ((*print-pretty* nil))
     (princ (abbrev obj *print-level* *print-length*) stream)))
@@ -3499,32 +3491,6 @@ the calls took.")
         (t (prine ans *trace-output*)))
   (oftr ")~%"))
 
-
-(defn fle (x)
-
-  "FLE is akin to the ANSI Common Lisp standard function
-  FUNCTION-LAMBDA-EXPRESSION.  'FLE' is shorter.  (FLE 'foo) may
-  return, among other things, the defining body of the function FOO.
-  In Clozure Common Lisp, definition saving is controlled by the
-  settings of the variables CCL::*SAVE-DEFINITIONS* and
-  CCL::*FASL-SAVE-DEFINITIONS*.  Under Closure Common Lisp, we may
-  also first print the name of the file in which FOO was defined."
-
-  #+Clozure
-  (let ((loc (ccl::find-definition-sources x)))
-    (let ((*print-pretty* nil))
-      (when loc (oft "~%; source: ~s" loc))))
-  (cond ((functionp x)
-         (function-lambda-expression x))
-        ((symbolp x)
-         (let ((fn (symbol-function x)))
-           (cond ((functionp fn)
-                  (function-lambda-expression fn))
-                 #+Clozure
-                 ((and (arrayp fn) (functionp (aref fn 1)))
-                  (function-lambda-expression (aref fn 1)))
-                 (t (ofe "Can't figure out ~a as a function." x)))))))
-
 (defg *memoize-fn-signature-error*
   "
   Memoize-fn: could not determine a signature for ~a.~%~
@@ -3535,8 +3501,6 @@ the calls took.")
          '(3 . 1))")
 
 (defg *sort-to-from-by-calls* nil)
-
-(defconstant *attached-fn-temp* (make-symbol "ATTACHED-FN-TEMP"))
 
 (defvar *memoize-use-attachment-warning-p* t)
 
@@ -3746,23 +3710,23 @@ the calls took.")
                        (cond (def (assert (eq (car def) 'defun))
                                   (cdr def)))))
 
-                    ((let ((def (function-lambda-expression
-                                 (symbol-function fn))))
-                       (cond (def (assert (eq (car def) 'lambda))
-                                  def))))
+                    ((multiple-value-bind
+                      (def flg)
+                      (our-function-lambda-expression fn)
+                      (cond (flg (cdr def))
+                            (def (assert (eq (car def)
+                                             'lambda))
+                                 def))))
 
                     (t
                      #+Clozure
                      (unless (and ccl::*save-source-locations*
                                   ccl::*fasl-save-definitions*)
                        (ofd "~&; Check the settings of ~
-                                   CCL::*SAVE-SOURCE-LOCATIONS* ~
-                                   and ~
-                                   CCL::*FASL-SAVE-DEFINITIONS*."))
-                     (ofe "MEMOIZE-FN: ** Cannot find a ~
-                                      definition for ~a via ACL2 ~
-                                      or ~
-                                      FUNCTION-LAMBDA-EXPRESSION."
+                             CCL::*SAVE-SOURCE-LOCATIONS* and ~
+                             CCL::*FASL-SAVE-DEFINITIONS*."))
+                     (ofe "MEMOIZE-FN: ** Cannot find a definition for ~a via ~
+                           ACL2 or OUR-FUNCTION-LAMBDA-EXPRESSION."
                           fn))) nil))
               ((eq (car cl-defun) 'defun)
                (cdr cl-defun))
@@ -4253,8 +4217,6 @@ the calls took.")
             (n2 (* num *2max-memoize-fns*))
             (w (access memoize-info-ht-entry l :watch-ifs)))
        (declare (fixnum num n2))
-
-       #+Clozure
        (when w
          (maphash (lambda (k v)
                     (when (eq fn (cadr v))
@@ -4444,7 +4406,7 @@ the calls took.")
          (push k l)))
      *memoize-info-ht*)
     l))
-  
+
 (defn1 unmemoize-profiled ()
 
   "UNMEMOIZE-PROFILED is a raw Lisp function.  (UNMEMOIZE-PROFILED)
@@ -4524,7 +4486,7 @@ the calls took.")
   "PROFILE-ALL is a raw Lisp function.  (PROFILE-ALL) profiles each
   symbol that has a function-symbol and occurs in a package known
   to ACL2, unless it is
-  
+
    1. memoized,
    2. traced,
    3. in the package COMMON-LISP,
@@ -4614,7 +4576,7 @@ the calls took.")
                  (functions-defined-in-form x))))))))
 
 (defun profile-file (file &rest r)
-   
+
   "PROFILE-FILE is a raw Lisp function.  (PROFILE-FILE file) calls
   PROFILE-FN on 'all the functions defined in' FILE, a relatively vague
   concept.  However, if packages are changed in FILE as it is read, in
@@ -4998,7 +4960,7 @@ the calls took.")
 
   "For a memoized function X, (NUMBER-OF-MEMOIZED-ENTRIES x) is the
   number of entries currently stored for X."
-  
+
   (let ((h (gethash x *memoize-info-ht*)))
     (unless h (ofe "~a is not memoized." x))
     (let* ((sym (access memoize-info-ht-entry
@@ -5229,12 +5191,12 @@ the calls took.")
          Variable              type
 
          *RECORD-BYTES*       boolean    (available in CCL only)
-         *RECORD-CALLS*       boolean 
-         *RECORD-HITS*        boolean 
-         *RECORD-HONS-CALLS*  boolean 
-         *RECORD-MHT-CALLS*   boolean 
-         *RECORD-PONS-CALLS*  boolean 
-         *RECORD-TIME*        boolean 
+         *RECORD-CALLS*       boolean
+         *RECORD-HITS*        boolean
+         *RECORD-HONS-CALLS*  boolean
+         *RECORD-MHT-CALLS*   boolean
+         *RECORD-PONS-CALLS*  boolean
+         *RECORD-TIME*        boolean
 
   In Clozure Common Lisp, the :WATCH-IFS keyword parameter of
   MEMOIZE-FN determines whether IFs in the body of the function being
@@ -5244,18 +5206,18 @@ the calls took.")
   MEMOIZE-SUMMARY is called, what information is printed:
 
          *REPORT-BYTES*       boolean   (available in CCL only)
-         *REPORT-CALLS*       boolean 
-         *REPORT-CALLS-FROM*  boolean 
-         *REPORT-CALLS-TO*    boolean 
-         *REPORT-HITS*        boolean 
-         *REPORT-HONS-CALLS*  boolean 
-         *REPORT-MHT-CALLS*   boolean 
-         *REPORT-PONS-CALLS*  boolean 
-         *REPORT-TIME*        boolean 
+         *REPORT-CALLS*       boolean
+         *REPORT-CALLS-FROM*  boolean
+         *REPORT-CALLS-TO*    boolean
+         *REPORT-HITS*        boolean
+         *REPORT-HONS-CALLS*  boolean
+         *REPORT-MHT-CALLS*   boolean
+         *REPORT-PONS-CALLS*  boolean
+         *REPORT-TIME*        boolean
          *REPORT-IFS*         boolean
 
-         *REPORT-ON-MEMO-TABLES*   boolean 
-         *REPORT-ON-PONS-TABLES*   boolean 
+         *REPORT-ON-MEMO-TABLES*   boolean
+         *REPORT-ON-PONS-TABLES*   boolean
          *MEMOIZE-SUMMARY-LIMIT*            (or integerp null)
          *MEMOIZE-SUMMARY-ORDER-LIST*       (symbol symbol ... symbol)
          *MEMOIZE-SUMMARY-ORDER-REVERSED*   boolean
@@ -5308,7 +5270,7 @@ the calls took.")
       (null (gethash x *memoize-info-ht*))))
 
 (defn1 memoize-summary-after-compute-calls-and-times ()
-  
+
 ;  If COMPUTE-CALLS-AND-TIMES is not called shortly before this
 ;  function, MEMOIZE-SUMMARY-AFTER-COMPUTE-CALLS-AND-TIMES, is called,
 ;  the information reported may be quite untimely.
@@ -5500,7 +5462,6 @@ the calls took.")
                              outside-fn-count
                            outside-fn-time))
                     l))
-                 
                  (when (and (> selftime 0)
                             (not (= selftime tt)))
                    (push `((,(ofn " To self/unprofiled functions")
@@ -5696,7 +5657,7 @@ the calls took.")
 (defn clear-memoize-statistics ()
   (clear-memoize-call-array)
   nil)
-  
+
 ; Note: The hons reader was formerly defined here, but it's now in
 ; books/serialize/compact-print-raw.lsp (loaded when the book
 ; serialize/compact-print is included).
@@ -5764,7 +5725,7 @@ next GC.~%"
 
 #+Clozure
 (defn1 start-sol-gc ()
-  
+
 ; The following settings are highly heuristic.  We arrange that gc
 ; occurs at 1/8 of the physical memory size in bytes, in order to
 ; leave room for the gc point to grow (as per
@@ -5804,7 +5765,7 @@ next GC.~%"
     (ccl::set-lisp-heap-gc-threshold bound)
     (ccl::use-lisp-heap-gc-threshold))
   nil)
-     
+
 #+Clozure
 (defun maybe-set-gc-threshold (&optional (fraction 1/32))
   (let (n)
@@ -5854,7 +5815,7 @@ next GC.~%"
 ;; executable.  The regions are described by lines that look something
 ;; like:
 
-;; 300040eef000-300042f60000 rwxp 300040eef000 00:00 0 
+;; 300040eef000-300042f60000 rwxp 300040eef000 00:00 0
 ;; 300042f60000-307c00000000 ---p 300042f60000 00:00 0
 
 ;; The first of these lines describes a region that's readable (r),
@@ -5975,6 +5936,7 @@ next GC.~%"
                         (push (list pid owner cmdline) ans))))))))))
      (sort ans '< :key 'car)))
 
+#+Clozure
 (defn print-ancestry (&optional (p (ccl::getpid)))
   (with-open-stream
    (s (csh :stream "ps ww -A -o pid,ppid,cmd"))
@@ -5993,6 +5955,7 @@ next GC.~%"
            (loop repeat i do (write-char #\Space))
            (princ (pop ans))))))
 
+#+Clozure
 (defn print-fds (&optional (p (ccl::getpid)))
   (loop for x in (directory (ofn "/proc/~a/fd/*" p))
         do
@@ -6003,7 +5966,7 @@ next GC.~%"
                       (looking-at "/proc/" n))
             (fresh-line)
             (princ n)))))
-                  
+
 (defn print-proc-stat (pid)
   (with-standard-io-syntax
   (ignore-errors
@@ -6106,12 +6069,10 @@ next GC.~%"
   (when (not (memoizedp-raw 'bad-lisp-objectp))
     (with-lower-overhead
      (memoize-fn 'bad-lisp-objectp :forget t)))
-  
+
   (when (not (memoizedp-raw 'worse-than-builtin))
-  
-; Warning: If this is changed or removed, visit the comment in 
-; worse-than-builtin.
-  
+    ;; Warning: If this is changed or removed, visit the comment in
+    ;; worse-than-builtin.
     (with-lower-overhead
      (memoize-fn 'worse-than-builtin
                  :condition ; Sol Swords suggestion
@@ -6121,28 +6082,24 @@ next GC.~%"
                        (not (fquotep term2))))))
 
   (when (not (memoizedp-raw 'fchecksum-obj))
-
-    "If this memoization is removed, modify the comment in
-      fchecksum-obj about memoization of that function."
-
+    ;; Warning: If this memoization is removed, modify the comment in
+    ;; fchecksum-obj about memoization of that function.
     (with-lower-overhead
      (memoize-fn 'fchecksum-obj :forget t)))
 
   (when (not (memoizedp-raw 'expansion-alist-pkg-names-memoize))
-
-    "If this memoization is removed, modify the comment in
-      expansion-alist-pkg-names about memoization of that function."
-
+    ;; Warning: If this memoization is removed, modify the comment in
+    ;; expansion-alist-pkg-names about memoization of that function.
     (with-lower-overhead
      (memoize-fn 'expansion-alist-pkg-names-memoize :forget t)))
 
-  ;; [Jared]: merged in from e4/memoize-raw.lsp
   (when (not (memoizedp-raw 'physical-memory))
+    ;; [Jared]: merged in from e4/memoize-raw.lsp
     (with-lower-overhead
      (memoize-fn 'physical-memory :inline nil)))
 
-  ;; [Jared]: merged in from e4/memoize-raw.lsp
   (when (not (memoizedp-raw 'swap-total))
+    ;; [Jared]: merged in from e4/memoize-raw.lsp
     (with-lower-overhead
      (memoize-fn 'swap-total :inline nil))))
 
@@ -6225,10 +6182,10 @@ next GC.~%"
 
 ;   This might be a good idea, but we do not understand about
 ;   ccl::advise being called twice, e.g., via *hons-init-hook*.
-; 
+;
 ;    "Before an image is saved or we otherwise quit, we kill any WATCH
 ;     process and delete any /tmp file created by the csh/sh facility."
-;   
+;
 ;     (ccl::advise ccl::quit
 ;                 (progn (watch-kill) (csh-stop) (sh-stop))
 ;                 :when :before)
@@ -6240,14 +6197,14 @@ next GC.~%"
                       (multiple-value-list (ccl::gc-verbose-p)))
          (ofvv "*hons-init-hook*:  Setting CCL's gc to verbose.")
          (ccl::gc-verbose t t))
-     
+
        "CCL's ephemeral gc doesn't seem to work well with honsing and
         memoizing, so we always shut it off."
-     
+
        (when (ccl::egc-active-p)
          (ofvv "*hons-init-hook*:  Turning off CCL's ephemeral gc.")
          (ccl::egc nil))
-     
+
        "Sol Swords's scheme to control GC in CCL.  See long comment in
         memoize-raw.lisp."
 
@@ -6277,7 +6234,7 @@ next GC.~%"
               (set-and-reset-gc-thresholds))
 
        ))
-  
+
   "*HONS-INIT-HOOK* is EVALed by HONS-INIT.  *HONS-INIT-HOOK* may be
   EVALed several times because HONS-INIT may be called several times.
   *HONS-INIT-HOOK* is supposed to set some options that a user might
@@ -6289,13 +6246,13 @@ next GC.~%"
     (ofe "HONS-INIT-HOOK-SET works for symbols, not ~a." var))
   (when (not (equal val (symbol-value var)))
     (ofv "*hons-init-hook*:  Setting ~a to ~a." var val)
-    (setf (symbol-value var) val)))     
+    (setf (symbol-value var) val)))
 
 ;          Sol Sword's scheme to control GC in CCL
-; 
+;
 ; The goal is to get CCL to perform a GC whenever we're using almost
 ; all the physical memory, but not otherwise.
-; 
+;
 ; The usual way of controlling GC on CCL is via LISP-HEAP-GC-THRESHOLD.
 ; This value is approximately amount of memory that will be allocated
 ; immediately after GC.  This means that the next GC will occur after
@@ -6304,44 +6261,44 @@ next GC.~%"
 ; time the next GC comes around is the threshold plus the amount that
 ; remained in use at the end of the previous GC.  This is a problem
 ; because of the following scenario:
-; 
+;
 ;  - We set the LISP-HEAP-GC-THRESHOLD to 3GB since we'd like to be able
 ;    to use most of the 4GB physical memory available.
-; 
+;
 ;  - A GC runs or we say USE-LISP-HEAP-GC-THRESHOLD to ensure that 3GB
 ;    is available to us.
-; 
+;
 ;  - We run a computation until we've exhausted this 3GB, at which point
-;    a GC occurs.  
-; 
+;    a GC occurs.
+;
 ;  - The GC reclaims 1.2 GB out of the 3GB used, so there is 1.8 GB
 ;    still in use.
-; 
+;
 ;  - After GC, 3GB more is automatically allocated -- but this means we
 ;    won't GC again until we have 4.8 GB in use, meaning we've gone to
 ;    swap.
-; 
+;
 ; What we really want is, instead of allocating a constant additional
 ; amount after each GC, to allocate up to a fixed total amount including
 ; what's already in use.  To emulate that behavior, we use the hack
 ; below.  This operates as follows (assuming the same 4GB total physical
 ; memory as in the above example:)
-; 
+;
 ; 1. We set the LISP-HEAP-GC-THRESHOLD to (3.5G - used bytes) and call
 ; USE-LISP-HEAP-GC-THRESHOLD so that our next GC will occur when we've
 ; used a total of 3.5G.
-; 
+;
 ; 2. We set the threshold back to 1GB without calling
 ; USE-LISP-HEAP-GC-THRESHOLD.
-; 
+;
 ; 3. Run a computation until we use up the 3.5G and the GC is called.
 ; Say the GC reclaims 1.2GB so there's 2.3GB in use.  1GB more (the
 ; current LISP-HEAP-GC-THRESHOLD) is allocated so the ceiling is 3.3GB.)
-; 
+;
 ; 4. A post-GC hook runs which again sets the threshold to (3.5G -
 ; used bytes), calls USE-LISP-HEAP-GC-THRESHOLD to raise the ceiling to
 ; 3.5G, then sets the threshold back to 1GB, and the process repeats.
-; 
+;
 ; A subtlety about this scheme is that post-GC hooks runs in a separate
 ; thread from the main execution.  A possible bug is that in step 4,
 ; between checking the amount of memory in use and calling
@@ -6528,10 +6485,10 @@ next GC.~%"
 
 #+Clozure
 (defparameter *with-space-timer-raw-limit* nil)
-  
+
 #+Clozure
 (defparameter *with-run-timer-raw-limit* nil
-  
+
   "*WITH-RUN-TIMER-RAW-LIMIT* is bound only by WITH-RUN-TIMER-RAW, and
   is bound to a nonnegative integer representing the value of
   (INTERNAL-RUN-TIME) after which, if the watch process interrupts the
@@ -6541,7 +6498,7 @@ next GC.~%"
 
 #+Clozure
 (defparameter *with-real-timer-raw-limit* nil
-  
+
   "*WITH-REAL-TIMER-RAW-LIMIT* is bound only by WITH-REAL-TIMER-RAW,
   and is bound to a nonnegative integer representing the value of
   (INTERNAL-REAL-TIME) after which, if the watch process interrupts
@@ -6553,7 +6510,7 @@ next GC.~%"
 (defg *watch-lock-ht* (make-hash-table)
   "*WATCH-LOCK-HT* is used to provide a locking mechanism to
   prevent watch-dump from being run twice at the same time.")
-  
+
 #+Clozure
 (declaim (hash-table *watch-lock-ht*))
 
@@ -6611,27 +6568,27 @@ next GC.~%"
            ((not *watch-file*)
             (ofd "~%; *WATCH-FILE* is NIL.  Invoke (watch)."))
            ((eql 0 (hash-table-count *watch-lock-ht*))
-            
+
 ; At this point, nothing has the watch lock.  We race for the watch
 ; lock but unknown others may also get into the race, this very
 ; process executing this very code.
 
             (let ((id (cons nil nil)))  ; a unique object
-              (unwind-protect 
+              (unwind-protect
                   (progn
                     (setf (gethash id *watch-lock-ht*) t)
                     (cond ((eql (hash-table-count *watch-lock-ht*) 1)
-                           
+
 ; The watch lock has been obtained by only one of 'us', and any
 ; competitors will do nothing.
-                           
+
                            ,@r)
                           (t (ofd "~%; WITH-WATCH-LOCK: ** the watch ~
                                    lock is currently taken."))))
                 (remhash id *watch-lock-ht*))
-              
+
 ; The watch lock is released as of now, if it was obtained.
-              
+
               ))
            (t (ofd "~%; WITH-WATCH-LOCK: ** the watch lock is ~
                     currently taken.")))
@@ -6702,7 +6659,7 @@ next GC.~%"
                           &key
                           (seconds *real-timer-raw-seconds*)
                           (time-out-value *real-timer-raw-value*))
-  
+
   "(WITH-REAL-TIMER-RAW form &key seconds time-out-value) begins an
   evaluation of FORM, but the evaluation may and should be aborted
   when more than SECONDS seconds of real-time (wall time) elapses.
@@ -6744,7 +6701,7 @@ next GC.~%"
                           &key
                           (seconds *run-timer-raw-seconds*)
                           (time-out-value *run-timer-raw-value*))
-  
+
   "(WITH-RUN-TIMER-RAW form &key seconds time-out-value) begins an
   evaluation of FORM, but the evaluation may and should be aborted
   when more than SECONDS seconds of run-time (not wall time) elapses.
@@ -6863,13 +6820,13 @@ next GC.~%"
            (incf-watch-count)
            (error *with-real-timer-raw-condition-instance*))
          (handler-case
-  
+
 ; No thread or stack frame can be expected to handle an error under
 ; MAYBE-WATCH-DUMP in WATCH-DUMP, because MAYBE-WATCH-DUMP is run as
 ; the result of an interrupt from the watch dog process.  In this
 ; unexpected case, we ignore the error, after printing a note to
 ; *DEBUG-IO*.
-  
+
 ; MAYBE-WATCH-DUMP calls (INCF-WATCH-COUNT), even if MAYBE-WATCH-DUMP
 ; exits via ERROR or exits after catching and ignoring an error.
 ; Otherwise, the interrupting watch dog process might wait a very long
@@ -6916,17 +6873,19 @@ next GC.~%"
 
 (defn1 incf-watch-count ()
   (incf (gethash 'count *watch-count-ht*)))
-  
+
 (defn1 set-watch-count (x)
   (setf (gethash 'count *watch-count-ht*) x))
 
 (defv *watch-sleep-seconds* 1
-  
+
   "The watch dog process sleeps at least *WATCH-SLEEP-SECONDS*
   before interrupting the main process.")
 
+(save-def
 (defn1 swap-total ()
   (meminfo "SwapTotal:"))
+)
 
 (defun watch (&optional force-dog)
 
@@ -6959,7 +6918,7 @@ next GC.~%"
   about calls to Common Lisp functions:
 
     0. Invoke (WATCH).
-  
+
     1. Profile some functions that have been defined.
 
        For example, call (PROFILE-FN 'foo1), ...
@@ -6978,7 +6937,7 @@ next GC.~%"
 
     2. Run a Lisp computation of interest to you that causes some of
        the functions you have profiled to be executed.
- 
+
     3. Invoke (WATCH-DUMP).
 
     4. Examine, perhaps in Emacs, the watch file, whose name was
@@ -7113,7 +7072,7 @@ next GC.~%"
                    *the-live-state*))) =>~%~a"
                  x def))
            (t
-             
+
 ; 3. Else, for a symbol with some Common Lisp DOCUMENTATION, print
 ; that.
 
@@ -7207,7 +7166,7 @@ next GC.~%"
    print-documentation
    compact-print-file
    compact-read-file
-                  
+
    *watch-items*
    *watch-forms*
    *watch-file-form*
@@ -7218,7 +7177,7 @@ next GC.~%"
    *watch-last-run-time*
    *watch-real-seconds-between-dumps*
    *watch-lock-ht*
-   
+
    #+Clozure
    *watch-dog-process*
    #+Clozure
@@ -7239,7 +7198,7 @@ next GC.~%"
    time-for-non-hits/call
    time/call
    total-time
-  
+
    resize-memo
    resize-pons
 
@@ -7258,7 +7217,7 @@ next GC.~%"
            (id (ccl::getpid))
            (rwx-size (rwx-size)))
       (declare (ignorable sum))
-      (oft   
+      (oft
 
 ; (stat (proc-stat id))
 
@@ -7412,7 +7371,7 @@ next GC.~%"
    (let* ((semaphore (make-watchdog duration)))
       (unwind-protect
           (funcall function)
-        (ccl:signal-semaphore semaphore)))) 
+        (ccl:signal-semaphore semaphore))))
 
 
 ;  COMPILER MACRO for IF
@@ -7631,7 +7590,7 @@ next GC.~%"
                      (setf (gethash new *ignore-form-ht*) t)
                      new))
                   (t call)))
-           (t         
+           (t
             (incf *if-counter*)
             (when *trace-if-compiler-macro*
               (prinl "*IF-COUNTER* incremented"
@@ -7732,9 +7691,11 @@ next GC.~%"
       (new-size (hash-table-size ht))
       (new-rehash-size (hash-table-rehash-size ht))
       (new-rehash-threshold (hash-table-rehash-threshold ht))
-      (new-weak (ccl::hash-table-weak-p ht))
-      (new-shared (ccl::nhash.owner ht)))
-  
+      (new-weak #+Clozure (ccl::hash-table-weak-p ht)
+                #-Clozure nil)
+      (new-shared #+Clozure (ccl::nhash.owner ht)
+                  #-Clozure nil))
+
   "(COPY-HASH-TABLE ht) takes a hash-table and returns a copy of it
   that may have some different attributes, depending upon the keyword
   values supplied for :NEW-SIZE and other keywords.  All the key/value
@@ -7773,7 +7734,7 @@ next GC.~%"
 ;;    if :SHARED is true.  A hash-table can be:
 
 ;;    a) thread-private, if :SHARED is false
-;;    b) shared, using locks if :SHARED is true and :LOCK-FREE is 
+;;    b) shared, using locks if :SHARED is true and :LOCK-FREE is
 ;;       false
 ;;    c) shared, without using locks if :SHARED is true and :LOCK-FREE
 ;;        is true.
@@ -7815,17 +7776,17 @@ next GC.~%"
 
 ;;   CSH
 
-; 
+;
 ; Here is a quite simple version of OPEN-GZIPPED-FILE that is fine to
 ; use in CCL for a few files, but perhaps not for thousands of files
 ; because FORK can take a serious amount of time for a big CCL job such
 ; as ACL2 since a copy is made by FORK of the entire job.
-; 
+;
 ; (defun open-gzipped-file (name)
 ;    (ccl::external-process-output-stream
 ;      (ccl::run-program "gunzip" (list "-c"  name)
 ;                        :output :stream :wait nil)))
-; 
+;
 ; To eliminate FORK as a source of such inefficiency, we provide the
 ; function CSH, which establishes a lasting subsidiary cshell process
 ; executing a 'read-and-execute one CSH line' loop.  It may be a good
@@ -7862,12 +7823,12 @@ next GC.~%"
 #+Clozure
 (defv *csh-start-string*
   "set tm=`mktemp /tmp/acl2-csh-temp.XXXXXX`; echo $tm")
-  
+
 #+Clozure
 (defn1 csh-start ()
 
   "(CSH-START) creates a subsidiary csh process.  CSH-START
-  is called automatically by CSH."  
+  is called automatically by CSH."
 
   (csh-stop)
   (setq *csh-process*
@@ -7888,7 +7849,7 @@ next GC.~%"
               (probe-file *csh-temporary-file-name*))
             *csh-temporary-file-name*)
            (t (ofe "csh-start: failed."))))))
-         
+
 (defn1 args-spaced (args)
   (cond ((atom args) "")
         ((and (atom (cdr args))
@@ -7961,7 +7922,7 @@ next GC.~%"
   ;; tracked down where it officially says so.  If 'echo' does not
   ;; flush its output, then the READ-CHAR below may wait forever.
   ;; Probably, adding a 'sync' command would guarantee the flushing.
-   
+
   (with-standard-io-syntax
    (pushnew 'csh-stop ccl::*save-exit-functions*)
    (unless (ccl::external-process-p *csh-process*) (csh-start))
@@ -7979,7 +7940,7 @@ next GC.~%"
              :input-stream (ccl::external-process-input-stream p)
              :output-stream (ccl::external-process-output-stream p)
              :temp-file-name *csh-temporary-file-name*)))
-   
+
     ;; It seems so peculiar to 'print' to an 'input' here, but input
     ;; and output are opposite on the other end.
 
@@ -7987,9 +7948,9 @@ next GC.~%"
     (write-line " > $tm < /dev/null ; echo" is)
     (finish-output is)
     (setq x (read-char os nil :eof))
-   
+
     ;; If necessary, READ-CHAR will wait.
-   
+
     (unless (and (eql x #\Newline) (null (listen os)))
       (loop while (characterp x) do
             (write-char x *error-output*)
@@ -8040,12 +8001,12 @@ next GC.~%"
 #+Clozure
 (defv *sh-start-string*
   "tm=`mktemp /tmp/acl2-sh-temp.XXXXXX`; echo $tm")
-  
+
 #+Clozure
 (defn1 sh-start ()
 
   "(SH-START) creates a subsidiary sh process.  SH-START
-  is called automatically by SH."  
+  is called automatically by SH."
 
   (sh-stop)
   (setq *sh-process*
@@ -8135,7 +8096,7 @@ next GC.~%"
              :input-stream (ccl::external-process-input-stream p)
              :output-stream (ccl::external-process-output-stream p)
              :temp-file-name *sh-temporary-file-name*)))
-   
+
     ;; It seems so peculiar to 'print' to an 'input' here, but input
     ;; and output are opposite on the other end.
 
@@ -8143,9 +8104,9 @@ next GC.~%"
     (write-line " > $tm < /dev/null ; echo" is)
     (finish-output is)
     (setq x (read-char os nil :eof))
-   
+
     ;; If necessary, READ-CHAR will wait.
-   
+
     (unless (and (eql x #\Newline) (null (listen os)))
       (loop while (characterp x) do
             (write-char x *error-output*)
@@ -8242,7 +8203,7 @@ next GC.~%"
   (setq *record-time* nil)
   (setq *count-pons-calls* nil))
 
-
+#+Clozure
 (defun our-gctime ()
   (ccl::timeval->microseconds ccl::*total-gc-microseconds*))
 
@@ -8693,7 +8654,7 @@ next GC.~%"
 ;;         (our-eofv (cons nil nil)))
 ;;     (cond (*use-hons-in-read-object*
 ;;             (our-lock-unlock-hons1
-             
+
 ;; ; Although a readmacro such as quote or backquote might return a CONS
 ;; ; that is not HONSP, HONS-READ-LIST will turn those into HONSES.
 
@@ -8891,7 +8852,7 @@ next GC.~%"
 ;;        (unless (eq (readtable-case *acl2-readtable*) :upcase)
 ;;          (ofe "PRINT-COMPACT-STREAM: Problem with the setting of ~
 ;;                (readtable-case *acl2-readtable*)."))
-       
+
 ;;        ;; We do not cause an error if the following *PRINT-...*
 ;;        ;; variable settings are different from what OUR-SYNTAX will
 ;;        ;; effect, and for many good reasons, as follows.
@@ -8926,7 +8887,7 @@ next GC.~%"
 ;;        ;; *READ-EVAL* -- OUR-SYNTAX uses T for *READ-EVAL*.  But we
 ;;        ;; don't print #. in compact-printing unless the # is properly
 ;;        ;; quoted with vertical bars or back-slashes.
-       
+
 ;;        ;; Though OUR-SYNTAX binds *PRINT-CIRCLE* to NIL,
 ;;        ;; COMPACT-PRINT-STREAM is designed to do the job that
 ;;        ;; *PRINT-CIRCLE* should do, except for circular objects, which
@@ -8976,7 +8937,7 @@ next GC.~%"
 ;;           (*read-eval* t)  ; to support #.constant printing
 ;;           (*read-suppress* nil)
 ;;           (*readtable* *acl2-readtable*)
-          
+
 ;;           ; Not relevant once one knows that *PRINT-PRETTY* is NIL:
 
 ;;           (*print-length* nil)
@@ -9017,9 +8978,9 @@ next GC.~%"
 ;;           )
 ;;       (compact-print-stream data stream))
 ;;     (namestring (our-truename stream))))
-  
+
 ;; (defun ns-=-reader (stream subchar arg)
-  
+
 ;; ; We don't use DEFN1 because this function might return 0 values.
 
 ;; ; Do not call ns-=-reader directly.
@@ -9167,6 +9128,3 @@ next GC.~%"
 ;;    #\# #\= #'ns-=-reader            *hacked-acl2-readtable*)
 
 ;;   (setq *hons-readtable-init-done* t))
-
-
-

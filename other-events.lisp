@@ -14826,6 +14826,7 @@
                (hons-union-ordered-string-lists x (cdr y))))))
 
 #+(and hons (not acl2-loop-only))
+(save-def
 (defun expansion-alist-pkg-names-memoize (x)
   (cond ((consp x)
          (hons-union-ordered-string-lists
@@ -14834,6 +14835,7 @@
         ((and x (symbolp x))
          (hons (symbol-package-name x) nil))
         (t nil)))
+)
 
 (defun expansion-alist-pkg-names (x base-kpa)
 

@@ -1365,6 +1365,33 @@ notation causes an error and (b) the use of ,. is not permitted."
   (ignore-errors (user-homedir-pathname)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;             SUPPORT FOR SERIALIZE INTEGRATION INTO ACL2
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; The following definitions might seem to belong serialize-raw.lisp, and
+;; that's where they lived when we only built ACL2(h) with CCL.  But Jared
+;; Davis noticed that SBCL 1.0.46 didn't let him add undefined functions into
+;; the readtable.  Note also that it doesn't seem sufficient to give the
+;; function symbols temporary definitions and redefine them later: the
+;; readtable still uses the old functions.  So to solve this, we move the
+;; functions over from serialize-raw.lisp to here.
+
+(declaim (ftype (function (t t t) (values t))
+                ser-decode-from-stream))
+
+(defun ser-cons-reader-macro (stream subchar arg)
+  (declare (ignorable subchar arg))
+  ;; This is the reader macro for #z.  When it is called the #z part has
+  ;; already been read, so we just want to read the serialized object.
+  (ser-decode-from-stream nil :never stream))
+
+(defun ser-hons-reader-macro (stream subchar arg)
+  (declare (ignorable subchar arg))
+  ;; This is the reader macro for #Z.  When it is called the #Z part has
+  ;; already been read, so we just want to read the serialized object.
+  (ser-decode-from-stream nil :smart stream))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                            MISCELLANY
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1383,3 +1410,37 @@ notation causes an error and (b) the use of ,. is not permitted."
   `(special-operator-p ,name))
 
 (defvar *startup-package-name* "ACL2")
+
+(defmacro save-def (def-form)
+
+; For each definition (save-def (defun name formals ... body)), where defun
+; could be replaced by other macros that take the same arguments (like
+; defun-one-output or defn1), this macro executes the definition and for the
+; hons version, also saves (name formals ... body) as the 'acl2-saved-def
+; property of name.  We use this property to obtain the raw Lisp definition of
+; name for memoize-fn, for Lisps like SBCL where function-lambda-expression
+; doesn't seem to work for us.
+
+; This macro is intended only for raw Lisp definitions.  For definitions in the
+; loop, we expect that cltl-def-from-name will give us the definition.
+
+  #+hons
+  (let* ((def (cdr def-form))
+         (name (car def)))
+    `(progn ,def-form
+            (setf (get ',name 'acl2-saved-def)
+                  ',def-form)))
+  #-hons
+  def-form)
+
+(defun our-function-lambda-expression (sym)
+
+; This is intended only for #+hons; otherwise it reduces to (mv
+; (function-lambda-expression (symbol-function sym)) nil).
+
+  (let ((temp (get sym 'acl2-saved-def)))
+    (cond (temp (values temp t))
+          (t (let* ((fn (symbol-function sym))
+                    (lam (and fn (function-lambda-expression fn))))
+               (cond (lam (values lam nil))
+                     (t (values nil nil))))))))

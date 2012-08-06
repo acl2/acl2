@@ -26,27 +26,16 @@
 
 ; This file cannot be compiled because it changes packages in the middle.
 
-; We restrict the hons version to CCL (starting with v3-6), because of
-; CCL-specific changes made to hons-raw.lisp.  With some work this restriction
-; could probably be relaxed, but it's not clear that it's worth the effort.
-#+(and hons (not ccl))
-(error "It is illegal to build the experimental HONS version
-of ACL2 in this Common Lisp.  For that version, the
-underlying Common Lisp must be CCL (Clozure Common Lisp,
-formerly OpenMCL).  CCL runs on many platforms, including
-Linux and Mac OS.  See the ACL2 installation instructions 
-how to obtain CCL.")
-
-#+(and hons ccl (not 64-bit-host)) ; use 64-bit-target instead?
-(error "It appears that you are trying to build the
-experimental HONS version of ACL2 in 32-bit CCL.  That is
-not currently supported; indeed, we have seen errors during
-a regression.  You can proceed by commenting out this error
-message in source file acl2-init.lisp.")
-
 ; Allow taking advantage of threads in SBCL, CCL, and Lispworks (where we may
-; want to build a parallel version, which needs this to take place).
-#+(or (and sbcl sb-thread) ccl lispworks)
+; want to build a parallel version, which needs this to take place).  At the
+; time that we add (perhaps once again) support for HONS in other lisps besides
+; CCL (August, 2012), there has been code developed that depends on mv-let
+; being the same as multiple-value-bind; see for example
+; books/centaur/aig/bddify.lisp, in particular the raw Lisp definition of
+; count-branches-to, specifically the use of b* in the labels definition of
+; lookup.  So we also use multiple-value-bind for mv-let when building the HONS
+; version.
+#+(or (and sbcl sb-thread) ccl lispworks hons)
 (push :acl2-mv-as-values *features*)
 
 ; Essay on Parallelism, Parallelism Warts, Parallelism Blemishes, Parallelism
@@ -1311,7 +1300,19 @@ implementations.")
 ; default, according to http://www.sbcl.org/manual/, is 2.  The problem seems
 ; to be stack overflow from fmt0, which is not tail recursive.
 
-        "~s --control-stack-size 4 --core ~s~a --eval '(acl2::sbcl-restart)'"
+; We have also observed that --dynamic-space-size 2000 is necessary in order to
+; complete an ACL2(h) regression with SBCL 1.0.55 on a Mac OS 10.6 laptop;
+; otherwise Lisp dies during a GC when certifying
+; books/centaur/tutorial/intro.lisp, even with (clear-memoize-tables) executed
+; at the start of acl2-compile-file and with (gc$ :full t) executed there as
+; well, and also at the start of write-expansion-file and immediately before
+; and after include-book-fn in certify-book-fn.  We believe that it has been
+; necessary to use such a --dynamic-space-size setting even to build ACL2 with
+; SBCL on some platforms, so we think it's reasonable to use this option for
+; ACL2, not just ACL2(h).
+
+        "~s --dynamic-space-size 2000 --control-stack-size 4 --core ~s~a ~
+         --eval '(acl2::sbcl-restart)'"
         prog
         eventual-sysout-core
 

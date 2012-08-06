@@ -19236,6 +19236,10 @@
   The `make' variable ~c[BOOKS] can now be defined above the line that includes
   Makefile-generic.  (For relevant background, ~pl[book-makefiles].)
 
+  (SBCL only) ACL2 images built on SBCL now have an option,
+  ~c[--dynamic-space-size 2000], that can avoid space problems that could
+  previously have caused the session to die.
+
   ~st[EMACS SUPPORT]
 
   ~st[EXPERIMENTAL VERSIONS]
@@ -19331,8 +19335,10 @@
   has been fixed.  Thanks to David Rager for pointing out the problem by
   sending an example.
 
-  An error now occurs when attempting to build the HONS version of ACL2 on a
-  32-bit platform.  We have seen regression failures on such a (CCL) platform.
+  We now support ACL2(h) built not only on 64-bit CCL but also on 64-bit SBCL
+  and 64-bit CMUCL.  Thanks to Jared Davis for doing most of the necessary
+  work on this.  Other host Lisps may work as well; users who want such support
+  but find it lacking are welcome to ask for it.
   ~eq[]
 
   ~/~/")

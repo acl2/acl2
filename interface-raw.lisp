@@ -6524,6 +6524,8 @@
             defmacro defabbrev defun@par)
           (setf (gethash (cadr form) ht)
                 form))
+         (save-def
+          (note-fns-in-form (cadr form) ht))
          (defun-for-state
            (setf (gethash (defun-for-state-name (cadr form)) ht)
                  form))
