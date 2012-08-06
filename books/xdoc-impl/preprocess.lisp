@@ -1037,8 +1037,9 @@
     (preprocess-aux x (+ n 1) xl dir base-pkg state (cons char acc))))
 
 (defun preprocess-main (x dir base-pkg state acc)
-  (declare (type string x))
-  (b* ((current-pkg    (acl2::f-get-global 'current-package state))
+  (declare (type (or string null) x))
+  (b* ((x (or x ""))
+       (current-pkg    (acl2::f-get-global 'current-package state))
        ;; Temporarily make "fmt" print as if it's in base-pkg.
        ((mv & & state) (acl2::set-current-package (symbol-package-name base-pkg) state))
        (x              (transform-code x))
