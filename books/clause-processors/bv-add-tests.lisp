@@ -45,6 +45,8 @@
     `(equal (f ,(make-bv-add sym-list))
             (f ,(make-bv-add (revappend sym-list nil))))))
 
+(comp 'f-macro-problem-fn) ; needed for Allegro CL, at least
+
 (defmacro f-macro-problem (n)
   (f-macro-problem-fn n))
 
@@ -54,6 +56,8 @@
   (let ((sym-list (make-sym-list n)))
     `(equal (f ,(make-bv-add sym-list))
             (f ,(make-bv-add (revappend sym-list nil))))))
+
+(comp 'macro-problem-fn) ; perhaps needed (see earlier comp call)
 
 (defmacro macro-problem (n)
   (macro-problem-fn n))
@@ -97,14 +101,19 @@
   (macro-problem 100)
   :rule-classes nil)
 
-(defthm example-problem-500-f
-  (f-macro-problem 500)
-  :rule-classes nil)
+; (Matt K., after v4-3) The following two forms cause a stack overflow in
+; ACL2(h) built on 32-bit Linux with Allegro CL 8.0, so we comment them out.
+; The stack overflow involves ACL2 source functions VAR-FN-COUNT and
+; VAR-FN-COUNT-LST.
+
+; (defthm example-problem-500-f
+;   (f-macro-problem 500)
+;   :rule-classes nil)
 
 ;Time:  11.26 seconds (prove: 11.24, print: 0.00, other: 0.02)
-(defthm example-problem-500
-  (macro-problem 500)
-  :rule-classes nil)
+;(defthm example-problem-500
+;  (macro-problem 500)
+;   :rule-classes nil)
 
 ; One big problem is enough, so we comment this out:
 ; (defthm f-example-problem-1000
