@@ -937,13 +937,16 @@ notation causes an error and (b) the use of ,. is not permitted."
                                ((stringp package-name)
                                 package-name)
                                (t nil)))
-         (*package* (if (assoc package-string
-                               (qfuncall known-package-alist *the-live-state*)
-                               :test 'equal)
-                        (qfuncall find-package-fast package-string)
+         (*package* (cond
+                     (*read-suppress* *package*)
+                     ((assoc package-string
+                             (qfuncall known-package-alist *the-live-state*)
+                             :test 'equal)
+                      (qfuncall find-package-fast package-string))
+                     (t
                       (error "There is no package named ~S that is known to ~
                               ACL2 in this context."
-                             package-name))))
+                             package-name)))))
     (read stream t nil t)))
 
 (defun sharp-u-read (stream char n)
@@ -967,6 +970,7 @@ notation causes an error and (b) the use of ,. is not permitted."
                   (concatenate 'string "#" (remove #\_ name))))
                 (t (let ((n (read-from-string (remove #\_ name))))
                      (cond ((numberp n) n)
+                           (*read-suppress* nil)
                            (t (error "Failure to read #u expression:~%~
                                       Result ~s is not a numeral."
                                      n)))))))))))

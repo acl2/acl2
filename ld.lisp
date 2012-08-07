@@ -19194,6 +19194,14 @@
   the last hypothesis.  Thanks to Sol Swords for reporting this bug and
   providing a fix.
 
+  The syntax ~c[#!] (~pl[sharp-bang-reader]) was broken after a skipped
+  readtime conditional.  For example, the following input line caused an
+  error.
+  ~bv[]
+  #+skip #!acl2(quote 3)
+  ~ev[]
+  This bug has been fixed.
+
   ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]
 
   Improvements have been made related to the reading of characters.  In
