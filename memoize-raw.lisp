@@ -983,6 +983,8 @@
   ;; reorder arguments based on their indices.  It's possible we could do
   ;; something like sort based on address, maybe, but I haven't thought about
   ;; it.
+  (declare (ignore x y))
+  #-Clozure
   nil
   #+Clozure
   (cond ((eql x y) nil)
@@ -3338,6 +3340,7 @@ the calls took.")
 (defg *smashed-or* nil)
 
 (defn1 memoize-eval-compile (def watch-ifs)
+  #-Clozure (declare (ignore watch-ifs))
   (unless (and (consp def)
                (eq 'defun (car def))
                (consp (cdr def))
@@ -5280,6 +5283,7 @@ the calls took.")
         (len-orig-fn-pairs (len fn-pairs))
         (len-fn-pairs 0)
         (global-total-time 0)
+        #+Clozure
         (global-bytes-allocated 0)
         (global-hons-calls 0)
         (global-pons-calls 0))
@@ -5302,6 +5306,7 @@ the calls took.")
             *memoize-summary-limit*)))
    (setq global-total-time
      (loop for pair in fn-pairs sum (total-time (car pair))))
+   #+Clozure
    (setq global-bytes-allocated
      (+ 1 (loop for pair in fn-pairs sum
                 (bytes-allocated (car pair)))))
@@ -5903,6 +5908,7 @@ next GC.~%"
     (:rt_priority "Real-time scheduling.")
     (:policy "Scheduling.")))
 
+#+Clozure
 (defn pid-owner (&optional also-cmdline)
   (let ((str (csh "ps -A -o user,pid"))
         (ans nil)
@@ -6967,11 +6973,15 @@ next GC.~%"
 
   Invoke (WATCH-HELP) outside of ACL2 for further details."
 
+  #-Clozure
+  (declare (ignore force-dog))
+
   #+Clozure
   (ccl::cpu-count)
   (watch-kill)
   #+Clozure
   (pushnew 'watch-kill ccl::*save-exit-functions*)
+  #+Clozure
   (setq *watch-lock-ht* (make-hash-table))
   (setq *watch-file* nil)
   (setq *watch-start-real-time* (get-internal-real-time))
@@ -7176,6 +7186,7 @@ next GC.~%"
    *watch-last-real-time*
    *watch-last-run-time*
    *watch-real-seconds-between-dumps*
+   #+Clozure
    *watch-lock-ht*
 
    #+Clozure
@@ -7691,10 +7702,10 @@ next GC.~%"
       (new-size (hash-table-size ht))
       (new-rehash-size (hash-table-rehash-size ht))
       (new-rehash-threshold (hash-table-rehash-threshold ht))
-      (new-weak #+Clozure (ccl::hash-table-weak-p ht)
-                #-Clozure nil)
-      (new-shared #+Clozure (ccl::nhash.owner ht)
-                  #-Clozure nil))
+      #+Clozure
+      (new-weak (ccl::hash-table-weak-p ht))
+      #+Clozure
+      (new-shared (ccl::nhash.owner ht)))
 
   "(COPY-HASH-TABLE ht) takes a hash-table and returns a copy of it
   that may have some different attributes, depending upon the keyword

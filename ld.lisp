@@ -19335,10 +19335,12 @@
   has been fixed.  Thanks to David Rager for pointing out the problem by
   sending an example.
 
-  We now support ACL2(h) built not only on 64-bit CCL but also on 64-bit SBCL
-  and 64-bit CMUCL.  Thanks to Jared Davis for doing most of the necessary
-  work on this.  Other host Lisps may work as well; users who want such support
-  but find it lacking are welcome to ask for it.
+  We now support ACL2(h) built not only on 64-bit CCL but also on all supported
+  host Ansi Common Lisps (i.e., all supported host Lisps except GCL).  Thanks
+  to Jared Davis for doing much of the work to make this improvement.  Note
+  that performance will likely be best for 64-bit CCL; for some Lisps,
+  performance may be much worse, probably depending in part on the underlying
+  implementation of hash tables.
   ~eq[]
 
   ~/~/")

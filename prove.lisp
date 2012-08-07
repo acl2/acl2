@@ -9601,8 +9601,6 @@
     (progn$
      (initialize-brr-stack state)
      (initialize-fc-wormhole-sites)
-     #+hons
-     (clear-memoize-table 'worse-than-builtin)
      (er-let* ((ttree1 (prove-loop (list (list term))
                                    (change prove-spec-var pspv
                                            :user-supplied-term term

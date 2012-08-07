@@ -250,6 +250,15 @@ implementations.")
 
 (load "acl2.lisp")
 
+; We allow ACL2(h) code to take advantage of Ansi CL features.  It's
+; conceivable that we don't need this restriction (which only applies to GCL),
+; but it doesn't currently seem worth the trouble to figure that out.
+#+(and hons (not cltl2))
+(progn
+  (format t "~%ERROR: It is illegal to build the experimental HONS version
+       of ACL2 in this non-ANSI Common Lisp.~%~%")
+  (acl2::exit-lisp))
+
 ; Fix a bug in SBCL 1.0.49 (https://bugs.launchpad.net/bugs/795705), thanks to
 ; patch provided by Nikodemus Siivola.
 #+sbcl

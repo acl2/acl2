@@ -115,7 +115,7 @@
 ; CCL creates hash tables that aren't shared between threads, which may result
 ; in slightly faster updates.
 
-  (declare (ignorable shared weak))
+  (declare (ignorable shared weak lock-free))
   (make-hash-table :test             test
                    :size             size
                    :rehash-size      rehash-size

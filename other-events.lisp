@@ -10895,7 +10895,7 @@
            (symbol-name (cadr mark))
          mark)
       ,(if bad-objectp
-           `(msg "~|Bad object: ~x0" ,bad-object)
+           `(msg "~|Bad object: ~X01" ,bad-object nil)
          "")))
 
 (defun include-book-er-warning-summary (keyword suspect-book-action-alist
@@ -11836,7 +11836,11 @@
                              ctx
                              'chk-raise-portcullis{pcert-info-3}
                              file1 file2
-                             (list :chk-sum1 chk-sum1 :chk-sum2 chk-sum2)))
+                             (list :chk-sum1 chk-sum1 :chk-sum2 chk-sum2
+                                   :portcullis-cmds portcullis-cmds
+                                   :pre-alist pre-alist
+                                   :post-alist3 post-alist3
+                                   :expansion-alist expansion-alist)))
                            ((and (not light-chkp)
                                  (not (include-book-alist-subsetp
                                        pre-alist
@@ -13761,9 +13765,18 @@
                            generally indicates that the file has been ~
                            modified since it was last certified (though it ~
                            could be the portcullis commands or the make-event ~
-                           expansions that have changed)."
+                           expansions that have changed).~|~%Developer note: ~
+                           the latter was computed as:~|~%~X56"
                           (list (cons #\3 (cddddr (car post-alist)))
-                                (cons #\4 ev-lst-chk-sum)))
+                                (cons #\4 ev-lst-chk-sum)
+                                (cons #\5
+                                      `(check-sum-cert
+                                        ',(access cert-obj cert-obj
+                                                  :cmds)
+                                        ',(access cert-obj cert-obj
+                                                  :expansion-alist)
+                                        ',ev-lst))
+                                (cons #\6 nil)))
                          :uncertified-okp
                          suspect-book-action-alist
                          ctx state))

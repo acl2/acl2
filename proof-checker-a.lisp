@@ -1246,17 +1246,22 @@
              (mv signal val state))
             ((and (null val) (member-eq 'value quit-conditions))
              (mv signal val state))
-            (t (pc-main-loop
-                (if (consp instr-list)
-                    (cdr instr-list)
-                  instr-list)
-                quit-conditions
+            (t (let ((new-last-value
 
-; We ultimately "succeed" if and only if every instruction "succeeds".
+; We ultimately "succeed" if and only if every instruction "succeeds".  We use
+; a let-binding here in order to avoid an Allegro CL compiler bug (found using
+; Allegro CL 8.0, but told by Franz support that it still exists in Allegro CL
+; 9.0).
 
-                (and last-value (null signal) val)
-                pc-print-prompt-and-instr-flg
-                state))))))))))
+                      (and last-value (null signal) val)))
+                 (pc-main-loop
+                  (if (consp instr-list)
+                      (cdr instr-list)
+                    instr-list)
+                  quit-conditions
+                  new-last-value
+                  pc-print-prompt-and-instr-flg
+                  state)))))))))))
 
 (defun make-initial-goal (term)
   (make goal
