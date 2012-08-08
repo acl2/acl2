@@ -179,6 +179,10 @@ defproxy-test.lisp -- examples of the use of defproxy
 
 ===============================================================================
 
+defun-plus.lisp -- support specifying an "output signature" for a function
+
+===============================================================================
+
 dft.lisp    -- write proofs in a sort of familiar style using dft macro
 dft-ex.lisp -- examples of use of dft book
 
