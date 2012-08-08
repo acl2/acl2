@@ -2284,6 +2284,7 @@ defproxy-test.acl2
 defproxy-test.lisp
 defp.lisp
 defpun.lisp
+defun-plus.lisp
 dft-ex.acl2
 dft-ex.lisp
 dft.lisp
