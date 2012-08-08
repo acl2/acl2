@@ -68,7 +68,7 @@
 ; .....
 ;;; END addition for rtl-untrans1
 
-(defun rtl-untrans1 (term iff-flg binop-tbl sigs-btree lops-alist preprocess-fn wrld)
+(defun rtl-untrans1 (term iff-flg untrans-tbl sigs-btree lops-alist preprocess-fn wrld)
 
 ; We return a Lisp form that translates to term if iff-flg is nil and
 ; that translates to a term iff-equivalent to term if iff-flg is t.
@@ -118,10 +118,10 @@
             (collect-non-trivial-bindings (lambda-formals (ffn-symb term))
                                           (rtl-untrans1-lst (fargs term)
                                                             nil
-                                                            binop-tbl sigs-btree lops-alist
+                                                            untrans-tbl sigs-btree lops-alist
                                                             preprocess-fn
                                                             wrld))
-            (rtl-untrans1 (lambda-body (ffn-symb term)) iff-flg binop-tbl sigs-btree lops-alist
+            (rtl-untrans1 (lambda-body (ffn-symb term)) iff-flg untrans-tbl sigs-btree lops-alist
                           preprocess-fn wrld)))
           ((and (eq (ffn-symb term) 'nth)
                 (quotep (fargn term 1))
@@ -133,7 +133,7 @@
              (list 'nth
                    (or accessor-name
                        (cadr (fargn term 1)))
-                   (rtl-untrans1 (fargn term 2) nil binop-tbl sigs-btree lops-alist preprocess-fn
+                   (rtl-untrans1 (fargn term 2) nil untrans-tbl sigs-btree lops-alist preprocess-fn
                                  wrld))))
           ((and (eq (ffn-symb term) 'update-nth)
                 (quotep (fargn term 1))
@@ -145,9 +145,9 @@
              (list 'update-nth
                    (or accessor-name
                        (cadr (fargn term 1)))
-                   (rtl-untrans1 (fargn term 2) nil binop-tbl sigs-btree lops-alist preprocess-fn
+                   (rtl-untrans1 (fargn term 2) nil untrans-tbl sigs-btree lops-alist preprocess-fn
                                  wrld)
-                   (rtl-untrans1 (fargn term 3) nil binop-tbl sigs-btree lops-alist preprocess-fn
+                   (rtl-untrans1 (fargn term 3) nil untrans-tbl sigs-btree lops-alist preprocess-fn
                                  wrld))))
           ((and (eq (ffn-symb term) 'update-nth-array)
                 (quotep (fargn term 1))
@@ -159,50 +159,50 @@
              (list 'update-nth-array
                    (or accessor-name
                        (cadr (fargn term 1)))
-                   (rtl-untrans1 (fargn term 2) nil binop-tbl sigs-btree lops-alist preprocess-fn
+                   (rtl-untrans1 (fargn term 2) nil untrans-tbl sigs-btree lops-alist preprocess-fn
                                  wrld)
-                   (rtl-untrans1 (fargn term 3) nil binop-tbl sigs-btree lops-alist preprocess-fn
+                   (rtl-untrans1 (fargn term 3) nil untrans-tbl sigs-btree lops-alist preprocess-fn
                                  wrld)
-                   (rtl-untrans1 (fargn term 4) nil binop-tbl sigs-btree lops-alist preprocess-fn
+                   (rtl-untrans1 (fargn term 4) nil untrans-tbl sigs-btree lops-alist preprocess-fn
                                  wrld))))
           ((eq (ffn-symb term) 'binary-+)
            (cons '+
                  (rtl-untrans1-lst (right-associated-args 'binary-+ term)
-                                   nil binop-tbl sigs-btree lops-alist preprocess-fn wrld)))
+                                   nil untrans-tbl sigs-btree lops-alist preprocess-fn wrld)))
           ((eq (ffn-symb term) 'unary-/)
-           (list '/ (rtl-untrans1 (fargn term 1) nil binop-tbl sigs-btree lops-alist preprocess-fn
+           (list '/ (rtl-untrans1 (fargn term 1) nil untrans-tbl sigs-btree lops-alist preprocess-fn
                                   wrld)))
           ((eq (ffn-symb term) 'unary--)
-           (list '- (rtl-untrans1 (fargn term 1) nil binop-tbl sigs-btree lops-alist preprocess-fn
+           (list '- (rtl-untrans1 (fargn term 1) nil untrans-tbl sigs-btree lops-alist preprocess-fn
                                   wrld)))
           ((eq (ffn-symb term) 'if)
            (case-match term
              (('if x1 *nil* *t*)
-              (list 'not (rtl-untrans1 x1 t binop-tbl sigs-btree lops-alist preprocess-fn wrld)))
+              (list 'not (rtl-untrans1 x1 t untrans-tbl sigs-btree lops-alist preprocess-fn wrld)))
              (('if x1 x2  *nil*)
-              (rtl-untrans-and (rtl-untrans1 x1 t binop-tbl sigs-btree lops-alist preprocess-fn wrld)
-                               (rtl-untrans1 x2 iff-flg binop-tbl sigs-btree lops-alist preprocess-fn
+              (rtl-untrans-and (rtl-untrans1 x1 t untrans-tbl sigs-btree lops-alist preprocess-fn wrld)
+                               (rtl-untrans1 x2 iff-flg untrans-tbl sigs-btree lops-alist preprocess-fn
                                              wrld)
                                iff-flg))
              (('if x1 *nil* x2)
-              (rtl-untrans-and (list 'not (rtl-untrans1 x1 t binop-tbl sigs-btree lops-alist
+              (rtl-untrans-and (list 'not (rtl-untrans1 x1 t untrans-tbl sigs-btree lops-alist
                                                         preprocess-fn wrld))
-                               (rtl-untrans1 x2 iff-flg binop-tbl sigs-btree lops-alist preprocess-fn
+                               (rtl-untrans1 x2 iff-flg untrans-tbl sigs-btree lops-alist preprocess-fn
                                              wrld)
                                iff-flg))
              (('if x1 x1 x2)
-              (rtl-untrans-or (rtl-untrans1 x1 iff-flg binop-tbl sigs-btree lops-alist preprocess-fn
+              (rtl-untrans-or (rtl-untrans1 x1 iff-flg untrans-tbl sigs-btree lops-alist preprocess-fn
                                             wrld)
-                              (rtl-untrans1 x2 iff-flg binop-tbl sigs-btree lops-alist preprocess-fn
+                              (rtl-untrans1 x2 iff-flg untrans-tbl sigs-btree lops-alist preprocess-fn
                                             wrld)))
              (('if x1 x2 *t*)
 
 ; Observe that (if x1 x2 t) = (if x1 x2 (not nil)) = (if x1 x2 (not x1)) =
 ; (if (not x1) (not x1) x2) = (or (not x1) x2).
 
-              (rtl-untrans-or (list 'not (rtl-untrans1 x1 t binop-tbl sigs-btree lops-alist
+              (rtl-untrans-or (list 'not (rtl-untrans1 x1 t untrans-tbl sigs-btree lops-alist
                                                        preprocess-fn wrld))
-                              (rtl-untrans1 x2 iff-flg binop-tbl sigs-btree lops-alist preprocess-fn
+                              (rtl-untrans1 x2 iff-flg untrans-tbl sigs-btree lops-alist preprocess-fn
                                             wrld)))
              (('if x1 *t* x2)
               (cond
@@ -211,23 +211,23 @@
                          (not (fquotep x1))
                          (member-eq (ffn-symb x1)
                                     *rtl-untrans-boolean-primitives*)))
-                (rtl-untrans-or (rtl-untrans1 x1 t binop-tbl sigs-btree lops-alist
+                (rtl-untrans-or (rtl-untrans1 x1 t untrans-tbl sigs-btree lops-alist
                                               preprocess-fn wrld)
-                                (rtl-untrans1 x2 iff-flg binop-tbl sigs-btree lops-alist
+                                (rtl-untrans1 x2 iff-flg untrans-tbl sigs-btree lops-alist
                                               preprocess-fn wrld)))
-               (t (rtl-untrans-if term iff-flg binop-tbl sigs-btree lops-alist preprocess-fn wrld))))
-             (& (rtl-untrans-if term iff-flg binop-tbl sigs-btree lops-alist preprocess-fn wrld))))
+               (t (rtl-untrans-if term iff-flg untrans-tbl sigs-btree lops-alist preprocess-fn wrld))))
+             (& (rtl-untrans-if term iff-flg untrans-tbl sigs-btree lops-alist preprocess-fn wrld))))
 ;;; START addition for rtl-untrans1
         ((eq (ffn-symb term) 'if1)
          (cond ((> (cond1-length term) 2)
-                (cons 'cond1 (rtl-untrans-into-cond1-clauses term binop-tbl sigs-btree lops-alist
+                (cons 'cond1 (rtl-untrans-into-cond1-clauses term untrans-tbl sigs-btree lops-alist
                                                              preprocess-fn wrld)))
                (t (list 'if1
-                        (rtl-untrans1 (fargn term 1) nil binop-tbl sigs-btree
+                        (rtl-untrans1 (fargn term 1) nil untrans-tbl sigs-btree
                                       lops-alist preprocess-fn wrld)
-                        (rtl-untrans1 (fargn term 2) nil binop-tbl sigs-btree
+                        (rtl-untrans1 (fargn term 2) nil untrans-tbl sigs-btree
                                       lops-alist preprocess-fn wrld)
-                        (rtl-untrans1 (fargn term 3) nil binop-tbl sigs-btree
+                        (rtl-untrans1 (fargn term 3) nil untrans-tbl sigs-btree
                                       lops-alist preprocess-fn wrld)))))
 ;;; END addition for rtl-untrans1
           ((and (eq (ffn-symb term) 'not)
@@ -235,20 +235,20 @@
                 (not (fquotep (fargn term 1)))
                 (member-eq (ffn-symb (fargn term 1)) '(< o<)))
            (list (if (eq (ffn-symb (fargn term 1)) '<) '<= 'o<=)
-                 (rtl-untrans1 (fargn (fargn term 1) 2) nil binop-tbl sigs-btree lops-alist
+                 (rtl-untrans1 (fargn (fargn term 1) 2) nil untrans-tbl sigs-btree lops-alist
                                preprocess-fn wrld)
-                 (rtl-untrans1 (fargn (fargn term 1) 1) nil binop-tbl sigs-btree lops-alist
+                 (rtl-untrans1 (fargn (fargn term 1) 1) nil untrans-tbl sigs-btree lops-alist
                                preprocess-fn wrld)))
           ((eq (ffn-symb term) 'not)
-           (dumb-negate-lit (rtl-untrans1 (fargn term 1) t binop-tbl sigs-btree lops-alist
+           (dumb-negate-lit (rtl-untrans1 (fargn term 1) t untrans-tbl sigs-btree lops-alist
                                           preprocess-fn wrld)))
           ((member-eq (ffn-symb term) '(implies iff))
            (fcons-term* (ffn-symb term)
-                        (rtl-untrans1 (fargn term 1) t binop-tbl sigs-btree lops-alist preprocess-fn
+                        (rtl-untrans1 (fargn term 1) t untrans-tbl sigs-btree lops-alist preprocess-fn
                                       wrld)
-                        (rtl-untrans1 (fargn term 2) t binop-tbl sigs-btree lops-alist preprocess-fn
+                        (rtl-untrans1 (fargn term 2) t untrans-tbl sigs-btree lops-alist preprocess-fn
                                       wrld)))
-          ((eq (ffn-symb term) 'cons) (rtl-untrans-cons term binop-tbl sigs-btree lops-alist
+          ((eq (ffn-symb term) 'cons) (rtl-untrans-cons term untrans-tbl sigs-btree lops-alist
                                                         preprocess-fn wrld))
           ((and (eq (ffn-symb term) 'synp)
 
@@ -264,108 +264,117 @@
 ; hypothesis in the second arg of its expansion.  We do this so that we
 ; can use it here and output something that the user will recognise.
 
-           (rtl-untrans1 (cadr (fargn term 2)) t binop-tbl sigs-btree lops-alist preprocess-fn wrld))
+           (rtl-untrans1 (cadr (fargn term 2)) t untrans-tbl sigs-btree lops-alist preprocess-fn wrld))
 ;;; START addition for rtl-untrans1
         ((eq (ffn-symb term) 'binary-cat) ; (cat x xsize y ysize)
          (rtl-untrans-cat
-          (rtl-untrans1 (fargn term 1) nil binop-tbl
+          (rtl-untrans1 (fargn term 1) nil untrans-tbl
                         sigs-btree lops-alist preprocess-fn wrld)
-          (rtl-untrans1 (fargn term 2) nil binop-tbl
+          (rtl-untrans1 (fargn term 2) nil untrans-tbl
                         sigs-btree lops-alist preprocess-fn wrld)
-          (rtl-untrans1 (fargn term 3) nil binop-tbl
+          (rtl-untrans1 (fargn term 3) nil untrans-tbl
                         sigs-btree lops-alist preprocess-fn wrld)
-          (rtl-untrans1 (fargn term 4) nil binop-tbl
+          (rtl-untrans1 (fargn term 4) nil untrans-tbl
                         sigs-btree lops-alist preprocess-fn wrld)))
         ((and (eq (fargn term 2) '$path)
               (let ((fn (symbol-btree-lookup (ffn-symb term) sigs-btree)))
                 (and fn
                      (list fn
-                           (rtl-untrans1 (fargn term 1) nil binop-tbl
+                           (rtl-untrans1 (fargn term 1) nil untrans-tbl
                                          sigs-btree lops-alist preprocess-fn wrld))))))
 ;;; END addition for rtl-untrans1
           (t
-           (let ((op (cdr (assoc-eq (ffn-symb term) binop-tbl))))
+           (let* ((pair (cdr (assoc-eq (ffn-symb term)
+                                       untrans-tbl)))
+                  (op (car pair))
+                  (flg (cdr pair)))
              (cond
-              (op (cons op
-                        (rtl-untrans1-lst (right-associated-args (ffn-symb term)
-                                                                 term)
-                                          nil binop-tbl sigs-btree lops-alist preprocess-fn wrld)))
+              ((and op flg)
+               (cons op
+                     (rtl-untrans1-lst (right-associated-args (ffn-symb term)
+                                                              term)
+                                       nil untrans-tbl sigs-btree lops-alist
+                                       preprocess-fn wrld)))
+              (op
+               (cons op
+                     (rtl-untrans1-lst (fargs term)
+                                       nil untrans-tbl sigs-btree lops-alist preprocess-fn wrld)))
               (t
 ;;; START addition for rtl-untrans1
              (let ((op (cdr (assoc-eq (ffn-symb term) lops-alist))))
                (cond
                 (op (rtl-untrans-lop op
-                                     (rtl-untrans1 (fargn term 1) nil binop-tbl
+                                     (rtl-untrans1 (fargn term 1) nil untrans-tbl
                                                    sigs-btree lops-alist
                                                    preprocess-fn wrld)
-                                     (rtl-untrans1 (fargn term 2) nil binop-tbl
+                                     (rtl-untrans1 (fargn term 2) nil untrans-tbl
                                                    sigs-btree lops-alist
                                                    preprocess-fn wrld)
-                                     (rtl-untrans1 (fargn term 3) nil binop-tbl
+                                     (rtl-untrans1 (fargn term 3) nil untrans-tbl
                                                    sigs-btree lops-alist
                                                    preprocess-fn wrld)))
                 (t
 ;;; END addition for rtl-untrans1
                  (mv-let (fn guts)
                    (car-cdr-nest term)
-                   (cond (fn (list fn (rtl-untrans1 guts nil binop-tbl sigs-btree lops-alist
+                   (cond (fn (list fn (rtl-untrans1 guts nil untrans-tbl sigs-btree lops-alist
                                                     preprocess-fn wrld))) 
                          (t (cons (ffn-symb term)
                                   (rtl-untrans1-lst (fargs term) nil
-                                                    binop-tbl sigs-btree lops-alist preprocess-fn
+                                                    untrans-tbl sigs-btree lops-alist preprocess-fn
                                                     wrld)))))))))))))))
 
-(defun rtl-untrans-cons1 (term binop-tbl sigs-btree lops-alist preprocess-fn wrld)
+(defun rtl-untrans-cons1 (term untrans-tbl sigs-btree lops-alist preprocess-fn wrld)
 
 ; This function digs through a 'cons nest, untranslating each of the
 ; elements and the final non-cons cdr.  It returns two results:  the
 ; list of untranslated elements and the untranslated final term.
 
-  (cond ((variablep term) (mv nil (rtl-untrans1 term nil binop-tbl sigs-btree lops-alist
+  (cond ((variablep term) (mv nil (rtl-untrans1 term nil untrans-tbl sigs-btree lops-alist
                                                 preprocess-fn wrld)))
-        ((fquotep term) (mv nil (rtl-untrans1 term nil binop-tbl sigs-btree lops-alist preprocess-fn
+        ((fquotep term) (mv nil (rtl-untrans1 term nil untrans-tbl sigs-btree lops-alist preprocess-fn
                                               wrld)))
         ((eq (ffn-symb term) 'cons)
          (mv-let (elements x)
-                 (rtl-untrans-cons1 (fargn term 2) binop-tbl sigs-btree lops-alist preprocess-fn
+                 (rtl-untrans-cons1 (fargn term 2) untrans-tbl sigs-btree lops-alist preprocess-fn
                                     wrld)
-                 (mv (cons (rtl-untrans1 (fargn term 1) nil binop-tbl sigs-btree lops-alist
+                 (mv (cons (rtl-untrans1 (fargn term 1) nil untrans-tbl sigs-btree lops-alist
                                          preprocess-fn wrld)
                            elements)
                      x)))
-        (t (mv nil (rtl-untrans1 term nil binop-tbl sigs-btree lops-alist preprocess-fn wrld)))))
+        (t (mv nil (rtl-untrans1 term nil untrans-tbl sigs-btree lops-alist preprocess-fn wrld)))))
 
-(defun rtl-untrans-cons (term binop-tbl sigs-btree lops-alist preprocess-fn wrld)
+(defun rtl-untrans-cons (term untrans-tbl sigs-btree lops-alist preprocess-fn wrld)
 
 ; Term is a non-quote term whose ffn-symb is 'cons.  We untranslate
 ; it into a CONS, a LIST, or a LIST*.
 
   (mv-let (elements x)
-          (rtl-untrans-cons1 term binop-tbl sigs-btree lops-alist preprocess-fn wrld)
+          (rtl-untrans-cons1 term untrans-tbl sigs-btree lops-alist preprocess-fn wrld)
           (cond ((eq x nil) (cons 'list elements))
                 ((null (cdr elements)) (list 'cons (car elements) x))
                 (t (cons 'list* (append elements (list x)))))))
 
-(defun rtl-untrans-if (term iff-flg binop-tbl sigs-btree lops-alist preprocess-fn wrld)
+(defun rtl-untrans-if (term iff-flg untrans-tbl sigs-btree lops-alist preprocess-fn wrld)
   (cond ((> (case-length nil term) 2)
          (case-match term
                      (('if (& key &) & &)
                       (list* 'case key
                              (rtl-untrans-into-case-clauses
-                              key term iff-flg binop-tbl sigs-btree lops-alist preprocess-fn
+                              key term iff-flg untrans-tbl sigs-btree lops-alist preprocess-fn
                               wrld)))))
         ((> (cond-length term) 2)
-         (cons 'cond (rtl-untrans-into-cond-clauses term iff-flg binop-tbl sigs-btree lops-alist
+         (cons 'cond (rtl-untrans-into-cond-clauses term iff-flg untrans-tbl sigs-btree lops-alist
                                                     preprocess-fn
                                                     wrld)))
         (t (list 'if
-                 (rtl-untrans1 (fargn term 1) t binop-tbl sigs-btree lops-alist preprocess-fn wrld)
-                 (rtl-untrans1 (fargn term 2) iff-flg binop-tbl sigs-btree lops-alist preprocess-fn
+                 (rtl-untrans1 (fargn term 1) t untrans-tbl sigs-btree lops-alist preprocess-fn wrld)
+                 (rtl-untrans1 (fargn term 2) iff-flg untrans-tbl sigs-btree lops-alist preprocess-fn
                                wrld)
-                 (rtl-untrans1 (fargn term 3) iff-flg binop-tbl sigs-btree lops-alist preprocess-fn
+                 (rtl-untrans1 (fargn term 3) iff-flg untrans-tbl sigs-btree lops-alist preprocess-fn
                                wrld)))))
 
-(defun rtl-untrans-into-case-clauses (key term iff-flg binop-tbl sigs-btree lops-alist preprocess-fn
+(defun rtl-untrans-into-case-clauses (key term iff-flg untrans-tbl sigs-btree lops-alist preprocess-fn
                                           wrld)
 
 ; We generate the clauses of a (case key ...) stmt equivalent to term.
@@ -382,68 +391,68 @@
                                  (eq val nil)
                                  (eq val 'otherwise))
                              (cons (list (list val)
-                                         (rtl-untrans1 x iff-flg binop-tbl sigs-btree lops-alist
+                                         (rtl-untrans1 x iff-flg untrans-tbl sigs-btree lops-alist
                                                        preprocess-fn wrld))
                                    (rtl-untrans-into-case-clauses
-                                    key y iff-flg binop-tbl sigs-btree lops-alist preprocess-fn wrld)
+                                    key y iff-flg untrans-tbl sigs-btree lops-alist preprocess-fn wrld)
                                   ))
                             (t (cons (list val (rtl-untrans1 x iff-flg
-                                                             binop-tbl sigs-btree lops-alist
+                                                             untrans-tbl sigs-btree lops-alist
                                                              preprocess-fn
                                                              wrld))
                                      (rtl-untrans-into-case-clauses
-                                      key y iff-flg binop-tbl sigs-btree lops-alist preprocess-fn
+                                      key y iff-flg untrans-tbl sigs-btree lops-alist preprocess-fn
                                       wrld)))))
                      ((and (eq pred 'member)
                            (eqlable-listp val))
-                      (cons (list val (rtl-untrans1 x iff-flg binop-tbl sigs-btree lops-alist
+                      (cons (list val (rtl-untrans1 x iff-flg untrans-tbl sigs-btree lops-alist
                                                     preprocess-fn wrld))
                             (rtl-untrans-into-case-clauses
-                             key y iff-flg binop-tbl sigs-btree lops-alist preprocess-fn wrld)))
+                             key y iff-flg untrans-tbl sigs-btree lops-alist preprocess-fn wrld)))
                      (t (list (list 'otherwise
-                                    (rtl-untrans1 term iff-flg binop-tbl sigs-btree lops-alist
+                                    (rtl-untrans1 term iff-flg untrans-tbl sigs-btree lops-alist
                                                   preprocess-fn wrld))))))
               (& (list (list 'otherwise
-                             (rtl-untrans1 term iff-flg binop-tbl sigs-btree lops-alist preprocess-fn
+                             (rtl-untrans1 term iff-flg untrans-tbl sigs-btree lops-alist preprocess-fn
                                            wrld))))))
 
-(defun rtl-untrans-into-cond-clauses (term iff-flg binop-tbl sigs-btree lops-alist preprocess-fn
+(defun rtl-untrans-into-cond-clauses (term iff-flg untrans-tbl sigs-btree lops-alist preprocess-fn
                                            wrld)
 
 ; We know cond-length is greater than 1; else this doesn't terminate.
 
   (case-match term
               (('if x1 x2 x3)
-               (cons (list (rtl-untrans1 x1 t binop-tbl sigs-btree lops-alist preprocess-fn wrld)
-                           (rtl-untrans1 x2 iff-flg binop-tbl sigs-btree lops-alist preprocess-fn
+               (cons (list (rtl-untrans1 x1 t untrans-tbl sigs-btree lops-alist preprocess-fn wrld)
+                           (rtl-untrans1 x2 iff-flg untrans-tbl sigs-btree lops-alist preprocess-fn
                                          wrld))
-                     (rtl-untrans-into-cond-clauses x3 iff-flg binop-tbl sigs-btree lops-alist
+                     (rtl-untrans-into-cond-clauses x3 iff-flg untrans-tbl sigs-btree lops-alist
                                                     preprocess-fn wrld)))
-              (& (list (list t (rtl-untrans1 term iff-flg binop-tbl sigs-btree lops-alist
+              (& (list (list t (rtl-untrans1 term iff-flg untrans-tbl sigs-btree lops-alist
                                              preprocess-fn wrld))))))
 
 ;;; START addition for rtl-untrans1
-(defun rtl-untrans-into-cond1-clauses (term binop-tbl sigs-btree lops-alist
+(defun rtl-untrans-into-cond1-clauses (term untrans-tbl sigs-btree lops-alist
                                             preprocess-fn wrld)
 
 ; We know cond1-length is greater than 1; else this doesn't terminate.
 
   (case-match term
               (('if1 x1 x2 x3)
-               (cons (list (rtl-untrans1 x1 nil binop-tbl sigs-btree lops-alist
+               (cons (list (rtl-untrans1 x1 nil untrans-tbl sigs-btree lops-alist
                                          preprocess-fn wrld)
-                           (rtl-untrans1 x2 nil binop-tbl sigs-btree lops-alist
+                           (rtl-untrans1 x2 nil untrans-tbl sigs-btree lops-alist
                                          preprocess-fn wrld))
-                     (rtl-untrans-into-cond1-clauses x3 binop-tbl sigs-btree lops-alist
+                     (rtl-untrans-into-cond1-clauses x3 untrans-tbl sigs-btree lops-alist
                                                      preprocess-fn wrld)))
-              (& (list (list t (rtl-untrans1 term nil binop-tbl sigs-btree
+              (& (list (list t (rtl-untrans1 term nil untrans-tbl sigs-btree
                                              lops-alist preprocess-fn wrld))))))
 ;;; END addition for rtl-untrans1
 
-(defun rtl-untrans1-lst (lst iff-flg binop-tbl sigs-btree lops-alist preprocess-fn wrld)
+(defun rtl-untrans1-lst (lst iff-flg untrans-tbl sigs-btree lops-alist preprocess-fn wrld)
   (cond ((null lst) nil)
-        (t (cons (rtl-untrans1 (car lst) iff-flg binop-tbl sigs-btree lops-alist preprocess-fn wrld)
-                 (rtl-untrans1-lst (cdr lst) iff-flg binop-tbl sigs-btree lops-alist preprocess-fn
+        (t (cons (rtl-untrans1 (car lst) iff-flg untrans-tbl sigs-btree lops-alist preprocess-fn wrld)
+                 (rtl-untrans1-lst (cdr lst) iff-flg untrans-tbl sigs-btree lops-alist preprocess-fn
                                    wrld)))))
 
 ;; RAG - I relaxed the guards for < and complex to use realp instead
@@ -561,7 +570,7 @@
 (defun rtl-untranslate (term iff-flg wrld)
   (let ((rtl-tbl (table-alist 'rtl-tbl wrld)))
     (rtl-untrans1 term iff-flg
-                  (binop-table wrld)
+                  (untrans-table wrld)
                   (cdr (assoc 'sigs-btree rtl-tbl))
                   (cdr (assoc 'lops-alist rtl-tbl))
                   (untranslate-preprocess-fn wrld)
@@ -571,7 +580,7 @@
   (let ((rtl-tbl (table-alist 'rtl-tbl wrld)))
     (rtl-untrans1-lst lst
                       iff-flg
-                      (binop-table wrld)
+                      (untrans-table wrld)
                       (cdr (assoc-eq 'sigs-btree rtl-tbl))
                       (cdr (assoc-eq 'lops-alist rtl-tbl))
                       (untranslate-preprocess-fn wrld)
