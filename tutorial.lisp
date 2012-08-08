@@ -10395,8 +10395,8 @@
   o ~l[ACCUMULATED-PERSISTENCE] to get statistics on which runes are being
   tried.
 
-  o ~l[ADD-BINOP] and ~pl[ADD-MACRO-ALIAS] to associate a function name with a
-  macro name.
+  o ~l[ADD-MACRO-FN] and ~pl[ADD-MACRO-ALIAS] to associate a function name with
+  a macro name.
 
   o ~l[BREAK-REWRITE] for how to monitor rewrite rules.
 

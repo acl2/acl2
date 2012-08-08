@@ -1268,7 +1268,7 @@
   (declare (xargs :guard (symbolp wrld)))
   `(untranslate1 ,term
                  ,iff-flg
-                 (binop-table ,wrld)
+                 (untrans-table ,wrld)
                  (untranslate-preprocess-fn ,wrld)
                  ,wrld))
 
@@ -1397,7 +1397,7 @@
   (declare (xargs :guard (symbolp wrld)))
   `(untranslate1-lst ,lst
                      ,iff-flg
-                     (binop-table ,wrld)
+                     (untrans-table ,wrld)
                      (untranslate-preprocess-fn ,wrld)
                      ,wrld))
 
@@ -2545,7 +2545,7 @@
           val
           (error-trace-suggestion t)))))
 
-(defun untranslate1 (term iff-flg binop-tbl preprocess-fn wrld)
+(defun untranslate1 (term iff-flg untrans-tbl preprocess-fn wrld)
 
 ; We return a Lisp form that translates to term if iff-flg is nil and
 ; that translates to a term iff-equivalent to term if iff-flg is t.
@@ -2594,10 +2594,10 @@
             (collect-non-trivial-bindings (lambda-formals (ffn-symb term))
                                           (untranslate1-lst (fargs term)
                                                             nil
-                                                            binop-tbl
+                                                            untrans-tbl
                                                             preprocess-fn
                                                             wrld))
-            (untranslate1 (lambda-body (ffn-symb term)) iff-flg binop-tbl
+            (untranslate1 (lambda-body (ffn-symb term)) iff-flg untrans-tbl
                           preprocess-fn wrld)))
           ((and (eq (ffn-symb term) 'nth)
                 (quotep (fargn term 1))
@@ -2609,7 +2609,7 @@
              (list 'nth
                    (or accessor-name
                        (cadr (fargn term 1)))
-                   (untranslate1 (fargn term 2) nil binop-tbl preprocess-fn
+                   (untranslate1 (fargn term 2) nil untrans-tbl preprocess-fn
                                  wrld))))
           ((and (eq (ffn-symb term) 'update-nth)
                 (quotep (fargn term 1))
@@ -2621,9 +2621,9 @@
              (list 'update-nth
                    (or accessor-name
                        (cadr (fargn term 1)))
-                   (untranslate1 (fargn term 2) nil binop-tbl preprocess-fn
+                   (untranslate1 (fargn term 2) nil untrans-tbl preprocess-fn
                                  wrld)
-                   (untranslate1 (fargn term 3) nil binop-tbl preprocess-fn
+                   (untranslate1 (fargn term 3) nil untrans-tbl preprocess-fn
                                  wrld))))
           ((and (eq (ffn-symb term) 'update-nth-array)
                 (quotep (fargn term 1))
@@ -2635,50 +2635,50 @@
              (list 'update-nth-array
                    (or accessor-name
                        (cadr (fargn term 1)))
-                   (untranslate1 (fargn term 2) nil binop-tbl preprocess-fn
+                   (untranslate1 (fargn term 2) nil untrans-tbl preprocess-fn
                                  wrld)
-                   (untranslate1 (fargn term 3) nil binop-tbl preprocess-fn
+                   (untranslate1 (fargn term 3) nil untrans-tbl preprocess-fn
                                  wrld)
-                   (untranslate1 (fargn term 4) nil binop-tbl preprocess-fn
+                   (untranslate1 (fargn term 4) nil untrans-tbl preprocess-fn
                                  wrld))))
           ((eq (ffn-symb term) 'binary-+)
            (cons '+
                  (untranslate1-lst (right-associated-args 'binary-+ term)
-                                   nil binop-tbl preprocess-fn wrld)))
+                                   nil untrans-tbl preprocess-fn wrld)))
           ((eq (ffn-symb term) 'unary-/)
-           (list '/ (untranslate1 (fargn term 1) nil binop-tbl preprocess-fn
+           (list '/ (untranslate1 (fargn term 1) nil untrans-tbl preprocess-fn
                                   wrld)))
           ((eq (ffn-symb term) 'unary--)
-           (list '- (untranslate1 (fargn term 1) nil binop-tbl preprocess-fn
+           (list '- (untranslate1 (fargn term 1) nil untrans-tbl preprocess-fn
                                   wrld)))
           ((eq (ffn-symb term) 'if)
            (case-match term
              (('if x1 *nil* *t*)
-              (list 'not (untranslate1 x1 t binop-tbl preprocess-fn wrld)))
+              (list 'not (untranslate1 x1 t untrans-tbl preprocess-fn wrld)))
              (('if x1 x2  *nil*)
-              (untranslate-and (untranslate1 x1 t binop-tbl preprocess-fn wrld)
-                               (untranslate1 x2 iff-flg binop-tbl preprocess-fn
+              (untranslate-and (untranslate1 x1 t untrans-tbl preprocess-fn wrld)
+                               (untranslate1 x2 iff-flg untrans-tbl preprocess-fn
                                              wrld)
                                iff-flg))
              (('if x1 *nil* x2)
-              (untranslate-and (list 'not (untranslate1 x1 t binop-tbl
+              (untranslate-and (list 'not (untranslate1 x1 t untrans-tbl
                                                         preprocess-fn wrld))
-                               (untranslate1 x2 iff-flg binop-tbl preprocess-fn
+                               (untranslate1 x2 iff-flg untrans-tbl preprocess-fn
                                              wrld)
                                iff-flg))
              (('if x1 x1 x2)
-              (untranslate-or (untranslate1 x1 iff-flg binop-tbl preprocess-fn
+              (untranslate-or (untranslate1 x1 iff-flg untrans-tbl preprocess-fn
                                             wrld)
-                              (untranslate1 x2 iff-flg binop-tbl preprocess-fn
+                              (untranslate1 x2 iff-flg untrans-tbl preprocess-fn
                                             wrld)))
              (('if x1 x2 *t*)
 
 ; Observe that (if x1 x2 t) = (if x1 x2 (not nil)) = (if x1 x2 (not x1)) =
 ; (if (not x1) (not x1) x2) = (or (not x1) x2).
 
-              (untranslate-or (list 'not (untranslate1 x1 t binop-tbl
+              (untranslate-or (list 'not (untranslate1 x1 t untrans-tbl
                                                        preprocess-fn wrld))
-                              (untranslate1 x2 iff-flg binop-tbl preprocess-fn
+                              (untranslate1 x2 iff-flg untrans-tbl preprocess-fn
                                             wrld)))
              (('if x1 *t* x2)
               (cond
@@ -2687,31 +2687,31 @@
                          (not (fquotep x1))
                          (member-eq (ffn-symb x1)
                                     *untranslate-boolean-primitives*)))
-                (untranslate-or (untranslate1 x1 t binop-tbl
+                (untranslate-or (untranslate1 x1 t untrans-tbl
                                               preprocess-fn wrld)
-                                (untranslate1 x2 iff-flg binop-tbl
+                                (untranslate1 x2 iff-flg untrans-tbl
                                               preprocess-fn wrld)))
-               (t (untranslate-if term iff-flg binop-tbl preprocess-fn wrld))))
-             (& (untranslate-if term iff-flg binop-tbl preprocess-fn wrld))))
+               (t (untranslate-if term iff-flg untrans-tbl preprocess-fn wrld))))
+             (& (untranslate-if term iff-flg untrans-tbl preprocess-fn wrld))))
           ((and (eq (ffn-symb term) 'not)
                 (nvariablep (fargn term 1))
                 (not (fquotep (fargn term 1)))
                 (member-eq (ffn-symb (fargn term 1)) '(< o<)))
            (list (if (eq (ffn-symb (fargn term 1)) '<) '<= 'o<=)
-                 (untranslate1 (fargn (fargn term 1) 2) nil binop-tbl
+                 (untranslate1 (fargn (fargn term 1) 2) nil untrans-tbl
                                preprocess-fn wrld)
-                 (untranslate1 (fargn (fargn term 1) 1) nil binop-tbl
+                 (untranslate1 (fargn (fargn term 1) 1) nil untrans-tbl
                                preprocess-fn wrld)))
           ((eq (ffn-symb term) 'not)
-           (dumb-negate-lit (untranslate1 (fargn term 1) t binop-tbl
+           (dumb-negate-lit (untranslate1 (fargn term 1) t untrans-tbl
                                           preprocess-fn wrld)))
           ((member-eq (ffn-symb term) '(implies iff))
            (fcons-term* (ffn-symb term)
-                        (untranslate1 (fargn term 1) t binop-tbl preprocess-fn
+                        (untranslate1 (fargn term 1) t untrans-tbl preprocess-fn
                                       wrld)
-                        (untranslate1 (fargn term 2) t binop-tbl preprocess-fn
+                        (untranslate1 (fargn term 2) t untrans-tbl preprocess-fn
                                       wrld)))
-          ((eq (ffn-symb term) 'cons) (untranslate-cons term binop-tbl
+          ((eq (ffn-symb term) 'cons) (untranslate-cons term untrans-tbl
                                                         preprocess-fn wrld))
           ((and (eq (ffn-symb term) 'synp)
 
@@ -2739,83 +2739,87 @@
                            (and fn
                                 (cons fn
                                       (untranslate1-lst (cdr (fargs term)) nil
-                                                        binop-tbl preprocess-fn
+                                                        untrans-tbl preprocess-fn
                                                         wrld))))))
-                   (t (let ((op (cdr (assoc-eq (ffn-symb term) binop-tbl))))
+                   (t (let* ((pair (cdr (assoc-eq (ffn-symb term)
+                                                  untrans-tbl)))
+                             (op (car pair))
+                             (flg (cdr pair)))
                         (cond
                          (op (cons op
                                    (untranslate1-lst
                                     (cond
-                                     ((and (cdr (fargs term))
+                                     ((and flg
+                                           (cdr (fargs term))
                                            (null (cddr (fargs term))))
                                       (right-associated-args (ffn-symb term)
                                                              term))
                                      (t (fargs term)))
-                                    nil binop-tbl preprocess-fn wrld)))
+                                    nil untrans-tbl preprocess-fn wrld)))
                          (t
                           (mv-let
                            (fn guts)
                            (car-cdr-nest term)
                            (cond (fn (list fn
-                                           (untranslate1 guts nil binop-tbl
+                                           (untranslate1 guts nil untrans-tbl
                                                          preprocess-fn wrld))) 
                                  (t (cons (ffn-symb term)
                                           (untranslate1-lst (fargs term) nil
-                                                            binop-tbl
+                                                            untrans-tbl
                                                             preprocess-fn
                                                             wrld))))))))))))))
 
-(defun untranslate-cons1 (term binop-tbl preprocess-fn wrld)
+(defun untranslate-cons1 (term untrans-tbl preprocess-fn wrld)
 
 ; This function digs through a 'cons nest, untranslating each of the
 ; elements and the final non-cons cdr.  It returns two results:  the
 ; list of untranslated elements and the untranslated final term.
 
-  (cond ((variablep term) (mv nil (untranslate1 term nil binop-tbl
+  (cond ((variablep term) (mv nil (untranslate1 term nil untrans-tbl
                                                 preprocess-fn wrld)))
-        ((fquotep term) (mv nil (untranslate1 term nil binop-tbl preprocess-fn
+        ((fquotep term) (mv nil (untranslate1 term nil untrans-tbl preprocess-fn
                                               wrld)))
         ((eq (ffn-symb term) 'cons)
          (mv-let (elements x)
-                 (untranslate-cons1 (fargn term 2) binop-tbl preprocess-fn
+                 (untranslate-cons1 (fargn term 2) untrans-tbl preprocess-fn
                                     wrld)
-                 (mv (cons (untranslate1 (fargn term 1) nil binop-tbl
+                 (mv (cons (untranslate1 (fargn term 1) nil untrans-tbl
                                          preprocess-fn wrld)
                            elements)
                      x)))
-        (t (mv nil (untranslate1 term nil binop-tbl preprocess-fn wrld)))))
+        (t (mv nil (untranslate1 term nil untrans-tbl preprocess-fn wrld)))))
 
-(defun untranslate-cons (term binop-tbl preprocess-fn wrld)
+(defun untranslate-cons (term untrans-tbl preprocess-fn wrld)
 
 ; Term is a non-quote term whose ffn-symb is 'cons.  We untranslate
 ; it into a CONS, a LIST, or a LIST*.
 
   (mv-let (elements x)
-          (untranslate-cons1 term binop-tbl preprocess-fn wrld)
+          (untranslate-cons1 term untrans-tbl preprocess-fn wrld)
           (cond ((eq x nil) (cons 'list elements))
                 ((null (cdr elements)) (list 'cons (car elements) x))
                 (t (cons 'list* (append elements (list x)))))))
 
-(defun untranslate-if (term iff-flg binop-tbl preprocess-fn wrld)
+(defun untranslate-if (term iff-flg untrans-tbl preprocess-fn wrld)
   (cond ((> (case-length nil term) 2)
          (case-match term
                      (('if (& key &) & &)
                       (list* 'case key
                              (untranslate-into-case-clauses
-                              key term iff-flg binop-tbl preprocess-fn
+                              key term iff-flg untrans-tbl preprocess-fn
                               wrld)))))
         ((> (cond-length term) 2)
-         (cons 'cond (untranslate-into-cond-clauses term iff-flg binop-tbl
+         (cons 'cond (untranslate-into-cond-clauses term iff-flg untrans-tbl
                                                     preprocess-fn
                                                     wrld)))
         (t (list 'if
-                 (untranslate1 (fargn term 1) t binop-tbl preprocess-fn wrld)
-                 (untranslate1 (fargn term 2) iff-flg binop-tbl preprocess-fn
+                 (untranslate1 (fargn term 1) t untrans-tbl preprocess-fn wrld)
+                 (untranslate1 (fargn term 2) iff-flg untrans-tbl preprocess-fn
                                wrld)
-                 (untranslate1 (fargn term 3) iff-flg binop-tbl preprocess-fn
+                 (untranslate1 (fargn term 3) iff-flg untrans-tbl preprocess-fn
                                wrld)))))
 
-(defun untranslate-into-case-clauses (key term iff-flg binop-tbl preprocess-fn
+(defun untranslate-into-case-clauses (key term iff-flg untrans-tbl preprocess-fn
                                           wrld)
 
 ; We generate the clauses of a (case key ...) stmt equivalent to term.
@@ -2832,50 +2836,50 @@
                                  (eq val nil)
                                  (eq val 'otherwise))
                              (cons (list (list val)
-                                         (untranslate1 x iff-flg binop-tbl
+                                         (untranslate1 x iff-flg untrans-tbl
                                                        preprocess-fn wrld))
                                    (untranslate-into-case-clauses
-                                    key y iff-flg binop-tbl preprocess-fn wrld)
+                                    key y iff-flg untrans-tbl preprocess-fn wrld)
                                   ))
                             (t (cons (list val (untranslate1 x iff-flg
-                                                             binop-tbl
+                                                             untrans-tbl
                                                              preprocess-fn
                                                              wrld))
                                      (untranslate-into-case-clauses
-                                      key y iff-flg binop-tbl preprocess-fn
+                                      key y iff-flg untrans-tbl preprocess-fn
                                       wrld)))))
                      ((and (eq pred 'member)
                            (eqlable-listp val))
-                      (cons (list val (untranslate1 x iff-flg binop-tbl
+                      (cons (list val (untranslate1 x iff-flg untrans-tbl
                                                     preprocess-fn wrld))
                             (untranslate-into-case-clauses
-                             key y iff-flg binop-tbl preprocess-fn wrld)))
+                             key y iff-flg untrans-tbl preprocess-fn wrld)))
                      (t (list (list 'otherwise
-                                    (untranslate1 term iff-flg binop-tbl
+                                    (untranslate1 term iff-flg untrans-tbl
                                                   preprocess-fn wrld))))))
               (& (list (list 'otherwise
-                             (untranslate1 term iff-flg binop-tbl preprocess-fn
+                             (untranslate1 term iff-flg untrans-tbl preprocess-fn
                                            wrld))))))
 
-(defun untranslate-into-cond-clauses (term iff-flg binop-tbl preprocess-fn
+(defun untranslate-into-cond-clauses (term iff-flg untrans-tbl preprocess-fn
                                            wrld)
 
 ; We know cond-length is greater than 1; else this doesn't terminate.
 
   (case-match term
               (('if x1 x2 x3)
-               (cons (list (untranslate1 x1 t binop-tbl preprocess-fn wrld)
-                           (untranslate1 x2 iff-flg binop-tbl preprocess-fn
+               (cons (list (untranslate1 x1 t untrans-tbl preprocess-fn wrld)
+                           (untranslate1 x2 iff-flg untrans-tbl preprocess-fn
                                          wrld))
-                     (untranslate-into-cond-clauses x3 iff-flg binop-tbl
+                     (untranslate-into-cond-clauses x3 iff-flg untrans-tbl
                                                     preprocess-fn wrld)))
-              (& (list (list t (untranslate1 term iff-flg binop-tbl
+              (& (list (list t (untranslate1 term iff-flg untrans-tbl
                                              preprocess-fn wrld))))))
 
-(defun untranslate1-lst (lst iff-flg binop-tbl preprocess-fn wrld)
+(defun untranslate1-lst (lst iff-flg untrans-tbl preprocess-fn wrld)
   (cond ((null lst) nil)
-        (t (cons (untranslate1 (car lst) iff-flg binop-tbl preprocess-fn wrld)
-                 (untranslate1-lst (cdr lst) iff-flg binop-tbl preprocess-fn
+        (t (cons (untranslate1 (car lst) iff-flg untrans-tbl preprocess-fn wrld)
+                 (untranslate1-lst (cdr lst) iff-flg untrans-tbl preprocess-fn
                                    wrld)))))
 
 ;; RAG - I relaxed the guards for < and complex to use realp instead
@@ -3003,13 +3007,13 @@
                           nil))
                (untranslate1-lst lst
                                  iff-flg
-                                 (binop-table wrld)
+                                 (untrans-table wrld)
                                  (untranslate-preprocess-fn wrld)
                                  wrld))
           (t val)))
       (untranslate1-lst lst
                         iff-flg
-                        (binop-table wrld)
+                        (untrans-table wrld)
                         (untranslate-preprocess-fn wrld)
                         wrld))))
 

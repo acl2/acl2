@@ -1686,7 +1686,6 @@ the calls took.")
             bind-macro-args-optional
             bind-macro-args1
             binding-hyp-p
-            binop-table
             body
             boolean-listp
             booleanp
@@ -2564,6 +2563,7 @@ the calls took.")
             unify-sa-p
             union-eq
             union-equal
+            untrans-table
             untranslate
             untranslate-lst
             untranslate-preprocess-fn

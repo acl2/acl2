@@ -2404,6 +2404,12 @@
   (declare (xargs :guard (plist-worldp wrld)))
   (table-alist 'dive-into-macros-table wrld))
 
+(defun rassoc-eq-as-car (key alist)
+  (cond ((endp alist) nil)
+        ((eq key (car (cdr (car alist))))
+         (car alist))
+        (t (rassoc-eq-as-car key (cdr alist)))))
+
 (defun expand-address (addr raw-term term abbreviations iff-flg
                             accumulated-addr-r wrld)
 
@@ -2509,7 +2515,8 @@
                           :new-iff-flg nil 
                           :new-term (fetch-term term val))))))
             ((or (eq (car term) 'list)
-                 (let ((pair (rassoc-eq (car raw-term) (binop-table wrld))))
+                 (let ((pair (rassoc-eq-as-car (car raw-term)
+                                               (untrans-table wrld))))
                    (and pair
                         (eql (arity (car pair) wrld) 2))))
 

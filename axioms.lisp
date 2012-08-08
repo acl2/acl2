@@ -2249,6 +2249,34 @@
   (declare (xargs :guard t))
   (if p (if q nil t) (if q t nil)))
 
+#+acl2-loop-only
+(defun eq (x y)
+
+  ":Doc-Section ACL2::ACL2-built-ins
+
+  equality of symbols~/
+
+  ~c[Eq] is the function for determining whether two objects are
+  identical (i.e., have the exact same store address in the current
+  von Neumann implementation of Common Lisp).  It is the same as
+  ~ilc[equal] in the ACL2 logic.~/
+
+  ~c[Eq] is a Common Lisp function.  In order to ensure conformance
+  with Common Lisp, the ACL2 ~il[guard] on ~c[eq] requires at least one of
+  the arguments to ~c[eq] to be a symbol.  Common Lisp guarantees that
+  if ~c[x] is a symbol, then ~c[x] is ~c[eq] to ~c[y] if and only if ~c[x]
+  is ~ilc[equal] to ~c[y].  Thus, the ACL2 user should think of ~c[eq] as
+  nothing besides a fast means for checking ~ilc[equal] when one argument
+  is known to be a symbol.  In particular, it is possible that an
+  ~c[eq] test will not even require the cost of a function call but
+  will be as fast as a single machine instruction.~/"
+
+  (declare (xargs :guard (if (symbolp x)
+                             t
+                           (symbolp y))
+                  :mode :logic :verify-guards t))
+  (equal x y))
+
 (defun booleanp (x)
 
   ":Doc-Section ACL2::ACL2-built-ins
@@ -2264,9 +2292,9 @@
   To see the ACL2 definition of this function, ~pl[pf].~/"
 
   (declare (xargs :guard t))
-  (if (equal x t)
+  (if (eq x t)
       t
-    (equal x nil)))
+    (eq x nil)))
 
 ; We do not want to try to define defequiv at this point, so we use the
 ; expansion of (defequiv iff).
@@ -2487,34 +2515,6 @@
 
 ; Comments labeled "RAG" are from Ruben Gamboa, pertaining to his work
 ; in creating ACL2(r) (see :doc real).
-
-#+acl2-loop-only
-(defun eq (x y)
-
-  ":Doc-Section ACL2::ACL2-built-ins
-
-  equality of symbols~/
-
-  ~c[Eq] is the function for determining whether two objects are
-  identical (i.e., have the exact same store address in the current
-  von Neumann implementation of Common Lisp).  It is the same as
-  ~ilc[equal] in the ACL2 logic.~/
-
-  ~c[Eq] is a Common Lisp function.  In order to ensure conformance
-  with Common Lisp, the ACL2 ~il[guard] on ~c[eq] requires at least one of
-  the arguments to ~c[eq] to be a symbol.  Common Lisp guarantees that
-  if ~c[x] is a symbol, then ~c[x] is ~c[eq] to ~c[y] if and only if ~c[x]
-  is ~ilc[equal] to ~c[y].  Thus, the ACL2 user should think of ~c[eq] as
-  nothing besides a fast means for checking ~ilc[equal] when one argument
-  is known to be a symbol.  In particular, it is possible that an
-  ~c[eq] test will not even require the cost of a function call but
-  will be as fast as a single machine instruction.~/"
-
-  (declare (xargs :guard (if (symbolp x)
-                             t
-                           (symbolp y))
-                  :mode :logic :verify-guards t))
-  (equal x y))
 
 (defun true-listp (x)
 
@@ -39206,109 +39206,136 @@
     (:CASE-SPLIT-LIMITATIONS . (500 100))
     (:TAU-AUTO-MODEP . ,(cddr *tau-status-boot-strap-settings*)))) ; (2.b)
 
-(defun binop-table (wrld)
+(defun untrans-table (wrld)
 
   ":Doc-Section switches-parameters-and-modes
 
-  associates binary function with the corresponding macro~/
+  associates a function symbol with a macro for printing user-level terms~/
   ~bv[]
   Examples:
-  ACL2 !>(binop-table (w state))
-  '((binary-+ . +)
-    (binary-* . *)
-    (binary-append . append)
-    (binary-logand . logand)
-    (binary-logior . logior)
-    (binary-logxor . logxor)
-    (binary-logeqv . logeqv))
+  ACL2 !>(untrans-table (w state))
+  ((BINARY-+ + . T)
+   (BINARY-* * . T)
+   (BINARY-APPEND APPEND . T)
+   (BINARY-LOGAND LOGAND . T)
+   (BINARY-LOGIOR LOGIOR . T)
+   (BINARY-LOGXOR LOGXOR . T)
+   (BINARY-LOGEQV LOGEQV . T)
+   (BINARY-POR POR . T)
+   (BINARY-PAND PAND . T))
   ~ev[]
 
   ~l[table] for a general discussion of tables.~/
 
-  ~l[add-binop] for a more general discussion of this ~il[table]."
+  ~l[add-macro-fn] for a more general discussion of this ~il[table]."
 
   (declare (xargs :guard (plist-worldp wrld)))
-  (table-alist 'binop-table wrld))
+  (table-alist 'untrans-table wrld))
 
-(table binop-table nil
-       '((binary-+ . +)
-         (binary-* . *)
-         (binary-append . append)
-         (binary-logand . logand)
-         (binary-logior . logior)
-         (binary-logxor . logxor)
-         (binary-logeqv . logeqv)
-         (binary-por . por)
-         (binary-pand . pand))
+(table untrans-table nil
+       '((binary-+ + . t)
+         (binary-* * . t)
+         (binary-append append . t)
+         (binary-logand logand . t)
+         (binary-logior logior . t)
+         (binary-logxor logxor . t)
+         (binary-logeqv logeqv . t)
+         (binary-por por . t)
+         (binary-pand pand . t))
        :clear)
 
-(defmacro add-binop (op binop)
+(defmacro add-macro-fn (macro macro-fn &optional right-associate-p)
 
   ":Doc-Section switches-parameters-and-modes
 
   associate a function name with a macro name~/
   ~bv[]
-  Example:
-  (add-binop append binary-append)
+  Examples:
+  (add-macro-fn append binary-append)
+  (add-macro-fn append binary-append t)
   ~ev[]
-  This example associates the function symbol ~ilc[binary-append] with the
-  macro name ~ilc[append].  As a result, theory functions will understand
+  These examples each associate the function symbol ~ilc[binary-append] with
+  the macro name ~ilc[append].  As a result, theory functions will understand
   that ~c[append] refers to ~c[binary-append] ~-[] ~pl[add-macro-alias] ~-[]
   and moreover, proof output will be printed using ~c[append] rather than
-  ~c[binary-append], e.g., ~c[(append x y z w)] is printed rather than
-  ~c[(binary-append x (binary-append y (binary-append z w)))].
-
-  The function symbol need not be binary; the name ``~c[add-binop]'' is legacy
-  from when that was the intention.  However, the folding of right-associated
-  arguments suggested above only takes place for binary function symbols.~/
+  ~c[binary-append].  In the first case, ~c[(append x (append y z))] is printed
+  rather than ~c[(append x y z)].  In the second case, right-associated
+  arguments are printed flat: ~c[(append x y z)].  Such right-association is
+  considered only for binary function symbols; otherwise the optional third
+  argument is ignored.~/
   ~bv[]
-  General Form:
-  (add-binop macro-name function-name)
+  General Forms:
+  (add-macro-fn macro-name function-name)
+  (add-macro-fn macro-name function-name nil) ; same as abov
+  (add-macro-fn macro-name function-name t)
   ~ev[]
-  This is a convenient way to add an entry to ~ilc[macro-aliases-table]
-  and at the same time extend the ~c[:]~ilc[binop-table].  As suggested by the
-  example above, right-associated calls of a binary function in this table will
-  be printed as corresponding calls of macros.  Thus in the case of a binary
-  function symbol ~c[fn] associated with macro name ~c[mac], then a call
-  ~c[(fn arg1 (fn arg2 (... (fn argk arg))))] will be displayed to the user as
-  though the ``term'' were ~c[(mac arg1 arg2 ... argk arg)].  For a call
-  ~c[(f a1 ... ak)] of a function symbol that is not binary, then the effect is
-  simply to replace ~c[f] by the corresponding macro symbol.
-  ~l[macro-aliases-table], ~pl[remove-macro-alias], ~pl[binop-table], and
-  ~pl[remove-binop].~/"
+  This is a convenient way to add an entry to ~ilc[macro-aliases-table] and at
+  the same time extend the ~c[:]~ilc[untrans-table].  As suggested by the
+  example above, calls of a function in this table will be printed as
+  corresponding calls of macros, with right-associated arguments printed flat
+  in the case of a binary function symbol if the optional third argument is t.
+  In that case, for a binary function symbol ~c[fn] associated with macro name
+  ~c[mac], then a call ~c[(fn arg1 (fn arg2 (... (fn argk arg))))] will be
+  displayed to the user as though the ``term'' were
+  ~c[(mac arg1 arg2 ... argk arg)].  For a call ~c[(f a1 ... ak)] of a function
+  symbol that is not binary, or the optional argument is not supplied as ~c[t],
+  then the effect is simply to replace ~c[f] by the corresponding macro symbol.
+  ~l[macro-aliases-table], ~pl[remove-macro-alias], ~pl[untrans-table], and
+  ~pl[remove-macro-fn].~/"
 
-  `(progn (add-macro-alias ,op ,binop)
-          (table binop-table ',binop ',op)))
+  `(progn (add-macro-alias ,macro ,macro-fn)
+          (table untrans-table ',macro-fn '(,macro . ,right-associate-p))))
 
-(defmacro remove-binop (binop)
+(defmacro add-binop (macro macro-fn)
 
   ":Doc-Section switches-parameters-and-modes
 
-  remove the association of a binary function name with a macro name~/
+  associate a function name with a macro name~/
+
+  The form ~c[(add-binop macro macro-fn)] is an abbreviation for the form
+  ~c[(add-macro-fn macro macro-fn t)].  ~l[add-macro-fn].~/~/"
+
+  `(add-macro-fn ,macro ,macro-fn t))
+
+(defmacro remove-macro-fn (macro-fn)
+
+  ":Doc-Section switches-parameters-and-modes
+
+  remove the association of a function name with a macro name~/
   ~bv[]
   Example:
-  (remove-binop binary-append)~/
+  (remove-macro-fn binary-append)~/
   General Form:
-  (remove-binop binop)
+  (remove-macro-fn macro-fn)
   ~ev[]
-  ~l[add-binop] for a discussion of how to associate a macro name
-  with a binary function name for proof output purposes.  This form sets
-  ~ilc[binop-table] to the result of deleting the association of a macro
-  name with the given binary function name.  If the function name has no
-  such association, then this form still generates an event, but the
-  event has no real effect.~/"
+  ~l[add-macro-fn] for a discussion of how to associate a macro name with a
+  function name.  This form sets ~ilc[untrans-table] to the result of deleting
+  the association of a macro name with the given binary function name.  If the
+  function name has no such association, then this form still generates an
+  event, but the event has no real effect.~/"
 
-  `(table binop-table nil
-          (let ((tbl (table-alist 'binop-table world)))
-            (if (assoc-eq ',binop tbl)
-                (delete-assoc-eq-exec ',binop tbl)
+  `(table untrans-table nil
+          (let ((tbl (table-alist 'untrans-table world)))
+            (if (assoc-eq ',macro-fn tbl)
+                (delete-assoc-eq-exec ',macro-fn tbl)
               (prog2$ (cw "~%NOTE:  the name ~x0 did not appear as a key in ~
-                           binop-table.  Consider using :u or :ubt to ~
+                           untrans-table.  Consider using :u or :ubt to ~
                            undo this event, which is harmless but does not ~
-                           change binop-table.~%"
-                          ',binop)
+                           change untrans-table.~%"
+                          ',macro-fn)
                       tbl)))
           :clear))
+
+(defmacro remove-binop (macro-fn)
+
+  ":Doc-Section switches-parameters-and-modes
+
+  remove the association of a function name with a macro name~/
+
+  The form ~c[(remove-binop macro-fn)] is an abbreviation for the form
+  ~c[(remove-macro-fn macro-fn)].  ~l[remove-macro-fn].~/~/"
+
+  `(remove-macro-fn ,macro-fn))
 
 ; Begin implementation of tables allowing user control of :once and :all for
 ; the :match-free behavior of rewrite, linear, and forward-chaining rules.

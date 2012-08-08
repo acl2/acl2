@@ -7240,7 +7240,7 @@
   of printing binary function call nests using macros
   (~l[add-binop]) has also been moved out of the ~ilc[acl2-defaults-table] as
   suggested by Eric and Rob, but this feature didn't work anyhow
-  (~pl[note-2-7-bug-fixes]).  Incidentally, the symbols ~ilc[binop-table],
+  (~pl[note-2-7-bug-fixes]).  Incidentally, the symbols ~c[binop-table],
   ~ilc[add-binop], and ~ilc[remove-binop] have all been added to the list
   ~c[*acl2-exports*] (~pl[acl2-user]), ~ilc[add-invisible-fns] and
   ~ilc[remove-invisible-fns] have been added to that list, and
@@ -8877,7 +8877,7 @@
   ~c[(DV 3)] (and ~c[3]) would dive to ~c[t3] even though the corresponding
   function call is ~c[(binary-append t1 (binary-append t2 t3))].  This is still
   the case, but now this behavior holds for any macro associated with a
-  function in ~ilc[binop-table] (~pl[add-binop]).  Moreover, users can now
+  function in ~c[binop-table] (~pl[add-binop]).  Moreover, users can now
   write customized diving functions; ~pl[dive-into-macros-table], and also see
   ~c[books/misc/rtl-untranslate.lisp] for example calls to
   ~ilc[add-dive-into-macro].  Of course, the old behavior can still be obtained
@@ -12962,7 +12962,7 @@
   Fixed a bug that was disallowing calls of ~ilc[with-output] in ~il[events]
   that were executing before calling ~ilc[certify-book].
 
-  Modified the functionality of ~ilc[binop-table] so other than binary function
+  Modified the functionality of ~c[binop-table] so other than binary function
   symbols are properly supported (hence with no action based on
   right-associated arguments).  ~l[add-binop].
 
@@ -18739,6 +18739,15 @@
   to other than the name of name of a previously executed ~ilc[deftheory]
   event.  Now, a hard error occurs.
 
+  The ~il[table] ~c[binop-table] has been replaced by the table
+  ~ilc[untrans-table].  However, ~ilc[add-binop] and ~ilc[remove-binop]
+  continue to have the same effect as before.  ~l[add-macro-fn], which is a new
+  feature discussed below.
+
+  The function ~ilc[booleanp] is now defined using ~ilc[eq] instead of
+  ~ilc[equal], which may increase its efficiency.  Thanks to Jared Davis for
+  this change.
+
   ~st[NEW FEATURES]
 
   A new ``tau system'' provides a kind of ``type checker.''  ~l[tau-system].
@@ -18898,6 +18907,13 @@
   proof-checker command.  Finally, a corresponding new proof-checker command,
   ~c[apply-linear] (~c[al]), is an analogue of the ~il[proof-checker]
   ~c[rewrite] (~c[r]) command, but for ~il[linear] rules.
+
+  The macros ~ilc[add-macro-fn] and ~ilc[remove-macro-fn] replace macros
+  ~ilc[add-binop] and ~ilc[remove-binop], respectively, though the latter
+  continue to work.  The new macros allow you to decide whether or not to
+  display calls of binary macros as flat calls for right-associated arguments,
+  e.g., ~c[(append x y z)] rather than ~c[(append x (append y z))].
+  ~l[add-macro-fn].
 
   ~st[HEURISTIC IMPROVEMENTS]
 
