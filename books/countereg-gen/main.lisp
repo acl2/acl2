@@ -2647,12 +2647,14 @@ history s-hist.")
   (declare (xargs :mode :program
                   :guard (and (pseudo-termp term)
                               (plist-worldp wrld))))
-  (if (atom term) 
+  (if (variablep term)
       T ;vacuously true
-    (let ((fn (ffn-symb term))
-          (args (fargs term)))
-     (and (acl2::logical-namep fn wrld)
-          (all-functions-definedp-lst args wrld)))))
+    (if (fquotep term)
+        T ;same as above
+      (let ((fn (ffn-symb term))
+            (args (fargs term)))
+       (and (acl2::logical-namep fn wrld)
+            (all-functions-definedp-lst args wrld))))))
 (defun all-functions-definedp-lst (terms wrld)
   (declare (xargs :mode :program
                   :guard (and (pseudo-term-listp terms)
@@ -2663,8 +2665,6 @@ history s-hist.")
          (all-functions-definedp-lst (cdr terms) wrld)))))
               
         
-
-
 ;; The following function implements a callback function (computed hint)
 ;; which calls the counterexample generation testing code. Thus the
 ;; the so called "automated" combination of testing and theorem proving
@@ -2699,7 +2699,11 @@ history s-hist.")
 ;involve calling the very function being defined. We should avoid testing
 ;anything that is not executable.
        ((unless (all-functions-definedp-lst cl (w state)))
-        (value nil))
+        (prog2$
+         (cw? (verbose-flag vl)
+"~|Skip testing completely, since not all functions in this conjecture
+are defined.~|")
+         (value nil)))
        ((mv hyps concl) (clause-mv-hyps-concl cl))
        (- (cw? (debug-flag vl)
 "test-checkpoint: id=~x0 and processor=~x1~ hyps=~x2 concl=~x3 ~|" 
@@ -2777,7 +2781,13 @@ id processor hyps concl))
        ((mv ?erp stop? state) (cts-wts-search name hyps concl 
                                               vt-acl2-alst ord-elide-map
                                               (acl2s-defaults-alist) 
-                                              NIL ctx wrld state)))
+                                              NIL ctx wrld state))
+       (gcs% (get-gcs%-global))
+       ((er &) (if (> (access gcs% cts) 0)
+                   (assign print-summary-user-flag T) ;for print-summary-user
+                 (value nil)))
+       )
+   
    
 ;  in  
    (if stop?
@@ -2785,7 +2795,7 @@ id processor hyps concl))
         (if (acl2::function-symbolp 'inside-test? (w state))
             (value nil)
           (print-testing-summary-fn vl state))
-        (assign print-summary-user-flag T) ;only for use in print-summary-user
+        
         (mv t nil state))
 ;ignore errors in cts search function
      (mv nil nil state))))
