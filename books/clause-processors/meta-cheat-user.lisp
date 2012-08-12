@@ -8,7 +8,7 @@
 
 (include-book "meta-cheat-ttag")
 (include-book "tools/defevaluator-fast" :dir :system)
-(include-book "clause-processors/ev-theoremp" :dir :system)
+(include-book "ev-theoremp")
 (include-book "tools/def-functional-instance" :dir :system)           
 
 ;; The functions listed in this evaluator are the ones necessary to use all
