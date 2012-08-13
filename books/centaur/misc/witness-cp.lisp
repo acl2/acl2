@@ -37,129 +37,7 @@
 
 (local (in-theory (disable state-p1-forward)))
 
-;; WITNESS-CP is an extensible clause processor that can use
-;; various sets of rules to do "witnessing" transformations.  Taking set-based
-;; reasoning as an example,  we might want to look at hypotheses of the form
-;; (subsetp-equal a b) and conclude specific examples such as
-;; (implies (member-equal k a) (member-equal k b)) for various k.  We might
-;; also want to look at hypotheses of the form (not (subsetp-equal c d)) and
-;; conclude (and (member-equal j c) (not (member-equal j d))) for some witness
-;; j.
-
-;; There are thus four steps to this transformation:
-;; 1. Introduce witnesses for negative occurrences of universally-quantified
-;; predicates and positive occurrences of existentially-quantified ones.
-;; 1a. Optionally, generalize newly introduced witness terms into fresh
-;; variables, for readability.
-;; 2. Find the set of examples with which to instantiate positive
-;; universally-quantified and negative existentially-quantified predicates.
-;; 3. Instantiate these predicates with these examples.
-
-;; The clause processor needs two types of information to accomplish this:
-;; - what predicates are to be taken as universal/existential quantifiers and
-;;   what they mean; i.e. how to introduce witnesses/instantiate.
-;; - what examples to use when doing the instantiation.
-
-;; The witness-introduction and instantiation may both be lossy, i.e. result
-;; in a formula that isn't a theorem even if the original formula is one.
-
-;; To set up witnessing for not-subsetp-equal hypotheses:
-
-;; (defwitness subsetp-equal-witnessing
-;;   :predicate (not (subsetp-equal a b))
-;;   :expr (and (member-equal (subsetp-equal-witness a b) a)
-;;              (not (member-equal (subsetp-equal-witness a b) b)))
-;;   :generalize (((subsetp-equal-witness a b) . ssew)
-;;   :hints ('(:in-theory '(subsetp-equal-witness-correct))))
-
-;; This means that in the witnessing phase, we search for hypotheses of the
-;; form (not (subsetp-equal a b)) and for each such hypothesis, we add the
-;; hypothesis
-;; (and (member-equal (subsetp-equal-witness a b) a)
-;;      (not (member-equal (subsetp-equal-witness a b) b)))
-;; but then generalize away the term (subsetp-equal-witness a b) to a fresh
-;; variable from the set SSEW0, SSEW1, ... yielding new hyps:
-;;     (member-equal ssew0 a)
-;;     (not (member-equal ssew0 b))
-;; So effectively we've taken an existential assumption and introduced a fresh
-;; variable witnessing it.  We wrap (hide ...) around the original hyp to leave
-;; a trace of what we've done (otherwise it would likely be rewritten away,
-;; since the two hyps we've introduced imply its truth).
-
-;; We add these new hypotheses to our main formula.  To ensure that this is
-;; sound, the clause processor produces an additional proof obligation:
-;; (implies (not (subsetp-equal a b))
-;;          (and (member-equal (subsetp-equal-witness a b) a)
-;;               (not (member-equal (subsetp-equal-witness a b) b))))
-;; To ensure that we'll be able to satisfy this, the defwitness event tries to
-;; prove this using the computed hints provided by the :hint argument to
-;; defwitness.  In this case, this puts ACL2 into a theory containing only the
-;; subsetp-equal-witness-correct rule.  If the proof works, then the witness-cp
-;; hint will arrange for this same computed hint to be provided when the clause
-;; processor produces this proof obligation, and it's a fair bet that ACL2 will
-;; also be able to prove it then.  The hint provided is a good one because it
-;; puts ACL2 into a known theory (not dependent on the ambient theory); a :by
-;; hint is another good candidate.
-
-;; To set up instantiation of subsetp-equal hypotheses:
-
-;; (definstantiate subsetp-equal-instancing
-;;   :predicate (subsetp-equal a b)
-;;   :vars (k)
-;;   :expr (implies (member-equal k a)
-;;                  (member-equal k b))
-;;   :hints ('(:in-theory '(subsetp-equal-member))))
-
-;; This will mean that for each subsetp-equal hypothesis we find, we'll add
-;; hypotheses of the form (implies (member-equal k a) (member-equal k b)) for
-;; each of (possibly) several k.  The terms we use to instantiate k are
-;; determined by defexample; see below.
-;; To make it sound to add these hypotheses, the clause processor again
-;; introduces a proof obligation:
-;;  (implies (subsetp-equal a b)
-;;           (implies (member-equal k a)
-;;                    (member-equal k b)))
-;; Again, the :hints argument is used to prove this, both (as a test) when the
-;; definstantiate form is submitted and when it is used.
-
-;; The terms used to instantiate k above are determined by defexample rules,
-;; like the following:
-;;  (defexample subsetp-equal-member-template
-;;   :pattern (member-equal k a)
-;;   :templates (k)
-;;   :instance-rulename subsetp-equal-instancing)
-
-;; This means that in phase 2, we'll look through the clause for expressions
-;; (member-equal k a) and whenever we find one, include k in the list of
-;; witnesses to use for instantiating using the subsetp-equal-instance rule.
-;; Defexample doesn't require any proof obligation; it's just a heuristic that
-;; adds to the set of terms used to instantiate universal quantifiers.
-
-;; To use the scheme we've introduced for reasoning about subsetp-equal, we can
-;; introduce a witness ruleset:
-
-;; (def-witness-ruleset subsetp-equal-witnessing-rules
-;;   '(subsetp-equal-witnessing
-;;     subsetp-equal-instancing
-;;     subsetp-equal-member-template))
-
-;; Then when we want to use this reasoning strategy, we can provide a computed
-;; hint:
-;; :hints ((witness :ruleset subsetp-equal-witnessing-rules))
-
-;; This implicitly waits til the formula is stable-under-simplification and
-;; invokes the witness-cp clause processor, allowing it to use the
-;; witnessing/instancing/example rules listed.  It also sets things up so that
-;; the right hints will be provided to the extra proof obligations produced by
-;; applying defwitness and definstantiate rules.  You can also define a macro
-;; so that you don't have to remember this syntax:
-
-;; (defmacro subset-reasoning () '(witness :ruleset subsetp-equal-witnessing-rules))
-;; (defthm foo
-;;   ...
-;;  :hints (("goal" ...)
-;;          (subset-reasoning)))
-
+;; See :DOC WITNESS-CP, or read it below.
 
 
 (local (in-theory (disable true-listp default-car default-cdr
@@ -574,6 +452,10 @@ restrictions are not used~%")
   (alistp (pairlis$ a b))
   :hints(("Goal" :in-theory (enable alistp))))
 
+
+;; Vars is the list of quantified vars for the instance rule.
+;; Examples is a list of lists of expressions, each of same length as vars, to
+;; be bound to the vars.
 (defun instantiate-examples (expr vars examples alist)
   (declare (xargs :guard (and (pseudo-termp expr)
                               (symbol-listp vars)
@@ -677,6 +559,8 @@ restrictions are not used~%")
 
 (verify-guards simple-term-vars)
 
+;; example-alist maps each instance rulename to a list of lists of terms, each
+;; of the same length as the quantified vars of the instance rule.
 (defun good-instance-rules-and-examplesp (instance-rules example-alist)
   (declare (xargs :guard (alistp example-alist)))
   (b* (((when (atom instance-rules)) t)
@@ -892,6 +776,8 @@ restrictions are not used~%")
            :expand ((:free (x) (hide x))))))
 
 
+
+
 (defthm pseudo-term-listp-witness-cp-expand-instances-0
   (implies (pseudo-term-listp clause)
            (pseudo-term-listp
@@ -952,7 +838,7 @@ restrictions are not used~%")
               (equal (len rule) 6)
               (pseudo-termp (nth 2 rule))
               (pseudo-term-listp (nth 3 rule))
-              (symbolp (nth 4 rule)))
+              (symbol-listp (nth 4 rule)))
              (good-templatesp (cdr templates))))))
 
 (defun pseudo-term-list-list-alistp (x)
@@ -976,6 +862,39 @@ restrictions are not used~%")
 ;;   (implies (pseudo-term-val-alistp alist)
 ;;            (pseudo-term-listp (extract-from-alist vars alist))))
 
+(defun add-example-for-instance-rules (inst-rules example acc)
+  (declare (xargs :guard (and (symbol-listp inst-rules)
+                              (alistp acc)
+                              (pseudo-term-listp example)
+                              (pseudo-term-list-list-alistp acc))
+                  :guard-hints (("goal" :in-theory
+                                 (enable pseudo-term-list-listp-true-listp
+                                         pseudo-term-list-listp
+                                         alistp)))))
+  (if (atom inst-rules)
+      acc
+    (b* ((rule (car inst-rules))
+         (other-examples (cdr (assoc rule acc)))
+         ((when (member-equal example other-examples))
+          (add-example-for-instance-rules (cdr inst-rules) example acc))
+         (acc (cons (cons rule (cons example other-examples)) acc)))
+      (add-example-for-instance-rules (cdr inst-rules) example acc))))
+
+(defthm pseudo-term-list-list-alistp-add-example-for-instance-rules
+  (implies (and (pseudo-term-listp example)
+                (pseudo-term-list-list-alistp acc))
+           (pseudo-term-list-list-alistp
+            (add-example-for-instance-rules
+             inst-rules example acc)))
+  :hints(("Goal" :in-theory (enable pseudo-term-list-listp))))
+
+(defthm alistp-add-example-for-instance-rules
+  (implies (alistp acc)
+           (alistp (add-example-for-instance-rules
+                    inst-rules example acc)))
+  :hints(("Goal" :in-theory (enable alistp))))
+
+
 (defun examples-for-term (term templates acc state)
   (declare (xargs :guard (and (pseudo-termp term)
                               (good-templatesp templates)
@@ -984,7 +903,7 @@ restrictions are not used~%")
                   :verify-guards nil
                   :stobjs state))
   (b* (((when (atom templates)) (mv acc state))
-       ((nths ?exname enabledp pat templ rulename restriction) (car templates))
+       ((nths ?exname enabledp pat templ rulenames restriction) (car templates))
        ((when (not enabledp))
         (examples-for-term term (cdr templates) acc state))
        ((mv unify-ok alist) (simple-one-way-unify pat term nil))
@@ -1006,14 +925,8 @@ restrictions are not used~%")
         ;; Restriction not met
         (examples-for-term term (cdr templates) acc state))
        (example (substitute-into-list templ alist))
-       (other-examples (cdr (assoc rulename acc)))
-       ((when (member-equal example other-examples))
-        (examples-for-term term (cdr templates) acc state)))
-    (examples-for-term term (cdr templates)
-                       (cons (cons rulename
-                                   (cons example other-examples))
-                             acc)
-                       state)))
+       (acc (add-example-for-instance-rules rulenames example acc)))
+    (examples-for-term term (cdr templates) acc state)))
 
 (verify-guards examples-for-term
                :hints(("Goal" :in-theory (enable
@@ -1080,7 +993,7 @@ restrictions are not used~%")
                :hints (("goal" :in-theory (enable pseudo-termp
                                                   pseudo-term-listp))))
 
-(mutual-recursion
+(mutual-recursion ;; witness-cp-collect-examples
  (defun witness-cp-collect-examples-term (x templates acc state)
    (declare (xargs :guard (and (pseudo-termp x)
                                (good-templatesp templates)
@@ -1317,6 +1230,30 @@ restrictions are not used~%")
                                  (witness-ev-falsify (disjoin clause)))
                                 (witness-ev-falsify (disjoin clause)))))))))
 
+(local (defthm true-listp-make-non-dup-vars
+         (equal (true-listp (make-non-dup-vars x avoid)) t)))
+
+(local (defthm strip-cdrs-pairlis
+         (implies (and (equal (len a) (len b))
+                       (true-listp b))
+                  (equal (strip-cdrs (pairlis$ a b)) b))))
+
+(local (defthm pseudo-term-listp-when-symbol-listp
+         (implies (symbol-listp x)
+                  (pseudo-term-listp x))
+         :hints (("goal" :induct (len x)
+                  :in-theory (enable symbol-listp
+                                     pseudo-term-listp
+                                     pseudo-termp)))))
+
+(defthm pseudo-term-listp-witness-cp-generalize-clause
+  (implies (and (pseudo-term-listp clause)
+                (alistp genalist)
+                (symbol-listp (strip-cdrs genalist)))
+           (pseudo-term-listp
+            (witness-cp-generalize-clause genalist clause)))
+  :hints (("goal" :do-not-induct t)))
+
 (in-theory (disable witness-cp-generalize-clause))
 
 
@@ -1326,44 +1263,288 @@ restrictions are not used~%")
 ;;========================================================================
 ;; (top level)
 
+;; User-provided list of examples has form:
+;;   ((instance-rulename1 term1 term2 ...)
+;;    (instance-rulename2 term1 term2 ...) ...)
+;;  --- note: not an alist, "shadowed pairs" are multiple instances of the same rule
+;; whereas we need example alist of the form
+;;   ((instance-rulename1 (term1 term2 ...) ;; example1
+;;                        (term11 term12 ...) ;; example2
+;;                        ...)
+;;    (instance-rulename2 ...))
+;;  --- note: alist, shadowed pairs ignored.
+
+
+;; (defun pseudo-term-bindingsp (x)
+;;   ;; like LET bindings
+;;   (declare (xargs :guard t))
+;;   (if (Atom x)
+;;       (eq x nil)
+;;     (and (consp (car x))
+;;          (symbolp (caar x))
+;;          (consp (cdar x))
+;;          (pseudo-termp (cadar x))
+;;          (eq (cddar x) nil)
+;;          (pseudo-term-bindingsp (cdr x)))))
+
+;; (local (defthm assoc-in-pseudo-term-bindingsp
+;;          (implies (and (pseudo-term-bindingsp x)
+;;                        (assoc k x))
+;;                   (and (consp (cdr (assoc k x)))
+;;                        (pseudo-termp (cadr (assoc k x)))))))
+
+;; (local (defthm pseudo-term-bindingsp-implies-alistp
+;;          (implies (pseudo-term-bindingsp x)
+;;                   (alistp x))
+;;          :hints(("Goal" :in-theory (enable alistp)))))
+
+;; (local (defthm pseudo-term-bindingsp-implies-eqlable-alistp
+;;          (implies (pseudo-term-bindingsp x)
+;;                   (eqlable-alistp x))))
+           
+;; (local (defthm consp-assoc
+;;          (implies (and (alistp x)
+;;                        (assoc k x))
+;;                   (consp (assoc k x)))))
+                  
+;; (defun missing-bindings (keys bindings)
+;;   (declare (xargs :guard (pseudo-term-bindingsp bindings)))
+;;   (if (atom keys)
+;;       nil
+;;     (if (assoc (car keys) bindings)
+;;         (missing-bindings (cdr keys) bindings)
+;;       (cons (car keys)
+;;             (missing-bindings (cdr keys) bindings)))))
+
+;; (defun bindings-to-ordered-list (keys bindings)
+;;   (declare (xargs :guard (pseudo-term-bindingsp bindings)))
+;;   (if (atom keys)
+;;       nil
+;;     (cons (cdr (assoc (car keys) bindings))
+;;           (bindings-to-ordered-list (cdr keys) bindings))))
+
+
+;; just checks syntax, nothing sophisticated
+(defun good-user-examplesp (x)
+  (declare (Xargs :guard t))
+  (if (atom x)
+      (eq x nil)
+    (and (consp (car x))
+         (symbolp (caar x))
+         (pseudo-term-listp (cdar x))
+         (good-user-examplesp (cdr x)))))
+
+
+
+(defun user-examples-to-example-alist (user-examples acc)
+  (declare (xargs :guard (and (good-user-examplesp user-examples)
+                              (alistp acc)
+                              (pseudo-term-list-list-alistp acc))
+                  :guard-hints (("goal" :in-theory (enable alistp pseudo-term-list-listp)))))
+  (if (endp user-examples)
+      acc
+    (b* (((cons rulename termlist) (car user-examples))
+         (other-examples (cdr (assoc rulename acc)))
+         (acc (cons (cons rulename (cons termlist other-examples)) acc)))
+      (user-examples-to-example-alist (cdr user-examples) acc))))
+  
+(defthm user-examples-to-example-alist-type
+  (let ((res (user-examples-to-example-alist user-examples acc)))
+    (and (implies (alistp acc)
+                  (alistp res))
+         (implies (and (pseudo-term-list-list-alistp acc)
+                       (good-user-examplesp user-examples))
+                  (pseudo-term-list-list-alistp res))))
+  :hints(("Goal" :in-theory (enable alistp pseudo-term-list-listp))))
+
 
 (defun witness-cp (clause hints state)
+  ":doc-section witness-cp
+ witness-cp -- clause processor for quantifier-based reasoning~/
+
+ You should not call witness-cp directly, but rather using the WITNESS macro
+ as a computed hint.  This documentation is an overview of the witness-cp
+ system.
+
+ WITNESS-CP is an extensible clause processor that can use
+ various sets of rules to do \"witnessing\" transformations.  Taking set-based
+ reasoning as an example,  we might want to look at hypotheses of the form
+ (subsetp-equal a b) and conclude specific examples such as
+ (implies (member-equal k a) (member-equal k b)) for various k.  We might
+ also want to look at hypotheses of the form (not (subsetp-equal c d)) and
+ conclude (and (member-equal j c) (not (member-equal j d))) for some witness
+ j.
+
+ There are thus four steps to this transformation:
+ 1. Introduce witnesses for negative occurrences of universally-quantified
+ predicates and positive occurrences of existentially-quantified ones.
+ 1a. Optionally, generalize newly introduced witness terms into fresh
+ variables, for readability.
+ 2. Find the set of examples with which to instantiate positive
+ universally-quantified and negative existentially-quantified predicates.
+ 3. Instantiate these predicates with these examples.
+
+ The clause processor needs two types of information to accomplish this:
+ - what predicates are to be taken as universal/existential quantifiers and
+   what they mean; i.e. how to introduce witnesses/instantiate.
+ - what examples to use when doing the instantiation.
+
+ The witness-introduction and instantiation may both be lossy, i.e. result
+ in a formula that isn't a theorem even if the original formula is one.~/
+
+ To set up witnessing for not-subsetp-equal hypotheses:
+
+ (defwitness subsetp-equal-witnessing
+   :predicate (not (subsetp-equal a b))
+   :expr (and (member-equal (subsetp-equal-witness a b) a)
+              (not (member-equal (subsetp-equal-witness a b) b)))
+   :generalize (((subsetp-equal-witness a b) . ssew)
+   :hints ('(:in-theory '(subsetp-equal-witness-correct))))
+
+ This means that in the witnessing phase, we search for hypotheses of the
+ form (not (subsetp-equal a b)) and for each such hypothesis, we add the
+ hypothesis
+ (and (member-equal (subsetp-equal-witness a b) a)
+      (not (member-equal (subsetp-equal-witness a b) b)))
+ but then generalize away the term (subsetp-equal-witness a b) to a fresh
+ variable from the set SSEW0, SSEW1, ... yielding new hyps:
+     (member-equal ssew0 a)
+     (not (member-equal ssew0 b))
+ So effectively we've taken an existential assumption and introduced a fresh
+ variable witnessing it.  We wrap (hide ...) around the original hyp to leave
+ a trace of what we've done (otherwise it would likely be rewritten away,
+ since the two hyps we've introduced imply its truth).
+
+ We add these new hypotheses to our main formula.  To ensure that this is
+ sound, the clause processor produces an additional proof obligation:
+ (implies (not (subsetp-equal a b))
+          (and (member-equal (subsetp-equal-witness a b) a)
+               (not (member-equal (subsetp-equal-witness a b) b))))
+ To ensure that we'll be able to satisfy this, the defwitness event tries to
+ prove this using the computed hints provided by the :hint argument to
+ defwitness.  In this case, this puts ACL2 into a theory containing only the
+ subsetp-equal-witness-correct rule.  If the proof works, then the witness-cp
+ hint will arrange for this same computed hint to be provided when the clause
+ processor produces this proof obligation, and it's a fair bet that ACL2 will
+ also be able to prove it then.  The hint provided is a good one because it
+ puts ACL2 into a known theory (not dependent on the ambient theory); a :by
+ hint is another good candidate.
+
+ To set up instantiation of subsetp-equal hypotheses:
+
+ (definstantiate subsetp-equal-instancing
+   :predicate (subsetp-equal a b)
+   :vars (k)
+   :expr (implies (member-equal k a)
+                  (member-equal k b))
+   :hints ('(:in-theory '(subsetp-equal-member))))
+
+ This will mean that for each subsetp-equal hypothesis we find, we'll add
+ hypotheses of the form (implies (member-equal k a) (member-equal k b)) for
+ each of (possibly) several k.  The terms we use to instantiate k are
+ determined by defexample; see below.
+ To make it sound to add these hypotheses, the clause processor again
+ introduces a proof obligation:
+  (implies (subsetp-equal a b)
+           (implies (member-equal k a)
+                    (member-equal k b)))
+ Again, the :hints argument is used to prove this, both (as a test) when the
+ definstantiate form is submitted and when it is used.
+
+ The terms used to instantiate k above are determined by defexample rules,
+ like the following:
+  (defexample subsetp-equal-member-template
+   :pattern (member-equal k a)
+   :templates (k)
+   :instance-rulename subsetp-equal-instancing)
+
+ This means that in phase 2, we'll look through the clause for expressions
+ (member-equal k a) and whenever we find one, include k in the list of
+ witnesses to use for instantiating using the subsetp-equal-instance rule.
+ Defexample doesn't require any proof obligation; it's just a heuristic that
+ adds to the set of terms used to instantiate universal quantifiers.
+
+ To use the scheme we've introduced for reasoning about subsetp-equal, we can
+ introduce a witness ruleset:
+
+ (def-witness-ruleset subsetp-equal-witnessing-rules
+   '(subsetp-equal-witnessing
+     subsetp-equal-instancing
+     subsetp-equal-member-template))
+
+ Then when we want to use this reasoning strategy, we can provide a computed
+ hint:
+ :hints ((witness :ruleset subsetp-equal-witnessing-rules))
+
+ This implicitly waits til the formula is stable-under-simplification and
+ invokes the witness-cp clause processor, allowing it to use the
+ witnessing/instancing/example rules listed.  It also sets things up so that
+ the right hints will be provided to the extra proof obligations produced by
+ applying defwitness and definstantiate rules.  You can also define a macro
+ so that you don't have to remember this syntax:
+
+ (defmacro subset-reasoning () '(witness :ruleset subsetp-equal-witnessing-rules))
+ (defthm foo
+   ...
+  :hints ((\"goal\" ...)
+          (subset-reasoning)))
+
+ Documentation is available for defwitness, definstantiate, and defexample.
+ Also defquantexpr, which is a shortcut for the common pattern (as above) of
+ doing both a defwitness and definstantiate for a certain term.
+ Also defquant, which defines a quantified function (using defun-sk) and sets
+ up defwitness/definstantiate rules for it."
   (declare (xargs :guard (pseudo-term-listp clause)
                   :stobjs state
                   :verify-guards nil))
   (b* (((when (not (and (true-listp hints)
-                        (equal (len hints) 4))))
+                        (>= (len hints) 5))))
         (er hard? 'witness-cp "Bad hints: wrong format~%")
         (value (list clause)))
        ((nths generalizep
-              witness-rules example-templates instance-rules) hints)
+              witness-rules example-templates instance-rules
+              user-examples) hints)
        ((when (not (good-witness-rulesp witness-rules)))
         (er hard? 'witness-cp "Bad hints: bad witness-rules~%")
         (value (list clause)))
        ((when (not (good-templatesp example-templates)))
         (er hard? 'witness-cp "Bad hints: bad example-templates~%")
         (value (list clause)))
-       ((mv witnessed-clause generalize-alist witness-obligs state)
-        (witness-cp-expand-witnesses clause witness-rules state))
-       ((mv example-alist state)
-        (witness-cp-collect-examples-list
-         (beta-reduce-list witnessed-clause)
-         example-templates nil state))
+       ((when (not (good-user-examplesp user-examples)))
+        (er hard? 'witness-cp "Bad hints: bad user examples~%")
+        (value (list clause)))
+       (example-alist (user-examples-to-example-alist user-examples nil))
        ((when (not (good-instance-rules-and-examplesp
                     instance-rules example-alist)))
-        (er hard? 'witness-cp
-            "Bad hints: bad instance rules or generated bad example~%")
+        (er hard? 'witness-cp "Bad hints: bad instance rule or user example~%")
         (value (list clause)))
-       ((mv instanced-clause instance-obligs state)
-        (witness-cp-expand-instances
-         witnessed-clause example-alist instance-rules state))
+       ((mv witnessed-clause generalize-alist witness-obligs state)
+        (witness-cp-expand-witnesses clause witness-rules state))
        (generalized-clause
         (if generalizep
             (witness-cp-generalize-clause
-             generalize-alist instanced-clause)
-          instanced-clause)))
+             generalize-alist witnessed-clause)
+          witnessed-clause))
+       ((mv example-alist state)
+        (witness-cp-collect-examples-list
+         (beta-reduce-list generalized-clause)
+         example-templates example-alist state))
+       ((when (not (good-instance-rules-and-examplesp
+                    instance-rules example-alist)))
+        (er hard? 'witness-cp
+            "Bad hints: bad instance rule or generated example~%")
+        (value (list clause)))
+       ((mv instanced-clause instance-obligs state)
+        (witness-cp-expand-instances
+         generalized-clause example-alist instance-rules state))
+       ;; (generalized-clause
+       ;;  (if generalizep
+       ;;      (witness-cp-generalize-clause
+       ;;       generalize-alist instanced-clause)
+       ;;    instanced-clause))
+       )
     (value
-     (cons generalized-clause
+     (cons instanced-clause
            (remove-duplicates-equal
             (append instance-obligs witness-obligs))))))
 
@@ -1393,18 +1574,28 @@ restrictions are not used~%")
                    good-witness-rulesp good-templatesp
                    witness-cp-expand-witnesses
                    witness-cp-collect-examples-list
-                   witness-cp-expand-instances))
+                   witness-cp-expand-instances
+                   nth len update-nth nth-0-cons nth-add1))
           :use ((:instance witness-ev-falsify
                            (x (disjoin clause))
                            (a a))
                 (:instance witness-ev-falsify
+                 (x (disjoin (mv-nth 0 (witness-cp-expand-witnesses
+                                        clause (nth 1 hints) state))))
+                 (a a))
+                (:instance witness-ev-falsify
                            (x (disjoin
-                               (car (mv-nth 1 (witness-cp
-                                               clause
-                                               (update-nth 0 nil
-                                                           hints)
-                                               state)))))
-                           (a a)))
+                               (car (mv-nth 1 (witness-cp clause hints state)))))
+                           (a a))
+                (:instance witness-ev-falsify
+                 (x (disjoin
+                     (car (mv-nth 1 (witness-cp clause hints state)))))
+                 (a (witness-ev-falsify
+                     (disjoin (witness-cp-generalize-clause
+                               (mv-nth 1 (witness-cp-expand-witnesses
+                                          clause (nth 1 hints) state))
+                               (mv-nth 0 (witness-cp-expand-witnesses
+                                          clause (nth 1 hints) state))))))))
           :do-not-induct t))
   :otf-flg t
   :rule-classes :clause-processor)
@@ -1555,14 +1746,19 @@ restrictions are not used~%")
 ;; of these rules.
 
 (defun run-test-with-hint-replacement (term hints ctx state)
-  (declare (xargs :mode :program))
-  (b* (((er hint)
-        (translate-hints+ 'thm '((use-these-hints-hint clause))
-                          nil 'ctx (w state) state))
-       (clauses `(((not (use-these-hints ',hints))
-                   ,term)))
-       (pspv (make-pspv (ens state) (w state) :orig-hints hint)))
-    (prove-loop clauses pspv hint (ens state) (w state) ctx state)))
+  (declare (xargs :mode :program :stobjs state))
+  (with-ctx-summarized
+    ctx
+    (b* (((er hint)
+          (translate-hints+ 'thm '((use-these-hints-hint clause))
+                            nil 'ctx (w state) state))
+         (clauses `(((not (use-these-hints ',hints))
+                     ,term)))
+         (pspv (make-pspv (ens state) (w state) :orig-hints hint
+                          :displayed-goal term))
+         ((er ttree)
+          (prove-loop clauses pspv hint (ens state) (w state) ctx state)))
+      (chk-assumption-free-ttree ttree ctx state))))
 
 
 (defun wcp-translate-lst (lst state)
@@ -1576,7 +1772,7 @@ restrictions are not used~%")
 
 (defun defwitness-fn (name predicate expr restriction generalize hints
                            state)
-  (declare (xargs :mode :program))
+  (declare (xargs :mode :program :stobjs state))
   (b* (((when (not predicate))
         (mv "DEFWITNESS: Must supply a :PREDICATE.~%" nil state))
        ((when (not expr))
@@ -1590,7 +1786,7 @@ restrictions are not used~%")
        (generalize (pairlis$ generalize-terms (strip-cdrs generalize)))
        ((er &) (run-test-with-hint-replacement
                 `(implies ,predicate ,expr)
-                hints 'defwitness state))
+                hints (cons 'defwitness name) state))
        ;;                         `((prog2$ (cw "clause: ~x0~%" clause)
        ;;                                   '(:computed-hint-replacement
        ;;                                     :do-not '(preprocess simplify)))) nil nil))
@@ -1606,6 +1802,40 @@ restrictions are not used~%")
 (defmacro defwitness (name &key predicate expr
                            (restriction ''t)
                            generalize hints)
+  ":doc-section witness-cp
+ Defwitness -- add a WITNESS-CP rule providing a witness for an
+ existential-quantifier hypothesis (or universal-quantifier conclusion).~/
+
+ Usage example:
+ (defwitness subsetp-equal-witnessing
+   :predicate (not (subsetp-equal a b))
+   :expr (and (member-equal (subsetp-equal-witness a b) a)
+              (not (member-equal (subsetp-equal-witness a b) b)))
+   :generalize (((subsetp-equal-witness a b) . ssew)
+   :hints ('(:in-theory '(subsetp-equal-witness-correct))))
+
+ Additional arguments:
+   :restriction term
+ where term may have free variables that occur also in the :predicate term.
+
+ The above example tells WITNESS-CP how to expand a hypothesis of the form
+ (not (subsetp-equal a b)) or, equivalently, a conclusion of the form
+ (subsetp-equal a b), generating a fresh variable named SSEW or similar that
+ represents an object that proves that A is not a subset of B (because that
+ object is in A but not B.)
+
+ See ~il[witness-cp] for background.~/
+
+ When this rule is in place, WITNESS-CP will look for literals in the clause
+ that unify with the negation of PREDICATE.  It will replace these by a term
+ generated from EXPR.  It will generalize away terms that are keys in
+ GENERALIZE, replacing them by fresh variables based on their corresponding
+ values.  It will use HINTS to relieve the proof obligation that this
+ replacement is sound (which is also done when the defwitness form is run).
+
+ If a RESTRICTION is given, then this replacement will only take place when
+ it evaluates to a non-nil value.    This requires oracle-eval to be allowed;
+ ~l[oracle-eval].~/"
   `(make-event (defwitness-fn ',name ',predicate ',expr ',restriction
                  ',generalize ',hints state)))
 
@@ -1614,7 +1844,7 @@ restrictions are not used~%")
 
 (defun definstantiate-fn (name predicate vars expr restriction hints
                                state)
-  (declare (xargs :mode :program))
+  (declare (xargs :mode :program :stobjs state))
   (b* (((when (not predicate))
         (mv "DEFINSTANTIATE: Must supply a :PREDICATE.~%" nil state))
        ((when (not vars))
@@ -1627,7 +1857,7 @@ restrictions are not used~%")
         (translate expr t t nil 'definstantiate (w state) state))
        ((er &) (run-test-with-hint-replacement
                 `(implies ,predicate ,expr)
-                hints 'definstantiate state)))
+                hints (cons 'definstantiate name) state)))
     (value
      `(table witness-cp-instance-rules
              ',name ',(list t
@@ -1638,33 +1868,299 @@ restrictions are not used~%")
 
 (defmacro definstantiate (name &key predicate vars expr
                                (restriction ''t) hints)
+  ":doc-section witness-cp
+ Definstantiate -- add a WITNESS-CP rule showing how to instantiate a
+ universial-quantifier hyptothesis (or an existential-quantifier conclusion).~/
+
+ Usage example:
+ (definstantiate subsetp-equal-instancing
+   :predicate (subsetp-equal a b)
+   :vars (k)
+   :expr (implies (member-equal k a)
+                  (member-equal k b))
+   :hints ('(:in-theory '(subsetp-equal-member))))
+
+ Additional arguments:
+   :restriction term
+ where term may have free variables that occur also in the :predicate term or
+ the list :vars.
+
+ The above example tells WITNESS-CP how to expand a hypothesis of the form
+ (subsetp-equal a b) or, equivalently, a conclusion of the form
+ (not (subsetp-equal a b)), introducing a term of the form EXPR for each of
+ some set of K.  Which K are chosen depends on the set of existing ~il[defexample]
+ rules and the user-provided examples from the call of WITNESS.
+
+ See ~il[witness-cp] for background.~/
+
+ In more detail, WITNESS-CP will look in the clause for literals that unify
+ with the negation of PREDICATE.  It will replace these with a conjunction of
+ several instantiations of EXPR, with the free variables present in VARS
+ replaced by either user-provided terms or terms generated by a defexample rule.
+ It will use HINTS to relieve the proof obligation that this replacement is
+ sound (which is also done when the definstantiate form is run).
+
+ If a RESTRICTION is given, then this replacement will only take place when
+ it evaluates to a non-nil value.  This requires  oracle-eval to be allowed;
+ ~l[oracle-eval].
+ ~/"
   `(make-event (definstantiate-fn
                  ',name ',predicate ',vars ',expr ',restriction
                  ',hints state)))
 
 
+(defun quantexpr-bindings-to-generalize (bindings)
+  (b* (((when (atom bindings)) nil)
+       ((list var expr) (car bindings)))
+    (cons (cons expr var)
+          (quantexpr-bindings-to-generalize (cdr bindings)))))
+    
 
-(defun defexample-fn (name pattern templates instancename restriction
+(defun defquantexpr-fn (name predicate quantifier expr witnesses
+                             instance-restriction witness-restriction
+                             instance-hints witness-hints
+                             witness-rulename instance-rulename
+                             generalize)
+  (b* (((unless (member quantifier '(:forall :exists)))
+        (er hard? 'defquantexpr
+            "Quantifier argument must be either :FORALL or :EXISTS~%"))
+       (witness-rulename
+        (or witness-rulename
+            (intern-in-package-of-symbol
+             (concatenate 'string (symbol-name name) "-WITNESSING")
+             name)))
+       (instance-rulename
+        (or instance-rulename
+            (intern-in-package-of-symbol
+             (concatenate 'string (symbol-name name) "-INSTANCING")
+             name)))
+       ((mv witness-pred instance-pred witness-expr instance-expr)
+        (if (eq quantifier :forall)
+            (mv `(not ,predicate)
+                predicate
+                `(let ,witnesses
+                   (not ,expr))
+                expr)
+          (mv predicate
+              `(not ,predicate)
+              `(let ,witnesses ,expr)
+              `(not ,expr))))
+       (generalize-alist (quantexpr-bindings-to-generalize witnesses)))
+    `(progn (defwitness ,witness-rulename
+              :predicate ,witness-pred
+              :expr ,witness-expr
+              :hints ,witness-hints
+              ,@(and generalize `(:generalize ,generalize-alist))
+              :restriction ,witness-restriction)
+            (definstantiate ,instance-rulename
+              :predicate ,instance-pred
+              :vars ,(strip-cars witnesses)
+              :expr ,instance-expr
+              :hints ,instance-hints
+              :restriction ,instance-restriction))))
+
+(defmacro defquantexpr (name &key predicate
+                             (quantifier ':forall)
+                             expr witnesses
+                             (instance-restriction ''t)
+                             (witness-restriction ''t)
+                             instance-hints witness-hints
+                             witness-rulename
+                             instance-rulename
+                             (generalize 't))
+  ":doc-section witness-cp
+ Defquantexpr -- shortcut to perform both a DEFWITNESS and DEFINSTANTIATE~/
+
+ Usage:
+~bv[]
+ (defquantexpr subsetp-equal
+  :predicate (subsetp-equal x y)
+  :quantifier :forall
+  :witnesses ((k (subsetp-equal-witness x y)))
+  :expr (implies (member-equal k x)
+                 (member-equal k y))
+  :witness-hints ('(:in-theory '(subsetp-equal-witness-correct)))
+  :instance-hints ('(:in-theory '(subsetp-equal-member))))
+~ev[]
+ This expands to a DEFWITNESS and DEFINSTANTIATE form.  The names of the
+ defwitness and definstantiate rules produced are generated from the name
+ (first argument) of the defquantexpr form; in this case they are
+ subsetp-equal-witnessing and subsetp-equal-instancing.  Keyword arguments
+ witness-rulename and instance-rulename may be provided to override these
+ defaults.
+
+ Witness-hints and instance-hints are the hints passed to the two forms.
+
+ Additional arguments: instance-restriction, witness-restriction, generalize.
+ Instance-restriction and witness-restriction are the :restriction arguments
+ passed to defwitness and definstantiate, respectively.  If :generalize is nil,
+ then the defwitness rule will not do generalization; otherwise, it will use
+ the keys of :witnesses as the variable names.~/
+
+ The meaning of this form is as follows:
+~bv[]
+ \":predicate holds iff (:quantifier) (keys of :witnesses), :expr.\"
+~ev[]
+
+ In our example above:
+
+~bv[]
+ \"(subsetp-equal x y) iff for all k,
+   (implies (member-equal k x)
+            (member-equal k y)).\"
+~ev[]
+
+ An example of this with an existential quantifier:
+~bv[]
+ (defquantexpr intersectp-equal
+  :predicate (intersectp-equal x y)
+  :quantifier :exists
+  :witnesses ((k (intersectp-equal-witness x y)))
+  :expr (and (member-equal k x)
+             (member-equal k y))
+  :witness-hints ('(:in-theory '(intersectp-equal-witness-correct)))
+  :instance-hints ('(:in-theory '(intersectp-equal-member))))
+~ev[]
+
+ meaning:
+~bv[]
+ \"(intersectp-equal x y) iff there exists k such that
+      (and (member-equal k x)
+           (member-equal k y))\".
+~ev[]
+
+ the values bound to each key in :witnesses should be witnesses for the
+ existential quantifier in the direction of the bi-implication that involves
+ (the forward direction for :exists and the backward for :forall):
+
+ for the first example,
+~bv[]
+ \"(let ((k (subsetp-equal-witness x y)))
+      (implies (member-equal k x)
+               (member-equal k y)))
+   implies
+   (subsetp-equal x y).\"
+~ev[]
+
+ for the second example,
+~bv[]
+ \"(intersectp-equal x y)
+   implies
+   (let ((k (intersectp-equal-witness x y)))
+     (and (member-equal k x)
+          (member-equal k y))).\"
+~ev[]~/
+
+"
+  (defquantexpr-fn name predicate quantifier expr witnesses
+     instance-restriction witness-restriction
+     instance-hints witness-hints witness-rulename instance-rulename generalize))
+
+
+
+
+
+
+
+(defun missing-instance-rules (instance-rules alist)
+  (declare (xargs :guard (and (alistp alist)
+                              (symbol-listp instance-rules))))
+  (if (atom instance-rules)
+      nil
+    (if (assoc (car instance-rules) alist)
+        (missing-instance-rules (cdr instance-rules) alist)
+      (cons (car instance-rules)
+            (missing-instance-rules (cdr instance-rules) alist)))))
+
+
+(defun wrong-arity-instance-rules (arity instance-rules alist)
+  (declare (xargs :mode :program))
+  (if (atom instance-rules)
+      nil
+    (if (= (len (nth 3 (assoc (car instance-rules) alist))) arity)
+        (wrong-arity-instance-rules arity (cdr instance-rules) alist)
+      (cons (car instance-rules)
+            (wrong-arity-instance-rules arity (cdr instance-rules) alist)))))
+
+(defun defexample-fn (name pattern templates instance-rules restriction
                            state)
-  (declare (Xargs :mode :program))
+  (declare (Xargs :mode :program :stobjs state))
   (b* (((when (not pattern))
         (mv "DEFEXAMPLE: Must supply a :PATTERN.~%" nil state))
        ((when (not templates))
         (mv "DEFEXAMPLE: Must supply :TEMPLATES.~%" nil state))
-       ((when (not instancename))
+       ((when (not instance-rules))
         (mv "DEFEXAMPLE: Must supply an :INSTANCE-RULENAME.~%" nil state))
+       (instance-rule-alist (table-alist 'witness-cp-instance-rules
+                                         (w state)))
+       (missing-rules (missing-instance-rules instance-rules instance-rule-alist))
+       ((when missing-rules)
+        (mv (msg "DEFEXAMPLE: The following instance rules do not exist: ~x0~%"
+                 missing-rules)
+            nil state))
+       (nvars (len templates))
+       (bad-rules (wrong-arity-instance-rules nvars instance-rules instance-rule-alist))
+       ((when bad-rules)
+        (mv (msg "DEFEXAMPLE: The following instance rules do not have the
+right number of free variables (~x0): ~x1~%"
+                 nvars bad-rules)
+            nil state))
        ((er pattern)
         (translate pattern t t nil 'defexample (w state) state))
        ((er templates)
         (wcp-translate-lst templates state)))
     (value
      `(table witness-cp-example-templates
-             ',name ',(list t pattern templates instancename restriction)))))
+             ',name ',(list t pattern templates instance-rules restriction)))))
 
 (defmacro defexample (name &key pattern templates instance-rulename
+                           instance-rules
                            (restriction ''t))
+  ":doc-section witness-cp
+Defexample -- tell witness-cp how to instantiate the free variables of
+definstantiate rules~/
+
+Example:
+~bv[]
+ (defexample set-reasoning-member-equal-template
+   :pattern (member-equal k y)
+   :templates (k)
+   :instance-rules
+   (subsetp-equal-instancing
+    intersectp-equal-instancing
+    set-equivp-instancing
+    set-consp-instancing))
+~ev[]
+
+Additional arguments:
+  :restriction term
+ where term may have free variables present in pattern,
+  :instance-rulename rule
+ may be used instead of :instance-rules when there is only one rule.
+
+Meaning: Find terms of the form ~c[(member-equal k y)] throughout the clause,
+and for each such ~c[k], for any match of one of the instance-rules listed, add
+an instance using that ~c[k].  For example, if we have a hypothesis
+~c[(subsetp-equal a b)] and terms
+~bv[]
+ (member-equal (foo x) (bar y))
+ (member-equal q a)
+~ev[]
+present somewhere in the clause, then this rule along with the
+subsetp-equal-instancing rule will cause the following hyps to be added:
+~bv[]
+ (implies (member-equal (foo x) a)
+          (member-equal (bar x) a))
+ (implies (member-equal q a)
+          (member-equal q b)).
+~ev[]
+
+If a :restriction is present, then the rule only applies to occurrences of
+pattern for which the restriction evaluates to non-nil.  This requires
+oracle-eval to be allowed; ~l[oracle-eval].~/~/"
   `(make-event
-    (defexample-fn ',name ',pattern ',templates ',instance-rulename
+    (defexample-fn ',name ',pattern ',templates
+      ',(if instance-rulename (list instance-rulename) instance-rules)
       ',restriction state)))
 
 
@@ -1714,100 +2210,185 @@ restrictions are not used~%")
 ;;                            instance-rules)))))
 
 (defmacro def-witness-ruleset (name rules)
+  ":doc-section witness-cp
+Def-witness-ruleset: name a set of witness-cp rules~/
+
+The WITNESS computed-hint macro takes a :ruleset argument that determines
+which witness-cp rules are allowed to fire.  Def-witness-ruleset allows
+one name to abbreviate several actual rules in this context.
+
+Usage:
+~bv[]
+ (def-witness-ruleset foo-rules
+    '(foo-instancing
+      foo-witnessing
+      bar-example-for-foo
+      baz-example-for-foo))
+~ev[]
+
+After submitting this form, the following invocations of WITNESS are
+equivalent:
+
+~bv[]
+ (witness :ruleset foo-rules)
+ (witness :ruleset (foo-rules))
+ (witness :ruleset (foo-instancing
+                    foo-witnessing
+                    bar-example-for-foo
+                    baz-example-for-foo))
+~ev[]
+
+ These rulesets are defined using a table event.  If multiple different
+definitions are given for the same ruleset name, the latest one is always in
+effect.
+
+ Rulesets can contain other rulesets.  These are expanded at the time the
+WITNESS hint is run.  A ruleset can be expanded with
+~bv[]
+ (witness-expand-ruleset names (w state))
+~ev[]
+
+Witness rules can also be enabled/disabled using ~il[witness-enable] and
+~il[witness-disable]; these settings take effect when WITNESS is called without
+specifying a ruleset.  Ruleset names may be used in witness-enable and
+witness-disable just as they are used in the ruleset argument of WITNESS.
+~/~/"
   `(table witness-cp-rulesets ',name ,rules))
 
-(defun defquant-witness-binding1 (n qvars witness-expr)
-  (if (atom qvars)
+;; (defun defquant-witness-binding1 (n qvars witness-expr)
+;;   (if (atom qvars)
+;;       nil
+;;     (cons `(,(car qvars) (mv-nth ,n ,witness-expr))
+;;           (defquant-witness-binding1 (1+ n) (cdr qvars) witness-expr))))
+
+;; (defun defquant-witness-binding (qvars witness-expr body)
+;;   (if (eql (len qvars) 1)
+;;       `(let ((,(car qvars) ,witness-expr)) ,body)
+;;     `(let ,(defquant-witness-binding1 0 qvars witness-expr)
+;;        ,body)))
+
+;; (defun defquant-generalize-alist1 (n qvars witness-expr generalize-vars)
+;;   (if (atom qvars)
+;;       nil
+;;     (cons `((mv-nth ,n ,witness-expr)
+;;             . ,(or (car generalize-vars) (car qvars)))
+;;           (defquant-generalize-alist1 (1+ n) (cdr qvars)
+;;             witness-expr (cdr generalize-vars)))))
+
+
+;; (defun defquant-generalize-alist (qvars witness-expr generalize-vars)
+;;   (if (eql (len qvars) 1)
+;;       `((,witness-expr . ,(or (car generalize-vars) (car qvars))))
+;;     (defquant-generalize-alist1 0 qvars witness-expr generalize-vars)))
+
+(defun defquant-witnesses-mv (n vars witness-call)
+  (if (atom vars)
       nil
-    (cons `(,(car qvars) (mv-nth ,n ,witness-expr))
-          (defquant-witness-binding1 (1+ n) (cdr qvars) witness-expr))))
+    (cons `(,(car vars) (mv-nth ,n ,witness-call))
+          (defquant-witnesses-mv (1+ n) (cdr vars) witness-call))))
 
-(defun defquant-witness-binding (qvars witness-expr body)
-  (if (eql (len qvars) 1)
-      `(let ((,(car qvars) ,witness-expr)) ,body)
-    `(let ,(defquant-witness-binding1 0 qvars witness-expr)
-       ,body)))
+(defun defquant-witnesses (vars witness-call)
+  (cond ((atom vars) nil) ;; ?
+        ((atom (cdr vars))
+         `((,(car vars) ,witness-call)))
+        (t (defquant-witnesses-mv 0 vars witness-call))))
+  
 
-(defun defquant-generalize-alist1 (n qvars witness-expr generalize-vars)
-  (if (atom qvars)
-      nil
-    (cons `((mv-nth ,n ,witness-expr)
-            . ,(or (car generalize-vars) (car qvars)))
-          (defquant-generalize-alist1 (1+ n) (cdr qvars)
-            witness-expr (cdr generalize-vars)))))
-
-
-(defun defquant-generalize-alist (qvars witness-expr generalize-vars)
-  (if (eql (len qvars) 1)
-      `((,witness-expr . ,(or (car generalize-vars) (car qvars))))
-    (defquant-generalize-alist1 0 qvars witness-expr generalize-vars)))
-
-(defun defquant-fn (name vars quant-expr generalize-vars witness-rulename
-                         instance-rulename define witness-dcls
-                         witness-dcls-p strengthen)
-  (b* ((witness-rulename (or witness-rulename
-                             (intern-in-package-of-symbol
-                              (concatenate 'string (symbol-name name)
-                                           "-WITNESSING")
-                              name)))
-       (witness-name (intern-in-package-of-symbol
-                      (concatenate 'string (symbol-name name)
-                                   "-WITNESS")
-                      name))
-       (witness-expr (cons witness-name vars))
-       (qcall (cons name vars))
-       (instance-rulename (or instance-rulename
-                              (intern-in-package-of-symbol
-                               (concatenate 'string (symbol-name name)
-                                            "-INSTANCING")
-                               name)))
+(defun defquant-fn (name vars quant-expr define
+                         witness-rulename
+                         instance-rulename
+                         doc
+                         quant-ok
+                         skolem-name
+                         thm-name
+                         rewrite
+                         strengthen
+                         witness-dcls)
+  (b* ((qcall (cons name vars))
        ((when (not (and (eql (len quant-expr) 3)
-                        (member (car quant-expr) '(forall exists))
+                        (member-equal (symbol-name (car quant-expr))
+                                     '("FORALL" "EXISTS"))
                         (or (symbolp (cadr quant-expr))
                             (symbol-listp (cadr quant-expr))))))
-        (er hard? 'defquant "Malformed quantifier expression: ~x0~%" quant-expr))
-       (quantifier (nth 0 quant-expr))
+        (er hard? 'defquant "Malformed quantifier expression: ~x0~%"
+            quant-expr))
+       (exists-p (equal (symbol-name (car quant-expr)) "EXISTS"))
        (qvars (nth 1 quant-expr))
        (qvars (if (atom qvars) (list qvars) qvars))
        (qexpr (nth 2 quant-expr))
-       (necc-suff-name (intern-in-package-of-symbol
-                        (concatenate 'string (symbol-name name)
-                                     (if (eq quantifier 'forall)
-                                         "-NECC" "-SUFF"))
-                        name)))
+       ;; these need to be chosen the same way as in defun-sk
+       (skolem-name (or skolem-name
+                        (intern-in-package-of-symbol
+                         (concatenate 'string (symbol-name name)
+                                      "-WITNESS")
+                         name)))
+       (witness-expr (cons skolem-name vars))
+       (thm-name (or thm-name
+                     (intern-in-package-of-symbol
+                      (concatenate 'string (symbol-name name)
+                                   (if exists-p
+                                       "-SUFF" "-NECC"))
+                      name))))
 
   `(progn
      ,@(and define `((defun-sk ,name ,vars ,quant-expr
-                       ,@(and witness-dcls-p
-                              `(:witness-dcls ,witness-dcls))
-                       :strengthen ,strengthen)))
-     (defwitness ,witness-rulename
-       :predicate ,(if (eq quantifier 'forall)
-                       `(not ,qcall)
-                     qcall)
-       :expr ,(defquant-witness-binding qvars witness-expr
-                (if (eq quantifier 'forall)
-                    `(not ,qexpr) qexpr))
-       :generalize ,(defquant-generalize-alist
-                      qvars witness-expr generalize-vars)
-       :hints ('(:in-theory '(,name))))
-     (definstantiate ,instance-rulename
-       :predicate ,(if (eq quantifier 'forall)
-                       qcall
-                     `(not ,qcall))
-       :vars ,qvars
-       :expr ,(if (eq quantifier 'forall)
-                  qexpr `(not ,qexpr))
-       :hints ('(:in-theory nil :use ,necc-suff-name)))
-     (in-theory (disable ,name ,necc-suff-name)))))
+                       :doc ,doc
+                       :quant-ok ,quant-ok
+                       :skolem-name ,skolem-name
+                       :thm-name ,thm-name
+                       :rewrite ,rewrite
+                       :strengthen ,strengthen
+                       :witness-dcls ,witness-dcls)))
+     (defquantexpr ,name
+       :predicate ,qcall
+       :quantifier ,(if exists-p :exists :forall)
+       :witnesses ,(defquant-witnesses qvars witness-expr)
+       :expr ,qexpr
+       :witness-hints ('(:in-theory '(,name)))
+       :instance-hints ('(:in-theory nil :use ,thm-name))
+       :witness-rulename ,witness-rulename
+       :instance-rulename ,instance-rulename)
+     (in-theory (disable ,name ,thm-name)))))
 
 
-(defmacro defquant (name vars quant-expr &key generalize-vars
-                         witness-rulename instance-rulename
-                         (define 't) (witness-dcls 'nil witness-dcls-p)
-                         (strengthen 'nil))
-  (defquant-fn name vars quant-expr generalize-vars witness-rulename
-    instance-rulename define witness-dcls witness-dcls-p strengthen))
+(defmacro defquant (name vars quant-expr &key
+                         (define 't)
+                         witness-rulename
+                         instance-rulename
+                         ;; defun-sk args
+                         doc
+                         quant-ok
+                         skolem-name
+                         thm-name
+                         rewrite
+                         strengthen
+                         (witness-dcls '((DECLARE (XARGS :NON-EXECUTABLE T)))))
+  ":doc-section witness-cp
+Defquant -- define a quantified function and corresponding witness-cp rules~/
+
+Defquant introduces a quantified function using ~il[defun-sk] and subsequently
+adds appropriate defwitness and definstantiate rules for that function.  Note
+that no defexample rules are provided (we judge these too hard to get right
+automatically).
+
+Usage: Defquant takes the same arguments as ~il[defun-sk], plus the following
+additional keywords:
+
+  :define -- default t, use nil to skip the defun-sk step (useful if it
+       has already been done)
+
+  :witness-rulename, :instance-rulename --
+     name the generated witness and instance rules.  The defaults are
+     name-witnessing and name-instancing.~/~/"
+
+  (defquant-fn name vars quant-expr define witness-rulename instance-rulename
+    doc
+    quant-ok
+    skolem-name
+    thm-name
+    rewrite
+    strengthen
+    witness-dcls))
 
 
 (defun witness-rule-e/d-event (rulename tablename enablep world)
@@ -1816,25 +2397,6 @@ restrictions are not used~%")
     (and look
          `((table ,tablename
                   ',rulename ',(update-nth 0 enablep (cdr look)))))))
-
-
-(defun witness-rule-e/d-fn (rulename enablep world)
-  (let ((events (append (witness-rule-e/d-event
-                         rulename 'witness-cp-witness-rules enablep world)
-                        (witness-rule-e/d-event
-                         rulename 'witness-cp-instance-rules enablep world)
-                        (witness-rule-e/d-event
-                         rulename 'witness-cp-example-templates enablep world))))
-    (if events
-        `(progn . ,events)
-      (er hard? 'witness-rule-e/d
-          "There is no witness-cp rule named ~x0.~%" rulename))))
-
-(defmacro witness-enable (rulename)
-  `(make-event (witness-rule-e/d-fn ',rulename t (w state))))
-
-(defmacro witness-disable (rulename)
-  `(make-event (witness-rule-e/d-fn ',rulename nil (w state))))
 
 (defun union-assoc (a b)
   (cond ((atom a) b)
@@ -1851,8 +2413,8 @@ restrictions are not used~%")
 (defun instance-rules-for-examples (example-templates)
   (if (atom example-templates)
       nil
-    (cons (nth 4 (car example-templates))
-          (instance-rules-for-examples (cdr example-templates)))))
+    (append (nth 4 (car example-templates))
+            (instance-rules-for-examples (cdr example-templates)))))
 
 
 (mutual-recursion
@@ -1870,9 +2432,15 @@ restrictions are not used~%")
         (example-templates1 (remove-dups-assoc example-templates1))
         ((mv instance-rules1 &)
          (look-up-witness-rules (instance-rules-for-examples example-templates1)
-                                (table-alist 'witness-cp-instance-rules world))))
+                                (table-alist 'witness-cp-instance-rules
+                                             world)))
+        ((mv instance-rules2 &)
+         (look-up-witness-rules rest (table-alist 'witness-cp-instance-rules
+                                                  world))))
      (mv (union-assoc (remove-dups-assoc witness-rules1) witness-rules)
-         (union-assoc (remove-dups-assoc instance-rules1) instance-rules)
+         (union-assoc (remove-dups-assoc instance-rules1)
+                      (union-assoc (remove-dups-assoc instance-rules2)
+                                   instance-rules))
          (union-assoc example-templates1 example-templates))))
 
  (defun witness-expand-ruleset-names (names world)
@@ -1893,24 +2461,104 @@ restrictions are not used~%")
            (union-assoc example-templates1 example-templates)
            rest)))))
 
+(defun witness-e/d-events (names tablename enablep world)
+  (if (atom names)
+      nil
+    (append (witness-rule-e/d-event (car names) tablename enablep world)
+            (witness-e/d-events (cdr names) tablename enablep world))))
+
+(defun witness-e/d-ruleset-fn (names enablep world)
+  (declare (xargs :mode :program))
+  (b* ((names (if (atom names) (list names) names))
+       ((mv w i e) (witness-expand-ruleset names world)))
+    `(with-output :off :all :on error
+       (progn
+         ,@(witness-e/d-events (strip-cars w) 'witness-cp-witness-rules enablep world)
+         ,@(witness-e/d-events (strip-cars i) 'witness-cp-instance-rules enablep world)
+         . ,(witness-e/d-events (strip-cars e) 'witness-cp-example-templates enablep world)))))
+
+(defmacro witness-enable (&rest names)
+  ":doc-section witness-cp
+ Witness-enable -- enable some witness-cp rules~/
+
+ Usage:
+~bv[]
+ (witness-enable name1 name2 ...)
+~ev[]
+ 
+ Sets the witness-cp rules name1, name2... to be enabled by default.
+When name1 is the name of a witness-ruleset rather than a rule, all rules in
+the ruleset are set enabled.
+
+The enabled/disabled setting of a witness-cp rule takes effect only when
+WITNESS is called with no :ruleset argument; otherwise, the ruleset specified
+ignores the enabled/disabled status.~/~/"
+  `(make-event (witness-e/d-ruleset-fn ',names t (w state))))
+
+(defmacro witness-disable (&rest names)
+  ":doc-section witness-cp
+ Witness-disable -- disable some witness-cp rules~/
+
+ Usage:
+~bv[]
+ (witness-disable name1 name2 ...)
+~ev[]
+ 
+ Sets the witness-cp rules name1, name2... to be disabled by default.
+When name1 is the name of a witness-ruleset rather than a rule, all rules in
+the ruleset are set disabled.
+
+The enabled/disabled setting of a witness-cp rule takes effect only when
+WITNESS is called with no :ruleset argument; otherwise, the ruleset specified
+ignores the enabled/disabled status.~/~/"
+  `(make-event (witness-e/d-ruleset-fn ',names nil (w state))))
 
 
-(defmacro witness (&key ruleset (generalize 't))
+
+(defmacro witness (&key ruleset (generalize 't) examples)
+  ":doc-section witness-cp
+Witness -- computed-hint that runs witness-cp~/
+
+Usage:
+~bv[]
+ (witness :ruleset (rule ruleset ...)
+          :examples
+           ((inst-rulename1 term1 term2 ...)
+            (inst-rulename2 term3 ...) ...)
+          :generalize t)
+~ev[]
+
+ Calls the clause processor WITNESS-CP.  If a ruleset is provided, only those
+witness-cp rules will be available; otherwise, all rules that are currently
+enabled (~l[witness-enable], ~il[witness-disable]) are used.
+
+The :generalize argument is T by default; if set to NIL, the generalization
+step is skipped (~l[witness-cp]).
+
+The :examples argument is empty by default.  Usually, examples are generated by
+defexample rules.  However, in some cases the user might like to instantiate
+universally-quantified hyps in a particular way on a one-off basis; this may be
+done using the :examples field.  Each inst-rulename must be the name of a
+definstantiate rule, and the terms following it correspond to that rule's :vars
+ (in partiular, the list of terms must be the same length as the :vars of the
+rule).~/~/"
   `(and stable-under-simplificationp
         (b* ((ruleset ',ruleset)
-             (rules
+             (examples ',examples)
+             (rules/user-examples
               (if ruleset
                   (mv-let (w i e)
                     (witness-expand-ruleset
                      (if (atom ruleset) (list ruleset) ruleset)
                      world)
-                    (list w e i))
+                    (list w e i examples))
                 (list (table-alist 'witness-cp-witness-rules world)
                       (table-alist 'witness-cp-example-templates
                                    world)
                       (table-alist 'witness-cp-instance-rules
-                                   world))))
-               (hints (cons ',generalize rules)))
+                                   world)
+                      examples)))
+               (hints (cons ',generalize rules/user-examples)))
           `(:computed-hint-replacement
             ((use-these-hints-hint clause))
             :clause-processor

@@ -20,7 +20,7 @@
 
 (in-package "ACL2")
 (include-book "finite-set-theory/osets/sets" :dir :system)
-(include-book "coi/util/in-conclusion" :dir :system)
+(include-book "mfc-utils")
 (include-book "witness-cp")
 
 (local (defthm equal-of-booleans-to-iff
@@ -138,8 +138,7 @@
 
 
 (defthm subsetp-equal-witness-rw
-  (implies (in-conclusion-check (subsetp-equal x y)
-                                :top :negated)
+  (implies (rewriting-positive-literal `(subsetp-equal ,x ,y))
            (let ((a (subsetp-equal-witness x y)))
              (iff (subsetp-equal x y)
                   (implies (member-equal a x)
@@ -180,8 +179,7 @@
   :hints(("Goal" :in-theory (enable member-equal))))
 
 (defthm intersectp-equal-witness-rw
-  (implies (in-conclusion-check (intersectp-equal x y)
-                                :top t)
+  (implies (rewriting-negative-literal `(intersectp-equal ,x ,y))
            (let ((a (intersectp-equal-witness x y)))
              (equal (intersectp-equal x y)
                     (and (member-equal a x)
@@ -258,8 +256,7 @@
               (member-equal (set-unequal-witness x y) y))))
 
 (defthm set-unequal-witness-rw
-  (implies (in-conclusion-check (set-equivp x y)
-                                :top :negated)
+  (implies (rewriting-positive-literal `(set-equivp ,x ,y))
            (equal (set-equivp x y)
                   (iff (member-equal (set-unequal-witness x y) x)
                        (member-equal (set-unequal-witness x y) y)))))
@@ -284,99 +281,65 @@
 
 ;; Set reasoning for WITNESS-CP.
 
-
-
-(defwitness subsetp-equal-witnessing
-  :predicate (not (subsetp-equal x y))
-  :expr (and (member-equal (subsetp-equal-witness
-                            x y) x)
-             (not (member-equal (subsetp-equal-witness
-                                 x y) y)))
-  :hints ('(:in-theory (e/d
-                        (subsetp-equal-witness-correct)
-                        (subsetp-equal
-                         member-equal))))
-  :generalize (((subsetp-equal-witness x y) . ssew)))
-
-(defwitness intersectp-equal-witnessing
-  :predicate (intersectp-equal x y)
-  :expr (and (member-equal (intersectp-equal-witness x y) x)
-             (member-equal (intersectp-equal-witness x y) y))
-  :hints ('(:in-theory (e/d
-                        (intersectp-equal-witness-correct)
-                        (intersectp-equal
-                         member-equal))))
-  :generalize (((intersectp-equal-witness x y) . iew)))
-
-(defwitness set-equivp-witnessing
-  :predicate (not (set-equivp x y))
-  :expr (not (iff (member-equal (set-unequal-witness x y) x)
-                  (member-equal (set-unequal-witness x y) y)))
-  :hints ('(:in-theory (e/d
-                        (set-unequal-witness-correct)
-                        (set-equivp member-equal))))
-  :generalize (((set-unequal-witness x y) . seqw)))
-
-(defwitness set-consp-witnessing
-  :predicate (consp x)
-  :expr (member-equal (car x) x)
-  :hints ('(:in-theory (enable member-equal)))
-  :generalize nil)
-
-
-(definstantiate subsetp-equal-instancing
+;; BOZO maybe change the variable names from all Ks to appropriate short names,
+;; i.e. ssew for subsetp-equal-witness?
+(defquantexpr subsetp-equal
   :predicate (subsetp-equal x y)
-  :vars (k)
+  :quantifier :forall
+  :witnesses ((k (subsetp-equal-witness x y)))
   :expr (implies (member-equal k x)
                  (member-equal k y))
-  :hints ('(:in-theory (e/d (subsetp-equal-member)
-                            (subsetp-equal
-                             member-equal)))))
+  :witness-hints ('(:in-theory '(subsetp-equal-witness-correct)))
+  :instance-hints ('(:in-theory '(subsetp-equal-member))))
 
-(definstantiate set-equivp-instancing
+(defquantexpr intersectp-equal
+  :predicate (intersectp-equal x y)
+  :quantifier :exists
+  :witnesses ((k (intersectp-equal-witness x y)))
+  :expr (and (member-equal k x)
+             (member-equal k y))
+  :witness-hints ('(:in-theory '(intersectp-equal-witness-correct)))
+  :instance-hints ('(:in-theory '(intersectp-equal-member))))
+
+(defquantexpr set-equivp
   :predicate (set-equivp x y)
-  :vars (k)
+  :quantifier :forall
+  :witnesses ((k (set-unequal-witness x y)))
   :expr (iff (member-equal k x)
              (member-equal k y))
-  :hints ('(:in-theory (e/d ()
-                            (set-equivp member-equal)))))
+  :witness-hints ('(:in-theory '(set-unequal-witness-correct)))
+  :instance-hints ('(:in-theory '(set-equivp-implies-iff-member-equal-2))))
 
-(definstantiate intersectp-equal-instancing
-  :predicate (not (intersectp-equal x y))
-  :vars (k)
-  :expr (or (not (member-equal k x))
-            (not (member-equal k y)))
-  :hints ('(:in-theory (e/d (intersectp-equal-member)
-                            (intersectp-equal
-                             member-equal)))))
-
-(definstantiate consp-instancing
-  :predicate (not (consp x))
-  :vars (k)
-  :expr (not (member-equal k x))
-  :hints ('(:in-theory (enable member-equal))))
+(defquantexpr set-consp
+  :predicate (consp x)
+  :quantifier :exists
+  :witnesses ((k (car x)))
+  :expr (member-equal k x)
+  :generalize nil
+  :witness-hints ('(:in-theory nil
+                    :expand ((:with member-equal
+                              (:free (k) (member-equal k x))))))
+  :instance-hints ('(:in-theory nil
+                    :expand ((:with member-equal
+                              (:free (k) (member-equal k x)))))))
 
 
-(defexample intersectp-equal-member-template
+(defexample set-reasoning-member-equal-template
   :pattern (member-equal k y)
   :templates (k)
-  :instance-rulename intersectp-equal-instancing)
+  :instance-rules
+  (subsetp-equal-instancing
+   intersectp-equal-instancing
+   set-equivp-instancing
+   set-consp-instancing))
 
-(defexample subsetp-equal-member-template
+(defexample set-reasoning-no-consp-member-equal-template
   :pattern (member-equal k y)
   :templates (k)
-  :instance-rulename subsetp-equal-instancing)
-
-(defexample set-equivp-member-template
-  :pattern (member-equal k y)
-  :templates (k)
-  :instance-rulename set-equivp-instancing)
-
-(defexample consp-member-template
-  :pattern (member-equal k y)
-  :templates (k)
-  :instance-rulename consp-instancing)
-
+  :instance-rules
+  (subsetp-equal-instancing
+   intersectp-equal-instancing
+   set-equivp-instancing))
 
 (def-witness-ruleset set-reasoning-rules
   '(subsetp-equal-witnessing
@@ -386,11 +349,8 @@
     subsetp-equal-instancing
     set-equivp-instancing
     intersectp-equal-instancing
-    consp-instancing
-    intersectp-equal-member-template
-    subsetp-equal-member-template
-    consp-member-template
-    set-equivp-member-template))
+    set-consp-instancing
+    set-reasoning-member-equal-template))
 
 (def-witness-ruleset set-reasoning-no-consp
   '(subsetp-equal-witnessing
@@ -401,7 +361,29 @@
     intersectp-equal-instancing
     intersectp-equal-member-template
     subsetp-equal-member-template
+    set-equivp-member-template
+    set-reasoning-no-consp-member-equal-template))
+
+(def-witness-ruleset set-reasoning-no-consp-manual-examples
+  '(subsetp-equal-witnessing
+    intersectp-equal-witnessing
+    set-equivp-witnessing
+    subsetp-equal-instancing
+    set-equivp-instancing
+    intersectp-equal-instancing
+    intersectp-equal-member-template
+    subsetp-equal-member-template
     set-equivp-member-template))
+
+(def-witness-ruleset set-reasoning-manual-examples
+  '(subsetp-equal-witnessing
+    intersectp-equal-witnessing
+    set-equivp-witnessing
+    set-consp-witnessing
+    subsetp-equal-instancing
+    set-equivp-instancing
+    intersectp-equal-instancing
+    set-consp-instancing))
 
 
 (defmacro set-reasoning ()

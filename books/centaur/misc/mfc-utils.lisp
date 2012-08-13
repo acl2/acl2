@@ -89,6 +89,17 @@
 (defmacro rewriting-negative-literal (term)
   `(syntaxp (rewriting-negative-literal-fn ,term mfc state)))
 
+(defun print-mfc (name mfc state)
+  (declare (xargs :stobjs state)
+           (ignore state))
+  (cw "~x0 mfc: ~X12~%" name
+      mfc
+      (evisc-tuple
+       nil nil
+       `((,(access metafunction-context mfc :wrld) . "<world>")
+         (,(access rewrite-constant
+                   (access metafunction-context mfc :rcnst)
+                   :current-enabled-structure) "<ens>")) nil)))
 
 ;; Arrgh, I'm not really sure how to craft theorems with must-fail/etc that
 ;; will ensure this is working properly, in case ACL2's MFC representation

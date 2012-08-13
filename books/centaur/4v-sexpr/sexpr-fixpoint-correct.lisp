@@ -1529,7 +1529,7 @@
                              translate-domain
                              no-duplicatesp-equal)))
           (witness :ruleset 4v-alist-<=-witnessing)
-          (witness :ruleset subsetp-equal-member-template)
+          (witness :ruleset set-reasoning-member-equal-template)
           (and stable-under-simplificationp
                '(:use ((:instance 4v-alist-<=-necc
                                   (x (translate-domain a map))

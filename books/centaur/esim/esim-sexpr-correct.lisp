@@ -582,10 +582,6 @@
                             4v-env-equiv-to-key-and-env-equiv)))))
 
 
-(defexample 4v-sexpr-fixpointp-4v-lookup-ex
-  :pattern (4v-lookup key al)
-  :templates (key)
-  :instance-rulename 4v-sexpr-fixpointp-instancing)
 
 (defexample 4v-sexpr-equiv-eval-alist-ex
   :pattern (4v-sexpr-eval-alist x env)
@@ -618,6 +614,17 @@
 
 (include-book "centaur/4v-sexpr/sexpr-fixpoint-top" :dir :system)
 
+(defexample 4v-sexpr-fixpointp-4v-lookup-ex
+  :pattern (4v-lookup key al)
+  :templates (key)
+  :instance-rulename 4v-sexpr-fixpointp-instancing)
+
+(defexample 4v-sexpr-fixpointp-hons-assoc-equal-ex
+  :pattern (hons-assoc-equal key al)
+  :templates (key)
+  :instance-rulename 4v-sexpr-fixpointp-instancing)
+
+
 (defthm esim-occ-single-when-fixpoint
   (implies (and (4v-sexpr-fixpointp (esim-sexpr-occ-out occ)
                                     fixpoint)
@@ -642,10 +649,6 @@
   (4v-sexpr-fixpointp nil x)
   :hints ((witness :ruleset 4v-sexpr-fixpointp-witnessing)))
 
-(defexample 4v-sexpr-fixpointp-hons-assoc-equal-ex
-  :pattern (hons-assoc-equal key al)
-  :templates (key)
-  :instance-rulename 4v-sexpr-fixpointp-instancing)
 
 (defthm 4v-sexpr-fixpointp-append
   (implies (not (intersectp-equal (alist-keys a) (alist-keys b)))
