@@ -1262,8 +1262,8 @@ active high or low.</dd>
                 (vl-atts-p x))))
 
   (defthm vl-atts-p-of-append
-    (implies (and (force (vl-atts-p x))
-                  (force (vl-atts-p y)))
+    (implies (and (vl-atts-p x)
+                  (vl-atts-p y))
              (vl-atts-p (append x y)))
     :hints(("Goal" :induct (len x))))
 
