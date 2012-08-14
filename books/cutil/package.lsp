@@ -122,7 +122,8 @@
     defaggregate
     defmapappend
     defmvtypes
-    defsection))
+    defsection
+    defsection-progn))
 
 (assign acl2::verbose-theory-warning nil)
 
