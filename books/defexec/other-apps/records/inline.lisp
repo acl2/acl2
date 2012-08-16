@@ -175,7 +175,10 @@
 
 ;; macros from the paper defined using defun*:
 
-(defmacro defun-inline (name args &rest x)
+; Changed August 2012 by Matt K.: Defun-inline is now the name of an ACL2
+; system macro, so we rename the book version below to defun/inline.
+
+(defmacro defun/inline (name args &rest x)
   `(defun* ,name ,args :inline ,@x))
 
 (defmacro defun-exec (name args &rest x)

@@ -1572,7 +1572,7 @@
                    ;;        (fsubst-into-tail-recursion
                    ;;         ''0 terminates-lambda fn nil body)))
                    ;;    body)
-                   ;;  nil (binop-table world) nil nil)
+                   ;;  nil (untrans-table world) nil nil)
                    )
                    ;;(if (,done . ,formals)
                    ;;    0

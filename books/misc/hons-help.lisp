@@ -25,8 +25,15 @@
 
   Make a fast alist out of an alist~/
 
-  (MAKE-FAL al name) copies the alist AL with hons-acons
-  to make a fast alist that ends with NAME.~/~/"
+  (MAKE-FAL al name) copies the alist AL with hons-acons to make a fast alist
+  that ends with NAME.~/
+
+  Note that MAKE-FAL can be used to extend an existing fast alist.  The
+  built-in function MAKE-FAST-ALIST does not have this property, but is
+  generally more efficient.  ~l[ansfl] for a way to free up memory for a fast
+  alist constructed by MAKE-FAL or MAKE-FAST-ALIST, but note that this is
+  unnecessary if you use WITH-FAST-ALIST, defined in distributed book
+  ~c[books/centaur/misc/hons-extra.lisp].~/"
 
   (cond ((atom al)
          name)
