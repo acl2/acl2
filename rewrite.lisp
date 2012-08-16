@@ -12122,8 +12122,7 @@
 
 (defun combine-free-failure-alists (a1 a2)
 
-; A1 and a2 are free-failure reasons, as described in (defrec rw-cache-entry
-; ...).
+; A1 and a2 are rw-cache-alists, as described in (defrec rw-cache-entry ...).
 
   (cond
    ((endp a1) (mv t a2))
@@ -12131,18 +12130,19 @@
     (let ((pair (assoc-equal (caar a1) a2)))
       (cond
        (pair ; then first update a2 with (car a1)
-        (let ((failure-reason (cdar pair)))
+        (let ((failure-reason-1 (cdar a1))
+              (failure-reason-2 (cdr pair)))
           (mv-let
            (flg a2)
            (cond
-            ((not (free-failure-p (cdr pair))) ; keep normal-failure reason
+            ((not (free-failure-p failure-reason-2)) ; keep normal-failure reason
              (mv t a2))
-            ((not (free-failure-p failure-reason))
-             (mv nil (put-assoc-equal (caar a1) failure-reason a2)))
+            ((not (free-failure-p failure-reason-1))
+             (mv nil (put-assoc-equal (caar a1) failure-reason-1 a2)))
             (t
              (mv-let
               (flg2 new-reason)
-              (combine-free-failure-reasons failure-reason (cdr pair))
+              (combine-free-failure-reasons failure-reason-1 failure-reason-2)
               (cond
                (flg2 (mv t a2))
                (t (mv nil (put-assoc-equal (caar a1) new-reason a2)))))))

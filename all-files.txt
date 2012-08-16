@@ -789,7 +789,7 @@ vecs-ints.lisp
 witness-cp.acl2
 witness-cp.lisp
 
-centaur/tutorial:
+books/centaur/tutorial:
 acl2-customization.lsp
 alu16-book.lisp
 alu16.lsp
@@ -1631,7 +1631,6 @@ books/coi/super-ihs:
 Makefile
 arithmetic.lisp
 ash.lisp
-basic-definitions.lisp
 basics.lisp
 bit-functions.lisp
 bit-twiddling-logops.lisp
@@ -1644,7 +1643,6 @@ evenp.lisp
 fast.lisp
 from-rtl.lisp
 hacks.lisp
-ihs-doc-topic.lisp
 inductions.lisp
 iter-sqrt.lisp
 logapp.lisp
@@ -2169,7 +2167,9 @@ books/ihs:
 @logops.lisp
 Makefile
 README
+basic-definitions.lisp
 ihs-definitions.lisp
+ihs-doc-topic.lisp
 ihs-init.acl2
 ihs-init.lisp
 ihs-lemmas.lisp

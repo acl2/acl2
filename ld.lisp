@@ -18748,6 +18748,11 @@
   ~ilc[equal], which may increase its efficiency.  Thanks to Jared Davis for
   this change.
 
+  For pairs ~c[(key . val)] in the ~ilc[macro-aliases-table], there had been a
+  requirement that ~c[val] is a known function symbol.  Now, it only needs to
+  be a symbol.  (This change was made to support the new feature,
+  ~ilc[defun-inline], described elsewhere in these release notes.)
+
   ~st[NEW FEATURES]
 
   A new ``tau system'' provides a kind of ``type checker.''  ~l[tau-system].
@@ -18914,6 +18919,13 @@
   display calls of binary macros as flat calls for right-associated arguments,
   e.g., ~c[(append x y z)] rather than ~c[(append x (append y z))].
   ~l[add-macro-fn].
+
+  It is now possible to request that the host Lisp compiler inline calls of
+  specified functions, or to direct that the host Lisp compiler not inline such
+  calls.  ~l[defun-inline] and ~pl[defun-notinline].  We thank Jared Davis for
+  several extensive, relevant conversations.  We also thank others who have
+  engaged in discussions with us about inlining for ACL2; besides Jared Davis,
+  we recall such conversations with Rob Sumners, Dave Greve, and Shilpi Goel.
 
   ~st[HEURISTIC IMPROVEMENTS]
 
@@ -19217,6 +19229,18 @@
   #+skip #!acl2(quote 3)
   ~ev[]
   This bug has been fixed.
+
+  Fixed a bug in the ~il[break-rewrite] utility, which was evidenced by error
+  messages that could occur when dealing with free variables.  An example of
+  such an error message is the following; we thank Robert Krug for sending us
+  an example that produced this error and enabled us to produce a fix.
+  ~bv[]
+  HARD ACL2 ERROR in TILDE-@-FAILURE-REASON-PHRASE1:  Unrecognized failure
+  reason, ((MEM-ARRAY . X86) (ADDR QUOTE 9)).
+  ~ev[]
+
+  We fixed an obscure bug that we believe could interfere with ~ilc[defproxy]
+  because of an incorrect ~c[(declaim (notinline <function>))] form.
 
   ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]
 

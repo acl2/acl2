@@ -40584,10 +40584,24 @@
   ~bv[]
   (table macro-aliases-table macro-name-form function-name-form)
   ~ev[]
-  where ~c[macro-name-form] and ~c[function-name-form] evaluate,
-  respectively, to a macro name and a function name in the current
-  ACL2 ~il[world].  ~l[table] for a general discussion of tables and
-  the ~c[table] event used to manipulate tables.
+  where ~c[macro-name-form] and ~c[function-name-form] evaluate, respectively,
+  to a macro name and a symbol in the current ACL2 ~il[world].  ~l[table] for a
+  general discussion of tables and the ~c[table] event used to manipulate
+  tables.
+
+  Note that ~c[function-name-form] (above) does not need to evaluate to a
+  function symbol, but only to a symbol.  As a result, one can introduce the
+  alias before defining a recursive function, as follows.
+  ~bv[]
+  (table macro-aliases-table 'mac 'fn)
+  (defun fn (x)
+    (if (consp x)
+        (mac (cdr x))
+      x))
+  ~ev[]
+  Although this is obviously contrived example, this flexibility can be useful
+  to macro writers; see for example the definition of ACL2 system macro
+  ~ilc[defun-inline].
 
   The ~ilc[table] ~ilc[macro-aliases-table] is an alist that associates
   macro symbols with function symbols, so that macro names may be used
@@ -40610,7 +40624,26 @@
        (and (symbolp key)
             (not (eq (getprop key 'macro-args t 'current-acl2-world world) t))
             (symbolp val)
-            (function-symbolp val world)))
+
+; We no longer (as of August 2012) require that val be a function symbol, so
+; that we can support recursive definition with defun-inline.  It would be nice
+; to use the following code as a replacement.  However,
+; chk-all-but-new-name-cmp is not defined at this point, and we don't think
+; it's worth the trouble to fight this boot-strapping battle.  If we decide
+; later to strengthen the guard this, then we will need to update :doc
+; macro-aliases-table to require that the value is a function symbol, not just
+; a symbol.
+
+;           (mv-let (erp val)
+;                   (chk-all-but-new-name-cmp
+;                    val
+;                    "guard for macro-aliases-table"
+;                    'function
+;                    world)
+;                   (declare (ignore val))
+;                   (null erp)))
+
+            ))
 
 (table macro-aliases-table nil
        '((+ . binary-+)
@@ -40731,6 +40764,191 @@
                           ',macro-name)
                       tbl)))
           :clear))
+
+(defconst *inline-suffix* "$INLINE")
+(defconst *inline-suffix-len-minus-1* (1- (length *inline-suffix*)))
+(defconst *notinline-suffix* "$NOTINLINE")
+(defconst *notinline-suffix-len-minus-1* (1- (length *notinline-suffix*)))
+
+(defmacro defun-inline (name &rest args)
+
+; Warning: Keep this in sync with defund-inline.
+
+  ":Doc-Section acl2::Events
+
+  define a potentially inlined function symbol and associated macro~/
+
+  You may be able to improve performance by replacing an event
+  ~c[(defun f ...)] with a corresponding event ~c[(defun-inline f ...)], in
+  order to encourage the host Lisp compiler to inline calls of ~c[f].
+
+  ~bv[]
+  Example Form:
+  (defun-inline lng (x)
+    (declare (xargs :guard (true-listp x)))
+    (if (endp x) 0 (1+ (lng (cdr x)))))~/
+
+  General Form:
+  (defun-inline fn (var1 ... varn) doc-string dcl ... dcl body)
+  ~ev[]
+  satisfying the same requirements as in the General Form for ~ilc[defun].  The
+  effect is to define a macro ~c[fn] and a function ~c[fn$inline] (i.e., a
+  symbol in the same package as ~c[fn] but whose ~ilc[symbol-name] has the
+  suffix ~c[\"$INLINE\"], such that each call of ~c[fn] expands to a call of
+  the function symbol ~c[fn$inline] on the same arguments.  Moreover,
+  ~ilc[table] ~il[events] are generated that allow the use of ~c[fn] in
+  ~il[theory] expressions to represent ~c[fn$inline] and that cause any
+  untranslated (user-level) call of ~c[fn$inline] to be printed as the
+  corresponding call of ~c[fn].
+
+  A form ~c[(defun-inline f ...)] actually defines a function named
+  ~c[f$inline] and a corresponding macro named ~c[f] whose calls expand to
+  calls of ~c[f$inline], while providing the illusion that there is just the
+  ``function'' ~c[f].  For example, the Example Form above macroexpands in one
+  step to the following form.
+  ~bv[]
+  (progn (defmacro lng (x) (list 'lng$inline x))
+         (add-macro-fn lng lng$inline)
+         (defun lng$inline (x)
+           (declare (xargs :guard (true-listp x)))
+           (if (endp x) 0 (1+ (lng (cdr x))))))
+  ~ev[]
+  Note that the above call of ~ilc[add-macro-fn] generates the aforementioned
+  two table events (~pl[add-macro-fn]), which provide the illusion that we are
+  just defining a function ~c[lng], as you can see in the following log:
+  ~c[lng] appears rather than ~c[lng$inline].
+  ~bv[]
+  ACL2 !>(set-gag-mode nil)
+  <state>
+  ACL2 !>(thm (equal (lng (append x y))
+                     (+ (lng x) (lng y)))
+              :hints ((\"Goal\" :in-theory (enable lng))))
+
+  [.. output omitted ..]
+
+  Subgoal *1/2
+  (IMPLIES (AND (NOT (ENDP X))
+                (EQUAL (LNG (APPEND (CDR X) Y))
+                       (+ (LNG (CDR X)) (LNG Y))))
+           (EQUAL (LNG (APPEND X Y))
+                  (+ (LNG X) (LNG Y)))).
+
+  [.. output omitted ..]
+  ~ev[]
+
+  Under the hood, ACL2 arranges that every function symbol with suffix
+  ~c[\"$INLINE\"] is presented to the compiler as one whose calls we would
+  prefer to inline.  Technically: the Common Lisp form
+  ~c[(declaim (inline f$inline))] is generated for a function symbol
+  ~c[f$inline] before that symbol's definition is submitted.  However, the
+  Common Lisp spec explicitly avoids requiring that the compiler respect this
+  ~c[declaim] form.  Fortunately, Common Lisp implementations often do respect
+  it.
+
+  Also ~pl[defund-inline], ~pl[defun-notinline], and ~pl[defund-notinline].
+
+  ~em[Remarks].
+
+  (1) None of these macros (including ~c[defun-inline]) are supported for use
+  inside a ~ilc[mutual-recursion].
+
+  (2) Every function symbol defined in ACL2 whose ~ilc[symbol-name] has the
+  suffix ~c[\"$INLINE\"] is proclaimed to be inline; similarly for
+  ~c[\"$NOTINLINE\"] and notinline.
+
+  (3) No special treatment for inlining (or notinlining) is given for function
+  symbols locally defined by ~ilc[flet], except in the case of symbols
+  discussed in (1) and (2) above that, at some point in the current ACL2
+  session, were defined as function symbols in ACL2 (even if not currently
+  defined because of undoing or being ~il[local]).~/"
+
+  (declare (xargs :guard (and args (symbol-listp (car args)))))
+  (let ((name$inline
+         (intern-in-package-of-symbol
+          (concatenate 'string (symbol-name name) *inline-suffix*)
+          name))
+        (formals (car args)))
+    `(progn (defmacro ,name ,formals
+              (list ',name$inline ,@formals))
+            (add-macro-fn ,name ,name$inline)
+            (defun ,name$inline ,@args))))
+
+(defmacro defund-inline (name &rest args)
+
+; Warning: Keep this in sync with defun-inline.
+
+  ":Doc-Section acl2::Events
+
+  define a potentially disabled, inlined function symbol and associated macro~/
+
+  ~c[Defund-inline] is a variant of ~ilc[defun-inline], the difference being
+  that ~c[defund-inline] disables the newly-defined function symbol.
+  ~l[defun-inline].~/~/"
+
+  (declare (xargs :guard (and args (symbol-listp (car args)))))
+  (let ((name$inline
+         (intern-in-package-of-symbol
+          (concatenate 'string (symbol-name name) *inline-suffix*)
+          name))
+        (formals (car args)))
+    `(progn (defmacro ,name ,formals
+              (list ',name$inline ,@formals))
+            (add-macro-fn ,name ,name$inline)
+            (defund ,name$inline ,@args))))
+
+(defmacro defun-notinline (name &rest args)
+
+; Warning: Keep this in sync with defund-notinline.
+
+  ":Doc-Section acl2::Events
+
+  define a not-to-be-inlined function symbol and associated macro~/
+
+  ~l[defun-inline] for an analogous utility that supports inlining.  The
+  present utility is probably far less useful; it tells the compiler ~em[not]
+  to inline calls of the function being defined.  Also ~pl[defund-notinline]
+  for a variant of this event that disables the newly-defined function symbol.
+
+  Under the hood, ~c[(defun-inline f ...)] and ~c[(defun-notinline f ...)]
+  cause evaluation of Common Lisp forms ~c[(declaim (inline f$inline))] and
+  ~c[(declaim (notinline f$notinline))], respectively.  According to the Common
+  Lisp spec, the compiler need not respect the first of these (for ~c[inline]),
+  but it must respect the second of these (for ~c[notinline]).  Fortunately,
+  Common Lisp implementations often do respect the first of these as well.~/~/"
+
+  (declare (xargs :guard (and args (symbol-listp (car args)))))
+  (let ((name$notinline
+         (intern-in-package-of-symbol
+          (concatenate 'string (symbol-name name) *notinline-suffix*)
+          name))
+        (formals (car args)))
+    `(progn (defmacro ,name ,formals
+              (list ',name$notinline ,@formals))
+            (add-macro-fn ,name ,name$notinline)
+            (defun ,name$notinline ,@args))))
+
+(defmacro defund-notinline (name &rest args)
+
+; Warning: Keep this in sync with defun-inline.
+
+  ":Doc-Section acl2::Events
+
+  define a disabled, not-to-be-inlined function symbol and associated macro~/
+
+  ~c[Defund-notinline] is a variant of ~ilc[defun-notinline], the difference
+  being that ~c[defund-notinline] disables the newly-defined function symbol.
+  ~l[defun-notinline].~/~/"
+
+  (declare (xargs :guard (and args (symbol-listp (car args)))))
+  (let ((name$notinline
+         (intern-in-package-of-symbol
+          (concatenate 'string (symbol-name name) *notinline-suffix*)
+          name))
+        (formals (car args)))
+    `(progn (defmacro ,name ,formals
+              (list ',name$notinline ,@formals))
+            (add-macro-fn ,name ,name$notinline)
+            (defund ,name$notinline ,@args))))
 
 ; Here we implement the nth-aliases table.  This is quite analogous to the
 ; macro-aliases table; see the comment above for a discussion of why we do not

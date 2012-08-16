@@ -4912,13 +4912,16 @@
 ; Evalp is only relevant when (hcomp-build),in which case it is passed to
 ; install-for-add-trip-hcomp-build.
 
+; We start with declaiming of inline and notinline.
+
   (loop for tail on defs
         do
         (let* ((def (car tail))
                (oneify-p (eq (car def) 'oneify-cltl-code))
-               (def0 (if oneify-p (caddr def) def)))
-          (when (equal (caddr def0)
-                       '(DECLARE (XARGS :NON-EXECUTABLE :PROGRAM)))
+               (def0 (if oneify-p (caddr def) (cdr def)))
+               (name (symbol-name (car def0))))
+          (cond ((equal (caddr def0)
+                        '(DECLARE (XARGS :NON-EXECUTABLE :PROGRAM)))
 
 ; We allow redefinition for a function introduced by :defproxy, regardless of
 ; the value of state global 'ld-redefinition-action.  If the original
@@ -4929,10 +4932,26 @@
 ; If we change or remove this proclaim form, then revisit the comment about
 ; inlining in redefinition-renewal-mode.
 
-            (proclaim (list 'notinline
-                            (if oneify-p
-                                (*1*-symbol (car def0))
-                              (car def)))))
+                 (proclaim (list 'notinline
+                                 (if oneify-p
+                                     (*1*-symbol (car def0))
+                                   (car def0)))))
+                (oneify-p nil)
+                ((terminal-substringp *inline-suffix*
+                                      name
+                                      *inline-suffix-len-minus-1*
+                                      (1- (length name)))
+                 (proclaim (list 'inline (car def0))))
+                ((terminal-substringp *notinline-suffix*
+                                      name
+                                      *notinline-suffix-len-minus-1*
+                                      (1- (length name)))
+                 (proclaim (list 'notinline (car def0)))))))
+  (loop for tail on defs
+        do
+        (let* ((def (car tail))
+               (oneify-p (eq (car def) 'oneify-cltl-code))
+               (def0 (if oneify-p (caddr def) (cdr def))))
           (cond ((and (eq *inside-include-book-fn* t)
                       (if oneify-p
                           (install-for-add-trip-include-book
