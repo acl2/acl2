@@ -18157,7 +18157,7 @@
   A new macro, ~ilc[spec-mv-let], supports speculative and parallel execution
   in the parallel version, courtesy of David Rager.
 
-  Among the enchancements for the HONS version (~pl[hons-and-memoization]) are
+  Among the enhancements for the HONS version (~pl[hons-and-memoization]) are
   the following.
   ~bq[]
   ~ilc[Memoize]d functions may now be traced (~pl[trace$]).  Thanks to Sol
@@ -18461,6 +18461,9 @@
 
 ; Added new severity option HARD?! for er, so that the guard of theory-fn can
 ; be t (avoiding the expense of doing the theory-namep check twice).
+
+; We now print notes to use :a! and see :DOC set-evisc-tuple when evaluating
+; :brr t.  Thanks to Robert Krug for suggesting this improvement.
 
   :doc
   ":Doc-Section release-notes
@@ -19097,10 +19100,10 @@
   :hints ((\"Goal\" :expand (:lambdas (foo x)))))
   ~ev[]
 
-  Certain ``program-only'' function calls will now cause hard Lisp
-  errors.  (The rather obscure reason for this fix is to support logical
-  modeling of the ACL2 evaluator.  A relevant technical discussion may be found
-  in source function ~c[oneify-cltl-code], at the binding of variable
+  Certain ``program-only'' function calls will now cause hard Lisp errors.
+  (The rather obscure reason for this fix is to support logical modeling of the
+  ACL2 evaluator.  A relevant technical discussion may be found in source
+  function ~c[oneify-cltl-code], at the binding of variable
   ~c[fail_program-only-safe].)
 
   There was an unnecessary restriction that ~ilc[FLET]-bound functions must
@@ -19302,8 +19305,9 @@
   (f) ; had caused raw Lisp error, before the fix
   ~ev[]
 
-  Among the enchancements for the parallel version, ACL2(p) (~pl[parallelism]),
-  are the following.~bq[]
+  Among the enhancements for the parallel version, ACL2(p) (~pl[parallelism]),
+  are the following.  We thank David Rager for his work in developing ACL2(p)
+  and these improvements in particular.~bq[]
 
   The macro ~c[set-parallel-evaluation] has been renamed
   ~ilc[set-parallel-execution].
@@ -19313,8 +19317,7 @@
   ~il[books].  However, it is easy to create events that have these effects;
   ~pl[set-waterfall-parallelism] and ~pl[set-waterfall-printing].  These
   changes were made so that ~c[:]~ilc[ubt] and similar commands do not change
-  the settings for waterfall-parallelism or waterfall-printing.  Thanks to
-  David Rager for contributing an initial implementation of these changes.
+  the settings for waterfall-parallelism or waterfall-printing.
 
   The implementation of ~ilc[deflock] has been improved.  Now, the macro it
   defines can provide a lock when invoked inside a ~il[guard]-verified or
@@ -19324,10 +19327,12 @@
   The underlying implementation for waterfall parallelism
   (~pl[set-waterfall-parallelism]) has been improved.  As a result, even the
   largest proofs in the regression suite can be run efficiently in
-  ~c[:resource-based] waterfall parallelism mode.  Additionally,
-  ~c[:resource-based] is now the recommended mode for waterfall parallelism.
+  ~c[:resource-based] waterfall parallelism mode.  Among these improvements is
+  one that can prevent machines from rebooting because operating system limits
+  have been exceeded; thanks to Robert Krug for bringing this issue to our
+  attention.
 
-  There is also a new flag for configuring the way waterfall parallelims
+  There is also a new flag for configuring the way waterfall parallelism
   behaves once underlying system resource limits are reached.  This flag is
   most relevant to ~c[:full] waterfall parallelism.
   ~pl[set-total-parallelism-work-limit] for more information.
@@ -19346,9 +19351,18 @@
   called ``ACL2(hp)''), the functions that are automatically memoized by the
   hons extension are now automatically unmemoized and memoized when the user
   toggles waterfall parallelism on and off, respectively.
+
+  Calling ~ilc[set-waterfall-parallelism] with a flag of ~c[t] now results in
+  the same settings as if it were called with a flag of ~c[:resource-based],
+  which is now the recommended mode for waterfall parallelism.  Thanks to
+  Shilpi Goel for requesting this feature.
+
+  The prover now aborts in a timely way in response to interrupts issued during
+  a proof with waterfall parallelism enabled.  (This had often not been the
+  case.)  Thanks to Shilpi Goel for requesting this improvement.
   ~eq[]
 
-  Among the enchancements for the HONS extension (~pl[hons-and-memoization])
+  Among the enhancements for the HONS extension (~pl[hons-and-memoization])
   are the following.~bq[]
 
   The compact-print code has been replaced by new serialization routines
@@ -21486,11 +21500,12 @@ which you can find under your local <CODE>acl2-sources/</CODE> diretory at
 Davis's xdoc utility, visit <CODE><A
 HREF=\"http://www.cs.utexas.edu/users/moore/acl2/~s3/distrib/xdoc/manual/preview.html\">xdoc/manual/preview.html</A></CODE>.
 Better yet, view a local copy of this file found under your
-<CODE>acl2-sources/books/</CODE> directory, if you have certified your distributed
-books.  If you use the experimental HONS version of ACL2 then you can build a
-more complete manual in <CODE>books/centaur/manual/preview.html</A> by running:
+<CODE>acl2-sources/books/</CODE> directory, if you have certified your
+distributed books.  If you use the experimental HONS version of ACL2 then you
+can build a more complete manual in
+<CODE>books/centaur/manual/preview.html</A></CODE> by running:
 <pre>
-  make regression-hons-fresh ACL2=<path to your saved_acl2>
+  make regression-hons-fresh ACL2=&lt;path to your saved_acl2&gt;
 </pre>
 </li>
 

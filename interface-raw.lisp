@@ -1508,6 +1508,11 @@
                      '(let ((temp (f-get-global 'guard-checking-on
                                                 *the-live-state*)))
                         (cond ((or (eq temp :none) (eq temp nil))
+
+; Calls of a stobj primitive that takes its stobj as an argument are always
+; guard-checked.  If that changes, consider also changing
+; ev-fncall-rec-logical.
+
                                t)
                               (t temp))))
                     (t '(f-get-global 'guard-checking-on *the-live-state*))))

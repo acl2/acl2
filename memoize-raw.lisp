@@ -3605,7 +3605,7 @@ the calls took.")
   more detail by (IF-REPORT).
 
   If the FORGET parameter is not NIL, the pons and memo tables of FN
-  are cleared at the end of every outermost call of FN."
+  are discarded at the end of every outermost call of FN."
 
 ; MIS-ORDERED-COMMUTATIVE-ARGS apparently, but only apparently,
 ; introduces nondeterminism into the values returned by ACL2 functions
@@ -4094,9 +4094,28 @@ the calls took.")
                                             ,start-time))
                             most-positive-mfixnum)
                            ,fn)))
-                 ,@(and forget `((setq ,tablename nil)
-                                 ,@(if (> nra 1)
-                                       `((setq ,ponstablename nil)))))
+                 ,@(and forget
+
+; Below, we "clear" the tables by setting them to nil, rather than by calling
+; clrhash.  The latter approach would probably avoid reallocation of space, but
+; we suspect that a gain in space efficiency may be offset by a loss in time
+; efficiency.  The present approach has been working, so we prefer not to
+; change it.  Below is just a little space analysis.
+
+; When we evaluated (defconstant *a* (make-list 1000)) in raw Lisp (CCL) and
+; then ran (time$ (bad-lisp-objectp *a*)), we saw about 71K bytes allocated,
+; which dropped to just 1,136 bytes after evaluating (unmemoize-fn
+; 'bad-lisp-objectp).  Then we evaluated (memoize-fn 'bad-lisp-objectp) -- this
+; time without a :forget argument -- and found about 71K bytes allocated on the
+; first timing of (bad-lisp-objectp *a*), but only 1,136 bytes allocated on
+; subsequent evaluations, presumably because we weren't starting from scratch.
+; We suspect that the byte allocation on subsequent runs may have been well
+; under 71K even after memoizing with :forget t, if the tables had been cleared
+; with clrhash rather than being blown away as is done just below.
+
+                        `((setq ,tablename nil)
+                          ,@(if (> nra 1)
+                                `((setq ,ponstablename nil)))))
                  (setq ,start-time -1)
                  (setq *caller* ,*mf-old-caller*)))))
 

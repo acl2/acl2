@@ -1470,11 +1470,21 @@
                  (acl2-system-namep fn w)
                  (not (equal (symbol-package-name fn) "ACL2"))))
            (guard-checking-off
-            (and gc-off (not safe-mode-requires-check)))
+            (and gc-off
+
+; Safe-mode defeats the turning-off of guard-checking, as does calling a stobj
+; primitive that takes its live stobj as an argument.  If the latter changes,
+; consider also changing oneify-cltl-code.
+
+                 (not safe-mode-requires-check)
+                 (not (let ((st (getprop fn 'stobj-function nil
+                                         'current-acl2-world w)))
+                        (and st
+                             (assoc-eq st latches)
+                             (member-eq st (stobjs-in fn w)))))))
            (extra (and gc-off
                        (cond (safe-mode-requires-check t)
-                             ((getprop fn 'stobj-function nil
-                                       'current-acl2-world w)
+                             ((not guard-checking-off)
                               :live-stobj)
                              (t nil)))))
 

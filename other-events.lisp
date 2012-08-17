@@ -21661,7 +21661,7 @@
 
 ; Informally, we wish to relate two kinds of evaluation, one using :LOGIC
 ; primitives and one using corresponding :EXEC primitives, in corresponding
-; environments where each abstract stobj is bound to an object satisfiying its
+; environments where each abstract stobj is bound to an object satisfying its
 ; :LOGIC recognizer in the first environment and its :EXEC recognizer in the
 ; second.  Such evaluation will enforce guards before making calls of stobj
 ; primitives at the :LOGIC level and (as we will see, by the :GUARD-THM

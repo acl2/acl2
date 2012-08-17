@@ -242,7 +242,7 @@
 
   ":Doc-Section switches-parameters-and-modes
 
-  enabling parallel execution for four of the parallelism primitives~/
+  for ACL2(p): enabling parallel execution for four parallelism primitives~/
 
   This ~il[documentation] topic relates to the experimental extension of ACL2
   supporting parallel execution and proof; ~pl[parallelism].  ~l[parallel] and
@@ -1066,7 +1066,7 @@
 
   ":Doc-Section switches-parameters-and-modes
 
-  enable waterfall-parallelism hacks~/
+  for ACL2(p): enable waterfall-parallelism hacks~/
 
   This ~il[documentation] topic relates to the experimental extension of ACL2
   supporting parallel execution and proof; ~pl[parallelism].
@@ -2617,7 +2617,7 @@
 
   ":Doc-Section switches-parameters-and-modes
 
-  set thread limit beyond which parallelism primitives execute serially~/
+  for ACL2(p): set thread limit for parallelism primitives~/
 
   This ~il[documentation] topic relates to the experimental extension of ACL2
   supporting parallel execution and proof; ~pl[parallelism].  While the most
@@ -2682,7 +2682,7 @@
 
   ":Doc-Section switches-parameters-and-modes
 
-  control the action taken when the thread limit is exceeded~/
+  for ACL2(p): control the action taken when the thread limit is exceeded~/
 
   This ~il[documentation] topic relates to the experimental extension of ACL2
   supporting parallel execution and proof; ~pl[parallelism].
