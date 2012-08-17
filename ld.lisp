@@ -18642,8 +18642,10 @@
   Finally, the commentary printed within ~il[gag-mode] that is related to
   ~il[forcing-round]s is now less verbose.  Thanks to Dave Greve and David
   Rager for discussions leading to the change in the printing of induction
-  schemes under gag-mode, and thanks to Warren Hunt for an email that led us to
-  similar handling for printing of guard conjectures.
+  schemes under gag-mode; thanks to Warren Hunt for an email that led us to
+  similar handling for printing of guard conjectures; and thanks to Robert Krug
+  for a suggestion that led us to restore, in abbreviated form, important
+  information about the sources of forcing round goals.
 
   An error now occurs if ~ilc[ld] is called while loading a compiled book.
   ~l[calling-ld-in-bad-contexts].  Thanks to David Rager for reporting a

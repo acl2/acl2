@@ -36,4 +36,4 @@ temp-emacs-file.lsp
 *.ufasl
 *.ufsl
 *.x86f
-
+*.sse2f

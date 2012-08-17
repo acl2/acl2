@@ -8564,6 +8564,9 @@
 
 (defun tilde-@-assumnotes-phrase-lst (lst wrld)
 
+; Warning :If you change this function, consider also changing
+; tilde-@-assumnotes-phrase-lst-gag-mode.
+
 ; WARNING: Note that the phrase is encoded twelve times below, to put
 ; in the appropriate noise words and punctuation!
 
@@ -8580,7 +8583,7 @@
         (cond ((null (cdr lst))
                (cond ((and (consp (access assumnote (car lst) :rune))
                            (null (base-symbol (access assumnote (car lst) :rune))))
-                      " ~@0~%  by primitive type reasoning about~%  ~q2,~| and~|")
+                      " ~@0~%  by primitive type reasoning about~%  ~q2.~|")
                      ((eq (access assumnote (car lst) :rune) 'equal)
                       " ~@0~%  by the linearization of~%  ~q2.~|")
                      ((symbolp (access assumnote (car lst) :rune))
@@ -8618,6 +8621,55 @@
   (list "" "~@*" "~@*" "~@*"
         (tilde-@-assumnotes-phrase-lst assumnotes wrld)))
 
+(defun tilde-@-assumnotes-phrase-lst-gag-mode (lst acc)
+
+; Warning: If you change this function, consider also changing
+; tilde-@-assumnotes-phrase-lst.  See also that function definition.
+
+  (cond
+   ((null lst)
+    (cond ((null acc) acc)
+          ((null (cdr acc))
+           (list (msg "in~@0.~|" (car acc))))
+          (t (reverse (list* (msg "in~@0.~|" (car acc))
+                             (msg "in~@0, and " (cadr acc))
+                             (pairlis-x1 "in~@0, ~|"
+                                         (pairlis$ (pairlis-x1 #\0 (cddr acc))
+                                                   nil)))))))
+   (t (tilde-@-assumnotes-phrase-lst-gag-mode
+       (cdr lst)
+       (let* ((cl-id-phrase
+               (tilde-@-clause-id-phrase
+                (access assumnote (car lst) :cl-id)))
+              (x
+               (cond ((and (consp (access assumnote (car lst) :rune))
+                           (null (base-symbol (access assumnote (car lst)
+                                                      :rune))))
+                      (list " ~@0 by primitive type reasoning"
+                            (cons #\0 cl-id-phrase)))
+                     ((eq (access assumnote (car lst) :rune) 'equal)
+                      (list " ~@0 by linearization"
+                            (cons #\0 cl-id-phrase)))
+                     ((symbolp (access assumnote (car lst) :rune))
+                      (list " ~@0 by assuming the guard for ~x1"
+                            (cons #\0 cl-id-phrase)
+                            (cons #\1 (access assumnote (car lst) :rune))))
+                     (t
+                      (list " ~@0 by applying ~x1"
+                            (cons #\0 cl-id-phrase)
+                            (cons #\1 (access assumnote (car lst)
+                                              :rune)))))))
+         (cond ((member-equal x acc)
+                x)
+               (t (cons x acc))))))))
+
+(defun tilde-*-assumnotes-column-phrase-gag-mode (assumnotes)
+
+; We create a tilde-* phrase that will print a column of assumnotes.
+
+  (list "" "~@*" "~@*" "~@*"
+        (tilde-@-assumnotes-phrase-lst-gag-mode assumnotes nil)))
+
 (defun process-assumptions-msg1 (forcing-round n pairs state)
 
 ; N is either nil (meaning the length of pairs is 1) or n is the length of
@@ -8626,22 +8678,31 @@
   (cond
    ((null pairs) state)
    (t (pprogn
-       (fms "~@0, below, will focus on~%~q1,~|which was forced in~%~*2"
-            (list (cons #\0 (tilde-@-clause-id-phrase
-                             (make clause-id
-                                   :forcing-round (1+ forcing-round)
-                                   :pool-lst nil
-                                   :case-lst (if n
-                                                 (list n)
-                                                 nil)
-                                   :primes 0)))
-                  (cons #\1 (untranslate (car (last (cdr (car pairs))))
-                                         t (w state)))
-                  (cons #\2 (tilde-*-assumnotes-column-phrase
-                             (car (car pairs))
-                             (w state))))
-            (proofs-co state) state
-            (term-evisc-tuple nil state))
+       (let ((cl-id-phrase
+              (tilde-@-clause-id-phrase
+               (make clause-id
+                     :forcing-round (1+ forcing-round)
+                     :pool-lst nil
+                     :case-lst (if n (list n) nil)
+                     :primes 0))))
+         (cond
+          ((gag-mode)
+           (fms "~@0 was forced ~*1"
+                (list (cons #\0 cl-id-phrase)
+                      (cons #\1 (tilde-*-assumnotes-column-phrase-gag-mode
+                                 (car (car pairs)))))
+                (proofs-co state) state
+                (term-evisc-tuple nil state)))
+          (t
+           (fms "~@0, below, will focus on~%~q1,~|which was forced in~%~*2"
+                (list (cons #\0 cl-id-phrase)
+                      (cons #\1 (untranslate (car (last (cdr (car pairs))))
+                                             t (w state)))
+                      (cons #\2 (tilde-*-assumnotes-column-phrase
+                                 (car (car pairs))
+                                 (w state))))
+                (proofs-co state) state
+                (term-evisc-tuple nil state)))))
        (process-assumptions-msg1 forcing-round
                                  (if n (1- n) nil)
                                  (cdr pairs) state)))))
@@ -8683,11 +8744,10 @@
          (proofs-co state)
          state
          nil)
-        (cond ((gag-mode) state)
-              (t (process-assumptions-msg1 forcing-round
-                                           (if (= n 1) nil n)
-                                           pairs
-                                           state)))
+        (process-assumptions-msg1 forcing-round
+                                  (if (= n 1) nil n)
+                                  pairs
+                                  state)
         (fms "We now undertake Forcing Round ~x0.~%"
              (list (cons #\0 (1+ forcing-round)))
              (proofs-co state)
