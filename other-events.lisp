@@ -15628,6 +15628,12 @@
                         full-book-name post-alist)))))
 
 (defun certify-book-finish-complete (full-book-name ctx state)
+
+; Wart: Perhaps we should convert compiled-file and expansion-file to OS-style
+; pathnames in some places below, as for some other files.  But we discovered
+; this issue just before the Version_5.0 release, so we prefer not to do such a
+; thing at this point.
+
   (let ((pcert0-file
          (convert-book-name-to-cert-name full-book-name :create-pcert))
         (pcert1-file
@@ -15635,7 +15641,11 @@
         (cert-file
          (convert-book-name-to-cert-name full-book-name t))
         (compiled-file
-         (convert-book-name-to-compiled-name full-book-name state)))
+         (convert-book-name-to-compiled-name full-book-name state))
+        (expansion-file
+         (expansion-filename full-book-name
+                             nil ; don't convert to OS, since we didn't above
+                             state)))
     (er-let* ((post-alist
                (certificate-post-alist pcert1-file cert-file full-book-name ctx
                                        state))
@@ -15668,6 +15678,7 @@
            (er-progn
             (touch? cert-file pcert0-file ctx state)
             (touch? compiled-file pcert0-file ctx state)
+            (touch? expansion-file pcert0-file ctx state)
             (value cert-file))))))))
 
 (defun expansion-alist-conflict (acl2x-expansion-alist
