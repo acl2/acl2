@@ -15591,7 +15591,8 @@
                      occurrences of :PCERT-INFO at the top level of file ~x0, ~
                      at positions ~x1 and ~x2."
                     pcert1-file (+ n 2) n)))))
-          (t (value post-alist)))))))))))
+          (t (pprogn (close-input-channel chan state)
+                     (value post-alist))))))))))))
 
 (defun post-alist-from-pcert1 (pcert1-file msg ctx state)
   (mv-let

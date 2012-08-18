@@ -812,19 +812,22 @@
   ~ev[]
   ~/
 
-  ~c[Set-waterfall-parallelism] accepts an argument that specifies the enabling
-  or disabling of the ~il[parallel] execution of ACL2's main proof process, the
-  waterfall.
+  ~c[Set-waterfall-parallelism] evaluates its argument, which specifies the
+  enabling or disabling of the ~il[parallel] execution of ACL2's main proof
+  process, the waterfall.
 
-  It also sets state global ~c[waterfall-printing] to an appropriate value.
-  ~l[set-waterfall-printing].
+  It also sets ~il[state] global ~c[waterfall-printing] to an appropriate
+  value.  ~l[set-waterfall-printing].
 
   Note that not all ACL2 features are supported when waterfall-parallelism is
-  set to non-nil (~pl[unsupported-waterfall-parallelism-features]).
+  set to non-~c[nil] (~pl[unsupported-waterfall-parallelism-features]).
+
+  A value of ~c[t] is treated the same as a value of ~c[:resource-based] and
+  is provided for user convenience.
 
   ~c[:Resource-based] waterfall parallelism typically achieves the best
   performance in ACL2(p), while maintaining system stability, so
-  ~c[:resource-based] is the recommended setting.
+  ~c[:resource-based] (or equivalently, ~c[t]) is the recommended value.
 
   A value of ~c[nil] indicates that ACL2(p) should never prove subgoals in
   parallel.
@@ -839,18 +842,15 @@
   proved, such that proving them in parallel will result in a useful reduction
   in overall proof time.
 
-  A value of ~c[:resource-based] indicates that ACL2(p) should use its built-in
-  heuristics to determine whether CPU core resources are available for parallel
-  execution.  Note that ACL2(p) does not hook into the operating system to
-  determine the workload on the machine.  ACL2(p) works off the assumption that
-  it is the only process using significant CPU resources, and it optimizes the
-  amount of parallelism based on the number of CPU cores in the system.  (Note
-  that ACL2(p) knows how to obtain the number of CPU cores from the operating
-  system in CCL, but that, in SBCL and in Lispworks, a constant is used
-  instead).
-
-  A value of ~c[t] is treated the same as a value of ~c[:resource-based] and
-  is provided for user convenience.
+  A value of ~c[:resource-based] (or equivalently, ~c[t]) indicates that
+  ACL2(p) should use its built-in heuristics to determine whether CPU core
+  resources are available for parallel execution.  Note that ACL2(p) does not
+  hook into the operating system to determine the workload on the machine.
+  ACL2(p) works off the assumption that it is the only process using
+  significant CPU resources, and it optimizes the amount of parallelism based
+  on the number of CPU cores in the system.  (Note that ACL2(p) knows how to
+  obtain the number of CPU cores from the operating system in CCL, but that, in
+  SBCL and in Lispworks, a constant is used instead).
 
   During the first proof attempt of a given conjecture, a value of
   ~c[:resource-and-timing-based] results in the same behavior as with
@@ -879,21 +879,10 @@
   memoized functions are unmemoized.  When ~c[set-waterfall-parallelism] is
   again called with a ~c[nil] value, those memoization settings are restored.
 
-  Note that this form cannot be used at the top level of a book, or of a
-  ~ilc[progn] or ~ilc[encapsulate] event.  Here is a workaround for use in such
-  contexts; of course, you may replace ~c[:full] with any other legal argument
-  for ~c[set-waterfall-parallelism].  Note that this form will not affect
-  waterfall-parallelism when including a certified book that contains it.
-  ~bv[]
-  (make-event (er-progn (set-waterfall-parallelism :full)
-                        (value '(value-triple nil))))
-  ~ev[]
-  (For more about event contexts and the use of ~c[make-event],
-  ~pl[make-event], in particular the section ``Restriction to Event
-  Contexts.'')
-
-  The following form has the effect described above, except that it will affect
-  waterfall-parallelism even when including a certified book that contains it.
+  ~c[Set-waterfall-parallelism] is an embedded event form.  However, a call of
+  this macro will not affect waterfall-parallelism when including a certified
+  book that contains that call.  For such an effect, you may use the following
+  ~ilc[make-event] form.
   ~bv[]
   (make-event (er-progn (set-waterfall-parallelism :full)
                         (value '(value-triple nil)))
@@ -987,10 +976,10 @@
   ~ev[]
   ~/
 
-  ~c[Set-waterfall-printing] takes an argument that indicates how much
-  printing should occur when executing ACL2 with the parallelized version of the
-  waterfall.  It only affects the printing that occurs when parallelism mode is
-  enabled for the waterfall (~pl[set-waterfall-parallelism]).
+  ~c[Set-waterfall-printing] evaluates its argument, which indicates how much
+  printing should occur when executing ACL2 with the parallelized version of
+  the waterfall.  It only affects the printing that occurs when parallelism
+  mode is enabled for the waterfall (~pl[set-waterfall-parallelism]).
 
   A value of ~c[:full] is intended to print the same output as in serial mode.
   This output will be interleaved unless the waterfall-parallelism mode is one
