@@ -7063,6 +7063,7 @@ next GC.~%"
             *WATCH-FILE*, viz.,~%; Aside:  ~a.~%(WATCH-KILL) kills ~
             the thread.~%"
          *watch-file*)))
+  #+Clozure
   (watch-dump))
 
 (defn1 first-string (l)

@@ -4157,10 +4157,10 @@ cws.lisp
 def-functional-instance.lisp
 defconsts.lisp
 defevaluator-fast.lisp
-defredundant.lisp
 define-keyed-function.lisp
 defined-const.lisp
 defmacfun.lisp
+defredundant.lisp
 defsum.lisp
 deftuple.lisp
 do-not.lisp
