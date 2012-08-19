@@ -6043,6 +6043,7 @@ next GC.~%"
        (oft "~%host-page-size:  ~:d" CCL:*HOST-PAGE-SIZE*))
      ans)))
 
+#+Clozure
 (defmacro globlet (bindings &rest rest)
   ;; [Jared]: this is only used in with-lower-overhead AFAICT.
 
@@ -6072,9 +6073,30 @@ next GC.~%"
             (psetq ,@(loop for b in bindings as v in vars nconc
                            (list (car b) v)))))))
 
+#-Clozure
+(defmacro globlet (&rest r)
+
+; See #+Clozure definition for an explanation of why we need this macro.  In
+; Lispworks, we get this warning if we use the #+Clozure definition:
+
+; ;;;*** Warning in ACL2::HONS-INIT-HOOK-MEMOIZATIONS: #:*COUNT-PONS-CALLS* bound lexically.
+
+; So we use a much simpler definition here.
+
+  `(let ,@r))
+
 (defmacro with-lower-overhead (&rest r)
   `(let ((*record-bytes* nil)
-         (*record-calls* nil)
+         (*record-calls*
+
+; It is a mystery why we need to set *record-calls* to t in LispWorks.  But we
+; do.  Otherwise, for example, evaluation hangs for
+;   (bad-lisp-objectp (make-list 100000))
+; when bad-lisp-objectp is in the initial memoized state produced by calling
+; hons-init (see hons-init-hook-memoizations, which has a call in
+; *hons-init-hook*).
+
+          #-lispworks nil #+lispworks t)
          (*record-hits* nil)
          (*record-hons-calls* nil)
          (*record-mht-calls* nil)
@@ -6763,6 +6785,7 @@ next GC.~%"
              ',time-out-value)
             (t (error c)))))))
 
+#+Clozure
 (defn1 watch-dump ()
 
   "(WATCH-DUMP) writes to the watch file the characters sent to
@@ -8225,7 +8248,12 @@ next GC.~%"
 (defn lower-overhead ()
   ;; Doesn't help much.
   (setq *record-bytes* nil)
-  (setq *record-calls* nil)
+  (setq *record-calls*
+
+; See the comment about LispWorks in with-lower-overhead; we make the analogous
+; adjustment for LispWorks here, in case it's necessary.
+
+        #-lispworks nil #+lispworks t)
   (setq *record-hits* nil)
   (setq *record-hons-calls* nil)
   (setq *record-mht-calls* nil)
