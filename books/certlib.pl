@@ -1401,11 +1401,13 @@ sub add_deps {
     # Clean the cert and out files if we're cleaning.
     if ($clean_certs) {
 	my $outfile = $base . ".out";
+	my $cert_outfile = $base . ".cert.out";
 	my $timefile = $base . ".time";
 	my $compfile = $base . ".lx64fsl";
 	my $acl2xfile = $base . ".acl2x";
 	unlink($target) if (-e $target);
 	unlink($outfile) if (-e $outfile);
+	unlink($cert_outfile) if (-e $cert_outfile);
 	unlink($timefile) if (-e $timefile);
 	unlink($compfile) if (-e $compfile);
 	unlink($acl2xfile) if (-e $acl2xfile);

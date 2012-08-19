@@ -38,7 +38,7 @@ of their respective owners and have their own licenses.
 
   make-event/assert
   Copyright (C) 2006 University of Texas at Austin
-  License: GPL 2 or later (per books/make-event/Readme.lsp)
+  License: GPL 2 (per books/make-event/Readme.lsp)
 
   misc/total-order
   License: GPL 2 (per books/LICENSE)
