@@ -65,7 +65,7 @@ values (by Cowles) and subsequently all ACL2 objects (by Greve).
     (DECLARE (XARGS :GUARD T))
     (IF (CONSP LST)
 	(CONS (CONS 'NFIX (CONS (CAR LST) 'NIL))
-	      (APPEND (LLIST-MACRO (CDR LST)) 'NIL))
+	      (LLIST-MACRO (CDR LST)))
 	NIL))
   
   (DEFMACRO LLIST (&REST LST)
