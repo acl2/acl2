@@ -22,3 +22,22 @@ For example, hints/basic-tests.acl2 has this:
   #+acl2-par
   ; computed hints that modify state
   (set-waterfall-parallelism nil)
+
+Here is a note relevant to ACL2(p) from David Rager.
+
+  Some of the books will perform better under :resource-based waterfall
+  parallelism than :full waterfall parallelism.  This is because these
+  books have so many subgoals and such a strange dependency tree between
+  those subgoals that the waterfall parallelism resources become
+  exhausted and the proofs must execute serially at times to maintain a
+  stable system.  As such, it may be good to override any :full setting
+  that a customization file provides and use :resource-based waterfall
+  parallelism instead -- just for these few books.  Note that even
+  without overriding the waterfall parallelism setting, the system will
+  remain stable.  Changing the waterfall parallelism mode is just a
+  performance optimization.  As of April 2012, the books to which this
+  statement may apply are the following:
+
+  models/jvm/m5/apprentice.lisp
+  coi/termination/assuming/complex.lisp
+  concurrent-programs/bakery/stutter2.lisp
