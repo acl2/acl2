@@ -761,7 +761,6 @@ and this new object would not be associated with the fast alist's hash table."
   ;; Has an under-the-hood implementation
   (cons (cons key val) alist))
 
-
 #+(or acl2-loop-only (not hons))
 (defn make-fast-alist (alist)
   ":Doc-Section Hons-and-Memoization

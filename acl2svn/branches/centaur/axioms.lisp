@@ -2169,7 +2169,6 @@
   See any documentation for Common Lisp for more details on many of these
   functions.~/")
 
-
 (deflabel miscellaneous
   :doc
   ":Doc-Section Miscellaneous
@@ -2205,6 +2204,7 @@
 ; (equal x x) = T
 
 ; x/=y -> (equal x y) = NIL
+
 
 ;                               LOGIC
 
@@ -2765,7 +2765,7 @@
    (declare (type fixnum acc))
    (the fixnum ; to assist in ACL2's proclaiming
         (cond ((atom x) acc)
-              ((= (the fixnum acc) most-positive-fixnum)
+              ((eql (the fixnum acc) most-positive-fixnum)
                #+(or gcl ccl allegro sbcl cmu
                      (and lispworks lispworks-64bit))
 
@@ -2810,7 +2810,7 @@
   #-acl2-loop-only
   (return-from len
                (let ((val (len1 x 0)))
-                 (if (= val -1)
+                 (if (eql val -1)
                      (len2 x 0)
                    val)))
   (if (consp x)
@@ -26923,6 +26923,7 @@
     flush-waterfall-parallelism-hashtables ; for #+acl2-par
     clear-current-waterfall-parallelism-ht ; for #+acl2-par
     setup-waterfall-parallelism-ht-for-name ; for #+acl2-par
+    set-waterfall-parallelism-fn ; for #+acl2-par combined with +hons
     fix-stobj-array-type
     set-gc-threshold$-fn
     certify-book-finish-complete
@@ -27415,10 +27416,12 @@
 ; low (another one of Robert's proofs showed us this).  So, now that we have
 ; the use-case for setting this to the largest number that we think the
 ; underlying runtime system will support, we do exactly that.  As of Jan 26,
-; 2012, we think a safe-enough limit is 10,000.  So, we use that number.  As
+; 2012, we think a safe enough limit is 4,000.  So, we use that number.  As
 ; multi-threading becomes more prevalent and the underlying runtime systems
-; increase their support for massive numbers of threads, we should continue to
-; increase this number.
+; increase their support for massive numbers of threads, we may wish to
+; continue to increase this number.  Note, however, that since we would also
+; like to support older systems, perhaps increasing this number is infeasible,
+; since the default should support all systems.
 
 ; On April 6, 2012, Rager reworked the way that we use spec-mv-let in the
 ; waterfall.  As such, the limit on the total amount of parallelism work
@@ -47046,8 +47049,13 @@ Lisp definition."
      waterfall0-with-hint-settings
      waterfall1)))
 
-#-acl2-par
 (defun make-identity-for-@par-mappings (mappings)
+
+; Although this is only used for #-acl2-par, we define it unconditionally so
+; that its rune is available in both ACL2 and ACL2(p).  Robert Krug used
+; arithmetic-5, which employs deftheory-static, and hence was bitten when this
+; rune was missing.
+
   (declare (xargs :guard (alistp mappings)))
   (cond ((endp mappings) nil)
         (t (cons `(defmacro ,(caar mappings) (&rest rst)

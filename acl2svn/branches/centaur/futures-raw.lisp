@@ -535,6 +535,11 @@
 ; or disable the error by setting the global variable
 ; total-parallelism-work-limit to nil.  This is the default behavior.
 
+; Parallelism wart: shorten this error, probably suggesting instead that the
+; user just disable the check.  Then redirect the user to :doc topic
+; set-total-parallelism-work-limit for instructions on how to configure the
+; threshold that triggers this error and serial execution.
+
                     (er hard 'not-too-many-futures-already-in-existence
                         "In order to allow the surprising behavior that ~
                          serializes computation for the :full waterfall ~
@@ -798,8 +803,6 @@
   (loop while (>= (atomically-modifiable-counter-read *last-slot-taken*)
                   (atomically-modifiable-counter-read *last-slot-saved*))
         do
-        (when (not (wait-on-semaphore *future-added* :timeout 15))
-          (throw :worker-thread-no-longer-needed nil))))
 
 ; There is no work to be done, so wait on a semaphore that signals the
 ; placement of a new future in *future-array*.  The code below returns when

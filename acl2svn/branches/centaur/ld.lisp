@@ -19105,6 +19105,10 @@
   ~ilc[set-fmt-soft-right-margin] or ~ilc[set-fmt-hard-right-margin] to set a
   small right margin.
 
+  Fixed ~ilc[set-inhibit-warnings] so that it takes effect for a subsequent
+  ~ilc[include-book] event.  Thanks to Jared Davis and David Rager for queries
+  that led to this fix.
+
   Hard Lisp errors are now avoided for certain ~c[:]~ilc[rewrite] rules: those
   whose ~il[equivalence] relation is other than ~c[equal] when the rule is
   originally processed, but is no longer a known equivalence relation when the
@@ -25421,7 +25425,11 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
   multiple value of the form ~c[(mv erp val state)].  All output to channels
   ~ilc[standard-co] and ~ilc[proofs-co] will be directed to the indicated
   file.  It is acceptable to replace ~c[filename] with
-  ~c[(quote filename)].~/"
+  ~c[(quote filename)].
+
+  Note that so-called comment-window output (~pl[cw] and ~pl[observation-cw])
+  is not redirected by ~c[wof] to a file, nor is printing from a
+  ~il[wormhole].~/"
 
   `(with-standard-co-and-proofs-co-to-file ,filename ,form))
 

@@ -391,12 +391,25 @@
   updated around March 23, 2011 to fix this problem, so if you get
   segfaults (for example) with CCL, try updating your CCL installation.
 
-  The standard process for book certification will not use
+  Book certification should generally work but may present some issues,
+  including the following.
+  ~bq[]
+  o The standard ~c[make]-based process for book certification will not use
   ~il[waterfall-parallelism], which is disabled by default (even when
   ~il[compiling-acl2p] by using the ~c[ACL2_PAR] flag).  ~l[book-makefiles],
   which explains that ~il[acl2-customization] files are ignored during that
   process unless specified explicitly on the command line or in the
   environment.
+
+  o A book certified with ACL2(p) might subsequently cause an error when
+  included with ACL2.  As of this writing, however, we have only seen this for
+  a book in which ~ilc[deftheory-static] is used.
+
+  o In general, ACL2(p) is primarily intended to support more rapid interactive
+  development.  While we are unaware of an unsoundness likely to affect an
+  ACL2(p) user, we suggest using ACL2 for final book certification, rather than
+  ACL2(p), to lower the risk of unsound book certification.
+  ~eq[]
 
   Proof output can contain repeated printing of the same subgoal name.
 
@@ -411,11 +424,17 @@
 
   Time limits (~pl[with-prover-time-limit]) aren't supported.
 
+  The timing information printed at the end of a proof attempt may be somewhat
+  inaccurate.  Consider using ~ilc[time$] to obtain timing information.
+
   The use of ~ilc[wormhole]s is not recommended, as there may be race
   conditions.
 
-  When waterfall-parallelism is enabled (~pl[set-waterfall-parallelism]),
-  the use of ~ilc[set-inhibit-output-lst] may not fully inhibit proof output.
+  Output specific to ~c[:OR] ~il[hints] is disabled.
+
+  Proof trees are likely not to work as originally designed.
+
+  The use of ~ilc[set-inhibit-output-lst] may not fully inhibit proof output.
 
   Interrupting a proof attempt is not yet properly supported.  At a minimum,
   interrupts are trickier with waterfall parallelism enabled.  For one, the
@@ -447,8 +466,7 @@
 
   If you are working with LispWorks 6.0 or 6.0.1, then you may see messages
   about misaligned conses.  The state of the system may be corrupted after such
-  a message has been printed.  This LispWorks bug is expected to be fixed in
-  later releases of LispWorks.
+  a message has been printed.  This LispWorks bug is fixed in LispWorks 6.1.
 
   The waterfall parallelism mode ~c[:resource-and-timing-based] is not fully
   supported when the host Lisp is other than CCL.  It may work, but we have not
@@ -961,7 +979,7 @@
   checkpoints, similar to (but still distinct from) gag-mode
   (~pl[set-gag-mode]).  The value of ~c[:limited] also prints messages that
   indicate which subgoal is currently being proved, along with the wall-clock
-  time elapsed since ACL2(p) was invoked; and if state global
+  time elapsed since the theorem began its proof; and if state global
   ~c['waterfall-printing-when-finished] has a non-~c[nil] value, then such a
   message will also be printed at the completion of each subgoal.  The function
   ~c[print-clause-id-okp] may receive an attachment to limit such printing;
@@ -2622,9 +2640,9 @@
 
   The value of state global ~c[total-parallelism-work-limit-error] dictates
   what occurs when the underlying runtime system runs reaches a limit on the
-  number of threads for parallel computation.  By default, the ACL2(p) user
-  will receive an error and computation will halt.  At this point, the ACL2(p)
-  user has the following options.
+  number of threads for parallel computation.  By default, when this limit is
+  reached, the ACL2(p) user will receive an error and computation will halt.
+  At this point, the ACL2(p) user has the following options.
 
   (1) Remove the limit by evaluating the following form.
   ~bv[]

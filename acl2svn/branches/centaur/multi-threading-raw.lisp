@@ -188,11 +188,19 @@
   #+ccl
   `(ccl::atomic-incf ,x)
   #+sb-thread
+
+; Parallelism blemish: we (David Rager) performed experiments in either 2009 or
+; 2010 that indicated that there was a problem with using SBCL's built-in
+; atomic increment and decrements.  Because of this observation, we roll our
+; own atomic increments and decrements based on locking.  For future reference,
+; we leave the version of the code that used SBCL's built-in primitives as a
+; comment.
+
 ;  `(progn ; (sb-debug:backtrace) 
 ;          (1+ (sb-ext:atomic-incf
 ;               (atomically-modifiable-counter-val ,x))))
 
-; Parallelism blemish: We do not recall why nil appears in the call to
+; Parallelism blemish: we do not recall why nil appears in the call to
 ; with-recursive-lock below.  Probably it can be omitted.
 
   `(sb-thread:with-recursive-lock ((atomically-modifiable-counter-lock ,x))
