@@ -105,7 +105,7 @@ endif
 # Inhibit all output except the summary (which can be useful for tracking down problems).
 # Set this to "" if you do want the output.
 
-INHIBIT := (set-inhibit-output-lst (list (quote prove) (quote proof-tree) (quote warning) (quote observation) (quote event) (quote expansion)))
+INHIBIT ?= (set-inhibit-output-lst (list (quote prove) (quote proof-tree) (quote warning) (quote observation) (quote event) (quote expansion)))
 
 # Support for make dependencies:  should be a list of book names without
 # the .lisp suffix.  Can be overridden on the command line or in a file
@@ -116,9 +116,18 @@ BOOKS ?= $(patsubst %.lisp, %, $(wildcard *.lisp))
 ACL2_COMPILE_FLG ?= :default
 
 # Set the following variable to T in order to use provisional
-# certification towards the certification of books.  It is used by
-# ACL2 when setting defaults for certain certify-book parameters.
-export ACL2_PCERT ?=
+# certification towards the certification of books.
+export ACL2_PCERT
+
+export ACL2_PCERT_ARG ?=
+export ACL2_OUTFILE_SUFFIX  ?=
+
+# Define the following variable as shown in the following example, in
+# order to arrange that books be provisionally certified using
+# certify-book with :pcert keyword argument of t, to build .pcert1
+# file when .pcert0 file is built:
+export ACL2_BOOKS_PCERT_ARG_T ?=
+# ACL2_BOOKS_PCERT_ARG_T = book1 book2
 
 #################### END of editable variables ####################
 
@@ -129,8 +138,6 @@ export ACL2_PCERT ?=
 # and the variables below will automatically be updated accordingly.
 
 BOOKS_CERT    = $(patsubst %, %.cert,    $(BOOKS))
-BOOKS_PCERT   = $(patsubst %, %.pcert,   $(BOOKS))
-BOOKS_ACL2X   = $(patsubst %, %.acl2x,   $(BOOKS))
 
 # As above with BOOKS_CERT, we use '=' for all of the following so
 # that BOOKS_COMP can be redefined locally in the local Makefile, by
@@ -175,17 +182,13 @@ all:
 		fi \
 	fi
 	@echo 'Using ACL2=$(ACL2)'
-	@if [ "$$ACL2_PCERT" != "" ] ;\
-	then \
-		$(MAKE) -s -f $(ACL2_BOOKS_MAKEFILE) ACL2_PCERT=t $(BOOKS_PCERT) \
-		  $(BOOKS_CERT) INHIBIT='$(INHIBIT)' ACL2='$(ACL2)' ;\
-	else \
-		$(MAKE) -s -f $(ACL2_BOOKS_MAKEFILE) \
-		  $(BOOKS_CERT) INHIBIT='$(INHIBIT)' ACL2='$(ACL2)' ;\
-	fi
+	$(MAKE) -s -f $(ACL2_BOOKS_MAKEFILE) \
+	  $(BOOKS_CERT) INHIBIT='$(INHIBIT)' ACL2='$(ACL2)'
+
+all_pcert: ACL2_PCERT = t
 
 all_pcert:
-	$(MAKE) -s -f $(ACL2_BOOKS_MAKEFILE) ACL2_PCERT=t all
+	$(MAKE) all -f $(ACL2_BOOKS_MAKEFILE)
 
 #  This rule tells how to get <book>.cert from <book>.lisp, either by running
 #  ACL2 on the <book>.acl2 file (if it exists) or using the default command
@@ -194,149 +197,134 @@ all_pcert:
 #  package, which can cause a problem if .acl2 files in our regressions suite
 #  execute (LP) instead of (ACL2::LP).  We deal with these issues below.
 
-# Keep this %.cert target in sync with the %.acl2x and %.pcert targets
-# below.  A reason they are not combined is that GNU Make might then
-# consider them equivalent for purposes of dependency tracking: at
-# least, we got regression failures in the make-event/ directory for
-#   make -j <n> double-cert-test.cert
-# with n>1: after making double-cert-test-1.acl2x, GNU Make thought it
-# was OK to start making double-cert-test.cert without first making
-# double-cert-test-1.cert.  Also note that the .pcert file depends on
-# the .acl2x file, but the .cert file does not.
+%.cert:   WORKXXX = workxxx
+%.pcert0: WORKXXX = workxxx_pcert0
+%.pcert1: WORKXXX = workxxx_pcert1
+%.acl2x:  WORKXXX = workxxx_acl2x
+
+%.cert:   ACL2_OUTFILE_SUFFIX =
+%.pcert0: ACL2_OUTFILE_SUFFIX = .pcert0
+%.pcert1: ACL2_OUTFILE_SUFFIX = .pcert1
+%.acl2x:  ACL2_OUTFILE_SUFFIX = .acl2x
+
+%.pcert0: ACL2_PCERT_ARG = CREATE
+# Override:
+$(patsubst %, %.pcert0, $(ACL2_BOOKS_PCERT_ARG_T)): ACL2_PCERT_ARG = T
+%.pcert1: ACL2_PCERT_ARG = CONVERT
+ifneq ($(ACL2_PCERT),)
+%.cert:   ACL2_PCERT_ARG = COMPLETE
+else
+%.cert:   ACL2_PCERT_ARG =
+endif
+%.acl2x:  ACL2_PCERT_ARG =
+
+define cert_cmd
+	echo "Making `pwd`/$@ on `date`"
+	rm -f $@
+	echo '(acl2::value :q)' > $(WORKXXX).$(*F)
+	echo '(in-package "ACL2")' >> $(WORKXXX).$(*F)
+	echo '(lp)' >> $(WORKXXX).$(*F)
+	if [ "$$ACL2_OUTFILE_SUFFIX" = ".acl2x" ] ; \
+	then \
+	  echo "(set-write-acl2x t state)" >> workxxx_acl2x.$(*F) ; \
+	fi
+	echo '$(INHIBIT)' >> $(WORKXXX).$(*F)
+	if [ -f $*.acl2 ] ; \
+	then \
+	  cat $*.acl2 >> $(WORKXXX).$(*F) ; \
+	elif [ -f cert.acl2 ] ; \
+	then \
+	  cat cert.acl2 >> $(WORKXXX).$(*F) ; \
+	  echo "" >> $(WORKXXX).$(*F) ; \
+	  echo '(certify-book "$*" ? $(ACL2_COMPILE_FLG))' >> $(WORKXXX).$(*F) ; \
+	else \
+	  echo "" >> $(WORKXXX).$(*F) ; \
+	  echo '(certify-book! "$*" 0 $(ACL2_COMPILE_FLG))' >> $(WORKXXX).$(*F) ; \
+	fi
+	echo "" >> $(WORKXXX).$(*F)
+	echo '(acl2::value :q)' >> $(WORKXXX).$(*F)
+	echo '(acl2::exit-lisp)' >> $(WORKXXX).$(*F)
+	if [ -n "$(ACL2_BOOKS_DEBUG)" ] ;\
+	then \
+	  echo "[Makefile-generic]: certify book commands (from $(WORKXXX).$(*F)):" ;\
+	  echo "" ;\
+	  cat $(WORKXXX).$(*F) ;\
+	  echo "" ;\
+	fi	
+	($(ACL2) < $(WORKXXX).$(*F) 2>&1) > $*$(ACL2_OUTFILE_SUFFIX).out
+	((test -f $<) && (ls -al $@)) || \
+	     (echo "" ;\
+		   tail -300 $*$(ACL2_OUTFILE_SUFFIX).out | sed 's/^/   | /' ;\
+		   echo "" ;\
+		   echo "" ;\
+		   echo "CERTIFICATION FAILED for `pwd`/$@ (see $*$(ACL2_OUTFILE_SUFFIX).out)" ;\
+		   exit 1)
+	rm -f $(WORKXXX).$(*F)
+endef
+
+# It is important for the .cert targets to depend on the .pcert1
+# targets, so that the .pcert1 targets are triggered as soon as
+# possible.  We considered instead making .pcert1 files early in the
+# commands for the .cert targets, but then the .pcert1 file cannot be
+# made until all subsidiary .cert targets are complete, which defeats
+# the point of parallel making of .pcert1 files supported by
+# provisional certification.  On the other hand, since the Complete
+# procedure of provisional certification moves a .pcert1 file to the
+# corresponding .cert file, the .cert target could be considered out
+# of date on any subsequent make!  So we declare all .pcert1 files to
+# be INTERMEDIATE, so that their absence does not trigger remaking of
+# .cert files.
+PCERT1 = $(patsubst %.lisp, %.pcert1, $(wildcard *.lisp))
+.INTERMEDIATE: $(PCERT1)
+
+# We also make the .pcert0 files INTERMEDIATE, to handle the following
+# circumstance.  Suppose we certify a set of books using ordinary
+# certification, and then we remake using provisional certification.
+# Then we would like to avoid recertifying books with valid .cert
+# files such that all their sub-books also have valid .cert files.
+# However, unlike the .pcert1 files (which are moved to .cert files,
+# and hence are eliminated by ACL2), we make the .pcert0 files
+# PRECIOUS; this way, they are still around if we subsequently need to
+# recertify only some of the books, still using provisional
+# certification.
+PCERT0 = $(patsubst %.lisp, %.pcert0, $(wildcard *.lisp))
+.INTERMEDIATE: $(PCERT0)
+.PRECIOUS: $(PCERT0)
+
+ifneq ($(ACL2_PCERT),)
+# Warning: Before thinking about removing dependency below on
+# %.pcert1, see the comment above where the .pcert1 files are declared
+# to be INTERMEDIATE.
+%.cert: %.lisp %.pcert1
+	@echo "Making (by moving .pcert1 file) `pwd`/$@ on `date`"
+	@echo '(certify-book "$*" ?)' > $(WORKXXX).$(*F)
+	@($(ACL2) < $(WORKXXX).$(*F) 2>&1) > $*$(ACL2_OUTFILE_SUFFIX).out
+	@(ls -al $@) || \
+	     (echo "" ;\
+		   tail -300 $*$(ACL2_OUTFILE_SUFFIX).out | sed 's/^/   | /' ;\
+		   echo "" ;\
+		   echo "" ;\
+		   echo "CERTIFICATION FAILED for `pwd`/$@ (see $*$(ACL2_OUTFILE_SUFFIX).out)" ;\
+		   exit 1)
+else
 %.cert: %.lisp
-	@echo "Making `pwd`/$@ on `date`"
-	@rm -f $*.cert
-	@echo '(acl2::value :q)' > workxxx.$(*F)
-	@echo '(in-package "ACL2")' >> workxxx.$(*F)
-	@echo '(lp)' >> workxxx.$(*F)
-	@echo '$(INHIBIT)' >> workxxx.$(*F)
-	@if [ -f $*.acl2 ] ; \
-	then \
-	  cat $*.acl2 >> workxxx.$(*F) ; \
-	elif [ -f cert.acl2 ] ; \
-	then \
-	  cat cert.acl2 >> workxxx.$(*F) ; \
-	  echo "" >> workxxx.$(*F) ; \
-	  echo '(certify-book "$*" ? $(ACL2_COMPILE_FLG))' >> workxxx.$(*F) ; \
-	else \
-	  echo "" >> workxxx.$(*F) ; \
-	  echo '(certify-book! "$*" 0 $(ACL2_COMPILE_FLG))' >> workxxx.$(*F) ; \
-	fi
-	@echo "" >> workxxx.$(*F)
-	@echo '(acl2::value :q)' >> workxxx.$(*F)
-	@echo '(acl2::exit-lisp)' >> workxxx.$(*F)
-	@if [ -n "$(ACL2_BOOKS_DEBUG)" ] ;\
-	then \
-	  echo "[Makefile-generic]: certify book commands:" ;\
-	  echo "" ;\
-	  cat workxxx.$(*F) ;\
-	  echo "" ;\
-	fi	
-	@(if [ "$$ACL2_PCERT" != "" ] ; then export ACL2_PCERT=CONVERT ; fi ; ($(ACL2) < workxxx.$(*F) 2>&1)) > $*.out
-	@((test -f $<) && (ls -al $@)) || \
-            (if [ "$$ACL2_PCERT" = "" ] ;\
-		then cert_fail_string="CERTIFICATION FAILED" ;\
-		else cert_fail_string="CERTIFICATION (CONVERT) FAILED" ;\
-		fi ;\
-	     echo "**$${cert_fail_string}** for `pwd`/$@" ;\
-	     echo "" ;\
-	     tail -300 $*.out | sed 's/^/   | /' ;\
-	     echo "" ;\
-	     echo "" ;\
-	     echo "**$${cert_fail_string}** for `pwd`/$@" ;\
-             exit 1)
-	@rm -f workxxx.$(*F)
+	@$(cert_cmd)
+endif
 
-# Keep this %.pcert target in sync with the %.cert and %.acl2x
-# targets; see the comment for %.cert above.
-%.pcert: %.lisp %.acl2x
-	@echo "Making `pwd`/$@ on `date`"
-	rm -f $*.pcert
-	@echo '(acl2::value :q)' > workxxx_pcert.$(*F)
-	@echo '(in-package "ACL2")' >> workxxx_pcert.$(*F)
-	@echo '(lp)' >> workxxx_pcert.$(*F)
-	@echo '$(INHIBIT)' >> workxxx_pcert.$(*F)
-	@if [ -f $*.acl2 ] ; \
-	then \
-	  cat $*.acl2 >> workxxx_pcert.$(*F) ; \
-	elif [ -f cert.acl2 ] ; \
-	then \
-	  cat cert.acl2 >> workxxx_pcert.$(*F) ; \
-	  echo "" >> workxxx_pcert.$(*F) ; \
-	  echo '(certify-book "$*" ? $(ACL2_COMPILE_FLG) :pcert :create :acl2x t)' >> workxxx_pcert.$(*F) ; \
-	else \
-	  echo "" >> workxxx_pcert.$(*F) ; \
-	  echo '(certify-book! "$*" 0 $(ACL2_COMPILE_FLG) :pcert :create :acl2x t)' >> workxxx_pcert.$(*F) ; \
-	fi
-	@echo "" >> workxxx_pcert.$(*F)
-	@echo '(acl2::value :q)' >> workxxx_pcert.$(*F)
-	@echo '(acl2::exit-lisp)' >> workxxx_pcert.$(*F)
-	@if [ -n "$(ACL2_BOOKS_DEBUG)" ] ;\
-	then \
-	  echo "[Makefile-generic]: certify book commands (for pcert):" ;\
-	  echo "" ;\
-	  cat workxxx_pcert.$(*F) ;\
-	  echo "" ;\
-	fi	
-	@(export ACL2_PCERT=CREATE ; ($(ACL2) < workxxx_pcert.$(*F) 2>&1)) > $@.out
-	@((test -f $<) && (ls -al $@)) || \
-            (echo "**CERTIFICATION (PROVISIONAL) FAILED** for `pwd`/$@" ;\
-	     echo "" ;\
-	     tail -300 $@.out | sed 's/^/   | /' ;\
-	     echo "" ;\
-	     echo "" ;\
-	     echo "**CERTIFICATION (PROVISIONAL) FAILED** for `pwd`/$@" ;\
-             exit 1)
-	@rm -f workxxx_pcert.$(*F)
+%.pcert0: %.lisp
+	@$(cert_cmd)
 
-# Keep this %.acl2x target in sync with the %.cert and %.pcert targets
-# above; see the comment for %.cert.
+# See override just below.
+%.pcert1: %.pcert0
+	@$(cert_cmd)
+
+# Override for %.pcert1 when using :pcert t to build .pcert0 and
+# .pcert1 files together (handy use of a static pattern rule):
+$(patsubst %, %.pcert1, $(ACL2_BOOKS_PCERT_ARG_T)): %.pcert1: %.pcert0
+	@echo "Note: Skipping build of $@ (normally built with $*.pcert0)."
+
 %.acl2x: %.lisp
-	@echo "Making `pwd`/$@ on `date`"
-	@rm -f $*.acl2x
-	@echo '(acl2::value :q)' > workxxx_acl2x.$(*F)
-	@echo '(in-package "ACL2")' >> workxxx_acl2x.$(*F)
-	@echo '(lp)' >> workxxx_acl2x.$(*F)
-	@echo '(in-package "ACL2")' >> workxxx_acl2x.$(*F)
-	@if [ "$$ACL2_PCERT" != "" ] ; \
-	then echo '(set-ld-skip-proofsp t state)' >> workxxx_acl2x.$(*F) ; \
-	echo "(set-write-acl2x (quote (t)) state)" >> workxxx_acl2x.$(*F) ;\
-	else \
-	echo "(set-write-acl2x t state)" >> workxxx_acl2x.$(*F) ;\
-	fi
-	@echo '$(INHIBIT)' >> workxxx_acl2x.$(*F)
-	@if [ -f $*.acl2 ] ; \
-	then \
-	  cat $*.acl2 >> workxxx_acl2x.$(*F) ; \
-	elif [ -f cert.acl2 ] ; \
-	then \
-	  cat cert.acl2 >> workxxx_acl2x.$(*F) ; \
-	  echo "" >> workxxx_acl2x.$(*F) ; \
-	  echo '(certify-book "$*" ? $(ACL2_COMPILE_FLG) :acl2x t)' >> workxxx_acl2x.$(*F) ; \
-	else \
-	  echo "" >> workxxx_acl2x.$(*F) ; \
-	  echo '(certify-book! "$*" 0 $(ACL2_COMPILE_FLG) :acl2x t)' >> workxxx_acl2x.$(*F) ; \
-	fi
-	@echo "" >> workxxx_acl2x.$(*F)
-	@echo '(value :q)' >> workxxx_acl2x.$(*F)
-	@echo '(exit-lisp)' >> workxxx_acl2x.$(*F)
-	@if [ -n "$(ACL2_BOOKS_DEBUG)" ] ;\
-	then \
-	  echo "[Makefile-generic]: certify book commands:" ;\
-	  echo "" ;\
-	  cat workxxx_acl2x.$(*F) ;\
-	  echo "" ;\
-	fi	
-	@($(ACL2) < workxxx_acl2x.$(*F) 2>&1) > $@.out
-	@((test -f $<) && (ls -al $@)) || \
-            (echo "**CERTIFICATION (for .acl2x file generation) FAILED** for `pwd`/$@" ;\
-	     echo "" ;\
-	     tail -300 $@.out | sed 's/^/   | /' ;\
-	     echo "" ;\
-	     echo "" ;\
-	     echo "**CERTIFICATION (for .acl2x file generation) FAILED** for `pwd`/$@" ;\
-             exit 1)
-	@rm -f workxxx_acl2x.$(*F)
+	@$(cert_cmd)
 
 # The following rules are useful when books have been certified in one lisp,
 # but we would also like their compiled files to exist in the other lisp.
@@ -489,7 +477,7 @@ ACL2_NON_DIR            = egrep -i -v ':dir'
 # Grep commands for include-book and ld forms withOUT :dir
 # (keep in sync with next set of grep commands):
 ACL2_EGREP_CMD          = egrep -i '^[^;]*include-book[ 	]*\".*\"' $$book.lisp | $(ACL2_NON_DIR)
-ACL2_EGREP_CMD_ACL2     = $(subst book.lisp,book.acl2,$(ACL2_EGREP_CMD))
+ACL2_EGREP_CMD_ACL2     = $(subst $$book.lisp,$$book.acl2,$(ACL2_EGREP_CMD))
 ACL2_EGREP_CMD_CERT     = $(subst $$book.lisp,cert.acl2,$(ACL2_EGREP_CMD))
 ACL2_EGREP_CMD_ACL2_LD  = egrep -i '^[^;]*\(ld[ 	]*\".*\"' $$book.acl2 | $(ACL2_NON_DIR)
 ACL2_EGREP_CMD_CERT_LD  = egrep -i '^[^;]*\(ld[ 	]*\".*\"' cert.acl2 | $(ACL2_NON_DIR)
@@ -499,7 +487,7 @@ ACL2_EGREP_CMD_CERT_LD  = egrep -i '^[^;]*\(ld[ 	]*\".*\"' cert.acl2 | $(ACL2_NO
 # (keep in sync with preceding set of grep commands):
 ACL2_NON_SLASH           = egrep -i -v '/'
 ACL2X_EGREP_CMD          = egrep -i '^[^;]*include-book[ 	]*\".*\"' $$book.lisp | $(ACL2_NON_DIR) | $(ACL2_NON_SLASH)
-ACL2X_EGREP_CMD_ACL2     = $(subst book.lisp,book.acl2,$(ACL2X_EGREP_CMD))
+ACL2X_EGREP_CMD_ACL2     = $(subst $$book.lisp,$$book.acl2,$(ACL2X_EGREP_CMD))
 ACL2X_EGREP_CMD_CERT     = $(subst $$book.lisp,cert.acl2,$(ACL2X_EGREP_CMD))
 ACL2X_EGREP_CMD_ACL2_LD  = egrep -i '^[^;]*\(ld[ 	]*\".*\"' $$book.acl2 | $(ACL2_NON_DIR) | $(ACL2_NON_SLASH)
 ACL2X_EGREP_CMD_CERT_LD  = egrep -i '^[^;]*\(ld[ 	]*\".*\"' cert.acl2 | $(ACL2_NON_DIR) | $(ACL2_NON_SLASH)
@@ -510,10 +498,9 @@ ACL2_EGREP_CMD_DIR_LD   = egrep -i '^[^;]*\(ld[ 	]*\".*\"[ 	]*:dir[ 	]*:system'
 
 # Sed commands for transforming above egrep results into a dependency line:
 ACL2_SED_CMD            = sed "s/[^\"]*\"/$$book.$$cert_or_acl2x: /" | sed 's/".*/.cert/'
-ACL2_SED_CMD_PCERT      = sed "s/[^\"]*\"/$$book.acl2x: /" | sed 's/".*/.acl2x/'
+ACL2_SED_CMD_PCERT0     = sed "s/[^\"]*\"/$$book.pcert0: /" | sed 's/".*/.pcert0/'
 ACL2_SED_CMD_LD         = sed "s/[^\"]*\"/$$book.$$cert_or_acl2x: /" | sed 's/".*//'
 ACL2_SED_CMD_DIR        = $(subst book.$$cert_or_acl2x: ,book.$$cert_or_acl2x: $$\(ACL2_SYSTEM_BOOKS)\/,$(ACL2_SED_CMD))
-ACL2_SED_CMD_DIR_PCERT  = $(subst book.acl2x: ,book.acl2x: $$\(ACL2_SYSTEM_BOOKS)\/,$(ACL2_SED_CMD_PCERT))
 ACL2_SED_CMD_DIR_LD     = $(subst book.$$cert_or_acl2x: ,book.$$cert_or_acl2x: $$\(ACL2_SYSTEM_BOOKS)\/,$(ACL2_SED_CMD_LD))
 
 # To comment out a line:
@@ -531,7 +518,6 @@ dependencies:
 	else \
 	  cert_or_acl2x=cert ; \
 	fi ; \
-	echo "$$book.$$cert_or_acl2x: $$book.lisp" ; \
 	$(ACL2_EGREP_CMD) | $(ACL2_SED_CMD) ;\
 	$(ACL2_EGREP_CMD_DIR) $$book.lisp | $(ACL2_SED_CMD_DIR) | $(ACL2_SED_CMD_COMMENT) ;\
 	if [ -f $$book.acl2 ]; then \
@@ -549,60 +535,39 @@ dependencies:
 	fi ; \
 	done
 	@echo ''
-	@echo '# DEPENDENCIES FOR PROVISIONAL CERTIFICATION ONLY:'
-	@echo 'ifneq ($$(ACL2_PCERT),)'
-	@echo ''
-	@echo '# Dependencies for .pcert files:'
+	@echo '# DEPENDENCIES SUPPORTING PROVISIONAL CERTIFICATION:'
 	@for book in $(BOOKS) ; \
 	do \
-	echo "" ; \
-	echo "$$book.pcert: $$book.acl2x" ; \
-	if [ -f $$book.acl2 ]; then \
-	echo "$$book.pcert: $$book.acl2" ; \
-	elif [ -f cert.acl2 ]; then \
-	echo "$$book.pcert: cert.acl2" ; \
-	fi ; \
+	echo "" ;\
+	if [ -f $$book.acl2 ] && [ -n "`egrep -i '^[^;]*\(certify-book[^;]*:acl2x t' $$book.acl2`" ]; then \
+	  echo $$book.pcert0: $$book.acl2x ; \
+	else \
+	  cert_or_acl2x=pcert0 ; \
+	  $(ACL2_EGREP_CMD) | $(ACL2_SED_CMD_PCERT0) ;\
+	  $(ACL2_EGREP_CMD_DIR) $$book.lisp | $(ACL2_SED_CMD_DIR) | $(ACL2_SED_CMD_COMMENT) ;\
+	  if [ -f $$book.acl2 ]; then \
+	  echo "$$book.$$cert_or_acl2x: $$book.acl2" ; \
+	  $(ACL2_EGREP_CMD_ACL2) | $(ACL2_SED_CMD_PCERT0) ;\
+	  $(ACL2_EGREP_CMD_ACL2_LD) | $(ACL2_SED_CMD_LD) ;\
+	  $(ACL2_EGREP_CMD_DIR) $$book.acl2 | $(ACL2_SED_CMD_DIR) | $(ACL2_SED_CMD_COMMENT) ;\
+	  $(ACL2_EGREP_CMD_DIR_LD) $$book.acl2 | $(ACL2_SED_CMD_DIR_LD) | $(ACL2_SED_CMD_COMMENT) ;\
+	  elif [ -f cert.acl2 ]; then \
+	  echo "$$book.$$cert_or_acl2x: cert.acl2" ; \
+	  $(ACL2_EGREP_CMD_CERT) | $(ACL2_SED_CMD_PCERT0) ;\
+	  $(ACL2_EGREP_CMD_CERT_LD) | $(ACL2_SED_CMD_LD) ;\
+	  $(ACL2_EGREP_CMD_DIR) cert.acl2 | $(ACL2_SED_CMD_DIR) | $(ACL2_SED_CMD_COMMENT) ;\
+	  $(ACL2_EGREP_CMD_DIR_LD) cert.acl2 | $(ACL2_SED_CMD_DIR_LD) | $(ACL2_SED_CMD_COMMENT) ;\
+	  fi ; \
+	fi ;\
 	done
-	@echo ''
-	@echo '# Dependencies for .acl2x files (similar to those for .cert files):'
-	@for book in $(BOOKS) ; \
-	do \
-	echo "" ; \
-	cert_or_acl2x=acl2x ; \
-	echo "$$book.acl2x: $$book.lisp" ; \
-	$(ACL2X_EGREP_CMD) | $(ACL2_SED_CMD_PCERT) ;\
-	$(ACL2_EGREP_CMD_DIR) $$book.lisp | $(ACL2_SED_CMD_DIR_PCERT) | $(ACL2_SED_CMD_COMMENT) ;\
-	if [ -f $$book.acl2 ]; then \
-	echo "$$book.acl2x: $$book.acl2" ; \
-	$(ACL2X_EGREP_CMD_ACL2) | $(ACL2_SED_CMD_PCERT) ;\
-	$(ACL2X_EGREP_CMD_ACL2_LD) | $(ACL2_SED_CMD_LD) ;\
-	$(ACL2_EGREP_CMD_DIR) $$book.acl2 | $(ACL2_SED_CMD_DIR_PCERT) | $(ACL2_SED_CMD_COMMENT) ;\
-	$(ACL2_EGREP_CMD_DIR_LD) $$book.acl2 | $(ACL2_SED_CMD_DIR_LD) | $(ACL2_SED_CMD_COMMENT) ;\
-	elif [ -f cert.acl2 ]; then \
-	echo "$$book.acl2x: cert.acl2" ; \
-	$(ACL2X_EGREP_CMD_CERT) | $(ACL2_SED_CMD_PCERT) ;\
-	$(ACL2X_EGREP_CMD_CERT_LD) | $(ACL2_SED_CMD_LD) ;\
-	$(ACL2_EGREP_CMD_DIR) cert.acl2 | $(ACL2_SED_CMD_DIR_PCERT) | $(ACL2_SED_CMD_COMMENT) ;\
-	$(ACL2_EGREP_CMD_DIR_LD) cert.acl2 | $(ACL2_SED_CMD_DIR_LD) | $(ACL2_SED_CMD_COMMENT) ;\
-	fi ; \
-	done
-	@echo ''
-	@echo '# Dependencies for converting .pcert to .cert files:'
-	@echo ''
-	@for book in $(BOOKS) ; \
-	do \
-	echo "$$book.cert: $$book.pcert" ; \
-	done
-	@echo ''
-	@echo 'endif'
 
 .PHONY: clean
 clean:
-	rm -f workxxx* *@expansion.lsp *.out *.date *.cert *.pcert *.cert.temp \
+	rm -f workxxx* *@expansion.lsp *.out *.date *.*cert *.pcert0 *.pcert1 *cert*.temp \
 	*.acl2x *.port Makefile-deps *.h *.c *.o *.sbin *.lbin *.fasl *.ufsl \
 	*.64ufasl *.ufasl *.pfsl *.dfsl *.dx32fsl *.lx32fsl *.d64fsl \
 	*.dx64fsl *.lx64fsl *.bin *.sparcf *.axpf *.x86f *.ppcf *.fas \
-	*.lib *.log TMP*.* temp-emacs-file.lsp
+	*.lib *.sse2f *.log TMP*.* temp-emacs-file.lsp
 
 ifdef FAST_DEPS_FOR_CLEAN
 # Note that Makefile-deps will be deleted by the clean target
