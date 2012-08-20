@@ -1406,7 +1406,6 @@ sub add_deps {
 	my $acl2xfile = $base . ".acl2x";
 	unlink($target) if (-e $target);
 	unlink($outfile) if (-e $outfile);
-	unlink($cert_outfile) if (-e $cert_outfile);
 	unlink($timefile) if (-e $timefile);
 	unlink($compfile) if (-e $compfile);
 	unlink($acl2xfile) if (-e $acl2xfile);
