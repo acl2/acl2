@@ -1265,6 +1265,13 @@
   (pseudo-function-symbol-listp val 2))
 
 ;-----------------------------------------------------------------
+; CONCRETE-STOBJ
+
+(defun concrete-stobjp (sym val)
+  (declare (ignore sym))
+  (symbolp val))
+
+;-----------------------------------------------------------------
 ; CONGRUENCES
 
 ; If fn has arity n, then the 'congruences property of fn is a list of tuples,
@@ -1311,6 +1318,13 @@
 (defun congruencesp (sym val)
   (declare (ignore sym))
   (pseudo-congruence-tuple-listp val))
+
+;-----------------------------------------------------------------
+; CONGRUENT-STOBJ-REP
+
+(defun congruent-stobj-repp (sym val)
+  (declare (ignore sym))
+  (symbolp val))
 
 ;-----------------------------------------------------------------
 ; CONST
@@ -2542,7 +2556,9 @@
                           (classicalpp sym val)))
           (CLAUSE-PROCESSOR (clause-processorp sym val))
           (COARSENINGS (coarseningsp sym val))
+          (CONCRETE-STOBJ (concrete-stobjp sym val))
           (CONGRUENCES (congruencesp sym val))
+          (CONGRUENT-STOBJ-REP (congruent-stobj-repp sym val))
           (CONST (const-propertyp sym val))
           (CONSTRAINEDP (pseudo-constrainedpp sym val))
           (CONSTRAINT-LST (constraint-lstp sym val))
