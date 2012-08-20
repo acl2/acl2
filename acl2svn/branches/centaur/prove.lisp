@@ -1279,7 +1279,7 @@
        (save-acl2p-checkpoint-for-summary cl-id prettyified-clause state)
        (with-output-lock
         (progn$
-         (cw "~%~%([ An ACL2(p) checkpoint:~%~%~s0~%"
+         (cw "~%~%([ An ACL2(p) key checkpoint:~%~%~s0~%"
              (string-for-tilde-@-clause-id-phrase cl-id))
          (cw "~x0" prettyified-clause)
 
@@ -1353,7 +1353,7 @@
   (prog2$
 
 ; Every branch of the cond below, with the exception of when cl is null,
-; results in an ACL2(p) checkpoint.  As such, it is reasonable to print the
+; results in an ACL2(p) key checkpoint.  As such, it is reasonable to print the
 ; checkpoint at the very beginning of this function.
 ; Acl2p-push-clause-printing contains code that handles the case where cl is
 ; nil.
@@ -3184,9 +3184,9 @@
 (defun waterfall-update-gag-state@par (cl-id clause proc signal ttree pspv state)
   (declare (ignore cl-id clause proc signal ttree pspv state))
 
-; Parallelism wart: consider causing an error when the user tries to enable gag
-; mode.  At the moment I'm unsure of the effects of returning two nils in this
-; case.
+; Parallelism blemish: consider causing an error when the user tries to enable
+; gag mode.  At the moment I'm unsure of the effects of returning two nils in
+; this case.
 
   (mv nil nil))
 
@@ -6652,10 +6652,14 @@
      (and (print-clause-id-okp cl-id)
           (with-output-lock
 
-; Parallelism wart: Kaufmann suggests that we need to skip printing clause-ids
-; that have already been printed.  Note that using the printing of clause-ids
-; to show that the prover is still making progress is no longer the default
-; setting (see :doc set-waterfall-printing).  Example:
+; Parallelism blemish: Kaufmann suggests that we need to skip printing
+; clause-ids that have already been printed.  Note that using the printing of
+; clause-ids to show that the prover is still making progress is no longer the
+; default setting (see :doc set-waterfall-printing).  This is a low-priority
+; blemish, because as of 2012-07, the main ACL2 users use the :very-limited
+; setting for waterfall-printing -- this setting only prints periods, not
+; clause-ids.  Example:
+
 ;   (set-waterfall-parallelism :pseudo-parallel)
 ;   (set-waterfall-printing :limited)
 ;   (thm (implies (equal x y) (equal u v)))
@@ -6671,11 +6675,7 @@
            (format t "At time ~,6f sec, starting: ~a~%"
                    (/ (- (get-internal-real-time)
                          *acl2p-starting-proof-time*)
-
-; Parallelism wart: call (get-internal-time-units) instead of hard-coding
-; 1000000.0.
-
-                      1000000.0)
+                      internal-time-units-per-second)
                    (string-for-tilde-@-clause-id-phrase cl-id)))))
     (:very-limited
      (with-output-lock
@@ -6702,7 +6702,7 @@
                  (format t "At time ~,6f sec, finished: ~a~%"
                          (/ (- (get-internal-real-time)
                                *acl2p-starting-proof-time*)
-                            1000000.0)
+                            internal-time-units-per-second)
                          (string-for-tilde-@-clause-id-phrase cl-id))))
                (t nil)))
          (t nil)))
@@ -8564,6 +8564,9 @@
 
 (defun tilde-@-assumnotes-phrase-lst (lst wrld)
 
+; Warning :If you change this function, consider also changing
+; tilde-@-assumnotes-phrase-lst-gag-mode.
+
 ; WARNING: Note that the phrase is encoded twelve times below, to put
 ; in the appropriate noise words and punctuation!
 
@@ -8580,7 +8583,7 @@
         (cond ((null (cdr lst))
                (cond ((and (consp (access assumnote (car lst) :rune))
                            (null (base-symbol (access assumnote (car lst) :rune))))
-                      " ~@0~%  by primitive type reasoning about~%  ~q2,~| and~|")
+                      " ~@0~%  by primitive type reasoning about~%  ~q2.~|")
                      ((eq (access assumnote (car lst) :rune) 'equal)
                       " ~@0~%  by the linearization of~%  ~q2.~|")
                      ((symbolp (access assumnote (car lst) :rune))
@@ -8618,6 +8621,55 @@
   (list "" "~@*" "~@*" "~@*"
         (tilde-@-assumnotes-phrase-lst assumnotes wrld)))
 
+(defun tilde-@-assumnotes-phrase-lst-gag-mode (lst acc)
+
+; Warning: If you change this function, consider also changing
+; tilde-@-assumnotes-phrase-lst.  See also that function definition.
+
+  (cond
+   ((null lst)
+    (cond ((null acc) acc)
+          ((null (cdr acc))
+           (list (msg "in~@0.~|" (car acc))))
+          (t (reverse (list* (msg "in~@0.~|" (car acc))
+                             (msg "in~@0, and " (cadr acc))
+                             (pairlis-x1 "in~@0, ~|"
+                                         (pairlis$ (pairlis-x1 #\0 (cddr acc))
+                                                   nil)))))))
+   (t (tilde-@-assumnotes-phrase-lst-gag-mode
+       (cdr lst)
+       (let* ((cl-id-phrase
+               (tilde-@-clause-id-phrase
+                (access assumnote (car lst) :cl-id)))
+              (x
+               (cond ((and (consp (access assumnote (car lst) :rune))
+                           (null (base-symbol (access assumnote (car lst)
+                                                      :rune))))
+                      (list " ~@0 by primitive type reasoning"
+                            (cons #\0 cl-id-phrase)))
+                     ((eq (access assumnote (car lst) :rune) 'equal)
+                      (list " ~@0 by linearization"
+                            (cons #\0 cl-id-phrase)))
+                     ((symbolp (access assumnote (car lst) :rune))
+                      (list " ~@0 by assuming the guard for ~x1"
+                            (cons #\0 cl-id-phrase)
+                            (cons #\1 (access assumnote (car lst) :rune))))
+                     (t
+                      (list " ~@0 by applying ~x1"
+                            (cons #\0 cl-id-phrase)
+                            (cons #\1 (access assumnote (car lst)
+                                              :rune)))))))
+         (cond ((member-equal x acc)
+                x)
+               (t (cons x acc))))))))
+
+(defun tilde-*-assumnotes-column-phrase-gag-mode (assumnotes)
+
+; We create a tilde-* phrase that will print a column of assumnotes.
+
+  (list "" "~@*" "~@*" "~@*"
+        (tilde-@-assumnotes-phrase-lst-gag-mode assumnotes nil)))
+
 (defun process-assumptions-msg1 (forcing-round n pairs state)
 
 ; N is either nil (meaning the length of pairs is 1) or n is the length of
@@ -8626,22 +8678,31 @@
   (cond
    ((null pairs) state)
    (t (pprogn
-       (fms "~@0, below, will focus on~%~q1,~|which was forced in~%~*2"
-            (list (cons #\0 (tilde-@-clause-id-phrase
-                             (make clause-id
-                                   :forcing-round (1+ forcing-round)
-                                   :pool-lst nil
-                                   :case-lst (if n
-                                                 (list n)
-                                                 nil)
-                                   :primes 0)))
-                  (cons #\1 (untranslate (car (last (cdr (car pairs))))
-                                         t (w state)))
-                  (cons #\2 (tilde-*-assumnotes-column-phrase
-                             (car (car pairs))
-                             (w state))))
-            (proofs-co state) state
-            (term-evisc-tuple nil state))
+       (let ((cl-id-phrase
+              (tilde-@-clause-id-phrase
+               (make clause-id
+                     :forcing-round (1+ forcing-round)
+                     :pool-lst nil
+                     :case-lst (if n (list n) nil)
+                     :primes 0))))
+         (cond
+          ((gag-mode)
+           (fms "~@0 was forced ~*1"
+                (list (cons #\0 cl-id-phrase)
+                      (cons #\1 (tilde-*-assumnotes-column-phrase-gag-mode
+                                 (car (car pairs)))))
+                (proofs-co state) state
+                (term-evisc-tuple nil state)))
+          (t
+           (fms "~@0, below, will focus on~%~q1,~|which was forced in~%~*2"
+                (list (cons #\0 cl-id-phrase)
+                      (cons #\1 (untranslate (car (last (cdr (car pairs))))
+                                             t (w state)))
+                      (cons #\2 (tilde-*-assumnotes-column-phrase
+                                 (car (car pairs))
+                                 (w state))))
+                (proofs-co state) state
+                (term-evisc-tuple nil state)))))
        (process-assumptions-msg1 forcing-round
                                  (if n (1- n) nil)
                                  (cdr pairs) state)))))
@@ -8683,11 +8744,10 @@
          (proofs-co state)
          state
          nil)
-        (cond ((gag-mode) state)
-              (t (process-assumptions-msg1 forcing-round
-                                           (if (= n 1) nil n)
-                                           pairs
-                                           state)))
+        (process-assumptions-msg1 forcing-round
+                                  (if (= n 1) nil n)
+                                  pairs
+                                  state)
         (fms "We now undertake Forcing Round ~x0.~%"
              (list (cons #\0 (1+ forcing-round)))
              (proofs-co state)
@@ -9281,16 +9341,34 @@
 
 (defun print-pstack-and-gag-state (state)
 
-; Parallelism blemish: don't print the pstack when waterfall parallelism is
-; enabled.  It ends up being long and, as far as Rager knows, unhelpful.
+; When waterfall parallelism is enabled, and the user has to interrupt a proof
+; twice before it quits, the prover will attempt to print the gag state and
+; pstack.  Based on observation by Rager, the pstack tends to be long and
+; irrelevant in this case.  So, we disable the printing of the pstack when
+; waterfall parallelism is enabled and waterfall-printing is something other
+; than :full.  We considered not involving the current value for
+; waterfall-printing, but using the :full setting is a strange thing to begin
+; with.  So, we make the decision that if a user goes to the effort to use the
+; :full waterfall-printing mode, that maybe they'd like to see the pstack after
+; all.
 
-  (prog2$
-   (cw
-    "Here is the current pstack [see :DOC pstack]:")
-   (mv-let (erp val state)
-           (pstack)
-           (declare (ignore erp val))
-           (print-gag-state state))))
+; The below #+acl2-par change in definition also results in not printing
+; gag-state under these conditions.  However, this is effectively a no-op,
+; because the parallel waterfall does not save anything to gag-state anyway.
+
+  (cond 
+   #+acl2-par
+   ((and (f-get-global 'waterfall-parallelism state)
+         (not (eql (f-get-global 'waterfall-printing state) :full)))
+    state)
+   (t
+    (prog2$
+     (cw
+      "Here is the current pstack [see :DOC pstack]:")
+     (mv-let (erp val state)
+             (pstack)
+             (declare (ignore erp val))
+             (print-gag-state state))))))
 
 (defun prove-loop0 (clauses pspv hints ens wrld ctx state)
 
@@ -9349,8 +9427,8 @@
   #-acl2-loop-only
   (setq *deep-gstack* nil) ; in case we never call initial-gstack
   #+(and hons (not acl2-loop-only))
-  (when (memoizedp-raw 'worse-than)
-    (clear-memoize-table 'worse-than))
+  (when (memoizedp-raw 'worse-than-builtin)
+    (clear-memoize-table 'worse-than-builtin))
   (prog2$ (clear-pstk)
           (pprogn
            (increment-timer 'other-time state)
@@ -9362,11 +9440,15 @@
            (mv-let (erp ttree state)
                    (bind-acl2-time-limit ; make *acl2-time-limit* be let-bound
                     (prove-loop0 clauses pspv hints ens wrld ctx state))
-                   (pprogn
-                    (increment-timer 'prove-time state)
-                    (cond
-                     (erp (mv erp nil state))
-                     (t (value ttree))))))))
+                   (progn$
+                    #+(and hons (not acl2-loop-only))
+                    (when (memoizedp-raw 'worse-than-builtin)
+                      (clear-memoize-table 'worse-than-builtin))
+                    (pprogn
+                     (increment-timer 'prove-time state)
+                     (cond
+                      (erp (mv erp nil state))
+                      (t (value ttree)))))))))
 
 (defun rw-cache-state (wrld)
   (let ((pair (assoc-eq t (table-alist 'rw-cache-state-table wrld))))
@@ -9576,9 +9658,9 @@
                         (prin1 term str)
                         (terpri str)
                         (force-output str))))
-    (prog2$
-     (prog2$ (initialize-brr-stack state)
-             (initialize-fc-wormhole-sites))
+    (progn$
+     (initialize-brr-stack state)
+     (initialize-fc-wormhole-sites)
      (er-let* ((ttree1 (prove-loop (list (list term))
                                    (change prove-spec-var pspv
                                            :user-supplied-term term

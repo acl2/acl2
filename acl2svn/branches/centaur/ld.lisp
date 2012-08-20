@@ -7240,7 +7240,7 @@
   of printing binary function call nests using macros
   (~l[add-binop]) has also been moved out of the ~ilc[acl2-defaults-table] as
   suggested by Eric and Rob, but this feature didn't work anyhow
-  (~pl[note-2-7-bug-fixes]).  Incidentally, the symbols ~ilc[binop-table],
+  (~pl[note-2-7-bug-fixes]).  Incidentally, the symbols ~c[binop-table],
   ~ilc[add-binop], and ~ilc[remove-binop] have all been added to the list
   ~c[*acl2-exports*] (~pl[acl2-user]), ~ilc[add-invisible-fns] and
   ~ilc[remove-invisible-fns] have been added to that list, and
@@ -8877,7 +8877,7 @@
   ~c[(DV 3)] (and ~c[3]) would dive to ~c[t3] even though the corresponding
   function call is ~c[(binary-append t1 (binary-append t2 t3))].  This is still
   the case, but now this behavior holds for any macro associated with a
-  function in ~ilc[binop-table] (~pl[add-binop]).  Moreover, users can now
+  function in ~c[binop-table] (~pl[add-binop]).  Moreover, users can now
   write customized diving functions; ~pl[dive-into-macros-table], and also see
   ~c[books/misc/rtl-untranslate.lisp] for example calls to
   ~ilc[add-dive-into-macro].  Of course, the old behavior can still be obtained
@@ -12962,7 +12962,7 @@
   Fixed a bug that was disallowing calls of ~ilc[with-output] in ~il[events]
   that were executing before calling ~ilc[certify-book].
 
-  Modified the functionality of ~ilc[binop-table] so other than binary function
+  Modified the functionality of ~c[binop-table] so other than binary function
   symbols are properly supported (hence with no action based on
   right-associated arguments).  ~l[add-binop].
 
@@ -18157,7 +18157,7 @@
   A new macro, ~ilc[spec-mv-let], supports speculative and parallel execution
   in the parallel version, courtesy of David Rager.
 
-  Among the enchancements for the HONS version (~pl[hons-and-memoization]) are
+  Among the enhancements for the HONS version (~pl[hons-and-memoization]) are
   the following.
   ~bq[]
   ~ilc[Memoize]d functions may now be traced (~pl[trace$]).  Thanks to Sol
@@ -18462,6 +18462,13 @@
 ; Added new severity option HARD?! for er, so that the guard of theory-fn can
 ; be t (avoiding the expense of doing the theory-namep check twice).
 
+; We now print notes to use :a! and see :DOC set-evisc-tuple when evaluating
+; :brr t.  Thanks to Robert Krug for suggesting this improvement.
+
+; Eliminated warnings at build time for CLISP due to two definitions of the
+; same function from both defproxy and encapsulate, by marking those
+; encapsulate forms (in boot-strap-pass-2.lisp) as #+acl2-loop-only.
+
   :doc
   ":Doc-Section release-notes
 
@@ -18642,8 +18649,10 @@
   Finally, the commentary printed within ~il[gag-mode] that is related to
   ~il[forcing-round]s is now less verbose.  Thanks to Dave Greve and David
   Rager for discussions leading to the change in the printing of induction
-  schemes under gag-mode, and thanks to Warren Hunt for an email that led us to
-  similar handling for printing of guard conjectures.
+  schemes under gag-mode; thanks to Warren Hunt for an email that led us to
+  similar handling for printing of guard conjectures; and thanks to Robert Krug
+  for a suggestion that led us to restore, in abbreviated form, important
+  information about the sources of forcing round goals.
 
   An error now occurs if ~ilc[ld] is called while loading a compiled book.
   ~l[calling-ld-in-bad-contexts].  Thanks to David Rager for reporting a
@@ -18738,6 +18747,20 @@
   A call of the ~ilc[theory] macro had previously returned ~c[nil] when applied
   to other than the name of name of a previously executed ~ilc[deftheory]
   event.  Now, a hard error occurs.
+
+  The ~il[table] ~c[binop-table] has been replaced by the table
+  ~ilc[untrans-table].  However, ~ilc[add-binop] and ~ilc[remove-binop]
+  continue to have the same effect as before.  ~l[add-macro-fn], which is a new
+  feature discussed below.
+
+  The function ~ilc[booleanp] is now defined using ~ilc[eq] instead of
+  ~ilc[equal], which may increase its efficiency.  Thanks to Jared Davis for
+  this change.
+
+  For pairs ~c[(key . val)] in the ~ilc[macro-aliases-table], there had been a
+  requirement that ~c[val] is a known function symbol.  Now, it only needs to
+  be a symbol.  (This change was made to support the new feature,
+  ~ilc[defun-inline], described elsewhere in these release notes.)
 
   ~st[NEW FEATURES]
 
@@ -18898,6 +18921,20 @@
   proof-checker command.  Finally, a corresponding new proof-checker command,
   ~c[apply-linear] (~c[al]), is an analogue of the ~il[proof-checker]
   ~c[rewrite] (~c[r]) command, but for ~il[linear] rules.
+
+  The macros ~ilc[add-macro-fn] and ~ilc[remove-macro-fn] replace macros
+  ~ilc[add-binop] and ~ilc[remove-binop], respectively, though the latter
+  continue to work.  The new macros allow you to decide whether or not to
+  display calls of binary macros as flat calls for right-associated arguments,
+  e.g., ~c[(append x y z)] rather than ~c[(append x (append y z))].
+  ~l[add-macro-fn].
+
+  It is now possible to request that the host Lisp compiler inline calls of
+  specified functions, or to direct that the host Lisp compiler not inline such
+  calls.  ~l[defun-inline] and ~pl[defun-notinline].  We thank Jared Davis for
+  several extensive, relevant conversations.  We also thank others who have
+  engaged in discussions with us about inlining for ACL2; besides Jared Davis,
+  we recall such conversations with Rob Sumners, Dave Greve, and Shilpi Goel.
 
   ~st[HEURISTIC IMPROVEMENTS]
 
@@ -19067,10 +19104,10 @@
   :hints ((\"Goal\" :expand (:lambdas (foo x)))))
   ~ev[]
 
-  Certain ``program-only'' function calls will now cause hard Lisp
-  errors.  (The rather obscure reason for this fix is to support logical
-  modeling of the ACL2 evaluator.  A relevant technical discussion may be found
-  in source function ~c[oneify-cltl-code], at the binding of variable
+  Certain ``program-only'' function calls will now cause hard Lisp errors.
+  (The rather obscure reason for this fix is to support logical modeling of the
+  ACL2 evaluator.  A relevant technical discussion may be found in source
+  function ~c[oneify-cltl-code], at the binding of variable
   ~c[fail_program-only-safe].)
 
   There was an unnecessary restriction that ~ilc[FLET]-bound functions must
@@ -19194,6 +19231,26 @@
   the last hypothesis.  Thanks to Sol Swords for reporting this bug and
   providing a fix.
 
+  The syntax ~c[#!] (~pl[sharp-bang-reader]) was broken after a skipped
+  readtime conditional.  For example, the following input line caused an
+  error.
+  ~bv[]
+  #+skip #!acl2(quote 3)
+  ~ev[]
+  This bug has been fixed.
+
+  Fixed a bug in the ~il[break-rewrite] utility, which was evidenced by error
+  messages that could occur when dealing with free variables.  An example of
+  such an error message is the following; we thank Robert Krug for sending us
+  an example that produced this error and enabled us to produce a fix.
+  ~bv[]
+  HARD ACL2 ERROR in TILDE-@-FAILURE-REASON-PHRASE1:  Unrecognized failure
+  reason, ((MEM-ARRAY . X86) (ADDR QUOTE 9)).
+  ~ev[]
+
+  We fixed an obscure bug that we believe could interfere with ~ilc[defproxy]
+  because of an incorrect ~c[(declaim (notinline <function>))] form.
+
   ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]
 
   Improvements have been made related to the reading of characters.  In
@@ -19236,6 +19293,10 @@
   The `make' variable ~c[BOOKS] can now be defined above the line that includes
   Makefile-generic.  (For relevant background, ~pl[book-makefiles].)
 
+  (SBCL only) ACL2 images built on SBCL now have an option,
+  ~c[--dynamic-space-size 2000], that can avoid space problems that could
+  previously have caused the session to die.
+
   ~st[EMACS SUPPORT]
 
   ~st[EXPERIMENTAL VERSIONS]
@@ -19248,19 +19309,18 @@
   (f) ; had caused raw Lisp error, before the fix
   ~ev[]
 
-  Among the enchancements for the parallel version, ACL2(p) (~pl[parallelism]),
-  are the following.~bq[]
+  Among the enhancements for the parallel version, ACL2(p) (~pl[parallelism]),
+  are the following.  We thank David Rager for his work in developing ACL2(p)
+  and these improvements in particular.~bq[]
 
   The macro ~c[set-parallel-evaluation] has been renamed
   ~ilc[set-parallel-execution].
 
-  The macros ~ilc[set-waterfall-parallelism] and ~ilc[set-waterfall-printing]
-  are no longer ~il[events], so may not be placed at the top level of
-  ~il[books].  However, it is easy to create events that have these effects;
-  ~pl[set-waterfall-parallelism] and ~pl[set-waterfall-printing].  These
-  changes were made so that ~c[:]~ilc[ubt] and similar commands do not change
-  the settings for waterfall-parallelism or waterfall-printing.  Thanks to
-  David Rager for contributing an initial implementation of these changes.
+  Calls of the macro ~ilc[set-waterfall-printing] are no longer ~il[events], so
+  may not be placed at the top level of ~il[books].  However, it is easy to
+  create events that have these effects; ~pl[set-waterfall-printing].  Note
+  that now, ~c[:]~ilc[ubt] and similar commands do not change the settings for
+  either waterfall-parallelism or waterfall-printing.
 
   The implementation of ~ilc[deflock] has been improved.  Now, the macro it
   defines can provide a lock when invoked inside a ~il[guard]-verified or
@@ -19270,10 +19330,12 @@
   The underlying implementation for waterfall parallelism
   (~pl[set-waterfall-parallelism]) has been improved.  As a result, even the
   largest proofs in the regression suite can be run efficiently in
-  ~c[:resource-based] waterfall parallelism mode.  Additionally,
-  ~c[:resource-based] is now the recommended mode for waterfall parallelism.
+  ~c[:resource-based] waterfall parallelism mode.  Among these improvements is
+  one that can prevent machines from rebooting because operating system limits
+  have been exceeded; thanks to Robert Krug for bringing this issue to our
+  attention.
 
-  There is also a new flag for configuring the way waterfall parallelims
+  There is also a new flag for configuring the way waterfall parallelism
   behaves once underlying system resource limits are reached.  This flag is
   most relevant to ~c[:full] waterfall parallelism.
   ~pl[set-total-parallelism-work-limit] for more information.
@@ -19292,9 +19354,18 @@
   called ``ACL2(hp)''), the functions that are automatically memoized by the
   hons extension are now automatically unmemoized and memoized when the user
   toggles waterfall parallelism on and off, respectively.
+
+  Calling ~ilc[set-waterfall-parallelism] with a flag of ~c[t] now results in
+  the same settings as if it were called with a flag of ~c[:resource-based],
+  which is now the recommended mode for waterfall parallelism.  Thanks to
+  Shilpi Goel for requesting this feature.
+
+  The prover now aborts in a timely way in response to interrupts issued during
+  a proof with waterfall parallelism enabled.  (This had often not been the
+  case.)  Thanks to Shilpi Goel for requesting this improvement.
   ~eq[]
 
-  Among the enchancements for the HONS extension (~pl[hons-and-memoization])
+  Among the enhancements for the HONS extension (~pl[hons-and-memoization])
   are the following.~bq[]
 
   The compact-print code has been replaced by new serialization routines
@@ -19331,8 +19402,12 @@
   has been fixed.  Thanks to David Rager for pointing out the problem by
   sending an example.
 
-  An error now occurs when attempting to build the HONS version of ACL2 on a
-  32-bit platform.  We have seen regression failures on such a (CCL) platform.
+  We now support ACL2(h) built not only on 64-bit CCL but also on all supported
+  host Ansi Common Lisps (i.e., all supported host Lisps except GCL).  Thanks
+  to Jared Davis for doing much of the work to make this improvement.  Note
+  that performance will likely be best for 64-bit CCL; for some Lisps,
+  performance may be much worse, probably depending in part on the underlying
+  implementation of hash tables.
   ~eq[]
 
   ~/~/")
@@ -21333,7 +21408,11 @@ written.  Books are contributed and maintained by the ACL2 community
 (see <code><A
 HREF=\"http://acl2-books.googlecode.com/\">http://acl2-books.googlecode.com/</A></code>)
 and their authors are generally noted in each book or its
-<code>README</code> file.
+<code>README</code> file.  There is a <A
+HREF=\"http://fv.centtech.com/acl2/5.0/doc/\">combined manual</A> that
+incorporates not only <A HREF=\"#User's-Manual\">The User's Manual</A>
+for ACL2 but also documentation for many books; thanks to Jared Davis
+for building this view of the documentation.
 
 <p>
 
@@ -21424,15 +21503,15 @@ HREF=\"~s1\">Major Topics</A> (here, or above).  Better yet, view a local copy,
 which you can find under your local <CODE>acl2-sources/</CODE> diretory at
 <CODE>doc/HTML/acl2-doc.html</CODE>.</li>
 
-<li>For web browsing using a version of our documentation generated by Jared
-Davis's xdoc utility, visit <CODE><A
-HREF=\"http://www.cs.utexas.edu/users/moore/acl2/~s3/distrib/xdoc/manual/preview.html\">xdoc/manual/preview.html</A></CODE>.
-Better yet, view a local copy of this file found under your
-<CODE>acl2-sources/books/</CODE> directory, if you have certified your distributed
-books.  If you use the experimental HONS version of ACL2 then you can build a
-more complete manual in <CODE>books/centaur/manual/preview.html</A> by running:
+<li>For web browsing, you can use <CODE><A
+HREF=\http://fv.centtech.com/acl2/5.0/doc/\">a version of our documentation
+generated by Jared Davis's xdoc utility</CODE>.  Better yet, view a local copy
+of this file found under your <CODE>acl2-sources/books/</CODE> directory, if
+you have certified your distributed books.  If you use the experimental HONS
+version of ACL2 then you can build a more complete manual in
+<CODE>books/xdoc-impl/manual/preview.html</A></CODE> by running:
 <pre>
-  make regression-hons-fresh ACL2=<path to your saved_acl2>
+  make regression-hons-fresh ACL2=&lt;path to your saved_acl2&gt;
 </pre>
 </li>
 

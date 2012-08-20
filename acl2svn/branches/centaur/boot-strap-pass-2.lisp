@@ -84,6 +84,9 @@
 ;;; Attachment: too-many-ifs-post-rewrite and too-many-ifs-pre-rewrite
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+#+acl2-loop-only
+; The above readtime conditional avoids a CLISP warning, and lets the defproxy
+; for print-clause-id-okp provide the raw Lisp definition.
 (encapsulate
  ((too-many-ifs-post-rewrite (args val) t
                              :guard (and (pseudo-term-listp args)
@@ -482,6 +485,9 @@
 
 ; Complete too-many-ifs-pre-rewrite.
 
+#+acl2-loop-only
+; The above readtime conditional avoids a CLISP warning, and lets the defproxy
+; for print-clause-id-okp provide the raw Lisp definition.
 (encapsulate
   ((too-many-ifs-pre-rewrite (args counts) t
                              :guard
@@ -615,6 +621,9 @@
                                        (fn-count-1 nil (cadr lit) 0
                                                    0)))))))))
 
+#+acl2-loop-only
+; The above readtime conditional avoids a CLISP warning, and lets the defproxy
+; for print-clause-id-okp provide the raw Lisp definition.
 (encapsulate
  ((ancestors-check (lit ancestors tokens) (mv t t)
                    :guard (and (pseudo-termp lit)
@@ -704,6 +713,9 @@
 
 (verify-termination-boot-strap clause-id-p) ; and guards
 
+#+acl2-loop-only
+; The above readtime conditional avoids a CLISP warning, and lets the defproxy
+; for print-clause-id-okp provide the raw Lisp definition.
 (encapsulate
  (((print-clause-id-okp *) => * :formals (cl-id) :guard (clause-id-p cl-id)))
  (local (defun print-clause-id-okp (x)
@@ -717,6 +729,9 @@
 ;;; Attachments: oncep-tp
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+#+acl2-loop-only
+; The above readtime conditional avoids a CLISP warning, and lets the defproxy
+; for print-clause-id-okp provide the raw Lisp definition.
 (encapsulate
  (((oncep-tp * *) => *
    :formals (rune wrld)

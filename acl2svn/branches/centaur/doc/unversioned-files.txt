@@ -27,6 +27,7 @@ TEX-old
 *.dx64fsl
 *.fas
 *.fasl
+*.sse2f
 *.h
 *.lbin
 *.lib

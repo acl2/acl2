@@ -1508,6 +1508,11 @@
                      '(let ((temp (f-get-global 'guard-checking-on
                                                 *the-live-state*)))
                         (cond ((or (eq temp :none) (eq temp nil))
+
+; Calls of a stobj primitive that takes its stobj as an argument are always
+; guard-checked.  If that changes, consider also changing
+; ev-fncall-rec-logical.
+
                                t)
                               (t temp))))
                     (t '(f-get-global 'guard-checking-on *the-live-state*))))
@@ -4912,13 +4917,16 @@
 ; Evalp is only relevant when (hcomp-build),in which case it is passed to
 ; install-for-add-trip-hcomp-build.
 
+; We start with declaiming of inline and notinline.
+
   (loop for tail on defs
         do
         (let* ((def (car tail))
                (oneify-p (eq (car def) 'oneify-cltl-code))
-               (def0 (if oneify-p (caddr def) def)))
-          (when (equal (caddr def0)
-                       '(DECLARE (XARGS :NON-EXECUTABLE :PROGRAM)))
+               (def0 (if oneify-p (caddr def) (cdr def)))
+               (name (symbol-name (car def0))))
+          (cond ((equal (caddr def0)
+                        '(DECLARE (XARGS :NON-EXECUTABLE :PROGRAM)))
 
 ; We allow redefinition for a function introduced by :defproxy, regardless of
 ; the value of state global 'ld-redefinition-action.  If the original
@@ -4929,10 +4937,26 @@
 ; If we change or remove this proclaim form, then revisit the comment about
 ; inlining in redefinition-renewal-mode.
 
-            (proclaim (list 'notinline
-                            (if oneify-p
-                                (*1*-symbol (car def0))
-                              (car def)))))
+                 (proclaim (list 'notinline
+                                 (if oneify-p
+                                     (*1*-symbol (car def0))
+                                   (car def0)))))
+                (oneify-p nil)
+                ((terminal-substringp *inline-suffix*
+                                      name
+                                      *inline-suffix-len-minus-1*
+                                      (1- (length name)))
+                 (proclaim (list 'inline (car def0))))
+                ((terminal-substringp *notinline-suffix*
+                                      name
+                                      *notinline-suffix-len-minus-1*
+                                      (1- (length name)))
+                 (proclaim (list 'notinline (car def0)))))))
+  (loop for tail on defs
+        do
+        (let* ((def (car tail))
+               (oneify-p (eq (car def) 'oneify-cltl-code))
+               (def0 (if oneify-p (caddr def) (cdr def))))
           (cond ((and (eq *inside-include-book-fn* t)
                       (if oneify-p
                           (install-for-add-trip-include-book
@@ -6524,6 +6548,8 @@
             defmacro defabbrev defun@par)
           (setf (gethash (cadr form) ht)
                 form))
+         (save-def
+          (note-fns-in-form (cadr form) ht))
          (defun-for-state
            (setf (gethash (defun-for-state-name (cadr form)) ht)
                  form))
@@ -6552,9 +6578,9 @@
          (defrec ; pick just one function introduced
            (setf (gethash (record-changer-function-name (cadr form)) ht)
                  form))
-         ((add-binop
-           add-custom-keyword-hint
+         ((add-custom-keyword-hint
            add-macro-alias
+           add-macro-fn
            declaim
            def-basic-type-sets
            defattach

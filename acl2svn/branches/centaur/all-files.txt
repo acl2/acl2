@@ -594,6 +594,7 @@ integer-length.lisp
 part-select.lisp
 rotate.lisp
 sbitsets.lisp
+sign-extend.lisp
 top.lisp
 
 books/centaur/defrstobj:
@@ -737,6 +738,7 @@ symbolic-arithmetic.lisp
 books/centaur/misc:
 alist-defs.lisp
 alist-equiv.lisp
+alist-witness.lisp
 ap.lisp
 arith-equivs.lisp
 date.acl2
@@ -787,7 +789,7 @@ vecs-ints.lisp
 witness-cp.acl2
 witness-cp.lisp
 
-centaur/tutorial:
+books/centaur/tutorial:
 acl2-customization.lsp
 alu16-book.lisp
 alu16.lsp
@@ -2165,7 +2167,9 @@ books/ihs:
 @logops.lisp
 Makefile
 README
+basic-definitions.lisp
 ihs-definitions.lisp
+ihs-doc-topic.lisp
 ihs-init.acl2
 ihs-init.lisp
 ihs-lemmas.lisp
@@ -2280,6 +2284,7 @@ defproxy-test.acl2
 defproxy-test.lisp
 defp.lisp
 defpun.lisp
+defun-plus.lisp
 dft-ex.acl2
 dft-ex.lisp
 dft.lisp
@@ -2476,6 +2481,7 @@ proofs
 spec-mv-let.lisp
 stress-tests.lisp
 syntax-tests.lisp
+without-waterfall-parallelism.lisp
 
 books/parallel/proofs:
 Makefile
@@ -4146,14 +4152,15 @@ books/tools:
 Makefile
 Readme.lsp
 bstar.lisp
+case-splitting-rules.lisp
 cws.lisp
 def-functional-instance.lisp
 defconsts.lisp
 defevaluator-fast.lisp
-defredundant.lisp
 define-keyed-function.lisp
 defined-const.lisp
 defmacfun.lisp
+defredundant.lisp
 defsum.lisp
 deftuple.lisp
 do-not.lisp

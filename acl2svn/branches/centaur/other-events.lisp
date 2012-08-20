@@ -10895,6 +10895,10 @@
            (symbol-name (cadr mark))
          mark)
       ,(if bad-objectp
+
+; Developer debug:
+;          `(msg "~|Bad object: ~X01" ,bad-object nil)
+
            `(msg "~|Bad object: ~x0" ,bad-object)
          "")))
 
@@ -11836,7 +11840,14 @@
                              ctx
                              'chk-raise-portcullis{pcert-info-3}
                              file1 file2
-                             (list :chk-sum1 chk-sum1 :chk-sum2 chk-sum2)))
+                             (list :chk-sum1 chk-sum1 :chk-sum2 chk-sum2
+
+; Developer debug:
+;                                  :portcullis-cmds portcullis-cmds
+;                                  :pre-alist pre-alist
+;                                  :post-alist3 post-alist3
+;                                  :expansion-alist expansion-alist
+                                   )))
                            ((and (not light-chkp)
                                  (not (include-book-alist-subsetp
                                        pre-alist
@@ -11870,8 +11881,8 @@
                                  (include-book-er1 file1 file2
                                                    (cons
                                                     "After evaluating the ~
-                                               portcullis commands for the ~
-                                               book ~x0:~|~*3."
+                                                     portcullis commands for ~
+                                                     the book ~x0:~|~*3."
                                                     (list (cons #\3 msgs)))
                                                    warning-summary ctx state))))))
                            (t (value (make cert-obj
@@ -13762,8 +13773,23 @@
                            modified since it was last certified (though it ~
                            could be the portcullis commands or the make-event ~
                            expansions that have changed)."
+
+; Developer debug:
+;                          ~|~%Developer note: ~
+;                          the latter was computed as:~|~%~X56"
                           (list (cons #\3 (cddddr (car post-alist)))
-                                (cons #\4 ev-lst-chk-sum)))
+                                (cons #\4 ev-lst-chk-sum)
+
+; Developer debug:
+;                               (cons #\5
+;                                     `(check-sum-cert
+;                                       ',(access cert-obj cert-obj
+;                                                 :cmds)
+;                                       ',(access cert-obj cert-obj
+;                                                 :expansion-alist)
+;                                       ',ev-lst))
+;                               (cons #\6 nil)
+                                ))
                          :uncertified-okp
                          suspect-book-action-alist
                          ctx state))
@@ -14826,6 +14852,7 @@
                (hons-union-ordered-string-lists x (cdr y))))))
 
 #+(and hons (not acl2-loop-only))
+(save-def
 (defun expansion-alist-pkg-names-memoize (x)
   (cond ((consp x)
          (hons-union-ordered-string-lists
@@ -14834,6 +14861,7 @@
         ((and x (symbolp x))
          (hons (symbol-package-name x) nil))
         (t nil)))
+)
 
 (defun expansion-alist-pkg-names (x base-kpa)
 
@@ -15563,7 +15591,8 @@
                      occurrences of :PCERT-INFO at the top level of file ~x0, ~
                      at positions ~x1 and ~x2."
                     pcert1-file (+ n 2) n)))))
-          (t (value post-alist)))))))))))
+          (t (pprogn (close-input-channel chan state)
+                     (value post-alist))))))))))))
 
 (defun post-alist-from-pcert1 (pcert1-file msg ctx state)
   (mv-let
@@ -15599,6 +15628,12 @@
                         full-book-name post-alist)))))
 
 (defun certify-book-finish-complete (full-book-name ctx state)
+
+; Wart: Perhaps we should convert compiled-file and expansion-file to OS-style
+; pathnames in some places below, as for some other files.  But we discovered
+; this issue just before the Version_5.0 release, so we prefer not to do such a
+; thing at this point.
+
   (let ((pcert0-file
          (convert-book-name-to-cert-name full-book-name :create-pcert))
         (pcert1-file
@@ -15606,7 +15641,11 @@
         (cert-file
          (convert-book-name-to-cert-name full-book-name t))
         (compiled-file
-         (convert-book-name-to-compiled-name full-book-name state)))
+         (convert-book-name-to-compiled-name full-book-name state))
+        (expansion-file
+         (expansion-filename full-book-name
+                             nil ; don't convert to OS, since we didn't above
+                             state)))
     (er-let* ((post-alist
                (certificate-post-alist pcert1-file cert-file full-book-name ctx
                                        state))
@@ -15639,6 +15678,7 @@
            (er-progn
             (touch? cert-file pcert0-file ctx state)
             (touch? compiled-file pcert0-file ctx state)
+            (touch? expansion-file pcert0-file ctx state)
             (value cert-file))))))))
 
 (defun expansion-alist-conflict (acl2x-expansion-alist
@@ -21633,7 +21673,7 @@
 
 ; Informally, we wish to relate two kinds of evaluation, one using :LOGIC
 ; primitives and one using corresponding :EXEC primitives, in corresponding
-; environments where each abstract stobj is bound to an object satisfiying its
+; environments where each abstract stobj is bound to an object satisfying its
 ; :LOGIC recognizer in the first environment and its :EXEC recognizer in the
 ; second.  Such evaluation will enforce guards before making calls of stobj
 ; primitives at the :LOGIC level and (as we will see, by the :GUARD-THM
@@ -28073,10 +28113,13 @@
           (cond (show-more
                  (pprogn
                   (cond (pl-p state)
-                        (t (fms0 "  -- IF REWRITE is called with a third ~
-                                  argument of t: --")))
+                        (t (fms0 "  -- IF ~#c~[REWRITE~/APPLY-LINEAR~]: is ~
+                                  called with a third argument of t: --"
+                                 (list (cons #\c (if (eq caller 'show-rewrites)
+                                                     0 1))))))
                   (fms fmt-string
-                       (list (cons #\3 (untrans0
+                       (list (cons #\c (if (eq caller 'show-rewrites) 0 1))
+                             (cons #\3 (untrans0
                                         (sublis-var unify-subst-2 rhs)
                                         term-id-iff abbreviations))
                              (cons #\s (if pl-p 1 0))
