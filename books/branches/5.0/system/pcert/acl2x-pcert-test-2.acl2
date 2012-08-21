@@ -1,0 +1,1 @@
+(certify-book "acl2x-pcert-test-2" 0 t :acl2x t)

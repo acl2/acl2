@@ -1,0 +1,366 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; arithmetic-axioms.lisp
+;;
+;;
+;; This file contains the axioms and theorems about arithmetic
+;; contained in axioms.lisp (the source file).  It is not used
+;; in the library, and is included as referance material only.
+;; A user can look at this file in order to see what ACL2
+;; ``knows'' about arithmetic.  All other arithmetic facts
+;; must be built upon what is contained here.
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Many of the axioms with :rule-classes nil are known by
+;; type-set.
+
+
+(defaxiom closure
+  (and (acl2-numberp (+ x y))
+       (acl2-numberp (* x y))
+       (acl2-numberp (- x))
+       (acl2-numberp (/ x)))
+  :rule-classes nil)
+
+
+(defaxiom Associativity-of-+
+  (equal (+ (+ x y) z) (+ x (+ y z))))
+
+(defaxiom Commutativity-of-+
+  (equal (+ x y) (+ y x)))
+
+(defaxiom Unicity-of-0
+  (equal (+ 0 x)
+         (fix x)))
+
+(defaxiom Inverse-of-+
+  (equal (+ x (- x)) 0))
+
+(defthm rationalp-+
+  (implies (and (rationalp x)
+                (rationalp y))
+           (rationalp (+ x y))))
+
+(defaxiom completion-of-+
+  (equal (+ x y)
+         (if (acl2-numberp x)
+             (if (acl2-numberp y)
+                 (+ x y)
+               x)
+           (if (acl2-numberp y)
+               y
+             0)))
+  :rule-classes nil)
+
+(defthm default-+-1
+  (implies (not (acl2-numberp x))
+           (equal (+ x y) (fix y))))
+
+(defthm default-+-2
+  (implies (not (acl2-numberp y))
+           (equal (+ x y) (fix x))))
+
+(defthm rationalp-unary--
+  (implies (rationalp x)
+           (rationalp (- x))))
+
+(defaxiom completion-of-unary-minus
+  (equal (- x)
+         (if (acl2-numberp x)
+             (- x)
+           0))
+  :rule-classes nil)
+
+(defthm default-unary-minus
+  (implies (not (acl2-numberp x))
+           (equal (- x) 0)))
+
+
+(defaxiom Associativity-of-*
+  (equal (* (* x y) z) (* x (* y z))))
+
+(defaxiom Commutativity-of-*
+  (equal (* x y) (* y x)))
+
+(defaxiom Unicity-of-1
+  (equal (* 1 x)
+         (fix x)))
+
+(defaxiom Inverse-of-*
+  (implies (and (acl2-numberp x)
+                (not (equal x 0)))
+           (equal (* x (/ x)) 1)))
+
+(defthm rationalp-*
+  (implies (and (rationalp x)
+                (rationalp y))
+           (rationalp (* x y))))
+
+(defaxiom completion-of-*
+  (equal (* x y)
+         (if (acl2-numberp x)
+             (if (acl2-numberp y)
+                 (* x y)
+               0)
+           0))
+  :rule-classes nil)
+
+(defthm default-*-1
+  (implies (not (acl2-numberp x))
+           (equal (* x y) 0)))
+
+(defthm default-*-2
+  (implies (not (acl2-numberp y))
+           (equal (* x y) 0)))
+
+(defthm rationalp-unary-/
+  (implies (rationalp x)
+           (rationalp (/ x))))
+
+(defaxiom completion-of-unary-/
+  (equal (/ x)
+         (if (and (acl2-numberp x)
+                  (not (equal x 0)))
+             (/ x)
+           0))
+  :rule-classes nil)
+
+(defthm default-unary-/
+  (implies (or (not (acl2-numberp x))
+               (equal x 0))
+           (equal (/ x) 0)))
+
+
+(defaxiom Distributivity
+  (equal (* x (+ y z))
+         (+ (* x y) (* x z))))
+
+
+(defaxiom Rational-implies1
+  (implies (rationalp x)
+           (and (integerp (denominator x))
+                (integerp (numerator x))
+                (< 0 (denominator x))))
+  :rule-classes nil)
+
+(defaxiom Rational-implies2
+  (implies (rationalp x)
+           (equal (* (/ (denominator x)) (numerator x)) x)))
+
+(defaxiom Lowest-Terms
+  (implies (and (integerp n)
+                (rationalp x)
+                (integerp r)
+                (integerp q)
+                (< 0 n)
+                (equal (numerator x) (* n r))
+                (equal (denominator x) (* n q)))
+           (equal n 1))
+  :rule-classes nil)
+
+(defaxiom completion-of-denominator
+  (equal (denominator x)
+         (if (rationalp x)
+             (denominator x)
+           1))
+  :rule-classes nil)
+
+(defthm default-denominator
+  (implies (not (rationalp x))
+           (equal (denominator x)
+                  1)))
+
+(defaxiom completion-of-numerator
+  (equal (numerator x)
+         (if (rationalp x)
+             (numerator x)
+           0))
+  :rule-classes nil)
+
+(defthm default-numerator
+  (implies (not (rationalp x))
+           (equal (numerator x)
+                  0)))
+
+
+(defaxiom <-on-others
+  (equal (< x y)
+         (< (+ x (- y)) 0))
+  :rule-classes nil)
+
+(defaxiom Zero
+  (not (< 0 0))
+  :rule-classes nil)
+
+(defaxiom Trichotomy
+  (and
+   (implies (acl2-numberp x)
+            (or (< 0 x)
+                (equal x 0)
+                (< 0 (- x))))
+   (or (not (< 0 x))
+       (not (< 0 (- x)))))
+  :rule-classes nil)
+
+(defaxiom Positive
+  (and (implies (and (< 0 x) (< 0 y))
+                (< 0 (+ x y)))
+       (implies (and (rationalp x)
+                     (rationalp y)
+                     (< 0 x)
+                     (< 0 y))
+                (< 0 (* x y))))
+  :rule-classes nil)
+
+(defaxiom nonnegative-product
+  (implies (rationalp x)
+           (and (rationalp (* x x))
+                (<= 0 (* x x))))
+  :rule-classes ((:type-prescription
+                  :typed-term (* x x))))
+
+(defaxiom completion-of-<
+  (equal (< x y)
+         (if (and (rationalp x)
+                  (rationalp y))
+             (< x y)
+           (let ((x1 (if (acl2-numberp x) x 0))
+                 (y1 (if (acl2-numberp y) y 0)))
+             (or (< (realpart x1) (realpart y1))
+                 (and (equal (realpart x1) (realpart y1))
+                      (< (imagpart x1) (imagpart y1)))))))
+  :rule-classes nil)
+
+(defthm default-<-1
+  (implies (not (acl2-numberp x))
+           (equal (< x y)
+                  (< 0 y))))
+
+(defthm default-<-2
+  (implies (not (acl2-numberp y))
+           (equal (< x y)
+                  (< x 0))))
+
+
+(defaxiom complex-implies1
+  (and (rationalp (realpart x))
+       (rationalp (imagpart x)))
+  :rule-classes nil)
+
+(defaxiom complex-definition
+  (implies (and (rationalp x)
+                (rationalp y))
+           (equal (complex x y)
+                  (+ x (* #c(0 1) y))))
+  :rule-classes nil)
+
+(defaxiom complex-rationalp-has-nonzero-imagpart
+  (implies (complex-rationalp x)
+           (not (equal 0 (imagpart x))))
+  :rule-classes nil)
+
+(defaxiom realpart-imagpart-elim
+  (implies (acl2-numberp x)
+           (equal (complex (realpart x) (imagpart x)) x))
+  :rule-classes (:rewrite :elim))
+
+(defaxiom realpart-complex
+  (implies (and (rationalp x)
+                (rationalp y))
+           (equal (realpart (complex x y))
+                  x)))
+
+(defaxiom imagpart-complex
+  (implies (and (rationalp x)
+                (rationalp y))
+           (equal (imagpart (complex x y))
+                  y)))
+
+(defthm complex-equal
+  (implies (and (rationalp x1)
+                (rationalp y1)
+                (rationalp x2)
+                (rationalp y2))
+           (equal (equal (complex x1 y1) (complex x2 y2))
+                  (and (equal x1 x2)
+                       (equal y1 y2)))))
+
+(defaxiom completion-of-complex
+  (equal (complex x y)
+         (complex (if (rationalp x) x 0)
+                  (if (rationalp y) y 0)))
+  :rule-classes nil)
+
+(defthm default-complex-1
+  (implies (not (rationalp x))
+           (equal (complex x y)
+                  (complex 0 y))))
+
+(defthm default-complex-2
+  (implies (not (rationalp y))
+           (equal (complex x y)
+                  (if (rationalp x) x 0))))
+
+(defthm complex-0
+  (equal (complex x 0)
+         (rfix x)))
+
+(defaxiom completion-of-imagpart
+  (equal (imagpart x)
+         (if (acl2-numberp x)
+             (imagpart x)
+           0))
+  :rule-classes nil)
+
+(defthm default-imagpart
+  (implies (not (acl2-numberp x))
+           (equal (imagpart x)
+                  0)))
+
+(defaxiom completion-of-realpart
+  (equal (realpart x)
+         (if (acl2-numberp x)
+             (realpart x)
+           0))
+  :rule-classes nil)
+
+(defthm default-realpart
+  (implies (not (acl2-numberp x))
+           (equal (realpart x)
+                  0)))
+
+
+(defaxiom integer-implies-rational
+  (implies (integerp x) (rationalp x))
+  :rule-classes nil)
+
+(defaxiom Integer-0
+  (integerp 0)
+  :rule-classes nil)
+
+(defaxiom Integer-1
+  (integerp 1)
+  :rule-classes nil)
+
+(defaxiom Integer-step
+  (implies (integerp x)
+           (and (integerp (+ x 1))
+                (integerp (+ x -1))))
+  :rule-classes nil)
+
+(defthm expt-type-prescription-non-zero-base
+  (implies (and (acl2-numberp r)
+                (not (equal r 0)))
+           (not (equal (expt r i) 0)))
+  :rule-classes :type-prescription)
+
+(defthm expt-type-prescription-non-zero-base-rationalp-case
+  (implies (and (rationalp r)
+                (not (equal r 0)))
+           (and (rationalp (expt r i))
+                (not (equal (expt r i) 0))))
+  :rule-classes :type-prescription)
+
+(defthm rationalp-implies-acl2-numberp
+  (implies (rationalp x) (acl2-numberp x)))

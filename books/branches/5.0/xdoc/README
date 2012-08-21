@@ -1,0 +1,23 @@
+
+                      XDOC/ DIRECTORY README
+
+The files that make up the XDOC system are split across two directories:
+
+    xdoc/              -- interfacing macros for documentation commands
+    xdoc-impl/         -- actual implementation of documentation commands
+
+Splitting up the files this way is an unfortunate hack that is necessary to
+deal with the limitations of the ACL2 build system.  In particular, ACL2's
+books/Makefile can't cope with a situation such as
+
+    foo/A depends on bar/B
+    bar/B depends on foo/C
+
+In our case, the xdoc implementation uses books from other directories like
+misc, tools, and str.  But we want to be able to document books in these
+directories with xdoc!
+
+Fortunately, very little is needed to implement the defxdoc command.  So, my
+basic approach is to make the interface available in the xdoc/ directory, which
+has no dependencies.  Then, books in directories like misc can just depend on
+xdoc, and xdoc-impl can depend on them.

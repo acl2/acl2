@@ -1,0 +1,56 @@
+******************************************************************************
+
+                       ACL2-MATHEMATICA LINK 
+
+		    TIMA - VDS, Grenoble, France
+
+       Al Sammane Ghiath, Borrione Dominique, Ostier Pierre
+
+                    Schmaltz Julien and Toma Diana
+
+*****************************************************************************
+
+acl2link is an executable that links Mathematica and ACL2 through a pipe. 
+
+-----------------------------------------------------------
+INSTALL
+
+To install the link, just execute:
+
+
+In[1]:= Install["acl2link"]
+
+
+in Mathematica. You will get:
+
+
+Out[1]= LinkObject[./acl2link, 1, 1]
+
+In[2]:= 
+
+Now, you can call ACL2 in Mathematica through the functions 
+
+callAcl2["string"], 
+
+where string is send to ACL2 and the last line of the ACL2 message is returned.
+For instance:
+
+In[2]:= callAcl2["(defthm foo (equal x x) :rule-classes nil)"]
+
+Out[2]=  FOO
+
+In[3]:= 
+
+------------------------------------------------------------
+UNINSTALL
+
+To uninstall acl2link (before exiting mathematica), execute :
+
+closeAcl2[]
+
+
+In[4]:= closeAcl2[]
+
+Out[4]= 0 
+
+

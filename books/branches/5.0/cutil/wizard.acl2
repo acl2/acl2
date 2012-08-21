@@ -1,0 +1,2 @@
+(ld "cert.acl2")
+(certify-book "wizard" ? t :ttags '(definline))

@@ -1,0 +1,50 @@
+This directory contains some books featured in the chapter "Continuity
+and Differentiability in ACL2" of the book "Computer-Aided Reeasoning:
+ACL2 Case Studies," by Ruben Gamboa.  In particular, the books develop
+the elementary theory of continuous and differentiable functions.
+Some of the development was left off as exercises in the chapter, and
+this directory contains the author's solutions.
+
+The books here serve to describe the non-standard extensions to ACL2,
+which are incorporated in ACL2(r).  (See also the documentation topic
+REAL for information about ACL2(r).)  Users who wish to pursue this
+area further are advised to consult the ACL2(r) book nsa (see
+../../nonstd/nsa/nsa.lisp), which proves many useful theorems from
+non-standard analysis.
+
+NOTE:  These books are intended NOT to be certified here.  To certify
+them, work in the "mirrored" copy of this directory, which under the
+ACL2 distribution resides in books/nonstd/case-studies/analysis/
+(i.e., relative to the present directory is
+../../nonstd/case-studies/analysis/).  See ../../nonstd/README for
+important instructions.
+
+    * continuity.lisp		-- Intermediate-value theorem
+
+    * derivatives.lisp		-- Rolle's theorem, mean-value theorem
+
+    * exercise1.lisp		-- The non-existence of sqrt(2) in ACL2,
+	                           and/or its irrationality in ACL2(r).
+
+    * exercise2.lisp            -- A different version of the intermediate-
+	                           value theorem.
+
+    * exercise3.lisp		-- Uses the intermediate-value theorem to
+				   show the existence of sqrt(2) in ACL2(r).
+
+    * exercise4.lisp		-- Finds the maximum point for a continuous
+				   function over a closed bounded interval.
+
+    * exercise5.lisp		-- Finds the minimum point for a continuous
+				   function over a closed bounded interval.
+
+    * exercise6.lisp		-- The sum/product of two continuous functions
+				   is continuous.
+
+    * exercise7.lisp		-- Proves the classical version of Rolle's
+				   theorem.
+
+    * exercise8.lisp		-- The sum/product of two differentiable 
+				   functions is differentiable.
+		
+

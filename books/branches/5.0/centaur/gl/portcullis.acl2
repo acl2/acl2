@@ -1,0 +1,8 @@
+
+
+(ld "package.lsp")
+(ld "centaur/vl/package.lsp" :dir :system)
+;; (ld "cutil/package.lsp" :dir :system)
+(include-book "cutil/portcullis" :dir :system)
+(ld "tools/flag-package.lsp" :dir :system)
+(certify-book "portcullis" ?)

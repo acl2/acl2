@@ -1,0 +1,2 @@
+(ld "finite-set-theory/osets/sets.defpkg" :dir :system)
+(certify-book "ptest-mergesort" ? t :skip-proofs-okp t)

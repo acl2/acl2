@@ -1,0 +1,4 @@
+(ld "hacker-pkg.lsp")
+
+
+(ACL2::CERTIFY-BOOK "bridge" ACL2::? T)

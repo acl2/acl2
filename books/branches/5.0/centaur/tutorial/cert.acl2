@@ -1,0 +1,8 @@
+; cert.acl2
+; Just loads relevant packages
+
+(in-package "ACL2")
+(include-book "centaur/vl/portcullis" :dir :system)
+(include-book "centaur/gl/portcullis" :dir :system)
+(include-book "centaur/esim/portcullis" :dir :system)
+(include-book "centaur/aig/portcullis" :dir :system)
