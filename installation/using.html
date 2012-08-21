@@ -1,5 +1,5 @@
 <HTML>
-<HEAD><TITLE>ACL2 Version 4.3 Installation Guide: Using ACL2</TITLE></HEAD>
+<HEAD><TITLE>ACL2 Version 5.0 Installation Guide: Using ACL2</TITLE></HEAD>
 
 <BODY TEXT="#000000">
 <BODY BGCOLOR="#FFFFFF">
@@ -26,9 +26,9 @@
 
 Here we begin with a discussion of how to <A HREF="#Invoking">invoke ACL2</A>
 interactively.  We then discuss <A HREF="#Testing">testing</A> as well as the
-<A HREF="#Certifying">certification</A> of ACL2 <em>books</em> that come with
-the distribution.  We conclude with a discussion of the <A
-HREF="#Documentation">documentation</A>.
+<A HREF="#Certifying">certification</A> of ACL2 <em>distributed
+books</em>.  We conclude with a discussion of
+the <A HREF="#Documentation">documentation</A>.
 
 <BR><HR><BR>
 <H3><A NAME="Invoking">Invoking ACL2</A></H3>
@@ -48,8 +48,8 @@ invoke ACL2 by running that image, e.g.,
 <CODE>mycomputer% </CODE><I>dir</I><CODE>/acl2-sources/saved_acl2</CODE>
 <BR><BR>
 
-If on a Unix/Linux system, then to make it easy to invoke ACL2 by typing a
-short command, e.g.,
+If you on a Unix-like system, then to make it easy to invoke ACL2 by
+typing a short command, e.g.,
 
 <BR><BR>
 <CODE>mycomputer% acl2</CODE>
@@ -126,10 +126,12 @@ which is first printed out as though you had typed it.  Each will print some
 text, generally a proof of some conjecture.  None should fail.
 
 <P>
-A more elaborate test is to <A NAME="#Certifying">certify the ``books''</A>
-that come with the distribution, which is a good idea anyhow; this is our next
-topic.  On a Unix/Linux system, you can also certify just a small but useful
-subset of the books in a few minutes by executing, in directory
+A more elaborate test is to <A NAME="#Certifying">certify
+    the <em><a href="obtaining-and-installing.html#Obtaining-books">distributed
+    books</a></em>, which is a good idea anyhow; this is our next
+    topic.  On a Unix-like system, you can also certify just a
+    small but useful subset of the books in a few minutes by
+    executing, in directory
 <i>dir</i>/<code>acl2-sources</code>:
 <pre>
 make certify-books-short
@@ -138,14 +140,13 @@ make certify-books-short
 <BR><HR><BR>
 <H3><A NAME="Certifying">Certifying ACL2 Books</A></H3>
 
-<!-- NOTE to developers: v4-3 below indicates a normal release, which is OK. -->
-<!-- Do not edit that for incremental releases. -->
-
-The ``books'' that come with the distribution have been contributed mainly by
-users and are on the subdirectory <CODE>acl2-sources/books</CODE>.  See <A
-HREF="http://www.cs.utexas.edu/users/moore/acl2/v4-3/distrib/acl2-sources/books/Readme.html"><CODE>acl2-sources/books/Readme.html</CODE></A>
-for information.  The general topic of books is discussed thoroughly in the
-ACL2 documentation; see the <CODE>BOOKS</CODE> node in the documentation tree.
+The <em>distributed books</em> have been contributed mainly by users and may
+be obtained
+as <a href="obtaining-and-installing.html#Obtaining-books">explained
+elsewhere</a>, to create subdirectory <CODE>acl2-sources/books</CODE>.
+The general topic of books is discussed thoroughly in the ACL2
+documentation;
+see <CODE>http://www.cs.utexas.edu/users/moore/acl2/current/BOOKS.html</CODE>.
 
 <P>
 Books should be ``certified'' before they are used.  We do not distribute
@@ -155,8 +156,9 @@ your ACL2 image and because books generally need to be certified before they
 can be used.
 
 <P>
-It is easy to re-certify all the distributed books in Unix/Linux.  We recommend you
-do this.  If you have entered ACL2, exit to the operating system, e.g., by
+It is easy to re-certify all the distributed books on a Unix-like system.
+We recommend you do this.  If you have entered ACL2, exit to the
+operating system, e.g., evaluting the form, <code>(quit)</code>, or by
 control-d in many systems.
 
 <P>
@@ -166,7 +168,7 @@ make certify-books
 </PRE>
 
 This will generate minimal output to the screen and will probably take an hour
-or two.  Failure is indicated by the presence of <code>**CERTIFICATION FAILED**</code> in the log.
+or two.  Failure is indicated by the presence of <code>CERTIFICATION FAILED</code> in the log.
 
 <P>
 
@@ -176,16 +178,17 @@ make clean-books
 </PRE>
 
 <P>
-The <CODE>certify-books</CODE> target does not cause workshop books to be
-certified.  If you want to certify those books as well, you will first need to
-<a
-href="http://www.cs.utexas.edu/users/moore/acl2/v4-3/distrib/acl2-sources/books/workshops.tar.gz">download
-the gzipped tar file</a> to the <CODE>books/</CODE> directory, and then gunzip
-and extract it.  You can certify all the books, including books for the
-workshops (including those from the 1999 workshop as described in the
-(hardbound) book <A
-HREF="http://www.cs.utexas.edu/users/moore/publications/acl2-books/acs/index.html"><EM>Computer-Aided
-Reasoning: ACL2 Case Studies</EM></A>), using the command:
+The <CODE>certify-books</CODE> target does not cause workshop books to
+be certified.  If you want to certify those books as well, you will
+first need to
+<a href="http://acl2-books.googlecode.com/files/workshops.tar.gz">download
+the gzipped tar file of the workshops books</a> to
+the <CODE>books/</CODE> directory, and then gunzip and extract it.
+You can certify all the books, including books for the workshops
+(including those from the 1999 workshop as described in the
+(hardbound)
+book <A HREF="http://www.cs.utexas.edu/users/moore/publications/acl2-books/acs/index.html"><EM>Computer-Aided
+    Reasoning: ACL2 Case Studies</EM></A>), using the command:
 
 <PRE>
 make regression
@@ -194,7 +197,7 @@ make regression
 <P>
 By default, certification uses the image
 <I>dir</I><CODE>/acl2-sources/saved_acl2</CODE>.  You may specify any ACL2
-image, as long as it is either a command on your Unix/Linux path or an absolute file
+image, as long as it is either a command on your path or an absolute file
 name, for example as follows.
 
 <PRE>
@@ -204,11 +207,14 @@ make regression ACL2=/u/smith/projects/acl2/saved_acl2
 </PRE>
 
 <P>
-We apologize to non-Unix/Linux users: we do not provide non-Unix/Linux
-instructions for recertifying the distributed books.  The
-certification methods provided by the authors of the books vary
-greatly and we codified them in the Unix/Linux makefile (GNUmakefile) used above.  Most
-subdirectories of <CODE>acl2-sources/books</CODE> contain either a
+We apologize to users of other than Unix-like systems (i.e., other
+than Unix, GNU-Linux, and Mac OS X): we do not provide instructions
+for recertifying all the distributed books on such systems, though
+there are such environments that can be installed on Windows (e.g.,
+Cygwin).  The certification methods provided by the authors of the
+books vary greatly and we codified them in the makefile, which is
+named <code>GNUmakefile</code>, used above.  Some subdirectories
+of <CODE>acl2-sources/books/</CODE> contain either a
 <CODE>README</CODE> file or a <CODE>certify.lsp</CODE> file.  Users
 who wish to certify one of these books and who cannot figure out (from
 these scant clues) what to type to ACL2 should not hesitate to contact
@@ -222,13 +228,15 @@ Next proceed to the section on <A HREF="#Documentation">Documentation</A>.
 
 <P>
 ACL2's documentation is a hypertext document that, if printed in book
-form, is about 2000 pages or more than 7 megabytes of postscript.  Its
-hypertext character makes it far more pleasing to read with an
-interactive browser.  The documentation is available in four formats:
-HTML, Texinfo, Postscript and ACL2 documentation strings.  All of this
-material is copyrighted by the University of Texas at Austin and is
-derived under the GNU General Public License from material copyrighted
-by Computational Logic, Inc.
+form, is just over 2050 pages, or about 2.4 megabytes of gzipped
+postscript.  Its hypertext character makes it far more pleasing to
+read with an interactive browser.  The documentation is available in
+several formats: HTML, Texinfo, Postscript and ACL2 documentation
+strings, and more recently,
+in <a href="http://fv.centtech.com/acl2/5.0/doc/">web-browsable form
+with some books' documentation</a>, courtesy of Jared Davis.  The ACL2
+documentation is copyrighted by the University of Texas at Austin
+under Version 2 of the GNU General Public License.
 
 <P>
 Two Web-based guided tours of ACL2 are available from the home page
@@ -298,7 +306,7 @@ The Postscript version of the documentation is not included in our normal
 distribution because it is so much less useful than the hyper-text versions.
 But a <A
 HREF="http://www.cs.utexas.edu/users/moore/publications/acl2-book.ps.gz">gzipped
-Postscript (1.2 MB)</A> version is available.  It prints as a book of about 1000
+Postscript (2.4 MB)</A> version is available.  It prints as a book of about 2050
 pages and contains a Table of Contents and an index to all documented topics.
 
 <P><B>ACL2 Documentation Strings</B><P>

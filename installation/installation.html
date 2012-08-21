@@ -1,21 +1,25 @@
 <HTML>
-<HEAD><TITLE>ACL2 Version 4.3 Installation Guide</TITLE></HEAD>
+<HEAD><TITLE>ACL2 Version 5.0 Installation Guide</TITLE></HEAD>
 
 <BODY TEXT="#000000">
 <BODY BGCOLOR="#FFFFFF">
 
-<H1><A NAME="top">ACL2 Version 4.3 Installation Guide</A></H1>
+<H1><A NAME="top">ACL2 Version 5.0 Installation Guide</A></H1>
 
 <H3>NOTE: From time to time we may provide so-called <i>incremental
 releases</i> of ACL2.  Please follow the <a
-href="http://www.cs.utexas.edu/users/moore/acl2/v4-3/new.html">recent changes
+href="http://www.cs.utexas.edu/users/moore/acl2/v5-0/new.html">recent changes
 to this page</a> link on the <a
 href="http://www.cs.utexas.edu/users/moore/acl2/">ACL2 home page</a> for more
 information.</H3>
 
 <hr size=3 noshade>
 
-<H1>Easy Install for Linux/Unix/MacOS</H1>
+<H1>Easy Install for Unix-like Systems</H1>
+
+Here, "Unix-like Systems" includes Unix, GNU-Linux, and MacOS X.
+
+<p>
 
 <b>NOTE:</b> A quicker and even easier install may be possible, by
 instead obtaining a <a
@@ -24,13 +28,26 @@ distribution</a> if one is available for your platform.  Otherwise:
 
 <ol>
 
-<li>Fetch <A HREF="http://www.cs.utexas.edu/users/moore/acl2/v4-3/distrib/acl2.tar.gz">
-acl2.tar.gz</A> into a new directory, say <code>acl2/v4-3/</code>.</li>
+<li>Fetch <A HREF="http://www.cs.utexas.edu/users/moore/acl2/v5-0/distrib/acl2.tar.gz">
+acl2.tar.gz</A> into a new directory, say <code>acl2/v5-0/</code>.</li>
 
-<li>Execute the following to create directory <code>acl2-sources/</code>:
-<pre>
-tar xfz acl2.tar.gz
-</pre></li>
+<li>Execute the following to create directory <code>acl2-sources/</code>:<br>
+<code>tar xfz acl2.tar.gz</code>
+
+<li>Fetch
+  the <A HREF="http://acl2-books.googlecode.com/files/books.tar.gz">distributed
+  books</A> from the Google Code website.
+  (You can also
+  see <A HREF="obtaining-and-installing.html#Sources">further instructions</A> if you also want to install
+  the
+<A HREF="http://acl2-books.googlecode.com/files/workshops.tar.gz">workshops
+books</A>
+or <A HREF="http://acl2-books.googlecode.com/files/nonstd.tar.gz">nonstd
+books</A> under the <CODE>books/</CODE> directory).
+
+<li>Execute the following in <code>acl2-sources/</code> to create
+  directory <code>books/</code>:<br>
+<code>tar xfz books.tar.gz</code>
 
 <li><a href="requirements.html">Obtain a Common Lisp implementation</a> if you don't
 already have one.</li>
@@ -56,14 +73,8 @@ make regression
 
 </ol>
 
-You now have an ACL2 executable called <code>saved_acl2</code> (from step 4)
-and access to certified distributed books (from step 5).  Enjoy!
-
-<p>
-
-<i>Note</i>: There are many other books available from ACL2 workshops,
-available
-<a href="http://www.cs.utexas.edu/users/moore/acl2/v4-3/distrib/acl2-sources/books/workshops.tar.gz">here</a>.
+You now have an ACL2 executable called <code>saved_acl2</code> (from step 6)
+and access to certified distributed books (from step 7).  Enjoy!
 
 <hr size=3 noshade>
 
@@ -85,8 +96,7 @@ NEED.</font></b> Otherwise, read on....
 <LI><A HREF="obtaining-and-installing.html">OBTAINING AND INSTALLING ACL2</A>
 <UL>
   <LI><A HREF="obtaining-and-installing.html#Shortcuts">Pre-built Binary Distributions</A>
-  <LI><A HREF="obtaining-and-installing.html#Sources-Unix">Obtaining the Sources: Unix, Mac OS X, and Linux</A>
-  <LI><A HREF="obtaining-and-installing.html#Sources-Non-Unix">Obtaining the Sources: Other than Unix, Mac OS X, and Linux Systems</A>
+  <LI><A HREF="obtaining-and-installing.html#Sources">Obtaining the Sources</A>
   <LI><A HREF="obtaining-and-installing.html#Create-Image">Creating or Obtaining an Executable Image</A>
   <LI><A HREF="obtaining-and-installing.html#Running">Running Without Building an Executable Image</A>
   <LI><A HREF="obtaining-and-installing.html#Summary">Summary of Distribution</A>

@@ -1,13 +1,12 @@
-; ACL2 Version 4.3 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2011  University of Texas at Austin
+; ACL2 Version 5.0 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2012  University of Texas at Austin
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
 
 ; This program is free software; you can redistribute it and/or modify
-; it under the terms of the GNU General Public License as published by
-; the Free Software Foundation; either version 2 of the License, or
-; (at your option) any later version.
+; it under the terms of Version 2 of the GNU General Public License as
+; published by the Free Software Foundation.
 
 ; This program is distributed in the hope that it will be useful,
 ; but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -3208,16 +3207,15 @@
 
   ACL2 copyright, license, sponsorship~/~/
 
-  ACL2 Version 4.3 -- A Computational Logic for Applicative Common Lisp
-  Copyright (C) 2011  University of Texas at Austin
+  ACL2 Version 5.0 -- A Computational Logic for Applicative Common Lisp
+  Copyright (C) 2012  University of Texas at Austin
 
   This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
   (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
 
   This program is free software; you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation; either version 2 of the License, or
-  (at your option) any later version.
+  it under the terms of Version 2 of the GNU General Public License as
+  published by the Free Software Foundation.
 
   This program is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -9183,9 +9181,9 @@
   The ~il[proof-checker] now does non-linear arithmetic when appropriate.  It
   had formerly ignored ~ilc[set-non-linearp] executed in the ACL2 command loop.
 
-  Incremental releases are now supported.  ~l[version] and {obsolete after 4.3}
-  set-tainted-okp.  Thanks to Hanbing Liu for discovering a flaw in our
-  original design.
+  Incremental releases are now supported.  ~l[version] and {obsolete after
+  Version  4.3} set-tainted-okp.  Thanks to Hanbing Liu for discovering a flaw
+  in our original design.
 
   The pattern-matching algorithm for ~c[:]~ilc[rewrite] rules has been made
   slightly more restrictive, thanks to a suggestion and examples from Robert
@@ -10246,8 +10244,8 @@
   We fixed an inefficiency that could cause an ~ilc[ld] command to seem to hang
   at its conclusion.  Thanks to Sandip Ray for pointing out this problem.
 
-  We checked that ACL2 runs under LispWorks 4.4.5 (last checked before 4.3),
-  and have inhibited redefinition warnings.
+  We checked that ACL2 runs under LispWorks 4.4.5, and have inhibited
+  redefinition warnings.
 
   Two changes have been made on behalf of congruence-based reasoning.  Thanks
   to Dave Greve for examples and discussions that have led to these changes,
@@ -18198,7 +18196,7 @@
   ~/
   ")
 
-(deflabel note-4-4
+(deflabel note-5-0
 
 ; Improved comments about step-limits.
 
@@ -18353,7 +18351,7 @@
 ; the Complete operation caused an error, the reason being that an unknown
 ; package was being used in the post-alist in the certificate file.
 
-; Here is the example promised in :doc note-4-4 and in a comment about
+; Here is the example promised in :doc note-5-0 and in a comment about
 ; :SKIPPED-PROOFSP in certify-book-fn, regarding "Fixed a soundness bug based
 ; on the use of ~ilc[skip-proofs] ...."  First consider the following two
 ; books.
@@ -18472,7 +18470,7 @@
   :doc
   ":Doc-Section release-notes
 
-  ACL2 Version  4.4 (xxx, 20xx) Notes~/
+  ACL2 Version  5.0 (August, 2012) Notes~/
 
   NOTE!  New users can ignore these release notes, because the
   ~il[documentation] has been updated to reflect all changes that are recorded
@@ -18484,6 +18482,11 @@
   books, Emacs support, and experimental versions.  Each change is described in
   just one category, though of course many changes could be placed in more than
   one category.
+
+  NOTE: ACL2 is now distributed under Version 2 of the GNU General Public
+  License.  Formerly, any later version had been acceptable.  Moreover, books
+  are no longer distributed from a University of Texas website, but rather,
+  from Google Code at ~url[http://code.google.com/p/acl2-books/downloads/].
 
   ~st[CHANGES TO EXISTING FEATURES]
 
@@ -19014,7 +19017,7 @@
   Fixed a soundness bug based on the use of ~ilc[skip-proofs] together with the
   little-used argument ~c[k=t] for ~ilc[certify-book].  An example proof of
   ~c[nil] appears in a comment in the ACL2 sources, in
-  ~c[(deflabel note-4-4 ...)].
+  ~c[(deflabel note-5-0 ...)].
 
   Fixed a soundness bug that allowed users to define new ~il[proof-checker]
   primitive commands.  Before this fix, a book proving ~c[nil] could be
@@ -19026,7 +19029,7 @@
   respect to ~ilc[make-event] expansions, but not recognized as such.  The
   change is to include the so-called expansion-alist in the certificate's
   checksum.  An example appears in a comment in the ACL2 sources, in
-  ~c[(deflabel note-4-4 ...)].
+  ~c[(deflabel note-5-0 ...)].
 
   Fixed a bug in ~il[guard] verification due to expanding calls of primitives
   when translating user-level terms to internal form, so called ``translated
@@ -19121,11 +19124,11 @@
       (h state)))
   ~ev[]
 
-  We fixed a bug, introduced in the preceding release (4.3), in the check for
-  irrelevant formals (~pl[irrelevant-formals]).  That check had been too
-  lenient in its handling of lambda (~il[LET]) expressions, for example
-  allowing the following definition to be admitted in spite of its first
-  formal parameter obviously being irrelevant.
+  We fixed a bug, introduced in the preceding release (Version  4.3), in the
+  check for irrelevant formals (~pl[irrelevant-formals]).  That check had been
+  too lenient in its handling of lambda (~il[LET]) expressions, for example
+  allowing the following definition to be admitted in spite of its first formal
+  parameter obviously being irrelevant.
   ~bv[]
   (defun foo (x clk)
     (if (zp clk)
@@ -19172,7 +19175,7 @@
 
   Fixed a ~il[proof-checker] bug that could result in duplicate goal names in
   the case of forced hypotheses.  An example showing this bug, before the fix,
-  appears in a comment in the ACL2 sources, in ~c[(deflabel note-4-4 ...)].
+  appears in a comment in the ACL2 sources, in ~c[(deflabel note-5-0 ...)].
 
   We fixed a bug in a prover routine involved in ~il[type-set] computations
   involving linear arithmetic.  This bug has been around since at least as far
@@ -19296,6 +19299,10 @@
   (SBCL only) ACL2 images built on SBCL now have an option,
   ~c[--dynamic-space-size 2000], that can avoid space problems that could
   previously have caused the session to die.
+
+  The default value for variable ~c[LISP] in file ~c[GNUmakefile] is now
+  ~c[ccl].  Thus, if you use `~c[make]' in the standard way to build an ACL2
+  executable, the default host Lisp is ~c[ccl] rather than ~c[gcl].
 
   ~st[EMACS SUPPORT]
 
@@ -21337,7 +21344,7 @@ Recent changes to this page</A>
 </TD>
 <TD>
 <!-- This relative URL is made absolute in distributed tar file -->
-<A HREF=\"installation/installation.html\">Obtaining and Installing Version 4.3</A>
+<A HREF=\"installation/installation.html\">Obtaining and Installing Version 5.0</A>
 </TD>
 
 </TR>
@@ -21347,7 +21354,7 @@ Recent changes to this page</A>
 <A HREF=\"~sg\"><IMG SRC=\"note02.gif\" BORDER=0></A>
 </TD>
 <TD>
-<A HREF=\"~sg\">Differences from Version 4.2</A><A HREF=\"~s7\"> <IMG SRC=\"twarning.gif\"></A>
+<A HREF=\"~sg\">Differences from Version 4[.]3</A><A HREF=\"~s7\"> <IMG SRC=\"twarning.gif\"></A>
 </TD>
 <TD ALIGN=CENTER VALIGN=MIDDLE>
 <A HREF=\"other-releases.html\">
@@ -21494,7 +21501,7 @@ with ACL2.
 
 <B>Note</B>: The documentation is available for reading in a Web
 browser (recommended), in Emacs Info, using the ACL2 <CODE>:DOC</CODE> command,
-or as a printed book (about 1900 pages).  These are available as follows.
+or as a printed book (about 2050 pages).  These are available as follows.
 
 <ul>
 
@@ -21526,21 +21533,22 @@ directory):<br>
 
 <li>To read a printed copy, obtain a Postscript version <A HREF=
 \"http://www.cs.utexas.edu/users/moore/publications/acl2-book.ps.gz\">here</A>
-(over 2 MB).</li>
+(about 2.4 MB).</li>
 
 </ul>
 
 <BR><HR><BR>
 <H2><A NAME=\"Tools\">Lemma Libraries and Utilities; and, How to Contribute</A></H2>
 
-The distribution of ACL2 includes some tools built by users.  Most of
-these are ACL2 ``<A
-HREF=\"http://www.cs.utexas.edu/users/moore/acl2/~s3/distrib/acl2-sources/books/Readme.html\">books</A>,''
-which are collections of definitions and theorems you might find
-useful in your models and proofs.  Most of the available books come with the distribution, but
-the above link will also take you to additional books in support of the ACL2
-Workshops (``<code>workshops</code>'') and non-standard analysis
-(``<code>nonstd</code>'').
+A companion to ACL2 is the library of <em>distributed books</em>, which have
+been developed by many users over the years.  These books contain definitions
+and theorems that you might find useful in your models and proofs.  The <A
+HREF=\"installation/installation.html\">installation instructions</A> explain
+how to <A HREF=\"http://code.google.com/p/acl2-books/downloads/\">download</A>
+and install the distributed books.  These books include some tools built by
+users.  The above download link will also take you to additional books in
+support of the ACL2 Workshops (``<code>workshops</code>'') and non-standard
+analysis (``<code>nonstd</code>'').
 
 <p>
 
@@ -21604,7 +21612,7 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
     programming                         ;;; d
     rule-classes                        ;;; e
     books                               ;;; f
-    note-4-3                            ;;; g
+    note-5-0                            ;;; g
     the-method                          ;;; h
     introduction-to-the-theorem-prover  ;;; i   ; This is not used right now.
     interesting-applications            ;;; j
@@ -22513,8 +22521,9 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
   
   ACL2 is distributed on the Web without fee.
 
-  There is a ~b[License] agreement, which is available via the ACL2 Home Page
-  link below.
+  There is a ~b[License] agreement, GPL Version 2 (see
+  ~url[http://www.gnu.org/licenses/gpl-2.0.html]), as indicated near the top of
+  each source file.
 
   ACL2 currently runs on ~b[Unix], ~b[Linux], ~b[Windows], and
   ~b[Macintosh OS X] operating systems.
@@ -25782,7 +25791,7 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
 
   about ACL2~/
 
-  This is ACL2 Version 4.3, copyright (C) 2011 University of Texas at Austin,
+  This is ACL2 Version 5.0, copyright (C) 2011 University of Texas at Austin,
   authored by Matt Kaufmann and J Strother Moore.
 
   For past versions, see
@@ -25797,9 +25806,7 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
   related publications, libraries, ACL2 workshops and seminars, installation
   instructions, and acknowledgements.
 
-  See
-  ~url[http://www.cs.utexas.edu/users/moore/acl2/current/installation/misc.html#License-and-Copyright]
-  for license and copyright information.
+  ~l[copyright] for license and copyright information.
 
   ~/~/")
 

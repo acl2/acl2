@@ -1,13 +1,12 @@
-; ACL2 Version 4.3 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2011  University of Texas at Austin
+; ACL2 Version 5.0 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2012  University of Texas at Austin
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
 
 ; This program is free software; you can redistribute it and/or modify
-; it under the terms of the GNU General Public License as published by
-; the Free Software Foundation; either version 2 of the License, or
-; (at your option) any later version.
+; it under the terms of Version 2 of the GNU General Public License as
+; published by the Free Software Foundation.
 
 ; This program is distributed in the hope that it will be useful,
 ; but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -27458,7 +27457,7 @@
 ; The reason MCL needs special treatment is that (char-code #\Newline) = 13 in
 ; MCL, not 10.  See also :DOC version.
 
-; ACL2 Version 4.3
+; ACL2 Version 5.0
 
 ; We put the version number on the line above just to remind ourselves to bump
 ; the value of state global 'acl2-version, which gets printed out with the
@@ -27484,7 +27483,7 @@
 ; reformatting :DOC comments.
 
                   ,(concatenate 'string
-                                "ACL2 Version 4.3"
+                                "ACL2 Version 5.0"
                                 #+non-standard-analysis
                                 "(r)"
                                 #+(and mcl (not ccl))

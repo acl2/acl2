@@ -1,13 +1,12 @@
-; ACL2 Version 4.3 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2011  University of Texas at Austin
+; ACL2 Version 5.0 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2012  University of Texas at Austin
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
 
 ; This program is free software; you can redistribute it and/or modify
-; it under the terms of the GNU General Public License as published by
-; the Free Software Foundation; either version 2 of the License, or
-; (at your option) any later version.
+; it under the terms of Version 2 of the GNU General Public License as
+; published by the Free Software Foundation.
 
 ; This program is distributed in the hope that it will be useful,
 ; but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -16126,7 +16125,7 @@
 ; portcullis command after setting ld-skip-proofsp to a non-nil value.  So we
 ; are conservative here, being sure that in such a case, we set
 ; :SKIPPED-PROOFSP to T in the annotations for the present book.  See the
-; example in a comment in the deflabel note-4-4 pertaining to "Fixed a
+; example in a comment in the deflabel note-5-0 pertaining to "Fixed a
 ; soundness bug based on the use of ~ilc[skip-proofs] ...."
 
                                                    (and

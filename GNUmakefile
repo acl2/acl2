@@ -1,15 +1,14 @@
 #  -*- Fundamental -*- 
 
-# ACL2 Version 4.3 -- A Computational Logic for Applicative Common Lisp
-# Copyright (C) 2011  University of Texas at Austin.
+# ACL2 Version 5.0 -- A Computational Logic for Applicative Common Lisp
+# Copyright (C) 2012  University of Texas at Austin.
 
 # This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 # (C) 1997 Computational Logic, Inc.  See the documentation topic NOTES-2-0.
 
 # This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.
+# it under the terms of Version 2 of the GNU General Public License as
+# published by the Free Software Foundation.
 
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -195,9 +194,9 @@
 #  to preserve the metering, use the fast-meter option.  If you want to
 #  get rid of the metering in the compiled code, do make full.
 
-LISP = gcl
+LISP = ccl
 DIR = /tmp
-ACL2_VERSION = v4-3
+ACL2_VERSION = v5-0
 
 # The variable NONSTD should be defined for the non-standard version and not
 # for the standard version.  Non-standard ACL2 images will end in saved_acl2r
@@ -477,7 +476,7 @@ copy:
 .PHONY: copy-distribution
 copy-distribution:
 # WARNING: Execute this from an ACL2 source directory.
-# Keep this in sync with copy-workshop.
+# Keep this in sync with copy-books, copy-workshops, and copy-nonstd.
 # You must manually rm -r ${DIR} before this or it will fail without doing
 # any damage.
 # Note that below, /projects/acl2/ is not used, because this directory must
@@ -494,10 +493,28 @@ copy-distribution:
 	rm -f workxxx
 	rm -f workyyy
 
+.PHONY: copy-books
+copy-books:
+# WARNING: Execute this from an ACL2 source directory.
+# See the comments for copy-distribution, and keep these in sync.  Use the same
+# DIR for both.
+	rm -f workxxx
+	rm -f workyyy
+	rm -f acl2r.lisp
+	echo '(load "init.lisp")' > workxxx
+	echo '(acl2::copy-distribution "workyyy" "${CURDIR}" "${DIR}" "all-files-books.txt" t)' >> workxxx
+	echo '(acl2::exit-lisp)' >> workxxx
+	${LISP} < workxxx
+	chmod 777 workyyy
+	./workyyy
+	rm -f workxxx
+	rm -f workyyy
+
 .PHONY: copy-workshops
 copy-workshops:
 # WARNING: Execute this from an ACL2 source directory.
-# WARNING:  This should only be run after directory ${DIR} (hence ${DIR}/books) exists.
+# WARNING: This should only be run after directory ${DIR}/books exists,
+#          so run `make' with target copy-books first.
 # See the comments for copy-distribution, and keep these in sync.  Use the same
 # DIR for both.
 	rm -f workxxx
@@ -515,7 +532,8 @@ copy-workshops:
 .PHONY: copy-nonstd
 copy-nonstd:
 # WARNING: Execute this from an ACL2 source directory.
-# WARNING:  This should only be run after directory ${DIR} (hence ${DIR}/books) exists.
+# WARNING: This should only be run after directory ${DIR}/books exists,
+#          so run `make' with target copy-books first.
 # See the comments for copy-distribution, and keep these in sync.  Use the same
 # DIR for both.
 	rm -f workxxx

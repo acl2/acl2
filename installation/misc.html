@@ -1,5 +1,5 @@
 <HTML>
-<HEAD><TITLE>ACL2 Version 4.3 Installation Guide: Miscellaneous Information</TITLE></HEAD>
+<HEAD><TITLE>ACL2 Version 5.0 Installation Guide: Miscellaneous Information</TITLE></HEAD>
 
 <BODY TEXT="#000000">
 <BODY BGCOLOR="#FFFFFF">
@@ -60,9 +60,11 @@ extension and how to build it, and a warning about its experimental nature.
 <P>
 
 if you care to use ACL2(r), first
-<A
-HREF="http://www.cs.utexas.edu/users/moore/acl2/v4-3/distrib/acl2-sources/books/nonstd.tar.gz">
-download the non-standard analysis books (gzipped tar file)</A> to the
+<A HREF="http://acl2-books.googlecode.com/files/nonstd.tar.gz">
+download the non-standard analysis books (gzipped tar file)</A> from
+the Google
+Code <a href="https://code.google.com/p/acl2-books/">acl2-books
+project website</a>, and save to the
 <code>books/</code> subdirectory of your copy of the ACL2 distribution, say,
 <I>dir</I>/acl2-sources/books/</code>.  Then run:
 <pre>
@@ -76,9 +78,9 @@ acl2-sources</CODE><BR> <CODE>make large-acl2r LISP=</CODE><I>xxx</I><BR>
 where <I>xxx</I> is the command to run your local Common Lisp.
 <P>
 By default, if no <CODE>LISP=</CODE><I>xxx</I> is specified,
-<CODE>LISP=gcl</CODE> is used.  On our hosts, <CODE>gcl</CODE> is the name of
-GNU Common Lisp, which can be obtained as explained <a
-href="obtaining-and-installing.html#Obtaining-GCL">in the Requirements document</a>.
+<CODE>LISP=ccl</CODE> is used.  On our hosts, <CODE>ccl</CODE> is the name of
+Clozure Common Lisp (CCL), which can be obtained as explained <a
+href="obtaining-and-installing.html#Obtaining-CCL">in the Requirements document</a>.
 <P>
 This will create executable <code>saved_acl2r</code> in the
 <I>dir</I><code>/acl2-sources</code> directory (notice the trailing
@@ -116,11 +118,6 @@ lists, or view their archives, at:
 </ul>
 
 <P>
-You can search the ACL2 documentation, workshops, and publications online from
-<CODE><A HREF="http://www.cs.utexas.edu/users/moore/acl2/admin/forms/search.html">
-http://www.cs.utexas.edu/users/moore/acl2/admin/forms/search.html</A></CODE>.
-
-<P>
 Finally, please report bugs in ACL2 to
 <CODE><A HREF="mailto:acl2-bugs@utlists.utexas.edu">acl2-bugs@utlists.utexas.edu</A></CODE>.
 
@@ -134,17 +131,16 @@ the U. S. Department of the Treasury.
 <BR><HR><BR>
 <H3><A NAME="License-and-Copyright">License and Copyright</A></H3>
 
-ACL2 Version 4.3 -- A Computational Logic for Applicative Common Lisp<BR>
-Copyright (C) 2011  University of Texas at Austin
+ACL2 Version 5.0 -- A Computational Logic for Applicative Common Lisp<BR>
+Copyright (C) 2012  University of Texas at Austin
 <P>
 This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 (C) 1997 Computational Logic, Inc.
 <P>
 This program is free software; you can redistribute it and/or modify
-it under the terms of the <A
+it under the terms of Version 2 of the <A
 HREF="../LICENSE">GNU General Public License</A> as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
+the Free Software Foundation.
 <P>
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of

@@ -2151,6 +2151,7 @@ books/workshops/2006/rager/support:
 Makefile
 ptest-fib.lisp
 ptest-if-normalization.lisp
+ptest-mergesort.acl2
 ptest-mergesort.lisp
 
 books/workshops/2006/ray:

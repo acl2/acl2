@@ -21,6 +21,7 @@ powerlists
 rtl
 sqrt
 workshops
+xdoc
 
 books/nonstd/arithmetic:
 Makefile
@@ -296,3 +297,5 @@ Readme.lsp
 sin-cos-minimal.lisp
 sqrt-derivative.lisp
 sum-composition.lisp
+
+books/nonstd/xdoc:
