@@ -21354,7 +21354,7 @@ Recent changes to this page</A>
 <A HREF=\"~sg\"><IMG SRC=\"note02.gif\" BORDER=0></A>
 </TD>
 <TD>
-<A HREF=\"~sg\">Differences from Version 4[.]3</A><A HREF=\"~s7\"> <IMG SRC=\"twarning.gif\"></A>
+<A HREF=\"~sg\">Differences from Version 4.3</A><A HREF=\"~s7\"> <IMG SRC=\"twarning.gif\"></A>
 </TD>
 <TD ALIGN=CENTER VALIGN=MIDDLE>
 <A HREF=\"other-releases.html\">
