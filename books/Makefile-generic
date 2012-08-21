@@ -1,5 +1,5 @@
-#; ACL2 Version 4.3 -- A Computational Logic for Applicative Common Lisp
-#; Copyright (C) 2011  University of Texas at Austin
+#; ACL2 Version 5.0 -- A Computational Logic for Applicative Common Lisp
+#; Copyright (C) 2012  University of Texas at Austin
 
 #; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 #; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTES-2-0.
