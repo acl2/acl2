@@ -195,6 +195,20 @@ lx64fsl-more:
 	fi \
 	done
 
+.PHONY: lx32fsl
+lx32fsl: lx32fsl-more
+
+.PHONY: lx32fsl-more
+lx32fsl-more:
+	@for dir in $(DIRS) ; \
+	do \
+	if [ -f $$dir/Makefile ]; then \
+	(cd $$dir ; \
+	$(MAKE) lx32fsl ; \
+	cd ..) ; \
+	fi \
+	done
+
 .PHONY: clean
 clean: clean-more
 
