@@ -14059,7 +14059,7 @@
   ~c[saved_acl2r].
 
   Note that you should also download the `nonstd' books, from
-  ~url[http://www.cs.utexas.edu/users/moore/acl2/current/distrib/acl2-sources/books/nonstd.tar.gz]
+  ~url[http://acl2-books.googlecode.com/files/nonstd-5.0.tar.gz]
   and then certify them from your acl2-sources directory, shown here as
   ~c[<DIR>]:
   ~bv[]

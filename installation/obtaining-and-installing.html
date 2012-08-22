@@ -113,12 +113,12 @@ other than Gnu tar.  You can see if you have Gnu tar by running
 <UL>
 
   <li><b>Easy download.</b>
-    Fetch <CODE><A HREF="http://acl2-books.googlecode.com/files/books.tar.gz">a
+    Fetch <CODE><A HREF="http://acl2-books.googlecode.com/files/books-5.0.tar.gz">a
     gzipped tarfile</A></CODE> of the distributed books, and then
     extract as follows to create a <code>books/</code>
     subdirectory:<BR>
 
-    <code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;tar xfz books.tar.gz</code>
+    <code>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;tar xfz books-5.0.tar.gz</code>
   </li>
 
   <li><b><font color="red">OR</font></b>, obtain a read-only copy
@@ -149,16 +149,17 @@ provide the workshops books or nonstd books.  You can fetch them
 easily as gzipped tarfiles, as follows, using the following links.
 
 <UL>
-<LI><A HREF="http://acl2-books.googlecode.com/files/workshops.tar.gz">ACL2 Workshops books</A></LI>
-<LI><A HREF="http://acl2-books.googlecode.com/files/nonstd.tar.gz">ACL2(r) books</A></LI>
+<LI><A HREF="http://acl2-books.googlecode.com/files/workshops-5.0.tar.gz">ACL2 Workshops books</A></LI>
+<LI><A HREF="http://acl2-books.googlecode.com/files/nonstd-5.0.tar.gz">ACL2(r) books</A></LI>
 </UL>
 
 Then put the gzipped tarfile(s) in
 the <CODE>acl2-sources/books/</CODE> directory, connect to that
-directory, and extract:<BR>
+directory, and extract to create <CODE>workshops/</CODE>
+and <CODE>nonstd/</CODE> subdirectories, respectively:<BR>
 
-<CODE>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;tar xfz workshops.tar.gz</CODE><BR>
-<CODE>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;tar xfz nonstd.tar.gz</CODE>
+<CODE>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;tar xfz workshops-5.0.tar.gz</CODE><BR>
+<CODE>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;tar xfz nonstd-5.0.tar.gz</CODE>
 
 </UL>
 
@@ -584,7 +585,7 @@ split/     ; The result of splitting up acl2.tar.gz; see split/Readme.html
 
 <P>
 The entire acl2.tar.gz is about 6.7MB, which extracts to
-about 29MB.  The gzipped tarfile books.tar.gz (obtained as described
+about 29MB.  The gzipped tarfile books-5.0.tar.gz (obtained as described
 <a href="#Obtaining-books">above</a>) is about 10MB, which extracts to
 about 59MB.  Additional space is required to build an image, perhaps
 50 to 300 megabytes depending on the platform (including the host
