@@ -21344,7 +21344,7 @@ Recent changes to this page</A>
 </TD>
 <TD>
 <!-- This relative URL is made absolute in distributed tar file -->
-<A HREF=\"installation/installation.html\">Obtaining and Installing Version 5.0</A>
+<A HREF=\"installation/installation.html\">Obtaining, Installing, and License</A>
 </TD>
 
 </TR>

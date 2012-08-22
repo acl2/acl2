@@ -36,14 +36,8 @@ acl2.tar.gz</A> into a new directory, say <code>acl2/v5-0/</code>.</li>
 
 <li>Fetch
   the <A HREF="http://acl2-books.googlecode.com/files/books-5.0.tar.gz">distributed
-  books</A> from the Google Code website.
-  (You can also
-  see <A HREF="obtaining-and-installing.html#Sources">further instructions</A> if you also want to install
-  the
-<A HREF="http://acl2-books.googlecode.com/files/workshops-5.0.tar.gz">workshops
-books</A>
-or <A HREF="http://acl2-books.googlecode.com/files/nonstd-5.0.tar.gz">nonstd
-books</A> under the <CODE>books/</CODE> directory).
+  books</A> from the Google Code website into your
+  new <code>acl2-sources/</code> directory.
 
 <li>Execute the following in <code>acl2-sources/</code> to create
   directory <code>books/</code>:<br>
@@ -65,6 +59,14 @@ make version 3.80 that seemed to be solved with version 3.81.)
 make LISP=&lt;path_to_your_lisp_executable&gt;
 </pre></li>
 
+<li>OPTIONAL: Download gzipped tarfiles
+for <A HREF="http://acl2-books.googlecode.com/files/workshops-5.0.tar.gz">workshops
+books</A>
+and/or <A HREF="http://acl2-books.googlecode.com/files/nonstd-5.0.tar.gz">nonstd
+books</A> into the <CODE>books/</CODE> directory.  (Further
+instructions are
+<A HREF="obtaining-and-installing.html#Sources">here</A>.)
+
 <li>Certify books (this may take a few hours; you can speed this up
 with the option <code>-j N</code> if you have an N-core machine, N&gt;1):
 <pre>
@@ -74,7 +76,7 @@ make regression
 </ol>
 
 You now have an ACL2 executable called <code>saved_acl2</code> (from step 6)
-and access to certified distributed books (from step 7).  Enjoy!
+and access to certified distributed books (from step 8).  Enjoy!
 
 <hr size=3 noshade>
 
