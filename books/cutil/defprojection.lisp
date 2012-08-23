@@ -237,6 +237,12 @@ function.</p>")
                                              `(and (true-listp ,acc)
                                                    ,guard))
                                    :mode ,mode
+                                   ;; we tell ACL2 not to normalize because
+                                   ;; otherwise type reasoning can rewrite the
+                                   ;; definition, and ruin some of our theorems
+                                   ;; below, e.g., when ELEMENT is known to be
+                                   ;; zero always.
+                                   :normalize nil
                                    :verify-guards nil))
                    (if (consp ,x)
                        (,exec-fn ,@(subst `(cdr ,x) x list-args)
@@ -247,6 +253,12 @@ function.</p>")
                  (defun ,list-fn (,@list-args)
                    (declare (xargs :guard ,guard
                                    :mode ,mode
+                                   ;; we tell ACL2 not to normalize because
+                                   ;; otherwise type reasoning can rewrite the
+                                   ;; definition, and ruin some of our theorems
+                                   ;; below, e.g., when ELEMENT is known to be
+                                   ;; zero.
+                                   :normalize nil
                                    :verify-guards nil))
                    ,(if parallelize
                         `(if (consp ,x)
