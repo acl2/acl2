@@ -40869,7 +40869,21 @@
   ~c[:exports]) you will need to supply the name of the function symbol rather
   than the name of the macro; e.g., for the above form
   ~c[(defun-inline foo ...)], you may subsequently issue the event
-  ~c[(verify-guards foo$inline)] but not ~c[(verify-guards foo)].~/"
+  ~c[(verify-guards foo$inline)] but not ~c[(verify-guards foo)].
+
+  (5) Obscure Remark.  Suppose that you certify a book with compilation (the
+  default) in one host Lisp, saving the expansion file.  Suppose that you then
+  compile in another host Lisp by using ~ilc[include-book] with argument
+  ~c[:load-compiled-file :comp].  Then in subsequent sessions, including that
+  book with the second host Lisp will not result in any inline or notinline
+  behavior for functions defined in the book.  This may be fixed in a future
+  release if someone complains.~/"
+
+; Implementor hint for (5) above: Search for ";;; Declaim forms:" in
+; write-expansion-file, and notice the printing just below it of a readtime
+; conditional for the host Lisp, so that declaim forms are restricted to that
+; Lisp.  This mechanism was probably put into place so that declaiming for GCL
+; didn't result in declaiming for Allegro CL, or something along those lines.
 
   (declare (xargs :guard (and (symbolp name)
                               args

@@ -4936,21 +4936,27 @@
 ; If we change or remove this proclaim form, then revisit the comment about
 ; inlining in redefinition-renewal-mode.
 
-                 (proclaim (list 'notinline
-                                 (if oneify-p
-                                     (*1*-symbol (car def0))
-                                   (car def0)))))
+                 (let ((form (list 'notinline
+                                   (if oneify-p
+                                       (*1*-symbol (car def0))
+                                     (car def0)))))
+                   (proclaim form)
+                   (push (list 'declaim form) *declaim-list*)))
                 (oneify-p nil)
                 ((terminal-substringp *inline-suffix*
                                       name
                                       *inline-suffix-len-minus-1*
                                       (1- (length name)))
-                 (proclaim (list 'inline (car def0))))
+                 (let ((form (list 'inline (car def0))))
+                   (proclaim form)
+                   (push (list 'declaim form) *declaim-list*)))
                 ((terminal-substringp *notinline-suffix*
                                       name
                                       *notinline-suffix-len-minus-1*
                                       (1- (length name)))
-                 (proclaim (list 'notinline (car def0)))))))
+                 (let ((form (list 'notinline (car def0))))
+                   (proclaim form)
+                   (push (list 'declaim form) *declaim-list*))))))
   (loop for tail on defs
         do
         (let* ((def (car tail))

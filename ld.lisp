@@ -18550,7 +18550,7 @@
   improved in the case that redefinition is active.  In that case, redundancy
   now additionally requires that the ``translated'' body is unchanged, i.e.,
   even after expanding macro calls and replacing constants (defined by
-  ~ilc[defconst]) with their values.  Thanks for Sol Swords for requesting this
+  ~ilc[defconst]) with their values.  Thanks to Sol Swords for requesting this
   enhancement, and to Jared Davis for pointing out a bug in a preliminary
   change.  ~l[redundant-events], in particular the ``Note About Unfortunate
   Redundancies''.  Note that this additional requirement was already in force
@@ -18826,11 +18826,10 @@
   parallelism.  ~l[provisional-certification].  Thanks to Jared Davis for
   requesting this feature and for helpful discussions, based in part on
   rudimentary provisional certification schemes that he developed first at
-  Rockwell Collins and later for his `Milawa' project.  Thanks also to Sol
-  Also, thanks to Jared and to Sol Swords for testing this feature and for
-  providing a fix for a bug in a preliminary implementation, and thanks to Sol
-  for providing performance feedback and a crucial suggestion that led to an
-  improved implementation.
+  Rockwell Collins and later for his `Milawa' project.  Also, thanks to Jared
+  and to Sol Swords for testing this feature and for providing a fix for a bug
+  in a preliminary implementation, and thanks to Sol for providing performance
+  feedback and a crucial suggestion that led to an improved implementation.
 
   Event summaries now show the names of events that were mentioned in
   ~il[hints] of type ~c[:use], ~c[:by], or ~c[:clause-processor].
@@ -18935,9 +18934,10 @@
   It is now possible to request that the host Lisp compiler inline calls of
   specified functions, or to direct that the host Lisp compiler not inline such
   calls.  ~l[defun-inline] and ~pl[defun-notinline].  We thank Jared Davis for
-  several extensive, relevant conversations.  We also thank others who have
-  engaged in discussions with us about inlining for ACL2; besides Jared Davis,
-  we recall such conversations with Rob Sumners, Dave Greve, and Shilpi Goel.
+  several extensive, relevant conversations, and for finding a bug in a
+  preliminary implementation.  We also thank others who have engaged in
+  discussions with us about inlining for ACL2; besides Jared Davis, we recall
+  such conversations with Rob Sumners, Dave Greve, and Shilpi Goel.
 
   ~st[HEURISTIC IMPROVEMENTS]
 
