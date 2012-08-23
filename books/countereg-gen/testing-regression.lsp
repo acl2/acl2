@@ -94,6 +94,9 @@ of which have not yet been verified.  See :DOC verify-guards.
 ;of the memory.
 (defdata memory (listof (cons nat integer))) 
 ;ISSUE: map not working due to guards
+;ISSUE: print-summary-user-testing is firing where it shouldnt. How should I
+;reset this global flag correctly??
+
 ;; (defdata memory (map nat integer))
 
 (nth-memory 9436794189)
@@ -213,6 +216,7 @@ of which have not yet been verified.  See :DOC verify-guards.
                    (<= b (* 4 c)))
               (< (expt (- a 1) 2) (* b c)))
      :hints (("goal" :cases ((< 0 b)))))
+;08/22/12 ACL2 v5.0 The above thm no longer goes through
 
 
 ;; testcase 5 (only finds cts if arithmetic-5 library is loaded)

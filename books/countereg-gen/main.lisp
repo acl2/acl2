@@ -1716,8 +1716,8 @@ made to x already.")
 
 ; a% represents the snapshot of the beginning of the dpll do-while loop
 (defrec a% (;partial-A is the list of assigns made till now
-            (hyps concl partial-A) ;args to simple-search
-            (run-hist . gcs) ;accumulate in simple-search
+            (hyps concl partial-A) ;args to simple search
+            (run-hist . gcs) ;accumulate in simple search
             ((var . cs) val kind i . inconsistent?) 
 ;result of assign and propagate
             ) 
@@ -1974,20 +1974,130 @@ last decision made in Assign. For more details refer to the FMCAD paper.")
                            ctx wrld state)))))
 
 ;;; The Main counterexample/witness generation function           
-(def cts-wts-search (name H C type-alist elide-map
-                          defaults programp 
+(def cts-wts-search (name H C vars type-alist 
+                          programp defaults 
+                          run-hist% gcs%
                           ctx wrld state)
-  (decl :sig ((string pseudo-term-list pseudo-term symbol-alist symbol-alist 
-                      symbol-alist boolean
+  (decl :sig ((string pseudo-term-list pseudo-term symbol-list
+                      symbol-alist 
+                      boolean symbol-alist 
+                      run-hist%-p gcs%-p
+                      symbol plist-world state)
+              -> (mv erp (list boolean s-hist gcs%) state))
+        :mode :program
+        :doc 
+"
+* Synopsis       
+  Local interface to subgoal-level counterexample and witness
+  search using either naive testing or incremental dpll
+  style search for counterexamples.
+
+* Input parameters
+  - first 7 params other than vars, see def csearch
+  - vars :: free variables of (H=>C) in dependency order
+  - run-hist% :: newly created run-hist% for this subgoal
+  - gcs% :: global gcs%
+  - rest see def csearch
+
+* Output signature 
+  - (mv erp (list stop? run-hist% gcs%) state) where erp is the error tag which is non-nil
+    when an error took place during evaluation of (search ...). 
+    stop? is T if we should abort our search, i.e our stopping
+    condition is satisfied (this value is given by run-tests), 
+    otherwise stop? is NIL (by default). run-hist% and gcs% are 
+    accumulated in the search for cts and wts in the current conjecture
+
+* What it does
+  1. retrieve the various search/testing parameters
+  2a. if form has no free variables exit with appropriate return val
+  2b. otherwise call simple or incremental search
+     depending on the search-strategy set in defaults.
+  
+  3. return error triple containing stop? (described in simple-search)
+")
+
+  
+  (b* ((N (get-acl2s-default 'num-trials defaults 0)) ;shudnt it be 100?
+;Note: I dont need to provide the default arg 0 above, since we are
+;sure the defaults alist we get is complete i.e it would definitely
+;contain the key 'num-trials'. But I am envisioning a scenario, where
+;I might call this function on its own and not via test?, then this
+;functionality is useful for debugging.
+       (vl (get-acl2s-default 'verbosity-level defaults 1))
+       (sm (get-acl2s-default 'sampling-method defaults :random))
+       (ss (get-acl2s-default 'search-strategy defaults :simple))
+       (blimit (get-acl2s-default 'backtrack-limit defaults 2))
+       
+       (form  `(implies (and ,@H) ,C)))
+;  in
+   (if (endp (all-vars-lst (cons C H)));(constant-value-expressionp form wrld)
+       ;;dont even try trivial forms like constant expressions
+       (b* (((mv erp c state)
+             (trans-eval-single-value form ctx state))
+            ((mv run-hist% gcs%)
+             (record-testrun. (if c :witness :counterexample)
+                              '() 
+                              run-hist% gcs%)))
+;       in
+        (prog2$
+         (cw? (verbose-flag vl)
+              "~%Stop searching ~x0, formula evaluates to a constant ~x1.~%"  
+              name c)
+         (mv erp (list NIL run-hist% gcs%) state)))
+
+;ELSE ATLEAST ONE VARIABLE
+;     in
+      (case ss ;search strategy
+        (:simple      (simple-search name 
+                                     H C vars '()
+                                     type-alist
+                                     run-hist% gcs% 
+                                     N vl sm programp
+                                     ctx wrld state))
+                          
+
+        (:incremental (if (endp (cdr vars))
+;bugfix 21 May '12 - if only one var, call simple search
+                          (simple-search name
+                                         H C vars '()
+                                         type-alist
+                                         run-hist% gcs% 
+                                         N vl sm programp
+                                         ctx wrld state)
+                        
+                        (b* ((P  (cons (dumb-negate-lit C) H))
+                             (x0 (select P (debug-flag vl)))
+                             (partial-A '())
+                             ((mv & H~ C~ a% state) 
+                              (assign-propagate... x0 0 NIL)))
+;                              in
+                         (incremental-search vars H~ C~ a% '()
+                                             name type-alist
+                                             N vl sm blimit programp
+                                             ctx wrld state))))
+                           
+                       
+        (otherwise (prog2$ 
+                    (cw? (normal-output-flag vl)
+"~|Error in search: Only simple & incremental search strategy are available~|")
+                    (mv T NIL state)))))))
+
+   
+(def csearch (name H C 
+                   type-alist elide-map 
+                   programp defaults 
+                   ctx wrld state)
+  (decl :sig ((string pseudo-term-list pseudo-term 
+                      symbol-alist symbol-alist 
+                      boolean symbol-alist
                       symbol plist-world state)
               -> (mv erp boolean state))
         :mode :program
         :doc 
 "
 * Synopsis       
-  Interface to subgoal-level counterexample and witness
-  search using either naive testing or incremental dpll
-  style search for counterexamples.
+  Main Interface to searching for counterexamples (and witnesses)
+  in the conjecture (H => C)
 
 * Input parameters
   - name :: name of subgoal or 'top if run from test?
@@ -1995,10 +2105,10 @@ last decision made in Assign. For more details refer to the FMCAD paper.")
   - C :: conclusion
   - type-alist :: types inferred by ACL2 forward-chain
   - elide-map :: elide-map[v] = term for each elided variable v
-  - defaults :: alist overiding the current acl2s-defaults
   - programp :: T when form has a program mode fun or we are in :program
                 Its only use is for efficiency. We use guard-checking :none
                 for programp = T and nil otherwise, which is more efficient.
+  - defaults :: alist overiding the current acl2s-defaults
   - ctx :: usually the top-level form which employed this procedure
   - wrld :: current acl2 world
   - state :: state
@@ -2006,19 +2116,15 @@ last decision made in Assign. For more details refer to the FMCAD paper.")
 * Output signature 
   - (mv erp stop? state) where erp is the error tag which is non-nil
     when an error took place during evaluation of (search ...). 
-    stop? is T if we should abort our search, i.e our stopping
-    condition is satisfied (this value is given by run-tests), 
-    otherwise stop? is NIL (by default). 
+    stop? is T if we should abort our search.
 
 * What it does
-  1. if form has no free variables exit with appropriate return val
-  2. construct a new s-hist-entry% and call simple or incremental search
-     depending on the search-strategy set in defaults.
-  3. the resulting run-hist% (a field in s-hist-entry%), gcs% 
+  1. construct a new s-hist-entry% and call cts-wts-search 
+     with globals @gcs, run-hist% and defaults
+  2. the return values of run-hist% (a field in s-hist-entry%), gcs% 
      are recorded in globals @gcs and @s-hist.
-  4. return error triple containing stop? (described in simple-search)
+  3. return error triple containing stop? (described in simple-search)
 ")
-
   (f* ((update-cts-search-globals ()
          (b* ((s-hist-entry% (change s-hist-entry% run-hist run-hist%))
               ((mv end state) (acl2::read-run-time state))
@@ -2030,95 +2136,28 @@ last decision made in Assign. For more details refer to the FMCAD paper.")
               (state (put-s-hist-global s-hist))
               (state  (put-gcs%-global gcs%)))
           state)))
-                  
-  (b* ((N (get-acl2s-default 'num-trials defaults 0)) ;shudnt it be 100?
-;Note: I dont need to provide the default arg 0 above, since we are
-;sure the defaults alist we get is complete i.e it would definitely
-;contain the key 'num-trials'. But I am envisioning a scenario, where
-;I might call this function on its own and not via test?, then this
-;functionality is useful for debugging.
-       (vl (get-acl2s-default 'verbosity-level defaults 1))
-       (sm (get-acl2s-default 'sampling-method defaults :random))
-       (ss (get-acl2s-default 'search-strategy defaults :simple))
-       (blimit (get-acl2s-default 'backtrack-limit defaults 2))
-       ((mv start state) (acl2::read-run-time state))
-       (form  `(implies (and ,@H) ,C)))
-;  in
-   (if (endp (all-vars-lst (cons C H)));(constant-value-expressionp form wrld)
-       ;;dont even try trivial forms like constant expressions
-       (b* (((mv erp c state)
-             (trans-eval-single-value form ctx state))
-            (s-hist-entry% (initial-s-hist-entry% name H C '()
-                                                  type-alist elide-map start))
-            (gcs% (get-gcs%-global))
-            ((mv run-hist% gcs%)
-             (record-testrun. (if c :witness :counterexample)
-                              '() 
-                              (access s-hist-entry% run-hist)
-                              gcs%)))
-;       in
-        (prog2$
-         (cw? (verbose-flag vl)
-              "~%Stop searching ~x0; formula evaluates to a constant ~x1.~%"  
-              name c)
-         (let ((state (update-cts-search-globals)))
-          (mv erp NIL state))))
-
-;ELSE ATLEAST ONE VARIABLE
-     (b* ((vars (vars-in-dependency-order H C vl wrld))
-          (s-hist-entry% (initial-s-hist-entry% name H C vars 
-                                                type-alist elide-map start))
+      (b* (((mv start state) (acl2::read-run-time state))
+           (vl (get-acl2s-default 'verbosity-level defaults 1))
+           (vars (vars-in-dependency-order H C vl wrld))
+           (s-hist-entry% (initial-s-hist-entry% 
+                           name H C vars 
+                           type-alist elide-map start))
           (run-hist% (access s-hist-entry% run-hist))
           (gcs% (get-gcs%-global))
-          (partial-A '()))
-;     in
-      (case ss ;search strategy
-        (:simple     (b* (((mv erp (list stop? run-hist% gcs%) state)
-                           (simple-search name 
-                                          H C vars partial-A
-                                          type-alist
-                                          run-hist% gcs% 
-                                          N vl sm programp
-                                          ctx wrld state))
-                          (state (update-cts-search-globals)))
-                      ;;in
-                      (prog2$ 
-                       (and erp
-                            (cw? (normal-output-flag vl)
-"~|Error occurred in simple-search.~|"))
-                       (mv erp stop? state))))
 
-        (:incremental (b* (((mv erp (list stop? run-hist% gcs%) state)
-                            (if (endp (cdr vars))
-;bugfix 21 May '12 - if only one var, call simple search
-                                (simple-search name
-                                               H C vars partial-A
-                                               type-alist
-                                               run-hist% gcs% 
-                                               N vl sm programp
-                                               ctx wrld state)
-                          
-                              (b* ((P  (cons (dumb-negate-lit C) H))
-                                   (x0 (select P (debug-flag vl)))
-                                   ((mv & H~ C~ a% state) 
-                                    (assign-propagate... x0 0 NIL)))
-;                              in
-                               (incremental-search vars H~ C~ a% '()
-                                                   name type-alist
-                                                   N vl sm blimit programp
-                                                   ctx wrld state))))
-                           (state (update-cts-search-globals)))
-                       (prog2$ 
-                        (and erp
-                             (cw? (normal-output-flag vl)
-"~|Error occurred in incremental-search.~|"))
-                        (mv erp stop? state))))
-        (otherwise (prog2$ 
-                    (cw? (normal-output-flag vl)
-"~|Error in search: Only simple & incremental search strategy are available~|")
-                    (mv T NIL state)))))))))
-
-   
+          ((mv erp (list stop? run-hist% gcs%) state)
+           (cts-wts-search name H C vars type-alist programp 
+                           defaults run-hist% gcs%
+                           ctx wrld state))
+          (state (update-cts-search-globals)))
+       (prog2$ 
+        (and erp
+             (cw? (normal-output-flag vl)
+                  "~|Error occurred in cts-wts-search.~|"))
+        (mv erp stop? state)))))
+       
+                  
+  
 ;;list comprehension syntax
 ;; (and (true-listp vs)
 ;;      (null |[x : x in vs :  (not (possible-defdata-type-p x))]|))
@@ -2223,7 +2262,7 @@ doesnt work on an make-event
             (get-dest-elim-replaced-terms (cdr elim-sequence))))))
 
 
-(defun walk-to-ancestors-and-collect-replaced-terms (hist ans)
+(defun collect-replaced-terms (hist ans)
   (declare (xargs :mode :program))
   (if (endp hist)
     ans
@@ -2238,20 +2277,20 @@ doesnt work on an make-event
                     (list-up-lists 
                      (acl2::tagged-object 'acl2::terms ttree)
                      (acl2::tagged-object 'acl2::variables ttree))))
-               (walk-to-ancestors-and-collect-replaced-terms 
+               (collect-replaced-terms 
                 (cdr hist) (append ans1 ans))))
             ((eq proc 'acl2::eliminate-destructors-clause)
 ;Destructor elimination
              (let* ((elim-sequence 
                      (acl2::tagged-object 'acl2::elim-sequence ttree))
                     (ans1 (get-dest-elim-replaced-terms elim-sequence)))
-               (walk-to-ancestors-and-collect-replaced-terms
+               (collect-replaced-terms
                 (cdr hist) (append ans1 ans))))
 ;Else (simplification and etc etc)
             (t (let* ((binding-lst 
                        (acl2::tagged-object 'acl2::binding-lst ttree))
                       (ans1 (convert-conspairs-to-listpairs binding-lst)))
-                 (walk-to-ancestors-and-collect-replaced-terms
+                 (collect-replaced-terms
                   (cdr hist) (append ans1 ans))))))))
                  
 
@@ -2641,6 +2680,59 @@ history s-hist.")
 ;                         PRINT end                             |
 ;----------------------------------------------------------------
 
+
+(defun get-acl2-type-alist (cl pspv vl wrld state)
+  (declare (xargs :mode :program
+                  :stobjs (state)))
+  (b* ((ens (acl2::access acl2::rewrite-constant
+                          (acl2::access 
+                           acl2::prove-spec-var pspv :rewrite-constant)
+                          :current-enabled-structure))
+       
+;Use forward-chain ACL2 system function to build the context
+;This context, gives us the type-alist ACL2 inferred from the
+;the current subgoal i.e. cl
+       ((mv & type-alist &)
+        (acl2::forward-chain cl
+                             (acl2::enumerate-elements cl 0)
+                             nil ; do not force
+                             nil ; do-not-reconsiderp
+                             (w state)
+                             ens
+                             (acl2::match-free-override wrld)
+                             state))
+       (vt-acl2-alst  (acl2::get-var-types-from-type-alist 
+                       type-alist (all-vars-lst cl)))
+       (- (cw? (debug-flag vl) 
+"~|ACL2 type-alist: ~x0~|" vt-acl2-alst)))
+   vt-acl2-alst))
+   
+  
+
+(defun cts-wts-search-clause (cl name pspv hist vl ctx wrld state)
+  "helper function for test-checkpoint. It basically sets up 
+   everything for the call to csearch."
+  (declare (xargs :stobjs (state)
+                  :mode :program))
+                  
+  (b* ((vt-acl2-alst (get-acl2-type-alist cl pspv vl wrld state))
+       
+       ((mv hyps concl) (clause-mv-hyps-concl cl))
+       
+       (elided-var-map (collect-replaced-terms hist nil))
+       ;; Ordering is necessary to avoid errors in printing top-level cts
+     
+       (ord-elide-map (do-let*-ordering elided-var-map 
+                                        (debug-flag vl)))
+       (defaults (acl2s-defaults-alist))
+       )
+       
+   (csearch name hyps concl 
+            vt-acl2-alst ord-elide-map 
+            NIL defaults 
+            ctx wrld state)))
+
+
 (mutual-recursion
 (defun all-functions-definedp (term wrld)
   "are all the functions used in term executable?"
@@ -2672,7 +2764,7 @@ history s-hist.")
 ;; engineering design of ACL2 theorem prover.
 ;; If somebody reads this comment, I would be very interested in any other
 ;; theorem-provers having a call-back mechanism in their implementation.
-(defun acl2::test-checkpoint (id cl processor pspv hist state)
+(defun acl2::test-checkpoint (id cl cl-list processor pspv hist state)
   (declare (xargs :stobjs (state)
                   :mode :program
                   :guard (consp pspv)))
@@ -2748,43 +2840,16 @@ id processor hyps concl))
         (value nil));ignore backtrack hint
        
        
-       (ens (acl2::access acl2::rewrite-constant
-                          (acl2::access 
-                           acl2::prove-spec-var pspv :rewrite-constant)
-                          :current-enabled-structure))
-       
-;Use forward-chain ACL2 system function to build the context
-;This context, gives us the type-alist ACL2 inferred from the
-;the current subgoal i.e. cl
-       (wrld (w state))
-       
-       ((mv & type-alist &)
-        (acl2::forward-chain cl
-                             (acl2::enumerate-elements cl 0)
-                             nil ; do not force
-                             nil ; do-not-reconsiderp
-                             (w state)
-                             ens
-                             (acl2::match-free-override wrld)
-                             state))
-       ((mv hyps concl) (clause-mv-hyps-concl cl))
-       
        (name (acl2::string-for-tilde-@-clause-id-phrase id))
-       (elided-var-map (walk-to-ancestors-and-collect-replaced-terms hist nil))
-       ;; Ordering is necessary to avoid errors in printing top-level cts
-     
-       (ord-elide-map (do-let*-ordering elided-var-map (debug-flag vl)))
-       (vt-acl2-alst  (acl2::get-var-types-from-type-alist 
-                       type-alist (all-vars-lst cl)))
-       (- (cw? (debug-flag vl) "~|ACL2 type-alist: ~x0~|" vt-acl2-alst))
-       
-       ((mv ?erp stop? state) (cts-wts-search name hyps concl 
-                                              vt-acl2-alst ord-elide-map
-                                              (acl2s-defaults-alist) 
-                                              NIL ctx wrld state))
+       (wrld (w state))
+       ((mv & stop? state) (cts-wts-search-clause cl name pspv hist 
+                                                  vl ctx wrld state))
        (gcs% (get-gcs%-global))
-       ((er &) (if (> (access gcs% cts) 0)
-                   (assign print-summary-user-flag T) ;for print-summary-user
+       ((er &) (if (and (> (access gcs% cts) 0)
+;1. only print summary if there is a counterexample
+;2. dont bother with test?, since test? does give a summary at the end
+                        (acl2::function-symbolp 'inside-test? (w state)))
+                   (assign print-summary-user-flag T)
                  (value nil)))
        )
    
@@ -2797,8 +2862,29 @@ id processor hyps concl))
           (print-testing-summary-fn vl state))
         
         (mv t nil state))
+     (if (equal processor 'acl2::generalize-clause)
+         ;NOTE: this pspv is for the cl not for cl-list, so there
+         ;might be some inconsistency or wierdness here
+         (b* ((gen-cl (car cl-list))
+              (type-alist (get-acl2-type-alist gen-cl pspv vl wrld state))
+              ((mv H C) (clause-mv-hyps-concl gen-cl))
+              (vars (vars-in-dependency-order H C vl wrld))
+              ((mv erp (list & run-hist% &) state)
+               (cts-wts-search name H C vars
+                           type-alist NIL
+                           (acl2s-defaults-alist) 
+                           *initial-run-hist%* 
+; we dont care about witnesses and the start time
+                           (initial-gcs% 1 0 0 (cons H C))
+                           ctx wrld state))
+              (num-cts-found (access run-hist% |#cts|)))
+          (value (if (and (not erp)
+                          (> num-cts-found 0))
+                     '(:do-not '(acl2::generalize)
+                               :no-thanks t)
+                   nil)))
 ;ignore errors in cts search function
-     (mv nil nil state))))
+       (value nil)))))
 
 
 ;Dont print the "Thanks" message:
@@ -2925,10 +3011,10 @@ id processor hyps concl))
        (- (cw? (and (not programp)
                     (debug-flag vl))
  "~|ACL2 type-alist for TOP : ~x0~|" vt-acl2-alst))
-       ((mv erp ?stop? state) (cts-wts-search "top" hyps concl 
-                                              vt-acl2-alst '() 
-                                              defaults programp
-                                              ctx wrld state))
+       ((mv erp ?stop? state) (csearch "top" hyps concl 
+                                       vt-acl2-alst '() 
+                                       programp defaults
+                                       ctx wrld state))
               
 ; abort b* if top-level-test? failed
 ; or  if form contains a program-mode function

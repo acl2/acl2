@@ -503,7 +503,8 @@ for counterexamples.
 ;take parent pspv and hist, not the ones returned by clause-processor
 
              `(test-checkpoint acl2::id 
-                                    acl2::clause 
+                                    acl2::clause
+                                    acl2::clause-list
                                     acl2::processor
 ;TODO:ask Matt about sending parent pspv and hist
                                     ',acl2::pspv 
@@ -535,6 +536,7 @@ for counterexamples.
        '((list* :backtrack 
                 `(test-checkpoint acl2::id 
                                        acl2::clause 
+                                       acl2::clause-list
                                        acl2::processor 
                                        ',acl2::pspv 
                                        ',acl2::hist
