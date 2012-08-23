@@ -10,11 +10,18 @@
 
 <ul>
 
+<LI><A HREF="#vstte-12">VSTTE 2012 Competition</A></LI>
 <LI><A HREF="#acl2-books">ACL2 Books Repository</A></LI>
 <LI><A HREF="#performance">Performance Comparisons</A></LI>
 <LI><A HREF="#courses">ACL2 Course Materials</A></LI>
 
 </ul>
+
+<A NAME="vstte-12"><H2>VSTTE 2012 Competition</H2>
+
+A team of four ACL2 users entered the VSTTE 2012 competition.  For
+  information, including the team's solution, visit
+  this <a href="http://www.cs.utexas.edu/users/moore/acl2/vstte-2012/index.html">link</a>.
 
 <A NAME="acl2-books"><H2>ACL2 Books Repository</H2></A>
 
@@ -37,7 +44,89 @@ eventually incorporated into official ACL2 releases.
 
 <A NAME="performance"><H2>Performance Comparisons</H2></A>
 
-<i>Coming soon....</i>
+<p>
+
+The statistics below correspond to runs of <code>make -j 8
+regression</code> using both distributed
+and <a href="distrib/acl2-sources/books/workshops.tar.gz">workshop</a>
+books, skipping directory <code>books/clause-processors/SULFA/</code>,
+for ACL2 executables built on Linux platforms as indicated.  Not shown
+are results of testing on Windows and Mac OS X.  Each regression was
+run on Ubuntu Linux.
+
+<p>
+
+<H3>64-bit ACL2 Linux runs on 4-core Intel(R) Xeon(R) with Hyper-Threading, 3.5 GHz machine using make -j 8</H3>
+
+Note: We ran regression using CLISP 2.44.1 as well, but without the
+<code>workshops/</code> books.  The wall clock time was close to 3
+hours, exceeding all the times below even though those below
+include certification of the <code>workshops/</code> books.
+
+<ul>
+
+<li>CCL Version 1.9-dev-r15314M-trunk
+<pre>
+14779.560u 288.770s 49:07.53 511.2%	0+0k 225288+915328io 475pf+0w
+
+<i>Compare with ACL2(p), the experimental extension of ACL2 with parallel
+proof (as reported in David Rager's dissertation):</i>
+
+14173.100u 563.430s 39:10.14 627.0%	0+0k 239448+940704io 489pf+0w</pre></li>
+
+<li>Gnu Common Lisp (GCL) Version 2.6.8pre, 524288 maximum pages:
+<pre>
+16947.870u 639.020s 53:16.67 550.1%	0+0k 340320+2437920io 611pf+0w</pre></li>
+
+<li>Lispworks Version 6.1.0:
+<pre>
+14459.400u 252.460s 47:48.26 512.9%	0+0k 203176+950544io 553pf+0w</pre></li>
+
+<li>SBCL Version 1.0.49:
+<pre>
+18991.440u 414.700s 1:05:25.00 494.4%	0+0k 414576+1149896io 860pf+0w</pre></li>
+
+</ul>
+
+<H3>64-bit ACL2(h) Linux runs on 4-core Intel(R) Xeon(R) with Hyper-Threading, 3.5 GHz machine using make -j 8</H3>
+
+Note that unlike the times above, the times just below are for the <a href="http://www.cs.utexas.edu/users/moore/acl2/current/HONS-AND-MEMOIZATION.html">HONS
+version of ACL2</a>, i.e., ACL2(h), <b>and they reflect a significantly
+larger regression suite than do the times above.</b>
+
+<ul>
+
+<li>CCL Version 1.7-dev-r14860M-trunk
+<pre>
+22025.870u 1323.510s 1:17:09.53 504.3%	0+0k 316424+1345976io 1878pf+0w</pre></li>
+
+<li>Lispworks Version 6.1.0:
+<pre>
+23672.800u 460.130s 1:20:09.15 501.8%	0+0k 211952+1350728io 1403pf+0w</pre></li>
+
+<li>SBCL Version 1.0.49:
+<pre>
+30563.800u 768.890s 1:43:21.47 505.2%	0+0k 496120+1604168io 1968pf+0w</pre></li>
+
+</ul>
+
+<H3>32-bit ACL2 Linux runs on 4-core Intel(R) Xeon(R) with Hyper-Threading, 2.8 GHz machine using make -j 8</H3>
+
+<ul>
+
+<li>Gnu Common Lisp (GCL) Version 2.6.8pre, 524288 maximum pages:
+<pre>19287.745u 550.174s 1:03:10.33 523.3%	0+0k 195784+2304704io 328pf+0w</pre></li>
+
+<li>Allegro Common Lisp (Allegro CL) Version 8.0:
+<pre>22120.106u 313.839s 1:17:43.59 481.0%	0+0k 107280+952896io 199pf+0w</pre></li>
+
+<li>CCL Version 1.9-dev-r15314M-trunk
+<pre>22748.149u 341.213s 1:19:15.08 485.5%	0+0k 158928+912616io 331pf+0w</pre></li>
+
+<li>CMU Common Lisp (CMUCL) Version 19e:<br>
+<pre>48736.445u 945.459s 2:57:50.74 465.5%	0+0k 169312+1091672io 323pf+0w</pre></li>
+
+</ul>
 
 <p>
 
