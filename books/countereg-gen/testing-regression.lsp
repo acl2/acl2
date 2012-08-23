@@ -48,8 +48,10 @@ of which have not yet been verified.  See :DOC verify-guards.
             ((equal (first v) (third v)) "isosceles")
             (t "scalene"))
     "error"))
+
 (acl2s-defaults :set num-trials 1000000)
 (acl2s-defaults :set testing-enabled :naive)
+
 (time$
 (test? 
  (implies (and (triplep x)
@@ -245,6 +247,7 @@ of which have not yet been verified.  See :DOC verify-guards.
                         (list 'and formula formula)
                         (list 'or formula formula)
                         (list 'implies formula formula)))
+;ISSUE: made defdata idempotent (redundant events)
 
 (defun simplify (f)
   ;:input-contract (formulap f)

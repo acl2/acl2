@@ -109,7 +109,9 @@
   (declare (xargs :mode :program
                   :guard (and (alistp acl2-type-alist)
                               (symbol-listp freevars))))
-  (get-var-types-from-type-alist1 acl2-type-alist freevars '()))
+  (if (endp acl2-type-alist)
+      '()
+    (get-var-types-from-type-alist1 acl2-type-alist freevars '())))
 
 
 

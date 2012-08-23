@@ -2156,7 +2156,28 @@ last decision made in Assign. For more details refer to the FMCAD paper.")
                   "~|Error occurred in cts-wts-search.~|"))
         (mv erp stop? state)))))
        
-                  
+   
+(def csearch-with-timeout (name H C 
+                                type-alist elide-map 
+                                programp defaults 
+                                ctx wrld state)
+  (decl :sig ((string pseudo-term-list pseudo-term 
+                      symbol-alist symbol-alist 
+                      boolean symbol-alist
+                      symbol plist-world state)
+              -> (mv erp boolean state))
+        :mode :program
+        :doc "wrap csearch with a timeout mechanism")
+  (acl2::with-timeout1
+   (acl2s-defaults :get subgoal-timeout)
+   (csearch name H C type-alist elide-map programp defaults ctx wrld state)
+   (prog2$
+    (cw? (normal-output-flag 
+             (get-acl2s-default 'verbosity-level defaults 1))
+            "~|Search for counterexamples TIMED OUT!~%")
+; error flag raised. stop? is set to NIL but it doesnt matter I guess.
+    (mv T NIL state))))
+               
   
 ;;list comprehension syntax
 ;; (and (true-listp vs)
@@ -2645,6 +2666,7 @@ history s-hist.")
   (declare (xargs :mode :program
                   :stobjs (state)))
   (b* ((ctx 'print-testing-summary)
+;when testing errored out or timed out, theres no point of printing.
        (s-hist (get-s-hist-global))
        ((unless (and (consp s-hist) (consp (car s-hist))
                      (equal "top" (caar s-hist))))
@@ -2766,9 +2788,7 @@ history s-hist.")
 ;; theorem-provers having a call-back mechanism in their implementation.
 (defun acl2::test-checkpoint (id cl cl-list processor pspv hist state)
   (declare (xargs :stobjs (state)
-                  :mode :program
-                  :guard (consp pspv)))
-;; ASK MATT, why is pspv an irrelevant formal!
+                  :mode :program))
 
 ;;   (decl :sig ((symbol clause symbol any any state) -> (mv erp boolean state))
 ;;         :mode :program
@@ -2777,14 +2797,15 @@ history s-hist.")
 ;; This function uses override hint + backtrack hint combination.
 ;; On the top-level GOAL it initializes gcs% and s-hist. On SUBGOALS 
 ;; that are not checkpoints does no-op. On checkpoints it calls the 
-;; cts/wts/search procedure.
+;; cts search procedure.
 ;; ")
 ; RETURN either (mv t nil state) or (mv nil nil state) 
 ; PRECONDITION -
 ; INVARIANT - no new prove call is made during the computation of this
 ; function (this is very important)
-
-  (b* ((ctx 'acl2::test-checkpoint)
+  (acl2::with-timeout1 
+   (acl2s-defaults :get subgoal-timeout)
+   (b* ((ctx 'acl2::test-checkpoint)
 ;TODObug: test? defaults should be the one to be used
        (vl (acl2s-defaults :get verbosity-level)) 
 ;27 June 2012 - Fixed bug, in CCG, some lemmas are non-executable, since they
@@ -2848,7 +2869,7 @@ id processor hyps concl))
        ((er &) (if (and (> (access gcs% cts) 0)
 ;1. only print summary if there is a counterexample
 ;2. dont bother with test?, since test? does give a summary at the end
-                        (acl2::function-symbolp 'inside-test? (w state)))
+                        (not (acl2::function-symbolp 'inside-test? (w state))))
                    (assign print-summary-user-flag T)
                  (value nil)))
        )
@@ -2884,7 +2905,12 @@ id processor hyps concl))
                                :no-thanks t)
                    nil)))
 ;ignore errors in cts search function
-       (value nil)))))
+       (value nil))))
+   (prog2$
+    (cw? (normal-output-flag (acl2s-defaults :get verbosity-level))
+         "~|Subgoal counterexample search TIMED OUT!~%")
+    (value nil))
+   ))
 
 
 ;Dont print the "Thanks" message:
@@ -2941,140 +2967,149 @@ id processor hyps concl))
               -> (mv erp any state))
         :doc "gives an error triple wrapping a form that will be ... ")
   (f* ((check-syntax   (form logicp) (acl2::translate form  T logicp T 
-                                                        "test? check" 
-                                                        wrld state)))
-  (b* ((defaults (acl2s-defaults-alist override-defaults))
-       (testing-enabled   (get-acl2s-default 'testing-enabled defaults))
-       (vl                (get-acl2s-default 'verbosity-level defaults))
-       ((when (eq testing-enabled NIL)) ;dont do any testing
-        (value '(value-triple :invisible))))
-       
-  (acl2::state-global-let*
-   ((acl2::inhibit-output-lst 
-     (if (system-debug-flag vl)
-         '(summary)
-       acl2::*valid-output-names*)))
-   
-  (b* (((mv erp term state) (check-syntax form NIL))
-       ((when erp)          (prog2$
-                             (cw? (normal-output-flag vl) 
-"~|TEST?: The input form is ill-formed, see below:~%")
+                                                      "test? check" 
+                                                      wrld state)))
+   (b* ((defaults (acl2s-defaults-alist override-defaults))
+        (testing-enabled (get-acl2s-default 'testing-enabled defaults))
+        (vl              (get-acl2s-default 'verbosity-level defaults))
+        ((when (eq testing-enabled NIL)) ;dont do any testing
+         (value '(value-triple :invisible))))
+    
+    (acl2::state-global-let*
+     ((acl2::inhibit-output-lst 
+       (if (system-debug-flag vl)
+           '(summary)
+         acl2::*valid-output-names*)))
+     
+     (b* (((mv erp term state) (check-syntax form NIL))
+          ((when erp)          
+           (prog2$
+            (cw? (normal-output-flag vl) 
+                 "~|TEST?: The input form is ill-formed, see below:~%")
 ;show error to user which was invisble earlier
-                             (acl2::state-global-let*
-                              ((acl2::inhibit-output-lst '(summary)))
-                              (acl2::translate form  T NIL T 
-                                               "test? check" 
-                                               (w state) state))))
-                             
-               
+            (acl2::state-global-let*
+             ((acl2::inhibit-output-lst '(summary)))
+             (acl2::translate form  T NIL T 
+                              "test? check" 
+                              (w state) state))))
+          
+          
 ; No syntax error in input form, check for program-mode fns
 ; Note: translate gives nil as the term if form has
 ; a program-mode function, so we ignore it
-       ((mv pm? & state)    (check-syntax form T))
-       
-       (programp            (or pm?
-                                (eq (default-defun-mode (w state)) 
-                                    :program)))
+          ((mv pm? & state)    (check-syntax form T))
+          (programp            (or pm?
+                                   (eq (default-defun-mode (w state)) 
+                                       :program)))
 
-       ;; get rid of lambdas i.e let/let*
-       (term  (expand-lambda term))
-       (pform (acl2::prettyify-clause (list term) nil wrld))
-    
-       ((mv phyps pconcl)  (mv (get-hyps pform) (get-concl pform)))
-    
-       ((er hyps) (acl2::translate-term-lst phyps 
-                                            t nil t "test?" wrld state)) 
-       ((er concl) (acl2::translate pconcl t nil t "test?" wrld state))
+          ;; get rid of lambdas i.e let/let*
+          (term  (expand-lambda term))
+          (pform (acl2::prettyify-clause (list term) nil wrld))
+          
+          ((mv phyps pconcl)  (mv (get-hyps pform) (get-concl pform)))
+          
+          ((er hyps) (acl2::translate-term-lst phyps 
+                                               t nil t "test?" wrld state)) 
+          ((er concl) (acl2::translate pconcl t nil t "test?" wrld state))
+
 ; initialize these per test?/thm/defthm globals that store information
 ; across subgoals in a single thm event
-       ((mv start-top state) (acl2::read-run-time state))
-       (gcs%  (initial-gcs% 
-               (get-acl2s-default 'num-counterexamples defaults)
-               (get-acl2s-default 'num-witnesses defaults)
-               start-top (cons hyps concl)))
-       (state (put-gcs%-global gcs%))
-       (state (put-s-hist-global '()))
-       ((er &) (assign print-summary-user-flag NIL)) ;reset
-       ((mv & type-alist &)
-        (if programp (mv nil '() nil)
-          (acl2::forward-chain (list term);cl CHECK with Matt!
-                               (acl2::enumerate-elements (list term) 0)
-                               nil ; do not force
-                               nil ; do-not-reconsiderp
-                               wrld (acl2::ens state)
-                               (acl2::match-free-override wrld)
-                               state)))
-       (vt-acl2-alst (and type-alist
-                          (acl2::get-var-types-from-type-alist 
-                           type-alist (all-vars term))))
-                                                      
-       (- (cw? (and (not programp)
-                    (debug-flag vl))
- "~|ACL2 type-alist for TOP : ~x0~|" vt-acl2-alst))
-       ((mv erp ?stop? state) (csearch "top" hyps concl 
-                                       vt-acl2-alst '() 
-                                       programp defaults
-                                       ctx wrld state))
-              
-; abort b* if top-level-test? failed
-; or  if form contains a program-mode function
-; or if test? is called in program-mode
-       (abortp  (or erp stop? programp (eq testing-enabled :naive)))
-      
+          ((mv start-top state) (acl2::read-run-time state))
+          (gcs%  (initial-gcs% 
+                  (get-acl2s-default 'num-counterexamples defaults)
+                  (get-acl2s-default 'num-witnesses defaults)
+                  start-top (cons hyps concl)))
+          (state (put-gcs%-global gcs%))
+          (state (put-s-hist-global '()))
+          ((er &) (assign print-summary-user-flag NIL)) ;reset
+         
+          ((mv & type-alist &)
+           (if programp (mv nil '() nil)
+             (acl2::forward-chain (list term);cl CHECK with Matt!
+                                  (acl2::enumerate-elements (list term) 0)
+                                  nil ; do not force
+                                  nil ; do-not-reconsiderp
+                                  wrld (acl2::ens state)
+                                  (acl2::match-free-override wrld)
+                                  state)))
+          (vt-acl2-alst (acl2::get-var-types-from-type-alist 
+                         type-alist (all-vars term)))
+          
+          (- (cw? (and (not programp)
+                       (debug-flag vl))
+                  "~|ACL2 type-alist for TOP : ~x0~|" vt-acl2-alst))
+          ((mv error-or-timeoutp ?stop? state) 
+           (csearch-with-timeout "top" hyps concl 
+                                 vt-acl2-alst '() 
+                                 programp defaults
+                                 ctx wrld state))
+          
+; dont take theorem prover's help if 
+; 1. csearch errored out or timed out
+; 2. stopping condition has already been reached
+; 3. form contains a program-mode function or we are in program mode
+; 4. testing is set to :naive
+          (no-thm-help?  (or error-or-timeoutp
+                             stop?
+                             programp
+                             (eq testing-enabled :naive)))
+          
 ; TODO: print something if erp is true i.e error in testing
-            
+          
 ; Else call ACL2 prover with a hint
 ; that does random testing on every checkpoint.
-       (- (cw? (system-debug-flag vl) "~|abortp = ~x0~%" abortp))
-       ((mv erp & state)
-          (if abortp ;if above flag is true dont take theorem prover's help
-              (mv T '? state) ;TODO: I am throwing information here!
-            (er-progn
-             ;; dummy world event to recognize we are inside test?
-             (acl2::defun-fn '(inside-test? nil t)
-               state '(defun inside-test? nil t))
-             (acl2::thm-fn form state
-                           (or hints 
+          (- (cw? (system-debug-flag vl) "~|thm+testing: ~x0~%" no-thm-help?))
+          ((mv thm-erp & state)
+           (if no-thm-help? 
+               (mv T '? state) ;TODO: I am throwing information here!
+             (er-progn
+              ;; dummy world event to recognize we are inside test?
+              (acl2::defun-fn '(inside-test? nil t)
+                              state '(defun inside-test? nil t))
+              (acl2::thm-fn form state
+                            (or hints 
 ;user-specified hints override default hints
-                              '(("Goal"
-                                 :do-not-induct t 
-                                 :do-not '(acl2::generalize 
-                                           acl2::fertilize))))
+                                '(("Goal"
+                                   :do-not-induct t 
+                                   :do-not '(acl2::generalize 
+                                             acl2::fertilize))))
 ;TODO: Matt's code doesnt work through induction and forcing rds
 ;Also the OTF flag is set to true, to test all initial subgoals. 
-                          t nil))))
+                            t nil))))
 
 ; TODO: errors in print functions will abort the whole form
-       ((mv end state) (acl2::read-run-time state))
-       (gcs%  (get-gcs%-global))
-       (gcs% (change gcs% end-time end))
-       (state (put-gcs%-global gcs%))
-       ((er &) (print-testing-summary-fn vl state))
-       ((mv erp state )      
+          ((mv end state) (acl2::read-run-time state))
+          (gcs%  (get-gcs%-global))
+          (gcs% (change gcs% end-time end))
+          (state (put-gcs%-global gcs%))
+          ((er &) (if error-or-timeoutp 
+                      (value nil) ;no point in printing if error or timeout
+                    (print-testing-summary-fn vl state)))
+          ((mv cts-found? state)      
 ; If testing found a counterexample, print so and abort.
-        (b* ((gcs% (get-gcs%-global))
-             (num-cts (access gcs% cts)))
+           (b* ((gcs% (get-gcs%-global))
+                (num-cts (access gcs% cts)))
             (cond ((posp num-cts) 
                    (prog2$
                     (cw? (normal-output-flag vl)
-"Test? found a counterexample.~%")
+                         "~%test? found a counterexample.~%")
                     (mv T state)))
-;If we had didnt do thm+testing, then we had to abort after top-level
-;testing, but we dont have a counterexample, so we simply exit with no error
-                  (erp 
+; either thm failed, or we didnt call thm. Either way if we didnt find a cts
+; then we say the test? succeeded!
+                  (thm-erp
                    (prog2$
                     (cw? (normal-output-flag vl)
-"Test? succeeded. No counterexamples were found.~%")
+                         "~%test? succeeded. No counterexamples were found.~%")
                     (mv NIL state)))
-;Success means the prover actually proved form is a theorem.
+;Success means the prover actually proved the conjecture under consideration
                   (t 
                    (prog2$
                     (cw? (normal-output-flag vl)
-"Test? proved the conjecture under consideration (without induction). ~
+                         "~%test? proved the conjecture under consideration (without induction). ~
  Therefore, no counterexamples exist. ~%" nil )
                     (mv NIL state)))))))
-   
-   (mv erp '(value-triple :invisible) state ))))))
+      
+      (mv cts-found? '(value-triple :invisible) state ))))))
 
 (defxdoc test?
   :parents (ACL2::TESTING)
