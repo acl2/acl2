@@ -936,12 +936,12 @@ like @(see bitset-intersect) and @(see bitset-difference).</p>"
 ; Table that lists functions that produce bitsets.  You can add to this table
 ; if you develop your own bitset-producing functions.
 
-       '((bitset-singleton . t)
-         (bitset-insert . t)
-         (bitset-delete . t)
-         (bitset-intersect . t)
-         (bitset-union . t)
-         (bitset-difference . t))
+       '((bitset-singleton$inline . t)
+         (bitset-insert$inline . t)
+         (bitset-delete$inline . t)
+         (bitset-intersect$inline . t)
+         (bitset-union$inline . t)
+         (bitset-difference$inline . t))
 
        :clear)
 

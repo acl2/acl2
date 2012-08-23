@@ -25,8 +25,9 @@
 ;; (local (in-theory (enable* arith-equiv-forwarding)))
 
 (in-package "ACL2")
-(include-book "ihs/logops-definitions" :dir :system)
+(include-book "ihs/basic-definitions" :dir :system)
 (include-book "tools/rulesets" :dir :system)
+(include-book "mfc-utils")
 
 (defthm bitp-compound-recognizer
   ;; Questionable given the bitp-forward rule.  But I think we may still want
@@ -161,6 +162,23 @@
 (defthm nfix-equal-to-nonzero-const
   (implies (and (syntaxp (quotep n))
                 (not (zp n)))
+           (equal (equal (nfix x) n)
+                  (equal x n))))
+
+
+; When we started using the more sophisticated equal-by-logbitp hammer, we
+; found that we were running into (equal (nfix x) n) terms, where n was greater
+; than zero.  In these cases we really want to learn that X is a natural.  It's
+; easy to imagine these rules getting expensive, so we might want to consider
+; backchain limits.
+
+(defthm ifix-equal-to-nonzero
+  (implies (not (zip n))
+           (equal (equal (ifix x) n)
+                  (equal x n))))
+
+(defthm nfix-equal-to-nonzero
+  (implies (not (zp n))
            (equal (equal (nfix x) n)
                   (equal x n))))
 
@@ -365,6 +383,67 @@
   :rule-classes :forward-chaining)
 
 
+; When we started using the more sophisticated equal-by-logbitp hammer, we
+; found that we were running into hyps like (< 7 (nfix n)) and failing to
+; realize that N was a natural.
+;
+; We can get close to what we want with just some forward-chaining rules:
+
+(defthm inequality-with-nfix-forward-to-natp-1
+  (implies (and (< a (nfix n))
+                (<= 0 a))
+           (natp n))
+  :rule-classes :forward-chaining)
+
+(defthm inequality-with-nfix-forward-to-natp-2
+  (implies (and (<= a (nfix n))
+                (< 0 a))
+           (natp n))
+  :rule-classes :forward-chaining)
+
+; But something insidious can happen here.  For instance:
+;
+#||
+
+(defstub foo (x) t)
+
+(defthm crock (implies (< 3 (nfix n)) (foo n))
+  :hints(("Goal" :in-theory (disable nfix))))
+
+(defthm crock2 (implies (<= 3 (nfix n)) (foo n))
+    :hints(("Goal" :in-theory (disable nfix))))
+
+||#
+;
+; Here, the forward-chaining rules don't appear to get us anything, because
+; when we rewrite the particular hyp (< 3 (nfix n)), we don't assume that
+; particular hyp, and nothing else in the clause shows us that (natp n).
+;
+; What we really want to do in this special case is to go ahead and replace the
+; inequality in the clause with (and (natp n) (< 3 n)).  If we had this as a
+; general rewrite rule it would introduce case-splits, but as a special rule
+; that only applies to top-level literals we won't introduce case-splits.
+
+(defthm inequality-with-nfix-hyp-1
+  ;; Rewrite top-level (< 3 (nfix n)) into (and (natp n) (< 3 n)).
+  ;; We originally did this only for quoteps, but I think since we're only
+  ;; rewriting top-level hyps it should be cheap, and found cases where we
+  ;; seem to want to do this to non-constants, too.
+  (implies (and (syntaxp (rewriting-negative-literal-fn `(< ,a (nfix ,n)) mfc state))
+                (<= 0 a))
+           (equal (< a (nfix n))
+                  (and (natp n)
+                       (< a n)))))
+
+(defthm inequality-with-nfix-hyp-2
+  ;; Rewrite top-level (<= 3 (nfix n)) into (and (natp n) (<= 3 n))
+  (implies (and (syntaxp (rewriting-positive-literal-fn `(< (nfix ,n) ,a) mfc state))
+                (< 0 a))
+           (equal (< (nfix n) a)
+                  (not (and (natp n)
+                            (<= a n)))))
+  :hints(("Goal" :in-theory (enable nfix))))
+
 
 (def-ruleset! arith-equiv-forwarding
   '(negative-forward-to-nat-equiv-0
@@ -377,7 +456,10 @@
     equal-nfix-foward-to-nat-equiv-both
     equal-bfix-foward-to-bit-equiv
     equal-bfix-foward-to-bit-equiv-both
-    not-equal-1-forward-to-bit-equiv))
+    not-equal-1-forward-to-bit-equiv
+    inequality-with-nfix-forward-to-natp-1
+    inequality-with-nfix-forward-to-natp-2
+    ))
 
 
 
@@ -487,6 +569,21 @@
 (defcong bit-equiv equal (b-ior x y) 2)
 (defcong bit-equiv equal (b-xor x y) 1)
 (defcong bit-equiv equal (b-xor x y) 2)
+(defcong bit-equiv equal (b-eqv x y) 1)
+(defcong bit-equiv equal (b-eqv x y) 2)
+(defcong bit-equiv equal (b-nand x y) 1)
+(defcong bit-equiv equal (b-nand x y) 2)
+(defcong bit-equiv equal (b-nor x y) 1)
+(defcong bit-equiv equal (b-nor x y) 2)
+(defcong bit-equiv equal (b-andc1 x y) 1)
+(defcong bit-equiv equal (b-andc1 x y) 2)
+(defcong bit-equiv equal (b-andc2 x y) 1)
+(defcong bit-equiv equal (b-andc2 x y) 2)
+(defcong bit-equiv equal (b-orc1 x y) 1)
+(defcong bit-equiv equal (b-orc1 x y) 2)
+(defcong bit-equiv equal (b-orc2 x y) 1)
+(defcong bit-equiv equal (b-orc2 x y) 2)
+
 
 (defcong int-equiv equal (lognot x) 1)
 

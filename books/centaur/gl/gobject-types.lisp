@@ -5,13 +5,6 @@
 (include-book "tools/pattern-match" :dir :system)
 (include-book "misc/untranslate-patterns" :dir :system)
 
-
-(defmacro tag (x) `(vl::tag ,x))
-
-(add-macro-alias tag vl::tag)
-
-(add-untranslate-pattern (vl::tag ?x) (tag ?x))
-
 (set-verify-guards-eagerness 2)
 
 (defagg-fns g-concrete (obj) :tag :g-concrete :legiblep nil)

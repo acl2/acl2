@@ -99,8 +99,7 @@
 
   (defund natchars-aux (n acc)
     (declare (type integer n)
-             (xargs :guard (and (natp n)
-                                (character-listp acc))
+             (xargs :guard (natp n)
                     :verify-guards nil))
     (if (mbe :logic (zp n)
              :exec (= (the integer n) 0))

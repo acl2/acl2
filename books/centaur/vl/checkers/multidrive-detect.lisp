@@ -419,7 +419,7 @@
     (if (atom (car alist))
         (vl-modinsts-same-warning modname (cdr alist))
       (cons (vl-modinst-same-warning modname
-                                     (ec-call (vl-modinst->modname (caar alist)))
+                                     (ec-call (vl-modinst->modname$inline (caar alist)))
                                      (cdar alist))
             (vl-modinsts-same-warning modname (cdr alist))))))
 

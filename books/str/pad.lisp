@@ -239,7 +239,10 @@ of the string <tt>x</tt>.</p>
         (if (or (eql (car x) #\Space)
                 (eql (car x) #\Tab)
                 (eql (car x) #\Newline)
-                (eql (car x) #\Page))
+                (eql (car x) #\Page)
+                (eql (car x) (code-char 13)) ;; Carriage Return
+                (eql (car x) (code-char 11)) ;; Vertical Tab
+                )
             (trim-aux (cdr x))
           x)
       nil))

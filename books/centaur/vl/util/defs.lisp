@@ -29,7 +29,7 @@
 ; about general concepts which the ordinary ACL2 user may have written
 ; other, conflicting theorems about.
 
-(include-book "cutil/top-opt" :dir :system)
+(include-book "cutil/top" :dir :system)
 (include-book "tools/defconsts" :dir :system)
 (include-book "unicode/two-nats-measure" :dir :system)
 (include-book "unicode/list-defuns" :dir :system)

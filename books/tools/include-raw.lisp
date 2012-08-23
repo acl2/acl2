@@ -80,7 +80,8 @@
 (defmacro include-raw (fname &key
                              (do-not-compile 'nil)
                              (on-compile-fail 'nil on-compile-fail-p)
-                             (on-load-fail 'nil on-load-fail-p))
+                             (on-load-fail 'nil on-load-fail-p)
+                             (host-readtable 'nil))
   ":doc-section miscellaneous
 Include a raw Lisp file in an ACL2 book, with compilation~/
 
@@ -94,7 +95,8 @@ Usage:
               (format t \"Compilation failed with message ~~a~~%\"
                       condition)
               :on-load-fail
-              (cw \"Oh well, the load failed~~%\"))
+              (cw \"Oh well, the load failed~~%\")
+              :host-readtable t)
  (include-raw \"another-raw-lisp-file.lsp\"
               :do-not-compile t)
 ~ev[]
@@ -119,6 +121,11 @@ The optional keyword ~c[:do-not-compile] may be used to suppress compilation.
 In this case, during book certification the file will just be loaded using
 ~c[load].  Similarly, during include-book we will only load the lisp file, and
 not try to load a compiled file.
+
+The optional keyword ~c[:host-readtable] may be used to make sure that the
+original *readtable* for this Lisp is being used, instead of the ACL2
+readtable, while reading the file.  This may sometimes be necessary to avoid
+differences between ACL2's reader and what raw Lisp code is expecting.
 
 One further note:  In most or all Lisps, compiling foo.lisp and foo.lsp results
 in the same compiled file (named foo.fasl, or something similar depending on
@@ -152,22 +159,28 @@ using this tool and depending on compilation.~/~/"
         ;; customize what happens in each of these situations.
         (progn!
          (set-raw-mode t)
-         (if (or (not (f-get-global 'certify-book-info state))
-                 ,do-not-compile)
-             (mv nil nil state)
-           (raw-compile ,fname ,(not on-compile-fail-p)
-                        ',on-compile-fail state)))
+         (let ((*readtable* (if ,host-readtable
+                                *host-readtable*
+                              *acl2-readtable*)))
+           (if (or (not (f-get-global 'certify-book-info state))
+                   ,do-not-compile)
+               (mv nil nil state)
+             (raw-compile ,fname ,(not on-compile-fail-p)
+                          ',on-compile-fail state))))
         (declare (ignore erp val))
         (value '(value-triple :invisible))))
 
      (progn!
       (set-raw-mode t)
-      ;; According to Matt K., *hcomp-fn-macro-restore-ht* is nonnil only when
-      ;; loading a book's compiled file.  We want to wait until the events of
-      ;; the include-book are being processed to run this, so that our compiled
-      ;; file isn't loaded twice.
-      (when (null *hcomp-fn-macro-restore-ht*)
-        (,(if do-not-compile 'raw-load-uncompiled 'raw-load)
-         ,fname ,(not on-load-fail-p) ',on-load-fail state))
+      (let ((*readtable* (if ,host-readtable
+                             *host-readtable*
+                           *acl2-readtable*)))
+        ;; According to Matt K., *hcomp-fn-macro-restore-ht* is nonnil only
+        ;; when loading a book's compiled file.  We want to wait until the
+        ;; events of the include-book are being processed to run this, so that
+        ;; our compiled file isn't loaded twice.
+        (when (null *hcomp-fn-macro-restore-ht*)
+          (,(if do-not-compile 'raw-load-uncompiled 'raw-load)
+           ,fname ,(not on-load-fail-p) ',on-load-fail state)))
       (value-triple ,fname))))
 

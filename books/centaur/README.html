@@ -142,6 +142,7 @@ the <tt>acl2/books</tt> directory.  We recommend that you configure
 your <tt>PATH</tt> so you can invoke it by just typing <tt>cert.pl</tt>.</dd>
 
 
+
 <dt>GTKWave Configuration (Optional)</dt>
 
 <dd>We often use <a href="http://gtkwave.sourceforge.net/">GTKWave</a> for
@@ -156,13 +157,21 @@ typing <tt>gtkwave</tt>.</dd>
 <h3>Building the Centaur Books</h3>
 
 <p>Once you have all the above prerequisites, you will be ready to certify the
-Centaur books.</p>
+Centaur books.  There are two steps:</p>
 
-<p>To build all of the books and all available documentation, you should be able
-to run the following command in the <tt>acl2/books/centaur</tt> directory:</p>
+<p>1. Build the Quicklisp book.  This is special because it has to go download
+Quicklisp and run its setup.</p>
 
 <pre>
-cert.pl doc.lisp -j 4       # -j 4 for a quad-core processor
+cd [...]/acl2/books/centaur/quicklisp
+make
+</pre>
+
+<p>2. Build the rest of the books and all available documentation:</p>
+
+<pre>
+cd [...]/acl2/books/centaur
+cert.pl doc.lisp -j 4           # -j 4 for a quad-core processor
 </pre>
 
 <p>Depending on your hardware this may take ten minutes up to hours.</p>

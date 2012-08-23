@@ -547,8 +547,15 @@ prove this property for you.</p>
 examples of its use.</p>"
 
   (defmacro defpp (name formals &key body (guard 't) guard-hints guard-debug parents short long inlinep)
+
+    ;; For inline pretty-printers, we can't just use definline because it would add its own
+    ;; macro-alias stuff.  So we do it manually.
+
     (let* ((mksym-package-symbol name)
-           (fn (mksym name '-fn)))
+           (fn (intern-in-package-of-symbol
+                (cat (symbol-name name) "-FN"
+                     (if inlinep acl2::*inline-suffix* ""))
+                name)))
       `(defsection ,name
          :parents ,parents
          :short ,short
@@ -557,7 +564,7 @@ examples of its use.</p>"
          (defmacro ,name (,@formals)
            (list ',fn ,@formals 'ps))
 
-         (,(if inlinep 'definlined 'defund) ,fn (,@formals ps)
+         (defund ,fn (,@formals ps)
            (declare (xargs :guard (and ,guard
                                        (vl-pstate-p ps))
                            :stobjs ps

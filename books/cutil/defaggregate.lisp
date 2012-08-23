@@ -28,6 +28,7 @@
 (include-book "tools/bstar" :dir :system)
 (include-book "xdoc/names" :dir :system)
 (include-book "str/cat" :dir :system)
+(include-book "misc/definline" :dir :system)
 
 ; BOZO these don't really go here.  But, the harm should be low since we're in
 ; our own package.
@@ -100,19 +101,6 @@ for a new record-like structure.  It is similar to <tt>struct</tt> in C or
    </ul></li>
  <li>Basic theorems relating these new functions.</li>
 </ul>
-
-<p><b>TTAG Note:</b> defaggregate accessors are ordinarily inlined using the
-<tt>misc/definline</tt> book for better performance.  Unfortunately this book
-requires a ttag.  To avoid inlining (and hence the need for any ttags), you can
-invoke:</p>
-
-<code>
- (set-defaggregate-inlinep nil)
-</code>
-
-<p>before introducing your aggregates.  This macro expands into a table event,
-so you can wrap it in <tt>local</tt>, etc.</p>
-
 
 <h3>Usage and Options</h3>
 
@@ -369,9 +357,6 @@ optimization altogether.</p>
 <p>BOZO provide explanations of what these examples do.</p>
 
 <code>
-
-  (set-defaggregate-inlinep nil)
-
   (defaggregate taco
     (shell meat cheese lettuce sauce)
     :tag :taco
@@ -448,19 +433,9 @@ optimization altogether.</p>
 
 </code>")
 
-(table defaggregate 'inlinep t)
-
-(defmacro set-defaggregate-inlinep (arg)
-  `(table defaggregate 'inlinep ,arg))
-
-(defun get-defaggregate-inlinep (wrld)
-  (declare (xargs :guard (plist-worldp wrld)))
-  (cdr (hons-assoc-equal 'inlinep (table-alist 'defaggregate wrld))))
 
 
-
-
-(defxdoc tag
+(defsection tag
   :parents (cutil)
   :short "Alias for <tt>car</tt> used by @(see defaggregate)."
 
@@ -471,25 +446,22 @@ is being represented (e.g., \"employee\").</p>
 <p>The <tt>tag</tt> function is an alias for <tt>car</tt>, and so it can be
 used to get the tag from these kinds of objects.  We introduce this alias and
 keep it disabled so that reasoning about the tags of objects does not slow down
-reasoning about <tt>car</tt> in general.</p>
+reasoning about <tt>car</tt> in general.</p>"
 
-@(def acl2::tag)
-@(thm cutil::tag-forward-to-consp)")
+  (definlined tag (x)
+    (declare (xargs :guard t))
+    (mbe :logic (car x)
+         :exec (if (consp x)
+                   (car x)
+                 nil)))
 
-(defund tag (x)
-  (declare (xargs :guard t))
-  (mbe :logic (car x)
-       :exec (if (consp x)
-                 (car x)
-               nil)))
+  (def-ruleset tag-reasoning nil)
 
-(def-ruleset tag-reasoning nil)
-
-(defthm tag-forward-to-consp
-  (implies (tag x)
-           (consp x))
-  :rule-classes :forward-chaining
-  :hints(("Goal" :in-theory (enable tag))))
+  (defthm tag-forward-to-consp
+    (implies (tag x)
+             (consp x))
+    :rule-classes :forward-chaining
+    :hints(("Goal" :in-theory (enable tag)))))
 
 
 
@@ -774,8 +746,8 @@ reasoning about <tt>car</tt> in general.</p>
 ;;                   (DECLARE (IGNORABLE SHELL MEAT CHEESE LETTUCE SAUCE))
 ;;                   (AND (SHELLP SHELL)))))
 
-(defun da-make-accessor (name field map inlinep)
-  `(,(if inlinep 'definlined 'defund)
+(defun da-make-accessor (name field map)
+  `(defund-inline
     ,(da-accessor-name name field)
     (,(da-x name)) ;; formals
     (declare (xargs :guard (,(da-recognizer-name name) ,(da-x name))
@@ -789,14 +761,14 @@ reasoning about <tt>car</tt> in general.</p>
 ;;                         :GUARD-HINTS (("Goal" :IN-THEORY (ENABLE TACO-P)))))
 ;;         (CDR (ASSOC 'MEAT (CDR X))))
 
-(defun da-make-accessors-aux (name fields map inlinep)
+(defun da-make-accessors-aux (name fields map)
   (if (consp fields)
-      (cons (da-make-accessor name (car fields) map inlinep)
-            (da-make-accessors-aux name (cdr fields) map inlinep))
+      (cons (da-make-accessor name (car fields) map)
+            (da-make-accessors-aux name (cdr fields) map))
     nil))
 
-(defun da-make-accessors (name fields legiblep inlinep)
-  (da-make-accessors-aux name fields (da-fields-map name legiblep fields) inlinep))
+(defun da-make-accessors (name fields legiblep)
+  (da-make-accessors-aux name fields (da-fields-map name legiblep fields)))
 
 (defun da-make-accessor-of-constructor (name field all-fields)
   `(defthm ,(intern-in-package-of-symbol (concatenate 'string
@@ -1131,7 +1103,7 @@ term.  The attempted binding of~|~% ~p1~%~%is not of this form."
         (da-fields-autodoc name fields)))
 
 
-(defun defaggregate-fn (name fields tag require honsp legiblep inlinep patbindp mode parents short long)
+(defun defaggregate-fn (name fields tag require honsp legiblep patbindp mode parents short long)
   (and (or (symbolp name)
            (er hard 'defaggregate "Name must be a symbol."))
        (or (symbol-listp fields)
@@ -1174,9 +1146,6 @@ term.  The attempted binding of~|~% ~p1~%~%is not of this form."
               (x                (da-x name)))
          `(progn
 
-            ,@(and inlinep
-                   `((include-book "misc/definline" :dir :system)))
-
             ,@(da-autodoc name fields require parents short long)
 
             ,(if (eq mode :logic)
@@ -1186,7 +1155,7 @@ term.  The attempted binding of~|~% ~p1~%~%is not of this form."
             ,(da-make-recognizer name tag fields require legiblep)
             ,(da-make-constructor name tag fields require honsp legiblep)
             ,(da-make-honsed-constructor name tag fields require legiblep)
-            ,@(da-make-accessors name fields legiblep inlinep)
+            ,@(da-make-accessors name fields legiblep)
 
             ,@(and patbindp
                    `((defmacro ,(intern-in-package-of-symbol
@@ -1290,7 +1259,6 @@ term.  The attempted binding of~|~% ~p1~%~%is not of this form."
                              long)
   `(make-event (let ((mode (or ',mode (default-defun-mode (w state)))))
                  (defaggregate-fn ',name ',fields ',tag ',require ',hons ',legiblep
-                   (get-defaggregate-inlinep (w state))
                    ',patbindp mode ',parents ',short ',long))))
 
 

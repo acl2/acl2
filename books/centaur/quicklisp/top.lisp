@@ -1,5 +1,5 @@
-; CUTIL - Centaur Basic Utilities
-; Copyright (C) 2008-2011 Centaur Technology
+; Quicklisp setup for Centaur books
+; Copyright (C) 2008-2012 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -18,5 +18,22 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-(include-book "portcullis")
-(certify-book "top-opt" ? t :ttags :all)
+(in-package "ACL2")
+(include-book "tools/include-raw" :dir :system)
+; (depends-on "setup.lisp")
+
+
+; Quicklisp (www.quicklisp.org) is a tool for installing Common Lisp libraries,
+; somewhat like CPAN for Perl, GEMS for Ruby.
+;
+; This file is a way to get Quicklisp loaded in an ACL2 session.  It doesn't
+; load anything beyond Quicklisp itself, so, e.g., to load an actual Quicklisp
+; package, you'll need to do something like:
+;
+;   (ql:quickload "cl-json")
+;
+; In your own ACL2 book.  Obviously doing this will require a ttag.  For that
+; matter, even loading this Quicklisp book requires a ttag.
+
+(defttag :quicklisp)
+(include-raw "setup.lisp" :do-not-compile t :host-readtable t)

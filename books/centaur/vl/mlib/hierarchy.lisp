@@ -91,14 +91,14 @@ require a lot of consing.</p>
     :hints(("Goal" :in-theory (enable vl-modulelist-everinstanced-exec))))
 
   (verify-guards vl-modulelist-everinstanced-exec)
-  (verify-guards vl-modulelist-everinstanced)
+  (verify-guards vl-modulelist-everinstanced$inline)
 
   (defttag vl-optimize)
   (progn!
    (set-raw-mode t)
    (setf (gethash 'vl-modinstlist->modnames-exec ACL2::*never-profile-ht*) t)
    (setf (gethash 'vl-modulelist-everinstanced-exec ACL2::*never-profile-ht*) t)
-   (defun vl-modulelist-everinstanced (x)
+   (defun vl-modulelist-everinstanced$inline (x)
      (nreverse (vl-modulelist-everinstanced-exec x nil))))
   (defttag nil))
 
@@ -1704,6 +1704,7 @@ vl-maximal-deporder).  Otherwise, we will wait for a subsequent pass.</p>"
   ;;   :hints(("Goal" :in-theory (enable vl-deporder-pass))))
 
   )
+
 
 
 (defsection vl-deporder-pass*

@@ -97,6 +97,7 @@ integer, <tt>n</tt> is a bit position, and <tt>val</tt> is a bit."
     :hints(("Goal" :in-theory (enable logbitp-of-ash-split))))
 
   (add-to-ruleset ihsext-advanced-thms logbitp-of-install-bit-split)
+  (add-to-ruleset logbitp-case-splits logbitp-of-install-bit-split)
 
   (local (in-theory (e/d (logbitp-of-install-bit-split)
                          (install-bit))))

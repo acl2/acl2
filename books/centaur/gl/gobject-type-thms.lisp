@@ -15,8 +15,6 @@
 
 (set-verify-guards-eagerness 2)
 
-(cutil::set-defaggregate-inlinep nil)
-
 (da-with-extras g-concrete (obj) :tag :g-concrete :legiblep nil)
 (da-with-extras g-boolean (bool) :tag :g-boolean :legiblep nil)
 (da-with-extras g-number (num) :tag :g-number :legiblep nil)

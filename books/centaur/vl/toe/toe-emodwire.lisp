@@ -631,9 +631,7 @@ details.</p>"
   (progn!
    (set-raw-mode t)
 
-   (declaim (inline vl-emodwire-scan))
-
-   (defun vl-emodwire-scan (name)
+   (defun vl-emodwire-scan$inline (name)
      (declare (type string name))
      (let ((open    nil)
            (close   nil)

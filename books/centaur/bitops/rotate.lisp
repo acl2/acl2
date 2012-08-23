@@ -166,7 +166,14 @@ same as not rotating at all."
     :hints ((equal-by-logbitp-hint)
             (and stable-under-simplificationp
                  '(:in-theory (enable logbitp-of-loghead-split
-                                      logbitp-of-ash-split))))))
+                                      logbitp-of-ash-split)))))
+
+  (defthm rotate-left-by-width
+    (equal (rotate-left x width width)
+           (loghead width x))
+    :hints(("Goal" :in-theory (enable acl2::logbitp-of-rotate-left-split
+                                      acl2::logbitp-of-loghead-split))
+           (equal-by-logbitp-hint))))
 
 
 
@@ -419,7 +426,14 @@ same as not rotating at all."
     :hints ((equal-by-logbitp-hint)
             (and stable-under-simplificationp
                  '(:in-theory (enable logbitp-of-loghead-split
-                                      logbitp-of-ash-split))))))
+                                      logbitp-of-ash-split)))))
+
+  (defthm rotate-right-by-width
+    (equal (rotate-right x width width)
+           (loghead width x))
+    :hints(("Goal" :in-theory (enable acl2::logbitp-of-rotate-right-split
+                                      acl2::logbitp-of-loghead-split))
+           (equal-by-logbitp-hint))))
 
 
 
@@ -506,6 +520,7 @@ same as not rotating at all."
                     ((rotate-right nil nil t))))
     :hints((equal-by-logbitp-hint)
            (and stable-under-simplificationp
-                '(:in-theory (e/d (logbitp-of-rotate-right-1-split
-                                   logbitp-of-rotate-right-split)))))))
+                '(:in-theory (e/d* (nfix
+                                    logbitp-of-rotate-right-1-split
+                                    logbitp-of-rotate-right-split)))))))
 

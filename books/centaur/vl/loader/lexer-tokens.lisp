@@ -695,7 +695,7 @@ any token.</p>
                                               vl-realtoken->etext
                                               vl-plaintoken->etext)))))
 
-   (verify-guards vl-token->etext
+   (verify-guards vl-token->etext$inline
                   :hints(("Goal" :in-theory (enable vl-token-p))
                          (and stable-under-simplificationp
                               '(:in-theory (enable crock

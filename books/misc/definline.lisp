@@ -1,77 +1,92 @@
 ;; definline.lisp - The definline and definlined macros.
 ;; Jared Davis <jared@cs.utexas.edu>
 ;;
-;; This file is in the public domain.  You can freely redistribute it and modify
-;; it for any purpose.  This file comes with absolutely no warranty, including the 
-;; implied warranties of merchantibility and fitness for a particular purpose.
+;; This file is in the public domain.  You can freely redistribute it and
+;; modify it for any purpose.  This file comes with absolutely no warranty,
+;; including the implied warranties of merchantibility and fitness for a
+;; particular purpose.
 
 (in-package "ACL2")
 (include-book "doc-section")
 
-(defdoc definline
+;; BOZO -- as a temporary hack, we need a way to mangle the formals since we
+;; can't use stobj names as macro args.  Matt's probably going to fix this, or
+;; fix defun-inline to work with stobj arguments in some other way, at which
+;; point we can change definline to just be a wrapper for defun-inline.
+
+(defun definline-mangle-formal (x)
+  (declare (xargs :guard (symbolp x)))
+  ;; I use the ACL2 package because if we just use the package-of X, we can get
+  ;; into trouble when args nave names like "string" that are in the Common
+  ;; Lisp package: we're not allowed to intern new symbols into COMMON-LISP::
+  (intern$ (concatenate 'string "MANGLED_" (symbol-name x)) "ACL2"))
+
+(defun definline-mangle-formals (x)
+  (declare (xargs :guard (symbol-listp x)))
+  (if (atom x)
+      nil
+    (cons (definline-mangle-formal (car x))
+          (definline-mangle-formals (cdr x)))))
+
+(defmacro definline (name formals &rest args)
   ":Doc-Section misc
-  Define an inline function~/
+  Alias for ~ilc[defun-inline]~/
   Examples:
   ~bv[]
     (include-book \"misc/definline\")
     (definline car-alias (x)
       (car x))
-  ~ev[]~/
-  ~c[definline] is the same as ~il[defun], but also issues a Common Lisp ``proclaim''
-  form instructing the compiler to inline later calls to this function.  Some Lisps 
-  ignore these ``proclaim'' forms and make inlining worthless.  However, inlining 
-  may provide significant gains on other Lisps.
+  ~ev[]
+  ~c[definline] is a wrapper for ~ilc[defun-inline].
 
-  Inlining is usually beneficial for ``small'' non-recursive functions which are
-  called frequently.")
+  We probably shouldn't have this wrapper.  But until ACL2 5.0 there was no
+  ~c[defun-inline], and ~c[definline] was implemented using a ~il[trust-tag].
+  When ~c[defun-inline] was introduced, we already had many books with
+  ~c[definline] and liked the shorter name, so we dropped the trust tag and
+  turned it into a wrapper for ~c[defun-inline].~/~/"
+  (declare (xargs :guard (symbol-listp formals)))
+  (let ((name$inline
+         (intern-in-package-of-symbol
+          (concatenate 'string (symbol-name name) *inline-suffix*)
+          name))
+        (mangled-formals
+         (definline-mangle-formals formals)))
+    `(progn (defmacro ,name ,mangled-formals
+              (list ',name$inline . ,mangled-formals))
+            (add-macro-fn ,name ,name$inline)
+            (defun ,name$inline ,formals . ,args))))
 
-(defdoc definlined
+(defmacro definlined (name formals &rest args)
   ":Doc-Section misc
-  Define an inline function and then disable it.~/
-  ~/
-  This is a ~il[defund]-like version of ~il[definline].")
+  Alias for ~ilc[defund-inline]~/
+  This is a ~il[defund]-like version of ~il[definline].~/~/"
+  (declare (xargs :guard (symbol-listp formals)))
+  (let ((name$inline
+         (intern-in-package-of-symbol
+          (concatenate 'string (symbol-name name) *inline-suffix*)
+          name))
+        (mangled-formals
+         (definline-mangle-formals formals)))
+    `(progn (defmacro ,name ,mangled-formals
+              (list ',name$inline . ,mangled-formals))
+            (add-macro-fn ,name ,name$inline)
+            (defund ,name$inline ,formals . ,args))))
 
 
-(defun redefine-inline-fn (name state)
-  ;; has an under-the-hood definition
-  (declare (xargs :guard t :stobjs state)
-           (ignorable state))
-  (prog2$
-   (cw "Warning: redefine-inline-fn has not been redefined and is doing nothing.")
-   name))
+(local
+ (progn
 
-(defmacro redefine-inline (name)
-  `(make-event (let ((name (redefine-inline-fn ',name state)))
-                 (value `(value-triple ',name)))
-               :check-expansion t))
+(defun test (x)
+  (declare (xargs :guard (natp x)))
+  (+ 1 x))
 
-(defmacro definline (name &rest args)
-  `(progn (defun ,name ,@args)
-          (redefine-inline ,name)))
+(definline test2 (x)
+  (declare (xargs :guard (natp x)))
+  (+ 1 x))
 
-(defmacro definlined (name &rest args)
-  `(progn (defund ,name ,@args)
-          (redefine-inline ,name)))
+(defun f (x) (test x))
+(defun g (x) (test2 x))
 
-(defttag definline)
-
-(progn!
- (set-raw-mode t)
- (defun redefine-inline-fn (name state)
-   (unless (live-state-p state)
-     (er hard? 'redefine-inline-fn
-         "redefine-inline-fn can only be called on live states."))
-   (unless (symbolp name)
-     (er hard? 'redefine-inline-fn
-         "expected ~x0 to be a symbol." name))
-   (let* ((wrld (w state))
-          (def (cltl-def-from-name name wrld)))
-     (unless def
-       (er hard? 'redefine-inline-fn "~x0 does not appear to be defined." name))
-     (eval `(proclaim '(inline ,name)))
-     (eval def))
-   name))
-
-(defttag nil)
-
-
+;; (disassemble$ 'f) ;; not inlined, as expected
+;; (disassemble$ 'g) ;; inlined, as expected
+  ))

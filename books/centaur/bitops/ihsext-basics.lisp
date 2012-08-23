@@ -1,3 +1,26 @@
+; Centaur Bitops Library
+; Copyright (C) 2010-2011 Centaur Technology
+;
+; Contact:
+;   Centaur Technology Formal Verification Group
+;   7600-C N. Capital of Texas Highway, Suite 300, Austin, TX 78731, USA.
+;   http://www.centtech.com/
+;
+; This program is free software; you can redistribute it and/or modify it under
+; the terms of the GNU General Public License as published by the Free Software
+; Foundation; either version 2 of the License, or (at your option) any later
+; version.  This program is distributed in the hope that it will be useful but
+; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+; more details.  You should have received a copy of the GNU General Public
+; License along with this program; if not, write to the Free Software
+; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
+
+
+; ihsext-basics.lisp
+;
+; Original authors: Sol Swords <sswords@centtech.com>
+;                   Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
 
@@ -5,36 +28,21 @@
 ;; here are left still enabled.  Perhaps accumulated-persistence will find the
 ;; important ones.
 
-
-(include-book "ihs/logops-definitions" :dir :system)
-(include-book "cutil/defsection" :dir :system)
-;; (include-book "centaur/misc/nat-equiv" :dir :system)
-(include-book "tools/rulesets" :dir :system)
 (include-book "centaur/misc/arith-equivs" :dir :system)
-(local (in-theory (enable* arith-equiv-forwarding)))
-(local (include-book "ihs/quotient-remainder-lemmas" :dir :system))
-
-
-(defconst *ihs-extensions-disables*
-  '(floor mod expt ash evenp oddp
-          logbitp logbit logior logand lognot logxor
-          logcons logcar logcdr loghead logtail
-          integer-length
-          logmaskp logext logapp
-          b-eqv b-nand b-nor b-andc1 b-andc2 b-orc1 b-orc2
-          b-not b-and b-ior b-xor bfix bitp
-          logcount))
-
-
-;; There are too many rules with forced hyps in logops-lemmas.  We'll locally
-;; include it and redundantly define many of the useful theorems.
-(local (include-book "ihs/logops-lemmas" :dir :system))
+(include-book "xdoc/top" :dir :system)
 (include-book "tools/defredundant" :dir :system)
 
+(local (in-theory (enable* arith-equiv-forwarding)))
+(local (include-book "ihs/quotient-remainder-lemmas" :dir :system))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
+(local (include-book "ihs/logops-lemmas" :dir :system))
 
-;; Redundant inclusions of good lemmas from logops-lemmas:
+
 (defredundant-events
+; There are too many rules with forced hyps in logops-lemmas.  We'll locally
+; include it and redundantly define many of the useful theorems.
+
+  constant-syntaxp
   ash-0
   cancel-equal-lognot
   commutativity-of-logand
@@ -67,7 +75,7 @@
   logext-identity
 
   ;; we'll prove a stronger rewrite rule and disable this
-  ;; rw, but it's a good elim  
+  ;; rw, but it's a good elim
   logcar-logcdr-elim
 
   ;; these are weird but won't hurt much
@@ -78,9 +86,18 @@
 
   ;; logbitp-0-minus-1 remove hyps
   ;; logbit-0-minus-1 remove hyps
-  
+
   signed-byte-p-logops)
-       
+
+(defconst *ihs-extensions-disables*
+  '(floor mod expt ash evenp oddp
+          logbitp logbit logior logand lognot logxor
+          logcons logcar logcdr loghead logtail
+          integer-length
+          logmaskp logext logapp
+          b-eqv b-nand b-nor b-andc1 b-andc2 b-orc1 b-orc2
+          b-not b-and b-ior b-xor bfix bitp
+          logcount))
 
 
 (make-event
@@ -91,7 +108,6 @@
 
 (in-theory (set-difference-theories (current-theory :here)
                                     *ihs-extensions-disables*))
-
 
 (def-ruleset! ihsext-basic-thms nil)
 (def-ruleset! ihsext-advanced-thms nil)
@@ -104,7 +120,7 @@
 
 
 (defsection bit-ops
-  
+
   (local (in-theory (enable b-eqv b-nand b-nor b-andc1 b-andc2 b-orc1 b-orc2
                             bfix b-not b-and b-ior b-xor bitp)))
 
@@ -398,7 +414,7 @@
                                        logcdr-<-x-when-positive
                                        logcdr->=-x-when-nonpositive
                                        logcdr->-x-when-below-minus1))
-  
+
   (defthmd logcons-<-n-strong
     (implies (integerp j)
              (equal (< (logcons b i) j)
@@ -720,7 +736,7 @@
     (implies (<= (nfix size) (nfix pos))
              (equal (logbitp pos (loghead size i))
                     nil))
-    :hints(("Goal" 
+    :hints(("Goal"
             :induct (and (logbitp pos i)
                          (logbitp size i))
             :expand ((:free (x) (logbitp pos x))))))
@@ -899,17 +915,24 @@
                                  loghead-identity
                                  logtail-identity
                                  logtail-equal-0))))
-  
+
   (defthm logtail-of-logtail
     (equal (logtail n (logtail m x))
            (logtail (+ (nfix n) (nfix m)) x))
-    
+
     :hints (("goal" :induct (and (logtail m x)
                                  (logtail n x))
              :in-theory (disable (force)
                                  logtail-identity
                                  logtail-equal-0))))
 
+  (defthm loghead-1-of-logtail
+    ;; Maybe too special-purpose?
+    (equal (loghead 1 (logtail n x))
+           (logbit n x))
+    :hints(("Goal"
+            :in-theory (enable logtail** loghead** logbitp**)
+            :induct (logtail n x))))
 
   (defthm logtail-natp
     (implies (natp x)
@@ -946,7 +969,7 @@
    :rule-classes
    ((:definition :clique (integer-length)
      :controller-alist ((integer-length t)))))
-  
+
 
 
   (add-to-ruleset ihsext-redefs '(integer-length**))
@@ -985,6 +1008,7 @@
                                     ((force)))))
     :rule-classes :linear))
 
+
 (defsection lognot**
 
   ;; (defthmd lognot-when-zip
@@ -1009,9 +1033,9 @@
                     (lognot (logcdr i))))
     :hints(("Goal"
             :use ((:instance lognot*
-                   (i (ifix i))))))
+                             (i (ifix i))))))
     :rule-classes ((:definition :clique (lognot)
-                    :controller-alist ((lognot t)))))
+                                :controller-alist ((lognot t)))))
 
   (add-to-ruleset ihsext-redefs '(lognot**))
 
@@ -1027,7 +1051,7 @@
                  (t (logcons (b-not (logcar i))
                              (lognot (logcdr i))))))
     :hints (("goal" :use ((:instance lognot*
-                           (i (ifix i))))
+                                     (i (ifix i))))
              :in-theory (disable lognot lognot*)))
     :rule-classes ((:definition
                     :clique (lognot)
@@ -1110,9 +1134,9 @@
                     (> (ifix i) (lognot j))))
     :hints(("Goal" :in-theory (enable lognot)
             :use ((:instance <-on-others
-                   (x (lognot i)) (y j))
+                             (x (lognot i)) (y j))
                   (:instance <-on-others
-                   (x (lognot k)) (y (ifix i)))))))
+                             (x (lognot k)) (y (ifix i)))))))
 
   (defthm lognot->-const
     (implies (and (syntaxp (quotep j))
@@ -1121,9 +1145,9 @@
                     (< (ifix i) (lognot j))))
     :hints(("Goal" :in-theory (enable lognot)
             :use ((:instance <-on-others
-                   (y (lognot i)) (x j))
+                             (y (lognot i)) (x j))
                   (:instance <-on-others
-                   (y (lognot j)) (x (ifix i)))))))
+                             (y (lognot j)) (x (ifix i)))))))
 
   (defthm lognot-equal-const
     (implies (and (syntaxp (quotep j))
@@ -1287,7 +1311,7 @@
     (implies (<= 0 (ifix x))
              (<= 0 (logand x y)))
     :rule-classes :linear)
-  
+
   (defthm logand->=-0-linear-2
     (implies (<= 0 (ifix y))
              (<= 0 (logand x y)))
@@ -1902,7 +1926,7 @@
 
 
   ;; (in-theory (disable ash))
-  
+
   (local (in-theory (enable* ihsext-inductions
                              ihsext-recursive-redefs)))
 
@@ -1911,7 +1935,7 @@
 
   (defthm ash-of-n-0
     (equal (ash n 0) (ifix n)))
-  
+
 
   ;; (defthmd ash-when-zip-i
   ;;   (implies (zip i)
@@ -1963,7 +1987,7 @@
           ((< count 0)
            (logbitp-of-ash-ind pos (logcdr i) (1+ count)))
           (t (logbitp-of-ash-ind (1- pos) i (1- count)))))
- 
+
   (defthmd logbitp-of-ash-split
     (equal (logbitp pos (ash i count))
            (and (<= (ifix count) (nfix pos))
@@ -2184,7 +2208,7 @@
     :rule-classes ((:induction
                     :pattern (unsigned-byte-p bits x)
                     :scheme (unsigned-byte-p-ind bits x))))
-    
+
   (defthmd unsigned-byte-p-incr
     (implies (and (unsigned-byte-p a x)
                   (natp b)
@@ -2357,7 +2381,7 @@
     :rule-classes ((:induction
                     :pattern (signed-byte-p bits x)
                     :scheme (signed-byte-p-ind bits x))))
-    
+
   (defthmd signed-byte-p-incr
     (implies (and (signed-byte-p a x)
                   (natp b)
@@ -2402,7 +2426,7 @@
 
 
 (defsection logapp**
-  
+
   (local (in-theory (enable* ihsext-recursive-redefs
                              ihsext-inductions
                              ihsext-bounds-thms
@@ -2443,7 +2467,7 @@
                       (logapp (1- size) (logcdr i) j))))
     :hints (("goal" :use (logapp-fixes
                           (:instance logapp-fixes
-                           (size (1- size)) (i (logcdr i))))
+                                     (size (1- size)) (i (logcdr i))))
              :in-theory (disable logapp (force)
                                  int-equiv-implies-equal-logapp-2
                                  int-equiv-implies-equal-logapp-3
@@ -2631,6 +2655,12 @@
 
 (defsection mod
 
+  (defthm mod-self
+    (equal (mod a a) 0)
+    :hints(("Goal"
+            :in-theory (enable mod floor)
+            :cases ((acl2-numberp a)))))
+
   (defthmd mod-to-loghead
     (implies (and (integerp i)
                   ;; n is expected to be a natural, but it could really be
@@ -2646,7 +2676,15 @@
 
   (add-to-ruleset ihsext-arithmetic '(mod-to-loghead)))
 
+
+
 (defsection floor
+
+  (defthm floor-0
+    ;; Names chosen for compatibility with an arithmetic-3 rule of the same name
+    (and (equal (floor x 0) 0)
+         (equal (floor 0 y) 0))
+    :hints(("Goal" :in-theory (enable floor))))
 
   (defthmd floor-to-logtail
     (implies (and (integerp i)
@@ -2662,7 +2700,6 @@
             :cases ((integerp n)))))
 
   (add-to-ruleset ihsext-arithmetic '(floor-to-logtail)))
-
 
 
 
@@ -2717,7 +2754,7 @@
 
   (defthm logext-of-sz-minus1
     (equal (logext size -1) -1))
-           
+
 
   (defthmd logext**
     (equal (logext size i)
@@ -2775,10 +2812,7 @@
                   (>= size1 (if (posp size) size 1)))
              (signed-byte-p size1 (logext size i))))
 
-  (add-to-ruleset ihsext-basic-thms signed-byte-p-of-logext)
-
-  ;; ihs rule with unnecessary type hyps
-  (in-theory (disable signed-byte-p-logext)))
+  (add-to-ruleset ihsext-basic-thms signed-byte-p-of-logext))
 
 
 

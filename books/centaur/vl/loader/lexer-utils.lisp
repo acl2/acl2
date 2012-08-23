@@ -172,7 +172,7 @@ call <tt>coerce</tt> or build the list of characters.</p>
                            (prefixp (nthcdr i (coerce string 'list)) (vl-echarlist->chars echars))))
            :hints(("Goal" :in-theory (enable vl-matches-string-p-impl)))))
 
-  (verify-guards vl-matches-string-p)
+  (verify-guards vl-matches-string-p$inline)
 
   (local (in-theory (enable vl-matches-string-p)))
 
@@ -348,7 +348,7 @@ never occurs in <tt>echars</tt>, then <tt>prefix</tt> is the entire list of
                  (revappend (mv-nth 1 (vl-read-until-literal string echars)) acc)
                  (mv-nth 2 (vl-read-until-literal string echars)))))
 
-  (verify-guards vl-read-until-literal)
+  (verify-guards vl-read-until-literal$inline)
 
 
   (def-prefix/remainder-thms vl-read-until-literal
@@ -792,7 +792,9 @@ vl-read-while-ctype).</p>"
                                                  (mv-nth 1 (,read-while echars))))))
                        :hints(("Goal" :use ((:functional-instance equiv-of-vl-read-while-ctype-impl . ,fi-pairs))))))
 
-              (verify-guards ,read-while)
+              (verify-guards ,(intern-in-package-of-symbol
+                               (str::cat (symbol-name read-while) acl2::*inline-suffix*)
+                               read-while))
 
               (defthm ,(mksym (cat "REMAINDER-OF-" readwhilestr) pkg)
                 (and (equal (true-listp (mv-nth 1 (,read-while echars)))

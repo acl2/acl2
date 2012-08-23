@@ -1,5 +1,5 @@
-; CUTIL - Centaur Basic Utilities
-; Copyright (C) 2008-2011 Centaur Technology
+; Centaur Books -- Quicklisp installer
+; Copyright (C) 2008-2012 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -18,5 +18,11 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-(include-book "portcullis")
-(certify-book "defaggregate-opt" ? t :ttags :all)
+; This just does the initial quicklisp install.  It should get run when the
+; Makefile tries to build setup.lisp
+
+:q
+(in-package "CL-USER")
+(load "quicklisp.lisp")
+(quicklisp-quickstart:install :path ".")
+(quit)

@@ -61,17 +61,10 @@
 
 <h3>Loading the library</h3>
 
-<p>A ttag-free version of the complete library can be loaded with:</p>
+<p>You can load the full library with:</p>
 
 <code>
  (include-book \"cutil/top\" :dir :system)
-</code>
-
-<p>Or, for a slightly optimized version that requires a ttag, you can instead
-load:</p>
-
-<code>
- (include-book \"cutil/top-opt\" :dir :system)
 </code>
 
 

@@ -101,7 +101,7 @@
                  ;; jared: removing this, it's not included in vl anymore
                  ;; ,(da-make-debugger name tag fields require legiblep)
                  ,(da-make-constructor name tag fields require hons legiblep)
-                 ,@(da-make-accessors name fields legiblep nil)
+                 ,@(da-make-accessors name fields legiblep)
                  (gl::def-pattern-match-constructor
                   (,x) ,name (and (consp ,x) (eq (gl::tag ,x) ',tag))
                   ,(gl::da-accessors name fields))))))

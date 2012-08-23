@@ -1069,7 +1069,7 @@ instead.</p>"
   (local (in-theory (enable vl-expr->finalwidth
                             vl-expr-p)))
 
-  (verify-guards vl-expr->finalwidth)
+  (verify-guards vl-expr->finalwidth$inline)
 
   (defthm vl-maybe-natp-of-vl-expr->finalwidth
     (implies (force (vl-expr-p x))
@@ -1106,7 +1106,7 @@ is a @(see vl-maybe-exprtype-p).</p>"
 
   (local (in-theory (enable vl-expr-p vl-expr->finaltype)))
 
-  (verify-guards vl-expr->finaltype)
+  (verify-guards vl-expr->finaltype$inline)
 
   (defthm vl-maybe-exprtype-p-of-vl-expr->finaltype
     (implies (force (vl-expr-p x))

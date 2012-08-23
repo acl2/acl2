@@ -811,13 +811,13 @@ is not performed for other block sizes.</p>"
      `(encapsulate
         ()
         ,exec-def
-        (,(if fn 'definlined 'defund) sbitset-members-aux (x)
-         (declare (xargs :guard (sbitsetp x)
-                         :verify-guards nil))
-         ,real-body)
+        (definlined sbitset-members-aux (x)
+          (declare (xargs :guard (sbitsetp x)
+                          :verify-guards nil))
+          ,real-body)
         (local (in-theory (enable sbitset-members-aux)))
         ,remove-thm
-        (verify-guards sbitset-members-aux))))
+        (verify-guards sbitset-members-aux$inline))))
 
   (definlined sbitset-members (x)
     (declare (xargs :guard (sbitsetp x)
@@ -877,7 +877,7 @@ is not performed for other block sizes.</p>"
       (equal (sbitset-members-aux x)
              (sbitset-members x)))
 
-    (verify-guards sbitset-members))
+    (verify-guards sbitset-members$inline))
 
 
   (defthm sbitset-members-default

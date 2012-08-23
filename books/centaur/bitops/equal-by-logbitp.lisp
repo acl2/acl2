@@ -197,6 +197,19 @@ can generate the appropriate <tt>:functional-instance</tt> automatically.</p>"
                              (b (logbitp-rhs))))))))
 
 
+(defthmd logbitp-when-bit
+  ;; Disabled because the case split could be expensive
+  (implies (bitp b)
+           (equal (logbitp i b)
+                  (and (= (nfix i) 0)
+                       (equal b 1)))))
+
+(defthm logbitp-of-negative-const
+  (implies (and (syntaxp (quotep x))
+                (< x 0))
+           (equal (logbitp bit x)
+                  (not (logbitp bit (lognot x))))))
+
 
 
 (defsection logbitp-of-const
@@ -746,4 +759,50 @@ constant, you might want to consider enabling this rule.</p>"
             :in-theory (e/d* (open-logbitp-of-const-lite
                               arith-equiv-forwarding
                               nfix ifix))))))
+
+
+
+(defsection equal-by-logbitp-hammer
+  :parents (equal-by-logbitp)
+  :short "Drastic automation for @(see equal-by-logbitp)."
+
+  :long "<p>This is an enhanced version of @(see equal-by-logbitp-hint) that
+also enables a bunch of case-splitting rules that allow @(see logbitp) to go
+through functions like @(see ash), @(see loghead), @(see install-bit),
+etc.</p>"
+
+  (def-ruleset! logbitp-case-splits
+    ;; Basic logbitp case-splitting rules to enable first
+    '(acl2::logbitp-of-ash-split
+      acl2::logbitp-of-loghead-split
+      acl2::logbitp-of-logapp-split))
+
+  (def-ruleset! logbitp-case-splits+
+    ;; Even more case splitting rules to enable after that
+    '(logbitp-case-splits
+      logbitp-when-bit
+      b-not b-and b-ior b-xor b-eqv b-nand b-nor b-andc1 b-andc2
+      b-orc1 b-orc2
+      nfix ifix bfix))
+
+  (defmacro equal-by-logbitp-hammer ()
+    '(and stable-under-simplificationp
+          '(:computed-hint-replacement
+            ((and stable-under-simplificationp
+                  '(:in-theory (e/d* (acl2::logbitp-of-const-split))))
+             (and stable-under-simplificationp
+                  '(:in-theory (e/d* (logbitp-case-splits
+                                      logbitp-when-bit
+                                      acl2::logbitp-of-const-split))))
+             (and stable-under-simplificationp
+                  (equal-by-logbitp-hint))
+             (and stable-under-simplificationp
+                  '(:in-theory (e/d* (logbitp-case-splits
+                                      logbitp-when-bit
+                                      acl2::logbitp-of-const-split
+                                      b-xor b-ior b-and)))))
+            :no-thanks t))))
+
+
+
 
