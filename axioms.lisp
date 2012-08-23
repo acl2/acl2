@@ -40768,6 +40768,7 @@
 (defconst *inline-suffix-len-minus-1* (1- (length *inline-suffix*)))
 (defconst *notinline-suffix* "$NOTINLINE")
 (defconst *notinline-suffix-len-minus-1* (1- (length *notinline-suffix*)))
+(defconst *non-stobj-var-root* (coerce (symbol-name 'non-stobj-var) 'list))
 
 (defmacro defun-inline (name &rest args)
 
@@ -40859,16 +40860,29 @@
   symbols locally defined by ~ilc[flet], except in the case of symbols
   discussed in (1) and (2) above that, at some point in the current ACL2
   session, were defined as function symbols in ACL2 (even if not currently
-  defined because of undoing or being ~il[local]).~/"
+  defined because of undoing or being ~il[local]).
 
-  (declare (xargs :guard (and args (symbol-listp (car args)))))
-  (let ((name$inline
-         (intern-in-package-of-symbol
-          (concatenate 'string (symbol-name name) *inline-suffix*)
-          name))
-        (formals (car args)))
-    `(progn (defmacro ,name ,formals
-              (list ',name$inline ,@formals))
+  (4) The function symbol actually being defined by ~c[(defun-inline foo ...)]
+  is ~c[foo$inline].  As mentioned above, one can be oblivious to this fact
+  when writing ~il[theory] expressions or perusing prover output.  However, for
+  other purposes (for example, ~ilc[verify-guards] and ~ilc[defabsstobj]
+  ~c[:exports]) you will need to supply the name of the function symbol rather
+  than the name of the macro; e.g., for the above form
+  ~c[(defun-inline foo ...)], you may subsequently issue the event
+  ~c[(verify-guards foo$inline)] but not ~c[(verify-guards foo)].~/"
+
+  (declare (xargs :guard (and (symbolp name)
+                              args
+                              (symbol-listp (car args)))))
+  (let* ((name$inline
+          (intern-in-package-of-symbol
+           (concatenate 'string (symbol-name name) *inline-suffix*)
+           name))
+         (formals (car args))
+         (macro-formals ; try to avoid using stobj names
+          (make-var-lst1 *non-stobj-var-root* name (length formals) nil)))
+    `(progn (defmacro ,name ,macro-formals
+              (list ',name$inline ,@macro-formals))
             (add-macro-fn ,name ,name$inline)
             (defun ,name$inline ,@args))))
 
@@ -40885,13 +40899,15 @@
   ~l[defun-inline].~/~/"
 
   (declare (xargs :guard (and args (symbol-listp (car args)))))
-  (let ((name$inline
-         (intern-in-package-of-symbol
-          (concatenate 'string (symbol-name name) *inline-suffix*)
-          name))
-        (formals (car args)))
-    `(progn (defmacro ,name ,formals
-              (list ',name$inline ,@formals))
+  (let* ((name$inline
+          (intern-in-package-of-symbol
+           (concatenate 'string (symbol-name name) *inline-suffix*)
+           name))
+         (formals (car args))
+         (macro-formals ; try to avoid using stobj names
+          (make-var-lst1 *non-stobj-var-root* name (length formals) nil)))
+    `(progn (defmacro ,name ,macro-formals
+              (list ',name$inline ,@macro-formals))
             (add-macro-fn ,name ,name$inline)
             (defund ,name$inline ,@args))))
 
@@ -40916,13 +40932,15 @@
   Common Lisp implementations often do respect the first of these as well.~/~/"
 
   (declare (xargs :guard (and args (symbol-listp (car args)))))
-  (let ((name$notinline
-         (intern-in-package-of-symbol
-          (concatenate 'string (symbol-name name) *notinline-suffix*)
-          name))
-        (formals (car args)))
-    `(progn (defmacro ,name ,formals
-              (list ',name$notinline ,@formals))
+  (let* ((name$notinline
+          (intern-in-package-of-symbol
+           (concatenate 'string (symbol-name name) *notinline-suffix*)
+           name))
+         (formals (car args))
+         (macro-formals ; try to avoid using stobj names
+          (make-var-lst1 *non-stobj-var-root* name (length formals) nil)))
+    `(progn (defmacro ,name ,macro-formals
+              (list ',name$notinline ,@macro-formals))
             (add-macro-fn ,name ,name$notinline)
             (defun ,name$notinline ,@args))))
 
@@ -40939,13 +40957,15 @@
   ~l[defun-notinline].~/~/"
 
   (declare (xargs :guard (and args (symbol-listp (car args)))))
-  (let ((name$notinline
-         (intern-in-package-of-symbol
-          (concatenate 'string (symbol-name name) *notinline-suffix*)
-          name))
-        (formals (car args)))
-    `(progn (defmacro ,name ,formals
-              (list ',name$notinline ,@formals))
+  (let* ((name$notinline
+          (intern-in-package-of-symbol
+           (concatenate 'string (symbol-name name) *notinline-suffix*)
+           name))
+         (formals (car args))
+         (macro-formals ; try to avoid using stobj names
+          (make-var-lst1 *non-stobj-var-root* name (length formals) nil)))
+    `(progn (defmacro ,name ,macro-formals
+              (list ',name$notinline ,@macro-formals))
             (add-macro-fn ,name ,name$notinline)
             (defund ,name$notinline ,@args))))
 

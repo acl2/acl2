@@ -8658,9 +8658,7 @@
                             (cons #\0 cl-id-phrase)
                             (cons #\1 (access assumnote (car lst)
                                               :rune)))))))
-         (cond ((member-equal x acc)
-                x)
-               (t (cons x acc))))))))
+         (add-to-set-equal x acc))))))
 
 (defun tilde-*-assumnotes-column-phrase-gag-mode (assumnotes)
 
