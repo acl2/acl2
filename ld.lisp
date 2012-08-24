@@ -19419,6 +19419,40 @@
 
   ~/~/")
 
+(deflabel note-5-1
+
+  :doc
+  ":Doc-Section release-notes
+
+  ACL2 Version  5.1 (xxx, 20xx) Notes~/
+
+  NOTE!  New users can ignore these release notes, because the
+  ~il[documentation] has been updated to reflect all changes that are recorded
+  here.
+
+  Below we roughly organize the changes since Version  4.3 into the following
+  categories of changes: existing features, new features, heuristic
+  improvements, bug fixes, changes at the system level and to distributed
+  books, Emacs support, and experimental versions.  Each change is described in
+  just one category, though of course many changes could be placed in more than
+  one category.
+
+  ~st[CHANGES TO EXISTING FEATURES]
+
+  ~st[NEW FEATURES]
+
+  ~st[HEURISTIC IMPROVEMENTS]
+
+  ~st[BUG FIXES]
+
+  ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]
+
+  ~st[EMACS SUPPORT]
+
+  ~st[EXPERIMENTAL VERSIONS]
+
+  ~/~/")
+
 (deflabel the-method
   :doc
   ":Doc-Section Miscellaneous
