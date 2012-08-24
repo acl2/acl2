@@ -44949,10 +44949,17 @@ Lisp definition."
   the use of ~ilc[evisc-table] to abbreviate large constants, so that the
   abbreviation can be read back in; ~pl[evisc-table].
 
-  Note that the ACL2 reader only supports `~c[#.]' as described above, unlike
-  Common Lisp.  Older versions (preceding  3.5) used `~c[#.]' to abort, but
-  that functionality is now carried out by ~c[(a!)]; ~pl[a!].  For a related
-  feature that only pops up one level, ~pl[p!].")
+  Remarks.
+
+  (1) The ACL2 reader only supports `~c[#.]' as described above, unlike Common
+  Lisp.  Older versions (preceding 3.5) used `~c[#.]' to abort, but that
+  functionality is now carried out by ~c[(a!)]; ~pl[a!].  For a related feature
+  that only pops up one level, ~pl[p!].
+
+  (2) If you call ~ilc[certify-book] on a book that contains a form
+  `~c[#.*foo*]', the ~c[*foo*] must already be defined in the ~il[world] in
+  which you issue the ~c[certify-book] command.  The reason is that
+  ~c[certify-book] reads the entire book before evaluating its forms.")
 
 (defdoc sharp-comma-reader
   ":Doc-Section other
