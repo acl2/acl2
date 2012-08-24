@@ -510,44 +510,6 @@ copy-books:
 	rm -f workxxx
 	rm -f workyyy
 
-.PHONY: copy-workshops
-copy-workshops:
-# WARNING: Execute this from an ACL2 source directory.
-# WARNING: This should only be run after directory ${DIR}/books exists,
-#          so run `make' with target copy-books first.
-# See the comments for copy-distribution, and keep these in sync.  Use the same
-# DIR for both.
-	rm -f workxxx
-	rm -f workyyy
-	rm -f acl2r.lisp
-	echo '(load "init.lisp")' > workxxx
-	echo '(acl2::copy-distribution "workyyy" "${CURDIR}" "${DIR}" "all-files-workshops.txt" t)' >> workxxx
-	echo '(acl2::exit-lisp)' >> workxxx
-	${LISP} < workxxx
-	chmod 777 workyyy
-	./workyyy
-	rm -f workxxx
-	rm -f workyyy
-
-.PHONY: copy-nonstd
-copy-nonstd:
-# WARNING: Execute this from an ACL2 source directory.
-# WARNING: This should only be run after directory ${DIR}/books exists,
-#          so run `make' with target copy-books first.
-# See the comments for copy-distribution, and keep these in sync.  Use the same
-# DIR for both.
-	rm -f workxxx
-	rm -f workyyy
-	rm -f acl2r.lisp
-	echo '(load "init.lisp")' > workxxx
-	echo '(acl2::copy-distribution "workyyy" "${CURDIR}" "${DIR}" "all-files-nonstd.txt" t)' >> workxxx
-	echo '(acl2::exit-lisp)' >> workxxx
-	${LISP} < workxxx
-	chmod 777 workyyy
-	./workyyy
-	rm -f workxxx
-	rm -f workyyy
-
 .PHONY: copy-extra
 copy-extra:
 # Developer target only.
