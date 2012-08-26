@@ -19443,6 +19443,14 @@
 
   ~st[HEURISTIC IMPROVEMENTS]
 
+  We obtained a substantial speedup ~-[] 13% observed for the regression suite,
+  and 8% observed for the ACL2(h) regression suite ~-[] by tweaking the
+  ~il[break-rewrite] implementation to eliminate virtually all of its overhead
+  when it is not in use (the default, which holds until ~c[:]~ilc[brr]~c[ t] is
+  evaluated).  Thanks to David Rager for a conversation involving ACL2(p)
+  performance statistics that suggested looking at changing ~il[break-rewrite]
+  to boost performance.
+
   ~st[BUG FIXES]
 
   ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]

@@ -8371,15 +8371,16 @@
    #+acl2-par ; test is always false anyhow when #-acl2-par
    ((f-get-global 'waterfall-parallelism state)
     nil)
+   ((not (f-get-global 'gstackp state))
+    nil)
    (t
     (brr-wormhole
      '(lambda (whs)
         (set-wormhole-entry-code
          whs
-         (if (and (f-get-global 'gstackp state)
-                  (assoc-equal (access rewrite-rule lemma :rune)
-                               (cdr (assoc-eq 'brr-monitored-runes
-                                              (wormhole-data whs)))))
+         (if (assoc-equal (access rewrite-rule lemma :rune)
+                          (cdr (assoc-eq 'brr-monitored-runes
+                                         (wormhole-data whs))))
              :ENTER
            :SKIP)))
      `((brr-gstack . ,gstack)
@@ -8593,14 +8594,15 @@
    #+acl2-par ; test is always false anyhow when #-acl2-par
    ((f-get-global 'waterfall-parallelism state)
     nil)
+   ((not (f-get-global 'gstackp state))
+    nil)
    (t
     (brr-wormhole
      '(lambda (whs)
         (set-wormhole-entry-code
          whs
-         (if (and (f-get-global 'gstackp state)
-                  (assoc-equal gstack
-                               (cdr (assoc-eq 'brr-stack (wormhole-data whs)))))
+         (if (assoc-equal gstack
+                          (cdr (assoc-eq 'brr-stack (wormhole-data whs))))
              :ENTER
            :SKIP)))
      `((brr-gstack . ,gstack)
