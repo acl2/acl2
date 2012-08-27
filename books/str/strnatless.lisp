@@ -783,7 +783,7 @@ one index.</p>"
                                (:type-prescription character-listp)
                                (:type-prescription eqlable-listp)
                                (:type-prescription atom-listp)
-                               (:type-prescription digitp)
+                               (:type-prescription digitp$inline)
                                (:type-prescription strnat<-aux)
                                (:type-prescription char<)
                                default-char-code
@@ -863,7 +863,7 @@ than the string <tt>y</tt>, using an ordering that is nice for humans.</p>
 <p>We avoid coercing the strings into character lists, and this is altogether
 pretty fast.</p>"
 
-  (defund strnat< (x y)
+  (definlined strnat< (x y)
     (declare (type string x)
              (type string y))
     (mbe :logic

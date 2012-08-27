@@ -9,6 +9,7 @@
    '(pkg-witness bad-atom<= b* quit exit
      hons-acons hons-get hut het hqual hons-equal
      hons-assoc-equal make-fal
+     definline definlined
 
      tag
 

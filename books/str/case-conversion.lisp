@@ -36,8 +36,6 @@
 
 
 
-
-
 (defsection upcase-charlist
   :parents (case-conversion)
   :short "Convert every character in a list to upper case."
@@ -57,19 +55,14 @@ consing outweighs this.  At any rate, this optimization does not affect the
 logical definition.</p>"
 
   (defund charlist-has-some-down-alpha-p (x)
-    (declare (xargs :guard (character-listp x)
-                    :guard-hints(("Goal" :in-theory (enable down-alpha-p)))))
+    (declare (xargs :guard (character-listp x)))
     (if (atom x)
         nil
-      (or (mbe :logic (down-alpha-p (car x))
-               :exec (let ((code (char-code (car x))))
-                       (declare (type (unsigned-byte 8) code))
-                       (and (<= (little-a) code)
-                            (<= code (little-z)))))
+      (or (down-alpha-p (car x))
           (charlist-has-some-down-alpha-p (cdr x)))))
 
   (defund upcase-charlist-aux (x acc)
-    (declare (Xargs :guard (and (character-listp x)
+    (declare (xargs :guard (and (character-listp x)
                                 (character-listp acc))))
     (if (atom x)
         acc
@@ -144,15 +137,10 @@ consing outweighs this.  At any rate, this optimization does not affect the
 logical definition.</p>"
 
   (defund charlist-has-some-up-alpha-p (x)
-    (declare (xargs :guard (character-listp x)
-                    :guard-hints(("Goal" :in-theory (enable up-alpha-p)))))
+    (declare (xargs :guard (character-listp x)))
     (if (atom x)
         nil
-      (or (mbe :logic (up-alpha-p (car x))
-               :exec (let ((code (char-code (car x))))
-                       (declare (type (unsigned-byte 8) code))
-                       (and (<= (big-a) code)
-                            (<= code (big-z)))))
+      (or (up-alpha-p (car x))
           (charlist-has-some-up-alpha-p (cdr x)))))
 
   (defund downcase-charlist-aux (x acc)
@@ -231,7 +219,7 @@ does not affect the logical definition.</p>
 
 <p>Despite trying to make this fast, the builtin <tt>string-upcase</tt> can
 really outperform us since it doesn't have to build the intermediate list, etc.
-It's really a shame that <tt>string-upcase</tt> has such a terrble guard.
+It's really a shame that <tt>string-upcase</tt> has such a terrible guard.
 Well, at least we're better when no work needs to be done:</p>
 
 <code>
@@ -255,16 +243,11 @@ Well, at least we're better when no work needs to be done:</p>
                                 (natp xl)
                                 (= xl (length x))
                                 (<= n xl))
-                    :measure (nfix (- (nfix xl) (nfix n)))
-                    :guard-hints(("Goal" :in-theory (enable down-alpha-p)))))
+                    :measure (nfix (- (nfix xl) (nfix n)))))
     (if (mbe :logic (zp (- (nfix xl) (nfix n)))
              :exec (= n xl))
         nil
-      (or (mbe :logic (down-alpha-p (char x n))
-               :exec (let ((code (char-code (char x n))))
-                       (declare (type (unsigned-byte 8) code))
-                       (and (<= (little-a) code)
-                            (<= code (little-z)))))
+      (or (down-alpha-p (char x n))
           (string-has-some-down-alpha-p x (+ 1 (lnfix n)) xl))))
 
 
@@ -278,21 +261,12 @@ Well, at least we're better when no work needs to be done:</p>
                                 (natp xl)
                                 (= xl (length x))
                                 (<= n xl))
-                    :measure (nfix (- (nfix xl) (nfix n)))
-                    :guard-debug t
-                    :guard-hints(("Goal" :in-theory (enable upcase-char)))))
+                    :measure (nfix (- (nfix xl) (nfix n)))))
     (if (mbe :logic (zp (- (nfix xl) (nfix n)))
              :exec (= n xl))
         acc
       (let* ((char   (char x n))
-             (upchar (mbe :logic (upcase-char char)
-                          :exec (let ((code (char-code char)))
-                                  (declare (type (unsigned-byte 8) code))
-                                  (if (and (<= (little-a) code)
-                                           (<= code (little-z)))
-                                      (code-char (the (unsigned-byte 8)
-                                                   (- code (case-delta))))
-                                    char)))))
+             (upchar (upcase-char char)))
         (upcase-string-aux x (+ 1 (lnfix n)) xl (cons upchar acc)))))
 
   (defund upcase-string (x)
@@ -376,16 +350,11 @@ make this fast.</p>"
                                 (natp xl)
                                 (= xl (length x))
                                 (<= n xl))
-                    :measure (nfix (- (nfix xl) (nfix n)))
-                    :guard-hints(("Goal" :in-theory (enable up-alpha-p)))))
+                    :measure (nfix (- (nfix xl) (nfix n)))))
     (if (mbe :logic (zp (- (nfix xl) (nfix n)))
              :exec (= n xl))
         nil
-      (or (mbe :logic (up-alpha-p (char x n))
-               :exec (let ((code (char-code (char x n))))
-                       (declare (type (unsigned-byte 8) code))
-                       (and (<= (big-a) code)
-                            (<= code (big-z)))))
+      (or (up-alpha-p (char x n))
           (string-has-some-up-alpha-p x (+ 1 (lnfix n)) xl))))
 
   (defund downcase-string-aux (x n xl acc)
@@ -397,21 +366,12 @@ make this fast.</p>"
                                 (natp xl)
                                 (= xl (length x))
                                 (<= n xl))
-                    :measure (nfix (- (nfix xl) (nfix n)))
-                    :guard-debug t
-                    :guard-hints(("Goal" :in-theory (enable downcase-char)))))
+                    :measure (nfix (- (nfix xl) (nfix n)))))
     (if (mbe :logic (zp (- (nfix xl) (nfix n)))
              :exec (= n xl))
         acc
-      (let* ((char   (char x n))
-             (downchar (mbe :logic (downcase-char char)
-                            :exec (let ((code (char-code char)))
-                                    (declare (type (unsigned-byte 8) code))
-                                    (if (and (<= (big-a) code)
-                                             (<= code (big-z)))
-                                        (code-char (the (unsigned-byte 8)
-                                                     (+ code (case-delta))))
-                                      char)))))
+      (let* ((char     (char x n))
+             (downchar (downcase-char char)))
         (downcase-string-aux x (+ 1 (lnfix n)) xl (cons downchar acc)))))
 
   (defund downcase-string (x)

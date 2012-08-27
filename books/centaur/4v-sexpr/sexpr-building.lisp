@@ -53,12 +53,12 @@ sexpr-rewrite) should be duplicated here.</p>")
                          'x))))
 
 (local (defthm equal-of-4v-unfloat-and-4vf
-         (equal (equal (4v-unfloat a) *4vf*)
-                (equal a *4vf*))))
+         (equal (equal (4v-unfloat a) (4vf))
+                (equal a (4vf)))))
 
 (local (defthm equal-of-4v-unfloat-and-4vt
-         (equal (equal (4v-unfloat a) *4vt*)
-                (equal a *4vt*))))
+         (equal (equal (4v-unfloat a) (4vt))
+                (equal a (4vt)))))
 
 (local (defthm car-of-4v-sexpr-eval
          (equal (car (4v-sexpr-eval-list x env))
@@ -90,7 +90,7 @@ apply.</p>"
 
   (defthm 4v-sexpr-eval-of-4vs-t
     (equal (4v-sexpr-eval (4vs-t) env)
-           *4vt*))
+           (4vt)))
 
   (defthm 4v-sexpr-vars-of-4vs-t
     (equal (4v-sexpr-vars (4vs-t))
@@ -115,7 +115,7 @@ apply.</p>"
 
   (defthm 4v-sexpr-eval-of-4vs-f
     (equal (4v-sexpr-eval (4vs-f) env)
-           *4vf*))
+           (4vf)))
 
   (defthm 4v-sexpr-vars-of-4vs-f
     (equal (4v-sexpr-vars (4vs-f))
@@ -140,7 +140,7 @@ will not apply.</p>"
 
   (defthm 4v-sexpr-eval-of-4vs-x
     (equal (4v-sexpr-eval (4vs-x) env)
-           *4vx*))
+           (4vx)))
 
   (defthm 4v-sexpr-vars-of-4vs-x
     (equal (4v-sexpr-vars (4vs-x))
@@ -165,7 +165,7 @@ will not apply.</p>"
 
   (defthm 4v-sexpr-eval-of-4vs-z
     (equal (4v-sexpr-eval (4vs-z) env)
-           *4vz*))
+           (4vz)))
 
   (defthm 4v-sexpr-vars-of-4vs-z
     (equal (4v-sexpr-vars (4vs-z))
@@ -295,7 +295,7 @@ will not apply.</p>"
   (defund 4v-and-list (x)
     (declare (xargs :guard t))
     (if (atom x)
-        *4vt*
+        (4vt)
       (4v-and (car x)
               (4v-and-list (cdr x)))))
 
@@ -304,14 +304,14 @@ will not apply.</p>"
   (defthm 4v-and-list-when-atom
     (implies (atom x)
              (equal (4v-and-list x)
-                    *4vt*)))
+                    (4vt))))
 
   (defthm 4v-and-list-of-cons
     (equal (4v-and-list (cons a x))
            (4v-and a (4v-and-list x))))
 
   (defthm 4v-and-list-never-z
-    (equal (equal (4v-and-list x) *4vz*)
+    (equal (equal (4v-and-list x) (4vz))
            nil)))
 
 

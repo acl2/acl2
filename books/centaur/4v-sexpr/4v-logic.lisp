@@ -30,6 +30,7 @@
 (include-book "centaur/misc/witness-cp" :dir :system)
 (include-book "tools/rulesets" :dir :system)
 (include-book "xdoc/top" :dir :system)
+(include-book "misc/definline" :dir :system)
 
 ;; Local Variables:
 ;; eval: (put '4vcases 'lisp-indent-function 1)
@@ -122,7 +123,7 @@ typically use <tt>&amp;</tt> or <tt>otherwise</tt>.</p>
   :long "<p>@(call 4v-fix) interprets <tt>a</tt> as a four-valued constant.
 Any non-@(see 4vp) objects are coerced to X.</p>"
 
-  (defun 4v-fix (a)
+  (definline 4v-fix (a)
     (declare (xargs :guard t))
     (mbe :logic
          (if (4vp a) a (4vx))
@@ -186,7 +187,7 @@ define operations like @(see 4v-not) and @(see 4v-and) that are intended to
 model gates, we generally apply <tt>4v-unfloat</tt> to the inputs so that any Z
 values are treated as X.</p>"
 
-  (defun 4v-unfloat (a)
+  (definline 4v-unfloat (a)
     (declare (xargs :guard t))
     (mbe :logic
          (4vcases a
@@ -227,7 +228,7 @@ truth table:</p>
 
 <p>See @(see 4v-unfloat) for an explanation of the Z case.</p>"
 
-  (defun 4v-not (a)
+  (definline 4v-not (a)
     (declare (xargs :guard t))
     (4vcases a
       (t (4vf))
@@ -258,7 +259,7 @@ truth table:</p>
 
 <p>See @(see 4v-unfloat) for an explanation of the Z case.</p>"
 
-  (defun 4v-and (a b)
+  (definline 4v-and (a b)
     (declare (xargs :guard t))
     (mbe :logic
          (4vcases a
@@ -292,7 +293,7 @@ truth table:</p>
 
 <p>See @(see 4v-unfloat) for an explanation of the Z case.</p>"
 
-  (defun 4v-or (a b)
+  (definline 4v-or (a b)
     (declare (xargs :guard t))
     (mbe :logic
          (4vcases a
@@ -326,7 +327,7 @@ truth table:</p>
 
 <p>See @(see 4v-unfloat) for an explanation of the Z case.</p>"
 
-  (defun 4v-xor (a b)
+  (definline 4v-xor (a b)
     (declare (xargs :guard t))
     (mbe :logic
          (4vcases a
@@ -360,7 +361,7 @@ truth table:</p>
 
 <p>See @(see 4v-unfloat) for an explanation of the Z case.</p>"
 
-  (defun 4v-iff (a b)
+  (definline 4v-iff (a b)
     (declare (xargs :guard t))
     (mbe :logic
          (4vcases a
@@ -889,10 +890,20 @@ specification).</p>
                                  4v-res 4v-ite 4v-ite* 4v-tristate 4v-pullup
                                  4v-wand 4v-wor))
 
-(def-ruleset 4v-op-execs '((4v-fix) (4v-unfloat) (4v-not) (4v-and) (4v-or)
-                           (4v-xor) (4v-iff) (4v-res) (4v-ite) (4v-ite*)
-                           (4v-tristate) (4v-pullup)
-                           (4v-wand) (4v-wor)))
+(def-ruleset 4v-op-execs '((4v-fix$inline)
+                           (4v-unfloat$inline)
+                           (4v-not$inline)
+                           (4v-and$inline)
+                           (4v-or$inline)
+                           (4v-xor$inline)
+                           (4v-iff$inline)
+                           (4v-res)
+                           (4v-ite)
+                           (4v-ite*)
+                           (4v-tristate)
+                           (4v-pullup)
+                           (4v-wand)
+                           (4v-wor)))
 
 
 (defsection 4v-<=
@@ -921,7 +932,7 @@ there is no order imposed between T, F, and Z.</p>
 
 <p>This ordering plays a key role in @(see 4v-monotonicity).</p>"
 
-  (defun 4v-<= (a b)
+  (definline 4v-<= (a b)
     (declare (xargs :guard t))
     (mbe :logic
          (let ((a (4v-fix a)))

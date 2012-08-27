@@ -395,7 +395,7 @@
                                 ;; instname-list is a string list
                                 )))
     (make-vl-warning
-     :type (if (ec-call (str::isubstrp "ph1" target-modname))
+     :type (if (ec-call (str::isubstrp$inline "ph1" target-modname))
                :vl-warn-instances-same-minor
              :vl-warn-instances-same)
      :msg  "In module ~m0, found multiple instances of module ~m1 with ~

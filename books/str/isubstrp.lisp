@@ -33,7 +33,7 @@ substring of y.</p>
 <p>See also @(see istrpos) for an alternative that reports the position of the
 matched substring.</p>"
 
-  (defund isubstrp (x y)
+  (definlined isubstrp (x y)
     (declare (type string x)
              (type string y))
     (if (istrpos x y)

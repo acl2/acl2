@@ -21,6 +21,7 @@
 (in-package "STR")
 (include-book "cat")
 (include-book "strprefixp")
+
 (local (include-book "misc/assert" :dir :system))
 (local (include-book "arithmetic"))
 
@@ -93,18 +94,20 @@ Examples:
  \"xaaoyaa\"
 </code>"
 
+;; BOZO probably worthwhile to check if old occurs, and if not don't bother to
+;; do any coercion, etc.
+
   (defund strsubst (old new x)
     (declare (xargs :guard (and (stringp old)
                                 (stringp new)
                                 (stringp x))))
-    (let ((xl   (length x))
-          (oldl (length old)))
+    (let ((oldl (length old)))
       (if (= oldl 0)
           (mbe :logic (if (stringp x)
                           x
                         "")
                :exec x)
-        (reverse (coerce (strsubst-aux old new x 0 xl oldl nil) 'string)))))
+        (reverse (coerce (strsubst-aux old new x 0 (length x) oldl nil) 'string)))))
 
   (local (in-theory (enable strsubst)))
 

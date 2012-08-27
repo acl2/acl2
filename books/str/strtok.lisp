@@ -20,6 +20,7 @@
 
 (in-package "STR")
 (include-book "xdoc/top" :dir :system)
+(include-book "misc/definline" :dir :system)
 (local (include-book "misc/assert" :dir :system))
 (local (include-book "arithmetic"))
 (local (include-book "unicode/revappend" :dir :system))
@@ -100,7 +101,7 @@ somewhat similar to repeatedly calling the <tt>strtok</tt> function in C.</p>
 <p>Note that all of the characters in <tt>delimiters</tt> are removed, and no
 empty strings are ever found in <tt>strtok</tt>'s output.</p>"
 
-  (defund strtok (x delimiters)
+  (definlined strtok (x delimiters)
     (declare (xargs :guard (and (stringp x)
                                 (character-listp delimiters))))
     (reverse (strtok-aux x 0 (length x) delimiters nil nil)))

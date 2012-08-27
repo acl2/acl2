@@ -63,7 +63,7 @@ are equal to <tt>x</tt>.</p>
 every other string.  That is, <tt>(strsuffixp \"\" x)</tt> is always
 <tt>t</tt>.</p>"
 
-  (defund strsuffixp (x y)
+  (definlined strsuffixp (x y)
     (declare (xargs :guard (and (stringp x)
                                 (stringp y))))
     (let* ((xlen (length x))

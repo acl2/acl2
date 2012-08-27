@@ -49,7 +49,7 @@ CCL on the machine Lisp2.</p>
               (loop for c in *chars* do (digitp c))))
 </code>"
 
-  (defund digitp (x)
+  (definlined digitp (x)
     (declare (type character x))
     (mbe :logic (let ((code (char-code (char-fix x))))
                   (and (<= (char-code #\0) code)
@@ -72,7 +72,7 @@ CCL on the machine Lisp2.</p>
   :long "<p>For instance, the digit-val of #\3 is 3.  For any
 non-<tt>digitp</tt>, 0 is returned.</p>"
 
-  (defund digit-val (x)
+  (definlined digit-val (x)
     (declare (type character x)
              (xargs :guard (digitp x)
                     :guard-hints (("Goal" :in-theory (enable digitp)))))
@@ -121,14 +121,9 @@ non-<tt>digitp</tt>, 0 is returned.</p>"
 ; BOZO consider using cutil::deflist
 
   (defund digit-listp (x)
-    (declare (xargs :guard (character-listp x)
-                    :guard-hints (("Goal" :in-theory (enable digitp)))))
+    (declare (xargs :guard (character-listp x)))
     (if (consp x)
-        (and (mbe :logic (digitp (car x))
-                  :exec (let ((code (the (unsigned-byte 8) (char-code (the character (car x))))))
-                          (declare (type (unsigned-byte 8) code))
-                          (and (<= (the (unsigned-byte 8) 48) (the (unsigned-byte 8) code))
-                               (<= (the (unsigned-byte 8) code) (the (unsigned-byte 8) 57)))))
+        (and (digitp (car x))
              (digit-listp (cdr x)))
       t))
 
@@ -197,7 +192,7 @@ can tolerate non-numeric characters after the number.</p>"
                                               (the integer val)))))
                  (the integer val))))
 
-  (defund digit-list-value (x)
+  (definlined digit-list-value (x)
     (declare (xargs :guard (and (character-listp x)
                                 (digit-listp x))
                     :verify-guards nil))
@@ -236,7 +231,7 @@ can tolerate non-numeric characters after the number.</p>"
             :in-theory (enable digit-list-value1)
             :induct (digit-list-value1 x val))))
 
-  (verify-guards digit-list-value)
+  (verify-guards digit-list-value$inline)
 
   (defthm digit-list-value-of-append
     (equal (digit-list-value (append x (list a)))
@@ -248,14 +243,9 @@ can tolerate non-numeric characters after the number.</p>"
 (defsection skip-leading-digits
 
   (defund skip-leading-digits (x)
-    (declare (xargs :guard (character-listp x)
-                    :guard-hints (("Goal" :in-theory (enable digitp)))))
+    (declare (xargs :guard (character-listp x)))
     (if (consp x)
-        (if (mbe :logic (digitp (car x))
-                 :exec (let ((code (the (unsigned-byte 8) (char-code (the character (car x))))))
-                         (declare (type (unsigned-byte 8) code))
-                         (and (<= (the (unsigned-byte 8) 48) (the (unsigned-byte 8) code))
-                              (<= (the (unsigned-byte 8) code) (the (unsigned-byte 8) 57)))))
+        (if (digitp (car x))
             (skip-leading-digits (cdr x))
           x)
       nil))
@@ -279,15 +269,9 @@ can tolerate non-numeric characters after the number.</p>"
 (defsection take-leading-digits
 
   (defund take-leading-digits (x)
-    (declare (xargs :guard (character-listp x)
-                    :guard-hints (("Goal" :in-theory (enable digitp)))))
-
+    (declare (xargs :guard (character-listp x)))
     (if (consp x)
-        (if (mbe :logic (digitp (car x))
-                 :exec (let ((code (the (unsigned-byte 8) (char-code (the character (car x))))))
-                         (declare (type (unsigned-byte 8) code))
-                         (and (<= (the (unsigned-byte 8) 48) (the (unsigned-byte 8) code))
-                              (<= (the (unsigned-byte 8) code) (the (unsigned-byte 8) 57)))))
+        (if (digitp (car x))
             (cons (car x) (take-leading-digits (cdr x)))
           nil)
       nil))
@@ -330,22 +314,12 @@ can tolerate non-numeric characters after the number.</p>"
                                 (natp xl)
                                 (<= n xl)
                                 (= xl (length x)))
-                    :measure (nfix (- (nfix xl) (nfix n)))
-                    :verify-guards nil))
+                    :measure (nfix (- (nfix xl) (nfix n)))))
     (if (mbe :logic (zp (- (nfix xl) (nfix n)))
              :exec (= (the integer n) (the integer xl)))
         t
-      (and (mbe :logic (digitp (char x n))
-                :exec
-                (let ((code (the (unsigned-byte 8)
-                              (char-code (the character (char x n))))))
-                  (declare (type (unsigned-byte 8) code))
-                  (and (<= (the (unsigned-byte 8) 48) (the (unsigned-byte 8) code))
-                       (<= (the (unsigned-byte 8) code) (the (unsigned-byte 8) 57)))))
+      (and (digitp (char x n))
            (digit-string-p-aux x (+ 1 (lnfix n)) xl))))
-
-  (verify-guards digit-string-p-aux
-    :hints(("Goal" :in-theory (enable digitp))))
 
   (defthm digit-string-p-aux-removal
     (implies (and (stringp x)
@@ -356,7 +330,7 @@ can tolerate non-numeric characters after the number.</p>"
     :hints(("Goal" :in-theory (enable digit-string-p-aux
                                       digit-listp))))
 
-  (defun digit-string-p (x)
+  (definline digit-string-p (x)
     (declare (type string x))
 
 ; 0.5485 seconds, no garbage

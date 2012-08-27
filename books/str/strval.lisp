@@ -20,6 +20,7 @@
 
 (in-package "STR")
 (include-book "strnatless")
+(include-book "misc/definline" :dir :system)
 (local (include-book "arithmetic"))
 (local (include-book "misc/assert" :dir :system))
 
@@ -31,9 +32,10 @@
   :short "Recognizer for characters #\0 through #\7."
   :long "<p>@(call octal-digitp) is the octal alternative to @(see digitp).</p>"
 
-  (defund octal-digitp (x)
+  (definlined octal-digitp (x)
     (declare (type character x))
     (let ((code (char-code (mbe :logic (char-fix x) :exec x))))
+      (declare (type (unsigned-byte 8) code))
       (and (<= (char-code #\0) code)
            (<= code (char-code #\7)))))
 
@@ -41,6 +43,7 @@
     (implies (octal-digitp x)
              (digitp x))
     :hints(("Goal" :in-theory (enable octal-digitp digitp)))))
+
 
 (defsection octal-digit-listp
   :parents (numbers)
@@ -57,6 +60,7 @@
     (implies (octal-digit-listp x)
              (digit-listp x))
     :hints(("Goal" :in-theory (enable digit-listp octal-digit-listp)))))
+
 
 (defsection parse-octal-from-charlist
   :parents (numbers)
@@ -86,6 +90,7 @@ digits and returns their octal value.</p>"
     :rule-classes :type-prescription
     :hints(("Goal" :in-theory (enable parse-octal-from-charlist)))))
 
+
 (defsection octal-digit-list-value
   :parents (numbers)
   :short "Coerces a list of octal digits into a natural number."
@@ -95,7 +100,7 @@ for octal numbers.</p>
 <p>See also @(see parse-octal-from-charlist) for a more flexible function that
 can tolerate non-octal digits after the number.</p>"
 
-  (defund octal-digit-list-value (x)
+  (definlined octal-digit-list-value (x)
     (declare (xargs :guard (and (character-listp x)
                                 (octal-digit-listp x))))
     (b* (((mv val ?len ?rest)
@@ -120,9 +125,10 @@ can tolerate non-octal digits after the number.</p>"
   :short "Recognizer for characters 0-9, A-F, and a-f."
   :long "<p>@(call hex-digitp) is the hexadecimal alternative to @(see digitp).</p>"
 
-  (defund hex-digitp (x)
+  (definlined hex-digitp (x)
     (declare (type character x))
     (let ((code (char-code (mbe :logic (char-fix x) :exec x))))
+      (declare (type (unsigned-byte 8) code))
       (or (and (<= (char-code #\0) code)
                (<= code (char-code #\9)))
           (and (<= (char-code #\a) code)
@@ -147,7 +153,7 @@ can tolerate non-octal digits after the number.</p>"
   :long "<p>@(call hex-digit-val) is the hexadecimal version of @(see
 digit-val).</p>"
 
-  (defund hex-digit-val (x)
+  (definlined hex-digit-val (x)
     (declare (xargs :guard (and (characterp x)
                                 (hex-digitp x))))
     (if (mbe :logic (not (hex-digitp x))
@@ -155,6 +161,7 @@ digit-val).</p>"
         0
       (let ((code (char-code (mbe :logic (char-fix x)
                                   :exec x))))
+        (declare (type (unsigned-byte 8) code))
         (cond ((<= (char-code #\a) code) (- code (- (char-code #\a) 10)))
               ((<= (char-code #\A) code) (- code (- (char-code #\A) 10)))
               (t                         (- code (char-code #\0)))))))
@@ -224,7 +231,7 @@ for hex numbers.</p>
 <p>See also @(see parse-hex-from-charlist) for a more flexible function that
 can tolerate non-hex digits after the number.</p>"
 
-  (defund hex-digit-list-value (x)
+  (definlined hex-digit-list-value (x)
     (declare (xargs :guard (and (character-listp x)
                                 (hex-digit-listp x))))
     (b* (((mv val ?len ?rest)
@@ -247,7 +254,7 @@ can tolerate non-hex digits after the number.</p>"
   :short "Recognizer for characters #\0 and #\1."
   :long "<p>@(call bit-digitp) is the binary alternative to @(see digitp).</p>"
 
-  (defund bit-digitp (x)
+  (definlined bit-digitp (x)
     (declare (xargs :guard t))
     (or (eql x #\0)
         (eql x #\1))))
@@ -315,7 +322,7 @@ for bit numbers.</p>
 <p>See also @(see parse-bits-from-charlist) for a more flexible function that
 can tolerate non-bit digits after the number.</p>"
 
-  (defund bit-digit-list-value (x)
+  (definlined bit-digit-list-value (x)
     (declare (xargs :guard (and (character-listp x)
                                 (bit-digit-listp x))))
     (b* (((mv val ?len ?rest)
@@ -347,7 +354,7 @@ can tolerate non-bit digits after the number.</p>"
 number.  For example, <tt>(strval \"35\")</tt> is 35.  If the string has any
 non-decimal digit characters, we return <tt>nil</tt>.</p>"
 
-  (defund strval (x)
+  (definlined strval (x)
     (declare (type string x))
     (b* ((xl (length x))
          ((mv val len)
@@ -368,7 +375,7 @@ non-decimal digit characters, we return <tt>nil</tt>.</p>"
 decimal numbers.  For example, <tt>(strval8 \"10\")</tt> is 8.  If the string
 has any non-octal digit characters, we return <tt>nil</tt>.</p>"
 
-  (defund strval8 (x)
+  (definlined strval8 (x)
     (declare (type string x))
     (let ((chars (coerce x 'list)))
       (and (octal-digit-listp chars)
@@ -387,7 +394,7 @@ has any non-octal digit characters, we return <tt>nil</tt>.</p>"
 of decimal numbers.  For example, <tt>(strval16 \"10\")</tt> is 16.  If the
 string has any non-hex digit characters, we return <tt>nil</tt>.</p>"
 
-  (defund strval16 (x)
+  (definlined strval16 (x)
     (declare (type string x))
     (let ((chars (coerce x 'list)))
       (and (hex-digit-listp chars)
@@ -406,7 +413,7 @@ string has any non-hex digit characters, we return <tt>nil</tt>.</p>"
 of decimal numbers.  For example, <tt>(strval16 \"10\")</tt> is 2.  If the
 string has any non-binary digit characters, we return <tt>nil</tt>.</p>"
 
-  (defund strval2 (x)
+  (definlined strval2 (x)
     (declare (type string x))
     (let ((chars (coerce x 'list)))
       (and (bit-digit-listp chars)

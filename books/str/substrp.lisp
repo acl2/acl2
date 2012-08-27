@@ -32,7 +32,7 @@ The test is case-sensitive.</p>
 <p>See also @(see isubstrp) for a case-insensitive version, and @(see strpos)
 or @(see strrpos) for alternatives that say where a match occurs.</p>"
 
-  (defund substrp (x y)
+  (definlined substrp (x y)
     (declare (type string x)
              (type string y))
     (if (strpos x y)

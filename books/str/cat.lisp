@@ -20,6 +20,7 @@
 
 (in-package "STR")
 (include-book "xdoc/top" :dir :system)
+(include-book "misc/definline" :dir :system)
 (local (include-book "arithmetic"))
 (local (include-book "unicode/take" :dir :system))
 
@@ -64,12 +65,18 @@ the result may be faster.</p>"
 
   (defun fast-string-append (str1 str2)
     "May be redefined under-the-hood in str/fast-cat.lisp"
+    ;; We don't inline this because you might want to develop books without
+    ;; fast-cat (for fewer ttags), but then include fast-cat later for more
+    ;; performance.
     (declare (xargs :guard (and (stringp str1)
                                 (stringp str2))))
     (string-append str1 str2))
 
   (defun fast-string-append-lst (x)
     "May be redefined under-the-hood in str/fast-cat.lisp"
+    ;; We don't inline this because you might want to develop books without
+    ;; fast-cat (for fewer ttags), but then include fast-cat later for more
+    ;; performance.
     (declare (xargs :guard (string-listp x)))
     (string-append-lst x))
 
@@ -147,7 +154,7 @@ conses to <tt>n</tt> conses, where <tt>n</tt> is the length of <tt>x</tt>.</p>"
                            (append (simpler-take (+ 1 n) (coerce x 'list)) y)))
            :hints(("Goal" :use ((:instance append-chars-aux-correct))))))
 
-  (defund append-chars (x y)
+  (definlined append-chars (x y)
     (declare (xargs :guard (stringp x))
              (type string x))
     (mbe :logic (append (coerce x 'list) y)
@@ -227,10 +234,9 @@ for more details.</p>"
             :in-theory (enable revappend-chars-aux)
             :induct (revappend-chars-aux x n xl y))))
 
-  (defund revappend-chars (x y)
+  (definlined revappend-chars (x y)
     (declare (xargs :guard (stringp x))
              (type string x))
-
     (mbe :logic (revappend (coerce x 'list) y)
          :exec (revappend-chars-aux x 0 (length x) y)))
 

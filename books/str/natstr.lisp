@@ -112,7 +112,7 @@
                                                  (rem (the integer n) 10))))))
                           acc))))
 
-  (defund natchars (n)
+  (definlined natchars (n)
     (declare (type integer n)
              (xargs :guard (natp n)
                     :verify-guards nil))
@@ -125,7 +125,7 @@
     :hints(("Goal" :in-theory (enable natchars-aux basic-natchars))))
 
   (verify-guards natchars-aux)
-  (verify-guards natchars)
+  (verify-guards natchars$inline)
 
   (local (in-theory (enable natchars)))
 
@@ -169,7 +169,7 @@
 
 (defsection natstr
 
-  (defund natstr (n)
+  (definlined natstr (n)
     (declare (type integer n)
              (xargs :guard (natp n)))
     (coerce (natchars n) 'string))
@@ -218,7 +218,7 @@
            (append (basic-natchars n) acc))
     :hints(("Goal" :in-theory (enable revappend-natchars-aux basic-natchars))))
 
-  (defun revappend-natchars (n acc)
+  (definline revappend-natchars (n acc)
     (declare (type integer n)
              (xargs :guard (natp n)
                     :guard-hints(("Goal" :in-theory (enable natchars)))))

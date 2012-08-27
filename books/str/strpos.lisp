@@ -19,6 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "STR")
+(include-book "misc/definline" :dir :system)
 (include-book "strprefixp")
 (local (include-book "arithmetic"))
 
@@ -107,7 +108,7 @@ calling @(see strprefixp), rather than some better algorithm.</p>
 <p>Corner case: we say that the empty string <b>is</b> a prefix of any other
 string.  That is, <tt>(strpos \"\" x)</tt> is 0 for all <tt>x</tt>.</p>"
 
-  (defund strpos (x y)
+  (definlined strpos (x y)
     (declare (type string x)
              (type string y))
     (strpos-fast (the string x)

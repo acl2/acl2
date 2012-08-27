@@ -209,3 +209,43 @@
                             (y 255)
                             (n n)
                             (m m)))))))
+
+
+(encapsulate
+  ()
+  (local (defthm l1
+           (implies (or (not (natp x))
+                        (<= 256 x))
+                    (equal (code-char x)
+                           (code-char 0)))
+           :hints(("Goal" :use ((:instance acl2::completion-of-code-char))))))
+
+  (local (defthm l2
+           (implies (natp k)
+                    (equal (char-code (code-char (+ k (char-code a))))
+                           (if (and (integerp k)
+                                    (<= 0 (+ k (char-code a)))
+                                    (< (+ k (char-code a)) 256))
+                               (+ k (char-code a))
+                             0)))
+           :hints(("Goal"
+                   :cases ((< (+ k (char-code a)) 256))))))
+
+  (local (defthm l0
+           (implies (and (integerp a)
+                         (not (integerp b)))
+                    (equal (integerp (+ a b))
+                           (not (acl2-numberp b))))))
+
+  (defthm char-code-of-code-char-of-sum-with-char-code
+    (equal (char-code (code-char (+ k (char-code a))))
+           (cond ((integerp k)
+                  (if (and (<= 0 (+ k (char-code a)))
+                           (< (+ k (char-code a)) 256))
+                      (+ k (char-code a))
+                    0))
+                 ((acl2-numberp k)
+                  0)
+                 (t
+                  (char-code a))))
+    :hints(("Goal" :in-theory (disable code-char-char-code-is-identity)))))

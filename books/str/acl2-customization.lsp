@@ -18,5 +18,7 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
+(in-package "ACL2")
+(ld "~/acl2-customization.lsp")
 (ld "package.lsp")
 (in-package "STR")

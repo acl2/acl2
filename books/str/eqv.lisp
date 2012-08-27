@@ -21,6 +21,7 @@
 (in-package "STR")
 (include-book "xdoc/top" :dir :system)
 (include-book "unicode/list-fix" :dir :system)
+(include-book "misc/definline" :dir :system)
 (local (include-book "arithmetic"))
 
 (in-theory (disable char<))
@@ -36,7 +37,7 @@ non-character.</p>
 <p>This is similar to other fixing functions like @(see fix) and @(see nfix).
 See also @(see chareqv).</p>"
 
-  (defund char-fix (x)
+  (definlined char-fix (x)
     (declare (xargs :guard t))
     (if (characterp x)
         x
@@ -71,7 +72,7 @@ coerced arguments are equal.</p>
 
 <p>See also @(see ichareqv) for a case-insensitive alternative.</p>"
 
-  (defund chareqv (x y)
+  (definlined chareqv (x y)
     (declare (xargs :guard t))
     (eql (char-fix x) (char-fix y)))
 

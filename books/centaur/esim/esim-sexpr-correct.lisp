@@ -835,7 +835,7 @@
 
 (encapsulate nil
   (local (in-theory (disable* esim-sexpr-occ-out esim-occ-single
-                              4v-sexpr-eval 4v-fix (4v-fix)
+                              4v-sexpr-eval 4v-fix (4v-fix$inline)
                               good-esim-modulep similar-patternsp
                               default-car default-cdr
                               ; 4v-sexpr-fixpointp-is-alt1
@@ -1180,7 +1180,7 @@
 ; 4v-env-equiv-when-4v-alist-<=-both-ways
                                   esim-fixpoint-p-occs-when-<=
                                   keys-equiv-when-alist-keys
-                                  (:type-prescription 4v-fix)
+                                  (:type-prescription 4v-fix$inline)
                                   4v-sexpr-eval
                                   alist-equiv-append-atom
                                   esim-fixpoint-p-occs
@@ -1246,7 +1246,7 @@
 ; 4v-env-equiv-when-4v-alist-<=-both-ways
                                   esim-fixpoint-p-occs-when-<=
                                   keys-equiv-when-alist-keys
-                                  (:type-prescription 4v-fix)
+                                  (:type-prescription 4v-fix$inline)
                                   4v-sexpr-eval
                                   esim-fixpoint-p-occs
                                   4v-fix))

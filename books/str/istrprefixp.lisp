@@ -85,29 +85,15 @@ strings to lists.</p>"
                 :exec (= (the integer yn)
                          (the integer yl)))
            nil)
-          ((mbe :logic (ichareqv (char x xn)
-                                 (char y yn))
-                :exec (let ((cx (the character (char (the string x) (the integer xn))))
-                            (cy (the character (char (the string y) (the integer yn)))))
-                        (if (standard-char-p (the character cx))
-                            (if (standard-char-p (the character cy))
-                                (char-equal (the character cx) (the character cy))
-                              nil)
-                          (eql (the character cx) (the character cy)))))
-           (mbe :logic (istrprefixp-impl x y
-                                         (+ (nfix xn) 1)
-                                         (+ (nfix yn) 1)
-                                         xl yl)
-                :exec  (istrprefixp-impl (the string x)
-                                         (the string y)
-                                         (the integer (+ (the integer xn) 1))
-                                         (the integer (+ (the integer yn) 1))
-                                         (the integer xl)
-                                         (the integer yl))))
+          ((ichareqv (char x xn) (char y yn))
+           (istrprefixp-impl x y
+                             (+ 1 (lnfix xn))
+                             (+ 1 (lnfix yn))
+                             xl yl))
           (t
            nil)))
 
-  (defun istrprefixp (x y)
+  (definline istrprefixp (x y)
     (declare (type string x)
              (type string y)
              (xargs :verify-guards nil))
@@ -134,5 +120,5 @@ strings to lists.</p>"
                               (nthcdr yn (coerce y 'list)))))
     :hints(("Goal" :in-theory (enable istrprefixp-impl))))
 
-  (verify-guards istrprefixp))
+  (verify-guards istrprefixp$inline))
 

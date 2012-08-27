@@ -19,6 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "STR")
+(include-book "misc/definline" :dir :system)
 (include-book "xdoc/top" :dir :system)
 (include-book "unicode/prefixp" :dir :system)
 (include-book "unicode/nthcdr" :dir :system)
@@ -119,7 +120,7 @@ of the string <tt>y</tt>, in a case-sensitive manner.</p>
 <p>But we use a more efficient implementation which avoids coercing the
 strings into character lists.</p>"
 
-  (defun strprefixp (x y)
+  (definline strprefixp (x y)
     (declare (type string x)
              (type string y))
     (mbe :logic (prefixp (coerce x 'list)

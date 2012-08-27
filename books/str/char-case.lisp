@@ -45,7 +45,7 @@ alphabetic character.</p>
 but it is irritating to use because it has @(see standard-char-p) guards.  In
 contrast, <tt>up-alpha-p</tt> works on arbitrary characters.</p>"
 
-  (defund up-alpha-p (x)
+  (definlined up-alpha-p (x)
     (declare (type character x))
     (let ((code (char-code x)))
       (declare (type (unsigned-byte 8) code))
@@ -126,7 +126,7 @@ alphabetic character.</p>
 but it is irritating to use because it has @(see standard-char-p) guards.  In
 contrast, <tt>down-alpha-p</tt> works on arbitrary characters.</p>"
 
-  (defund down-alpha-p (x)
+  (definlined down-alpha-p (x)
     (declare (type character x))
     (let ((code (char-code x)))
       (declare (type (unsigned-byte 8) code))
@@ -207,16 +207,14 @@ upper-case equivalents, and returns other characters unchanged.</p>
 but it is irritating to use because it has @(see standard-char-p) guards.  In
 contrast, <tt>upcase-char</tt> works on arbitrary characters.</p>"
 
-  (defund upcase-char (x)
+  (definlined upcase-char (x)
     (declare (type character x))
     (let ((code (char-code x)))
       (declare (type (unsigned-byte 8) code))
       (if (and (<= (little-a) code)
                (<= code (little-z)))
-          (code-char (the (unsigned-byte 8)
-                       (- code (case-delta))))
-        (mbe :logic (char-fix x)
-             :exec x))))
+          (code-char (the (unsigned-byte 8) (- code (case-delta))))
+        (mbe :logic (char-fix x) :exec x))))
 
   (local (in-theory (enable upcase-char)))
 
@@ -309,16 +307,14 @@ acl2::char-downcase), but it is irritating to use because it has @(see
 standard-char-p) guards.  In contrast, <tt>downcase-char</tt> works on
 arbitrary characters.</p>"
 
-  (defund downcase-char (x)
+  (definlined downcase-char (x)
     (declare (type character x))
     (let ((code (char-code x)))
       (declare (type (unsigned-byte 8) code))
       (if (and (<= (big-a) code)
                (<= code (big-z)))
-          (code-char (the (unsigned-byte 8)
-                       (+ code (case-delta))))
-        (mbe :logic (char-fix x)
-             :exec x))))
+          (code-char (the (unsigned-byte 8) (+ code (case-delta))))
+        (mbe :logic (char-fix x) :exec x))))
 
   (local (in-theory (enable downcase-char)))
 

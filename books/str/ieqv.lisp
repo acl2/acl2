@@ -19,8 +19,7 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "STR")
-(include-book "xdoc/top" :dir :system)
-(include-book "unicode/list-fix" :dir :system)
+(include-book "char-case")
 (local (include-book "unicode/nthcdr" :dir :system))
 (local (include-book "arithmetic"))
 
@@ -36,21 +35,10 @@ irritating to use because it has @(see standard-char-p) guards.  In contrast,
 <tt>ichareqv</tt> works on arbitrary characters, with some loss of
 efficiency.</p>"
 
-  (defund ichareqv (x y)
+  (definlined ichareqv (x y)
     (declare (type character x)
              (type character y))
-    (mbe :logic (let ((x (if (characterp x) x (code-char 0)))
-                      (y (if (characterp y) y (code-char 0))))
-                  (if (standard-char-p x)
-                      (if (standard-char-p y)
-                          (char-equal x y)
-                        nil)
-                    (eql x y)))
-         :exec (if (standard-char-p (the character x))
-                   (if (standard-char-p (the character y))
-                       (char-equal (the character x) (the character y))
-                     nil)
-                 (eql (the character x) (the character y)))))
+    (equal (downcase-char x) (downcase-char y)))
 
   (local (in-theory (enable ichareqv)))
 
@@ -163,21 +151,16 @@ strings into lists.</p>
            (and (ichareqv (char x n) (char y n))
                 (istreqv-aux x y (+ (nfix n) 1) l)))
          :exec
-         (if (= (the integer n) (the integer l))
+         (if (eql (the integer n) (the integer l))
              t
-           (and (let ((cx (the character (char (the string x) (the integer n))))
-                      (cy (the character (char (the string y) (the integer n)))))
-                  (if (standard-char-p (the character cx))
-                      (if (standard-char-p (the character cy))
-                          (char-equal (the character cx) (the character cy))
-                        nil)
-                    (eql (the character cx) (the character cy))))
+           (and (ichareqv (the character (char (the string x) (the integer n)))
+                          (the character (char (the string y) (the integer n))))
                 (istreqv-aux (the string x)
                              (the string y)
                              (the integer (+ (the integer n) 1))
                              (the integer l))))))
 
-  (defun istreqv (x y)
+  (definline istreqv (x y)
     (declare (type string x)
              (type string y)
              (xargs :verify-guards nil))
@@ -186,7 +169,7 @@ strings into lists.</p>
          :exec
          (let ((xl (the integer (length (the string x))))
                (yl (the integer (length (the string y)))))
-           (and (= (the integer xl) (the integer yl))
+           (and (eql (the integer xl) (the integer yl))
                 (istreqv-aux (the string x)
                              (the string y)
                              (the integer 0)
@@ -219,4 +202,4 @@ strings into lists.</p>
             :in-theory (enable istreqv-aux)
             :induct (istreqv-aux x y n l))))
 
-  (verify-guards istreqv))
+  (verify-guards istreqv$inline))

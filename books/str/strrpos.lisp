@@ -101,7 +101,7 @@ calling @(see strprefixp), rather than some better algorithm.</p>
 string.  As a consequence, <tt>(strrpos \"\" x)</tt> is (length x) for all
 <tt>x</tt>.</p>"
 
-  (defund strrpos (x y)
+  (definlined strrpos (x y)
     (declare (type string x)
              (type string y))
     (let ((yl (length (the string y))))

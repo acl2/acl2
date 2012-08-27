@@ -76,7 +76,7 @@ theorems <tt>iprefixp-of-istrpos</tt> and
                          (the integer xl)
                          (the integer yl)))))
 
-  (defund istrpos (x y)
+  (definlined istrpos (x y)
     (declare (type string x)
              (type string y))
     (istrpos-impl (the string x)
