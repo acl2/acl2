@@ -599,19 +599,19 @@
   (list-type-butlast-lemma elem-type00 list-type00 (l))
   :rule-classes nil
   :hints (("Goal" :do-not-induct t
-	   :in-theory (enable butlast))))
+	   :in-theory (e/d (butlast) (take-is-xfirstn first-n-ac-non-recursive)))))
 
 (defthm list-type-butlast10
   (list-type-butlast-lemma elem-type10 list-type10 (l a))
   :rule-classes nil
   :hints (("Goal" :do-not-induct t
-	   :in-theory (enable butlast))))
+	   :in-theory (e/d (butlast) (take-is-xfirstn first-n-ac-non-recursive)))))
 
 (defthm list-type-butlast11
   (list-type-butlast-lemma elem-type11 list-type11 (a l))
   :rule-classes nil
   :hints (("Goal" :do-not-induct t
-	   :in-theory (enable butlast))))
+	   :in-theory (e/d (butlast) (take-is-xfirstn first-n-ac-non-recursive)))))
 
 ; ---------- SUBSEQ ----------
 
@@ -635,19 +635,19 @@
   (list-type-subseq-lemma elem-type00 list-type00 (l))
   :rule-classes nil
   :hints (("Goal" :do-not-induct t
-	   :in-theory (enable subseq))))
+	   :in-theory (e/d (subseq) (take-is-xfirstn first-n-ac-non-recursive)))))
 
 (defthm list-type-subseq10
   (list-type-subseq-lemma elem-type10 list-type10 (l a))
   :rule-classes nil
   :hints (("Goal" :do-not-induct t
-	   :in-theory (enable subseq))))
+	   :in-theory (e/d (subseq) (take-is-xfirstn first-n-ac-non-recursive)))))
 
 (defthm list-type-subseq11
   (list-type-subseq-lemma elem-type11 list-type11 (a l))
   :rule-classes nil
   :hints (("Goal" :do-not-induct t
-	   :in-theory (enable subseq))))
+	   :in-theory (e/d (subseq) (take-is-xfirstn first-n-ac-non-recursive)))))
 
 ; ---------- UPDATE-NTH ----------
 

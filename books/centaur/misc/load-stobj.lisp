@@ -23,8 +23,8 @@
 (include-book "unicode/list-fix" :dir :system)
 (local (include-book "arithmetic/top" :dir :system))
 (local (include-book "data-structures/list-defthms" :dir :system))
-(local (include-book "unicode/take" :dir :system))
-(local (include-book "unicode/nthcdr" :dir :system))
+;;(local (include-book "unicode/take" :dir :system))
+;;(local (include-book "unicode/nthcdr" :dir :system))
 (local (include-book "equal-by-nths"))
 (local (include-book "tools/do-not" :dir :system))
 (local (do-not generalize fertilize))
@@ -76,34 +76,37 @@
                      (equal (car x) a)
                      (equal (cdr x) b)))))
 
-(local (defthm cdr-of-nthcdr
-         (equal (cdr (nthcdr n x))
-                (nthcdr (+ 1 (nfix n)) x))))
+;; (local (defthm cdr-of-nthcdr
+;;          (equal (cdr (nthcdr n x))
+;;                 (nthcdr (+ 1 (nfix n)) x))))
 
-(local (defthm cdr-of-simpler-take
-         (equal (cdr (simpler-take a x))
-                (simpler-take (- a 1) (cdr x)))
-         :hints(("Goal" :in-theory (enable simpler-take)))))
+;; (local (defthm cdr-of-xfirstn
+;;          (equal (cdr (xfirstn a x))
+;;                 (xfirstn (- a 1) (cdr x)))
+;;          :hints(("Goal" :in-theory (enable xfirstn)))))
 
-(local (defthm simpler-take-of-nthcdr
+(local (in-theory (enable cdr-over-nthcdr
+                          take-is-xfirstn)))
+
+(local (defthm xfirstn-of-nthcdr
          (implies (and (posp a)
                        (posp n))
-                  (equal (simpler-take a (nthcdr n x))
-                         (cons (nth n x) (simpler-take (- a 1) (nthcdr (+ n 1) x)))))
-         :hints(("Goal" :expand ((simpler-take a (nthcdr n x)))))))
+                  (equal (xfirstn a (nthcdr n x))
+                         (cons (nth n x) (xfirstn (- a 1) (nthcdr (+ n 1) x)))))
+         :hints(("Goal" :expand ((xfirstn a (nthcdr n x)))))))
 
-(local (defthm simpler-take-when-zp
+(local (defthm xfirstn-when-zp
          (implies (zp n)
-                  (equal (simpler-take n x)
+                  (equal (xfirstn n x)
                          nil))
-         :hints(("Goal" :in-theory (enable simpler-take)))))
+         :hints(("Goal" :in-theory (enable xfirstn)))))
 
-(local (defthm nth-of-simpler-take
-         (equal (nth a (simpler-take b x))
+(local (defthm nth-of-xfirstn
+         (equal (nth a (xfirstn b x))
                 (if (< (nfix a) (nfix b))
                     (nth a x)
                   nil))
-         :hints(("Goal" :in-theory (enable simpler-take)))))
+         :hints(("Goal" :in-theory (enable xfirstn)))))
 
 (local (defthm nth-of-list-fix
          (equal (nth n (list-fix a))
@@ -155,12 +158,12 @@
    ()
    (local (defthmd l0
             (implies (natp n)
-                     (equal (simpler-take (len a)
+                     (equal (xfirstn (len a)
                                           (nthcdr n (load-stobj-array n a b)))
                             (list-fix a)))))
 
    (local (defthmd l1
-            (equal (simpler-take (len a) (load-stobj-array 0 a b))
+            (equal (xfirstn (len a) (load-stobj-array 0 a b))
                    (list-fix a))
             :hints(("Goal" :use ((:instance l0 (n 0)))))))
 
@@ -170,9 +173,9 @@
                      (nth n a)))
      :hints(("goal"
              :do-not-induct t
-             :in-theory (disable nth-of-simpler-take)
+             :in-theory (disable nth-of-xfirstn)
              :use ((:instance l1)
-                   (:instance nth-of-simpler-take
+                   (:instance nth-of-xfirstn
                               (a n)
                               (b (len a))
                               (x (load-stobj-array 0 a b)))))))))

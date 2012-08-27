@@ -1004,23 +1004,41 @@ The second argument to pattern constructor ~x0 must be a symbol, but is ~x1~%~%"
   (declare (xargs :mode :program))
   (if (atom stobjs)
       form
-    (let ((rest-retvals (remove-eq (car stobjs) retvals)))
+    (let* ((stobj (if (consp (car stobjs))
+                      (caar stobjs)
+                    (car stobjs)))
+           (rest-retvals (remove-eq stobj retvals)))
       (patbind-local-stobjs-helper
        (cdr stobjs)
        rest-retvals
        `(with-local-stobj
-          ,(car stobjs)
+          ,stobj
           (mv-let ,retvals
             ,form
             ,(if (consp (cdr rest-retvals))
                  `(mv . ,rest-retvals)
-               (car rest-retvals))))))))
+               (car rest-retvals)))
+          . ,(and (consp (car stobjs))
+                  (cdar stobjs)))))))
           
+(defun patbind-local-stobj-arglistp (args)
+  (declare (xargs :mode :program))
+  (if (atom args)
+      (eq args nil)
+    (and (let ((x (car args)))
+           (or (symbolp x)
+               (case-match x
+                 ((stobj creator)
+                  (and (symbolp stobj)
+                       (symbolp creator))))))
+         (patbind-local-stobj-arglistp (cdr args)))))
+
 (defun patbind-local-stobjs-fn (args forms rest-expr)
   (declare (xargs :mode :program))
-  (b* (((unless (symbol-listp args))
+  (b* (((unless (patbind-local-stobj-arglistp args))
         (er hard? 'patbind-local-stobjs-fn
-            "In local-stobjs b* binder, arguments must be symbols"))
+            "In local-stobjs b* binder, arguments must be symbols or
+      (stobj creator) pairs"))
        ((unless (and (= (len forms) 1)
                      (symbol-listp (car forms))
                      (eq (caar forms) 'mv)))

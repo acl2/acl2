@@ -936,15 +936,13 @@
   (equal (nth n (append a b))
          (if (< (nfix n) (len a))
              (nth n a)
-             (nth (- n (len a)) b))))
+             (nth (- (nfix n) (len a)) b))))
 
 (defthm nth-revappend
-  (implies (and (integerp n)
-                (<= 0 n))
-           (equal (nth n (revappend a b))
-                  (if (< n (len a))
-                      (nth (- (len a) (1+ n)) a)
-                    (nth (- n (len a)) b))))
+  (equal (nth n (revappend a b))
+         (if (< (nfix n) (len a))
+             (nth (- (len a) (1+ (nfix n))) a)
+           (nth (- (nfix n) (len a)) b)))
   :hints (("Goal" :induct (revappend a b))))
 
 (defthm nth-reverse 
@@ -961,52 +959,50 @@
 ;; XFIRSTN. 
 
 
-(local 
-   (defun xfirstn (n l)
-     (declare (xargs :guard (and (integerp n)
-                                 (<= 0 n)
-                                 (true-listp l))))
-     (cond ((zp n) nil)
-           (t (cons (car l) (xfirstn (1- n) (cdr l)))))))
+(defun xfirstn (n l)
+  (declare (xargs :guard (and (integerp n)
+                              (<= 0 n)
+                              (true-listp l))))
+  (cond ((zp n) nil)
+        (t (cons (car l) (xfirstn (1- n) (cdr l))))))
 
-(local 
-   (defthm nth-xfirstn
-     (implies (and (integerp i)
-                   (<= 0 i)
-                   (integerp n)
-                   (<= 0 n))
-              (equal (nth i (xfirstn n l))
-                     (if (<= n (len l))
-                         (if (< i n)
-                             (nth i l)
-                           nil)
-                       (if (< i (len l))
-                           (nth i l)
-                         nil))))))
+(defthm len-xfirstn
+  (equal (len (xfirstn n x))
+         (nfix n)))
 
-(local 
-   (defthm first-n-ac-non-recursive
-     (implies (and (true-listp ac)
-                   (integerp n)
-                   (<= 0 n))
-              (equal (first-n-ac n l ac)
-                     (revappend ac (xfirstn n l))))))
+(defthm nth-xfirstn
+  (equal (nth i (xfirstn n l))
+         (if (<= (nfix n) (len l))
+             (if (< (nfix i) (nfix n))
+                 (nth i l)
+               nil)
+           (if (< (nfix i) (len l))
+               (nth i l)
+             nil))))
 
-(local 
- (defthm nth-take
-   (implies (and (integerp i) 
-                 (<= 0 i)
-                 (integerp n) 
-                 (<= 0 n))
-            (equal (nth i (take n l))
-                   (if (<= n (len l))
-                       (if (< i n)
-                           (nth i l)
-                         nil)
-                     (if (< i (len l))
-                         (nth i l)
-                       nil))))
-   :hints (("Goal" :do-not-induct t))))
+
+(defthm first-n-ac-non-recursive
+  (implies (true-listp ac)
+           (equal (first-n-ac n l ac)
+                  (revappend ac (xfirstn n l)))))
+
+(defthmd take-is-xfirstn
+  (equal (take n l)
+         (xfirstn n l)))
+
+(local (in-theory (enable take-is-xfirstn)))
+(local (in-theory (disable take)))
+
+(defthm nth-take
+  (equal (nth i (take n l))
+         (if (<= (nfix n) (len l))
+             (if (< (nfix i) (nfix n))
+                 (nth i l)
+               nil)
+           (if (< (nfix i) (len l))
+               (nth i l)
+             nil)))
+  :hints (("Goal" :do-not-induct t)))
 
 (defthm nth-butlast
     (implies (and (integerp i) 
@@ -1027,17 +1023,19 @@
 
              :in-theory (disable revappend))))
 
-(local
-   (defthm car-nthcdr
-     (equal (car (nthcdr n l))
-            (nth n l))))
+(defthm car-nthcdr
+  (equal (car (nthcdr n l))
+         (nth n l)))
 
-(local
-   (defthm cdr-nthcdr
-     (implies (and (integerp n)
-                   (<= 0 n))
-              (equal (cdr (nthcdr n l))
-                     (nthcdr (1+ n) l)))))
+(defthmd cdr-over-nthcdr
+  (equal (cdr (nthcdr n l))
+         (nthcdr n (cdr l))))
+
+(local (in-theory (enable cdr-over-nthcdr)))
+
+(defthm nth-nthcdr
+  (equal (nth i (nthcdr j l))
+         (nth (+ (nfix j) (nfix i)) l)))
 
 (defthm nth-subseq 
     (implies (and (true-listp l)
@@ -1074,9 +1072,6 @@
   :hints (("Goal" :induct (make-list-ac j val ac))))
 
 
-(defthm nth-nthcdr
-  (equal (nth i (nthcdr j l))
-         (nth (+ (nfix j) (nfix i)) l)))
 
 
 (defthm nth-nth-seg
@@ -1546,19 +1541,82 @@
   (equal (update-nth j b (update-nth i a l))
          (if (= (nfix i) (nfix j))
              (update-nth j b l)
-             (update-nth i a (update-nth j b l))))
+           (update-nth i a (update-nth j b l))))
   :rule-classes 
   ((:rewrite :corollary
-             (implies (= (nfix i) (nfix j))
-                      (equal (update-nth j b (update-nth i a l))
-                             (update-nth j b l))))
+    (implies (= (nfix i) (nfix j))
+             (equal (update-nth j b (update-nth i a l))
+                    (update-nth j b l))))
    (:rewrite :corollary
-             (implies (< (nfix i) (nfix j))
-                      (equal (update-nth j b (update-nth i a l))
-                             (update-nth i a (update-nth j b l)))))))
+    (implies (not (= (nfix i) (nfix j)))
+             (equal (update-nth j b (update-nth i a l))
+                    (update-nth i a (update-nth j b l))))
+    :loop-stopper ((j i)))))
+
+
+(defthm true-listp-update-nth-rw
+  (implies (true-listp x)
+           (true-listp (update-nth n v x))))
+
+
+; ------------------------------------------------------------
+; RESIZE-LIST
+; ------------------------------------------------------------
+
+(encapsulate nil
+  (local (defun my-induct (n m lst)
+           (if (zp n)
+               (list lst)
+             (if (zp m)
+                 nil
+               (my-induct (- n 1) (- m 1)
+                          (if (atom lst)
+                              lst
+                            (cdr lst)))))))
+
+  (local (in-theory (enable nth)))
+
+  (defthmd nth-of-resize-list-split
+    (equal (nth n (resize-list lst m default-value))
+           (let ((n (nfix n))
+                 (m (nfix m)))
+             (and (< n m)
+                  (if (< n (len lst))
+                      (nth n lst)
+                    default-value))))
+    :hints(("Goal"
+            :expand (resize-list lst m default-value)
+            :induct (my-induct n m lst)))))
+
+(defthm nth-of-resize-list-preserved
+  (implies (and (< (nfix n) (len lst))
+                (< (nfix n) (nfix m)))
+           (equal (nth n (resize-list lst m default-value))
+                  (nth n lst)))
+  :hints(("Goal" :in-theory (enable nth-of-resize-list-split))))
+
+(defthm nth-of-resize-list-too-big
+  (implies (<= (nfix m) (nfix n))
+           (equal (nth n (resize-list lst m default-value))
+                  nil))
+  :hints(("Goal" :in-theory (enable nth-of-resize-list-split))))
+
+(defthm nth-of-resize-list-newly-in-bounds
+  (implies (and (<= (len lst) (nfix n))
+                (< (nfix n) (nfix m)))
+           (equal (nth n (resize-list lst m default-value))
+                  default-value))
+  :hints(("Goal" :in-theory (enable nth-of-resize-list-split))))
+
+
+(defthm len-resize-list
+  (equal (len (resize-list lst m default))
+         (nfix m)))
+
 
 
 (in-theory (disable butlast position position-eq position-equal
                     occurrences occurrences-eq occurrences-equal))
+
 
 

@@ -292,7 +292,7 @@
            (int-equiv x 0))
   :rule-classes :forward-chaining)
 
-(defthm zp-forward-to-int-equiv-0
+(defthm zp-forward-to-nat-equiv-0
   (implies (zp x)
            (nat-equiv x 0))
   :rule-classes :forward-chaining)
@@ -315,7 +315,7 @@
 
 (def-ruleset! arith-equiv-minimal-forwarding
   '(zip-forward-to-int-equiv-0
-    zp-forward-to-int-equiv-0
+    zp-forward-to-nat-equiv-0
     zbp-forward-to-bit-equiv-0
     not-negp-implies-ifix-nonnegative
     zp-implies-ifix-nonpositive))
@@ -323,6 +323,11 @@
 
 (defthm negative-forward-to-nat-equiv-0
   (implies (< n 0)
+           (nat-equiv n 0))
+  :rule-classes :forward-chaining)
+
+(defthm nonpositive-forward-to-nat-equiv-0
+  (implies (<= n 0)
            (nat-equiv n 0))
   :rule-classes :forward-chaining)
 
@@ -447,6 +452,7 @@
 
 (def-ruleset! arith-equiv-forwarding
   '(negative-forward-to-nat-equiv-0
+    nonpositive-forward-to-nat-equiv-0
     not-integerp-forward-to-int-equiv-0
     not-natp-forward-to-int-equiv-0
     not-bitp-forward-to-int-equiv-0

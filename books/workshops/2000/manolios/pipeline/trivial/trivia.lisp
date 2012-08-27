@@ -22,8 +22,9 @@
     (if (zp i) t
 	(natural-induction (1- i))))
 
-(defthm car-nthcdr
-    (equal (car (nthcdr idx lst)) (nth idx lst)))
+;; in data-structures/list-defthms.lisp
+;; (defthm car-nthcdr
+;;     (equal (car (nthcdr idx lst)) (nth idx lst)))
 
 (defthm cdr-nthcdr
     (implies (and (integerp idx) (<= 0 idx))

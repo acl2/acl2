@@ -30,42 +30,44 @@
 	   (t (cons (car l) (xfirstn (1- n) (cdr l))))))
 
 ; from list-defthms
-   (defthm nth-xfirstn
-     (implies (and (integerp i)
-		   (<= 0 i)
-		   (integerp n)
-		   (<= 0 n))
-	      (equal (nth i (xfirstn n l))
-		     (if (<= n (len l))
-			 (if (< i n)
-			     (nth i l)
-			   nil)
-		       (if (< i (len l))
-			   (nth i l)
-			 nil)))))
+; Sol -- this was made nonlocal and modified in list-defthms so I removed it here
+   ;; (defthm nth-xfirstn
+   ;;   ;; modified to match new version in list-defthms
+   ;;   (implies (and (integerp i)
+   ;;      	   (<= 0 i)
+   ;;      	   (integerp n)
+   ;;      	   (<= 0 n))
+   ;;            (equal (nth i (xfirstn n l))
+   ;;      	     (if (<= n (len l))
+   ;;      		 (if (< i n)
+   ;;      		     (nth i l)
+   ;;      		   nil)
+   ;;      	       (if (< i (len l))
+   ;;      		   (nth i l)
+   ;;      		 nil)))))
 
 ; from list-defthms
-(defthm first-n-ac-non-recursive
-  (implies (and (true-listp ac)
-                (integerp n)
-                (<= 0 n))
-           (equal (first-n-ac n l ac)
-                  (revappend ac (xfirstn n l)))))
+;; (defthm first-n-ac-non-recursive
+;;   (implies (and (true-listp ac)
+;;                 (integerp n)
+;;                 (<= 0 n))
+;;            (equal (first-n-ac n l ac)
+;;                   (revappend ac (xfirstn n l)))))
 
 ; from list-defthms
-(defthm nth-take
-  (implies (and (integerp i) 
-                (<= 0 i)
-                (integerp n) 
-                (<= 0 n))
-           (equal (nth i (take n l))
-                  (if (<= n (len l))
-                      (if (< i n)
-                          (nth i l)
-                        nil)
-                    (if (< i (len l))
-                        (nth i l)
-                      nil))))
-  :hints (("Goal" :do-not-induct t)))
+;; (defthm nth-take
+;;   (implies (and (integerp i) 
+;;                 (<= 0 i)
+;;                 (integerp n) 
+;;                 (<= 0 n))
+;;            (equal (nth i (take n l))
+;;                   (if (<= n (len l))
+;;                       (if (< i n)
+;;                           (nth i l)
+;;                         nil)
+;;                     (if (< i (len l))
+;;                         (nth i l)
+;;                       nil))))
+;;   :hints (("Goal" :do-not-induct t)))
 
 )
