@@ -394,13 +394,32 @@
 ;
 ; We can get close to what we want with just some forward-chaining rules:
 
-(defthm inequality-with-nfix-forward-to-natp-1
+; Note: disabling these for now, and removing them from the ruleset below.
+; Consider:
+
+;; (defstub foo (x y) t)
+
+;; (defaxiom foo-axiom
+;;   (implies (and (equal x (< (nfix a) (nfix b)))
+;;                 (syntaxp (prog2$ (cw "x: ~x0~%" x)
+;;                                  t))
+;;                 x)
+;;            (equal (foo a b) t)))
+
+;; (thm (implies (< (nfix a) (nfix b))
+;;               (foo a b)))
+
+; This fails when inequality-with-nfix-foward-to-natp-1 is enabled, because
+; we forward-chain from the (< (nfix a) (nfix b)) hyp to (natp b), which then
+; causes (< (nfix a) (nfix b)) to rewrite to (< (nfix a) b) and not get relieved.
+
+(defthmd inequality-with-nfix-forward-to-natp-1
   (implies (and (< a (nfix n))
                 (<= 0 a))
            (natp n))
   :rule-classes :forward-chaining)
 
-(defthm inequality-with-nfix-forward-to-natp-2
+(defthmd inequality-with-nfix-forward-to-natp-2
   (implies (and (<= a (nfix n))
                 (< 0 a))
            (natp n))
@@ -463,8 +482,8 @@
     equal-bfix-foward-to-bit-equiv
     equal-bfix-foward-to-bit-equiv-both
     not-equal-1-forward-to-bit-equiv
-    inequality-with-nfix-forward-to-natp-1
-    inequality-with-nfix-forward-to-natp-2
+    ; inequality-with-nfix-forward-to-natp-1
+    ; inequality-with-nfix-forward-to-natp-2
     ))
 
 

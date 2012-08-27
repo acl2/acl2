@@ -492,9 +492,10 @@ unless (@targets) {
 }
 
 my %sourcehash = ( );
+my %otherhash = ( );
 
 foreach my $target (@targets) {
-    add_deps($target, $cache, \%depmap, \%sourcehash, \%tscache, 0);
+    add_deps($target, $cache, \%depmap, \%sourcehash, \%otherhash, \%tscache, 0);
 }
 
 if ($params_file && open (my $params, "<", $params_file)) {
@@ -646,6 +647,7 @@ unless ($no_makefile) {
     foreach my $cert (@certs) {
 	my $certdeps = cert_deps($cert, \%depmap);
 	my $srcdeps = cert_srcdeps($cert, \%depmap);
+	my $otherdeps = cert_otherdeps($cert, \%depmap);
 	my $image = cert_image($cert, \%depmap);
 	my $useacl2x = cert_get_param($cert, \%depmap, "acl2x") || 0;
 	# BOZO acl2x implies no pcert
@@ -660,7 +662,7 @@ unless ($no_makefile) {
 	# }
 	print $mf "\n";
 	print $mf "$cert :";
-	foreach my $dep (@$certdeps, @$srcdeps) {
+	foreach my $dep (@$certdeps, @$srcdeps, @$otherdeps) {
 	    print $mf " \\\n     $dep";
 	}
 	if ($image && ($image ne "acl2")) {
@@ -686,7 +688,7 @@ unless ($no_makefile) {
 	    print $mf "\n\n";
 	    print $mf "$acl2xfile : acl2xskip = $acl2xskip\n";
 	    print $mf "$acl2xfile :";
-	    foreach my $dep (@$certdeps, @$srcdeps) {
+	    foreach my $dep (@$certdeps, @$srcdeps, @$otherdeps) {
 		print $mf " \\\n     $dep";
 	    }
 	    if ($image && ($image ne "acl2")) {
@@ -714,6 +716,7 @@ unless ($no_makefile) {
 	my $bookdeps = cert_bookdeps($cert, \%depmap);
 	my $portdeps = cert_portdeps($cert, \%depmap);
 	my $srcdeps = cert_srcdeps($cert, \%depmap);
+	my $otherdeps = cert_otherdeps($cert, \%depmap);
 	my $image = cert_image($cert, \%depmap);
 	(my $base = $cert) =~ s/\.cert$//;
 	# this is either the pcert0 or pcert1 depending on no_pcert
@@ -726,7 +729,7 @@ unless ($no_makefile) {
 	    # has no_pcert set
 	    print $mf " \\\n     " . cert_sequential_dep($dep, \%depmap);
 	}
-	foreach my $dep (@$srcdeps) {
+	foreach my $dep (@$srcdeps, @$otherdeps) {
 	    print $mf " \\\n     $dep";
 	}
 	if ($image && ($image ne "acl2")) {

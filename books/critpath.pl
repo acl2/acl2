@@ -177,9 +177,10 @@ unless (@targets) {
 }
 
 my %sourcehash = ();
+my %otherhash = ();
 foreach my $target (@targets) {
     if ($target =~ /\.cert/) {
-	add_deps($target, $cache, \%deps, \%sourcehash, \%tscache, 0);
+	add_deps($target, $cache, \%deps, \%sourcehash, \%otherhash, \%tscache, 0);
     }
 }
 

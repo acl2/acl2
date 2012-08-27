@@ -283,16 +283,22 @@ sub cert_srcdeps {
     return $entry && $entry->[2];
 }
 
-sub cert_image {
+sub cert_otherdeps {
     my ($cert, $depmap) = @_;
     my $entry = $depmap->{$cert};
     return $entry && $entry->[3];
 }
 
-sub cert_get_params {
+sub cert_image {
     my ($cert, $depmap) = @_;
     my $entry = $depmap->{$cert};
     return $entry && $entry->[4];
+}
+
+sub cert_get_params {
+    my ($cert, $depmap) = @_;
+    my $entry = $depmap->{$cert};
+    return $entry && $entry->[5];
 }
 
 sub cert_get_param {
@@ -1095,6 +1101,7 @@ sub src_deps {
 	$local_dirs,        # :dir name table
 	$certdeps,          # certificate dependency list (accumulator)
 	$srcdeps,           # source file dependency list (accumulator)
+	$otherdeps,         # other file dependency list (accumulator)
 	$certparams,        # cert param hash (accumulator)
 	$book_only,         # Only record include-book dependencies
 	$tscache,           # timestamp cache
@@ -1156,7 +1163,7 @@ sub src_deps {
 		print "Bad path in (depends-on \"$depname\""
                       . ($dir ? " :dir $dir)" : ")") . " in $fname\n";
 	    }
-	    $fullname && push(@$srcdeps, $fullname);
+	    $fullname && push(@$otherdeps, $fullname);
 	} elsif ($type eq $loads_event) {
 	    my $srcname = $event->[1];
 	    my $dir = $event->[2];
@@ -1168,6 +1175,7 @@ sub src_deps {
 			 $local_dirs,
 			 $certdeps,
 			 $srcdeps,
+			 $otherdeps,
 			 $certparams,
 			 $book_only,
 			 $tscache,
@@ -1193,6 +1201,7 @@ sub src_deps {
 			     $local_dirs,
 			     $certdeps,
 			     $srcdeps,
+			     $otherdeps,
 			     $certparams,
 			     $book_only,
 			     $tscache,
@@ -1250,6 +1259,7 @@ sub find_deps {
     my $bookdeps = [];
     my $portdeps = [];
     my $srcdeps = $book_only ? [] : [ $lispfile ];
+    my $otherdeps = [];
     my $local_dirs = {};
 
     # If this source file has a .lisp extension, we assume it's a
@@ -1278,6 +1288,7 @@ sub find_deps {
 		     $local_dirs, 
 		     $portdeps,
 		     $srcdeps,
+		     $otherdeps,
 		     $certparams,
 		     $book_only, 
 		     $tscache,
@@ -1288,7 +1299,7 @@ sub find_deps {
 
     # Scan the lisp file for include-books.
     src_deps($lispfile, $cache, $local_dirs,
-	     $bookdeps, $srcdeps, $certparams, $book_only,
+	     $bookdeps, $srcdeps, $otherdeps, $certparams, $book_only,
 	     $tscache, !$certifiable, {}, $parent);
 
     if ($debugging) {
@@ -1298,6 +1309,8 @@ sub find_deps {
 	print_lst($portdeps);
 	print "sources:\n";
 	print_lst($srcdeps);
+	print "others:\n";
+	print_lst($otherdeps);
     }
     
     my $image;
@@ -1318,7 +1331,7 @@ sub find_deps {
 	    my $imfilepath = canonical_path($imagefile);
 	    # Won't check the result of canonical_path because we're
 	    # already in the right directory.
-	    push(@{$srcdeps}, $imfilepath);
+	    push(@{$otherdeps}, $imfilepath);
 	    my $line;
 	    if (open(my $im, "<", $imagefile)) {
 		$line = <$im>;
@@ -1331,7 +1344,7 @@ sub find_deps {
 	}
     }
 
-    return ($bookdeps, $portdeps, $srcdeps, $image, $certparams);
+    return ($bookdeps, $portdeps, $srcdeps, $otherdeps, $image, $certparams);
 
 }
 
@@ -1340,7 +1353,7 @@ sub find_deps {
 # Given that the dependency map $depmap is already built, this collects
 # the full set of sources and targets needed for a given file.
 sub deps_dfs {
-    my ($target, $depmap, $visited, $sources, $certs) = @_;
+    my ($target, $depmap, $visited, $sources, $certs, $others) = @_;
 
     if ($visited->{$target}) {
 	return;
@@ -1351,6 +1364,7 @@ sub deps_dfs {
     push (@$certs, $target);
     my $certdeps = cert_deps($target, $depmap);
     my $srcdeps = cert_srcdeps($target, $depmap);
+    my $otherdeps = cert_otherdeps($target, $depmap);
 
     foreach my $dep (@$srcdeps) {
 	if (! $visited->{$dep}) {
@@ -1359,8 +1373,16 @@ sub deps_dfs {
 	}
     }
 
+    foreach my $dep (@$otherdeps) {
+	if (! $visited->{$dep}) {
+	    push(@$others, $dep);
+	    $visited->{$dep} = 1;
+	}
+    }
+
+
     foreach my $dep (@$certdeps) {
-	deps_dfs($dep, $depmap, $visited, $sources, $certs);
+	deps_dfs($dep, $depmap, $visited, $sources, $certs, $others);
     }
 }
 
@@ -1371,7 +1393,7 @@ sub deps_dfs {
 # If the target has been seen before, then it returns immediately.
 # Otherwise, this calls on find_deps to get those dependencies.
 sub add_deps {
-    my ($target,$cache,$depmap,$sources,$tscache,$parent) = @_;
+    my ($target,$cache,$depmap,$sources,$others,$tscache,$parent) = @_;
 
     print "add_deps (check) $target\n" if $debugging;
 
@@ -1419,11 +1441,11 @@ sub add_deps {
 	return;
     }
 
-    my ($bookdeps, $portdeps, $srcdeps, $image, $certparams)
+    my ($bookdeps, $portdeps, $srcdeps, $otherdeps, $image, $certparams)
 	= find_deps($lispfile, $cache, 0, $tscache, $parent);
 
 
-    $depmap->{$target} = [ $bookdeps, $portdeps, $srcdeps, $image, $certparams ] ;
+    $depmap->{$target} = [ $bookdeps, $portdeps, $srcdeps, $otherdeps, $image, $certparams ] ;
 
     if ($print_deps) {
 	print "Dependencies for $target:\n";
@@ -1437,6 +1459,10 @@ sub add_deps {
 	}
 	print "src:\n";
 	foreach my $dep (@{$srcdeps}) {
+	    print "$dep\n";
+	}
+	print "other:\n";
+	foreach my $dep (@{$otherdeps}) {
 	    print "$dep\n";
 	}
 	print "image: $image\n" if $image;
@@ -1455,9 +1481,15 @@ sub add_deps {
 	$sources->{$dep} = 1;
     }
 
+    # Accumulate the set of non-source/cert deps..
+    foreach my $dep (@$otherdeps) {
+	$others->{$dep} = 1;
+    }
+
+
     # Run the recursive add_deps on each dependency.
     foreach my $dep  (@$bookdeps, @$portdeps) {
-	add_deps($dep, $cache, $depmap, $sources, $tscache, $target);
+	add_deps($dep, $cache, $depmap, $sources, $others, $tscache, $target);
     }
 
 }
