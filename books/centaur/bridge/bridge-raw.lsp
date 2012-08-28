@@ -28,10 +28,10 @@
 (defmacro debug (msg &rest args)
   nil
   ;; For hacking on the bridge, uncomment this to watch what's happening.
-  ;;`(format *terminal-io*
-  ;;         (concatenate 'string "Bridge: ~a: " ,msg)
-  ;;         (ccl::process-name ccl::*current-process*)
-  ;;         . ,args)
+  `(format *terminal-io*
+          (concatenate 'string "Bridge: ~a: " ,msg)
+          (ccl::process-name ccl::*current-process*)
+          . ,args)
   )
 
 (defmacro alert (msg &rest args)
@@ -515,6 +515,21 @@ This is a trace-co test"))
 ; pass the return values and any exceptions back on to the caller, which gets
 ; messy with multiple-values, etc.
 
+;; This is no good:
+;; (catch 'foo
+;;   (handler-case
+;;    (throw 'foo 3)
+;;    (condition (foo) (format t "Got it ~a" foo))))
+
+;; This works:
+;; (catch 'foo
+;;   (progn
+;;     (block bar
+;;       (unwind-protect
+;;           (throw 'foo 3)
+;;         (return-from bar nil)))
+;;     (format t "Did what I want!")))
+
 
 (defmacro in-main-thread-aux (&rest forms)
   ;; Assumes we have the lock, i.e., the exclusive right to tell the main
@@ -522,11 +537,13 @@ This is a trace-co test"))
   (let ((done         (gensym))
         (retvals      (gensym))
         (errval       (gensym))
+        (finished     (gensym))
         (saved-stdout (gensym))
         (saved-stdco  (gensym))
         (work         (gensym)))
     `(let* ((,done         (ccl::make-semaphore))
             (,retvals      nil)
+            (,finished     nil)
             (,errval       nil)
             (,saved-stdout *standard-output*)
             (,saved-stdco  *standard-co*)
@@ -540,17 +557,30 @@ This is a trace-co test"))
                       (*error-output*    ,saved-stdout)
                       (*standard-co*     ,saved-stdco))
                  (with-acl2-channels-bound ,saved-stdco
-                   (unwind-protect
-                       (handler-case
-                        (progn
-                          (setq ,retvals (multiple-value-list (progn . ,forms)))
-                          (debug "Main thread computed its return values.~%"))
-                        (error (condition)
-                               (debug "Main thread trapping error for worker.~%")
-                               (setq ,errval condition)))
-                     ;; Wake up the worker who is waiting on us.
-                     (debug "Main thread waking up the worker.~%")
-                     (ccl::signal-semaphore ,done)))))))
+
+                   (block try-to-run-it
+                     (unwind-protect
+                         (handler-case
+                          (progn
+                            (setq ,retvals (multiple-value-list (progn . ,forms)))
+                            (setq ,finished t)
+                            (debug "Main thread computed its return values.~%"))
+                          (error (condition)
+                                 (debug "Main thread trapping error for worker.~%")
+                                 (setq ,errval condition)
+                                 (setq ,finished t)))
+                       ;; Things like THROW can get past the handler-case, but not
+                       ;; past the unwind-protect.  Arrrgh...
+                       (debug "Main thread computation had non-local exit.~%")
+                       (unless ,finished (setq ,errval
+                                               (make-condition
+                                                'simple-error
+                                                :format-control "Unexpected non-local exit.")))
+                       (return-from try-to-run-it nil)))
+
+                   (debug "Main thread waking up the worker.~%")
+                   (ccl::signal-semaphore ,done)
+                   (debug "Main thread is all done.~%"))))))
        (debug "Installing work for main thread.~%")
        (setq *main-thread-work* ,work)              ;; Install work for main to find
        (ccl::signal-semaphore *main-thread-ready*)  ;; Tell main work is there for him

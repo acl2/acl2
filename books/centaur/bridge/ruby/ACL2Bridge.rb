@@ -25,7 +25,7 @@ require 'hash_keyword_args'
 
 class ACL2Bridge
 
-  DEFAULT_PORT = 55432
+  DEFAULT_PORT = 55433
 
   def initialize(args={})
     args = args.keyword_args(:name => "ACL2",
