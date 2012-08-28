@@ -3214,6 +3214,9 @@ nor a predefined typename~%" dtexp)
                           new-constructors
                           ctx wrld state))
          (testing-enabled (acl2s-defaults :get testing-enabled))
+; 08/26/12 defdata avoids testing. the following is a patch to avoid
+; showing testing summary message in a defdata form that succeeds a test?.
+         ((er &) (assign print-summary-user-flag NIL))
          );*b
 ;in
        (value `(progn
