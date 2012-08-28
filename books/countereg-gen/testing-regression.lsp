@@ -53,6 +53,13 @@ of which have not yet been verified.  See :DOC verify-guards.
 (acl2s-defaults :set testing-enabled :naive)
 
 (time$
+; 27th Aug '12
+;Note: random is slightly less than twice as fast as BE
+; random - ; 4.95 seconds realtime, 4.96 seconds runtime
+;            (927,923,408 bytes allocated)
+; be -     ; 8.12 seconds realtime, 8.14 seconds runtime
+;            (1,902,023,552 bytes allocated).
+; Investigate this!
 (test? 
  (implies (and (triplep x)
                (trianglep x)
@@ -143,6 +150,9 @@ of which have not yet been verified.  See :DOC verify-guards.
 (test?
  (equal (update a1 v1 (update a2 v2 m))
         (update a2 v2 (update a1 v1 m))))
+; NOTE: BE gets no counterexamples in the above for numtrials 1000!
+; Makes sense.
+
 
 ; Conjecture - version 2
 
@@ -152,6 +162,12 @@ of which have not yet been verified.  See :DOC verify-guards.
                (natp a2))
           (equal (update a1 v1 (update a2 v2 m))
                  (update a2 v2 (update a1 v1 m)))))
+; NOTE: BE gets no counterexamples in the above even for numtrials 100000!
+; This is not good. This is probably due to the faulty DEFDATA::|next BE args|
+; function which enumerates the variables in a naive way. See note after
+; testcase 5.
+; 1000000 timesout
+
 
 ;Conjecture - version#3
 ;TODO - I am not trying hard to refute conclusion in incremental
@@ -187,7 +203,16 @@ of which have not yet been verified.  See :DOC verify-guards.
                      (<= b (* 4 c)))
                 (< (expt (- a 1) 2) (* b c))))
 
-;;TODO: C is being printed in quoted form in :incremental
+;; TODO: C is being printed in quoted form in :incremental
+;; It seems the above has been fixed.
+
+;; TODO harshrc 27th Aug '12
+;; IMP NOTE: incremental does a bad job if the initial value for the first
+;; variable chosen is BAD. If it was good, it does an efficient job.
+;; WHich means, I need to look into how I am using num-trials,
+;; backtrack-limit and stopping condition in the case of incremental.
+;; I need to revisit the implementation design of incremental!!
+
 (thm (implies (and (real/rationalp a)
                      (real/rationalp b)
                      (real/rationalp c)
@@ -230,6 +255,13 @@ of which have not yet been verified.  See :DOC verify-guards.
                (<= (+ x y) (* 2 z)))
           (or (> (* x y z) (* x y x))
               (> (* x y z) (* x y y)))))
+; Aug 27th '12
+; Note: BE does exceptionally well in the above example. The reason is
+; to do with the faulty DEFDATA::|next BE args| function. In the above
+; example this is how BE enumerates X Y Z:
+; 0 0 0 -> 1 0 0 -> 1 1 0 -> 1 1 1 -> 2 1 1 -> 2 2 1 -> and so on
+; clearly such an enumeration will find cts easily for the above conjecture.
+
 
 ;;testcase 6
 (test?
@@ -355,6 +387,21 @@ of which have not yet been verified.  See :DOC verify-guards.
 ;;(5004/4 - 4485/3 - 0.59/0.1) stats
 
 ;TODO.bug - incremental is giving assert failure!
+; This is due to the way easy-simplify works and propagate
+; blindly throws away a simplification that is not smaller
+; in term-order than the original hyp.
+; 27th Aug '12, to get rid of the above error, one needs to
+; submit a compound recognizer rule as follows.
+; Additionally I also make sure that I dont break the invariant
+; that after propagating a X=const assignment, X will not appear
+; as a free variable in the resulting simplified hyp
+
+(defthm small-posp-is-a-posp
+  (implies (small-posp x)
+           (and (integerp x)
+                (< 0 x)))
+  :rule-classes :compound-recognizer)
+
 (test? 
   (implies (and (integerp c1)
                 (integerp c2)
@@ -414,6 +461,8 @@ of which have not yet been verified.  See :DOC verify-guards.
 ;-- (K 10) and (N 5)
 
 
+;Note: incremental does a really bad job with this test?
+(acl2s-defaults :set search-strategy :simple)
 (test? 
  (implies (and (posp k)
                (posp n)
@@ -449,13 +498,20 @@ of which have not yet been verified.  See :DOC verify-guards.
       'error
     0))
 
-(acl2s-defaults :set testing-enabled T) ;only works for T
+(acl2s-defaults :set testing-enabled T) ;if simple, then only T works
+
 (test? (implies (and (integerp x)
                      (integerp y)
                      (integerp z))
                 (/= (g x y z) 'error)))
 
-
+(acl2s-defaults :set testing-enabled :naive) ;for incremental, naive works too
+(test? (implies (and (integerp x)
+                     (integerp y)
+                     (integerp z)
+                     (equal x (hash y))
+                     (equal y (hash z)))
+                NIL))
 
 
 

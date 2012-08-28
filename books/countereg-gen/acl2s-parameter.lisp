@@ -208,7 +208,7 @@ being lazy about documentation.
  :long "Specify which of the following strategies to
   use for instantiating free variables of the conjecture
   under test: <tt>:simple</tt> or <tt>:incremental</tt>
-  or <tt:hybrid</tt>.
+  or <tt>:hybrid</tt>.
   <tt>:incremental</tt> uses a dpll-like algorithm to search
 for counterexamples.
   By default this parameter is set to the symbol <tt>:simple</tt>.

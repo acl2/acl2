@@ -1638,8 +1638,8 @@ made to x already.")
 ; simplifcation?  Then our code breaks, especially rem-vars logic and capturing
 ; full assignment.
 
-(def simplify-hyps1 (rem-hyps init-hyps ans. state)
-  (decl :sig ((pseudo-term-list pseudo-term-list pseudo-term-list state)
+(def simplify-hyps1 (rem-hyps init-hyps eq-hyp ans. vl state)
+  (decl :sig ((pseudo-term-list pseudo-term-list pseudo-term-list bool state)
               -> (mv erp pseudo-term state))
         :mode :program
         :doc "simplify each hyp in rem-hyps assuming init-hyps, accumulate in
@@ -1652,23 +1652,35 @@ made to x already.")
          (simplified? (term-order shyp hyp))
          ((when (eq shyp ''nil)) ;contradiction
           (mv T ans. state))
-         (shyp (if simplified? shyp hyp))) ;TODO: revisit
-     (simplify-hyps1 (cdr rem-hyps) init-hyps 
+; 27th Aug '12. FIXED a bug in testing-regression.lsp. In incremental mode
+; the assert$ that x should not be in the free vars of the conjecture
+; was being violated because I was naively checking against term-order.
+; But in the case of small-posp, the type assumptions that could have been
+; brought to ACL2's attention using compound-recognizer rules were hidden
+; leading to a big IF term being generated in shyp.
+; SO now if the above happens(I should give a warning here), at the very
+;  least I subst the assignment in hyp.
+         ((list 'equal x a) eq-hyp)
+         (- (cw? (debug-flag vl) 
+             "ACHTUNG: simplify-hyps result not less than hyp in term-order"))
+         (shyp (if simplified? shyp (subst a x hyp))))
+     
+     (simplify-hyps1 (cdr rem-hyps) init-hyps eq-hyp
                      (if (eq shyp ''t) ans.
                        (append ans. (list shyp))) ;dont mess with order
-                     state))))
+                     vl state))))
 
-(def simplify-hyps (hyps eq-hyp state)
-  (decl :sig ((pseudo-term-list pseudo-term state) 
+(def simplify-hyps (hyps eq-hyp vl state)
+  (decl :sig ((pseudo-term-list pseudo-term boolean state) 
               -> (mv erp pseudo-term-list state))
         :mode :program
         :doc "simplify hyps assuming equality eq-hyp. return shyps in an error
         triple.")
-  (b* (((er shyps1) (simplify-hyps1 hyps (list eq-hyp) '() state)))
+  (b* (((er shyps1) (simplify-hyps1 hyps (list eq-hyp) eq-hyp '() vl state)))
 ;I do the above and then again simplify to get order-insensitive list of
 ;simplified hypotheses i.e the order of the hyps in the argument should not
 ;change the result of this function.
-   (simplify-hyps1 shyps1 (cons eq-hyp shyps1) '() state)))
+   (simplify-hyps1 shyps1 (cons eq-hyp shyps1) eq-hyp '() vl state)))
                       
 (def propagate (x a hyps concl vl state)
   (decl :sig ((symbol pseudo-term ;actually a quoted constant
@@ -1679,8 +1691,8 @@ made to x already.")
   function from tools/easy-simplify.lisp (earlier I was using
   expander.lisp). return (mv erp (shyps sconcl) state) where erp might be T
   indicating discovery of inconsistency/contradiction in the hypotheses")
- (b* ((eq-hyp (list 'equal x a))
-      ((er shyps)  (simplify-hyps hyps eq-hyp state))
+ (b* ((eq-hyp (list 'equal x a)) ;variable comes first
+      ((er shyps)  (simplify-hyps hyps eq-hyp vl state))
 ;IMP: sconcl shud be a pseudo-term; not a term-list, or an IF
       (- (cw? (debug-flag vl)
 "~|PROPAGATE: ~x0 ---~x1=~x2--> ~x3~|" hyps x a shyps))
@@ -2152,7 +2164,7 @@ last decision made in Assign. For more details refer to the FMCAD paper.")
           (state (update-cts-search-globals)))
        (prog2$ 
         (and erp
-             (cw? (normal-output-flag vl)
+             (cw? (verbose-flag vl)
                   "~|Error occurred in cts-wts-search.~|"))
         (mv erp stop? state)))))
        
