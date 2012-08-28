@@ -174,7 +174,7 @@ class ACL2Bridge
     until_ready { |type, content|
       reply[type] = "" unless reply[type]
       reply[type] << content
-      if type == :stdout and stream
+      if stream and (type == :stdout or type == :error)
         stream << content
         stream.flush
       end

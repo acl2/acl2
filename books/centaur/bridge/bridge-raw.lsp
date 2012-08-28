@@ -608,8 +608,9 @@ This is a trace-co test"))
          (error "The main thread is busy."))
      (unwind-protect
          ;; For the lock we just grabbed.
-         (debug "Main thread wasn't busy, so it's my turn.~%")
-         (in-main-thread-aux ,stream . ,forms)
+         (progn
+           (debug "Main thread wasn't busy, so it's my turn.~%")
+           (in-main-thread-aux ,stream . ,forms))
        (debug "Releasing lock on main thread.~%")
        (ccl::release-lock *main-thread-lock*))))
 
