@@ -75,6 +75,8 @@
 (include-book "tutorial/alu16-book")
 (include-book "tutorial/counter")
 
+(include-book "bridge/top")
+
 (include-book "defrstobj/defrstobj")
 
 #||

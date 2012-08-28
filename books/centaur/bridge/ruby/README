@@ -1,0 +1,49 @@
+-------------------------------------------------------------------------------
+
+                     RUBY INTERFACE TO THE ACL2 BRIDGE
+
+-------------------------------------------------------------------------------
+
+Files:
+
+   ACL2Bridge.rb -- Core library for connecting to an ACL2 Bridge and
+                    communicating with it.
+
+   demo.rb       -- Trivial demo program that uses ACL2Bridge.rb to
+                    implement a lousy read-eval-print loop.
+
+
+Supporting software:
+
+   Ruby Version: 1.9.3p0
+
+   Gems: getopt, hash_keyword_args
+
+
+Documentation:
+
+   To use any of this you will need to know about the ACL2 Bridge.  It is
+   documented in the Centaur Books Manual, under "Bridge".  If you don't know
+   where the Centaur Books Manual is, please see the file:
+
+      books/centaur/README.html
+
+   in your ACL2 distribution.
+
+   This Ruby code is just an interface to the ACL2 Bridge.  The source code has
+   lots of comments that explain what is happening, so just start reading
+   ACL2Bridge.rb for usage info.
+
+
+Trying the Demo:
+
+   To try the demo, you'll need to first start an ACL2 Bridge, then run
+   "./demo.rb --help" for information on how to connect.  You can connect
+   multiple clients at a time, of course.
+
+
+Questions:
+
+   For help, ask Jared Davis <jared@centtech.com>
+
+-------------------------------------------------------------------------------

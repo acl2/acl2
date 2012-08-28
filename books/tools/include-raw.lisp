@@ -18,64 +18,7 @@
 ;
 ; Original authors: Jared Davis and Sol Swords <{jared,sswords}@centtech.com>
 
-
 (in-package "ACL2")
-
-(defttag include-raw)
-
-(progn!
- (set-raw-mode t)
-
- (defun raw-compile (name error-on-fail on-fail state)
-   #-cltl2
-   (compile-file (extend-pathname (cbd) name state))
-   #+cltl2
-   (handler-case
-    (compile-file (extend-pathname (cbd) name state))
-    (error (condition)
-           (if error-on-fail
-               (let ((condition-str (format nil "~a" condition)))
-                 (er hard 'include-raw
-                     "Compilation of ~x0 failed with the following message:~%~@1~%"
-                     name condition-str))
-             (eval `(let ((condition ',condition))
-                      (declare (ignorable condition))
-                      ,on-fail)))))
-   nil)
-
- (defun raw-load-uncompiled (name error-on-fail on-fail state)
-   #-cltl2
-   (load (extend-pathname (cbd) name state))
-   #+cltl2
-   (handler-case
-    (load (extend-pathname (cbd) name state))
-    (error (condition)
-           (if error-on-fail
-               (let ((condition-str (format nil "~a" condition)))
-                 (er hard 'include-raw
-                     "Load of ~x0 failed with the following message:~%~@1~%"
-                     name condition-str))
-             (eval `(let ((condition ',condition))
-                      (declare (ignorable condition))
-                      ,on-fail)))))
-   nil)
-
- (defun raw-load (name error-on-fail on-fail state)
-   (let* ((fname (extend-pathname (cbd) name state))
-          (compiled-fname (compile-file-pathname fname)))
-     #-cltl2
-     (load-compiled compiled-fname)
-     #+cltl2
-     (handler-case
-      (load-compiled compiled-fname)
-      (error (condition)
-             (progn
-               (format t "Compiled file ~a did not load; loading uncompiled ~a.~%Message: ~a~%"
-                       (namestring compiled-fname)
-                       fname condition)
-               (raw-load-uncompiled name error-on-fail on-fail state)))))
-   nil))
-
 
 (defmacro include-raw (fname &key
                              (do-not-compile 'nil)
@@ -133,6 +76,64 @@ the Lisp.)  Therefore, it is a mistake to use the same base name for a raw Lisp
 file with .lsp extension and an ACL2 book with .lisp extension, at least when
 using this tool and depending on compilation.~/~/"
   `(progn
+
+     (progn!
+      ;; [Jared] We originally defined these supporting functions above, but
+      ;; that meant that just including the include-raw book required a ttag.
+      ;; By putting these things into the macro itself, we get away from that.
+
+      (set-raw-mode t)
+
+      (defun raw-compile (name error-on-fail on-fail state)
+        #-cltl2
+        (compile-file (extend-pathname (cbd) name state))
+        #+cltl2
+        (handler-case
+         (compile-file (extend-pathname (cbd) name state))
+         (error (condition)
+                (if error-on-fail
+                    (let ((condition-str (format nil "~a" condition)))
+                      (er hard 'include-raw
+                          "Compilation of ~x0 failed with the following message:~%~@1~%"
+                          name condition-str))
+                  (eval `(let ((condition ',condition))
+                           (declare (ignorable condition))
+                           ,on-fail)))))
+        nil)
+
+      (defun raw-load-uncompiled (name error-on-fail on-fail state)
+        #-cltl2
+        (load (extend-pathname (cbd) name state))
+        #+cltl2
+        (handler-case
+         (load (extend-pathname (cbd) name state))
+         (error (condition)
+                (if error-on-fail
+                    (let ((condition-str (format nil "~a" condition)))
+                      (er hard 'include-raw
+                          "Load of ~x0 failed with the following message:~%~@1~%"
+                          name condition-str))
+                  (eval `(let ((condition ',condition))
+                           (declare (ignorable condition))
+                           ,on-fail)))))
+        nil)
+
+      (defun raw-load (name error-on-fail on-fail state)
+        (let* ((fname (extend-pathname (cbd) name state))
+               (compiled-fname (compile-file-pathname fname)))
+          #-cltl2
+          (load-compiled compiled-fname)
+          #+cltl2
+          (handler-case
+           (load-compiled compiled-fname)
+           (error (condition)
+                  (progn
+                    (format t "Compiled file ~a did not load; loading uncompiled ~a.~%Message: ~a~%"
+                            (namestring compiled-fname)
+                            fname condition)
+                    (raw-load-uncompiled name error-on-fail on-fail state)))))
+        nil))
+
      (make-event
       (mv-let (erp val state)
         ;; This progn!, including the compilation of the file to be loaded,
