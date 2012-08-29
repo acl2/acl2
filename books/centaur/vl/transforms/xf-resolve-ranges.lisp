@@ -455,7 +455,7 @@ concatenations.</p>")
 
 
 (defsection vl-op-selresolve
-  :parents (transforms)
+  :parents (rangeresolve)
   :short "Main function for simplifying selects"
   :long "<p><b>Signature:</b> @(call vl-op-selresolve) returns <tt>(mv
 warnings-prime args-prime)</tt></p>

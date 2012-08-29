@@ -300,7 +300,7 @@ vl-pattern-match-flop).  Then we check whether the <tt>clk</tt> and
 
 
 (defsection vl-make-1-bit-latch-instances
-  :parents (latch-inference)
+  :parents (flop-inference)
   :short "Build a list of <tt>VL_1_BIT_LATCH</tt> instances."
 
   :long "<p><b>Signature:</b> @(call vl-make-1-bit-latch-instances) returns a
@@ -356,7 +356,7 @@ list of module instances.</p>
 
 
 (defsection vl-make-n-bit-latch
-  :parents (latch-inference)
+  :parents (flop-inference)
   :short "Generate <tt>VL_<i>N</i>_BIT_LATCH</tt> for some <i>N</i>."
 
   :long "<p><b>Signature:</b> @(call vl-make-n-bit-latch) returns a list of
@@ -525,6 +525,7 @@ completeness.</p>"
 
 
 (defsection vl-pattern-match-latch
+  :parents (flop-inference)
   :short "Checks whether an always statement is a recognizable form for a
 latch."
   :long "Skips extra error checking for things like the LHS being an idexpr, it
@@ -640,8 +641,10 @@ not occurring in the RHS, the right things being in the sensitivity list, etc."
 
 
 (defsection vl-match/check-latch
+  :parents (flop-inference)
   :short "Checks whether an always statement is recognizable as a latch, plus
 extra sanity checking."
+
   (defund vl-match/check-latch (x warnings)
     "Returns (mv warnings successp condition-expr lhs-expr rhs-expr)"
     (declare (xargs :guard (and (vl-always-p x)
@@ -751,7 +754,7 @@ extra sanity checking."
 ; Actual inference of flops and latches:
 
 (defsection vl-always-infer-latch/flop
-  :parents (flop-inference latch-inference)
+  :parents (flop-inference)
   :short "Try to infer a flop or latch from an <tt>always</tt> block."
 
   :long "<p><b>Signature:</b> @(call vl-always-infer-latch/flop) returns
@@ -1013,7 +1016,7 @@ the module.</li>
 
 
 (defsection vl-alwayslist-infer-latches/flops
-  :parents (flop-inference latch-inference)
+  :parents (flop-inference)
   :short "Try to infer latches and flops from a list of <tt>always</tt>
 blocks."
 

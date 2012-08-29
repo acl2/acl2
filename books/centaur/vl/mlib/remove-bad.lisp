@@ -520,7 +520,7 @@ still okay, and </li>
 
 
 (defsection vl-modulelist-zombies
-  :parents (warnings mlib)
+  :parents (warnings)
   :short "Identify modules with fatal warnings."
   :long "<p>@(call vl-modulelist-zombies) gathers and returns the names of all
 modules in <tt>x</tt> which have some fatal warning (as determined by @(see
@@ -546,7 +546,7 @@ vl-propagate-errors).</p>"
 
 
 (defsection vl-propagate-errors
-  :parents (warnings mlib)
+  :parents (warnings)
 
   :short "Eliminate modules with fatal warnings (and their dependents)."
 
@@ -615,7 +615,7 @@ kept in the same order as they occur in <tt>x</tt>.</p>"
 
 
 (defsection vl-propagate-new-errors
-  :parents (warnings mlib)
+  :parents (warnings)
   :short "@(call vl-propagate-new-errors) is a trivial wrapper for @(call
 vl-propagate-errors) which accumulates victims."
 

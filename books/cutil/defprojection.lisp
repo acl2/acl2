@@ -129,6 +129,25 @@ function.</p>")
   (equal (append (append x y) z)
          (append x (append y z))))
 
+(defun variable-or-constant-listp (x)
+  (if (atom x)
+      t
+    (and (or (symbolp (car x))
+             (quotep (car x))
+             ;; things that quote to themselves
+             (acl2-numberp (car x))
+             (stringp (car x))
+             (characterp (car x)))
+         (variable-or-constant-listp (cdr x)))))
+
+(defun collect-vars (x)
+  (if (atom x)
+      nil
+    (if (and (symbolp (car x))
+             (not (keywordp (car x))))
+        (cons (car x) (collect-vars (cdr x)))
+      (collect-vars (cdr x)))))
+
 (defun defprojection-fn (name formals element
                               nil-preservingp already-definedp
                               guard verify-guards
@@ -168,22 +187,28 @@ function.</p>")
        ((unless (and (consp element)
                      (symbolp (car element))))
         (er hard 'defprojection
-            "The element transformation must be a function applied ~
-            to the formals, but is ~x0." element))
+            "The element transformation should be a function/macro call, ~
+             but is ~x0." element))
 
        (list-fn   name)
        (list-args formals)
        (elem-fn   (car element))
        (elem-args (cdr element))
        (exec-fn   (mksym list-fn '-exec))
+       (elem-syms (collect-vars elem-args))
 
-       ((unless (and (symbol-listp elem-args)
-                     (no-duplicatesp elem-args)
-                     (subsetp elem-args formals)
-                     (subsetp formals elem-args)))
+       ((unless (variable-or-constant-listp elem-args))
+        (er hard? 'defprojection
+            "The element's arguments must be a function applied to the ~
+             formals or constants, but are: ~x0." elem-args))
+
+       ((unless (and (no-duplicatesp elem-syms)
+                     (subsetp elem-syms formals)
+                     (subsetp formals elem-syms)))
         (er hard 'defprojection
-            "The element transformation's formals do not agree with ~
-             the list transformation's formals."))
+            "The variables in the :element do not agree with the formals:~% ~
+              - formals: ~x0~% ~
+              - element vars: ~x1~%" formals elem-syms))
 
        ((unless (or (eq mode :logic)
                     (eq mode :program)))

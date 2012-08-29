@@ -68,7 +68,25 @@
     :optimize nil
     :parallelize t)
 
+
+  ;; Some tests with constants...
+
+  (defprojection add1-list (x)
+    (+ 1 x)
+    :guard (integer-listp x))
+
+  (defprojection symbol-<-foo-list (x)
+    (symbol-< :foo x)
+    :guard (symbol-listp x))
+
+  (defprojection symbol-<-bar-list (x)
+    (symbol-< 'bar x)
+    :guard (symbol-listp x))
+
   ))
+
+
+
 
 
 
