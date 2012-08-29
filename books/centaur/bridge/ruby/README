@@ -12,6 +12,10 @@ Files:
    demo.rb       -- Trivial demo program that uses ACL2Bridge.rb to
                     implement a lousy read-eval-print loop.
 
+   to_lisp.rb    -- Optional, extends Ruby's Integer, String, Array, and
+                    Hash classes with a .to_lisp method.  Useful for web
+                    applications that want to send form input to ACL2.
+
 
 Supporting software:
 

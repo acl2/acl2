@@ -28,10 +28,10 @@
 (defmacro debug (msg &rest args)
   nil
   ;; For hacking on the bridge, uncomment this to watch what's happening.
-  `(format *terminal-io*
-          (concatenate 'string "Bridge: ~a: " ,msg)
-          (ccl::process-name ccl::*current-process*)
-          . ,args)
+  ;`(format *terminal-io*
+  ;        (concatenate 'string "Bridge: ~a: " ,msg)
+  ;        (ccl::process-name ccl::*current-process*)
+  ;        . ,args)
   )
 
 (defmacro alert (msg &rest args)
