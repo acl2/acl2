@@ -25,6 +25,8 @@
 (include-book "vl/mlib/clean-concats")
 (include-book "vl/mlib/atts")
 (include-book "vl/transforms/xf-careless-infer-flops")
+(include-book "vl/transforms/xf-clean-selects")
+(include-book "vl/transforms/xf-propagate")
 
 (include-book "aig/aig-equivs")
 (include-book "aig/aig-vars")

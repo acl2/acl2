@@ -24,6 +24,15 @@
 # always produces a string.  The intent is that this string can be given to a
 # Lisp parser to get a basic Lisp version of the Ruby object.
 
+class NilClass
+
+  def to_lisp
+    return "NIL"
+  end
+
+end
+
+
 class Integer
 
   def to_lisp

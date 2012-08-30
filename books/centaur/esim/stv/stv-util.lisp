@@ -248,7 +248,7 @@ simulation variable.  For instance, if you have an STV output line like:</p>
 </code>
 
 <p>Then <tt>(stv-out-&gt;width 'res1 stv)</tt> will return the width of
-<tt>main_result</tT>, say 64.  If <tt>x</tt> isn't one of the STV's outputs, we
+<tt>main_result</tt>, say 64.  If <tt>x</tt> isn't one of the STV's outputs, we
 cause a runtime error and logically return 0.</p>"
 
   (defun stv-out->width (x stv)

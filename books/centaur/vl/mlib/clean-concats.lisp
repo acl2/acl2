@@ -24,19 +24,33 @@
 (local (include-book "../util/arithmetic"))
 
 
+(defxdoc expr-cleaning
+  :parents (mlib)
+  :short "Functions for cleaning up ugly expressions.")
+
 
 (defsection vl-elim-nested-concats
+  :parents (expr-cleaning)
+  :short "Flatten out nested concatenations like <tt>{a, b, {c, d}, { { e, f }
+  }}</tt> into <tt>{a, b, c, d, e, f}</tt>."
 
-; Flatten out nested concatenations like {a, b, {c, d}, { { e, f } }} into {a,
-; b, c, d, e, f}.  This may help our select-merging code, below, to be more
-; effective and notice things like {foo[3], {foo[2], foo[1]}, foo[0]}.
+  :long "<p>@(call vl-elim-nested-concats) is given <tt>x</tt>, a list of
+expressions which we assume are the arguments to a concatenation.  We flatten
+out any top-level nested concatenations in <tt>x</tt>, and return the possibly
+simplified list of expressions.</p>
+
+<p>This may help @(see vl-maybe-merge-selects) to be more effective.  For
+instance, with the help of flattening, it can merge selects such as:</p>
+
+<code>{foo[3], {foo[2], foo[1]}, foo[0]}</code>"
 
   (defund vl-elim-nested-concats-pass (x)
     "Returns (MV PROGRESSP X-PRIME)"
     (declare (xargs :guard (vl-exprlist-p x)))
     (b* (((when (atom x))
           (mv nil nil))
-         ((mv cdr-progressp cdr-prime) (vl-elim-nested-concats-pass (cdr x)))
+         ((mv cdr-progressp cdr-prime)
+          (vl-elim-nested-concats-pass (cdr x)))
          (expr1 (car x))
          ((unless (and (not (vl-fast-atom-p expr1))
                        (eq (vl-nonatom->op expr1) :vl-concat)))
@@ -77,8 +91,6 @@
   (defund vl-elim-nested-concats (x)
     (declare (xargs :guard (vl-exprlist-p x)))
 
-    ;; We assume that X are the arguments to a concatenation.  We eliminate any
-    ;; nested concatenations at the top-level of X.
 
     (b* (((mv progressp x-prime)
           (vl-elim-nested-concats-pass x)))
@@ -98,35 +110,44 @@
 
 
 
+(defsection vl-maybe-merge-selects-aux
+  :parents (expr-cleaning)
+  :short "Identify a sequence of decreasing bit- and part-selects."
 
-(defsection vl-maybe-merge-selects
+  :long "<p>@(call vl-maybe-merge-selects-aux) returns <tt>(mv min
+rest)</tt>.</p>
 
-; Merge together concatenations of wires such as { foo[3], foo[2], foo[1] } and
-; turn them into prettier ranges like foo[3:1], where possible.
+<p>We look for a sequence of decreasing bit- and part- selects that count
+downward from <tt>from[n]</tt>.</p>
+
+<p>We return the index of the final bit select that matches this criteria as
+<tt>min</tt>, and the remainder of <tt>x</tt> as <tt>rest</tt>.</p>
+
+<p>Here are some examples.</p>
+
+<p>Suppose FROM is the idexpr \"foo\", and N is 6.</p>
+
+<p>Then, given a sequence x = (foo[5] foo[4] foo[3] bar baz), we return</p>
+<code>
+   MIN = 3
+   REST = (bar baz)
+</code>
+
+<p>But if x = (bar baz), we just immediately return</p>
+<code>
+   MIN = 6
+   REST = (bar baz)
+</code>
+
+<p>We also handle part selects, e.g., if X is (foo[5:3], foo[2], bar, baz),
+we return</p>
+<code>
+   MIN = 2
+   REST = (bar baz)
+</code>"
 
   (defund vl-maybe-merge-selects-aux (x from n)
     "Returns (MIN REST)"
-
-; We look for a sequence of decreasing bit- and part- selects that count
-; downward from from[n], and return the index of the final bit select that
-; matches this criteria as MIN, and the remainder of X as REST.
-
-; Here are some examples.
-; Suppose FROM is the idexpr "foo", and N is 6.
-;
-; Then, given a sequence x = (foo[5] foo[4] foo[3] bar baz), we return
-;   MIN = 3
-;   REST = (bar baz)
-;
-; But if x = (bar baz), we just immediately return
-;   MIN = 6
-;   REST = (bar baz).
-;
-; We also handle part selects, e.g., if X is (foo[5:3], foo[2], bar, baz),
-; we return
-;   MIN = 2
-;   REST = (bar baz).
-
     (declare (xargs :guard (and (vl-exprlist-p x)
                                 (vl-expr-p from)
                                 (natp n))))
@@ -189,9 +210,29 @@
     (implies (force (natp n))
              (<= (mv-nth 0 (vl-maybe-merge-selects-aux x from n))
                  n))
-    :rule-classes :linear)
+    :rule-classes :linear))
 
-  (local (in-theory (disable vl-maybe-merge-selects-aux)))
+
+
+(defsection vl-maybe-merge-selects
+  :parents (expr-cleaning)
+  :short "Merge together concatenations like <tt>{foo[3], foo[2], foo[1]}</tt>
+into prettier expressions like <tt>foo[3:1]</tt>."
+
+  :long "<p><b>Signature:</b> @(call vl-maybe-merge-selects) returns
+<tt>x'</tt>.</p>
+
+<p>Here, <tt>x</tt> is a list of expressions which we assume is found within
+either a concatenation or a multiple concatenation.  The <tt>mod</tt> and
+<tt>ialist</tt> are the module and its @(see vl-moditem-alist) so we can look
+up wires in <tt>x</tt> to see their ranges.</p>
+
+<p>Note: to make this function more effective, <tt>x</tt> can be preprocessed
+with @(see vl-elim-nested-concats).</p>
+
+<p>We walk over <tt>x</tt>, looking for sequences of selects that can be merged
+together.  For instance, <tt>foo[3:1], foo[0]</tt> could generally be merged
+into <tt>foo[3:0]</tt>.</p>"
 
   (local (in-theory (enable vl-maybe-natp)))
 
@@ -199,10 +240,6 @@
     (declare (xargs :guard (and (vl-exprlist-p x)
                                 (vl-module-p mod)
                                 (equal ialist (vl-moditem-alist mod)))))
-
-; We assume X is an expression list that occurs WITHIN A CONCATENATION OR
-; MULTIPLE CONCATENATION.
-
     (b* (((when (atom x))
           nil)
 
@@ -299,9 +336,22 @@
 
 
 (defsection vl-expr-clean-concats
+  :parents (expr-cleaning)
+  :short "Flatten concatenations and try to merge adjacent, compatible wires
+within them into larger part-selects."
 
-; Flatten concatenations and try to merge adjacent, compatible wires within
-; them.
+  :long "<p><b>Signature:</b> @(call vl-expr-clean-concats) returns <tt>x'</tt>.</p>
+
+<p>Here, <tt>x</tt> is any expression that occurs in the module <tt>mod</tt>,
+and <tt>ialist</tt> is the @(see vl-moditem-alist) for <tt>mod</tt> so that we
+can quickly look up wires to ensure that our simplifications are sound.</p>
+
+<p>We try to simplify the concatenations within <tt>x</tt>, by flattening out
+nested concatenations and merging concatenations like <tt>{foo[3:1],
+foo[0]}</tt> into selects like <tt>foo[3:0]</tt>.</p>
+
+<p>We return a new expression, <tt>x'</tt>, which is semantically equal to
+<tt>x</tt> but may be aesthetically better.</p>"
 
   (mutual-recursion
 
@@ -383,4 +433,221 @@
             :in-theory (enable vl-expr-clean-concats))))
 
   (verify-guards vl-expr-clean-concats))
+
+
+
+(defsection vl-expr-clean-selects1
+  :parents (expr-cleaning)
+  :short "Core routine behind @(see vl-expr-clean-selects)."
+
+  (mutual-recursion
+
+   (defund vl-expr-clean-selects1 (x mod ialist)
+     (declare (xargs :guard (and (vl-expr-p x)
+                                 (vl-module-p mod)
+                                 (equal ialist (vl-moditem-alist mod)))
+                     :measure (vl-expr-count x)
+                     :verify-guards nil))
+     (b* (((when (vl-fast-atom-p x))
+           x)
+
+          ((vl-nonatom x) x)
+          (args (vl-exprlist-clean-selects1 x.args mod ialist))
+
+          ;; To handle bit- and part-selects in the same way, we now treat
+          ;; bit-selects like foo[3] as foo[3:3] and extract the name (as a
+          ;; string), and the msb/lsb (as naturals).
+
+          ((mv name sel-msb sel-lsb)
+           (cond ((eq x.op :vl-bitselect)
+                  (b* (((list from bit) args))
+                    (if (and (vl-idexpr-p from)
+                             (vl-expr-resolved-p bit))
+                        (mv (vl-idexpr->name from)
+                            (vl-resolved->val bit)
+                            (vl-resolved->val bit))
+                      (mv nil nil nil))))
+                 ((eq x.op :vl-partselect-colon)
+                  (b* (((list from msb lsb) args))
+                    (if (and (vl-idexpr-p from)
+                             (vl-expr-resolved-p msb)
+                             (vl-expr-resolved-p lsb))
+                        (mv (vl-idexpr->name from)
+                            (vl-resolved->val msb)
+                            (vl-resolved->val lsb))
+                      (mv nil nil nil))))
+                 (t
+                  (mv nil nil nil))))
+
+          ((unless name)
+           ;; Not something we can simplify further, just update the args.
+           (change-vl-nonatom x :args args))
+
+          ;; It's important that the declaration is of an unsigned wire.  Note
+          ;; that in Verilog, foo[3:0] is always unsigned.  So it's not
+          ;; generally sound to replace foo[3:0] with foo when we have "wire
+          ;; signed [3:0] foo", because the replacement expression "foo" would
+          ;; now be signed, whereas the original was unsigned.
+          (decl (vl-fast-find-moduleitem name mod ialist))
+          ((mv decl-okp range)
+           (case (tag decl)
+             (:vl-netdecl (mv (not (vl-netdecl->signedp decl)) (vl-netdecl->range decl)))
+             (:vl-regdecl (mv (not (vl-regdecl->signedp decl)) (vl-regdecl->range decl)))
+             (otherwise (mv nil nil))))
+
+          ((unless (and decl-okp (vl-maybe-range-resolved-p range)))
+           ;; The declaration is too complex for us to really try to simplify any
+           ;; selects to it, so don't try to simplify, just update the args.
+           (change-vl-nonatom x :args args))
+
+          (range-msb (if range (vl-resolved->val (vl-range->msb range)) 0))
+          (range-lsb (if range (vl-resolved->val (vl-range->lsb range)) 0))
+          ((when (and (= sel-msb range-msb)
+                      (= sel-lsb range-lsb)))
+           ;; Success: we have just found foo[msb:lsb] where the wire's declaration is
+           ;; of foo[msb:lsb].  Drop the select.
+           (first args)))
+
+       ;; Else, we found some other kind of select, e.g., maybe we found foo[3:0] but
+       ;; the declaration is foo[5:0].  Don't simplify anything.
+       (change-vl-nonatom x :args args)))
+
+   (defund vl-exprlist-clean-selects1 (x mod ialist)
+     (declare (xargs :guard (and (vl-exprlist-p x)
+                                 (vl-module-p mod)
+                                 (equal ialist (vl-moditem-alist mod)))
+                     :measure (vl-exprlist-count x)))
+     (if (atom x)
+         nil
+       (cons (vl-expr-clean-selects1 (car x) mod ialist)
+             (vl-exprlist-clean-selects1 (cdr x) mod ialist)))))
+
+  (defthm true-listp-of-vl-exprlist-clean-selects1
+    (true-listp (vl-exprlist-clean-selects1 x mod ialist))
+    :rule-classes :type-prescription
+    :hints(("Goal"
+            :induct (len x)
+            :expand (vl-exprlist-clean-selects1 x mod ialist))))
+
+  (defthm len-of-vl-exprlist-clean-selects1
+    (equal (len (vl-exprlist-clean-selects1 x mod ialist))
+           (len x))
+    :hints(("Goal" :induct (len x)
+            :expand (vl-exprlist-clean-selects1 x mod ialist))))
+
+  (defthm vl-exprlist-clean-selects1-under-iff
+    (iff (vl-exprlist-clean-selects1 x mod ialist)
+         (consp x))
+    :hints(("Goal" :induct (len x)
+            :expand (vl-exprlist-clean-selects1 x mod ialist))))
+
+  (flag::make-flag vl-flag-expr-clean-selects
+                   vl-expr-clean-selects1
+                   :flag-mapping ((vl-expr-clean-selects1 . expr)
+                                  (vl-exprlist-clean-selects1 . list)))
+
+  (defthm-vl-flag-expr-clean-selects
+    (defthm vl-expr-p-of-vl-expr-clean-selects1
+      (implies (and (force (vl-expr-p x))
+                    (force (vl-module-p mod))
+                    (force (equal ialist (vl-moditem-alist mod))))
+               (vl-expr-p (vl-expr-clean-selects1 x mod ialist)))
+      :flag expr)
+
+    (defthm vl-exprlist-p-of-vl-exprlist-clean-selects1
+      (implies (and (force (vl-exprlist-p x))
+                    (force (vl-module-p mod))
+                    (force (equal ialist (vl-moditem-alist mod))))
+               (vl-exprlist-p (vl-exprlist-clean-selects1 x mod ialist)))
+      :flag list)
+
+    :hints(("Goal"
+            :expand ((vl-expr-clean-selects1 x mod ialist)
+                     (vl-exprlist-clean-selects1 x mod ialist)))))
+
+
+; BOZO gross horribly yucky rules.  These solve the problem but are really slow
+; and terrible looking.  We need a better way to deal with this kind of arity
+; reasoning.  I'd like to only need to prove the
+; len-of-vl-exprlist-clean-selects1 rule, and have it be able to figure out the
+; rest.
+
+  (local (defthm cdr-by-len-under-iff
+           (implies (<= 2 (len x))
+                    (cdr x))
+           :hints(("Goal" :expand ((len x))))))
+
+  (local (defthm cddr-by-len-under-iff
+           (implies (<= 3 (len x))
+                    (cddr x))
+           :hints(("Goal"
+                   :expand ((len x)
+                            (len (cdr x)))))))
+
+  (local (defthm car-by-len-when-vl-exprlist-p
+           (implies (and (<= 1 (len x))
+                         (vl-exprlist-p x))
+                    (first x))))
+
+  (local (defthm second-by-len-when-vl-exprlist-p
+           (implies (and (<= 2 (len x))
+                         (vl-exprlist-p x))
+                    (second x))))
+
+  (local (defthm third-by-len-when-vl-exprlist-p
+           (implies (and (<= 3 (len x))
+                         (vl-exprlist-p x))
+                    (third x))))
+
+  (verify-guards vl-exprlist-clean-selects1))
+
+
+
+(defsection vl-expr-clean-selects
+  :parents (expr-cleaning)
+  :short "Simplify concatenations and selects in an expression."
+
+  :long "<p><b>Signature:</b> @(call vl-expr-clean-selects) returns <tt>x'</tt>.</p>
+
+<p>We are given <tt>x</tt>, an expression that occurs within the module <tt>mod</tt>,
+and <tt>ialist</tt>, the @(see vl-moditem-alist) for <tt>mod</tt>.</p>
+
+<p>We try to simplify <tt>x</tt> in a fairly advanced way, and return the simplified
+expression <tt>x'</tt>.  There are two phases to the simplification:</p>
+
+<ul>
+
+<li>We clean up the concatenations using @(see vl-expr-clean-concats),
+in order to eliminate nested concatenations and merge together expressions like
+<tt>{foo[3:1], foo[0]}</tt> info <tt>foo[3:0]</tt>.</li>
+
+<li>We walk over the reduced expression, trying to notice any unnecessary
+selects, e.g., if we have <tt>wire [3:0] w</tt>, then we will replace
+occurrences of <tt>w[3:0]</tt> with just <tt>w</tt>.
+
+</ul>"
+
+  (defund vl-expr-clean-selects (x mod ialist)
+    (declare (xargs :guard (and (vl-expr-p x)
+                                (vl-module-p mod)
+                                (equal ialist (vl-moditem-alist mod)))))
+    (vl-expr-clean-selects1 (vl-expr-clean-concats x mod ialist)
+                            mod ialist))
+
+  (local (in-theory (enable vl-expr-clean-selects)))
+
+  (defthm vl-expr-p-of-vl-expr-clean-selects
+    (implies (and (force (vl-expr-p x))
+                  (force (vl-module-p mod))
+                  (force (equal ialist (vl-moditem-alist mod))))
+             (vl-expr-p (vl-expr-clean-selects x mod ialist)))))
+
+
+(defprojection vl-exprlist-clean-selects (x mod ialist)
+  (vl-expr-clean-selects x mod ialist)
+  :guard (and (vl-exprlist-p x)
+              (vl-module-p mod)
+              (equal ialist (vl-moditem-alist mod)))
+  :result-type vl-exprlist-p
+  :parents (expr-cleaning))
 

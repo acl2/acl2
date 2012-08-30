@@ -2505,6 +2505,12 @@ name, some arguments to module instances may also not be given portnames.</p>")
                   (not (member nil (vl-plainarglist->exprs x)))))
   :hints(("Goal" :induct (len x))))
 
+(defthm vl-exprlist-p-of-remove-nil-of-plainarglist->exprs
+  (implies (vl-plainarglist-p x)
+           (vl-exprlist-p (remove nil (vl-plainarglist->exprs x))))
+  :hints(("Goal" :induct (len x))))
+
+
 
 
 

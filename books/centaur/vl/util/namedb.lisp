@@ -337,7 +337,7 @@ for a module.</p>
 <h3>Using Name DBs</h3>
 
 <p>Typically, the user begins by constructing a name db using <tt>(@(see
-vl-starting-namedb names))</tt>, where <tt>names</tt> are just a list of the
+vl-starting-namedb) names)</tt>, where <tt>names</tt> are just a list of the
 strings that are \"in use.\"</p>
 
 <p>Once constructed, name DBs must be used in a single-threaded discipline.

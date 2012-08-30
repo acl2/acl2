@@ -108,7 +108,7 @@ stv-implementation-details).</p>")
  ;; ---------------------------------------------------------------------------
 </code>
 
-<h3>High-Level Overview<h3>
+<h3>High-Level Overview</h3>
 
 <p>The <tt>:initial</tt> section controls the initial values of state bits.
 For the above vector, <tt>foo.statemachine.busy</tt> will be initialized to

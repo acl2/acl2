@@ -1208,3 +1208,52 @@ vl-exprlist-p) and return them as a string list."
                     (vl-plainarglist-p inouts)
                     (vl-plainarglist-p unknowns))))))
 
+
+
+
+(defsection vl-expr-selects
+  :parents (expr-tools)
+  :short "Collects up all the bit-select and part-select expressions within an
+expression, and return them as a flat list of expressions."
+
+  (mutual-recursion
+
+   (defund vl-expr-selects (x)
+     ;; Assumes no nested selects
+     (declare (xargs :guard (vl-expr-p x)
+                     :measure (vl-expr-count x)))
+     (b* (((when (vl-fast-atom-p x))
+           nil)
+          ((vl-nonatom x) x)
+          ((when (or (eq x.op :vl-bitselect)
+                     (eq x.op :vl-partselect-colon)
+                     (eq x.op :vl-partselect-pluscolon)
+                     (eq x.op :vl-partselect-minuscolon)))
+           (list x)))
+       (vl-exprlist-selects x.args)))
+
+   (defund vl-exprlist-selects (x)
+     (declare (xargs :guard (vl-exprlist-p x)
+                     :measure (vl-exprlist-count x)))
+     (if (atom x)
+         nil
+       (append (vl-expr-selects (car x))
+               (vl-exprlist-selects (cdr x))))))
+
+  (flag::make-flag vl-flag-expr-selects
+                   vl-expr-selects
+                   :flag-mapping ((vl-expr-selects . expr)
+                                  (vl-exprlist-selects . list)))
+
+  (defthm-vl-flag-expr-selects
+    (defthm vl-exprlist-p-of-vl-expr-selects
+      (implies (force (vl-expr-p x))
+               (vl-exprlist-p (vl-expr-selects x)))
+      :flag expr)
+
+    (defthm vl-exprlist-p-of-vl-exprlist-selects
+      (implies (force (vl-exprlist-p x))
+               (vl-exprlist-p (vl-exprlist-selects x)))
+      :flag list)
+    :hints(("Goal" :expand ((vl-exprlist-selects x)
+                            (vl-expr-selects x))))))
