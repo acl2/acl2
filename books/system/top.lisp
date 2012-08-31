@@ -4,6 +4,7 @@
 (in-package "ACL2")
 
 (include-book "hl-addr-combine")
+(include-book "extend-pathname")
 (include-book "too-many-ifs")
 (include-book "verified-termination-and-guards")
 (include-book "sublis-var")

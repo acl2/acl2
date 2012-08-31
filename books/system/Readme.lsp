@@ -7,6 +7,7 @@ Readme.lsp
 convert-normalized-term-to-pairs.lisp
 gather-dcls.lisp
 hl-addr-combine.lisp
+extend-pathname.lisp
 pseudo-good-worldp.lisp
 pseudo-termp-lemmas.lisp
 subcor-var.lisp
@@ -23,7 +24,9 @@ worldp-check.lisp
  )
  (:TITLE "System Books")
  (:AUTHOR/S
-  "Jared Davis for hl-addr-combine.lisp;
+  "Jared Davis for:
+     hl-addr-combine.lisp
+     extend-pathname.lisp
    David Rager for:
      gather-dcls.lisp
      pseudo-termp-lemmas.lisp
