@@ -173,6 +173,21 @@ handles good ACL2 objects.</li>
 add pretty-printing.</p>")
 
 
+(defxdoc bindings
+  :parents (bridge)
+  :short "ACL2 Bridge interfaces for other programming languages."
+
+  :long "<p>The ACL2 Bridge can probably be used from just about any
+programming language that has sockets.</p>
+
+<p>There is a nice <a href='http://www.ruby-lang.org/'>Ruby</a> interface in
+<tt>books/centaur/bridge/ruby</tt>.</p>
+
+<p>For other programming languages, implementing a client should be a very easy
+exercise: just read about @(see command)s and @(see message)s to understand the
+communication.  You might look at the Ruby interface as an example.</p>")
+
+
 (defsection start
   :parents (bridge)
   :short "Start an ACL2 Bridge server."
@@ -238,59 +253,6 @@ restart a server.</p>"
     (cw "Under-the-hood definition of bridge::stop not installed?")))
 
 
-(defxdoc in-main-thread
-  :parents (bridge)
-  :short "Raw lisp mechanism for making sure forms execute in the main thread."
-
-  :long "<p>This is a special form that is only meant to be used by ACL2 Bridge
-clients when they issue commands.  A syntax example is:</p>
-
-<code>
- (bridge::in-main-thread (memoize 'fib) (fib 37))
-</code>
-
-<p>This is really just a hack that lets you use commands that, for one reason
-or another, must only ever be executed in the \"main\" thread (in CCL parlance,
-the \"initial listener\" thread).  Practical applications include:</p>
-
-<ul>
-
-<li>Running memoized functions (the memoization code isn't thread-safe, and
-attempts to use a memoized function in multiple thread can result in hard
-errors), and</li>
-
-<li>Doing computations that involve a lot of @(see hons)ing (otherwise, each
-thread has its own hons space, and you may not get the sharing you are
-expecting).</li>
-
-</ul>
-
-<p>If the main thread is busy with work from other clients, this form will wait
-until it becomes available again.  See also @(see try-in-main-thread), which
-instead just causes an error if the main thread is busy.</p>")
-
-
-(defxdoc try-in-main-thread
-  :parents (bridge)
-  :short "Alternative to @(see in-main-thread) that exits immediately if the
-main thread is already busy with something else.")
-
-
-(defxdoc bindings
-  :parents (bridge)
-  :short "ACL2 Bridge interfaces for other programming languages."
-
-  :long "<p>The ACL2 Bridge can probably be used from just about any
-programming language that has sockets.</p>
-
-<p>There is a nice <a href='http://www.ruby-lang.org/'>Ruby</a> interface in
-<tt>books/centaur/bridge/ruby</tt>.</p>
-
-<p>For other programming languages, implementing a client should be a very easy
-exercise: just read about @(see command)s and @(see message)s to understand the
-communication.  You might look at the Ruby interface as an example.</p>")
-
-
 
 ; A few functions that are handy for testing things.
 
@@ -320,5 +282,77 @@ communication.  You might look at the Ruby interface as an example.</p>")
             (sleep$ 1)
             (sleepyprint (- n 1)))))
 
+
+
 (defttag :bridge)
 (include-raw "bridge-raw.lsp")
+
+
+(defsection in-main-thread
+  :parents (bridge)
+  :short "Special mechanism for making sure forms execute in the main thread."
+
+  :long "<p>This is a special form that is only meant to be used by ACL2 Bridge
+clients when they issue commands.  A syntax example is:</p>
+
+<code>
+ (bridge::in-main-thread (memoize 'fib) (fib 37))
+</code>
+
+<p>This is really just a hack that lets you use commands that, for one reason
+or another, must only ever be executed in the \"main\" thread (in CCL parlance,
+the \"initial listener\" thread).  Practical applications include:</p>
+
+<ul>
+
+<li>Running memoized functions (the memoization code isn't thread-safe, and
+attempts to use a memoized function in multiple thread can result in hard
+errors), and</li>
+
+<li>Doing computations that involve a lot of @(see hons)ing (otherwise, each
+thread has its own hons space, and you may not get the sharing you are
+expecting).</li>
+
+</ul>
+
+<p>If the main thread is busy with work from other clients, this form will wait
+until it becomes available again.  See also @(see try-in-main-thread), which
+instead just causes an error if the main thread is busy.</p>"
+
+  (defmacro-last run-in-main-thread)
+
+  (defmacro in-main-thread (&rest forms)
+    ;; Waits until the main-thread is available, then uses it to execute forms.
+    `(run-in-main-thread :irrelevant-val-for-return-last
+                         (progn$ . ,forms))))
+
+
+
+(defsection try-in-main-thread
+  :parents (bridge)
+  :short "Alternative to @(see in-main-thread) that exits immediately if the
+main thread is already busy with something else."
+
+  (defmacro-last try-to-run-in-main-thread)
+
+  (defmacro try-in-main-thread (&rest forms)
+    ;; Checks if the main-thread is available, and if so uses it to execute
+    ;; forms.  Otherwise, causes an error.
+    `(try-to-run-in-main-thread :irrelevant-val-for-return-last
+                                (progn$ . ,forms))))
+
+
+(defun test-imt (x)
+  (declare (xargs :guard (natp x)))
+  (in-main-thread
+   (cw "Hello ")
+   (cw "World~%")
+   (+ 1 x)))
+
+(defun test-timt (x)
+  (declare (xargs :guard (natp x)))
+  (try-in-main-thread
+   (cw "Hello ")
+   (cw "World~%")
+   (+ 1 x)))
+

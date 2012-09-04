@@ -27,6 +27,8 @@
 (include-book "vl/transforms/xf-careless-infer-flops")
 (include-book "vl/transforms/xf-clean-selects")
 (include-book "vl/transforms/xf-propagate")
+(include-book "vl/transforms/xf-expr-simp")
+(include-book "vl/transforms/xf-inline")
 
 (include-book "aig/aig-equivs")
 (include-book "aig/aig-vars")

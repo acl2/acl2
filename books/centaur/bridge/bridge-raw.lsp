@@ -28,10 +28,10 @@
 (defmacro debug (msg &rest args)
   nil
   ;; For hacking on the bridge, uncomment this to watch what's happening.
-  ;`(format *terminal-io*
-  ;        (concatenate 'string "Bridge: ~a: " ,msg)
-  ;        (ccl::process-name ccl::*current-process*)
-  ;        . ,args)
+  ;; `(format *terminal-io*
+  ;;         (concatenate 'string "Bridge: ~a: " ,msg)
+  ;;         (ccl::process-name ccl::*current-process*)
+  ;;         . ,args)
   )
 
 (defmacro alert (msg &rest args)
@@ -336,7 +336,17 @@ abc
     ;; Try to do the command.  This can fail for any number of reasons.  We
     ;; always want to keep going, whether there's an error or not.
     (let ((ret (handler-case
-                (multiple-value-list (eval cmd))
+                (multiple-value-list
+                 (eval
+                  ;; As a convenience, bind STATE so that commands can use it without having
+                  ;; to bind it.  This is nice in that it lets a macro such as
+                  ;;   (FOO-MAC X Y Z) == `(FOO-MAC-FN ,X ,Y ,Z STATE)
+                  ;; be used from commands directly and still hide the state.  It's probably
+                  ;; not worth doing this for other stobjs, but STATE is so common that maybe
+                  ;; it's worthwhile to do it.
+                  `(let ((acl2::state acl2::*the-live-state*))
+                     (declare (ignorable acl2::state))
+                     ,cmd)))
                 (error (condition)
                        (alert "Error executing command ~a: ~a~%" cmd condition)
                        (send-message "ERROR"
@@ -592,16 +602,19 @@ This is a trace-co test"))
        (debug "Got good values from the main thread.~%")
        (values-list ,retvals))))
 
-(defmacro in-main-thread (&rest forms)
-  ;; Waits until the main-thread is available, then uses it to execute forms.
+(defmacro run-in-main-thread-raw (irrelevant-variable-for-return-last form)
+  (declare (ignore irrelevant-variable-for-return-last))
+  ;; BOZO this probably isn't quite right w.r.t. values-list, our-multiple-values-bind, etc. nonsense
+  ;; But it seems to work on CCL, at least.
   `(ccl::with-lock-grabbed
     (*main-thread-lock*)
     (debug "Got the lock, now in main thread.~%")
-    (in-main-thread-aux ,stream . ,forms)))
+    (in-main-thread-aux ,form)))
 
-(defmacro try-in-main-thread (&rest forms)
-  ;; Checks if the main-thread is available, and if so uses it to execute
-  ;; forms.  Otherwise, causes an error.
+(defmacro try-to-run-in-main-thread-raw (irrelevant-variable-for-return-last form)
+  (declare (ignore irrelevant-variable-for-return-last))
+  ;; BOZO this probably isn't quite right w.r.t. values-list, our-multiple-values-bind, etc. nonsense
+  ;; But it seems to work on CCL, at least.
   `(if (not (ccl::try-lock *main-thread-lock*))
        (progn
          (debug "The main thread is busy, giving up.~%")
@@ -610,7 +623,7 @@ This is a trace-co test"))
          ;; For the lock we just grabbed.
          (progn
            (debug "Main thread wasn't busy, so it's my turn.~%")
-           (in-main-thread-aux ,stream . ,forms))
+           (in-main-thread-aux ,form))
        (debug "Releasing lock on main thread.~%")
        (ccl::release-lock *main-thread-lock*))))
 

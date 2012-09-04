@@ -623,7 +623,7 @@ in order to eliminate nested concatenations and merge together expressions like
 
 <li>We walk over the reduced expression, trying to notice any unnecessary
 selects, e.g., if we have <tt>wire [3:0] w</tt>, then we will replace
-occurrences of <tt>w[3:0]</tt> with just <tt>w</tt>.
+occurrences of <tt>w[3:0]</tt> with just <tt>w</tt>.</li>
 
 </ul>"
 
