@@ -138,15 +138,35 @@ the whole process.</p>")
   ;; We optimize the recognition of whitespace by basically using a bitset.
   ;; This is probably silly and not worth the effort.
 
+  (defmacro vertical-tab-char () (code-char 11))
+  (defmacro carriage-return-char () (code-char 13))
+
+  (defmacro whitespace-mask ()
+    ;; To generate this mask:
+    ;; (include-book "centaur/bitops/bitsets" :dir :system)
+    ;; (acl2::bitset-list (char-code #\Space)
+    ;;                    (char-code #\Tab)
+    ;;                    (char-code #\Page)
+    ;;                    (char-code #\Newline)
+    ;;                    (char-code (vertical-tab-char))
+    ;;                    (char-code (carriage-return-char)))
+    4294983168)
+
   (local (in-theory (disable logbitp)))
 
+  ;; It isn't clear to me whether these ought to be part of the whitespace
+  ;; definition, but it's probably sensible to include at least the
+  ;; carriage-return character.
+
   (local (defun test (n)
-           (and (equal (logbitp n 4294972928)
+           (and (equal (logbitp n (whitespace-mask))
                        (let ((x (code-char n)))
                          (or (eql x #\Space)
                              (eql x #\Tab)
                              (eql x #\Page)
-                             (eql x #\Newline))))
+                             (eql x #\Newline)
+                             (eql x (vertical-tab-char))
+                             (eql x (carriage-return-char)))))
                 (or (zp n)
                     (test (- n 1))))))
 
@@ -155,21 +175,25 @@ the whole process.</p>")
                          (natp i)
                          (natp n)
                          (<= i n))
-                    (equal (logbitp i 4294972928)
+                    (equal (logbitp i (whitespace-mask))
                            (let ((x (code-char i)))
                              (or (eql x #\Space)
                                  (eql x #\Tab)
                                  (eql x #\Page)
-                                 (eql x #\Newline)))))
+                                 (eql x #\Newline)
+                                 (eql x (vertical-tab-char))
+                                 (eql x (carriage-return-char))))))
            :hints(("Goal" :induct (test n)))))
 
   (local (defthm test-consequence
            (implies (characterp x)
-                    (equal (logbitp (char-code x) 4294972928)
+                    (equal (logbitp (char-code x) (whitespace-mask))
                            (or (eql x #\Space)
                                (eql x #\Tab)
                                (eql x #\Page)
-                               (eql x #\Newline))))
+                               (eql x #\Newline)
+                               (eql x (vertical-tab-char))
+                               (eql x (carriage-return-char)))))
            :hints(("Goal" :use ((:instance test-lemma
                                            (n 255)
                                            (i (char-code x))))))))
@@ -178,8 +202,10 @@ the whole process.</p>")
     (mbe :logic (or (eql x #\Space)
                     (eql x #\Tab)
                     (eql x #\Page) ;; "form feed"
-                    (eql x #\Newline))
-         :exec (logbitp (char-code x) 4294972928))))
+                    (eql x #\Newline)
+                    (eql x (vertical-tab-char))
+                    (eql x (carriage-return-char)))
+         :exec (logbitp (char-code x) (whitespace-mask)))))
 
 (defchar not-whitespace
   (not (vl-whitespace-p x)))

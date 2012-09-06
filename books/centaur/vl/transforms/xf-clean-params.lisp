@@ -351,11 +351,15 @@ throughout the module list.</p>"
 
          ((unless useless-param-names)
           (mv x nil))
+         (- (cw "; Removing ~x0 unused parameters from ~s1: ~x2~%"
+                (len useless-param-names)
+                (vl-module->name x)
+                (mergesort useless-param-names)))
 
          (useless-param-pos (vl-positions-of-params useless-param-names paramdecls))
-
 ;         (- (cw "; ~s0: eliminate ~&1 ~x2.~%"
 ;                (vl-module->name x) useless-param-names useless-param-pos))
+
 
          (useless-struct    (make-vl-useless-params :positions useless-param-pos
                                                     :names useless-param-names))
