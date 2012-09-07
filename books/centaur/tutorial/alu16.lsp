@@ -296,6 +296,15 @@
 ;     http://eptcs.org/content.cgi?ACL22011
 
 
+; We have an inconvenient redefinition of UNSIGNED-BYTE-P, which this fixes for
+; the theorems below.
+(local (defthm unsigned-byte-p-re-redef
+         (equal (unsigned-byte-p bits x)
+                (AND (INTEGERP BITS)
+                     (<= 0 BITS)
+                     (INTEGER-RANGE-P 0 (EXPT 2 BITS) X)))
+         :hints(("Goal" :in-theory (enable unsigned-byte-p)))
+         :rule-classes :definition))
 
 ; Here is a proof that ALU16 adds correctly modulo 2^16 when it is given the
 ; PLUS opcode.  To illustrate a few things you need to be aware of, I have done
