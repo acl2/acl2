@@ -13,10 +13,12 @@
 <B>Table of Contents</B><BR>
 
 <UL>
-  <LI><A NAME="Shortcuts">Pre-built Binary Distributions:</A>
-    <i>None yet; these may appear later (perhaps for <A
-HREF="http://packages.qa.debian.org/a/acl2.html">Debian GNU Linux</A>,
-    MacPorts for Mac OS X, and/or Windows).</i>
+  <LI><A HREF="#Shortcuts">Pre-built Binary Distributions</A>
+  <UL>
+    <LI><A HREF="#Shortcut-debian">Debian GNU Linux</A>
+    <LI><A HREF="#Shortcut-MacPorts">MacPorts for Mac OS X</A>
+    <LI><A HREF="#Shortcut-windows">Windows</A>
+  </UL>
   <LI><A HREF="#Sources">Obtaining the Sources and Distributed Books</A>
   <LI><A HREF="#Create-Image">Creating or Obtaining an Executable Image</A>
   <UL>
@@ -30,7 +32,7 @@ HREF="http://packages.qa.debian.org/a/acl2.html">Debian GNU Linux</A>,
     <UL>
       <LI><A HREF="#Mac-OS-X-GCL">Special Case: Building an Executable Image on Mac OS X using GCL</A>
       <LI><A HREF="#Windows-GCL">Special Case: Building an Executable Image on a Windows System using GCL</A>
-      <LI><A HREF="#Windows-GCL-Jared">Instructions from Jared Davis for
+      <LI><A HREF="windows-gcl-jared.html">Older instructions from Jared Davis for
       building ACL2 on Windows using mingw</A>
     </UL>
   </UL>
@@ -63,6 +65,104 @@ with ACL2, typically called the "distributed books".  It is important
 that you obtain these books, which are distributed from the Google
 Code <a href="https://code.google.com/p/acl2-books/">acl2-books
 project website</a>; directions are included below.
+
+<BR><HR noshade size=8><BR>
+<H2><A NAME="Shortcuts">Pre-built Binary Distributions</A></H2>
+
+Visit the "Recent changes to this page" link on the <A
+HREF="http://www.cs.utexas.edu/users/moore/acl2/">ACL2 home page</A> to see if
+there are other shortcuts available.
+
+<UL>
+
+<LI><B><A NAME="Shortcut-debian">Debian GNU Linux</A></B>
+
+<p>
+
+A Debian Gnu Linux package is available, which is likely to work on
+other Linux systems as well.  Thanks to Camm Maguire for maintaining
+this package, and for pointing out that as Debian packages are simply
+ar and tar archives, they can be unpacked on any linux system, and who
+has said: "If someone is running Debian, all they want to do is
+'apt-get install acl2', doing likewise for any optional add-on package
+they wish as well, e.g. emacs, infix, etc."  Alternatively, Debian GNU
+Linux users may wish
+to <A HREF="http://packages.qa.debian.org/a/acl2.html">download the
+Debian package for Linux</A>.  Or, see following annotated log,
+provided by Camm Maguire, to see another way to proceed.
+
+<pre>
+     camm@localhost:~$ cd /tmp
+     camm@localhost:/tmp$ mkdir a
+     camm@localhost:/tmp$ cd a
+     camm@localhost:/tmp/a$ wget ftp://ftp.debian.org/debian/pool/main/a/acl2/acl2*5.0*_{i386,all}*b
+
+     ;;; or ftp, use browser, etc.  I.e. download the .deb files.  Replace
+     ;;; i386 above with amd64 if the target is a 64bit Ubuntu machine.
+     ;;; Other target names should be self explanatory.  The 'all'
+     ;;; designation refers to binary independent data. 
+
+     camm@localhost:/tmp/a$ ls
+     acl2_5.0-1_i386.deb	   acl2-books-certs_5.0-1_all.deb   acl2-doc_5.0-1_all.deb    acl2-infix_5.0-1_i386.deb        acl2-source_5.0-1_all.deb
+     acl2-books_5.0-1_i386.deb  acl2-books-source_5.0-1_all.deb  acl2-emacs_5.0-1_all.deb  acl2-infix-source_5.0-1_all.deb
+     camm@localhost:/tmp/a$ for i in *b; do ar x $i; tar zxf data.tar.gz; done
+
+     ;;; unpack files in current directory
+
+     camm@localhost:/tmp/a$ sed -e 's,usr,tmp/a/usr,g' usr/bin/acl2 &gt;tmp && chmod 755 tmp && mv tmp usr/bin/acl2
+
+     ;;; Edit shell script wrapper to refer to the local path
+
+     camm@localhost:/tmp/a$ usr/bin/acl2
+     GCL (GNU Common Lisp)  2.6.7 CLtL1    Aug 22 2012 15:25:31
+     Source License: LGPL(gcl,gmp), GPL(unexec,bfd,xgcl)
+     Binary License:  GPL due to GPL'ed components: (XGCL READLINE UNEXEC)
+     Modifications of this banner must retain notice of a compatible license
+     Dedicated to the memory of W. Schelter
+
+     Use (help) to get some basic information on how to use GCL.
+     Temporary directory for compiler files set to /tmp/
+
+      ACL2 Version 5.0 built August 25, 2012  11:53:08.
+      Copyright (C) 2012  University of Texas at Austin
+      ACL2 comes with ABSOLUTELY NO WARRANTY.  This is free software and you
+      are welcome to redistribute it under certain conditions.  For details,
+      see the GNU General Public License.
+
+      Initialized with (INITIALIZE-ACL2 'INCLUDE-BOOK *ACL2-PASS-2-FILES*).
+      See the documentation topic note-5-0 for recent changes.
+      Note: We have modified the prompt in some underlying Lisps to further
+      distinguish it from the ACL2 prompt.
+
+     ACL2 Version 5.0.  Level 1.  Cbd "/tmp/a/".
+     Distributed books directory "/tmp/a/usr/share/acl2-5.0/books/".
+     Type :help for help.
+     Type (good-bye) to quit completely out of ACL2.
+
+     ACL2 !&gt;
+</pre>
+
+<p>
+
+<LI><B><A NAME="Shortcut-MacPorts">MacPorts for Mac OS X</A></B>
+
+ACL2 versions have sometimes been made available under MacPorts.  If
+  we learn that an up-to-date version is available, we will add
+  instructions here.
+
+<p>
+
+<LI><B><A NAME="Shortcut-windows">Windows</A></B>
+
+<p>
+
+In the past, a Windows Installer for ACL2 has included a Unix
+environment, pre-certified standard and workshop books, and a copy of Gnu
+Emacs.  This capability has largely been superseded
+by <a href="#Build-Particular">the section on Building an Executable
+    Image on Some Particular Systems</a>.
+
+</UL>
 
 <BR><HR noshade size=8><BR>
 <H2><A NAME="Sources">Obtaining the Sources and Distributed Books</A></H2>
