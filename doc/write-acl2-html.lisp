@@ -366,7 +366,7 @@ an html file.  See :DOC markup")
   (pprogn
    (princ$ "<br><br><br><a href=\"" channel state)
    (princ$ html-file channel state)
-   (princ$ "\"><img src=\"llogo.gif\"></a>" channel state)
+   (princ$ "\"><img src=\"acl2-logo-62-41.gif\"></a>" channel state)
    (cond ((null index-file) ; then channel is to the index file
           state)
          (t (pprogn

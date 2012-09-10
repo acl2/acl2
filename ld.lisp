@@ -21276,7 +21276,7 @@
 <TABLE>
 <TR>
 <TD>
-<IMG SRC=\"logo.gif\" ALIGN=LEFT ALT=\"ACL2\">
+<IMG SRC=\"acl2-logo-200-134.gif\" ALIGN=LEFT ALT=\"ACL2\">
 </TD>
 <TD>
 <CENTER><H1>~s0</H1></CENTER>
