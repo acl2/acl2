@@ -83,6 +83,8 @@
 
 (include-book "defrstobj/defrstobj")
 
+(include-book "misc/smm")
+
 #||
 
 ;; This really doesn't belong here, but I want it out of cutil/top to improve
