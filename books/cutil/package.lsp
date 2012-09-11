@@ -100,6 +100,7 @@
 ; Stuff I moved into xdoc:
                xdoc::extract-keyword-from-args
                xdoc::throw-away-keyword-parts
+               undocumented
 
                ))
    ;; Things to remove:

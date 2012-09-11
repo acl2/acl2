@@ -42,11 +42,6 @@
 (local (include-book "data-structures/list-defthms" :dir :system))
 
 
-(defxdoc undocumented
-  :parents (vl)
-  :short "Placeholder for undocumented topics.")
-
-
 (defxdoc utilities
   :parents (vl)
   :short "Generic utilities that are unrelated to Verilog processing, but which

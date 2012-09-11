@@ -3253,7 +3253,7 @@ and @(see vl-paramdecl-p) objects, respectively.</p>"
   (:vl-noedge
    :vl-posedge
    :vl-negedge)
-  :parents (vl-evatom)
+  :parents (vl-evatom-p)
   :short "Type of an item in an event control list."
   :long "<p>Any particular atom in the event control list might have a
 <tt>posedge</tt>, <tt>negedge</tt>, or have no edge specifier at all, e.g., for
@@ -3358,8 +3358,8 @@ rid of repeateventcontrol.</p>")
 
 
 (defsection vl-delayoreventcontrol-p
-
-; BOZO document me
+  :parents (modules)
+  :short "BOZO document this."
 
   (defund vl-delayoreventcontrol-p (x)
     (declare (xargs :guard t))
@@ -3413,8 +3413,8 @@ rid of repeateventcontrol.</p>")
 
 
 (defsection vl-maybe-delayoreventcontrol-p
-
-;; BOZO document me
+  :parents (modules)
+  :short "BOZO document this."
 
   (defund vl-maybe-delayoreventcontrol-p (x)
     (declare (xargs :guard t))

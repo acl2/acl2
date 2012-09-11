@@ -149,6 +149,38 @@
   (mergesort (find-children-aux par x)))
 
 
+(defun gather-topic-names (x)
+  (if (atom x)
+      nil
+    (cons (cdr (assoc :name (car x)))
+          (gather-topic-names (cdr x)))))
+
+(defun find-orphaned-topics-1 (child parents names-fal acc)
+  ;; Returns an alist of (CHILD . MISSING-PARENT)
+  (cond ((atom parents)
+         acc)
+        ((hons-get (car parents) names-fal)
+         (find-orphaned-topics-1 child (cdr parents) names-fal acc))
+        (t
+         (find-orphaned-topics-1 child (cdr parents) names-fal
+                                 (cons (cons child (car parents))
+                                       acc)))))
+
+(defun find-orphaned-topics-main (x names-fal acc)
+  (b* (((when (atom x))
+        acc)
+       (child   (cdr (assoc :name (car x))))
+       (parents (cdr (assoc :parents (car x))))
+       (acc     (find-orphaned-topics-1 child parents names-fal acc)))
+    (find-orphaned-topics-main (cdr x) names-fal acc)))
+
+(defun find-orphaned-topics (x)
+  (b* ((names     (gather-topic-names x))
+       (names-fal (make-fast-alist (pairlis$ names nil)))
+       (orphans   (find-orphaned-topics-main x names-fal nil)))
+    (fast-alist-free names-fal)
+    orphans))
+
 
 
 (mutual-recursion
@@ -537,6 +569,10 @@
                       :mintime 1/2))
        (state  (time$ (save-hierarchy x dir index-pkg expand-level state)
                       :msg "; Saving hierarchical index: ~st sec, ~sa bytes~%"))
-       (state  (save-success-file (len x) dir state)))
+       (state  (save-success-file (len x) dir state))
+       (orphans (find-orphaned-topics x)))
+    (or (not orphans)
+        (cw "~|~%WARNING: found topics with non-existent parents:~%~x0~%These ~
+             topics may only show up in the index pages.~%~%" orphans))
     state))
 

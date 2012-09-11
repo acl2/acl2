@@ -763,8 +763,9 @@ about it, we might write something like this:</p>
 
 
 (defxdoc defsection-progn
-  :parents (cutil)
+  :parents (xdoc)
   :short "Fancy <tt>(progn ...)</tt> with a name and @(see xdoc) support."
+
   :long "<p>The <tt>defsection-progn</tt> macro is like @(see defsection)
 except that it generates a <tt>(progn ...)</tt> instead of an <tt>(encapsulate
 nil ...)</tt>.</p>
@@ -773,3 +774,7 @@ nil ...)</tt>.</p>
 <tt>local</tt> events within the section.  A <tt>defsection-progn</tt>
 basically does not introduce a new scope, whereas a <tt>defsection</tt>
 does.</p>")
+
+
+(defxdoc undocumented
+  :short "Placeholder for undocumented topics.")

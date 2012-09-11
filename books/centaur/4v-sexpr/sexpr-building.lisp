@@ -317,7 +317,7 @@ will not apply.</p>"
 
 
 (defsection 4vs-and
-  :parents (sexpr-construtors)
+  :parents (4vs-constructors)
   :short "@(call 4vs-and) constructs a 4v-sexpr equivalent to <tt>(and a b)</tt>."
 
   (defund 4vs-and (a b)
@@ -382,7 +382,7 @@ list <tt>x</tt>, producing a single sexpr representing their conjunction."
 
 
 (defsection 4vs-and-lists
-  :parents (sexpr-constructors)
+  :parents (4vs-constructors)
   :short "@(call 4vs-and-lists) pairwise ands together the sexprs from two
 separate lists, forming a new sexpr list."
 
@@ -513,7 +513,7 @@ list <tt>x</tt>, producing a single sexpr representing their disjunction."
 
 
 (defsection 4vs-or-lists
-  :parents (sexpr-constructors)
+  :parents (4vs-constructors)
   :short "@(call 4vs-or-lists) pairwise ors together the sexprs from two
 separate lists, forming a new sexpr list."
 
@@ -529,7 +529,7 @@ separate lists, forming a new sexpr list."
 
 
 (defsection 4vs-xor
-  :parents (sexpr-constructors)
+  :parents (4vs-constructors)
   :short "@(call 4vs-xor) constructs a sexpr representing <tt>(xor a
 b)</tt>."
 
@@ -558,7 +558,7 @@ b)</tt>."
                    (4v-sexpr-eval b env)))))
 
 (defsection 4vs-xor-lists
-  :parents (sexpr-constructors)
+  :parents (4vs-constructors)
   :short "@(call 4vs-xor-lists) pairwise xors together the sexprs from two
 separate lists, forming a new sexpr list."
 
@@ -574,7 +574,7 @@ separate lists, forming a new sexpr list."
 
 
 (defsection 4vs-iff
-  :parents (sexpr-constructors)
+  :parents (4vs-constructors)
   :short "@(call 4vs-iff) constructs a sexpr representing <tt>(iff a
 b)</tt>."
   :long "<p>To make this better agree with @(see sexpr-rewrite), I just
@@ -593,7 +593,7 @@ implement this as the not of the <tt>xor</tt>.</p>"
 
 
 (defsection 4vs-iff-lists
-  :parents (sexpr-constructors)
+  :parents (4vs-constructors)
   :short "@(call 4vs-iff-lists) pairwise iffs together the sexprs from the
 lists x and y, forming a new sexpr list."
 
@@ -609,7 +609,7 @@ lists x and y, forming a new sexpr list."
 
 
 (defsection 4vs-implies
-  :parents (sexpr-constructors)
+  :parents (4vs-constructors)
   :short "@(call 4vs-implies) constructs a new sexpr representing
 <tt>(implies a b)</tt>."
   :long "<p>This is just an abbreviation for <tt>(or (not a) b)</tt>, so we
@@ -621,7 +621,7 @@ leave it enabled.</p>"
 
 
 (defsection 4vs-implies-lists
-  :parents (sexpr-constructors)
+  :parents (4vs-constructors)
   :short "@(call 4vs-implies-lists) pairwise impliess together the sexprs
 from the lists x and y, forming a new sexpr list."
 

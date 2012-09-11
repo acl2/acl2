@@ -111,8 +111,8 @@ they are given fresh names.</p>")
   :long "<p>You'll generally want to do something like:</p>
 
 <code>
-   (pairlis$ (vl-netdecllist->names old-netdecls)
-             (vl-netdecllist->names renamed-netdecls))
+   (pairlis$ (vl-netdecllist-&gt;names old-netdecls)
+             (vl-netdecllist-&gt;names renamed-netdecls))
 </code>
 
 <p>And then use this as a substitution.</p>"

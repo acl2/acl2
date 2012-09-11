@@ -4509,7 +4509,7 @@ a @(see " type-s ")"))
                             '(warnings))))
 
     `(defsection ,name
-       :parents (size)
+       :parents (expression-sizing)
        :short ,short
        :long ,long
 

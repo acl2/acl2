@@ -65,7 +65,7 @@ during error reporting.</p>")
 
 
 (defsection *vl-fakeloc*
-  :parents (vl-location)
+  :parents (vl-location-p)
   :short "A \"fake\" @(see vl-location-p) which we use when generating our
 own @(see extended-characters) and module items."
 
@@ -76,7 +76,7 @@ own @(see extended-characters) and module items."
 
 
 (defsection vl-location-string
-  :parents (vl-location)
+  :parents (vl-location-p)
   :short "Convert an @(see vl-location-p) into a string."
   :long "<p>@(call vl-location-string) is often useful in generating warning
 or error messages.  It converts a @(see vl-location-p) object into a string
@@ -96,7 +96,7 @@ of the form <i>filename:line:col</i>.</p>"
 
 
 (defsection vl-location-between-p
-  :parents (vl-location)
+  :parents (vl-location-p)
   :short "@(call vl-location-between-p) is true exactly when <tt>x</tt> is in
 the same file as <tt>min</tt> and <tt>max</tt>, and inclusively falls between
 these bounds."

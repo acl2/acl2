@@ -24,29 +24,36 @@
 (include-book "../mlib/fmt")
 (local (include-book "../util/arithmetic"))
 
+(defsection oddexpr-check
+  :parents (checkers)
+  :short "Check for odd expressions that might indicate precedence problems."
 
-; Rough code for finding expressions that might have precedence problems.
-;
-; Consider the expression a & b < c.  Due to the Verilog precedence rules, this
-; gets parsed as a & (b < c).  Well, that might be quite surprising.  We try to
-; look for expressions like this and, unless the code contains explicit parens
-; around the (b < c) part, we issue a warning that it might not have the
-; expected precedence.
-;
-; This has found a few good bugs!
+  :long "<p>This is some rough code for finding expressions that might have
+precedence problems.</p>
+
+<p>Consider the expression <tt>a &amp; b &lt; c</tt>.  Due to the Verilog
+precedence rules, this gets parsed as <tt>a &amp; (b &lt; c)</tt>.  Well, that
+might be quite surprising.  We try to look for expressions like this and,
+unless the code contains explicit parens around the (b &lt; c) part, we issue a
+warning that it might not have the expected precedence.</p>
+
+<p>This has found a few good bugs!</p>")
+
 
 (defsection vl-expr-probable-selfsize
+  :parents (oddexpr-check)
+  :short "Heuristically estimate an expression's size."
 
-; This returns a size or nil for failure.  There's no reason to believe the
-; size it returns will be the eventual size of the expression because size
-; propagation hasn't been taken into account; in fact we may just fail and
-; return nil for a number of reasons (for instance the wire ranges may not be
-; resolved yet), there's no way to get the failure reason.
-;
-; On the other hand, I think it should be the case that the final size of the
-; expression will always be at least as much as this selfsize, if it returns a
-; non-nil value.  And we can use this before resolving ranges, etc., which
-; makes it useful for simple linting.
+  :long "<p>This returns a size or <tt>nil</tt> for failure.  There's no reason
+to believe the size it returns will be the eventual size of the expression
+because size propagation hasn't been taken into account; in fact we may just
+fail and return <tt>nil</tt> for a number of reasons (for instance the wire
+ranges may not be resolved yet), there's no way to get the failure reason.</p>
+
+<p>On the other hand, I think it should be the case that the final size of the
+expression will always be at least as much as this selfsize, if it returns a
+non-<tt>nil</tt> value.  And we can use this before resolving ranges, etc.,
+which makes it useful for simple linting.</p>"
 
   (defconst *fake-modelement*
     (make-vl-netdecl :name "Fake_Module_Element"
@@ -68,82 +75,93 @@
     :rule-classes :type-prescription))
 
 
-; -----------------------------------------------------------------------------
-;
-;                    Precedence-Error Prone Expressions
-;
-; -----------------------------------------------------------------------------
 
-(defun vl-odd-binop-class (x)
-  ;; Groups binary operators into classes
-  (declare (xargs :guard (vl-op-p x)))
-  (case x
-    ((:vl-binary-times :vl-binary-div :vl-binary-mod :vl-binary-power)
-     :mult-class)
-    ((:vl-binary-plus)
-     :plus-class)
-    ((:vl-binary-minus)
-     :minus-class)
-    ((:vl-binary-shl :vl-binary-shr :vl-binary-ashl :vl-binary-ashr)
-     :shift-class)
-    ((:vl-binary-lt :vl-binary-lte :vl-binary-gt :vl-binary-gte)
-     :rel-class)
-    ((:vl-binary-eq :vl-binary-neq)
-     :cmp-class)
-    ((:vl-binary-ceq :vl-binary-cne)
-     :ceq-class)
-    ((:vl-binary-bitand)
-     :bitand-class)
-    ((:vl-binary-xor :vl-binary-xnor)
-     :xor-class)
-    ((:vl-binary-bitor)
-     :bitor-class)
-    ((:vl-binary-logand)
-     :logand-class)
-    ((:vl-binary-logor)
-     :logor-class)
-    (otherwise
-     nil)))
+(defsection vl-odd-binop-class
+  :parents (oddexpr-check)
+  :short "Group binary operators into classes."
 
-(defconst *vl-odd-binops-table*
+  :long "<p>This lets us come up with a basic abstraction for an expression,
+where, e.g., we treat any kind of shift operation as equivalent, etc.</p>"
 
-; This is the main table that controls whether we warn about certain
-; combinations of binary operators.  If you want to NOT issue a warning about a
-; particular combination of operators, then just leave it out of the table.
-;
-; The keys in the table have the form (outer-op . inner-op).  Loosely speaking,
-; a key like
-;
-;    (:shift-class . :plus-class)
-;
-; matches expressions of the following forms:
-;
-;    1. (a + b) << c
-;    2. a << (b + c)
-;
-; Whereas a key like (:plus-class . :shift-class) would match expressions of
-; the following forms:
-;
-;    1. (a << b) + c
-;    2. a + (b << c)
-;
-; In other words, the inner-op is the "sub" operation, and the outer-op is the
-; "top" operation.
-;
-; Note that we never have keys where the outer-op has a higher precedence than
-; the inner operation, such as (:plus-class . :shift-class).  Why not?
-;
-; Because of the precedence rules, a << b + c gets parsed as a << (b + c).  In
-; other words, the only reason we'd ever get an expression that matches
-; (:plus-class . :shift-class) is that the user explicitly put in their own
-; parens around the shift operator.  If they've done that, then they are
-; explicitly saying what precedence they want, and there's no chance they are
-; going to be surprised by Verilog's precedence rules.  This same reasoning
-; holds for any combination of operators where the outer op is higher
-; precedence than the inner op.
+  (defun vl-odd-binop-class (x)
+    (declare (xargs :guard (vl-op-p x)))
+    (case x
+      ((:vl-binary-times :vl-binary-div :vl-binary-mod :vl-binary-power)
+       :mult-class)
+      ((:vl-binary-plus)
+       :plus-class)
+      ((:vl-binary-minus)
+       :minus-class)
+      ((:vl-binary-shl :vl-binary-shr :vl-binary-ashl :vl-binary-ashr)
+       :shift-class)
+      ((:vl-binary-lt :vl-binary-lte :vl-binary-gt :vl-binary-gte)
+       :rel-class)
+      ((:vl-binary-eq :vl-binary-neq)
+       :cmp-class)
+      ((:vl-binary-ceq :vl-binary-cne)
+       :ceq-class)
+      ((:vl-binary-bitand)
+       :bitand-class)
+      ((:vl-binary-xor :vl-binary-xnor)
+       :xor-class)
+      ((:vl-binary-bitor)
+       :bitor-class)
+      ((:vl-binary-logand)
+       :logand-class)
+      ((:vl-binary-logor)
+       :logor-class)
+      (otherwise
+       nil))))
 
+(defsection *vl-odd-binops-table*
+  :parents (oddexpr-check)
+  :short "The actual intelligence behidn the oddexpr check."
 
-  '(
+  :long "<p>This is the main table that controls whether we warn about certain
+combinations of binary operators.  If you want to NOT issue a warning about a
+particular combination of operators, then just leave it out of the table.</p>
+
+<p>The keys in the table have the form (outer-class . inner-class).  For
+details about these classes see @(see vl-odd-binop-class).  Loosely speaking, a
+key like <tt>(:shift-class . :plus-class)</tt> matches expressions of the
+following forms:</p>
+
+<ol>
+<li>(a + b) &lt;&lt; c</li>
+<li>a &lt;&lt; (b + c)</li>
+</ol>
+
+<p>Whereas a key like (:plus-class . :shift-class) would match expressions of
+the following forms:</p>
+
+<ol>
+<li>(a &lt;&lt; b) + c</li>
+<li>a + (b &lt;&lt; c)</li>
+</ol>
+
+<p>In other words, the inner-op is the \"sub\" operation, and the outer-op is the
+\"top\" operation.</p>
+
+<p>Note that we never have keys where the outer-op has a higher precedence than
+the inner operation, such as <tt>(:plus-class . :shift-class)</tt>.  Why not?</p>
+
+<p>Because of the precedence rules, <tt>a &lt;&lt; b + c</tt> gets parsed as
+<tt>a &lt;&lt; (b + c)</tt>.  In other words, the only reason we'd ever get an
+expression that matches <tt>(:plus-class . :shift-class)</tt> is that the user
+explicitly put in their own parens around the shift operator.  If they've done
+that, then they are explicitly saying what precedence they want, and there's no
+chance they are going to be surprised by Verilog's precedence rules.  This same
+reasoning holds for any combination of operators where the outer op is higher
+precedence than the inner op.</p>
+
+<p><b>NOTE</b> see the source code for this table for additional comments
+giving motivation for these actions, etc.</p>
+
+@(def *vl-odd-binops-table*)"
+
+  (defconst *vl-odd-binops-table*
+
+    '(
 
 ; PLUS OPERATOR.
 ;
@@ -161,13 +179,13 @@
 ;   a + b || c    |  (a + b) || c     yes         --               warn
 ; ----------------+----------------------------------------------------------------------------------------------------
 
-    ;; (outer-op     .  inner-op)    .   action
-    ((:shift-class   . :plus-class)  .   :check-precedence)
-    ((:bitand-class  . :plus-class)  .   :check-precedence)
-    ((:xor-class     . :plus-class)  .   :check-precedence)
-    ((:bitor-class   . :plus-class)  .   :check-precedence)
-    ((:logand-class  . :plus-class)  .   :check-type)
-    ((:logor-class   . :plus-class)  .   :check-type)
+      ;; (outer-op     .  inner-op)    .   action
+      ((:shift-class   . :plus-class)  .   :check-precedence)
+      ((:bitand-class  . :plus-class)  .   :check-precedence)
+      ((:xor-class     . :plus-class)  .   :check-precedence)
+      ((:bitor-class   . :plus-class)  .   :check-precedence)
+      ((:logand-class  . :plus-class)  .   :check-type)
+      ((:logor-class   . :plus-class)  .   :check-type)
 
 
 
@@ -180,7 +198,7 @@
 ; In this case, the outer-op is + and the inner-op is minus.
 ; We use a special action to cover this one odd case.
 
-    ((:plus-class . :minus-class) . :check-precedence-plusminus)
+      ((:plus-class . :minus-class) . :check-precedence-plusminus)
 
 
 ; MINUS OPERATOR.
@@ -199,14 +217,14 @@
 ;   a - b || c    |  (a - b) || c     yes         --               warn
 ; ----------------+----------------------------------------------------------------------------------------------------
 
-    ;; (outer-op     .  inner-op)    .   action
-    ((:minus-class   . :minus-class)  . :check-precedence)
-    ((:shift-class   . :minus-class)  . :check-precedence)
-    ((:bitand-class  . :minus-class)  . :check-precedence)
-    ((:xor-class     . :minus-class)  . :check-precedence)
-    ((:bitor-class   . :minus-class)  . :check-precedence)
-    ((:logand-class  . :minus-class)  . :check-type)
-    ((:logor-class   . :minus-class)  . :check-type)
+      ;; (outer-op     .  inner-op)    .   action
+      ((:minus-class   . :minus-class)  . :check-precedence)
+      ((:shift-class   . :minus-class)  . :check-precedence)
+      ((:bitand-class  . :minus-class)  . :check-precedence)
+      ((:xor-class     . :minus-class)  . :check-precedence)
+      ((:bitor-class   . :minus-class)  . :check-precedence)
+      ((:logand-class  . :minus-class)  . :check-type)
+      ((:logor-class   . :minus-class)  . :check-type)
 
 
 ; SHIFT OPERATORS. (<< >> <<< >>>)
@@ -225,13 +243,13 @@
 ;   a << b || c   |  (a << b) || c    yes         --               warn
 ; ----------------+----------------------------------------------------------------------------------
 
-    ;; (outer-op     . inner-op)      . action
-    ((:shift-class   . :shift-class)  . :check-precedence)
-    ((:bitand-class  . :shift-class)  . :check-precedence)
-    ((:xor-class     . :shift-class)  . :check-precedence)
-    ((:bitor-class   . :shift-class)  . :check-precedence)
-    ((:logand-class  . :shift-class)  . :check-type)
-    ((:logor-class   . :shift-class)  . :check-type)
+      ;; (outer-op     . inner-op)      . action
+      ((:shift-class   . :shift-class)  . :check-precedence)
+      ((:bitand-class  . :shift-class)  . :check-precedence)
+      ((:xor-class     . :shift-class)  . :check-precedence)
+      ((:bitor-class   . :shift-class)  . :check-precedence)
+      ((:logand-class  . :shift-class)  . :check-type)
+      ((:logor-class   . :shift-class)  . :check-type)
 
 
 ; RELATIONAL OPERATORS. (< <= > >=)
@@ -250,12 +268,12 @@
 ;   a < b || c    |  (a < b) || c     no          no
 ; ----------------+----------------------------------------------------------------------------------
 
-    ;; (outer-op     .  inner-op)    . action
-    ((:rel-class     . :rel-class)   . :check-type)
-    ((:cmp-class     . :rel-class)   . :check-type)
-    ((:bitand-class  . :rel-class)   . :check-type-unless-topargs-boolean)  ; permit (a < b) & c when c seems boolean
-    ((:xor-class     . :rel-class)   . :check-type)
-    ((:bitor-class   . :rel-class)   . :check-type-unless-topargs-boolean)  ; permit (a < b) | c when c seems boolean
+      ;; (outer-op     .  inner-op)    . action
+      ((:rel-class     . :rel-class)   . :check-type)
+      ((:cmp-class     . :rel-class)   . :check-type)
+      ((:bitand-class  . :rel-class)   . :check-type-unless-topargs-boolean) ; permit (a < b) & c when c seems boolean
+      ((:xor-class     . :rel-class)   . :check-type)
+      ((:bitor-class   . :rel-class)   . :check-type-unless-topargs-boolean) ; permit (a < b) | c when c seems boolean
 
 
 ; COMPARISON OPERATORS. (== !=)
@@ -274,11 +292,11 @@
 ;   a == b || c   |  (a == b) || c    no          no
 ; ----------------+----------------------------------------------------------------------------------
 
-    ;; (outer-op    .  inner-op)      . action
-    ((:cmp-class    .  :cmp-class)    . :check-type)
-    ((:bitand-class .  :cmp-class)    . :check-type-unless-topargs-boolean)  ; permit (a == b) & c when c seems boolean
-    ((:xor-class    .  :cmp-class)    . :check-type)
-    ((:bitor-class  .  :cmp-class)    . :check-type-unless-topargs-boolean)  ; permit (a == b) | c when c seems boolean
+      ;; (outer-op    .  inner-op)      . action
+      ((:cmp-class    .  :cmp-class)    . :check-type)
+      ((:bitand-class .  :cmp-class)    . :check-type-unless-topargs-boolean) ; permit (a == b) & c when c seems boolean
+      ((:xor-class    .  :cmp-class)    . :check-type)
+      ((:bitor-class  .  :cmp-class)    . :check-type-unless-topargs-boolean) ; permit (a == b) | c when c seems boolean
 
 
 ; BITWISE AND. (&)
@@ -297,10 +315,10 @@
 ;   a & b || c    |  (a & b) || c     yes         --               warn
 ; ----------------+----------------------------------------------------------------------------------
 
-    ;; (outer-op    .  inner-op)      . action
-    ((:xor-class    .  :bitand-class) . :check-precedence)   ; maybe too frequent
-    ((:logand-class .  :bitand-class) . :check-type-unless-topargs-boolean) ; permit a && (b & c) when args are one bit
-    ((:logor-class  .  :bitand-class) . :check-type-unless-topargs-boolean) ; permit a || (b & c) when args are one bit
+      ;; (outer-op    .  inner-op)      . action
+      ((:xor-class    .  :bitand-class) . :check-precedence) ; maybe too frequent
+      ((:logand-class .  :bitand-class) . :check-type-unless-topargs-boolean) ; permit a && (b & c) when args are one bit
+      ((:logor-class  .  :bitand-class) . :check-type-unless-topargs-boolean) ; permit a || (b & c) when args are one bit
 
 
 
@@ -320,9 +338,9 @@
 ;   a ^ b || c    |  (a ^ b) || c     yes         --
 ; ----------------+----------------------------------------------------------------------------------
 
-    ;; (outer-op    .  inner-op)      . action
-    ((:logand-class .  :xor-class)    . :check-type)
-    ((:logor-class  .  :xor-class)    . :check-type)
+      ;; (outer-op    .  inner-op)      . action
+      ((:logand-class .  :xor-class)    . :check-type)
+      ((:logor-class  .  :xor-class)    . :check-type)
 
 
 ; BITWISE OR. (|)
@@ -341,9 +359,9 @@
 ;   a | b || c    |  (a | b) || c     yes         --
 ; ----------------+----------------------------------------------------------------------------------
 
-    ;; (outer-op    .  inner-op)      . action
-    ((:logand-class .  :bitor-class)  . :check-type-unless-topargs-boolean) ; permit a && (b | c) when args are one bit
-    ((:logor-class  .  :bitor-class)  . :check-type-unless-topargs-boolean) ; permit a || (b | c) when args are one bit
+      ;; (outer-op    .  inner-op)      . action
+      ((:logand-class .  :bitor-class)  . :check-type-unless-topargs-boolean) ; permit a && (b | c) when args are one bit
+      ((:logor-class  .  :bitor-class)  . :check-type-unless-topargs-boolean) ; permit a || (b | c) when args are one bit
 
 
 ; LOGICAL AND (&&)
@@ -362,7 +380,7 @@
 ;   a && b || c   |  (a && b) || c    no         maybe?
 ; ----------------+----------------------------------------------------------------------------------
 
-    ((:logor-class . :logand-class) . :check-precedence)
+      ((:logor-class . :logand-class) . :check-precedence)
 
 ; LOGICAL OR (||)
 ;
@@ -380,127 +398,134 @@
 ;   a || b || c   |  (a || b) || c    no          no
 ; ----------------+----------------------------------------------------------------------------------
 
-    ))
+      )))
 
 
+(defsection vl-warn-odd-binary-expression-main
+  :parents (oddexpr-check)
+  :short "Check the top-level of a binary expression for precedence problems."
 
+  :long "<p>Note that any particular binary expression, say <tt>P OP Q</tt>,
+might have sub-structure in either the P argument or in the Q argument.  To
+deal with this, in @(see vl-warn-odd-binary-expression), we call this function
+twice:</p>
 
-; Note.  Any particular binary expression, say P OP Q, might have sub-structure in
-; either the P argument or in the Q argument.  To deal with this, we call this
-; function twice: first with (OP P Q) and FLIPPED=NIL, then with (OP Q P) and
-; FLIPPED=T.
-;
-; The first argument, A, we regard as the "simple" argument; we don't try to
-; decompose it any more.  However, we try to match X against B OP2 C.  Then, we
-; see if we think the sequence A op (B op2 C) seems reasonable.
+<ul>
+ <li>First with <tt>(OP P Q)</tt> and <tt>FLIPPED=NIL</tt>,</li>
+ <li>Then with <tt>(OP Q P)</tt> and <tt>FLIPPED=T</tt>.</li>
+</ul>
 
-(defund vl-warn-odd-binary-expression-main (op1 a x flipped mod ialist)
-  (declare (xargs :guard (and (vl-op-p op1)
-                              (vl-expr-p a)
-                              (vl-expr-p x)
-                              (booleanp flipped)
-                              (vl-module-p mod)
-                              (equal ialist (vl-moditem-alist mod)))
-                  :guard-debug t)
-           (ignorable a flipped))
-  (b* (((when (or (vl-fast-atom-p x)
-                  (not (eql (vl-op-arity (vl-nonatom->op x)) 2))))
-        nil)
-       (op2        (vl-nonatom->op x))
-       (op1-class  (vl-odd-binop-class op1))
-       (op2-class  (vl-odd-binop-class op2))
-       (key        (cons op1-class op2-class))
-       (look       (assoc-equal key *vl-odd-binops-table*))
-       ((unless look)
-        nil))
-    (case (cdr look)
-      ((:check-precedence)
-       ;; We've run into something like a + b << c which parses in a way that
-       ;; might sometimes be surprising, viz. (a + b) << c.  We want to check
-       ;; whether there are explicit parens around the sub-op (op2).  If so,
-       ;; this seems to be what the user wants; else issue a warning.
-       (if (assoc-equal "VL_EXPLICIT_PARENS" (vl-nonatom->atts x))
-           nil
-         :check-precedence))
+<p>The first argument, A, we regard as the \"simple\" argument; we don't try to
+decompose it any more.  However, we try to match X against <tt>B OP2 C</tt>.
+Then, we see if we think the sequence <tt>A op (B op2 C)</tt> seems
+reasonable.</p>"
 
-      (:check-type
-       ;; Hrmn.  Well, even in the case of type errors, parens seem to be pretty
-       ;; indicative that the designer wants to do something weird.
-       (if (assoc-equal "VL_EXPLICIT_PARENS" (vl-nonatom->atts x))
-           nil
-         :check-type))
+  (defund vl-warn-odd-binary-expression-main (op1 a x flipped mod ialist)
+    (declare (xargs :guard (and (vl-op-p op1)
+                                (vl-expr-p a)
+                                (vl-expr-p x)
+                                (booleanp flipped)
+                                (vl-module-p mod)
+                                (equal ialist (vl-moditem-alist mod)))
+                    :guard-debug t)
+             (ignorable a flipped))
+    (b* (((when (or (vl-fast-atom-p x)
+                    (not (eql (vl-op-arity (vl-nonatom->op x)) 2))))
+          nil)
+         (op2        (vl-nonatom->op x))
+         (op1-class  (vl-odd-binop-class op1))
+         (op2-class  (vl-odd-binop-class op2))
+         (key        (cons op1-class op2-class))
+         (look       (assoc-equal key *vl-odd-binops-table*))
+         ((unless look)
+          nil))
+      (case (cdr look)
+        ((:check-precedence)
+         ;; We've run into something like a + b << c which parses in a way that
+         ;; might sometimes be surprising, viz. (a + b) << c.  We want to check
+         ;; whether there are explicit parens around the sub-op (op2).  If so,
+         ;; this seems to be what the user wants; else issue a warning.
+         (if (assoc-equal "VL_EXPLICIT_PARENS" (vl-nonatom->atts x))
+             nil
+           :check-precedence))
 
-      (:check-type-unless-topargs-boolean
-       (b* (((when (assoc-equal "VL_EXPLICIT_PARENS" (vl-nonatom->atts x)))
-             nil)
-            (asize (vl-expr-probable-selfsize a mod ialist))
-            (xsize (vl-expr-probable-selfsize x mod ialist))
-            ((when (and (or (not asize) (eql asize 1))
-                        (or (not xsize) (eql xsize 1))))
-             ;; Skip it since args are boolean or there was some error determining
-             ;; their sizes.
-             nil))
-         :check-type))
+        (:check-type
+         ;; Hrmn.  Well, even in the case of type errors, parens seem to be pretty
+         ;; indicative that the designer wants to do something weird.
+         (if (assoc-equal "VL_EXPLICIT_PARENS" (vl-nonatom->atts x))
+             nil
+           :check-type))
 
-      ((:check-precedence-plusminus)
-       ;; Special case for plus of minus.  We want to warn about (a - b) + c without
-       ;; explicit parens.  We know OP1 is + and OP2 is -.
-       ;;
-       ;; If FLIPPED=NIL, the expression we found was A + (B - C).  We know there must
-       ;; be explicit parens or it wouldn't have gotten parsed this way, so there's
-       ;; nothing to do.
-       ;;
-       ;; If FLIPPED=T, the expression we found was (B - C) + A.  This is the case we
-       ;; want to warn about, unless there were explicit parens around (B - C).
-       (if (and flipped
-                (not (assoc-equal "VL_EXPLICIT_PARENS" (vl-nonatom->atts x))))
-           :check-precedence
-         nil))
+        (:check-type-unless-topargs-boolean
+         (b* (((when (assoc-equal "VL_EXPLICIT_PARENS" (vl-nonatom->atts x)))
+               nil)
+              (asize (vl-expr-probable-selfsize a mod ialist))
+              (xsize (vl-expr-probable-selfsize x mod ialist))
+              ((when (and (or (not asize) (eql asize 1))
+                          (or (not xsize) (eql xsize 1))))
+               ;; Skip it since args are boolean or there was some error determining
+               ;; their sizes.
+               nil))
+           :check-type))
 
-      (nil
-       nil)
+        ((:check-precedence-plusminus)
+         ;; Special case for plus of minus.  We want to warn about (a - b) + c without
+         ;; explicit parens.  We know OP1 is + and OP2 is -.
+         ;;
+         ;; If FLIPPED=NIL, the expression we found was A + (B - C).  We know there must
+         ;; be explicit parens or it wouldn't have gotten parsed this way, so there's
+         ;; nothing to do.
+         ;;
+         ;; If FLIPPED=T, the expression we found was (B - C) + A.  This is the case we
+         ;; want to warn about, unless there were explicit parens around (B - C).
+         (if (and flipped
+                  (not (assoc-equal "VL_EXPLICIT_PARENS" (vl-nonatom->atts x))))
+             :check-precedence
+           nil))
 
-      (otherwise
-       (er hard? 'vl-warn-odd-binary-expression-main
-           "Unexpected action type ~x0.~%" (cdr look))))))
-
-
-
-
-
-
-
-
-(mutual-recursion
-
- (defun vl-warn-odd-binary-expression (x mod ialist)
-   (declare (xargs :guard (and (vl-expr-p x)
-                               (vl-module-p mod)
-                               (equal ialist (vl-moditem-alist mod)))
-                   :measure (vl-expr-count x)))
-   (b* (((when (vl-fast-atom-p x))
+        (nil
          nil)
-        (op    (vl-nonatom->op x))
-        (arity (vl-op-arity op))
-        (args  (vl-nonatom->args x))
-        ((unless (eql arity 2))
-         (vl-warn-odd-binary-expression-list args mod ialist))
-        ((list a b) args)
-        (msg1 (vl-warn-odd-binary-expression-main op a b nil mod ialist))
-        (msg2 (vl-warn-odd-binary-expression-main op b a t   mod ialist)))
-     (append (if msg1 (list (cons msg1 x)) nil)
-             (if msg2 (list (cons msg2 x)) nil)
-             (vl-warn-odd-binary-expression-list args mod ialist))))
 
- (defun vl-warn-odd-binary-expression-list (x mod ialist)
-   (declare (xargs :guard (and (vl-exprlist-p x)
-                               (vl-module-p mod)
-                               (equal ialist (vl-moditem-alist mod)))
-                   :measure (vl-exprlist-count x)))
-   (if (atom x)
-       nil
-     (append (vl-warn-odd-binary-expression (car x) mod ialist)
-             (vl-warn-odd-binary-expression-list (cdr x) mod ialist)))))
+        (otherwise
+         (er hard? 'vl-warn-odd-binary-expression-main
+             "Unexpected action type ~x0.~%" (cdr look)))))))
+
+
+
+(defsection vl-warn-odd-binary-expression
+  :parents (oddexpr-check)
+  :short "Recursively check through an expression for precedence problems."
+
+  (mutual-recursion
+
+   (defun vl-warn-odd-binary-expression (x mod ialist)
+     (declare (xargs :guard (and (vl-expr-p x)
+                                 (vl-module-p mod)
+                                 (equal ialist (vl-moditem-alist mod)))
+                     :measure (vl-expr-count x)))
+     (b* (((when (vl-fast-atom-p x))
+           nil)
+          (op    (vl-nonatom->op x))
+          (arity (vl-op-arity op))
+          (args  (vl-nonatom->args x))
+          ((unless (eql arity 2))
+           (vl-warn-odd-binary-expression-list args mod ialist))
+          ((list a b) args)
+          (msg1 (vl-warn-odd-binary-expression-main op a b nil mod ialist))
+          (msg2 (vl-warn-odd-binary-expression-main op b a t   mod ialist)))
+       (append (if msg1 (list (cons msg1 x)) nil)
+               (if msg2 (list (cons msg2 x)) nil)
+               (vl-warn-odd-binary-expression-list args mod ialist))))
+
+   (defun vl-warn-odd-binary-expression-list (x mod ialist)
+     (declare (xargs :guard (and (vl-exprlist-p x)
+                                 (vl-module-p mod)
+                                 (equal ialist (vl-moditem-alist mod)))
+                     :measure (vl-exprlist-count x)))
+     (if (atom x)
+         nil
+       (append (vl-warn-odd-binary-expression (car x) mod ialist)
+               (vl-warn-odd-binary-expression-list (cdr x) mod ialist))))))
 
 
 
@@ -587,6 +612,7 @@
 
 
 (defsection vl-oddexpr-check
+  :parents (oddexpr-check)
 
   (defpp vl-pp-oddexpr-details (x)
     :body
@@ -629,6 +655,7 @@
 
 
 (defsection vl-exprctxalist-oddexpr-check
+  :parents (oddexpr-check)
 
   (defund vl-exprctxalist-oddexpr-check (x mod ialist)
     (declare (xargs :guard (and (vl-exprctxalist-p x)

@@ -24,7 +24,7 @@
 
 
 (defxdoc gateredux
-  :parents (transform)
+  :parents (transforms)
   :short "Eliminate gates like <tt>bufif0</tt>, <tt>nmos</tt>, etc."
   :long "<p>We implement a module rewrite which eliminates \"complicated\"
  gates, namely</p>

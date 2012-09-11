@@ -37,7 +37,10 @@
   (set-difference-equal
    (union-eq '(defsection
                defxdoc
+               definline
+               definlined
                lexorder
+               lnfix
                <<
                <<-irreflexive
                <<-transitive

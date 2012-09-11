@@ -80,6 +80,7 @@
       unsigned-byte-p
       cwtime
       defxdoc
+      undocumented
       progn$
 
       make-fal
