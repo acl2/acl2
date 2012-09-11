@@ -352,14 +352,15 @@ can tolerate non-bit digits after the number.</p>"
   :short "Interpret a string as a decimal number."
   :long "<p>@(call strval) tries to interpret a string as a base-10 natural
 number.  For example, <tt>(strval \"35\")</tt> is 35.  If the string has any
-non-decimal digit characters, we return <tt>nil</tt>.</p>"
+non-decimal digit characters or is empty, we return <tt>nil</tt>.</p>"
 
   (definlined strval (x)
     (declare (type string x))
     (b* ((xl (length x))
          ((mv val len)
           (str::parse-nat-from-string x 0 0 0 xl)))
-      (and (= len xl)
+      (and (< 0 len)
+           (= len xl)
            val)))
 
   (defthm type-of-strval
@@ -373,12 +374,13 @@ non-decimal digit characters, we return <tt>nil</tt>.</p>"
   :short "Interpret a string as an octal number."
   :long "<p>@(call strval8) is like @(see strval) but for octal instead of
 decimal numbers.  For example, <tt>(strval8 \"10\")</tt> is 8.  If the string
-has any non-octal digit characters, we return <tt>nil</tt>.</p>"
+is empty or has any non-octal digit characters, we return <tt>nil</tt>.</p>"
 
   (definlined strval8 (x)
     (declare (type string x))
     (let ((chars (coerce x 'list)))
-      (and (octal-digit-listp chars)
+      (and (consp chars)
+           (octal-digit-listp chars)
            (octal-digit-list-value chars))))
 
   (defthm type-of-strval8
@@ -392,12 +394,14 @@ has any non-octal digit characters, we return <tt>nil</tt>.</p>"
   :short "Interpret a string as a hexadecimal number."
   :long "<p>@(call strval16) is like @(see strval) but for hexadecimal instead
 of decimal numbers.  For example, <tt>(strval16 \"10\")</tt> is 16.  If the
-string has any non-hex digit characters, we return <tt>nil</tt>.</p>"
+string is empty or has any non-hex digit characters, we return
+<tt>nil</tt>.</p>"
 
   (definlined strval16 (x)
     (declare (type string x))
     (let ((chars (coerce x 'list)))
-      (and (hex-digit-listp chars)
+      (and (consp chars)
+           (hex-digit-listp chars)
            (hex-digit-list-value chars))))
 
   (defthm type-of-strval16
@@ -409,14 +413,15 @@ string has any non-hex digit characters, we return <tt>nil</tt>.</p>"
 (defsection strval2
   :parents (numbers)
   :short "Interpret a string as a binary number."
-  :long "<p>@(call strval2) is like @(see strval) but for binary instead
-of decimal numbers.  For example, <tt>(strval16 \"10\")</tt> is 2.  If the
-string has any non-binary digit characters, we return <tt>nil</tt>.</p>"
+  :long "<p>@(call strval2) is like @(see strval) but for binary instead of
+decimal numbers.  For example, <tt>(strval16 \"10\")</tt> is 2.  If the string
+is empty or has any non-binary digit characters, we return <tt>nil</tt>.</p>"
 
   (definlined strval2 (x)
     (declare (type string x))
     (let ((chars (coerce x 'list)))
-      (and (bit-digit-listp chars)
+      (and (consp chars)
+           (bit-digit-listp chars)
            (bit-digit-list-value chars))))
 
   (defthm type-of-strval2
@@ -426,3 +431,17 @@ string has any non-binary digit characters, we return <tt>nil</tt>.</p>"
     :hints(("Goal" :in-theory (enable strval2)))))
 
 
+(local (assert! (equal (strval "") nil)))
+(local (assert! (equal (strval2 "") nil)))
+(local (assert! (equal (strval8 "") nil)))
+(local (assert! (equal (strval16 "") nil)))
+
+(local (assert! (equal (strval "0") 0)))
+(local (assert! (equal (strval2 "0") 0)))
+(local (assert! (equal (strval8 "0") 0)))
+(local (assert! (equal (strval16 "0") 0)))
+
+(local (assert! (equal (strval "1234") 1234)))
+(local (assert! (equal (strval2 "0101") #b0101)))
+(local (assert! (equal (strval8 "1234") #o1234)))
+(local (assert! (equal (strval16 "1234") #x1234)))
