@@ -99,6 +99,26 @@
 
 ; TO DO:
 
+; - Improve documentation, e.g., clarifying that (and how) proof-supporters
+;   tracking and summaries aren't perfect (for example, ignoring
+;   verify-guards).
+
+; - (ACL2 sources change) Save the proof-supporters-alist produced by
+;   certify-book, so that we can run dead-events after certify-book.
+
+; - Save info in proof-supporters-alist for events without names whose
+;   admissibility depends on proofs, such as verify-guards.
+
+; - Consider extending the notion of ancestors to include the function
+;   symbols from the 'classes property.  To see that property try this, for
+;   example:
+;     (defthm foo (equal x x)
+;       :rule-classes ((:rewrite :corollary (equal (car (cons 3 b)) 3))))
+;     :props foo
+;   By the way, notice that source function immediate-canonical-ancestors
+;   considers the guard of the canonical function but, sadly I think, not the
+;   guard of its siblings.
+
 ; - Generalize notion of "syntactic supporter"; see the WARNING in
 ;   immediate-syntactic-supporters-lst.
 
