@@ -47,10 +47,10 @@
 ; General specification:
 
 ; The macro (dead-events lst) is defined near the end of this book, where lst
-; should evaluate to a list of event names, and the result is a list of event
-; names for dead code and dead theorems: names of function and theorems that do
-; not support the proof of any event in lst, even though they are admitted
-; before some event in lst.
+; should evaluate to a non-empty list of event names, and the result is a list
+; of event names for dead code and dead theorems: names of function and
+; theorems that do not support the proof of any event in lst, even though they
+; are admitted before some event in lst.
 
 ; By default, or if keyword :syntaxp t is provided, "support the proof of event
 ; E" is interpreted broadly: it includes not only the names of rules and hinted
@@ -245,7 +245,7 @@
         (t (let ((n (absolute-event-number (car names) wrld nil)))
              (cond
               ((aref1 *live-names-ar-name* live-names-ar n)
-               (make-live-names-ar-nil (cdr names) supp-ar live-names-ar wrld))
+               (make-live-names-ar-t (cdr names) supp-ar live-names-ar wrld))
               (t (let ((live-names-ar
                         (aset1 *live-names-ar-name* live-names-ar n t))
                        (supps (aref1 *supp-ar-name* supp-ar n))
@@ -351,6 +351,14 @@
 (defun dead-events-fn (names syntaxp start redef-ok wrld)
   (let ((ctx 'dead-events))
     (cond
+     ((null names)
+      (er hard ctx
+          "At least one name must be supplied to DEAD-EVENTS."))
+     ((not (symbol-listp names))
+      (er hard ctx
+          "The argument of DEAD-EVENTS must evaluate to a true list of ~
+           symbols, but instead it evaluates to ~x0."
+          names))
      ((and (not redef-ok)
            (global-val 'redef-seen wrld))
       (er hard ctx
