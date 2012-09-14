@@ -19439,6 +19439,18 @@
 
   ~st[CHANGES TO EXISTING FEATURES]
 
+  Function ~ilc[fmt-to-string] and similar functions (~pl[printing-to-strings])
+  now use the default right margin settings; formerly the right margin had been
+  set at 10,000.  If you want the former behavior, you can use the
+  ~c[:fmt-control-alist], as illustrated below.
+  ~bv[]
+  (fmt-to-string \"~~x0\"
+                 (list (cons #\\0 (make-list 30)))
+                 :fmt-control-alist
+                 `((fmt-soft-right-margin . 10000)
+                   (fmt-hard-right-margin . 10000)))
+  ~ev[]
+
   ~st[NEW FEATURES]
 
   ~st[HEURISTIC IMPROVEMENTS]

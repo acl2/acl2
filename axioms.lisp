@@ -27432,6 +27432,9 @@
                val)))
     val))
 
+(defconst *fmt-soft-right-margin-default* 65)
+(defconst *fmt-hard-right-margin-default* 77)
+
 (defconst *initial-global-table*
 
 ; Warning: Keep this list in alphabetic order as per ordered-symbol-alistp.  It
@@ -27528,8 +27531,8 @@
     (doc-fmt-alist . nil)
     (evisc-hitp-without-iprint . nil)
     (eviscerate-hide-terms . nil)
-    (fmt-hard-right-margin . 77)
-    (fmt-soft-right-margin . 65) ; same as proof-tree-buffer-width
+    (fmt-hard-right-margin . ,*fmt-hard-right-margin-default*)
+    (fmt-soft-right-margin . ,*fmt-soft-right-margin-default*)
     (gag-mode . nil) ; set in lp
     (gag-mode-evisc-tuple . nil)
     (gag-state . nil)
@@ -27598,7 +27601,7 @@
     (prompt-function . default-print-prompt)
     (prompt-memo . nil)
     (proof-tree . nil)
-    (proof-tree-buffer-width . 65) ; same as fmt-soft-right-margin
+    (proof-tree-buffer-width . ,*fmt-soft-right-margin-default*)
     (proof-tree-ctx . nil)
     (proof-tree-indent . "|  ")
     (proof-tree-start-printed . nil)
@@ -46598,7 +46601,8 @@ Lisp definition."
   ACL2 users are generally advised to avoid breaking into raw Lisp.  Advanced
   users may, on occasion, see the need to do so.  Evaluating ~c[(break$)] will
   have that effect.  (Exception: ~c[break$] is disabled after evaluation of
-  ~c[(set-debugger-enable :never)]; ~pl[set-debugger-enable].)~/~/
+  ~c[(set-debugger-enable :never)]; ~pl[set-debugger-enable].)  ~c[Break$]
+  returns ~c[nil].~/~/
 
   :cited-by other"
 

@@ -6197,8 +6197,10 @@
   of which output a newline so as to establish the column position at ~c[0].
   Unlike Common Lisp's ~c[format] routine, ~c[fmt] and its relatives break the
   output into lines so that, by default, an attempt is made to avoid printing
-  past column ~c[77].  ~l[set-fmt-hard-right-margin] for a discussion of how
-  linebreaks are inserted and how to change the relevant default settings.
+  past column ~c[77] (the value of constant
+  ~c[*fmt-hard-right-margin-default*]).  ~l[set-fmt-hard-right-margin] for a
+  discussion of how linebreaks are inserted and how to change the relevant
+  default settings.
 
   The formatting functions scan the string from left to right,
   printing each successive character unless it is a tilde ~c[(~~)].  Upon

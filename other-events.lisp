@@ -32872,7 +32872,20 @@
   print-control variables to values; ~pl[print-control].  Any alist mapping
   variables to values is legal, however.  By default the print controls are set
   according to the value of constant ~c[*fmt-control-defaults*];
-  ~c[fmt-control-alist] overrides these defaults.
+  ~c[fmt-control-alist] overrides these defaults.  For example,
+  ~c[*fmt-control-defaults*] sets the right margin just as it is set in the
+  initial ACL2 ~il[state], by binding ~c[fmt-soft-right-margin] and
+  ~c[fmt-hard-right-margin] to their respective defaults of
+  ~c[*fmt-soft-right-margin-default*] and ~c[*fmt-hard-right-margin-default*].
+  The following example shows how you can override those defaults, in this case
+  arranging to print flat by setting the right margin to a large number.
+  ~bv[]
+  (fmt-to-string \"~~x0\"
+                 (list (cons #\\0 (make-list 30)))
+                 :fmt-control-alist
+                 `((fmt-soft-right-margin . 10000)
+                   (fmt-hard-right-margin . 10000)))
+  ~ev[]
 
   ~c[Iprint] is typically ~c[nil], but ~c[t] is also a legal value.
   ~l[set-iprint] for the effect of value ~c[t], which however is local to this
@@ -32895,8 +32908,10 @@
 
   (append *print-control-defaults*
           `((write-for-read t)
-            (fmt-hard-right-margin 10000 set-fmt-hard-right-margin)
-            (fmt-soft-right-margin 10000 set-fmt-soft-right-margin)
+            (fmt-hard-right-margin ,*fmt-hard-right-margin-default*
+                                   set-fmt-hard-right-margin)
+            (fmt-soft-right-margin ,*fmt-soft-right-margin-default*
+                                   set-fmt-soft-right-margin)
             (iprint-soft-bound ,*iprint-soft-bound-default*)
             (iprint-hard-bound ,*iprint-hard-bound-default*)
             (ppr-flat-right-margin
@@ -32931,7 +32946,8 @@
                                   ,(cond
                                     ((member-eq var *fixed-fmt-controls*)
                                      `(er hard 'fmt-control-bindings
-                                          "The binding of ~x0 is illegal in this context."
+                                          "The binding of ~x0 is illegal in ~
+                                           this context."
                                           ',var))
                                     (t '(cdr pair))))
                                  (t ,(cadr trip))))
