@@ -22,84 +22,7 @@
 
 (in-package "ACL2")
 
-(include-book "tools/include-raw" :dir :system)
 (include-book "tools/bstar" :dir :system)
-
-
-(defttag hons-extra)
-
-;; (depends-on "hons-extra-raw.lsp")
-(include-raw "hons-extra-raw.lsp")
-
-
-
-
-(defdoc with-fast-alist
-  ":Doc-Section Hons-and-Memoization
-
-~c[(with-fast-alist name form)] causes ~c[name] to be a fast alist for the
-execution of ~c[form].~/
-
-Logically, ~c[with-fast-alist] just returns ~c[form].
-
-Under the hood, we cause ~c[alist] to become a fast alist before executing
-~c[form].  If doing so caused us to introduce a new hash table, the hash table
-is automatically freed after ~c[form] completes.
-
-More accurately, under the hood ~c[(with-fast-alist name form)] essentially
-expands to something like:
-
-~bv[]
- (if (already-fast-alist-p name)
-     form
-   (let ((<temp> (make-fast-alist name)))
-     (prog1 form
-            (fast-alist-free <temp>))))
-~ev[]
-
-Practically speaking, ~c[with-fast-alist] is frequently a better choice then
-just using ~ilc[make-fast-alist], and is particularly useful for writing
-functions that can take either fast or slow alists as arguments.  That is,
-consider the difference between:
-
-~bv[]
- (defun bad (alist ...)
-   (let* ((fast-alist (make-fast-alist alist))
-          (answer     (expensive-computation fast-alist ...)))
-    (prog2$ (fast-alist-free fast-alist)
-            answer)))
-
- (defun good (alist ...)
-    (with-fast-alist alist
-      (expensive-computation alist ...)))
-~ev[]
-
-Either approach is fine if the caller provides a slow ~c[alist].  But if the
-input ~c[alist] is already fast, ~c[bad] will (perhaps unexpectedly) free it!
-On the other hand, ~c[good] is able to take advantage of an already-fast
-argument and will not cause it to be inadvertently freed.
-
-See also ~ilc[with-fast-alists], which allows you to call ~ilc[with-fast-alist]
-on several alists simultaneously.
-
-Note that we also extend the ~ilc[b*] macro with ~c[with-fast] pattern binder.
-That is, you may write something like this:
-
-~bv[]
- (b* (...
-      ((with-fast a b c ...))
-      ...)
-   ...)
-~ev[]
-
-which causes ~c[a], ~c[b], and ~c[c] to become fast alists until the completion
-of the ~c[b*] form.
-
-Note that with-fast-alist will cause logically tail-recursive functions not to
-execute tail-recursively if its cleanup phase happens after the tail-recursive
-call returns.~/~/")
-
-(defmacro-last with-fast-alist)
 
 (defun with-fast-alists-fn (alists form)
   (if (atom alists)
@@ -206,29 +129,6 @@ is just shorthand for:
 
 (in-theory (disable make-fast-alist-of-alists))
  
-(defdoc with-stolen-alist
-  ":Doc-Section Hons-and-Memoization
-
-~c[(with-stolen-alist name form)] ensures that ~c[name] is a fast alist at the
-start of the execution of ~c[form].  At the end of execution, it ensures that
-~c[name] is a fast alist if and only if it was originally.  That is, if
-~c[name] was not a fast alist originally, its hash table link is freed, and if
-it was a fast alist originally but its table was modified during the execution
-of ~c[form], that table is restored.  Note that any extended table created from
-the original fast alist during ~c[form] must be manually freed.~/
-
-Logically, ~c[with-stolen-alist] just returns ~c[form].
-
-Under the hood, we cause ~c[alist] to become a fast alist before executing
-~c[form], and we check the various conditions outlined above before returning
-the final value.
-
-Note that with-stolen-alist will cause logically tail-recursive functions not to
-execute tail-recursively if its cleanup phase happens after the tail-recursive
-call returns.~/~/")
-
-(defmacro-last with-stolen-alist)
-
 (defun with-stolen-alists-fn (alists form)
   (if (atom alists)
       form
@@ -301,48 +201,6 @@ is just shorthand for:
 
 ||#
 
-
-
-
-(defdoc fast-alist-free-on-exit
-  ":Doc-Section Hons-and-Memoization
-Free a fast alist after the completion of some form.~/
-
-Logically, ~c[(fast-alist-free-on-exit name form)] is the identity and returns
-~c[form].
-
-Under the hood, this essentially expands to:
-~bv[]
- (prog1 form
-        (fast-alist-free name))
-~ev[]
-
-In other words, ~c[name] is not freed immediately, but instead remains a fast
-alist until the form completes.  This may be useful when you are writing code
-that uses a fast alist but has many return points.
-
-See also ~ilc[fast-alists-free-on-exit], which can be used to free several
-alists.
-
-We also provide a ~c[b*] binder, ~c[free-on-exit], e.g.,
-~bv[]
- (b* (...
-      ((free-on-exit a b c))
-      ...)
-   ...)
-~ev[]
-
-causes ~c[a], ~c[b], and ~c[c] to be freed when the ~c[b*] completes, but they
-remain fast alists until then.~/~/")
-
-(progn!
- (set-raw-mode t)
- (defmacro fast-alist-free-on-exit-raw (alist form)
-   `(our-multiple-value-prog1
-     ,form
-     (fast-alist-free ,alist))))
-
-(defmacro-last fast-alist-free-on-exit)
 
 (defun fast-alists-free-on-exit-fn (alists form)
   (if (atom alists)
