@@ -19471,6 +19471,16 @@
 
   ~st[EXPERIMENTAL VERSIONS]
 
+  Among the enhancements for the HONS extension (~pl[hons-and-memoization])
+  are the following.~bq[]
+
+  Macros ~ilc[with-fast-alist], ~ilc[with-stolen-alist], and
+  ~ilc[fast-alist-free-on-exit] are now defined in ACL2(h), rather than being
+  defined in the book ~c[\"books/centaur/misc/hons-extra.lisp\"].  Thanks to
+  Jared Davis and Sol Swords for donating this code, and thanks to Jared for
+  helpful discussions leading to this change.
+  ~eq[]
+
   ~/~/")
 
 (deflabel the-method

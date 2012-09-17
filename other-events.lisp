@@ -3000,6 +3000,9 @@
     (memoize-off-raw . memoize-off)
     (memoize-let-raw . memoize-let)
     (with-prover-time-limit1-raw . with-prover-time-limit1)
+    (with-fast-alist-raw . with-fast-alist)
+    (with-stolen-alist-raw . with-stolen-alist)
+    (fast-alist-free-on-exit-raw . fast-alist-free-on-exit)
 
 ; Keep the following comment in sync with *initial-return-last-table* and with
 ; chk-return-last-entry.
@@ -32740,7 +32743,8 @@
 
   (declare (xargs :guard (plist-worldp wrld)
                   :mode :program))
-  (cond ((ttag wrld)
+  (cond ((or (ttag wrld)
+             (global-val 'boot-strap-flg wrld))
          (and (symbolp key)
               key
               (or (symbolp val)

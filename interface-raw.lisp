@@ -6550,7 +6550,7 @@
   (and (consp form)
        (case (car form)
          ((defun defund defn defproxy defun-nx defun-one-output defstub
-            defmacro defabbrev defun@par)
+            defmacro defabbrev defun@par defmacro-last)
           (setf (gethash (cadr form) ht)
                 form))
          (save-def

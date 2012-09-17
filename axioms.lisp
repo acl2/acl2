@@ -27121,6 +27121,7 @@
     with-reckless-readtable
     with-lock
     catch-throw-to-local-top-level
+    with-fast-alist-raw with-stolen-alist-raw fast-alist-free-on-exit-raw
     ))
 
 (defmacro with-live-state (form)

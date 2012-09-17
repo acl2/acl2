@@ -767,8 +767,7 @@ and this new object would not be associated with the fast alist's hash table."
 ~c[(make-fast-alist alist)] creates a fast-alist from the input alist,
 returning ~c[alist] itself or, in some cases, a new object equal to it.~/
 
-Note: it is often better to use ~c[with-fast-alist]; see the distributed book
-~c[books/centaur/misc/hons-extra.lisp] for more information.
+Note: it is often better to use ~c[with-fast-alist]; ~pl[with-fast-alist].
 
 Logically, ~c[make-fast-alist] is the identity function.
 
@@ -923,6 +922,159 @@ should have been freed with ~ilc[fast-alist-free].~/~/"
 
   ;; Has an under-the-hood implementation
   nil)
+
+(defdoc with-fast-alist
+  ":Doc-Section Hons-and-Memoization
+
+~c[(with-fast-alist name form)] causes ~c[name] to be a fast alist for the
+execution of ~c[form].~/
+
+Logically, ~c[with-fast-alist] just returns ~c[form].
+
+Under the hood, we cause ~c[alist] to become a fast alist before executing
+~c[form].  If doing so caused us to introduce a new hash table, the hash table
+is automatically freed after ~c[form] completes.
+
+More accurately, under the hood ~c[(with-fast-alist name form)] essentially
+expands to something like:
+
+~bv[]
+ (if (already-fast-alist-p name)
+     form
+   (let ((<temp> (make-fast-alist name)))
+     (prog1 form
+            (fast-alist-free <temp>))))
+~ev[]
+
+Practically speaking, ~c[with-fast-alist] is frequently a better choice then
+just using ~ilc[make-fast-alist], and is particularly useful for writing
+functions that can take either fast or slow alists as arguments.  That is,
+consider the difference between:
+
+~bv[]
+ (defun bad (alist ...)
+   (let* ((fast-alist (make-fast-alist alist))
+          (answer     (expensive-computation fast-alist ...)))
+    (prog2$ (fast-alist-free fast-alist)
+            answer)))
+
+ (defun good (alist ...)
+    (with-fast-alist alist
+      (expensive-computation alist ...)))
+~ev[]
+
+Either approach is fine if the caller provides a slow ~c[alist].  But if the
+input ~c[alist] is already fast, ~c[bad] will (perhaps unexpectedly) free it!
+On the other hand, ~c[good] is able to take advantage of an already-fast
+argument and will not cause it to be inadvertently freed.
+
+See also the macro ~c[with-fast-alists] defined in the book
+~c[\"books/centaur/misc/hons-extra.lisp\"], which allows you to call
+~ilc[with-fast-alist] on several alists simultaneously.
+
+The book ~c[\"books/centaur/misc/hons-extra.lisp\"] extends the ~c[b*] macro
+(defined in the book ~c[\"books/tools/bstar.lisp\"]) with the ~c[with-fast]
+pattern binder.  That is, after executing
+~c[(include-book \"centaur/misc/hons-extra.lisp\" :dir :system)] you may write
+something like this:
+
+~bv[]
+ (b* (...
+      ((with-fast a b c ...))
+      ...)
+   ...)
+~ev[]
+
+which causes ~c[a], ~c[b], and ~c[c] to become fast alists until the completion
+of the ~c[b*] form.
+
+Note that ~c[with-fast-alist] will cause logically tail-recursive functions not
+to execute tail-recursively if its cleanup phase happens after the
+tail-recursive call returns.~/~/")
+
+(defdoc with-stolen-alist
+  ":Doc-Section Hons-and-Memoization
+
+~c[(with-stolen-alist name form)] ensures that ~c[name] is a fast alist at the
+start of the execution of ~c[form].  At the end of execution, it ensures that
+~c[name] is a fast alist if and only if it was originally.  That is, if
+~c[name] was not a fast alist originally, its hash table link is freed, and if
+it was a fast alist originally but its table was modified during the execution
+of ~c[form], that table is restored.  Note that any extended table created from
+the original fast alist during ~c[form] must be manually freed.~/
+
+Logically, ~c[with-stolen-alist] just returns ~c[form].
+
+Under the hood, we cause ~c[alist] to become a fast alist before executing
+~c[form], and we check the various conditions outlined above before returning
+the final value.
+
+Note that ~c[with-stolen-alist] will cause logically tail-recursive functions
+not to execute tail-recursively if its cleanup phase happens after the
+tail-recursive call returns.~/~/")
+
+(defdoc fast-alist-free-on-exit
+  ":Doc-Section Hons-and-Memoization
+Free a fast alist after the completion of some form.~/
+
+Logically, ~c[(fast-alist-free-on-exit name form)] is the identity and returns
+~c[form].
+
+Under the hood, this essentially expands to:
+~bv[]
+ (prog1 form
+        (fast-alist-free name))
+~ev[]
+
+In other words, ~c[name] is not freed immediately, but instead remains a fast
+alist until the form completes.  This may be useful when you are writing code
+that uses a fast alist but has many return points.
+
+See also the macro ~c[fast-alists-free-on-exit] defined in the book
+~c[\"books/centaur/misc/hons-extra.lisp\"], which can be used to free several
+alists.
+
+The book ~c[\"books/centaur/misc/hons-extra.lisp\"] extends the ~c[b*] macro
+(defined in the book ~c[\"books/tools/bstar.lisp\"]) with the ~c[free-on-exit]
+pattern binder.  That is, after executing
+~c[(include-book \"centaur/misc/hons-extra.lisp\" :dir :system)], the form
+
+~bv[]
+ (b* (...
+      ((free-on-exit a b c))
+      ...)
+   ...)
+~ev[]
+
+causes ~c[a], ~c[b], and ~c[c] to be freed when the ~c[b*] completes, but they
+remain fast alists until then.~/~/")
+
+#+(or acl2-loop-only (not hons))
+(defmacro with-fast-alist-raw (alist form)
+  ;; Has an under-the-hood implementation
+  (declare (ignore alist))
+  form)
+
+(defmacro with-fast-alist (alist form)
+  `(return-last 'with-fast-alist-raw ,alist ,form))
+
+#+(or acl2-loop-only (not hons))
+(defmacro with-stolen-alist-raw (alist form)
+  ;; Has an under-the-hood implementation
+  (declare (ignore alist))
+  form)
+
+(defmacro with-stolen-alist (alist form)
+  `(return-last 'with-stolen-alist-raw ,alist ,form))
+
+#+(or acl2-loop-only (not hons))
+(defmacro fast-alist-free-on-exit-raw (alist form)
+  ;; Has an under-the-hood implementation
+  (declare (ignore alist))
+  form)
+
+(defmacro fast-alist-free-on-exit (alist form)
+  `(return-last 'fast-alist-free-on-exit-raw ,alist ,form))
 
 (defn cons-subtrees (x al)
   ":Doc-Section Hons-and-Memoization

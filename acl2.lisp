@@ -838,7 +838,6 @@
     "memoize"   ; but only get special under-the-hood treatment with #+hons
     "hons"      ; but only get special under-the-hood treatment with #+hons
     "serialize" ; but only get special under-the-hood treatment with #+hons
-    "boot-strap-pass-2"
     "basis"
     "parallel" ; but only get special under-the-hood treatment with #+acl2-par
     #+acl2-par "futures-raw"
@@ -869,6 +868,7 @@
     "tutorial"
     "interface-raw"
     "defpkgs"
+    "boot-strap-pass-2" ; at the end so that it is compiled last
     )
   "*acl2-files* is the list of all the files necessary to build
 ACL2 from scratch.")
