@@ -7750,37 +7750,21 @@
                                          msg)))
                                (t (value (cons term val))))))))))
 
-#+acl2-par
-(defmacro error-fms-cw (hardp ctx str alist)
-
-; Keep in sync with error-fms.
-
-  `(wormhole 'comment-window-io
-             '(lambda (whs)
-                (set-wormhole-entry-code whs :ENTER))
-             (list ,hardp ,ctx ,str ,alist)
-             '(let ((chan (f-get-global 'standard-co state)))
-                (pprogn (newline chan state)
-                        (error-fms-channel hardp ctx str alist chan state)
-                        (newline chan state)
-                        (newline chan state)))
-             :ld-verbose nil
-             :ld-pre-eval-print nil
-             :ld-prompt nil))
-
-; Parallelism wart: it could be better to call error-fms directly, as in the
-; following definition of error-fms-wormhole.  Also, delete this wart and the
-; following commented defmacro.
-
-;(defmacro error-fms-wormhole (hardp ctx str alist)
-;  `(wormhole 'comment-window-io
-;             '(lambda (whs)
-;                (set-wormhole-entry-code whs :ENTER))
-;             (list ,hardp ,ctx ,str ,alist)
-;             (error-fms hardp ctx str alist state)
-;             :ld-verbose nil
-;             :ld-pre-eval-print nil
-;             :ld-prompt nil))
+(defun error-fms-cw (hardp ctx str alist)
+  (wormhole 'comment-window-io
+            '(lambda (whs)
+               (set-wormhole-entry-code whs :ENTER))
+            (list hardp ctx str alist)
+            `(let ((hardp (nth 0 (@ wormhole-input)))
+                   (ctx (nth 1 (@ wormhole-input)))
+                   (str (nth 2 (@ wormhole-input)))
+                   (alist (nth 3 (@ wormhole-input))))
+               (pprogn (error-fms hardp ctx str alist state)
+                       (value :q)))
+            :ld-error-action :error ; for robustness; no error is expected
+            :ld-verbose nil
+            :ld-pre-eval-print nil
+            :ld-prompt nil))
 
 #+acl2-par
 (defmacro error-fms@par (&rest args)

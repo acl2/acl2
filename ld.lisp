@@ -19481,6 +19481,15 @@
   helpful discussions leading to this change.
   ~eq[]
 
+  Among the enhancements for ACL2(p) (~pl[parallelism]) are the following.  We
+  thank David Rager for his work in developing ACL2(p) and for his
+  contributions in making these improvements.~bq[]
+
+  A bug has been fixed that could leave one in a ~il[wormhole], awaiting input,
+  after an error, such as an error in an ~c[:in-theory] hint during a proof.
+  Thanks to Shilpi Goel for bringing this bug to our attention.
+  ~eq[]
+
   ~/~/")
 
 (deflabel the-method
