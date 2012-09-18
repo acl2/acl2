@@ -7304,14 +7304,20 @@ Missing functions:
                   (invoke-restart 'continue))
                  (t
 
-; Parallelism wart: as of May 16, 2011, we also reset all parallelism variables
-; in Rager's modified version of the source code.  However, that strikes Rager
-; as strange, since we went through so much trouble to find out where we should
-; reset parallelism variables. So, it is now commented out, today, May 16, 
-; 2011, and we will wait to see what happens.
+; Parallelism blemish: as of May 16, 2011, we also reset all parallelism
+; variables in Rager's modified version of the source code.  However, that
+; strikes Rager as strange, since we went through so much trouble to find out
+; where we should reset parallelism variables. So, it is now commented out,
+; today, May 16, 2011, and we will wait to see what happens.
 
 ;                  #+acl2-par
 ;                  (reset-all-parallelism-variables)
+
+; Parallelism blemish: after a single proof runs for awhile, at least with
+; waterfall parallelism enabled, it can take two interrupts before the abort
+; occurs.  It would be nice if the proof could abort after the first interrupt,
+; since when two interrupts are required, the summary does not print the
+; ACL2(p) checkpoints.
 
                   (ignore-errors ; might not be in scope of catch
                     (throw 'local-top-level :our-abort))))))))

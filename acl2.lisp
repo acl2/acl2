@@ -2089,12 +2089,12 @@ which is saved just in case it's needed later.")
 ; an attempt to improve the chance of a succesful exit.  In practice, the call
 ; does not fix the problem.  However, we leave it for now since we don't think
 ; it can hurt.  If exit-lisp starts working reliably without the following
-; calls to send-die-to-all-except-initial-threads and stop-multiprocessing,
-; they should be removed.
+; calls to send-die-to-worker-threads and stop-multiprocessing, they should be
+; removed.
 
   #+(and acl2-par lispworks)
   (when mp::*multiprocessing*
-    (send-die-to-all-except-initial-threads)
+    (send-die-to-worker-threads)
     (mp::stop-multiprocessing))
 
 ; The status (an integer) will be returned as the exit status (shell variable

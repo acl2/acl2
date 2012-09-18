@@ -25799,7 +25799,7 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
   #-acl2-loop-only
   (progn
 
-; Parallelism wart: it may be a good idea to reset the parallelism variables
+; Parallelism blemish: it may be a good idea to reset the parallelism variables
 ; in all #+acl2-par compilations before saving the image.
 
     (if (not (eql *ld-level* 0))

@@ -382,7 +382,7 @@
 
 ; (a) Kill all worker threads.
 
-  (send-die-to-all-except-initial-threads)
+  (send-die-to-worker-threads)
 
 ; (b) Reset "most" of the parallelism variables.
 

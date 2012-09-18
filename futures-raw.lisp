@@ -432,7 +432,7 @@
 
 ; Warning: this function should only be called after calling
 ; reset-parallelism-variables, which calls
-; send-die-to-all-except-initial-threads to kill all worker threads.
+; send-die-to-worker-threads to kill all worker threads.
 
 ; This function is not to be confused with reset-parallelism-variables
 ; (although it is similar in nature).  Both are called by
@@ -474,7 +474,7 @@
         (make-atomically-modifiable-counter 1))
 
 ; If we let the threads expire naturally instead of calling the above
-; send-die-to-all-except-initial-threads, then this setting is unnecessary.
+; send-die-to-worker-threads, then this setting is unnecessary.
   (setf *idle-future-thread-count* (make-atomically-modifiable-counter 0))
 ; (setf *pending-future-thread-count* (make-atomically-modifiable-counter 0))
 ; (setf *resumptive-future-thread-count* (make-atomically-modifiable-counter 0))
@@ -589,7 +589,11 @@
   `(unwind-protect ,body-form (without-interrupts ,@cleanup-forms))
 
 ; Parallelism wart: we should specify a Lispworks compile-time definition (as
-; we did for CCL and SBCL).
+; we did for CCL and SBCL).  Or, perhaps we should merge the CCL definition
+; into the LispWorks definition.  Regardless, we need to check that interrupts
+; are disabled during the cleanup form in LispWorks and then make a note that
+; LispWorks has this property (perhaps by merging with the note about CCL,
+; above).
 
   #-(or ccl sb-thread)
   `(unwind-protect ,body-form ,@cleanup-forms))
