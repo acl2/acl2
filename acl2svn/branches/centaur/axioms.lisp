@@ -1,13 +1,12 @@
-; ACL2 Version 4.3 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2011  University of Texas at Austin
+; ACL2 Version 5.0 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2012  University of Texas at Austin
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
 
 ; This program is free software; you can redistribute it and/or modify
-; it under the terms of the GNU General Public License as published by
-; the Free Software Foundation; either version 2 of the License, or
-; (at your option) any later version.
+; it under the terms of Version 2 of the GNU General Public License as
+; published by the Free Software Foundation.
 
 ; This program is distributed in the hope that it will be useful,
 ; but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -14144,7 +14143,7 @@
   ~c[saved_acl2r].
 
   Note that you should also download the `nonstd' books, from
-  ~url[http://www.cs.utexas.edu/users/moore/acl2/current/distrib/acl2-sources/books/nonstd.tar.gz]
+  ~url[http://acl2-books.googlecode.com/files/nonstd-5.0.tar.gz]
   and then certify them from your acl2-sources directory, shown here as
   ~c[<DIR>]:
   ~bv[]
@@ -27209,6 +27208,7 @@
     with-reckless-readtable
     with-lock
     catch-throw-to-local-top-level
+    with-fast-alist-raw with-stolen-alist-raw fast-alist-free-on-exit-raw
     ))
 
 (defmacro with-live-state (form)
@@ -27520,6 +27520,9 @@
                val)))
     val))
 
+(defconst *fmt-soft-right-margin-default* 65)
+(defconst *fmt-hard-right-margin-default* 77)
+
 (defconst *initial-global-table*
 
 ; Warning: Keep this list in alphabetic order as per ordered-symbol-alistp.  It
@@ -27545,7 +27548,7 @@
 ; The reason MCL needs special treatment is that (char-code #\Newline) = 13 in
 ; MCL, not 10.  See also :DOC version.
 
-; ACL2 Version 4.3
+; ACL2 Version 5.0
 
 ; We put the version number on the line above just to remind ourselves to bump
 ; the value of state global 'acl2-version, which gets printed out with the
@@ -27571,7 +27574,7 @@
 ; reformatting :DOC comments.
 
                   ,(concatenate 'string
-                                "ACL2 Version 4.3"
+                                "ACL2 Version 5.0"
                                 #+non-standard-analysis
                                 "(r)"
                                 #+(and mcl (not ccl))
@@ -27616,8 +27619,8 @@
     (doc-fmt-alist . nil)
     (evisc-hitp-without-iprint . nil)
     (eviscerate-hide-terms . nil)
-    (fmt-hard-right-margin . 77)
-    (fmt-soft-right-margin . 65) ; same as proof-tree-buffer-width
+    (fmt-hard-right-margin . ,*fmt-hard-right-margin-default*)
+    (fmt-soft-right-margin . ,*fmt-soft-right-margin-default*)
     (gag-mode . nil) ; set in lp
     (gag-mode-evisc-tuple . nil)
     (gag-state . nil)
@@ -27686,7 +27689,7 @@
     (prompt-function . default-print-prompt)
     (prompt-memo . nil)
     (proof-tree . nil)
-    (proof-tree-buffer-width . 65) ; same as fmt-soft-right-margin
+    (proof-tree-buffer-width . ,*fmt-soft-right-margin-default*)
     (proof-tree-ctx . nil)
     (proof-tree-indent . "|  ")
     (proof-tree-start-printed . nil)
@@ -40879,191 +40882,6 @@
                       tbl)))
           :clear))
 
-(defconst *inline-suffix* "$INLINE")
-(defconst *inline-suffix-len-minus-1* (1- (length *inline-suffix*)))
-(defconst *notinline-suffix* "$NOTINLINE")
-(defconst *notinline-suffix-len-minus-1* (1- (length *notinline-suffix*)))
-
-(defmacro defun-inline (name &rest args)
-
-; Warning: Keep this in sync with defund-inline.
-
-  ":Doc-Section acl2::Events
-
-  define a potentially inlined function symbol and associated macro~/
-
-  You may be able to improve performance by replacing an event
-  ~c[(defun f ...)] with a corresponding event ~c[(defun-inline f ...)], in
-  order to encourage the host Lisp compiler to inline calls of ~c[f].
-
-  ~bv[]
-  Example Form:
-  (defun-inline lng (x)
-    (declare (xargs :guard (true-listp x)))
-    (if (endp x) 0 (1+ (lng (cdr x)))))~/
-
-  General Form:
-  (defun-inline fn (var1 ... varn) doc-string dcl ... dcl body)
-  ~ev[]
-  satisfying the same requirements as in the General Form for ~ilc[defun].  The
-  effect is to define a macro ~c[fn] and a function ~c[fn$inline] (i.e., a
-  symbol in the same package as ~c[fn] but whose ~ilc[symbol-name] has the
-  suffix ~c[\"$INLINE\"], such that each call of ~c[fn] expands to a call of
-  the function symbol ~c[fn$inline] on the same arguments.  Moreover,
-  ~ilc[table] ~il[events] are generated that allow the use of ~c[fn] in
-  ~il[theory] expressions to represent ~c[fn$inline] and that cause any
-  untranslated (user-level) call of ~c[fn$inline] to be printed as the
-  corresponding call of ~c[fn].
-
-  A form ~c[(defun-inline f ...)] actually defines a function named
-  ~c[f$inline] and a corresponding macro named ~c[f] whose calls expand to
-  calls of ~c[f$inline], while providing the illusion that there is just the
-  ``function'' ~c[f].  For example, the Example Form above macroexpands in one
-  step to the following form.
-  ~bv[]
-  (progn (defmacro lng (x) (list 'lng$inline x))
-         (add-macro-fn lng lng$inline)
-         (defun lng$inline (x)
-           (declare (xargs :guard (true-listp x)))
-           (if (endp x) 0 (1+ (lng (cdr x))))))
-  ~ev[]
-  Note that the above call of ~ilc[add-macro-fn] generates the aforementioned
-  two table events (~pl[add-macro-fn]), which provide the illusion that we are
-  just defining a function ~c[lng], as you can see in the following log:
-  ~c[lng] appears rather than ~c[lng$inline].
-  ~bv[]
-  ACL2 !>(set-gag-mode nil)
-  <state>
-  ACL2 !>(thm (equal (lng (append x y))
-                     (+ (lng x) (lng y)))
-              :hints ((\"Goal\" :in-theory (enable lng))))
-
-  [.. output omitted ..]
-
-  Subgoal *1/2
-  (IMPLIES (AND (NOT (ENDP X))
-                (EQUAL (LNG (APPEND (CDR X) Y))
-                       (+ (LNG (CDR X)) (LNG Y))))
-           (EQUAL (LNG (APPEND X Y))
-                  (+ (LNG X) (LNG Y)))).
-
-  [.. output omitted ..]
-  ~ev[]
-
-  Under the hood, ACL2 arranges that every function symbol with suffix
-  ~c[\"$INLINE\"] is presented to the compiler as one whose calls we would
-  prefer to inline.  Technically: the Common Lisp form
-  ~c[(declaim (inline f$inline))] is generated for a function symbol
-  ~c[f$inline] before that symbol's definition is submitted.  However, the
-  Common Lisp spec explicitly avoids requiring that the compiler respect this
-  ~c[declaim] form.  Fortunately, Common Lisp implementations often do respect
-  it.
-
-  Also ~pl[defund-inline], ~pl[defun-notinline], and ~pl[defund-notinline].
-
-  ~em[Remarks].
-
-  (1) None of these macros (including ~c[defun-inline]) are supported for use
-  inside a ~ilc[mutual-recursion].
-
-  (2) Every function symbol defined in ACL2 whose ~ilc[symbol-name] has the
-  suffix ~c[\"$INLINE\"] is proclaimed to be inline; similarly for
-  ~c[\"$NOTINLINE\"] and notinline.
-
-  (3) No special treatment for inlining (or notinlining) is given for function
-  symbols locally defined by ~ilc[flet], except in the case of symbols
-  discussed in (1) and (2) above that, at some point in the current ACL2
-  session, were defined as function symbols in ACL2 (even if not currently
-  defined because of undoing or being ~il[local]).~/"
-
-  (declare (xargs :guard (and args (symbol-listp (car args)))))
-  (let ((name$inline
-         (intern-in-package-of-symbol
-          (concatenate 'string (symbol-name name) *inline-suffix*)
-          name))
-        (formals (car args)))
-    `(progn (defmacro ,name ,formals
-              (list ',name$inline ,@formals))
-            (add-macro-fn ,name ,name$inline)
-            (defun ,name$inline ,@args))))
-
-(defmacro defund-inline (name &rest args)
-
-; Warning: Keep this in sync with defun-inline.
-
-  ":Doc-Section acl2::Events
-
-  define a potentially disabled, inlined function symbol and associated macro~/
-
-  ~c[Defund-inline] is a variant of ~ilc[defun-inline], the difference being
-  that ~c[defund-inline] disables the newly-defined function symbol.
-  ~l[defun-inline].~/~/"
-
-  (declare (xargs :guard (and args (symbol-listp (car args)))))
-  (let ((name$inline
-         (intern-in-package-of-symbol
-          (concatenate 'string (symbol-name name) *inline-suffix*)
-          name))
-        (formals (car args)))
-    `(progn (defmacro ,name ,formals
-              (list ',name$inline ,@formals))
-            (add-macro-fn ,name ,name$inline)
-            (defund ,name$inline ,@args))))
-
-(defmacro defun-notinline (name &rest args)
-
-; Warning: Keep this in sync with defund-notinline.
-
-  ":Doc-Section acl2::Events
-
-  define a not-to-be-inlined function symbol and associated macro~/
-
-  ~l[defun-inline] for an analogous utility that supports inlining.  The
-  present utility is probably far less useful; it tells the compiler ~em[not]
-  to inline calls of the function being defined.  Also ~pl[defund-notinline]
-  for a variant of this event that disables the newly-defined function symbol.
-
-  Under the hood, ~c[(defun-inline f ...)] and ~c[(defun-notinline f ...)]
-  cause evaluation of Common Lisp forms ~c[(declaim (inline f$inline))] and
-  ~c[(declaim (notinline f$notinline))], respectively.  According to the Common
-  Lisp spec, the compiler need not respect the first of these (for ~c[inline]),
-  but it must respect the second of these (for ~c[notinline]).  Fortunately,
-  Common Lisp implementations often do respect the first of these as well.~/~/"
-
-  (declare (xargs :guard (and args (symbol-listp (car args)))))
-  (let ((name$notinline
-         (intern-in-package-of-symbol
-          (concatenate 'string (symbol-name name) *notinline-suffix*)
-          name))
-        (formals (car args)))
-    `(progn (defmacro ,name ,formals
-              (list ',name$notinline ,@formals))
-            (add-macro-fn ,name ,name$notinline)
-            (defun ,name$notinline ,@args))))
-
-(defmacro defund-notinline (name &rest args)
-
-; Warning: Keep this in sync with defun-inline.
-
-  ":Doc-Section acl2::Events
-
-  define a disabled, not-to-be-inlined function symbol and associated macro~/
-
-  ~c[Defund-notinline] is a variant of ~ilc[defun-notinline], the difference
-  being that ~c[defund-notinline] disables the newly-defined function symbol.
-  ~l[defun-notinline].~/~/"
-
-  (declare (xargs :guard (and args (symbol-listp (car args)))))
-  (let ((name$notinline
-         (intern-in-package-of-symbol
-          (concatenate 'string (symbol-name name) *notinline-suffix*)
-          name))
-        (formals (car args)))
-    `(progn (defmacro ,name ,formals
-              (list ',name$notinline ,@formals))
-            (add-macro-fn ,name ,name$notinline)
-            (defund ,name$notinline ,@args))))
-
 ; Here we implement the nth-aliases table.  This is quite analogous to the
 ; macro-aliases table; see the comment above for a discussion of why we do not
 ; use the acl2-defaults-table here.
@@ -45249,10 +45067,17 @@ Lisp definition."
   the use of ~ilc[evisc-table] to abbreviate large constants, so that the
   abbreviation can be read back in; ~pl[evisc-table].
 
-  Note that the ACL2 reader only supports `~c[#.]' as described above, unlike
-  Common Lisp.  Older versions (preceding  3.5) used `~c[#.]' to abort, but
-  that functionality is now carried out by ~c[(a!)]; ~pl[a!].  For a related
-  feature that only pops up one level, ~pl[p!].")
+  Remarks.
+
+  (1) The ACL2 reader only supports `~c[#.]' as described above, unlike Common
+  Lisp.  Older versions (preceding 3.5) used `~c[#.]' to abort, but that
+  functionality is now carried out by ~c[(a!)]; ~pl[a!].  For a related feature
+  that only pops up one level, ~pl[p!].
+
+  (2) If you call ~ilc[certify-book] on a book that contains a form
+  `~c[#.*foo*]', the ~c[*foo*] must already be defined in the ~il[world] in
+  which you issue the ~c[certify-book] command.  The reason is that
+  ~c[certify-book] reads the entire book before evaluating its forms.")
 
 (defdoc sharp-comma-reader
   ":Doc-Section other
@@ -46891,7 +46716,8 @@ Lisp definition."
   ACL2 users are generally advised to avoid breaking into raw Lisp.  Advanced
   users may, on occasion, see the need to do so.  Evaluating ~c[(break$)] will
   have that effect.  (Exception: ~c[break$] is disabled after evaluation of
-  ~c[(set-debugger-enable :never)]; ~pl[set-debugger-enable].)~/~/
+  ~c[(set-debugger-enable :never)]; ~pl[set-debugger-enable].)  ~c[Break$]
+  returns ~c[nil].~/~/
 
   :cited-by other"
 

@@ -1,13 +1,12 @@
-; ACL2 Version 4.3 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2011  University of Texas at Austin
+; ACL2 Version 5.0 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2012  University of Texas at Austin
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
 
 ; This program is free software; you can redistribute it and/or modify
-; it under the terms of the GNU General Public License as published by
-; the Free Software Foundation; either version 2 of the License, or
-; (at your option) any later version.
+; it under the terms of Version 2 of the GNU General Public License as
+; published by the Free Software Foundation.
 
 ; This program is distributed in the hope that it will be useful,
 ; but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -3001,6 +3000,9 @@
     (memoize-off-raw . memoize-off)
     (memoize-let-raw . memoize-let)
     (with-prover-time-limit1-raw . with-prover-time-limit1)
+    (with-fast-alist-raw . with-fast-alist)
+    (with-stolen-alist-raw . with-stolen-alist)
+    (fast-alist-free-on-exit-raw . fast-alist-free-on-exit)
 
 ; Keep the following comment in sync with *initial-return-last-table* and with
 ; chk-return-last-entry.
@@ -16126,7 +16128,7 @@
 ; portcullis command after setting ld-skip-proofsp to a non-nil value.  So we
 ; are conservative here, being sure that in such a case, we set
 ; :SKIPPED-PROOFSP to T in the annotations for the present book.  See the
-; example in a comment in the deflabel note-4-4 pertaining to "Fixed a
+; example in a comment in the deflabel note-5-0 pertaining to "Fixed a
 ; soundness bug based on the use of ~ilc[skip-proofs] ...."
 
                                                    (and
@@ -32741,7 +32743,8 @@
 
   (declare (xargs :guard (plist-worldp wrld)
                   :mode :program))
-  (cond ((ttag wrld)
+  (cond ((or (ttag wrld)
+             (global-val 'boot-strap-flg wrld))
          (and (symbolp key)
               key
               (or (symbolp val)
@@ -32873,7 +32876,20 @@
   print-control variables to values; ~pl[print-control].  Any alist mapping
   variables to values is legal, however.  By default the print controls are set
   according to the value of constant ~c[*fmt-control-defaults*];
-  ~c[fmt-control-alist] overrides these defaults.
+  ~c[fmt-control-alist] overrides these defaults.  For example,
+  ~c[*fmt-control-defaults*] sets the right margin just as it is set in the
+  initial ACL2 ~il[state], by binding ~c[fmt-soft-right-margin] and
+  ~c[fmt-hard-right-margin] to their respective defaults of
+  ~c[*fmt-soft-right-margin-default*] and ~c[*fmt-hard-right-margin-default*].
+  The following example shows how you can override those defaults, in this case
+  arranging to print flat by setting the right margin to a large number.
+  ~bv[]
+  (fmt-to-string \"~~x0\"
+                 (list (cons #\\0 (make-list 30)))
+                 :fmt-control-alist
+                 `((fmt-soft-right-margin . 10000)
+                   (fmt-hard-right-margin . 10000)))
+  ~ev[]
 
   ~c[Iprint] is typically ~c[nil], but ~c[t] is also a legal value.
   ~l[set-iprint] for the effect of value ~c[t], which however is local to this
@@ -32896,8 +32912,10 @@
 
   (append *print-control-defaults*
           `((write-for-read t)
-            (fmt-hard-right-margin 10000 set-fmt-hard-right-margin)
-            (fmt-soft-right-margin 10000 set-fmt-soft-right-margin)
+            (fmt-hard-right-margin ,*fmt-hard-right-margin-default*
+                                   set-fmt-hard-right-margin)
+            (fmt-soft-right-margin ,*fmt-soft-right-margin-default*
+                                   set-fmt-soft-right-margin)
             (iprint-soft-bound ,*iprint-soft-bound-default*)
             (iprint-hard-bound ,*iprint-hard-bound-default*)
             (ppr-flat-right-margin
@@ -32932,7 +32950,8 @@
                                   ,(cond
                                     ((member-eq var *fixed-fmt-controls*)
                                      `(er hard 'fmt-control-bindings
-                                          "The binding of ~x0 is illegal in this context."
+                                          "The binding of ~x0 is illegal in ~
+                                           this context."
                                           ',var))
                                     (t '(cdr pair))))
                                  (t ,(cadr trip))))
@@ -33436,3 +33455,209 @@
                   wrld
                   (and acc
                        (ext-anc-attachments-valid-p-1 siblings alist wrld))))))))
+
+; Start definitions related to defun-inline.
+
+(defconst *inline-suffix* "$INLINE")
+(defconst *inline-suffix-len-minus-1* (1- (length *inline-suffix*)))
+(defconst *notinline-suffix* "$NOTINLINE")
+(defconst *notinline-suffix-len-minus-1* (1- (length *notinline-suffix*)))
+(defconst *non-stobj-var-root* (coerce (symbol-name 'non-stobj-var) 'list))
+
+(defun defun-inline-form (name formals lst defun-type suffix)
+
+; Defun-type is DEFUN or DEFUND; suffix is *inline-suffix* or
+; *notinline-suffix*.
+
+  (declare (xargs :mode :program
+                  :guard (and (symbolp name)
+                              (symbol-listp formals)
+                              lst
+                              (<= (number-of-strings (butlast lst 1))
+                                  1)
+                              (or (eq defun-type 'defun)
+                                  (eq defun-type 'defund))
+                              (or (equal suffix *inline-suffix*)
+                                  (equal suffix *notinline-suffix*)))))
+  (let* ((name$inline
+          (intern-in-package-of-symbol
+           (concatenate 'string (symbol-name name) suffix)
+           name))
+         (dcls-and-strings (butlast lst 1))
+         (strings (get-string dcls-and-strings))
+         (dcls (remove-strings dcls-and-strings))
+         (body (car (last lst)))
+         (macro-formals ; try to avoid using stobj names
+          (make-var-lst1 *non-stobj-var-root* name (length formals) nil)))
+    `(progn (defmacro ,name ,macro-formals
+              ,@strings
+              (list ',name$inline ,@macro-formals))
+            (add-macro-fn ,name ,name$inline)
+            (,defun-type ,name$inline ,formals ,@dcls ,body))))
+
+(defmacro defun-inline (name formals &rest lst)
+
+  ":Doc-Section acl2::Events
+
+  define a potentially inlined function symbol and associated macro~/
+
+  You may be able to improve performance by replacing an event
+  ~c[(defun f ...)] with a corresponding event ~c[(defun-inline f ...)], in
+  order to encourage the host Lisp compiler to inline calls of ~c[f].
+
+  ~bv[]
+  Example Form:
+  (defun-inline lng (x)
+    (declare (xargs :guard (true-listp x)))
+    (if (endp x) 0 (1+ (lng (cdr x)))))~/
+
+  General Form:
+  (defun-inline fn (var1 ... varn) doc-string dcl ... dcl body)
+  ~ev[]
+  satisfying the same requirements as in the General Form for ~ilc[defun].  The
+  effect is to define a macro ~c[fn] and a function ~c[fn$inline] (i.e., a
+  symbol in the same package as ~c[fn] but whose ~ilc[symbol-name] has the
+  suffix ~c[\"$INLINE\"], such that each call of ~c[fn] expands to a call of
+  the function symbol ~c[fn$inline] on the same arguments.  If ~c[doc-string]
+  is supplied, then it is associated with ~c[fn], not with ~c[fn$inline].
+  Moreover, ~ilc[table] ~il[events] are generated that allow the use of ~c[fn]
+  in ~il[theory] expressions to represent ~c[fn$inline] and that cause any
+  untranslated (user-level) call of ~c[fn$inline] to be printed as the
+  corresponding call of ~c[fn].
+
+  A form ~c[(defun-inline f ...)] actually defines a function named
+  ~c[f$inline] and a corresponding macro named ~c[f] whose calls expand to
+  calls of ~c[f$inline], while providing the illusion that there is just the
+  ``function'' ~c[f].  For example, the Example Form above macroexpands in one
+  step to the following form.
+  ~bv[]
+  (progn (defmacro lng (non-stobj-var0)
+           (list 'lng$inline non-stobj-var0))
+         (add-macro-fn lng lng$inline)
+         (defun lng$inline (x)
+           (declare (xargs :guard (true-listp x)))
+           (if (endp x) 0 (1+ (lng (cdr x))))))
+  ~ev[]
+  Note that the above call of ~ilc[add-macro-fn] generates the aforementioned
+  two table events (~pl[add-macro-fn]), which provide the illusion that we are
+  just defining a function ~c[lng], as you can see in the following log:
+  ~c[lng] appears rather than ~c[lng$inline].
+  ~bv[]
+  ACL2 !>(set-gag-mode nil)
+  <state>
+  ACL2 !>(thm (equal (lng (append x y))
+                     (+ (lng x) (lng y)))
+              :hints ((\"Goal\" :in-theory (enable lng))))
+
+  [.. output omitted ..]
+
+  Subgoal *1/2
+  (IMPLIES (AND (NOT (ENDP X))
+                (EQUAL (LNG (APPEND (CDR X) Y))
+                       (+ (LNG (CDR X)) (LNG Y))))
+           (EQUAL (LNG (APPEND X Y))
+                  (+ (LNG X) (LNG Y)))).
+
+  [.. output omitted ..]
+  ~ev[]
+
+  Under the hood, ACL2 arranges that every function symbol with suffix
+  ~c[\"$INLINE\"] is presented to the compiler as one whose calls we would
+  prefer to inline.  Technically: the Common Lisp form
+  ~c[(declaim (inline f$inline))] is generated for a function symbol
+  ~c[f$inline] before that symbol's definition is submitted.  However, the
+  Common Lisp spec explicitly avoids requiring that the compiler respect this
+  ~c[declaim] form.  Fortunately, Common Lisp implementations often do respect
+  it.
+
+  Also ~pl[defund-inline], ~pl[defun-notinline], and ~pl[defund-notinline].
+
+  ~em[Remarks].
+
+  (1) None of these macros (including ~c[defun-inline]) is supported for use
+  inside a ~ilc[mutual-recursion].
+
+  (2) Every function symbol defined in ACL2 whose ~ilc[symbol-name] has the
+  suffix ~c[\"$INLINE\"] is proclaimed to be inline; similarly for
+  ~c[\"$NOTINLINE\"] and notinline.
+
+  (3) No special treatment for inlining (or notinlining) is given for function
+  symbols locally defined by ~ilc[flet], except in the case of symbols
+  discussed in (1) and (2) above that, at some point in the current ACL2
+  session, were defined as function symbols in ACL2 (even if not currently
+  defined because of undoing or being ~il[local]).
+
+  (4) The function symbol actually being defined by ~c[(defun-inline foo ...)]
+  is ~c[foo$inline].  As mentioned above, one can be oblivious to this fact
+  when writing ~il[theory] expressions or perusing prover output.  However, for
+  other purposes (for example, ~ilc[verify-guards] and ~ilc[defabsstobj]
+  ~c[:exports]) you will need to supply the name of the function symbol rather
+  than the name of the macro; e.g., for the above form
+  ~c[(defun-inline foo ...)], you may subsequently issue the event
+  ~c[(verify-guards foo$inline)] but not ~c[(verify-guards foo)].
+
+  (5) Obscure Remark.  Suppose that you certify a book with compilation (the
+  default) in one host Lisp, saving the expansion file.  Suppose that you then
+  compile in another host Lisp by using ~ilc[include-book] with argument
+  ~c[:load-compiled-file :comp].  Then in subsequent sessions, including that
+  book with the second host Lisp will not result in any inline or notinline
+  behavior for functions defined in the book.  This may be fixed in a future
+  release if someone complains.~/"
+
+; Implementor hint for (5) above: Search for ";;; Declaim forms:" in
+; write-expansion-file, and notice the printing just below it of a readtime
+; conditional for the host Lisp, so that declaim forms are restricted to that
+; Lisp.  This mechanism was probably put into place so that declaiming for GCL
+; didn't result in declaiming for Allegro CL, or something along those lines.
+
+  (defun-inline-form name formals lst 'defun *inline-suffix*))
+
+(defmacro defund-inline (name formals &rest lst)
+
+; Warning: Keep this in sync with defun-inline.
+
+  ":Doc-Section acl2::Events
+
+  define a potentially disabled, inlined function symbol and associated macro~/
+
+  ~c[Defund-inline] is a variant of ~ilc[defun-inline], the difference being
+  that ~c[defund-inline] disables the newly-defined function symbol.
+  ~l[defun-inline].~/~/"
+
+  (defun-inline-form name formals lst 'defund *inline-suffix*))
+
+(defmacro defun-notinline (name formals &rest lst)
+
+; Warning: Keep this in sync with defund-notinline.
+
+  ":Doc-Section acl2::Events
+
+  define a not-to-be-inlined function symbol and associated macro~/
+
+  ~l[defun-inline] for an analogous utility that supports inlining.  The
+  present utility is probably far less useful; it tells the compiler ~em[not]
+  to inline calls of the function being defined.  Also ~pl[defund-notinline]
+  for a variant of this event that disables the newly-defined function symbol.
+
+  Under the hood, ~c[(defun-inline f ...)] and ~c[(defun-notinline f ...)]
+  cause evaluation of Common Lisp forms ~c[(declaim (inline f$inline))] and
+  ~c[(declaim (notinline f$notinline))], respectively.  According to the Common
+  Lisp spec, the compiler need not respect the first of these (for ~c[inline]),
+  but it must respect the second of these (for ~c[notinline]).  Fortunately,
+  Common Lisp implementations often do respect the first of these as well.~/~/"
+
+  (defun-inline-form name formals lst 'defun *notinline-suffix*))
+
+(defmacro defund-notinline (name formals &rest lst)
+
+; Warning: Keep this in sync with defun-inline.
+
+  ":Doc-Section acl2::Events
+
+  define a disabled, not-to-be-inlined function symbol and associated macro~/
+
+  ~c[Defund-notinline] is a variant of ~ilc[defun-notinline], the difference
+  being that ~c[defund-notinline] disables the newly-defined function symbol.
+  ~l[defun-notinline].~/~/"
+
+  (defun-inline-form name formals lst 'defund *notinline-suffix*))

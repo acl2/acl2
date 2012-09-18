@@ -1,13 +1,12 @@
-; ACL2 Version 4.3 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2011  University of Texas at Austin
+; ACL2 Version 5.0 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2012  University of Texas at Austin
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
 
 ; This program is free software; you can redistribute it and/or modify
-; it under the terms of the GNU General Public License as published by
-; the Free Software Foundation; either version 2 of the License, or
-; (at your option) any later version.
+; it under the terms of Version 2 of the GNU General Public License as
+; published by the Free Software Foundation.
 
 ; This program is distributed in the hope that it will be useful,
 ; but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -7661,14 +7660,14 @@
                             (prog2$ 
                              (with-output-lock
                               (cw "Normally we would attempt to prove two or ~
-                                  more of the previously printed subgoals by ~
-                                  induction.  However, we prefer in this ~
-                                  instance to focus on the original input ~
-                                  conjecture rather than those simplified ~
-                                  special cases.  We therefore abandon our ~
-                                  previous work on these conjectures and ~
-                                  reassign the name *1 to the original ~
-                                  conjecture."))
+                                   more of the previously printed subgoals by ~
+                                   induction.  However, we prefer in this ~
+                                   instance to focus on the original input ~
+                                   conjecture rather than those simplified ~
+                                   special cases.  We therefore abandon our ~
+                                   previous work on these conjectures and ~
+                                   reassign the name *1 to the original ~
+                                   conjecture."))
                              (mv@par combined-step-limit 
                                      'abort
                                      combined-prove-spec-vars
@@ -7689,7 +7688,7 @@
                       nil)
                      (t (with-output-lock
                          (cw "Invalid speculation for children of subgoal ~
-                                ~x0~%"
+                              ~x0~%"
                              (string-for-tilde-@-clause-id-phrase cl-id)))))
                (waterfall1-lst@par (cond ((eq n 'settled-down-clause) n) 
                                          ((null n) nil)
@@ -7755,7 +7754,7 @@
         (mv-let 
          (first-half-clauses second-half-clauses len-first-half)
          (halves-with-length clauses)
-         (spec-mv-let 
+         (spec-mv-let
 
 ; Here, we perform the speculative call of waterfall1-lst@par, which is the
 ; recursion on the cdr of clauses.  As such, this code matches the code at the
@@ -7858,14 +7857,14 @@
 
                              (with-output-lock
                               (cw "Normally we would attempt to prove two or ~
-                                  more of the previously printed subgoals by ~
-                                  induction.  However, we prefer in this ~
-                                  instance to focus on the original input ~
-                                  conjecture rather than those simplified ~
-                                  special cases.  We therefore abandon our ~
-                                  previous work on these conjectures and ~
-                                  reassign the name *1 to the original ~
-                                  conjecture."))
+                                   more of the previously printed subgoals by ~
+                                   induction.  However, we prefer in this ~
+                                   instance to focus on the original input ~
+                                   conjecture rather than those simplified ~
+                                   special cases.  We therefore abandon our ~
+                                   previous work on these conjectures and ~
+                                   reassign the name *1 to the original ~
+                                   conjecture."))
                              (mv@par combined-step-limit 
                                      'abort
 
@@ -7903,7 +7902,7 @@
                        nil)
                       (t (with-output-lock
                           (cw "Invalid speculation for children of subgoal ~
-                              ~x0~%"
+                               ~x0~%"
                               (string-for-tilde-@-clause-id-phrase cl-id)))))
                 (waterfall1-lst@par (cond ((eq n 'settled-down-clause) n) 
                                           ((null n) nil)
@@ -8659,9 +8658,7 @@
                             (cons #\0 cl-id-phrase)
                             (cons #\1 (access assumnote (car lst)
                                               :rune)))))))
-         (cond ((member-equal x acc)
-                x)
-               (t (cons x acc))))))))
+         (add-to-set-equal x acc))))))
 
 (defun tilde-*-assumnotes-column-phrase-gag-mode (assumnotes)
 

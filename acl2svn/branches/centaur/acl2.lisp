@@ -1,14 +1,13 @@
-; ACL2 Version 4.3 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2011  University of Texas at Austin
+; ACL2 Version 5.0 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2012  University of Texas at Austin
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic
 ; NOTE-2-0.
 
 ; This program is free software; you can redistribute it and/or modify
-; it under the terms of the GNU General Public License as published by
-; the Free Software Foundation; either version 2 of the License, or
-; (at your option) any later version.
+; it under the terms of Version 2 of the GNU General Public License as
+; published by the Free Software Foundation.
 
 ; This program is distributed in the hope that it will be useful,
 ; but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -844,7 +843,6 @@
     "memoize"   ; but only get special under-the-hood treatment with #+hons
     "hons"      ; but only get special under-the-hood treatment with #+hons
     "serialize" ; but only get special under-the-hood treatment with #+hons
-    "boot-strap-pass-2"
     "basis"
     "parallel" ; but only get special under-the-hood treatment with #+acl2-par
     #+acl2-par "futures-raw"
@@ -875,6 +873,7 @@
     "tutorial"
     "interface-raw"
     "defpkgs"
+    "boot-strap-pass-2" ; at the end so that it is compiled last
     )
   "*acl2-files* is the list of all the files necessary to build
 ACL2 from scratch.")
@@ -930,7 +929,7 @@ ACL2 from scratch.")
    (setq acl2::*copy-of-acl2-version*
 ;  Keep this in sync with the value of acl2-version in *initial-global-table*.
          (concatenate 'string
-                      "ACL2 Version 4.3"
+                      "ACL2 Version 5.0"
                       #+non-standard-analysis
                       "(r)"
                       #+(and mcl (not ccl))

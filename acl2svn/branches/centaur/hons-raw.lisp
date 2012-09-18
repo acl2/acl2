@@ -1,14 +1,13 @@
-; ACL2 Version 4.3 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2011  University of Texas at Austin
+; ACL2 Version 5.0 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2012  University of Texas at Austin
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic
 ; NOTE-2-0.
 
 ; This program is free software; you can redistribute it and/or modify
-; it under the terms of the GNU General Public License as published by
-; the Free Software Foundation; either version 2 of the License, or
-; (at your option) any later version.
+; it under the terms of Version 2 of the GNU General Public License as
+; published by the Free Software Foundation.
 
 ; This program is distributed in the hope that it will be useful,
 ; but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -3462,6 +3461,69 @@ To avoid the following break and get only the above warning:~%  ~a~%"
   ;; no need to inline
   (hl-maybe-initialize-default-hs)
   (hl-hspace-make-fast-alist alist *default-hs*))
+
+(defmacro with-fast-alist-raw (alist form)
+  (let ((alist-was-fast-p (gensym))
+        (alist-var (if (legal-variablep alist)
+                       alist
+                     (gensym))))
+    `(progn
+       (hl-maybe-initialize-default-hs)
+       (let* (
+              ;; If alist isn't a variable, then depend on it being a
+              ;; computation that returns the same (eq) object each time, and
+              ;; that object can be turned into an (eq) fast alist, i.e. its
+              ;; keys are normed.  If not, then the user may not find their
+              ;; alist to be fast during the execution of form, but we'll still
+              ;; correctly free it.
+              (,alist-var ,alist)
+              (,alist-was-fast-p
+               (let ((slot (hl-faltable-general-lookup ,alist-var (hl-hspace-faltable *default-hs*))))
+                 (if (hl-falslot-key slot)
+                     t
+                   nil)))
+              (,alist-var (if ,alist-was-fast-p
+                              ,alist-var
+                            (make-fast-alist ,alist-var))))
+         (our-multiple-value-prog1
+          ,form
+          (if ,alist-was-fast-p
+              nil
+            (fast-alist-free ,alist-var)))))))
+
+(defmacro with-stolen-alist-raw (alist form)
+  (let ((alist-was-fast-p (gensym))
+        (alist-var (if (legal-variablep alist)
+                       alist
+                     (gensym))))
+    `(progn
+       (hl-maybe-initialize-default-hs)
+       (let* (
+              ;; If alist isn't a variable, then depend on it being a
+              ;; computation that returns the same (eq) object each time, and
+              ;; that object can be turned into an (eq) fast alist, i.e. its
+              ;; keys are normed.  If not, then the user may not find their
+              ;; alist to be fast during the execution of form, but we'll still
+              ;; correctly free it.
+              (,alist-var ,alist)
+              (,alist-was-fast-p
+               (let ((slot (hl-faltable-general-lookup ,alist-var (hl-hspace-faltable *default-hs*))))
+                 (if (hl-falslot-key slot)
+                     t
+                   nil)))
+              (,alist-var (if ,alist-was-fast-p
+                              ,alist-var
+                            (make-fast-alist ,alist-var))))
+         (our-multiple-value-prog1
+          ,form
+          (if ,alist-was-fast-p
+              (make-fast-alist ,alist-var)
+            (fast-alist-free ,alist-var)))))))
+
+(defmacro fast-alist-free-on-exit-raw (alist form)
+  `(our-multiple-value-prog1
+    ,form
+    (fast-alist-free ,alist)))
 
 ;  COMPATIBILITY WITH OLD HONS FUNCTIONS ------------------------
 

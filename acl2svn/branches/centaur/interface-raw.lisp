@@ -1,13 +1,12 @@
-; ACL2 Version 4.3 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2011  University of Texas at Austin
+; ACL2 Version 5.0 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2012  University of Texas at Austin
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
 
 ; This program is free software; you can redistribute it and/or modify
-; it under the terms of the GNU General Public License as published by
-; the Free Software Foundation; either version 2 of the License, or
-; (at your option) any later version.
+; it under the terms of Version 2 of the GNU General Public License as
+; published by the Free Software Foundation.
 
 ; This program is distributed in the hope that it will be useful,
 ; but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -4937,21 +4936,27 @@
 ; If we change or remove this proclaim form, then revisit the comment about
 ; inlining in redefinition-renewal-mode.
 
-                 (proclaim (list 'notinline
-                                 (if oneify-p
-                                     (*1*-symbol (car def0))
-                                   (car def0)))))
+                 (let ((form (list 'notinline
+                                   (if oneify-p
+                                       (*1*-symbol (car def0))
+                                     (car def0)))))
+                   (proclaim form)
+                   (push (list 'declaim form) *declaim-list*)))
                 (oneify-p nil)
                 ((terminal-substringp *inline-suffix*
                                       name
                                       *inline-suffix-len-minus-1*
                                       (1- (length name)))
-                 (proclaim (list 'inline (car def0))))
+                 (let ((form (list 'inline (car def0))))
+                   (proclaim form)
+                   (push (list 'declaim form) *declaim-list*)))
                 ((terminal-substringp *notinline-suffix*
                                       name
                                       *notinline-suffix-len-minus-1*
                                       (1- (length name)))
-                 (proclaim (list 'notinline (car def0)))))))
+                 (let ((form (list 'notinline (car def0))))
+                   (proclaim form)
+                   (push (list 'declaim form) *declaim-list*))))))
   (loop for tail on defs
         do
         (let* ((def (car tail))
@@ -6545,7 +6550,7 @@
   (and (consp form)
        (case (car form)
          ((defun defund defn defproxy defun-nx defun-one-output defstub
-            defmacro defabbrev defun@par)
+            defmacro defabbrev defun@par defmacro-last)
           (setf (gethash (cadr form) ht)
                 form))
          (save-def

@@ -1,13 +1,12 @@
-; ACL2 Version 4.3 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2011  University of Texas at Austin
+; ACL2 Version 5.0 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2012  University of Texas at Austin
 
 ; This version of ACL2 was produced by modifying ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTES-2-0.
 
 ; This program is free software; you can redistribute it and/or modify
-; it under the terms of the GNU General Public License as published by
-; the Free Software Foundation; either version 2 of the License, or
-; (at your option) any later version.
+; it under the terms of Version 2 of the GNU General Public License as
+; published by the Free Software Foundation.
 
 ; This program is distributed in the hope that it will be useful,
 ; but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -268,12 +267,11 @@
 
 @ifinfo
 This is documentation for ~sv@*
-Copyright @copyright{} 2011  University of Texas at Austin
+Copyright @copyright{} 2012  University of Texas at Austin
 
 This program is free software; you can redistribute it and/or modify@*
-it under the terms of the GNU General Public License as published by@*
-the Free Software Foundation; either version 2 of the License, or@*
-(at your option) any later version.
+it under the terms of Version 2 of the GNU General Public License as@*
+published by the Free Software Foundation.
 
 This program is distributed in the hope that it will be useful,@*
 but WITHOUT ANY WARRANTY; without even the implied warranty of@*
@@ -308,7 +306,7 @@ END-INFO-DIR-ENTRY
 @center ~sm ~fy
 @page
 @vskip 0pt plus 1filll
-Copyright @copyright{} 2011  University of Texas at Austin
+Copyright @copyright{} 2012  University of Texas at Austin
 Distributed under the terms of the GNU General Public License.
 @sp 2
 This is documentation for ~sv @*
