@@ -106,10 +106,11 @@
                            'string))
      name)))
 
-(defun generate-output-lemma-single (name guards output)
+(defun generate-output-lemma-single (name guards output output-hints)
   `((defthm ,(generate-output-lemma-name name nil)
       (implies ,guards
-               ,output))))
+               ,output)
+      :hints ,output-hints)))
   
 (defun generate-output-lemma-multiple (name guards output number)
   (if (atom output)
@@ -122,9 +123,9 @@
                                             (cdr output)
                                             (1+ number)))))
 
-(defun generate-output-lemmas (name guards output)
+(defun generate-output-lemmas (name guards output output-hints)
   (if (not (equal (car output) 'and))
-      (generate-output-lemma-single name guards output)
+      (generate-output-lemma-single name guards output output-hints)
     (generate-output-lemma-multiple name guards (cdr output) 1)))
 
 ;; ============================================================================
@@ -134,11 +135,13 @@
 (defmacro defun+ (name formals dcl body &key disable)
   (let* ((guards (car (fetch-dcl-field-program-mode :guard (list dcl))))
          (output (car (fetch-dcl-field-program-mode :output (list dcl))))
-         (new-dcls (car (strip-dcls-program-mode '(:output) (list dcl)))))
+         (output-hints (car (fetch-dcl-field-program-mode :output-hints (list dcl))))
+         (new-dcls (car (strip-dcls-program-mode '(:output) (list dcl))))
+         (new-dcls (car (strip-dcls-program-mode '(:output-hints) (list new-dcls)))))
     `(progn
        (defun ,name ,formals ,new-dcls ,body)
        ,@(if output
-             (generate-output-lemmas name guards output)
+             (generate-output-lemmas name guards output output-hints)
            `((value-triple nil)))
        ,(if disable
            `(in-theory (disable ,name))
@@ -148,12 +151,21 @@
 ;; Some examples
 ;; ============================================================================
 
-(local 
+(local
  (defun+ baz (x y z)
    (declare (xargs :guard (and (integerp x)
                                (integerp y)
                                (integerp z))
                    :output (integerp (baz x y z))))
+   (+ x y z)))
+
+(local
+ (defun+ baz (x y z)
+   (declare (xargs :guard (and (integerp x)
+                               (integerp y)
+                               (integerp z))
+                   :output (integerp (baz x y z))
+                   :output-hints (("Goal" :do-not-induct t))))
    (+ x y z)))
 
 (local 
@@ -262,4 +274,7 @@
 ;; rules automatically generated, so having this extra mechanism for flagging
 ;; the automatic use of these lemmas, would help us figure out whether they can
 ;; cause problems.
+
+;; Come up with a way of allowing hints for the output lemmas when there is
+;; more than one output lemma.
 ;; ============================================================================
