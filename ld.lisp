@@ -19465,6 +19465,10 @@
 
   ~st[BUG FIXES]
 
+  Fixed a raw Lisp error that occurred when tracing a ~i[stobj] resize
+  function, thanks to an error report from Warren Hunt, Marijn Heule, and
+  Nathan Wetzler.
+
   ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]
 
   ~st[EMACS SUPPORT]
