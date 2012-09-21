@@ -257,6 +257,12 @@ constructed and used in an ephemeral manner.</p>
 <tt>:hons t</tt> implies <tt>:legiblep nil</tt>.</p>
 
 
+<h4>Defun-mode (<tt>:mode</tt> parameter)</h4>
+
+<p>Mode for the introduced functions -- must be either <tt>:program</tt> or
+<tt>:logic</tt>.  The current defun-mode by default</p>
+
+
 <h4>XDOC Integration (<tt>:parents</tt>, <tt>short</tt>, and <tt>long</tt> parameters)</h4>
 
 <p>The <tt>:parents</tt>, <tt>:short</tt>, and <tt>:long</tt> arguments are
@@ -1102,8 +1108,8 @@ term.  The attempted binding of~|~% ~p1~%~%is not of this form."
   (cons (da-main-autodoc name fields require parents short long)
         (da-fields-autodoc name fields)))
 
-
-(defun defaggregate-fn (name fields tag require honsp legiblep patbindp mode parents short long)
+(defun defaggregate-fn (name fields tag require honsp legiblep patbindp mode
+                             parents short long)
   (and (or (symbolp name)
            (er hard 'defaggregate "Name must be a symbol."))
        (or (symbol-listp fields)
