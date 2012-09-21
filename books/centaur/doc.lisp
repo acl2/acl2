@@ -84,6 +84,11 @@
 (include-book "defrstobj/defrstobj")
 
 (include-book "misc/smm")
+(include-book "bitops/install-bit")
+(include-book "bitops/rotate")
+(include-book "misc/tailrec")
+(include-book "vl/mlib/sub-counts")
+(include-book "vl/util/prefix-hash")
 
 #||
 
