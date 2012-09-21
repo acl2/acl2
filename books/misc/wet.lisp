@@ -183,9 +183,14 @@
                             (trans-eval ',form 'wet state t)
                             (cond
                              (erp
-                              (let ((evisc-tuple ,(if evisc-tuple-p
-                                                      evisc-tuple
-                                                    '(abbrev-evisc-tuple state)))
+                              (let ((evisc-tuple
+                                     ,(if evisc-tuple-p
+                                          evisc-tuple
+                                        '(evisc-tuple 3
+                                                      4
+                                                      (trace-evisceration-alist
+                                                       state)
+                                                      nil)))
                                     (val (f-get-global 'wet-stack state)))
                                 (pprogn
                                  (fms "Backtrace stack:"
