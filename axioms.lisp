@@ -9885,6 +9885,40 @@
 ; A call of throw-or-attach assumes that the attachment-symbol is special and,
 ; more importantly, bound.  So we ensure that property here.
 
+; It's a bit subtle why this approach works.  Indeed, consider the following
+; example.  Suppose the book foo.lisp has the just following two forms.
+
+;   (in-package "ACL2")
+;   (encapsulate ((foo (x) t)) (local (defun foo (x) x)))
+
+; Now certify the book, with (certify-book "foo"), and then in a new session:
+
+;   :q
+;   (load "foo")
+;   (boundp (attachment-symbol 'foo))
+
+; Then boundp call returns nil.  If instead we do this in a new session
+
+;   (include-book "foo")
+;   :q
+;   (boundp (attachment-symbol 'foo))
+
+; then the boundp call returns t.  This is not surprising, since we can see by
+; tracing throw-or-attach-call that it is being called, thus defining the
+; attachment-symbol.
+
+; There might thus seem to be the following possibility of errors due to
+; unbound attachment-symbols.  Suppose that foo were called before its
+; attachment-symbol is defined by evaluation of the above encapsulate form in
+; the loop, say, during the early load of the compiled file for foo.lisp on
+; behalf of include-book.  Then an error would occur, because the
+; attachment-symbol for foo would not yet be defined.  However, the only way we
+; can imagine this case occurring for a certified book is if foo gets an
+; attachment before it is called (else the book wouldn't have been
+; certifiable).  Yet in raw Lisp, defattach calls defparameter for the
+; attachment-symbol for every function receiving an attachment, thus avoiding
+; the possibility of this proposed problem of unbound attachment-symbols.
+
   (declare (xargs :guard t))
   #-acl2-loop-only
   (eval `(defvar ,(attachment-symbol fn) nil))
