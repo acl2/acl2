@@ -2837,7 +2837,10 @@
            (push `(progn #+hons (push ',name *defattach-fns*)
                          ,(set-attachment-symbol-form
                            name
-                           (if (boundp at-sym) (symbol-value at-sym) nil)))
+
+; Note that at-sym is bound when name is introduced; see throw-or-attach-call.
+
+                           (symbol-value at-sym)))
                  (get name '*undo-stack*))))
         #+hons
         (memoize

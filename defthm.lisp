@@ -3193,7 +3193,7 @@
   rewriter strictly more type information than it already had.  The
   new rule is stored anyway, overriding the old, if enabled.  You may
   be playing subtle games with enabling or rewriting.  But two other
-  interpretions are more likely, we think.  One is that you have
+  interpretations are more likely, we think.  One is that you have
   forgotten about an earlier rule and should merely print it out to
   make sure it says what you know and then forget your new rule.  The
   other is that you meant to give the system more information and the

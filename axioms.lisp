@@ -9844,39 +9844,56 @@
 (defmacro aokp ()
   '*aokp*)
 
-(defvar *attached-fn-called*)
+#+hons
+(defvar *attached-fn-called* nil)
 
 #+hons
 (defmacro update-attached-fn-called (fn)
-  `(when (and (boundp '*attached-fn-called*)
-              (null *attached-fn-called*))
+  `(when (null *attached-fn-called*)
      (setq *attached-fn-called* ,fn)))
 
 (defmacro throw-or-attach (fn formals &optional *1*-p)
-  (let ((at-fn (attachment-symbol fn)))
-    `(let ()
-       (declare (special ,at-fn))
-       (cond ((and (boundp ',at-fn)
-                   ,at-fn
-                   (aokp))
+
+; Warning: this macro assumes that (attachment-symbol fn) is special and, more
+; important, bound.  So it is probably best to lay down calls of of this macro
+; using throw-or-attach-call.
+
+  (let ((at-fn (attachment-symbol fn))
+        (at-fn-var (gensym)))
+
+; It is tempting to insert the form (eval `(defvar ,at-fn nil)) here.  But that
+; would only be evaluated at compile time.  When loading a compiled file on
+; behalf of including a book, this eval call would no longer be around; it
+; would instead have been executed during compilation.  The Warning above is
+; intended to guarantee that at-fn has already been both declared special and
+; bound.
+
+    `(let ((,at-fn-var ,at-fn)) ; to look up special var value only once
+       (cond ((and ,at-fn-var (aokp))
               #+hons
               (update-attached-fn-called ',fn)
               (funcall ,(if *1*-p
-                            `(*1*-symbol ,at-fn)
-                          at-fn)
+                            `(*1*-symbol ,at-fn-var)
+                          at-fn-var)
                        ,@formals))
-             (t (throw-without-attach
-                 (and (boundp ',at-fn)
-                      ,at-fn)
-                 ,fn
-                 ,formals))))))
+             (t (throw-without-attach ,at-fn ,fn ,formals))))))
 
 )
+
+(defun throw-or-attach-call (fn formals)
+
+; A call of throw-or-attach assumes that the attachment-symbol is special and,
+; more importantly, bound.  So we ensure that property here.
+
+  (declare (xargs :guard t))
+  #-acl2-loop-only
+  (eval `(defvar ,(attachment-symbol fn) nil))
+  (list 'throw-or-attach fn formals))
 
 (defun null-body-er (fn formals maybe-attach)
   (declare (xargs :guard t))
   (if maybe-attach
-      (list 'throw-or-attach fn formals)
+      (throw-or-attach-call fn formals)
     (list 'throw-without-attach nil fn formals)))
 
 ; CLTL2 and the ANSI standard have made the main Lisp package name be
@@ -27031,6 +27048,7 @@
     read-object-suppress
 
     assign-lock
+    throw-or-attach-call
   ))
 
 (defconst *primitive-macros-with-raw-code*

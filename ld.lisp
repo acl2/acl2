@@ -19451,6 +19451,26 @@
                    (fmt-hard-right-margin . 10000)))
   ~ev[]
 
+  The use of attachments (~pl[defattach]) has been made more efficient,
+  avoiding some low-level checks (Common Lisp `~c[boundp]' checks).  Thanks to
+  Shilpi Goel for constructing an example that we used to help direct us to
+  remove inefficiency.  The following results for that example ~-[] a Fibonacci
+  program run on a machine interpreter in raw-mode (~pl[set-raw-mode]) ~-[]
+  give a sense of the potential speedup, though we note that a full ACL2(h)
+  regression showed no significant speedup.~bv[]
+
+  ; Time before the change:
+  ; 0.89 seconds realtime, 0.90 seconds runtime
+
+  ; Time after the change:
+  ; 0.75 seconds realtime, 0.75 seconds runtime
+
+  ; Time when cheating to avoid the cost of attachments, by redefining a
+  ; function to BE its attachment (so, this gives a lower bound on possible
+  ; execution time):
+  ; 0.72 seconds realtime, 0.72 seconds runtime
+  ~ev[]
+
   ~st[NEW FEATURES]
 
   ~st[HEURISTIC IMPROVEMENTS]
