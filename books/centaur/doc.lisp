@@ -101,6 +101,27 @@
 (include-book "cutil/defalist-tests" :dir :system)
 (include-book "cutil/defmapappend-tests" :dir :system)
 (include-book "cutil/defprojection-tests" :dir :system)
+
+;; Here is more tricking of the dependency scanner, to avoid leaving out books
+;; under books/centaur/ from the certification process invoked by running 'make
+;; regression-hons' from the acl2-sources directory.  Note that at least one of
+;; these can't be moved to outside this comment: defrstobj/groundwork/demo1
+;; gives a conflicting definition of a stobj, st.
+
+(include-book "bitops/sign-extend")
+(include-book "defrstobj/groundwork/demo1")
+(include-book "defrstobj/groundwork/demo2")
+(include-book "defrstobj/groundwork/demo3")
+(include-book "defrstobj/groundwork/demo4")
+(include-book "defrstobj/groundwork/demo5")
+(include-book "misc/top")
+(include-book "ubdds/sanity-check-macros")
+(include-book "vl/checkers/use-set-tool")
+(include-book "vl/lint/xf-drop-unresolved-submodules")
+(include-book "vl/mlib/lvalues-mentioning")
+(include-book "vl/mlib/rvalues")
+(include-book "vl/util/prefixp")
+
 ||#
 
 
