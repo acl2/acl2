@@ -29,6 +29,7 @@
 ; with packages to see if the macro breaks, and also try defining a large
 ; machine to see how well proving the supporting theorems scales.
 
+
 (defrstobj m1  ;; "machine 1"                 ; Executable interface:
 
   (regs  :type (array integer (32))           ; (get-regs i m1)
@@ -200,3 +201,10 @@
   (m5-fld15 :initially nil))
 
 
+
+
+
+(defrstobj matt-example
+  ;; Example stobj from Matt Kaufmann that previously did not work due to a
+  ;; theory problem, which we have now fixed.
+  (fld1 :type integer :initially 0))

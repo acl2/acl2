@@ -79,6 +79,25 @@
            (equal (update-nth n val1 (update-nth m val2 x))
                   (update-nth m val2 (update-nth n val1 x)))))
 
+(defthm update-nth-diff-gather-constants
+  ;; This is a special alternative to update-nth-diff that is willing to
+  ;; reorder keys/vals in the wrong order, as long as the result will be a
+  ;; completely constant update to a constant record.
+  ;;
+  ;; This isn't really enough.  It won't do the job for nests of updates.  But
+  ;; it is good enough to get through the "matt-example" in basic-tests.lisp.
+  ;; Without the rule, we fail to prove to-leaves-bad-bad, because we put the
+  ;; keys into the wrong order and don't get all the constants resolved.
+  (implies (and (syntaxp (and (quotep x)
+                              (quotep n)
+                              (quotep val1)
+                              (or (not (quotep m))
+                                  (not (quotep val2)))))
+                (not (equal (nfix n) (nfix m))))
+           (equal (update-nth n val1 (update-nth m val2 x))
+                  (update-nth m val2 (update-nth n val1 x))))
+  :rule-classes ((:rewrite :loop-stopper nil)))
+
 (defthm update-nth-of-nth
   (equal (update-nth n (nth n arr) arr)
          (if (< (nfix n) (len arr))

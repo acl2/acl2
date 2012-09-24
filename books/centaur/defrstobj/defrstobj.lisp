@@ -974,6 +974,19 @@
                            (let ((misc (,st-misc ,name)))
                              (equal misc (g-delete-keys ',user-keys misc))))))
 
+
+         ;; Matt Kaufmann sent me a nice bug report that showed
+         ;; good-stp-of-create-st failing for an extremely simple rstobj.  It
+         ;; seemed like ACL2 was trying to prove the theorem by executing
+         ;; good-stp on the constant list '(0 nil t nil), which was getting
+         ;; created by (create-st).  But this in turn called weak-stp, which is
+         ;; non-executable, and wrapped the whole term in a HIDE.  Then nothing
+         ;; could apply to it, and everything broke down.  So, to fix this,
+         ;; just make sure we never try to execute these during the following
+         ;; proofs.  See "matt-example" in basic-tests.lisp.
+         (local (in-theory (disable (:executable-counterpart ,good-stp)
+                                    (:executable-counterpart ,weak-stp))))
+
          (defthm ,(mksym good-stp '-of- create-name)
            (,good-stp (,create-name))
            :hints(("Goal" :in-theory (enable ,good-stp))))
