@@ -19421,6 +19421,12 @@
 
 (deflabel note-5-1
 
+; Added analogues simple-translate-and-eval-error-double and
+; simple-translate-and-eval-cmp of simple-translate-and-eval, which instead of
+; (mv erp val state) return (mv erp val) and a context-message pair,
+; respectively.  Note that error output is never inhibited for these functions
+; as implemented.
+
   :doc
   ":Doc-Section release-notes
 
@@ -19430,7 +19436,7 @@
   ~il[documentation] has been updated to reflect all changes that are recorded
   here.
 
-  Below we roughly organize the changes since Version  4.3 into the following
+  Below we roughly organize the changes since Version  5.0 into the following
   categories of changes: existing features, new features, heuristic
   improvements, bug fixes, changes at the system level and to distributed
   books, Emacs support, and experimental versions.  Each change is described in
@@ -19472,6 +19478,13 @@
   ~ev[]
 
   ~st[NEW FEATURES]
+
+  Among the new features for system hackers are analogues of system function
+  ~c[simple-translate-and-eval] that do not return ~ilc[state].  (Thanks to
+  David Rager for requesting this feature and helpful conversations on its
+  implementation.)  This and other low-level changes are typically documented
+  in comments in the corresponding release note event, which in this case is
+  ~c[(deflabel note-5-1 ...)].
 
   ~st[HEURISTIC IMPROVEMENTS]
 

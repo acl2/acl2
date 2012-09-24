@@ -3248,6 +3248,22 @@
                             (t (mv@par t nil state))))
                  (t (value@par msg-or-val)))))
 
+(defmacro cmp-to-error-double (form)
+
+; This is a variant of cmp-to-error-triple that returns (mv erp val) rather
+; than (mv erp val state).
+
+  `(mv-let (ctx msg-or-val)
+           ,form
+           (cond (ctx (prog2$ (cond (msg-or-val
+                                     (assert$ (not (eq ctx t))
+                                              (error-fms-cw
+                                               nil ctx "~@0"
+                                               (list (cons #\0 msg-or-val)))))
+                                    (t nil))
+                              (mv t nil)))
+                 (t (mv nil msg-or-val)))))
+
 (defmacro cmp-and-value-to-error-quadruple (form)
 
 ; We convert a context-message pair and an extra-value (see the Essay on
@@ -7770,38 +7786,43 @@
 (defmacro error-fms@par (&rest args)
   `(error-fms-cw ,@args))
 
-#+acl2-par
-(defun simple-translate-and-eval@par (x alist ok-stobj-names msg ctx wrld state
+(defun simple-translate-and-eval-cmp (x alist ok-stobj-names msg ctx wrld state
                                         aok safe-mode gc-off)
 
-; Keep in sync with simple-translate-and-eval.
+; Warning: Errors printed by this function are not inhibited by
+; set-inhibit-output-lst.
+
+; This version of simple-translate-and-eval returns a context-message pair; see
+; the Essay on Context-message Pairs.  See simple-translate-and-eval for
+; documentation, for example that translation is done under the assumption that
+; the user is granted full access to the stobjs in state.
 
 ; Notice that we pass in safe-mode and gc-off explicitly, rather than reading
 ; them from state, because there are occasions (e.g., eval-theory-expr@par)
 ; where at least one of these parameters could differ from its corresponding
 ; state value.  But couldn't we have simply state-global-let*-bound the
-; relevant state globals?  Well, no, in contexts like eval-theory-expr@par that
-; do not allow modification of state.
+; relevant state globals?  Well, no, not in contexts like eval-theory-expr@par
+; that do not allow modification of state.
 
-  (er-let*@par
-   ((term (translate@par x '(nil) nil t ctx wrld state)))
+  (er-let*-cmp
+   ((term (translate-cmp x '(nil) nil t ctx wrld (default-state-vars t))))
    (let ((vars (all-vars term))
          (legal-vars (append (strip-cars alist)
                              ok-stobj-names)))
      (cond ((not (subsetp-eq vars legal-vars))
-            (er@par soft ctx
-              "~@0 may contain ~#1~[no variables~/only the variable ~&2~/only ~
-               the variables ~&2~], but ~x3 contains ~&4."
-              msg
-              (cond ((null legal-vars) 0)
-                    ((null (cdr legal-vars)) 1)
-                    (t 2))
-              legal-vars
-              x
-              vars))
+            (er-cmp ctx
+                    "~@0 may contain ~#1~[no variables~/only the variable ~
+                     ~&2~/only the variables ~&2~], but ~x3 contains ~&4."
+                    msg
+                    (cond ((null legal-vars) 0)
+                          ((null (cdr legal-vars)) 1)
+                          (t 2))
+                    legal-vars
+                    x
+                    vars))
            (t (mv-let (erp val)
 
-; Note that because translate@par is called above with parameter stobjs-out =
+; Note that because translate-cmp is called above with parameter stobjs-out =
 ; '(nil), we have met the requirement on ev-w; specifically, evaluation of the
 ; given form cannot modify any stobj.
 
@@ -7820,13 +7841,57 @@
                             (user-stobj-alist state)
                             safe-mode gc-off nil aok)
                       (cond
-                       (erp (pprogn@par
-                             (error-fms@par nil ctx (car val) 
-                                            (cdr val))
-                             (er@par soft ctx
-                               "~@0 could not be evaluated."
-                               msg)))
-                       (t (value@par (cons term val))))))))))
+                       (erp (prog2$
+                             (error-fms-cw nil ctx (car val) (cdr val))
+                             (er-cmp ctx
+                                     "~@0 could not be evaluated."
+                                     msg)))
+                       (t (value-cmp (cons term val))))))))))
+
+(defun simple-translate-and-eval-error-double (x alist ok-stobj-names msg ctx
+                                                 wrld state aok safe-mode
+                                                 gc-off)
+
+; Warning: Errors printed by this function are not inhibited by
+; set-inhibit-output-lst.
+
+; This version of simple-translate-and-eval returns an error double (mv erp
+; val).  See simple-translate-and-eval for documentation, for example that
+; translation is done under the assumption that the user is granted full access
+; to the stobjs in state.
+
+; This function was requested by David Rager so that he could make the book
+; books/cutil/wizard.lisp thread-safe for ACL2(p).  We return an error double
+; (mv erp val).
+
+; Our plan is to introduce simple-translate-and-eval-cmp first, because we have
+; nice idioms for context-message pairs.  Then we trivially define
+; simple-translate-and-eval-error-double in terms of
+; simple-translate-and-eval-cmp.
+
+; See a comment in simple-translate-and-eval-cmp for why we pass in safe-mode
+; and gc-off explicitly, rather than reading them from state.
+
+  (cmp-to-error-double
+   (simple-translate-and-eval-cmp x alist ok-stobj-names msg ctx wrld state
+                                  aok safe-mode gc-off)))
+
+#+acl2-par
+(defun simple-translate-and-eval@par (x alist ok-stobj-names msg ctx wrld state
+                                        aok safe-mode gc-off)
+
+; This function is just an ACL2(p) wrapper for
+; simple-translate-and-eval-error-double.  The history is that this function
+; was defined first, but David Rager needed a version that worked in
+; non-parallel ACL2 as well; see simple-translate-and-eval-error-double.
+
+; We keep the function simple-translate-and-eval@par because of its handling in
+; bodies of functions defined using defun@par according to the table
+; *@par-mappings*.  See for example the call of simple-translate-and-eval@par
+; in (defun@par translate-do-not-hint ...).
+
+  (simple-translate-and-eval-error-double x alist ok-stobj-names msg ctx wrld
+                                          state aok safe-mode gc-off))
 
 (defun tilde-*-alist-phrase1 (alist evisc-tuple level)
   (cond ((null alist) nil)
