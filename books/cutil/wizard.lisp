@@ -57,31 +57,36 @@
 
 (defun simpler-trans-eval (x alist state)
   (declare (xargs :stobjs state :mode :program))
-  (b* (((mv er (cons ?trans eval) state)
-        (simple-translate-and-eval x alist nil
-                                   (msg "Term was ~x0" x)
-                                   'simpler-trans-eval
-                                   (w state)
-                                   state
-                                   t)))
+  (b* (((mv er (cons ?trans eval))
+        (simple-translate-and-eval-error-double
+         x alist nil
+         (msg "Term was ~x0" x)
+         'simpler-trans-eval
+         (w state)
+         state
+         t
+         (f-get-global 'safe-mode state)
+         (gc-off state))))
     (or (not er)
         (er hard? 'simpler-trans-eval
             "Evaluation somehow failed for ~x0: ~@1" x er))
-    (mv eval state)))
+    eval))
 
 (defun simpler-trans-eval-list (x alist state)
   (declare (xargs :stobjs state :mode :program))
-  (b* (((mv er (cons ?trans eval) state)
-        (simple-translate-and-eval x alist nil
-                                   (msg "Term was ~x0" x)
-                                   'simpler-trans-eval
-                                   (w state)
-                                   state
-                                   t)))
+  (b* (((mv er (cons ?trans eval))
+        (simple-translate-and-eval-error-double x alist nil
+                                                (msg "Term was ~x0" x)
+                                                'simpler-trans-eval
+                                                (w state)
+                                                state
+                                                t
+                                                (f-get-global 'safe-mode state)
+                                                (gc-off state))))
     (or (not er)
         (er hard? 'simpler-trans-eval
             "Evaluation somehow failed for ~x0: ~@1" x er))
-    (mv eval state)))
+    eval))
 
 
 
@@ -91,14 +96,14 @@
 (defun filter-sigmas-by-restriction (restrict sigmas state)
   (declare (xargs :stobjs state :mode :program))
   (b* (((when (atom sigmas))
-        (mv nil state))
-       ((mv evaluation state)
+        nil)
+       (evaluation
         (simpler-trans-eval restrict (car sigmas) state))
        ((unless evaluation)
         (filter-sigmas-by-restriction restrict (cdr sigmas) state))
-       ((mv rest state)
+       (rest
         (filter-sigmas-by-restriction restrict (cdr sigmas) state)))
-    (mv (cons (car sigmas) rest) state)))
+    (cons (car sigmas) rest)))
 
 ;; (filter-sigmas-by-restriction '(quotep x)
 ;;                               (collect-matches-from-term '(foo x)
@@ -109,36 +114,36 @@
 (defun wizard-print-advice (sigma advice state)
   (declare (xargs :stobjs state :mode :program))
   (b* (((wizadvice advice) advice)
-       ((mv args-evaled state) (simpler-trans-eval advice.args sigma state))
+       (args-evaled (simpler-trans-eval advice.args sigma state))
        (msg (cons (concatenate 'string "~|~%Wizard: " advice.msg "~%")
                   (pairlis2 '(#\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9) args-evaled))))
     (cw "~@0" msg)
-    state))
+    nil))
 
 (defun wizard-print-advice-list (sigmas advice state)
   (declare (xargs :stobjs state :mode :program))
   (if (atom sigmas)
-      state
-    (let ((state (wizard-print-advice (car sigmas) advice state)))
-      (wizard-print-advice-list (cdr sigmas) advice state))))
+      nil
+    (prog2$ (wizard-print-advice (car sigmas) advice state)
+            (wizard-print-advice-list (cdr sigmas) advice state))))
 
 (defun wizard-do-advice (clause advice state)
   (declare (xargs :stobjs state :mode :program))
   (b* (((wizadvice advice) advice)
        (sigmas (collect-matches-from-term-list advice.pattern clause nil))
        (sigmas (remove-duplicates-equal sigmas))
-       ((mv sigmas state)
+       (sigmas
         (if advice.restrict
             (filter-sigmas-by-restriction advice.restrict sigmas state)
-          (mv sigmas state))))
+          sigmas)))
     (wizard-print-advice-list sigmas advice state)))
 
 (defun wizard-do-advice-list (clause advices state)
   (declare (xargs :stobjs state :mode :program))
   (if (atom advices)
-      state
-    (let ((state (wizard-do-advice clause (car advices) state)))
-      (wizard-do-advice-list clause (cdr advices) state))))
+      nil
+    (prog2$ (wizard-do-advice clause (car advices) state)
+            (wizard-do-advice-list clause (cdr advices) state))))
 
 (table wizard-advice)
 
@@ -156,10 +161,10 @@
 (defun wizard-fn (stable-under-simplificationp clause state)
   (declare (xargs :stobjs state :mode :program))
   (if (not stable-under-simplificationp)
-      (value nil)
-    (let* ((advices (get-wizard-advice (w state)))
-           (state   (wizard-do-advice-list clause advices state)))
-      (value nil))))
+      nil
+    (let ((advices (get-wizard-advice (w state))))
+      (prog2$ (wizard-do-advice-list clause advices state)
+              nil))))
 
 (defmacro wizard ()
   `(wizard-fn stable-under-simplificationp clause state))
