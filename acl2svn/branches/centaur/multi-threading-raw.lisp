@@ -1015,59 +1015,28 @@
   #-(or ccl sbcl lispworks)
   (error "Function thread-name is unimplemented in this Lisp."))
 
-#+(or ccl sbcl lispworks)
-(defun initial-threads1 (threads)
+(defconstant *worker-thread-name* "Worker thread")
 
-; Parallelism wart: this function is intended to return all threads not under
-; ACL2(p) control.  As currently implemented, it depends on exact names of
-; initial threads, and it doesn't comprehend threads created by the system
-; after startup (e.g. for parallel garbage collection or alarm clocks, if those
-; ever exist).
-
+(defun worker-threads1 (threads)
   (cond ((endp threads)
          nil)
-        (#+ccl
-         (member-equal (ccl:process-name (car threads))
-                       '("listener" "Initial"))
-
-         #+sbcl
-         (member-equal (sb-thread:thread-name (car threads))
-                       '("initial thread"))
-         #+lispworks
-         (member-equal (mp:process-name (car threads))
-                       '("TTY Listener" "The idle process" 
-                         "Restart Function Process"))
+        ((equal (thread-name (car threads)) *worker-thread-name*)
          (cons (car threads)
-               (initial-threads1 (cdr threads))))
-        (t (initial-threads1 (cdr threads)))))
+               (worker-threads1 (cdr threads))))
+        (t (worker-threads1 (cdr threads)))))
 
-(defun initial-threads ()
+(defun worker-threads ()
 
-; Once upon a time, we would set a *initial-threads* variable upon startup of
-; ACL2.  This variable accurately reflected the set of initial threads in both
-; CCL and SBCL, but not Lispworks.  Due to our use of Lispworks'
-; multiprocessing model (where we start a tty-listener when lp exits),
-; accurately updating this variable is difficult (perhaps infeasible).  Since
-; we prefer a more uniform approach across Lisp implementations, we simply
-; return the threads that currently exist that match the names of threads that
-; we associate with "initial" threads.
+; Returns the subset of the current list of threads that are worker threads
+; spawned by ACL2(p).
 
-; When terminating parallelism threads, only those not appearing in the list
-; returned by initial-threads will be terminated.
+  (worker-threads1 (all-threads)))
 
-  #+(or ccl sbcl lispworks)
-  (initial-threads1 (all-threads))
-  #-(or ccl sbcl lispworks)
-  nil)
-
-(defun all-threads-except-initial-threads-are-dead ()
+(defun all-worker-threads-are-dead ()
   #+sbcl
   (<= (length (all-threads)) 1)
   #-sbcl
-  (null (set-difference (all-threads) (initial-threads)))
-;;; Parallelism wart: define worker-threads.
-;;;  (null (worker-threads))
-)
+  (null (worker-threads)))
 
 #+ccl
 (defun all-given-threads-are-reset (threads)
@@ -1077,34 +1046,27 @@
                 "Reset")
          (all-given-threads-are-reset (cdr threads)))))
 
-(defun all-threads-except-initial-threads-are-dead-or-reset ()
+(defun all-worker-threads-are-dead-or-reset ()
 
 ; CCL has a bug that if you try to throw a thread that is "reset" ("reset" is a
 ; CCL term), it ignores the throw (and the thread never expires).  As such, we
 ; do not let threads in the "reset" state prevent us from finishing the
 ; resetting of parallelism variables.
 
-;;; Parallelism wart: define worker-threads.
-;;;  (all-given-threads-are-reset (worker-threads))
-
   #+ccl
-  (all-given-threads-are-reset 
-   (set-difference (all-threads) (initial-threads)))
-  #+sbcl
-  (<= (length (all-threads)) 1)
-  #-(or ccl sbcl)
-  (null (set-difference (all-threads) (initial-threads))))
+  (all-given-threads-are-reset (worker-threads))
+  #-ccl
+  (null (worker-threads)))
 
-(defun send-die-to-all-except-initial-threads ()
+(defun send-die-to-worker-threads ()
 
 ; This function is evaluated only for side effect.
 
-  (throw-all-threads-in-list (set-difference (all-threads)
-                                             (initial-threads)))
+  (throw-all-threads-in-list (worker-threads))
   (let ((round 0))
     (loop do
       
-; We used to call "(thread-wait 'all-threads-except-initial-threads-are-dead)".
+; We used to call "(thread-wait 'all-worker-threads-are-dead)".
 ; However, we noticed a synchronization problem between what we might prefer
 ; the underlying Lisp to do (in this one case) and what the Lisp actually does.
 ; In particular, when we call run-thread, the call to run-thread returns,
@@ -1116,28 +1078,24 @@
 ; throw.  In practice, this works just fine.
 
           (when (equal (mod round 10) 0)
-            (throw-all-threads-in-list (set-difference (all-threads)
-                                                       (initial-threads)))
+            (throw-all-threads-in-list (worker-threads))
 
 ; The following commented code is only for debugging
 
-;              (format t "Waiting for all non-initial threads to halt.~%")
+;              (format t "Waiting for parallelism worker threads to halt.~%")
 ;              (format t "Current threads are ~%~s~%~%" (all-threads))
 
             )
           (sleep 0.03)
           (incf round)
-          while (not
-                 (all-threads-except-initial-threads-are-dead-or-reset)))))
+          while (not (all-worker-threads-are-dead-or-reset)))))
 
-(defun kill-all-except-initial-threads ()
+(defun kill-all-worker-threads ()
 
 ; This function is evaluated only for side effect.
 
-  (let ((target-threads (set-difference (all-threads)
-                                        (initial-threads))))
-    (kill-all-threads-in-list target-threads))
-  (thread-wait 'all-threads-except-initial-threads-are-dead))
+  (kill-all-threads-in-list (worker-threads))
+  (thread-wait 'all-worker-threads-are-dead))
 
 
 ;---------------------------------------------------------------------

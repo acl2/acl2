@@ -20843,6 +20843,10 @@
 
 (defun defstobj-field-fns-axiomatic-defs (top-recog var n ftemps wrld)
 
+; Warning: Keep the formals in the definitions below in sync with corresponding
+; formals defstobj-field-fns-raw-defs.  Otherwise trace$ may not work
+; correctly; we saw such a problem in Version_5.0 for a resize function.
+
 ; Warning:  See the guard remarks in the Essay on Defstobj Definitions.
 
 ; We return a list of defs (see defstobj-axiomatic-defs) for all the accessors,
@@ -20870,7 +20874,7 @@
              (resizable (nth 7 field-template)))
         (cond
          (arrayp
-          (append 
+          (append
            `((,length-name (,var)
                            (declare (xargs :guard (,top-recog ,var)
                                            :verify-guards t)
@@ -21099,6 +21103,10 @@
 
 (defun defstobj-field-fns-raw-defs (var flush-var inline n ftemps)
 
+; Warning: Keep the formals in the definitions below in sync with corresponding
+; formals defstobj-field-fns-raw-defs.  Otherwise trace$ may not work
+; correctly; we saw such a problem in Version_5.0 for a resize function.
+
 ; Warning:  See the guard remarks in the Essay on Defstobj Definitions.
 
   #-hons (declare (ignorable flush-var)) ; irrelevant var without hons
@@ -21138,9 +21146,9 @@
                 `((the (and fixnum (integer 0 *))
                        (length (svref ,var ,n))))))
            (,resize-name
-            (k ,var)
+            (i ,var)
             ,@(if (not resizable)
-                  `((declare (ignore k))
+                  `((declare (ignore i))
                     (prog2$
                       (er hard ',resize-name
                           "The array field corresponding to accessor ~x0 of ~
@@ -21149,9 +21157,9 @@
                           ',accessor-name
                           ',var)
                       ,var))
-                `((if (not (and (integerp k)
-                                (>= k 0)
-                                (< k array-dimension-limit)))
+                `((if (not (and (integerp i)
+                                (>= i 0)
+                                (< i array-dimension-limit)))
                       (hard-error
                        ',resize-name
                        "Attempted array resize failed because the requested ~
@@ -21159,13 +21167,13 @@
                         value of Common Lisp constant array-dimension-limit, ~
                         which is ~x1.  These bounds on array sizes are fixed ~
                         by ACL2."
-                       (list (cons #\0 k)
+                       (list (cons #\0 i)
                              (cons #\1 array-dimension-limit)))
                     (let* ((old (svref ,var ,n))
-                           (min-index (if (< k (length old))
-                                          k
+                           (min-index (if (< i (length old))
+                                          i
                                         (length old)))
-                           (new (make-array$ k
+                           (new (make-array$ i
 
 ; The :initial-element below is probably not necessary in the case
 ; that we are downsizing the array.  At least, CLtL2 does not make any

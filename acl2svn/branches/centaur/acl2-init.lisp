@@ -1114,7 +1114,7 @@ implementations.")
 
   #+acl2-par
   (when mp::*multiprocessing*
-    (send-die-to-all-except-initial-threads)
+    (send-die-to-worker-threads)
     (mp::stop-multiprocessing)
     (gc$))
   #+acl2-par

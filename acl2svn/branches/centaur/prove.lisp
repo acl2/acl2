@@ -7760,6 +7760,11 @@
 ; recursion on the cdr of clauses.  As such, this code matches the code at the
 ; end of waterfall1-lst.
 
+; Variable names that end with "1" (as in signal1) store results from proving
+; the first half of the clauses (the part of the spec-mv-let that is always
+; peformed), and variable names that end with "2" (as in signal2) store results
+; from speculatively proving the second half of the clauses.
+
           (step-limit2 signal2 pspv2 jppl-flg2)
           (waterfall1-lst@par (cond ((eq n 'settled-down-clause) n)
                                     ((null n) nil)
@@ -7816,10 +7821,6 @@
                (and (not (eq signal1 'error))
                     (not (eq signal1 'abort))
                     (speculative-execution-valid pspv pspv1))
-
-; Parallelism wart: document that variables xxx1 is from the "current subogal"
-; and variables xxx2 are from the speculative execution.
-              
                (cond ((eq signal2 'error)
                       (mv@par step-limit2 'error nil nil state))
                      ((eq signal2 'abort)
@@ -7888,7 +7889,7 @@
 
 ; Parallelism wart: improve message just below (maybe even eliminate it?).
 ; Also, consider avoiding this direct use of inhibit-output-lst (it seemed that
-; io? didn't work because we don't use state as it requires).
+; io? didn't work because we don't use state, as it requires).
 ; And finally, deal the same way with all cw printing done on behalf of the
 ; prover; consider searching for with-output-lock to find those.
 

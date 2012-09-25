@@ -19421,6 +19421,12 @@
 
 (deflabel note-5-1
 
+; Added analogues simple-translate-and-eval-error-double and
+; simple-translate-and-eval-cmp of simple-translate-and-eval, which instead of
+; (mv erp val state) return (mv erp val) and a context-message pair,
+; respectively.  Note that error output is never inhibited for these functions
+; as implemented.
+
   :doc
   ":Doc-Section release-notes
 
@@ -19430,7 +19436,7 @@
   ~il[documentation] has been updated to reflect all changes that are recorded
   here.
 
-  Below we roughly organize the changes since Version  4.3 into the following
+  Below we roughly organize the changes since Version  5.0 into the following
   categories of changes: existing features, new features, heuristic
   improvements, bug fixes, changes at the system level and to distributed
   books, Emacs support, and experimental versions.  Each change is described in
@@ -19451,7 +19457,34 @@
                    (fmt-hard-right-margin . 10000)))
   ~ev[]
 
+  The use of attachments (~pl[defattach]) has been made more efficient,
+  avoiding some low-level checks (Common Lisp `~c[boundp]' checks).  Thanks to
+  Shilpi Goel for constructing an example that we used to help direct us to
+  remove inefficiency.  The following results for that example ~-[] a Fibonacci
+  program run on a machine interpreter in raw-mode (~pl[set-raw-mode]) ~-[]
+  give a sense of the potential speedup, though we note that a full ACL2(h)
+  regression showed no significant speedup.~bv[]
+
+  ; Time before the change:
+  ; 0.89 seconds realtime, 0.90 seconds runtime
+
+  ; Time after the change:
+  ; 0.75 seconds realtime, 0.75 seconds runtime
+
+  ; Time when cheating to avoid the cost of attachments, by redefining a
+  ; function to BE its attachment (so, this gives a lower bound on possible
+  ; execution time):
+  ; 0.72 seconds realtime, 0.72 seconds runtime
+  ~ev[]
+
   ~st[NEW FEATURES]
+
+  Among the new features for system hackers are analogues of system function
+  ~c[simple-translate-and-eval] that do not return ~ilc[state].  (Thanks to
+  David Rager for requesting this feature and helpful conversations on its
+  implementation.)  This and other low-level changes are typically documented
+  in comments in the corresponding release note event, which in this case is
+  ~c[(deflabel note-5-1 ...)].
 
   ~st[HEURISTIC IMPROVEMENTS]
 
@@ -19464,6 +19497,10 @@
   to boost performance.
 
   ~st[BUG FIXES]
+
+  Fixed a raw Lisp error that occurred when tracing a ~i[stobj] resize
+  function, thanks to an error report from Warren Hunt, Marijn Heule, and
+  Nathan Wetzler.
 
   ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]
 
@@ -19479,6 +19516,15 @@
   defined in the book ~c[\"books/centaur/misc/hons-extra.lisp\"].  Thanks to
   Jared Davis and Sol Swords for donating this code, and thanks to Jared for
   helpful discussions leading to this change.
+  ~eq[]
+
+  Among the enhancements for ACL2(p) (~pl[parallelism]) are the following.  We
+  thank David Rager for his work in developing ACL2(p) and for his
+  contributions in making these improvements.~bq[]
+
+  A bug has been fixed that could leave one in a ~il[wormhole], awaiting input,
+  after an error, such as an error in an ~c[:in-theory] hint during a proof.
+  Thanks to Shilpi Goel for bringing this bug to our attention.
   ~eq[]
 
   ~/~/")
@@ -25799,7 +25845,7 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
   #-acl2-loop-only
   (progn
 
-; Parallelism wart: it may be a good idea to reset the parallelism variables
+; Parallelism blemish: it may be a good idea to reset the parallelism variables
 ; in all #+acl2-par compilations before saving the image.
 
     (if (not (eql *ld-level* 0))

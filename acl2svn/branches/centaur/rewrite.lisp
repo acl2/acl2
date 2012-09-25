@@ -8352,7 +8352,7 @@
 (defun brkpt1 (lemma target unify-subst type-alist ancestors initial-ttree
                      gstack state)
 
-; Parallelism wart: since we lock the use of wormholes, brr might be usable
+; #+ACL2-PAR note: since we lock the use of wormholes, brr might be usable
 ; within the parallelized waterfall.  However, since locks can serialize
 ; computation, we leave brr disabled for now.  Kaufmann has the following
 ; reaction to using brr and waterfall parallelism at the same time:
@@ -8588,7 +8588,7 @@
 (defun brkpt2 (wonp failure-reason unify-subst gstack rewritten-rhs final-ttree
                     rcnst state)
 
-; Parallelism wart: see parallelism warts in brkpt1.
+; #+ACL2-PAR note: see brkpt1.
 
   (cond
    #+acl2-par ; test is always false anyhow when #-acl2-par

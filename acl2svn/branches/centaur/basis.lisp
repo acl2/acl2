@@ -12882,7 +12882,7 @@
   The compilation problem disappears if the last form above is replaced with
   the following two forms.
   ~bv[]
-  (include-book \"misc/hacker\" :dir :system)
+  (include-book \"hacking/hacker\" :dir :system)
   (with-raw-mode (update-fld 3 *the-live-st*))
   ~ev[]
   ~/"
