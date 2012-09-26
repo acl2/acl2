@@ -19519,8 +19519,8 @@
   ~eq[]
 
   Among the enhancements for ACL2(p) (~pl[parallelism]) are the following.  We
-  thank David Rager for his work in developing ACL2(p) and for his
-  contributions in making these improvements.~bq[]
+  thank David Rager for his work in developing ACL2(p) and for his helpful role
+  in these improvements.~bq[]
 
   A bug has been fixed that could leave one in a ~il[wormhole], awaiting input,
   after an error, such as an error in an ~c[:in-theory] hint during a proof.
@@ -19528,6 +19528,28 @@
   ~eq[]
 
   ~/~/")
+
+(deflabel |NOTE-5-1(R)|
+  :doc
+  ":Doc-Section release-notes
+
+  ACL2 Version  5.1(r) (xxx, 20xx) Notes~/
+
+  ~/
+
+  Please ~pl[note-5-1] for changes in Version  5.1 of ACL2.
+
+  Thanks to Ruben Gamboa for his helpful role in making the following
+  improvements made with Ruben Gamboa in support for non-standard analysis in
+  ACL2(r).
+
+  Constrained functions can now be introduce as non-classical.  ~l[signature].
+
+  ~ilc[Defun-sk] now takes a new keyword argument, ~c[:CLASSICALP], that
+  determines whether or not the named function is classical.  ~l[defun-sk].
+
+  ~/
+  ")
 
 (deflabel the-method
   :doc

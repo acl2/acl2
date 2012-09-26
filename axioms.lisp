@@ -19101,10 +19101,17 @@
   made to the ~il[world] by the superior ~c[encapsulate], to permit
   ~c[an-element] to be used as a function symbol in ~c[thm1].
 
-  Finally, we note that an ~ilc[encapsulate] event is redundant if and only if
-  a syntactically identical ~ilc[encapsulate] has already been executed under
-  the same ~ilc[default-defun-mode], ~ilc[default-ruler-extenders], and
-  ~ilc[default-verify-guards-eagerness].  ~l[redundant-events].~/"
+  An ~ilc[encapsulate] event is redundant if and only if a syntactically
+  identical ~ilc[encapsulate] has already been executed under the same
+  ~ilc[default-defun-mode], ~ilc[default-ruler-extenders], and
+  ~ilc[default-verify-guards-eagerness].  ~l[redundant-events].
+
+  Remark for ACL2(r) (~pl[real]).  For ACL2(r), ~ilc[encapsulate] can be used
+  to introduce classical and non-classical functions, as determined by the
+  signatures; ~pl[signature].  Those marked as classical (respectively
+  non-classical) must have classical (respectively, non-classical) ~ilc[local]
+  witness functions.  A related requirement applies to functional
+  instantiation; ~pl[lemma-instance].~/"
 
 ; Warning: See the Important Boot-Strapping Invariants before modifying!
 

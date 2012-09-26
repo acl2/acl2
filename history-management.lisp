@@ -16163,6 +16163,29 @@
            whose first element is :THEOREM, :INSTANCE, or~ ~
            :FUNCTIONAL-INSTANCE")))))
 
+(deflabel functional-instantiation-in-acl2r
+  :doc
+  ":Doc-Section Miscellaneous
+
+  additional requirements for ~c[:functional-instance] hints in ACL2(r)~/
+
+  This documentation topic relates to ACL2(r), the modification of ACL2 that
+  supports the real numbers (~pl[real]).
+
+  ~l[hints] and ~pl[lemma-instance] for a discussion of ~c[:use] hints that
+  employ the ~c[:functional-instance] keyword.  Here, we document additional
+  requirements for such hints that applies to ACL2(r).  We assume familiarity
+  with lemma instances; ~pl[lemma-instance].
+
+  (1) When functionally instantiating a non-classical formula, it is illegal
+  to use pseudo-lambda expressions in a lemma instance.
+
+  (2) A classical function symbol must be bound either to a classical function
+  symbol or to a lambda (or, if allowed, pseudo-lambda) expression with a
+  classical body.  Similarly, a non-classical function symbol must be bound
+  either to a non-classical function symbol or to a lambda (or, if allowed,
+  pseudo-lambda) expression with a non-classical body.~/~/")
+
 (deflabel lemma-instance
   :doc
   ":Doc-Section Miscellaneous
@@ -16253,6 +16276,9 @@
   of those instances would have to be proved.  However, for the sake of
   efficiency, ACL2 stores the fact that such an instantiated constraint has
   been proved and avoids it in future events.
+
+  Note that ACL2(r) (~pl[real]) imposes additional requirements for functional
+  instantiation.  ~l[functional-instantiation-in-acl2r].
 
   Obscure case for ~il[definition]s.  If the lemma instance refers to a
   ~c[:definition] ~il[rune], then it refers to the ~ilc[corollary] formula of
