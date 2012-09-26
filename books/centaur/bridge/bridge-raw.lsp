@@ -319,7 +319,7 @@ abc
       (type cmd)
       (handler-case (read-command stream)
                     (error (condition)
-                           (alert "Error during read-command: ~a~%" condition)
+                           (alert "Error during read-command:~%~a~%" condition)
                            (send-message "ERROR"
                                          (format nil "Error during read-command:~%~a~%" condition)
                                          stream)
@@ -348,9 +348,9 @@ abc
                      (declare (ignorable acl2::state))
                      ,cmd)))
                 (error (condition)
-                       (alert "Error executing command ~a: ~a~%" cmd condition)
+                       (alert "Error executing command ~a:~%~a~%" cmd condition)
                        (send-message "ERROR"
-                                     (format nil "Error executing command ~a:~a~%" cmd condition)
+                                     (format nil "Error executing command ~a:~%~a~%" cmd condition)
                                      stream)
                        (return-from worker-do-work t)))))
 

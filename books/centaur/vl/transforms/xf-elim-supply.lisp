@@ -221,6 +221,7 @@ value.</p>")
                      (length supply1s)))
        (sigma  (revappend (pairlis$ supply0s zeroes)
                           (pairlis$ supply1s ones)))
+       ((with-fast sigma))
        (x-prime (change-vl-module x
                                   :netdecls new-decls
                                   :warnings warnings-prime)))

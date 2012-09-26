@@ -1636,7 +1636,7 @@ macro for invoking this constructor.</p>
 
 <ul>
 
- <li><tt>vl-casestmt-&gt;type</tt> returns the case type (i.e., <tt>case</tt>,
+ <li><tt>vl-casestmt-&gt;casetype</tt> returns the case type (i.e., <tt>case</tt>,
  <tt>casex</tt>, or <tt>casez</tt>); see @(see vl-casetype-p).</li>
 
  <li><tt>vl-casestmt-&gt;test</tt> returns the <i>test</i> expression.</li>

@@ -382,6 +382,7 @@ Hence, we need some code for detecting what wires are driven.</p>"
          ((unless sigma)
           ;; Nothing to do.
           x)
+         ((with-fast sigma))
          (propagate-names (alist-keys sigma))
          (temp-assigns    (remove-simple-assigns-to propagate-names (vl-module->assigns x)))
          (temp-mod        (change-vl-module x :assigns temp-assigns)))
@@ -428,7 +429,16 @@ Hence, we need some code for detecting what wires are driven.</p>"
 
   (defund vl-module-propagate (x)
     (declare (xargs :guard (vl-module-p x)))
-    (vl-propagation-fixpoint x 1000))
+    (b* (((vl-module x) x)
+         ((when (or x.alwayses
+                    x.paramdecls
+                    x.fundecls
+                    x.eventdecls
+                    x.regdecls
+                    x.vardecls))
+          (cw "Note: not propagating in ~s0; module looks too complicated.~%" x.name)
+          x))
+      (vl-propagation-fixpoint x 1000)))
 
   (local (in-theory (enable vl-module-propagate)))
 

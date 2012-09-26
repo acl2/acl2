@@ -149,13 +149,39 @@
   :count strong
   (vl-unimplemented))
 
+
+(defparser vl-parse-specify-block-aux (tokens warnings)
+  ;; BOZO this is really not implemented.  We just read until endspecify,
+  ;; throwing away any tokens we encounter until it.
+  :result (vl-modelementlist-p val)
+  :resultp-of-nil t
+  :true-listp t
+  :fails gracefully
+  :count strong
+  (seqw tokens warnings
+        (when (vl-is-token? :vl-kwd-endspecify)
+          (:= (vl-match-token :vl-kwd-endspecify))
+          (return nil))
+        (:s= (vl-match-any))
+        (:= (vl-parse-specify-block-aux))
+        (return nil)))
+
 (defparser vl-parse-specify-block (tokens warnings)
   :result (vl-modelementlist-p val)
   :resultp-of-nil t
   :true-listp t
   :fails gracefully
   :count strong
-  (vl-unimplemented))
+  (if (not (consp tokens))
+      (vl-parse-error "Unexpected EOF.")
+    (seqw tokens warnings
+          (:= (vl-parse-warning :vl-warn-specify
+                                (cat "Specify blocks are not yet implemented.  "
+                                     "Instead, we are simply ignoring everything "
+                                     "until 'endspecify'.")))
+          (ret := (vl-parse-specify-block-aux))
+          (return ret))))
+
 
 (defparser vl-parse-specparam-declaration (atts tokens warnings)
   :guard (vl-atts-p atts)
@@ -182,12 +208,9 @@
   ;; BOZO horrible hack for task declaration skipping
   (not x))
 
-
-
-
 (defparser vl-parse-task-declaration-aux (tokens warnings)
   ;; BOZO this is really not implemented.  We just read until endtask, throwing
-  ;; away any tokens we encounter until then.
+  ;; away any tokens we encounter until it.
   :result (vl-task-p val)
   :resultp-of-nil t
   :true-listp t

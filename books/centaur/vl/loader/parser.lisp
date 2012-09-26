@@ -27,15 +27,41 @@
   :parents (loader)
   :short "Verilog Parser.")
 
+(defparser vl-parse-udp-declaration-aux (tokens warnings)
+  ;; BOZO this is really not implemented.  We just read until endprimitive,
+  ;; throwing away any tokens we encounter until then.
+  :result (vl-task-p val)
+  :resultp-of-nil t
+  :true-listp t
+  :fails gracefully
+  :count strong
+  (seqw tokens warnings
+        (when (vl-is-token? :vl-kwd-endprimitive)
+          (:= (vl-match-token :vl-kwd-endprimitive))
+          (return nil))
+        (:s= (vl-match-any))
+        (:= (vl-parse-udp-declaration-aux))
+        (return nil)))
+
 (defparser vl-parse-udp-declaration (atts tokens warnings)
-  ;; This :result is sloppy and won't be true if we implement configs, but
+  ;; This :result is sloppy and won't be true if we implement udps, but
   ;; it lets vl-parse return a module list.
   :guard (vl-atts-p atts)
-  :result (vl-module-p val)
+  :result (not val)
+  :resultp-of-nil t
+  :true-listp t
   :fails gracefully
   :count strong
   (declare (ignorable atts))
-  (vl-unimplemented))
+  (if (atom tokens)
+      (vl-parse-error "Unexpected EOF.")
+    (seqw tokens warnings
+          (:= (vl-parse-warning :vl-warn-primitive
+                                (cat "User-defined primitive modules are not yet "
+                                     "implemented.  We are just ignoring everything "
+                                     "until 'endprimitive'.")))
+          (:= (vl-parse-udp-declaration-aux))
+          (return nil))))
 
 (defparser vl-parse-config-declaration (tokens warnings)
   ;; This :result is sloppy and won't be true if we implement configs, but
@@ -150,27 +176,30 @@ override."))
 
 (defattach vl-parse-ram-hook-fn vl-parse-ram-default-hook-fn)
 
-(defparser vl-parse-description (tokens warnings)
-  :guard (vl-warninglist-p warnings) ;; BOZO gross!
-  :result (vl-module-p val)
-  :resultp-of-nil nil
-  :fails gracefully
-  :count strong
-  (cond ((not (consp tokens))
-         (vl-parse-error "Unexpected EOF."))
-        ((vl-is-token? :vl-kwd-config)
-         (vl-parse-config-declaration))
-        (t
-         (mv-let (erp atts tokens warnings)
-                 (vl-parse-0+-attribute-instances)
-                 (if erp
-                     (mv erp atts tokens warnings)
-                   (cond ((vl-is-token? :vl-kwd-primitive)
-                          (vl-parse-udp-declaration atts))
-                         ((vl-is-token? :vl-kwd-vl_ram)
-                          (vl-parse-ram-hook atts))
-                         (t
-                          (vl-parse-module-declaration atts))))))))
+(encapsulate
+  ()
+  (local (in-theory (disable (force))))
+  (defparser vl-parse-description (tokens warnings)
+    :guard (vl-warninglist-p warnings) ;; BOZO gross!
+    :result (vl-modulelist-p val)
+    :resultp-of-nil t
+    :true-listp t
+    :fails gracefully
+    :count strong
+    (declare (xargs :guard-debug t))
+    (seqw tokens warnings
+          (atts := (vl-parse-0+-attribute-instances))
+          (when (vl-is-token? :vl-kwd-config)
+            (mod := (vl-parse-config-declaration))
+            (return (list mod)))
+          (when (vl-is-token? :vl-kwd-primitive)
+            (mods := (vl-parse-udp-declaration atts))
+            (return mods))
+          (when (vl-is-token? :vl-kwd-vl_ram)
+            (mod := (vl-parse-ram-hook atts))
+            (return (list mod)))
+          (mod := (vl-parse-module-declaration atts))
+          (return (list mod)))))
 
 (defparser vl-parse-source-text (tokens warnings)
   :guard (vl-warninglist-p warnings) ;; BOZO gross!
@@ -184,9 +213,7 @@ override."))
           (return nil))
         (first := (vl-parse-description))
         (rest := (vl-parse-source-text))
-        (return (cons first rest))))
-
-
+        (return (append first rest))))
 
 (defund vl-parse (tokens warnings)
   "Returns (MV SUCCESSP MODULELIST WARNINGS)"

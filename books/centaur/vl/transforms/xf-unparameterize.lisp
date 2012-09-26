@@ -979,6 +979,7 @@ additional details.</p>"
        (t
         (b* (((mv successp warnings sigma)
               (vl-match-paramargs-with-decls inst mod warnings))
+             ((with-fast sigma))
              ((unless successp)
               (mv nil warnings inst nil))
 

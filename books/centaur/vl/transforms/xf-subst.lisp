@@ -32,12 +32,12 @@
 throughout Verilog constructs such as expressions, assignments, and
 modules.</p>
 
-<p>Our main use of substitution is in unparameterization, where we use
+<p>Our original use of substitution was in unparameterization, where we used
 substitution to replace parameters with their values throughout a module.
 Because of this, and since there are usually only a couple of parameters per
-module, we create ordinary alists and look up with @(see hons-assoc-equal)
-rather than @(see hons-get).</p>")
-
+module, we historically created ordinary alists and look up with @(see
+hons-assoc-equal) rather than @(see hons-get).  Since then we have found
+substitution to be more generally useful, and prefer to use fast alists.</p>")
 
 
 (defalist vl-sigma-p (x)
@@ -84,7 +84,7 @@ attributes is left up to the implementation.</p>"
      (if (vl-fast-atom-p x)
          (let ((guts (vl-atom->guts x)))
            (if (vl-fast-id-p guts)
-               (or (cdr (hons-assoc-equal (vl-id->name guts) sigma))
+               (or (cdr (hons-get (vl-id->name guts) sigma))
                    x)
              x))
        (let ((args-prime (vl-exprlist-subst (vl-nonatom->args x) sigma)))

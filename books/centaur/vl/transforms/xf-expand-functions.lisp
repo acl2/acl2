@@ -706,6 +706,7 @@ okay (since eliminating parameters changes the function's namespace).</p>"
          ;; Okay, everything looks good.  We want to now just expand the parameters
          ;; away by rewriting them with their values.
          (sigma (vl-fundecl-param-sigma paramdecls))
+         ((with-fast sigma))
 
          (regdecls   (vl-regdecllist-subst regdecls sigma))
          (vardecls   (vl-vardecllist-subst vardecls sigma))
@@ -2057,6 +2058,7 @@ this <tt>expr</tt>.</p>"
           (cons (cons (vl-netdecl->name x.out) gen-ret-wire)
                 (append (pairlis$ (vl-netdecllist->names x.inputs) gen-input-wires)
                         (pairlis$ (vl-netdecllist->names x.locals) gen-local-wires))))
+         ((with-fast sigma))
 
          (body-assigns  (vl-assignlist-subst x.assigns sigma))
          (body-assigns  (vl-relocate-assignments body-assigns loc))

@@ -1549,32 +1549,41 @@ original source code.)</p>"
 
 (defpp vl-pp-arguments (x)
   :guard (vl-arguments-p x)
-  :body (let* ((namedp         (vl-arguments->namedp x))
-               (args           (vl-arguments->args x))
-               (force-newlinep (longer-than-p 5 args)))
-
-          (if namedp
-              (vl-pp-namedarglist args force-newlinep)
-
-            (progn$
-
-             ;; Paranoid check for horrible corner case.
-             (if (and (equal (len args) 1)
-                      (not (vl-plainarg->expr (car args))))
+  :body (b* ((namedp         (vl-arguments->namedp x))
+             (args           (vl-arguments->args x))
+             (force-newlinep (longer-than-p 5 args))
+             ((when namedp)
+              (vl-pp-namedarglist args force-newlinep))
+             ((when (and (consp args)
+                         (not (consp (cdr args)))
+                         (not (vl-plainarg->expr (car args)))))
+              ;; Horrible corner case!  Positional arg list with just one
+              ;; argument and a blank actual.  No way to print this.  If
+              ;; possible we'll trust the portname and try to turn it into a
+              ;; named argument list.
+              (if (vl-plainarg->portname (car args))
+                  (b* ((namedarg (make-vl-namedarg :name (vl-plainarg->portname (car args))
+                                                   :expr nil
+                                                   :atts (vl-plainarg->atts (car args)))))
+                    (cw "; Warning: horrible corner case in vl-pp-arguments, printing named.~%")
+                    (vl-pp-namedarglist (list namedarg) force-newlinep))
+                ;; We don't even have a name.  How did this happen?
+                (progn$
                  (er hard? 'vl-pp-arguments
-                     "Congrats!  You have reached a remarkably obscure corner case.  You are ~
-                      trying to print a plain argument list, of length 1, which contains ~
-                      a \"blank\" entry.  But there is actually no way to express this in ~
-                      Verilog.  See cbooks/vl/blank.v for a basic summary of the problem. ~
-                      There are some ways we can work around this: (1) convert into a named ~
-                      argument list, or (2) eliminating the blank by, for outputs, adding a wire ~
-                      name of the appropriate width; for inputs, convert into n'bz where n ~
-                      is the appropriate width.  But there isn't enough information in ~
-                      vl-pp-arguments to carry out this transformation.  At any rate, we ~
-                      give up.  Well done!")
-               t)
-
-             (vl-pp-plainarglist args force-newlinep)))))
+                     "Congrats!  You have reached a remarkably obscure corner ~
+                      case.  You are trying to print a plain argument list, ~
+                      of length 1, which contains a \"blank\" entry.  But ~
+                      there is actually no way to express this in Verilog.  ~
+                      See cbooks/vl/blank.v for a basic summary of the ~
+                      problem. There are some ways we can work around this: ~
+                      (1) convert into a named argument list, or (2) ~
+                      eliminating the blank by, for outputs, adding a wire ~
+                      name of the appropriate width; for inputs, convert into ~
+                      n'bz where n is the appropriate width.  But there isn't ~
+                      enough information in vl-pp-arguments to carry out this ~
+                      transformation.  At any rate, we give up.  Well done!")
+                 ps))))
+          (vl-pp-plainarglist args force-newlinep)))
 
 (defpp vl-pp-modinst-atts-begin (x)
   :guard (vl-atts-p x)
@@ -1805,6 +1814,8 @@ original source code.)</p>"
                        (vl-pp-gateinstlist (cdr x)))
           ps))
 
+
+
 (defpp vl-pp-delaycontrol (x)
   :guard (vl-delaycontrol-p x)
   :body (let ((value (vl-delaycontrol->value x)))
@@ -1870,58 +1881,79 @@ original source code.)</p>"
               ((vl-eventcontrol-p x) (vl-pp-eventcontrol x))
               (t (vl-pp-repeateventcontrol x))))
 
+
+
+
+
+; Statement printing.  I want to do at least something to allow nested
+; statements to get progressively more indented.  As a very basic way to
+; implement this, I piggy-back on the autowrap column and autowrap indent
+; fields of the printer state.
+;
+; Ordinarily autowrap-col is around 80 and autowrap-ind is around 5.  The
+; autowrap-ind normally doesn't matter except for what happens when lines get
+; wrapped.  We'll have statements start at autowrap-ind - 2.
+;
+; Convention: every statement starts by automatically indenting itself, and
+; every statement prints a newline at the end!
+
+(defpp vl-pp-stmt-autoindent ()
+  :body (vl-indent (nfix (- (vl-ps->autowrap-ind) 2))))
+
+(defmacro vl-pp-stmt-indented (&rest args)
+  `(let* ((_pp_stmt_autowrap_ind_ (vl-ps->autowrap-ind))
+          (_pp_stmt_autowrap_col_ (vl-ps->autowrap-col))
+          (ps (vl-ps-update-autowrap-col (+ 2 _pp_stmt_autowrap_col_)))
+          (ps (vl-ps-update-autowrap-ind (+ 2 _pp_stmt_autowrap_ind_)))
+          (ps (vl-ps-seq . ,args))
+          (ps (vl-ps-update-autowrap-col _pp_stmt_autowrap_col_))
+          (ps (vl-ps-update-autowrap-ind _pp_stmt_autowrap_ind_)))
+     ps))
+
 (defpp vl-pp-assignstmt (x)
   :guard (vl-assignstmt-p x)
-  :body (let ((type   (vl-assignstmt->type x))
-              (lvalue (vl-assignstmt->lvalue x))
-              (expr   (vl-assignstmt->expr x))
-              (ctrl   (vl-assignstmt->ctrl x))
-              (atts   (vl-assignstmt->atts x)))
-          (vl-ps-seq (vl-print "   ")
-                     (if atts (vl-pp-atts atts) ps)
+  :body (b* (((vl-assignstmt x) x))
+          (vl-ps-seq (vl-pp-stmt-autoindent)
+                     (if x.atts (vl-pp-atts x.atts) ps)
                      (vl-ps-span "vl_key"
-                                 (case type
+                                 (case x.type
                                    (:vl-assign (vl-println? "assign "))
                                    (:vl-force  (vl-println? "force "))
                                    (otherwise  ps)))
-                     (vl-pp-expr lvalue)
-                     (case type
+                     (vl-pp-expr x.lvalue)
+                     (case x.type
                        (:vl-nonblocking (vl-println? "<="))
                        (otherwise       (vl-println? "=")))
-                     (if ctrl
-                         (vl-pp-delayoreventcontrol ctrl)
+                     (if x.ctrl
+                         (vl-pp-delayoreventcontrol x.ctrl)
                        ps)
-                     (vl-pp-expr expr)
+                     (vl-pp-expr x.expr)
                      (vl-println " ;"))))
 
 (defpp vl-pp-nullstmt (x)
   :guard (vl-nullstmt-p x)
-  :body (let ((atts (vl-nullstmt->atts x)))
-          (vl-ps-seq (vl-print "   ")
-                     (if atts (vl-pp-atts atts) ps)
+  :body (b* (((vl-nullstmt x) x))
+          (vl-ps-seq (vl-pp-stmt-autoindent)
+                     (if x.atts (vl-pp-atts x.atts) ps)
                      (vl-println " ;"))))
-
 
 (defpp vl-pp-enablestmt (x)
   :guard (vl-enablestmt-p x)
-  :body (let ((id   (vl-enablestmt->id x))
-              (atts (vl-enablestmt->atts x))
-              (args (vl-enablestmt->args x)))
-          (vl-ps-seq
-           (vl-print "   ")
-           (if atts (vl-pp-atts atts) ps)
-           (vl-pp-expr id)
-           (vl-println? "(")
-           (vl-pp-exprlist args)
-           (vl-println ") ;"))))
+  :body (b* (((vl-enablestmt x) x))
+          (vl-ps-seq (vl-pp-stmt-autoindent)
+                     (if x.atts (vl-pp-atts x.atts) ps)
+                     (vl-pp-expr x.id)
+                     (vl-println? "(")
+                     (vl-pp-exprlist x.args)
+                     (vl-println ") ;"))))
 
 (defpp vl-pp-atomicstmt (x)
   :guard (vl-atomicstmt-p x)
-  :body (cond ((vl-nullstmt-p x)
+  :body (cond ((vl-fast-nullstmt-p x)
                (vl-pp-nullstmt x))
-              ((vl-assignstmt-p x)
+              ((vl-fast-assignstmt-p x)
                (vl-pp-assignstmt x))
-              ((vl-enablestmt-p x)
+              ((vl-fast-enablestmt-p x)
                (vl-pp-enablestmt x))
               (t
                (vl-ps-seq
@@ -1930,14 +1962,30 @@ original source code.)</p>"
                 ps))))
 
 
+(defund vl-casetype-string (x)
+  (declare (xargs :guard (vl-casetype-p x)
+                  :guard-hints (("Goal" :in-theory (enable vl-casetype-p)))))
+  (case x
+    ('nil         "case")
+    (:vl-casex    "casex")
+    (:vl-casez    "casez")
+    (otherwise    (prog2$ (er hard 'vl-casetype-string "Provably impossible")
+                          ""))))
+
+(defthm stringp-of-vl-casetype-string
+  (stringp (vl-casetype-string x))
+  :rule-classes :type-prescription
+  :hints(("Goal" :in-theory (enable vl-casetype-string))))
+
+
 (defmacro vl-pp-stmt (x)
   `(vl-pp-stmt-fn ,x ps))
 
 (defmacro vl-pp-stmtlist (x)
   `(vl-pp-stmtlist-fn ,x ps))
 
-
-
+(defmacro vl-pp-cases (exprs bodies)
+  `(vl-pp-cases-fn ,exprs ,bodies ps))
 
 (mutual-recursion
 
@@ -1963,34 +2011,26 @@ original source code.)</p>"
 
        (case type
 
-         ((:vl-nullstmt)
-          (vl-ps-seq (vl-print "   ")
-                     (if atts (vl-pp-atts atts) ps)
-                     (vl-println ";")))
-
          ((:vl-ifstmt)
-          (vl-ps-seq (vl-print "   ")
+          (vl-ps-seq (vl-pp-stmt-autoindent)
                      (if atts (vl-pp-atts atts) ps)
-                     (vl-ps-span "vl_key" (vl-print "if "))
-                     (vl-print "(")
+                     (vl-ps-span "vl_key" (vl-print "if"))
+                     (vl-print " (")
                      (vl-pp-expr (vl-ifstmt->condition x))
                      (vl-println ")")
-                     (vl-print "   ")
-                     (vl-pp-stmt (vl-ifstmt->truebranch x))
-                     (vl-println "")
-                     (vl-ps-span "vl_key" (vl-println "   else "))
-                     (vl-pp-stmt (vl-ifstmt->falsebranch x))
-                     ))
+                     (vl-pp-stmt-indented (vl-pp-stmt (vl-ifstmt->truebranch x)))
+                     (vl-pp-stmt-autoindent)
+                     (vl-ps-span "vl_key" (vl-println "else"))
+                     (vl-pp-stmt-indented (vl-pp-stmt (vl-ifstmt->falsebranch x)))))
 
          ((:vl-blockstmt)
           (let ((sequentialp (vl-blockstmt->sequentialp x))
                 (name        (vl-blockstmt->name x))
                 (decls       (vl-blockstmt->decls x))
                 (stmts       (vl-blockstmt->stmts x)))
-            (vl-ps-seq (vl-print "   ")
+            (vl-ps-seq (vl-pp-stmt-autoindent)
                        (if atts (vl-pp-atts atts) ps)
-                       (vl-ps-span "vl_key"
-                                   (vl-print (if sequentialp "begin " "fork ")))
+                       (vl-ps-span "vl_key" (vl-print (if sequentialp "begin " "fork ")))
                        (if (not name)
                            ps
                          (vl-ps-seq
@@ -2002,10 +2042,9 @@ original source code.)</p>"
                              "vl_cmt"
                              (vl-print "// BOZO implement vl-pp-stmt for block with decls")))))
                        (vl-println "")
-                       (vl-pp-stmtlist stmts)
-                       (vl-println "")
-                       (vl-ps-span "vl_key"
-                                   (vl-print-str (if sequentialp "   end" "   join")))
+                       (vl-pp-stmt-indented (vl-pp-stmtlist stmts))
+                       (vl-pp-stmt-autoindent)
+                       (vl-ps-span "vl_key" (vl-print-str (if sequentialp "end" "join")))
                        (vl-println ""))))
 
          ((:vl-forstmt)
@@ -2015,10 +2054,9 @@ original source code.)</p>"
                 (nextlhs (vl-forstmt->nextlhs x))
                 (nextrhs (vl-forstmt->nextrhs x))
                 (body    (vl-forstmt->body x)))
-            (vl-ps-seq (vl-print "    ")
+            (vl-ps-seq (vl-pp-stmt-autoindent)
                        (if atts (vl-pp-atts atts) ps)
-                       (vl-ps-span "vl_key"
-                                   (vl-print "for "))
+                       (vl-ps-span "vl_key" (vl-print "for "))
                        (vl-print "(")
                        (vl-pp-expr initlhs) (vl-print " = ") (vl-pp-expr initrhs)
                        (vl-print "; ")
@@ -2026,20 +2064,42 @@ original source code.)</p>"
                        (vl-print "; ")
                        (vl-pp-expr nextlhs) (vl-print " = ") (vl-pp-expr nextrhs)
                        (vl-println ")")
-                       (vl-pp-stmt body))))
+                       (vl-pp-stmt-indented (vl-pp-stmt body)))))
 
          ((:vl-timingstmt)
           (let ((ctrl (vl-timingstmt->ctrl x))
                 (stmt (vl-timingstmt->body x)))
-            (vl-ps-seq (vl-print "   ")
+            (vl-ps-seq (vl-pp-stmt-autoindent)
                        (if atts (vl-pp-atts atts) ps)
                        (vl-pp-delayoreventcontrol ctrl)
+                       (vl-print " ")
                        (vl-pp-stmt stmt))))
 
+         ((:vl-casestmt)
+          (let ((type    (vl-casestmt->casetype x))
+                (test    (vl-casestmt->test x))
+                (exprs   (vl-casestmt->exprs x))
+                (bodies  (vl-casestmt->bodies x))
+                (default (vl-casestmt->default x)))
+            (vl-ps-seq (vl-pp-stmt-autoindent)
+                       (if atts (vl-pp-atts atts) ps)
+                       (vl-ps-span "vl_key" (vl-print-str (vl-casetype-string type)))
+                       (vl-print " (")
+                       (vl-pp-expr test)
+                       (vl-println ")")
+                       (vl-pp-stmt-indented (vl-pp-cases exprs bodies))
+                       (vl-pp-stmt-autoindent)
+                       (vl-ps-span "vl_key" (vl-print "default"))
+                       (vl-println " :")
+                       (vl-pp-stmt-indented (vl-pp-stmt default))
+                       (vl-pp-stmt-autoindent)
+                       (vl-ps-span "vl_key" (vl-print "endcase")))))
+
          (otherwise
-          ;; :vl-forstmt :vl-casestmt :vl-casexstmt :vl-casezstmt :vl-foreverstmt
+          ;; :vl-forstmt :vl-foreverstmt
           ;; :vl-waitstmt :vl-repeatstmt :vl-whilestmt
           (vl-ps-span "vl_cmt"
+                      (vl-pp-stmt-autoindent)
                       (vl-print "// BOZO implement vl-pp-stmt for ")
                       (vl-println (symbol-name type)))))))))
 
@@ -2051,25 +2111,56 @@ original source code.)</p>"
    (if (atom x)
        ps
      (vl-ps-seq (vl-pp-stmt (car x))
-                (vl-pp-stmtlist (cdr x))))))
+                (vl-pp-stmtlist (cdr x)))))
 
+ (defund vl-pp-cases-fn (exprs bodies ps)
+   (declare (xargs :guard (and (vl-exprlist-p exprs)
+                               (vl-stmtlist-p bodies)
+                               (vl-pstate-p ps))
+                   :stobjs ps
+                   :measure (two-nats-measure (acl2-count bodies) 0)))
+   (cond ((and (atom exprs)
+               (atom bodies))
+          ps)
+         ((or (atom exprs)
+              (atom bodies))
+          (progn$ (er hard? 'vl-pp-cases-fn
+                      "Case statement with different number of match expressions and bodies???")
+                  ps))
+         (t
+          (vl-ps-seq (vl-pp-stmt-autoindent)
+                     (vl-pp-expr (car exprs))
+                     (vl-println " :")
+                     (vl-pp-stmt-indented (vl-pp-stmt (car bodies)))
+                     (vl-pp-cases (cdr exprs) (cdr bodies)))))))
 
 (FLAG::make-flag flag-vl-pp-stmt-fn
                  vl-pp-stmt-fn
                  :flag-mapping ((vl-pp-stmt-fn . stmt)
-                                (vl-pp-stmtlist-fn . list)))
+                                (vl-pp-stmtlist-fn . list)
+                                (vl-pp-cases-fn . case)))
 
 (defthm-flag-vl-pp-stmt-fn vl-pstate-p-of-flag-vl-pp-stmt-fn
-  (stmt (implies (and (force (vl-stmt-p x))
-                      (force (vl-pstate-p ps)))
-                 (vl-pstate-p (vl-pp-stmt x))))
-  (list (implies (and (force (vl-stmtlist-p x))
-                      (force (vl-pstate-p ps)))
-                 (vl-pstate-p (vl-pp-stmtlist x))))
+  (defthm vl-pstate-p-of-vl-pp-stmt
+    (implies (and (force (vl-stmt-p x))
+                  (force (vl-pstate-p ps)))
+             (vl-pstate-p (vl-pp-stmt x)))
+    :flag stmt)
+  (defthm vl-pstate-p-of-vl-pp-stmtlist
+    (implies (and (force (vl-stmtlist-p x))
+                  (force (vl-pstate-p ps)))
+             (vl-pstate-p (vl-pp-stmtlist x)))
+    :flag list)
+  (defthm vl-pstate-p-of-vl-pp-cases
+    (implies (and (force (vl-exprlist-p exprs))
+                  (force (vl-stmtlist-p bodies))
+                  (force (vl-pstate-p ps)))
+             (vl-pstate-p (vl-pp-cases exprs bodies)))
+    :flag case)
   :hints(("Goal"
-          :induct (flag-vl-pp-stmt-fn flag x ps)
           :expand ((vl-pp-stmt-fn x ps)
-                   (vl-pp-stmtlist-fn x ps)))))
+                   (vl-pp-stmtlist-fn x ps)
+                   (vl-pp-cases-fn exprs bodies ps)))))
 
 (verify-guards vl-pp-stmt-fn)
 
