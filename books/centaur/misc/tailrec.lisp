@@ -1256,11 +1256,11 @@
                             a))
            (partial-ev (disjoin clause) a))
   :hints (("goal" :do-not-induct t
-           :in-theory (disable done-retval-next-from-body
-                               has-tail-call
-                               fsubst-into-tail-recursion-body
-                               default-car default-cdr)))
-  :otf-flg t
+           :in-theory (e/d (use-by-hint use-these-hints)
+                           ( done-retval-next-from-body
+                             has-tail-call
+                             fsubst-into-tail-recursion-body
+                             default-car default-cdr))))
   :rule-classes :clause-processor)
 
 
@@ -1325,10 +1325,11 @@
                             a))
            (partial-ev (disjoin clause) a))
   :hints (("goal" :do-not-induct t
-           :in-theory (disable done-retval-next-from-body
-                               has-tail-call
-                               fsubst-into-tail-recursion-body
-                               default-car default-cdr)))
+           :in-theory (e/d (use-by-hint use-these-hints)
+                           (done-retval-next-from-body
+                            has-tail-call
+                            fsubst-into-tail-recursion-body
+                            default-car default-cdr))))
   :otf-flg t
   :rule-classes :clause-processor)
 
