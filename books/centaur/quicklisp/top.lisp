@@ -36,4 +36,20 @@
 ; matter, even loading this Quicklisp book requires a ttag.
 
 (defttag :quicklisp)
+
+(value-triple (cw "~%~%~
+***********************************************************************~%~
+*****                                                             *****~%~
+*****                  IF YOUR BUILD FAILS                        *****~%~
+*****                                                             *****~%~
+***** The include-raw form here can fail if you try to certify    *****~%~
+***** this book without first getting quicklisp installed.  You   *****~%~
+***** need to run 'make' first.                                   *****~%~
+*****                                                             *****~%~
+***** See books/centaur/README.html for detailed directions for   *****~%~
+***** properly building the Centaur books.                        *****~%~
+*****                                                             *****~%~
+***********************************************************************~%~
+~%"))
+
 (include-raw "setup.lisp" :do-not-compile t :host-readtable t)
