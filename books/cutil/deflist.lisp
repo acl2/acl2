@@ -54,6 +54,7 @@ function that expects a list should ignore the final cdr of the list.</p>
    &amp;key guard               ; t by default
         verify-guards       ; t by default
         already-definedp    ; nil by default
+        elementp-of-nil     ; :unknown by default
         negatedp            ; nil by default
         mode                ; current defun-mode by default
         parents             ; '(acl2::undocumented) by default
@@ -96,9 +97,10 @@ already defined the function.  This can be used to generate all of the ordinary
 <tt>deflist</tt> theorems without generating a <tt>defund</tt> event, and is
 useful when you are dealing with mutually recursive recognizers.</p>
 
-<p>The optional <tt>:value-of-nil</tt> keyword can be used when <tt>(elementp
-nil ...)</tt> is always known to be <tt>t</tt> or <tt>nil</tt>.  When it is
-provided, <tt>deflist</tt> can generate slightly better theorems.</p>
+<p>The optional <tt>:elementp-of-nil</tt> keyword can be used when
+<tt>(elementp nil ...)</tt> is always known to be <tt>t</tt> or <tt>nil</tt>.
+When it is provided, <tt>deflist</tt> can generate slightly better
+theorems.</p>
 
 <p>The optional <tt>:negatedp</tt> keyword can be used to recognize a list
 whose every element does not satisfy elementp.</p>
