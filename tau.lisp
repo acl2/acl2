@@ -1535,9 +1535,10 @@
   (mv-let (erp val)
           (ev-fncall-w fn evg-lst wrld nil nil t t nil)
 
-; The arguments to ev-fncall-w above, after wrld, are safe-mode (= nil), gc-off
-; (= t), hard-error-returns-nilp (= t), and aok (= nil).  These are the same
-; arguments used in the call of ev-fncall-w in sublis-var!.
+; The arguments to ev-fncall-w above, after wrld, are user-stobj-alist (= nil),
+; safe-mode (= nil), gc-off (= t), hard-error-returns-nilp (= t), and aok (=
+; nil).  These are the same arguments used in the call of ev-fncall-w in
+; sublis-var!.
 
           (cond
            (erp
@@ -3651,7 +3652,7 @@
                (& (cons hyp rest)))))))
 
 (defun acceptable-tau-rulep (pair wrld)
-  (let ((hyps (strip-force-and-case-split (car pair)))    ; <----- Insert call here
+  (let ((hyps (strip-force-and-case-split (car pair)))
         (concl (cdr pair)))
     (cond
      ((tau-boolean-formp hyps concl wrld) 'BOOLEAN)

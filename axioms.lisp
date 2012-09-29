@@ -7595,15 +7595,14 @@
   of a rule class object to specify how that elegant statement is to be
   interpreted as a rule.  For the rule class object to be well-formed, its
   (defaulted) ~c[:]~ilc[corollary], ~c[term], must follow from ~c[thm].  Unless
-  ~c[term] is trivially implied by ~c[thm], using little more than
-  propositional logic, the formula ~c[(implies thm term)] is submitted to the
-  theorem prover and the proof attempt must be successful.  During that proof
-  attempt the values of ~c[:]~ilc[hints], ~c[:]~ilc[instructions], and
-  ~c[:]~ilc[otf-flg], as provided in the rule class object, are provided as
-  arguments to the prover.  Such auxiliary proofs give the sort of output that
-  one expects from the prover.  However, as noted above, corollaries that
-  follow trivially are not submitted to the prover; thus, such corollaries
-  cause no prover output.
+  ~c[term] follows trivially from ~c[thm] using little more than propositional
+  logic, the formula ~c[(implies thm term)] is submitted to the theorem prover
+  and the proof attempt must be successful.  During that proof attempt the
+  values of ~c[:]~ilc[hints], ~c[:]~ilc[instructions], and ~c[:]~ilc[otf-flg],
+  as provided in the rule class object, are provided as arguments to the
+  prover.  Such auxiliary proofs give the sort of output that one expects from
+  the prover.  However, as noted above, corollaries that follow trivially are
+  not submitted to the prover; thus, such corollaries cause no prover output.
 
   Note that before ~c[term] is stored, all calls of macros in it are expanded
   away.  ~l[trans].
@@ -7945,8 +7944,6 @@
   expression in which a variable is compared successively to a sequence of
   symbols.  Only the ~i[first] big switch equation for a given function symbol
   ~c[fn] is stored!
-
-  Note on the MV-NTH Synonym Forms: These forms 
 
   To see what the tau system ``knows'' about a given function symbol
   ~pl[tau-data].  To see the entire tau data base, ~pl[tau-data-base].
