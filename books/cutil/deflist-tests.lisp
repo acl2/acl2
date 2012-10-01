@@ -70,5 +70,9 @@
    (deflist ratfree-listp (x)
      (rationalp x)
      :elementp-of-nil nil
-     :negatedp t)))
+     :negatedp t)
 
+   (deflist all-greater-than-p (min x)
+     (> min x)
+     :guard (and (integerp min)
+                 (integer-listp x)))))

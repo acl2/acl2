@@ -133,7 +133,7 @@ it.</p>
 <code>
  (deflist all-greaterp (min x)
    (&gt; x min)
-   :guard (and (natp n)
+   :guard (and (natp min)
                (nat-listp x)))
 </code>")
 
