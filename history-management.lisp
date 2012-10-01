@@ -5512,17 +5512,12 @@
   it sets an entire table (using keyword ~c[:clear]) to its existing value;
   ~pl[table].
 
-  In most cases, an ~ilc[encapsulate] event is redundant if and only if a
-  syntactically identical ~ilc[encapsulate] has already been executed under the
-  same ~ilc[default-defun-mode], ~ilc[default-ruler-extenders], and
-  ~ilc[default-verify-guards-eagerness].  There are two rather obscure
-  exceptions to this rule.  One exception is relevant only if ~ilc[make-event]
-  is invoked in the earlier ~c[encapsulate]; in that case, it suffices that the
-  two ~c[encapsulate]s are equal after replacing each top-level sub-event of
-  the earlier ~c[encapsulate] by its ~ilc[make-event] expansion.  The other
-  exception is in the case of redefinition (~pl[ld-redefinition-action]), in
-  which case an attempt is made to ignore an earlier ~c[encapsulate] that has
-  already been superseded by redefinition.
+  An ~ilc[encapsulate] event is redundant if a syntactically identical
+  ~ilc[encapsulate] has already been executed under the same
+  ~ilc[default-defun-mode], ~ilc[default-ruler-extenders], and
+  ~ilc[default-verify-guards-eagerness].  The criterion for redundancy of
+  ~ilc[encapsulate] events is actually a bit more generous, for example
+  ignoring contents of ~ilc[local] ~il[events]; ~pl[encapsulate].
 
   An ~ilc[include-book] is redundant if the book has already been included.
 

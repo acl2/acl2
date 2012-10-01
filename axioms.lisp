@@ -19098,10 +19098,17 @@
   made to the ~il[world] by the superior ~c[encapsulate], to permit
   ~c[an-element] to be used as a function symbol in ~c[thm1].
 
-  An ~ilc[encapsulate] event is redundant if and only if a syntactically
-  identical ~ilc[encapsulate] has already been executed under the same
-  ~ilc[default-defun-mode], ~ilc[default-ruler-extenders], and
-  ~ilc[default-verify-guards-eagerness].  ~l[redundant-events].
+  An ~ilc[encapsulate] event is redundant if and only if an earlier
+  ``corresponding'' ~ilc[encapsulate] (as defined below) has been executed
+  under the same ~ilc[default-defun-mode], ~ilc[default-ruler-extenders], and
+  ~ilc[default-verify-guards-eagerness].  ~l[redundant-events].  Here, two
+  ~c[encapsulate] ~il[events] are ``corresponding'' if they contain the same
+  number of top-level events ~-[] let ~c[k] be that number ~-[] and for each
+  ~c[i < k], the ~c[i]th top-level events ~c[E1] and ~c[E2] from the earlier
+  and current event (respectively): either ~c[E1] and ~c[E2] are equal, or
+  ~c[E1] is of the form ~c[(record-expansion E1 ...)], or else ~c[E1] and
+  ~c[E2] are equal after replacing each ~ilc[local] sub-event by
+  ~c[(local (value-triple :elided))].
 
   Remark for ACL2(r) (~pl[real]).  For ACL2(r), ~ilc[encapsulate] can be used
   to introduce classical and non-classical functions, as determined by the
@@ -19533,9 +19540,9 @@
   a ~ilc[local] event arising from ~c[make-event] expansion is replaced in that
   expansion by ~c[(local (value-triple :ELIDED))].
 
-  Finally, we note that ACL2 extends the notion of ``make-event expansion'' to
-  the case that a call of ~c[make-event] is found in the course of
-  macroexpansion.  We illustrate with the following example.
+  We note that ACL2 extends the notion of ``make-event expansion'' to the case
+  that a call of ~c[make-event] is found in the course of macroexpansion.  The
+  following example illustrates this point.
   ~bv[]
   (encapsulate
    ()
