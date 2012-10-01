@@ -19427,6 +19427,12 @@
 ; respectively.  Note that error output is never inhibited for these functions
 ; as implemented.
 
+; Two new functions, which are rarely if ever called by users, have been made
+; untouchable: stobj-evisceration-alist and trace-evisceration-alist.  Before
+; this change, (trace-evisceration-alist state) and (stobj-evisceration-alist
+; nil state) could return non-ACL2 objects, and the former even caused a hard
+; Lisp error when a user stobj had previously been introduced.
+
   :doc
   ":Doc-Section release-notes
 
@@ -19503,6 +19509,9 @@
   Nathan Wetzler.
 
   ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]
+
+  Fixed a bug in the implementation of ~ilc[wet] (which is actually in the book
+  ~c[books/misc/wet.lisp]).
 
   ~st[EMACS SUPPORT]
 

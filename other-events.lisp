@@ -22243,6 +22243,29 @@
   for the stobj.  The executable definition is applied in raw Lisp to a live
   stobj, which is an array object associated with the given stobj name.
 
+  We can picture a sequence of updates to corresponding abstract and concrete
+  stobjs as follows.  Initially in this picture, ~c[st$a0] and ~c[st$c0] are a
+  corresponding abstract and concrete stobj (respectively).  Then an update,
+  ~c[u1], is applied with ~c[:LOGIC] and ~c[:EXEC] functions ~c[u$a1] and
+  ~c[u$c1], respectively.  The resulting abstract and concrete stobj, ~c[st$a1]
+  and ~c[st$c1], correspond as before.  Then a second update, ~c[u2], is
+  applied with ~c[:LOGIC] and ~c[:EXEC] functions ~c[u$a2] and ~c[u$c2],
+  respectively ~-[] again preserving the correspondence.  And so on.
+
+  ~bv[]
+  Abstract               u$a1       u$a2       u$a3
+  (:logic)         st$a0  --> st$a1  --> st$a2  -->   ...
+
+                     ^          ^          ^               ^
+  Correspondence     |          |          |          ...  |
+                     v          v          v               v
+
+                         u$c1       u$c2       u$c3
+  Concrete         st$c0  --> st$c1  --> st$c2  -->   ...
+  (:exec)
+  ~ev[]
+
+  We conclude this introduction with some remarks about implementation.
   Consider an abstract stobj ~c[st] with corresponding concrete stobj ~c[st$c].
   The live stobjs for ~c[st] and ~c[st$c] have the same structure, but are
   distinct arrays.  Indeed, the raw Lisp creator function for ~c[st$c] is
@@ -25607,7 +25630,9 @@
 
   ; Set trace evisc tuple to restrict print-level to 3 and print-length to 4,
   ; while hiding the logical world and suitably printing stobjs even if trace$
-  ; option ``:hide nil'' is used.
+  ; option ``:hide nil'' is used.  (Note: calling ~c[trace-evisceration-alist]
+  ; directly requires removing this function as `untouchable', which requires a
+  ; trust tag; ~pl[remove-untouchable].)
   (set-trace-evisc-tuple
    (evisc-tuple 3 4 (trace-evisceration-alist state) nil)
    state)~/

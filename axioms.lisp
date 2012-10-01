@@ -34904,6 +34904,9 @@
 
     with-live-state ; see comment in that macro
 
+    stobj-evisceration-alist ; returns bad object
+    trace-evisceration-alist ; returns bad object
+
 ; We briefly included maybe-install-acl2-defaults-table, but that defeated the
 ; ability to call :puff.  It now seems unnecessary to include
 ; maybe-install-acl2-defaults-table, since its body is something one can call
