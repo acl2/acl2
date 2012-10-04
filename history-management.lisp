@@ -5512,12 +5512,12 @@
   it sets an entire table (using keyword ~c[:clear]) to its existing value;
   ~pl[table].
 
-  An ~ilc[encapsulate] event is redundant if a syntactically identical
-  ~ilc[encapsulate] has already been executed under the same
-  ~ilc[default-defun-mode], ~ilc[default-ruler-extenders], and
-  ~ilc[default-verify-guards-eagerness].  The criterion for redundancy of
-  ~ilc[encapsulate] events is actually a bit more generous, for example
-  ignoring contents of ~ilc[local] ~il[events]; ~pl[encapsulate].
+  The typical way for an ~ilc[encapsulate] event to be redundant is when a
+  syntactically identical ~ilc[encapsulate] has already been executed under the
+  same ~ilc[default-defun-mode], ~ilc[default-ruler-extenders], and
+  ~ilc[default-verify-guards-eagerness].  The full criterion for redundancy of
+  ~c[encapsulate] events is more complex (~pl[encapsulate]); for example, it
+  ignores contents of ~ilc[local] ~il[events].
 
   An ~ilc[include-book] is redundant if the book has already been included.
 
@@ -7833,9 +7833,10 @@
 
   The keyword ~il[command] ~c[:ubu!] is the same as ~c[:]~ilc[ubu], but with
   related queries suppressed appropriately, and with a guarantee that it is
-  ``error-free.''  More precisely, the error triple returned by ~c[:ubu!]  will
-  always be of the form ~c[(mv nil val state)].  ~c[:]~ilc[Oops] will undo the
-  last ~c[:ubu!].  Also ~pl[ubu], ~pl[ubt], and ~pl[u].~/"
+  ``error-free.''  More precisely, the error triple (~pl[error-triples])
+  returned by ~c[:ubu!]  will always be of the form ~c[(mv nil val state)].
+  ~c[:]~ilc[Oops] will undo the last ~c[:ubu!].  Also ~pl[ubu], ~pl[ubt], and
+  ~pl[u].~/"
 
   (list 'ubt!-ubu!-fn :ubu cd 'state))
 
@@ -8059,9 +8060,15 @@
                (current-path-rev (reverse (global-val 'include-book-path
                                                       wrld))))
            (io? error nil state
-                (name book-path-rev current-path-rev)
+                (name book-path-rev current-path-rev wrld)
                 (pprogn
-                 (cond ((null book-path-rev)
+                 (cond ((and (null book-path-rev)
+                             (acl2-system-namep name wrld))
+                        (fms "Note: ~x0 has already been defined as a system ~
+                              name; that is, it is built into ACL2.~|~%"
+                             (list (cons #\0 name))
+                             (standard-co state) state nil))
+                       ((null book-path-rev)
                         (fms "Note: ~x0 was previously defined at the top ~
                               level~#1~[~/ of the book being certified~].~|~%"
                              (list (cons #\0 name)
@@ -17313,7 +17320,7 @@
                 (prettyify-stobj-flags stobjs-out))
             (er@par soft ctx
               "The form ~x0 was expected to represent an ordinary value, but ~
-               it returns a tuple of the form ~x1. Note that Error triples ~
+               it returns a tuple of the form ~x1.  Note that error triples ~
                are not allowed in this feature in ACL2(p) (see :doc ~
                error-triples-and-parallelism)"
               uform
@@ -20581,17 +20588,18 @@
   then return a single non-~il[stobj] value, not an error triple, since
   ~c[state] is not one of the first seven variables shown in (a).
 
-  Note: Error triples are an ACL2 idiom for implementing ``errors.''  If a
-  computation returns ~c[(mv erp val state)] in a context in which ACL2 is
-  respecting the error triple convention (~pl[ld-error-triples] and
-  ~pl[ld-error-action]), then an error is deemed to have occurred if ~c[erp] is
-  non-~c[nil].  The computation is expected to have printed an appropriate
-  error message to ~ilc[state] and further computation is aborted.  On the
-  other hand, if a computation returns an error triple in which ~c[erp] is nil,
-  then ``value'' of the computation is taken to be the second component,
-  ~c[val], of the triple (along with the possibly modified ~ilc[state]), and
-  computation continues.  For more information about programming with error
-  triples, ~pl[programming-with-state].
+  Note: Error triples are an ACL2 idiom for implementing ``errors'';
+  ~pl[error-triples].  If a computation returns ~c[(mv erp val state)] in a
+  context in which ACL2 is respecting the error triple
+  convention (~pl[ld-error-triples] and ~pl[ld-error-action]), then an error is
+  deemed to have occurred if ~c[erp] is non-~c[nil].  The computation is
+  expected to have printed an appropriate error message to ~ilc[state] and
+  further computation is aborted.  On the other hand, if a computation returns
+  an error triple in which ~c[erp] is nil, then ``value'' of the computation is
+  taken to be the second component, ~c[val], of the triple (along with the
+  possibly modified ~ilc[state]), and computation continues.  For more
+  information about programming with error triples,
+  ~pl[programming-with-state].
 
   The function symbol cases are treated as abbreviations of the term
   ~c[(fn ID CLAUSE WORLD)],

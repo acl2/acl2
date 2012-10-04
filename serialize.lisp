@@ -285,9 +285,7 @@ General forms:
 (with-serialize-character #\Y form)
 (with-serialize-character #\Z form)
 ~ev[]
-where ~c[form] should evaluate to an error triple, i.e. a result of the form
-~c[(mv erp val state)] where ~c[erp] and ~c[val] are ordinary (non-~il[stobj])
-values.
+where ~c[form] should evaluate to an error triple (~pl[error-triples]).
 
 Note that if you prefer to obtain the same behavior (as described below)
 globally, rather than only within the scope of ~c[with-serialize-character],

@@ -89,11 +89,11 @@
   keywords ~c[&optional] and ~c[&rest]; ~pl[macro-args], but note that
   here, ~c[args] may not include ~c[&key] or ~c[&whole].
 
-  The value of ~c[body] should be an ACL2 ``error triple,'' i.e., have the
+  The value of ~c[body] should be an error triple (~pl[error-triples]), of the
   form ~c[(mv erp xxx state)] for some ~c[erp] and ~c[xxx].  If ~c[erp] is
   ~c[nil], then ~c[xxx] is handed off to the proof-checker's instruction
-  interpreter.  Otherwise, evaluation typically halts.  We may write
-  more on the full story later if there is interest in reading it.~/"
+  interpreter.  Otherwise, evaluation typically halts.  We may write more on
+  the full story later if there is interest in reading it.~/"
 
   (define-pc-meta-or-macro-fn 'macro raw-name formals body))
 
@@ -247,19 +247,19 @@
   Evaluate ~c[form].  The ~c[lisp] command is mainly of interest for side
   effects.  See also ~c[print], ~c[skip], and ~c[fail].
 
-  The rest of the documentation for ~c[lisp] is of interest only to
-  those who use it in macro commands.  If the Lisp evaluation (by
-  ~c[trans-eval]) of form returns an ``error triple'' of the form
-  ~c[(mv erp ((NIL NIL STATE) . (erp-1 val-1 &)) state)], then the
-  ~c[lisp] command returns the appropriate error triple
+  The rest of the documentation for ~c[lisp] is of interest only to those who
+  use it in macro commands.  If the Lisp evaluation (by ~c[trans-eval]) of form
+  returns an error triple (~pl[error-triples]) of the form
+  ~c[(mv erp ((NIL NIL STATE) . (erp-1 val-1 &)) state)], then the ~c[lisp]
+  command returns the appropriate error triple
   ~bv[]
   (mv (or erp erp-1)
       val-1
       state) .
   ~ev[]
-  Otherwise, the ~c[trans-eval] of form must return an ``error triple''
-  of the form ~c[(mv erp (cons stobjs-out val) &)], and the ~c[lisp]
-  command returns the appropriate error triple
+  Otherwise, the ~c[trans-eval] of form must return an error triple of the form
+  ~c[(mv erp (cons stobjs-out val) &)], and the ~c[lisp] command returns the
+  appropriate error triple
   ~bv[]
   (mv erp
       val
@@ -3502,17 +3502,17 @@
   ~st[Remark:]  The arguments are ~st[not] evaluated, except (in a sense) for
   ~c[success-expr], as described below.
 
-  Each primitive and meta instruction can be thought of as returning
-  an error triple (in the standard ACL2 sense), say ~c[(erp val state)].
-  An instruction (primitive or meta) ``succeeds'' if ~c[erp] is ~c[nil] and
+  Each primitive and meta instruction can be thought of as returning an error
+  triple, say ~c[(erp val state)]; ~pl[error-triples].  An
+  instruction (primitive or meta) ``succeeds'' if ~c[erp] is ~c[nil] and
   ~c[val] is not ~c[nil]; otherwise it ``fails''.  (When we use the words
-  ``succeed'' or ``fail'' in this technical sense, we'll always
-  include them in double quotes.)  If an instruction ``fails,'' we say
-  that that the failure is ``soft'' if ~c[erp] is ~c[nil]; otherwise the
-  failure is ``hard''.  The ~c[sequence] command gives the user control
-  over how to treat ``success'' and ``failure'' when sequencing
-  instructions, though we have created a number of handy macro
-  commands for this purpose, notably ~c[do-all], ~c[do-strict] and ~c[protect].
+  ``succeed'' or ``fail'' in this technical sense, we'll always include them in
+  double quotes.)  If an instruction ``fails,'' we say that that the failure is
+  ``soft'' if ~c[erp] is ~c[nil]; otherwise the failure is ``hard''.  The
+  ~c[sequence] command gives the user control over how to treat ``success'' and
+  ``failure'' when sequencing instructions, though we have created a number of
+  handy macro commands for this purpose, notably ~c[do-all], ~c[do-strict] and
+  ~c[protect].
 
   Here is precisely what happens when a ~c[sequence] instruction is run.
   The instruction interpreter is run on the instructions supplied in

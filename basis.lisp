@@ -13892,8 +13892,8 @@
 
   Finally, if ~c[ld-post-eval-print] is ~c[:command-conventions] and also
   ~c[ld-error-triples] is ~c[t], then ~ilc[ld] prints the result but treats
-  ``error triples'' specially.  An ``error triple'' is a result,
-  ~c[(mv erp val state)], that consists of three values, the third of which is
+  ``error triples'' specially.  An ``error triple'' (~pl[error-triples]) is a
+  result, ~c[(mv erp val state)], that consists of two ordinary values and
   ~ilc[state].  Many ACL2 functions use such triples to signal errors.  The
   convention is that if ~c[erp] (the first value) is ~c[nil], then the function
   is returning ~c[val] (the second value) as its conventional single result and
@@ -13998,9 +13998,8 @@
   ~ilc[standard-oi], evaluates them and prints the result to ~ilc[standard-co].
   However, there are various flags that control ~ilc[ld]'s behavior and
   ~c[ld-error-action] is one of them.  Suppose that ~ilc[ld-error-triples] is
-  ~c[t] and a form evaluates to a so-called ``error triple''
-  ~c[(mv erp val state)], where ~c[state] is the ACL2 state
-  object (~pl[state]).  If the ``error component'', ~c[erp], is non-~c[nil],
+  ~c[t] and a form evaluates to an error triple ~c[(mv erp val state)];
+  ~pl[error-triples].  If the ``error component'', ~c[erp], is non-~c[nil],
   then an error is said to have occurred.  If an error occurs, ~ilc[ld]'s
   action depends on ~c[ld-error-action].  If it is ~c[:continue], ~ilc[ld] just
   continues processing the forms in ~ilc[standard-oi].  If it is ~c[:return] or

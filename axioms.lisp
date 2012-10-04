@@ -12291,7 +12291,7 @@
   Warning: ~c[With-output] has no effect in raw Lisp, and hence is disallowed
   in function bodies.  However, you can probably get the effect you want as
   illustrated below, where ~c[<form>] must return an error triple
-  ~c[(mv erp val state)]; ~pl[ld].
+  ~c[(mv erp val state)]; ~pl[ld] and ~pl[error-triples].
   ~bv[]
   Examples avoiding with-output, for use in function definitions:
 
@@ -13388,13 +13388,12 @@
   ~il[state], something that very few users will probably want to do.
   ~l[state].~/
 
-  ~c[Er-progn] is used much the way that ~ilc[progn] is used in Common
-  Lisp, except that it expects each form within it to evaluate to an
-  ``error triple'' of the form ~c[(mv erp val state)].  The first such
-  form, if any, that evaluates to such a triple where ~c[erp] is not
-  ~c[nil] yields the error triple returned by the ~c[er-progn].  If
-  there is no such form, then the last form returns the value of the
-  ~c[er-progn] form.
+  ~c[Er-progn] is used much the way that ~ilc[progn] is used in Common Lisp,
+  except that it expects each form within it to evaluate to an ``error triple''
+  of the form ~c[(mv erp val state)]; ~pl[error-triples].  The first such form,
+  if any, that evaluates to such a triple where ~c[erp] is not ~c[nil] yields
+  the error triple returned by the ~c[er-progn].  If there is no such form,
+  then the last form returns the value of the ~c[er-progn] form.
 
   ~bv[]
   General Form:
@@ -18725,11 +18724,11 @@
   table, ~c[key-term] and ~c[value-term], if present, are arbitrary terms
   involving (at most) the single variable ~ilc[world], ~c[op], if present, is
   one of the table operations below, and ~c[term], if present, is a term.
-  ~c[Table] returns an ACL2 ``error triple'' (~pl[programming-with-state]).
-  The effect of ~c[table] on ~ilc[state] depends on ~c[op] and how many
-  arguments are presented.  Some invocations actually have no effect on the
-  ACL2 ~il[world] and hence an invocation of ~c[table] is not always an
-  ``event''.  We explain below, after giving some background information.
+  ~c[Table] returns an ACL2 ``error triple'' (~pl[error-triples]).  The effect
+  of ~c[table] on ~ilc[state] depends on ~c[op] and how many arguments are
+  presented.  Some invocations actually have no effect on the ACL2 ~il[world]
+  and hence an invocation of ~c[table] is not always an ``event''.  We explain
+  below, after giving some background information.
 
   ~b[Important Note:] The ~c[table] forms above are calls of a macro that
   expand to involve the special variable ~ilc[state].  This will prevent you
@@ -19098,17 +19097,26 @@
   made to the ~il[world] by the superior ~c[encapsulate], to permit
   ~c[an-element] to be used as a function symbol in ~c[thm1].
 
-  An ~ilc[encapsulate] event is redundant if and only if an earlier
-  ``corresponding'' ~ilc[encapsulate] (as defined below) has been executed
-  under the same ~ilc[default-defun-mode], ~ilc[default-ruler-extenders], and
-  ~ilc[default-verify-guards-eagerness].  ~l[redundant-events].  Here, two
-  ~c[encapsulate] ~il[events] are ``corresponding'' if they contain the same
-  number of top-level events ~-[] let ~c[k] be that number ~-[] and for each
-  ~c[i < k], the ~c[i]th top-level events ~c[E1] and ~c[E2] from the earlier
-  and current event (respectively): either ~c[E1] and ~c[E2] are equal, or
-  ~c[E1] is of the form ~c[(record-expansion E1 ...)], or else ~c[E1] and
-  ~c[E2] are equal after replacing each ~ilc[local] sub-event by
-  ~c[(local (value-triple :elided))].
+  The typical way for an ~c[encapsulate] event to be redundant is when a
+  syntactically identical ~c[encapsulate] has already been executed under the
+  same ~ilc[default-defun-mode], ~ilc[default-ruler-extenders], and
+  ~ilc[default-verify-guards-eagerness].  More generally, the ~c[encapsulate]
+  events need not be syntactically identical, but rather, need only to
+  correspond in the following sense: they contain the same number of top-level events
+  ~-[] let ~c[k] be that number ~-[] and for each ~c[i < k], the ~c[i]th
+  top-level events ~c[E1] and ~c[E2] from the earlier and current
+  ~c[encapsulate]s have one of the following properties.
+
+  o ~c[E1] and ~c[E2] are equal; or
+
+  o ~c[E1] is of the form ~c[(record-expansion E2 ...)]; or else
+
+  o ~c[E1] and ~c[E2] are equal after replacing each ~ilc[local] sub-event by
+  ~c[(local (value-triple :elided))], where a sub-event of an event ~c[E] is
+  either ~c[E] itself, or a sub-event of a constituent event of ~c[E] in the
+  case that ~c[E] is a call of ~ilc[with-output], ~ilc[with-prover-time-limit],
+  ~ilc[with-prover-step-limit], ~c[record-expansion], ~ilc[time$], ~ilc[progn],
+  ~ilc[progn!], or ~c[encapsulate] itself.
 
   Remark for ACL2(r) (~pl[real]).  For ACL2(r), ~ilc[encapsulate] can be used
   to introduce classical and non-classical functions, as determined by the
@@ -26094,7 +26102,8 @@
   ~ev[]
   Note that the first result is indented by one space.  This is ACL2's way to
   indicate that the ~ilc[assign] expression returned an ``error triple'' and
-  that no error was signalled.  We discuss error triples in more detail below.
+  that no error was signalled.  We discuss error triples in more detail below;
+  also ~pl[error-triples].
 
   As illustrated above, the output signatures of the utilities for assigning to
   state globals differ from each other as follows: ~ilc[f-put-global] returns
@@ -26169,7 +26178,8 @@
   triple''.  (Whether it is treated as an error triple depends on the
   programmer.)  Error triples are often denoted ~c[(mv erp val state)], and
   common ACL2 programming idioms treat ~c[erp] as a flag indicating whether an
-  error is being signalled and ~c[val] as the ``value'' computed.
+  error is being signalled and ~c[val] as the ``value'' computed.  Also
+  ~pl[error-triples].
 
   Even ACL2 users who are not programmers encounter error triples, because
   these are the values returned by evaluation of ACL2 ~il[events].  Consider
@@ -26524,11 +26534,11 @@
   a common ACL2 programming idiom~/
 
   When evaluation returns three values, where the first two are ordinary
-  objects and the third is the ACL2 ~il[state], the result may be called an
-  ``error triple''.  If an error triple is ~c[(mv erp val state)], we think of
-  ~c[erp] as an error flag and ~c[val] as the returned value.
+  (non-~il[stobj]) objects and the third is the ACL2 ~il[state], the result may
+  be called an ``error triple''.  If an error triple is ~c[(mv erp val state)],
+  we think of ~c[erp] as an error flag and ~c[val] as the returned value.
   ~l[programming-with-state] for a discussion of error triples and how to
-  program with them.~/~/")
+  program with them.  Also ~pl[ld-error-triples].~/~/")
 
 (defun update-nth (key val l)
 
@@ -28821,17 +28831,18 @@
   value is a single ordinary object (i.e. not multiple values, and not
   ~il[state] or any other ~il[stobj]); ~c[set-vari], if supplied, is a function
   with ~il[signature] ~c[((set-vari * state) => state)]; and ~c[body] is an
-  expression that evaluates to an error triple.  Each ~c[formi] is evaluated in
-  order, starting with ~c[form1], and with each such binding the state global
-  variable ~c[vari] is bound to the value of ~c[formi], sequentially in the
-  style of let*.  More precisely, then meaning of this form is to set (in
-  order) the global values of the indicated ~il[state] global variables
-  ~c[vari] to the values of ~c[formi] using ~ilc[f-put-global], execute
-  ~c[body], restore the ~c[vari] to their previous values (but see the
-  discussion of setters below), and return the triple produced by body (with
-  its state as modified by the restoration).  The restoration is guaranteed
-  even in the face of aborts.  The ``bound'' variables may initially be unbound
-  in state and restoration means to make them unbound again.
+  expression that evaluates to an error triple (~pl[error-triples]).  Each
+  ~c[formi] is evaluated in order, starting with ~c[form1], and with each such
+  binding the state global variable ~c[vari] is bound to the value of
+  ~c[formi], sequentially in the style of ~ilc[let*].  More precisely, then
+  meaning of this form is to set (in order) the global values of the indicated
+  ~il[state] global variables ~c[vari] to the values of ~c[formi] using
+  ~ilc[f-put-global], execute ~c[body], restore the ~c[vari] to their previous
+  values (but see the discussion of setters below), and return the triple
+  produced by body (with its state as modified by the restoration).  The
+  restoration is guaranteed even in the face of aborts.  The ``bound''
+  variables may initially be unbound in state and restoration means to make
+  them unbound again.
 
   Still referring to the General Form above, let ~c[old-vali] be the value of
   state global variable ~c[vari] at the time ~c[vari] is about to be assigned
@@ -46606,9 +46617,9 @@ Lisp definition."
    (get-wormhole-status name state)
 
    ~c[Name] should be the name of a wormhole (~pl[wormhole]).  This function
-   returns an error triple of the form ~c[(mv nil s state)], where ~c[s] is the
-   status of the named wormhole.  The status is obtained by reading the oracle
-   in the ACL2 ~ilc[state].~/
+   returns an error triple (~pl[error-triples]) of the form
+   ~c[(mv nil s state)], where ~c[s] is the status of the named wormhole.  The
+   status is obtained by reading the oracle in the ACL2 ~ilc[state].~/
 
    This function makes the status of a wormhole visible outside the wormhole.
    But since this function takes ~ilc[state] and modifies it, the function may

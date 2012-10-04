@@ -5716,8 +5716,8 @@
   supplied values of flags ~c[a] and ~c[b].
 
   If no arguments are supplied the form is not an event and simply returns (as
-  an ``error triple'' ~c[(mv nil ans state)]) the current settings of the two
-  flags.  For example:
+  an error triple ~c[(mv nil ans state)]; ~pl[error-triples]) the current
+  settings of the two flags.  For example:
 
   ~bv[]
   ACL2 !>(tau-system)

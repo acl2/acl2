@@ -1055,9 +1055,7 @@
          (cond
           ((and (eq flg :command-conventions)
                 (ld-error-triples state)
-                (equal (length stobjs-out) 3)
-                (eq (car stobjs-out) nil)
-                (eq (caddr stobjs-out) 'state))
+                (equal stobjs-out *error-triple-sig*))
 
 ; We get here if we are following command-conventions and the form
 ; returned triple (mv erp val state).  Note that erp must be a
@@ -2643,12 +2641,12 @@
   ...
   ~ev[]~/
 
-  By putting an ~c[(i-am-here)] form at the ``frontier'' of an evolving
-  file of ~il[command]s, you can use ~ilc[rebuild] to load the file up to the
-  ~c[(i-am-here)].  ~c[I-am-here] simply returns an ~ilc[ld] error triple and any
-  form that ``causes an error'' will do the same job.  Note that the
-  text of the file after the ~c[(i-am-here)] need not be machine
-  readable."
+  By putting an ~c[(i-am-here)] form at the ``frontier'' of an evolving file of
+  ~il[command]s, you can use ~ilc[rebuild] to load the file up to the
+  ~c[(i-am-here)].  ~c[I-am-here] simply returns an error
+  triple (~pl[error-triples]) that indicates an error, and any form that
+  ``causes an error'' will do the same job.  Note that the text of the file
+  after the ~c[(i-am-here)] need not be machine readable."
 
   '(mv-let (col state)
            (fmt1 "~ I-AM-HERE~|" nil 0 (standard-co state) state nil) 
@@ -19433,6 +19431,21 @@
 ; nil state) could return non-ACL2 objects, and the former even caused a hard
 ; Lisp error when a user stobj had previously been introduced.
 
+; Fixed an error message that was complaining about redefinition of a function
+; previously defined at the top level, or at the top level of a book, when the
+; function was actually built into ACL2.  For example:
+; 
+; ; old:
+; ACL2 !>(defun rewrite (x) x)
+; ....
+; Note: REWRITE was previously defined at the top level.
+; 
+; ; new:
+; ACL2 !>(defun rewrite (x) x)
+; ....
+; Note: REWRITE has already been defined as a system name; that is, it
+; is built into ACL2.
+
   :doc
   ":Doc-Section release-notes
 
@@ -19507,6 +19520,29 @@
   Fixed a raw Lisp error that occurred when tracing a ~i[stobj] resize
   function, thanks to an error report from Warren Hunt, Marijn Heule, and
   Nathan Wetzler.
+
+  Fixed a raw Lisp error that occurred for certain ill-formed signatures, as in
+  the following example.
+  ~bv[]
+  ACL2 !>(encapsulate
+             (((f (*) => * :guard t)))
+             (local (defun f (x) (consp x))))
+
+  ***********************************************
+  ************ ABORTING from raw Lisp ***********
+  Error:  value (F (*) => * :GUARD T) is not of the expected type SYMBOL.
+  ***********************************************
+  ~ev[]
+
+  The notion of ``error triple'' (~pl[error-triples]) had been implemented
+  ambiguously, with the result that for a ~il[stobj], ~c[st], the result of
+  evaluating the following two forms was the same: ~c[(mv nil st state)] and
+  ~c[(mv t st state)].  Of course, these are just examples; in general, a
+  result of ~c[(mv erp val state)] was sometimes treated as an error triple
+  even when ~c[val] is a ~il[stobj].  Now, ~c[(mv erp val state)] is an error
+  triple only when ~c[erp] and ~c[val] are ordinary (non-~il[stobj]) values.
+  Thanks to Warren Hunt and Marijn Heule for bringing this problem to our
+  attention.
 
   ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]
 

@@ -6392,7 +6392,7 @@
   imagine that the ~il[events] under an ~c[encapsulate], ~c[progn], or
   ~c[certify-book] form were flattened into a list of events that were then
   submitted to ACL2 up to the point of failure.  This would put us in the state
-  in which the original failed event had failed, so we could now submit that
+  in which the original failed event had failed, so we could now replay that
   failed event and try modifying it, or first proving additional events, in
   order to get it admitted.
 
@@ -8328,6 +8328,7 @@
                   (((name . &) . &)
                    name))))
       (and name
+           (symbolp name)
            (not (new-namep name wrld))
            (let* ((wrld-tail (lookup-world-index
                               'event

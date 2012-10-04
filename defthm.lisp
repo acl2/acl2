@@ -3066,7 +3066,48 @@
   (implies (alistp x)         When (alistp x) is assumed true,
            (true-listp x))    add the additional hypothesis that x
                               is of primitive type true-listp.~/
+  ~ev[]
 
+  Before presenting the General Forms, we start with a motivating example.  The
+  following provides a nice example of a ~c[:compound-recognizer] rule that is
+  built into ACL2.
+  ~bv[]
+  (defthm natp-compound-recognizer
+    (equal (natp x)
+           (and (integerp x)
+                (<= 0 x)))
+    :rule-classes :compound-recognizer)
+  ~ev[]
+  To see how this rule might be useful, consider the following (admittedly very
+  simple) ~il[events].
+  ~bv[]
+  (defun triple (x)
+    (* 3 x))
+
+  (defthm triple-preserves-integerp
+    (implies (integerp x)
+             (integerp (triple x))))
+
+  (in-theory (disable triple natp))
+  ~ev[]
+  If the above ~c[:compound-recognizer] rule is disabled, then the following
+  trivial theorem fails as shown; we explain below.
+  ~bv[]
+  (thm (implies (natp x)
+                (integerp (triple x)))
+    :hints ((\"Goal\" :in-theory (disable natp-compound-recognizer))))
+  ~ev[]
+
+  The problem is that when ACL2 tries to rewrite the term
+  ~c[(integerp (triple x))] using the ~c[:]~ilc[rewrite] rule
+  ~c[triple-preserves-integerp], it needs to rewrite the hypothesis
+  ~c[(integerp x) to ~c[t], but instead what is known is ~c[(natp x)].  If we
+  remove the hint, then the proof succeeds because the above
+  ~c[:compound-recognizer] rule tells ACL2 that when assuming ~c[(natp x)] to
+  be true, it should actually assume both ~c[(integerp x)] and ~c[(<= 0 x)] to
+  be true.
+
+  ~bv[]
   General Forms:
   (implies (fn x) concl)               ; (1)
   (implies (not (fn x)) concl)         ; (2)
@@ -3077,14 +3118,14 @@
   (equal (fn x) concl)                 ; (6)
   ~ev[]
   where ~c[fn] is a Boolean valued function of one argument, ~c[x] is a
-  variable symbol, and the system can deduce some restriction on the
-  primitive type of ~c[x] from the assumption that ~c[concl] holds.  The third
-  restriction is vague but one way to understand it is to weaken it a
-  little to ``and ~c[concl] is a non-tautological conjunction or
-  disjunction of the primitive type recognizers listed below.''
+  variable symbol, and the system can deduce some restriction on the primitive
+  type of ~c[x] from the assumption that ~c[concl] holds.  The last restriction
+  is vague but one way to understand it is to weaken it a little to ``and
+  ~c[concl] is a non-tautological conjunction or disjunction of the primitive
+  type recognizers listed below.''
 
-  The primitive ACL2 types and a suitable primitive recognizing
-  expression for each are listed below.
+  The primitive ACL2 types and a suitable primitive recognizing expression for
+  each are listed below.
   ~bv[]
     type                suitable primitive recognizer
 
@@ -3110,52 +3151,53 @@
     strings             (stringp x)
     characters          (characterp x)
   ~ev[]
+
   Thus, a suitable ~c[concl] to recognize the naturals would be
-  ~c[(or (equal x 0) (and (integerp x) (> x 0)))] but it turns out that we
-  also permit ~c[(and (integerp x) (>= x 0))].  Similarly, the true-lists
-  could be specified by
+  ~c[(or (equal x 0) (and (integerp x) (> x 0)))] but it turns out that we also
+  permit ~c[(and (integerp x) (>= x 0))].  Similarly, the true-lists could be
+  specified by
   ~bv[]
   (or (equal x nil) (and (consp x) (true-listp x)))
   ~ev[]
-  but we in fact allow ~c[(true-listp x)].  When time permits we will
-  document more fully what is allowed or implement a macro that
-  permits direct specification of the desired type in terms of the
-  primitives.
+  but we in fact allow ~c[(true-listp x)].  When time permits we will document
+  more fully what is allowed or implement a macro that permits direct
+  specification of the desired type in terms of the primitives.
 
   There are essentially four forms of ~c[:compound-recognizer] rules, as the
-  third and fourth forms are equivalent, as are the fifth and sixth.  We
-  explain how such rules are used by considering the individual forms.
+  forms labeled (3) and (4) above are equivalent, as are those labeled (5)
+  and (6).  We explain how such rules are used by considering the individual
+  forms.
 
-  Consider a rule of the first form, ~c[(implies (fn x) concl)].  The
-  effect of such a rule is that when the rewriter assumes ~c[(fn x)] true,
-  as it would while diving through ~c[(if (fn x) xxx ...)] to rewrite ~c[xxx],
-  it restricts the type of ~c[x] as specified by ~c[concl].  However, when
-  assuming ~c[(fn x)] false, as necessary in ~c[(if (fn x) ... xxx)], the rule
-  permits no additional assumptions about the type of ~c[x].  For example,
-  if ~c[fn] is ~c[primep], i.e., the predicate that recognizes prime numbers,
-  then ~c[(implies (primep x) (and (integerp x) (>= x 0)))] is a compound
-  recognizer rule of the first form.  When ~c[(primep x)] is assumed true,
-  the rewriter gains the additional information that ~c[x] is a natural
-  number.  When ~c[(primep x)] is assumed false, no additional information
-  is gained ~-[] since ~c[x] may be a non-prime natural or may not even be a
-  natural.
+  Consider form (1), ~c[(implies (fn x) concl)].  The effect of such a rule is
+  that when the rewriter assumes ~c[(fn x)] true, as it would while diving
+  through ~c[(if (fn x) xxx ...)] to rewrite ~c[xxx], it restricts the type of
+  ~c[x] as specified by ~c[concl].  For example, if ~c[concl] is the term
+  ~c[(integerp x)], then when rewriting ~c[xxx], ~c[x] will be assumed to be an
+  integer.  However, when assuming ~c[(fn x)] false, as necessary in
+  ~c[(if (fn x) ... xxx)], the rule permits no additional assumptions about the
+  type of ~c[x].  For example, if ~c[fn] is ~c[primep], i.e., the predicate
+  that recognizes prime numbers, then
+  ~c[(implies (primep x) (and (integerp x) (>= x 0)))] is a compound recognizer
+  rule of the first form.  When ~c[(primep x)] is assumed true, the rewriter
+  gains the additional information that ~c[x] is a natural number.  When
+  ~c[(primep x)] is assumed false, no additional information is gained ~-[]
+  since ~c[x] may be a non-prime natural or may not even be a natural.
 
-  The second general form addresses itself to the symmetric case, when
-  assuming ~c[(fn x)] false permits type restrictions on ~c[x] but assuming
-  ~c[(fn x)] true permits no such restrictions.  For example, if we
-  defined ~c[exprp] to be the recognizer for well-formed expressions for
-  some language in which all symbols, numbers, character objects and
-  strings were well-formed ~-[] e.g., the well-formedness rules only put
-  restrictions on expressions represented by ~ilc[consp]s ~-[] then the
-  theorem ~c[(implies (not (exprp x)) (consp x))] is a rule of the second
-  form.  Assuming ~c[(exprp x)] true tells us nothing about the type of ~c[x];
-  assuming it false tells us ~c[x] is a ~ilc[consp].
+  Form (2) is the symmetric case, when assuming ~c[(fn x)] false permits type
+  restrictions on ~c[x] but assuming ~c[(fn x)] true permits no such
+  restrictions.  For example, if we defined ~c[exprp] to be the recognizer for
+  well-formed expressions for some language in which all symbols, numbers,
+  character objects and strings were well-formed ~-[] e.g., the well-formedness
+  rules only put restrictions on expressions represented by ~ilc[consp]s ~-[]
+  then the theorem ~c[(implies (not (exprp x)) (consp x))] is a rule of the
+  second form.  Assuming ~c[(exprp x)] true tells us nothing about the type of
+  ~c[x]; assuming it false tells us ~c[x] is a ~ilc[consp].
 
-  The third and fourth general forms, which are really equivalent, address
-  themselves to the case where one type may be deduced from ~c[(fn x)] and a
-  generally unrelated type may be deduced from its negation.  If we modified
-  the expression recognizer above so that character objects are illegal, then
-  rules of the third and fourth forms are
+  Forms (3) and (4), which are really equivalent, address themselves to the
+  case where one type may be deduced from ~c[(fn x)] and a generally unrelated
+  type may be deduced from its negation.  If we modified the expression
+  recognizer above so that character objects are illegal, then rules of the
+  forms (3) and (4) are
   ~bv[]
   (and (implies (exprp x) (not (characterp x)))
        (implies (not (exprp x)) (or (consp x) (characterp x)))).
@@ -3163,18 +3205,19 @@
       (not (characterp x))
     (or (consp x) (characterp x)))
   ~ev[]
-  Finally, rules of the fifth and sixth classes address the case where ~c[fn]
-  recognizes all and only the objects whose type is described.  In
-  these cases, ~c[fn] is really just a new name for some ``compound
-  recognizers.''  The classic example is ~c[(booleanp x)], which is just a
-  handy combination of two primitive types:
+
+  Finally, rules of forms (5) and (6) address the case where ~c[fn] recognizes
+  all and only the objects whose type is described.  In these cases, ~c[fn] is
+  really just a new name for some ``compound recognizers.''  The classic
+  example is ~c[(booleanp x)], which is just a handy combination of two
+  primitive types:
   ~bv[]
   (iff (booleanp x) (or (equal x t) (equal x nil))).
   ~ev[]
 
   Often it is best to disable ~c[fn] after proving that it is a compound
-  recognizer, since ~c[(fn x)] will not be recognized as a compound
-  recognizer once it has been expanded.
+  recognizer, since otherwise the term ~c[(fn x)] will be expanded and thus
+  disappear.
 
   Every time you prove a new compound recognizer rule about ~c[fn] it overrides
   all previously proved compound recognizer rules about ~c[fn].  Thus, if you
@@ -3184,44 +3227,41 @@
   first form followed by one of the second only leaves the second fact in the
   data base.
 
-  Compound recognizer rules can be disabled with the effect that older
-  rules about ~c[fn], if any, are exposed.
+  Compound recognizer rules can be disabled with the effect that older rules
+  about ~c[fn], if any, are exposed.
 
-  If you prove more than one compound recognizer rule for a function, you
-  may see a ~st[warning] message to the effect that the new rule is not as
-  ``restrictive'' as the old.  That is, the new rules do not give the
-  rewriter strictly more type information than it already had.  The
-  new rule is stored anyway, overriding the old, if enabled.  You may
-  be playing subtle games with enabling or rewriting.  But two other
-  interpretations are more likely, we think.  One is that you have
-  forgotten about an earlier rule and should merely print it out to
-  make sure it says what you know and then forget your new rule.  The
-  other is that you meant to give the system more information and the
-  system has simply been unable to extract the intended type
-  information from the term you placed in the conclusion of the new
-  rule.  Given our lack of specificity in saying how type information
-  is extracted from rules, you can hardly blame yourself for this
-  problem.  Sorry.  If you suspect you've been burned this way, you
-  should rephrase the new rule in terms of the primitive recognizing
-  expressions above and see if the warning is still given.  It would
-  also be helpful to let us see your example so we can consider it as
-  we redesign this stuff.
+  If you prove more than one compound recognizer rule for a function, you may
+  see a ~st[warning] message to the effect that the new rule is not as
+  ``restrictive'' as the old.  That is, the new rules do not give the rewriter
+  strictly more type information than it already had.  The new rule is stored
+  anyway, overriding the old, if enabled.  You may be playing subtle games with
+  enabling or rewriting.  But two other interpretations are more likely, we
+  think.  One is that you have forgotten about an earlier rule and should
+  merely print it out to make sure it says what you intend, and then discard
+  your new rule.  The other is that you meant to give the system more
+  information and the system has simply been unable to extract the intended
+  type information from the term you placed in the conclusion of the new rule.
+  Given our lack of specificity in saying how type information is extracted
+  from rules, you can hardly blame yourself for this problem.  Sorry.  If you
+  suspect you've been burned this way, you should rephrase the new rule in
+  terms of the primitive recognizing expressions above and see if the warning
+  is still given.  It would also be helpful to let us see your example so we
+  can consider it as we redesign this stuff.
 
   Compound recognizer rules are similar to ~c[:]~ilc[forward-chaining] rules in
-  that the system deduces new information from the act of assuming
-  something true or false.  If a compound recognizer rule were stored
-  as a forward chaining rule it would have essentially the same effect
-  as described, when it has any effect at all.  The important point is
-  that ~c[:]~ilc[forward-chaining] rules, because of their more general and
-  expensive form, are used ``at the top level'' of the simplification
-  process: we forward chain from assumptions in the goal being proved.
-  But compound recognizer rules are built in at the bottom-most level
-  of the simplifier, where type reasoning is done.
+  that the system deduces new information from the act of assuming something
+  true or false.  If a compound recognizer rule were stored as a forward
+  chaining rule it would have essentially the same effect as described, when it
+  has any effect at all.  The important point is that
+  ~c[:]~ilc[forward-chaining] rules, because of their more general and
+  expensive form, are used ``at the top level'' of the simplification process:
+  we forward chain from assumptions in the goal being proved.  But compound
+  recognizer rules are built in at the bottom-most level of the simplifier,
+  where type reasoning is done.
 
-  All that said, compound recognizer rules are a rather fancy,
-  specialized mechanism.  It may be more appropriate to create
-  ~c[:]~ilc[forward-chaining] rules instead of ~c[:compound-recognizer]
-  rules.")
+  All that said, compound recognizer rules are a rather fancy, specialized
+  mechanism.  It may be more appropriate to create ~c[:]~ilc[forward-chaining]
+  rules instead of ~c[:compound-recognizer] rules.")
 
 (defun destructure-compound-recognizer (term)
 
@@ -13425,7 +13465,7 @@
   into expressions involving ~c[state].  While these macros appear to return
   the list of ~il[monitor]ed ~il[rune]s this is an illusion.  They all print
   ~il[monitor]ed ~il[rune] information to the comment window and then return
-  values (so-called ``error triples'') instructing ~c[ld] to print nothing.  It
+  error triples (~pl[error-triples]) instructing ~c[ld] to print nothing.  It
   is impossible to return the list of ~il[monitor]ed ~il[rune]s because it
   exists only in the ~il[wormhole] ~il[state] with which you interact when a
   break occurs.  This allows you to change the ~il[monitor]ed ~il[rune]s and
