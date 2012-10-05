@@ -26537,8 +26537,24 @@
   (non-~il[stobj]) objects and the third is the ACL2 ~il[state], the result may
   be called an ``error triple''.  If an error triple is ~c[(mv erp val state)],
   we think of ~c[erp] as an error flag and ~c[val] as the returned value.
+  By default, if the result of evaluating a top-level form is an error triple
+  ~c[(mv erp val state)], then that result is not printed if ~c[erp] is
+  non-~c[nil] or if ~c[val] is the keyword ~c[:INVISIBLE], and otherwise
+  ~c[val] is printed with a preceding space.  For example:
+  ~bv[]
+  ACL2 !>(+ 3 4) ; ordinary value
+  7
+  ACL2 !>(mv nil (+ 3 4) state) ; error triple, error component of nil
+   7
+  ACL2 !>(mv t (+ 3 4) state) ; error triple, non-nil error component
+  ACL2 !>(mv nil :invisible state) ; special case for :INVISIBLE
+  ACL2 !>
+  ~ev[]
+
   ~l[programming-with-state] for a discussion of error triples and how to
-  program with them.  Also ~pl[ld-error-triples].~/~/")
+  program with them.  Also ~pl[ld-error-triples] and ~pl[ld] for a discussion
+  of the value ~c[:COMMAND-CONVENTIONS] for keyword
+  ~c[:LD-POST-EVAL-PRINT].~/~/")
 
 (defun update-nth (key val l)
 
