@@ -16751,16 +16751,16 @@
   ~st[Remark on system functions.]  There may be times when you want to apply
   ~c[verify-termination] (and also, perhaps, ~ilc[verify-guards]) to functions
   that are predefined in ACL2.  It may be necessary in such cases to modify the
-  system code first.  See
+  system code first.  See Part II of
   ~url[http://www.cs.utexas.edu/users/moore/acl2/open-architecture/] for a
   discussion of the process for contributing updates to the system code and
   ~il[books] with such ~c[verify-termination] or ~ilc[verify-guards]
-  ~il[events].  To see which built-in ~c[:]~ilc[program] mode functions have
-  already received such treatment, see directory ~c[books/system]; for example,
-  use the Unix utility `~c[grep]' to search:
-  ~bv[]
-  grep '(verify-' books/system/*.lisp
-  ~ev[]
+  ~il[events], perhaps resulting in more system functions being built-in as
+  ~il[guard]-verified.  To see which built-in functions have already received
+  such treatment, see directory ~c[books/system]; or, evaluate the constant
+  ~c[*system-verify-guards-alist*], which associates a distributed book name
+  with a list of functions whose guard-verification is proved by including that
+  book.  See the above URL for more details.
 
   Note that if ~c[fn1] is already in ~c[:]~ilc[logic] mode, then the
   ~c[verify-termination] call has no effect.  It is generally considered to be

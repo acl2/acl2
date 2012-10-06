@@ -19505,6 +19505,18 @@
   in comments in the corresponding release note event, which in this case is
   ~c[(deflabel note-5-1 ...)].
 
+  More built-in functions are now ~il[guard]-verified (and in ~c[:]~ilc[logic]
+  mode).  Furthermore, a mechanism exists for marking yet more built-in
+  functions as guard-verified based on ~il[books] contributed by users; see
+  Part II of
+  ~url[http://www.cs.utexas.edu/users/moore/acl2/open-architecture/].  The
+  current state of that enterprise may be viewed by evaluating the constant
+  ~c[*system-verify-guards-alist*], which associates a distributed book name
+  with a list of functions.  When ACL2 is built in the normal way, each of
+  those functions is marked as guard-verified when ACL2 is started up; but a
+  special developer build can be used to check that the indicated book,
+  together with its sub-books, proves that those functions are guard-verified.
+
   ~st[HEURISTIC IMPROVEMENTS]
 
   We obtained a substantial speedup ~-[] 13% observed for the regression suite,

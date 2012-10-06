@@ -2011,7 +2011,8 @@
 
 ; Warning: Keep this in sync with the definitions of
 ; safe-access-command-tuple-number and pseudo-command-landmarkp in
-; books/system/pseudo-good-worldp.lisp.
+; books/system/pseudo-good-worldp.lisp, and function
+; safe-access-command-tuple-form in the ACL2 sources.
 
 ; See make-command-tuple for a discussion of defun-mode/form.
 
@@ -2051,8 +2052,25 @@
       :program)))
 
 (defun access-command-tuple-form (x)
+
+; See also safe-access-command-tuple-form for a safe version (i.e., with guard
+; t).
+
   (let ((tmp (access command-tuple x :defun-mode/form)))
     (if (keywordp (car tmp))
+        (cdr tmp)
+      tmp)))
+
+(defun safe-access-command-tuple-form (x)
+
+; This is just a safe version of access-command-tuple-form.
+
+  (declare (xargs :guard t))
+  (let ((tmp (and (consp x)
+                  (consp (cdr x))
+                  (access command-tuple x :defun-mode/form))))
+    (if (and (consp tmp)
+             (keywordp (car tmp)))
         (cdr tmp)
       tmp)))
 

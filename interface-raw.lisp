@@ -6621,6 +6621,7 @@
            set-invisible-fns-table
            set-tau-auto-mode
            set-waterfall-parallelism
+           system-verify-guards
            table
            value
            verify-guards

@@ -200,10 +200,10 @@ ACL2_VERSION = v5-0
 
 # The variable NONSTD should be defined for the non-standard version and not
 # for the standard version.  Non-standard ACL2 images will end in saved_acl2r
-# rather than saved_acl2.  ACL2_HONS, ACL2_PAR, and ACL2_WAG (for
+# rather than saved_acl2.  ACL2_HONS, ACL2_PAR, ACL2_DEVEL, and ACL2_WAG (for
 # feature write-arithmetic-goals) are similar (with suffixes h,
-# p, and w, resp., rather than r), but for the experimental hons and parallel
-# versions and the feature that writes out arithmetic lemma data to
+# p, d, and w, resp., rather than r), but for the experimental hons and
+# parallel versions and the feature that writes out arithmetic lemma data to
 # ~/write-arithmetic-goals.lisp (surely only of interest to implementors!).
 
 # DO NOT EDIT ACL2_SUFFIX!  Edit the above-mentioned three variables instead.
@@ -217,6 +217,9 @@ ifdef ACL2_PAR
 endif
 ifdef ACL2_WAG
 	ACL2_SUFFIX := $(ACL2_SUFFIX)w
+endif
+ifdef ACL2_DEVEL
+	ACL2_SUFFIX := $(ACL2_SUFFIX)d
 endif
 ifdef NONSTD
 	ACL2_SUFFIX := $(ACL2_SUFFIX)r
@@ -291,7 +294,7 @@ endif
 ifdef ACL2_PAR
 	sources := $(sources) multi-threading-raw.lisp parallel-raw.lisp futures-raw.lisp
 endif
-# No change to sources for ACL2_WAG
+# No change to sources for ACL2_DEVEL or ACL2_WAG
 
 all: large
 
@@ -316,6 +319,9 @@ acl2r.lisp:
 	fi
 	if [ "$(ACL2_PAR)" != "" ] ; then \
 	echo '(or (member :acl2-par *features*) (push :acl2-par *features*))' >> acl2r.lisp ;\
+	fi
+	if [ "$(ACL2_DEVEL)" != "" ] ; then \
+	echo '(or (member :acl2-devel *features*) (push :acl2-devel *features*))' >> acl2r.lisp ;\
 	fi
 	if [ "$(ACL2_WAG)" != "" ] ; then \
 	mv -f ~/write-arithmetic-goals.lisp.old ; \
@@ -755,6 +761,10 @@ large-acl2r:
 large-acl2h:
 	$(MAKE) large ACL2_HONS=h
 
+.PHONY: large-acl2d
+large-acl2d:
+	$(MAKE) large ACL2_HONS=d
+
 .PHONY: large-acl2p
 large-acl2p:
 	$(MAKE) large ACL2_PAR=p
@@ -855,6 +865,32 @@ certify-books-short:
 
 .PHONY: certify-books-test
 certify-books-test: certify-books-fresh
+
+# The following target assumes that we are using an image built with
+# ACL2_DEVEL set.
+.PHONY: devel-check
+devel-check:
+	@counter=0 ; \
+	while [ t ] ;\
+	do \
+	echo "(chk-new-verified-guards $$counter) ..." ;\
+	echo "(chk-new-verified-guards $$counter)" > workxxx.devel-check ;\
+	$(ACL2) < workxxx.devel-check > devel-check.out ;\
+	if [ "`fgrep CHK-NEW-VERIFIED-GUARDS-COMPLETE devel-check.out`" ] ; then \
+		rm -f workxxx.devel-check devel-check.out ;\
+		echo 'SUCCESS for devel-check' ;\
+		exit 0 ;\
+	fi ;\
+	if [ "`fgrep CHK-NEW-VERIFIED-GUARDS-SUCCESS devel-check.out`" ] ; then \
+		rm -f workxxx.devel-check devel-check.out ;\
+		counter=`expr $$counter + 1` ;\
+	else \
+		echo '**FAILED** devel-check: output log follows:' ;\
+		cat devel-check.out ;\
+		rm -f workxxx.devel-check devel-check.out ;\
+		exit 1 ;\
+	fi \
+	done
 
 # The next two targets can be used with certify-books-test to run the
 # test with infix syntax output.  Just do

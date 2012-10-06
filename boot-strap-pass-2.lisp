@@ -811,6 +811,67 @@
  (verify-termination-boot-strap string-for-tilde-@-clause-id-phrase))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; verify-termination and guard verification:
+; strict-merge-symbol-<, strict-merge-sort-symbol-<, strict-symbol-<-sortedp,
+; and sort-symbol-listp
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(verify-termination-boot-strap strict-merge-symbol-<
+                               (declare (xargs :measure
+                                               (+ (len l1) (len l2)))))
+
+(encapsulate
+ ()
+
+ (local
+  (defthm len-strict-merge-symbol-<
+    (<= (len (strict-merge-symbol-< l1 l2 acc))
+        (+ (len l1) (len l2) (len acc)))
+    :rule-classes :linear))
+
+ (local
+  (defthm len-evens
+    (equal (len l)
+           (+ (len (evens l))
+              (len (odds l))))
+    :rule-classes :linear))
+
+ (local
+  (defthm symbol-listp-evens
+    (implies (symbol-listp x)
+             (symbol-listp (evens x)))
+    :hints (("Goal" :induct (evens x)))))
+
+ (local
+  (defthm symbol-listp-odds
+    (implies (symbol-listp x)
+             (symbol-listp (odds x)))))
+
+ (local
+  (defthm symbol-listp-strict-merge-symbol-<
+    (implies (and (symbol-listp l1)
+                  (symbol-listp l2)
+                  (symbol-listp acc))
+             (symbol-listp (strict-merge-symbol-< l1 l2 acc)))))
+
+ (verify-termination-boot-strap strict-merge-sort-symbol-<
+                                (declare (xargs :measure (len l)
+                                                :verify-guards nil)))
+
+ (local
+  (defthm symbol-listp-strict-merge-sort-symbol-<
+    (implies (symbol-listp x)
+             (symbol-listp (strict-merge-sort-symbol-< x)))))
+
+ (verify-guards strict-merge-sort-symbol-<)
+
+ (verify-termination-boot-strap strict-symbol-<-sortedp) ; and guards
+
+ (verify-termination-boot-strap sort-symbol-listp) ; and guards
+
+ )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Theories
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -899,6 +960,164 @@
   started up ACL2.~/
 
   :cited-by theory-functions")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Define checker for system-verify-guards
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(verify-termination-boot-strap safe-access-command-tuple-form) ; and guards
+
+(defun new-verify-guards-fns1 (wrld installed-wrld acc)
+  (declare (xargs :guard (and (plist-worldp wrld)
+                              (plist-worldp installed-wrld)
+                              (symbol-listp acc))))
+  (cond ((or (endp wrld)
+             (and (eq (caar wrld) 'command-landmark)
+                  (eq (cadar wrld) 'global-value)
+                  (equal (safe-access-command-tuple-form (cddar wrld))
+                         '(exit-boot-strap-mode))))
+         (strict-merge-sort-symbol-< acc))
+        ((and (eq (cadar wrld) 'symbol-class)
+              (eq (cddar wrld) :COMMON-LISP-COMPLIANT)
+              (getprop (caar wrld) 'predefined nil 'current-acl2-world
+                       installed-wrld))
+         (new-verify-guards-fns1 (cdr wrld)
+                                 installed-wrld
+                                 (cons (caar wrld) acc)))
+        (t (new-verify-guards-fns1 (cdr wrld) installed-wrld acc))))
+
+(defun new-verify-guards-fns (state)
+
+; It is important for performance that this function be guard-verified, because
+; it is called inside an assert-event form in chk-new-verified-guards, which
+; causes evaluation to be in safe-mode and would cause evaluation of
+; plist-worldp on behalf of guard-checking for new-verify-guards-fns1.
+
+  (declare (xargs :stobjs state))
+  (let ((wrld (w state)))
+    (new-verify-guards-fns1 wrld wrld nil)))
+
+(defconst *system-verify-guards-alist*
+
+; Each cdr was produced by evaluating
+; (new-verify-guards-fns (w state) (w state) nil)
+; after including the book indicated in the car, e.g.,
+; (include-book "system/top" :dir :system).
+
+  '(("system/top" .
+     (CONS-TERM CONS-TERM1
+                CONS-TERM1-MV2 DUMB-NEGATE-LIT
+                FETCH-DCL-FIELD FETCH-DCL-FIELDS
+                FETCH-DCL-FIELDS1 FETCH-DCL-FIELDS2
+                FMT-CHAR FMT-VAR MISSING-FMT-ALIST-CHARS
+                MISSING-FMT-ALIST-CHARS1 PLAUSIBLE-DCLSP
+                PLAUSIBLE-DCLSP1 QUOTE-LISTP STRIP-DCLS
+                STRIP-DCLS1 STRIP-KEYWORD-LIST
+                SUBCOR-VAR SUBCOR-VAR-LST
+                SUBCOR-VAR1 SUBLIS-VAR SUBLIS-VAR-LST
+                SUBLIS-VAR1 SUBLIS-VAR1-LST
+                SUBST-EXPR SUBST-EXPR-ERROR SUBST-EXPR1
+                SUBST-EXPR1-LST SUBST-VAR SUBST-VAR-LST))))
+
+(defconst *len-system-verify-guards-alist*
+  (length *system-verify-guards-alist*))
+
+(defmacro chk-new-verified-guards (n)
+  (cond
+   ((or (not (natp n))
+        (> n *len-system-verify-guards-alist*))
+    `(er soft 'chk-new-verified-guards
+         "The index ~x0 is not a valid index for *system-verify-guards-alist*."
+         ',n))
+   ((eql n *len-system-verify-guards-alist*)
+    '(value-triple :CHK-NEW-VERIFIED-GUARDS-COMPLETE))
+   (t
+    (let* ((pair (nth n *system-verify-guards-alist*)) 
+           (user-book-name (car pair))
+           (fns (cdr pair)))
+      `(progn (include-book ,user-book-name
+                            :DIR :SYSTEM
+                            :UNCERTIFIED-OKP nil
+                            :DEFAXIOMS-OKP nil
+                            :SKIP-PROOFS-OKP nil
+                            :TTAGS nil)
+              (assert-event
+               (equal ',fns
+                      (new-verify-guards-fns state))
+               :msg (msg "ERROR: The set of newly guard-verified functions ~
+                          from the ACL2 Library book ~x0 does not match the ~
+                          expected set from the constant ~
+                          *system-verify-guards-alist*.~|~%From the ~
+                          book:~|~X13~|~%Expected from ~
+                          *system-verify-guards-alist*:~|~X23~|"
+                         ',user-book-name
+                         (new-verify-guards-fns state)
+                         ',fns
+                         nil))
+              (value-triple :CHK-NEW-VERIFIED-GUARDS-SUCCESS))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Define and possibly call system-verify-guards
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun system-verify-guards-fn-1 (fns acc)
+  (declare (xargs :guard (symbol-listp fns)))
+  (cond ((endp fns) acc)
+        (t (system-verify-guards-fn-1
+            (cdr fns)
+            (cons `(skip-proofs (verify-termination-boot-strap ,(car fns)))
+                  acc)))))
+
+(defun cons-absolute-event-numbers (fns wrld acc)
+  (declare (xargs :guard (and (symbol-listp fns)
+                              (plist-worldp wrld)
+                              (alistp acc))))
+  (cond ((endp fns) acc)
+        (t (cons-absolute-event-numbers
+            (cdr fns)
+            wrld
+            (acons (or (getprop (car fns) 'absolute-event-number nil
+                                'current-acl2-world wrld)
+                       (er hard? 'cons-absolute-event-numbers
+                           "The 'absolute-event-number property is missing ~
+                            for ~x0."
+                           (car fns)))
+                   (car fns)
+                   acc)))))
+
+(defun sort->-absolute-event-number (fns wrld)
+  (declare (xargs :mode :program)) ; because of merge-sort-car->
+  (strip-cdrs (merge-sort-car-> (cons-absolute-event-numbers fns wrld nil))))
+
+(defun system-verify-guards-fn (alist wrld acc)
+  (declare (xargs :mode :program)) ; because of sort->-absolute-event-number
+  (cond ((endp alist) acc)
+        (t (system-verify-guards-fn
+            (cdr alist)
+            wrld
+            (system-verify-guards-fn-1
+             (sort->-absolute-event-number (cdar alist) wrld)
+             acc)))))
+
+(defmacro system-verify-guards ()
+  `(make-event
+    (let ((events (system-verify-guards-fn *system-verify-guards-alist*
+                                           (w state)
+                                           nil)))
+      (list* 'encapsulate
+             ()
+             '(set-verify-guards-eagerness 2)
+             events))))
+
+; Normally we go ahead and trust *system-verify-guards-alist*, installing
+; guard-verified functions with the following form.  But when feature
+; :acl2-devel is set, then we do not do so, as we instead intend to run
+; (chk-new-verified-guards i) for each i less than the length of
+; *system-verify-guards-alist*, in order to check that the effect of
+; system-verify-guards is sound.
+#+(and acl2-loop-only ; Note that make-event can't be called here in raw Lisp.
+       (not acl2-devel))
+(system-verify-guards)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; End
