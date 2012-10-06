@@ -28,7 +28,11 @@
 (local
  (encapsulate
    ()
-
+   
+   (defn int-or-nilp (x)
+     (or (integerp x)
+         (null x)))
+   
    (deflist int-listp (x)
      (integerp x))
 
@@ -75,4 +79,18 @@
    (deflist all-greater-than-p (min x)
      (> min x)
      :guard (and (integerp min)
-                 (integer-listp x)))))
+                 (integer-listp x)))
+
+   (deflist int-true-listp (x)
+     (integerp x)
+     :true-listp t)
+
+   (deflist int-true-listp-with-elementp (x)
+     (integerp x)
+     :true-listp t
+     :elementp-of-nil nil)
+
+   (deflist int-or-nil-true-listp (x)
+     (int-or-nilp x)
+     :true-listp t
+     :elementp-of-nil t)))

@@ -179,6 +179,14 @@ it.</p>
   (defthmd deflist-lemma-6
     (subsetp-equal (duplicated-members x) x)))
 
+;;   (defthmd deflist-lemma-7
+
+;; ; May be needed in the equal case of proving the of-nth lemma for
+;; ; :true-listp==t and elementp-of-nil==nil
+
+;;     (implies (and (booleanp x) (booleanp y))
+;;              (equal (equal x y) (iff x y))) 
+;;     :hints (("Goal" :in-theory (enable booleanp))))
 
 (defun concatenate-symbol-names (x)
   (declare (xargs :guard (symbol-listp x)))
@@ -485,6 +493,57 @@ it.</p>
                          t))
          :hints(,last-ditch-hint))
 
+; TODO: figure out nice general corresponding theorems for update-nth.
+
+       ,@(and true-listp (equal elementp-of-nil :unknown)
+              `((defthm ,(mksym name '-of-nth)
+                  (implies (and (,name ,x)
+                                (< (nfix ,n) (len ,x)))
+                           (,elementp (nth ,n ,x)))
+                  :hints(("Goal" :in-theory (disable ,elementp))
+                         ,last-ditch-hint))))
+
+       ,@(and true-listp (equal elementp-of-nil t)
+              `((defthm ,(mksym name '-of-nth)
+                  (implies (,name ,x)
+                           (,elementp (nth ,n ,x)))
+                  :hints(("Goal" :in-theory (disable ,elementp))
+                         ,last-ditch-hint))))
+
+; TODO: we should be able to prove the following non-local theorem, because we
+; can prove the iff version.  However, the use of the iff theorem in the
+; equality theorem requires a theory that is different from what we have here.
+; We would like to sort this out, but in the meantime, we just leave the iff
+; version of the theorem.
+
+       ;; ,@(and true-listp (null elementp-of-nil)
+       ;;        `((local 
+       ;;           (defthm ,(mksym name '-of-nth-lemma)
+       ;;             (implies (,name ,x)
+       ;;                      (iff (,elementp (nth ,n ,x))
+       ;;                           (< (nfix ,n) (len ,x))))
+       ;;             :hints(("Goal" :in-theory (e/d (nth) (,elementp)))
+       ;;                    ,last-ditch-hint)))
+       ;;          (local
+       ;;           (defthm ,(mksym name '-of-nth-elementp-lemma)
+       ;;             (booleanp (,elementp ,x))
+       ;;             :hints(("Goal" :in-theory (enable booleanp ,elementp)))))
+
+       ;;          (defthm ,(mksym name '-of-nth)
+       ;;            (implies (,name ,x)
+       ;;                     (equal (,elementp (nth ,n ,x))
+       ;;                            (< (nfix ,n) (len ,x))))
+       ;;            :hints (("Goal" :in-theory (enable booleanp))
+       ;;                    ,last-ditch-hint))))
+
+       ,@(and true-listp (null elementp-of-nil)
+              `((defthm ,(mksym name '-of-nth-iff)
+                  (implies (,name ,x)
+                           (iff (,elementp (nth ,n ,x))
+                                (< (nfix ,n) (len ,x))))
+                  :hints(("Goal" :in-theory (e/d (nth) (,elementp)))
+                         ,last-ditch-hint))))
+
        (local (in-theory (disable ,name)))
 
        (defthm ,(mksym name '-of-nthcdr)
@@ -672,8 +731,7 @@ it.</p>
                   (implies (force (,name ,@formals))
                            (equal (,name ,@(subst `(duplicated-members ,x) x formals))
                                   t))
-                  :hints(,last-ditch-hint))
-                )))))
+                  :hints(,last-ditch-hint)))))))
 
 (defmacro deflist (name formals element
                         &key
