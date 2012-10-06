@@ -2,6 +2,11 @@
 ; sort-symbol-<.  This function is included in :program mode in the ACL2 source
 ; code, and is used by defpkg.
 
+; Added October, 2012: Parts of this file have been incorporated into the ACL2
+; sources, so that now strict-merge-symbol-<, strict-merge-sort-symbol-<,
+; strict-symbol-<-sortedp, and sort-symbol-listp are guard-verified when ACL2
+; starts up.
+
 ; Matt Kaufmann, July 2006
 
 ; Copyright (C) 2006 by Matt Kaufmann <kaufmann@cs.utexas.edu>
