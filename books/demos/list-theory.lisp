@@ -29,18 +29,29 @@
            (true-listp lst))
   :rule-classes :compound-recognizer)
 
-(defthm foo-list-p-of-cons
-  (implies (and (foo-list-p lst)
-                (foo-p e))
-           (foo-list-p (cons e lst))))
+; We could submit the following three lemmas, which would allow many of our
+; subsequent proof obligations to succeed.
 
-(defthm foo-list-p-cdr-case
-  (implies (foo-list-p (cons e lst))
-           (foo-list-p lst)))
+;; (defthm foo-list-p-of-cons
+;;   (implies (and (foo-list-p lst)
+;;                 (foo-p e))
+;;            (foo-list-p (cons e lst))))
 
-(defthm foo-list-p-car-case
-  (implies (foo-list-p (cons e lst))
-           (foo-p e)))
+;; (defthm foo-list-p-cdr-case
+;;   (implies (foo-list-p (cons e lst))
+;;            (foo-list-p lst)))
+
+;; (defthm foo-list-p-car-case
+;;   (implies (foo-list-p (cons e lst))
+;;            (foo-p e)))
+
+; However, we instead use an equals rule, which will also allow those
+; subsequent proof obligations to succeed.
+
+(defthm foo-list-p-constructors
+  (equal (foo-list-p (cons e lst))
+         (and (foo-p e)
+              (foo-list-p lst))))
 
 (defthmd foo-list-p-and-member-imply-foo-p
 

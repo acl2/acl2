@@ -1,3 +1,5 @@
+all: top
+
 DIRS = modeling
 
 include ../Makefile-subdirs
