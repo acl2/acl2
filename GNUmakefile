@@ -74,27 +74,20 @@
 #                    ; experimental extension ACL2(p) of ACL2); see
 #                    ; file acl2-customization-files/README.
 #   make regression-fast
-#                    ; (WARNINGS:
-#                       (1) This target should be considered a bit experimental:
-#                    ;      It works only if the workshops books are included,
-#                    ;      and also, we have seen failure messages on linux
-#                    ;      (but not Mac) such as
-#                    ;        /lusr/bin/bash: line 1: 25654 Bus error
-#                    ;      without any actual certification failure.  But if
-#                    ;      you follow "make -j n regression-fast" with "make -j
-#                    ;      n regression", you may get some nice speed-up.)
-#                    ;  (2) This target uses variable ACL2, with default value
-#                    ;      "acl2", so it is probably a good idea to run with
-#                    ;      explicit setting ACL2=<path_to_ACL2>.
-#                    ;  [end of warnings])
-#                    ; Certify a substantial portion of the books that would be
-#                    ; certified by `make regression', but with better
-#                    ; parallelism.  We have used this with option "-j 24" to
-#                    ; obtain over a 12x speedup.  Note to those who use
-#                    ; "alpha" versions of ACL2: You may want to update
-#                    ; books/Makefile-fast occasionally; just follow
-#                    ; instructions in books/regression-targets to update that
-#                    ; file first and then update books/Makefile-fast as follows:
+#                    ; (WARNING: This target uses variable ACL2, with default value
+#                    ;      "acl2", so it is probably a good idea to run after
+#                    ;      explicitly setting ACL2=<path_to_ACL2>.
+#                    ;      End of warning.)
+#                    ; Certify a substantial portion of the books that
+#                    ; would be certified by `make regression', but
+#                    ; with better parallelism.  We have used this
+#                    ; with option "-j 24" to obtain over a 12x
+#                    ; speedup.  This target assumes that
+#                    ; books/Makefile-fast is up-to-date; if you are
+#                    ; using an "alpha" version, just follow
+#                    ; instructions in books/regression-targets to
+#                    ; update that file first and then update
+#                    ; books/Makefile-fast as follows:
 #                    ;   cd books/
 #                    ;   ./cert.pl -s Makefile-fast --targets regression-targets -b .
 #   make clean-books ; Remove certificate files, object files, log files,
@@ -296,6 +289,7 @@ ifdef ACL2_PAR
 endif
 # No change to sources for ACL2_DEVEL or ACL2_WAG
 
+# Top target:
 all: large
 
 .PHONY: acl2r
