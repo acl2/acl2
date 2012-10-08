@@ -3755,7 +3755,7 @@
                            ,@(and book-form (list book-form))
                            (wet! ,form ,@kwd-args))
                           (cond (erp (mv "WET failed!" nil state))
-                                (t (value `(value-triple ,val)))))))))
+                                (t (value `(value-triple ',val)))))))))
 
 (defmacro disassemble$ (fn &rest args
                            &key (recompile ':default)
@@ -19560,6 +19560,11 @@
   triple only when ~c[erp] and ~c[val] are ordinary (non-~il[stobj]) values.
   Thanks to Warren Hunt and Marijn Heule for bringing this problem to our
   attention.
+
+  The ``with-error-trace'' utility, ~ilc[wet], now works in the non-error case
+  when given a form that returns multiple values.  (Note however that
+  ~ilc[STATE] will be printed as ~c[REPLACED-STATE]; and similarly, a
+  user-defined ~il[stobj], say ~c[ST], will be printed as ~c[REPLACED-ST].)
 
   ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]
 
