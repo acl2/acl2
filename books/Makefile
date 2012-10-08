@@ -68,7 +68,7 @@ DIRS2_EXCEPT_WK_COI = ordinals data-structures bdd ihs arithmetic-2 arithmetic-3
 	concurrent-programs/german-protocol deduction/passmore clause-processors \
 	quadratic-reciprocity tools paco hacking security regex \
 	defsort hons-archive serialize wp-gen xdoc-impl system tutorial-problems cutil \
-	countereg-gen
+	countereg-gen demos
 DIRS2_EXCEPT_WK = $(DIRS2_EXCEPT_WK_COI) coi misc/misc2
 DIRS2 = $(DIRS2_EXCEPT_WK) workshops
 SHORTDIRS2 = ordinals data-structures bdd
@@ -151,6 +151,7 @@ system: tools arithmetic arithmetic-5 misc
 cutil: xdoc tools str misc finite-set-theory/osets defsort unicode clause-processors
 countereg-gen: xdoc arithmetic-5 tools defexec finite-set-theory/osets \
 	arithmetic-3 arithmetic ordinals
+demos: make-event
 
 # Note: There is no need to include values for "centaur:", since dependencies
 # are handled by cert.pl in that case.
