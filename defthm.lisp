@@ -5865,7 +5865,7 @@
               hyp3
               ((!ev (fn !x . !extended-args) !a)
                fn)
-              (t nil))))))))
+              (& nil))))))))
 
 (defun meta-fn-args (term extendedp ens state)
   (cond
@@ -10982,13 +10982,13 @@
                           (case-match corollary
                             (('implies hyp concl)
                              (list (cons (list hyp) concl)))
-                            (t (list (cons nil corollary)))))
+                            (& (list (cons nil corollary)))))
                          (:type-prescription
                           (let ((corollary (remove-guard-holders corollary)))
                             (case-match corollary
                               (('implies hyp concl)
                                (list (cons (flatten-ands-in-lit hyp) concl)))
-                              (t (list (cons nil corollary))))))
+                              (& (list (cons nil corollary))))))
                          (otherwise
                           (unprettyify (remove-guard-holders corollary))))))
                   (cond

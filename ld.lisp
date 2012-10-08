@@ -19446,6 +19446,11 @@
 ; Note: REWRITE has already been defined as a system name; that is, it
 ; is built into ACL2.
 
+; Fixed bugs in case-match calls: final branch cased on t instead of &.  The
+; functions were translate-rule-class-alist and bdd-clause1; the former could
+; be exploited to get a misleading error message, but that's all, while we
+; didn't investigate the consequences of the bdd-clause1 bug.
+
   :doc
   ":Doc-Section release-notes
 
