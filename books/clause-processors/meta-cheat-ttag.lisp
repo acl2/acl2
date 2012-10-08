@@ -121,7 +121,7 @@
                               (T (AND (NULL (CDR REST-HYPS))
                                       (CASE-MATCH HYP3
                                                   ((!EV (FN !X . !EXTENDED-ARGS) !A) FN)
-                                                  (T NIL)))))))))
+                                                  (& NIL)))))))))
          ((when (equal (nthcdr 3 (car ev-wrld)) expected-definition))
           ;; The definition is as expected, so do nothing.
           (value '(value-triple
@@ -170,7 +170,7 @@
                hyp3
                ((!ev (fn !x . !extended-args) !a)
                 fn)
-               (t nil))))))))
+               (& nil))))))))
 
 (redef-)
 
