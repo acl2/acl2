@@ -114,12 +114,15 @@ svn copy  -m 'Release branch corresponding to actual ACL2 5.0 release.' \
         https://acl2-books.googlecode.com/svn/tags/5.0
 
 
-For an ACL2 developer, the next step is:
+For an ACL2 developer, the next step is to remember the current
+version number for the books -- below, we assume it is 663.
 
 cd /projects/acl2/devel/books/
 svn switch https://acl2-books.googlecode.com/svn/branches/5.0
 
-and back to the trunk AFTER the release is complete:
+Now switch back to the trunk AFTER the release is complete,
+substituting "663" below by the number saved above (where "663" is
+mentioned):
 
 cd /projects/acl2/devel/books/
 # While still in 5.0:
@@ -140,13 +143,14 @@ copy, and notifies you of conflicts where it can't.
 
 Note to ACL2 developers: During the release process, while the books/
 subdirectory is a branch instead of the trunk, be sure to use
---ignore-externals.  Details: The ACL2 sources repository contains an
-"svn:externals" property that links the acl2/books subdirectory to the
-trunk of the acl2-books repository.  Unfortunately, this means that if
-you do an "svn switch" within books/ from trunk to a branch, then do
-an "svn update" in the acl2 sources directory, it will try and switch
-your books back from the branch to the trunk.  To avoid this, use "svn
-update --ignore-externals" instead.
+--ignore-externals when doing svn stuff in the ACL2 sources
+development directory.  Details: The ACL2 sources repository contains
+an "svn:externals" property that links the acl2/books subdirectory to
+the trunk of the acl2-books repository.  Unfortunately, this means
+that if you do an "svn switch" within books/ from trunk to a branch,
+then do an "svn update" in the acl2 sources directory, it will try and
+switch your books back from the branch to the trunk.  To avoid this,
+use "svn update --ignore-externals" instead.
 
 [Instructions already covered above, but left here in case they're
 helpful sometime:
