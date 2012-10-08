@@ -130,8 +130,6 @@
     (cw "Server state is: ~x0~%" server-st)
     (cw "Network state is: ~x0~%" network-st))))
 
-(make-event '(value-triple :hi))
-
 #+demo-only ; skipped during book certification
 (let ((client-st (initialize-client))
       (server-st (initialize-server))
