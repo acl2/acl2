@@ -159,51 +159,54 @@
   `(with-output
     :off summary
     (make-event
-     (pprogn
-      (f-put-global 'wet-stack nil state)
-      (mv-let
-       (erp val state)
-       (er-let* ((specs (wet-trace-specs ',form
-                                         ,fns
-                                         ,(if compile-p
-                                              compile
-                                            `(if (eq ,fns :all)
-                                                 nil
-                                               ,compile))
-                                         state)))
-                (with-trace-saved
-                 (er-progn (untrace$)
-                           (defttag :trace!)
-                           (trans-eval (cons 'trace$ specs)
-                                       'wet
-                                       state
-                                       t)
-                           (mv-let
-                            (erp val state)
-                            (trans-eval ',form 'wet state t)
-                            (cond
-                             (erp
-                              (let ((evisc-tuple
-                                     ,(if evisc-tuple-p
-                                          evisc-tuple
-                                        '(evisc-tuple 3
-                                                      4
-                                                      (trace-evisceration-alist
-                                                       state)
-                                                      nil)))
-                                    (val (f-get-global 'wet-stack state)))
-                                (pprogn
-                                 (fms "Backtrace stack:"
-                                      nil *standard-co* state nil)
-                                 (fms "----------------~|"
-                                      nil *standard-co* state nil)
-                                 (print-numbered-list val
-                                                      *standard-co*
-                                                      evisc-tuple
-                                                      state)
-                                 (value (list 'value-triple
-                                              :invisible)))))
-                             (t (value (list 'value-triple
-                                             (kwote (cdr val))))))))))
-       (cond (erp (mv "WET! failed." nil state))
-             (t (mv nil val state))))))))
+     (progn
+       (defttag :trace!)
+       (remove-untouchable trace-evisceration-alist t)
+       (progn!
+        (pprogn
+         (f-put-global 'wet-stack nil state)
+         (mv-let
+          (erp val state)
+          (er-let* ((specs (wet-trace-specs ',form
+                                            ,fns
+                                            ,(if compile-p
+                                                 compile
+                                               `(if (eq ,fns :all)
+                                                    nil
+                                                  ,compile))
+                                            state)))
+                   (with-trace-saved
+                    (er-progn (untrace$)
+                              (trans-eval (cons 'trace$ specs)
+                                          'wet
+                                          state
+                                          t)
+                              (mv-let
+                               (erp val state)
+                               (trans-eval ',form 'wet state t)
+                               (cond
+                                (erp
+                                 (let ((evisc-tuple
+                                        ,(if evisc-tuple-p
+                                             evisc-tuple
+                                           '(evisc-tuple 3
+                                                         4
+                                                         (trace-evisceration-alist
+                                                          state)
+                                                         nil)))
+                                       (val (f-get-global 'wet-stack state)))
+                                   (pprogn
+                                    (fms "Backtrace stack:"
+                                         nil *standard-co* state nil)
+                                    (fms "----------------~|"
+                                         nil *standard-co* state nil)
+                                    (print-numbered-list val
+                                                         *standard-co*
+                                                         evisc-tuple
+                                                         state)
+                                    (value (list 'value-triple
+                                                 :invisible)))))
+                                (t (value (list 'value-triple
+                                                (kwote (cdr val))))))))))
+          (cond (erp (mv "WET! failed." nil state))
+                (t (mv nil val state))))))))))
