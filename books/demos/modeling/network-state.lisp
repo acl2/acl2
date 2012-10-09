@@ -1,13 +1,13 @@
-; This books demonstrates how we could model network state and an attacker that
-; would be a "Man in the middle" between a client and a server.  This file is
-; the second of two that perform this modeling.  This second file,
-; network-state.lisp, is similar to the first file, but it uses more advanced
-; features of ACL2 (like defn, defaggregate, b*, guards, defun+ and its output
-; signatures, etc.).
+; This books demonstrates how we could model network communications between a
+; client and server, and how we can interleave an attacker that would be a "Man
+; in the middle" between the client and a server.  This file is the second of
+; two that perform this modeling.  This file, network-state.lisp, is similar to
+; the first, but it uses more advanced features of ACL2 (like defn,
+; defaggregate, b*, guards, defun+ and its output signatures, etc.).
 
-; The concepts in this book are based off Rager's JFKr model, which can be
-; found in books/security/jfkr.lisp and is explained in "An Executable Model
-; for JFKr", by David Rager, which was included in the 2009 ACL2 Workshop.
+; The concepts in this book are based off David Rager's JFKr model, which can
+; be found in books/security/jfkr.lisp and is explained in "An Executable Model
+; for JFKr", which was included in the 2009 ACL2 Workshop.
 
 ; Copyright David Rager 2012.
 
@@ -33,7 +33,7 @@
 ; Setup client state
 ;;;;;;;;;;;;;;;;;;;;;;;
 
-(defn unknown-or-integerp (x)
+(defn unknown-or-integerp (x) ; defn implicitly verifies a :guard of t
   (or (equal x :unknown)
       (integerp x)))
 
@@ -45,12 +45,9 @@
              (unknown-or-integerp answer)))
   :tag :client-state)
 
-(defconst *initial-number-to-square* 8)
-(defconst *initial-result* :unknown)
-(defconst *initial-client*
-  (make-client-state
-   :number-to-square *initial-number-to-square*
-   :answer *initial-result*))
+(defconst *initial-client* ; for concrete simulation
+  (make-client-state :number-to-square 8
+                     :answer :unknown))
 
 ;;;;;;;;;;;;;;;;;;;;;;;
 ; Setup server state
@@ -63,10 +60,8 @@
             :rule-classes ((:type-prescription))))
  :tag :server-state)
 
-(defconst *intial-number-of-requests-served* 0)
-(defconst *initial-server*
-  (make-server-state
-   :requests-served *intial-number-of-requests-served*))
+(defconst *initial-server* ; for concrete simulation
+  (make-server-state :requests-served 0))
 
 ;;;;;;;;;;;;;;;;;;;;;;
 ; Setup network state
@@ -84,7 +79,7 @@
 (defn id-p (x)
 
 ; Would rather make this a macro, but since we can't do that and use deflist,
-; we later create a forward chaining rule.
+; we later create a forward chaining rule that gives us similar functionality.
 
   (keywordp x))
 
@@ -105,7 +100,7 @@
 
 (in-theory (disable id-p)) ; we want to reason about id-p, not keywordp
 
-(defconst *initial-network*
+(defconst *initial-network* ; for concrete simulation
   nil)
 
 (cutil::deflist network-state-p (x)
@@ -118,7 +113,7 @@
  (local (include-book "arithmetic/top" :dir :system))
 
  (defun+ square (x)
-   (declare (xargs :guard t ; (integerp x)
+   (declare (xargs :guard t ; could be (integerp x)
                    :output (integerp (square x))))
    (cond ((integerp x)
           (expt x 2))
@@ -128,8 +123,10 @@
 (defconst *server-id* :server)
 
 (defun retrieve-network-message (dest network-st)
+
 ; Returns the message and a new network state, which does not include the new
 ; message
+
   (declare (xargs :guard (and (id-p dest)
                               (network-state-p network-st))))
   (cond ((atom network-st)
@@ -144,16 +141,24 @@
                             (mv msg 
                                 (cons (car network-st)
                                       network-st-recursive)))))))))
-(defthm retrieve-network-message-output-lemma
+
+(defthm retrieve-network-message-returns-network-packet-p
   (implies (and (id-p dest)
                 (network-state-p network-st))
            (implies (car (retrieve-network-message dest network-st))
-                    (network-packet-p (car (retrieve-network-message dest
+                    (network-packet-p (mv-nth 0 (retrieve-network-message dest
                                                                      network-st))))))
 (defthm retrieve-network-message-returns-network-state-p
   (implies (network-state-p network-st)
-           (network-state-p (mv-nth 1 (retrieve-network-message x network-st)))))
 
+; Using (cadr ...) in the below call causes a later theorem
+; (SERVER-STEP1-OUTPUT-LEMMA-2) to fail, but shouldn't (mv-nth 1 ...) just
+; expand to cadr since mv-nth is enabled?  Actually, probably not, since mv-nth
+; is recursive.
+
+           (network-state-p (mv-nth 1 (retrieve-network-message
+                                       x
+                                       network-st)))))
 
 (defun+ make-square-request (value-to-square)
   (declare (xargs :guard (integerp value-to-square)
@@ -164,23 +169,29 @@
    :message (make-message :tag :request
                           :payload value-to-square)))
 
-(defun+ client-step1 (client-st network-st)
-  (declare (xargs :guard (and (client-state-p client-st)
-                              (network-state-p network-st))
-                  :output (and (client-state-p (car (client-step1 client-st network-st)))
-                               (network-state-p (cadr (client-step1 client-st network-st))))))
-  (mv client-st
-      (cons
-       (make-square-request
-        (client-state->number-to-square client-st))
-       network-st)))
-
 (defn print-states (client-st server-st network-st)
   (prog2$ 
    (cw "~%Client state is: ~x0~%" client-st)
    (prog2$
     (cw "Server state is: ~x0~%" server-st)
     (cw "Network state is: ~x0~%" network-st))))
+
+;;;;;;;;;;;;;;;;;;;;;;;
+; Client makes request
+;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun+ client-step1 (client-st network-st)
+  (declare (xargs :guard (and (client-state-p client-st)
+                              (network-state-p network-st))
+                  :output (and (client-state-p (car (client-step1 client-st
+                                                                  network-st)))
+                               (network-state-p (cadr (client-step1 client-st
+                                                                    network-st))))))
+  (mv client-st
+      (cons
+       (make-square-request
+        (client-state->number-to-square client-st))
+       network-st)))
 
 #+demo-only ; skipped during book certification
 (let ((client-st *initial-client*)
@@ -193,18 +204,24 @@
 (defun+ make-square-response (dest result)
   (declare (xargs :guard (and (id-p dest)
                               (integerp result))
-                  :output (network-packet-p (make-square-response dest result))))
+                  :output (network-packet-p (make-square-response dest
+                                                                  result))))
   (make-network-packet :sender *server-id*
                        :dest dest 
                        :message (make-message :tag :answer
                                               :payload result)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Server creates response
+;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun+ server-step1 (server-st network-st)
   (declare (xargs :guard (and (server-state-p server-st)
                               (network-state-p network-st))
                   :output (and (server-state-p (car (server-step1 server-st
                                                                   network-st)))
-                               (network-state-p (cadr (server-step1 server-st network-st))))))
+                               (network-state-p (cadr (server-step1
+                                                       server-st network-st))))))
   (b* (((mv packet network-st)
         (retrieve-network-message *server-id* network-st))
        ((when (null packet))
@@ -230,7 +247,9 @@
                   (print-states client-st server-st
                                 network-st))))
 
-
+;;;;;;;;;;;;;;;;;;;;;;
+; Client saves answer
+;;;;;;;;;;;;;;;;;;;;;;
 
 (defun+ client-step2 (client-st network-st)
   (declare (xargs :guard (and (client-state-p client-st)
@@ -249,7 +268,7 @@
         network-st)))
 
 #+demo-only
-(b* ((client-st *initial-client*) ; not symbolic, because it has concrete initialization
+(b* ((client-st *initial-client*)
      (server-st *initial-server*)
      (network-st *initial-network*)
      ((mv client-st network-st)
@@ -262,8 +281,12 @@
       (client-step2 client-st network-st)))
   (print-states client-st server-st network-st))
 
+;;;;;;;;;;;;;;;;;;;;;;;
+; Concrete correctness
+;;;;;;;;;;;;;;;;;;;;;;;
+
 (defthm honest-square-is-good-concrete
-  (b* ((client-st *initial-client*) ; not symbolic, because it has concrete initialization
+  (b* ((client-st *initial-client*)
        (server-st *initial-server*)
        (network-st *initial-network*)
        ((mv client-st network-st)
@@ -275,8 +298,12 @@
     (equal (expt (client-state->number-to-square client-st) 2)
            (client-state->answer client-st))))
 
+;;;;;;;;;;;;;;;;;;;;;;;
+; Symbolic correctness
+;;;;;;;;;;;;;;;;;;;;;;;
+
 (defthm honest-square-is-good-symbolic-simulation
-  (implies (and (client-state-p client-st) ; is symbolic
+  (implies (and (client-state-p client-st)
                 (server-state-p server-st)
                 (network-state-p network-st))
            (b* (((mv client-st network-st)
@@ -288,6 +315,11 @@
              (equal (expt (client-state->number-to-square client-st) 2)
                     (client-state->answer client-st)))))
            
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Define a specific attack
+;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defun+ man-in-the-middle-specific-attack (network-st)
   (declare (xargs :guard (network-state-p network-st)
                   :output (network-state-p (man-in-the-middle-specific-attack
@@ -323,15 +355,24 @@
       (client-step2 client-st network-st)))
   (print-states client-st server-st network-st))
 
+; There is no point in trying to prove the analogous concrete or symbolic
+; versions of the honest-square-is-good* theorems -- they would not be true.
 
-; We could leave attack1 and attack2 completely unconstrained.  We could be a
-; little more realistic and at least define versions that return a
-; network-state-p.  However, this difference will not affect our ability to not
-; prove the theorem below (it will still be false).  Thus, we opt for the
-; simple call to defstub, so that the reader can more clearly see that we allow
-; the attacker to anything their heart desires to the network state.
+;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Define abstract attacks
+;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defstub attack1 (*) => *) 
+; We leave attack1 and attack2 completely unconstrained.  We could be a little
+; more realistic and at least define versions that return a network-state-p.
+; However, this difference will not affect our ability to not prove the theorem
+; below (it will still be false).  Thus, we opt for the simple call to defstub,
+; so that the reader can more clearly see that we allow the attacker to
+; anything their heart desires to the network state.
+
+; We define attack1 and attack2 to be functions that each take a single
+; argument and return a single value -- nothing more.
+
+(defstub attack1 (*) => *)
 (defstub attack2 (*) => *)
 
 (must-fail
@@ -340,7 +381,8 @@
 ; theorem isn't valid.  However, if we believed the theorem to be valid, we
 ; would relentlessly examine the feedback from ACL2 until we figured out how to
 ; make ACL2 agree with our belief.  But, we happen to know that the theorem
-; isn't true, so we leave it as is.
+; isn't true, because this protocol provides no protection against malicious
+; attacks, so we leave it as is.
  
  (defthm |bad-square-is-good?-with-double-attack|
    (implies (and (client-state-p client-st) ; is symbolic
