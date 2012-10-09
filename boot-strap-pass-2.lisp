@@ -967,6 +967,23 @@
 
 (verify-termination-boot-strap safe-access-command-tuple-form) ; and guards
 
+(defun pair-fns-with-measured-subsets (fns wrld acc)
+  (declare (xargs :guard (and (symbol-listp fns)
+                              (plist-worldp wrld)
+                              (true-listp acc))))
+  (cond ((endp fns) (reverse acc))
+        (t (pair-fns-with-measured-subsets
+            (cdr fns)
+            wrld
+            (cons (let* ((fn (car fns))
+                         (justification (getprop fn 'justification nil
+                                                 'current-acl2-world wrld))
+                         (ms (and (consp justification) ; for guard
+                                  (consp (cdr justification)) ; for guard
+                                  (access justification justification :subset))))
+                    (cons fn ms))
+                  acc)))))
+
 (defun new-verify-guards-fns1 (wrld installed-wrld acc)
   (declare (xargs :guard (and (plist-worldp wrld)
                               (plist-worldp installed-wrld)
@@ -976,7 +993,10 @@
                   (eq (cadar wrld) 'global-value)
                   (equal (safe-access-command-tuple-form (cddar wrld))
                          '(exit-boot-strap-mode))))
-         (strict-merge-sort-symbol-< acc))
+         (pair-fns-with-measured-subsets
+          (strict-merge-sort-symbol-< acc)
+          installed-wrld
+          nil))
         ((and (eq (cadar wrld) 'symbol-class)
               (eq (cddar wrld) :COMMON-LISP-COMPLIANT)
               (getprop (caar wrld) 'predefined nil 'current-acl2-world
@@ -1003,21 +1023,40 @@
 ; (new-verify-guards-fns (w state) (w state) nil)
 ; after including the book indicated in the car, e.g.,
 ; (include-book "system/top" :dir :system).
+; Each entry is of the form (fn . measured-subset).
 
-  '(("system/top" .
-     (CONS-TERM CONS-TERM1
-                CONS-TERM1-MV2 DUMB-NEGATE-LIT
-                FETCH-DCL-FIELD FETCH-DCL-FIELDS
-                FETCH-DCL-FIELDS1 FETCH-DCL-FIELDS2
-                FMT-CHAR FMT-VAR MISSING-FMT-ALIST-CHARS
-                MISSING-FMT-ALIST-CHARS1 PLAUSIBLE-DCLSP
-                PLAUSIBLE-DCLSP1 QUOTE-LISTP STRIP-DCLS
-                STRIP-DCLS1 STRIP-KEYWORD-LIST
-                SUBCOR-VAR SUBCOR-VAR-LST
-                SUBCOR-VAR1 SUBLIS-VAR SUBLIS-VAR-LST
-                SUBLIS-VAR1 SUBLIS-VAR1-LST
-                SUBST-EXPR SUBST-EXPR-ERROR SUBST-EXPR1
-                SUBST-EXPR1-LST SUBST-VAR SUBST-VAR-LST))))
+  '(("system/top"
+     (CONS-TERM)
+     (CONS-TERM1)
+     (CONS-TERM1-MV2)
+     (DUMB-NEGATE-LIT)
+     (FETCH-DCL-FIELD)
+     (FETCH-DCL-FIELDS LST)
+     (FETCH-DCL-FIELDS1 LST)
+     (FETCH-DCL-FIELDS2 KWD-LIST)
+     (FMT-CHAR)
+     (FMT-VAR)
+     (MISSING-FMT-ALIST-CHARS)
+     (MISSING-FMT-ALIST-CHARS1 CHAR-TO-TILDE-S-STRING-ALIST)
+     (PLAUSIBLE-DCLSP LST)
+     (PLAUSIBLE-DCLSP1 LST)
+     (QUOTE-LISTP L)
+     (STRIP-DCLS LST)
+     (STRIP-DCLS1 LST)
+     (STRIP-KEYWORD-LIST LST)
+     (SUBCOR-VAR FORM)
+     (SUBCOR-VAR-LST FORMS)
+     (SUBCOR-VAR1 VARS)
+     (SUBLIS-VAR)
+     (SUBLIS-VAR-LST)
+     (SUBLIS-VAR1 FORM)
+     (SUBLIS-VAR1-LST L)
+     (SUBST-EXPR)
+     (SUBST-EXPR-ERROR)
+     (SUBST-EXPR1 TERM)
+     (SUBST-EXPR1-LST ARGS)
+     (SUBST-VAR FORM)
+     (SUBST-VAR-LST L))))
 
 (defconst *len-system-verify-guards-alist*
   (length *system-verify-guards-alist*))
@@ -1060,34 +1099,40 @@
 ;;; Define and possibly call system-verify-guards
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun system-verify-guards-fn-1 (fns acc)
-  (declare (xargs :guard (symbol-listp fns)))
-  (cond ((endp fns) acc)
+(defun system-verify-guards-fn-1 (fns-alist acc)
+  (declare (xargs :guard (symbol-alistp fns-alist)))
+  (cond ((endp fns-alist) acc)
         (t (system-verify-guards-fn-1
-            (cdr fns)
-            (cons `(skip-proofs (verify-termination-boot-strap ,(car fns)))
+            (cdr fns-alist)
+            (cons `(skip-proofs (verify-termination-boot-strap ; and guards
+                                 ,(caar fns-alist)
+                                 ,@(let ((ms (cdar fns-alist)))
+                                     (and ms
+                                          `((declare (xargs :measure
+                                                            (:? ,@ms))))))))
                   acc)))))
 
-(defun cons-absolute-event-numbers (fns wrld acc)
-  (declare (xargs :guard (and (symbol-listp fns)
+(defun cons-absolute-event-numbers (fns-alist wrld acc)
+  (declare (xargs :guard (and (symbol-alistp fns-alist)
                               (plist-worldp wrld)
                               (alistp acc))))
-  (cond ((endp fns) acc)
+  (cond ((endp fns-alist) acc)
         (t (cons-absolute-event-numbers
-            (cdr fns)
+            (cdr fns-alist)
             wrld
-            (acons (or (getprop (car fns) 'absolute-event-number nil
+            (acons (or (getprop (caar fns-alist) 'absolute-event-number nil
                                 'current-acl2-world wrld)
                        (er hard? 'cons-absolute-event-numbers
                            "The 'absolute-event-number property is missing ~
                             for ~x0."
-                           (car fns)))
-                   (car fns)
+                           (caar fns-alist)))
+                   (car fns-alist)
                    acc)))))
 
-(defun sort->-absolute-event-number (fns wrld)
+(defun sort->-absolute-event-number (fns-alist wrld)
   (declare (xargs :mode :program)) ; because of merge-sort-car->
-  (strip-cdrs (merge-sort-car-> (cons-absolute-event-numbers fns wrld nil))))
+  (strip-cdrs (merge-sort-car->
+               (cons-absolute-event-numbers fns-alist wrld nil))))
 
 (defun system-verify-guards-fn (alist wrld acc)
   (declare (xargs :mode :program)) ; because of sort->-absolute-event-number

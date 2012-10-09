@@ -2579,7 +2579,7 @@
                           (mv "The dive via address ~x0 brings us to the ~x4 ~
                                term~%~ ~ ~y1,~|~%which translates to~%~ ~ ~
                                ~y2.~|~%The requested dive into this ~x4 term ~
-                               is problematic, because of ~s3.  Try using ~
+                               is problematic, because of ~@3.  Try using ~
                                DIVE instead (after using PP to find the ~
                                appropriate address)."
                               (list (cons #\0 (reverse accumulated-addr-r))
