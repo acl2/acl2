@@ -7,7 +7,8 @@ list-theory.lisp
 modeling/cert.acl2
 modeling/Makefile
 modeling/network-state-basic.lisp
-modeling/network-state.lisp")
+modeling/network-state.lisp
+proofs")
  (:TITLE    "Simple demos for performing modeling and proofs in ACL2")
  (:AUTHOR/S "David Rager")
  (:KEYWORDS ; non-empty list of keywords, case-insensitive
