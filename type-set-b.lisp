@@ -1698,6 +1698,8 @@
 
 (defrec clause-id
 
+; Warning: Keep this in sync with clause-id-p.
+
 ; Forcing-round is a natural number, pool-lst and case-lst are generally
 ; true-lists of non-zero naturals (though elements of case-lst can be of the
 ; form Dk in the case of a dijunctive split) and primes is a natural.  The
@@ -1736,6 +1738,9 @@
                 (d-pos-listp (cdr lst))))))
 
 (defun clause-id-p (cl-id)
+
+; Warning: Keep this in sync with (defrec clause-id ...).
+
   (declare (xargs :guard t))
   (case-match cl-id
     (((forcing-round . pool-lst) case-lst . primes)

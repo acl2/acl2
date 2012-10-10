@@ -7086,46 +7086,6 @@
 ;                        (ts-builder-case-listp (cdr args)))))
   (ts-builder-macro (car args) (cdr args)))
 
-(defun standard-guard (sym)
-  (cond ((symbolp sym)
-         (let* ((str (symbol-name sym))
-                (c (cond ((int= (length str) 0) nil)
-                         (t (char str 0)))))
-           (case c
-                 ((#\I #\J #\K #\M #\N) (list 'integerp sym))
-                 (#\L (list 'true-listp sym))
-                 (otherwise
-                  (cond ((eql (string<= "TERM-L" str) 6)
-                         (list 'pseudo-term-listp sym))
-                        ((eql (string<= "TERM" str) 4)
-                         (list 'pseudo-termp sym))
-                        ((eql (string<= "SYM" str) 3)
-                         (list 'symbolp sym))
-                        ((eql (string<= "STR" str) 3)
-                         (list 'stringp sym))
-                        ((eql (string<= "ALIST" str) 5)
-                         (list 'alistp sym))
-                        (t nil))))))
-        (t nil)))
-
-(defun standard-guard-lst (lst)
-  (cond ((atom lst)
-         (cond ((eq lst nil) nil)
-               (t (list nil))))
-        (t (cons (standard-guard (car lst))
-                 (standard-guard-lst (cdr lst))))))
-
-(defmacro std (&rest x)
-  (let ((hyps (standard-guard-lst x)))
-    (cond ((member nil hyps)
-           (er hard 'std
-               "The standard guard macro std was given an argument ~
-                list, ~x0, which it did not recognize.  Some element ~
-                of the list does not have a standard type associated ~
-                with its name."
-               x))
-          (t (cons 'and hyps)))))
-
 (defabbrev strip-not (term)
 
 ; A typical use of this macro is:
@@ -7577,16 +7537,63 @@
         (t (append (make-record-field-lst (car field-layout))
                    (make-record-field-lst (cdr field-layout))))))
 
-(defun record-macros (name field-layout cheap)
-  (cons 'progn
-        (append
-         (make-record-accessors name
-                                (make-record-field-lst field-layout)
-                                (make-record-car-cdrs field-layout
-                                                      (if cheap nil '(cdr)))
-                                cheap)
-         (list (make-record-changer name field-layout cheap)
-               (make-record-maker name field-layout cheap)))))
+(defun record-maker-recognizer-name (name)
+
+; We use the "WEAK-" prefix in order to avoid name clashes with stronger
+; recognizers that one may wish to define.
+
+  (declare (xargs :guard (symbolp name)))
+  (intern-in-package-of-symbol
+   (concatenate 'string "WEAK-" (symbol-name name) "-P")
+   name))
+
+(defun make-record-recognizer-body (field-layout)
+  (declare (xargs :guard t))
+  (cond
+   ((consp field-layout)
+    (cond
+     ((consp (car field-layout))
+      (cond
+       ((consp (cdr field-layout))
+        `(and (consp x)
+              (let ((x (car x)))
+                ,(make-record-recognizer-body (car field-layout)))
+              (let ((x (cdr x)))
+                ,(make-record-recognizer-body (cdr field-layout)))))
+       (t
+        `(and (consp x)
+              (let ((x (car x)))
+                ,(make-record-recognizer-body (car field-layout)))))))
+     ((consp (cdr field-layout))
+      `(and (consp x)
+            (let ((x (cdr x)))
+              ,(make-record-recognizer-body (cdr field-layout)))))
+     (t '(consp x))))
+   (t t)))
+
+(defun make-record-recognizer (name field-layout cheap recog-name)
+  `(defun ,recog-name (x)
+     (declare (xargs :mode :logic :guard t))
+     ,(cond (cheap (make-record-recognizer-body field-layout))
+            (t `(and (consp x)
+                     (eq (car x) ',name)
+                     (let ((x (cdr x)))
+                       ,(make-record-recognizer-body field-layout)))))))
+
+(defun record-macros (name field-layout cheap recog-name)
+  (declare (xargs :guard (or recog-name (symbolp name))))
+  (let ((recog-name (or recog-name
+                        (record-maker-recognizer-name name))))
+    (cons 'progn
+          (append
+           (make-record-accessors name
+                                  (make-record-field-lst field-layout)
+                                  (make-record-car-cdrs field-layout
+                                                        (if cheap nil '(cdr)))
+                                  cheap)
+           (list (make-record-changer name field-layout cheap)
+                 (make-record-maker name field-layout cheap)
+                 (make-record-recognizer name field-layout cheap recog-name))))))
 
 ; WARNING: If you change the layout of records, you must change
 ; certain functions that build them in.  Generally, these functions
@@ -7595,8 +7602,13 @@
 ; for a list of one group of such functions.  You might also search
 ; for occurrences of the word defrec prior to this definition of it.
 
-(defmacro defrec (name field-lst cheap)
-  (record-macros name field-lst cheap))
+(defmacro defrec (name field-lst cheap &optional recog-name)
+
+; A recognizer with guard t has is defined using recog-name, if supplied; else,
+; by default, its name for (defrec foo ...) is the symbol WEAK-FOO-P, in the
+; same package as foo.
+
+  (record-macros name field-lst cheap recog-name))
 
 (defabbrev equalityp (term)
 
@@ -13958,11 +13970,11 @@
   ~ilc[standard-oi], evaluates them and prints the result to ~ilc[standard-co].
   However, there are various flags that control ~ilc[ld]'s behavior and
   ~c[ld-error-triples] is one of them.  If this variable has the value ~c[t]
-  then when a form evaluates to 3 values, the first of which is
-  non-~c[nil] and the third of which is ~ilc[state], an error is deemed to have
-  occurred.  When an error occurs in evaluating a form, ~ilc[ld] rolls back
-  the ACL2 ~il[world] to the configuration it had at the conclusion of the
-  last error-free form.  Then ~ilc[ld] takes the action determined by
+  then when a form evaluates to an error triple ~c[(mv erp val state)]
+  (~pl[error-triples]) such that ~c[erp] is non-~c[nil], then an error is
+  deemed to have occurred.  When an error occurs in evaluating a form, ~ilc[ld]
+  rolls back the ACL2 ~il[world] to the configuration it had at the conclusion
+  of the last error-free form.  Then ~ilc[ld] takes the action determined by
   ~ilc[ld-error-action]."
 
   (f-get-global 'ld-error-triples state))

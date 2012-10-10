@@ -1983,7 +1983,7 @@
   Depending on ~ilc[ld-error-triples], ~c[ld] may interpret the result as an
   ``error.''  ~l[ld-error-triples].  We first discuss ~c[ld]'s behavior if no
   error signal is detected (either because none was sent or because ~c[ld] is
-  ignoring them because ~ilc[ld-error-triples] is nil).
+  ignoring them because ~ilc[ld-error-triples] is ~c[nil]).
 
   In the case of a non-erroneous result, ~c[ld] does two things: First, if the
   logical ~il[world] in the now current ~il[state] is different than the
@@ -1993,9 +1993,10 @@
   ~ilc[standard-co], but only if ~ilc[ld-post-eval-print] is not ~c[nil].  The
   result is printed as a list of (multiple) values unless
   ~ilc[ld-post-eval-print] is ~c[:command-conventions],
-  ~ilc[ld-error-triples] is t, and the result is an ``error triple'', i.e., of
-  the form ~c[(mv * * state)].  In that case, only the non-erroneous ``value''
-  component of the result is printed.  ~l[ld-post-eval-print].
+  ~ilc[ld-error-triples] is ~c[t], and the result is an ``error triple'', i.e.,
+  of the form ~c[(mv * * state)] (~pl[error-triples]).  In that case, only the
+  non-erroneous ``value'' component of the result is printed.
+  ~l[ld-post-eval-print].
 
   Whenever ~c[ld] prints anything (whether the input form, a query, or
   some results) it ``eviscerates'' it if ~c[ld-evisc-tuple] is non-~c[nil].
@@ -19450,6 +19451,10 @@
 ; functions were translate-rule-class-alist and bdd-clause1; the former could
 ; be exploited to get a misleading error message, but that's all, while we
 ; didn't investigate the consequences of the bdd-clause1 bug.
+
+; The defrec utility now defines a recognizer with guard t.  An optional
+; argument specifies the name of the recognizer, which by default for (defrec
+; foo ...) is the symbol WEAK-FOO-P, in the same package as foo.
 
   :doc
   ":Doc-Section release-notes
