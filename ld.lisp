@@ -19501,6 +19501,11 @@
   ; 0.72 seconds realtime, 0.72 seconds runtime
   ~ev[]
 
+  Functions ~c[read-acl2-oracle] and ~c[read-acl2-oracle@par] are no longer
+  untouchable (~pl[remove-untouchable]).  We reported this change for
+  Version_5.0 but it was not made; thanks to Jared Davis for bringing this to
+  our attention.  Function ~c[get-timer] also is no longer untouchable.
+
   ~st[NEW FEATURES]
 
   Among the new features for system hackers are analogues of system function

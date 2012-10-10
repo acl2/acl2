@@ -34907,9 +34907,6 @@
 
 ;   read-idate - used by write-acl2-html, so can't be untouchable?
 
-    read-acl2-oracle read-acl2-oracle@par
-    get-timer     ; might not need to be an untouchable function
-
     update-user-stobj-alist
 
     big-n
