@@ -42211,15 +42211,18 @@
 (progn
 
 (defun i-small (x)
+  (declare (xargs :guard t))
   (and (acl2-numberp x)
        (equal (standard-part x) 0)))
 
 (defun i-close (x y)
+  (declare (xargs :guard t))
   (and (acl2-numberp x)
        (acl2-numberp y)
        (i-small (- x y))))
 
 (defun i-large (x)
+  (declare (xargs :guard t))
   (and (acl2-numberp x)
        (not (equal x 0))
        (i-small (/ x))))

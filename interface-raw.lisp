@@ -6887,11 +6887,7 @@ Missing functions:
                   (symbolp (nth 5 trip))
                   (eq (symbol-class (nth 5 trip)
                                     (w *the-live-state*))
-                      :ideal)
-                  #+:non-standard-analysis
-                  (not (member-eq (nth 5 trip)
-                                  '(I-SMALL I-CLOSE I-LARGE)))
-                  )
+                      :ideal))
              (check-none-ideal (cdr trips) (cons (nth 5 trip) acc)))
             (t (check-none-ideal (cdr trips) acc)))))))
 

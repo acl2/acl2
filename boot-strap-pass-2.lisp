@@ -858,10 +858,11 @@
                                 (declare (xargs :measure (len l)
                                                 :verify-guards nil)))
 
- (local
-  (defthm symbol-listp-strict-merge-sort-symbol-<
-    (implies (symbol-listp x)
-             (symbol-listp (strict-merge-sort-symbol-< x)))))
+ (defthm symbol-listp-strict-merge-sort-symbol-<
+; This lemma is non-local because it is needed for "make proofs", for
+; guard-verification for new-verify-guards-fns1.
+   (implies (symbol-listp x)
+            (symbol-listp (strict-merge-sort-symbol-< x))))
 
  (verify-guards strict-merge-sort-symbol-<)
 
