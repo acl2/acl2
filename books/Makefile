@@ -59,6 +59,12 @@ export ACL2_PCERT
 
 # Note: arithmetic-4 could be added in analogy to arithmetic-5.
 
+ifdef HONS_P
+	DIRS_HONS=models/X86
+else
+	DIRS_HONS=
+endif
+
 DIRS1 = cowles arithmetic meta xdoc
 DIRS2_EXCEPT_WK_COI = ordinals data-structures bdd ihs arithmetic-2 arithmetic-3 arithmetic-5 \
 	misc models/jvm/m1 models/jvm/m5 proofstyles rtl arithmetic-3/extra sorting make-event parallel hints \
@@ -68,7 +74,7 @@ DIRS2_EXCEPT_WK_COI = ordinals data-structures bdd ihs arithmetic-2 arithmetic-3
 	concurrent-programs/german-protocol deduction/passmore clause-processors \
 	quadratic-reciprocity tools paco hacking security regex \
 	defsort hons-archive serialize wp-gen xdoc-impl system tutorial-problems cutil \
-	countereg-gen demos
+	countereg-gen demos $(DIRS_HONS)
 DIRS2_EXCEPT_WK = $(DIRS2_EXCEPT_WK_COI) coi misc/misc2
 DIRS2 = $(DIRS2_EXCEPT_WK) workshops
 SHORTDIRS2 = ordinals data-structures bdd
@@ -132,6 +138,8 @@ hints: misc
 models/jvm/m1: arithmetic-3/extra
 models/jvm/m5: top-with-meta-cert ordinals misc ihs
 # models/jvm/m5 is needed for paco/books, not paco
+models/X86: tools arithmetic-5 arithmetic misc rtl defexec
+# X86 also depends on centaur
 paco: ihs ordinals top-with-meta-cert
 hacking: misc
 parallel: make-event tools

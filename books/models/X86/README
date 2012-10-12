@@ -1,0 +1,15 @@
+This directory contains subdirectories for models of variants of X86.
+As of this writing (Oct. 12, 2012), all contributions are by Shilpi
+Goel, Warren Hunt, and Matt Kaufmann.
+
+Each top-level subdirectory has a README file containing more
+information as well as a LICENSE file.
+
+Current contents:
+
+x86-y86/	A very simple microprocessor model for the Y86 ISA,
+		which is an X86-like ISA
+
+y86-abs/	A variant of x86-y86/ that uses space-efficient memory,
+		and uses abstract stobjs for reasoning and execution
+		efficiency
