@@ -820,7 +820,7 @@ regression-hons-only: hons-check
 # variable ACL2 is bound.
 regression-hons:
 	$(MAKE) regression-hons-only
-	$(MAKE) regression
+	$(MAKE) regression HONS_P=t
 
 .PHONY: regression-fast
 regression-fast:
@@ -956,7 +956,7 @@ clean-doc:
 
 .PHONY: clean-books
 clean-books:
-	cd books ; $(MAKE) $(ACL2_IGNORE) clean ; $(MAKE) $(ACL2_IGNORE) clean-hons
+	cd books ; $(MAKE) $(ACL2_IGNORE) HONS_P=t clean ; $(MAKE) $(ACL2_IGNORE) clean-hons
 
 .PHONY: clean-books-nonstd
 clean-books-nonstd:
