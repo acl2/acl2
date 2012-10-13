@@ -4059,14 +4059,17 @@
   of ~c[ev], by functional instantiation.  We can then carry out the proof of
   the ~il[equivalence] of ~c[term1] and ~c[term2] as follows: Fix ~c[a] to be
   an alist that maps the quotations of the variables of ~c[term1] and ~c[term2]
-  to themselves.  Then, ~bv[] term1 = (ev* 'term1 a) ; (1) by construction of
-  ev* and a = (ev* (fn 'term1) a) ; (2) by the metatheorem for ev* = (ev*
-  'term2 a) ; (3) by evaluation of fn = term2 ; (4) by construction of ev* and
-  a ~ev[] Note that in line (2) above, where we appeal to the (functional
-  instantiation of the) metatheorem, we can relieve its (optional)
-  ~ilc[pseudo-termp] and ~ilc[alistp] hypotheses by appealing to the facts that
-  ~c[term1] is a term and ~c[a] is an alist by construction.  [End of Aside for
-  the logic-minded.]
+  to themselves.  Then,
+  ~bv[]
+  term1 = (ev* 'term1 a)      ; (1) by construction of ev* and a
+        = (ev* (fn 'term1) a) ; (2) by the metatheorem for ev*
+        = (ev* 'term2 a)      ; (3) by evaluation of fn
+        = term2               ; (4) by construction of ev* and a
+  ~ev[]
+  Note that in line (2) above, where we appeal to the (functional instantiation
+  of the) metatheorem, we can relieve its (optional) ~ilc[pseudo-termp] and
+  ~ilc[alistp] hypotheses by appealing to the facts that ~c[term1] is a term
+  and ~c[a] is an alist by construction.  [End of Aside for the logic-minded.]
 
   There are subtleties related to the notion of ``growing'' ~c[ev] to a
   ``larger'' evaluator, as mentioned in the paragraph just above.  For
@@ -4464,7 +4467,7 @@
   restrictions in detail below.~/
 
   An argument given elsewhere (~pl[meta], in particular ``Aside for the
-  logic-minded'') explains that the correctness argument for appying
+  logic-minded'') explains that the correctness argument for applying
   metatheoretic simplifiers requires that one be able to ``grow'' an evaluator
   (~pl[defevaluator]) to handle all functions in the current ACL2 ~il[world].
   Then we may, in essence, functionally instantiate the original evaluator to
