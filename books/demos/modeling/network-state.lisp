@@ -12,7 +12,7 @@
 ; Copyright David Rager 2012.
 
 
-; Suppose we have the following english description of a protocol.
+; Suppose we have the following English description of a protocol.
 
 ; There are two actors, a client/initiator and a server/responder.  In this
 ; case, the server is providing a simple service -- it looks for a request on
@@ -20,6 +20,42 @@
 ; within the request, and sends the result back on the network.
 
 ; The server will keep track of the number of requests that it has served.
+
+
+; The way we model state in this book is a reasonable model.  However, there
+; are of course other ways that we could have done this.  The following two
+; paragraphs are intended for a slightly more experienced reader, and the
+; novice reader may wish to skip them.
+
+; In this book, we have three states: the client state, the server state, and
+; the network state.  One thing that could be different is that these three
+; states could be combined into one single state.  Such a decision is a
+; judgment call.  The current approach makes it clear to the reader that the
+; server can not change the client state.  However, even if the client state
+; was embedded in one single state (and we implemented such embedding
+; correctly), ACL2 should easily be able to determine (prove) that the server
+; does not change the client state.
+
+; Another difference between this model and other models is that we sequence
+; the client and server steps in a relatively manual fashion (see the uses of
+; "b*" below).  We could model a greater variety of attacks if we had a single
+; interpreter that took a state and a list that said what sequence of steps to
+; run.  This interpreter would then run the sequence of steps on the state, and
+; we could prove properties about the resulting sequence.  We could also
+; underspecify the sequence of steps and still attempt to prove the same
+; properties.  If those properties held, despite this less well-defined
+; sequence of steps, we would have more assurance in the protocol.  One
+; potentially interesting way to model picking the "next step" would be to have
+; an "oracle" (for an example of an oracle that returns one of two values, see
+; function foo in file nondeterminism.lisp, in this same directory) that could
+; indicate whether the client, server, or attacker would get to take the next
+; step.  We could then attempt to prove that given the oracle returns one of
+; the three values each time the interpreter is called, if the :answer field in
+; the client changes from :unknown, that the value for :answer must be the
+; square of the client's :number-to-square.  Of course, this property isn't
+; true of the protocol described and implemented in this file.  However, if we
+; were to correctly add cryptographic functions (for example, encryption and
+; signed hashes), we could perhaps create a protocol that had this property.
 
 (in-package "ACL2")
 
@@ -122,6 +158,10 @@
 (defconst *client-id* :client)
 (defconst *server-id* :server)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Define retrieving a message from the network
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defun retrieve-network-message (dest network-st)
 
 ; Returns the message and a new network state, which does not include the new
@@ -146,15 +186,16 @@
   (implies (and (id-p dest)
                 (network-state-p network-st))
            (implies (car (retrieve-network-message dest network-st))
-                    (network-packet-p (mv-nth 0 (retrieve-network-message dest
-                                                                     network-st))))))
+                    (network-packet-p (mv-nth 0 
+                                              (retrieve-network-message dest
+                                                                        network-st))))))
 (defthm retrieve-network-message-returns-network-state-p
   (implies (network-state-p network-st)
-
+           
 ; Using (cadr ...) in the below call causes a later theorem
 ; (SERVER-STEP1-OUTPUT-LEMMA-2) to fail, but shouldn't (mv-nth 1 ...) just
 ; expand to cadr since mv-nth is enabled?  Actually, probably not, since mv-nth
-; is recursive.
+; is recursive and its argument isn't the base case.
 
            (network-state-p (mv-nth 1 (retrieve-network-message
                                        x
@@ -303,16 +344,16 @@
 ;;;;;;;;;;;;;;;;;;;;;;;
 
 (defthm honest-square-is-good-symbolic-simulation
-  (implies (and (client-state-p client-st)
+  (implies (and (client-state-p client-st-orig)
                 (server-state-p server-st)
                 (network-state-p network-st))
            (b* (((mv client-st network-st)
-                 (client-step1 client-st network-st))
+                 (client-step1 client-st-orig network-st))
                 ((mv ?server-st network-st)
                  (server-step1 server-st network-st))
                 ((mv client-st ?network-st)
                  (client-step2 client-st network-st)))
-             (equal (expt (client-state->number-to-square client-st) 2)
+             (equal (expt (client-state->number-to-square client-st-orig) 2)
                     (client-state->answer client-st)))))
            
 
@@ -333,8 +374,8 @@
         (prog2$ (cw "Missing packet~%")
                 network-st)))
     (cons (make-square-request 
-           (+ 20 (message->payload (network-packet->message
-                                    original-packet))))
+           (+ 1 (message->payload (network-packet->message
+                                   original-packet))))
           network-st)))
 
 #+demo-only
@@ -375,26 +416,27 @@
 (defstub attack1 (*) => *)
 (defstub attack2 (*) => *)
 
-(must-fail
+; Technically being unable to prove the below theorem in ACL2 doesn't mean that
+; the theorem isn't valid.  However, if we believed the theorem to be valid, we
+; would relentlessly examine the feedback from ACL2 until we figured out either
+; of (1) how to make ACL2 agree with our belief or (2) a counterexample that
+; illustrates a weakness in the protocol.  In this example, we happen to know
+; that the theorem isn't true (we have a such a counter-example, shown in
+; function man-in-the-middle-specific-attack), so we leave it as is.
 
-; Technically being unable to prove this theorem in ACL2 doesn't mean that the
-; theorem isn't valid.  However, if we believed the theorem to be valid, we
-; would relentlessly examine the feedback from ACL2 until we figured out how to
-; make ACL2 agree with our belief.  But, we happen to know that the theorem
-; isn't true, because this protocol provides no protection against malicious
-; attacks, so we leave it as is.
- 
- (defthm |bad-square-is-good?-with-double-attack|
-   (implies (and (client-state-p client-st) ; is symbolic
-                 (server-state-p server-st)
-                 (network-state-p network-st))
-            (b* (((mv client-st network-st)
-                  (client-step1 client-st network-st))
-                 (network-st (attack1 network-st)) ; ATTACK!!!
-                 ((mv ?server-st network-st)
-                  (server-step1 server-st network-st))
-                 (network-st (attack2 network-st)) ; ATTACK!!!
-                 ((mv client-st ?network-st)
-                  (client-step2 client-st network-st)))
-              (equal (expt (client-state->number-to-square client-st) 2)
-                     (client-state->answer client-st))))))
+#|| 
+(defthm |bad-square-is-good?-with-double-attack|
+  (implies (and (client-state-p client-st-orig) ; is symbolic
+                (server-state-p server-st)
+                (network-state-p network-st))
+           (b* (((mv client-st network-st)
+                 (client-step1 client-st network-st))
+                (network-st (attack1 network-st)) ; ATTACK!!!
+                ((mv ?server-st network-st)
+                 (server-step1 server-st network-st))
+                (network-st (attack2 network-st)) ; ATTACK!!!
+                ((mv client-st ?network-st)
+                 (client-step2 client-st network-st)))
+             (equal (expt (client-state->number-to-square client-st-orig) 2)
+                    (client-state->answer client-st)))))
+||#
