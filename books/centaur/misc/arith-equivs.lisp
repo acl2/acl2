@@ -531,17 +531,17 @@
 ;;                            (equal (bit-equiv b a)
 ;;                                   (equal a (bfix b)))))))
 
-;; (defthm equal-of-ifixes
-;;   (equal (equal (ifix a) (ifix b))
-;;          (int-equiv a b)))
+(defthmd equal-of-ifixes
+  (equal (equal (ifix a) (ifix b))
+         (int-equiv a b)))
 
-;; (defthm equal-of-nfixes
-;;   (equal (equal (nfix a) (nfix b))
-;;          (nat-equiv a b)))
+(defthmd equal-of-nfixes
+  (equal (equal (nfix a) (nfix b))
+         (nat-equiv a b)))
 
-;; (defthm equal-of-bfixes
-;;   (equal (equal (bfix a) (bfix b))
-;;          (bit-equiv a b)))
+(defthmd equal-of-bfixes
+  (equal (equal (bfix a) (bfix b))
+         (bit-equiv a b)))
 
 ;; (in-theory (disable int-equiv nat-equiv bit-equiv))
 
