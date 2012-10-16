@@ -59,11 +59,12 @@ export ACL2_PCERT
 
 # Note: arithmetic-4 could be added in analogy to arithmetic-5.
 
-ifdef HONS_P
-	DIRS_HONS=models/X86
-else
+### Temporary deletion till we get the license straightened out.
+# ifdef HONS_P
+# 	DIRS_HONS=models/X86
+# else
 	DIRS_HONS=
-endif
+# endif
 
 DIRS1 = cowles arithmetic meta xdoc
 DIRS2_EXCEPT_WK_COI = ordinals data-structures bdd ihs arithmetic-2 arithmetic-3 arithmetic-5 \
