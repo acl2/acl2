@@ -1,9 +1,8 @@
 This directory contains subdirectories for models of variants of X86.
-As of this writing (Oct. 12, 2012), all contributions are by Shilpi
-Goel, Warren Hunt, Matt Kaufmann, and Robert Krug.
+See the file, LICENSE, for copyright and authorship information.
 
 Each top-level subdirectory has a README file containing more
-information as well as a LICENSE file.
+information.
 
 Current contents:
 
