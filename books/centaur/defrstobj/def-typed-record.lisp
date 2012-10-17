@@ -547,13 +547,6 @@
 
 ; Some basic tests to make sure the macro is working
 
-   (defun nat-listp (x)
-     (declare (xargs :guard t))
-     (if (atom x)
-         (equal x nil)
-       (and (natp (car x))
-            (nat-listp (cdr x)))))
-
    (def-typed-record nat
      :elem-p (natp x)
      :elem-list-p (nat-listp x)

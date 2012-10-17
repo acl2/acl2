@@ -65,6 +65,31 @@ CCL on the machine Lisp2.</p>
 
 
 
+(defsection nonzero-digitp
+  :parents (numbers)
+  :short "Recognizer for non-zero numeric characters (1-9)."
+
+  (definlined nonzero-digitp (x)
+    (declare (type character x))
+    (mbe :logic (let ((code (char-code (char-fix x))))
+                  (and (<= (char-code #\1) code)
+                       (<= code (char-code #\9))))
+         :exec (let ((code (the (unsigned-byte 8) (char-code (the character x)))))
+                 (declare (type (unsigned-byte 8) code))
+                 (and (<= (the (unsigned-byte 8) 49) (the (unsigned-byte 8) code))
+                      (<= (the (unsigned-byte 8) code) (the (unsigned-byte 8) 57))))))
+
+  (local (in-theory (enable nonzero-digitp)))
+
+  (defcong chareqv equal (nonzero-digitp x) 1)
+
+  (defthm digitp-when-nonzero-digitp
+    (implies (nonzero-digitp x)
+             (digitp x))
+    :hints(("Goal" :in-theory (enable digitp)))))
+
+
+
 (defsection digit-val
   :parents (numbers)
   :short "Coerces a @(see digitp) character into an integer."
@@ -316,7 +341,7 @@ can tolerate non-numeric characters after the number.</p>"
                                 (= xl (length x)))
                     :measure (nfix (- (nfix xl) (nfix n)))))
     (if (mbe :logic (zp (- (nfix xl) (nfix n)))
-             :exec (= (the integer n) (the integer xl)))
+             :exec (int= n xl))
         t
       (and (digitp (char x n))
            (digit-string-p-aux x (+ 1 (lnfix n)) xl))))

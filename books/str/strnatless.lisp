@@ -245,7 +245,7 @@ of our logical definition.</p>"
                (t
                 (mv (nfix val) (nfix len))))
          :exec
-         (cond ((= (the integer n) (the integer xl))
+         (cond ((int= n xl)
                 (mv val len))
                (t
                 (let ((code (the (unsigned-byte 8)
@@ -391,11 +391,11 @@ string such as \"x0\" is considered to be less than \"x00\", etc.</p>
 ; lengths.  This second part only is necessary to accomodate leading zeroes.
 
              (cond ((or (< v1 v2)
-                        (and (= v1 v2)
+                        (and (int= v1 v2)
                              (< l1 l2)))
                     t)
                    ((or (< v2 v1)
-                        (and (= v1 v2)
+                        (and (int= v1 v2)
                              (< l2 l1)))
                     nil)
                    (t
@@ -694,11 +694,11 @@ one index.</p>"
                        ((mv v2 l2)
                         (parse-nat-from-string y 0 0 yn yl)))
                     (cond ((or (< v1 v2)
-                               (and (= v1 v2)
+                               (and (int= v1 v2)
                                     (< l1 l2)))
                            t)
                           ((or (< v2 v1)
-                               (and (= v1 v2)
+                               (and (int= v1 v2)
                                     (< l2 l1)))
                            nil)
                           (t
@@ -712,9 +712,9 @@ one index.</p>"
                  (t
                   (strnat<-aux x y (+ 1 xn) (+ 1 yn) xl yl))))
          :exec
-         (cond ((= (the integer yn) (the integer yl))
+         (cond ((int= yn yl)
                 nil)
-               ((= (the integer xn) (the integer xl))
+               ((int= xn xl)
                 t)
                (t
                 (let* ((char-x (the character (char (the string x) (the integer xn))))
@@ -746,11 +746,11 @@ one index.</p>"
                                                  (the integer yn)
                                                  (the integer yl))))
                       (cond ((or (< (the integer v1) (the integer v2))
-                                 (and (= (the integer v1) (the integer v2))
+                                 (and (int= v1 v2)
                                       (< (the integer l1) (the integer l2))))
                              t)
                             ((or (< (the integer v2) (the integer v1))
-                                 (and (= (the integer v1) (the integer v2))
+                                 (and (int= v1 v2)
                                       (< (the integer l2) (the integer l1))))
                              nil)
                             (t

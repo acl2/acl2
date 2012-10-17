@@ -204,9 +204,12 @@ out into minor warnings.</p>"
          ((mv ?inputs outputs ?inouts ?unknowns)
           (vl-partition-plainargs (vl-arguments->args x1.portargs) nil nil nil nil))
          (outexprs (vl-plainarglist->exprs outputs))
-         ((when (member nil outexprs))
-          (er hard? 'vl-modinstlist-fixed-up-outs "expected no blanks")))
-      (cons (vl-exprlist-fix outexprs)
+         (fixed-outexprs (if (member nil outexprs)
+                             ;; Can't fix them up because there are blanks.  Well, who
+                             ;; cares.  We'll just leave them unfixed.
+                             outexprs
+                           (vl-exprlist-fix outexprs))))
+      (cons fixed-outexprs
             (vl-modinstlist-fixed-up-outs (cdr x)))))
 
   (defund vl-maybe-warn-dupeinst (key modinsts warnings)

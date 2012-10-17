@@ -109,7 +109,7 @@ or coercion is performed.</p>"
            (if (> diff 0)
                (let ((spaces (make-list diff :initial-element #\Space)))
                  (coerce (mbe :logic (append-chars x spaces)
-                              :exec (if (= x-len 0)
+                              :exec (if (zp x-len)
                                         spaces
                                       (append-chars-aux x (- x-len 1) spaces)))
                          'string))

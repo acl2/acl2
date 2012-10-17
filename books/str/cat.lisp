@@ -218,7 +218,7 @@ for more details.</p>"
                                 (equal xl (length x)))
                     :measure (nfix (- (nfix xl) (nfix n)))))
     (if (mbe :logic (zp (- (nfix xl) (nfix n)))
-             :exec (= n xl))
+             :exec (int= n xl))
         y
       (revappend-chars-aux x (+ 1 (lnfix n)) xl (cons (char x n) y))))
 
@@ -287,3 +287,39 @@ for more details.</p>"
               (STR::append-chars *str* nil))))
 
 ||#
+
+
+
+(defsection prefix-strings
+  :parents (concatenation)
+  :short "Concatenates a prefix onto every string in a list of strings."
+
+  :long "<p>@(call prefix-strings) produces a new string list by concatenating
+<tt>prefix</tt> onto every member of <tt>x</tt>.</p>"
+
+  (defund prefix-strings (prefix x)
+    (declare (xargs :guard (and (stringp prefix)
+                                (string-listp x))))
+    (if (atom x)
+        nil
+      (cons (cat prefix (car x))
+            (prefix-strings prefix (cdr x)))))
+
+  (local (in-theory (enable prefix-strings)))
+
+  (defthm prefix-strings-when-atom
+    (implies (atom x)
+             (equal (prefix-strings prefix x)
+                    nil)))
+
+  (defthm prefix-strings-of-cons
+    (equal (prefix-strings prefix (cons a x))
+           (cons (cat prefix a)
+                 (prefix-strings prefix x))))
+
+  (defthm string-listp-of-prefix-strings
+    (string-listp (prefix-strings prefix x)))
+
+  (defthm len-of-prefix-strings
+    (equal (len (prefix-strings prefix x))
+           (len x))))

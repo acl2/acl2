@@ -51,8 +51,7 @@
                                        (the integer xl)
                                        (the integer yl)))
            (lnfix n))
-          ((mbe :logic (zp n)
-                :exec (= (the integer n) (the integer 0)))
+          ((zp n)
            nil)
           (t
            (strrpos-fast (the string x)

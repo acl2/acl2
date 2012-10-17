@@ -63,7 +63,7 @@
                       (nfix n))
          :exec
          (cond ((mbe :logic (zp (- (nfix xl) (nfix n)))
-                     :exec (= n xl))
+                     :exec (int= n xl))
                 nil)
                ((eql (char x n) char)
                 (lnfix n))
@@ -95,9 +95,9 @@
              (type string x)
              (type integer n xl curr goal))
     (cond ((mbe :logic (zp (- (nfix xl) (nfix n)))
-                :exec (= n xl))
+                :exec (int= n xl))
            nil)
-          ((= curr goal)
+          ((int= curr goal)
            (lnfix n))
           (t
            (go-to-line x (+ 1 (lnfix n)) xl

@@ -360,7 +360,7 @@ non-decimal digit characters or is empty, we return <tt>nil</tt>.</p>"
          ((mv val len)
           (str::parse-nat-from-string x 0 0 0 xl)))
       (and (< 0 len)
-           (= len xl)
+           (int= len xl)
            val)))
 
   (defthm type-of-strval

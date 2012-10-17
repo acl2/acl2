@@ -102,7 +102,7 @@ Examples:
                                 (stringp new)
                                 (stringp x))))
     (let ((oldl (length old)))
-      (if (= oldl 0)
+      (if (zp oldl)
           (mbe :logic (if (stringp x)
                           x
                         "")

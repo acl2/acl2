@@ -245,7 +245,7 @@ Well, at least we're better when no work needs to be done:</p>
                                 (<= n xl))
                     :measure (nfix (- (nfix xl) (nfix n)))))
     (if (mbe :logic (zp (- (nfix xl) (nfix n)))
-             :exec (= n xl))
+             :exec (int= n xl))
         nil
       (or (down-alpha-p (char x n))
           (string-has-some-down-alpha-p x (+ 1 (lnfix n)) xl))))
@@ -263,7 +263,7 @@ Well, at least we're better when no work needs to be done:</p>
                                 (<= n xl))
                     :measure (nfix (- (nfix xl) (nfix n)))))
     (if (mbe :logic (zp (- (nfix xl) (nfix n)))
-             :exec (= n xl))
+             :exec (int= n xl))
         acc
       (let* ((char   (char x n))
              (upchar (upcase-char char)))
@@ -352,7 +352,7 @@ make this fast.</p>"
                                 (<= n xl))
                     :measure (nfix (- (nfix xl) (nfix n)))))
     (if (mbe :logic (zp (- (nfix xl) (nfix n)))
-             :exec (= n xl))
+             :exec (int= n xl))
         nil
       (or (up-alpha-p (char x n))
           (string-has-some-up-alpha-p x (+ 1 (lnfix n)) xl))))
@@ -368,7 +368,7 @@ make this fast.</p>"
                                 (<= n xl))
                     :measure (nfix (- (nfix xl) (nfix n)))))
     (if (mbe :logic (zp (- (nfix xl) (nfix n)))
-             :exec (= n xl))
+             :exec (int= n xl))
         acc
       (let* ((char     (char x n))
              (downchar (downcase-char char)))

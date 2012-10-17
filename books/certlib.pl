@@ -1164,6 +1164,8 @@ sub src_deps {
                       . ($dir ? " :dir $dir)" : ")") . " in $fname\n";
 	    }
 	    $fullname && push(@$otherdeps, $fullname);
+	} elsif ($type eq $depends_on_event) {
+	    # skip it
 	} elsif ($type eq $loads_event) {
 	    my $srcname = $event->[1];
 	    my $dir = $event->[2];
@@ -1558,6 +1560,7 @@ sub to_cert_name {
 
 
 # Takes a list of inputs containing some filenames and some labels
+# and some entries of the form "-p filename".
 # (ending with a colon.)  Sorts out the filenames into a list of
 # targets (changing them to .cert extensions if necessary) and returns
 # the list of targets and a hash associating each label with its list

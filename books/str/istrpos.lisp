@@ -66,8 +66,7 @@ theorems <tt>iprefixp-of-istrpos</tt> and
                                         (the integer yl)))
            (lnfix n))
           ((mbe :logic (zp (- (nfix yl) (nfix n)))
-                :exec (= (the integer n)
-                         (the integer yl)))
+                :exec (int= n yl))
            nil)
           (t
            (istrpos-impl (the string x)

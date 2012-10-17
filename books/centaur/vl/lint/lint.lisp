@@ -155,13 +155,18 @@
                          :start-files   start-files
                          :search-path   search-path
                          :searchext     searchext)))
-       ;; Throw away any modules we don't care about, if we have been
-       ;; given any top-mods.
-       (mods (if (not top-mods)
-                 mods
-               (vl-remove-unnecessary-modules (mergesort top-mods)
-                                              (mergesort mods))))
-       (mods0 mods)
+
+       ;; Historically we dealt with top-mods here.  But it's no good
+       ;; to throw away modules that have hierarchical identifiers pointing
+       ;; into them, so now we do it later, after HID resolution.
+
+       ;; Mods0 is used for skip-detection.  If we have topmods, go ahead
+       ;; and remove them from mods0, to avoid skip-detect warnings about
+       ;; irrelevant mods.
+       (mods0 (if (not top-mods)
+                  mods
+                (vl-remove-unnecessary-modules (mergesort top-mods)
+                                               (mergesort mods))))
 
        (- (cw "~%vl-lint: initial processing...~%"))
        (mods (cwtime (vl-modulelist-portcheck mods)))
@@ -228,6 +233,20 @@
        (mods (cwtime (vl-modulelist-lint-stmt-rewrite mods)))
        (mods (cwtime (vl-modulelist-stmtrewrite mods 1000)))
        (mods (cwtime (vl-modulelist-hid-elim mods)))
+
+       (mods (if (uniquep (vl-modulelist->names mods))
+                 mods
+               (er hard? 'vl-lint
+                   "Programming error.  Expected modules to have unique ~
+                    names after vl-modulelist-hid-elim.  Please tell Jared.")))
+
+       ;; Now that HIDs are gone, we can throw away any modules we don't care
+       ;; about, if we have been given any top-mods.
+       (mods (if (not top-mods)
+                 mods
+               (vl-remove-unnecessary-modules (mergesort top-mods)
+                                              (mergesort mods))))
+
 
        ;; BOZO it seems sort of legitimate to do this before sizing, which
        ;; might be nice.  Of course, a more rigorous use/set analysis will

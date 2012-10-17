@@ -322,7 +322,8 @@ allows for the mutually-recursive use of <tt>defwellformed</tt>.</p>")
 (defun wf-normal-defun (name formals guard body extra-decls)
   (declare (xargs :mode :program))
   `(defund ,name ,formals
-     (declare (xargs :guard ,guard)
+     (declare (xargs :guard ,guard
+                     :normalize nil)
               ,@extra-decls)
      ,(wf-rewrite-body nil body)))
 
@@ -330,7 +331,8 @@ allows for the mutually-recursive use of <tt>defwellformed</tt>.</p>")
   (declare (xargs :mode :program))
   `(defund ,(wf-warn-name name) (,@formals warnings)
      (declare (xargs :guard (and ,guard
-                                 (vl-warninglist-p warnings)))
+                                 (vl-warninglist-p warnings))
+                     :normalize nil)
               (ignorable warnings)
               ,@extra-decls)
      ,(wf-rewrite-body t body)))

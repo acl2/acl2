@@ -54,7 +54,7 @@
          (take (min n (length x)) (coerce x 'list))
          :exec
          (let ((n (min n (length x))))
-           (if (= n 0)
+           (if (zp n)
                nil
              (firstn-chars-aux x (- n 1) nil)))))
 
@@ -87,7 +87,7 @@
          (append (firstn-chars n x) y)
          :exec
          (let ((n (min n (length x))))
-           (if (= n 0)
+           (if (zp n)
                y
              (firstn-chars-aux x (- n 1) y)))))
 

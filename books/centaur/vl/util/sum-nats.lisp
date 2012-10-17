@@ -144,6 +144,81 @@
 
 
 
+(defsection max-nats
+  :parents (utilities)
+  :short "Maximum member in a list of naturals."
+
+  :long "<p>Typically you would only use this on non-empty lists, but as a
+reasonable default we say the maximum member of the empty list is
+<tt>0</tt>.</p>"
+
+  (defund max-nats (x)
+    (declare (xargs :guard (nat-listp x)))
+    (if (atom x)
+        0
+      (max (lnfix (car x))
+           (max-nats (cdr x)))))
+
+  (local (in-theory (enable max-nats)))
+
+  (defthm max-nats-when-atom
+    (implies (atom x)
+             (equal (max-nats x) 0)))
+
+  (defthm max-nats-of-cons
+    (equal (max-nats (cons a x))
+           (max (nfix a) (max-nats x))))
+
+  (defthm natp-of-max-nats
+    (natp (max-nats x))
+    :rule-classes :type-prescription)
+
+  (defthm max-nats-of-append
+    (equal (max-nats (append x y))
+           (max (max-nats x)
+                (max-nats y))))
+
+  (defthm max-nats-of-rev
+    (equal (max-nats (rev x))
+           (max-nats x)))
+
+  (defthm max-nats-of-revappend
+    (equal (max-nats (revappend x y))
+           (max (max-nats x)
+                (max-nats y)))))
+
+
+
+(defsection min-nats
+  :parents (utilities)
+  :short "Minimum member in a list of naturals."
+
+  :long "<p>Typically you would only use this on non-empty lists, but as a
+reasonable default we say the minimum of the empty list is <tt>0</tt>.</p>"
+
+  (defund min-nats (x)
+    (declare (xargs :guard (nat-listp x)))
+    (cond ((atom x)
+           0)
+          ((atom (cdr x))
+           (lnfix (car x)))
+          (t
+           (min (lnfix (car x))
+                (min-nats (cdr x))))))
+
+  (local (in-theory (enable min-nats)))
+
+  (defthm natp-of-min-nats
+    (natp (min-nats x))
+    :rule-classes :type-prescription)
+
+  (defthm min-nats-bound
+    (implies (consp x)
+             (<= (min-nats x) (max-nats x)))
+    :rule-classes ((:rewrite) (:linear))
+    :hints(("Goal" :in-theory (enable min-nats max-nats)))))
+
+
 
 (defsection nats-from
   :parents (utilities)

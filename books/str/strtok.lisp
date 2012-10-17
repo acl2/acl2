@@ -48,8 +48,7 @@
                                 (string-listp acc))
                     :measure (nfix (- (nfix xl) (nfix n)))))
     (if (mbe :logic (zp (- (nfix xl) (nfix n)))
-             :exec (= (the integer n)
-                      (the integer xl)))
+             :exec (int= n xl))
         (if curr
             (cons (reverse (coerce curr 'string)) acc)
           acc)

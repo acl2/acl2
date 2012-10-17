@@ -56,7 +56,7 @@ into a character list and then coerce it back into a string at the end.</p>"
     (let ((n  (lnfix n))
           (xl (lnfix xl)))
       (if (mbe :logic (zp (- xl n))
-               :exec (= n xl))
+               :exec (int= n xl))
           acc
         (let* ((char (char x n))
                (acc  (cons char acc))

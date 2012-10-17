@@ -268,6 +268,18 @@ there is some string value or nothing.</p>"
   :hints(("Goal" :induct (len x))))
 
 
+(deflist vl-maybe-string-listp (x)
+  (vl-maybe-string-p x)
+  :elementp-of-nil t
+  :parents (utilities))
+
+(defthm string-listp-when-no-nils-in-vl-maybe-string-listp
+  (implies (and (not (member-equal nil x))
+                (vl-maybe-string-listp x))
+           (equal (string-listp x)
+                  (true-listp x)))
+  :hints(("Goal" :induct (len x))))
+
 
 
 (defsection debuggable-and

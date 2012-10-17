@@ -171,7 +171,7 @@ should typically be 0 to begin with.</li>
              (type string x)
              (type integer n xl col tabsize))
     (if (mbe :logic (zp (- (nfix xl) (nfix n)))
-             :exec (= n xl))
+             :exec (int= n xl))
         (mv (lnfix col) acc)
       (let ((char1 (char x n)))
         (html-encode-string-aux

@@ -20,6 +20,7 @@
 
 (in-package "STR")
 (include-book "digitp")
+(include-book "arithmetic/nat-listp" :dir :system)
 (local (include-book "unicode/revappend" :dir :system))
 (local (include-book "arithmetic-3/floor-mod/floor-mod" :dir :system))
 (local (include-book "unicode/rev" :dir :system))
@@ -33,6 +34,11 @@
 
 
 (defsection basic-natchars
+  :parents (natchars)
+  :short "Logically simple definition that is mostly similar to @(see natchars)."
+
+  :long "<p>@(call basic-natchars) almost computes <tt>(natchars n)</tt>, but
+when <tt>n</tt> is zero it returns <tt>nil</tt> instead of <tt>(#\\0)</tt>.</p>"
 
   (defund basic-natchars (n)
     (declare (xargs :guard (natp n)))
@@ -88,6 +94,9 @@
 
 
 (defsection natchars
+  :parents (numbers)
+  :short "Convert a natural number into a list of characters."
+  :long "<p>For instance, <tt>(natchars 123)</tt> is <tt>(#\\1 #\\2 #\\3)</tt>.</p>"
 
   (local (defthm digit-list-value-of-rev-of-basic-natchars
            (equal (digit-list-value (acl2::rev (basic-natchars n)))
@@ -101,8 +110,7 @@
     (declare (type integer n)
              (xargs :guard (natp n)
                     :verify-guards nil))
-    (if (mbe :logic (zp n)
-             :exec (= (the integer n) 0))
+    (if (zp n)
         acc
       (natchars-aux (the integer (truncate (the integer n) 10))
                     (cons (the character (code-char
@@ -167,7 +175,11 @@
            (nfix n))))
 
 
+
 (defsection natstr
+  :parents (numbers)
+  :short "Convert a natural number into a string."
+  :long "<p>For instance, <tt>(natstr 123)</tt> is <tt>\"123\"</tt>.</p>"
 
   (definlined natstr (n)
     (declare (type integer n)
@@ -196,13 +208,45 @@
 
 
 
+(defsection natstr-list
+  :parents (numbers)
+  :short "Convert a list of natural numbers into a list of strings."
+
+  (defund natstr-list (x)
+    (declare (xargs :guard (acl2::nat-listp x)))
+    (if (atom x)
+        nil
+      (cons (natstr (car x))
+            (natstr-list (cdr x)))))
+
+  (local (in-theory (enable natstr-list)))
+
+  (defthm natstr-list-when-atom
+    (implies (atom x)
+             (equal (natstr-list x)
+                    nil)))
+
+  (defthm natstr-list-of-cons
+    (equal (natstr-list (cons a x))
+           (cons (natstr a)
+                 (natstr-list x))))
+
+  (defthm string-listp-of-natstr-list
+    (string-listp (natstr-list x))))
+
+
+
 (defsection revappend-natchars
+  :parents (numbers)
+  :short "More efficient version of <tt>(revappend (@(see natchars) n) acc).</tt>"
+
+  :long "<p>This can be useful when building strings by consing together
+characters in reverse order.</p>"
 
   (defund revappend-natchars-aux (n acc)
     (declare (type integer n)
              (xargs :guard (and (natp n))))
-    (if (mbe :logic (zp n)
-             :exec (= (the integer n) 0))
+    (if (zp n)
         acc
       (cons (the character (code-char
                             (the (unsigned-byte 8)
@@ -223,7 +267,7 @@
              (xargs :guard (natp n)
                     :guard-hints(("Goal" :in-theory (enable natchars)))))
     (mbe :logic (revappend (natchars n) acc)
-         :exec (if (= n 0)
+         :exec (if (zp n)
                    (cons #\0 acc)
                  (revappend-natchars-aux n acc)))))
 

@@ -25,72 +25,219 @@
 (in-package "CUTIL")
 (include-book "deflist")
 
-(local
- (encapsulate
-   ()
-   
-   (defn int-or-nilp (x)
-     (or (integerp x)
-         (null x)))
-   
-   (deflist int-listp (x)
-     (integerp x))
 
-   (deflist int-listp (x)
-     ;; Make sure redundant version works
-     (integerp x))
 
-   #!ACL2
-   (cutil::deflist int-listp (x)
-     ;; Make sure other-package version works
-     (integerp x))
+(local (progn
 
-   (deflist int-listp-program (x)
-     (integerp x)
-     :mode :program
-     :parents (foo))
+(in-theory
+ ;; This is awful and you should generally never do it.  But here, the idea is
+ ;; to show that all of these deflists will succeed even in a crippled theory.
+ nil)
 
-   (deflist int-listp-doc (x)
-     (integerp x)
-     :parents (foo))
+(encapsulate
+  (((foop *) => *))
+  (local (defun foop (x) (consp x)))
+  (defthm booleanp-of-foop
+    (or (equal (foop x) t)
+        (equal (foop x) nil))
+    :rule-classes :type-prescription))
 
-   (deflist intfree-listp (x)
-     (integerp x)
-     :negatedp t)
+(encapsulate
+  (((barp *) => *))
+  (local (defun barp (x) (atom x)))
+  (local (in-theory (enable booleanp booleanp-compound-recognizer)))
+  (defthm booleanp-of-barp
+    (or (equal (barp x) t)
+        (equal (barp x) nil))
+    :rule-classes :type-prescription)
+  (defthm barp-of-nil
+    (barp nil)))
 
-   (deflist true-list-listp (x)
-     (true-listp x)
-     :elementp-of-nil t)
+(encapsulate
+  (((bazp *) => *))
+  (local (defun bazp (x) (consp x)))
+  (defthm booleanp-of-bazp
+    (or (equal (bazp x) t)
+        (equal (bazp x) nil))
+    :rule-classes :type-prescription)
+  (defthm bazp-of-nil
+    (not (bazp nil))))
 
-   (deflist truelistfree-listp (x)
-     (true-listp x)
-     :negatedp t
-     :elementp-of-nil t)
 
-   (deflist rat-listp (x)
-     (rationalp x)
-     :elementp-of-nil nil)
+;; Basic tests to make sure the macro has all its theorems set up with the
+;; right polarity for the different cases of elementp-of-nil and negatedp...
 
-   (deflist ratfree-listp (x)
-     (rationalp x)
-     :elementp-of-nil nil
-     :negatedp t)
+(deflist foolist1p (x)
+  (foop x))
 
-   (deflist all-greater-than-p (min x)
-     (> min x)
-     :guard (and (integerp min)
-                 (integer-listp x)))
+(deflist foolist2p (x)
+  (foop x)
+  :true-listp t)
 
-   (deflist int-true-listp (x)
-     (integerp x)
-     :true-listp t)
+(deflist nfoolist1p (x)
+  (foop x)
+  :negatedp t)
 
-   (deflist int-true-listp-with-elementp (x)
-     (integerp x)
-     :true-listp t
-     :elementp-of-nil nil)
+(deflist nfoolist2p (x)
+  (foop x)
+  :negatedp t
+  :true-listp t)
 
-   (deflist int-or-nil-true-listp (x)
-     (int-or-nilp x)
-     :true-listp t
-     :elementp-of-nil t)))
+
+(deflist barlist1p (x)
+   (barp x)
+   :elementp-of-nil t)
+
+(deflist barlist2p (x)
+   (barp x)
+   :elementp-of-nil t
+   :true-listp t)
+
+(deflist nbarlist1p (x)
+  (barp x)
+  :elementp-of-nil t
+  :negatedp t)
+
+(deflist nbarlist2p (x)
+  (barp x)
+  :elementp-of-nil t
+  :negatedp t
+  :true-listp t)
+
+
+(deflist bazlist1p (x)
+   (bazp x)
+   :elementp-of-nil nil)
+
+(deflist bazlist2p (x)
+   (bazp x)
+   :elementp-of-nil nil
+   :true-listp t)
+
+(deflist nbazlist1p (x)
+   (bazp x)
+   :elementp-of-nil nil
+   :negatedp t)
+
+(deflist nbazlist2p (x)
+   (bazp x)
+   :elementp-of-nil nil
+   :negatedp t
+   :true-listp t)
+
+
+;; Make sure everything still works for basic types instead of just constrained
+;; functions, since ACL2 knows too much about these in some cases...
+
+(deflist intlist1p (x)
+   (integerp x))
+
+(deflist intlist2p (x)
+   (integerp x)
+   :elementp-of-nil nil)
+
+
+(deflist symlist1p (x)
+   (symbolp x))
+
+(deflist symlist2p (x)
+   (symbolp x)
+   :elementp-of-nil t)
+
+
+;; Because of type-prescription reasoning, normalization, etc., there can be
+;; problems with trivial recognizers that are always true or always false.
+
+(encapsulate
+  (((alwaystrue *) => *))
+  (local (defun alwaystrue (x) (equal x x)))
+  (defthm type-of-alwaystrue
+    (equal (alwaystrue x) t)
+    :rule-classes :type-prescription))
+
+(encapsulate
+  (((alwaysfalse *) => *))
+  (local (defun alwaysfalse (x) (not (equal x x))))
+  (defthm type-of-alwaysfalse
+    (equal (alwaysfalse x) nil)
+    :rule-classes :type-prescription))
+
+(deflist alt-truelistp (x)
+  (alwaystrue x)
+  :guard t)
+
+
+
+
+;; Other packages, program mode, documentation stuff
+
+#!ACL2
+(cutil::deflist int-listp (x)
+  (integerp x))
+
+(deflist testlist1 (x)
+  (integerp x)
+  :mode :program)
+
+(deflist testlist2 (x)
+  (integerp x)
+  :short "Foo")
+
+(deflist testlist3 (x)
+  (integerp x)
+  :long "Foo")
+
+(deflist testlist4 (x)
+  (integerp x)
+  :parents (whatever))
+
+
+;; Guards
+
+(local (in-theory (enable (:type-prescription evenp))))
+
+(deflist evenlist1p (x)
+  (evenp x)
+  :guard (integer-listp x)
+  :guard-hints(("Goal" :in-theory (enable integer-listp))))
+
+(deflist evenlist2p (x)
+  (evenp x)
+  :guard (atom-listp x)
+  :verify-guards nil)
+
+
+
+;; Additional arguments
+
+(deflist biglist1p (min x)
+  (> min x)
+  :guard (and (integerp min)
+              (integer-listp x))
+  :guard-hints(("Goal" :in-theory (enable integer-listp))))
+
+(defun blah-p (min x)
+  (declare (xargs :guard (integerp min)))
+  (or (not x)
+      (and (integerp x)
+           (> min x))))
+
+(deflist blahlist1p (min x)
+  (blah-p min x)
+  :guard (integerp min)
+  :elementp-of-nil t)
+
+(deflist nblahlist1p (min x)
+  (blah-p min x)
+  :guard (integerp min)
+  :negatedp t
+  :elementp-of-nil t)
+
+(deflist blahlist2p (min x)
+  (blah-p min x)
+  :guard (integerp min)
+  :true-listp t)
+
+
+))
+
