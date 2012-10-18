@@ -5,9 +5,11 @@
 Makefile
 Readme.lsp
 convert-normalized-term-to-pairs.lisp
+extend-pathname.lisp
+f-put-global.lisp
 gather-dcls.lisp
 hl-addr-combine.lisp
-extend-pathname.lisp
+io.lisp
 pseudo-good-worldp.lisp
 pseudo-termp-lemmas.lisp
 subcor-var.lisp
@@ -34,6 +36,9 @@ worldp-check.lisp
      subst-expr.lisp
      subst-var.lisp
      verified-termination-and-guards.lisp
+   Sol Swords for:
+     f-put-global.lisp
+     io.lisp
    Matt Kaufmann and J Moore for the rest")
  (:Keywords "Logical World")
  (:ABSTRACT
