@@ -12135,10 +12135,11 @@
   (declare (xargs :guard (and (true-listp lst)
                               (integerp n)
                               (<= 0 n))))
-  (let ((lng (len lst)))
+  (let ((lng (len lst))
+        (n (nfix n)))
     (if (<= lng n)
         nil
-        (take (- lng n) lst))))
+      (take (- lng n) lst))))
 
 #-acl2-loop-only
 (defmacro with-output (&rest args)

@@ -19511,6 +19511,11 @@
   Version_5.0 but it was not made; thanks to Jared Davis for bringing this to
   our attention.  Function ~c[get-timer] also is no longer untouchable.
 
+  The function ~ilc[butlast] now behaves more reasonably on arguments violating
+  its ~il[guard].  For example, ~c[(butlast '(1 2 3) -1)] is now provably equal
+  to ~c[(1 2 3)] instead of to ~c[(1 2 3 nil)].  Thanks to Jared Davis for
+  suggesting a change to the definition of ~c[butlast].
+
   ~st[NEW FEATURES]
 
   Among the new features for system hackers are analogues of system function
