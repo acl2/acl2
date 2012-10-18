@@ -844,7 +844,7 @@ does not care whether <tt>x</tt> is nil-terminated.</p>"))))
          :hints(("Goal"
                  :induct (len ,x)
                  :in-theory (enable subsetp-equal ,name)
-                 :expand (true-listp x))
+                 :expand (true-listp ,x))
                 ;;,last-ditch-hint
                 ))
 
