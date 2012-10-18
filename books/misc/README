@@ -54,6 +54,11 @@ defabsstobj-example-2.lisp -- example use of defabsstobj
 
 ===============================================================================
 
+dijkstra-shortest-path.lisp -- A Proof of the Correctness of Dijkstra's
+                               Shortest Path Algorithm in ACL2
+
+===============================================================================
+
 disassemble.lisp -- support for disassemble$, an interface to Common
                     Lisp's disassemble utility for showing assembly
                     code for a given function symbol's definition
