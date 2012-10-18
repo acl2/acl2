@@ -6357,7 +6357,7 @@
 ; from that definition.  So for redundancy, soundness only requires that the
 ; measured subsets agree when the old and new definitions are both in :logic
 ; mode.  We can even change the measure from an existing :program mode
-; defintiion to produce a new :program mode definition, so as to provide a
+; definition to produce a new :program mode definition, so as to provide a
 ; better hint for a later verify-termination call.
 
 ; One might think that we should do the measures check when the old definition
@@ -9513,9 +9513,9 @@
    (t
 
 ; We do not allow users to use 'verify-termination-boot-strap.  Why?  See the
-; comment in redundant-or-reclassifying-defunp about "verify-termination is now
-; just a macro for make-event", and see the discussion about make-event at the
-; end of :doc verify-termination.
+; comment in redundant-or-reclassifying-defunp0 about "verify-termination is
+; now just a macro for make-event", and see the discussion about make-event at
+; the end of :doc verify-termination.
 
     (er soft 'verify-termination-boot-strap
         "~x0 may only be used while ACL2 is being built.  Use ~x1 instead."

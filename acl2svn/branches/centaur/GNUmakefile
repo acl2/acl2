@@ -74,27 +74,20 @@
 #                    ; experimental extension ACL2(p) of ACL2); see
 #                    ; file acl2-customization-files/README.
 #   make regression-fast
-#                    ; (WARNINGS:
-#                       (1) This target should be considered a bit experimental:
-#                    ;      It works only if the workshops books are included,
-#                    ;      and also, we have seen failure messages on linux
-#                    ;      (but not Mac) such as
-#                    ;        /lusr/bin/bash: line 1: 25654 Bus error
-#                    ;      without any actual certification failure.  But if
-#                    ;      you follow "make -j n regression-fast" with "make -j
-#                    ;      n regression", you may get some nice speed-up.)
-#                    ;  (2) This target uses variable ACL2, with default value
-#                    ;      "acl2", so it is probably a good idea to run with
-#                    ;      explicit setting ACL2=<path_to_ACL2>.
-#                    ;  [end of warnings])
-#                    ; Certify a substantial portion of the books that would be
-#                    ; certified by `make regression', but with better
-#                    ; parallelism.  We have used this with option "-j 24" to
-#                    ; obtain over a 12x speedup.  Note to those who use
-#                    ; "alpha" versions of ACL2: You may want to update
-#                    ; books/Makefile-fast occasionally; just follow
-#                    ; instructions in books/regression-targets to update that
-#                    ; file first and then update books/Makefile-fast as follows:
+#                    ; (WARNING: This target uses variable ACL2, with default value
+#                    ;      "acl2", so it is probably a good idea to run after
+#                    ;      explicitly setting ACL2=<path_to_ACL2>.
+#                    ;      End of warning.)
+#                    ; Certify a substantial portion of the books that
+#                    ; would be certified by `make regression', but
+#                    ; with better parallelism.  We have used this
+#                    ; with option "-j 24" to obtain over a 12x
+#                    ; speedup.  This target assumes that
+#                    ; books/Makefile-fast is up-to-date; if you are
+#                    ; using an "alpha" version, just follow
+#                    ; instructions in books/regression-targets to
+#                    ; update that file first and then update
+#                    ; books/Makefile-fast as follows:
 #                    ;   cd books/
 #                    ;   ./cert.pl -s Makefile-fast --targets regression-targets -b .
 #   make clean-books ; Remove certificate files, object files, log files,
@@ -200,10 +193,10 @@ ACL2_VERSION = v5-0
 
 # The variable NONSTD should be defined for the non-standard version and not
 # for the standard version.  Non-standard ACL2 images will end in saved_acl2r
-# rather than saved_acl2.  ACL2_HONS, ACL2_PAR, and ACL2_WAG (for
+# rather than saved_acl2.  ACL2_HONS, ACL2_PAR, ACL2_DEVEL, and ACL2_WAG (for
 # feature write-arithmetic-goals) are similar (with suffixes h,
-# p, and w, resp., rather than r), but for the experimental hons and parallel
-# versions and the feature that writes out arithmetic lemma data to
+# p, d, and w, resp., rather than r), but for the experimental hons and
+# parallel versions and the feature that writes out arithmetic lemma data to
 # ~/write-arithmetic-goals.lisp (surely only of interest to implementors!).
 
 # DO NOT EDIT ACL2_SUFFIX!  Edit the above-mentioned three variables instead.
@@ -217,6 +210,9 @@ ifdef ACL2_PAR
 endif
 ifdef ACL2_WAG
 	ACL2_SUFFIX := $(ACL2_SUFFIX)w
+endif
+ifdef ACL2_DEVEL
+	ACL2_SUFFIX := $(ACL2_SUFFIX)d
 endif
 ifdef NONSTD
 	ACL2_SUFFIX := $(ACL2_SUFFIX)r
@@ -291,8 +287,9 @@ endif
 ifdef ACL2_PAR
 	sources := $(sources) multi-threading-raw.lisp parallel-raw.lisp futures-raw.lisp
 endif
-# No change to sources for ACL2_WAG
+# No change to sources for ACL2_DEVEL or ACL2_WAG
 
+# Top target:
 all: large
 
 .PHONY: acl2r
@@ -316,6 +313,9 @@ acl2r.lisp:
 	fi
 	if [ "$(ACL2_PAR)" != "" ] ; then \
 	echo '(or (member :acl2-par *features*) (push :acl2-par *features*))' >> acl2r.lisp ;\
+	fi
+	if [ "$(ACL2_DEVEL)" != "" ] ; then \
+	echo '(or (member :acl2-devel *features*) (push :acl2-devel *features*))' >> acl2r.lisp ;\
 	fi
 	if [ "$(ACL2_WAG)" != "" ] ; then \
 	mv -f ~/write-arithmetic-goals.lisp.old ; \
@@ -755,6 +755,10 @@ large-acl2r:
 large-acl2h:
 	$(MAKE) large ACL2_HONS=h
 
+.PHONY: large-acl2d
+large-acl2d:
+	$(MAKE) large ACL2_HONS=d
+
 .PHONY: large-acl2p
 large-acl2p:
 	$(MAKE) large ACL2_PAR=p
@@ -816,7 +820,7 @@ regression-hons-only: hons-check
 # variable ACL2 is bound.
 regression-hons:
 	$(MAKE) regression-hons-only
-	$(MAKE) regression
+	$(MAKE) regression HONS_P=t
 
 .PHONY: regression-fast
 regression-fast:
@@ -855,6 +859,32 @@ certify-books-short:
 
 .PHONY: certify-books-test
 certify-books-test: certify-books-fresh
+
+# The following target assumes that we are using an image built with
+# ACL2_DEVEL set.
+.PHONY: devel-check
+devel-check:
+	@counter=0 ; \
+	while [ t ] ;\
+	do \
+	echo "(chk-new-verified-guards $$counter) ..." ;\
+	echo "(chk-new-verified-guards $$counter)" > workxxx.devel-check ;\
+	$(ACL2) < workxxx.devel-check > devel-check.out ;\
+	if [ "`fgrep CHK-NEW-VERIFIED-GUARDS-COMPLETE devel-check.out`" ] ; then \
+		rm -f workxxx.devel-check devel-check.out ;\
+		echo 'SUCCESS for devel-check' ;\
+		exit 0 ;\
+	fi ;\
+	if [ "`fgrep CHK-NEW-VERIFIED-GUARDS-SUCCESS devel-check.out`" ] ; then \
+		rm -f workxxx.devel-check devel-check.out ;\
+		counter=`expr $$counter + 1` ;\
+	else \
+		echo '**FAILED** devel-check: output log follows:' ;\
+		cat devel-check.out ;\
+		rm -f workxxx.devel-check devel-check.out ;\
+		exit 1 ;\
+	fi \
+	done
 
 # The next two targets can be used with certify-books-test to run the
 # test with infix syntax output.  Just do
@@ -926,7 +956,7 @@ clean-doc:
 
 .PHONY: clean-books
 clean-books:
-	cd books ; $(MAKE) $(ACL2_IGNORE) clean ; $(MAKE) $(ACL2_IGNORE) clean-hons
+	cd books ; $(MAKE) $(ACL2_IGNORE) HONS_P=t clean ; $(MAKE) $(ACL2_IGNORE) clean-hons
 
 .PHONY: clean-books-nonstd
 clean-books-nonstd:

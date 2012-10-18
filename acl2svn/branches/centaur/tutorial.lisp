@@ -68,6 +68,9 @@
   * ``~il[|A Walking Tour of ACL2| A Walking Tour]'' (1 hour) provides an
   overview of the theorem prover.
 
+  * The external site ~url[http://tryacl2.org] provides interactive lessons to
+  get you started using ACL2.
+
   * ``~il[introduction-to-the-theorem-prover Introduction to the Theorem Prover]''
   (10-40 hours) provides instruction on how to interact with the system.
   Unlike the three documents above, this document expects you to ~em[think]!  It

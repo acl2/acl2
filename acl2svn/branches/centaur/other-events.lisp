@@ -3778,8 +3778,9 @@
   a ~ilc[keyword-value-listp], i.e., an alternating list of keywords and values
   starting with a keyword.  In this case ~c[((fn x1 ... xn) => val)] must be a
   legal signature as described above.  The legal keywords in ~c[k] are
-  ~c[:GUARD] and ~c[:FORMALS].  The value following ~c[:FORMALS] is to
-  be the list of formal parameters of ~c[fn], while the value following
+  ~c[:GUARD] and ~c[:FORMALS] (except that for ACL2(r), also see the remark
+  about ~c[:CLASSICALP] later in this topic).  The value following ~c[:FORMALS]
+  is to be the list of formal parameters of ~c[fn], while the value following
   ~c[:GUARD] is a term that is to be the ~il[guard] of ~c[fn].  Note that this
   guard is never actually evaluated, and is not subject to the guard
   verification performed on functions introduced by ~ilc[defun]
@@ -3824,7 +3825,12 @@
   ~ev[]
   specifies that ~c[names] is either the name of a single-threaded object or
   else is a list of such names.  Every name in ~c[names] must have been
-  previously defined as a stobj via ~ilc[defstobj] or ~ilc[defabsstobj].~/")
+  previously defined as a stobj via ~ilc[defstobj] or ~ilc[defabsstobj].
+
+  As promised above, we conclude with a remark about an additional keyword,
+  ~c[:CLASSICALP], that is legal for ACL2(r) (~pl[real]).  The value of this
+  keyword must be ~c[t] (the default) or ~c[nil], indicating respectively
+  whether ~c[fn] is classical or not.~/")
 
 (defconst *generic-bad-signature-string*
   "The object ~x0 is not a legal signature.  A basic signature is of one of ~
@@ -3834,7 +3840,7 @@
 
 (defconst *signature-keywords*
   '(:GUARD
-    #+:non-standard-analysis :CLASSICAL
+    #+:non-standard-analysis :CLASSICALP
     :STOBJS :FORMALS))
 
 (defun duplicate-key-in-keyword-value-listp (l)
@@ -3955,6 +3961,17 @@
                     signature."
                    x)
               nil nil nil nil nil))
+         #+:non-standard-analysis
+         ((not (booleanp (cadr (assoc-keyword :CLASSICALP
+
+; If :CLASSICALP is not bound in kwd-value-list, then the above test reduces to
+; (not (booleanp nil)), which is false, which is appropropriate.
+
+                                              kwd-value-list))))
+          (mv (msg "The object ~x0 is not a legal signature.  The value of ~
+                    :CLASSICALP keyword must be Boolean; see :DOC signature."
+                   x)
+              nil nil nil nil nil))
          (t
           (let* ((formals-tail (assoc-keyword :FORMALS kwd-value-list))
                  (formals (if formals-tail
@@ -3994,6 +4011,16 @@
           (mv (msg "The object ~x0 is not a legal signature.  The :FORMALS ~
                     keyword is only legal for the newer style of signature; ~
                     see :DOC signature."
+                   x)
+              nil nil nil nil nil))
+         #+:non-standard-analysis
+         ((not (booleanp (cadr (assoc-keyword :CLASSICALP
+
+; See comment above about :CLASSICALP.
+
+                                              kwd-value-list))))
+          (mv (msg "The object ~x0 is not a legal signature.  The value of ~
+                    :CLASSICALP keyword must be Boolean; see :DOC signature."
                    x)
               nil nil nil nil nil))
          (t
@@ -5745,10 +5772,27 @@
 ;; implicitly taken to be classical, so a non-classical witness
 ;; function presents a (non-obvious) signature violation.
 
-(defun bad-signature-alist (insigs udf-fns wrld)
+(defun bad-signature-alist (insigs kwd-value-list-lst udf-fns wrld)
+
+; Warning: If you change this function, consider changing the message printed
+; by any function that uses the result of this function.
+
+; For ACL2 (as opposed to ACL2(r)), we do not use kwd-value-list-lst.  It is
+; convenient though to keep it as a formal, to avoid proliferation of
+; #-:non-standard-analysis readtime conditionals.  We are tempted to declare
+; kwd-value-list-lst as IGNOREd, in order to avoid the complaint that
+; kwd-value-list-lst is an irrelevant formal.  However, ACL2 then complains
+; because of the recursive calls of this function.  Fortunately, declaring
+; kwd-value-list-lst IGNORABLE also turns off the irrelevance check.
+
+  #-:non-standard-analysis
+  (declare (ignorable kwd-value-list-lst))
   (cond ((null insigs) nil)
         ((member-eq (caar insigs) udf-fns)
-         (bad-signature-alist (cdr insigs) udf-fns wrld))
+         (bad-signature-alist (cdr insigs)
+                              (cdr kwd-value-list-lst)
+                              udf-fns
+                              wrld))
         (t (let* ((declared-insig (car insigs))
                   (fn (car declared-insig))
                   (actual-insig (list fn
@@ -5758,10 +5802,40 @@
              (cond
               ((and (equal-insig declared-insig actual-insig)
                     #+:non-standard-analysis
-                    (classical-fn-list-p (list fn) wrld))
-               (bad-signature-alist (cdr insigs) udf-fns wrld))
+
+; If the function is specified to be classical, then it had better have a
+; classical witness.  But in fact the converse is critical too!  Consider the
+; following example.
+
+;   (encapsulate
+;    ((g (x) t :classicalp nil))
+;    (local (defun g (x) x))
+;    (defun f (x)
+;      (g x)))
+
+; This is clearly not what we intend: a classical function (f) that depends
+; syntactically on a non-classical function (g).  We could then probably prove
+; nil (though we haven't done it) by deriving a property P about f that fails
+; for some non-classical function h, then deriving the trivial corollary that P
+; holds for g in place of f (since f and g are equal), and then functionally
+; instantiating this corollary for g mapped to h.  But even if such a proof
+; attempt were somehow to fail, we prefer not to allow the situation above,
+; which seems bound to lead to unsoundness eventually!
+
+                    (eq (classicalp fn wrld)
+                        (let ((tail (assoc-keyword :classicalp
+                                                   (car kwd-value-list-lst))))
+                          (cond (tail (cadr tail))
+                                (t t)))))
+               (bad-signature-alist (cdr insigs)
+                                    (cdr kwd-value-list-lst)
+                                    udf-fns
+                                    wrld))
               (t (cons (list fn declared-insig actual-insig)
-                       (bad-signature-alist (cdr insigs) udf-fns wrld))))))))
+                       (bad-signature-alist (cdr insigs)
+                                            (cdr kwd-value-list-lst)
+                                            udf-fns
+                                            wrld))))))))
 
 (defmacro if-ns (test tbr fbr ctx)
 
@@ -5790,10 +5864,15 @@
              (cons
               (if-ns (equal-insig dcl-insig act-insig)
                      (msg
-                      "The signature you declared for ~x0 is ~x1, but ~
-                       your local witness for the function is not classical."
+                      "The signature you declared for ~x0 and the local ~
+                       witness for that function do not agree on whether the ~
+                       function is classical.  If you are seeing this error ~
+                       in the context of an attempt to admit a call of ~
+                       DEFUN-SK without a :CLASSICALP keyword supplied, then ~
+                       a solution is likely to be the addition of :CLASSICALP ~
+                       ~x1 to the DEFUN-SK form."
                       fn
-                      (unparse-signature dcl-insig))
+                      nil)
                      (msg
                       "The signature you declared for ~x0 is ~x1, but ~
                        the signature of your local witness for it is ~
@@ -5820,7 +5899,7 @@
   (cond ((null alist) nil)
         (t (union-eq (caar alist) (union-eq-cars (cdr alist))))))
 
-(defun chk-acceptable-encapsulate2 (insigs wrld ctx state)
+(defun chk-acceptable-encapsulate2 (insigs kwd-value-list-lst wrld ctx state)
 
 ; Wrld is a world alist created by the execution of an event list.  Insigs is a
 ; list of internal form function signatures.  We verify that they are defined
@@ -5850,7 +5929,8 @@
      (declare (ignore val))
      (mv-let
       (erp2 val state)
-      (let ((bad-sig-alist (bad-signature-alist insigs udf-fns wrld)))
+      (let ((bad-sig-alist (bad-signature-alist insigs kwd-value-list-lst
+                                                udf-fns wrld)))
         (cond
          (bad-sig-alist
           (er soft ctx
@@ -6312,7 +6392,7 @@
   imagine that the ~il[events] under an ~c[encapsulate], ~c[progn], or
   ~c[certify-book] form were flattened into a list of events that were then
   submitted to ACL2 up to the point of failure.  This would put us in the state
-  in which the original failed event had failed, so we could now submit that
+  in which the original failed event had failed, so we could now replay that
   failed event and try modifying it, or first proving additional events, in
   order to get it admitted.
 
@@ -8248,6 +8328,7 @@
                   (((name . &) . &)
                    name))))
       (and name
+           (symbolp name)
            (not (new-namep name wrld))
            (let* ((wrld-tail (lookup-world-index
                               'event
@@ -8434,6 +8515,21 @@
                                  (t (conjoin stobj-terms)))
                            *t* wrld-acc)
            wrld ctx state)))))))
+
+(defun intro-udf-non-classicalp (insigs kwd-value-list-lst wrld)
+  (cond ((endp insigs) wrld)
+        (t (let* ((insig (car insigs))
+                  (fn (car insig))
+                  (kwd-value-list (car kwd-value-list-lst))
+                  (tail (assoc-keyword :CLASSICALP kwd-value-list))
+                  (val (if tail (cadr tail) t)))
+             (intro-udf-non-classicalp (cdr insigs)
+                                       (cdr kwd-value-list-lst)
+                                       (putprop-unless fn
+                                                       'classicalp
+                                                       val
+                                                       t ; default
+                                                       wrld))))))
 
 (defun assoc-proof-supporters-alist (sym alist)
   (cond ((endp alist) nil)
@@ -8742,7 +8838,8 @@
                    (pprogn
                     (print-encapsulate-msg2 insigs ev-lst state)
                     (er-progn
-                     (chk-acceptable-encapsulate2 insigs wrld2 ctx state)
+                     (chk-acceptable-encapsulate2 insigs kwd-value-list-lst
+                                                  wrld2 ctx state)
                      (let* ((pass1-known-package-alist
                              (global-val 'known-package-alist wrld2))
                             (new-ev-lst
@@ -8779,7 +8876,11 @@
                            (er-let*
                             ((wrld3a (intro-udf-guards insigs
                                                        kwd-value-list-lst wrld3
-                                                       wrld3 ctx state)))
+                                                       wrld3 ctx state))
+                             #+:non-standard-analysis
+                             (wrld3a (value (intro-udf-non-classicalp
+                                             insigs kwd-value-list-lst
+                                             wrld3a))))
                             (install-event
                              t
                              (or new-event-form event-form)
@@ -8866,7 +8967,10 @@
                                   state)
                     (er-let*
                      ((wrld3a (intro-udf-guards insigs kwd-value-list-lst
-                                                wrld3 wrld3 ctx state)))
+                                                wrld3 wrld3 ctx state))
+                      #+:non-standard-analysis
+                      (wrld3a (value (intro-udf-non-classicalp
+                                      insigs kwd-value-list-lst wrld3a))))
                      (install-event t
                                     (if expansion-alist
                                         new-event-form
@@ -18627,6 +18731,8 @@
 (defmacro defun-sk (name args body
                          &key
                          doc quant-ok skolem-name thm-name rewrite strengthen
+                         #+:non-standard-analysis
+                         (classicalp 't classicalp-p)
                          (witness-dcls
                           '((declare (xargs :non-executable t)))))
 
@@ -18894,6 +19000,12 @@
   Some distracting and unimportant warnings are inhibited during
   ~c[defun-sk].
 
+  Note for ACL2(r) users (~pl[real]): In ACL2(r), the keyword ~c[:CLASSICALP]
+  is also supported.  Its legal values are ~c[t] (the default) and ~c[nil], and
+  it determines whether or not (respectively) ACL2(r) will consider ~c[fn] to
+  be a classical function.  It must be the case that the value is
+  ~c[t] (perhaps implicitly, by default) if and only if ~c[body] is classical.
+
   Note that this way of implementing quantifiers is not a new idea.  Hilbert
   was certainly aware of it 60 years ago!  Also
   ~pl[conservativity-of-defchoose] for a technical argument that justifies the
@@ -18941,7 +19053,10 @@
          ((,skolem-name ,args
                          ,(if (= (length bound-vars) 1)
                               (car bound-vars)
-                            (cons 'mv bound-vars))))
+                            (cons 'mv bound-vars))
+                         #+:non-standard-analysis
+                         ,@(and classicalp-p
+                                `(:classicalp ,classicalp))))
          (local (in-theory '(implies)))
          (local
           (defchoose ,skolem-name ,bound-vars ,args
@@ -22129,6 +22244,29 @@
   for the stobj.  The executable definition is applied in raw Lisp to a live
   stobj, which is an array object associated with the given stobj name.
 
+  We can picture a sequence of updates to corresponding abstract and concrete
+  stobjs as follows.  Initially in this picture, ~c[st$a0] and ~c[st$c0] are a
+  corresponding abstract and concrete stobj (respectively).  Then an update,
+  ~c[u1], is applied with ~c[:LOGIC] and ~c[:EXEC] functions ~c[u$a1] and
+  ~c[u$c1], respectively.  The resulting abstract and concrete stobj, ~c[st$a1]
+  and ~c[st$c1], correspond as before.  Then a second update, ~c[u2], is
+  applied with ~c[:LOGIC] and ~c[:EXEC] functions ~c[u$a2] and ~c[u$c2],
+  respectively ~-[] again preserving the correspondence.  And so on.
+
+  ~bv[]
+  Abstract               u$a1       u$a2       u$a3
+  (:logic)         st$a0  --> st$a1  --> st$a2  -->   ...
+
+                     ^          ^          ^               ^
+  Correspondence     |          |          |          ...  |
+                     v          v          v               v
+
+                         u$c1       u$c2       u$c3
+  Concrete         st$c0  --> st$c1  --> st$c2  -->   ...
+  (:exec)
+  ~ev[]
+
+  We conclude this introduction with some remarks about implementation.
   Consider an abstract stobj ~c[st] with corresponding concrete stobj ~c[st$c].
   The live stobjs for ~c[st] and ~c[st$c] have the same structure, but are
   distinct arrays.  Indeed, the raw Lisp creator function for ~c[st$c] is
@@ -25493,7 +25631,9 @@
 
   ; Set trace evisc tuple to restrict print-level to 3 and print-length to 4,
   ; while hiding the logical world and suitably printing stobjs even if trace$
-  ; option ``:hide nil'' is used.
+  ; option ``:hide nil'' is used.  (Note: calling ~c[trace-evisceration-alist]
+  ; directly requires removing this function as `untouchable', which requires a
+  ; trust tag; ~pl[remove-untouchable].)
   (set-trace-evisc-tuple
    (evisc-tuple 3 4 (trace-evisceration-alist state) nil)
    state)~/

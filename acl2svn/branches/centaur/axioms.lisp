@@ -7644,15 +7644,14 @@
   of a rule class object to specify how that elegant statement is to be
   interpreted as a rule.  For the rule class object to be well-formed, its
   (defaulted) ~c[:]~ilc[corollary], ~c[term], must follow from ~c[thm].  Unless
-  ~c[term] is trivially implied by ~c[thm], using little more than
-  propositional logic, the formula ~c[(implies thm term)] is submitted to the
-  theorem prover and the proof attempt must be successful.  During that proof
-  attempt the values of ~c[:]~ilc[hints], ~c[:]~ilc[instructions], and
-  ~c[:]~ilc[otf-flg], as provided in the rule class object, are provided as
-  arguments to the prover.  Such auxiliary proofs give the sort of output that
-  one expects from the prover.  However, as noted above, corollaries that
-  follow trivially are not submitted to the prover; thus, such corollaries
-  cause no prover output.
+  ~c[term] follows trivially from ~c[thm] using little more than propositional
+  logic, the formula ~c[(implies thm term)] is submitted to the theorem prover
+  and the proof attempt must be successful.  During that proof attempt the
+  values of ~c[:]~ilc[hints], ~c[:]~ilc[instructions], and ~c[:]~ilc[otf-flg],
+  as provided in the rule class object, are provided as arguments to the
+  prover.  Such auxiliary proofs give the sort of output that one expects from
+  the prover.  However, as noted above, corollaries that follow trivially are
+  not submitted to the prover; thus, such corollaries cause no prover output.
 
   Note that before ~c[term] is stored, all calls of macros in it are expanded
   away.  ~l[trans].
@@ -7994,8 +7993,6 @@
   expression in which a variable is compared successively to a sequence of
   symbols.  Only the ~i[first] big switch equation for a given function symbol
   ~c[fn] is stored!
-
-  Note on the MV-NTH Synonym Forms: These forms 
 
   To see what the tau system ``knows'' about a given function symbol
   ~pl[tau-data].  To see the entire tau data base, ~pl[tau-data-base].
@@ -12211,10 +12208,11 @@
   (declare (xargs :guard (and (true-listp lst)
                               (integerp n)
                               (<= 0 n))))
-  (let ((lng (len lst)))
+  (let ((lng (len lst))
+        (n (nfix n)))
     (if (<= lng n)
         nil
-        (take (- lng n) lst))))
+      (take (- lng n) lst))))
 
 #-acl2-loop-only
 (defmacro with-output (&rest args)
@@ -12367,7 +12365,7 @@
   Warning: ~c[With-output] has no effect in raw Lisp, and hence is disallowed
   in function bodies.  However, you can probably get the effect you want as
   illustrated below, where ~c[<form>] must return an error triple
-  ~c[(mv erp val state)]; ~pl[ld].
+  ~c[(mv erp val state)]; ~pl[ld] and ~pl[error-triples].
   ~bv[]
   Examples avoiding with-output, for use in function definitions:
 
@@ -13475,13 +13473,12 @@
   ~il[state], something that very few users will probably want to do.
   ~l[state].~/
 
-  ~c[Er-progn] is used much the way that ~ilc[progn] is used in Common
-  Lisp, except that it expects each form within it to evaluate to an
-  ``error triple'' of the form ~c[(mv erp val state)].  The first such
-  form, if any, that evaluates to such a triple where ~c[erp] is not
-  ~c[nil] yields the error triple returned by the ~c[er-progn].  If
-  there is no such form, then the last form returns the value of the
-  ~c[er-progn] form.
+  ~c[Er-progn] is used much the way that ~ilc[progn] is used in Common Lisp,
+  except that it expects each form within it to evaluate to an ``error triple''
+  of the form ~c[(mv erp val state)]; ~pl[error-triples].  The first such form,
+  if any, that evaluates to such a triple where ~c[erp] is not ~c[nil] yields
+  the error triple returned by the ~c[er-progn].  If there is no such form,
+  then the last form returns the value of the ~c[er-progn] form.
 
   ~bv[]
   General Form:
@@ -16842,16 +16839,16 @@
   ~st[Remark on system functions.]  There may be times when you want to apply
   ~c[verify-termination] (and also, perhaps, ~ilc[verify-guards]) to functions
   that are predefined in ACL2.  It may be necessary in such cases to modify the
-  system code first.  See
+  system code first.  See Part II of
   ~url[http://www.cs.utexas.edu/users/moore/acl2/open-architecture/] for a
   discussion of the process for contributing updates to the system code and
   ~il[books] with such ~c[verify-termination] or ~ilc[verify-guards]
-  ~il[events].  To see which built-in ~c[:]~ilc[program] mode functions have
-  already received such treatment, see directory ~c[books/system]; for example,
-  use the Unix utility `~c[grep]' to search:
-  ~bv[]
-  grep '(verify-' books/system/*.lisp
-  ~ev[]
+  ~il[events], perhaps resulting in more system functions being built-in as
+  ~il[guard]-verified.  To see which built-in functions have already received
+  such treatment, see directory ~c[books/system]; or, evaluate the constant
+  ~c[*system-verify-guards-alist*], which associates a distributed book name
+  with a list of functions whose guard-verification is proved by including that
+  book.  See the above URL for more details.
 
   Note that if ~c[fn1] is already in ~c[:]~ilc[logic] mode, then the
   ~c[verify-termination] call has no effect.  It is generally considered to be
@@ -18815,11 +18812,11 @@
   table, ~c[key-term] and ~c[value-term], if present, are arbitrary terms
   involving (at most) the single variable ~ilc[world], ~c[op], if present, is
   one of the table operations below, and ~c[term], if present, is a term.
-  ~c[Table] returns an ACL2 ``error triple'' (~pl[programming-with-state]).
-  The effect of ~c[table] on ~ilc[state] depends on ~c[op] and how many
-  arguments are presented.  Some invocations actually have no effect on the
-  ACL2 ~il[world] and hence an invocation of ~c[table] is not always an
-  ``event''.  We explain below, after giving some background information.
+  ~c[Table] returns an ACL2 ``error triple'' (~pl[error-triples]).  The effect
+  of ~c[table] on ~ilc[state] depends on ~c[op] and how many arguments are
+  presented.  Some invocations actually have no effect on the ACL2 ~il[world]
+  and hence an invocation of ~c[table] is not always an ``event''.  We explain
+  below, after giving some background information.
 
   ~b[Important Note:] The ~c[table] forms above are calls of a macro that
   expand to involve the special variable ~ilc[state].  This will prevent you
@@ -19188,10 +19185,33 @@
   made to the ~il[world] by the superior ~c[encapsulate], to permit
   ~c[an-element] to be used as a function symbol in ~c[thm1].
 
-  Finally, we note that an ~ilc[encapsulate] event is redundant if and only if
-  a syntactically identical ~ilc[encapsulate] has already been executed under
-  the same ~ilc[default-defun-mode], ~ilc[default-ruler-extenders], and
-  ~ilc[default-verify-guards-eagerness].  ~l[redundant-events].~/"
+  The typical way for an ~c[encapsulate] event to be redundant is when a
+  syntactically identical ~c[encapsulate] has already been executed under the
+  same ~ilc[default-defun-mode], ~ilc[default-ruler-extenders], and
+  ~ilc[default-verify-guards-eagerness].  More generally, the ~c[encapsulate]
+  events need not be syntactically identical, but rather, need only to
+  correspond in the following sense: they contain the same number of top-level events
+  ~-[] let ~c[k] be that number ~-[] and for each ~c[i < k], the ~c[i]th
+  top-level events ~c[E1] and ~c[E2] from the earlier and current
+  ~c[encapsulate]s have one of the following properties.
+
+  o ~c[E1] and ~c[E2] are equal; or
+
+  o ~c[E1] is of the form ~c[(record-expansion E2 ...)]; or else
+
+  o ~c[E1] and ~c[E2] are equal after replacing each ~ilc[local] sub-event by
+  ~c[(local (value-triple :elided))], where a sub-event of an event ~c[E] is
+  either ~c[E] itself, or a sub-event of a constituent event of ~c[E] in the
+  case that ~c[E] is a call of ~ilc[with-output], ~ilc[with-prover-time-limit],
+  ~ilc[with-prover-step-limit], ~c[record-expansion], ~ilc[time$], ~ilc[progn],
+  ~ilc[progn!], or ~c[encapsulate] itself.
+
+  Remark for ACL2(r) (~pl[real]).  For ACL2(r), ~ilc[encapsulate] can be used
+  to introduce classical and non-classical functions, as determined by the
+  signatures; ~pl[signature].  Those marked as classical (respectively
+  non-classical) must have classical (respectively, non-classical) ~ilc[local]
+  witness functions.  A related requirement applies to functional
+  instantiation; ~pl[lemma-instance].~/"
 
 ; Warning: See the Important Boot-Strapping Invariants before modifying!
 
@@ -19616,9 +19636,9 @@
   a ~ilc[local] event arising from ~c[make-event] expansion is replaced in that
   expansion by ~c[(local (value-triple :ELIDED))].
 
-  Finally, we note that ACL2 extends the notion of ``make-event expansion'' to
-  the case that a call of ~c[make-event] is found in the course of
-  macroexpansion.  We illustrate with the following example.
+  We note that ACL2 extends the notion of ``make-event expansion'' to the case
+  that a call of ~c[make-event] is found in the course of macroexpansion.  The
+  following example illustrates this point.
   ~bv[]
   (encapsulate
    ()
@@ -26170,7 +26190,8 @@
   ~ev[]
   Note that the first result is indented by one space.  This is ACL2's way to
   indicate that the ~ilc[assign] expression returned an ``error triple'' and
-  that no error was signalled.  We discuss error triples in more detail below.
+  that no error was signalled.  We discuss error triples in more detail below;
+  also ~pl[error-triples].
 
   As illustrated above, the output signatures of the utilities for assigning to
   state globals differ from each other as follows: ~ilc[f-put-global] returns
@@ -26245,7 +26266,8 @@
   triple''.  (Whether it is treated as an error triple depends on the
   programmer.)  Error triples are often denoted ~c[(mv erp val state)], and
   common ACL2 programming idioms treat ~c[erp] as a flag indicating whether an
-  error is being signalled and ~c[val] as the ``value'' computed.
+  error is being signalled and ~c[val] as the ``value'' computed.  Also
+  ~pl[error-triples].
 
   Even ACL2 users who are not programmers encounter error triples, because
   these are the values returned by evaluation of ACL2 ~il[events].  Consider
@@ -26600,11 +26622,27 @@
   a common ACL2 programming idiom~/
 
   When evaluation returns three values, where the first two are ordinary
-  objects and the third is the ACL2 ~il[state], the result may be called an
-  ``error triple''.  If an error triple is ~c[(mv erp val state)], we think of
-  ~c[erp] as an error flag and ~c[val] as the returned value.
+  (non-~il[stobj]) objects and the third is the ACL2 ~il[state], the result may
+  be called an ``error triple''.  If an error triple is ~c[(mv erp val state)],
+  we think of ~c[erp] as an error flag and ~c[val] as the returned value.
+  By default, if the result of evaluating a top-level form is an error triple
+  ~c[(mv erp val state)], then that result is not printed if ~c[erp] is
+  non-~c[nil] or if ~c[val] is the keyword ~c[:INVISIBLE], and otherwise
+  ~c[val] is printed with a preceding space.  For example:
+  ~bv[]
+  ACL2 !>(+ 3 4) ; ordinary value
+  7
+  ACL2 !>(mv nil (+ 3 4) state) ; error triple, error component of nil
+   7
+  ACL2 !>(mv t (+ 3 4) state) ; error triple, non-nil error component
+  ACL2 !>(mv nil :invisible state) ; special case for :INVISIBLE
+  ACL2 !>
+  ~ev[]
+
   ~l[programming-with-state] for a discussion of error triples and how to
-  program with them.~/~/")
+  program with them.  Also ~pl[ld-error-triples] and ~pl[ld] for a discussion
+  of the value ~c[:COMMAND-CONVENTIONS] for keyword
+  ~c[:LD-POST-EVAL-PRINT].~/~/")
 
 (defun update-nth (key val l)
 
@@ -28897,17 +28935,18 @@
   value is a single ordinary object (i.e. not multiple values, and not
   ~il[state] or any other ~il[stobj]); ~c[set-vari], if supplied, is a function
   with ~il[signature] ~c[((set-vari * state) => state)]; and ~c[body] is an
-  expression that evaluates to an error triple.  Each ~c[formi] is evaluated in
-  order, starting with ~c[form1], and with each such binding the state global
-  variable ~c[vari] is bound to the value of ~c[formi], sequentially in the
-  style of let*.  More precisely, then meaning of this form is to set (in
-  order) the global values of the indicated ~il[state] global variables
-  ~c[vari] to the values of ~c[formi] using ~ilc[f-put-global], execute
-  ~c[body], restore the ~c[vari] to their previous values (but see the
-  discussion of setters below), and return the triple produced by body (with
-  its state as modified by the restoration).  The restoration is guaranteed
-  even in the face of aborts.  The ``bound'' variables may initially be unbound
-  in state and restoration means to make them unbound again.
+  expression that evaluates to an error triple (~pl[error-triples]).  Each
+  ~c[formi] is evaluated in order, starting with ~c[form1], and with each such
+  binding the state global variable ~c[vari] is bound to the value of
+  ~c[formi], sequentially in the style of ~ilc[let*].  More precisely, then
+  meaning of this form is to set (in order) the global values of the indicated
+  ~il[state] global variables ~c[vari] to the values of ~c[formi] using
+  ~ilc[f-put-global], execute ~c[body], restore the ~c[vari] to their previous
+  values (but see the discussion of setters below), and return the triple
+  produced by body (with its state as modified by the restoration).  The
+  restoration is guaranteed even in the face of aborts.  The ``bound''
+  variables may initially be unbound in state and restoration means to make
+  them unbound again.
 
   Still referring to the General Form above, let ~c[old-vali] be the value of
   state global variable ~c[vari] at the time ~c[vari] is about to be assigned
@@ -34983,9 +35022,6 @@
 
 ;   read-idate - used by write-acl2-html, so can't be untouchable?
 
-    read-acl2-oracle read-acl2-oracle@par
-    get-timer     ; might not need to be an untouchable function
-
     update-user-stobj-alist
 
     big-n
@@ -35006,6 +35042,9 @@
     f-put-global@par ; for #+acl2-par (modifies state under the hood)
 
     with-live-state ; see comment in that macro
+
+    stobj-evisceration-alist ; returns bad object
+    trace-evisceration-alist ; returns bad object
 
 ; We briefly included maybe-install-acl2-defaults-table, but that defeated the
 ; ability to call :puff.  It now seems unnecessary to include
@@ -42287,15 +42326,18 @@
 (progn
 
 (defun i-small (x)
+  (declare (xargs :guard t))
   (and (acl2-numberp x)
        (equal (standard-part x) 0)))
 
 (defun i-close (x y)
+  (declare (xargs :guard t))
   (and (acl2-numberp x)
        (acl2-numberp y)
        (i-small (- x y))))
 
 (defun i-large (x)
+  (declare (xargs :guard t))
   (and (acl2-numberp x)
        (not (equal x 0))
        (i-small (/ x))))
@@ -46706,9 +46748,9 @@ Lisp definition."
    (get-wormhole-status name state)
 
    ~c[Name] should be the name of a wormhole (~pl[wormhole]).  This function
-   returns an error triple of the form ~c[(mv nil s state)], where ~c[s] is the
-   status of the named wormhole.  The status is obtained by reading the oracle
-   in the ACL2 ~ilc[state].~/
+   returns an error triple (~pl[error-triples]) of the form
+   ~c[(mv nil s state)], where ~c[s] is the status of the named wormhole.  The
+   status is obtained by reading the oracle in the ACL2 ~ilc[state].~/
 
    This function makes the status of a wormhole visible outside the wormhole.
    But since this function takes ~ilc[state] and modifies it, the function may

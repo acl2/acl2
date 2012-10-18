@@ -2807,7 +2807,7 @@
                          lit
                          (('not x)
                           (mcons-term* 'if x *t* *nil*))
-                         (t (mcons-term* 'not lit)))))))
+                         (& (mcons-term* 'not lit)))))))
          (all-vars (all-vars term))
          (vars-hint (cdr (assoc-eq :vars hint-alist)))
          (prove-hint (if (assoc-eq :prove hint-alist)

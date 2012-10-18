@@ -2011,7 +2011,8 @@
 
 ; Warning: Keep this in sync with the definitions of
 ; safe-access-command-tuple-number and pseudo-command-landmarkp in
-; books/system/pseudo-good-worldp.lisp.
+; books/system/pseudo-good-worldp.lisp, and function
+; safe-access-command-tuple-form in the ACL2 sources.
 
 ; See make-command-tuple for a discussion of defun-mode/form.
 
@@ -2051,8 +2052,25 @@
       :program)))
 
 (defun access-command-tuple-form (x)
+
+; See also safe-access-command-tuple-form for a safe version (i.e., with guard
+; t).
+
   (let ((tmp (access command-tuple x :defun-mode/form)))
     (if (keywordp (car tmp))
+        (cdr tmp)
+      tmp)))
+
+(defun safe-access-command-tuple-form (x)
+
+; This is just a safe version of access-command-tuple-form.
+
+  (declare (xargs :guard t))
+  (let ((tmp (and (consp x)
+                  (consp (cdr x))
+                  (access command-tuple x :defun-mode/form))))
+    (if (and (consp tmp)
+             (keywordp (car tmp)))
         (cdr tmp)
       tmp)))
 
@@ -5512,17 +5530,12 @@
   it sets an entire table (using keyword ~c[:clear]) to its existing value;
   ~pl[table].
 
-  In most cases, an ~ilc[encapsulate] event is redundant if and only if a
+  The typical way for an ~ilc[encapsulate] event to be redundant is when a
   syntactically identical ~ilc[encapsulate] has already been executed under the
   same ~ilc[default-defun-mode], ~ilc[default-ruler-extenders], and
-  ~ilc[default-verify-guards-eagerness].  There are two rather obscure
-  exceptions to this rule.  One exception is relevant only if ~ilc[make-event]
-  is invoked in the earlier ~c[encapsulate]; in that case, it suffices that the
-  two ~c[encapsulate]s are equal after replacing each top-level sub-event of
-  the earlier ~c[encapsulate] by its ~ilc[make-event] expansion.  The other
-  exception is in the case of redefinition (~pl[ld-redefinition-action]), in
-  which case an attempt is made to ignore an earlier ~c[encapsulate] that has
-  already been superseded by redefinition.
+  ~ilc[default-verify-guards-eagerness].  The full criterion for redundancy of
+  ~c[encapsulate] events is more complex (~pl[encapsulate]); for example, it
+  ignores contents of ~ilc[local] ~il[events].
 
   An ~ilc[include-book] is redundant if the book has already been included.
 
@@ -7838,9 +7851,10 @@
 
   The keyword ~il[command] ~c[:ubu!] is the same as ~c[:]~ilc[ubu], but with
   related queries suppressed appropriately, and with a guarantee that it is
-  ``error-free.''  More precisely, the error triple returned by ~c[:ubu!]  will
-  always be of the form ~c[(mv nil val state)].  ~c[:]~ilc[Oops] will undo the
-  last ~c[:ubu!].  Also ~pl[ubu], ~pl[ubt], and ~pl[u].~/"
+  ``error-free.''  More precisely, the error triple (~pl[error-triples])
+  returned by ~c[:ubu!]  will always be of the form ~c[(mv nil val state)].
+  ~c[:]~ilc[Oops] will undo the last ~c[:ubu!].  Also ~pl[ubu], ~pl[ubt], and
+  ~pl[u].~/"
 
   (list 'ubt!-ubu!-fn :ubu cd 'state))
 
@@ -8064,9 +8078,15 @@
                (current-path-rev (reverse (global-val 'include-book-path
                                                       wrld))))
            (io? error nil state
-                (name book-path-rev current-path-rev)
+                (name book-path-rev current-path-rev wrld)
                 (pprogn
-                 (cond ((null book-path-rev)
+                 (cond ((and (null book-path-rev)
+                             (acl2-system-namep name wrld))
+                        (fms "Note: ~x0 has already been defined as a system ~
+                              name; that is, it is built into ACL2.~|~%"
+                             (list (cons #\0 name))
+                             (standard-co state) state nil))
+                       ((null book-path-rev)
                         (fms "Note: ~x0 was previously defined at the top ~
                               level~#1~[~/ of the book being certified~].~|~%"
                              (list (cons #\0 name)
@@ -16163,6 +16183,29 @@
            whose first element is :THEOREM, :INSTANCE, or~ ~
            :FUNCTIONAL-INSTANCE")))))
 
+(deflabel functional-instantiation-in-acl2r
+  :doc
+  ":Doc-Section Miscellaneous
+
+  additional requirements for ~c[:functional-instance] hints in ACL2(r)~/
+
+  This documentation topic relates to ACL2(r), the modification of ACL2 that
+  supports the real numbers (~pl[real]).
+
+  ~l[hints] and ~pl[lemma-instance] for a discussion of ~c[:use] hints that
+  employ the ~c[:functional-instance] keyword.  Here, we document additional
+  requirements for such hints that applies to ACL2(r).  We assume familiarity
+  with lemma instances; ~pl[lemma-instance].
+
+  (1) When functionally instantiating a non-classical formula, it is illegal
+  to use pseudo-lambda expressions in a lemma instance.
+
+  (2) A classical function symbol must be bound either to a classical function
+  symbol or to a lambda (or, if allowed, pseudo-lambda) expression with a
+  classical body.  Similarly, a non-classical function symbol must be bound
+  either to a non-classical function symbol or to a lambda (or, if allowed,
+  pseudo-lambda) expression with a non-classical body.~/~/")
+
 (deflabel lemma-instance
   :doc
   ":Doc-Section Miscellaneous
@@ -16253,6 +16296,9 @@
   of those instances would have to be proved.  However, for the sake of
   efficiency, ACL2 stores the fact that such an instantiated constraint has
   been proved and avoids it in future events.
+
+  Note that ACL2(r) (~pl[real]) imposes additional requirements for functional
+  instantiation.  ~l[functional-instantiation-in-acl2r].
 
   Obscure case for ~il[definition]s.  If the lemma instance refers to a
   ~c[:definition] ~il[rune], then it refers to the ~ilc[corollary] formula of
@@ -17292,7 +17338,7 @@
                 (prettyify-stobj-flags stobjs-out))
             (er@par soft ctx
               "The form ~x0 was expected to represent an ordinary value, but ~
-               it returns a tuple of the form ~x1. Note that Error triples ~
+               it returns a tuple of the form ~x1.  Note that error triples ~
                are not allowed in this feature in ACL2(p) (see :doc ~
                error-triples-and-parallelism)"
               uform
@@ -20560,17 +20606,18 @@
   then return a single non-~il[stobj] value, not an error triple, since
   ~c[state] is not one of the first seven variables shown in (a).
 
-  Note: Error triples are an ACL2 idiom for implementing ``errors.''  If a
-  computation returns ~c[(mv erp val state)] in a context in which ACL2 is
-  respecting the error triple convention (~pl[ld-error-triples] and
-  ~pl[ld-error-action]), then an error is deemed to have occurred if ~c[erp] is
-  non-~c[nil].  The computation is expected to have printed an appropriate
-  error message to ~ilc[state] and further computation is aborted.  On the
-  other hand, if a computation returns an error triple in which ~c[erp] is nil,
-  then ``value'' of the computation is taken to be the second component,
-  ~c[val], of the triple (along with the possibly modified ~ilc[state]), and
-  computation continues.  For more information about programming with error
-  triples, ~pl[programming-with-state].
+  Note: Error triples are an ACL2 idiom for implementing ``errors'';
+  ~pl[error-triples].  If a computation returns ~c[(mv erp val state)] in a
+  context in which ACL2 is respecting the error triple
+  convention (~pl[ld-error-triples] and ~pl[ld-error-action]), then an error is
+  deemed to have occurred if ~c[erp] is non-~c[nil].  The computation is
+  expected to have printed an appropriate error message to ~ilc[state] and
+  further computation is aborted.  On the other hand, if a computation returns
+  an error triple in which ~c[erp] is nil, then ``value'' of the computation is
+  taken to be the second component, ~c[val], of the triple (along with the
+  possibly modified ~ilc[state]), and computation continues.  For more
+  information about programming with error triples,
+  ~pl[programming-with-state].
 
   The function symbol cases are treated as abbreviations of the term
   ~c[(fn ID CLAUSE WORLD)],

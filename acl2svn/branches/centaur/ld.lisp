@@ -1055,9 +1055,7 @@
          (cond
           ((and (eq flg :command-conventions)
                 (ld-error-triples state)
-                (equal (length stobjs-out) 3)
-                (eq (car stobjs-out) nil)
-                (eq (caddr stobjs-out) 'state))
+                (equal stobjs-out *error-triple-sig*))
 
 ; We get here if we are following command-conventions and the form
 ; returned triple (mv erp val state).  Note that erp must be a
@@ -1985,7 +1983,7 @@
   Depending on ~ilc[ld-error-triples], ~c[ld] may interpret the result as an
   ``error.''  ~l[ld-error-triples].  We first discuss ~c[ld]'s behavior if no
   error signal is detected (either because none was sent or because ~c[ld] is
-  ignoring them because ~ilc[ld-error-triples] is nil).
+  ignoring them because ~ilc[ld-error-triples] is ~c[nil]).
 
   In the case of a non-erroneous result, ~c[ld] does two things: First, if the
   logical ~il[world] in the now current ~il[state] is different than the
@@ -1995,9 +1993,10 @@
   ~ilc[standard-co], but only if ~ilc[ld-post-eval-print] is not ~c[nil].  The
   result is printed as a list of (multiple) values unless
   ~ilc[ld-post-eval-print] is ~c[:command-conventions],
-  ~ilc[ld-error-triples] is t, and the result is an ``error triple'', i.e., of
-  the form ~c[(mv * * state)].  In that case, only the non-erroneous ``value''
-  component of the result is printed.  ~l[ld-post-eval-print].
+  ~ilc[ld-error-triples] is ~c[t], and the result is an ``error triple'', i.e.,
+  of the form ~c[(mv * * state)] (~pl[error-triples]).  In that case, only the
+  non-erroneous ``value'' component of the result is printed.
+  ~l[ld-post-eval-print].
 
   Whenever ~c[ld] prints anything (whether the input form, a query, or
   some results) it ``eviscerates'' it if ~c[ld-evisc-tuple] is non-~c[nil].
@@ -2643,12 +2642,12 @@
   ...
   ~ev[]~/
 
-  By putting an ~c[(i-am-here)] form at the ``frontier'' of an evolving
-  file of ~il[command]s, you can use ~ilc[rebuild] to load the file up to the
-  ~c[(i-am-here)].  ~c[I-am-here] simply returns an ~ilc[ld] error triple and any
-  form that ``causes an error'' will do the same job.  Note that the
-  text of the file after the ~c[(i-am-here)] need not be machine
-  readable."
+  By putting an ~c[(i-am-here)] form at the ``frontier'' of an evolving file of
+  ~il[command]s, you can use ~ilc[rebuild] to load the file up to the
+  ~c[(i-am-here)].  ~c[I-am-here] simply returns an error
+  triple (~pl[error-triples]) that indicates an error, and any form that
+  ``causes an error'' will do the same job.  Note that the text of the file
+  after the ~c[(i-am-here)] need not be machine readable."
 
   '(mv-let (col state)
            (fmt1 "~ I-AM-HERE~|" nil 0 (standard-co state) state nil) 
@@ -3757,7 +3756,7 @@
                            ,@(and book-form (list book-form))
                            (wet! ,form ,@kwd-args))
                           (cond (erp (mv "WET failed!" nil state))
-                                (t (value `(value-triple ,val)))))))))
+                                (t (value `(value-triple ',val)))))))))
 
 (defmacro disassemble$ (fn &rest args
                            &key (recompile ':default)
@@ -19427,6 +19426,36 @@
 ; respectively.  Note that error output is never inhibited for these functions
 ; as implemented.
 
+; Two new functions, which are rarely if ever called by users, have been made
+; untouchable: stobj-evisceration-alist and trace-evisceration-alist.  Before
+; this change, (trace-evisceration-alist state) and (stobj-evisceration-alist
+; nil state) could return non-ACL2 objects, and the former even caused a hard
+; Lisp error when a user stobj had previously been introduced.
+
+; Fixed an error message that was complaining about redefinition of a function
+; previously defined at the top level, or at the top level of a book, when the
+; function was actually built into ACL2.  For example:
+; 
+; ; old:
+; ACL2 !>(defun rewrite (x) x)
+; ....
+; Note: REWRITE was previously defined at the top level.
+; 
+; ; new:
+; ACL2 !>(defun rewrite (x) x)
+; ....
+; Note: REWRITE has already been defined as a system name; that is, it
+; is built into ACL2.
+
+; Fixed bugs in case-match calls: final branch cased on t instead of &.  The
+; functions were translate-rule-class-alist and bdd-clause1; the former could
+; be exploited to get a misleading error message, but that's all, while we
+; didn't investigate the consequences of the bdd-clause1 bug.
+
+; The defrec utility now defines a recognizer with guard t.  An optional
+; argument specifies the name of the recognizer, which by default for (defrec
+; foo ...) is the symbol WEAK-FOO-P, in the same package as foo.
+
   :doc
   ":Doc-Section release-notes
 
@@ -19477,6 +19506,16 @@
   ; 0.72 seconds realtime, 0.72 seconds runtime
   ~ev[]
 
+  Functions ~c[read-acl2-oracle] and ~c[read-acl2-oracle@par] are no longer
+  untouchable (~pl[remove-untouchable]).  We reported this change for
+  Version_5.0 but it was not made; thanks to Jared Davis for bringing this to
+  our attention.  Function ~c[get-timer] also is no longer untouchable.
+
+  The function ~ilc[butlast] now behaves more reasonably on arguments violating
+  its ~il[guard].  For example, ~c[(butlast '(1 2 3) -1)] is now provably equal
+  to ~c[(1 2 3)] instead of to ~c[(1 2 3 nil)].  Thanks to Jared Davis for
+  suggesting a change to the definition of ~c[butlast].
+
   ~st[NEW FEATURES]
 
   Among the new features for system hackers are analogues of system function
@@ -19485,6 +19524,18 @@
   implementation.)  This and other low-level changes are typically documented
   in comments in the corresponding release note event, which in this case is
   ~c[(deflabel note-5-1 ...)].
+
+  More built-in functions are now ~il[guard]-verified (and in ~c[:]~ilc[logic]
+  mode).  Furthermore, a mechanism exists for marking yet more built-in
+  functions as guard-verified based on ~il[books] contributed by users; see
+  Part II of
+  ~url[http://www.cs.utexas.edu/users/moore/acl2/open-architecture/].  The
+  current state of that enterprise may be viewed by evaluating the constant
+  ~c[*system-verify-guards-alist*], which associates a distributed book name
+  with a list of functions.  When ACL2 is built in the normal way, each of
+  those functions is marked as guard-verified when ACL2 is started up; but a
+  special developer build can be used to check that the indicated book,
+  together with its sub-books, proves that those functions are guard-verified.
 
   ~st[HEURISTIC IMPROVEMENTS]
 
@@ -19502,7 +19553,38 @@
   function, thanks to an error report from Warren Hunt, Marijn Heule, and
   Nathan Wetzler.
 
+  Fixed a raw Lisp error that occurred for certain ill-formed signatures, as in
+  the following example.
+  ~bv[]
+  ACL2 !>(encapsulate
+             (((f (*) => * :guard t)))
+             (local (defun f (x) (consp x))))
+
+  ***********************************************
+  ************ ABORTING from raw Lisp ***********
+  Error:  value (F (*) => * :GUARD T) is not of the expected type SYMBOL.
+  ***********************************************
+  ~ev[]
+
+  The notion of ``error triple'' (~pl[error-triples]) had been implemented
+  ambiguously, with the result that for a ~il[stobj], ~c[st], the result of
+  evaluating the following two forms was the same: ~c[(mv nil st state)] and
+  ~c[(mv t st state)].  Of course, these are just examples; in general, a
+  result of ~c[(mv erp val state)] was sometimes treated as an error triple
+  even when ~c[val] is a ~il[stobj].  Now, ~c[(mv erp val state)] is an error
+  triple only when ~c[erp] and ~c[val] are ordinary (non-~il[stobj]) values.
+  Thanks to Warren Hunt and Marijn Heule for bringing this problem to our
+  attention.
+
+  The ``with-error-trace'' utility, ~ilc[wet], now works in the non-error case
+  when given a form that returns multiple values.  (Note however that
+  ~ilc[STATE] will be printed as ~c[REPLACED-STATE]; and similarly, a
+  user-defined ~il[stobj], say ~c[ST], will be printed as ~c[REPLACED-ST].)
+
   ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]
+
+  Fixed a bug in the implementation of ~ilc[wet] (which is actually in the book
+  ~c[books/misc/wet.lisp]).
 
   ~st[EMACS SUPPORT]
 
@@ -19519,8 +19601,8 @@
   ~eq[]
 
   Among the enhancements for ACL2(p) (~pl[parallelism]) are the following.  We
-  thank David Rager for his work in developing ACL2(p) and for his
-  contributions in making these improvements.~bq[]
+  thank David Rager for his work in developing ACL2(p) and for his helpful role
+  in these improvements.~bq[]
 
   A bug has been fixed that could leave one in a ~il[wormhole], awaiting input,
   after an error, such as an error in an ~c[:in-theory] hint during a proof.
@@ -19528,6 +19610,28 @@
   ~eq[]
 
   ~/~/")
+
+(deflabel |NOTE-5-1(R)|
+  :doc
+  ":Doc-Section release-notes
+
+  ACL2 Version  5.1(r) (xxx, 20xx) Notes~/
+
+  ~/
+
+  Please ~pl[note-5-1] for changes in Version  5.1 of ACL2.
+
+  Thanks to Ruben Gamboa for his helpful role in making the following
+  improvements made with Ruben Gamboa in support for non-standard analysis in
+  ACL2(r).
+
+  Constrained functions can now be introduce as non-classical.  ~l[signature].
+
+  ~ilc[Defun-sk] now takes a new keyword argument, ~c[:CLASSICALP], that
+  determines whether or not the named function is classical.  ~l[defun-sk].
+
+  ~/
+  ")
 
 (deflabel the-method
   :doc
