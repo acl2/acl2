@@ -780,7 +780,7 @@
      :hints(("Goal" :in-theory (enable gobject-listp-true-listp))))
 
 
-   (include-book "centaur/misc/f-put-global" :dir :system)
+   (include-book "system/f-put-global" :dir :system)
 
    (defthm-glcp-generic-interp-flg
      glcp-generic-interp-state-p1-lemma

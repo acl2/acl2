@@ -19,9 +19,9 @@
 (set-state-ok t)
 
 (include-book "file-measure")
-(local (include-book "open-input-channel"))
-(local (include-book "read-char"))
-(local (include-book "close-input-channel"))
+;; (local (include-book "open-input-channel"))
+;; (local (include-book "read-char"))
+;; (local (include-book "close-input-channel"))
 (local (include-book "revappend"))
 (local (include-book "tools/mv-nth" :dir :system))
 

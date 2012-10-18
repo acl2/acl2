@@ -35,7 +35,6 @@
 (include-book "fal-graphs")
 (include-book "fast-alists")
 (include-book "filter-alist")
-(include-book "f-put-global")
 (include-book "hons-alphorder-merge")
 (include-book "hons-extra")
 (include-book "hons-remove-dups")

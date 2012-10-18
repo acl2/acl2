@@ -18,9 +18,9 @@
 (in-package "ACL2")
 (include-book "file-measure")
 (include-book "unsigned-byte-listp")
-(local (include-book "open-input-channel"))
-(local (include-book "close-input-channel"))
-(local (include-book "read-byte"))
+;; (local (include-book "open-input-channel"))
+;; (local (include-book "close-input-channel"))
+;; (local (include-book "read-byte"))
 (local (include-book "tools/mv-nth" :dir :system))
 (set-state-ok t)
 

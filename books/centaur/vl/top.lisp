@@ -67,7 +67,7 @@
 (local (include-book "mlib/modname-sets"))
 (local (include-book "util/arithmetic"))
 (local (include-book "util/osets"))
-(local (include-book "centaur/misc/f-put-global" :dir :system))
+(local (include-book "system/f-put-global" :dir :system))
 (local (in-theory (disable put-global)))
 
 #||

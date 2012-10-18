@@ -17,9 +17,9 @@
 
 (in-package "ACL2")
 (include-book "file-measure")
-(local (include-book "open-input-channel"))
-(local (include-book "read-byte"))
-(local (include-book "close-input-channel"))
+;; (local (include-book "open-input-channel"))
+;; (local (include-book "read-byte"))
+;; (local (include-book "close-input-channel"))
 (local (include-book "revappend"))
 (local (include-book "rev"))
 (local (include-book "tools/mv-nth" :dir :system))

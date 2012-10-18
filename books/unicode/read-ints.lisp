@@ -145,7 +145,6 @@
 (in-theory (disable read-8s))
 
 
-
 ;; read-16ube
 
 (defun read-16ube (channel state)

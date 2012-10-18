@@ -27,6 +27,7 @@
 (local (include-book "../util/arithmetic"))
 (set-state-ok t)
 
+(local (in-theory (disable acl2::file-measure-of-read-byte$-rw)))
 
 (defsection vl-read-file-aux
   :parents (vl-read-file)

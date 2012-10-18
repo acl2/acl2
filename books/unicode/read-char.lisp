@@ -16,72 +16,74 @@
 ;; Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (in-package "ACL2")
-(local (include-book "tools/mv-nth" :dir :system))
-(local (include-book "update-state"))
-(local (include-book "open-input-channels"))
+(include-book "system/io" :dir :system)
 
-; [Removed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2.]
-; (local (defthm assoc-eq-is-assoc-equal
-;          (equal (assoc-eq a x)
-;                 (assoc-equal a x))))
+;; (local (include-book "tools/mv-nth" :dir :system))
+;; (local (include-book "update-state"))
+;; (local (include-book "open-input-channels"))
 
-(defthm read-char$-state
-  (implies (and (force (state-p1 state))
-                (force (open-input-channel-p1 channel :character state))
-                (force (symbolp channel)))
-           (state-p1 (mv-nth 1 (read-char$ channel state))))
-  :hints(("Goal" :in-theory (disable statep-functions)
-          :use ((:instance state-p1
-                           (x state))
-                (:instance state-p1
-                           (x (mv-nth 1 (read-char$ channel state))))))))
+;; ; [Removed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2.]
+;; ; (local (defthm assoc-eq-is-assoc-equal
+;; ;          (equal (assoc-eq a x)
+;; ;                 (assoc-equal a x))))
 
-(defthm read-char$-open-input-channel-p1
-  (implies (and (force (state-p1 state))
-                (force (open-input-channel-p1 channel :character state))
-                (force (symbolp channel)))
-           (open-input-channel-p1 channel
-                                  :character
-                                  (mv-nth 1 (read-char$ channel state))))
-  :hints(("Goal" :in-theory (disable statep-functions)
-          :use ((:instance state-p1
-                           (x state))
-                (:instance state-p1
-                           (x (mv-nth 1 (read-char$ channel state))))))))
+;; (defthm read-char$-state
+;;   (implies (and (force (state-p1 state))
+;;                 (force (open-input-channel-p1 channel :character state))
+;;                 (force (symbolp channel)))
+;;            (state-p1 (mv-nth 1 (read-char$ channel state))))
+;;   :hints(("Goal" :in-theory (disable statep-functions)
+;;           :use ((:instance state-p1
+;;                            (x state))
+;;                 (:instance state-p1
+;;                            (x (mv-nth 1 (read-char$ channel state))))))))
 
-(local (defthmd car-typed-io-list-char
-  (implies (and (typed-io-listp x :character)
-                (consp x))
-           (characterp (car x)))))
+;; (defthm read-char$-open-input-channel-p1
+;;   (implies (and (force (state-p1 state))
+;;                 (force (open-input-channel-p1 channel :character state))
+;;                 (force (symbolp channel)))
+;;            (open-input-channel-p1 channel
+;;                                   :character
+;;                                   (mv-nth 1 (read-char$ channel state))))
+;;   :hints(("Goal" :in-theory (disable statep-functions)
+;;           :use ((:instance state-p1
+;;                            (x state))
+;;                 (:instance state-p1
+;;                            (x (mv-nth 1 (read-char$ channel state))))))))
 
-(defthm read-char$-character
-  (implies (and (mv-nth 0 (read-char$ channel state))
-                (force (state-p1 state))
-                (force (open-input-channel-p1 channel :character state)))
-           (characterp (mv-nth 0 (read-char$ channel state))))
-  :hints(("Goal" :in-theory (disable open-input-channel-p1
-                                     open-input-channels)
-          :use (:instance car-typed-io-list-char
-                          (x (cddr (assoc-equal
-                                    channel
-                                    (open-input-channels state))))))))
+;; (local (defthmd car-typed-io-list-char
+;;   (implies (and (typed-io-listp x :character)
+;;                 (consp x))
+;;            (characterp (car x)))))
 
-(encapsulate
- ()
+;; (defthm read-char$-character
+;;   (implies (and (mv-nth 0 (read-char$ channel state))
+;;                 (force (state-p1 state))
+;;                 (force (open-input-channel-p1 channel :character state)))
+;;            (characterp (mv-nth 0 (read-char$ channel state))))
+;;   :hints(("Goal" :in-theory (disable open-input-channel-p1
+;;                                      open-input-channels)
+;;           :use (:instance car-typed-io-list-char
+;;                           (x (cddr (assoc-equal
+;;                                     channel
+;;                                     (open-input-channels state))))))))
 
- (local (defthm lemma
-          (implies (and (typed-io-listp x :character)
-                        (not (car x)))
-                   (not (cadr x)))))
+;; (encapsulate
+;;  ()
 
- (defthm read-char$-after-eof
-   (implies (and (not (mv-nth 0 (read-char$ channel state)))
-                 (force (state-p state))
-                 (force (symbolp channel))
-                 (force (open-input-channel-p channel :character state)))
-            (not (mv-nth 0 (read-char$ channel (mv-nth 1 (read-byte$ channel state))))))
-   :hints(("Goal" :in-theory (e/d (read-char$)
-                                  (statep-functions))))))
+;;  (local (defthm lemma
+;;           (implies (and (typed-io-listp x :character)
+;;                         (not (car x)))
+;;                    (not (cadr x)))))
+
+;;  (defthm read-char$-after-eof
+;;    (implies (and (not (mv-nth 0 (read-char$ channel state)))
+;;                  (force (state-p state))
+;;                  (force (symbolp channel))
+;;                  (force (open-input-channel-p channel :character state)))
+;;             (not (mv-nth 0 (read-char$ channel (mv-nth 1 (read-byte$ channel state))))))
+;;    :hints(("Goal" :in-theory (e/d (read-char$)
+;;                                   (statep-functions))))))
 
 
-(in-theory (disable state-p1 open-input-channel-p1 read-char$))
+;; (in-theory (disable state-p1 open-input-channel-p1 read-char$))

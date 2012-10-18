@@ -18,8 +18,9 @@
 (in-package "ACL2")
 (include-book "utf8-decode")
 (include-book "take-bytes")
-(local (include-book "open-input-channel"))
-(local (include-book "close-input-channel"))
+;; (local (include-book "open-input-channel"))
+;; (local (include-book "close-input-channel"))
+(local (include-book "system/io" :dir :system))
 (local (include-book "tools/mv-nth" :dir :system))
 (set-state-ok t)
 

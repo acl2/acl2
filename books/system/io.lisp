@@ -91,7 +91,8 @@
   :hints(("Goal" :in-theory (enable state-p1))))
 
 (defthm symbolp-of-open-input-channel
-  (symbolp (mv-nth 0 (open-input-channel fname type state))))
+  (symbolp (mv-nth 0 (open-input-channel fname type state)))
+  :rule-classes (:rewrite :type-prescription))
 
 (defthm open-input-channel-p1-of-open-input-channel
   (implies (and (state-p1 state)
@@ -134,13 +135,36 @@
                                     y)))
    :hints(("Goal" :in-theory (enable open-channel1 read-file-listp1)))))
 
-(defthm state-p1-of-close-input-channel
-  (implies (and (state-p1 state)
-                (open-input-channel-p1 channel type state))
+;; type is a free variable here.  the two variants that follow try to get
+;; around this problem
+(defthm state-p1-of-close-input-channel-free
+  (implies (and (open-input-channel-p1 channel type state)
+                (state-p1 state))
            (state-p1 (close-input-channel channel state)))
   :hints(("Goal" :in-theory (e/d (state-p1
                                   read-files-p)
                                  (read-file-listp1)))))
+
+(defthm state-p1-of-close-input-channel-types
+  (implies (and (or (open-input-channel-p1 channel :byte state)
+                    (open-input-channel-p1 channel :object state)
+                    (open-input-channel-p1 channel :character state))
+                (state-p1 state))
+           (state-p1 (close-input-channel channel state)))
+  :hints(("Goal" :in-theory (disable close-input-channel
+                                     open-input-channel-p1))))
+
+(defthm state-p1-of-close-input-channel-of-open
+  (implies (and (open-input-channel-p1
+                 (mv-nth 0 (open-input-channel fname type state1))
+                 type state)
+                (state-p1 state))
+           (state-p1 (close-input-channel
+                      (mv-nth 0 (open-input-channel fname type state1))
+                      state)))
+  :hints(("Goal" :in-theory (disable close-input-channel
+                                     open-input-channel-p1
+                                     open-input-channel))))
 
 
 
@@ -154,7 +178,6 @@
 
 (defthm open-input-channel-p1-of-read-char$
   (implies (and (state-p1 state)
-                (symbolp channel)
                 (open-input-channel-p1 channel :character state))
            (open-input-channel-p1 channel :character (mv-nth 1 (read-char$ channel state)))))
 
@@ -165,20 +188,36 @@
                   (characterp (cadr x)))))
 
 (defthm characterp-of-read-char$
-  (implies (and (state-p1 state)
-                (symbolp channel)
-                (open-input-channel-p1 channel :character state)
-                (mv-nth 0 (read-char$ channel state)))
+  (implies (and (mv-nth 0 (read-char$ channel state))
+                (state-p1 state)
+                (open-input-channel-p1 channel :character state))
            (characterp (mv-nth 0 (read-char$ channel state))))
   :hints(("Goal" :in-theory (e/d (state-p1) (open-channel1))))
   :rule-classes
   (:rewrite
    (:type-prescription :corollary
     (implies (and (state-p1 state)
-                (symbolp channel)
-                (open-input-channel-p1 channel :character state))
+                  (open-input-channel-p1 channel :character state))
              (or (characterp (mv-nth 0 (read-char$ channel state)))
                  (null (mv-nth 0 (read-char$ channel state))))))))
+
+
+;; since peek-char$ doesn't return state there isn't too much to prove about it
+(defthm characterp-of-peek-char$
+  (implies (and (peek-char$ channel state)
+                (state-p1 state)
+                (open-input-channel-p1 channel :character state))
+           (characterp (peek-char$ channel state)))
+  :hints(("Goal" :in-theory (e/d (state-p1) (open-channel1))))
+  :rule-classes
+  (:rewrite
+   (:type-prescription :corollary
+    (implies (and (state-p1 state)
+                  (open-input-channel-p1 channel :character state))
+             (or (characterp (peek-char$ channel state))
+                 (null (peek-char$ channel state)))))))
+
+
 
 
 
@@ -192,7 +231,6 @@
 
 (defthm open-input-channel-p1-of-read-byte$
   (implies (and (state-p1 state)
-                (symbolp channel)
                 (open-input-channel-p1 channel :byte state))
            (open-input-channel-p1 channel :byte (mv-nth 1 (read-byte$ channel state)))))
 
@@ -206,19 +244,21 @@
          (implies (and (open-channel1 x)
                        (equal (cadar x) :byte)
                        (cdr x))
-                  (bytep (cadr x)))))
+                  (and (bytep (cadr x))
+                       (natp (cadr x))
+                       (integerp (cadr x))))))
   
 (defthm bytep-of-read-byte$
   (implies (and (state-p1 state)
-                (symbolp channel)
                 (open-input-channel-p1 channel :byte state)
                 (mv-nth 0 (read-byte$ channel state)))
-           (bytep (mv-nth 0 (read-byte$ channel state))))
+           (and (bytep (mv-nth 0 (read-byte$ channel state)))
+                (natp (mv-nth 0 (read-byte$ channel state)))
+                (integerp (mv-nth 0 (read-byte$ channel state)))))
   :hints(("Goal" :in-theory (e/d (state-p1) (open-channel1 bytep)))))
 
 (defthm bytep-of-read-byte$-type
   (implies (and (state-p1 state)
-                (symbolp channel)
                 (open-input-channel-p1 channel :byte state))
            (or (null (mv-nth 0 (read-byte$ channel state)))
                (natp (mv-nth 0 (read-byte$ channel state)))))
@@ -227,10 +267,9 @@
 
 (defthm bytep-of-read-byte$-linear
   (implies (and (state-p1 state)
-                (symbolp channel)
-                (open-input-channel-p1 channel :byte state)
-                (mv-nth 0 (read-byte$ channel state)))
-           (< (mv-nth 0 (read-byte$ channel state)) 256))
+                (open-input-channel-p1 channel :byte state))
+           (and (< (mv-nth 0 (read-byte$ channel state)) 256)
+                (<= 0 (mv-nth 0 (read-byte$ channel state)))))
   :hints(("Goal" :use bytep-of-read-byte$))
   :rule-classes :linear)
 
@@ -248,9 +287,75 @@
 
 (defthm open-input-channel-p1-of-read-object
   (implies (and (state-p1 state)
-                (symbolp channel)
                 (open-input-channel-p1 channel :object state))
-           (open-input-channel-p1 channel :object (mv-nth 2 (read-object channel state)))))
+           (open-input-channel-p1 channel :object (mv-nth 2 (read-object
+                                                             channel state)))))
+
+
+
+
+;; sometimes it's useful to know that state isn't modified when read at EOF
+;; (copied from unicode)
+(encapsulate
+ ()
+
+ (local (defthm lemma
+          (equal (equal a (cons x y))
+                 (and (consp a)
+                      (equal (car a) x)
+                      (equal (cdr a) y)))))
+
+ (local (defthm lemma2-char
+          (implies (and (open-channel1 foo)
+                        (equal (cadar foo) :character)
+                        (not (cadr foo)))
+                   (equal (cddr foo) (cdr foo)) )))
+
+ (local (defthm lemma2-byte
+          (implies (and (open-channel1 foo)
+                        (equal (cadar foo) :byte)
+                        (not (cadr foo)))
+                   (equal (cddr foo) (cdr foo)) )))
+
+ (local (in-theory (disable open-channel1)))
+
+ (local (defthm add-pair-same
+          (implies (and (ordered-symbol-alistp x)
+                        (assoc-equal k x))
+                   (equal (add-pair k (cdr (assoc-equal k x)) x)
+                          x))
+          :hints(("Goal" :in-theory (enable ordered-symbol-alistp)))))
+
+ (local (defthm update-nth-of-nth-same
+          (implies (< (nfix n) (len x))
+                   (equal (update-nth n (nth n x) x)
+                          x))
+          :hints(("Goal" :in-theory (enable nth update-nth)))))
+                 
+
+ (defthm state-preserved-by-read-char$-when-eof
+   (implies (and (not (mv-nth 0 (read-char$ channel state)))
+                 (state-p1 state)
+                 (open-input-channel-p1 channel :character state))
+            (equal (mv-nth 1 (read-char$ channel state))
+                   state))
+   :hints(("Goal" :in-theory (e/d (read-char$ state-p1)))))
+
+ (defthm state-preserved-by-read-byte$-when-eof
+   (implies (and (not (mv-nth 0 (read-byte$ channel state)))
+                 (state-p1 state)
+                 (open-input-channel-p1 channel :byte state))
+            (equal (mv-nth 1 (read-byte$ channel state))
+                   state))
+   :hints(("Goal" :in-theory (e/d (read-byte$ state-p1)))))
+
+ (defthm state-preserved-by-read-object-when-eof
+   (implies (and (mv-nth 0 (read-object channel state))
+                 (state-p1 state)
+                 (open-input-channel-p1 channel :object state))
+            (equal (mv-nth 2 (read-object channel state))
+                   state))
+   :hints(("Goal" :in-theory (e/d (read-object state-p1))))))
 
 
 
@@ -265,7 +370,8 @@
   :hints(("Goal" :in-theory (enable state-p1))))
 
 (defthm symbolp-of-open-output-channel
-  (symbolp (mv-nth 0 (open-output-channel fname type state))))
+  (symbolp (mv-nth 0 (open-output-channel fname type state)))
+  :rule-classes (:rewrite :type-prescription))
 
 (defthm open-output-channel-p1-of-open-output-channel
   (implies (and (state-p1 state)
@@ -298,12 +404,40 @@
                                 (cdr x))))
    :hints(("Goal" :in-theory (enable open-channel1 written-file)))))
 
-(defthm state-p1-of-close-output-channel
-  (implies (and (state-p1 state)
-                (open-output-channel-p1 channel type state))
+
+;; type is a free variable here.  the two variants that follow try to get
+;; around this problem
+(defthm state-p1-of-close-output-channel-free
+  (implies (and (open-output-channel-p1 channel type state)
+                (state-p1 state))
            (state-p1 (close-output-channel channel state)))
-  :hints(("Goal" :in-theory (e/d (state-p1 written-files-p)
+  :hints(("Goal" :in-theory (e/d (state-p1
+                                  written-files-p)
                                  (written-file)))))
+
+
+(defthm state-p1-of-close-output-channel-types
+  (implies (and (or (open-output-channel-p1 channel :byte state)
+                    (open-output-channel-p1 channel :object state)
+                    (open-output-channel-p1 channel :character state))
+                (state-p1 state))
+           (state-p1 (close-output-channel channel state)))
+  :hints(("Goal" :in-theory (disable close-output-channel
+                                     open-output-channel-p1))))
+
+(defthm state-p1-of-close-output-channel-of-open
+  (implies (and (open-output-channel-p1
+                 (mv-nth 0 (open-output-channel fname type state1))
+                 type state)
+                (state-p1 state))
+           (state-p1 (close-output-channel
+                      (mv-nth 0 (open-output-channel fname type state1))
+                      state)))
+  :hints(("Goal" :in-theory (disable close-output-channel
+                                     open-output-channel-p1
+                                     open-output-channel))))
+
+
 
 
 
@@ -349,7 +483,6 @@
 
 (defthm open-output-channel-p1-of-princ$
   (implies (and (state-p1 state)
-                (symbolp channel)
                 (open-output-channel-p1 channel :character state))
            (open-output-channel-p1 channel :character (princ$ x channel state))))
 
@@ -366,7 +499,6 @@
 
 (defthm open-output-channel-p1-of-write-byte$
   (implies (and (state-p1 state)
-                (symbolp channel)
                 (open-output-channel-p1 channel :byte state))
            (open-output-channel-p1 channel :byte (write-byte$ byte channel state))))
 
@@ -380,7 +512,6 @@
 
 (defthm open-output-channel-p1-of-print-object$
   (implies (and (state-p1 state)
-                (symbolp channel)
                 (open-output-channel-p1 channel :object state))
            (open-output-channel-p1 channel :object (print-object$ x channel state))))
 
@@ -533,7 +664,7 @@
 ;; it's just a workaround for the fact that read-object checks
 ;; (cdr entry) as a substitute for (consp (cdr entry)) to find whether there
 ;; are objects remaining.
-(defun input-measure (channel state-state)
+(defun file-measure (channel state-state)
   (declare (xargs :guard (and (symbolp channel)
                               (state-p1 state-state))))
   (+ (len (cddr (assoc-equal channel (open-input-channels state-state))))
@@ -542,39 +673,53 @@
                                                     state-state))))) 1 0)
        (if (cddr (assoc-equal channel (open-input-channels state-state))) 1 0))))
 
-(defthm input-measure-of-read-byte$-weak
-  (<= (input-measure channel (mv-nth 1 (read-byte$ channel state)))
-      (input-measure channel state))
+(defthm file-measure-of-read-byte$-weak
+  (<= (file-measure channel (mv-nth 1 (read-byte$ channel state)))
+      (file-measure channel state))
   :rule-classes (:rewrite :linear))
 
-(defthm input-measure-of-read-byte$-strong
+(defthm file-measure-of-read-byte$-strong
   (implies (mv-nth 0 (read-byte$ channel state))
-           (< (input-measure channel (mv-nth 1 (read-byte$ channel state)))
-              (input-measure channel state)))
+           (< (file-measure channel (mv-nth 1 (read-byte$ channel state)))
+              (file-measure channel state)))
   :rule-classes (:rewrite :linear))
 
-(defthm input-measure-of-read-char$-weak
-  (<= (input-measure channel (mv-nth 1 (read-char$ channel state)))
-      (input-measure channel state))
+(defthm file-measure-of-read-byte$-rw
+  (implies (mv-nth 0 (read-byte$ channel state))
+           (equal (file-measure channel (mv-nth 1 (read-byte$ channel state)))
+                  (+ -1 (file-measure channel state)))))
+
+(defthm file-measure-of-read-char$-weak
+  (<= (file-measure channel (mv-nth 1 (read-char$ channel state)))
+      (file-measure channel state))
   :rule-classes (:rewrite :linear))
 
-(defthm input-measure-of-read-char$-strong
+(defthm file-measure-of-read-char$-strong
   (implies (mv-nth 0 (read-char$ channel state))
-           (< (input-measure channel (mv-nth 1 (read-char$ channel state)))
-              (input-measure channel state)))
+           (< (file-measure channel (mv-nth 1 (read-char$ channel state)))
+              (file-measure channel state)))
   :rule-classes (:rewrite :linear))
 
-(defthm input-measure-of-read-object-weak
-  (<= (input-measure channel (mv-nth 2 (read-object channel state)))
-      (input-measure channel state))
+(defthm file-measure-of-read-char$-rw
+  (implies (mv-nth 0 (read-char$ channel state))
+           (equal (file-measure channel (mv-nth 1 (read-char$ channel state)))
+                  (1- (file-measure channel state)))))
+
+(defthm file-measure-of-read-object-weak
+  (<= (file-measure channel (mv-nth 2 (read-object channel state)))
+      (file-measure channel state))
   :rule-classes (:rewrite :linear))
 
-;; This one is a little unfortunate.
-(defthm input-measure-of-read-object-strong
+(defthm file-measure-of-read-object-strong
   (implies (not (mv-nth 0 (read-object channel state)))
-           (< (input-measure channel (mv-nth 2 (read-object channel state)))
-              (input-measure channel state)))
+           (< (file-measure channel (mv-nth 2 (read-object channel state)))
+              (file-measure channel state)))
   :rule-classes (:rewrite :linear))
+
+(defthm file-measure-of-read-object-rw
+  (implies (not (mv-nth 0 (read-object channel state)))
+           (equal (file-measure channel (mv-nth 2 (read-object channel state)))
+                  (1- (file-measure channel state)))))
 
 
 (in-theory (disable state-p1
@@ -590,4 +735,4 @@
                     princ$
                     write-byte$
                     print-object$
-                    input-measure))
+                    file-measure))

@@ -113,7 +113,8 @@ anywhere, <tt>realname</tt> is just <tt>nil</tt>.</p>"
     (declare (xargs :guard (and (stringp filename)
                                 (string-listp searchpath)
                                 (state-p state))
-                    :guard-hints(("Goal" :in-theory (enable state-p1)))))
+                    :guard-hints(("Goal" :in-theory (enable state-p1 get-global
+                                                            put-global)))))
     (if (ACL2::absolute-pathname-string-p filename nil (ACL2::os (w state)))
         (mv filename state)
       (vl-find-file-aux filename searchpath state)))

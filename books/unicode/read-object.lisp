@@ -17,36 +17,38 @@
 
 (in-package "ACL2")
 
-(local (include-book "update-state"))
-(local (include-book "open-input-channels"))
+(include-book "system/io" :dir :system)
 
-; [Removed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2.]
-; (local (defthm assoc-eq-is-assoc-equal
-;          (equal (assoc-eq a x)
-;                 (assoc-equal a x))))
+;; (local (include-book "update-state"))
+;; (local (include-book "open-input-channels"))
 
-(defthm read-object-state
-  (implies (and (force (state-p1 state))
-                (force (open-input-channel-p1 channel :object state))
-                (force (symbolp channel)))
-           (state-p1 (mv-nth 2 (read-object channel state))))
-  :hints(("Goal" :in-theory (disable statep-functions)
-          :use ((:instance state-p1
-                           (x state))
-                (:instance state-p1
-                           (x (mv-nth 2 (read-object channel state))))))))
+;; ; [Removed by Matt K. to handle changes to member, assoc, etc. after ACL2 4.2.]
+;; ; (local (defthm assoc-eq-is-assoc-equal
+;; ;          (equal (assoc-eq a x)
+;; ;                 (assoc-equal a x))))
 
-(defthm read-object-open-input-channel-p1
-  (implies (and (force (state-p1 state))
-                (force (open-input-channel-p1 channel :object state))
-                (force (symbolp channel)))
-           (open-input-channel-p1 channel
-                                  :object
-                                  (mv-nth 2 (read-object channel state))))
-  :hints(("Goal" :in-theory (disable statep-functions)
-          :use ((:instance state-p1
-                           (x state))
-                (:instance state-p1
-                           (x (mv-nth 2 (read-object channel state))))))))
+;; (defthm read-object-state
+;;   (implies (and (force (state-p1 state))
+;;                 (force (open-input-channel-p1 channel :object state))
+;;                 (force (symbolp channel)))
+;;            (state-p1 (mv-nth 2 (read-object channel state))))
+;;   :hints(("Goal" :in-theory (disable statep-functions)
+;;           :use ((:instance state-p1
+;;                            (x state))
+;;                 (:instance state-p1
+;;                            (x (mv-nth 2 (read-object channel state))))))))
 
-(in-theory (disable state-p1 open-input-channel-p1 read-object))
+;; (defthm read-object-open-input-channel-p1
+;;   (implies (and (force (state-p1 state))
+;;                 (force (open-input-channel-p1 channel :object state))
+;;                 (force (symbolp channel)))
+;;            (open-input-channel-p1 channel
+;;                                   :object
+;;                                   (mv-nth 2 (read-object channel state))))
+;;   :hints(("Goal" :in-theory (disable statep-functions)
+;;           :use ((:instance state-p1
+;;                            (x state))
+;;                 (:instance state-p1
+;;                            (x (mv-nth 2 (read-object channel state))))))))
+
+;; (in-theory (disable state-p1 open-input-channel-p1 read-object))
