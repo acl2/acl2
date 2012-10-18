@@ -75,7 +75,8 @@ DIRS2_EXCEPT_WK_COI = ordinals data-structures bdd ihs arithmetic-2 arithmetic-3
 	concurrent-programs/german-protocol deduction/passmore clause-processors \
 	quadratic-reciprocity tools paco hacking security regex \
 	defsort hons-archive serialize wp-gen xdoc-impl system tutorial-problems cutil \
-	countereg-gen demos $(DIRS_HONS)
+	countereg-gen $(DIRS_HONS)
+# Note: demos temporarily omitted above 10/18/2012, pending fix from David Rager
 DIRS2_EXCEPT_WK = $(DIRS2_EXCEPT_WK_COI) coi misc/misc2
 DIRS2 = $(DIRS2_EXCEPT_WK) workshops
 SHORTDIRS2 = ordinals data-structures bdd

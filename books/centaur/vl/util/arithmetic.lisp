@@ -718,8 +718,10 @@
 
 
 (defthm butlast-under-iff
-  ;; Bleh, definition doesn't nfix n so we have to have the hyp...
-  (implies (force (integerp n))
+; Hypothesis was changed for ACL2 Version 5.1 from (force (integerp n)) by Matt
+; Kaufmann, because a change to butlast made this fail, e.g., under the
+; bindings ((n -1) (x nil)).
+  (implies (force (natp n))
            (iff (butlast x n)
                 (< n (len x))))
   :hints(("Goal" :in-theory (enable butlast))))

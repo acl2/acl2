@@ -200,12 +200,16 @@
    :hints (("Goal" :do-not-induct t))))
 
 (defthm consp-butlast
+; Changed for ACL2 Version 5.1 by Matt Kaufmann, due to change in the
+; definition of butlast (which applies nfix to n).
   (equal (consp (butlast lst n))
-         (not (zp (- (len lst) n))))
+         (not (zp (- (len lst) (nfix n)))))
   :rule-classes ((:rewrite)
-                 (:type-prescription :corollary
-                                     (implies (not (zp (- (len lst) n)))
-                                              (consp (butlast lst n)))))
+                 (:type-prescription
+                  :corollary
+                  (implies (and (natp n)
+                                (not (zp (- (len lst) n))))
+                           (consp (butlast lst n)))))
   :hints (("Goal" :do-not-induct t)))
 
 (defthm consp-firstn
