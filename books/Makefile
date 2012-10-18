@@ -160,7 +160,7 @@ system: tools arithmetic arithmetic-5 misc
 cutil: xdoc tools str misc finite-set-theory/osets defsort unicode clause-processors
 countereg-gen: xdoc arithmetic-5 tools defexec finite-set-theory/osets \
 	arithmetic-3 arithmetic ordinals
-demos: make-event
+demos: make-event cutil misc tools arithmetic
 
 # Note: There is no need to include values for "centaur:", since dependencies
 # are handled by cert.pl in that case.
