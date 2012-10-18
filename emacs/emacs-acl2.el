@@ -89,12 +89,23 @@
   ; "control-t control-f" buries the current buffer (puts it on the bottom of
   ;      the buffer stack, out of the way, without killing the buffer)
 ; ACL2 proof-tree support
+  ; NOTE: This works by default if you install the ACL2 community books, as
+  ;       most ACL2 users do, in the books/ directory of your ACL2
+  ;       distribution.  Otherwise, you will need to set the variable
+  ;       *acl2-interface-dir* to a directory string containing a file
+  ;       top-start-shell-acl2.el that defines the functions start-proof-tree
+  ;       and start-proof-tree-noninteractive in emacs.  For user-level
+  ;       documentation provided in the ACL2 community books implementation,
+  ;       see the following file included there:
+  ;       books/interface/emacs/PROOF-TREE-EMACS.txt
   ; "meta-x start-proof-tree" starts proof-tree tracking in the current buffer
   ;      (where ACL2 is running).  See ACL2 documentation for PROOF-TREE for
   ;      more information.
   ; Function start-proof-tree-noninteractive (see below) can be used to start
   ;      proof-trees when emacs starts up; see below.
 ; Run ACL2 as inferior process
+  ; NOTE: This works by default if you install the ACL2 community books.
+  ;       Otherwise, see the NOTE above on "ACL2 proof-tree support".
   ; "meta-x run-acl2" starts up acl2 as an inferior process in emacs.  You may
   ;      have better luck simply issuing your ACL2 command in an ordinary
   ;      (emacs) shell.
@@ -747,7 +758,8 @@ beginning of the string that was processed."
   (if (boundp '*acl2-interface-dir*)
       *acl2-interface-dir*
     (setq *acl2-interface-dir*
-	  (concat (acl2-sources-dir) "interface/emacs/"))))
+; common location (i.e., for those who install ACL2 community books in books/):
+	  (concat (acl2-sources-dir) "books/interface/emacs/"))))
 
 (autoload 'start-proof-tree
   (concat (acl2-interface-dir) "top-start-shell-acl2")

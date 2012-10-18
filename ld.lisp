@@ -5870,7 +5870,7 @@
   documentation topic provides a gentle introduction to ACL2
   ~ilc[arrays] ~-[] ~pl[arrays-example] ~-[] and additional
   documentation has been provided for getting started with proof trees
-  in emacs ~-[] ~pl[proof-tree-emacs].
+  in emacs ~-[] ~pl[proof-tree].
 
   New Makefile targets ~c[fasl] and ~c[o] have been added to the ~c[books/]
   directory of the distribution.  For example, you might first certify
@@ -19585,6 +19585,15 @@
 
   Fixed a bug in the implementation of ~ilc[wet] (which is actually in the book
   ~c[books/misc/wet.lisp]).
+
+  A directory, ~c[interface/], is no longer part of the ACL2 distribution.
+  Rather, it is a subdirectory of the ACL2 community books.  Thus, if you fetch
+  those books in the usual way (see the installation instructions on the ACL2
+  home page), you will find a directory ~c[books/interface/].  Subdirectory
+  ~c[emacs/] of the ~c[interface] directory provides Emacs support for
+  ~il[proof-tree]s as well an ~c[acl2-mode].  This change has been reflected in
+  ACL2 file ~c[emacs/emacs-acl2.el], so users will probably not be impacted if
+  they load that file into Emacs.
 
   ~st[EMACS SUPPORT]
 

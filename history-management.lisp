@@ -103,12 +103,29 @@
 
   proof tree displays~/
 
-  A view of ACL2 proofs may be obtained by way of ``proof tree displays.''  The
-  emacs environment is easily customized to provide window-based proof tree
-  displays that assist in traversing and making sense of the proof transcript;
-  ~pl[proof-tree-emacs].  Proof tree displays may be turned on with the command
-  ~c[:]~ilc[start-proof-tree] and may be turned off with the command
-  ~c[:]~ilc[stop-proof-tree]; ~pl[start-proof-tree] and ~pl[stop-proof-tree].~/
+  A view of ACL2 proofs may be obtained by way of ``proof tree displays,''
+  which appear in proof output (~pl[proofs-co]) when proof-tree output is
+  enabled (see below) When ACL2 starts a proof and proof-tree output is
+  enabled, the proof output begins with the following string.
+  ~bv[]
+  << Starting proof tree logging >>
+  ~ev[]
+  Then for each goal encountered during the proof, a corresponding proof tree
+  display (as described below) is printed into the proof output: first the
+  characters in the constant string ~c[*proof-tree-start-delimiter*] are
+  printed, then the proof tree display, and finally the characters in the
+  constant string ~c[*proof-tree-end-delimiter*].
+
+  External tools may present proof tree displays in a separate window.  In
+  particular, a tool distributed with the ACL2 community books customizes the
+  emacs environment to provide window-based proof tree displays together with
+  commands for traversing the proof transcript; see the discussion of
+  ``ACL2 proof-tree support'' in file ~c[emacs/emacs-acl2.el] distributed with
+  ACL2.
+
+  The command ~c[:start-proof-tree] enables proof-tree output, while
+  ~c[:stop-proof-tree] disables proof-tree output; ~pl[start-proof-tree] and
+  ~pl[stop-proof-tree].~/
 
   Here is an example of a proof tree display, with comments.  Lines marked with
   ``c'' are considered ``checkpoints,'' i.e., goals whose scrutiny may be of
@@ -162,174 +179,10 @@
   ``fencepost'' mark indicates the start of a new proof by induction or of a
   new forcing round.
 
-  ~l[proof-tree-examples] for detailed examples.  To learn how to turn off
-  proof tree displays or to turn them back on again, ~pl[stop-proof-tree] and
-  ~pl[start-proof-tree], respectively. ~l[checkpoint-forced-goals] to learn how
-  to mark goals as checkpoints that ~il[force] the creation of goals in forcing
-  rounds.  Finally, ~pl[proof-tree-details] for some points not covered
-  elsewhere.")
-
-(deflabel proof-tree-emacs
-  :doc
-  ":Doc-Section Proof-tree
-
-  using emacs with proof trees~/
-
-  Within emacs, proof trees provide a sort of structure for the linear proof
-  transcript output by the ACL2 prover.  Below we explain how to get proof
-  trees set up in your emacs environment.~/
-
-  To get started, it suffices to load the distributed ACL2 emacs file, which
-  has lots more than just proof tree support (documented near the top of that
-  file), as follows.  Thus, you can put the following form in your
-  ~c[~~/.emacs] file, where ~c[DIR] refers to your ACL2 source directory
-  (typically called ~c[acl2-sources/]).
-  ~bv[]
-  (load \"DIR/emacs/emacs-acl2.el\")
-  ~ev[]
-  Then you can start the proof tree display by issuing the following emacs
-  command:  ~c[M-x start-proof-tree].
-
-  If you prefer not to load the ACL2 emacs file as shown above, you can instead
-  put the following forms in your ~c[~~/.emacs] file (where ~c[DIR] is as
-  above) and then issue the above ~c[M-x] command.
-  ~bv[]
-  (setq *acl2-interface-dir*
-        \"DIR/interface/emacs/\")
-
-  (autoload 'start-proof-tree
-    (concat *acl2-interface-dir* \"top-start-shell-acl2\")
-    \"Enable proof tree logging in a prooftree buffer.\"
-    t)
-  ~ev[]
-  Once the above is taken care of, then to start using proof trees you
-  do two things.  In emacs, start a shell (~c[meta-x shell]) and evaluate:
-  ~bv[]
-     M-x start-proof-tree
-  ~ev[]
-  Also, in your ACL2, evaluate
-  ~bv[]
-    :start-proof-tree
-  ~ev[]
-  If you want to turn off proof trees, evaluate this in emacs
-  ~bv[]
-     M-x stop-proof-tree
-  ~ev[]
-  and evaluate this in your ACL2 session:
-  ~bv[]
-    :stop-proof-tree
-  ~ev[]
-  When you do ~c[M-x start-proof-tree] for the first time in your emacs
-  session, you will be prompted for some information.  You can avoid the
-  prompt by putting the following in your ~c[.emacs] file.  The defaults are
-  as shown, but you can of course change them.
-  ~bv[]
-    (setq *acl2-proof-tree-height* 17)
-    (setq *checkpoint-recenter-line* 3)
-    (setq *mfm-buffer* \"*shell*\")
-  ~ev[]
-  Alternatively, you can put the following in your ~c[~~/.emacs file] in order
-  to start proof trees without any queries.
-  ~bv[]
-    (start-proof-tree-noninteractive \"*shell*\")
-  ~ev[]
-
-  Once you start proof trees (meta-x start-proof-tree), you will have defined
-  the key bindings shown by executing ~c[C-z h] in emacs.  Also
-  ~pl[proof-tree-bindings] for that additional documentation.
-
-  If you want ~il[proof-tree]s to be displayed in a separate emacs frame to the
-  side, then you can put the following forms in your ~c[.emacs] file above the
-  load of ~c[emacs-acl2.el] described above.  But you may wish to edit the
-  second form, in particular the number 2048.
-  ~bv[]
-  (start-proof-tree-noninteractive \"*shell*\")
-  (cond ((and (eq window-system 'x)
-              (fboundp 'x-display-pixel-width)
-              (= (x-display-pixel-width) 2048) ; for a wide monitor
-              )
-         (delete-other-windows)
-         (if (boundp 'emacs-startup-hook) ; false in xemacs
-             (push 'new-prooftree-frame emacs-startup-hook))))
-  ~ev[]
-
-  The file ~c[interface/emacs/README-mouse.doc] discusses an extension of ACL2
-  proof trees that allows the mouse to be used with menus.  That extension may
-  well work, but it is no longer supported.  The basic proof tree interface,
-  however, is supported and is what is described in detail elsewhere;
-  ~pl[proof-tree].  Thanks to Mike Smith for his major role in providing emacs
-  support for proof trees.")
-
-(deflabel proof-tree-bindings
-  :doc
-  ":Doc-Section Proof-tree-emacs
-
-  using emacs with proof trees~/
-
-  The key bindings set up when you start proof trees are shown below.
-  ~l[proof-tree-emacs] for how to get started with proof trees.~/
-
-  ~bv[]
-     C-z h               help
-     C-z ?               help
-  ~ev[]
-  Provides information about proof-tree/checkpoint tool.
-  Use `C-h d' to get more detailed information for specific functions.
-
-  ~bv[]
-     C-z c               Go to checkpoint
-  ~ev[]
-  Go to a checkpoint, as displayed in the \"prooftree\" buffer with the
-  character ~c[c] in the first column.  With non-zero prefix argument: move the
-  point in the ACL2 buffer (emacs variable ~c[*mfm-buffer*]) to the first
-  checkpoint displayed in the \"prooftree\" buffer, suspend the proof tree (see
-  ~c[suspend-proof-tree]), and move the cursor below that checkpoint in the
-  \"prooftree\" buffer.  Without a prefix argument, go to the first checkpoint
-  named below the point in the \"prooftree\" buffer (or if there is none, to
-  the first checkpoint).  Note however that unless the proof tree is suspended
-  or the ACL2 proof is complete or interrupted, the cursor will be generally be
-  at the bottom of the \"prooftree\" buffer each time it is modified, which
-  causes the first checkpoint to be the one that is found.
-
-  If the prefix argument is 0, move to the first checkpoint but do not keep
-  suspended.
-
-  ~bv[]
-     C-z g               Goto subgoal
-  ~ev[]
-  Go to the specified subgoal in the ACL2 buffer (emacs variable
-  ~c[*mfm-buffer*]) that lies closest to the end of that buffer -- except if
-  the current buffer is \"prooftree\" when this command is invoked, the subgoal
-  is the one from the proof whose tree is displayed in that buffer.  A default
-  is obtained, when possible, from the current line of the current buffer.
-
-  ~bv[]
-     C-z r               Resume proof tree
-  ~ev[]
-  Resume original proof tree display, re-creating buffer \"prooftree\" if
-  necessary.  See also ~c[suspend-proof-tree].  With prefix argument: push the
-  mark, do not modify the windows, and move point to end of ~c[*mfm-buffer*].
-
-  ~bv[]
-     C-z s               Suspend proof tree
-  ~ev[]
-  Freeze the contents of the \"prooftree\" buffer, until ~c[resume-proof-tree]
-  is invoked.  Unlike ~c[stop-proof-tree], the only effect of
-  ~c[suspend-proof-tree] is to stop putting characters into the \"prooftree\"
-  buffer; in particular, strings destined for that buffer continue ~sc[not] to
-  be put into the primary buffer, which is the value of the emacs variable
-  ~c[*mfm-buffer*].
-
-  ~bv[]
-    C-z o                Select other frame
-    C-z b                Switch to \"prooftree\" buffer
-    C-z B                Switch to frame called \"prooftree-frame\"
-  ~ev[]
-  These commands move between buffers and frames, as indicated.  The first of
-  these has nothing specifically to do with proof trees, but is handy if you
-  have at least two emacs frames displayed.  The second takes you to the
-  \"prooftree\" buffer (in the current frame), while the third takes you to the
-  frame called \"prooftree-frame\", creating it if it does not already exist.")
+  ~l[proof-tree-examples] for detailed examples.  ~l[checkpoint-forced-goals]
+  to learn how to mark goals as checkpoints that ~il[force] the creation of
+  goals in forcing rounds.  Finally, ~pl[proof-tree-details] for some points
+  not covered elsewhere.")
 
 (deflabel proof-tree-examples
   :doc
@@ -625,10 +478,9 @@
   ~c[:start-proof-tree] works by removing ~c[']~ilc[proof-tree] from the
   ~c[inhibit-output-lst]; ~pl[set-inhibit-output-lst].~/
 
-  Explanations of proof tree displays, including emacs support, may be found
-  elsewhere; ~pl[proof-tree] and ~pl[proof-tree-emacs].  In a nutshell:
-  ~c[:start-proof-tree] causes proof tree display to be turned on, once it has
-  been turned off by ~c[:]~ilc[stop-proof-tree].
+  Explanations of proof tree displays may be found elsewhere: ~pl[proof-tree].
+  In a nutshell: ~c[:start-proof-tree] causes proof tree display to be turned
+  on, once it has been turned off by ~c[:]~ilc[stop-proof-tree].
 
   Do not attempt to invoke ~c[start-proof-tree] during an interrupt in the
   middle of a proof."

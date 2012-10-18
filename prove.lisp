@@ -8949,7 +8949,7 @@
   If you believe the ~il[force]d goals are theorems, you should follow the
   usual methodology for ``fixing'' failed ACL2 proofs, e.g., the
   identification of key lemmas and their timely and proper use as
-  rules.  ~l[failure] and ~pl[proof-tree].
+  rules.  ~l[failure], ~pl[gag-mode], and ~pl[proof-tree].
 
   The rules designed for the goals of forcing rounds are often just
   what is needed to prove the ~il[force]d hypothesis at the time it is
