@@ -770,6 +770,44 @@ a recursive binding.~/~/"
                   patbind-er-fresh-variable-for-erp)
                  ,rest-expr)))))
 
+(def-b*-binder cmp
+  "B* binder for context-message pairs~/
+Usage:
+~bv[]
+ (b* (((cmp x) (cmp-returning-form))) (result-form))
+~ev[]
+is equivalent to
+~bv[]
+ (er-let*-cmp ((x (cmp-returning-form))) (result-form)),
+~ev[]
+which itself is approximately equivalent to
+~bv[]
+ (mv-let (ctx x)
+         (cmp-returning-form)
+     (if ctx
+         (mv ctx x)
+       (result-form)))
+~ev[]
+
+~l[B*] for background.
+
+The CMP binder only makes sense as a top-level binding, but its argument may be
+a recursive binding.~/~/"
+  (declare (xargs :guard (destructure-guard cmp args forms 1)))
+  `(mv-let (patbind-cmp-fresh-variable-for-ctx
+            patbind-cmp-fresh-variable-for-val)
+     ,(car forms)
+     (if patbind-cmp-fresh-variable-for-ctx
+         (mv patbind-cmp-fresh-variable-for-ctx
+             patbind-cmp-fresh-variable-for-val)
+       (patbind ,(car args)
+                (patbind-cmp-fresh-variable-for-val)
+                (check-vars-not-free
+                 (patbind-cmp-fresh-variable-for-val
+                  patbind-cmp-fresh-variable-for-ctx)
+                 ,rest-expr)))))
+
+
 (def-b*-binder state-global
   "B* binder for state globals~/
 Usage:

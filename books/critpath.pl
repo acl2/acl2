@@ -163,7 +163,7 @@ foreach my $target (@user_targets) {
 foreach my $top (@deps_of) {
     my $path = canonical_path(to_source_name($top));
     if ($path) {
-	my ($certdeps) = find_deps($path, $cache, 1, \%tscache);
+	my ($certdeps) = find_deps($path, $cache, \%tscache, 0);
 	push (@targets, @{$certdeps});
     } else {
 	print "Warning: bad path in --deps-of/-p $top\n";

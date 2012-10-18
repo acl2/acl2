@@ -1103,7 +1103,6 @@ sub src_deps {
 	$srcdeps,           # source file dependency list (accumulator)
 	$otherdeps,         # other file dependency list (accumulator)
 	$certparams,        # cert param hash (accumulator)
-	$book_only,         # Only record include-book dependencies
 	$tscache,           # timestamp cache
 	$ld_ok,             # Allow following LD commands
 	$seen,              # seen table for detecting circular dependencies
@@ -1120,7 +1119,7 @@ sub src_deps {
     $times_seen{$fname} = ($times_seen{$fname} || 0) + 1;
 
     $src_deps_depth = $src_deps_depth + 1;
-    print "$src_deps_depth src_deps $fname, $book_only\n"  if $debugging;
+    print "$src_deps_depth src_deps $fname\n"  if $debugging;
     my $events = src_events($fname, $cache, $tscache, $parent);
     if ($debugging) {
 	print "events: $fname";
@@ -1153,7 +1152,7 @@ sub src_deps {
 	    }
 	    print "include-book fullname: $fullname\n" if $debugging;
 	    $fullname && push(@$certdeps, $fullname);
-	} elsif ($type eq $depends_on_event && !$book_only) {
+	} elsif ($type eq $depends_on_event) {
 	    my $depname = $event->[1];
 	    my $dir = $event->[2];
 	    my $fullname = expand_dirname_cmd($depname, $fname, $dir,
@@ -1172,14 +1171,13 @@ sub src_deps {
 	    my $fullname = expand_dirname_cmd($srcname, $fname, $dir,
 					      $local_dirs, "loads", "");
 	    if ($fullname) {
-		push(@$srcdeps, $fullname) unless $book_only;
+		push(@$srcdeps, $fullname);
 		src_deps($fullname, $cache,
 			 $local_dirs,
 			 $certdeps,
 			 $srcdeps,
 			 $otherdeps,
 			 $certparams,
-			 $book_only,
 			 $tscache,
 			 $ld_ok,
 			 $seen,
@@ -1198,14 +1196,13 @@ sub src_deps {
 		my $fullname = expand_dirname_cmd($srcname, $fname, $dir,
 						  $local_dirs, "ld", "");
 		if ($fullname) {
-		    push(@$srcdeps, $fullname) unless $book_only;
+		    push(@$srcdeps, $fullname);
 		    src_deps($fullname, $cache,
 			     $local_dirs,
 			     $certdeps,
 			     $srcdeps,
 			     $otherdeps,
 			     $certparams,
-			     $book_only,
 			     $tscache,
 			     $ld_ok,
 			     $seen,
@@ -1256,11 +1253,11 @@ sub remove_dups {
 # assume it's supposed to be a certifiable book, so we look for .acl2
 # and image files as well.  Calls src_deps to get the dependencies.
 sub find_deps {
-    my ($lispfile,$cache,$book_only,$tscache,$parent) = @_;
+    my ($lispfile,$cache,$tscache,$parent) = @_;
 
     my $bookdeps = [];
     my $portdeps = [];
-    my $srcdeps = $book_only ? [] : [ $lispfile ];
+    my $srcdeps = [ $lispfile ];
     my $otherdeps = [];
     my $local_dirs = {};
 
@@ -1285,14 +1282,13 @@ sub find_deps {
 	# Scan the .acl2 file first so that we get the add-include-book-dir
 	# commands before the include-book commands.
 	if ($acl2file) {
-	    push(@$srcdeps, $acl2file) unless $book_only;
+	    push(@$srcdeps, $acl2file);
 	    src_deps($acl2file, $cache,
 		     $local_dirs, 
 		     $portdeps,
 		     $srcdeps,
 		     $otherdeps,
 		     $certparams,
-		     $book_only, 
 		     $tscache,
 		     1,
 		     {}, $lispfile);
@@ -1301,7 +1297,7 @@ sub find_deps {
 
     # Scan the lisp file for include-books.
     src_deps($lispfile, $cache, $local_dirs,
-	     $bookdeps, $srcdeps, $otherdeps, $certparams, $book_only,
+	     $bookdeps, $srcdeps, $otherdeps, $certparams,
 	     $tscache, !$certifiable, {}, $parent);
 
     if ($debugging) {
@@ -1317,7 +1313,7 @@ sub find_deps {
     
     my $image;
 
-    if (!$book_only && $certifiable) {
+    if ($certifiable) {
 	# If there is an .image file corresponding to this file or a
 	# cert.image in this file's directory, add a dependency on the
 	# ACL2 image specified in that file and the .image file itself.
@@ -1444,7 +1440,7 @@ sub add_deps {
     }
 
     my ($bookdeps, $portdeps, $srcdeps, $otherdeps, $image, $certparams)
-	= find_deps($lispfile, $cache, 0, $tscache, $parent);
+	= find_deps($lispfile, $cache, $tscache, $parent);
 
 
     $depmap->{$target} = [ $bookdeps, $portdeps, $srcdeps, $otherdeps, $image, $certparams ] ;
@@ -1576,7 +1572,7 @@ sub process_labels_and_targets {
 	    # Deps-of.
 	    my $name = canonical_path(to_source_name(substr($str,3)));
 	    if ($name) {
-		my ($deps) = find_deps($name, $cache, 1, $tscache, 0);
+		my ($deps) = find_deps($name, $cache, $tscache, 0);
 		push (@targets, @$deps);
 		push (@$label_targets, @$deps) if $label_started;
 	    } else {
