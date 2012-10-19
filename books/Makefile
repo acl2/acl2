@@ -125,7 +125,7 @@ textbook: arithmetic top-with-meta-cert ordinals ihs
 defexec: arithmetic misc ordinals
 symbolic: arithmetic arithmetic-2 data-structures ihs misc ordinals models/jvm/m5
 data-structures/memories: arithmetic-3 misc
-unicode: arithmetic arithmetic-3 ihs ordinals tools misc
+unicode: arithmetic arithmetic-3 ihs ordinals tools misc system
 proofstyles: arithmetic-2 ordinals misc top-with-meta-cert
 concurrent-programs/bakery: misc ordinals
 concurrent-programs/german-protocol: misc
