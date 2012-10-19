@@ -19616,6 +19616,11 @@
   A bug has been fixed that could leave one in a ~il[wormhole], awaiting input,
   after an error, such as an error in an ~c[:in-theory] hint during a proof.
   Thanks to Shilpi Goel for bringing this bug to our attention.
+
+  A key checkpoint for a given goal is now printed only once.  Previously, if a
+  key checkpoint led to more than one goal pushed for proof by induction, the
+  key checkpoint would be printed once for each such goal during the proof, and
+  also once for each such goal in the summary at the end.
   ~eq[]
 
   ~/~/")

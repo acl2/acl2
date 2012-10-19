@@ -1196,7 +1196,9 @@
           (t ttree))))
 
 #+acl2-par
-(defun save-acl2p-checkpoint-for-summary (cl-id prettyified-clause state)
+(defun save-and-print-acl2p-checkpoint (cl-id prettyified-clause
+                                              old-pspv-pool-lst forcing-round
+                                              state)
 
 ; We almost note that we are changing the global state of the program by
 ; returning a modified state.  However, we manually ensure that this global
@@ -1204,11 +1206,58 @@
 ; instead, we give ourselves the Okay to call f-put-global@par.
 
   (declare (ignorable cl-id prettyified-clause state))
-  (with-acl2p-checkpoint-saving-lock
-   (f-put-global@par 'acl2p-checkpoints-for-summary
-                     (cons (cons cl-id prettyified-clause)
-                           (f-get-global 'acl2p-checkpoints-for-summary state))
-                     state)))
+  (let* ((new-pair (cons cl-id prettyified-clause))
+         (newp
+          (with-acl2p-checkpoint-saving-lock
+           (cond
+            ((member-equal new-pair (f-get-global 'acl2p-checkpoints-for-summary
+                                                  state))
+             nil)
+            (t
+             (prog2$
+              (f-put-global@par 'acl2p-checkpoints-for-summary
+                                (cons new-pair
+                                      (f-get-global
+                                       'acl2p-checkpoints-for-summary state))
+                                state)
+              t))))))
+    (and
+     newp
+     (with-output-lock
+      (progn$
+       (cw "~%~%([ An ACL2(p) key checkpoint:~%~%~s0~%"
+           (string-for-tilde-@-clause-id-phrase cl-id))
+       (cw "~x0" prettyified-clause)
+
+; Parallelism no-fix: we are encountering a problem that we've known about from
+; within the first few months of looking at parallelizing the waterfall.  When
+; two sibling subgoals both push for induction, the second push doesn't know
+; about the first proof's push in parallel mode.  So, the number of the second
+; proof (e.g., *1.2) gets printed as if the first push hasn't happened (e.g.,
+; *1.2 gets mistakenly called *1.1).  Rather than fix this (the problem is
+; inherent to the naming scheme of ACL2), we punt and say what the name _could_
+; be (e.g., we print *1.1 for what's really *1.2).  The following non-theorem
+; showcases this problem.  See :doc topic set-waterfall-printing.
+
+; (thm (equal (append (car (cons x x)) y z) (append x x y)))
+
+; The sentence in the following cw call concerning the halting of the proof
+; attempt is motivated by the following example -- which is relevant because
+; ACL2(p) with :limited waterfall-printing does not print a message that says
+; the :do-not-induct hint causes the proof to abort.
+
+; (thm (equal (append x (append y z)) (append (append x y) z))
+;      :hints (("Goal" :do-not-induct t)))
+
+       (cw "~%~%The above subgoal may cause a goal to be pushed for proof by ~
+            induction.  The pushed goal's new name might be ~@0.  Note that ~
+            we may instead decide (either now or later) to prove the original ~
+            conjecture by induction.  Also note that if a hint indicates that ~
+            this subgoal or the original conjecture should not be proved by ~
+            induction, the proof attempt will halt.~%~%])~%~%"
+           (tilde-@-pool-name-phrase
+            forcing-round
+            old-pspv-pool-lst)))))))
 
 #+acl2-par
 (defun find-the-first-checkpoint (h checkpoint-processors)
@@ -1274,43 +1323,9 @@
            (prettyified-clause (prettyify-clause checkpoint-clause 
                                                  (let*-abstractionp state) 
                                                  wrld)))
-      (prog2$
-       (save-acl2p-checkpoint-for-summary cl-id prettyified-clause state)
-       (with-output-lock
-        (progn$
-         (cw "~%~%([ An ACL2(p) key checkpoint:~%~%~s0~%"
-             (string-for-tilde-@-clause-id-phrase cl-id))
-         (cw "~x0" prettyified-clause)
-
-; Parallelism no-fix: we are encountering a problem that we've known about from
-; within the first few months of looking at parallelizing the waterfall.  When
-; two sibling subgoals both push for induction, the second push doesn't know
-; about the first proof's push in parallel mode.  So, the number of the second
-; proof (e.g., *1.2) gets printed as if the first push hasn't happened (e.g.,
-; *1.2 gets mistakenly called *1.1).  Rather than fix this (the problem is
-; inherent to the naming scheme of ACL2), we punt and say what the name _could_
-; be (e.g., we print *1.1 for what's really *1.2).  The following non-theorem
-; showcases this problem.  See :doc topic set-waterfall-printing.
-
-; (thm (equal (append (car (cons x x)) y z) (append x x y)))
-
-; The sentence in the following cw call concerning the halting of the proof
-; attempt is motivated by the following example -- which is relevant because
-; ACL2(p) with :limited waterfall-printing does not print a message that says
-; the :do-not-induct hint causes the proof to abort.
-
-; (thm (equal (append x (append y z)) (append (append x y) z))
-;      :hints (("Goal" :do-not-induct t)))
-
-         (cw "~%~%The above subgoal may cause a goal to be pushed for proof by ~
-            induction.  The pushed goal's new name might be ~@0.  Note that ~
-            we may instead decide (either now or later) to prove the original ~
-            conjecture by induction.  Also note that if a hint indicates that ~
-            this subgoal or the original conjecture should not be proved by ~
-            induction, the proof attempt will halt.~%~%])~%~%"
-             (tilde-@-pool-name-phrase
-              forcing-round
-              old-pspv-pool-lst)))))))))
+      (save-and-print-acl2p-checkpoint cl-id prettyified-clause
+                                       old-pspv-pool-lst forcing-round
+                                       state)))))
 
 (defun@par push-clause (cl hist pspv wrld state)
 
