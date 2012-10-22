@@ -147,7 +147,7 @@ parallel: make-event tools
 security: misc arithmetic-3
 sorting: arithmetic-3/extra
 tools: arithmetic-5 misc
-regex: tools cutil
+regex: tools cutil str
 defsort: misc unicode tools
 hons-archive: defsort unicode tools arithmetic-3
 str: arithmetic unicode defsort tools xdoc misc
