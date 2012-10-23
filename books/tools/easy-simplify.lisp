@@ -9,14 +9,15 @@
 ;; some hypotheses, under a user-provided equivalence relation, 
 
 
-(defun if-nest-to-hyp-list (x)
-  (cond ((equal x ''t) nil)
-        ((or (atom x)
-             (not (eq (car x) 'if))
-             (not (equal (fourth x) ''nil)))
-         (list x))
-        (t (append (if-nest-to-hyp-list (second x))
-                   (if-nest-to-hyp-list (third x))))))
+;; Note: replaced this with acl2's built-in expand-assumptions-1
+;; (defun if-nest-to-hyp-list (x)
+;;   (cond ((equal x ''t) nil)
+;;         ((or (atom x)
+;;              (not (eq (car x) 'if))
+;;              (not (equal (fourth x) ''nil)))
+;;          (list x))
+;;         (t (append (if-nest-to-hyp-list (second x))
+;;                    (if-nest-to-hyp-list (third x))))))
 
 
 ;; takes a translated term and an implicitly conjoined list of translated hyps
@@ -69,8 +70,10 @@
         (translate term t nil t 'easy-simplify-term world state))
        ((er trans-hyp-term)
         (translate hyp-term t nil t 'easy-simplify-term world state))
-       ;; bozo find out how ACL2 does this, if it does
-       (hyps (if-nest-to-hyp-list trans-hyp-term))
+       ;; ;; bozo find out how ACL2 does this, if it does
+       ;; (hyps (if-nest-to-hyp-list trans-hyp-term))
+       ;; ... like this:
+       (hyps (expand-assumptions-1 trans-hyp-term))
        ((er new-term)
         (easy-simplify-term1-fn 
          trans-term hyps hints equiv normalize rewrite repeat backchain-limit

@@ -28,37 +28,39 @@
 
 
 (mutual-recursion
- (defun find-matching-terms (pattern x)
+ (defun find-matching-terms (pattern restr x)
    (declare (xargs :guard (and (pseudo-termp pattern)
+                               (alistp restr)
                                (pseudo-termp x))
                    :verify-guards nil))
    (b* (((when (or (mbe :logic (atom x) :exec (symbolp x))
                    (eq (car x) 'quote)))
          nil)
         ((mv succ1 alist1)
-         (simple-one-way-unify pattern x nil))
-        (alists (find-matching-terms-list pattern (cdr x))))
+         (simple-one-way-unify pattern x restr))
+        (alists (find-matching-terms-list pattern restr (cdr x))))
      (if (and succ1 (not (member-equal alist1 alists)))
          (cons alist1 alists)
        alists)))
 
- (defun find-matching-terms-list (pattern x)
+ (defun find-matching-terms-list (pattern restr x)
    (declare (xargs :guard (and (pseudo-termp pattern)
+                               (alistp restr)
                                (pseudo-term-listp x))))
    (if (endp x)
        nil
-     (union-equal (find-matching-terms pattern (car x))
-                  (find-matching-terms-list pattern (cdr x))))))
+     (union-equal (find-matching-terms pattern restr (car x))
+                  (find-matching-terms-list pattern restr (cdr x))))))
 
 (make-flag find-matching-terms-flg find-matching-terms)
 
 (defthm-find-matching-terms-flg
   (defthm true-listp-find-matching-terms
-    (true-listp (find-matching-terms pattern x))
+    (true-listp (find-matching-terms pattern restr x))
     :rule-classes (:rewrite :type-prescription)
     :flag find-matching-terms)
   (defthm true-listp-find-matching-terms-list
-    (true-listp (find-matching-terms-list pattern x))
+    (true-listp (find-matching-terms-list pattern restr x))
     :rule-classes (:rewrite :type-prescription)
     :flag find-matching-terms-list))
 
@@ -93,13 +95,33 @@
        ((cmp rest)
         (translate-subst-for-instantiate (cdr subst) state)))
     (value-cmp (cons (list (caar subst) tterm) rest))))
+
+(defun translate-restr-for-instantiate (restr state)
+  (b* (((when (atom restr))
+        (value-cmp nil))
+       ((when (atom (car restr)))
+        (cw "skipping malformed restriction pair: ~x0~%" (car restr))
+        (translate-restr-for-instantiate (cdr restr) state))
+       ((cmp tterm)
+        (translate-cmp (cdar restr) t t t 'instantiate-thm-for-matching-terms
+                       (w state)
+                       (default-state-vars t)))
+       ((cmp rest)
+        (translate-restr-for-instantiate (cdr restr) state)))
+    (value-cmp (cons (cons (caar restr) tterm) rest))))
             
 
-(defun instantiate-thm-for-matching-terms-fn (thm subst pattern clause state)
+(defun instantiate-thm-for-matching-terms-fn (thm subst pattern restr clause state)
   (b* (((mv ctx pattern)
         (translate-cmp pattern t t t
                        'instantiate-thm-for-matching-terms
                        (w state) (default-state-vars t)))
+       ((when ctx)
+        (if pattern
+            (er hard? ctx "~@0" pattern)
+          nil))
+       ((mv ctx restr)
+        (translate-restr-for-instantiate restr state))
        ((when ctx)
         (if pattern
             (er hard? ctx "~@0" pattern)
@@ -110,13 +132,13 @@
         (if pattern
             (er hard? ctx "~@0" pattern)
           nil))
-       (matches (find-matching-terms-list pattern clause))
+       (matches (find-matching-terms-list pattern restr clause))
        ;; matches is the list of unifying substitutions
        ((unless matches) nil))
     `(:use ,(make-insts-for-matches thm subst matches))))
 
 
-(defmacro instantiate-thm-for-matching-terms (thm subst pattern)
+(defmacro instantiate-thm-for-matching-terms (thm subst pattern &key restrict)
   ":doc-section computed-hints
 A computed hint which produces :use hints of the given theorem based on
 occurences of a pattern in the current goal clause.~/
@@ -190,4 +212,4 @@ theorem used.  For example:
 ~ev[]
 ~/"
   `(instantiate-thm-for-matching-terms-fn
-    ',thm ',subst ',pattern clause state))
+    ',thm ',subst ',pattern ',restrict clause state))

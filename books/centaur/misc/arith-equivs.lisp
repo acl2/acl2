@@ -661,7 +661,7 @@
 (encapsulate
   ()
 
-  (defund bool->bit (x)
+  (defund-inline bool->bit (x)
     (declare (xargs :guard t))
     (if x 1 0))
 
