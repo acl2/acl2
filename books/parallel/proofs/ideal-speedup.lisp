@@ -18,6 +18,10 @@
   (* *general-duration-factor*
      (round (/ 40 20) 1)))
 
+(defconst *32-way-duration-factor*
+  (* *general-duration-factor*
+     (round (/ 40 32) 1)))
+
 (defconst *40-way-duration-factor*
   (* *general-duration-factor*
      (round (/ 40 40) 1)))
@@ -71,6 +75,11 @@
   (if (equal x 1)
       (countdown 2000000 *20-way-duration-factor* *20-way-duration-factor* 0)
     (countdown 2000001 *20-way-duration-factor* *20-way-duration-factor* 0)))
+
+(defun countdown-wrapper-32-way (x)
+  (if (equal x 1)
+      (countdown 2000000 *32-way-duration-factor* *32-way-duration-factor* 0)
+    (countdown 2000001 *32-way-duration-factor* *32-way-duration-factor* 0)))
 
 (defun countdown-wrapper-40-way (x)
   (if (equal x 1)
@@ -137,6 +146,59 @@
        (p20-20-way x))
   :otf-flg t 
   :rule-classes nil)
+
+
+(defun p1-32-way (n) (not (equal (countdown-wrapper-32-way n) 11)))
+(defun p2-32-way (n) (not (equal (countdown-wrapper-32-way n) 12)))
+(defun p3-32-way (n) (not (equal (countdown-wrapper-32-way n) 13)))
+(defun p4-32-way (n) (not (equal (countdown-wrapper-32-way n) 14)))
+(defun p5-32-way (n) (not (equal (countdown-wrapper-32-way n) 15)))
+(defun p6-32-way (n) (not (equal (countdown-wrapper-32-way n) 16)))
+(defun p7-32-way (n) (not (equal (countdown-wrapper-32-way n) 17)))
+(defun p8-32-way (n) (not (equal (countdown-wrapper-32-way n) 18)))
+(defun p9-32-way (n) (not (equal (countdown-wrapper-32-way n) 19)))
+(defun p10-32-way (n) (not (equal (countdown-wrapper-32-way n) 20)))
+
+(defun p11-32-way (n) (not (equal (countdown-wrapper-32-way n) 21)))
+(defun p12-32-way (n) (not (equal (countdown-wrapper-32-way n) 22)))
+(defun p13-32-way (n) (not (equal (countdown-wrapper-32-way n) 23)))
+(defun p14-32-way (n) (not (equal (countdown-wrapper-32-way n) 24)))
+(defun p15-32-way (n) (not (equal (countdown-wrapper-32-way n) 25)))
+(defun p16-32-way (n) (not (equal (countdown-wrapper-32-way n) 26)))
+(defun p17-32-way (n) (not (equal (countdown-wrapper-32-way n) 27)))
+(defun p18-32-way (n) (not (equal (countdown-wrapper-32-way n) 28)))
+(defun p19-32-way (n) (not (equal (countdown-wrapper-32-way n) 29)))
+(defun p20-32-way (n) (not (equal (countdown-wrapper-32-way n) 30)))
+
+(defun p21-32-way (n) (not (equal (countdown-wrapper-32-way n) 31)))
+(defun p22-32-way (n) (not (equal (countdown-wrapper-32-way n) 32)))
+(defun p23-32-way (n) (not (equal (countdown-wrapper-32-way n) 33)))
+(defun p24-32-way (n) (not (equal (countdown-wrapper-32-way n) 34)))
+(defun p25-32-way (n) (not (equal (countdown-wrapper-32-way n) 35)))
+(defun p26-32-way (n) (not (equal (countdown-wrapper-32-way n) 36)))
+(defun p27-32-way (n) (not (equal (countdown-wrapper-32-way n) 37)))
+(defun p28-32-way (n) (not (equal (countdown-wrapper-32-way n) 38)))
+(defun p29-32-way (n) (not (equal (countdown-wrapper-32-way n) 39)))
+
+(defun p30-32-way (n) (not (equal (countdown-wrapper-32-way n) 32)))
+(defun p31-32-way (n) (not (equal (countdown-wrapper-32-way n) 41)))
+(defun p32-32-way (n) (not (equal (countdown-wrapper-32-way n) 42)))
+
+(comp t)
+
+(defthm ideal-32-way
+  (and (p1-32-way x) (p2-32-way x) (p3-32-way x) (p4-32-way x) (p5-32-way x)
+       (p6-32-way x) (p7-32-way x) (p8-32-way x) (p9-32-way x)
+       (p10-32-way x) (p11-32-way x) (p12-32-way x) (p13-32-way x)
+       (p14-32-way x) (p15-32-way x) (p16-32-way x) (p17-32-way x)
+       (p18-32-way x) (p19-32-way x) 
+       (p20-32-way x) (p21-32-way x) (p22-32-way x) (p23-32-way x) 
+       (p24-32-way x) (p25-32-way x) (p26-32-way x) (p27-32-way x)
+       (p28-32-way x) (p29-32-way x)
+       (p30-32-way x) (p31-32-way x) (p32-32-way x))
+  :otf-flg t
+  :rule-classes nil)
+
 
 (defun p1-40-way (n) (not (equal (countdown-wrapper-40-way n) 11)))
 (defun p2-40-way (n) (not (equal (countdown-wrapper-40-way n) 12)))
