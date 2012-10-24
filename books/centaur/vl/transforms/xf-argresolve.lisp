@@ -80,9 +80,9 @@ vl-gateinst-dirassign), just because it is convenient.</li>
 the specified <tt>name</tt> among <tt>args</tt>, a @(see vl-namedarglist-p)."
 
   :long "<p>We once used some fast-alist stuff here, but now I think that it
-isn't worthwhile since most module instances have relatively few arguments so
-it isn't really worthwhile.  It'd be easy enough to write an version that uses
-fast-alists when there are many arguments, but Jared doesn't expect performance
+isn't worthwhile since most module instances have relatively few arguments, or
+are instantiated infrequently.  It'd be easy enough to write an version that
+uses fast-alists when there are many arguments, but I don't expect performance
 to be a problem.</p>"
 
   (defund vl-find-namedarg (name args)
@@ -95,13 +95,19 @@ to be a problem.</p>"
           (t
            (vl-find-namedarg name (cdr args)))))
 
+  (local (in-theory (enable vl-find-namedarg)))
+
+  (defthm vl-find-namedarg-under-iff
+    (implies (force (vl-namedarglist-p args))
+             (iff (vl-find-namedarg name args)
+                  (member-equal name (vl-namedarglist->names args)))))
+
   (defthm vl-namedarg-p-of-vl-find-namedarg
     (implies (force (vl-namedarglist-p args))
              (equal (vl-namedarg-p (vl-find-namedarg name args))
                     (if (member-equal name (vl-namedarglist->names args))
                         t
-                      nil)))
-    :hints(("Goal" :in-theory (enable vl-find-namedarg)))))
+                      nil)))))
 
 
 
@@ -120,14 +126,15 @@ successp warnings x-prime)</tt>.</p>
 <li><tt>x</tt> is the @(see vl-arguments-p) structure that is the
 <tt>:portargs</tt> field of a module instance,</li>
 
-<li><tt>ports</tt> and <tt>portdecls</tt> are the lists of ports and port
-declarations for the module being instanced, and <tt>palist</tt> is the @(see
-vl-portdecl-alist) for <tt>portdecls</tt>, and</li>
+<li><tt>ports</tt> are the lists of ports and port declarations for the module
+being instanced, and</li>
 
 <li><tt>warnings</tt> is an ordinary @(see warnings) accumulator which we may
-extend with fatal warnings, and <tt>inst</tt> is the module instance we are
-working with, which is semantically irrelevant and is used merely to provide
-better error messages.</li>
+extend with fatal warnings, and</li>
+
+<li><tt>inst</tt> is the module instance we are working with, which is
+semantically irrelevant and is used merely to provide better error
+messages.</li>
 
 </ul>
 
@@ -135,36 +142,58 @@ better error messages.</li>
 @(see vl-arguments-p) structure which is always semantically equivalent to
 <tt>x</tt> and, upon success, uses plain arguments.</p>
 
-<p>The main function just does a few well-formedness checks, then calls the
-auxiliary function to do the conversion.</p>
+<p>The main function just does a few well-formedness checks, then calls the aux
+function to do the conversion.</p>
 
-<p>The auxiliary function walks down the list of ports.  For each port, it
-finds the corresponding argument and builds a new @(see vl-plainarg-p).  The
-resulting list of plain arguments ends up being in the same order as the
-ports.</p>"
+<p>The aux function walks down the list of ports.  For each port, it looks up
+the corresponding argument and builds a new @(see vl-plainarg-p).</p>
+
+<p>Iterating over the ports (instead of the arguments) has two advantages: the
+resulting list of plain arguments ends up being in the same order as the ports,
+and it is easy to introduce blanks for any ports that aren't connected.</p>
+
+<h3>Handling of Missing Arguments</h3>
+
+<p>We used to require that every port had a connection, and otherwise cause a
+fatal error.</p>
+
+<p>While a missing port is obviously a concern and we should at least cause a
+warning, the Verilog standard does not seem to say that it is an error.
+Moreover, at least some other Verilog tools, like Verilog-XL and NCVerilog,
+merely warn about the situation and then simply treat the port as
+unconnected.</p>
+
+<p>So, to be able to handle designs that do this bad thing, we now also
+tolerate named arguments with missing ports, and only issue non-fatal
+warnings.</p>"
 
   (defund vl-convert-namedargs-aux (args ports)
     "Returns a vl-plainarglist-p"
     (declare (xargs :guard (and (vl-portlist-p ports)
                                 (vl-namedarglist-p args)
-                                (vl-portlist-named-p ports)
-                                (subsetp-equal (vl-portlist->names ports)
-                                               (vl-namedarglist->names args)))))
-    (if (atom ports)
-        nil
-      (let ((arg (vl-find-namedarg (vl-port->name (car ports)) args)))
-        (cons (make-vl-plainarg :expr (vl-namedarg->expr arg)
-                                :atts (vl-namedarg->atts arg))
-              (vl-convert-namedargs-aux args (cdr ports))))))
+                                (vl-portlist-named-p ports))
+                    :guard-debug t))
+    (b* (((when (atom ports))
+          nil)
+         (namedarg (vl-find-namedarg (vl-port->name (car ports)) args))
+         (plainarg (if namedarg
+                       (make-vl-plainarg :expr (vl-namedarg->expr namedarg)
+                                         :atts (vl-namedarg->atts namedarg))
+;; Otherwise, there's no argument corresponding to this
+;; port.  That's bad, but we've already warned about it
+;; (see below) and so we're just going to create a blank
+;; argument for it.
+                     (make-vl-plainarg :expr nil
+                                       :atts '(("VL_MISSING_CONNECTION"))))))
+      (cons plainarg
+            (vl-convert-namedargs-aux args (cdr ports)))))
 
   (local (in-theory (enable vl-convert-namedargs-aux)))
 
   (defthm vl-plainarglist-of-vl-convert-namedargs-aux
     (implies (and (force (vl-portlist-p ports))
                   (force (vl-namedarglist-p args))
-                  (force (vl-portlist-named-p ports))
-                  (force (subsetp-equal (vl-portlist->names ports)
-                                        (vl-namedarglist->names args))))
+                  (force (vl-portlist-named-p ports)))
              (vl-plainarglist-p (vl-convert-namedargs-aux args ports))))
 
   (defthm len-of-vl-convert-namedargs-aux
@@ -183,7 +212,7 @@ ports.</p>"
          (args   (vl-arguments->args x))
 
          ((unless namedp)
-          ;; Already uses plain arguments, nothing to do.
+;; Already uses plain arguments, nothing to do.
           (mv t warnings x))
 
          (modname        (vl-modinst->modname inst))
@@ -194,7 +223,7 @@ ports.</p>"
          (sorted-actuals (mergesort actual-names))
 
          ((unless (vl-portlist-named-p ports))
-          ;; Illegal instance: uses named arguments but module has unnamed ports
+;; Illegal instance: uses named arguments but module has unnamed ports
           (b* ((nils (acl2::duplicity nil formal-names))
                (w    (make-vl-warning
                       :type :vl-bad-instance
@@ -210,7 +239,7 @@ ports.</p>"
 
          ((unless (mbe :logic (uniquep actual-names)
                        :exec (same-lengthp actual-names sorted-actuals)))
-          ;; Illegal instance: actual names are not unique.
+;; Illegal instance: actual names are not unique.
           (b* ((w (make-vl-warning
                    :type :vl-bad-instance
                    :msg "~a0 illegally has multiple connections for port~s1 ~&2."
@@ -220,38 +249,42 @@ ports.</p>"
                    :fn 'vl-convert-namedargs)))
             (mv nil (cons w warnings) x)))
 
-         ((unless (equal sorted-formals sorted-actuals))
-          ;; Illegal instance: actuals don't line up with formals.
-          (b* ((missing (difference sorted-formals sorted-actuals))
-               (extra   (difference sorted-actuals sorted-formals))
-               (w1 (and extra
-                        (make-vl-warning
-                         :type :vl-bad-instance
-                         :msg "~a0 illegally connects to the following ~s1 ~
-                               in ~m2: ~&3"
-                         :args (list inst
-                                     (if (vl-plural-p extra)
-                                         "ports, which do not exist"
-                                       "port, which does not exist")
-                                     modname extra)
-                         :fatalp t
-                         :fn 'vl-convert-namedargs)))
-               (w2 (and missing
-                        (make-vl-warning
-                         :type :vl-bad-instance
-                         :msg "~a0 illegally omits the following ~s1 from ~
-                               ~m2: ~&3"
-                         :args (list inst
-                                     (if (vl-plural-p missing) "ports" "port")
-                                     modname missing)
-                         :fatalp t
-                         :fn 'vl-convert-namedargs)))
-               (warnings (cond ((and w1 w2) (list* w1 w2 warnings))
-                               (w1          (cons w1 warnings))
-                               (w2          (cons w2 warnings))
-                               ;; Impossible case, but easier than proving it away.
-                               (t           warnings))))
-            (mv nil warnings x)))
+         ((unless (subset sorted-actuals sorted-formals))
+;; There are actuals that aren't formals, i.e., connections to
+;; "extra" ports that don't exist in the module.  Seems like a pretty
+;; clear error, and tools like Verilog-XL and NCVerilog reject it.
+          (b* ((extra (difference sorted-actuals sorted-formals))
+               (w     (make-vl-warning
+                       :type :vl-bad-instance
+                       :msg "~a0 illegally connects to the following ~s1 in ~
+                             ~m2: ~&3"
+                       :args (list inst
+                                   (if (vl-plural-p extra)
+                                       "ports, which do not exist"
+                                     "port, which does not exist")
+                                   modname extra)
+                       :fatalp t
+                       :fn 'vl-convert-namedargs)))
+            (mv nil (cons w warnings) x)))
+
+         (warnings
+          (if (subset sorted-formals sorted-actuals)
+;; Every formal is connected, looking good...
+              warnings
+;; There are formals that aren't actuals, i.e., we don't have
+;; connections to some ports.  Bad, bad.  But, we'll only issue a
+;; NON-FATAL warning, because this is allowed by tools like
+;; Verilog-XL and NCVerilog.
+            (b* ((missing (difference sorted-formals sorted-actuals))
+                 (w       (make-vl-warning
+                           :type :vl-bad-instance
+                           :msg "~a0 omits the following ~s1 from ~m2: ~&3"
+                           :args (list inst
+                                       (if (vl-plural-p missing) "ports" "port")
+                                       modname missing)
+                           :fatalp nil
+                           :fn 'vl-convert-namedargs)))
+              (cons w warnings))))
 
          (plainargs (vl-convert-namedargs-aux args ports))
          (x-prime   (vl-arguments nil plainargs)))

@@ -44,6 +44,7 @@ initially kept in a big, mixed list.</p>"
                     (vl-eventdecl-p x)
                     (vl-paramdecl-p x)
                     (vl-fundecl-p x)
+                    (vl-taskdecl-p x)
                     (vl-modinst-p x)
                     (vl-gateinst-p x)
                     (vl-always-p x)
@@ -58,6 +59,7 @@ initially kept in a big, mixed list.</p>"
                  (:vl-eventdecl (vl-eventdecl-p x))
                  (:vl-paramdecl (vl-paramdecl-p x))
                  (:vl-fundecl   (vl-fundecl-p x))
+                 (:vl-taskdecl  (vl-taskdecl-p x))
                  (:vl-modinst   (vl-modinst-p x))
                  (:vl-gateinst  (vl-gateinst-p x))
                  (:vl-always    (vl-always-p x))
@@ -104,6 +106,10 @@ initially kept in a big, mixed list.</p>"
 
   (defthm vl-modelement-p-when-vl-fundecl-p
     (implies (vl-fundecl-p x)
+             (vl-modelement-p x)))
+
+  (defthm vl-modelement-p-when-vl-taskdecl-p
+    (implies (vl-taskdecl-p x)
              (vl-modelement-p x)))
 
   (defthm vl-modelement-p-when-vl-modinst-p
@@ -174,6 +180,11 @@ initially kept in a big, mixed list.</p>"
                   (vl-modelement-p x))
              (vl-fundecl-p x)))
 
+  (defthm vl-taskdecl-p-by-tag-when-vl-modelement-p
+    (implies (and (equal (tag x) :vl-taskdecl)
+                  (vl-modelement-p x))
+             (vl-taskdecl-p x)))
+
   (defthm vl-modinst-p-by-tag-when-vl-modelement-p
     (implies (and (equal (tag x) :vl-modinst)
                   (vl-modelement-p x))
@@ -204,6 +215,7 @@ initially kept in a big, mixed list.</p>"
                   (not (equal (tag x) :vl-eventdecl))
                   (not (equal (tag x) :vl-paramdecl))
                   (not (equal (tag x) :vl-fundecl))
+                  (not (equal (tag x) :vl-taskdecl))
                   (not (equal (tag x) :vl-modinst))
                   (not (equal (tag x) :vl-gateinst))
                   (not (equal (tag x) :vl-always))
@@ -267,6 +279,11 @@ initially kept in a big, mixed list.</p>"
              (vl-modelementlist-p x))
     :hints(("Goal" :induct (len x))))
 
+  (defthm vl-modelementlist-p-when-vl-taskdecllist-p
+    (implies (vl-taskdecllist-p x)
+             (vl-modelementlist-p x))
+    :hints(("Goal" :induct (len x))))
+
   (defthm vl-modelementlist-p-when-vl-modinstlist-p
     (implies (vl-modinstlist-p x)
              (vl-modelementlist-p x))
@@ -305,6 +322,7 @@ initially kept in a big, mixed list.</p>"
       (:vl-eventdecl (vl-eventdecl->loc x))
       (:vl-paramdecl (vl-paramdecl->loc x))
       (:vl-fundecl   (vl-fundecl->loc x))
+      (:vl-taskdecl  (vl-taskdecl->loc x))
       (:vl-modinst   (vl-modinst->loc x))
       (:vl-gateinst  (vl-gateinst->loc x))
       (:vl-always    (vl-always->loc x))
@@ -352,6 +370,7 @@ initially kept in a big, mixed list.</p>"
                      vl-modinstlist-p-when-subsetp-equal
                      vl-gateinstlist-p-when-subsetp-equal
                      vl-fundecllist-p-when-subsetp-equal
+                     vl-taskdecllist-p-when-subsetp-equal
                      vl-eventdecllist-p-when-subsetp-equal
                      vl-portdecllist-p-when-subsetp-equal
                      vl-modelementlist-p-when-vl-portlist-p
@@ -363,6 +382,7 @@ initially kept in a big, mixed list.</p>"
                      vl-modelementlist-p-when-vl-modinstlist-p
                      vl-modelementlist-p-when-vl-gateinstlist-p
                      vl-modelementlist-p-when-vl-fundecllist-p
+                     vl-modelementlist-p-when-vl-taskdecllist-p
                      vl-modelementlist-p-when-vl-eventdecllist-p
                      vl-modelementlist-p-when-vl-assignlist-p
                      vl-modelementlist-p-when-vl-alwayslist-p
@@ -371,8 +391,8 @@ initially kept in a big, mixed list.</p>"
                      )))
 
   (defund vl-sort-modelements (x ports portdecls assigns netdecls vardecls regdecls
-                                 eventdecls paramdecls fundecls modinsts gateinsts
-                                 alwayses initials)
+                                 eventdecls paramdecls fundecls taskdecls
+                                 modinsts gateinsts alwayses initials)
     (declare (xargs :guard (and (vl-modelementlist-p x)
                                 (vl-portlist-p ports)
                                 (vl-portdecllist-p portdecls)
@@ -383,6 +403,7 @@ initially kept in a big, mixed list.</p>"
                                 (vl-eventdecllist-p eventdecls)
                                 (vl-paramdecllist-p paramdecls)
                                 (vl-fundecllist-p fundecls)
+                                (vl-taskdecllist-p taskdecls)
                                 (vl-modinstlist-p modinsts)
                                 (vl-gateinstlist-p gateinsts)
                                 (vl-alwayslist-p alwayses)
@@ -396,6 +417,7 @@ initially kept in a big, mixed list.</p>"
                                 (true-listp eventdecls)
                                 (true-listp paramdecls)
                                 (true-listp fundecls)
+                                (true-listp taskdecls)
                                 (true-listp modinsts)
                                 (true-listp gateinsts)
                                 (true-listp alwayses)
@@ -410,6 +432,7 @@ initially kept in a big, mixed list.</p>"
               (reverse eventdecls)
               (reverse paramdecls)
               (reverse fundecls)
+              (reverse taskdecls)
               (reverse modinsts)
               (reverse gateinsts)
               (reverse alwayses)
@@ -425,6 +448,7 @@ initially kept in a big, mixed list.</p>"
                            (if (eq tag :vl-eventdecl) (cons (car x) eventdecls) eventdecls)
                            (if (eq tag :vl-paramdecl) (cons (car x) paramdecls) paramdecls)
                            (if (eq tag :vl-fundecl)   (cons (car x) fundecls)   fundecls)
+                           (if (eq tag :vl-taskdecl)  (cons (car x) taskdecls)  taskdecls)
                            (if (eq tag :vl-modinst)   (cons (car x) modinsts)   modinsts)
                            (if (eq tag :vl-gateinst)  (cons (car x) gateinsts)  gateinsts)
                            (if (eq tag :vl-always)    (cons (car x) alwayses)   alwayses)
@@ -444,6 +468,7 @@ initially kept in a big, mixed list.</p>"
                          (vl-eventdecllist-p eventdecls)
                          (vl-paramdecllist-p paramdecls)
                          (vl-fundecllist-p fundecls)
+                         (vl-taskdecllist-p taskdecls)
                          (vl-modinstlist-p modinsts)
                          (vl-gateinstlist-p gateinsts)
                          (vl-alwayslist-p alwayses)
@@ -457,18 +482,19 @@ initially kept in a big, mixed list.</p>"
                          (true-listp eventdecls)
                          (true-listp paramdecls)
                          (true-listp fundecls)
+                         (true-listp taskdecls)
                          (true-listp modinsts)
                          (true-listp gateinsts)
                          (true-listp alwayses)
                          (true-listp initials)))
              (b* (((mv ports portdecls assigns netdecls
                        vardecls regdecls eventdecls
-                       paramdecls fundecls modinsts
-                       gateinsts alwayses initials)
+                       paramdecls fundecls taskdecls
+                       modinsts gateinsts alwayses initials)
                    (vl-sort-modelements x ports portdecls assigns netdecls
                                         vardecls regdecls eventdecls
-                                        paramdecls fundecls modinsts
-                                        gateinsts alwayses initials)))
+                                        paramdecls fundecls taskdecls
+                                        modinsts gateinsts alwayses initials)))
                (and (vl-portlist-p ports)
                     (vl-portdecllist-p portdecls)
                     (vl-assignlist-p assigns)
@@ -478,6 +504,7 @@ initially kept in a big, mixed list.</p>"
                     (vl-eventdecllist-p eventdecls)
                     (vl-paramdecllist-p paramdecls)
                     (vl-fundecllist-p fundecls)
+                    (vl-taskdecllist-p taskdecls)
                     (vl-modinstlist-p modinsts)
                     (vl-gateinstlist-p gateinsts)
                     (vl-alwayslist-p alwayses)

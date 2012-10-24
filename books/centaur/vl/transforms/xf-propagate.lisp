@@ -58,6 +58,29 @@ inputs instead of outputs, etc.</p>
 module/gate instance ports.</p>")
 
 
+
+(defaggregate propagate-limits
+  (max-ops)
+  :tag :propagate-limits
+  :require ((vl-maybe-natp-of-propagate-limits->max-ops
+             (vl-maybe-natp max-ops)
+             :rule-classes :type-prescription))
+  :parents (propagate)
+  :short "Limits on the assignments to consider."
+  :long "<p>We put this in an aggregate just to make it easy to extend.</p>")
+
+
+(defund propagate-expr-limits-okp (x limits)
+  (declare (xargs :guard (and (vl-expr-p x)
+                              (propagate-limits-p limits))))
+  (b* (((propagate-limits limits) limits)
+       ((unless limits.max-ops)
+        t)
+       (ops (vl-expr-ops x))
+       (ops (set-difference-eq ops '(:vl-bitselect :vl-partselect-colon))))
+    (< (len ops) limits.max-ops)))
+
+
 (defsection candidates-for-propagation
   :parents (propagate)
   :short "Gather initial candidates for propagation."
@@ -74,25 +97,26 @@ eliminating.  We're basically just looking for assignments like:</p>
 propagation would be too hard.  We return a @(see vl-sigma-p) that binds each
 identifiers to its replacement (i.e., the rhs).</p>"
 
-  (defund candidates-for-propagation (x)
-    (declare (xargs :guard (vl-assignlist-p x)))
-    (cond ((atom x)
-           nil)
-          ((vl-idexpr-p (vl-assign->lvalue (car x)))
-           (cons (cons (vl-idexpr->name (vl-assign->lvalue (car x)))
-                       (vl-assign->expr (car x)))
-                 (candidates-for-propagation (cdr x))))
-          (t
-           (candidates-for-propagation (cdr x)))))
+  (defund candidates-for-propagation (x limits)
+    (declare (xargs :guard (and (vl-assignlist-p x)
+                                (propagate-limits-p limits))))
+    (b* (((when (atom x))
+          nil)
+         ((vl-assign x1) (car x))
+         ((when (and (vl-idexpr-p x1.lvalue)
+                     (propagate-expr-limits-okp x1.expr limits)))
+          (cons (cons (vl-idexpr->name x1.lvalue) x1.expr)
+                (candidates-for-propagation (cdr x) limits))))
+      (candidates-for-propagation (cdr x) limits)))
 
   (local (in-theory (enable candidates-for-propagation)))
 
   (defthm alistp-of-candidates-for-propagation
-    (alistp (candidates-for-propagation x)))
+    (alistp (candidates-for-propagation x limits)))
 
   (defthm vl-sigma-p-of-candidates-for-propagation
     (implies (force (vl-assignlist-p x))
-             (vl-sigma-p (candidates-for-propagation x)))))
+             (vl-sigma-p (candidates-for-propagation x limits)))))
 
 
 
@@ -305,10 +329,11 @@ Hence, we need some code for detecting what wires are driven.</p>"
                     (alistp (remove-each-from-alist keys alist)))
            :hints(("Goal" :in-theory (enable remove-each-from-alist)))))
 
-  (defund propagation-sigma (x)
-    (declare (xargs :guard (vl-module-p x)))
+  (defund propagation-sigma (x limits)
+    (declare (xargs :guard (and (vl-module-p x)
+                                (propagate-limits-p limits))))
     (b* (((vl-module x) x)
-         (candidates (candidates-for-propagation x.assigns))
+         (candidates (candidates-for-propagation x.assigns limits))
 ;         (- (cw "  - Initial candidates: ~&0~%" (mergesort (alist-keys candidates))))
          (too-hard   (too-hard-to-propagate x))
 ;         (- (cw "  - Too hard: ~&0~%" (mergesort too-hard)))
@@ -340,7 +365,7 @@ Hence, we need some code for detecting what wires are driven.</p>"
 
   (defthm vl-sigma-p-of-propagation-sigma
     (implies (force (vl-module-p x))
-             (vl-sigma-p (propagation-sigma x)))
+             (vl-sigma-p (propagation-sigma x limits)))
     :hints(("Goal" :in-theory (enable propagation-sigma)))))
 
 
@@ -375,10 +400,11 @@ Hence, we need some code for detecting what wires are driven.</p>"
                     (string-listp (alist-keys x)))
            :hints(("Goal" :induct (len x)))))
 
-  (defund vl-propagation-round (x)
-    (declare (xargs :guard (vl-module-p x)))
+  (defund vl-propagation-round (x limits)
+    (declare (xargs :guard (and (vl-module-p x)
+                                (propagate-limits-p limits))))
     (b* ((- (cw "Starting propagation round for ~s0~%" (vl-module->name x)))
-         (sigma (propagation-sigma x))
+         (sigma (propagation-sigma x limits))
          ((unless sigma)
           ;; Nothing to do.
           x)
@@ -392,10 +418,10 @@ Hence, we need some code for detecting what wires are driven.</p>"
 
   (defthm vl-module-p-of-vl-propagation-round
     (implies (force (vl-module-p x))
-             (vl-module-p (vl-propagation-round x))))
+             (vl-module-p (vl-propagation-round x limits))))
 
   (defthm vl-module->name-of-vl-propagation-round
-    (equal (vl-module->name (vl-propagation-round x))
+    (equal (vl-module->name (vl-propagation-round x limits))
            (vl-module->name x))))
 
 
@@ -404,60 +430,64 @@ Hence, we need some code for detecting what wires are driven.</p>"
   :parents (propagate)
   :short "Repeatedly propagate assignments in a module."
 
-  (defund vl-propagation-fixpoint (x n)
+  (defund vl-propagation-fixpoint (x n limits)
     (declare (xargs :guard (and (vl-module-p x)
-                                (natp n))
+                                (natp n)
+                                (propagate-limits-p limits))
                     :measure (nfix n)))
     (b* (((when (zp n))
           (cw "Note: ran out of steps in vl-propagation-fixpoint for ~s0.~%"
               (vl-module->name x))
           x)
-         (new-x (vl-propagation-round x))
+         (new-x (vl-propagation-round x limits))
          ((when (equal new-x x))
           x))
-      (vl-propagation-fixpoint new-x (- n 1))))
+      (vl-propagation-fixpoint new-x (- n 1) limits)))
 
   (local (in-theory (enable vl-propagation-fixpoint)))
 
   (local (defthm l0
            (implies (force (vl-module-p x))
-                    (vl-module-p (vl-propagation-fixpoint x n)))))
+                    (vl-module-p (vl-propagation-fixpoint x n limits)))))
 
   (local (defthm l1
-           (equal (vl-module->name (vl-propagation-fixpoint x n))
+           (equal (vl-module->name (vl-propagation-fixpoint x n limits))
                   (vl-module->name x))))
 
-  (defund vl-module-propagate (x)
-    (declare (xargs :guard (vl-module-p x)))
+  (defund vl-module-propagate (x limits)
+    (declare (xargs :guard (and (vl-module-p x)
+                                (propagate-limits-p limits))))
     (b* (((vl-module x) x)
          ((when (or x.alwayses
                     x.paramdecls
                     x.fundecls
+                    x.taskdecls
                     x.eventdecls
                     x.regdecls
                     x.vardecls))
           (cw "Note: not propagating in ~s0; module looks too complicated.~%" x.name)
           x))
-      (vl-propagation-fixpoint x 1000)))
+      (vl-propagation-fixpoint x 1000 limits)))
 
   (local (in-theory (enable vl-module-propagate)))
 
   (defthm vl-module-p-of-vl-module-propagate
     (implies (force (vl-module-p x))
-             (vl-module-p (vl-module-propagate x))))
+             (vl-module-p (vl-module-propagate x limits))))
 
   (defthm vl-module->name-of-vl-module-propagate
-    (equal (vl-module->name (vl-module-propagate x))
+    (equal (vl-module->name (vl-module-propagate x limits))
            (vl-module->name x))))
 
 
-(defprojection vl-modulelist-propagate (x)
-  (vl-module-propagate x)
-  :guard (vl-modulelist-p x)
+(defprojection vl-modulelist-propagate (x limits)
+  (vl-module-propagate x limits)
+  :guard (and (vl-modulelist-p x)
+              (propagate-limits-p limits))
   :result-type vl-modulelist-p
   :parents (propagate))
 
 (defthm vl-modulelist->names-of-vl-modulelist-propagate
-  (equal (vl-modulelist->names (vl-modulelist-propagate x))
+  (equal (vl-modulelist->names (vl-modulelist-propagate x limits))
          (vl-modulelist->names x))
   :hints(("Goal" :induct (len x))))

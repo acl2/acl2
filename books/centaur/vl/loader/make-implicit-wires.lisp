@@ -648,8 +648,9 @@ this extended namespace.</p>"
 
 (defsection vl-fundecl-check-undeclared
   :parents (vl-make-implicit-wires)
-  :short "@(call vl-stmt-check-undeclared) checks an arbitrary @(see vl-stmt-p)
-for uses of undeclared names."
+  :short "@(call vl-fundecl-check-undeclared) checks an arbitrary @(see
+vl-fundecl-p) for uses of undeclared names."
+
   :long "<p>See @(see vl-make-implicit-wires-aux) to understand the
 arguments.</p>
 
@@ -683,7 +684,7 @@ problem.</p>"
          ;; Check for undeclared names in the non-local parts (the inputs and
          ;; return value range.)  It's not quite right to do the inputs here, as
          ;; described above, but in practice it shouldn't be much of a problem.
-         (other-names (vl-exprlist-names (append (vl-funinputlist-allexprs x.inputs)
+         (other-names (vl-exprlist-names (append (vl-taskportlist-allexprs x.inputs)
                                                  (vl-maybe-range-allexprs x.rrange))))
          (warnings    (vl-warn-about-undeclared-wires x other-names portdecls decls warnings))
 
@@ -701,7 +702,7 @@ problem.</p>"
          ;; Okay, now add the inputs to the local scope, since it's valid to
          ;; refer to them in the body.  Also add in the function's name since it
          ;; can be a valid return value.
-         (local-decls (make-fal (pairlis$ (vl-funinputlist->names x.inputs) nil) local-decls))
+         (local-decls (make-fal (pairlis$ (vl-taskportlist->names x.inputs) nil) local-decls))
          (local-decls  (hons-acons x.name nil local-decls))
 
          ;; The local scope is constructed, check the function's body.
@@ -716,6 +717,55 @@ problem.</p>"
   (defthm vl-warninglist-p-of-vl-fundecl-check-undeclared
     (implies (force (vl-warninglist-p warnings))
              (vl-warninglist-p (vl-fundecl-check-undeclared x portdecls decls warnings)))))
+
+
+
+(defsection vl-taskdecl-check-undeclared
+  :parents (vl-make-implicit-wires)
+  :short "@(call vl-taskdecl-check-undeclared) checks an arbitrary @(see vl-taskdecl-p)
+for uses of undeclared names."
+  :long "<p>This is nearly identical to @(see vl-fundecl-check-undeclared) and
+it has the same problems with parameters.</p>"
+
+  (defund vl-taskdecl-check-undeclared (x portdecls decls warnings)
+    "Returns WARNINGS'"
+    (declare (xargs :guard (and (vl-taskdecl-p x)
+                                (vl-warninglist-p warnings))))
+    (b* (((vl-taskdecl x) x)
+
+         ;; Check for undeclared names in the task's visible ports.  It's not
+         ;; quite right to do the ports here if they have parameters, as
+         ;; described above, but in practice it shouldn't be much of a problem.
+         (other-names (vl-exprlist-names (vl-taskportlist-allexprs x.ports)))
+         (warnings    (vl-warn-about-undeclared-wires x other-names portdecls decls warnings))
+
+         ;; Now make a local scope and add the local declarations, as in named
+         ;; block statements.
+         (local-decls (hons-shrink-alist decls nil))
+
+         ;; Now check/add the block items.  As we do this, we're acting like the
+         ;; ports haven't been declared yet.  That's not quite right, but it
+         ;; should be practically pretty reasonable since it's not valid to refer
+         ;; to a port in the other declarations.
+         ((mv warnings local-decls)
+          (vl-blockitemlist-check-undeclared x.decls portdecls local-decls warnings))
+
+         ;; Okay, now add the ports to the local scope, since it's valid to
+         ;; refer to them in the body.
+         (local-decls (make-fal (pairlis$ (vl-taskportlist->names x.ports) nil) local-decls))
+
+         ;; The local scope is constructed, check the task's body.
+         (warnings (vl-stmt-check-undeclared x x.body portdecls local-decls warnings))
+
+         ;; That's it, all done with the local scope.
+         (- (fast-alist-free local-decls)))
+      warnings))
+
+  (local (in-theory (enable vl-taskdecl-check-undeclared)))
+
+  (defthm vl-warninglist-p-of-vl-taskdecl-check-undeclared
+    (implies (force (vl-warninglist-p warnings))
+             (vl-warninglist-p (vl-taskdecl-check-undeclared x portdecls decls warnings)))))
 
 
 
@@ -889,7 +939,18 @@ later on.  We handle that in @(see vl-make-implicit-wires).</p>"
           (b* ((warnings (vl-fundecl-check-undeclared elem portdecls decls warnings))
                (decls    (hons-acons (vl-fundecl->name elem) nil decls))
                (acc      (cons elem acc)))
-            (vl-make-implicit-wires-aux (cdr x) portdecls decls acc warnings))))
+            (vl-make-implicit-wires-aux (cdr x) portdecls decls acc warnings)))
+
+         ((when (eq tag :vl-taskdecl))
+          ;; Tasks are tricky because they have their own scope, but we've
+          ;; already dealt with how to handle them, and they can't introduce
+          ;; any implicit wires, so this is easy.
+          (b* ((warnings (vl-taskdecl-check-undeclared elem portdecls decls warnings))
+               (decls    (hons-acons (vl-taskdecl->name elem) nil decls))
+               (acc      (cons elem acc)))
+            (vl-make-implicit-wires-aux (cdr x) portdecls decls acc warnings)))
+
+         )
 
       (er hard 'vl-make-implicit-wires-aux "Impossible")
       (mv warnings portdecls decls acc)))

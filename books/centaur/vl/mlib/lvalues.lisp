@@ -784,6 +784,18 @@ long)))
     (b* ((warnings (vl-fundecl-lvaluecheck (car x) warnings)))
         (vl-fundecllist-lvaluecheck (cdr x) warnings))))
 
+(def-vl-lvaluecheck
+  :type vl-taskdecl
+  :body (vl-stmt-lvaluecheck (vl-taskdecl->body x) warnings))
+
+(def-vl-lvaluecheck
+  :type vl-taskdecllist
+  :body
+  (if (atom x)
+      warnings
+    (b* ((warnings (vl-taskdecl-lvaluecheck (car x) warnings)))
+        (vl-taskdecllist-lvaluecheck (cdr x) warnings))))
+
 
 
 (defsection vl-module-lvaluecheck
@@ -797,7 +809,8 @@ long)))
          (warnings  (vl-gateinstlist-lvaluecheck x.gateinsts warnings))
          (warnings  (vl-alwayslist-lvaluecheck   x.alwayses  warnings))
          (warnings  (vl-initiallist-lvaluecheck  x.initials  warnings))
-         (warnings  (vl-fundecllist-lvaluecheck  x.fundecls  warnings)))
+         (warnings  (vl-fundecllist-lvaluecheck  x.fundecls  warnings))
+         (warnings  (vl-taskdecllist-lvaluecheck x.taskdecls warnings)))
       (change-vl-module x :warnings warnings)))
 
   (local (in-theory (enable vl-module-lvaluecheck)))

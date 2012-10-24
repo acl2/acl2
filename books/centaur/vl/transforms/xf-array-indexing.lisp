@@ -220,7 +220,7 @@ a @(see " type-s ")"))
 <tt>(mv warnings-prime x-prime)</tt></p>")))
 
   `(defsection ,name
-     :parents (make-array-indexing)
+     :parents (array-indexing)
      :short ,short
      :long ,long
 
@@ -257,7 +257,7 @@ a @(see " type-s ")"))
 <tt>(mv warnings-prime x-prime)</tt></p>")))
 
   `(defsection ,name
-     :parents (make-array-indexing)
+     :parents (array-indexing)
      :short ,short
      :long ,long
 

@@ -395,7 +395,7 @@ separate lists, forming a new sexpr list."
 
 
 (defsection 4vs-and-dumb
-  :parents (sexpr-construtors)
+  :parents (4vs-constructors)
   :short "@(call 4vs-and-dumb) constructs exactly the 4v-sexpr <tt>(and a b)</tt>."
   :long "<p>This is dumb in that it doesn't do the simple optimizations of
 @(see 4vs-and), but it has a nicer @(see 4v-sexpr-vars) theorem because of
@@ -476,7 +476,7 @@ s-expression for a conservative multiplexor."
 
 
 (defsection 4vs-or
-  :parents (sexpr-construtors)
+  :parents (4vs-constructors)
   :short "@(call 4vs-or) constructs a 4v-sexpr equivalent to <tt>(or a b)</tt>."
 
   (defund 4vs-or (a b)
@@ -500,7 +500,7 @@ s-expression for a conservative multiplexor."
 
 
 (defsection 4vs-or-list
-  :parents (sexpr-construtors)
+  :parents (4vs-constructors)
   :short "@(call 4vs-or-list) reduction ors together all the sexprs in the
 list <tt>x</tt>, producing a single sexpr representing their disjunction."
 

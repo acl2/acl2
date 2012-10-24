@@ -117,7 +117,8 @@ endfunction
 there are multiple calls of the function, and generally seems like an
 unreasonable thing to do.</p>
 
-<p>We do not support recursive functions.</p>
+<p>We do not support recursive functions.  I mean, come on.  Do you think we
+are Lisp programmers or something?</p>
 
 
 <h3>Transformation Approach</h3>
@@ -1206,7 +1207,7 @@ registers and inputs.</p>"
     (b* (((mv regdecls ?vardecls ?eventdecls ?paramdecls)
           (vl-filter-blockitems (vl-fundecl->decls function)))
          (regnames (vl-regdecllist->names regdecls))
-         (innames  (vl-funinputlist->names (vl-fundecl->inputs function)))
+         (innames  (vl-taskportlist->names (vl-fundecl->inputs function)))
          ((mv okp warnings written-regs read-regs read-inputs)
           (vl-fun-assignorder-okp-aux x innames regnames nil nil nil warnings function))
          ((unless okp)
@@ -1547,19 +1548,19 @@ throughout the rest of the module we only need one pass.</p>")
                       nil)))))
 
 
-(defsection vl-funinputlist-types-okp
+(defsection vl-taskportlist-types-okp
   :parents (vl-funtemplate-p)
   :short "Ensure that a function's inputs are simple enough to convert into nets."
 
-  (defund vl-funinputlist-types-okp (x warnings function)
+  (defund vl-taskportlist-types-okp (x warnings function)
     "Returns (MV OKP WARNINGS)"
-    (declare (xargs :guard (and (vl-funinputlist-p x)
+    (declare (xargs :guard (and (vl-taskportlist-p x)
                                 (vl-warninglist-p warnings)
                                 (vl-fundecl-p function))))
     (b* (((when (atom x))
           (mv t warnings))
 
-         ((vl-funinput x1) (car x))
+         ((vl-taskport x1) (car x))
          ((unless (or (eq x1.type :vl-unsigned)
                       (eq x1.type :vl-signed)))
           (b* ((w (make-vl-warning
@@ -1567,15 +1568,15 @@ throughout the rest of the module we only need one pass.</p>")
                    :msg "In ~a0, input ~s1 has unsupported type ~s2."
                    :args (list function x1.name x1.type)
                    :fatalp t
-                   :fn 'vl-funinputlist-types-okp)))
+                   :fn 'vl-taskportlist-types-okp)))
             (mv nil (cons w warnings)))))
-      (vl-funinputlist-types-okp (cdr x) warnings function)))
+      (vl-taskportlist-types-okp (cdr x) warnings function)))
 
-  (local (in-theory (enable vl-funinputlist-types-okp)))
+  (local (in-theory (enable vl-taskportlist-types-okp)))
 
-  (defthm vl-warninglist-p-of-vl-funinputlist-types-okp
+  (defthm vl-warninglist-p-of-vl-taskportlist-types-okp
     (implies (force (vl-warninglist-p warnings))
-             (vl-warninglist-p (mv-nth 1 (vl-funinputlist-types-okp x warnings function))))))
+             (vl-warninglist-p (mv-nth 1 (vl-taskportlist-types-okp x warnings function))))))
 
 
 (defsection vl-funinput-to-netdecl
@@ -1584,11 +1585,11 @@ throughout the rest of the module we only need one pass.</p>")
 funtemplate."
 
   :long "<p>We assume the input is okay in the sense of @(see
-vl-funinputlist-types-okp).</p>"
+vl-taskportlist-types-okp).</p>"
 
   (defund vl-funinput-to-netdecl (x)
-    (declare (xargs :guard (vl-funinput-p x)))
-    (b* (((vl-funinput x) x)
+    (declare (xargs :guard (vl-taskport-p x)))
+    (b* (((vl-taskport x) x)
          (name-atom (make-vl-atom :guts (make-vl-string :value x.name))))
       (make-vl-netdecl :name    x.name
                        :type    :vl-wire
@@ -1601,13 +1602,13 @@ vl-funinputlist-types-okp).</p>"
   (local (in-theory (enable vl-funinput-to-netdecl)))
 
   (defthm vl-netdecl-p-of-vl-funinput-to-netdecl
-    (implies (force (vl-funinput-p x))
+    (implies (force (vl-taskport-p x))
              (vl-netdecl-p (vl-funinput-to-netdecl x)))))
 
 
 (defprojection vl-funinputlist-to-netdecls (x)
   (vl-funinput-to-netdecl x)
-  :guard (vl-funinputlist-p x)
+  :guard (vl-taskportlist-p x)
   :result-type vl-netdecllist-p
   :parents (vl-funtemplate-p))
 
@@ -1768,7 +1769,7 @@ unsupported constructs or doesn't meet our other sanity criteria.</p>"
          ((mv okp warnings) (vl-fun-regdecllist-types-okp regdecls warnings x))
          ((unless okp) (mv nil warnings)) ;; already warned
 
-         ((mv okp warnings) (vl-funinputlist-types-okp x.inputs warnings x))
+         ((mv okp warnings) (vl-taskportlist-types-okp x.inputs warnings x))
          ((unless okp) (mv nil warnings)) ;; already warned
 
          ((mv okp warnings assigns) (vl-funbody-to-assignments x warnings))

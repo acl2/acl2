@@ -399,6 +399,7 @@ filter-long
 (def-vl-filter-by-name portdecl)
 (def-vl-filter-by-name paramdecl)
 (def-vl-filter-by-name fundecl)
+(def-vl-filter-by-name taskdecl)
 
 
 (def-vl-filter-by-name module

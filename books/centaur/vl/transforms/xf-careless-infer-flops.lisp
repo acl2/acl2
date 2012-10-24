@@ -107,12 +107,12 @@
              (vl-regdecllist-p (vl-find-regdecl-list names regdecls)))
     :hints(("Goal" :in-theory (enable vl-find-regdecl-list)))))
 
-       
+
 
 ; Actual inference of flops and latches:
 
 (defsection vl-always-careless-infer-latch/flop
-  :parents (flop-inference latch-inference)
+  :parents (flop-inference)
   :short "Try to infer a flop or latch from an <tt>always</tt> block."
 
   :long "<p><b>Signature:</b> @(call vl-always-careless-infer-latch/flop) returns
@@ -362,7 +362,7 @@ the module.</li>
 
 
 (defsection vl-alwayslist-careless-infer-latches/flops
-  :parents (flop-inference latch-inference)
+  :parents (flop-inference)
   :short "Try to infer latches and flops from a list of <tt>always</tt>
 blocks."
 

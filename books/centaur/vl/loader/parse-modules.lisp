@@ -52,8 +52,8 @@
                                 )))
     (b* (((mv items warnings) (vl-make-implicit-wires items warnings))
          ((mv item-ports portdecls assigns netdecls vardecls regdecls eventdecls paramdecls
-              fundecls modinsts gateinsts alwayses initials)
-          (vl-sort-modelements items nil nil nil nil nil nil nil nil nil nil nil nil nil)))
+              fundecls taskdecls modinsts gateinsts alwayses initials)
+          (vl-sort-modelements items nil nil nil nil nil nil nil nil nil nil nil nil nil nil)))
 
       (or (not item-ports)
           (er hard? 'vl-make-module-by-items "There shouldn't be any ports in the items."))
@@ -69,6 +69,7 @@
                       :eventdecls eventdecls
                       :paramdecls paramdecls
                       :fundecls   fundecls
+                      :taskdecls  taskdecls
                       :modinsts   modinsts
                       :gateinsts  gateinsts
                       :alwayses   alwayses
@@ -136,9 +137,8 @@
 ; Eventually we may implement some more of these.  For now, we just cause
 ; an error if any of them is used.
 ;
-; BOZO consider changing some of these to be in the task declaration style,
-; so that if they are used we give a warning and then gracefully skip over
-; them.
+; BOZO consider changing some of these to skip tokens until 'endfoo' and issue
+; a warning.
 ;
 
 (defparser vl-parse-generate-region (tokens warnings)
@@ -202,58 +202,6 @@
   :count strong
   (declare (ignore atts))
   (vl-unimplemented))
-
-(defund vl-task-p (x)
-  (declare (xargs :guard t))
-  ;; BOZO horrible hack for task declaration skipping
-  (not x))
-
-(defparser vl-parse-task-declaration-aux (tokens warnings)
-  ;; BOZO this is really not implemented.  We just read until endtask, throwing
-  ;; away any tokens we encounter until it.
-  :result (vl-task-p val)
-  :resultp-of-nil t
-  :true-listp t
-  :fails gracefully
-  :count strong
-  (seqw tokens warnings
-        (when (vl-is-token? :vl-kwd-endtask)
-          (:= (vl-match-token :vl-kwd-endtask))
-          (return nil))
-        (:s= (vl-match-any))
-        (:= (vl-parse-task-declaration-aux))
-        (return nil)))
-
-(encapsulate
- ()
- (local (defthm horrible-hack-1
-          (implies (vl-task-p x)
-                   (vl-modelementlist-p x))
-          :hints(("Goal" :in-theory (enable vl-task-p)))))
-
- (local (defthm horrible-hack-2
-          (implies (and (not (mv-nth 0 (vl-parse-task-declaration-aux tokens)))
-                        (force (vl-tokenlist-p tokens)))
-                   (vl-modelementlist-p (mv-nth 1 (vl-parse-task-declaration-aux tokens))))))
-
- (defparser vl-parse-task-declaration (atts tokens warnings)
-   :guard (vl-atts-p atts)
-   :result (vl-modelementlist-p val)
-   :resultp-of-nil t
-   :true-listp t
-   :fails gracefully
-   :count strong
-   (declare (ignore atts))
-   (if (not (consp tokens))
-       (vl-parse-error "Unexpected EOF.")
-     (seqw tokens warnings
-           (:= (vl-parse-warning :vl-warn-taskdecl
-                                 (cat "Task declarations are not yet implemented.  "
-                                      "Instead, we are simply ignoring everything "
-                                      "until 'endtask'.")))
-           (ret := (vl-parse-task-declaration-aux))
-           (return ret)))))
-
 
 (defparser vl-parse-parameter-override (atts tokens warnings)
   :guard (vl-atts-p atts)

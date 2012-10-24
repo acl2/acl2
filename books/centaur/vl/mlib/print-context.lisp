@@ -80,6 +80,10 @@
      (vl-ps-seq (vl-basic-cw "Function ")
                 (vl-print-wirename (vl-fundecl->name x))))
 
+    (:vl-taskdecl
+     (vl-ps-seq (vl-basic-cw "Task ")
+                (vl-print-wirename (vl-taskdecl->name x))))
+
     (:vl-modinst
      (let* ((instname (vl-modinst->instname x))
             (modname  (vl-modinst->modname x)))
@@ -175,6 +179,7 @@ vl-pp-context-full).</p>"
     (:vl-eventdecl (vl-print "// BOZO implement vl-pp-eventdecl in vl-pp-modelement-full"))
     (:vl-paramdecl (vl-pp-paramdecl x))
     (:vl-fundecl   (vl-pp-fundecl x))
+    (:vl-taskdecl  (vl-pp-taskdecl x))
     (:vl-modinst   (vl-pp-modinst x nil nil))
     (:vl-gateinst  (vl-pp-gateinst x))
     (:vl-always    (vl-pp-always x))

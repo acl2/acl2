@@ -117,7 +117,24 @@ PL: ~pl[test-broken-link]~/~/")
 
 #!XDOC
 ;; Actually install the ground-zero topics
-(table xdoc 'doc (append *acl2-ground-zero-topics* (get-xdoc-table world)))
+(table xdoc 'doc
+
+; Something subtle about this is, what do we do if there is both an ACL2 :doc
+; topic and an XDOC topic?
+;
+; Originally we appended the *acl2-ground-zero-topics* to (get-xdoc-table
+; world), which meant that built-in ACL2 documentation "won" and overwrote the
+; xdoc documentation.  But when I documented the system/io.lisp book, I found
+; that this wasn't what I wanted, because it meant stupid tiny little
+; placeholder documentation for things like read-char$ was overwriting the much
+; nicer XDOC documentation for it.
+;
+; Arguably we should do some kind of smart merge, but, well, this *is* xdoc
+; after all.  So I'm just going to say ACL2 loses, and if someone cares enough
+; to come up with something better, power to them.
+
+       (append (get-xdoc-table world)
+               *acl2-ground-zero-topics*))
 
 (defxdoc acl2
   :short "Documentation for the <a

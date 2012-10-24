@@ -2041,7 +2041,7 @@ in this list.</li>
 
 
 (defsection vl-filter-blockitems
-  :parents (stmt-tools vl-blockitemlist-p)
+  :parents (vl-blockitemlist-p)
   :short "Split up blockitems into lists by their type."
 
   (defund vl-filter-blockitems (x)

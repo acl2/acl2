@@ -180,7 +180,8 @@
              (:vl-eventdecl    (and (vl-eventdecl-p x)     (vl-lint-atts-say-ignore (vl-eventdecl->atts x)     mwtype)))
              (:vl-paramdecl    (and (vl-paramdecl-p x)     (vl-lint-atts-say-ignore (vl-paramdecl->atts x)     mwtype)))
              (:vl-fundecl      (and (vl-fundecl-p x)       (vl-lint-atts-say-ignore (vl-fundecl->atts x)       mwtype)))
-             (:vl-funinput     (and (vl-funinput-p x  )    (vl-lint-atts-say-ignore (vl-funinput->atts x)      mwtype)))
+             (:vl-taskport     (and (vl-taskport-p x)      (vl-lint-atts-say-ignore (vl-taskport->atts x)      mwtype)))
+             (:vl-taskdecl     (and (vl-taskdecl-p x)      (vl-lint-atts-say-ignore (vl-taskdecl->atts x)      mwtype)))
              (:vl-always       (and (vl-always-p x)        (vl-lint-atts-say-ignore (vl-always->atts x)        mwtype)))
              (:vl-initial      (and (vl-initial-p x)       (vl-lint-atts-say-ignore (vl-initial->atts x)       mwtype)))
              (:vl-plainarg     (and (vl-plainarg-p x)      (vl-lint-atts-say-ignore (vl-plainarg->atts x)      mwtype)))
@@ -203,6 +204,7 @@
            (vl-lint-scan-for-ignore (cdr x) mwtype)))))
     (or (vl-lint-scan-for-ignore (car x) mwtype)
         (vl-lint-scan-for-ignore (cdr x) mwtype))))
+
 
 (defsection vl-lint-suppress-warnings
 

@@ -397,6 +397,35 @@
              (vl-pstate-p (mv-nth 1 (vl-fundecllist-ppmap x alist ps))))))
 
 
+(defsection vl-taskdecllist-ppmap
+
+  (defund vl-taskdecllist-ppmap (x alist ps)
+    (declare (xargs :guard (and (vl-taskdecllist-p x)
+                                (vl-commentmap-p alist)
+                                (vl-pstate-p ps))
+                    :stobjs ps))
+    (if (atom x)
+        (mv alist ps)
+      (mv-let (str ps)
+        (with-semilocal-ps (vl-pp-taskdecl (car x)))
+        (vl-taskdecllist-ppmap (cdr x)
+                               (acons (vl-taskdecl->loc (car x)) str alist)
+                               ps))))
+
+  (local (in-theory (enable vl-taskdecllist-ppmap)))
+
+  (defthm vl-commentmap-p-of-vl-taskdecllist-ppmap
+    (implies (and (force (vl-taskdecllist-p x))
+                  (force (vl-commentmap-p alist))
+                  (force (vl-pstate-p ps)))
+             (vl-commentmap-p (mv-nth 0 (vl-taskdecllist-ppmap x alist ps)))))
+
+  (defthm vl-pstate-p-of-vl-taskdecllist-ppmap
+    (implies (and (force (vl-taskdecllist-p x))
+                  (force (vl-pstate-p ps)))
+             (vl-pstate-p (mv-nth 1 (vl-taskdecllist-ppmap x alist ps))))))
+
+
 
 (defsection vl-add-newlines-after-block-comments
 
@@ -518,6 +547,7 @@
          ((mv imap ps) (vl-vardecllist-ppmap x.vardecls imap ps))
          ((mv imap ps) (vl-netdecllist-ppmap x.netdecls imap ps))
          ((mv imap ps) (vl-fundecllist-ppmap x.fundecls imap ps))
+         ((mv imap ps) (vl-taskdecllist-ppmap x.taskdecls imap ps))
          ((mv imap ps) (vl-assignlist-ppmap x.assigns imap ps))
          ((mv imap ps) (vl-modinstlist-ppmap x.modinsts mods modalist imap ps))
          ((mv imap ps) (vl-gateinstlist-ppmap x.gateinsts imap ps))

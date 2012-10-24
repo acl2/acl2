@@ -606,33 +606,46 @@ optimization.</p>"
   :list vl-portlist
   :element vl-port)
 
-
-
 (def-vl-allexprs
-  :type :vl-funinput
-  :exec-body (vl-maybe-range-allexprs-exec (vl-funinput->range x) acc)
-  :body (vl-maybe-range-allexprs (vl-funinput->range x)))
+  :type :vl-taskport
+  :exec-body (vl-maybe-range-allexprs-exec (vl-taskport->range x) acc)
+  :body (vl-maybe-range-allexprs (vl-taskport->range x)))
 
 (def-vl-allexprs-list
-  :list vl-funinputlist
-  :element vl-funinput)
+  :list vl-taskportlist
+  :element vl-taskport)
 
 (def-vl-allexprs
   :type :vl-fundecl
-  :exec-body (b* ((acc (vl-maybe-range-allexprs-exec (vl-fundecl->rrange x) acc))
-                  (acc (vl-funinputlist-allexprs-exec (vl-fundecl->inputs x) acc))
-                  (acc (vl-blockitemlist-allexprs-exec (vl-fundecl->decls x) acc)))
-               (vl-stmt-allexprs-exec (vl-fundecl->body x) acc))
-  :body (append (vl-maybe-range-allexprs (vl-fundecl->rrange x))
-                (vl-funinputlist-allexprs (vl-fundecl->inputs x))
-                (vl-blockitemlist-allexprs (vl-fundecl->decls x))
-                (vl-stmt-allexprs (vl-fundecl->body x))))
+  :exec-body (b* (((vl-fundecl x) x)
+                  (acc (vl-maybe-range-allexprs-exec x.rrange acc))
+                  (acc (vl-taskportlist-allexprs-exec x.inputs acc))
+                  (acc (vl-blockitemlist-allexprs-exec x.decls acc)))
+               (vl-stmt-allexprs-exec x.body acc))
+  :body (b* (((vl-fundecl x) x))
+          (append (vl-maybe-range-allexprs x.rrange)
+                  (vl-taskportlist-allexprs x.inputs)
+                  (vl-blockitemlist-allexprs x.decls)
+                  (vl-stmt-allexprs x.body))))
 
 (def-vl-allexprs-list
   :list vl-fundecllist
   :element vl-fundecl)
 
+(def-vl-allexprs
+  :type :vl-taskdecl
+  :exec-body (b* (((vl-taskdecl x) x)
+                  (acc (vl-taskportlist-allexprs-exec x.ports acc))
+                  (acc (vl-blockitemlist-allexprs-exec x.decls acc)))
+               (vl-stmt-allexprs-exec x.body acc))
+  :body (b* (((vl-taskdecl x) x))
+          (append (vl-taskportlist-allexprs x.ports)
+                  (vl-blockitemlist-allexprs x.decls)
+                  (vl-stmt-allexprs x.body))))
 
+(def-vl-allexprs-list
+  :list vl-taskdecllist
+  :element vl-taskdecl)
 
 
 (def-vl-allexprs
@@ -649,6 +662,7 @@ optimization.</p>"
        (acc (vl-eventdecllist-allexprs-exec x.eventdecls acc))
        (acc (vl-paramdecllist-allexprs-exec x.paramdecls acc))
        (acc (vl-fundecllist-allexprs-exec x.fundecls acc))
+       (acc (vl-taskdecllist-allexprs-exec x.taskdecls acc))
        (acc (vl-modinstlist-allexprs-exec x.modinsts acc))
        (acc (vl-gateinstlist-allexprs-exec x.gateinsts acc))
        (acc (vl-alwayslist-allexprs-exec x.alwayses acc))
@@ -665,6 +679,7 @@ optimization.</p>"
               (vl-eventdecllist-allexprs x.eventdecls)
               (vl-paramdecllist-allexprs x.paramdecls)
               (vl-fundecllist-allexprs x.fundecls)
+              (vl-taskdecllist-allexprs x.taskdecls)
               (vl-modinstlist-allexprs x.modinsts)
               (vl-gateinstlist-allexprs x.gateinsts)
               (vl-alwayslist-allexprs x.alwayses)

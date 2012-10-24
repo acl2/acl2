@@ -789,13 +789,13 @@ displays.  The module browser's web pages are responsible for defining the
                             (vl-print "}}")))))
 
          ((:vl-concat)
-          ;; These don't need parens because they have maximal precedence
+          ;; This doesn't need parens because it has maximal precedence
           (vl-ps-seq (vl-print "{")
                      (vl-pp-exprlist args)
                      (vl-print "}")))
 
-         ((:vl-funcall :vl-syscall)
-          ;; These don't need parens because they have maximal precedence
+         ((:vl-funcall)
+          ;; This doesn't need parens because it has maximal precedence
           (if (not (consp args))
               (prog2$ (er hard? 'vl-pp-expr "Bad funcall")
                       ps)
@@ -803,6 +803,23 @@ displays.  The module browser's web pages are responsible for defining the
                        (vl-print "(")
                        (vl-pp-exprlist (rest args))
                        (vl-println? ")"))))
+
+         ((:vl-syscall)
+          ;; This doesn't need parens because it has maximal precedence
+          (if (not (consp args))
+              (prog2$ (er hard? 'vl-pp-expr "Bad syscall.")
+                      ps)
+            (vl-ps-seq (vl-pp-expr (first args))
+                       ;; Something tricky about system calls is: if there
+                       ;; aren't any arguments, then there should not even be
+                       ;; any parens!
+                       (if (consp (rest args))
+                           (vl-print "(")
+                         ps)
+                       (vl-pp-exprlist (rest args))
+                       (if (consp (rest args))
+                           (vl-println? ")")
+                         ps))))
 
          (t
           (prog2$ (er hard? 'vl-pp-expr "Bad op: ~x0.~%" op)
@@ -1943,9 +1960,16 @@ original source code.)</p>"
           (vl-ps-seq (vl-pp-stmt-autoindent)
                      (if x.atts (vl-pp-atts x.atts) ps)
                      (vl-pp-expr x.id)
-                     (vl-println? "(")
-                     (vl-pp-exprlist x.args)
-                     (vl-println ") ;"))))
+                     ;; Bug fixed 2012-10-22: if there are no arguments, we
+                     ;; must not print even the parens.  (Doing so isn't
+                     ;; syntactically legal.)
+                     (if (consp x.args)
+                         (vl-ps-seq
+                          (vl-println? "(")
+                          (vl-pp-exprlist x.args)
+                          (vl-print ")"))
+                       ps)
+                     (vl-println " ;"))))
 
 (defpp vl-pp-atomicstmt (x)
   :guard (vl-atomicstmt-p x)
@@ -2093,7 +2117,8 @@ original source code.)</p>"
                        (vl-println " :")
                        (vl-pp-stmt-indented (vl-pp-stmt default))
                        (vl-pp-stmt-autoindent)
-                       (vl-ps-span "vl_key" (vl-print "endcase")))))
+                       (vl-ps-span "vl_key" (vl-print "endcase"))
+                       (vl-println ""))))
 
          (otherwise
           ;; :vl-forstmt :vl-foreverstmt
@@ -2260,20 +2285,19 @@ original source code.)</p>"
           ps))
 
 
-
-(defsection vl-funtype-string
-  :parents (vl-funtype-p)
-  :short "@(call vl-funtype-string) returns a string describing this function
-type, for pretty-printing."
+(defsection vl-taskporttype-string
+  :parents (vl-taskporttype-p)
+  :short "@(call vl-taskporttype-string) returns a string describing this
+function type, for pretty-printing."
 
   :long "<p>We just return the empty don't print anything for
-<tt>:vl-unsigned</tt>, but it seems like; it would be valid to print
+<tt>:vl-unsigned</tt>, but it seems like it would be valid to print
 <tt>reg</tt>.</p>"
 
-  (local (in-theory (enable vl-funtype-p)))
+  (local (in-theory (enable vl-taskporttype-p)))
 
-  (defund vl-funtype-string (x)
-    (declare (xargs :guard (vl-funtype-p x)))
+  (defund vl-taskporttype-string (x)
+    (declare (xargs :guard (vl-taskporttype-p x)))
     (case x
       (:vl-unsigned "")
       (:vl-signed   "signed")
@@ -2282,19 +2306,21 @@ type, for pretty-printing."
       (:vl-realtime "realtime")
       (:vl-time     "time")
       (otherwise
-       (prog2$ (er hard 'vl-funtype-string "Provably impossible")
+       (prog2$ (er hard 'vl-taskporttype-string "Provably impossible")
                ""))))
 
-  (local (in-theory (enable vl-funtype-string)))
+  (local (in-theory (enable vl-taskporttype-string)))
 
-  (defthm stringp-of-vl-funtype-string
-    (stringp (vl-funtype-string x))
+  (defthm stringp-of-vl-taskporttype-string
+    (stringp (vl-taskporttype-string x))
     :rule-classes :type-prescription))
 
-(defpp vl-pp-funinput (x)
-  :guard (vl-funinput-p x)
-  :body (b* (((vl-funinput x) x)
-             (typestr (vl-funtype-string x.type)))
+
+(defpp vl-pp-taskport (x)
+  :guard (vl-taskport-p x)
+  :body (b* (((vl-taskport x) x)
+             (typestr (vl-taskporttype-string x.type))
+             (dirstr  (vl-direction-string x.dir)))
           (vl-ps-seq
            (vl-print "  ")
            (if x.atts
@@ -2302,7 +2328,8 @@ type, for pretty-printing."
                           (vl-print " "))
              ps)
            (vl-ps-span "vl_key"
-                       (vl-print "input ")
+                       (vl-print-str dirstr)
+                       (vl-print " ")
                        (vl-print-str typestr)
                        (if (equal typestr "")
                            ps
@@ -2313,19 +2340,19 @@ type, for pretty-printing."
              ps)
            (vl-print-wirename x.name))))
 
-(defpp vl-pp-funinputlist (x)
-  :guard (vl-funinputlist-p x)
+(defpp vl-pp-taskportlist (x)
+  :guard (vl-taskportlist-p x)
   :body (if (atom x)
             ps
-          (vl-ps-seq (vl-pp-funinput (car x))
+          (vl-ps-seq (vl-pp-taskport (car x))
                      (vl-println " ;")
-                     (vl-pp-funinputlist (cdr x)))))
+                     (vl-pp-taskportlist (cdr x)))))
 
 (defpp vl-pp-fundecl (x)
   :guard (vl-fundecl-p x)
   ;; We print these off using "variant 1" style (see parse-functions)
   :body (b* (((vl-fundecl x) x)
-             (typestr (vl-funtype-string x.rtype)))
+             (typestr (vl-taskporttype-string x.rtype)))
           (vl-ps-seq
            (vl-print "  ")
            (if x.atts
@@ -2347,7 +2374,7 @@ type, for pretty-printing."
              ps)
            (vl-print-wirename x.name)
            (vl-println ";")
-           (vl-pp-funinputlist x.inputs)
+           (vl-pp-taskportlist x.inputs)
            (vl-pp-blockitemlist x.decls)
            (vl-print "  ")
            (vl-pp-stmt x.body)
@@ -2363,6 +2390,40 @@ type, for pretty-printing."
           (vl-ps-seq (vl-pp-fundecl (car x))
                      (vl-println "")
                      (vl-pp-fundecllist (cdr x)))))
+
+
+(defpp vl-pp-taskdecl (x)
+  :guard (vl-taskdecl-p x)
+  :body (b* (((vl-taskdecl x) x))
+          (vl-ps-seq
+           (vl-print "  ")
+           (if x.atts
+               (vl-ps-seq (vl-pp-atts x.atts)
+                          (vl-print " "))
+             ps)
+           (vl-ps-span "vl_key"
+                       (vl-print "task ")
+                       (if x.automaticp
+                           (vl-print "automatic ")
+                         ps))
+           (vl-print-wirename x.name)
+           (vl-println ";")
+           (vl-pp-taskportlist x.ports)
+           (vl-pp-blockitemlist x.decls)
+           (vl-print "  ")
+           (vl-pp-stmt x.body)
+           (vl-basic-cw "~|")  ;; newline only if necessary
+           (vl-print "  ")
+           (vl-ps-span "vl_key" (vl-print "endtask"))
+           (vl-println ""))))
+
+(defpp vl-pp-taskdecllist (x)
+  :guard (vl-taskdecllist-p x)
+  :body (if (atom x)
+            ps
+          (vl-ps-seq (vl-pp-taskdecl (car x))
+                     (vl-println "")
+                     (vl-pp-taskdecllist (cdr x)))))
 
 
 (defpp vl-pp-module (x mods modalist)
@@ -2404,6 +2465,7 @@ for hyperlinking to submodules in HTML mode.</p>"
                ps
              (vl-println "// BOZO implement eventdecl printing"))
            (vl-pp-fundecllist x.fundecls) ;; put them here, so they can refer to declared wires
+           (vl-pp-taskdecllist x.taskdecls)
            (vl-pp-assignlist x.assigns)
            (vl-pp-modinstlist x.modinsts mods modalist)
            (vl-pp-gateinstlist x.gateinsts)

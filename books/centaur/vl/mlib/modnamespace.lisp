@@ -50,8 +50,10 @@
 ; any reasonable module is required to have a unique modnamespace.
 ;
 ; BOZO this does not get named blocks.  Unclear how nested blocks are supposed
-; to be handled.  When we add functions and tasks, those are also supposed to
-; get into the module namespace.  We already get names from events.  Good.
+; to be handled.  We get function and task names -- good.  We get names from
+; events -- good.  BOZO really this all needs to be properly documented and
+; explained.
+
 
 
 (defprojection vl-namedarglist->names (x)
@@ -276,6 +278,7 @@
        (acc (vl-eventdecllist->names-exec   x.eventdecls acc))
        (acc (vl-paramdecllist->names-exec   x.paramdecls acc))
        (acc (vl-fundecllist->names-exec     x.fundecls   acc))
+       (acc (vl-taskdecllist->names-exec    x.taskdecls   acc))
        (acc (vl-modinstlist->instnames-exec x.modinsts   acc))
        (acc (vl-gateinstlist->names-exec    x.gateinsts  acc)))
     acc))
@@ -302,6 +305,7 @@
                  (vl-eventdecllist->names   x.eventdecls)
                  (vl-paramdecllist->names   x.paramdecls)
                  (vl-fundecllist->names     x.fundecls)
+                 (vl-taskdecllist->names    x.taskdecls)
                  (vl-modinstlist->instnames x.modinsts)
                  (vl-gateinstlist->names    x.gateinsts)))
        :exec

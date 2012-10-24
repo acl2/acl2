@@ -201,6 +201,7 @@
 (def-vl-find-moditem eventdecl)
 (def-vl-find-moditem paramdecl)
 (def-vl-find-moditem fundecl)
+(def-vl-find-moditem taskdecl)
 
 (def-vl-find-moditem modinst
   :element->name vl-modinst->instname
@@ -226,6 +227,7 @@
         (vl-find-eventdecl name (vl-module->eventdecls x))
         (vl-find-paramdecl name (vl-module->paramdecls x))
         (vl-find-fundecl name (vl-module->fundecls x))
+        (vl-find-taskdecl name (vl-module->taskdecls x))
         (vl-find-modinst name (vl-module->modinsts x))
         (vl-find-gateinst name (vl-module->gateinsts x))))
 
@@ -237,6 +239,7 @@
                   (not (vl-eventdecl-p (vl-find-moduleitem name x)))
                   (not (vl-paramdecl-p (vl-find-moduleitem name x)))
                   (not (vl-fundecl-p (vl-find-moduleitem name x)))
+                  (not (vl-taskdecl-p (vl-find-moduleitem name x)))
                   (not (vl-modinst-p (vl-find-moduleitem name x)))
                   (force (stringp name))
                   (force (vl-module-p x)))
@@ -275,6 +278,11 @@
                        (force (stringp name))
                        (force (vl-module-p x)))
                   (vl-fundecl-p (vl-find-moduleitem name x)))
+
+         (implies (and (equal (tag (vl-find-moduleitem name x)) :vl-taskdecl)
+                       (force (stringp name))
+                       (force (vl-module-p x)))
+                  (vl-taskdecl-p (vl-find-moduleitem name x)))
 
          (implies (and (equal (tag (vl-find-moduleitem name x)) :vl-modinst)
                        (force (stringp name))
@@ -321,6 +329,7 @@
       (vl-eventdecl-p x)
       (vl-paramdecl-p x)
       (vl-fundecl-p x)
+      (vl-taskdecl-p x)
       (vl-modinst-p x)
       (vl-gateinst-p x)))
 
@@ -423,6 +432,7 @@
 (vl-def-moditemlist-alist eventdecl)
 (vl-def-moditemlist-alist paramdecl)
 (vl-def-moditemlist-alist fundecl)
+(vl-def-moditemlist-alist taskdecl)
 (vl-def-moditemlist-alist modinst
                           :element->name vl-modinst->instname
                           :names-may-be-nil t)
@@ -447,12 +457,14 @@
                  (vl-eventdecllist-alist (vl-module->eventdecls x))
                  (vl-paramdecllist-alist (vl-module->paramdecls x))
                  (vl-fundecllist-alist (vl-module->fundecls x))
+                 (vl-taskdecllist-alist (vl-module->taskdecls x))
                  (vl-modinstlist-alist (vl-module->modinsts x))
                  (vl-gateinstlist-alist (vl-module->gateinsts x)))
          :exec
          ;; Reverse order from the above
          (b* ((acc (vl-fast-gateinstlist-alist (vl-module->gateinsts x) nil))
               (acc (vl-fast-modinstlist-alist (vl-module->modinsts x) acc))
+              (acc (vl-fast-taskdecllist-alist (vl-module->taskdecls x) acc))
               (acc (vl-fast-fundecllist-alist (vl-module->fundecls x) acc))
               (acc (vl-fast-paramdecllist-alist (vl-module->paramdecls x) acc))
               (acc (vl-fast-eventdecllist-alist (vl-module->eventdecls x) acc))

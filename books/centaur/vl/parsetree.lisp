@@ -4360,7 +4360,7 @@ statement was read from in the source code.</li>
 
 
 
-(defenum vl-funtype-p
+(defenum vl-taskporttype-p
   (:vl-unsigned
    :vl-signed
    :vl-integer
@@ -4368,10 +4368,28 @@ statement was read from in the source code.</li>
    :vl-realtime
    :vl-time)
   :parents (modules)
-  :short "Representation of a function return and argument types."
+  :short "Representation for the type of task ports, function return types, and
+function inputs."
 
-  :long "<p>These are the various return types that a Verilog function can
-have.  For instance, we use <tt>:vl-unsigned</tt> for a function like:</p>
+  :long "<p>These are the various return types that can be used with a Verilog
+task's input, output, or inout declarations.  For instance, a task can have
+ports such as:</p>
+
+<code>
+  task mytask;
+    input integer count;  // type :vl-integer
+    output signed value;  // type :vl-signed
+    inout x;              // type :vl-unsigned
+    ...
+  endtask
+</code>
+
+<p>There isn't an explicit <tt>unsigned</tt> type that you can write; so note
+that <tt>:vl-unsigned</tt> is really the type for \"plain\" ports that don't
+have an explicit type label.</p>
+
+<p>These same types are used for the return values of Verilog functions.  For
+instance, we use <tt>:vl-unsigned</tt> for a function like:</p>
 
 <code> function [7:0] add_one ; ... endfunction </code>
 
@@ -4379,39 +4397,47 @@ have.  For instance, we use <tt>:vl-unsigned</tt> for a function like:</p>
 
 <code> function real get_ratio ; ... endfunction </code>
 
-<p>These same types can be used for the inputs of a function, e.g., you can
-have function inputs such as:</p>
-
-<code> input real a; </code>")
+<p>Likewise, the inputs to Verilog functions use these same kinds of
+types.</p>")
 
 
-(defaggregate vl-funinput
-  (name type range atts loc)
-  :tag :vl-funinput
+(defaggregate vl-taskport
+  (name dir type range atts loc)
+  :tag :vl-taskport
   :legiblep nil
-  :require ((stringp-of-vl-funinput->name
+  :require ((stringp-of-vl-taskport->name
              (stringp name)
              :rule-classes :type-prescription)
-            (vl-funtype-p-of-vl-funinput->type
-             (vl-funtype-p type))
-            (vl-maybe-range-p-of-vl-funinput->range
+            (vl-direction-p-of-vl-taskport->dir
+             (vl-direction-p dir))
+            (vl-taskporttype-p-of-vl-taskport->type
+             (vl-taskporttype-p type))
+            (vl-maybe-range-p-of-vl-taskport->range
              (vl-maybe-range-p range))
-            (vl-atts-p-of-vl-funinput->atts
+            (vl-atts-p-of-vl-taskport->atts
              (vl-atts-p atts))
-            (vl-location-p-of-vl-funinput->loc
+            (vl-location-p-of-vl-taskport->loc
              (vl-location-p loc)))
   :parents (modules)
-  :short "Representation of an input to a function."
+  :short "Representation of a task port or a function input."
 
-  :long "<p>A function in Verilog takes inputs which are similar to the ports
-of a module.  We represent them with their own <tt>vl-funinput-p</tt>
-structures instead of trying to reuse @(see vl-portdecl-p) because, unlike port
-declarations, they can have types such as <tt>integer</tt>, <tt>real</tt>, and
-so forth.</p>
+  :long "<p>Verilog tasks have ports that are similar to the ports of a module.
+We represent these ports with their own <tt>vl-taskport-p</tt> structures,
+rather than reusing @(see vl-portdecl-p), because unlike module port
+declarations, task ports can have types like <tt>integer</tt> or
+<tt>real</tt>.</p>
 
-<p>The <tt>name</tt> is just a string that is the name of this input.</p>
+<p>While Verilog functions don't have <tt>output</tt> or <tt>inout</tt> ports,
+they do have input ports that are very similar to task ports.  So, we reuse
+<tt>vl-taskport-p</tt> structures for function inputs.</p>
 
-<p>The <tt>type</tt> is a @(see vl-funtype-p) that gives the type for this
+<p>The <tt>name</tt> is just a string that is the name of this port.</p>
+
+<p>The <tt>dir</tt> is a @(see vl-direction-p) that says whether this port is
+an input, output, or inout port.  Note that tasks can have all three kinds of
+ports, but functions only have inputs.</p>
+
+<p>The <tt>type</tt> is a @(see vl-taskporttype-p) that gives the type for this
 input.</p>
 
 <p>The <tt>range</tt> is a @(see vl-maybe-range-p) that gives the size of this
@@ -4427,14 +4453,30 @@ function was found in the source code.  We use this location, instead of the
 location of the input keyword, because a list of inputs can be declared using
 the same input keyword.</p>")
 
-(deflist vl-funinputlist-p (x)
-  (vl-funinput-p x)
+(defthm type-of-vl-taskport->dir
+  (implies (force (vl-taskport-p x))
+           (and (symbolp (vl-taskport->dir x))
+                (not (equal (vl-taskport->dir x) t))
+                (not (equal (vl-taskport->dir x) nil))))
+  :rule-classes :type-prescription)
+
+(defthm type-of-vl-taskport->type
+  (implies (force (vl-taskport-p x))
+           (and (symbolp (vl-taskport->type x))
+                (not (equal (vl-taskport->type x) t))
+                (not (equal (vl-taskport->type x) nil))))
+  :rule-classes :type-prescription)
+
+
+
+(deflist vl-taskportlist-p (x)
+  (vl-taskport-p x)
   :guard t
   :elementp-of-nil nil)
 
-(defprojection vl-funinputlist->names (x)
-  (vl-funinput->name x)
-  :guard (vl-funinputlist-p x)
+(defprojection vl-taskportlist->names (x)
+  (vl-taskport->name x)
+  :guard (vl-taskportlist-p x)
   :nil-preservingp t
   :result-type string-listp)
 
@@ -4450,12 +4492,12 @@ the same input keyword.</p>")
             (booleanp-of-vl-fundecl->automaticp
              (booleanp automaticp)
              :rule-classes :type-prescription)
-            (vl-funtype-p-of-vl-fundecl->rtype
-             (vl-funtype-p rtype))
+            (vl-taskporttype-p-of-vl-fundecl->rtype
+             (vl-taskporttype-p rtype))
             (vl-maybe-range-p-of-vl-fundecl->rrange
              (vl-maybe-range-p rrange))
-            (vl-funinputlist-p-of-vl-fundecl->inputs
-             (vl-funinputlist-p inputs))
+            (vl-taskportlist-p-of-vl-fundecl->inputs
+             (vl-taskportlist-p inputs))
             (vl-blockitemlist-p-of-vl-fundecl->decls
              (vl-blockitemlist-p decls))
             (vl-stmt-p-of-vl-fundecl->body
@@ -4496,7 +4538,7 @@ provided.  This keyword indicates that the function should be reentrant and
 have its local parameters dynamically allocated for each function call, with
 various consequences.</p>
 
-<p>The <tt>rtype</tt> is a @(see vl-funtype-p) that describes the return type
+<p>The <tt>rtype</tt> is a @(see vl-taskporttype-p) that describes the return type
 of the function, e.g., a function might return an ordinary unsigned or signed
 result of some width, or might return a <tt>real</tt> value, etc.  For
 instance, the return type of <tt>lower_bits</tt> is <tt>:vl-unsigned</tt>.</p>
@@ -4507,10 +4549,21 @@ the function's result.  This only makes sense when the <tt>rtype</tt> is
 of <tt>lower_bits</tt> is <tt>[7:0]</tt>.</p>
 
 <p>The <tt>inputs</tt> are the arguments to the function, e.g., <tt>input [7:0]
-a</tt> above.  We represent these inputs as an @(see vl-funinputlist-p).  Note
-that although functions must have at least one input (and we do check for this
-in our parser), we don't syntactically enforce this requirement in the
-<tt>vl-fundecl-p</tt> structure.</p>
+a</tt> above.  We represent these inputs as an @(see vl-taskportlist-p).  There
+are a couple of things to note here:</p>
+
+<ul>
+
+<li>Functions must have at least one input.  We check this in our parser, but
+we don't syntactically enforce this requirement in the <tt>vl-fundecl-p</tt>
+structure.</li>
+
+<li>Functions only have inputs (i.e., they don't have outputs or inouts), but
+our @(see vl-taskport-p) structures have a direction.  This direction should
+always be <tt>:vl-input</tt> for a function's input.  We again check this in
+our parser, but not in the <tt>vl-fundecl-p</tt> structure itself.</li>
+
+</ul>
 
 <p>The <tt>decls</tt> are the local variable declarations for the function,
 e.g., the declarations of <tt>lowest_pair</tt> and <tt>next_lowest_pair</tt>
@@ -4550,8 +4603,91 @@ keyword was found in the source code.</p>")
   :rule-classes ((:rewrite) (:linear)))
 
 
+(defaggregate vl-taskdecl
+  (name automaticp ports decls body atts loc)
+  :tag :vl-taskdecl
+  :legiblep nil
+  :require ((stringp-of-vl-taskdecl->name
+             (stringp name)
+             :rule-classes :type-prescription)
+            (booleanp-of-vl-taskdecl->automaticp
+             (booleanp automaticp)
+             :rule-classes :type-prescription)
+            (vl-taskportlist-p-of-vl-taskdecl->ports
+             (vl-taskportlist-p ports))
+            (vl-blockitemlist-p-of-vl-taskdecl->decls
+             (vl-blockitemlist-p decls))
+            (vl-stmt-p-of-vl-taskdecl->body
+             (vl-stmt-p body))
+            (vl-atts-p-of-vl-taskdecl->atts
+             (vl-atts-p atts))
+            (vl-location-p-of-vl-taskdecl->loc
+             (vl-location-p loc)))
+  :parents (modules)
+  :short "Representation of a single Verilog task."
+  :long "<p>Tasks are described in Section 10.2 of the standard.  An example
+of a task is:</p>
+
+<code>
+task automatic dostuff;
+  input [3:0] count;
+  output inc;
+  output onehot;
+  output more;
+  reg [2:0] temp;
+  begin
+    temp = count[0] + count[1] + count[2] + count[3];
+    onehot = temp == 1;
+    if (!onehot) $display(\"onehot is %b\", onehot);
+    #10;
+    inc = count + 1;
+    more = count &gt; prev_count;
+  end
+endtask
+</code>
+
+<p>Tasks are somewhat like <see topic='@(url vl-fundecl-p)'>functions</see>,
+but they can have fewer restrictions, e.g., they can have multiple outputs, can
+include delays, etc.</p>
+
+<h3>Representation of Tasks</h3>
+
+<p>The <tt>name</tt> is a string that names the function, e.g.,
+<tt>\"dostuff\"</tt>.</p>
+
+<p>The <tt>automaticp</tt> flag says whether the <tt>automatic</tt> keyword was
+provided.  This keyword indicates that each invocation of the task has its own
+copy of its variables.  For instance, the task above had probably better be
+automatic if it there are going to be concurrent instances of it running, or
+else <tt>temp</tt> could be corrupted by the other task.</p>
+
+<p>The <tt>ports</tt> of the task are a @(see vl-taskportlist-p) that says what
+the inputs, outputs, and inouts of the task are.</p>
+
+<p>The <tt>decls</tt> are a @(see vl-blockitemlist-p) with the local
+declarations for the task, e.g., the declaration of <tt>temp</tt> would be
+found here.</p>
+
+<p>The <tt>body</tt> is a @(see vl-stmt-p) that gives the body of the function.
+We represent this as an ordinary statement.</p>
+
+<p>The <tt>atts</tt> are any attributes (see @(see vl-atts-p)) associated with
+this task.  The attributes come before the <tt>task</tt> keyword.</p>
+
+<p>The <tt>loc</tt> is the @(see vl-location-p) where the <tt>task</tt> keyword
+was found in the source code.</p>")
 
 
+(deflist vl-taskdecllist-p (x)
+  (vl-taskdecl-p x)
+  :guard t
+  :elementp-of-nil nil)
+
+(defprojection vl-taskdecllist->names (x)
+  (vl-taskdecl->name x)
+  :guard (vl-taskdecllist-p x)
+  :nil-preservingp t
+  :result-type string-listp)
 
 
 
@@ -4567,6 +4703,7 @@ keyword was found in the source code.</p>")
    eventdecls
    paramdecls
    fundecls
+   taskdecls
    modinsts
    gateinsts
    alwayses
@@ -4596,6 +4733,7 @@ keyword was found in the source code.</p>")
    (vl-eventdecllist-p-of-vl-module->eventdecls (vl-eventdecllist-p eventdecls))
    (vl-paramdecllist-p-of-vl-module->paramdecls (vl-paramdecllist-p paramdecls))
    (vl-fundecllist-p-of-vl-module->fundecls     (vl-fundecllist-p fundecls))
+   (vl-taskdecllist-p-of-vl-module->taskdecls   (vl-taskdecllist-p taskdecls))
    (vl-modinstlist-p-of-vl-module->modinsts     (vl-modinstlist-p modinsts))
    (vl-gateinstlist-p-of-vl-module->gateinsts   (vl-gateinstlist-p gateinsts))
    (vl-alwayslist-p-of-vl-module->alwayses      (vl-alwayslist-p alwayses))

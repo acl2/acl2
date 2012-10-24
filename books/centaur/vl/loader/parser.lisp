@@ -27,12 +27,15 @@
   :parents (loader)
   :short "Verilog Parser.")
 
+(defund udp-p (x)
+  (declare (ignore x))
+  t)
+
 (defparser vl-parse-udp-declaration-aux (tokens warnings)
   ;; BOZO this is really not implemented.  We just read until endprimitive,
   ;; throwing away any tokens we encounter until then.
-  :result (vl-task-p val)
+  :result (udp-p val)
   :resultp-of-nil t
-  :true-listp t
   :fails gracefully
   :count strong
   (seqw tokens warnings
@@ -47,7 +50,7 @@
   ;; This :result is sloppy and won't be true if we implement udps, but
   ;; it lets vl-parse return a module list.
   :guard (vl-atts-p atts)
-  :result (not val)
+  :result (vl-modulelist-p val)
   :resultp-of-nil t
   :true-listp t
   :fails gracefully

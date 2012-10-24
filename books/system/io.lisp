@@ -17,18 +17,32 @@
 ; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
 ;
 ; Original author: Sol Swords <sswords@centtech.com>
+; Documented by Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
-
+(include-book "xdoc/top" :dir :system)
 (include-book "f-put-global")
 
-;; Various guard-related facts about IO functions.
+(defsection bytep
 
-(defthm assoc-equal-of-add-pair
-    (equal (assoc-equal k1 (add-pair k2 v a))
-           (if (equal k1 k2)
-               (cons k2 v)
-             (assoc-equal k1 a))))
+  ;; This should probably be defined elsewhere.
+  ;;
+  ;; We leave this enabled since arithmetic theories probably shouldn't need to
+  ;; know about it.
+
+  (defun bytep (x)
+    (declare (xargs :guard t))
+    (and (natp x)
+         (< x 256)))
+
+  (defthm bytep-compound-recognizer
+    (implies (bytep x)
+             (and (integerp x)
+                  (<= 0 x)))
+    :rule-classes :compound-recognizer))
+
+;; Various guard-related facts about IO functions.  BOZO maybe some of these
+;; theorems should be local.
 
 (local (in-theory (disable open-channels-p
                            ordered-symbol-alistp
@@ -44,12 +58,18 @@
                            read-files-p
                            writeable-files-p
                            true-list-listp
-                           all-boundp)))
+                           all-boundp
+                           nth
+                           update-nth)))
 
 (local (table evisc-table (list 'quote *INITIAL-GLOBAL-TABLE*) "*INITIAL-GLOBAL-TABLE*"))
-(local (in-theory (disable nth update-nth)))
 
-;; Misc.
+(defthm assoc-equal-of-add-pair
+    (equal (assoc-equal k1 (add-pair k2 v a))
+           (if (equal k1 k2)
+               (cons k2 v)
+             (assoc-equal k1 a))))
+
 (defthm open-channel-listp-of-add-pair
   (implies (and (open-channel1 v)
                 (open-channel-listp x))
@@ -81,223 +101,503 @@
            (typed-io-listp (cdr (assoc-equal k x)) type))
   :hints(("Goal" :in-theory (enable readable-files-p))))
 
+(defxdoc *file-types*
+  :parents (io)
+  :short "Different ways to open files for reading and writing."
 
-;; READING -- opening/closing an input channel
-(defthm state-p1-of-open-input-channel
-  (implies (and (state-p1 state)
-                (stringp fname)
-                (member type *file-types*))
-           (state-p1 (mv-nth 1 (open-input-channel fname type state))))
-  :hints(("Goal" :in-theory (enable state-p1))))
+  :long "<p>See @(see io) for general discussion of file types.</p>
 
-(defthm symbolp-of-open-input-channel
-  (symbolp (mv-nth 0 (open-input-channel fname type state)))
-  :rule-classes (:rewrite :type-prescription))
+@(def *file-types*)")
 
-(defthm open-input-channel-p1-of-open-input-channel
-  (implies (and (state-p1 state)
-                (stringp fname)
-                (member type *file-types*)
-                (equal channel (mv-nth 0 (open-input-channel fname type state)))
-                channel)
-           (open-input-channel-p1
-            channel
-            type
-            (mv-nth 1 (open-input-channel fname type state))))
-  :hints(("Goal" :in-theory (enable state-p1))))
+(defxdoc logical-story-of-io
+  :parents (io)
+  :short "How file reading operations are modeled in the ACL2 logic."
+
+  :long "<p>ACL2's file input operations are available in <tt>:logic</tt>
+mode (see @(see defun-mode)).  This is somewhat tricky to justify in the logic,
+since, e.g., the contents of a file is external to ACL2, can be changed over
+time, and so on.</p>
+
+<p>Practically speaking, most users don't need to pay any attention to the
+details of this story.  Instead, see the book <tt>system/io</tt>, which
+develops the basic theorems that are necessary to reason about the io
+primitives.</p>
+
+<p>If, for some reason, you do want to understand the logical story, you might
+start with this paper:</p>
+
+<p>Jared Davis.  <a
+href='http://www.ccs.neu.edu/home/pete/acl206/papers/davisb.pdf'>Reasoning
+about ACL2 File Input</a>.  ACL2 Workshop 2006.</p>")
 
 
 
+
+; -----------------------------------------------------------------------------
+;
+;                                  INPUT
+;
+; -----------------------------------------------------------------------------
+
+(defsection open-input-channel
+  :parents (io)
+  :short "Open a file for reading."
+
+  :long "<p><b>Signature:</b> @(call open-input-channel) returns <tt>(mv
+channel state)</tt></p>
+
+<ul>
+
+<li><tt>file-name</tt> is a string that names the file to open.</li>
+
+<li><tt>typ</tt> is the type of input to be used and must be one of the valid
+@(see *file-types*).</li>
+
+<li><tt>state</tt> is the ACL2 @(see state).</li>
+
+</ul>
+
+<p>This is a @(see logic)-mode function, but its logical definition is tricky;
+see @(see logical-story-of-io).  The main logical consequence is that (on
+success) <tt>channel</tt> will become an open input channel of the indicated
+type, and hence can be read from or closed.</p>
+
+<p>Under the hood, we use Lisp's file operations to try to open the file.  On
+success, <tt>channel</tt> is a symbol in the <tt>ACL2-INPUT-CHANNEL</tt>
+package.  Under the hood, this symbol will be associated with a raw Lisp file
+stream.  Note that to avoid resource leaks, you should eventually use @(see
+close-input-channel) to free this stream.</p>
+
+<p>There are various reasons and ways that <tt>open-input-channel</tt> can
+fail.  For instance:</p>
+
+<ul>
+
+<li>If you try to open a file that does not exist, <tt>channel</tt> will be
+<tt>nil</tt>.</li>
+
+<li>If you try to open a file for which you do not have permission, say
+<tt>/etc/shadow</tt>, a hard Lisp error can result.</li>
+
+</ul>
+
+<p>BOZO it's too bad that the failure situations are handled so differently.
+It would probably be nicer to never cause a hard error, and instead return some
+explanation of why opening the file failed.</p>"
+
+  (defthm state-p1-of-open-input-channel
+    (implies (and (state-p1 state)
+                  (stringp fname)
+                  (member type *file-types*))
+             (state-p1 (mv-nth 1 (open-input-channel fname type state))))
+    :hints(("Goal" :in-theory (enable state-p1))))
+
+  (defthm symbolp-of-open-input-channel
+    (symbolp (mv-nth 0 (open-input-channel fname type state)))
+    :rule-classes (:rewrite :type-prescription))
+
+  (defthm open-input-channel-p1-of-open-input-channel
+    (implies (and (state-p1 state)
+                  (stringp fname)
+                  (member type *file-types*)
+                  (equal channel (mv-nth 0 (open-input-channel fname type state)))
+                  channel)
+             (open-input-channel-p1
+              channel
+              type
+              (mv-nth 1 (open-input-channel fname type state))))
+    :hints(("Goal" :in-theory (enable state-p1)))))
 
 ;; helper theorems for reading
-(local
- (progn
-   (defthm lookup-in-open-channels-p
-     (implies (and (open-channels-p x)
-                   (assoc k x))
-              (open-channel1 (cdr (assoc k x))))
-     :hints(("Goal" :in-theory (enable open-channels-p
-                                       ordered-symbol-alistp
-                                       open-channel-listp))))
+(local (defthm lookup-in-open-channels-p
+         (implies (and (open-channels-p x)
+                       (assoc k x))
+                  (open-channel1 (cdr (assoc k x))))
+         :hints(("Goal" :in-theory (enable open-channels-p
+                                           ordered-symbol-alistp
+                                           open-channel-listp)))))
 
-   (defthm open-channel1-of-read
-     (implies (open-channel1 x)
-              (open-channel1 (cons (car x) (cddr x)))))))
+(local (defthm open-channel1-of-read
+         (implies (open-channel1 x)
+                  (open-channel1 (cons (car x) (cddr x))))))
 
-
-(local
- (defthm read-file-listp1-from-open-channel1
-   (implies (and (open-channel1 x)
-                 (natp y))
-            (read-file-listp1 (list (caddar x)
-                                    (cadar x)
-                                    (cadddr (car x))
-                                    y)))
-   :hints(("Goal" :in-theory (enable open-channel1 read-file-listp1)))))
-
-;; type is a free variable here.  the two variants that follow try to get
-;; around this problem
-(defthm state-p1-of-close-input-channel-free
-  (implies (and (open-input-channel-p1 channel type state)
-                (state-p1 state))
-           (state-p1 (close-input-channel channel state)))
-  :hints(("Goal" :in-theory (e/d (state-p1
-                                  read-files-p)
-                                 (read-file-listp1)))))
-
-(defthm state-p1-of-close-input-channel-types
-  (implies (and (or (open-input-channel-p1 channel :byte state)
-                    (open-input-channel-p1 channel :object state)
-                    (open-input-channel-p1 channel :character state))
-                (state-p1 state))
-           (state-p1 (close-input-channel channel state)))
-  :hints(("Goal" :in-theory (disable close-input-channel
-                                     open-input-channel-p1))))
-
-(defthm state-p1-of-close-input-channel-of-open
-  (implies (and (open-input-channel-p1
-                 (mv-nth 0 (open-input-channel fname type state1))
-                 type state)
-                (state-p1 state))
-           (state-p1 (close-input-channel
-                      (mv-nth 0 (open-input-channel fname type state1))
-                      state)))
-  :hints(("Goal" :in-theory (disable close-input-channel
-                                     open-input-channel-p1
-                                     open-input-channel))))
-
-
-
-;; Read-char$
-(defthm state-p1-of-read-char$
-  (implies (and (state-p1 state)
-                (symbolp channel)
-                (open-input-channel-p1 channel :character state))
-           (state-p1 (mv-nth 1 (read-char$ channel state))))
-  :hints(("Goal" :in-theory (e/d (state-p1) (open-channel1)))))
-
-(defthm open-input-channel-p1-of-read-char$
-  (implies (and (state-p1 state)
-                (open-input-channel-p1 channel :character state))
-           (open-input-channel-p1 channel :character (mv-nth 1 (read-char$ channel state)))))
-
-(local (defthm character-cadr-of-open-channel1
+(local (defthm read-file-listp1-from-open-channel1
          (implies (and (open-channel1 x)
-                       (equal (cadar x) :character)
-                       (cdr x))
-                  (characterp (cadr x)))))
+                       (natp y))
+                  (read-file-listp1 (list (caddar x)
+                                          (cadar x)
+                                          (cadddr (car x))
+                                          y)))
+         :hints(("Goal" :in-theory (enable open-channel1 read-file-listp1)))))
 
-(defthm characterp-of-read-char$
-  (implies (and (mv-nth 0 (read-char$ channel state))
-                (state-p1 state)
-                (open-input-channel-p1 channel :character state))
-           (characterp (mv-nth 0 (read-char$ channel state))))
-  :hints(("Goal" :in-theory (e/d (state-p1) (open-channel1))))
-  :rule-classes
-  (:rewrite
-   (:type-prescription :corollary
+(defsection close-input-channel
+  :parents (io)
+  :short "Close an input channel."
+
+  :long "<p><b>Signature</b>: @(call close-input-channel) returns
+<tt>state</tt>.</p>
+
+<ul>
+
+<li><tt>channel</tt> is a symbol that must refer to a currently open input
+channel; see @(see open-input-channel).</li>
+
+<li><tt>state</tt> is the ACL2 @(see state).</li>
+
+</ul>
+
+<p>This is a @(see logic)-mode function, but its logical definition is tricky;
+see @(see logical-story-of-io).  The main logical consequence is that
+<tt>channel</tt> will no longer be an open input channel, and hence can no
+longer be read from or closed.</p>
+
+<p>Under the hood, we close the raw Lisp stream associated with
+<tt>channel</tt>.  It is generally necessary to close the input channels when
+you are done with them to avoid resource leaks.</p>"
+
+  (defthm state-p1-of-close-input-channel-free
+    ;; type is a free variable here.  the two variants that follow try to get
+    ;; around this problem
+    (implies (and (open-input-channel-p1 channel type state)
+                  (state-p1 state))
+             (state-p1 (close-input-channel channel state)))
+    :hints(("Goal" :in-theory (e/d (state-p1
+                                    read-files-p)
+                                   (read-file-listp1)))))
+
+  (defthm state-p1-of-close-input-channel-types
+    (implies (and (or (open-input-channel-p1 channel :byte state)
+                      (open-input-channel-p1 channel :object state)
+                      (open-input-channel-p1 channel :character state))
+                  (state-p1 state))
+             (state-p1 (close-input-channel channel state)))
+    :hints(("Goal" :in-theory (disable close-input-channel
+                                       open-input-channel-p1))))
+
+  (defthm state-p1-of-close-input-channel-of-open
+    (implies (and (open-input-channel-p1
+                   (mv-nth 0 (open-input-channel fname type state1))
+                   type state)
+                  (state-p1 state))
+             (state-p1 (close-input-channel
+                        (mv-nth 0 (open-input-channel fname type state1))
+                        state)))
+    :hints(("Goal" :in-theory (disable close-input-channel
+                                       open-input-channel-p1
+                                       open-input-channel)))))
+
+(defsection read-char$
+  :parents (io)
+  :short "Read one character from an open <tt>:character</tt> stream."
+
+  :long "<p>NOTE: We generally prefer to avoid @(see read-char$).  It is easy
+to use @(see read-byte$) instead, which is generally more efficient and avoids
+certain character-encoding issues; see below for details.</p>
+
+<p><b>Signature:</b> @(call read-char$) returns <tt>(mv char/nil
+state)</tt>.</p>
+
+<ul>
+
+<li><tt>channel</tt> is a symbol that must refer to an open <tt>:character</tt>
+input channel; see @(see open-input-channel).</li>
+
+<li><tt>state</tt> is the ACL2 @(see state).</li>
+
+</ul>
+
+<p>This is a @(see logic)-mode function, but its logical definition is tricky;
+see @(see logical-story-of-io).  The main logical consequence are to update the
+state.</p>
+
+<p>Under the hood, we read a <see topic='@(url characters)'>character</see>
+from the Lisp input stream that is associated with <tt>channel</tt>.  If we
+reach the end of the file, <tt>nil</tt> is returned.</p>
+
+<h3>Character versus Byte Input</h3>
+
+<p>In some sense, it is redundant for ACL2 to have separate kinds of input
+channels for characters and bytes.  After all, ACL2 has exactly 256 @(see
+characters) corresponding to bytes 0-255, and provides functions like @(see
+char-code) and @(see code-char) for converting between these characters and
+bytes.  So, one could easily define <tt>read-char$</tt> as a wrapper that calls
+<tt>code-char</tt> on <tt>read-byte$</tt>, or could define <tt>read-byte$</tt>
+as a wrapper for <tt>read-char$</tt> that calls <tt>char-code</tt>.</p>
+
+<p>That being said, we generally prefer to use byte input.  Common Lisp
+implementations have some freedom in how they implement characters.  Because of
+this, and because different Lisps might try to use different encodings when
+reading files, ACL2's <tt>read-char$</tt> has some extra checks to make sure
+that the characters being read in are legal.  At any rate, for a basic timing
+test on CCL, we measured <tt>read-char$</tt> at 12.5% slower than
+<tt>read-byte$</tt> with <tt>code-char</tt>.</p>
+
+<p>On the other hand, there is no equivalent of <tt>peek-char$</tt> for
+<tt>:byte</tt> input streams.  So, that might be worth considering.</p>"
+
+  ;; Performance testing code
+  #||
+  (include-book ;; newline to fool dependency scanner
+    "tools/bstar" :dir :system)
+  (defun skip-chars-until-eof (channel state)
+    (declare (xargs :mode :program :stobjs state))
+    (b* (((mv char/nil state) (read-char$ channel state))
+         ((unless char/nil)
+          state))
+      (skip-chars-until-eof channel state)))
+
+  (defun skip-bytes-until-eof (channel state)
+    (declare (xargs :mode :program :stobjs state))
+    (b* (((mv byte/nil state) (read-byte$ channel state))
+         ((unless byte/nil)
+          state))
+      (skip-bytes-until-eof channel state)))
+
+  (defun skip-chars-until-eof-alt (channel state)
+    (declare (xargs :mode :program :stobjs state))
+    (b* (((mv byte/nil state) (read-byte$ channel state))
+         ((unless byte/nil)
+          state)
+         (?char (code-char byte/nil)))
+      (skip-bytes-until-eof channel state)))
+
+  (b* (;; (file "/dev/shm/top.v") ;; 40 MB file on a ram disk ; ;
+       (file "/n/fv2/jared/fresh/e/acl2/acl2-characters") ;; file to check encoding stuff ; ;
+
+       ((mv channel state) (open-input-channel file :character state))
+       (state (time$ (skip-chars-until-eof channel state)))
+       (state (close-input-channel channel state))
+
+       ((mv channel state) (open-input-channel file :byte state))
+       (state (time$ (skip-bytes-until-eof channel state)))
+       (state (close-input-channel channel state))
+
+       ((mv channel state) (open-input-channel file :byte state))
+       (state (time$ (skip-chars-until-eof-alt channel state)))
+       (state (close-input-channel channel state))
+
+       )
+    state)
+  ||#
+
+  (defthm state-p1-of-read-char$
+    (implies (and (state-p1 state)
+                  (symbolp channel)
+                  (open-input-channel-p1 channel :character state))
+             (state-p1 (mv-nth 1 (read-char$ channel state))))
+    :hints(("Goal" :in-theory (e/d (state-p1) (open-channel1)))))
+
+  (defthm open-input-channel-p1-of-read-char$
     (implies (and (state-p1 state)
                   (open-input-channel-p1 channel :character state))
-             (or (characterp (mv-nth 0 (read-char$ channel state)))
-                 (null (mv-nth 0 (read-char$ channel state))))))))
+             (open-input-channel-p1 channel :character (mv-nth 1 (read-char$ channel state)))))
 
+  (local (defthm character-cadr-of-open-channel1
+           (implies (and (open-channel1 x)
+                         (equal (cadar x) :character)
+                         (cdr x))
+                    (characterp (cadr x)))))
 
-;; since peek-char$ doesn't return state there isn't too much to prove about it
-(defthm characterp-of-peek-char$
-  (implies (and (peek-char$ channel state)
-                (state-p1 state)
-                (open-input-channel-p1 channel :character state))
-           (characterp (peek-char$ channel state)))
-  :hints(("Goal" :in-theory (e/d (state-p1) (open-channel1))))
-  :rule-classes
-  (:rewrite
-   (:type-prescription :corollary
-    (implies (and (state-p1 state)
+  (defthm characterp-of-read-char$
+    (implies (and (mv-nth 0 (read-char$ channel state))
+                  (state-p1 state)
                   (open-input-channel-p1 channel :character state))
-             (or (characterp (peek-char$ channel state))
-                 (null (peek-char$ channel state)))))))
+             (characterp (mv-nth 0 (read-char$ channel state))))
+    :hints(("Goal" :in-theory (e/d (state-p1) (open-channel1))))
+    :rule-classes
+    (:rewrite
+     (:type-prescription :corollary
+                         (implies (and (state-p1 state)
+                                       (open-input-channel-p1 channel :character state))
+                                  (or (characterp (mv-nth 0 (read-char$ channel state)))
+                                      (null (mv-nth 0 (read-char$ channel state)))))))))
+
+(defsection peek-char$
+  :parents (io)
+  :short "Inspect the next character that will be read from an open
+<tt>:character</tt> input stream."
+
+  :long "<p><b>Signature:</b> @(call peek-char$) returns <tt>char/nil</tt>.</p>
+
+<ul>
+
+<li><tt>channel</tt> is a symbol that must refer to an open <tt>:character</tt>
+input channel; see @(see open-input-channel).</li>
+
+<li><tt>state</tt> is the ACL2 @(see state).</li>
+
+</ul>
+
+<p>This is a @(see logic)-mode function, but its logical definition is tricky;
+see @(see logical-story-of-io).</p>
+
+<p>Under the hood, this uses Lisp's I/O functions to say which character will
+be retrieved next by @(see read-char$), without altering the contents of the
+stream.  This provides only a single character of lookahead.</p>
+
+<p>You should typically never need to reason about <tt>peek-char$</tt>.  We
+prove it returns the same thing as <tt>read-char$</tt>, so you should be able
+to just reason about <tt>read-char$</tt> instead.</p>"
+
+  (defthm peek-char$-removal
+    (equal (peek-char$ channel state)
+           (mv-nth 0 (read-char$ channel state))))
+
+  (in-theory (disable peek-char$)))
+
+(defsection read-byte$
+  :parents (io)
+  :short "Read one byte from an open <tt>:byte</tt> stream."
+
+  :long "<p><b>Signature:</b> @(call read-byte$) returns <tt>(mv byte/nil
+state)</tt>.</p>
+
+<ul>
+
+<li><tt>channel</tt> is a symbol that must refer to an open <tt>:byte</tt>
+input channel; see @(see open-input-channel).</li>
+
+<li><tt>state</tt> is the ACL2 @(see state).</li>
+
+</ul>
+
+<p>This is a @(see logic)-mode function, but its logical definition is tricky;
+see @(see logical-story-of-io).  The main logical consequence are to update the
+state.</p>
+
+<p>Under the hood, we read a byte (i.e., a number between 0 and 255, inclusive)
+from the Lisp input stream that is associated with <tt>channel</tt>.  If we
+reach the end of the file, <tt>nil</tt> is returned.</p>"
+
+  (defthm state-p1-of-read-byte$
+    (implies (and (state-p1 state)
+                  (symbolp channel)
+                  (open-input-channel-p1 channel :byte state))
+             (state-p1 (mv-nth 1 (read-byte$ channel state))))
+    :hints(("Goal" :in-theory (e/d (state-p1) (open-channel1)))))
+
+  (defthm open-input-channel-p1-of-read-byte$
+    (implies (and (state-p1 state)
+                  (open-input-channel-p1 channel :byte state))
+             (open-input-channel-p1 channel :byte (mv-nth 1 (read-byte$ channel state)))))
+
+  (local (defthm bytep-cadr-of-open-channel1
+           (implies (and (open-channel1 x)
+                         (equal (cadar x) :byte)
+                         (cdr x))
+                    (and (bytep (cadr x))
+                         (natp (cadr x))
+                         (integerp (cadr x))))))
+
+  (defthm bytep-of-read-byte$
+    (implies (and (state-p1 state)
+                  (open-input-channel-p1 channel :byte state)
+                  (mv-nth 0 (read-byte$ channel state)))
+             (and (bytep (mv-nth 0 (read-byte$ channel state)))
+                  (natp (mv-nth 0 (read-byte$ channel state)))
+                  (integerp (mv-nth 0 (read-byte$ channel state)))))
+    :hints(("Goal" :in-theory (e/d (state-p1) (open-channel1 bytep)))))
+
+  (defthm bytep-of-read-byte$-type
+    (implies (and (state-p1 state)
+                  (open-input-channel-p1 channel :byte state))
+             (or (null (mv-nth 0 (read-byte$ channel state)))
+                 (natp (mv-nth 0 (read-byte$ channel state)))))
+    :hints(("Goal" :use bytep-of-read-byte$))
+    :rule-classes :type-prescription)
+
+  (defthm bytep-of-read-byte$-linear
+    (implies (and (state-p1 state)
+                  (open-input-channel-p1 channel :byte state))
+             (and (< (mv-nth 0 (read-byte$ channel state)) 256)
+                  (<= 0 (mv-nth 0 (read-byte$ channel state)))))
+    :hints(("Goal" :use bytep-of-read-byte$))
+    :rule-classes :linear))
 
 
+(defsection read-object
+  :parents (io)
+  :short "Read one object from an open <tt>:object</tt> stream."
 
+  :long "<p><b>Signature:</b> @(call read-object) returns <tt>(mv eofp obj
+state)</tt>.</p>
 
+<ul>
 
-;; Read-byte$
-(defthm state-p1-of-read-byte$
-  (implies (and (state-p1 state)
-                (symbolp channel)
-                (open-input-channel-p1 channel :byte state))
-           (state-p1 (mv-nth 1 (read-byte$ channel state))))
-  :hints(("Goal" :in-theory (e/d (state-p1) (open-channel1)))))
+<li><tt>channel</tt> is a symbol that must refer to an open <tt>:object</tt>
+input channel; see @(see open-input-channel).</li>
 
-(defthm open-input-channel-p1-of-read-byte$
-  (implies (and (state-p1 state)
-                (open-input-channel-p1 channel :byte state))
-           (open-input-channel-p1 channel :byte (mv-nth 1 (read-byte$ channel state)))))
+<li><tt>state</tt> is the ACL2 @(see state).</li>
 
-;; this should probably be defined elsewhere
-(defun bytep (x)
-  (declare (xargs :guard t))
-  (and (natp x) (< x 256)))
+</ul>
 
+<p>This is a @(see logic)-mode function, but its logical definition is tricky;
+see @(see logical-story-of-io).  The main logical consequence are to update the
+state.</p>
 
-(local (defthm bytep-cadr-of-open-channel1
-         (implies (and (open-channel1 x)
-                       (equal (cadar x) :byte)
-                       (cdr x))
-                  (and (bytep (cadr x))
-                       (natp (cadr x))
-                       (integerp (cadr x))))))
-  
-(defthm bytep-of-read-byte$
-  (implies (and (state-p1 state)
-                (open-input-channel-p1 channel :byte state)
-                (mv-nth 0 (read-byte$ channel state)))
-           (and (bytep (mv-nth 0 (read-byte$ channel state)))
-                (natp (mv-nth 0 (read-byte$ channel state)))
-                (integerp (mv-nth 0 (read-byte$ channel state)))))
-  :hints(("Goal" :in-theory (e/d (state-p1) (open-channel1 bytep)))))
+<p>Under the hood, we use the Lisp reader to try to read an object from the
+Lisp input stream that is associated with <tt>channel</tt>.</p>
 
-(defthm bytep-of-read-byte$-type
-  (implies (and (state-p1 state)
-                (open-input-channel-p1 channel :byte state))
-           (or (null (mv-nth 0 (read-byte$ channel state)))
-               (natp (mv-nth 0 (read-byte$ channel state)))))
-  :hints(("Goal" :use bytep-of-read-byte$))
-  :rule-classes :type-prescription)
+<p>Ideally, the input stream contains well-formed S-expressions that are free
+of \"bad\" objects like <tt>0.75</tt>, symbols from packages that ACL2 doesn't
+know about, etc; see @(see ACL2::|About Types|).  In this case,
+<tt>read-object</tt> reads the first S-expression in the file and returns it as
+<tt>obj</tt>, setting <tt>eofp</tt> to <tt>nil</tt>.  If there are no more
+S-expressions in the file, <tt>eofp</tt> is <tt>t</tt> and <tt>obj</tt> is
+<tt>nil</tt>.</p>
 
-(defthm bytep-of-read-byte$-linear
-  (implies (and (state-p1 state)
-                (open-input-channel-p1 channel :byte state))
-           (and (< (mv-nth 0 (read-byte$ channel state)) 256)
-                (<= 0 (mv-nth 0 (read-byte$ channel state)))))
-  :hints(("Goal" :use bytep-of-read-byte$))
-  :rule-classes :linear)
+<p>But the input stream can also be malformed.  For instance, we might
+encounter malformed S-expressions without enough closing parens, or bad objects
+like <tt>0.75</tt>.  These sorts of problems will cause hard errors or raw Lisp
+errors!</p>
 
+<p>Note that if the input contains plain symbols without explicit package name
+prefixes, e.g., <tt>foo</tt> instead of <tt>acl2::foo</tt>, then these symbols
+will be treated as coming from the current package.  If that isn't what you
+want, you can explicily call @(see in-package) to switch into whatever package
+you want to be the default.  For example, if the file <tt>temp</tt> contains
+exactly:</p>
 
+<code>
+foo
+</code>
 
+<p>Then the following book:</p>
 
+<code>
+ (in-package \"ACL2\")
+ (include-book \"tools/bstar\" :dir :system)
+ (include-book \"centaur/vl/portcullis\" :dir :system)
 
-;; Read-object
-(defthm state-p1-of-read-object
-  (implies (and (state-p1 state)
-                (symbolp channel)
-                (open-input-channel-p1 channel :object state))
-           (state-p1 (mv-nth 2 (read-object channel state))))
-  :hints(("Goal" :in-theory (e/d (state-p1) (open-channel1)))))
+ (make-event
+  (b* (((mv ?err ?val state) (in-package \"VL\"))
+       ((mv channel state)   (open-input-channel \"temp\" :object state))
+       ((mv ?eofp obj state) (read-object channel state))
+       (state                (close-input-channel channel state)))
+    (value `(defconst *foo* ',obj))))
+</code>
 
-(defthm open-input-channel-p1-of-read-object
-  (implies (and (state-p1 state)
-                (open-input-channel-p1 channel :object state))
-           (open-input-channel-p1 channel :object (mv-nth 2 (read-object
-                                                             channel state)))))
+<p>Defines <tt>*foo*</tt> as the symbol <tt>vl::foo</tt>, instead of
+<tt>acl2::foo</tt>.</p>"
 
+  (defthm state-p1-of-read-object
+    (implies (and (state-p1 state)
+                  (symbolp channel)
+                  (open-input-channel-p1 channel :object state))
+             (state-p1 (mv-nth 2 (read-object channel state))))
+    :hints(("Goal" :in-theory (e/d (state-p1) (open-channel1)))))
 
+  (defthm open-input-channel-p1-of-read-object
+    (implies
+     (and (state-p1 state)
+          (open-input-channel-p1 channel :object state))
+     (open-input-channel-p1 channel :object
+                            (mv-nth 2 (read-object channel state))))))
 
+(defsection state-preserved-after-eof
 
-;; sometimes it's useful to know that state isn't modified when read at EOF
-;; (copied from unicode)
-(encapsulate
- ()
+  ;; Sometimes it's useful to know that state isn't modified when read at EOF
+  ;; (copied from unicode)
 
  (local (defthm lemma
           (equal (equal a (cons x y))
@@ -331,66 +631,123 @@
                    (equal (update-nth n (nth n x) x)
                           x))
           :hints(("Goal" :in-theory (enable nth update-nth)))))
-                 
 
- (defthm state-preserved-by-read-char$-when-eof
-   (implies (and (not (mv-nth 0 (read-char$ channel state)))
-                 (state-p1 state)
-                 (open-input-channel-p1 channel :character state))
-            (equal (mv-nth 1 (read-char$ channel state))
-                   state))
-   :hints(("Goal" :in-theory (e/d (read-char$ state-p1)))))
+ (defsection char
+   :extension read-char$
+   (defthm state-preserved-by-read-char$-when-eof
+     (implies (and (not (mv-nth 0 (read-char$ channel state)))
+                   (state-p1 state)
+                   (open-input-channel-p1 channel :character state))
+              (equal (mv-nth 1 (read-char$ channel state))
+                     state))
+     :hints(("Goal" :in-theory (e/d (read-char$ state-p1))))))
 
- (defthm state-preserved-by-read-byte$-when-eof
-   (implies (and (not (mv-nth 0 (read-byte$ channel state)))
-                 (state-p1 state)
-                 (open-input-channel-p1 channel :byte state))
-            (equal (mv-nth 1 (read-byte$ channel state))
-                   state))
-   :hints(("Goal" :in-theory (e/d (read-byte$ state-p1)))))
+ (defsection byte
+   :extension read-byte$
+   (defthm state-preserved-by-read-byte$-when-eof
+     (implies (and (not (mv-nth 0 (read-byte$ channel state)))
+                   (state-p1 state)
+                   (open-input-channel-p1 channel :byte state))
+              (equal (mv-nth 1 (read-byte$ channel state))
+                     state))
+     :hints(("Goal" :in-theory (e/d (read-byte$ state-p1))))))
 
- (defthm state-preserved-by-read-object-when-eof
-   (implies (and (mv-nth 0 (read-object channel state))
-                 (state-p1 state)
-                 (open-input-channel-p1 channel :object state))
-            (equal (mv-nth 2 (read-object channel state))
-                   state))
-   :hints(("Goal" :in-theory (e/d (read-object state-p1))))))
-
-
-
-
-
-;; Writing -- opening an output channel
-(defthm state-p1-of-open-output-channel
-  (implies (and (state-p1 state)
-                (stringp fname)
-                (member type *file-types*))
-           (state-p1 (mv-nth 1 (open-output-channel fname type state))))
-  :hints(("Goal" :in-theory (enable state-p1))))
-
-(defthm symbolp-of-open-output-channel
-  (symbolp (mv-nth 0 (open-output-channel fname type state)))
-  :rule-classes (:rewrite :type-prescription))
-
-(defthm open-output-channel-p1-of-open-output-channel
-  (implies (and (state-p1 state)
-                (stringp fname)
-                (member type *file-types*)
-                (equal channel (mv-nth 0 (open-output-channel fname type state)))
-                channel)
-           (open-output-channel-p1
-            channel
-            type
-            (mv-nth 1 (open-output-channel fname type state))))
-  :hints(("Goal" :in-theory (enable state-p1))))
+ (defsection object
+   :extension read-object$
+   (defthm state-preserved-by-read-object-when-eof
+     (implies (and (mv-nth 0 (read-object channel state))
+                   (state-p1 state)
+                   (open-input-channel-p1 channel :object state))
+              (equal (mv-nth 2 (read-object channel state))
+                     state))
+     :hints(("Goal" :in-theory (e/d (read-object state-p1)))))))
 
 
-;; this is needed for open-output-channel!.
-(defthm open-output-channel-p1-of-put-global
-  (equal (open-output-channel-p1 channel type (put-global key val state))
-         (open-output-channel-p1 channel type state))
-  :hints(("Goal" :in-theory (enable open-output-channel-p1 put-global))))
+
+; -----------------------------------------------------------------------------
+;
+;                                  OUTPUT
+;
+; -----------------------------------------------------------------------------
+
+(defsection open-output-channel
+  :parents (io)
+  :short "Open a file for writing."
+
+  :long "<p><b>Signature:</b> @(call open-output-channel) returns <tt>(mv
+channel state)</tt></p>
+
+<ul>
+
+<li><tt>file-name</tt> can be either <tt>:string</tt> (to indicate that you
+want to print to a string stream), or a string like <tt>\"temp.txt\"</tt>that
+names the file to write to.</li>
+
+<li><tt>typ</tt> is the type of input to be used and must be one of the valid
+@(see *file-types*).</li>
+
+<li><tt>state</tt> is the ACL2 @(see state).</li>
+
+</ul>
+
+<p>This is a @(see logic)-mode function, but its logical definition is tricky;
+see @(see logical-story-of-io).  The main logical consequence is that (on
+success) <tt>channel</tt> will become an open output channel of the indicated
+type, and hence can be written to or closed.</p>
+
+<p>Under the hood, we either create a new Lisp string stream in memory (when
+<tt>file-name</tt> is <tt>:string</tt>) or we use Lisp's file operations to open
+<tt>file-name</tt> for writing.  Note that if <tt>file-name</tt> refers to a
+file that already exists, it will be overwritten (i.e., not appended to).</p>
+
+<p>On success, <tt>channel</tt> is a symbol in the <tt>ACL2-OUTPUT-CHANNEL</tt>
+package.  Under the hood, this symbol will be associated with the Lisp stream.
+Note that to avoid resource leaks, you should eventually use @(see
+close-output-channel) to free this stream.</p>
+
+<p>There are various reasons and ways that <tt>open-output-channel</tt> can
+fail, which can be platform dependent.  For instance:</p>
+
+<ul>
+
+<li>If you try to write to a file in a directory that does not exist, then on
+SBCL you will get a raw Lisp error but on CCL the directory will be
+created.</li>
+
+<li>If you try to open a file for which you do not have permission, say
+<tt>/etc/shadow</tt>, a hard Lisp error can result.</li>
+
+</ul>"
+
+  (defthm state-p1-of-open-output-channel
+    (implies (and (state-p1 state)
+                  (stringp fname)
+                  (member type *file-types*))
+             (state-p1 (mv-nth 1 (open-output-channel fname type state))))
+    :hints(("Goal" :in-theory (enable state-p1))))
+
+  (defthm symbolp-of-open-output-channel
+    (symbolp (mv-nth 0 (open-output-channel fname type state)))
+    :rule-classes (:rewrite :type-prescription))
+
+  (defthm open-output-channel-p1-of-open-output-channel
+    (implies (and (state-p1 state)
+                  (stringp fname)
+                  (member type *file-types*)
+                  (equal channel (mv-nth 0 (open-output-channel fname type state)))
+                  channel)
+             (open-output-channel-p1
+              channel
+              type
+              (mv-nth 1 (open-output-channel fname type state))))
+    :hints(("Goal" :in-theory (enable state-p1))))
+
+  (defthm open-output-channel-p1-of-put-global
+    ;; This is needed for open-output-channel!.
+    (equal (open-output-channel-p1 channel type (put-global key val state))
+           (open-output-channel-p1 channel type state))
+    :hints(("Goal" :in-theory (enable open-output-channel-p1 put-global)))))
+
 
 
 (local
@@ -405,42 +762,67 @@
    :hints(("Goal" :in-theory (enable open-channel1 written-file)))))
 
 
-;; type is a free variable here.  the two variants that follow try to get
-;; around this problem
-(defthm state-p1-of-close-output-channel-free
-  (implies (and (open-output-channel-p1 channel type state)
-                (state-p1 state))
-           (state-p1 (close-output-channel channel state)))
-  :hints(("Goal" :in-theory (e/d (state-p1
-                                  written-files-p)
-                                 (written-file)))))
+
+(defsection close-output-channel
+  :parents (io)
+  :short "Close an output channel."
+
+  :long "<p><b>Signature</b>: @(call close-output-channel) returns
+<tt>state</tt>.</p>
+
+<ul>
+
+<li><tt>channel</tt> is a symbol that must refer to a currently open output
+channel; see @(see open-output-channel).</li>
+
+<li><tt>state</tt> is the ACL2 @(see state).</li>
+
+</ul>
+
+<p>This is a @(see logic)-mode function, but its logical definition is tricky;
+see @(see logical-story-of-io).  The main logical consequence is that
+<tt>channel</tt> will no longer be an open output channel, and hence can no
+longer be written to or closed.</p>
+
+<p>Under the hood, we close the raw Lisp stream associated with
+<tt>channel</tt>.  This typically involves flushing the buffers associated with
+the file (i.e., actually writing your output to disk).  It is generally
+necessary to close output channels when you are done with them to avoid
+resource leaks.</p>"
+
+  (defthm state-p1-of-close-output-channel-free
+    ;; type is a free variable here.  the two variants that follow try to get
+    ;; around this problem
+    (implies (and (open-output-channel-p1 channel type state)
+                  (state-p1 state))
+             (state-p1 (close-output-channel channel state)))
+    :hints(("Goal" :in-theory (e/d (state-p1
+                                    written-files-p)
+                                   (written-file)))))
+
+  (defthm state-p1-of-close-output-channel-types
+    (implies (and (or (open-output-channel-p1 channel :byte state)
+                      (open-output-channel-p1 channel :object state)
+                      (open-output-channel-p1 channel :character state))
+                  (state-p1 state))
+             (state-p1 (close-output-channel channel state)))
+    :hints(("Goal" :in-theory (disable close-output-channel
+                                       open-output-channel-p1))))
+
+  (defthm state-p1-of-close-output-channel-of-open
+    (implies (and (open-output-channel-p1
+                   (mv-nth 0 (open-output-channel fname type state1))
+                   type state)
+                  (state-p1 state))
+             (state-p1 (close-output-channel
+                        (mv-nth 0 (open-output-channel fname type state1))
+                        state)))
+    :hints(("Goal" :in-theory (disable close-output-channel
+                                       open-output-channel-p1
+                                       open-output-channel)))))
 
 
-(defthm state-p1-of-close-output-channel-types
-  (implies (and (or (open-output-channel-p1 channel :byte state)
-                    (open-output-channel-p1 channel :object state)
-                    (open-output-channel-p1 channel :character state))
-                (state-p1 state))
-           (state-p1 (close-output-channel channel state)))
-  :hints(("Goal" :in-theory (disable close-output-channel
-                                     open-output-channel-p1))))
-
-(defthm state-p1-of-close-output-channel-of-open
-  (implies (and (open-output-channel-p1
-                 (mv-nth 0 (open-output-channel fname type state1))
-                 type state)
-                (state-p1 state))
-           (state-p1 (close-output-channel
-                      (mv-nth 0 (open-output-channel fname type state1))
-                      state)))
-  :hints(("Goal" :in-theory (disable close-output-channel
-                                     open-output-channel-p1
-                                     open-output-channel))))
-
-
-
-
-
+;; BOZO Should these be local?
 
 (defthm open-channel1-of-cons-byte
   (implies (and (open-channel1 x)
@@ -460,7 +842,7 @@
                 (character-listp y))
            (open-channel1 (cons (car x) (revappend y (cdr x)))))
   :otf-flg t)
-           
+
 ;; matches unicode/explode-nonnegative-integer.lisp
 (defthm character-listp-of-explode-nonnegative-integer
   (equal (character-listp (explode-nonnegative-integer n base acc))
@@ -473,47 +855,61 @@
   (character-listp (explode-atom x base)))
 
 
-;; Princ$
-(defthm state-p1-of-princ$
-  (implies (and (state-p1 state)
-                (symbolp channel)
-                (open-output-channel-p1 channel :character state))
-           (state-p1 (princ$ x channel state)))
-  :hints(("Goal" :in-theory (e/d (state-p1) (open-channel1 explode-atom)))))
 
-(defthm open-output-channel-p1-of-princ$
-  (implies (and (state-p1 state)
-                (open-output-channel-p1 channel :character state))
-           (open-output-channel-p1 channel :character (princ$ x channel state))))
+;; I-AM-HERE
+(defsection princ$
+  :parents (io)
+  ;; BOZO ACL2's documentation for princ$ is nice, it'd be good to have a better
+  ;; integration between it and XDOC.
+
+  (defthm state-p1-of-princ$
+    (implies (and (state-p1 state)
+                  (symbolp channel)
+                  (open-output-channel-p1 channel :character state))
+             (state-p1 (princ$ x channel state)))
+    :hints(("Goal" :in-theory (e/d (state-p1) (open-channel1 explode-atom)))))
+
+  (defthm open-output-channel-p1-of-princ$
+    (implies (and (state-p1 state)
+                  (open-output-channel-p1 channel :character state))
+             (open-output-channel-p1 channel :character (princ$ x channel state)))))
 
 
-;; Write-byte$
-(defthm state-p1-of-write-byte$
-  (implies (and (state-p1 state)
-                (symbolp channel)
-                (natp byte)
-                (< byte 256)
-                (open-output-channel-p1 channel :byte state))
-           (state-p1 (write-byte$ byte channel state)))
-  :hints(("Goal" :in-theory (e/d (state-p1) (open-channel1)))))
+(defsection write-byte$
+  :parents (io)
 
-(defthm open-output-channel-p1-of-write-byte$
-  (implies (and (state-p1 state)
-                (open-output-channel-p1 channel :byte state))
-           (open-output-channel-p1 channel :byte (write-byte$ byte channel state))))
+  ;; Write-byte$
+  (defthm state-p1-of-write-byte$
+    (implies (and (state-p1 state)
+                  (symbolp channel)
+                  (natp byte)
+                  (< byte 256)
+                  (open-output-channel-p1 channel :byte state))
+             (state-p1 (write-byte$ byte channel state)))
+    :hints(("Goal" :in-theory (e/d (state-p1) (open-channel1)))))
 
-;; print-object$
-(defthm state-p1-of-print-object$
-  (implies (and (state-p1 state)
-                (symbolp channel)
-                (open-output-channel-p1 channel :object state))
-           (state-p1 (print-object$ x channel state)))
-  :hints(("Goal" :in-theory (e/d (state-p1) (open-channel1)))))
+  (defthm open-output-channel-p1-of-write-byte$
+    (implies (and (state-p1 state)
+                  (open-output-channel-p1 channel :byte state))
+             (open-output-channel-p1 channel :byte (write-byte$ byte channel state)))))
 
-(defthm open-output-channel-p1-of-print-object$
-  (implies (and (state-p1 state)
-                (open-output-channel-p1 channel :object state))
-           (open-output-channel-p1 channel :object (print-object$ x channel state))))
+
+(defsection print-object$
+  :parents (io)
+
+  ;; print-object$
+  (defthm state-p1-of-print-object$
+    (implies (and (state-p1 state)
+                  (symbolp channel)
+                  (open-output-channel-p1 channel :object state))
+             (state-p1 (print-object$ x channel state)))
+    :hints(("Goal" :in-theory (e/d (state-p1) (open-channel1)))))
+
+  (defthm open-output-channel-p1-of-print-object$
+    (implies (and (state-p1 state)
+                  (open-output-channel-p1 channel :object state))
+             (open-output-channel-p1 channel :object (print-object$ x channel state)))))
+
 
 
 ;; Close-output-channel's guard requires that the channel is not the symbol:
@@ -523,7 +919,7 @@
 ;; then the new file clock, which is at least 1.  Blech!
 (encapsulate nil
   (local (in-theory (disable floor mod print-base-p)))
-  (local (include-book "ihs/quotient-remainder-lemmas" :dir :System))
+  (local (include-book "ihs/quotient-remainder-lemmas" :dir :system))
 
   (defthm print-base-p-implies-posp
     (implies (print-base-p x)
@@ -659,67 +1055,92 @@
     :hints(("Goal" :in-theory (disable make-input-channel)))))
 
 
-;; This is slightly different than unicode's file-measure, which allows us to
-;; prove it decreasing without assuming state-p1 in the object case.  Really
-;; it's just a workaround for the fact that read-object checks
-;; (cdr entry) as a substitute for (consp (cdr entry)) to find whether there
-;; are objects remaining.
-(defun file-measure (channel state-state)
-  (declare (xargs :guard (and (symbolp channel)
-                              (state-p1 state-state))))
-  (+ (len (cddr (assoc-equal channel (open-input-channels state-state))))
-     (if (consp (cddr (assoc-equal channel (open-input-channels state-state))))
-         (if (cdr (last (cddr (assoc-equal channel (open-input-channels
-                                                    state-state))))) 1 0)
-       (if (cddr (assoc-equal channel (open-input-channels state-state))) 1 0))))
+(defsection file-measure
+  :parents (io)
+  :short "A measure for admitting functions that read from files."
 
-(defthm file-measure-of-read-byte$-weak
-  (<= (file-measure channel (mv-nth 1 (read-byte$ channel state)))
-      (file-measure channel state))
-  :rule-classes (:rewrite :linear))
+  :long "<p><b>Signature:</b> @(call file-measure) returns a natural
+number.</p>
 
-(defthm file-measure-of-read-byte$-strong
-  (implies (mv-nth 0 (read-byte$ channel state))
-           (< (file-measure channel (mv-nth 1 (read-byte$ channel state)))
-              (file-measure channel state)))
-  :rule-classes (:rewrite :linear))
+<ul>
 
-(defthm file-measure-of-read-byte$-rw
-  (implies (mv-nth 0 (read-byte$ channel state))
-           (equal (file-measure channel (mv-nth 1 (read-byte$ channel state)))
-                  (+ -1 (file-measure channel state)))))
+<li><tt>channel</tt> may be any symbol but is typically an open input
+channel.</li>
 
-(defthm file-measure-of-read-char$-weak
-  (<= (file-measure channel (mv-nth 1 (read-char$ channel state)))
-      (file-measure channel state))
-  :rule-classes (:rewrite :linear))
+<li><tt>state-state</tt> is typically the ACL2 @(see state).</li>
 
-(defthm file-measure-of-read-char$-strong
-  (implies (mv-nth 0 (read-char$ channel state))
-           (< (file-measure channel (mv-nth 1 (read-char$ channel state)))
-              (file-measure channel state)))
-  :rule-classes (:rewrite :linear))
+</ul>
 
-(defthm file-measure-of-read-char$-rw
-  (implies (mv-nth 0 (read-char$ channel state))
-           (equal (file-measure channel (mv-nth 1 (read-char$ channel state)))
-                  (1- (file-measure channel state)))))
+<p>This is a @(see logic)-mode function, but its logical definition is tricky;
+see @(see logical-story-of-io).  The basic gist is that it returns how many
+objects are left in the channel and hence how many functions can still be
+read.</p>
 
-(defthm file-measure-of-read-object-weak
-  (<= (file-measure channel (mv-nth 2 (read-object channel state)))
-      (file-measure channel state))
-  :rule-classes (:rewrite :linear))
+<p>This function is only meant to be used to admit functions, and cannot be
+executed on the real ACL2 @(see state).</p>
 
-(defthm file-measure-of-read-object-strong
-  (implies (not (mv-nth 0 (read-object channel state)))
-           (< (file-measure channel (mv-nth 2 (read-object channel state)))
-              (file-measure channel state)))
-  :rule-classes (:rewrite :linear))
+<p>History.  Jared wrote an initial version of this function for the Unicode
+books.  Sol then extended it with a hack that allows us to prove it decreasing
+without assuming state-p1 in the object case.  (Really it's just a workaround
+for the fact that read-object checks <tt>(cdr entry)</tt> as a substitute for
+<tt>(consp (cdr entry))</tt> to find whether there are objects remaining.</p>"
 
-(defthm file-measure-of-read-object-rw
-  (implies (not (mv-nth 0 (read-object channel state)))
-           (equal (file-measure channel (mv-nth 2 (read-object channel state)))
-                  (1- (file-measure channel state)))))
+  (defun file-measure (channel state-state)
+    (declare (xargs :guard (and (symbolp channel)
+                                (state-p1 state-state))))
+    (+ (len (cddr (assoc-equal channel (open-input-channels state-state))))
+       (if (consp (cddr (assoc-equal channel (open-input-channels state-state))))
+           (if (cdr (last (cddr (assoc-equal channel (open-input-channels
+                                                      state-state))))) 1 0)
+         (if (cddr (assoc-equal channel (open-input-channels state-state))) 1 0))))
+
+  (defthm file-measure-of-read-byte$-weak
+    (<= (file-measure channel (mv-nth 1 (read-byte$ channel state)))
+        (file-measure channel state))
+    :rule-classes (:rewrite :linear))
+
+  (defthm file-measure-of-read-byte$-strong
+    (implies (mv-nth 0 (read-byte$ channel state))
+             (< (file-measure channel (mv-nth 1 (read-byte$ channel state)))
+                (file-measure channel state)))
+    :rule-classes (:rewrite :linear))
+
+  (defthm file-measure-of-read-byte$-rw
+    (implies (mv-nth 0 (read-byte$ channel state))
+             (equal (file-measure channel (mv-nth 1 (read-byte$ channel state)))
+                    (+ -1 (file-measure channel state)))))
+
+  (defthm file-measure-of-read-char$-weak
+    (<= (file-measure channel (mv-nth 1 (read-char$ channel state)))
+        (file-measure channel state))
+    :rule-classes (:rewrite :linear))
+
+  (defthm file-measure-of-read-char$-strong
+    (implies (mv-nth 0 (read-char$ channel state))
+             (< (file-measure channel (mv-nth 1 (read-char$ channel state)))
+                (file-measure channel state)))
+    :rule-classes (:rewrite :linear))
+
+  (defthm file-measure-of-read-char$-rw
+    (implies (mv-nth 0 (read-char$ channel state))
+             (equal (file-measure channel (mv-nth 1 (read-char$ channel state)))
+                    (1- (file-measure channel state)))))
+
+  (defthm file-measure-of-read-object-weak
+    (<= (file-measure channel (mv-nth 2 (read-object channel state)))
+        (file-measure channel state))
+    :rule-classes (:rewrite :linear))
+
+  (defthm file-measure-of-read-object-strong
+    (implies (not (mv-nth 0 (read-object channel state)))
+             (< (file-measure channel (mv-nth 2 (read-object channel state)))
+                (file-measure channel state)))
+    :rule-classes (:rewrite :linear))
+
+  (defthm file-measure-of-read-object-rw
+    (implies (not (mv-nth 0 (read-object channel state)))
+             (equal (file-measure channel (mv-nth 2 (read-object channel state)))
+                    (1- (file-measure channel state))))))
 
 
 (in-theory (disable state-p1

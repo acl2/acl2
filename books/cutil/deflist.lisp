@@ -577,7 +577,7 @@ does not care whether <tt>x</tt> is nil-terminated.</p>"))))
          (implies (not (consp ,x))
                   (equal (,name ,@formals)
                          ,(if true-listp
-                              `(null ,x)
+                              `(not ,x)
                             t)))
          :hints(("Goal" :in-theory (enable ,name))
                 ;,last-ditch-hint
@@ -869,22 +869,24 @@ does not care whether <tt>x</tt> is nil-terminated.</p>"))))
                   ;;,last-ditch-hint
                   )))
 
-       ,@(and (not true-listp)
-
-; TODO: create a suitable lemma for the true-listp case.
-
-              `((defthm ,(mksym name '-of-set-difference-equal)
-                  (implies (force (,name ,@formals))
-                           (equal (,name ,@(subst `(set-difference-equal ,x ,y) x formals))
-                                  t))
-                  :hints(("Goal"
-                          :induct (len ,x)
-                          :in-theory (enable set-difference-equal)
-                          :expand ((,name ,@formals)
-                                   (:free (,x ,y)
-                                          (,name ,@(subst `(cons ,x ,y) x formals)))))
-                         ;;,last-ditch-hint
-                         ))))
+       (defthm ,(mksym name '-of-set-difference-equal)
+         ;; This doesn't have a nice EQUAL theorem because, e.g., if all of the
+         ;; non-elementp's in X are also in Y, then they'll be removed and
+         ;; leave us with a good foo-listp.  Arguably the forcing here is too
+         ;; aggressive, but I think most of the time, if you're expecting a
+         ;; set-difference to be all of one type, it's probably because you're
+         ;; expecting X to all be of that type.
+         (implies (force (,name ,@formals))
+                  (equal (,name ,@(subst `(set-difference-equal ,x ,y) x formals))
+                         t))
+         :hints(("Goal"
+                 :induct (len ,x)
+                 :in-theory (enable set-difference-equal)
+                 :expand ((,name ,@formals)
+                          (:free (,x ,y)
+                                 (,name ,@(subst `(cons ,x ,y) x formals)))))
+                ;;,last-ditch-hint
+                ))
 
        (defthm ,(mksym name '-of-union-equal)
          (implies (and (force (,name ,@formals))

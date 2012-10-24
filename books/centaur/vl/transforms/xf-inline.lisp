@@ -107,14 +107,14 @@ clever.</p>")
                (cw "no: parameter declarations~%"))
            (or (not x.fundecls)
                (cw "no: function declarations~%"))
+           (or (not x.taskdecls)
+               (cw "no: task declarations~%"))
            (not (cw "yes~%"))))))
 
 (deflist vl-ok-to-inline-list-p (x)
   (vl-ok-to-inline-p x)
   :guard (vl-modulelist-p x)
   :parents (inline-mods))
-
-
 
 
 
@@ -139,17 +139,6 @@ wires that have been derived from the module's ports."
          (inside  (vl-port->expr port1))
          (outside (vl-plainarg->expr (car plainargs)))
 
-         ((unless (and inside outside))
-          ;; BOZO reconsider this, it seems like you should probably be able to
-          ;; just be able to return no assigns here, regardless of where the
-          ;; blank lives.
-          (b* ((w (make-vl-warning :type :vl-inline-fail
-                                   :msg "Blanks are not supported for inlining"
-                                   :args (list (car ports))
-                                   :fn 'vl-make-inlining-assigns
-                                   :fatalp nil)))
-            (mv nil (cons w warnings) nil)))
-
          ((mv warnings dir)
           (vl-port-direction (car ports) portdecls palist nil))
          ((unless dir)
@@ -164,13 +153,40 @@ wires that have been derived from the module's ports."
                                    :fatalp nil)))
             (mv nil (cons w warnings) nil)))
 
-         (assign1 (if (eq dir :vl-input)
-                      (make-vl-assign :lvalue inside :expr outside :loc loc)
-                    (make-vl-assign :lvalue outside :expr inside :loc loc)))
-         ((mv okp warnings assigns)
+         (assigns1
+          ;; If the port's expression (inside) is blank (nil), we don't need
+          ;; ANY assignments to cover this port:
+          ;;
+          ;;   - If the port is an input, it isn't used inside the submodule,
+          ;;     so there's obviously no need to assign it to anything.
+          ;;
+          ;;   - If the port is an output, it isn't being driven by the
+          ;;     submodule, so we don't need to drive whatever the superior
+          ;;     module wants to connect it to.
+          ;;
+          ;; Similarly, if the actual expression (outside) is blank (nil), we
+          ;; don't need any assignment:
+          ;;
+          ;;   - If the port is an input, then since the superior module isn't
+          ;;     driving it, we don't need to assign anything to it.
+          ;;
+          ;;   - If the port is an output, then since it's not connected to
+          ;;     anything in the superior module, there's obviously no need to
+          ;;     assign it to anything.
+          ;;
+          ;; Otherwise, we'll need an assignment based on the direction of the
+          ;; port.
+          (cond ((or (not inside) (not outside))
+                 nil)
+                ((eq dir :vl-input)
+                 (list (make-vl-assign :lvalue inside :expr outside :loc loc)))
+                (t
+                 (list (make-vl-assign :lvalue outside :expr inside :loc loc)))))
+
+         ((mv okp warnings assigns2)
           (vl-make-inlining-assigns (cdr ports) (cdr plainargs)
                                     portdecls palist loc warnings)))
-      (mv okp warnings (cons assign1 assigns))))
+      (mv okp warnings (append assigns1 assigns2))))
 
   (local (in-theory (enable vl-make-inlining-assigns)))
 

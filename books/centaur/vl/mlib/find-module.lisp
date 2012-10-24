@@ -53,7 +53,6 @@ the modules.  See @(see vl-fast-has-module) for a faster alternative.</p>"
                (vl-has-module name (cdr mods)))))))
 
 
-
 (defsection vl-find-module
   :parents (hierarchy)
   :short "@(call vl-find-module) retrieves the first module named <tt>x</tt>
@@ -121,7 +120,6 @@ the modules.  See @(see vl-fast-find-module) for a faster alternative.</p>"
   :long "<p>A modalist is generally constructed by @(see vl-modalist).</p>")
 
 
-
 (defsection vl-modalist
   :parents (hierarchy)
   :short "Build a fast alist mapping module names to modules."
@@ -172,7 +170,6 @@ module lookups.</p>"
   (defthm vl-modalist-p-of-vl-modalist
     (implies (force (vl-modulelist-p x))
              (vl-modalist-p (vl-modalist x)))))
-
 
 
 (defsection vl-fast-has-module
@@ -285,7 +282,6 @@ performance, see @(see vl-fast-find-modules).</p>"
     (implies (vl-has-modules names mods)
              (equal (vl-modulelist->names (vl-find-modules names mods))
                     (list-fix names)))))
-
 
 
 (defsection vl-fast-find-modules
