@@ -110,7 +110,7 @@ it.</p>")
 (defun defalist-fn (name formals key val
                          guard verify-guards
                          keyp-of-nil valp-of-nil
-                         mode parents short long)
+                         mode parents short long true-listp)
   (declare (xargs :mode :program))
   (b* (((unless (symbolp name))
         (er hard 'deflist "Name must be a symbol, but is ~x0." name))
@@ -197,11 +197,14 @@ each value satisfies @(see " (symbol-name valp) ")."))))
                (declare (xargs :guard ,guard
                                :verify-guards ,verify-guards
                                :mode ,mode))
-               (or (atom ,x)
+               (if (consp ,x)
                    (and (consp (car ,x))
                         (,keyp ,@(subst `(caar ,x) x key-formals))
                         (,valp ,@(subst `(cdar ,x) x val-formals))
-                        (,name ,@(subst `(cdr ,x) x formals))))))
+                        (,name ,@(subst `(cdr ,x) x formals)))
+                 ,(if true-listp
+                         `(null ,x)
+                       t))))
 
        ((when (eq mode :program))
         `(progn
@@ -237,7 +240,9 @@ each value satisfies @(see " (symbol-name valp) ")."))))
        (defthm ,(mksym name '-when-not-consp)
          (implies (not (consp ,x))
                   (equal (,name ,@formals)
-                         t))
+                         ,(if true-listp
+                              `(not ,x)
+                            t)))
          :hints(("Goal" :in-theory (enable ,name))
                 ,last-ditch-hint))
 
@@ -250,17 +255,20 @@ each value satisfies @(see " (symbol-name valp) ")."))))
          :hints(("Goal" :in-theory (enable ,name))
                 ,last-ditch-hint))
 
-       (defthm ,(mksym name '-of-list-fix)
-         (equal (,name ,@(subst `(list-fix ,x) x formals))
-                (,name ,@formals))
-         :hints(("Goal"
-                 :induct (len ,x)
-                 :in-theory (enable list-fix))
-                ,last-ditch-hint))
+       ,@(and (not true-listp)
+              `((defthm ,(mksym name '-of-list-fix)
+                  (equal (,name ,@(subst `(list-fix ,x) x formals))
+                         (,name ,@formals))
+                  :hints(("Goal"
+                          :induct (len ,x)
+                          :in-theory (enable list-fix))
+                         ,last-ditch-hint))))
 
        (defthm ,(mksym name '-of-append)
          (equal (,name ,@(subst `(append ,x ,y) x formals))
-                (and (,name ,@formals)
+                (and (,name ,@(if true-listp
+                                  (subst `(list-fix ,x) x formals)
+                                formals))
                      (,name ,@(subst y x formals))))
          :hints(("Goal"
                  :induct (len ,x)
@@ -269,7 +277,9 @@ each value satisfies @(see " (symbol-name valp) ")."))))
 
        (defthm ,(mksym name '-of-rev)
          (equal (,name ,@(subst `(rev ,x) x formals))
-                (,name ,@formals))
+                (,name ,@(if true-listp
+                             (subst `(list-fix ,x) x formals)
+                           formals)))
          :hints(("Goal"
                  :induct (len ,x)
                  :in-theory (enable rev))
@@ -277,7 +287,9 @@ each value satisfies @(see " (symbol-name valp) ")."))))
 
        (defthm ,(mksym name '-of-revappend)
          (equal (,name ,@(subst `(revappend ,x ,y) x formals))
-                (and (,name ,@formals)
+                (and (,name ,@(if true-listp
+                                  (subst `(list-fix ,x) x formals)
+                                formals))
                      (,name ,@(subst y x formals))))
          :hints(("Goal"
                  :induct (revappend ,x ,y)
@@ -368,13 +380,17 @@ each value satisfies @(see " (symbol-name valp) ")."))))
                        (subsetp-equal (double-rewrite ,x)
                                       (double-rewrite ,y)))
                   (equal (,name ,@formals)
-                         t))
+                         ,(if true-listp
+                              `(true-listp ,x)
+                            t)))
          :rule-classes ((:rewrite)
                         (:rewrite :corollary
                                   (implies (and (subsetp-equal (double-rewrite ,x) ,y)
                                                 (,name ,@(subst y x formals)))
                                            (equal (,name ,@formals)
-                                                  t))))
+                                                  ,(if true-listp
+                                                       `(true-listp ,x)
+                                                     t)))))
          :hints(("Goal"
                  :induct (len ,x)
                  :in-theory (enable subsetp-equal))
@@ -410,12 +426,13 @@ each value satisfies @(see " (symbol-name valp) ")."))))
                  :in-theory (enable repeat))
                 ,last-ditch-hint))
 
-       (defthm ,(mksym name '-of-mergesort)
-         (equal (,name ,@(subst `(mergesort ,x) x formals))
-                (,name ,@formals))
-         :hints(("Goal" :cases ((,name ,@formals)))
-                ,last-ditch-hint))
-
+       ,@(and (not true-listp)
+              `((defthm ,(mksym name '-of-mergesort)
+                  (equal (,name ,@(subst `(mergesort ,x) x formals))
+                         (,name ,@formals))
+                  :hints(("Goal" :cases ((,name ,@formals)))
+                         ,last-ditch-hint))))
+         
        (defthm ,(mksym name '-of-last)
          (implies (force (,name ,@formals))
                   (equal (,name ,@(subst `(last ,x) x formals))
@@ -470,15 +487,16 @@ each value satisfies @(see " (symbol-name valp) ")."))))
                          t))
          :hints(,last-ditch-hint))
 
-       (defthm ,(mksym name '-of-union)
-         (implies (and (force (,name ,@formals))
-                       (force (,name ,@(subst y x formals))))
-                  (,name ,@(subst `(union ,x ,y) x formals)))
-         :hints(("Goal"
-                 :use ((:instance deflist-lemma-5 (x ,x) (y ,y))
-                       (:instance ,(mksym name '-of-append)))
-                 :in-theory (disable ,(mksym name '-of-append)))
-                ,last-ditch-hint))
+       ,@(and (not true-listp)
+              `((defthm ,(mksym name '-of-union)
+                  (implies (and (force (,name ,@formals))
+                                (force (,name ,@(subst y x formals))))
+                           (,name ,@(subst `(union ,x ,y) x formals)))
+                  :hints(("Goal"
+                          :use ((:instance deflist-lemma-5 (x ,x) (y ,y))
+                                (:instance ,(mksym name '-of-append)))
+                          :in-theory (disable ,(mksym name '-of-append)))
+                         ,last-ditch-hint))))
 
        (defthm ,(mksym name '-of-duplicated-members)
          (implies (force (,name ,@formals))
@@ -546,11 +564,12 @@ each value satisfies @(see " (symbol-name valp) ")."))))
                          mode
                          (parents '(acl2::undocumented))
                          (short 'nil)
-                         (long 'nil))
+                         (long 'nil)
+                         (true-listp 'nil))
   `(make-event (let ((mode (or ',mode (default-defun-mode (w state)))))
                  (defalist-fn ',name ',formals ',key ',val
                    ',guard ',verify-guards
                    ',keyp-of-nil ',valp-of-nil
                    mode
-                   ',parents ',short ',long))))
+                   ',parents ',short ',long ',true-listp))))
 
