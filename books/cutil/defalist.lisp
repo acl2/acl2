@@ -30,13 +30,15 @@
 association list (e.g., <tt>string-nat-alistp</tt>) and proves basic theorems
 about it.</p>
 
-<p>Unlike many ACL2 alist recognizers, the recognizers introduced by defalist
-do not imply <tt>(alistp x)</tt>, but they do imply something like
-<tt>(cons-listp x)</tt>.  That is, we require that each element is a cons, but
-we do not require the alists to be nil-terminated.  This is sometimes
-unfortunate when you want to use functions like <tt>strip-cars</tt> or
-<tt>strip-cdrs</tt> that expect their argument to be a true-list.  But it means
-you can use size hints, names, etc., for fast alists.</p>
+<p>Unlike many ACL2 alist recognizers, (unless one uses a non-<tt>nil</tt>
+value for <tt>true-listp</tt>, as shown below) the recognizers introduced by
+defalist do not imply <tt>(alistp x)</tt>, but they do imply something like
+<tt>(cons-listp x)</tt>.  That is, we require that each element is a cons, but,
+by default, we do not require the alists to be nil-terminated.  This is
+sometimes unfortunate when you want to use functions like <tt>strip-cars</tt>
+or <tt>strip-cdrs</tt> that expect their argument to be a true-list.  But it
+means you can use size hints, names, etc., for fast alists.  See @(see
+strict-list-recognizers) for further discussion.</p>
 
 <p>General form:</p>
 
@@ -48,6 +50,7 @@ you can use size hints, names, etc., for fast alists.</p>
          verify-guards     ; t by default
          keyp-of-nil       ; :unknown by default
          valp-of-nil       ; :unknown by default
+         true-listp        ; nil by default
          mode              ; current defun-mode by default
          parents           ; '(acl2::undocumented) by default
          short             ; nil by default
@@ -89,6 +92,13 @@ inspected.</p>
 <p>The optional <tt>:guard</tt> and <tt>:verify-guards</tt> are given to the
 <tt>defund</tt> event that we introduce.  In other words, these are the guards
 that will be used for the list recognizer, not the element recognizer.</p>
+
+<p>The optional <tt>:true-listp</tt> keyword can be used to require that the
+new recognizer is \"strict\" and will only accept lists that are
+<tt>nil</tt>-terminated; by default the recognizer will be \"loose\" and will
+not pay attention to the final <tt>cdr</tt>.  There are various reasons to
+prefer one behavior or another; see @(see strict-list-recognizers) for
+details.</p>
 
 <p>The optional <tt>:keyp-of-nil</tt> (similarly <tt>:valp-of-nil</tt>)
 keywords can be used when <tt>(key-recognizer nil ...)</tt> (similarly

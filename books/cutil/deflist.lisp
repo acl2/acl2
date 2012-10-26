@@ -79,7 +79,7 @@ defalist), @(see defprojection), and @(see defmapappend) handle <tt>x</tt>.</p>
 
 <p>More examples:</p>
 
-<p>Recognier for lists with no natural numbers:</p>
+<p>Recognizer for lists with no natural numbers:</p>
 
 <code>
  (deflist nat-free-listp (x)
