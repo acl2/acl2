@@ -17,6 +17,8 @@ ev-theoremp.lisp
 generalize.acl2
 generalize.lisp
 join-thms.lisp
+meta-extract-simple-test.lisp
+meta-extract-user.lisp
 multi-env-trick.lisp
 null-fail-hints.lisp
 replace-defined-consts.acl2
@@ -74,6 +76,14 @@ Book generalize.lisp provides a generalization clause processor.
 Book join-thms.lisp automates the introduction of certain theorems about
 evaluators that are useful for verifying clause processors.
 
+Book meta-extract-simple-test.lisp is a simple example, based on more complex
+examples in meta-extract-user.lisp, that illustrates meta-extract hypotheses
+in :meta rules.
+
+Book meta-extract-user.lisp defines theorems and tools to enable the user to
+more easily take advantage of the meta-extract hypotheses feature for :meta
+rules.
+
 Book multi-env-trick.lisp automates a trick for introducing clause
 processors that allows each generated clause to be evaluated under multiple
 binding alists in the correctness proof.
@@ -101,7 +111,7 @@ and proves theorems about them that may be useful in defining clause
 processors.")
  (:PERMISSION
   "Clause processor examples
-Copyright (C) 2007 by:
+Copyright (C) 2007 by University of Texas at Austin:
  Jared Davis <jared@cs.utexas.edu>       (equality.lisp)
  Matt Kaufmann <kaufmann@cs.utexas.edu>  (basic-examples.lisp)
  Erik Reeber <reeber@cs.utexas.edu>      (bv-add*.lisp)
@@ -112,6 +122,16 @@ Copyright (C) 2007 by:
 
 Copyright 2010 by Centaur Technology:    (autohide.lisp,
                                           unify-subst.lisp)
+
+Copyright (C) 2012 by University of Texas at Austin:
+ Matt Kaufmann <kaufmann@cs.utexas.edu>  (meta-extract-simple-test.lisp)
+
+Copyright 2012 by Centaur Technology:
+ Sol Swords <sswords@centtech.com>       (meta-extract-user.lisp)
+ which includes a few small modifications from the
+ original meta-cheat-user.lisp,
+ Copyright 2012 by University of Texas at Austin:
+ Matt Kaufmann <kaufmann@cs.utexas.edu>
 
 This program is free software; you can redistribute it and/or 
 modify it under the terms of the GNU General Public License as 

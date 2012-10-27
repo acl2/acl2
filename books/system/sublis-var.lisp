@@ -19,7 +19,7 @@
    (cond
     (flg ; sublis-var1-lst
      (cond ((endp x)
-            (mv nil nil))
+            (mv nil x))
            (t (mv-let (changedp1 term)
                       (sublis-var1-flg nil alist (car x))
                       (mv-let (changedp2 lst)

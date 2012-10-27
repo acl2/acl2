@@ -10,6 +10,7 @@ f-put-global.lisp
 gather-dcls.lisp
 hl-addr-combine.lisp
 io.lisp
+meta-extract.lisp
 pseudo-good-worldp.lisp
 pseudo-termp-lemmas.lisp
 subcor-var.lisp

@@ -12,3 +12,4 @@
 (include-book "subst-expr")
 (include-book "convert-normalized-term-to-pairs")
 (include-book "gather-dcls")
+(include-book "meta-extract")

@@ -23,10 +23,10 @@
 #; University of Texas at Austin
 #; Austin, TX 78712-1188 U.S.A.
 
-# This file certifies all the books that come with the system by asking the
-# appropriate subdirectories certify their books.  The subsidiary Makefiles
-# take advantage of a makefile, Makefile-generic, in this directory, which is
-# derived from one written by Bishop Brock.
+# This file certifies books by directing appropriate subdirectories to
+# certify their books.  The subsidiary Makefiles take advantage of a
+# makefile, Makefile-generic, in this directory, which is derived from
+# one written by Bishop Brock.
 
 # For example, to clean and time book certification (including workshops):
 # make clean all-plus
@@ -132,7 +132,7 @@ concurrent-programs/german-protocol: misc
 deduction/passmore: 
 serialize: tools
 clause-processors: top-with-meta-cert arithmetic-3 textbook arithmetic \
-	misc tools data-structures arithmetic-5
+	misc tools data-structures arithmetic-5 system
 quadratic-reciprocity: rtl
 misc/misc2: rtl coi top-with-meta-cert
 hints: misc
