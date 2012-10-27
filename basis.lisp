@@ -12368,7 +12368,7 @@
                               (pseudo-term-listp (strip-cdrs alist))
                               (pseudo-term-listp l))))
   (cond ((endp l)
-         (mv nil nil))
+         (mv nil l))
         (t (mv-let (changedp1 term)
                    (sublis-var1 alist (car l))
                    (mv-let (changedp2 lst)

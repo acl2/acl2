@@ -1537,7 +1537,17 @@
 ; for encapsulated functions that we do not want executed.
 
   '(big-n decrement-big-n zp-big-n sys-call-status-sequence
-          canonical-pathname))
+          canonical-pathname
+
+; The following mfc-xx functions have implicit constraints, based on the
+; implicit constraint for meta-extract-contextual-fact.  See the Essay on
+; Correctness of Meta Reasoning.
+
+          mfc-ts-fn mfc-ts-ttree
+          mfc-rw-fn mfc-rw-ttree
+          mfc-rw+-fn mfc-rw+-ttree
+          mfc-relieve-hyp-fn mfc-relieve-hyp-ttree
+          mfc-ap-fn mfc-ap-ttree))
 
 ;; RAG - I added the treatment of *non-standard-primitives*
 

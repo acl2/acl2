@@ -661,9 +661,11 @@
 (defmacro defun-*1* (fn &rest args)
   `(defun ,(*1*-symbol fn) ,@args))
 
-(defmacro defun-override (name formals &rest rest)
-  `(progn (defun ,name ,formals ,@rest)
-          (defun-*1* ,name ,formals ,@rest)))
+(defmacro defun-overrides (name formals &rest rest)
+  (list 'quote
+        (list `(defun ,name ,formals ,@rest)
+              `(defun-*1* ,name ,formals
+                 (,name ,@formals)))))
 
 ;          ONEIFICATION
 
@@ -1899,8 +1901,8 @@
 
 ; And finally, this is where we finish handling of safe-mode for
 ; guarded-primitive-p functions, specifically those in :program mode since if
-; such a function is in :logic mode then it is :common-lisp-compliant (see
-; check-none-ideal), so it is handled above.
+; such a function is in :logic mode then either it is non-executable or
+; :common-lisp-compliant (see check-none-ideal), hence is handled above.
 
                                (cond
                                 (boot-strap-p
@@ -6438,28 +6440,66 @@
 
 ; Warning: These definitions will replace both the raw Lisp and *1* definitions
 ; of the first argument of each defun-override.  We ensure that these
-; definitions can't be evaluated when proving theorems.  (Perhaps a form of
-; defattach would be more suitable.)
+; definitions can't be evaluated when proving theorems, thus avoiding
+; unsoundness we could otherwise get, say by way of a standard functional
+; instantiation approach, by allowing axioms during proofs (through evaluation)
+; that aren't recorded as axioms.
 
-  '((defun-override mfc-ts (term mfc state)
+  '((defun-overrides mfc-ts-fn (term mfc state forcep)
       (progn (chk-live-state-p 'mfc-ts state)
-             (mfc-ts-raw term mfc state)))
+             (mv-let (ans ttree)
+                     (mfc-ts-raw term mfc state forcep)
+                     (declare (ignore ttree))
+                     ans)))
+    (defun-overrides mfc-ts-ttree (term mfc state forcep)
+      (progn (chk-live-state-p 'mfc-ts state)
+             (mfc-ts-raw term mfc state forcep)))
 
-    (defun-override mfc-rw (term obj equiv-info mfc state)
+    (defun-overrides mfc-rw-fn (term obj equiv-info mfc state forcep)
       (progn (chk-live-state-p 'mfc-rw state)
-             (mfc-rw-raw term nil obj equiv-info mfc 'mfc-rw state)))
+             (mv-let (ans ttree)
+                     (mfc-rw-raw term nil obj equiv-info mfc 'mfc-rw state
+                                 forcep)
+                     (declare (ignore ttree))
+                     ans)))
+    (defun-overrides mfc-rw-ttree (term obj equiv-info mfc state forcep)
+      (progn (chk-live-state-p 'mfc-rw state)
+             (mfc-rw-raw term nil obj equiv-info mfc 'mfc-rw state forcep)))
 
-    (defun-override mfc-rw+ (term alist obj equiv-info mfc state)
+    (defun-overrides mfc-rw+-fn (term alist obj equiv-info mfc state forcep)
       (progn (chk-live-state-p 'mfc-rw+ state)
-             (mfc-rw-raw term alist obj equiv-info mfc 'mfc-rw+ state)))
+             (mfc-rw-raw term alist obj equiv-info mfc 'mfc-rw+ state forcep)))
+    (defun-overrides mfc-rw+-ttree (term alist obj equiv-info mfc state forcep)
+      (progn (chk-live-state-p 'mfc-rw+ state)
+             (mv-let (ans ttree)
+                     (mfc-rw-raw term alist obj equiv-info mfc 'mfc-rw+ state
+                                 forcep)
+                     (declare (ignore ttree))
+                     ans)))
 
-    (defun-override mfc-relieve-hyp (hyp alist rune target bkptr mfc state)
+    (defun-overrides mfc-relieve-hyp-fn (hyp alist rune target bkptr mfc state
+                                             forcep)
       (progn (chk-live-state-p 'mfc-relieve-hyp state)
-             (mfc-relieve-hyp-raw hyp alist rune target bkptr mfc state)))
+             (mfc-relieve-hyp-raw hyp alist rune target bkptr mfc state
+                                  forcep)))
+    (defun-overrides mfc-relieve-hyp-ttree (hyp alist rune target bkptr mfc
+                                                state forcep)
+      (progn (chk-live-state-p 'mfc-relieve-hyp state)
+             (mv-let (ans ttree)
+                     (mfc-relieve-hyp-raw hyp alist rune target bkptr mfc state
+                                          forcep)
+                     (declare (ignore ttree))
+                     ans)))
 
-    (defun-override mfc-ap (term mfc state)
+    (defun-overrides mfc-ap-fn (term mfc state forcep)
       (progn (chk-live-state-p 'mfc-ap state)
-             (mfc-ap-raw term mfc state)))))
+             (mfc-ap-raw term mfc state forcep)))
+    (defun-overrides mfc-ap-ttree (term mfc state forcep)
+      (progn (chk-live-state-p 'mfc-ap state)
+             (mv-let (ans ttree)
+                     (mfc-ap-raw term mfc state forcep)
+                     (declare (ignore ttree))
+                     ans)))))
 
 (defun-one-output exit-boot-strap-mode ()
 
@@ -6482,8 +6522,9 @@
   (stop-proof-tree-fn *the-live-state*)
   (f-put-global 'ld-skip-proofsp nil *the-live-state*)
   (move-current-acl2-world-key-to-front (w *the-live-state*))
-  (dolist (form *built-in-defun-overrides*)
-    (compile (eval form)))
+  (dolist (override-defs *built-in-defun-overrides*)
+    (dolist (form (eval override-defs))
+      (compile (eval form))))
   (checkpoint-world1 t (w *the-live-state*) *the-live-state*))
 
 (defun-one-output ld-alist-raw (standard-oi ld-skip-proofsp ld-error-action)
@@ -6862,18 +6903,15 @@ Missing functions:
    ((null trips)
     (cond ((null acc) nil)
           (t (er hard 'check-none-ideal
-                 "The following are :ideal mode functions.  We rely in ~
-                  oneify-cltl-code on the absence of :ideal mode functions in ~
-                  the boot-strap world (see the comment on check-none-ideal ~
-                  there).  These functions should have their guards ~
-                  verified: ~&0."
+                 "The following are :ideal mode functions that are not ~
+                  non-executable.  We rely in oneify-cltl-code on the absence ~
+                  of such functions in the boot-strap world (see the comment ~
+                  on check-none-ideal there).  These functions should have ~
+                  their guards verified: ~&0."
                  acc))))
    (t
-    (let ((trip (car trips)))
-      (cond ((and (eq (car trip) 'event-landmark)
-                  (true-listp trip)
-                  (eq (cadr trip) 'global-value)
-                  (eq (nth 4 trip) 'defun)
+    (let* ((trip (car trips))
+           (fn
 
 ; We need to rule out triples such as the following (but for :ideal mode)
 
@@ -6884,11 +6922,20 @@ Missing functions:
 ;                  (COND ((ENDP L) NIL)
 ;                        (T (CONS (CAR L) (EVENS (CDDR L))))))
 
-                  (symbolp (nth 5 trip))
-                  (eq (symbol-class (nth 5 trip)
+            (and (eq (car trip) 'event-landmark)
+                 (true-listp trip)
+                 (eq (cadr trip) 'global-value)
+                 (eq (nth 4 trip) 'defun)
+                 (nth 5 trip))))
+      (cond ((and fn
+                  (symbolp fn)
+                  (eq (symbol-class fn
                                     (w *the-live-state*))
-                      :ideal))
-             (check-none-ideal (cdr trips) (cons (nth 5 trip) acc)))
+                      :ideal)
+                  (not (eq (getprop fn 'non-executablep nil
+                                    'current-acl2-world (w *the-live-state*))
+                           t)))
+             (check-none-ideal (cdr trips) (cons fn acc)))
             (t (check-none-ideal (cdr trips) acc)))))))
 
 (defun check-state-globals-initialized ()

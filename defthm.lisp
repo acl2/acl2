@@ -3972,7 +3972,9 @@
   General Forms:
   (implies (and (pseudo-termp x)        ; this hyp is optional
                 (alistp a)              ; this hyp is optional
-                (ev (hyp-fn x ...) a))  ; this hyp is optional
+                (ev (hyp-fn x ...) a)   ; this hyp is optional
+                ; meta-extract hyps may also be included (see below)
+                )
            (equiv (ev x a)
                   (ev (fn x ...) a)))
   ~ev[]
@@ -3982,7 +3984,7 @@
   to ~c[fn] and ~c[hyp-fn] should be identical.  In the most common case, both
   take a single argument, ~c[x], which denotes the term to be simplified.  If
   ~c[fn] and/or ~c[hyp-fn] are ~il[guard]ed, their ~il[guard]s should be
-  trivially implied by ~ilc[pseudo-termp]. We say the theorem above is a
+  trivially implied by ~ilc[pseudo-termp].  We say the theorem above is a
   ``metatheorem'' or ``metalemma'' and ~c[fn] is a ``metafunction'', and
   ~c[hyp-fn] is a ``hypothesis metafunction''.
 
@@ -3993,6 +3995,12 @@
   within certain limits.  We discuss vanilla metafunctions here and recommend a
   thorough understanding of them before proceeding (at which time
   ~pl[extended-metafunctions]).
+
+  Additional hypotheses are supported, called ``meta-extract hypotheses''.
+  These allow metafunctions to depend on the validity of certain terms
+  extracted from the context or the logical ~il[world].  These hypotheses
+  provide a relatively advanced form of metatheorem so we explain them
+  elsewhere; ~pl[meta-extract].
 
   One might think that metafunctions and (if supplied) hypothesis metafunctions
   must be executable: that is, not constrained (i.e., introduced in the
@@ -4219,11 +4227,11 @@
 
   ~ev[]
 
-  Notice that in the following (silly) conjectre, ACL2 initially does only does
-  the simplification directed by the metafunction; a second goal is generated
-  before the commuativity of addition can be applied.  If the above calls of
-  ~c[UNHIDE] and ~c[HIDE] had been stripped off, then ~c[Goal'] would have been
-  the term printed in ~c[Goal''] below.
+  Notice that in the following (silly) conjecture, ACL2 initially does only
+  does the simplification directed by the metafunction; a second goal is
+  generated before the commuativity of addition can be applied.  If the above
+  calls of ~c[UNHIDE] and ~c[HIDE] had been stripped off, then ~c[Goal'] would
+  have been the term printed in ~c[Goal''] below.
 
   ~bv[]
   ACL2 !>(thm
@@ -4779,7 +4787,9 @@
   General Form of an Extended :Meta theorem:
   (implies (and (pseudo-termp x)              ; this hyp is optional
                 (alistp a)                    ; this hyp is optional
-                (ev (hyp-fn x mfc state) a))  ; this hyp is optional
+                (ev (hyp-fn x mfc state) a)   ; this hyp is optional
+                ; meta-extract hyps may also be included (see below)
+                )
            (equiv (ev x a)
                   (ev (fn x mfc state) a)))
   ~ev[]
@@ -4799,14 +4809,23 @@
   metatheorems installing such functions.  Defining extended metafunctions
   requires that you also be familiar with many ACL2 implementation details.
   This documentation is sketchy on these details; see the ACL2 source code or
-  email the ~il[acl2-help] list if you need more help.~/
+  email the ~il[acl2-help] list if you need more help.
+
+  Additional hypotheses are supported, called ``meta-extract hypotheses'', that
+  allow metafunctions to depend on the validity of certain terms extracted from
+  the context or the logical ~il[world].  These hypotheses provide a relatively
+  advanced form of metatheorem so we explain them elsewhere;
+  ~pl[meta-extract].~/
 
   The metafunction context, ~c[mfc], is a list containing many different data
   structures used by various internal ACL2 functions.  We do not document the
   form of ~c[mfc].  Your extended metafunction should just take ~c[mfc] as its
   second formal and pass it into the functions mentioned below.  The ACL2
-  ~c[state] is well-documented (~pl[state]).  The following expressions may be
-  useful in defining extended metafunctions.
+  ~c[state] is well-documented (~pl[state]).  Below we present expressions
+  below that can be useful in defining extended metafunctions.  Some of these
+  expressions involve keyword arguments, ~c[:forcep] and ~c[:ttree], which are
+  optional and in most cases are fine to omit, and which we explain after we
+  present the useful expressions.
 
   ~c[(mfc-clause mfc)]: returns the current goal, in clausal form.  A clause is
   a list of ACL2 terms, implicitly denoting the disjunction of the listed
@@ -4838,15 +4857,15 @@
   The ~c[ttree] component is probably irrelevant here.  All the terms in the
   type-alist are in translated form (~pl[trans]).  The ~c[ts] are numbers
   denoting finite Boolean combinations of ACL2's primitive types
-  (~pl[type-set]).  The type-alist includes not only information gleaned from the
-  conditions governing the term being rewritten but also that gleaned from
+  (~pl[type-set]).  The type-alist includes not only information gleaned from
+  the conditions governing the term being rewritten but also that gleaned from
   forward chaining from the (negations of the) other literals in the clause
   returned by ~c[mfc-clause].
 
   ~c[(w state)]: returns the ACL2 logical ~ilc[world].
 
-  ~c[(mfc-ts term mfc state)]: returns the ~c[type-set] of ~c[term] in
-  the current context; ~pl[type-set].
+  ~c[(mfc-ts term mfc state :forcep forcep :ttreep ttreep)]: returns the
+  ~c[type-set] of ~c[term] in the current context; ~pl[type-set].
 
   ~c[(mfc-rw term obj equiv-info mfc state)]: returns the result of rewriting
   ~c[term] in the current context, ~c[mfc], with objective ~c[obj] and the
@@ -4909,12 +4928,26 @@
   have been generated by ~ilc[force] or ~ilc[case-split].  (If you need such a
   feature, feel free to request it of the ACL2 implementors.)
 
+  We explain the ~c[:forcep] and ~c[:ttreep] keyword arguments provided in some
+  expressions, as promised above.  Their defaults are ~c[:same] and ~c[nil],
+  respectively.  A value of ~c[:same] for ~c[:forcep] means that forcing will
+  be allowed if and only if it is allowed in the current rewriting environment;
+  ~pl[force].  A value of ~c[t] or ~c[nil] for ~c[:forcep] overrides this
+  default and allows or disallows forcing, respectively.  By default these
+  functions return a single value, ~c[val], but if ~c[:ttreep] is ~c[t] then
+  they return ~c[(mv val ttree)], where ~c[ttree] is the tag-tree (~pl[ttree])
+  returned by the indicated operation, with an input tag-tree of ~c[nil]).
+
   During the execution of a metafunction by the theorem prover, the expressions
-  above compute the results specified.  However, there are no axioms about the
-  ~c[mfc-] function symbols: they are uninterpreted function symbols.  Thus, in
-  the proof of the correctness of a metafunction, no information is available
-  about the results of these functions.  Thus,
-  ~em[these functions can be used for heuristic purposes only.]
+  above compute the results specified.  Typically, you should imagine that
+  there are no axioms about the ~c[mfc-] function symbols: treat them as
+  uninterpreted function symbols.  There is an advanced feature, meta-extract
+  hypotheses, that can avoid this logical weakness in some cases when proving
+  ~c[:]~ilc[meta] rules; ~pl[meta-extract].  But we assume for the rest of the
+  present ~il[documentation] topic that you do not use meta-extract hypotheses.
+  Thus, in the proof of the correctness of a metafunction, no information is
+  available about the results of these functions: you should
+  ~em[use these functions for heuristic purposes only].
 
   For example, your metafunction may use these functions to decide whether to
   perform a given transformation, but the transformation must be sound
@@ -5099,6 +5132,254 @@
 
   ~ev[]
   ")
+
+(deflabel meta-extract
+  :doc
+  ":Doc-Section Miscellaneous
+
+  meta reasoning using valid terms extracted from context or ~il[world]~/
+
+  For this topic, we assume familiarity not only with metatheorems and
+  metafunctions (~pl[meta]) but also with extended metafunctions
+  (~pl[extended-metafunctions]).  The capability described here ~-[] so-called
+  ``meta-extract hypotheses'' for a ~c[:meta] rule ~-[] provides an advanced
+  form of meta-level reasoning that was largely designed by Sol Swords, who
+  also provided a preliminary implementation.
+
+  A ~c[:meta] rule may now have hypotheses, known as ``meta-extract
+  hypotheses'', that take either of the following two forms.  Here ~c[evl] is
+  the evaluator, ~c[obj] is an arbitrary term, ~c[mfc] is the variable used as
+  the metafunction context, ~c[state] is literally the symbol ~c[STATE], ~c[a]
+  is the second argument of ~c[evl] in both arguments of the conclusion of the
+  rule, and ~c[aa] is an arbitrary term.
+  ~bv[]
+  (evl (meta-extract-contextual-fact obj mfc state) a)
+  (evl (meta-extract-global-fact obj state) aa))
+  ~ev[]
+  Note that the first form, involving ~c[meta-extract-contextual-fact], is only
+  allowed if the metafunction is an extended metafunction.~/
+
+  These additional hypotheses may be necessary in order to prove a proposed
+  metatheorem, in particular when the correctness of the metafunction depends
+  on the correctness of utilities extracting formulas from the logical
+  ~il[world] or facts from the metafunction context (mfc).  After the
+  ~c[:]~ilc[meta] rule is proved, however, the meta-extract hypotheses have no
+  effect on how the rule is applied during a proof.  An argument for
+  correctness of using meta-extract hypotheses is given in the ACL2 source code
+  within a comment entitled ``Essay on Correctness of Meta Reasoning''.  In the
+  documentation below, we focus not only the application of ~c[:]~ilc[meta]
+  rules but, rather, on how the use of meta-extract hypotheses allow you to
+  prove correctness of metafunctions that use facts from the logical ~il[world]
+  or the metafunction context (mfc).
+
+  Below we describe properties of ~c[meta-extract-contextual-fact] and
+  ~c[meta-extract-global-fact], but after we illustrate their utility with an
+  example.  This example comes from the distributed book,
+  ~c[books/clause-processors/meta-extract-simple-test.lisp], which presents
+  very basic (and contrived) examples that nevertheless illustrate meta-extract
+  hypotheses.
+  ~bv[]
+  (defthm plus-identity-2-meta
+    (implies (and (nthmeta-ev (meta-extract-global-fact '(:formula bar-posp)
+                                                        state)
+                              (list (cons 'u
+                                          (nthmeta-ev (cadr (cadr term))
+                                                      a))))
+                  (nthmeta-ev (meta-extract-contextual-fact
+                               `(:typeset ,(caddr term)) mfc state)
+                              a))
+             (equal (nthmeta-ev term a)
+                    (nthmeta-ev (plus-identity-2-metafn term mfc state) a)))
+    :rule-classes ((:meta :trigger-fns (binary-+))))
+  ~ev[]
+  The two hypotheses illustratate the two basic kinds of meta-extract
+  hypotheses: applications of the evaluator to a call of
+  ~c[meta-extract-global-fact] and to a call of
+  ~c[meta-extract-contextual-fact].  Here is the definition of the metafunction
+  used in the above rule, slightly simplified here from what is found in the
+  above book (but adequate for proving the two events that follow it in the
+  above book).
+  ~bv[]
+  (defun plus-identity-2-metafn (term mfc state)
+    (declare (xargs :stobjs state :verify-guards nil))
+    (case-match term
+      (('binary-+ ('bar &) y)
+       (cond
+        ((equal (meta-extract-formula 'bar-posp state)
+                '(POSP (BAR U)))
+         (if (ts= (mfc-ts y mfc state :forcep nil)
+                  *ts-character*)
+             (cadr term)
+           term))
+        (t term)))
+      (& term)))
+  ~ev[]
+  This metafunction returns its input term unchanged except in the case that
+  the term is of the form ~c[(binary-+ (bar x) y)] and the following two
+  conditions are met, in which case it returns ~c[(bar x)].
+  ~bv[]
+  (1)  (equal (meta-extract-formula 'bar-posp state)
+              '(POSP (BAR U)))
+
+  (2)  (ts= (mfc-ts y mfc state :forcep nil)
+            *ts-character*)
+  ~ev[]
+  So suppose that term is ~c[(list 'binary-+ (list 'bar x) y)].  We show how
+  the meta-extract hypotheses allow together with (1) and (2) imply that the
+  conclusion of the above ~c[:meta] rule holds.  Here is that conclusion after
+  a bit of simplification.
+  ~bv[]
+  (equal (nthmeta-ev (list 'binary-+ (list 'bar x) y) a)
+         (nthmeta-ev (list 'bar x) a))
+  ~ev[]
+  This equality simplifies as follows using the evaluator properties of
+  ~c[nthmeta-ev].
+  ~bv[]
+  (equal (binary-+ (bar (nthmeta-ev x a))
+                   (nthmeta-ev y a))
+         (bar (nthmeta-ev x a)))
+  ~ev[]
+  Clearly it suffices to show:
+  ~bv[]
+  (A)  (posp (bar (nthmeta-ev x a)))
+
+  (B)  (characterp (nthmeta-ev y a))
+  ~ev[]
+  It remains then to show that these follow from (1) and (2) together with the
+  meta-extract hypotheses.
+
+  First consider (A).  We show that it is just a simplification of the first
+  meta-extract hypothesis.
+  ~bv[]
+  (nthmeta-ev (meta-extract-global-fact '(:formula bar-posp)
+                                        state)
+              (list (cons 'u
+                          (nthmeta-ev (cadr (cadr term))
+                                      a))))
+  = {by our assumption that term is (list 'binary-+ (list 'bar x) y)}
+  (nthmeta-ev (meta-extract-global-fact '(:formula bar-posp)
+                                        state)
+              (list (cons 'u
+                          (nthmeta-ev x a))))
+  = {by definition of meta-extract-global-fact, as discussed later}
+  (nthmeta-ev (meta-extract-formula 'bar-posp state)
+              (list (cons 'u
+                          (nthmeta-ev x a))))
+  = {by (1)}
+  (nthmeta-ev '(posp (bar u))
+              (list (cons 'u
+                          (nthmeta-ev x a))))
+  = {by evaluator properties of nthmeta-ev}
+  (posp (bar (nthmeta-ev x a)))
+  ~ev[]
+
+  Now consider (B).  We show that it is just a simplification of the second
+  meta-extract hypothesis.
+  ~bv[]
+  (nthmeta-ev (meta-extract-contextual-fact
+               `(:typeset ,(caddr term)) mfc state)
+              a)
+  = {by our assumption that term is (list 'binary-+ (list 'bar x) y)}
+  (nthmeta-ev (meta-extract-contextual-fact (list ':typeset y) mfc state)
+              a)
+  = {by definition of meta-extract-contextual-fact, as discussed later}
+  (nthmeta-ev (list 'typespec-check
+                    (list 'quote
+                          (mfc-ts y mfc state :forcep nil))
+                    y)
+              a)
+  = {by (2)}
+  (nthmeta-ev (list 'typespec-check
+                    (list 'quote *ts-character*)
+                    y)
+              a)
+  = {by evaluator properties of nthmeta-ev}
+  (typespec-check *ts-character* (nthmeta-ev y a))
+  = {by definition of typespec-check}
+  (characterp (nthmeta-ev y a))
+  ~ev[]
+
+  Note the use of ~c[:forcep nil] above.  All of the ~c[mfc-xx] functions take
+  a keyword argument ~c[:forcep].  Calls of ~c[mfc-xx] functions made on behalf
+  of ~c[meta-extract-contextual-fact] always use ~c[:forcep nil], so in order
+  to reason about these calls in your own metafunctions, you will want to use
+  ~c[:forcep nil].  We are contemplating adding a utility like
+  ~c[meta-extract-contextual-fact] that allows forcing but returns a tag-tree
+  (~pl[ttree]).
+
+  Finally, we document what is provided logically by calls of
+  ~c[meta-extract-global-fact] and ~c[meta-extract-contextual-fact].  Of
+  course, you are invited to look at the definitions of these function in the
+  ACL2 source code, or by using ~c[:]~ilc[pe].  Note that both of these
+  functions are non-executable (their bodies are inside a call of
+  ~ilc[non-exec]); their function is purely logical, not for execution.  The
+  functions return ~c[*t*], i.e., ~c[(quote t)], in cases that they provide no
+  information.
+
+  First we consider the value of ~c[(meta-extract-global-fact obj state)] for
+  various values of ~c[obj].
+
+  ~bq[]
+  Case ~c[obj] = (list :formula FN):~nl[]
+  The value reduces to the value of ~c[(meta-extract-formula FN state)], which
+  returns the ``formula'' of ~c[FN] in the following sense.  If ~c[FN] is the
+  name of a defined function with formals ~c[(X1 ... Xk)], then the formula is
+  ~c[(equal (FN X1 ... Xk) BODY)], where ~c[BODY] is the (unsimplified) body of
+  the definition of ~c[FN].  Otherwise, if ~c[FN] is the name of a theorem, the
+  formula is just what is stored for that theorem.  Otherwise, if ~c[FN] is the
+  name of a function introduced by ~c[defchoose], then the formula is the axiom
+  introduced for ~c[FN].  Otherwise, the formula is ~c[*t*].
+
+  Case ~c[obj] = (list :lemma FN N):~nl[]
+  Assume ~c[N] is a natural number; otherwise, treat ~c[N] as 0.  If ~c[FN] is
+  a function symbol with more than ~c[N] associated lemmas ~-[] ``associated''
+  in the sense of ~c[(getprop FN 'lemmas nil 'current-acl2-world (w state))]
+  ~-[] then the value is the ~c[N]th such lemma (with zero-based indexing).
+  Otherwise the value is ~c[*t*].
+
+  For any other values of ~c[obj], the value is ~c[*t*].~eq[]
+
+  Finally, the value of ~c[(meta-extract-contextual-fact obj mfc state)] 
+  is as follows for various values of ~c[obj].
+
+  ~bq[]
+  Case ~c[obj] = (list :typeset TERM ...):~nl[]
+  The value is the value of ~c[(typespec-check ts TERM)], where ~c[ts] is
+  the value of ~c[(mfc-ts TERM mfc state :forcep nil :ttreep nil)], and where
+  ~c[(typespec-check ts val)] is defined to be true when ~c[val] has type-set
+  ~c[ts].  (Exception: If ~c[val] satisfies ~c[bad-atom] then
+  ~c[typespec-check] is true when ~c[ts] is negative.)
+
+  Case ~c[obj] = (list :rw+ TERM ALIST OBJ EQUIV ...):~nl[]
+  We assume below that ~c[EQUIV] is a symbol that represents an equivalence
+  relation, where ~c[nil] represents ~ilc[equal], ~c[t] represents ~ilc[iff],
+  and otherwise ~c[EQUIV] represents itself (an equivalence relation in the
+  current logical ~il[world]).  For any other ~c[EQUIV] the value is ~c[*t*].
+  Now let ~c[rhs] be the value of
+  ~c[(mfc-rw+ TERM ALIST OBJ EQUIV mfc state :forcep nil :ttreep nil)].  Then
+  the value is the term ~c[(list 'equv (sublis-var ALIST TERM) rhs)], where
+  equv is the equivalence relation represented by ~c[EQUIV], and ~c[sublis-var]
+  is defined to substitute a variable-binding alist into a term.
+
+  Case ~c[obj] = (list :rw TERM OBJ EQUIV ...):~nl[]
+  The value is the same as above but for an ~c[ALIST] of ~c[nil], i.e., for the
+  case that ~c[obj] is ~c[(list :rw+ TERM nil OBJ EQUIV ...)].
+
+  Case ~c[obj] = (list :ap TERM ...):~nl[]
+  The value is ~c[(list 'not TERM)] if
+  ~c[(mfc-ap TERM mfc state :forcep nil :ttreep nil)] is true, else is
+  ~c[*t*].
+
+  Case ~c[obj] = (list :relieve-hyp HYP ALIST RUNE TARGET BKPTR ...):~nl[]
+  The value is ~c[(sublis-var alist hyp)] ~-[] see above for a discussion of
+  ~c[sublis-var] ~-[] if the following is true.
+  ~bv[]
+  (mfc-relieve-hyp hyp alist rune target bkptr mfc state
+                   :forcep nil :ttreep nil)
+  ~ev[]
+  Otherwise the value is ~c[*t*].
+
+  If no case above applies, then the value is ~c[*t*].~eq[]~/")
 
 (defun evaluator-clause/arglist (evfn formals x)
 
@@ -5835,7 +6116,47 @@
 
 (table term-table t '((binary-+ x y) (binary-* '0 y) (car x)))
 
-(defun meta-rule-hypothesis-function (hyp ev x a mfc-symbol)
+(defun remove-meta-extract-contextual-hyps (hyps ev mfc-symbol a)
+
+; Return (mv hyps' flg), where hyps' is the result of removing suitable
+; meta-extract-contextual-fact hypotheses from hyps and flg is true if and only
+; if at least one such hypothesis was removed.  Ev is the evaluator function
+; symbol and mfc-symbol is either nil or the mfc from the conclusion of a rule
+; of class :meta.  See also remove-meta-extract-global-hyps for an
+; corresponding function for global hypotheses.
+
+  (cond
+   ((atom hyps) (mv nil nil))
+   (t (let ((hyp (car hyps)))
+        (mv-let
+         (hs flg)
+         (remove-meta-extract-contextual-hyps (cdr hyps) ev mfc-symbol a)
+         (case-match hyp
+           ((!ev ('meta-extract-contextual-fact & !mfc-symbol 'state) !a)
+            (mv hs t))
+           (& (mv (cons hyp hs) flg))))))))
+
+(defun remove-meta-extract-global-hyps (hyps ev)
+
+; Return (mv hyps' flg), where hyps' is the result of removing suitable
+; meta-extract-global-fact hypotheses from hyps and flg is true if and only if
+; at least one such hypothesis was removed.  Ev is the evaluator function
+; symbol.  See also remove-meta-extract-contextual-hyps for an analogous
+; function.
+
+  (declare (xargs :mode :program))
+  (cond
+   ((atom hyps) (mv nil nil))
+   (t (let ((hyp (car hyps)))
+        (mv-let
+         (hs flg)
+         (remove-meta-extract-global-hyps (cdr hyps) ev)
+         (case-match hyp
+           ((!ev ('meta-extract-global-fact & 'state) &)
+            (mv hs t))
+           (& (mv (cons hyp hs) flg))))))))
+
+(defun meta-rule-hypothesis-functions (hyp ev x a mfc-symbol)
 
 ; Here hyp is the hypothesis of the proposed meta rule (or, *t* if
 ; there is none).  We want to identify the hypothesis metafunction
@@ -5852,23 +6173,30 @@
 ; that order.  The value of mfc-symbol is the variable symbol used to
 ; denote the context.
 
-  (let ((hyps (flatten-ands-in-lit hyp)))
-    (let* ((rest-hyps (remove1-equal
-                       (fcons-term* 'pseudo-termp x)
-                       (remove1-equal (fcons-term* 'alistp a) hyps)))
-           (hyp3 (car rest-hyps))
-           (extended-args
-            (if mfc-symbol (cons mfc-symbol '(STATE)) nil)))
-      (cond
-       ((null rest-hyps)
-        t)
-       (t
-        (and (null (cdr rest-hyps))
-             (case-match
-              hyp3
-              ((!ev (fn !x . !extended-args) !a)
-               fn)
-              (& nil))))))))
+  (let ((hyps (remove1-equal
+               (fcons-term* 'pseudo-termp x)
+               (remove1-equal (fcons-term* 'alistp a)
+                              (flatten-ands-in-lit hyp)))))
+    (mv-let
+     (hyps flg1)
+     (if mfc-symbol
+         (remove-meta-extract-contextual-hyps hyps ev mfc-symbol a)
+       (mv hyps nil))
+     (mv-let
+      (hyps flg2)
+      (remove-meta-extract-global-hyps hyps ev)
+      (let ((hyp3 (car hyps))
+            (extended-args
+             (if mfc-symbol (cons mfc-symbol '(STATE)) nil)))
+        (mv (cond
+             ((null hyps) t)
+             (t (and (null (cdr hyps))
+                     (case-match hyp3
+                       ((!ev (fn !x . !extended-args) !a)
+                        fn)
+                       (& nil)))))
+            (append (and flg1 '(meta-extract-contextual-fact))
+                    (and flg2 '(meta-extract-global-fact)))))))))
 
 (defun meta-fn-args (term extendedp ens state)
   (cond
@@ -6088,7 +6416,8 @@
   (let* ((imm (immediate-canonical-ancestors fn wrld (list fn) rlp)))
     (canonical-ancestors-rec imm wrld nil rlp)))
 
-(defun chk-evaluator-use-in-rule (name meta-fn-lst rule-type ev ctx wrld state)
+(defun chk-evaluator-use-in-rule (name meta-fn hyp-fn extra-fns rule-type ev
+                                       ctx wrld state)
   (er-progn
    (let ((temp (context-for-encapsulate-pass-2 (decode-logical-name ev wrld)
                                                (f-get-global 'in-local-flg
@@ -6145,6 +6474,9 @@
              (ev-lst-prop (getprop ev-lst 'defaxiom-supporter nil
                                    'current-acl2-world wrld))
              (ev-fns (list ev ev-lst))
+             (meta-fn-lst (if hyp-fn
+                              (list meta-fn hyp-fn)
+                            (list meta-fn)))
              (meta-anc (canonical-ancestors-rec
                         (collect-canonical-siblings meta-fn-lst wrld nil nil)
                         wrld
@@ -6156,6 +6488,22 @@
                       nil
                       t)))
         (cond
+         ((and extra-fns
+               (or (getprop ev 'predefined nil 'current-acl2-world wrld)
+                   (getprop ev-lst 'predefined nil 'current-acl2-world wrld)))
+
+; See the comment below about this case in the comment in a case below, where
+; we reference the Essay on Correctness of Meta Reasoning.
+
+          (er soft ctx
+              "The proposed evaluator function, ~x0, was defined in the ~
+               boot-strap world.  This is illegal when meta-extract hyotheses ~
+               are present, because for logical reasons our implementation ~
+               assumes that the evaluator is not ancestral in ~v1."
+              (if (getprop ev 'predefined nil 'current-acl2-world wrld)
+                  ev
+                ev-lst)
+              '(meta-extract-contextual-fact meta-extract-global-fact)))
          ((or ev-prop ev-lst-prop)
           (er soft ctx ; see comment in defaxiom-supporters
               "The proposed ~x0 rule, ~x1, is illegal because its evaluator ~
@@ -6166,6 +6514,11 @@
               (if ev-prop ev ev-lst)
               (or ev-prop ev-lst-prop)))
          ((intersectp-eq ev-fns meta-anc)
+
+; As explained in the Essay on Correctness of Meta Reasoning, we might expect
+; also to check here that ev and ev-lst are not ancestral in extra-fns.  But
+; extra-fns are defined in the boot-strap world while ev and ev-lst, as
+; we check above, are not.
 
 ; It would be nice to improve the following error message by finding the
 ; particular function symbol in the meta or clause-processor rule for which ev
@@ -6309,18 +6662,19 @@
                   fn))
              (t (er-progn
                  (chk-rule-fn-guard "metafunction" :meta fn ctx wrld state)
-                 (let ((hyp-fn (meta-rule-hypothesis-function
-                                hyp ev x a mfc-symbol))
-                       (term-list
-                        (cdar (table-alist 'term-table (w state)))))
-                   (er-progn
-                    (cond
-                     ((null hyp-fn)
-                      (er soft ctx str name (untranslate term t wrld)))
-                     ((and (not (eq hyp-fn t))
-                           (not (member-equal (stobjs-in hyp-fn wrld)
-                                              '((nil)
-                                                (nil nil state)))))
+                 (mv-let
+                  (hyp-fn extra-fns)
+                  (meta-rule-hypothesis-functions hyp ev x a mfc-symbol)
+                  (let ((term-list
+                         (cdar (table-alist 'term-table (w state)))))
+                    (er-progn
+                     (cond
+                      ((null hyp-fn)
+                       (er soft ctx str name (untranslate term t wrld)))
+                      ((and (not (eq hyp-fn t))
+                            (not (member-equal (stobjs-in hyp-fn wrld)
+                                               '((nil)
+                                                 (nil nil state)))))
 
 ; It is tempting to avoid the check here that hyp-fn does not take
 ; stobjs in.  After all, we have already checked this for fn, and fn
@@ -6328,33 +6682,33 @@
 ; functions to traffic in stobjs even though they do not use STATE (or
 ; another stobj name) as a formal.  So, we play it safe and check.
 
-                      (er soft ctx
-                          "Hypothesis metafunctions cannot take single ~
+                       (er soft ctx
+                           "Hypothesis metafunctions cannot take single ~
                            threaded object names as formal parameters.  The ~
                            function ~x0 may therefore not be used as a ~
                            hypothesis metafunction."
-                          hyp-fn))
-                     ((not (eq hyp-fn t))
-                      (er-progn
-                       (chk-evaluator-use-in-rule name
-                                                  (list fn hyp-fn)
-                                                  :meta ev ctx wrld state)
-                       (chk-rule-fn-guard "hypothesis function" :meta fn ctx
-                                          wrld state)))
-                     (t (chk-evaluator-use-in-rule name
-                                                   (list fn)
-                                                   :meta ev ctx wrld state)))
-                    (chk-evaluator ev wrld ctx state)
+                           hyp-fn))
+                      ((not (eq hyp-fn t))
+                       (er-progn
+                        (chk-evaluator-use-in-rule name
+                                                   fn hyp-fn extra-fns
+                                                   :meta ev ctx wrld state)
+                        (chk-rule-fn-guard "hypothesis function" :meta fn ctx
+                                           wrld state)))
+                      (t (chk-evaluator-use-in-rule name
+                                                    fn nil extra-fns
+                                                    :meta ev ctx wrld state)))
+                     (chk-evaluator ev wrld ctx state)
 
 ; In the code below, mfc-symbol is used merely as a Boolean indicating
 ; that this is an extended metafunction.
 
-                    (chk-meta-function fn name trigger-fns mfc-symbol term-list
-                                       ctx ens state)
-                    (if (eq hyp-fn t)
-                        (value nil)
-                      (chk-meta-function hyp-fn name trigger-fns mfc-symbol
-                                         term-list ctx ens state)))))))))))
+                     (chk-meta-function fn name trigger-fns mfc-symbol
+                                        term-list ctx ens state)
+                     (if (eq hyp-fn t)
+                         (value nil)
+                       (chk-meta-function hyp-fn name trigger-fns mfc-symbol
+                                          term-list ctx ens state))))))))))))
 
 ; And to add a :META rule:
 
@@ -6455,33 +6809,38 @@
                a))
       (mv *t* eqv ev x a fn mfc-symbol))
      (& (mv *t* nil nil nil nil nil nil)))
-   (let ((hyp-fn (meta-rule-hypothesis-function hyp ev x a mfc-symbol)))
-     (cond
-      ((or (null hyp-fn) (null eqv))
-       (er hard 'add-meta-rule
-           "Add-meta-rule broke on args ~x0!  It seems to be out of sync with ~
-            chk-acceptable-meta-rule."
-           (list rune nume trigger-fns term)))
-      (t
-       (add-meta-rule1 trigger-fns
-                       (make rewrite-rule
-                             :rune rune
-                             :nume nume
-                             :hyps (if (eq hyp-fn t) nil hyp-fn)
-                             :equiv eqv
-                             :lhs fn
-                             :var-info nil ; unused
-                             :rhs (if mfc-symbol 'extended nil)
-                             :subclass 'meta
-                             :heuristic-info nil
-                             :backchain-limit-lst backchain-limit)
-                       (mark-attachment-disallowed
-                        (if (eq hyp-fn t) (list fn) (list hyp-fn fn))
-                        ev
-                        (msg "it supports both evaluator and meta functions ~
-                              used in :META rule ~x0"
-                             (base-symbol rune))
-                        wrld)))))))
+   (mv-let
+    (hyp-fn extra-fns)
+    (meta-rule-hypothesis-functions hyp ev x a mfc-symbol)
+    (declare (ignore extra-fns))
+    (cond
+     ((or (null hyp-fn) (null eqv))
+      (er hard 'add-meta-rule
+          "Add-meta-rule broke on args ~x0!  It seems to be out of sync with ~
+           chk-acceptable-meta-rule."
+          (list rune nume trigger-fns term)))
+     (t
+      (add-meta-rule1 trigger-fns
+                      (make rewrite-rule
+                            :rune rune
+                            :nume nume
+                            :hyps (if (eq hyp-fn t) nil hyp-fn)
+                            :equiv eqv
+                            :lhs fn
+                            :var-info nil ; unused
+                            :rhs (if mfc-symbol 'extended nil)
+                            :subclass 'meta
+                            :heuristic-info nil
+                            :backchain-limit-lst backchain-limit)
+                      (mark-attachment-disallowed
+                       (if (eq hyp-fn t)
+                           (list fn)
+                         (list hyp-fn fn))
+                       ev
+                       (msg "it supports both evaluator and meta functions ~
+                             used in :META rule ~x0"
+                            (base-symbol rune))
+                       wrld)))))))
 
 ;---------------------------------------------------------------------------
 ; Section:  Destructor :ELIM Rules
@@ -9825,7 +10184,7 @@
                                         list ~x0 contains duplicates"
                                        non-alist-vars)))))
                       (t (value nil))))
-              (chk-evaluator-use-in-rule name (list cl-proc) :clause-processor
+              (chk-evaluator-use-in-rule name cl-proc nil nil :clause-processor
                                          ev ctx wrld state)
               (chk-rule-fn-guard "clause-processor" :clause-processor cl-proc
                                  ctx wrld state)
@@ -13765,7 +14124,8 @@
 ; functions and defaxiom supporters.
 
 ; First, consider the following comment from relevant-constraints (which should
-; be kept in sync with that comment):
+; be kept in sync with that comment), regarding functional instantiation of a
+; theorem, thm, using a functional substitution, alist.
 
 ; The relevant theorems are the set of all terms, term, such that
 ;   (a) term mentions some function symbol in the domain of alist,
@@ -13783,13 +14143,13 @@
 
 ; ACL2 insists that the evaluator of a proposed :meta or :clause-processor rule
 ; is not ancestral in any defaxiom or in the definition of, or constraint on,
-; the rule's metafunction (or its hypothesis metafunction, if there is one).
-; Thus, when we imagine functionally instantiating the rule as discussed above,
-; at the point of its application, the only relevant theorems for (i) above are
-; the constraints on the evaluator, and there are no relevant theorems for (ii)
-; above.  We can use our usual computation of "ancestral", which does not
-; explore below functions that are not instantiablep, since (presumably!) no
-; evaluator functions occur in the boot-strap world.
+; the rule's metafunction or hypotheses.  Thus, when we imagine functionally
+; instantiating the rule as discussed above, at the point of its application,
+; the only relevant theorems for (i) above are the constraints on the
+; evaluator, and there are no relevant theorems for (ii) above.  We can use our
+; usual computation of "ancestral", which does not explore below functions that
+; are not instantiablep, since (presumably!) no evaluator functions occur in
+; the boot-strap world.
 
 ; But there is a subtlety not fully addressed above.  Consider the following
 ; case: a legitimate :meta (or :clause-processor) rule P, with evaluator evl,

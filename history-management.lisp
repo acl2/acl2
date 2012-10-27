@@ -14247,6 +14247,8 @@
 ; Name may be either an event name or a rune.  We return the formula associated
 ; with name.  We may return nil if we can find no such formula.
 
+; For name a symbol, keep this in sync with meta-extract-formula.
+
   (cond ((consp name) (corollary name wrld))
         (t (let ((body (body name normalp wrld)))
              (cond ((and body normalp)

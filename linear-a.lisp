@@ -798,7 +798,7 @@
 ; force-assumption.
 
   (cond
-   ((null type-alist) nil)
+   ((endp type-alist) nil)
    ((contains-assumptionp (cddar type-alist))
     (remove-assumption-entries-from-type-alist (cdr type-alist)))
    (t (cons (car type-alist)
