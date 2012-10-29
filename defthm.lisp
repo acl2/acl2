@@ -5469,6 +5469,33 @@
                                         (kwote-lst (evfn-lst (cdr x) a)))
                                   'nil)))
                     ((not (symbolp x))
+
+; We considered replacing the right-hand side below simply by (cdr (assoc-equal
+; x a)), i.e., without making a special case for x = nil.  Our motivation was
+; an observation from Sol Swords: there is a kind of mismatch between that
+; special case for nil on the one hand, and the treating of nil as an ordinary
+; variable by sublis-var.  Indeed, he went through some effort to deal with
+; this mismatch in his distributed book,
+; books/clause-processors/sublis-var-meaning.lisp, using a hypothesis (not
+; (assoc nil alist)) in some lemmas in that book.
+
+; However, if we were to make that change, together with the corresponding
+; change in the local witness for the evaluator in the symbolp case, then the
+; preceding clause (above) would no longer be valid for our local witness.
+; Consider for example the case that x is '(binary-+) and a is '((nil . 7)),
+; and that evfn is the local witness and understands binary-+.  Then the
+; left-hand side above is 14 but the right-hand side is 0.  A fix is to modify
+; the preceding clause by replacing the final 'nil by a (and then dropping the
+; syntaxp hypothesis above, and even making this a definition rule with
+; :controller-alist mapping the evaluator to (t nil)).  But that change would
+; make invalid the lemma ev-commutes-car in distributed book
+; books/tools/defevaluator-fast.lisp.  It would also require changing some
+; hints, for example replacing the :hints in event lemma0, distributed book
+; books/clause-processors/bv-add.lisp, by (("Goal" :expand ((evl x1 env)))).
+; Who knows how many books might be affected, including some user books not in
+; the regression suite?  So we have decided to leave well enough alone, at
+; least for now.  If later we learn of a reason to reconsider, we may do so.
+
                      (equal (evfn x a)
                             (if x
                                 (cdr (assoc-equal x a))
