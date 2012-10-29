@@ -5322,13 +5322,13 @@
   ~bq[]
   Case ~c[obj] = (list :formula FN):~nl[]
   The value reduces to the value of ~c[(meta-extract-formula FN state)], which
-  returns the ``formula'' of ~c[FN] in the following sense.  If ~c[FN] is the
-  name of a defined function with formals ~c[(X1 ... Xk)], then the formula is
-  ~c[(equal (FN X1 ... Xk) BODY)], where ~c[BODY] is the (unsimplified) body of
-  the definition of ~c[FN].  Otherwise, if ~c[FN] is the name of a theorem, the
-  formula is just what is stored for that theorem.  Otherwise, if ~c[FN] is the
-  name of a function introduced by ~c[defchoose], then the formula is the axiom
-  introduced for ~c[FN].  Otherwise, the formula is ~c[*t*].
+  returns the ``formula'' of ~c[FN] in the following sense.  If ~c[FN] is a
+  function symbol with formals ~c[(X1 ... Xk)], then the formula is the
+  ~il[constraint] on ~c[FN] if ~c[FN] is constrained or introduced by
+  ~ilc[defchoose], and otherwise is ~c[(equal (FN X1 ... Xk) BODY)], where
+  ~c[BODY] is the (unsimplified) body of the definition of ~c[FN].  Otherwise,
+  if ~c[FN] is the name of a theorem, the formula is just what is stored for
+  that theorem.  Otherwise, the formula is ~c[*t*].
 
   Case ~c[obj] = (list :lemma FN N):~nl[]
   Assume ~c[N] is a natural number; otherwise, treat ~c[N] as 0.  If ~c[FN] is
