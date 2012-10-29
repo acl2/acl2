@@ -100,7 +100,7 @@ endif
 # Inhibit all output except the summary (which can be useful for tracking down problems).
 # Set this to "" if you do want the output.
 
-INHIBIT ?= (set-inhibit-output-lst (list (quote prove) (quote proof-tree) (quote warning) (quote observation) (quote event) (quote expansion)))
+INHIBIT ?= (set-inhibit-output-lst (list (quote prove) (quote proof-tree) (quote warning) (quote observation) (quote event) (quote expansion))) (set-debugger-enable :bt)
 
 # Support for make dependencies:  should be a list of book names without
 # the .lisp suffix.  Can be overridden on the command line or in a file
@@ -252,7 +252,7 @@ define cert_cmd
 		   tail -300 $*$(ACL2_OUTFILE_SUFFIX).out | sed 's/^/   | /' ;\
 		   echo "" ;\
 		   echo "" ;\
-		   echo "CERTIFICATION FAILED for `pwd`/$@ (see $*$(ACL2_OUTFILE_SUFFIX).out)" ;\
+		   echo '**CERTIFICATION FAILED** for `pwd`/$@ (see $*$(ACL2_OUTFILE_SUFFIX).out)' ;\
 		   exit 1)
 	rm -f $(WORKXXX).$(*F)
 endef

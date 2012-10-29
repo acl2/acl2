@@ -405,7 +405,7 @@ my $full_file = File::Spec->rel2abs($TARGET);
 (my $vol, my $dir, my $file) = File::Spec->splitpath($full_file);
 my $goal = "$file.$TARGETEXT";
 
-print "Making $dir$goal on " . strftime('%d-%b-%Y %H:%M',localtime) . "\n";
+print "Making $dir$goal on " . strftime('%d-%b-%Y %H:%M:%S',localtime) . "\n";
 
 my $fulldir = File::Spec->canonpath(File::Spec->catpath($vol, $dir, ""));
 print "-- Entering directory $fulldir\n" if $DEBUG;

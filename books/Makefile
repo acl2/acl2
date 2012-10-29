@@ -35,7 +35,7 @@
 # waterfall parallelism (requires the experimental extension ACL2(p)
 # of ACL2), see file acl2-sources/acl2-customization-files/README.
 
-# We do not set variable ACL2 set here, because the value here would be
+# We do not set variable ACL2 here, because the value here would be
 # overriden anyhow by the values in the subsidiary Makefiles, which get their
 # value from file Makefile-generic.  However, ACL2 can be set on the command
 # line, e.g.:
