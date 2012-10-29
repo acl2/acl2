@@ -19472,6 +19472,13 @@
 ;   The Essay on Correctness of Meta Reasoning has been substantially
 ;   extended.
 
+; The definition of constraint-info has changed very slightly in order to make
+; it easier to make :common-lisp-compliant (as required in order to make
+; meta-extract-formula :common-lisp-compliant).  The main change is that some
+; zero-ary function constraints might not be in quote-normal form, though that
+; actually seems impossible since the changes away from cons-term would only be
+; relevant for executable zero-ary primitives, of which there are none!
+
   :doc
   ":Doc-Section release-notes
 

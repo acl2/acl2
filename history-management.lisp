@@ -14247,8 +14247,6 @@
 ; Name may be either an event name or a rune.  We return the formula associated
 ; with name.  We may return nil if we can find no such formula.
 
-; For name a symbol, keep this in sync with meta-extract-formula.
-
   (cond ((consp name) (corollary name wrld))
         (t (let ((body (body name normalp wrld)))
              (cond ((and body normalp)
@@ -14456,6 +14454,8 @@
 ; case, we do not need to use the definitional axiom explicitly in order to
 ; obtain the full list of constraints.
 
+  (declare (xargs :guard (and (symbolp fn)
+                              (plist-worldp wrld))))
   (let ((prop (getprop fn 'constraint-lst
 
 ; We want to distinguish between not finding a list of constraints, and finding
@@ -14468,7 +14468,8 @@
 
     (cond
      ((eq prop t)
-      (let ((body (body fn nil wrld)))
+      (let ((body ; (body fn nil wrld), but easier to guard-verify:
+             (getprop fn 'unnormalized-body nil 'current-acl2-world wrld)))
         (cond (body
 
 ; Warning: Do not apply remove-guard-holders to body.  We rely on having all
@@ -14479,8 +14480,8 @@
 ; clause-processor functions; see the remark about mbe in the Essay on
 ; Correctness of Meta Reasoning.
 
-               (mv nil (mcons-term* 'equal
-                                    (cons-term fn (formals fn wrld))
+               (mv nil (fcons-term* 'equal
+                                    (fcons-term fn (formals fn wrld))
                                     body)))
               (t
                (mv nil

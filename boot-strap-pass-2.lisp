@@ -1103,40 +1103,32 @@
 ;;; meta-extract support
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(verify-termination-boot-strap formals) ; and guards
+(verify-termination-boot-strap constraint-info) ; and guards
+
 (defund meta-extract-formula (name state)
 
-; Keep this in sync with formula.  This function is a version of formula that
-; supports meta-extract-global-fact; it applies only to symbols (not runes) and
-; is in :logic mode.  It is also executable, since it may be called by meta
-; functions.  Thus, since it is in :logic mode and executable, it is also
-; guard-verified, as required by the ACL2 build process.
+; This function supports meta-extract-global-fact.  It needs to be executable
+; and in :logic mode (hence, as required by the ACL2 build process,
+; guard-verified), since it may be called by meta functions.
 
-; We make a few changes from formula, notably supporting only symbols and only
-; the normalp=nil form of body, in order to avoid having to put body in :logic
-; mode, which (because body is executable) would require that body be
-; guard-verified, which would probably take considerable effort.  We also avoid
-; mcons-term* and cons-term, since they have guards requiring that arguments to
-; function calls satisfy pseudo-termp.  We don't want to have to reason that
-; the 'unnormalized-body is a pseudo-termp.
+; While this function can be viewed as a version of formula, it applies only to
+; symbols (not runes), it is in :logic mode, and there are a few other
+; differences as well.  The present function requires name to be a symbol and
+; only returns a normalp=nil form of body.  (Otherwise, in order to put body in
+; :logic mode, body would need to be guard-verified, which would probably take
+; considerable effort.)
 
   (declare (xargs :stobjs state
                   :guard (symbolp name)))
-  (let* ((wrld (w state))
-         (body ; (body name nil wrld)
-          (getprop name 'unnormalized-body nil 'current-acl2-world wrld)))
-    (cond (body
-           (fcons-term* ; mcons-term*
-            'equal
-            (fcons-term ; cons-term
-             name
-             (or (getprop name 'formals nil 'current-acl2-world wrld)
-                 (er hard? 'meta-extract-formula
-                     "The symbol ~x0 fails to have a 'FORMALS property even ~
-                      though it has an  'UNNORMALIZED-BODY property!")))
-            body))
-          (t (or (getprop name 'theorem nil 'current-acl2-world wrld)
-                 (getprop name 'defchoose-axiom nil 'current-acl2-world wrld)
-                 *t*)))))
+  (let ((wrld (w state)))
+    (or (getprop name 'theorem nil 'current-acl2-world wrld)
+        (mv-let (flg prop)
+                (constraint-info name wrld)
+                (cond ((eq prop *unknown-constraints*)
+                       *t*)
+                      (flg (ec-call (conjoin prop)))
+                      (t prop))))))
 
 (verify-termination-boot-strap type-set-quote)
 (verify-guards type-set-quote)

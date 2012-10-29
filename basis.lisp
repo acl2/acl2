@@ -9679,11 +9679,13 @@
           (t (er soft 'read-file "No file found ~x0." name)))))
 
 (defun formals (fn w)
+  (declare (xargs :guard (and (symbolp fn)
+                              (plist-worldp w))))
   (cond ((flambdap fn)
          (lambda-formals fn))
         (t (let ((temp (getprop fn 'formals t 'current-acl2-world w)))
              (cond ((eq temp t)
-                    (er hard 'formals
+                    (er hard? 'formals
                         "Every function symbol is supposed to have a ~
                          'FORMALS property but ~x0 does not!"
                         fn))
