@@ -213,6 +213,7 @@
 
 (defthm mextract-lemma-term
   (implies (and (member rule (getprop fn 'lemmas nil 'current-acl2-world (w state)))
+                (not (eq (access rewrite-rule rule :subclass) 'meta))
                 (mextract-ev-global-facts))
            (mextract-ev (rewrite-rule-term rule)
                       a))
@@ -229,6 +230,7 @@
 ;; symbol in the world is a correct rewrite rule.
 (defthm mextract-lemma
   (implies (and (member rule (getprop fn 'lemmas nil 'current-acl2-world (w state)))
+                (not (eq (access rewrite-rule rule :subclass) 'meta))
                 (mextract-ev (conjoin (access rewrite-rule rule :hyps)) a)
                 (mextract-ev-global-facts))
            (mextract-ev `(,(access rewrite-rule rule :equiv)
