@@ -19639,6 +19639,9 @@
   ACL2 file ~c[emacs/emacs-acl2.el], so users will probably not be impacted if
   they load that file into Emacs.
 
+  The distributed books file ~c[books/Makefile-generic] now causes, by default,
+  a backtrace to be printed when there is a raw Lisp error.
+
   ~st[EMACS SUPPORT]
 
   ~st[EXPERIMENTAL VERSIONS]
