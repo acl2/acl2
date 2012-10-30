@@ -5333,9 +5333,10 @@
   Case ~c[obj] = (list :lemma FN N):~nl[]
   Assume ~c[N] is a natural number; otherwise, treat ~c[N] as 0.  If ~c[FN] is
   a function symbol with more than ~c[N] associated lemmas ~-[] ``associated''
-  in the sense of ~c[(getprop FN 'lemmas nil 'current-acl2-world (w state))]
-  ~-[] then the value is the ~c[N]th such lemma (with zero-based indexing).
-  Otherwise the value is ~c[*t*].
+  in the sense of being either a ~c[:]~ilc[definition] rule for ~c[FN] or a
+  ~c[:]~ilc[rewrite] rule for ~c[FN] whose left-hand side has a top function
+  symbol of ~c[FN] ~-[] then the value is the ~c[N]th such lemma (with
+  zero-based indexing).  Otherwise the value is ~c[*t*].
 
   For any other values of ~c[obj], the value is ~c[*t*].~eq[]
 
