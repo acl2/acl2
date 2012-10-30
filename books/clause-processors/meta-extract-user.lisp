@@ -213,7 +213,6 @@
 
 (defthm mextract-lemma-term
   (implies (and (member rule (getprop fn 'lemmas nil 'current-acl2-world (w state)))
-                (not (eq (access rewrite-rule rule :subclass) 'meta))
                 (mextract-ev-global-facts))
            (mextract-ev (rewrite-rule-term rule)
                       a))
