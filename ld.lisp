@@ -3695,18 +3695,21 @@
   abbrev-evisc-tuple is used, if bound; ~pl[set-evisc-tuple].
 
   The ~c[:fns] option.  As mentioned above, by default the ~c[wet] backtrace
-  shows user-defined functions ``supporting'' the form being evaluated.  This
-  default can be overridden by supplying an explicit list, ~c[fns], of
-  functions, using option ~c[:fns fns]; these will then be the functions whose
-  calls are eligible for inclusion in the backtrace.  The special value
-  ~c[:fns :all] will allow all user-defined function calls in the backtrace.
+  shows user-defined functions that syntactically ``support'' the form being
+  evaluated.  This default can be overridden by supplying an explicit list,
+  ~c[fns], of functions, using option ~c[:fns fns]; these will then be the
+  functions whose calls are eligible for inclusion in the backtrace.  The
+  special value ~c[:fns :all] will allow all user-defined function calls in the
+  backtrace.  This value can be useful when using ~ilc[oracle-apply], for
+  example, since the function being applied isn't typically included as
+  a syntactic supporter of the form being evaluated.
 
   The ~c[:compile] option.  ~c[Wet] uses the ~ilc[trace$] utility to modify the
   definitions of affected functions so that they can record information for the
-  backtrace.  As described above, these affected functions are those
-  ``supporting'' the form unless specified by the ~c[:fns] option.  As is the
-  case for ~c[trace$] ~-[] ~pl[trace$] ~-[] the new definitions of these
-  affected functions may or may not be compiled.  For ~c[trace$] and for
+  backtrace.  As described above, these affected functions are those that
+  syntactically ``support'' the form unless specified by the ~c[:fns] option.
+  As is the case for ~c[trace$] ~-[] ~pl[trace$] ~-[] the new definitions of
+  these affected functions may or may not be compiled.  For ~c[trace$] and for
   ~c[wet], the default is to compile the new definition if and only if the
   original definition was compiled, except: For ~c[wet], if option
   ~c[:fns :all] is provided, then the default is not to compile the affected
@@ -19580,6 +19583,10 @@
   implementation, together with very helpful discussions as well as a community
   book, ~c[books/clause-processors/meta-extract-user.lisp], that extends the
   power of meta-extract hypotheses.
+
+  New utilities ~ilc[oracle-funcall], ~ilc[oracle-apply], and
+  ~ilc[oracle-apply-raw] call a function argument on specified arguments.
+  Thanks to Jared Davis for requesting this utility.
 
   ~st[HEURISTIC IMPROVEMENTS]
 

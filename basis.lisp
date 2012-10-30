@@ -9697,19 +9697,6 @@
              (cond ((eq temp t) nil)
                    (t (length temp)))))))
 
-(defun stobjs-in (fn w)
-
-; Fn must be a function symbol, not a lambda expression and not an
-; undefined symbol.  See the Essay on STOBJS-IN and STOBJS-OUT.
-
-  (if (eq fn 'cons)
-
-; We call this function on cons so often we optimize it.
-
-      '(nil nil)
-
-    (getprop fn 'stobjs-in nil 'current-acl2-world w)))
-
 (defun stobjs-out (fn w)
 
 ; Warning: keep this in sync with get-stobjs-out-for-declare-form.
@@ -9804,12 +9791,6 @@
   routine encounters the constant ~c[(QUOTE (A B C D))], it will replace it
   with ~c[*a*], and the usual untranlation routine will print this as
   ~c[*A*].~/")
-
-(defun all-nils (lst)
-  (declare (xargs :guard (true-listp lst)))
-  (cond ((endp lst) t)
-        (t (and (eq (car lst) nil)
-                (all-nils (cdr lst))))))
 
 (defconst *user-defined-functions-table-keys*
 

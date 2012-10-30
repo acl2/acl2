@@ -27121,6 +27121,8 @@
 
     assign-lock
     throw-or-attach-call
+
+    oracle-apply oracle-apply-raw
   ))
 
 (defconst *primitive-macros-with-raw-code*
@@ -34931,6 +34933,8 @@
 
     stobj-evisceration-alist ; returns bad object
     trace-evisceration-alist ; returns bad object
+
+    oracle-apply-raw
 
 ; We briefly included maybe-install-acl2-defaults-table, but that defeated the
 ; ability to call :puff.  It now seems unnecessary to include
@@ -47427,3 +47431,235 @@ Lisp definition."
                        "-"
                        (symbol-name sym))
           "ACL2"))
+
+; Oracle-funcall, oracle-apply, and oracle-apply-ttag:
+
+(defun stobjs-in (fn w)
+
+; Fn must be a function symbol, not a lambda expression and not an
+; undefined symbol.  See the Essay on STOBJS-IN and STOBJS-OUT.
+
+  (declare (xargs :guard (and (symbolp fn)
+                              (plist-worldp w))))
+  (if (eq fn 'cons)
+
+; We call this function on cons so often we optimize it.
+
+      '(nil nil)
+
+    (getprop fn 'stobjs-in nil 'current-acl2-world w)))
+
+(defmacro oracle-funcall (fn &rest args)
+
+  ":Doc-Section ACL2::ACL2-built-ins
+
+  call a function argument on the remaining arguments~/
+
+  ~c[Oracle-funcall] evaluates its first argument to produce an ACL2 function
+  symbol, and then applies that function symbol to the values of the rest of
+  the arguments.  The return value is of the form ~c[(mv call-result state)].
+
+  ~bv[]
+  Examples:
+  (oracle-funcall 'cons 3 4) ==> (mv '(3 . 4) <state>)
+  (oracle-funcall (car '(floor foo bar)) (+ 6 7) 5) ==> (mv 2 <state>)
+  ~ev[]
+
+  ~c[Oracle-funcall] is a macro; each of its calls macroexpands to a call of
+  the related utility ~c[oracle-apply] that takes the ACL2 ~ilc[state] as an
+  argument, as follows:
+  ~bv[]
+  (oracle-funcall fn x1 x2 .. xk)
+  ~ev[]
+  macroexpands to
+  ~bv[]
+  (oracle-apply fn (list x1 x2 .. xk) state)
+  ~ev[]
+
+  Note that calls of ~c[oracle-funcall] and ~c[oracle-apply] return two values:
+  the result of the function application, and a modified ~ilc[state].
+
+  ~l[oracle-apply] for details, including information about ~il[guard]s.~/~/"
+
+  `(oracle-apply ,fn (list ,@args) state))
+
+(defun all-nils (lst)
+  (declare (xargs :guard (true-listp lst)))
+  (cond ((endp lst) t)
+        (t (and (eq (car lst) nil)
+                (all-nils (cdr lst))))))
+
+(defun oracle-apply-guard (fn args state)
+  (declare (xargs :stobjs state))
+  (and (symbolp fn)
+       (not (eq fn 'return-last))
+       (true-listp args)
+       (let* ((wrld (w state))
+              (formals (getprop fn 'formals t 'current-acl2-world wrld))
+              (stobjs-in (stobjs-in fn wrld)))
+         (and (not (eq formals t))
+              (eql (len formals) (len args))
+              (true-listp stobjs-in) ; needed for guard of all-nils
+              (all-nils stobjs-in)))))
+
+(defun oracle-apply (fn args state)
+
+; The use of an oracle is important for the logical story.  For example, we can
+; imagine the following sort of situation without an oracle.
+
+;   (encapsulate
+;    ()
+;    (local (defun f (x)
+;             1))
+;    (defthm prop-1
+;      (equal (oracle-funcall 'f) 1)
+;      :rule-classes nil))
+;   
+;   (encapsulate
+;    ()
+;    (local (defun f ()
+;             2))
+;    (defthm prop-2
+;      (equal (oracle-funcall 'f) 2)
+;      :rule-classes nil))
+;   
+;   (defthm contradiction
+;     nil
+;     :hints (("Goal" :use (prop-1 prop-2))))
+
+  ":Doc-Section ACL2::ACL2-built-ins
+
+  call a function argument on the given list of arguments~/
+
+  ~c[Oracle-apply] evaluates its first argument to produce an ACL2 function
+  symbol, ~c[FN], and then applies ~c[FN] to the value of the second argument,
+  which should be a true list whose length is the number of inputs for ~c[FN].
+  The return value is of the form ~c[(mv call-result state)].
+
+  ~bv[]
+  Examples:
+  (oracle-apply 'cons '(3 4) state) = (mv '(3 . 4) <state>)
+  (oracle-apply (car '(floor foo)) (list (+ 6 7) 5) state) = (mv 2 <state>)
+  ~ev[]
+
+  Also ~pl[oracle-funcall] for a related utility.
+
+  Note that calls of ~c[oracle-funcall] and ~c[oracle-apply] return two values:
+  the result of the function application, and a modified ~ilc[state].
+
+  ~c[Oracle-apply] is defined in ~c[:]~ilc[logic] mode, and in fact is
+  ~il[guard]-verified.  However, you will not be able to prove much about this
+  function, because it is defined in the logic using the ~c[acl2-oracle] field
+  of the ACL2 ~il[state].  The behavior described above ~-[] i.e., making a
+  function call ~-[] takes place when the third argument is the ACL2
+  ~ilc[state], so during proofs (when that can never happen), a term
+  ~c[(oracle-apply 'fn '...)] will not simplify using a call of ~c[fn].
+
+  The guard for ~c[(oracle-apply fn args state)] is the term
+  ~c[(oracle-apply-guard fn args state)], which says the following: ~c[fn] and
+  ~c[args] must satisfy ~ilc[symbolp] and ~ilc[true-listp], respectively;
+  ~c[fn] must be a known function symbol other than ~ilc[return-last] that is
+  not untouchable (~pl[push-untouchable]) and has no ~il[stobj] arguments (not
+  even ~ilc[state]); and the ~il[length] of ~c[args] must equal the arity of
+  ~c[fn] (~pl[signature]).  The requirement that ~c[fn] be a known function
+  symbol may be a bit onerous for guard verification, but this is easily
+  overcome by using ec-call, for example as follows.
+  ~bv[]
+  (defun f (x state)
+    (declare (xargs :stobjs state))
+    (ec-call (oracle-apply 'car (list x) state)))
+  ~ev[]
+  This use of ~ilc[ec-call] will, however, cause the ~il[guard] of
+  ~c[oracle-apply] to be checked at runtime.
+
+  If the ~il[guard] for ~c[oracle-apply] fails to hold but there is no guard
+  violation because guard-checking is suppressed (~pl[set-guard-checking]),
+  then the value returned is computed using its logical definition ~-[] which,
+  as mentioned above, uses the ACL2 oracle ~-[] and hence the value computed is
+  unpredictable (indeed, the function argument will not actually be called).
+
+  The value returned by ~c[oracle-apply] is always a single value obtained by
+  calling the executable counterpart of its function argument, as we now
+  explain.  Consider a form ~c[(oracle-apply fn args state)] that evaluates to
+  ~c[(mv VAL state')], where ~c[fn] evaluates to the function symbol ~c[F].  If
+  ~c[F] returns multiple values, then ~c[VAL] is the first value computed by
+  the call of ~c[F] on the value of ~c[args].  More precisely, ~c[oracle-apply]
+  actually invokes the executable counterpart of ~c[F]; thus, if ~c[args] is
+  the expression ~c[(list x1 ... xk)], then ~c[VAL] is the same as (first)
+  value returned by evaluating ~c[(ec-call (F x1 x2 ... xk))].  ~l[ec-call].
+
+  (Remark.  If you identify a need for a version of ~c[oracle-apply] to return
+  multiple values, we can perhaps provide such a utility; feel free to contact
+  the ACL2 implementors to request it.)
+
+  A subtlely is that the evaluation takes place in so-called ``safe mode'',
+  which avoids raw Lisp errors due to calls of ~c[:]~ilc[program] mode
+  functions.  The use of safe mode is unlikely to be noticed if the value of
+  the first argument of ~c[oracle-apply] is a ~c[:]~ilc[logic] mode function
+  symbol.  However, for ~c[:program] mode functions with side effects due to
+  special raw Lisp code, as may be the case for built-in functions or for
+  custom functions defined with active trust tags (~pl[defttag]), use of the
+  following function may be preferable:
+
+  ~l[oracle-apply-raw] for a much less restrictive version of ~c[oracle-apply],
+  which avoids safe mode and (for example) can apply a function that has a
+  definition in the host Lisp but not in the ACL2 ~il[world].~/~/"
+
+  (declare (xargs :stobjs state
+                  :guard (oracle-apply-guard fn args state)))
+  #-acl2-loop-only
+  (when (live-state-p state)
+    (return-from oracle-apply
+                 (mv (state-free-global-let* ((safe-mode t))
+                                             (apply (*1*-symbol fn) args))
+                     state)))
+  #+acl2-loop-only
+  (mv-let (erp val state)
+          (read-acl2-oracle state)
+          (declare (ignore erp))
+
+; We arrange for the result to depend logically on fn and args.  This is
+; probably not important to do, but it seems potentially weird for the result
+; ot have nothing to do with fn or with args.
+
+          (mv (and (true-listp val)
+                   (eq (car val) fn)
+                   (equal (cadr val) args)
+                   (caddr val))
+              state)))
+
+(defun oracle-apply-raw (fn args state)
+
+  ":Doc-Section ACL2::ACL2-built-ins
+
+  call a function argument on the given list of arguments, no restrictions~/
+
+  ~l[oracle-apply], as we assume familiarity with that function.
+  ~c[Oracle-apply-raw] is a variant of ~c[oracle-apply] that is untouchable,
+  and hence requires a trust tag to remove the untouchability (~pl[defttag] and
+  ~pl[remove-untouchable]).  Unlike ~c[oracle-apply], ~c[oracle-apply-raw]
+  simply calls the raw Lisp function ~c[funcall] to compute the result, without
+  restriction: the specified ~c[:]~ilc[guard] is ~c[t], the function itself is
+  applied (not its executable counterpart), there is no restriction for
+  untouchable functions or ~ilc[return-last], and safe mode is not used.  Thus,
+  in general, ~c[oracle-apply-raw] can be dangerous to use: any manner of error
+  can occur!
+
+  As is the case for ~ilc[oracle-apply], the function symbol
+  ~ilc[oracle-apply-raw] is defined in ~c[:]~ilc[logic] mode and is
+  ~il[guard]-verified.  ~c[Oracle-apply-raw] is logically defined to be
+  ~ilc[oracle-apply]; more precisely:
+  ~bv[]
+  (oracle-apply-raw fn args state)
+  = {logical definition}
+  (ec-call (oracle-apply fn args state))
+  ~ev[]~/~/"
+
+  (declare (xargs :stobjs state :guard t))
+  #-acl2-loop-only
+  (when (live-state-p state)
+    (return-from oracle-apply-raw
+                 (mv (funcall fn args) state)))
+  #+acl2-loop-only
+  (ec-call (oracle-apply fn args state)))
+
