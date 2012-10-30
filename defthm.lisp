@@ -5881,7 +5881,12 @@
                                :well-founded-relation o<
                                :mode :logic))
                (cond
-                ((symbolp x) (and x (cdr (assoc-eq x a))))
+                ((symbolp x)
+
+; Before removing the conjunct of x below, see the long comment in
+; evaluator-clauses about "without making a special case for x = nil".
+
+                 (and x (cdr (assoc-eq x a))))
                 ((atom x) nil)
                 ((eq (car x) 'quote) (car (cdr x)))
                 ((consp (car x))
