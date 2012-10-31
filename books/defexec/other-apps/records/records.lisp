@@ -1,4 +1,5 @@
 ; Rob Sumners
+; Modified to be slightly more extensible by David Rager in 2012
 
 (in-package "ACL2")
 
@@ -48,6 +49,12 @@ We also include some auxiliary lemmas which have proven useful.
 
 (defthm record-mget-non-nil-cannot-be-nil
   (implies (mget a r) r))
+
+Furthermore, in an attempt to make this version of records extensible (by this,
+we mean that a user can define a new record-like object that uses mset and
+mget), we provide a theory event that labels the lemmas we needed when
+extending this record in our own work.  See theory event extend-records below
+for a list of the lemmas we deemed necessary.
 
 We normalize the record structures (which allows the 'equal-ity based rewrite
 rules) as alists where the keys (cars) are ordered using the total-order added
@@ -123,10 +130,10 @@ well-formed record hypothesis.
            (or (null (cdr x))
                (<< (caar x) (caadr x))))))
 
-(local
-(defthm good-map-implies-well-formed-map
+(defthmd good-map-implies-well-formed-map
   (implies (good-map x)
-           (well-formed-map x))))
+           (well-formed-map x)))
+(local (in-theory (enable good-map-implies-well-formed-map)))
 
 (local
 (defthm good-map-implies-not-ifrp
@@ -163,24 +170,24 @@ well-formed record hypothesis.
 
 ;; we need the following theorems in order to get the guard for s to verify.
 
-(local
-(defthm mset-wf-is-bounded
+(defthmd mset-wf-is-bounded
   (implies (and (well-formed-map r)
                 (mset-wf a v r)
                 (<< e a)
                 (<< e (caar r)))
-           (<< e (caar (mset-wf a v r))))))
+           (<< e (caar (mset-wf a v r)))))
+(local (in-theory (enable mset-wf-is-bounded)))
 
 (local
 (defthm mset-wf-preserves-well-formed-map
   (implies (well-formed-map r)
            (well-formed-map (mset-wf a v r)))))
 
-(local
-(defthm mset-wf-preserves-good-map
+(defthmd mset-wf-preserves-good-map
   (implies (and (good-map r)
                 (wf-keyp a))
-           (good-map (mset-wf a v r)))))
+           (good-map (mset-wf a v r))))
+(local (in-theory (enable mset-wf-preserves-good-map)))
 
 (defun mset-fast (a v r)
   (declare (xargs :guard (good-map r)))
@@ -295,8 +302,20 @@ well-formed record hypothesis.
   (implies (and r (well-formed-map r))
            (map->acl2 r))))
 
-(in-theory (disable acl2->map map->acl2))
+; The following two theorems are useful when using this implementation of
+; records to provide set/get functionality to an interface.
 
+(defthmd good-map-implies-equal-map->acl2-to-x
+  (implies (good-map x)
+           (equal (map->acl2 x)
+                  x)))
+
+(defthmd good-map-implies-equal-acl2->map-to-x
+  (implies (good-map x)
+           (equal (acl2->map x)
+                  x)))
+
+(in-theory (disable acl2->map map->acl2))
 
 ;;;; final (exported) properties of record g(et) and s(et) ;;;;
 
@@ -362,3 +381,13 @@ well-formed record hypothesis.
 ;; manipulate record terms which are encountered.
 
 (in-theory (disable mset mget))
+
+(deftheory extend-records
+
+; Theory useful for extending records.
+
+  '(good-map-implies-equal-map->acl2-to-x
+    good-map-implies-equal-acl2->map-to-x
+    
+    good-map wf-keyp good-map-implies-well-formed-map mset-wf-is-bounded
+    mset-wf-preserves-good-map mset mset-wf))
