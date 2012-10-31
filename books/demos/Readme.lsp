@@ -6,6 +6,7 @@ Readme.lsp
 list-theory.lisp
 modeling/cert.acl2
 modeling/Makefile
+modeling/memories.lisp
 modeling/network-state-basic.lisp
 modeling/network-state.lisp
 proofs")
