@@ -43,16 +43,15 @@ into a <b>comment map</b>, which is an alist that maps @(see vl-location-p)
 objects to strings.</p>
 
 <p>By construction, each of these strings is known to be a valid Verilog
-comment, i.e., it begins with <tt>//</tt> and ends with a newline, or begins
-with <tt>/*</tt> and ends with <tt>*/</tt>.  But in the
-<tt>vl-commentmap-p</tt> definition, we only require <tt>stringp</tt>, and it
-can occasionally be useful to put non-comments into the map, e.g., see @(see
-vl-commentmap-entry-sort).</p>
+comment, i.e., it begins with @('//') and ends with a newline, or begins with
+@('/*') and ends with @('*/').  But in the @('vl-commentmap-p') definition, we
+only require @('stringp'), and it can occasionally be useful to put
+non-comments into the map, e.g., see @(see vl-commentmap-entry-sort).</p>
 
 <h3>Special Notes about Comment Shifting</h3>
 
 <p>BOZO this comment applies to the behavior of
-<tt>vl-kill-whitespace-and-comments-core</tt> which is part of the lexer.  It
+@('vl-kill-whitespace-and-comments-core') which is part of the lexer.  It
 probably makes sense NOT to shift the comments in the lexer, but to instead
 move this to the pretty-printer.</p>
 
@@ -66,25 +65,25 @@ it actually occurs in the line.</p>
 
 <p>Style 1:</p>
 
-<code>
+@({
     /* the following decodes the controller signal from
        the such-and-so unit.  the valid values are blah
        blah blah blah ... */
-    wire ctrl_sig = ~w[0] &amp; ...;
-</code>
+    wire ctrl_sig = ~w[0] & ...;
+})
 
 <p>Style 2:</p>
 
-<code>
+@({
     // decode controller signal from such-and-so unit
-    wire ctrl_sig = ~w[0] &amp; ...;
-</code>
+    wire ctrl_sig = ~w[0] & ...;
+})
 
 <p>Style 3:</p>
 
-<code>
-    wire ctrl_sig = ~w[0] &amp; ...;  // decode controller signal
-</code>
+@({
+    wire ctrl_sig = ~w[0] & ...;  // decode controller signal
+})
 
 <p>If we record the exact positions of the comments, then we get perfectly good
 behavior when Styles 1 and Styles 2 are used.  However, we get a very BAD
@@ -94,7 +93,7 @@ all said to be at Line L on column C.  However, this comment will be at Line L
 on Column C+X.  The net result is that the translation will look something
 like:</p>
 
-<code>
+@({
     wire ctrl_sig;                    }
     wire _gen_37;                     }   Line L, Col C
     wire _gen_38;                     }
@@ -103,7 +102,7 @@ like:</p>
     and(ctrl_sig, _gen_38, _gen_39);  }
 
     // decode controller signal       }   Line L, Col C+X
-</code>
+})
 
 <p>Having the comment come after this big mess of stuff is really unfortunate,
 and, even worse, it makes it look like the comment refers to whatever comes
@@ -116,9 +115,9 @@ are given before module items, so that this approach essentially forces all
 comments to act as though they occur at the start of their line.</p>
 
 <p>The current approach is pretty bad w.r.t. internal comments, e.g., if I
-write an expression with lots of <tt>/* blah */</tt>-style comments, inside of
-it, then these all get moved over to the front.  Bad stuff.  But such comments
-seem relatively rare anyway, and I am not too worried about trying to support
+write an expression with lots of @('/* blah */')-style comments, inside of it,
+then these all get moved over to the front.  Bad stuff.  But such comments seem
+relatively rare anyway, and I am not too worried about trying to support
 them.</p>"
 
   (defund vl-commentmap-p (x)

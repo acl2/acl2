@@ -31,15 +31,15 @@
   :short "One-bit multiplier."
 
   :long "<p>This module implements a one-bit multiply.  Normally you would
-think of this as an <tt>and</tt> gate, but the X-detection semantics are
-slightly different: a multiply must emit X whenever either argument is X or Z,
-whereas, e.g., <tt>X &amp; 0</tt> yields <tt>0</tt>.</p>
+think of this as an @('and') gate, but the X-detection semantics are slightly
+different: a multiply must emit X whenever either argument is X or Z, whereas,
+e.g., @('X & 0') yields @('0').</p>
 
 <p>The actual Verilog definition of this module is as follows.  These gates
-precisely implement the Verilog semantics for <tt>o = a * b</tt> when
-<tt>o</tt>, <tt>a</tt>, and <tt>b</tt> are one-bit wide.</p>
+precisely implement the Verilog semantics for @('o = a * b') when @('o'),
+@('a'), and @('b') are one-bit wide.</p>
 
-<code>
+@({
 module VL_1_BIT_MULT (o, a, b);
   output o;
   input a, b;
@@ -51,7 +51,7 @@ module VL_1_BIT_MULT (o, a, b);
   xor (x1, x0, x0);
   xor (o, p0, x1);
 endmodule
-</code>"
+})"
 
   (defconst *vl-1-bit-mult*
     (b* ((name (hons-copy "VL_1_BIT_MULT"))
@@ -183,26 +183,25 @@ endmodule
 (def-vl-modgen vl-make-n-bit-mult (n)
   :short "Generate an multiplier module."
 
-  :long "<p>We produce <tt>VL_N_BIT_MULT</tt> for the given <tt>n</tt>, which
-is written using @(see primitives) but is semantically equal to:</p>
+  :long "<p>We produce @('VL_N_BIT_MULT') for the given @('n'), which is
+written using @(see primitives) but is semantically equal to:</p>
 
-<code>
+@({
 module VL_N_BIT_MULT (out, a, b) ;
   output [n-1:0] out;
   input [n-1:0] a;
   input [n-1:0] b;
   assign out = a * b;
 endmodule
-</code>
+})
 
 <p>We use a naive, sum-of-partial-products style multiplier.  It computes
 N (shifted) partial products (using N gates apiece), then sums them together
-with <tt>n-1</tt> instances of an N-bit wide adder circuit.</p>
+with @('n-1') instances of an N-bit wide adder circuit.</p>
 
-<p>The semantics of Verilog require that if any bit of <tt>a</tt> or <tt>b</tt>
-is <tt>X</tt> or <tt>Z</tt>, then every bit of the output is <tt>X</tt>.  We
-implement this explicitly, which adds a layer of X-detection around the core
-circuitry.</p>"
+<p>The semantics of Verilog require that if any bit of @('a') or @('b') is
+@('X') or @('Z'), then every bit of the output is @('X').  We implement this
+explicitly, which adds a layer of X-detection around the core circuitry.</p>"
 
   :guard (posp n)
   :body

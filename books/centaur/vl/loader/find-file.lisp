@@ -28,9 +28,8 @@
 
 (defsection vl-extend-pathname
   :parents (vl-find-file)
-  :short "@(call vl-extend-pathname) concatenates <tt>dir</tt> and
-<tt>filename</tt>, adding a slash to between them only if <tt>dir</tt> does not
-end with a slash."
+  :short "@(call vl-extend-pathname) concatenates @('dir') and @('filename'),
+adding a slash to between them only if @('dir') does not end with a slash."
 
   (defund vl-ends-with-directory-separatorp (x)
     (declare (xargs :guard (stringp x)))
@@ -93,21 +92,21 @@ end with a slash."
   :short "Determine where to load a file from, given its (absolute or relative)
 name and a list of directories to search."
 
-  :long "<p><b>Signature:</b> @(call vl-find-file) returns <tt>(mv realname
-state)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-find-file) returns @('(mv realname
+state)').</p>
 
-<p>The <tt>filename</tt> is the name of a file you want to load; it can be
-either an absolute filename (in which case it will just be returned as
-<tt>realname</tt>), or a relative filename (in which case we will look for it
-in the <tt>searchpath</tt>).</p>
+<p>The @('filename') is the name of a file you want to load; it can be either
+an absolute filename (in which case it will just be returned as @('realname')),
+or a relative filename (in which case we will look for it in the
+@('searchpath')).</p>
 
-<p>The <tt>searchpath</tt> is a list of strings that are the names of
-directories to search.  These order of these directories is important, because
-we search them in order.</p>
+<p>The @('searchpath') is a list of strings that are the names of directories
+to search.  These order of these directories is important, because we search
+them in order.</p>
 
 <p>If we find the file in any of the search directories, we essentially return
-<tt>dir/filename</tt> as <tt>realname</tt>.  But if we can't find the file
-anywhere, <tt>realname</tt> is just <tt>nil</tt>.</p>"
+@('dir/filename') as @('realname').  But if we can't find the file anywhere,
+@('realname') is just @('nil').</p>"
 
   (defund vl-find-file (filename searchpath state)
     (declare (xargs :guard (and (stringp filename)
@@ -148,8 +147,8 @@ anywhere, <tt>realname</tt> is just <tt>nil</tt>.</p>"
   :short "Alternative to @(see vl-find-file) that can take a list of
 extensions."
 
-  :long "<p><b>Signature:</b> @(call vl-find-basename/extension) returns
-<tt>(mv realname warnings state)</tt>.</p>"
+  :long "<p><b>Signature:</b> @(call vl-find-basename/extension) returns @('(mv
+realname warnings state)').</p>"
 
   (defund vl-find-basename/extension-aux (filename extensions dir state)
     (declare (xargs :guard (and (stringp filename)

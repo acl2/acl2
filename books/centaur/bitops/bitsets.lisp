@@ -35,10 +35,10 @@ natural numbers."
   :long "<h3>Introduction</h3>
 
 <p>In this library, sets of natural numbers are represented as natural numbers
-by saying <tt>a</tt> is a member of the set <tt>X</tt> when <tt>(@(see logbitp)
-a X)</tt>.  For instance, the set {1, 2, 4} would be represented as the number
-22.  In binary, this number is 10110, and you can see that bits 1, 2, and 4 are
-each \"true\".</p>
+by saying @('a') is a member of the set @('X') when @('(@(see logbitp) a X)').
+For instance, the set {1, 2, 4} would be represented as the number 22.  In
+binary, this number is 10110, and you can see that bits 1, 2, and 4 are each
+\"true\".</p>
 
 <p>This representation enjoys certain efficiencies.  In particular, operations
 like union, intersection, difference, and subset testing can be carried out in
@@ -68,102 +68,104 @@ instance, you would need 8 KB of memory just to represent the singleton set
 {65536}.</p>
 
 <p>The <see topic=\"@(url sbitsets)\">sparse bitsets</see> library is an
-alternative to bitsets that uses lists of <tt>(offset . data)</tt> pairs
-instead of ordinary natural numbers as the set representation.  This
-representation is perhaps somewhat less efficient for dense sets, but is far
-more efficient for sparse sets (e.g., {65536} can be represented with a single
-cons of fixnums instead of an 8 KB bignum.) and still provides word-at-a-time
-operations in many cases.</p>
+alternative to bitsets that uses lists of @('(offset . data)') pairs instead of
+ordinary natural numbers as the set representation.  This representation is
+perhaps somewhat less efficient for dense sets, but is far more efficient for
+sparse sets (e.g., {65536} can be represented with a single cons of fixnums
+instead of an 8 KB bignum.) and still provides word-at-a-time operations in
+many cases.</p>
 
 
 <h3>Loading the Library</h3>
 
 <p>The basic bitsets library can be loaded with:</p>
 
-<code>
+@({
  (include-book \"bitops/bitsets\" :dir :cbooks)
-</code>
+})
 
 <p>An optimized version (that requires additional ttags) can be loaded with:</p>
 
-<code>
+@({
  (include-book \"bitops/bitsets-opt\" :dir :cbooks)
-</code>
+})
 
 
 <h3>Using the Library</h3>
 
 <p>Convention:</p>
+
 <ul>
-  <li><tt>a, b, ...</tt> denote set elements</li>
-  <li><tt>X, Y, ...</tt> denote sets.</li>
+
+<li>@('a, b, ...') denote set elements</li>
+
+<li>@('X, Y, ...') denote sets.</li>
+
 </ul>
 
-<p>There is no such explicit <tt>bitsetp</tt> recognizer; instead we just use
-<tt>natp</tt>.  Similarly there is no separate bitset-fixing function because
-we just use <tt>nfix</tt>.</p>
+<p>There is no such explicit @('bitsetp') recognizer; instead we just use
+@('natp').  Similarly there is no separate bitset-fixing function because we
+just use @('nfix').</p>
 
 <h5>Bitset Constructors</h5>
 
-<dl>
-<dt><tt>(@(see bitset-singleton) a)</tt></dt>
-<dd>Constructs the set <tt>{ a }</tt></dd>
-<dd>Execution: <tt>(ash 1 a)</tt></dd>
+<dl> <dt>@('(@(see bitset-singleton) a)')</dt> <dd>Constructs the set @('{ a
+}')</dd> <dd>Execution: @('(ash 1 a)')</dd>
 
-<dt><tt>(@(see bitset-insert) a X)</tt></dt>
-<dd>Constructs the set <tt>X U {a}</tt></dd>
-<dd>Execution: <tt>(logior (ash 1 a) x)</tt></dd>
+<dt>@('(@(see bitset-insert) a X)')</dt>
+<dd>Constructs the set @('X U {a}')</dd>
+<dd>Execution: @('(logior (ash 1 a) x)')</dd>
 
-<dt><tt>(@(see bitset-list) a b ...)</tt></dt>
-<dd>Constructs the set <tt>{a, b, ...}</tt></dd>
-<dd>Execution: repeated <tt>bitset-insert</tt>s</dd>
+<dt>@('(@(see bitset-list) a b ...)')</dt>
+<dd>Constructs the set @('{a, b, ...}')</dd>
+<dd>Execution: repeated @('bitset-insert')s</dd>
 
-<dt><tt>(@(see bitset-list*) a b ... X)</tt></dt>
-<dd>Constructs the set <tt>X U {a, b, ...}</tt></dd>
-<dd>Execution: repeated <tt>bitset-insert</tt>s</dd>
+<dt>@('(@(see bitset-list*) a b ... X)')</dt>
+<dd>Constructs the set @('X U {a, b, ...}')</dd>
+<dd>Execution: repeated @('bitset-insert')s</dd>
 
-<dt><tt>(@(see bitset-delete) a X)</tt></dt>
-<dd>Constructs the set <tt>X - {a}</tt></dd>
-<dd>Execution: <tt>(logandc1 (ash 1 a) x)</tt></dd>
+<dt>@('(@(see bitset-delete) a X)')</dt>
+<dd>Constructs the set @('X - {a}')</dd>
+<dd>Execution: @('(logandc1 (ash 1 a) x)')</dd>
 
-<dt><tt>(@(see bitset-union) X Y)</tt></dt>
-<dd>Constructs the set <tt>X U Y</tt></dd>
-<dd>Execution: <tt>(logior x y)</tt></dd>
+<dt>@('(@(see bitset-union) X Y)')</dt>
+<dd>Constructs the set @('X U Y')</dd>
+<dd>Execution: @('(logior x y)')</dd>
 
-<dt><tt>(@(see bitset-intersect) X Y)</tt></dt>
-<dd>Constructs the set <tt>X \\intersect Y</tt></dd>
-<dd>Execution: <tt>(logand x y)</tt></dd>
+<dt>@('(@(see bitset-intersect) X Y)')</dt>
+<dd>Constructs the set @('X \\intersect Y')</dd>
+<dd>Execution: @('(logand x y)')</dd>
 
-<dt><tt>(@(see bitset-difference) X Y)</tt></dt>
-<dd>Constructs the set <tt>X - Y</tt></dd>
-<dd>Execution: <tt>(logandc1 y x)</tt></dd>
+<dt>@('(@(see bitset-difference) X Y)')</dt>
+<dd>Constructs the set @('X - Y')</dd>
+<dd>Execution: @('(logandc1 y x)')</dd>
 </dl>
 
 <h5>Inspecting Bitsets</h5>
 
 <dl>
-<dt><tt>(@(see bitset-memberp) a X)</tt></dt>
-<dd>Determine whether <tt>a</tt> is a member of the set <tt>X</tt></dd>
-<dd>Execution: <tt>(logbitp a x)</tt></dd>
+<dt>@('(@(see bitset-memberp) a X)')</dt>
+<dd>Determine whether @('a') is a member of the set @('X')</dd>
+<dd>Execution: @('(logbitp a x)')</dd>
 
-<dt><tt>(@(see bitset-intersectp) X Y)</tt></dt>
-<dd>Determines whether <tt>X</tt> and <tt>Y</tt> have any common members</dd>
-<dd>Execution: <tt>(logtest x y)</tt></dd>
+<dt>@('(@(see bitset-intersectp) X Y)')</dt>
+<dd>Determines whether @('X') and @('Y') have any common members</dd>
+<dd>Execution: @('(logtest x y)')</dd>
 
-<dt><tt>(@(see bitset-subsetp) X Y)</tt></dt>
-<dd>Determines whether <tt>X</tt> is a subset of <tt>Y</tt></dd>
-<dd>Execution: <tt>(= 0 (logandc2 y x))</tt></dd>
+<dt>@('(@(see bitset-subsetp) X Y)')</dt>
+<dd>Determines whether @('X') is a subset of @('Y')</dd>
+<dd>Execution: @('(= 0 (logandc2 y x))')</dd>
 
-<dt><tt>(@(see bitset-cardinality) X)</tt></dt>
-<dd>Determines the cardinality of <tt>X</tt></dd>
-<dd>Execution: <tt>(logcount x)</tt></dd>
+<dt>@('(@(see bitset-cardinality) X)')</dt>
+<dd>Determines the cardinality of @('X')</dd>
+<dd>Execution: @('(logcount x)')</dd>
 
 </dl>
 
 <h5>Enumerating Bitset Members</h5>
 
 <dl>
-<dt><tt>(@(see bitset-members) X)</tt></dt>
+<dt>@('(@(see bitset-members) X)')</dt>
 <dd>Constructs an ordinary ordered set with the elements of X.</dd>
 <dd>Expensive: must cons together all of the set elements.</dd>
 </dl>
@@ -179,18 +181,18 @@ terms of @(see bitset-members).</p>
 
 <h4>Basic Approach</h4>
 
-<p>If you want to reason about some bitset-producing function <tt>foo</tt>,
-then you should typically try to write your theorems about:</p>
+<p>If you want to reason about some bitset-producing function @('foo'), then
+you should typically try to write your theorems about:</p>
 
-<code>
+@({
  (bitset-members (foo ...))
-</code>
+})
 
 <p>instead of directly proving something about:</p>
 
-<code>
+@({
  (foo ...)
-</code>
+})
 
 <p>For example, to reason about @(see bitset-union) we prove:</p>
 
@@ -198,38 +200,38 @@ then you should typically try to write your theorems about:</p>
 @(thm bitset-members-of-bitset-union)
 
 <p>In most cases, the above theorems are sufficient for reasoning about the
-behavior of <tt>bitset-union</tt>.</p>
+behavior of @('bitset-union').</p>
 
 <p>Note that once you have defined a bitset-producing function, you may wish to
-add it to the table <tt>bitset-fns</tt> so that the witnessing hints (below)
-will understand that they produce bitsets.</p>
+add it to the table @('bitset-fns') so that the witnessing hints (below) will
+understand that they produce bitsets.</p>
 
 
 <h4>Equivalence Proofs</h4>
 
-<p>The <tt>bitset-members</tt> approach is good most of the time, but in some
-cases you may wish to show that two bitset-producing functions literally create
-the same bitset.  That is, instead of showing:</p>
+<p>The @('bitset-members') approach is good most of the time, but in some cases
+you may wish to show that two bitset-producing functions literally create the
+same bitset.  That is, instead of showing:</p>
 
-<code>
+@({
  (bitset-members (foo ...)) = (bitset-members (bar ...))
-</code>
+})
 
 <p>it is perhaps better to prove:</p>
 
-<code>
+@({
  (foo ...) = (bar ...)
-</code>
+})
 
 <p>It should be automatic to prove this stronger form (after first proving the
 weaker form) by adding the hint:</p>
 
-<code>
+@({
  :hints ((bitset-witnessing))
-</code>
+})
 
-<p>which ties into the witnessing stuff from <tt>centaur/misc/witness-cp</tt>
-to show that bitsets are equal when they have the same members.</p>")
+<p>which ties into the witnessing stuff from @('centaur/misc/witness-cp') to
+show that bitsets are equal when they have the same members.</p>")
 
 
 
@@ -238,25 +240,25 @@ to show that bitsets are equal when they have the same members.</p>")
   :short "@(call bitset-members) converts a bitset into an ordinary, ordered
 set."
 
-  :long "<p>Reasoning note: <tt>bitset-members</tt> is fundamental to reasoning
+  :long "<p>Reasoning note: @('bitset-members') is fundamental to reasoning
 about bitsets; see <i>Reasoning with Bitsets</i> in @(see bitsets).  Its
-definition and the theorem <tt>in-of-bitset-members</tt> should generally be
-left disabled since they expose the underlying representation of bitsets.</p>
+definition and the theorem @('in-of-bitset-members') should generally be left
+disabled since they expose the underlying representation of bitsets.</p>
 
-<p>Performance note: <tt>bitset-members</tt> is <b>inherently expensive</b>: no
-matter how it is implemented, it must create at least <tt>|X|</tt> conses.  You
-may sometimes be able to avoid this cost using functions like @(see
+<p>Performance note: @('bitset-members') is <b>inherently expensive</b>: no
+matter how it is implemented, it must create at least @('|X|') conses.  You may
+sometimes be able to avoid this cost using functions like @(see
 bitset-memberp), @(see bitset-intersectp), or @(see bitset-subsetp)
 instead.</p>
 
 <p>It is simple enough to convert a bitset into an ordered set: since the @(see
-integer-length) of <tt>x</tt> gives us an upper bound on its elements, we just
-need to walk up to this bound and collect all <tt>i</tt> such that <tt>(@(see
-logbitp) i x)</tt>.</p>
+integer-length) of @('x') gives us an upper bound on its elements, we just need
+to walk up to this bound and collect all @('i') such that @('(@(see logbitp) i
+x)').</p>
 
 <p>The definition below uses @(see bits-between) to do just this.  However,
-note that when the <tt>bitsets-opt</tt> book is loaded (which requires a ttag),
-a more efficient implementation is used; see @(see ttag-bitset-members) for
+note that when the @('bitsets-opt') book is loaded (which requires a ttag), a
+more efficient implementation is used; see @(see ttag-bitset-members) for
 details.</p>"
 
   (defund bitset-members (x)
@@ -341,21 +343,21 @@ details.</p>"
 
   :long "<p>Logically, @(call bignum-extract) is essentially:</p>
 
-<code>
+@({
    (logand (ash x (* -32 slice)) (1- (expt 2 32)))
-</code>
+})
 
-<p>What does this do?  Imagine partitioning the integer <tt>x</tt> into a list
-of 32-bit slices.  Say that the least-significant 32 bits are the 0th slice,
-and so on.  The <tt>bignum-extract</tt> function is just extracting the
-<tt>slice</tt>th slice of <tt>x</tt>.</p>
+<p>What does this do?  Imagine partitioning the integer @('x') into a list of
+32-bit slices.  Say that the least-significant 32 bits are the 0th slice, and
+so on.  The @('bignum-extract') function is just extracting the @('slice')th
+slice of @('x').</p>
 
-<p>The logical definition of <tt>bignum-extract</tt> is not very efficient;
-when <tt>x</tt> is a bignum, the <tt>(ash x (* -32 slice))</tt> term will
-generally require us to create a new bignum.  In the <tt>bitsets-opt</tt> book,
-we develop an under-the-hood replacement for 64-bit CCL that takes advantage of
-the underlying representation of bignums, and essentially implements this
-function into an array access.</p>"
+<p>The logical definition of @('bignum-extract') is not very efficient; when
+@('x') is a bignum, the @('(ash x (* -32 slice))') term will generally require
+us to create a new bignum.  In the @('bitsets-opt') book, we develop an
+under-the-hood replacement for 64-bit CCL that takes advantage of the
+underlying representation of bignums, and essentially implements this function
+into an array access.</p>"
 
   (defund bignum-extract (x slice)
     (declare (xargs :guard (and (integerp x)
@@ -426,9 +428,8 @@ function into an array access.</p>"
   :parents (bitset-members)
   :short "Notes about the optimization of @(see bitset-members)."
 
-  :long "<p>The basic version of <tt>bitset-members</tt> calls @(see
-bits-between), which repeatedly indexes into the bitset using @(see
-logbitp).</p>
+  :long "<p>The basic version of @('bitset-members') calls @(see bits-between),
+which repeatedly indexes into the bitset using @(see logbitp).</p>
 
 <p>We found this wasn't very efficient in 64-bit CCL, and have developed an
 alternate implementation that uses:</p>
@@ -443,10 +444,10 @@ bignum in a particularly efficient way on 64-bit CCL.</li>
 
 </ol>
 
-<p>Basic performance testing suggests that <tt>ttag-bitset-members</tt> is
-almost 5x faster than a regular version.  Here's the testing code I used:</p>
+<p>Basic performance testing suggests that @('ttag-bitset-members') is almost
+5x faster than a regular version.  Here's the testing code I used:</p>
 
-<code>
+@({
  (include-book \"bitsets\")
  (include-book \"../aig/random-sim\")
  (include-book \"../misc/memory-mgmt-raw\")
@@ -489,16 +490,16 @@ almost 5x faster than a regular version.  Here's the testing code I used:</p>
   (time$ (ttag-bitset-members-list *random-data*)
          :msg \"Optimized TTAG: ~st sec, ~sa bytes~%\")
   nil)
-</code>
+})
 
 <p>And the results (on fv-1):</p>
 
-<code>
+@({
  Unoptimized Original: 17.11 sec, 4,001,845,424 bytes
  Unoptimized TTAG: 14.20 sec, 9,118,513,584 bytes
  Optimized Original: 3.57 sec, 4,001,845,424 bytes
  Optimized TTAG: 3.57 sec, 4,001,845,424 bytes
-</code>"
+})"
 
   (local (in-theory (disable assoc-append)))
 
@@ -559,16 +560,15 @@ almost 5x faster than a regular version.  Here's the testing code I used:</p>
 
 (defsection bitset-memberp
   :parents (bitsets)
-  :short "@(call bitset-memberp) tests whether <tt>a</tt> is a member of the
-set <tt>X</tt>."
+  :short "@(call bitset-memberp) tests whether @('a') is a member of the set
+@('X')."
 
   :long "<p>This is reasonably efficient: it executes as @(see logbitp) and
 does not need to use @(see bitset-members).</p>
 
-<p>We prefer to reason about <tt>(sets::in a (bitset-members X))</tt>.  We
-could have used this as the <tt>:logic</tt> definition, but the @(see
-logbitp)-based definition should be better for symbolic simulation with @(see
-GL).</p>"
+<p>We prefer to reason about @('(sets::in a (bitset-members X))').  We could
+have used this as the @(':logic') definition, but the @(see logbitp)-based
+definition should be better for symbolic simulation with @(see GL).</p>"
 
   (definlined bitset-memberp (a x)
     (declare (xargs :guard (and (natp a)
@@ -584,10 +584,10 @@ GL).</p>"
 
 (defsection bitset-singleton
   :parents (bitsets)
-  :short "@(call bitset-singleton) constructs the singleton set <tt>{a}</tt>."
+  :short "@(call bitset-singleton) constructs the singleton set @('{a}')."
 
   :long "<p>This is perhaps slightly more efficient than the equivalent,
- <tt>(@(see bitset-insert) A 0)</tt>.</p>"
+ @('(@(see bitset-insert) A 0)').</p>"
 
   (definlined bitset-singleton (a)
     (declare (xargs :guard (natp a)))
@@ -628,7 +628,7 @@ GL).</p>"
 
 (defsection bitset-insert
   :parents (bitsets)
-  :short "@(call bitset-insert) constructs the set <tt>X U {a}</tt>."
+  :short "@(call bitset-insert) constructs the set @('X U {a}')."
 
   :long "<p>This looks pretty efficient, but keep in mind that it still has to
 construct a new set and hence is linear in the size of the set.  You should
@@ -686,7 +686,7 @@ like @(see bitset-union).</p>"
 
 (defsection bitset-delete
   :parents (bitsets)
-  :short "@(call bitset-delete) constructs the set <tt>X - {a}</tt>."
+  :short "@(call bitset-delete) constructs the set @('X - {a}')."
 
   :long "<p>This looks pretty efficient, but keep in mind that it still has to
 construct a new set and hence is linear in the size of the set.  You should
@@ -742,7 +742,7 @@ like @(see bitset-intersect) and @(see bitset-difference).</p>"
 
 (defsection bitset-union
   :parents (bitsets)
-  :short "@(call bitset-union) constructs the set <tt>X U Y</tt>."
+  :short "@(call bitset-union) constructs the set @('X U Y')."
 
   (definlined bitset-union (x y)
     (declare (xargs :guard (and (natp x)
@@ -791,7 +791,7 @@ like @(see bitset-intersect) and @(see bitset-difference).</p>"
 
 (defsection bitset-intersect
   :parents (bitsets)
-  :short "@(call bitset-intersect) constructs the set <tt>X \\intersect Y</tt>."
+  :short "@(call bitset-intersect) constructs the set @('X \\intersect Y')."
 
   :long "<p>Note: if you only want to know whether or not two sets intersect,
 @(see bitset-intersectp) is probably more efficient.</p>"
@@ -843,7 +843,7 @@ like @(see bitset-intersect) and @(see bitset-difference).</p>"
 
 (defsection bitset-difference
   :parents (bitsets)
-  :short "@(call bitset-difference) constructs the set <tt>X - Y</tt>."
+  :short "@(call bitset-difference) constructs the set @('X - Y')."
 
   (definlined bitset-difference (x y)
     (declare (xargs :guard (and (natp x)
@@ -1026,8 +1026,8 @@ like @(see bitset-intersect) and @(see bitset-difference).</p>"
 
 (defsection bitset-subsetp
   :parents (bitsets)
-  :short "@(call bitset-subsetp) efficiently determines if <tt>X</tt> is a
-subset of <tt>Y</tt>."
+  :short "@(call bitset-subsetp) efficiently determines if @('X') is a subset
+of @('Y')."
 
   (definlined bitset-subsetp (x y)
     (declare (xargs :guard (and (natp x)
@@ -1091,8 +1091,8 @@ subset of <tt>Y</tt>."
 
 (defsection bitset-intersectp
   :parents (bitsets)
-  :short "@(call bitset-intersectp) efficiently determines if <tt>X</tt> and
-<tt>Y</tt> have any common members."
+  :short "@(call bitset-intersectp) efficiently determines if @('X') and @('Y')
+have any common members."
 
   :long "<p>This is efficient because, unlike @(see bitset-intersect), we don't
 actually construct the intersection.</p>"
@@ -1151,12 +1151,12 @@ actually construct the intersection.</p>"
 (defsection bitset-cardinality
   :parents (bitsets)
   :short "@(call bitset-cardinality) determines the cardinality of the set
-<tt>X</tt>."
+@('X')."
 
-  :long "<p>We prefer to reason about <tt>(sets::cardinality (bitset-members
-X))</tt>.  We could have used this as the <tt>:logic</tt> definition, but the
-@(see logcount)-based definition should be better for symbolic simulation with
-@(see GL).</p>"
+  :long "<p>We prefer to reason about @('(sets::cardinality (bitset-members
+X))').  We could have used this as the @(':logic') definition, but the @(see
+logcount)-based definition should be better for symbolic simulation with @(see
+GL).</p>"
 
   (defund bitset-cardinality (x)
     (declare (xargs :guard (natp x)))
@@ -1301,13 +1301,13 @@ X))</tt>.  We could have used this as the <tt>:logic</tt> definition, but the
 (defsection bitset-list*
   :parents (bitsets)
   :short "Macro to repeatedly insert into a bitset."
-  :long "<p>Example: <tt>(bitset-list* a b c X)</tt> expands to:</p>
+  :long "<p>Example: @('(bitset-list* a b c X)') expands to:</p>
 
-<code>
+@({
  (bitset-insert a
   (bitset-insert b
    (bitset-insert c X)))
-</code>
+})
 
 <p>This is much like the @(see list*) macro for constructing lists.  See also
 @(see bitset-list) for a @(see list)-like version.</p>
@@ -1331,17 +1331,17 @@ will require N calls of @(see bitset-insert).</p>"
 (defsection bitset-list
   :parents (bitsets)
   :short "Macro to construct a bitset from particular members."
-  :long "<p>Example: <tt>(bitset-list 1 2 4)</tt> constructs the set <tt>{1, 2,
-  4}</tt>.</p>
+  :long "<p>Example: @('(bitset-list 1 2 4)') constructs the set @('{1, 2,
+  4}').</p>
 
-<p>In general, <tt>(bitset-list x1 x2 ... xn)</tt> expands to</p>
+<p>In general, @('(bitset-list x1 x2 ... xn)') expands to</p>
 
-<code>
+@({
  (bitset-insert x1
   (bitset-insert x2
    (bitset-insert ...
      (bitset-insert xn 0))))
-</code>
+})
 
 <p>This is much like the @(see list) macro for constructing lists.  See also
 @(see bitset-list*) for a @(see list*)-like version.</p>

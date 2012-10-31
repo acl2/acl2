@@ -60,23 +60,22 @@
 of Verilog modules, is supposed to produce an equivalent, parameter-free set of
 modules.</p>
 
-<p>There are two kinds of parameter declarations, <tt>parameter</tt> and
-<tt>localparam</tt>, examples of which are shown below.  Parameters have
-default values, and their defaults can refer to other parameters in the
-module.</p>
+<p>There are two kinds of parameter declarations, @('parameter') and
+@('localparam'), examples of which are shown below.  Parameters have default
+values, and their defaults can refer to other parameters in the module.</p>
 
-<code>
+@({
     module m (a, b, c) ;
       ...
       parameter size = 4 ;
       localparam twosize = 2 * size ;
       ...
     endmodule
-</code>
+})
 
 <p>And a module which uses parameters can be instantiated like this:</p>
 
-<code>
+@({
     module uses_m (x y z) ;
       ...
       m #(6)        m_instance_1 (.a(x), .b(y), .c(z)) ; // size 6
@@ -84,35 +83,32 @@ module.</p>
       m             m_instance_3 (.a(x), .b(y), .c(z)) ; // size 4
       ...
     endmodule
-</code>
+})
 
 <p>Local parameters are just like parameters except that they cannot be
 assigned to from outside the module.  They are not used at Centaur so we have
 not tried to support them.  On the other hand, it does not seem like it would
 be difficult to add support for them.</p>
 
-<p>Verilog also includes a <tt>defparam</tt> statement, which we do not
-currently support, that can be used to override parameters in other modules.
-If supporting this is desired, we should first use a separate transform to
-eliminate any uses of <tt>defparam</tt>, then unparameterize as we do
-today.</p>
+<p>Verilog also includes a @('defparam') statement, which we do not currently
+support, that can be used to override parameters in other modules.  If
+supporting this is desired, we should first use a separate transform to
+eliminate any uses of @('defparam'), then unparameterize as we do today.</p>
 
 <p>The basic idea behind unparameterization is pretty simple.  Suppose we are
-dealing with a parameterized module called <tt>plus</tt>, which takes a single
-parameter called <tt>size</tt>.  There may be several modules, say <tt>m1</tt>,
-<tt>m2</tt>, and <tt>m3</tt>, which contain instances of <tt>plus</tt> with
-different sizes, say <tt>8</tt>, <tt>16</tt>, and <tt>32</tt>.</p>
+dealing with a parameterized module called @('plus'), which takes a single
+parameter called @('size').  There may be several modules, say @('m1'),
+@('m2'), and @('m3'), which contain instances of @('plus') with different
+sizes, say @('8'), @('16'), and @('32').</p>
 
-<p>Our general strategy is to eliminate <tt>plus</tt> from our module list by
-replacing it with three new modules, <tt>plus$size=8</tt>,
-<tt>plus$size=16</tt>, and <tt>plus$size=32</tt>, which are copies of
-<tt>plus</tt> except that <tt>size</tt> has been replaced everywhere with
-<tt>8</tt>, <tt>16</tt>, or <tt>32</tt> as suggested by their names.  At the
-same time, we need to change the instances of <tt>plus</tt> throughout
-<tt>m1</tt>, <tt>m2</tt>, and <tt>m3</tt> with appropriate instances of the new
-modules.  Finally, once all of the instances of the generic <tt>plus</tt> have
-been done away with, we can safely remove <tt>plus</tt> from our module
-list.</p>")
+<p>Our general strategy is to eliminate @('plus') from our module list by
+replacing it with three new modules, @('plus$size=8'), @('plus$size=16'), and
+@('plus$size=32'), which are copies of @('plus') except that @('size') has been
+replaced everywhere with @('8'), @('16'), or @('32') as suggested by their
+names.  At the same time, we need to change the instances of @('plus')
+throughout @('m1'), @('m2'), and @('m3') with appropriate instances of the new
+modules.  Finally, once all of the instances of the generic @('plus') have been
+done away with, we can safely remove @('plus') from our module list.</p>")
 
 
 
@@ -177,18 +173,18 @@ list.</p>")
 
   :long "<p>In Verilog, parameter declarations can have a type, range, and
 signedness, and the expression involved could be complex.  They can also be
-introduced with <tt>localparam</tt> instead of <tt>parameter</tt>.</p>
+introduced with @('localparam') instead of @('parameter').</p>
 
 <p>But in practice, at Centaur, all of our parameter declarations look
 something like this:</p>
 
-<code>
+@({
    parameter width = 1 ;
-</code>
+})
 
 <p>That is, there is no type or range, they are not signed (well, the
-expression shown above, <tt>1</tt>, is a signed decimal constant, but the
-keyword 'signed' does not occur in the parameter declaration), they are never
+expression shown above, @('1'), is a signed decimal constant, but the keyword
+'signed' does not occur in the parameter declaration), they are never
 localparams, and their default value is always a resolved expression.</p>
 
 <p>Being pragmatic, we insist upon these restrictions and introduce the notion
@@ -308,9 +304,8 @@ limits so that more flexible paramter declarations are supported.</p>"
 
 (defsection vl-modules-with-params
   :parents (unparameterization)
-  :short "@(call vl-modules-with-params) gathers all modules within the
-module list <tt>x</tt> that have any parameters, and returns them as a
-new module list."
+  :short "@(call vl-modules-with-params) gathers all modules within the module
+list @('x') that have any parameters, and returns them as a new module list."
 
   (defund vl-modules-with-params (mods)
     (declare (xargs :guard (vl-modulelist-p mods)))
@@ -338,11 +333,11 @@ new module list."
 
   :short "Procedure for eliminating parameterized modules which are no longer used."
 
-  :long "<p>Once all occurrences of a parameterized module like <tt>plus</tt> have
-been replaced with instances of concrete modules like <tt>plus$size=16</tt>, we
-need to eliminate the generic <tt>plus</tt> from the list of modules in order
-to finally arrive at a list of modules which are parameter-free.  We do this
-with @(call vl-delete-top-level-modules-with-params).</p>"
+  :long "<p>Once all occurrences of a parameterized module like @('plus') have
+been replaced with instances of concrete modules like @('plus$size=16'), we
+need to eliminate the generic @('plus') from the list of modules in order to
+finally arrive at a list of modules which are parameter-free.  We do this with
+@(call vl-delete-top-level-modules-with-params).</p>"
 
   (defund vl-delete-top-level-modules-with-params (mods modalist)
     (declare (xargs :guard (and (vl-modulelist-p mods)
@@ -372,19 +367,19 @@ with @(call vl-delete-top-level-modules-with-params).</p>"
   :short "Matches formals and actuals for named args."
 
   :long "<p><b>Signature: </b> @(call vl-match-paramargs-with-decls) returns
-<tt>(mv successp warnings-prime sigma)</tt>.</p>
+@('(mv successp warnings-prime sigma)').</p>
 
 <p>We build a @(see vl-sigma-p) which maps the formals (the parameter
 declarations) to the actuals, for a list of named parameter arguments.  That
-is, given module <tt>mod</tt> with parameters <tt>p1</tt>, <tt>p2</tt>, ...,
-and an instance of <tt>mod</tt> such as:</p>
+is, given module @('mod') with parameters @('p1'), @('p2'), ..., and an
+instance of @('mod') such as:</p>
 
-<code>
+@({
     mod #(.p1(5), .p2(8), ...) my_inst (...)
-</code>
+})
 
-<p>We construct a @(see vl-sigma-p) mapping <tt>p1</tt> to <tt>5</tt>,
-<tt>p2</tt> to <tt>8</tt>, and so on.</p>
+<p>We construct a @(see vl-sigma-p) mapping @('p1') to @('5'), @('p2') to
+@('8'), and so on.</p>
 
 <p>We recur over the declarations, rather than the formals, because the user is
 allowed to omit formals and we want to give those parameters their default
@@ -393,8 +388,8 @@ values.</p>
 <h5>Failures</h5>
 
 <p>This function may fail if the actuals are blank, and in such a case an
-updated list of warnings is generated.  The <tt>inst</tt> argument is only used
-to provide the context for error reporting, and should be the @(see vl-modinst-p)
+updated list of warnings is generated.  The @('inst') argument is only used to
+provide the context for error reporting, and should be the @(see vl-modinst-p)
 that this mapping is being carried out for.</p>"
 
   (defund vl-find-named-arg (name args)
@@ -497,7 +492,7 @@ that this mapping is being carried out for.</p>"
   :short "Matches formals and actuals for plain args."
 
   :long "<p><b>Signature:</b> @(call vl-match-plainargs-with-paramdecls)
-returns <tt>(mv successp warnings-prime sigma)</tt>.</p>
+returns @('(mv successp warnings-prime sigma)').</p>
 
 <p>This is much like @(see vl-match-namedargs-with-paramdecls), but for plain
 argument lists.</p>
@@ -584,7 +579,7 @@ argument is provided to it, then the other two get the default values.</p>"
   :short "Build a @(see vl-sigma-p) mapping parameter formals to actuals."
 
   :long "<p><b>Signature:</b> @(call vl-match-paramargs-with-decls) returns
-<tt>(mv successp warnings-prime sigma)</tt>.</p>
+@('(mv successp warnings-prime sigma)').</p>
 
 <p>A basic operation in unparameterization is being able to pair up
 the <i>formals</i> and <i>actuals</i>.  That is, the module declares that it
@@ -593,12 +588,12 @@ some expressions (\"actuals\") to be substituted in for these formals.</p>
 
 <p>We are given a module and an instance of that module.  We might fail for
 various reasons, e.g., maybe we try to instantiate a missing parameter, or use
-a \"blank\" value, etc.  In such a case, <tt>successp</tt> is <tt>nil</tt> and
-some new, fatal @(see warnings) will be added to <tt>warnings</tt> to form
-<tt>warnings-prime</tt>.</p>
+a \"blank\" value, etc.  In such a case, @('successp') is @('nil') and some
+new, fatal @(see warnings) will be added to @('warnings') to form
+@('warnings-prime').</p>
 
-<p>On success, <tt>sigma</tt> will be a @(see vl-sigma-p) that maps the names
-of the parameters to their values.  This can then be substituted (@(see
+<p>On success, @('sigma') will be a @(see vl-sigma-p) that maps the names of
+the parameters to their values.  This can then be substituted (@(see
 substitution)) into the module being instantiated to form an unparameterized
 version of the module.</p>
 
@@ -700,11 +695,11 @@ these cases.</p>"
   :long "<p>@(call vl-unparam-newname) is used to introduce the new name for
 unparameterized modules.</p>
 
-<p><tt>Origname</tt> is the original name of the module, e.g., <tt>plus</tt>,
-and <tt>sigma</tt> is a @(see vl-sigma-p) that maps the parameter names to
-their values, say <tt>size</tt> &lt;-- 5 and <tt>width</tt> &lt;-- 32.  We
-generate a new name by appending on the attributes and their bindings as
-strings of the form <tt>$key=val</tt>, e.g., <tt>plus$size=5$width=32</tt>.</p>
+<p>@('Origname') is the original name of the module, e.g., @('plus'), and
+@('sigma') is a @(see vl-sigma-p) that maps the parameter names to their
+values, say @('size') &lt;-- 5 and @('width') &lt;-- 32.  We generate a new
+name by appending on the attributes and their bindings as strings of the form
+@('$key=val'), e.g., @('plus$size=5$width=32').</p>
 
 <p>At Centaur, this is very likely to form unique new names since, since we do
 not use dollar signs in the names of modules.  But we explicitly check in our
@@ -815,7 +810,7 @@ parameters are resolved, we can violate this property.</p>
 <p>Illustrating the problem takes some setup.  In particular, suppose we have
 the following modules hierarchy:</p>
 
-<code>
+@({
 outer
  |
  |------ foo #(6) inst1 ;
@@ -827,12 +822,12 @@ outer
  |------ mid #(6) inst2 ;
           |
           bot #(width) mid_bot ;
-</code>
+})
 
 <p>If we blindly start unparameterizing every module we see, then after one
 round of unparameterization we have:</p>
 
-<code>
+@({
 outer
  |
  |------ foo$size=6 inst1 ;
@@ -844,11 +839,11 @@ outer
  |------ mid$size=6 inst2 ;
           |
           bot #(6) mid_bot ;
-</code>
+})
 
 <p>Then, in the next round:</p>
 
-<code>
+@({
 outer
  |
  |------ foo$size=6 inst1 ;
@@ -860,20 +855,19 @@ outer
  |------ mid$size=6 inst2 ;
           |
           bot$size=6 mid_bot ;
-</code>
+})
 
 <p>And now we're hosed, because we now have two different versions of
-<tt>mid$size=6</tt>, one where the <tt>bot</tt> instance has already been
+@('mid$size=6'), one where the @('bot') instance has already been
 unparameterized, and one where it has not.  These eventually will converge, but
 we think it seems better to never let them diverge in the first place.</p>
 
 <p>Toward this end, we say that certain modules are unsafe to unparameterize.
-In particular, we don't want to unparameterize instances of any module
-<tt>foo</tt> that is ever instantiated by another parameterized module
-<tt>bar</tt>.  In the above example, this means we want to consider both
-<tt>mid</tt> and <tt>bot</tt> to be initially off-limits, and only
-unparameterize <tt>foo</tt> in the first round.  After that, mid will become
-okay to unparameterize, etc.</p>
+In particular, we don't want to unparameterize instances of any module @('foo')
+that is ever instantiated by another parameterized module @('bar').  In the
+above example, this means we want to consider both @('mid') and @('bot') to be
+initially off-limits, and only unparameterize @('foo') in the first round.
+After that, mid will become okay to unparameterize, etc.</p>
 
 <p>Note that this function is memoized for efficiency.</p>"
 
@@ -901,14 +895,14 @@ okay to unparameterize, etc.</p>
   :parents (unparameterization)
   :short "Try to unparameterize a single module instance."
 
-  :long "<p><b>Signature:</b> @(call vl-maybe-unparam-inst) returns
-<tt>(mv successp warnings-prime inst-prime new-mods)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-maybe-unparam-inst) returns @('(mv
+successp warnings-prime inst-prime new-mods)').</p>
 
 <p>We assume we are looking at an instantiation, inst, of some module found in
 mods.  We also assume that all of the modules in mods have \"good\" parameter
 declaration lists (in the sense of @(see vl-good-paramdecl-p)), and so as a
 consequence we know that this also holds for whichever particular module
-<tt>inst</tt> refers to.</p>
+@('inst') refers to.</p>
 
 <p>Unsafe is the fast alist produced by @(see
 vl-unsafe-to-unparameterize-modules).  We never unparameterize an instance of a
@@ -917,30 +911,28 @@ modules in this alist to avoid introducing certain conflicts.</p>
 <p>If the module being instantiated has no parameters, or when we are unable to
 unparameterize because some parameter expression has not yet been resolved,
 this function is not very interesting.  In such a case it returns successfully,
-with <tt>warnings-prime</tt> as just <tt>warnings</tt>, <tt>inst-prime</tt> as
-<tt>inst</tt>, and <tt>new-mod</tt> as <tt>nil</tt>.</p>
+with @('warnings-prime') as just @('warnings'), @('inst-prime') as @('inst'),
+and @('new-mod') as @('nil').</p>
 
 <p>The interesting case is when the module has parameters, and all of the
 parameter arguments have been resolved.  For instance, suppose we are dealing
-with an instance of the module <tt>plus</tt> and the <tt>size</tt> parameter
-has been resolved to <tt>16</tt>.  In this case,</p>
+with an instance of the module @('plus') and the @('size') parameter has been
+resolved to @('16').  In this case,</p>
 
 <ul>
 
- <li><tt>inst-prime</tt> is an \"updated\" copy of <tt>inst</tt> which, instead
-of pointing to <tt>plus</tt>, points to the new, parameter-free module named
-<tt>plus$size=16</tt>, and </li>
+ <li>@('inst-prime') is an \"updated\" copy of @('inst') which, instead of
+pointing to @('plus'), points to the new, parameter-free module named
+@('plus$size=16'), and </li>
 
- <li><tt>new-mods</tt> is (typically) a singleton list containing one new,
-parameter-free module, <tt>plus$size=16</tt>, which has been derived from
-<tt>plus</tt> by replacing all occurrences of <tt>size</tt> with
-<tt>16</tt>.</li>
-</ul>
+ <li>@('new-mods') is (typically) a singleton list containing one new,
+parameter-free module, @('plus$size=16'), which has been derived from @('plus')
+by replacing all occurrences of @('size') with @('16').</li> </ul>
 
 <p>Historically, we used to return only a single module instead of a list of
-<tt>new-mods</tt>.  However, this function now takes special care to support
-@(see onehot) detection, so that when find instances of <tt>VL_N_BIT_ONEHOT</tt>
-we may need to generate several modules.  See @(see vl-make-n-bit-onehot) for
+@('new-mods').  However, this function now takes special care to support @(see
+onehot) detection, so that when find instances of @('VL_N_BIT_ONEHOT') we may
+need to generate several modules.  See @(see vl-make-n-bit-onehot) for
 additional details.</p>"
 
   (defund vl-maybe-unparam-inst (inst unsafe mods modalist warnings)
@@ -1056,16 +1048,20 @@ additional details.</p>"
   :parents (unparameterization)
   :short "Extension of @(see vl-maybe-unparam-inst) to a list of instances."
 
-  :long "<p><b>Signature:</b> @(call vl-maybe-unparam-instlist) returns <tt>(mv
-successp warnings-prime insts-prime new-mods)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-maybe-unparam-instlist) returns @('(mv
+successp warnings-prime insts-prime new-mods)').</p>
 
 <ul>
- <li><tt>successp</tt> indicates whether all of the module instances were
+
+<li>@('successp') indicates whether all of the module instances were
 successfully unparameterized.</li>
- <li><tt>insts-prime</tt> are replacements for <tt>insts</tt> that point
-to the updated modules.</li>
- <li><tt>new-mods</tt> are any newly generated modules, e.g.,
-<tt>plus$size=16</tt>.</li>
+
+<li>@('insts-prime') are replacements for @('insts') that point to the updated
+modules.</li>
+
+<li>@('new-mods') are any newly generated modules, e.g.,
+@('plus$size=16').</li>
+
 </ul>"
 
   (defund vl-maybe-unparam-instlist (insts unsafe mods modalist warnings)
@@ -1121,45 +1117,45 @@ to the updated modules.</li>
   :parents (unparameterization)
   :short "Extension of @(see vl-maybe-unparam-inst) to a module."
 
-  :long "<p><b>Signature:</b> @(call vl-unparameterize-module) returns
-<tt>(mv successp mod-prime new-mods)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-unparameterize-module) returns @('(mv
+successp mod-prime new-mods)').</p>
 
-<p>Note!  <tt>Successp</tt> does <b>NOT</b> indicate that the instances of
-<tt>mod-prime</tt> are parameter-free; it only says that there were no errors
+<p>Note!  @('Successp') does <b>NOT</b> indicate that the instances of
+@('mod-prime') are parameter-free; it only says that there were no errors
 during the course of unparameterization (e.g., trying to instantiate missing
 parameters or some such.)</p>
 
-<p>The resulting <tt>mod-prime</tt> can still contain parameters if the
-\"actuals\" have not yet been resolved.  This can happen, e.g., in the case of
-a module which itself has parameters that it uses in order to instantiate its
+<p>The resulting @('mod-prime') can still contain parameters if the \"actuals\"
+have not yet been resolved.  This can happen, e.g., in the case of a module
+which itself has parameters that it uses in order to instantiate its
 submodules.  For example, given:</p>
 
-<code>
+@({
   module whatever ( a, b, c, d );
     parameter size = 1;
     ...;
     submodule #(size) inst1 (a, b);
     submodule #(size) inst2 (c, d);
   endmodule
-</code>
+})
 
-<p>If we try to unparameterize <tt>whatever</tt>, we will not fail, but
-the resulting <tt>mod-prime</tt> will be unchanged.  It is not until
-we have unparameterized the particular instances of <tt>whatever</tt>
-and arrived at a module like:</p>
+<p>If we try to unparameterize @('whatever'), we will not fail, but the
+resulting @('mod-prime') will be unchanged.  It is not until we have
+unparameterized the particular instances of @('whatever') and arrived at a
+module like:</p>
 
-<code>
+@({
   module \\whatever$size=2 (a, b, c, d) ;
     ...;
     submodule #(2) inst1 (a, b);
     submodule #(2) inst2 (c, d);
   endmodule
-</code>
+})
 
 <p>that we will be able to actually produce a parameter-free
-<tt>mod-prime</tt>.</p>
+@('mod-prime').</p>
 
-<p>When there is an error, the resulting <tt>mod-prime</tt> will have been
+<p>When there is an error, the resulting @('mod-prime') will have been
 annotated with some warnings explaining the problem.  However, its instances
 will not be changed.  Such modules will be eliminated.</p>"
 
@@ -1212,8 +1208,8 @@ will not be changed.  Such modules will be eliminated.</p>"
   :parents (unparameterization)
   :short "Extension of @(see vl-maybe-unparam-inst) to a module list."
 
-  :long "<p><b>Signature:</b> @(call vl-unparameterize-pass-aux) returns
-<tt>(mv success-mods fail-mods new-mods)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-unparameterize-pass-aux) returns @('(mv
+success-mods fail-mods new-mods)').</p>
 
 <p>This is almost a full pass of unparameterization, except that it doesn't do
 much in the way of error checking and throwing away bad modules.  We try to
@@ -1221,12 +1217,16 @@ apply @(see vl-unparameterize-module) to every module in the list.  We produce
 three lists as outputs:</p>
 
 <ul>
-  <li><tt>success-mods</tt> are those modules in <tt>x</tt> for which no errors
-      were encountered,</li>
-  <li><tt>fail-mods</tt> are those modules in <tt>x</tt> which had errors in
-      unparameterization, and </li>
-  <li><tt>new-mods</tt> are any newly generated modules that are formed in this
-      pass of unparameterization.</li>
+
+<li>@('success-mods') are those modules in @('x') for which no errors were
+encountered,</li>
+
+<li>@('fail-mods') are those modules in @('x') which had errors in
+unparameterization, and </li>
+
+<li>@('new-mods') are any newly generated modules that are formed in this pass
+of unparameterization.</li>
+
 </ul>"
 
   (defund vl-unparameterize-pass-aux (x unsafe mods modalist)
@@ -1304,8 +1304,8 @@ three lists as outputs:</p>
   :parents (unparameterization)
   :short "One full pass of unparameterization over a module list."
 
-  :long "<p><b>Signature:</b> @(call vl-unparameterize-pass) returns
-<tt>(mv success-mods fail-mods)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-unparameterize-pass) returns @('(mv
+success-mods fail-mods)').</p>
 
 <p>We perform one full pass of unparameterization.  This involves</p>
 <ul>
@@ -1561,14 +1561,14 @@ somewhat involved, so we have not yet attempted it.</p>"
   :parents (unparameterization)
   :short "Top level unparamterization routine."
 
-  :long "<p><b>Signature:</b> @(call vl-unparameterize) returns <tt>(mv
-successp success-mods fail-mods)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-unparameterize) returns @('(mv successp
+success-mods fail-mods)').</p>
 
-<p>We perform up to <tt>n</tt> passes of unparameterization via @(see
+<p>We perform up to @('n') passes of unparameterization via @(see
 vl-unparameterize-pass).  Our hope is that after some number of iterations, all
-parameterized modules have been eliminated.  If so, <tt>successp</tt> is set to
-true and the modules are partitioned into <tt>success-mods</tt> and
-<tt>fail-mods</tt>.</p>
+parameterized modules have been eliminated.  If so, @('successp') is set to
+true and the modules are partitioned into @('success-mods') and
+@('fail-mods').</p>
 
 <p>If modules with parameters are still left, we throw them away and annotate
 them, saying that we were unable to unparameterize them.</p>"

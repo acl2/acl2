@@ -25,15 +25,15 @@
   :parents (vl-weirdint-p)
   :short "Representation of a single Verilog bit (0, 1, X, or Z)."
 
-  :long "<p>Verilog has four register-transfer level values, <tt>0</tt>,
-<tt>1</tt>, <tt>X</tt>, and <tt>Z</tt>.  In @(see vl-weirdint-p) objects, We
-represent these values using the keyword symbols:</p>
+  :long "<p>Verilog has four register-transfer level values, @('0'), @('1'),
+@('X'), and @('Z').  In @(see vl-weirdint-p) objects, We represent these values
+using the keyword symbols:</p>
 
 <ul>
- <li><tt>:vl-0val</tt> means 0,</li>
- <li><tt>:vl-1val</tt> means 1,</li>
- <li><tt>:vl-xval</tt> means X, and</li>
- <li><tt>:vl-zval</tt> means Z.</li>
+ <li>@(':vl-0val') means 0,</li>
+ <li>@(':vl-1val') means 1,</li>
+ <li>@(':vl-xval') means X, and</li>
+ <li>@(':vl-zval') means Z.</li>
 </ul>")
 
 (deflist vl-bitlist-p (x)

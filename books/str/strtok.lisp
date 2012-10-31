@@ -85,20 +85,21 @@
 (defsection strtok
   :parents (str)
   :short "Tokenize a string with character delimiters."
-  :long "<p>@(call strtok) splits the string <tt>x</tt> into a list of
-substrings, based on <tt>delimiters</tt>, a list of characters.  This is
-somewhat similar to repeatedly calling the <tt>strtok</tt> function in C.</p>
+
+  :long "<p>@(call strtok) splits the string @('x') into a list of substrings,
+based on @('delimiters'), a list of characters.  This is somewhat similar to
+repeatedly calling the @('strtok') function in C.</p>
 
 <p>As an example:</p>
 
-<code>
+@({
  (strtok \"foo bar, baz!\" (list #\\Space #\\, #\\!))
    --&gt;
  (\"foo\" \"bar\" \"baz\")
-</code>
+})
 
-<p>Note that all of the characters in <tt>delimiters</tt> are removed, and no
-empty strings are ever found in <tt>strtok</tt>'s output.</p>"
+<p>Note that all of the characters in @('delimiters') are removed, and no empty
+strings are ever found in @('strtok')'s output.</p>"
 
   (definlined strtok (x delimiters)
     (declare (xargs :guard (and (stringp x)

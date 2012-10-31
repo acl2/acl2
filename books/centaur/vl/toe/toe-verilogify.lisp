@@ -80,12 +80,14 @@
 vl-maybe-nat-listp)."
 
   :long "<p>@(call vl-match-contiguous-indices) tries to consume the leading
-portion of <tt>x</tt> if it counts up from <tt>n</tt>.  It returns <tt>(mv
-range-end rest)</tt>.  Here's an illustrative example:</p>
+portion of @('x') if it counts up from @('n').  It returns @('(mv range-end
+rest)').  Here's an illustrative example:</p>
 
-<code>
- (vl-match-contiguous-indices 1 '(2 3 4 5 10 11 12)) --&gt; (mv 5 (10 11 12))
-</code>
+@({
+ (vl-match-contiguous-indices 1 '(2 3 4 5 10 11 12))
+   -->
+ (mv 5 (10 11 12))
+})
 
 <p>We use when collapsing emod names into Verilog-style names; see @(see
 vl-merge-contiguous-indices).</p>"
@@ -140,14 +142,15 @@ vl-merge-contiguous-indices).</p>"
 (defsection vl-merge-contiguous-indices
   :parents (vl-verilogify-emodwirelist)
   :short "Transform a @(see vl-maybe-nat-listp) by combining contiguous
-sequences of indices into <tt>(low . high)</tt> pairs."
+sequences of indices into @('(low . high)') pairs."
 
   :long "<p>For example:</p>
-<code>
+
+@({
  (vl-merge-contiguous-indices '(1 2 3 5 6 7 8 9 10 15 17 18))
-  --&gt;
+  -->
  ((1 . 3) (5 . 10) 15 (17 . 18))
-</code>"
+})"
 
   (defund vl-merged-index-p (x)
     (declare (xargs :guard t))
@@ -188,17 +191,17 @@ sequences of indices into <tt>(low . high)</tt> pairs."
   :parents (vl-verilogify-emodwirelist)
   :short "Transform a merged index list into Verilog-style wire names."
 
-  :long "<p>@(call vl-verilogify-merged-indices) takes <tt>name</tt>, which
-should be a string, and <tt>x</tt>, a <tt>vl-merged-index-list-p</tt> such as
-@(see vl-merge-contiguous-indices) generates.  It produces a list of strings
-that represent the Verilog bit- and part-selects of these indices from
-<tt>name</tt>.  For instance,</p>
+  :long "<p>@(call vl-verilogify-merged-indices) takes @('name'), which should
+be a string, and @('x'), a @('vl-merged-index-list-p') such as @(see
+vl-merge-contiguous-indices) generates.  It produces a list of strings that
+represent the Verilog bit- and part-selects of these indices from @('name').
+For instance,</p>
 
-<code>
+@({
  (vl-verilogify-merged-indices \"foo\" '(1 (3 . 6) 8))
- --&gt;
+ -->
  (\"foo[1]\" \"foo[6:3]\" \"foo[8]\")
-</code>"
+})"
 
   (local (in-theory (enable vl-merged-index-p)))
 

@@ -36,8 +36,8 @@ internal representation for module and gate instances.</p>
 
 <p>We have little choice but to support plain argument lists internally,
 because the are the only way to instantiate gates and are also the only way to
-instantiate modules with ports like <tt>foo[3:0]</tt> without external names.
-But it is basically straightforward to eliminate all named argument lists by
+instantiate modules with ports like @('foo[3:0]') without external names.  But
+it is basically straightforward to eliminate all named argument lists by
 replacing them with their plain equivalents, reducing the number of syntactic
 constructs that later transformations need to deal with.</p>
 
@@ -48,8 +48,8 @@ constructs that later transformations need to deal with.</p>
 <li>We try to get rid of all the named argument lists by replacing them with
 plain argument lists; see @(see vl-convert-namedargs),</li>
 
-<li>We try to annotate each @(see vl-plainarg-p) with its <tt>dir</tt> and
-<tt>portname</tt> fields, so that the direction and name of many ports will be
+<li>We try to annotate each @(see vl-plainarg-p) with its @('dir') and
+@('portname') fields, so that the direction and name of many ports will be
 available for use in error messages; see @(see vl-annotate-plainargs),</li>
 
 <li>We check that each module instance has the proper arity, and</li>
@@ -64,7 +64,7 @@ and vice-versa; see @(see vl-check-blankargs).</li>
 <ul>
 
 <li>We check that the arity of each gate instance is acceptable and annotate
-each @(see vl-plainarg-p) with its <tt>dir</tt> field; see @(see
+each @(see vl-plainarg-p) with its @('dir') field; see @(see
 vl-gateinst-dirassign), and</li>
 
 <li>We check that no \"blank\" arguments are given to gates, and issue a
@@ -77,7 +77,7 @@ vl-gateinst-dirassign), just because it is convenient.</li>
 (defsection vl-find-namedarg
   :parents (vl-convert-namedargs)
   :short "@(call vl-find-namedarg) attempts to find a @(see vl-namedarg-p) of
-the specified <tt>name</tt> among <tt>args</tt>, a @(see vl-namedarglist-p)."
+the specified @('name') among @('args'), a @(see vl-namedarglist-p)."
 
   :long "<p>We once used some fast-alist stuff here, but now I think that it
 isn't worthwhile since most module instances have relatively few arguments, or
@@ -116,31 +116,30 @@ to be a problem.</p>"
   :short "Canonicalizes @(see vl-arguments-p) structures to use plain
 arguments."
 
-  :long "<p><b>Signature:</b> @(call vl-convert-namedargs) returns <tt>(mv
-successp warnings x-prime)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-convert-namedargs) returns @('(mv
+successp warnings x-prime)').</p>
 
 <p>As inputs:</p>
 
 <ul>
 
-<li><tt>x</tt> is the @(see vl-arguments-p) structure that is the
-<tt>:portargs</tt> field of a module instance,</li>
+<li>@('x') is the @(see vl-arguments-p) structure that is the @(':portargs')
+field of a module instance,</li>
 
-<li><tt>ports</tt> are the lists of ports and port declarations for the module
+<li>@('ports') are the lists of ports and port declarations for the module
 being instanced, and</li>
 
-<li><tt>warnings</tt> is an ordinary @(see warnings) accumulator which we may
+<li>@('warnings') is an ordinary @(see warnings) accumulator which we may
 extend with fatal warnings, and</li>
 
-<li><tt>inst</tt> is the module instance we are working with, which is
-semantically irrelevant and is used merely to provide better error
-messages.</li>
+<li>@('inst') is the module instance we are working with, which is semantically
+irrelevant and is used merely to provide better error messages.</li>
 
 </ul>
 
-<p>We return a success flag, updated warnings, and <tt>x-prime</tt>, a new
-@(see vl-arguments-p) structure which is always semantically equivalent to
-<tt>x</tt> and, upon success, uses plain arguments.</p>
+<p>We return a success flag, updated warnings, and @('x-prime'), a new @(see
+vl-arguments-p) structure which is always semantically equivalent to @('x')
+and, upon success, uses plain arguments.</p>
 
 <p>The main function just does a few well-formedness checks, then calls the aux
 function to do the conversion.</p>
@@ -317,30 +316,30 @@ warnings.</p>"
   :short "Annotates a plain argument list with port names and directions."
 
   :long "<p><b>Signature:</b> @(call vl-annotate-plainargs) returns
-<tt>args-prime</tt>.</p>
+@('args-prime').</p>
 
 <p>As inputs,</p>
 
 <ul>
 
-<li><tt>args</tt> is a list of @(see vl-plainarg-p) structures which typically
-have no <tt>:dir</tt> or <tt>:portname</tt> information; our goal is to add
-these annotations to <tt>x</tt>, and</li>
+<li>@('args') is a list of @(see vl-plainarg-p) structures which typically have
+no @(':dir') or @(':portname') information; our goal is to add these
+annotations to @('x'), and</li>
 
-<li><tt>ports</tt> and <tt>portdecls</tt> are the lists of ports and port
-declarations for the module being instanced, and <tt>palist</tt> is the @(see
-vl-portdecl-alist) for <tt>portdecls</tt>.</li>
+<li>@('ports') and @('portdecls') are the lists of ports and port declarations
+for the module being instanced, and @('palist') is the @(see vl-portdecl-alist)
+for @('portdecls').</li>
 
 </ul>
 
-<p>We return a new argument list, <tt>args-prime</tt>, which is semantically
-equivalent to <tt>x</tt> but may have additional <tt>:portname</tt> and
-<tt>:dir</tt> annotations.</p>
+<p>We return a new argument list, @('args-prime'), which is semantically
+equivalent to @('x') but may have additional @(':portname') and @(':dir')
+annotations.</p>
 
 <p>This is a \"best-effort\" process which may fail to add annotations to any
 or all arguments.  Such failures are expected, so we do not generate any
 warnings or errors in response to them.  What causes these failures?  Not all
-ports necessarily have a name, so we cannot add a <tt>:portname</tt> for every
+ports necessarily have a name, so we cannot add a @(':portname') for every
 port.  The direction of a port may also not be apparent in some cases; see
 @(see vl-port-direction) for details.</p>"
 
@@ -413,11 +412,11 @@ blanks connected to non-blank ports."
 
 <ul>
 
-<li><tt>args</tt> is a list of @(see vl-plainarg-p) structures, and</li>
+<li>@('args') is a list of @(see vl-plainarg-p) structures, and</li>
 
-<li><tt>ports</tt> and <tt>portdecls</tt> are the lists of ports and port
-declarations for the module being instanced, and <tt>palist</tt> is the @(see
-vl-portdecl-alist) for <tt>portdecls</tt>.</li>
+<li>@('ports') and @('portdecls') are the lists of ports and port declarations
+for the module being instanced, and @('palist') is the @(see vl-portdecl-alist)
+for @('portdecls').</li>
 
 </ul>
 
@@ -477,8 +476,8 @@ these cases, we add a non-fatal warning explaining the problem.</p>"
   :short "Apply the @(see argresolve) transformation to a @(see
 vl-arguments-p)."
 
-  :long "<p><b>Signature:</b> @(call vl-arguments-argresolve) returns
-<tt>(mv warnings x-prime)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-arguments-argresolve) returns @('(mv
+warnings x-prime)').</p>
 
 <p>This is just a basic wrapper that applies @(see vl-convert-namedargs), @(see
 vl-annotate-plainargs), and @(see vl-check-blankargs), and checks that the
@@ -569,8 +568,8 @@ associating each module name to its corresponding @(see vl-portdecl-alist).</p>"
   :parents (argresolve)
   :short "Apply the @(see argresolve) transformation to a @(see vl-modinst-p)."
 
-  :long "<p><b>Signature:</b> @(call vl-modinst-argresolve) returns <tt>(mv
-warnings x-prime)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-modinst-argresolve) returns @('(mv
+warnings x-prime)').</p>
 
 <p>This is just a basic wrapper around @(see vl-arguments-argresolve).  We look
 up the module being instantiated from the @(see vl-modalist) so that we can get
@@ -668,19 +667,18 @@ vl-modinst-p)s."
   :short "Arity-checks a gate instance and annotates its arguments with their
 directions."
 
-  :long "<p><b>Signature:</b> @(call vl-gateinst-dirassign) returns <tt>(mv
-warnings x-prime)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-gateinst-dirassign) returns @('(mv
+warnings x-prime)').</p>
 
-<p>We are given <tt>x</tt>, a gate instance, and <tt>warnings</tt>, an ordinary
-@(see warnings) accumulator.  We return a new gate instance, <tt>x-prime</tt>,
-which is semantically equivalent to <tt>x</tt>.</p>
+<p>We are given @('x'), a gate instance, and @('warnings'), an ordinary @(see
+warnings) accumulator.  We return a new gate instance, @('x-prime'), which is
+semantically equivalent to @('x').</p>
 
-<p>If <tt>x</tt> is a well-formed gate instance, then no fatal warnings will be
-added and every argument of <tt>x-prime</tt> will be given the correct
-<tt>:dir</tt> annotation, following the rules in Chapter 7 of the Verilog
-specification.</p>
+<p>If @('x') is a well-formed gate instance, then no fatal warnings will be
+added and every argument of @('x-prime') will be given the correct @(':dir')
+annotation, following the rules in Chapter 7 of the Verilog specification.</p>
 
-<p>If <tt>x</tt> is a not well-formed (i.e., it has an improper arity), then it
+<p>If @('x') is a not well-formed (i.e., it has an improper arity), then it
 will be returned unchanged and a fatal warning will be added.</p>
 
 <p>We also check for blank arguments in gates during this function.  BOZO this
@@ -939,7 +937,7 @@ vl-gateinst-p)s."
   :short "Apply the @(see argresolve) transformation to a @(see vl-module-p)."
 
   :long "<p><b>Signature:</b> @(call vl-module-argresolve) returns
-<tt>x-prime</tt>.</p>
+@('x-prime').</p>
 
 <p>This is just glue-code to apply @(see vl-modinst-argresolve) to all of the
 module instances, and @(see vl-gateinst-dirassign) to all of the gate instances

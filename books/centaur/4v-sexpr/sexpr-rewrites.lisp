@@ -971,9 +971,9 @@ particular variable out into a top-level if-then-else."
 
   :long "<p>The shannon expansion of a term M by a Boolean variable V is</p>
 
-<code>
+@({
 if V then M' else M'',
-</code>
+})
 
 <p>where M' is formed from M by substituting true for V and M'' is formed by
 subsituting false for V.</p>
@@ -981,9 +981,9 @@ subsituting false for V.</p>
 <p>For 4-valued terms we need to make a slight adjustment, because in the case
 where V is X, this doesn't work.  Instead, the term we get looks like:</p>
 
-<code>
+@({
  (XOR (XOR V V) (ITE V M' M'')).
-</code>
+})
 
 <p>Here the term (XOR V V) detects the case where V is X or Z, and XORing that
 with the if-then-else term makes the whole result X in that case.</p>
@@ -991,9 +991,9 @@ with the if-then-else term makes the whole result X in that case.</p>
 <p>This is useful for certain cases where a term may have false dependencies.
 Consider</p>
 
-<code>
+@({
  (ITE V (ITE (NOT V) A B) C).
-</code>
+})
 
 <p>Intuitively, we'd think that the A branch wouldn't have any relevance, since
 we can only get there by going through a V and a (NOT V) test, which are
@@ -1005,17 +1005,17 @@ X, in exchange for getting rid of the dependency on A.  The Shannon
 expansion (if combined with rewriting) accomplishes this: the Shannon-rewritten
 version of the term above looks like:</p>
 
-<code>
+@({
  (XOR (XOR V V)
       (ITE (T) (ITE (NOT (T)) A B) C)
       (ITE (F) (ITE (NOT (F)) A B) C))
-</code>
+})
 
 which rewrites to
 
-<code>
+@({
  (XOR (XOR V V) B C).
-</code>"
+})"
 
 ; [Jared] I now memoize the true/false alists for each variable to improve the
 ; memoization of 4v-sexpr-restrict as we shannon-expand several different sexprs,

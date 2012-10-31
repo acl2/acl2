@@ -31,9 +31,9 @@
   :short "@(call stv-widen-lines) rewrites lines of an STV, repeating the last
 entry in each line until the desired number of phases is reached."
 
-  :long "<p>The <tt>warn-non-blank</tt> is intended to be set for :output lines
+  :long "<p>The @('warn-non-blank') is intended to be set for :output lines
 and :internals lines.  When it is set, we cause an error if an attempt is made
-to replicate any element other than <tt>_</tt>, since it doesn't make sense to
+to replicate any element other than @('_'), since it doesn't make sense to
 replicate simulation variables.</p>"
 
   (defund stv-widen-lines (lines number-of-phases warn-non-blank)
@@ -87,8 +87,8 @@ many phases there are."
 stv-expand).  We generally expect that all the lines have been widened before
 any compilation is performed.</p>
 
-<p>Note that we don't widen <tt>:initial</tt> lines; they have only one value,
-not a series of values over time.</p>"
+<p>Note that we don't widen @(':initial') lines; they have only one value, not
+a series of values over time.</p>"
 
   (defund stv-widen (stv)
     (declare (xargs :guard (stvdata-p stv)))

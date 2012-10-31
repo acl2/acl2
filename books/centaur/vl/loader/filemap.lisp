@@ -45,20 +45,7 @@ develop the @(see vl-server), these properties seemed quite attractive.</p>
 very similar to an alist that satisfies @(see vl-string-keys-p) and @(see
 vl-string-values-p).  Our basic motivation is to make it more easy to change
 the representation of a filemap in the future, should we decide that we need
-either more control or flexibility in the underlying representation.</p>
-
-<h3>Definition</h3>
-
-@(def vl-filemap-p)
-
-<h3>Theorems</h3>
-
-@(thm vl-filemap-p-when-not-consp)
-@(thm vl-filemap-p-of-cons)
-@(thm alistp-when-vl-filemap-p)
-@(thm stringp-of-cdr-of-hons-assoc-equal-when-vl-filemap-p)
-@(thm vl-filemap-p-of-append)
-@(thm vl-filemap-p-of-rev)"
+either more control or flexibility in the underlying representation.</p>"
 
   (defund vl-filemap-p (x)
     (declare (xargs :guard t))
@@ -115,21 +102,10 @@ vl-location-p)."
   :long "<p><b>Signature:</b> @(call vl-string-findloc) returns a natural
 number or nil.</p>
 
-<p><tt>x</tt> is a string and <tt>loc</tt> is a @(see vl-location-p).  We
-assume that <tt>x</tt> contains the entire contents of the file named by
-<tt>loc</tt>; typically <tt>x</tt> might be obtained from a @(see
-vl-filemap-p).  We return the index of <tt>loc</tt> within <tt>x</tt>, or NIL
-if such a location is not in <tt>x</tt>.</p>
-
-<h3>Definition</h3>
-
-@(def vl-string-findloc)
-@(def vl-string-findloc-aux)
-
-<h3>Theorems</h3>
-
-@(thm type-of-vl-string-findloc)
-@(thm bounds-of-vl-string-findloc)"
+<p>@('x') is a string and @('loc') is a @(see vl-location-p).  We assume that
+@('x') contains the entire contents of the file named by @('loc'); typically
+@('x') might be obtained from a @(see vl-filemap-p).  We return the index of
+@('loc') within @('x'), or NIL if such a location is not in @('x').</p>"
 
   (defund vl-string-findloc-aux (x n xl cline ccol tline tcol)
     ;; X - the string to search
@@ -234,17 +210,15 @@ vl-location-p)s."
   :long "<p><b>Signature:</b> @(call vl-string-between-locs) returns a string
 or nil.</p>
 
-<p><tt>x</tt> is a string; <tt>loc1</tt> and <tt>loc2</tt> are @(see
-vl-location-p)s, which may be in any order.  The filenames of <tt>loc1</tt> and
-<tt>loc2</tt> are ignored but generally should be the same.  We expect that
-<tt>x</tt> corresponds to the entire contents of this file; typically
-<tt>x</tt> might be obtained from a @(see vl-filemap-p).</p>
+<p>@('x') is a string; @('loc1') and @('loc2') are @(see vl-location-p)s, which
+may be in any order.  The filenames of @('loc1') and @('loc2') are ignored but
+generally should be the same.  We expect that @('x') corresponds to the entire
+contents of this file; typically @('x') might be obtained from a @(see
+vl-filemap-p).</p>
 
-<p>If both locations are within <tt>x</tt>, we compute their locations as in
-@(see vl-string-findloc) and return the substring of <tt>x</tt> that falls
-between these locations, inclusive.  Otherwise we return nil.</p>
-
-@(def vl-string-between-locs)"
+<p>If both locations are within @('x'), we compute their locations as in @(see
+vl-string-findloc) and return the substring of @('x') that falls between these
+locations, inclusive.  Otherwise we return nil.</p>"
 
   (defund vl-location-before-nofilename (x y)
     (declare (xargs :guard (and (vl-location-p x)

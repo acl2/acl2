@@ -637,27 +637,26 @@
 
 (defsection faig-fix-equiv
   :parents (faig)
-  :short "We say the objects <tt>X</tt> and <tt>Y</tt> are equivalent if they
-are (1) @(see faig-equiv), and (2) both atoms or both conses."
+  :short "We say the objects @('X') and @('Y') are equivalent if they are (1)
+@(see faig-equiv), and (2) both atoms or both conses."
 
   :long "<p>This might seem kind of strange at first, but it has some nice
 congruence properties that aren't true of ordinary @(see faig-equiv).</p>
 
 <p>In particular, FAIG operations like @(see faig-eval) and @(see
 faig-restrict) generally treat any malformed FAIGs (i.e., atoms) as \"X\", that
-is, <tt>(t . t)</tt>.  This is nice because in some sense it is conservative
-with respect to our ordinary interpretation of FAIGs.</p>
+is, @('(t . t)').  This is nice because in some sense it is conservative with
+respect to our ordinary interpretation of FAIGs.</p>
 
-<p>Unfortunately, this means that <tt>faig-equiv</tt> is <b>not</b> sufficient
-to imply that the car/cdr are @(see aig-equiv).  For instance, let <tt>x</tt>
-be 5 and let <tt>y</tt> be <tt>(t . t)</tt>.  Then, <tt>x</tt> and <tt>y</tt>
-are <tt>faig-equiv</tt>, but their cars are not <tt>aig-equiv</tt> because the
-car of <tt>x</tt> is <tt>nil</tt>, constant false, whereas the car of
-<tt>y</tt> is <tt>t</tt>, constant true.</p>
+<p>Unfortunately, this means that @('faig-equiv') is <b>not</b> sufficient to
+imply that the car/cdr are @(see aig-equiv).  For instance, let @('x') be 5 and
+let @('y') be @('(t . t)').  Then, @('x') and @('y') are @('faig-equiv'), but
+their cars are not @('aig-equiv') because the car of @('x') is @('nil'),
+constant false, whereas the car of @('y') is @('t'), constant true.</p>
 
-<p>So, @(call faig-fix-equiv) corrects for this by insisting that <tt>x</tt>
-and <tt>y</tt> are either both atoms or both conses.  This way, the car/cdr of
-<tt>faig-fix-equiv</tt> objects are always @(see aig-equiv).</p>"
+<p>So, @(call faig-fix-equiv) corrects for this by insisting that @('x') and
+@('y') are either both atoms or both conses.  This way, the car/cdr of
+@('faig-fix-equiv') objects are always @(see aig-equiv).</p>"
 
   (def-universal-equiv faig-fix-equiv
     :equiv-terms ((iff (consp x))

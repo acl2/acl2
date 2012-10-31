@@ -52,25 +52,25 @@ completely erased from the parse tree.  Hence, we do not need to consider
 how to synthesize them or handle them at all!</p>
 
 <ul>
-<li><tt>+a</tt>             --&gt; <tt>a + 1'sb0</tt></li>
-<li><tt>-a</tt>             --&gt; <tt>1'sb0 - a</tt></li>
+<li>@('+a')     --&gt; @('a + 1'sb0')</li>
+<li>@('-a')     --&gt; @('1'sb0 - a')</li>
 
-<li><tt>a &amp;&amp; b</tt> --&gt; <tt>(|a) &amp; (|b)</tt></li>
-<li><tt>a || b</tt>         --&gt; <tt>(|a) | (|b)</tt></li>
-<li><tt>!a</tt>             --&gt; <tt>{~(|a)}</tt></li>
+<li>@('a && b') --&gt; @('(|a) & (|b)')</li>
+<li>@('a || b') --&gt; @('(|a) | (|b)')</li>
+<li>@('!a')     --&gt; @('{~(|a)}')</li>
 
-<li><tt>~&amp; (a)</tt> --&gt; <tt>{~( &amp;a )}</tt></li>
-<li><tt>~| (a)</tt>     --&gt; <tt>{~( |a )}</tt></li>
-<li><tt>~^ (a)</tt>     --&gt; <tt>{~( ^a )}</tt></li>
+<li>@('~& (a)') --&gt; @('{~( &a )}')</li>
+<li>@('~| (a)') --&gt; @('{~( |a )}')</li>
+<li>@('~^ (a)') --&gt; @('{~( ^a )}')</li>
 
-<li><tt>a &lt; b</tt>  --&gt; <tt>{~(a &gt;= b)}</tt></li>
-<li><tt>a &gt; b</tt>  --&gt; <tt>{~(b &gt;= a)}</tt></li>
-<li><tt>a &lt;= b</tt> --&gt; <tt>b &gt;= a</tt></li>
+<li>@('a < b')  --&gt; @('{~(a >= b)}')</li>
+<li>@('a > b')  --&gt; @('{~(b >= a)}')</li>
+<li>@('a <= b') --&gt; @('b >= a')</li>
 
-<li><tt>a == b</tt> --&gt; <tt>&amp;(a ~^ b)</tt></li>
-<li><tt>a != b</tt> --&gt; <tt>|(a ^ b)</tt></li>
+<li>@('a == b') --&gt; @('&(a ~^ b)')</li>
+<li>@('a != b') --&gt; @('|(a ^ b)')</li>
 
-<li><tt>a !== b</tt> --&gt; <tt>{~(a === b)}</tt></li>
+<li>@('a !== b') --&gt; @('{~(a === b)}')</li>
 </ul>
 
 <h4>Additional Rules</h4>
@@ -83,20 +83,20 @@ is that the right name for this kind of thing?) then then Z is always in the
 false branch.</p>
 
 <ul>
-<li><tt>a ? b : c</tt> --&gt; <tt>(|a) ? b : c</tt></li>
-<li><tt>a ? z : c</tt> --&gt; <tt>~(|a) ? c : z</tt></li>
+<li>@('a ? b : c') --&gt; @('(|a) ? b : c')</li>
+<li>@('a ? z : c') --&gt; @('~(|a) ? c : z')</li>
 </ul>
 
 <p>We also consolidate multiple-concatenations of constint and weirdint values
 into a single values.  This is important for properly recognizing zatoms in
 occform, since designers sometimes write things like</p>
 
-<code>
+@({
     assign foo = a ? b : width{ 1'bz }
-</code>
+})
 
-<p>Here, if we don't consolidate <tt>width{1'bz}</tt>, we're not going to
-recognize it as a zatom and occform it correctly.</p>")
+<p>Here, if we don't consolidate @('width{1'bz}'), we're not going to recognize
+it as a zatom and occform it correctly.</p>")
 
 (defsection vl-replicate-constint-value
 
@@ -215,15 +215,16 @@ recognize it as a zatom and occform it correctly.</p>")
 (defsection vl-op-oprewrite
   :parents (oprewrite)
   :short "Main operator rewriting function."
-  :long "<p><b>Signature:</b> @(call vl-op-oprewrite) returns <tt>(mv
-warnings-prime expr-prime)</tt>.</p>
 
-<p>We are given <tt>op</tt>, an operator which is being applied to
-<tt>args</tt>, which are some already-rewritten arguments.  <tt>atts</tt> are
-the current attributes for this operator, and <tt>warnings</tt> is an
-accumulator for warnings which we may extend.</p>
+  :long "<p><b>Signature:</b> @(call vl-op-oprewrite) returns @('(mv
+warnings-prime expr-prime)').</p>
 
-<p>We produce a new expression, either by applying <tt>op</tt> to <tt>args</tt>
+<p>We are given @('op'), an operator which is being applied to @('args'), which
+are some already-rewritten arguments.  @('atts') are the current attributes for
+this operator, and @('warnings') is an accumulator for warnings which we may
+extend.</p>
+
+<p>We produce a new expression, either by applying @('op') to @('args')
 verbatim, or by applying one of the rewrites described in @(see oprewrite).
 Keeping this function separate from @(see vl-expr-oprewrite) helps to keep the
 mutual recursion as simple as possible.</p>"
@@ -661,7 +662,7 @@ mutual recursion as simple as possible.</p>"
 (defsection vl-expr-oprewrite
   :parents (oprewrite)
   :short "@(call vl-expr-oprewrite) rewrites operators throughout the @(see
-vl-expr-p) <tt>x</tt> and returns <tt>(mv warnings-prime x-prime)</tt>."
+vl-expr-p) @('x') and returns @('(mv warnings-prime x-prime)')."
 
   (mutual-recursion
 
@@ -766,7 +767,7 @@ vl-expr-p) <tt>x</tt> and returns <tt>(mv warnings-prime x-prime)</tt>."
          (thm-type   (intern-in-package-of-symbol thm-type-s name))
          (short      (cat "Rewrite operators throughout a @(see " type-s ")"))
          (long       (cat "<p><b>Signature:</b> @(call " name-s ") returns
-<tt>(mv warnings-prime x-prime)</tt></p>")))
+@('(mv warnings-prime x-prime)')</p>")))
 
   `(defsection ,name
      :parents (oprewrite)
@@ -801,7 +802,7 @@ vl-expr-p) <tt>x</tt> and returns <tt>(mv warnings-prime x-prime)</tt>."
          (thm-true   (intern-in-package-of-symbol thm-true-s name))
          (short      (cat "Rewrite operators throughout a @(see " type-s ")"))
          (long       (cat "<p><b>Signature:</b> @(call " name-s ") returns
-<tt>(mv warnings-prime x-prime)</tt></p>")))
+@('(mv warnings-prime x-prime)')</p>")))
 
   `(defsection ,name
      :parents (oprewrite)

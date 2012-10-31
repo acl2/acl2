@@ -104,22 +104,20 @@
   :parents (vl-wirealist-p)
   :short "Safely generate the (fast) wirealists for a list of modules."
 
-  :long "<p>@(call vl-modulelist-all-wirealists) returns <tt>(mv warning-alist
-all-wirealists)</tt>.</p>
+  :long "<p>@(call vl-modulelist-all-wirealists) returns @('(mv warning-alist
+all-wirealists)').</p>
 
 <p>We attempt to construct the @(see vl-wirealist-p) for every module in the
-module list <tt>x</tt>.  This process might fail for any particular module; see
+module list @('x').  This process might fail for any particular module; see
 @(see vl-module-wirealist) for details.  So, we return two values:</p>
 
-<ul>
-<li><tt>warning-alist</tt> is a @(see vl-modwarningalist-p) that may bind the
-names of some modules in <tt>x</tt> to new warnings explaining why we were
-unable to construct their wire alists.</li>
+<ul> <li>@('warning-alist') is a @(see vl-modwarningalist-p) that may bind the
+names of some modules in @('x') to new warnings explaining why we were unable
+to construct their wire alists.</li>
 
-<li><tt>all-wirealists</tt> is a fast alist that binds each module's name to
-its wire alist.  Note that if there were any problems, this may be an empty or
-partial wire alist.</li>
-</ul>"
+<li>@('all-wirealists') is a fast alist that binds each module's name to its
+wire alist.  Note that if there were any problems, this may be an empty or
+partial wire alist.</li> </ul>"
 
   (defund vl-modulelist-all-wirealists (x)
     "Returns (MV WARNING-ALIST ALL-WIREALISTS)"

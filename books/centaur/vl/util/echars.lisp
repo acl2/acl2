@@ -97,9 +97,9 @@ of the form <i>filename:line:col</i>.</p>"
 
 (defsection vl-location-between-p
   :parents (vl-location-p)
-  :short "@(call vl-location-between-p) is true exactly when <tt>x</tt> is in
-the same file as <tt>min</tt> and <tt>max</tt>, and inclusively falls between
-these bounds."
+  :short "@(call vl-location-between-p) is true exactly when @('x') is in the
+same file as @('min') and @('max'), and inclusively falls between these
+bounds."
 
   (defund vl-location-between-p (x min max)
     (declare (xargs :guard (and (vl-location-p x)
@@ -142,7 +142,7 @@ these bounds."
             (vl-location-p-of-vl-echar->loc    (vl-location-p loc)))
   :parents (extended-characters)
   :short "An annotated character."
-  :long "<p>Each <tt>vl-echar-p</tt> associates its <tt>char</tt> with a @(see
+  :long "<p>Each @('vl-echar-p') associates its @('char') with a @(see
 vl-location-p) that says where the character was read from.</p>")
 
 
@@ -218,10 +218,10 @@ notably saves a lot of memory when we build @(see vl-filemap-p)s.</p>"
   :parents (extended-characters)
   :short "Override the locations of characters."
   :long "<p>@(call vl-change-echarlist-locations) is given a list of extended
-characters, <tt>x</tt>, and a location, <tt>loc</tt>.  It changes the location
-of every character in <tt>x</tt> to <tt>loc</tt>.</p>
+characters, @('x'), and a location, @('loc').  It changes the location of every
+character in @('x') to @('loc').</p>
 
-<p>This funny operation is used in the preprocessor to make <tt>`define</tt>
+<p>This funny operation is used in the preprocessor to make @('`define')
 handling more sensible.</p>"
 
   (defund vl-change-echarlist-locations (x loc)
@@ -246,24 +246,22 @@ handling more sensible.</p>"
   :parents (extended-characters)
   :short "Transform an ordinary character list into a @(see vl-echarlist-p)."
 
-  :long "<p><tt>vl-echarlist-from-chars</tt> transforms a character list into
-an extended character list.  It properly handles the incrementing of line and
-column numbers, but note that it assigns every character the same source type.</p>
+  :long "<p>@('vl-echarlist-from-chars') transforms a character list into an
+extended character list.  It properly handles the incrementing of line and
+column numbers, but note that it assigns every character the same source
+type.</p>
 
-<p>We implement <tt>vl-echarlist-from-chars</tt> as a macro wrapper for the
+<p>We implement @('vl-echarlist-from-chars') as a macro wrapper for the
 function @(srclink vl-echarlist-from-chars-aux).</p>
 
 <p>@(call vl-echarlist-from-chars)</p>
 
-<ul>
-<li><tt>x</tt> is the list of characters to convert.</li>
-<li><tt>filename</tt> will be used as the filename for every character.</li>
-<li><tt>line</tt> is the starting line.</li>
-<li><tt>col</tt> is the starting column.</li>
-</ul>
+<ul> <li>@('x') is the list of characters to convert.</li> <li>@('filename')
+will be used as the filename for every character.</li> <li>@('line') is the
+starting line.</li> <li>@('col') is the starting column.</li> </ul>
 
-<p>Note that we actually optimize this function using <tt>nreverse</tt> for
-better performance.</p>"
+<p>Note that we actually optimize this function using @('nreverse') for better
+performance.</p>"
 
   (defund vl-echarlist-from-chars-aux (x filename line col acc)
     (declare (xargs :guard (and (character-listp x)
@@ -358,11 +356,10 @@ better performance.</p>"
 
 (defsection vl-echarlist-from-str
   :parents (extended-characters)
-  :short "Transform an ordinary <tt>stringp</tt> into a @(see vl-echarlist-p)."
+  :short "Transform an ordinary @('stringp') into a @(see vl-echarlist-p)."
 
-  :long "<p><tt>vl-echarlist-from-str</tt> is like @(see
-vl-echarlist-from-chars), but operates on an ACL2 string instead of a character
-list.</p>
+  :long "<p>@('vl-echarlist-from-str') is like @(see vl-echarlist-from-chars),
+but operates on an ACL2 string instead of a character list.</p>
 
 @(call vl-echarlist-from-str)
 
@@ -378,7 +375,7 @@ from a string.  The simplest approach to this would be:</p>
 and reason about @(see vl-echarlist-from-chars) instead.</p>
 
 <p>For better efficiency, we avoid the coerce and process the string directly.
-Also note that we actually use <tt>nreverse</tt> here.</p>"
+Also note that we actually use @('nreverse') here.</p>"
 
   (defund vl-echarlist-from-str-aux (x n xl filename line col acc)
     (declare (xargs :guard (and (stringp x)
@@ -486,9 +483,9 @@ Also note that we actually use <tt>nreverse</tt> here.</p>"
 
 (defsection vl-echar-digit-value
   :parents (extended-characters)
-  :short "@(call vl-echar-digit-value) interprets the extended character
-<tt>x</tt> as a base-<tt>radix</tt> digit, or returns <tt>nil</tt> if
-<tt>x</tt> is not a valid digit in this base."
+  :short "@(call vl-echar-digit-value) interprets the extended character @('x')
+as a base-@('radix') digit, or returns @('nil') if @('x') is not a valid digit
+in this base."
 
   (defund vl-echar-digit-value (x radix)
     (declare (xargs :guard (and (vl-echar-p x)
@@ -514,9 +511,9 @@ Also note that we actually use <tt>nreverse</tt> here.</p>"
 
 (defsection vl-echarlist-unsigned-value
   :parents (extended-characters)
-  :short "@(call vl-echarlist-unsigned-value) interprets the extended
-character list <tt>x</tt> as a base-<tt>radix</tt> number, or returns
-<tt>nil</tt> if <tt>x</tt> is invalid."
+  :short "@(call vl-echarlist-unsigned-value) interprets the extended character
+list @('x') as a base-@('radix') number, or returns @('nil') if @('x') is
+invalid."
 
   (defund vl-echarlist-unsigned-value-aux (x radix n)
     (declare (xargs :guard (and (vl-echarlist-p x)

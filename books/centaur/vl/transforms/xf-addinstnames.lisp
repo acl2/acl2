@@ -30,7 +30,7 @@
   :long "<p>This transformation does nothing more than generate a name for
 every gate and module instance which are unnamed.  The names are safely
 generated using a @(see vl-namefactory-p) and will have names such as
-<tt>modinst_11</tt> and <tt>gateinst_46</tt>.</p>
+@('modinst_11') and @('gateinst_46').</p>
 
 <p>This transform is curiously expensive.  My guess is that occform is putting
 in a lot of gates that don't have names, so that almost all modules need to be
@@ -43,11 +43,11 @@ the modules.</p>")
   :parents (addinstnames)
   :short "Name a @(see vl-modinst-p), if necessary."
 
-  :long "<p><b>Signature</b>: @(call vl-modinst-addinstnames) returns <tt>(mv
-x-prime nf-prime)</tt>.</p>
+  :long "<p><b>Signature</b>: @(call vl-modinst-addinstnames) returns @('(mv
+x-prime nf-prime)').</p>
 
-<p><tt>x</tt> is a modinst which occurs within <tt>mod</tt>, and <tt>nf</tt> is
-a @(see vl-namefactory-p) that allows us to generate unique names.</p>"
+<p>@('x') is a modinst which occurs within @('mod'), and @('nf') is a @(see
+vl-namefactory-p) that allows us to generate unique names.</p>"
 
   (defund vl-modinst-addinstnames (x nf)
     "Returns (MV X-PRIME NF-PRIME)"
@@ -183,7 +183,7 @@ instances."
   :short "Name any unnamed module and gate instances throughout a module."
 
   :long "<p><b>Signature:</b> @(call vl-module-addinstnames) returns
-<tt>x-prime</tt>.</p>"
+@('x-prime').</p>"
 
   (defund vl-module-addinstnames (x)
     (declare (xargs :guard (vl-module-p x)))

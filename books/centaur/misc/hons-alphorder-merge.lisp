@@ -70,7 +70,7 @@
 <p>This is used in @(see aig-vars) and @(see 4v-sexpr-vars).</p>
 
 <p>When the inputs happen to be ordered sets, the result is also an ordered set
-and <tt>hons-alphorder-merge</tt> is nothing more than @(see sets::union).</p>"
+and @('hons-alphorder-merge') is nothing more than @(see sets::union).</p>"
 
   (defun hons-alphorder-merge (a b)
     (declare (xargs :guard (and (atom-listp a)

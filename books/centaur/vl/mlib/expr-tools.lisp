@@ -32,6 +32,7 @@
 (defsection vl-one-bit-constants
   :parents (expr-tools)
   :short "Already-sized, one-bit constants."
+
   :long "<p>Care should be taken when using these constants because they are
 already annotated with their final widths and types, and @(see
 expression-sizing) is a very complex topic.</p>"
@@ -70,9 +71,10 @@ expression-sizing) is a very complex topic.</p>"
 (defsection vl-expr-resolved-p
   :parents (expr-tools)
   :short "Recognizes plain constant integer expressions."
+
   :long "<p>We say an expression is <b>resolved</b> when it is just an atomic,
 integer value that is free of X/Z bits.  We often expect to be able to resolve
-the expressions that occur in ranges like <tt>wire [3:0] foo;</tt> and in
+the expressions that occur in ranges like @('wire [3:0] foo;') and in
 selects.</p>"
 
   (definlined vl-expr-resolved-p (x)
@@ -84,6 +86,7 @@ selects.</p>"
 (defsection vl-resolved->val
   :parents (expr-tools)
   :short "Get the value from a resolved expression."
+
   :long "<p>This is guaranteed to be a natural number.</p>"
 
   (definlined vl-resolved->val (x)
@@ -120,8 +123,9 @@ selects.</p>"
 (defsection vl-idexpr-p
   :parents (expr-tools)
   :short "Recognize plain identifier expressions."
+
   :long "<p>This recognizes simple, non-hierarchical identifier expressions
-like <tt>foo</tt>.</p>"
+like @('foo').</p>"
 
   (definlined vl-idexpr-p (x)
     (declare (xargs :guard (vl-expr-p x)))
@@ -138,6 +142,7 @@ like <tt>foo</tt>.</p>"
 (defsection vl-idexpr->name
   :parents (expr-tools)
   :short "Get the name from a @(see vl-idexpr-p)."
+
   :long "<p>This is guaranteed to be a string.</p>"
 
   (definlined vl-idexpr->name (x)
@@ -223,8 +228,8 @@ given name, width, and type.</p>"
                 (vl-maybe-exprtype-p finaltype))
     :result-type vl-exprlist-p
     :parents (expr-tools)
-    :long "<p>Each expression is given the specified <tt>finalwidth</tt> and
-<tt>finaltype</tt>.</p>")
+    :long "<p>Each expression is given the specified @('finalwidth') and
+@('finaltype').</p>")
 
   (local (in-theory (enable vl-make-idexpr-list)))
 
@@ -244,7 +249,7 @@ given name, width, and type.</p>"
 (defsection vl-expr-widthsfixed-p
   :parents (expr-tools)
   :short "@(call vl-expr-widthsfixed-p) determines if all of the
-<tt>finalwidth</tt> fields throughout an expression are natural numbers."
+@('finalwidth') fields throughout an expression are natural numbers."
 
   (mutual-recursion
 
@@ -419,17 +424,18 @@ names, since these are not treated as @(see vl-id-p) atoms, but are instead
 @(see vl-hidpiece-p), @(see vl-sysfunname-p), or @(see vl-funname-p) atoms.</p>
 
 <p>Note that as we gather names, we do <b>NOT</b> descend into any embedded
-<tt>(* foo = bar *)</tt>-style attributes.</p>
+@('(* foo = bar *)')-style attributes.</p>
 
-<p><tt>vl-expr-names</tt> is necessarily mutually-recursive with
-<tt>vl-exprlist-names</tt>.  For efficiency we use a tail-recursive,
+<p>@('vl-expr-names') is necessarily mutually-recursive with
+@('vl-exprlist-names').  For efficiency we use a tail-recursive,
 accumulator-style functions to do the collection.  Under the hood, we also use
-<tt>nreverse</tt> optimization.</p>"
+@('nreverse') optimization.</p>"
 
   (defxdoc vl-exprlist-names
     :parents (expr-tools)
     :short "Gather the names of all @(see vl-id-p) atoms throughout an
 expression list."
+
     :long "<p>See @(see vl-expr-names)</p>")
 
   (mutual-recursion
@@ -591,11 +597,8 @@ expression list."
 vl-oplist-p).</p>
 
 <p>We simply gather all of the operators, with repetition.  The resulting list
-may contain any @(see vl-op-p), including even odd such as <tt>:vl-syscall</tt>
-or <tt>:vl-hid-dot</tt>, which you might not ordinarily think of as an
-operator.</p>
-
-@(def vl-expr-ops)"
+may contain any @(see vl-op-p), including even odd such as @(':vl-syscall') or
+@(':vl-hid-dot'), which you might not ordinarily think of as an operator.</p>"
 
   (defxdoc vl-exprlist-ops
     :parents (expr-tools)
@@ -887,15 +890,16 @@ operator.</p>
 
 (defsection vl-$random-expr-p
   :parents (expr-tools)
-  :short "Recognize calls of the <tt>$random</tt> system function."
-  :long "<p>The syntax for <tt>$random</tt> calls is described in Section
-17.9.1 on page 311:</p>
+  :short "Recognize calls of the @('$random') system function."
 
-<code>random_function ::= $random[ '(' seed ')' ]</code>
+  :long "<p>The syntax for @('$random') calls is described in Section 17.9.1 on
+page 311:</p>
 
-<p>Note that the <tt>seed</tt> is supposed to be a reg, integer, or time
-variable.  In this recognizer, if a seed is provided we require it to be an
-identifier, but we do not check what kind of identifier it is.</p>"
+@({random_function ::= $random[ '(' seed ')' ]})
+
+<p>Note that the @('seed') is supposed to be a reg, integer, or time variable.
+In this recognizer, if a seed is provided we require it to be an identifier,
+but we do not check what kind of identifier it is.</p>"
 
   (defund vl-$random-expr-p (x)
     (declare (xargs :guard (vl-expr-p x)))
@@ -1058,17 +1062,20 @@ usually think of as atoms.</p>
 (defsection vl-exprlist-to-plainarglist
   :parents (expr-tools)
   :short "Build a plainarglist from some expressions."
-  :long "<p><b>Signature:</b> @(call vl-exprlist-to-plainarglist) returns
-a @(see vl-plainarglist-p).</p>
+
+  :long "<p><b>Signature:</b> @(call vl-exprlist-to-plainarglist) returns a
+@(see vl-plainarglist-p).</p>
 
 <ul>
-<li><tt>x</tt> is an @(see vl-exprlist-p),</li>
 
-<li><tt>dir</tt> is a @(see vl-direction-p), or <tt>nil</tt>, which will be
-assigned to each resulting plainarg, and</li>
+<li>@('x') is an @(see vl-exprlist-p),</li>
 
-<li><tt>atts</tt> are the attributes which will be assigned to each resulting
+<li>@('dir') is a @(see vl-direction-p), or @('nil'), which will be assigned to
+each resulting plainarg, and</li>
+
+<li>@('atts') are the attributes which will be assigned to each resulting
 plainarg.</li>
+
 </ul>"
 
   (defund vl-exprlist-to-plainarglist-fn (x dir atts)

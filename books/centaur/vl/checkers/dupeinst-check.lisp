@@ -29,10 +29,10 @@
 
   :long "<p>This is a trivially simple check for cases like:</p>
 
-<code>
+@({
    mymod m1 (o1, a, b);
    mymod m2 (o2, a, b);
-</code>
+})
 
 <p>That is, instances of the same module with the same inputs but perhaps with
 different outputs.  The @(see duperhs-check) is similar but looks for
@@ -64,10 +64,10 @@ dupeinst check is to find modinsts with the same key.</p>
 <p>The keys we use have to know the modname so we don't get confused by things
 like</p>
 
-<code>
+@({
   mymod1 m1 (o1, a, b);
   mymod2 m2 (o2, a, b);
-</code>
+})
 
 <p>Which presumably have the same inputs but are very different things.</p>
 
@@ -160,22 +160,27 @@ that key, which lets us immediately see which modinsts have the same key.</p>
   :parents (dupeinst-check)
   :short "Possibly add warnings about a group of module instances."
   :long "<p><b>Signature:</b> @(call vl-maybe-warn-dupeinst) returns
-<tt>warnings'</tt>.</p>
+@('warnings'').</p>
 
 <ul>
-<li><tt>key</tt> is the shared @(see vl-dupeinst-key-p) for a group of modinsts.</li>
-<li><tt>modinsts</tt> are the modinsts that share this key.</li>
-<li><tt>warnings</tt> is the @(see warnings) accumulator to extend.</li>
+
+<li>@('key') is the shared @(see vl-dupeinst-key-p) for a group of
+modinsts.</li>
+
+<li>@('modinsts') are the modinsts that share this key.</li>
+
+<li>@('warnings') is the @(see warnings) accumulator to extend.</li>
+
 </ul>
 
 <p>Modinsts might not have multiple entries, in which case there is nothing to
-do and we just return <tt>warnings</tt> unchanged.  Otherwise, we issue a
-warning about the modules.</p>
+do and we just return @('warnings') unchanged.  Otherwise, we issue a warning
+about the modules.</p>
 
 <p>By default, all duplicated modules are considered worth warning about.  But
 you can configure which modules are considered trivial/okay to duplicate by
-attaching a function to <tt>vl-dupeinst-trivial-p</tt>.  These will be filtered
-out into minor warnings.</p>"
+attaching a function to @('vl-dupeinst-trivial-p').  These will be filtered out
+into minor warnings.</p>"
 
   (encapsulate
     (((vl-dupeinst-trivial-p *) => *

@@ -46,8 +46,8 @@ the string's length (which, interestingly, may be zero).  We also say that the
 finaltype is unsigned.</p>
 
 <p>For all other atoms, we insist that the finaltype and finalwidth are
-<tt>nil</tt>, which we intend to mean \"not applicable\".  These atoms are
-reals, function names and system function names, and the individual pieces of
+@('nil'), which we intend to mean \"not applicable\".  These atoms are reals,
+function names and system function names, and the individual pieces of
 hierarchical identifiers.</p>"
 
   (defund vl-atom-welltyped-p (x)
@@ -99,12 +99,11 @@ expressions.</p>
 <p>Every atom in the expression must satisfy @(see vl-atom-welltyped-p).</p>
 
 <p>Every nonatom has certain consistency checks that depend upon which operator
-is being applied.  For instance, in an expression like <tt>a + b</tt>, we
-require that the final width/type of the expression agrees exactly with the
-final widths/types of <tt>a</tt> and <tt>b</tt>.  As another example, we insist
-that the finalwidth/type of <tt>&amp;foo</tt> is one-bit unsigned, but
-otherwise we only require that the width of <tt>foo</tt> itself is
-non-zero.</p>"
+is being applied.  For instance, in an expression like @('a + b'), we require
+that the final width/type of the expression agrees exactly with the final
+widths/types of @('a') and @('b').  As another example, we insist that the
+finalwidth/type of @('&foo') is one-bit unsigned, but otherwise we only require
+that the width of @('foo') itself is non-zero.</p>"
 
   (mutual-recursion
 

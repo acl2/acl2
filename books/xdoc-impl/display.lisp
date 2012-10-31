@@ -395,7 +395,8 @@
 (defun display-topic (x all-topics state)
   (b* ((name (cdr (assoc :name x)))
 ;       (- (cw "Preprocessing...~%"))
-       ((mv text state) (preprocess-topic x all-topics nil state))
+       ;; Use NIL as the topics-fal as a simple way to suppress autolinks...
+       ((mv text state) (preprocess-topic x all-topics nil nil state))
 ;       (- (cw "Text is ~x0.~%" text))
 ;       (- (cw "Parsing xml...~%"))
        ((mv err tokens) (parse-xml text))
@@ -439,5 +440,5 @@
             (symbol-name name))
         (value :invisible))
 
-       (state (display-topic xdoc-entry all-xdoc-topics state)))
+       (state      (display-topic xdoc-entry all-xdoc-topics state)))
     (value :invisible)))

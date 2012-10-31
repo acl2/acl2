@@ -181,7 +181,7 @@ efficient.</p>")
   :parents (printer)
   :short "The <b>p</b>rinter <b>s</b>tate stobj."
 
-  :long "<p>Our printer's state is a represented as the stobj <tt>ps</tt>, whose
+  :long "<p>Our printer's state is a represented as the stobj @('ps'), whose
 definition is as follows.</p>
 
 @(def ps)
@@ -190,12 +190,12 @@ definition is as follows.</p>
 
 <ul>
 
-<li><tt>rchars</tt> -- holds the printed elements (characters and strings) in
+<li>@('rchars') -- holds the printed elements (characters and strings) in
 reverse order.  The is badly named because originally it only held characters,
 but we later extended it to strings to make string-printing more
 efficient.</li>
 
-<li><tt>col</tt> -- records the current column number.</li>
+<li>@('col') -- records the current column number.</li>
 
 </ul>
 
@@ -208,27 +208,27 @@ and saved into a @(see vl-psconfig-p) object.</p>
 
 <ul>
 
-<li><tt>autowrap-col</tt>, a column number for autowrapping,</li>
+<li>@('autowrap-col'), a column number for autowrapping,</li>
 
-<li><tt>autowrap-ind</tt>, number of spaces to indent after autowrapping,</li>
+<li>@('autowrap-ind'), number of spaces to indent after autowrapping,</li>
 
-<li><tt>htmlp</tt>, a flag indicating whether we are printing html,</li>
+<li>@('htmlp'), a flag indicating whether we are printing html,</li>
 
-<li><tt>tabsize</tt>, the tab size to use for &amp;nbsp; expansion in html mode,</li>
+<li>@('tabsize'), the tab size to use for &amp;nbsp; expansion in html mode,</li>
 
-<li><tt>package</tt>, a symbol which specifies the \"home\" package for
-    printing symbols (e.g., <tt>ACL2::foo</tt> vs. <tt>VL::foo</tt>.</li>
+<li>@('package'), a symbol which specifies the \"home\" package for printing
+symbols (e.g., @('ACL2::foo') vs. @('VL::foo').</li>
 
-<li><tt>base</tt>, an <tt>acl2::print-base-p</tt> for base 10, 16, etc.</li>
+<li>@('base'), an @('acl2::print-base-p') for base 10, 16, etc.</li>
 
 </ul>
 
-<p>Finally, the printer includes a <tt>misc</tt> field which must be an alist,
-and which can be used to pass along any custom parameters that your own
-printing functions would like to inspect.</p>
+<p>Finally, the printer includes a @('misc') field which must be an alist, and
+which can be used to pass along any custom parameters that your own printing
+functions would like to inspect.</p>
 
-<p>I once considered changing the way <tt>ps</tt> works, so that we would use
-an array of characters and write into the array, instead of consing characters.
+<p>I once considered changing the way @('ps') works, so that we would use an
+array of characters and write into the array, instead of consing characters.
 This is appealing because we might be able to avoid consing during printing at
 the cost of having to allocate a buffer at the beginning.  But, preliminary
 tests suggested that there is not much of a speed improvement, and while it
@@ -237,9 +237,8 @@ particularly nice in that it makes @(see with-local-ps) very cheap, etc.</p>
 
 <h3>Macro wrappers</h3>
 
-<p>We generally hide the existence of <tt>ps</tt> by introducing
-<tt>ps</tt>-free wrapper macros.  We provide such macros for the primitive
-field accessors:</p>
+<p>We generally hide the existence of @('ps') by introducing @('ps')-free
+wrapper macros.  We provide such macros for the primitive field accessors:</p>
 
  @(def vl-ps->rchars)
  @(def vl-ps->col)
@@ -535,16 +534,16 @@ field accessors:</p>
   :parents (printer)
   :short "Macro for introducing user-defined printing functions."
 
-  :long "<p>The macro <tt>defpp</tt> (\"define pretty printer\") helps to
-automate the introduction of @(see ps)-based printing functions.</p>
+  :long "<p>The macro @('defpp') (\"define pretty printer\") helps to automate
+the introduction of @(see ps)-based printing functions.</p>
 
 <p>Generally, to carry out your guard proofs, you need to show that every
-printing function you introduce will produce a valid <tt>vl-pstate-p</tt> when
-given a valid <tt>vl-pstate-p</tt> as input.  This macro automatically tries to
+printing function you introduce will produce a valid @('vl-pstate-p') when
+given a valid @('vl-pstate-p') as input.  This macro automatically tries to
 prove this property for you.</p>
 
-<p>See <tt>vl/util/print.lisp</tt> and also <tt>vl/writer.lisp</tt> for many
-examples of its use.</p>"
+<p>See @('vl/util/print.lisp') and also @('vl/writer.lisp') for many examples
+of its use.</p>"
 
   (defmacro defpp (name formals &key body (guard 't) guard-hints guard-debug parents short long inlinep)
 
@@ -587,24 +586,24 @@ examples of its use.</p>"
   :parents (basic-printing)
   :short "Macro for issuing a sequence of printer commands."
 
-  :long "<p>The macro <tt>(vl-ps-seq ...)</tt> can be used to combine printing
+  :long "<p>The macro @('(vl-ps-seq ...)') can be used to combine printing
 commands.  For instance,</p>
 
-<code>
+@({
  (vl-ps-seq
    (vl-print \"foo\")
    (vl-println \"bar\")
    ...)
-</code>
+})
 
 <p>Is short for:</p>
 
-<code>
+@({
  (let* ((ps (vl-print \"foo\"))
         (ps (vl-println \"bar\"))
         ...)
    ps)
-</code>"
+})"
 
   (defun vl-ps-seq-pairs (x)
     (if (consp x)
@@ -634,7 +633,7 @@ HTML mode is enabled."
 (defsection vl-ps-span
   :parents (basic-printing)
   :short "Like @(see vl-ps-seq), except that in HTML mode the contents are also
-wrapped in a <tt>&lt;span&gt;</tt> tag of the given class."
+wrapped in a @('<span>') tag of the given class."
 
   (defmacro vl-ps-span (class &rest args)
     (declare (xargs :guard (stringp class)))
@@ -655,16 +654,15 @@ wrapped in a <tt>&lt;span&gt;</tt> tag of the given class."
 
   :long "<p>Once you are done printing, you typically want to access the
 characters that have been printed, e.g., as a character list or string.  You
-might directly access the <tt>rchars</tt> field of @(see ps), using, e.g.,
-@(call vl-ps->rchars), but it is a weird @(see vl-printedlist-p) structure, is
-in reverse order, and is generally not very convenient to work with.  So, it
-is typically more convenient to use these alternatives.</p>")
+might directly access the @('rchars') field of @(see ps), using, e.g., @(call
+vl-ps->rchars), but it is a weird @(see vl-printedlist-p) structure, is in
+reverse order, and is generally not very convenient to work with.  So, it is
+typically more convenient to use these alternatives.</p>")
 
 
 (defsection vl-ps->chars
   :parents (accessing-printed-output)
-  :short "<tt>(vl-ps-&gt;chars)</tt> returns what was printed as a character
-list."
+  :short "@('(vl-ps->chars)') returns what was printed as a character list."
 
   :long "<p>Building up a big character list can be somewhat expensive, so see
 also @(see vl-ps->string).</p>"
@@ -707,11 +705,11 @@ also @(see vl-ps->string).</p>"
 
 (defsection vl-ps->string
   :parents (accessing-printed-output)
-  :short "<tt>(vl-ps-&gt;string)</tt> returns the printed characters as a
-string, in the order in which they were printed."
+  :short "@('(vl-ps->string)') returns the printed characters as a string, in
+the order in which they were printed."
 
-  :long "<p>This is logically just <tt>(coerce (vl-ps-&gt;chars) 'string)</tt>,
-but we install a more efficient definition under the hood in raw Lisp.</p>"
+  :long "<p>This is logically just @('(coerce (vl-ps->chars) 'string)'), but we
+install a more efficient definition under the hood in raw Lisp.</p>"
 
   (defund vl-ps->string-fn (ps)
     (declare (xargs :guard (vl-pstate-p ps)
@@ -794,8 +792,8 @@ but we install a more efficient definition under the hood in raw Lisp.</p>"
   :parents (accessing-printed-output)
   :short "(program mode) Write the printed characters to a file."
 
-  :long "<p><tt>(vl-print-to-file filename)</tt> writes the printed characters
-to the indicated file.</p>"
+  :long "<p>@('(vl-print-to-file filename)') writes the printed characters to
+the indicated file.</p>"
 
   (defun vl-print-to-file-fn (filename ps state)
     (declare (xargs :mode :program
@@ -837,7 +835,7 @@ from another.</p>
 <p>We provide two mechanisms for coping with this.</p>
 
 <p>The recommended approach is to use @(see with-local-ps), which in turn uses
-<tt>with-local-stobj</tt> to give you a temporary <tt>ps</tt> to work with.</p>
+@('with-local-stobj') to give you a temporary @('ps') to work with.</p>
 
 <p>An alternative, which we do not often use, is to explicitly manage saving
 and restoring of the printer's state.  To support this, we provide some
@@ -848,16 +846,16 @@ printer's fields.</p>")
   :parents (printing-locally)
   :short "Print using a local instance of @(see ps)."
 
-  :long "<p>The convenient (but trivial) macro <tt>with-local-ps</tt> allows
-you to print using a local copy of @(see ps), and returns the result of
-printing as a string.</p>
+  :long "<p>The convenient (but trivial) macro @('with-local-ps') allows you to
+print using a local copy of @(see ps), and returns the result of printing as a
+string.</p>
 
-<p>Unfortunately, <tt>with-local-stobj</tt> cannot be used at the top level
-loop, and hence <tt>with-local-ps</tt> cannot be used at the top level.
-However, it can still be used in functions, and you can call those functions
-from the loop.  For instance,</p>
+<p>Unfortunately, @('with-local-stobj') cannot be used at the top level loop,
+and hence @('with-local-ps') cannot be used at the top level.  However, it can
+still be used in functions, and you can call those functions from the loop.
+For instance,</p>
 
-<code>
+@({
  (defun f (foo bar)
    (declare (xargs :guard (and (integerp foo) (integerp bar))))
    (with-local-ps
@@ -867,11 +865,11 @@ from the loop.  For instance,</p>
     (vl-print bar)))
 
  (f 3 6) ;; returns \"; foo = 3, bar = 6\"
-</code>
+})
 
-<p>Note that in this example, <tt>f</tt> prints using the default
-configuration.  Other configurations can be easily saved and loaded; see the
-discussion in @(see vl-psconfig-p) for details.</p>"
+<p>Note that in this example, @('f') prints using the default configuration.
+Other configurations can be easily saved and loaded; see the discussion in
+@(see vl-psconfig-p) for details.</p>"
 
   (defmacro with-local-ps (&rest forms)
     `(acl2::with-local-stobj ps
@@ -903,10 +901,10 @@ discussion in @(see vl-psconfig-p) for details.</p>"
 (defsection vl-cw-ps-seq
   :parents (basic-printing)
   :short "Print to standard-out using @(see ps)"
-  :long "<p><tt>(vl-cw-ps-seq ...)</tt> expands to <tt>(cw-unformatted (@(see
-with-local-ps) ...))</tt>.  Due to the use of <tt>with-local-ps</tt>, this
-macro can only be used within functions, and cannot be called from the top
-level.</p>"
+
+  :long "<p>@('(vl-cw-ps-seq ...)') expands to @('(cw-unformatted (@(see
+with-local-ps) ...))').  Due to the use of @('with-local-ps'), this macro can
+only be used within functions, and cannot be called from the top level.</p>"
 
   (defmacro vl-cw-ps-seq (&rest args)
     `(cw-unformatted (with-local-ps ,@args))))
@@ -917,11 +915,12 @@ level.</p>"
   :parents (printing-locally)
   :short "Erase all contents and reset @(see ps) to its default configuration."
 
-  :long "<p><tt>(vl-ps-full-reset)</tt> restores @(see ps) to its initial
-state.  This erases any text that has been printed, sets the column number to
-0, and also sets all of the config variables to their defaults (text mode, 80
-column autowrap with 5 space autoindent, and a tab size of 8.)  See also @(see
-vl-ps-text-reset) for an alternative that does not alter the configuration.</p>"
+  :long "<p>@('(vl-ps-full-reset)') restores @(see ps) to its initial state.
+This erases any text that has been printed, sets the column number to 0, and
+also sets all of the config variables to their defaults (text mode, 80 column
+autowrap with 5 space autoindent, and a tab size of 8.)  See also @(see
+vl-ps-text-reset) for an alternative that does not alter the
+configuration.</p>"
 
   :body (vl-ps-seq
          (vl-ps-update-rchars nil)
@@ -938,10 +937,10 @@ vl-ps-text-reset) for an alternative that does not alter the configuration.</p>"
   :parents (printing-locally)
   :short "Erase the contents of @(see ps) without altering its configuration."
 
-  :long "<p><tt>(vl-ps-text-reset)</tt> erases any text in @(see ps) and sets
-the column number to 0.  It does not alter any of the configuration variables.
-See also @(see vl-ps-full-reset) for a way to completely restore @(see ps) to
-its default state.</p>"
+  :long "<p>@('(vl-ps-text-reset)') erases any text in @(see ps) and sets the
+column number to 0.  It does not alter any of the configuration variables.  See
+also @(see vl-ps-full-reset) for a way to completely restore @(see ps) to its
+default state.</p>"
 
   :body (vl-ps-seq
          (vl-ps-update-rchars nil)
@@ -1120,11 +1119,11 @@ printed.</li>
 (defpp vl-indent (n)
   :guard (natp n)
   :parents (basic-printing)
-  :short "@(call vl-indent) indents to column <tt>n</tt>."
+  :short "@(call vl-indent) indents to column @('n')."
 
   :long "<p>In text mode we indent by printing spaces; in HTML mode we instead
-print <tt>&amp;nbsp;</tt> characters.  Note that this function has no effect if
-we are already past column <tt>n</tt>.</p>"
+print @('&nbsp;') characters.  Note that this function has no effect if we are
+already past column @('n').</p>"
 
   :body
   (let ((rchars (vl-ps->rchars))
@@ -1148,12 +1147,13 @@ we are already past column <tt>n</tt>.</p>"
 
 (defsection vl-printable-p
   :parents (basic-printing)
-  :short "@(call vl-printable-p) recognizes strings, character lists, numbers, and
-ordinary characters."
+  :short "@(call vl-printable-p) recognizes strings, character lists, numbers,
+and ordinary characters."
+
   :long "<p>We use this function as the guard for functions such as @(see
-vl-print), @(see vl-println), etc.  We do not allow <tt>x</tt> to be a symbol
-because of the potential confusion between the symbol <tt>nil</tt> and
-character lists.</p>"
+vl-print), @(see vl-println), etc.  We do not allow @('x') to be a symbol
+because of the potential confusion between the symbol @('nil') and character
+lists.</p>"
 
   (defund vl-printable-p (x)
     (declare (xargs :guard t))
@@ -1213,12 +1213,11 @@ character lists.</p>"
   :parents (basic-printing)
   :short "@(call vl-print) prints text with automatic encoding."
 
-  :long "<p><tt>x</tt> may be any @(see vl-printable-p) object, and we print it
-to @(see ps).  In text mode, the characters for the printed representation of
-<tt>x</tt> are printed verbatim.  In HTML mode, we automatically encode
-characters like <tt>&amp;</tt> into <tt>&amp;amp;</tt>.  See also @(see
-vl-print-markup) and @(see vl-print-url) for alternatives that perform
-different kinds of encoding.</p>"
+  :long "<p>@('x') may be any @(see vl-printable-p) object, and we print it to
+@(see ps).  In text mode, the characters for the printed representation of
+@('x') are printed verbatim.  In HTML mode, we automatically encode characters
+like @('&') into @('&amp;').  See also @(see vl-print-markup) and @(see
+vl-print-url) for alternatives that perform different kinds of encoding.</p>"
 
   (defpp vl-print-str-main (x)
     :guard (stringp x)
@@ -1391,8 +1390,8 @@ natural numbers."
   :short "@(call vl-println) prints text with automatic encoding, and always
 adds a newline."
   :long "<p>This function is like @(see vl-print), except that a newline is
-printed after <tt>x</tt>.  When we are in HTML mode, a <tt>&lt;br/&gt;</tt>
-tag and a newline are printed.</p>"
+printed after @('x').  When we are in HTML mode, a @('<br/>') tag and a newline
+are printed.</p>"
 
   (defpp vl-println-main (x)
     :guard (vl-printable-p x)
@@ -1461,13 +1460,13 @@ tag and a newline are printed.</p>"
   :guard (vl-printable-p x)
   :parents (basic-printing)
   :short "@(call vl-println?) prints text with automatic encoding, and may also
-inserts a newline if we have gone past the <tt>autowrap-col</tt>."
+inserts a newline if we have gone past the @('autowrap-col')."
 
-  :long "<p>This function is like @(see vl-print), except that after <tt>x</tt>
-is printed, we check to see whether the current <tt>col</tt> exceeds the
-<tt>autowrap-col</tt> for @(see ps).  If so, we insert a newline (and, in HTML
-mode, a <tt>&lt;br/&gt;</tt> tag) as in @(see vl-println), and indent the next
-line to the column specified by the @(see ps)'s <tt>autowrap-ind</tt>.</p>
+  :long "<p>This function is like @(see vl-print), except that after @('x') is
+printed, we check to see whether the current @('col') exceeds the
+@('autowrap-col') for @(see ps).  If so, we insert a newline (and, in HTML
+mode, a @('<br/>') tag) as in @(see vl-println), and indent the next line to
+the column specified by the @(see ps)'s @('autowrap-ind').</p>
 
 <p>When writing pretty-printers, it is useful to call this function in places
 that would be acceptable line-break points, so that very long lines will be
@@ -1522,8 +1521,9 @@ split up at reasonably good places.</p>"
 (defsection vl-print-markup
   :parents (basic-printing)
   :short "@(call vl-print-markup) prints verbatim text with no encoding."
-  :long "<p><tt>x</tt> is any object that satisfies @(see vl-printable-p).  We
-print the characters for <tt>x</tt> directly to @(see ps) without any automatic
+
+  :long "<p>@('x') is any object that satisfies @(see vl-printable-p).  We
+print the characters for @('x') directly to @(see ps) without any automatic
 encoding, no matter what mode we are in.  This function is generally intended
 for the printing of HTML tags.</p>"
 
@@ -1555,10 +1555,11 @@ for the printing of HTML tags.</p>"
   :parents (basic-printing)
   :short "@(call vl-println-markup) prints verbatim text with no encoding, then
 prints a newline."
+
   :long "<p>This is identical to @(see vl-print-markup) except for the newline.
-Unlike @(see vl-println), no <tt>&lt;br/&gt;</tt> tag is printed in HTML mode.
-The goal is only to provide a convenient way to insert line breaks in the
-middle of a lot of markup.</p>"
+Unlike @(see vl-println), no @('<br/>') tag is printed in HTML mode.  The goal
+is only to provide a convenient way to insert line breaks in the middle of a
+lot of markup.</p>"
   :body
   (let ((rchars  (vl-ps->rchars)))
     (cond ((stringp x)
@@ -1579,7 +1580,8 @@ middle of a lot of markup.</p>"
   :guard (vl-printable-p x)
   :parents (basic-printing)
   :short "@(call vl-print-url) prints text with automatic URL encoding."
-  :long "<p>This function simply prints the URL-encoding of <tt>x</tt> to @(see
+
+  :long "<p>This function simply prints the URL-encoding of @('x') to @(see
 ps), regardless of the output mode.  It is useful for printing parts of URLs
 with the proper encoding.</p>"
   :body
@@ -1608,10 +1610,12 @@ with the proper encoding.</p>"
   :guard (and (string-listp x)
               (natp indent))
   :parents (basic-printing)
-  :short "@(call vl-print-strings-with-commas) prints the elements of
-<tt>x</tt>, a string list, separated by commas."
+  :short "@(call vl-print-strings-with-commas) prints the elements of @('x'), a
+string list, separated by commas."
+
   :long "<p>The output is automatically encoded and word wrapped, and each line
-is indented to column <tt>indent</tt>.</p>"
+is indented to column @('indent').</p>"
+
   :body (let ((orig-indent (vl-ps->autowrap-ind)))
           (vl-ps-seq
            (vl-ps-update-autowrap-ind indent)
@@ -1623,11 +1627,13 @@ is indented to column <tt>indent</tt>.</p>"
 (defpp vl-print-strings-as-lines (x)
   :guard (string-listp x)
   :parents (basic-printing)
-  :short "@(call vl-print-strings-as-lines) prints the elements of <tt>x</tt>,
-a string list, on separate lines."
-  :long "<p>The output is automatically encoded, and <tt>&lt;br/&gt;</tt> tags are
-added to separate the lines when we are in the HTML output mode.  Each string is
+  :short "@(call vl-print-strings-as-lines) prints the elements of @('x'), a
+string list, on separate lines."
+
+  :long "<p>The output is automatically encoded, and @('<br/>') tags are added
+to separate the lines when we are in the HTML output mode.  Each string is
 printed on its own line, with no indenting and no automatic word wrapping.</p>"
+
   :body (if (atom x)
             ps
           (vl-ps-seq
@@ -1638,36 +1644,36 @@ printed on its own line, with no indenting and no automatic word wrapping.</p>"
 
 (defsection formatted-printing
   :parents (printer)
-  :short "Higher-level routines for printing objects with a <tt>fmt</tt>- or
-<tt>cw</tt>-like feel."
+  :short "Higher-level routines for printing objects with a @('fmt')- or
+@('cw')-like feel."
 
-  :long "<p>We implement limited versions of <tt>fmt</tt> and <tt>cw</tt>.  The
+  :long "<p>We implement limited versions of @('fmt') and @('cw').  The
 following ACL2-style directives are supported and behave similarly as those
-described in \"<tt>:doc fmt</tt>.\"</p>
+described in \"@(':doc fmt').\"</p>
 
 <ul>
 
-<li><tt>~~</tt>, prints a tilde</li>
-<li><tt>~%</tt>, prints a newline</li>
-<li><tt>~|</tt>, prints a newline if we are not already on column 0</li>
-<li><tt>~[space]</tt>, prints a space</li>
-<li><tt>~\[newline]</tt>, skips subsequent whitespace</li>
+<li>@('~~'), prints a tilde</li>
+<li>@('~%'), prints a newline</li>
+<li>@('~|'), prints a newline if we are not already on column 0</li>
+<li>@('~[space]'), prints a space</li>
+<li>@('~\[newline]'), skips subsequent whitespace</li>
 
-<li><tt>~xi</tt>, pretty-print an object.</li>
+<li>@('~xi'), pretty-print an object.</li>
 
-<li><tt>~si</tt>, prints a string verbatim, or acts like <tt>~xi</tt> when
-given any non-string object.</li>
+<li>@('~si'), prints a string verbatim, or acts like @('~xi') when given any
+non-string object.</li>
 
-<li><tt>~&amp;i</tt>, print a list, separated by commas, with the word \"and\"
+<li>@('~&i'), print a list, separated by commas, with the word \"and\"
 preceeding the final element.</li>
 
 </ul>
 
-<p>Note: our pretty-printer is currently very lousy.  Its output is not
-nearly as nice as ACL2's ordinary <tt>~x</tt> directives.</p>
+<p>Note: our pretty-printer is currently very lousy.  Its output is not nearly
+as nice as ACL2's ordinary @('~x') directives.</p>
 
-<p>Note: although other ACL2-style directives are not yet supported, we
-may eventually extend the printer to allow them.</p>")
+<p>Note: although other ACL2-style directives are not yet supported, we may
+eventually extend the printer to allow them.</p>")
 
 
 (defsection vl-ppr-escape-slashes
@@ -2273,18 +2279,21 @@ may eventually extend the printer to allow them.</p>")
   :guard (and (stringp x)
               (alistp alist))
   :parents (formatted-printing)
-  :short "Basic <tt>fmt</tt>-like printing function for @(see ps)."
-  :long "<p>@(call vl-basic-fmt) takes as inputs <tt>x</tt>, a format string as
+  :short "Basic @('fmt')-like printing function for @(see ps)."
+
+  :long "<p>@(call vl-basic-fmt) takes as inputs @('x'), a format string as
 described in @(see formatted-printing), and an alist that should map characters
 to objects, which provides the arguments to the format string, as in ordinary
 fmt-style ACL2 printing.</p>"
+
   :body (vl-basic-fmt-aux x 0 (length x) alist))
 
 
 
 (defsection vl-basic-cw
   :parents (formatted-printing)
-  :short "Basic <tt>cw</tt>-like printing function for @(see ps)."
+  :short "Basic @('cw')-like printing function for @(see ps)."
+
   :long "<p>This is a simple wrapper for @(see vl-basic-fmt).  See also @(see
 vl-basic-cw-obj).</p>"
 
@@ -2299,22 +2308,22 @@ vl-basic-cw-obj).</p>"
   :parents (formatted-printing)
   :short "Like @(see vl-basic-cw), but reads its format string from an object."
 
-  :long "<p>Ordinariy, <tt>vl-basic-cw</tt> requires you to provide its
-arguments explicitly in the macro call.  That is, you might write something
-like this:</p>
+  :long "<p>Ordinariy, @('vl-basic-cw') requires you to provide its arguments
+explicitly in the macro call.  That is, you might write something like
+this:</p>
 
-<code>
+@({
  (vl-basic-cw \"foo is ~x0 and bar is ~x1.~%\" foo bar)
-</code>
+})
 
-<p>With <tt>vl-basic-cw-obj</tt>, the arguments are instead expected to be a
-list, and this list is deconstructed to produce the alist to be given to @(see
+<p>With @('vl-basic-cw-obj'), the arguments are instead expected to be a list,
+and this list is deconstructed to produce the alist to be given to @(see
 vl-basic-fmt).  For instance, to print the same text as above, we might
 write:</p>
 
-<code>
+@({
  (vl-basic-cw-obj \"foo is ~x0 and bar is ~x1~%\" (list foo bar))
-</code>
+})
 
 <p>This is particularly useful for, e.g., @(see warnings) or other cases where
 you want to cons up a structure that can be printed, but not necessarily print

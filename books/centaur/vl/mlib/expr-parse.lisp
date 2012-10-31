@@ -34,18 +34,17 @@ strings, for instance in @(see acl2::symbolic-test-vectors) we want to let the
 user write Verilog-style hierarchical identifiers to describe the wires they
 are interested in.</p>
 
-<p>@(call vl-parse-expr-from-str) returns a @(see vl-expr-p) or <tt>nil</tt> to
+<p>@(call vl-parse-expr-from-str) returns a @(see vl-expr-p) or @('nil') to
 signal failure.</p>
 
-<p>We expect that <tt>str</tt> contains <b>exactly one</b> Verilog expression.
-We will fail if this isn't the case, or if any part of the lexing/parsing
-process fails or produces warnings.  In these cases we will print warning
-messages to standard output, but there's no programmatic way to extract the
-warnings.</p>
+<p>We expect that @('str') contains <b>exactly one</b> Verilog expression.  We
+will fail if this isn't the case, or if any part of the lexing/parsing process
+fails or produces warnings.  In these cases we will print warning messages to
+standard output, but there's no programmatic way to extract the warnings.</p>
 
 <p>We have arbitrarily decided not to preprocess the string.  This means you
-can't use <tt>`ifdef</tt> stuff or <tt>`defines</tt>.  However, comments and
-whitespace are tolerated and ignored.</p>
+can't use @('`ifdef') stuff or @('`defines').  However, comments and whitespace
+are tolerated and ignored.</p>
 
 <p>We don't transform the expression at all.  This means, for instance, that if
 you parse an expression like \"foo[3-1:0]\" then it'll still have the subtract

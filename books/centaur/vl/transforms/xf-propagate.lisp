@@ -33,18 +33,18 @@ to reduce modules that have lots of intermediate wires by just replacing the
 wire with its expression.  For instance, a module that had assignments
 like:</p>
 
-<code>
+@({
     assign a1 = ~a2;
     assign a2 = ~a3;
     assign a3 = ~a4;
     assign a4 = ~a5;
-</code>
+})
 
 <p>Could presumably be propagated into:</p>
 
-<code>
+@({
     assign a1 = ~(~(~(~a5)));
-</code>
+})
 
 <p>Which we could then reduce in other ways.</p>
 
@@ -89,9 +89,9 @@ module/gate instance ports.</p>")
 vl-assignlist-p), looking for assignments that are simple enough to consider
 eliminating.  We're basically just looking for assignments like:</p>
 
-<code>
+@({
    assign identifier = expr;
-</code>
+})
 
 <p>These are just initial candidates, and we'll eliminate some of them because
 propagation would be too hard.  We return a @(see vl-sigma-p) that binds each
@@ -235,34 +235,34 @@ correctly.</p>"
 assignment to a wire that is ever selected from.  The goal is to avoid having
 to deal with things like this:</p>
 
-<code>
+@({
     assign foo = a + b;
     assign bar = foo[2] + 3;
-</code>
+})
 
 <p>Naive propagation of foo would result in:</p>
 
-<code>
+@({
     assign bar = (a + b)[2] + 3;
-</code>
+})
 
 <p>And we don't want to try to think about how to handle this.  Even if we just
 had something like assign foo = bar, it'd be complicated because foo/bar could
 have different ranges, e.g., if we have</p>
 
-<code>
+@({
     wire [3:0] foo;
     wire [4:1] bar;
     assign foo = bar;
     assign baz = foo[2] + 3;
-</code>
+})
 
 <p>Then we would need to be careful to fix up the indicides when substituting
 into baz, i.e., the correct substitution would be:</p>
 
-<code>
+@({
     assign baz = bar[3] + 3;
-</code>
+})
 
 <p>And that's getting tricky.  So, the basic idea is: if the wire is ever
 selected from anywhere, then just don't try to propagate it.</p>
@@ -270,10 +270,10 @@ selected from anywhere, then just don't try to propagate it.</p>
 <p>Also, for propagation to be safe, we need to make sure that we are not
 propagating wires that have multiple drivers.  For instance, if we had:</p>
 
-<code>
+@({
     assign A = B;
     assign A = C;
-</code>
+})
 
 <p>Then it wouldn't be safe to just go around replacing uses of A with either B
 or C, because neither B nor C captures the whole value being assigned to A.

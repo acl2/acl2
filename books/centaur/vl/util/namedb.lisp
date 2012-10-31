@@ -28,7 +28,7 @@
 
 (defsection vl-pgenstr
   :parents (vl-namedb-p)
-  :short "@(call vl-pgenstr) creates the string \"<tt>prefix</tt>_<tt>n</tt>\"."
+  :short "@(call vl-pgenstr) creates the string \"@('prefix')_@('n')\"."
 
   :long "<p>We @(see hons-copy) the result because generated names are
 frequently used in fast alists.  See also @(see vl-pgenstr-p) and @(see
@@ -44,7 +44,7 @@ vl-pgenstr->val).</p>"
 (defsection vl-pgenstr-p
   :parents (vl-namedb-p)
   :short "@(call vl-pgenstr-p) recognizes strings of the form
-\"<tt>prefix</tt>_n\"."
+\"@('prefix')_n\"."
 
   :long "<p>See also @(see vl-pgenstr) and @(see vl-pgenstr->val).</p>"
 
@@ -81,9 +81,9 @@ vl-pgenstr->val).</p>"
 
 (defsection vl-pgenstr->val
   :parents (vl-namedb-p)
-  :short "@(call vl-pgenstr->val) retrieves <tt>n</tt> from the string
-<tt>str</tt>, which must have the form \"<tt>prefix</tt>_<tt>n</tt>\"; we
-return <tt>n</tt> as a natural number."
+  :short "@(call vl-pgenstr->val) retrieves @('n') from the string @('str'),
+which must have the form \"@('prefix')_@('n')\"; we return @('n') as a natural
+number."
 
   :long "<p>See also @(see vl-pgenstr) and @(see vl-pgenstr-p).</p>
 @(def vl-pgenstr->val)"
@@ -111,8 +111,8 @@ return <tt>n</tt> as a natural number."
 
 (defsection vl-pgenstr-highest
   :parents (vl-namedb-p)
-  :short "@(call vl-pgenstr-highest) returns the largest <tt>n</tt> such
-that \"<tt>prefix</tt>_n\" occurs in <tt>names</tt>."
+  :short "@(call vl-pgenstr-highest) returns the largest @('n') such that
+\"@('prefix')_n\" occurs in @('names')."
 
   (defund vl-pgenstr-highest (prefix names)
     (declare (xargs :guard (and (stringp prefix)
@@ -336,26 +336,25 @@ for a module.</p>
 
 <h3>Using Name DBs</h3>
 
-<p>Typically, the user begins by constructing a name db using <tt>(@(see
-vl-starting-namedb) names)</tt>, where <tt>names</tt> are just a list of the
-strings that are \"in use.\"</p>
+<p>Typically, the user begins by constructing a name db using @('(@(see
+vl-starting-namedb) names)'), where @('names') are just a list of the strings
+that are \"in use.\"</p>
 
 <p>Once constructed, name DBs must be used in a single-threaded discipline.
-That is, the functions for generating names actually return <tt>(mv fresh-name
-db-prime)</tt>, and to ensure that a sequence of generated names are unique,
-one must always use the most recently returned db to generate subsequent
-names.</p>
+That is, the functions for generating names actually return @('(mv fresh-name
+db-prime)'), and to ensure that a sequence of generated names are unique, one
+must always use the most recently returned db to generate subsequent names.</p>
 
 <p>Two functions are provided for generating names:</p>
 
-<p><tt>(@(see vl-namedb-indexed-name) prefix nf)</tt> produces a name that
-looks like <tt>prefix_n</tt>, where <tt>n</tt> is the smallest positive natural
-number <tt>n</tt> such that the name <tt>prefix_n</tt> is not in use.</p>
+<p>@('(vl-namedb-indexed-name prefix nf)') produces a name that looks like
+@('prefix_n'), where @('n') is the smallest positive natural number @('n') such
+that the name @('prefix_n') is not in use.</p>
 
-<p><tt>(@(see vl-namedb-plain-name) name nf)</tt> attempts to return
-<tt>name</tt> verbatim.  When this is not possible, a name of the form
-<tt>name_n</tt>, a note will be printed to standard output and instead we will
-produce a name with <tt>vl-namedb-indexed-name</tt>.</p>
+<p>@('(vl-namedb-plain-name name nf)') attempts to return @('name') verbatim.
+When this is not possible, a name of the form @('name_n'), a note will be
+printed to standard output and instead we will produce a name with
+@('vl-namedb-indexed-name').</p>
 
 <p>We use these functions for different purposes.  We think that @(see
 vl-namedb-indexed-name) should be used for \"throwaway\" names that don't need
@@ -365,27 +364,27 @@ should be used for splitting up instance names or in any other cases where a
 reliable name is desired.</p>
 
 <p>Because name DBs make use of fast alists, they should be destroyed with
-<tt>(@(see vl-free-namedb) nf)</tt> when you are done using them.</p>
+@('(vl-free-namedb nf)') when you are done using them.</p>
 
 
 <h3>Freshness Guarantee</h3>
 
 <p>To establish that name DBs generate only fresh names, we introduce the
-function <tt>(@(see vl-namedb-allnames) nf)</tt>.  This function returns a list
-of all names that the name db currently considers to be in use.  We prove:</p>
+function @('(vl-namedb-allnames nf)').  This function returns a list of
+all names that the name db currently considers to be in use.  We prove:</p>
 
 <ul>
 
-<li>Every name in <tt>names</tt> is among the <tt>allnames</tt> of the initial
-name db produced by <tt>(vl-starting-namedb names).</tt></li>
+<li>Every name in @('names') is among the @('allnames') of the initial name db
+produced by @('(vl-starting-namedb names).')</li>
 
-<li>The <tt>fresh-name</tt>s returned by @(see vl-namedb-indexed-name) or @(see
-vl-namedb-plain-name) are not members of the <tt>allnames</tt> of the input
+<li>The @('fresh-name')s returned by @(see vl-namedb-indexed-name) or @(see
+vl-namedb-plain-name) are not members of the @('allnames') of the input
 db.</li>
 
-<li>The <tt>allnames</tt> of the resulting <tt>db-prime</tt> include exactly
-the <tt>allnames</tt> of the input <tt>db</tt>, along with the generated
-<tt>fresh-name</tt>.</li>
+<li>The @('allnames') of the resulting @('db-prime') include exactly the
+@('allnames') of the input @('db'), along with the generated
+@('fresh-name').</li>
 
 </ul>
 
@@ -397,31 +396,29 @@ only give you fresh names.</p>
 
 <p>A name db has three fields:</p>
 
-<ul>
-<li><tt>names</tt>, a fast alist that associates strings to <tt>t</tt>.</li>
-<li><tt>pmap</tt>, a fast alist that associates strings to natural numbers.</li>
-<li><tt>plist</tt>, a fast alist that associates strings to <tt>t</tt>.</li>
-</ul>
+<ul> <li>@('names'), a fast alist that associates strings to @('t').</li>
+<li>@('pmap'), a fast alist that associates strings to natural numbers.</li>
+<li>@('plist'), a fast alist that associates strings to @('t').</li> </ul>
 
-<p><u>Invariant B1</u>.  The <tt>pmap</tt> is empty whenever <tt>names</tt> is
+<p><u>Invariant B1</u>.  The @('pmap') is empty whenever @('names') is
 empty.</p>
 
-<p><u>Invariant B2</u>.  Each <tt>prefix</tt> bound in <tt>pmap</tt> is bound
-to <tt>(@(see vl-pgenstr-highest) prefix (strip-cars names))</tt>.</p>
+<p><u>Invariant B2</u>.  Each @('prefix') bound in @('pmap') is bound to
+@('(@(see vl-pgenstr-highest) prefix (strip-cars names))').</p>
 
-<p><u>Invariant C1</u>.  The <tt>plist</tt> binds exactly those
-<tt>prefix</tt>es that are bound in <tt>pmap</tt>.</p>
+<p><u>Invariant C1</u>.  The @('plist') binds exactly those @('prefix')es that
+are bound in @('pmap').</p>
 
-<p>Intuitively, the <tt>names</tt> represents the set of all names that are
+<p>Intuitively, the @('names') represents the set of all names that are
 currently in use.  We use a fast-alist representation so that we can very
 quickly determine whether a plain name is available.</p>
 
-<p>Meanwhile, the <tt>pmap</tt> allows us to use something much like the
-\"historic scheme\" to quickly generate indexed names.  In particular, it binds
-some prefixes with their highest used index.  This way, we only need to scan
-the <tt>names</tt> once per prefix.</p>
+<p>Meanwhile, the @('pmap') allows us to use something much like the \"historic
+scheme\" to quickly generate indexed names.  In particular, it binds some
+prefixes with their highest used index.  This way, we only need to scan the
+@('names') once per prefix.</p>
 
-<p>The <tt>plist</tt> is really just an optimization that allows us to avoid
+<p>The @('plist') is really just an optimization that allows us to avoid
 needing to shrink the plists.  See the discussion in @(see
 vl-compatible-with-prefix-set-p) for details.</p>")
 
@@ -505,7 +502,7 @@ the freshness guarantee for name DBs, described in @(see vl-namedb-p).</p>"
 (defsection vl-starting-namedb
   :parents (vl-namedb-p)
   :short "@(call vl-starting-namedb) creates a name database that regards
-<tt>names</tt> as already in use."
+@('names') as already in use."
 
   (defund vl-starting-namedb (names)
     (declare (xargs :guard (string-listp names)))
@@ -530,9 +527,9 @@ the freshness guarantee for name DBs, described in @(see vl-namedb-p).</p>"
 
 (defsection vl-namedb-indexed-name
   :parents (vl-namedb-p)
-  :short "@(call vl-namedb-indexed-name) constructs a fresh name that
-looks like <tt>prefix_n</tt> for some natural number <tt>n</tt>, and returns
-<tt>(mv fresh-name db-prime)</tt>."
+  :short "@(call vl-namedb-indexed-name) constructs a fresh name that looks
+like @('prefix_n') for some natural number @('n'), and returns @('(mv
+fresh-name db-prime)')."
 
   (defund vl-namedb-indexed-name (prefix db)
     "Returns (MV FRESH-NAME DB-PRIME)"
@@ -626,13 +623,13 @@ looks like <tt>prefix_n</tt> for some natural number <tt>n</tt>, and returns
 
 (defsection vl-unlike-any-prefix-p
   :parents (vl-namedb-p)
-  :short "@(call vl-unlike-any-prefix-p) determines whether for all <tt>p</tt>
-in <tt>prefixes</tt>, <tt>(@(see vl-pgenstr-p) p name)</tt> is false."
+  :short "@(call vl-unlike-any-prefix-p) determines whether for all @('p') in
+@('prefixes'), @('(@(see vl-pgenstr-p) p name)') is false."
 
   :long "<p>We use this function in the implementation of @(see
 vl-namedb-plain-name).  When requesting a plain name, one might ask for a name
-like <tt>foo_3</tt>, which could screw up the prefix map if we are using
-<tt>foo</tt> as a prefix.</p>
+like @('foo_3'), which could screw up the prefix map if we are using @('foo')
+as a prefix.</p>
 
 <p>One solution would be to fix up the prefix map when this occurs.  But we
 take the easier approach of just not allowing you to request any name that
@@ -731,10 +728,9 @@ matches a current prefix.</p>"
 
 (defsection vl-namedb-plain-name
   :parents (vl-namedb-p)
-  :short "@(call vl-namedb-plain-name) returns <tt>(mv fresh-name
-db-prime)</tt>.  When possible, <tt>fresh-name</tt> is just <tt>name</tt>.
-When this is not possible, a note is printed and <tt>fresh-name</tt> looks like
-<tt>name_n</tt> instead."
+  :short "@(call vl-namedb-plain-name) returns @('(mv fresh-name db-prime)').
+When possible, @('fresh-name') is just @('name').  When this is not possible, a
+note is printed and @('fresh-name') looks like @('name_n') instead."
 
   (defund vl-namedb-plain-name (name db)
     "Returns (MV FRESH-NAME DB-PRIME)"
@@ -882,8 +878,8 @@ When this is not possible, a note is printed and <tt>fresh-name</tt> looks like
 
 (defsection vl-free-namedb
   :parents (vl-namedb-p)
-  :short "@(call vl-free-namedb) frees the fast alists associated with a
-name db and returns <tt>nil</tt>."
+  :short "@(call vl-free-namedb) frees the fast alists associated with a name
+db and returns @('nil')."
   :long "<p>The name db should never be used after this function is called,
 since doing so will result in fast-alist discipline failures.</p>
 
@@ -902,11 +898,11 @@ since doing so will result in fast-alist discipline failures.</p>
   :parents (vl-namedb-p)
   :short "Generate a list of fresh names."
 
-  :long "<p>@(call vl-namedb-plain-names) returns <tt>(mv fresh-names
-db-prime)</tt>.</p>
+  :long "<p>@(call vl-namedb-plain-names) returns @('(mv fresh-names
+db-prime)').</p>
 
-<p>When possible, <tt>fresh-names</tt> are just <tt>names</tt>.  When this is
-not possible due to name collisions, some of the <tt>fresh_names</tt> may have
+<p>When possible, @('fresh-names') are just @('names').  When this is not
+possible due to name collisions, some of the @('fresh_names') may have
 additional indexes as in @(see vl-namedb-indexed-name), and notes may be
 printed.</p>"
 

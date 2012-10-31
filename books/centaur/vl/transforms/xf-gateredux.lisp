@@ -25,26 +25,26 @@
 
 (defxdoc gateredux
   :parents (transforms)
-  :short "Eliminate gates like <tt>bufif0</tt>, <tt>nmos</tt>, etc."
+  :short "Eliminate gates like @('bufif0'), @('nmos'), etc."
   :long "<p>We implement a module rewrite which eliminates \"complicated\"
  gates, namely</p>
 
 <ul>
- <li><tt>bufif0</tt> and <tt>bufif1</tt>,</li>
- <li><tt>notif0</tt> and <tt>notif1</tt>,</li>
- <li><tt>nmos</tt>, <tt>rnmos</tt>, <tt>pmos</tt>, and <tt>rpmos</tt>,</li>
- <li><tt>cmos</tt> and <tt>rcmos</tt>,</li>
- <li><tt>pullup</tt> and <tt>pulldown</tt>,</li>
+ <li>@('bufif0') and @('bufif1'),</li>
+ <li>@('notif0') and @('notif1'),</li>
+ <li>@('nmos'), @('rnmos'), @('pmos'), and @('rpmos'),</li>
+ <li>@('cmos') and @('rcmos'),</li>
+ <li>@('pullup') and @('pulldown'),</li>
 </ul>
 
 <p>and replaces them with instances of modules that are written entirely in
-terms of the simple gates (buf, not, ...) and <tt>VL_1_BIT_MUX</tt>, which we
+terms of the simple gates (buf, not, ...) and @('VL_1_BIT_MUX'), which we
 regard as a primitive.</p>
 
 <p>The true semantics of these \"complicated\" above cannot be perfectly
 understood in an ordinary, four-valued Verilog simulation, because in certain
-cases they emit special values, <tt>L</tt> and <tt>H</tt>, that are not among
-the four primitive values of Verilog, namely <tt>{ 0, 1, X, Z }</tt>.</p>
+cases they emit special values, @('L') and @('H'), that are not among the four
+primitive values of Verilog, namely @('{ 0, 1, X, Z }').</p>
 
 <p>Because of this, our rewrites only conservatively approximate these gates.
 See test-redux.v for Cadence tests that establish the correspondence between
@@ -53,7 +53,7 @@ approximation allows us to at least deal with modules that are written using
 these gates, but in our E model, we may at some point wish to substitute
 primitives that are more faithful to the true Verilog semantics.</p>
 
-<p>The other gates, such as <tt>tran</tt>, <tt>tranif1</tt>, etc., are not yet
+<p>The other gates, such as @('tran'), @('tranif1'), etc., are not yet
 supported, since they are trickier.</p>
 
 <h3>Ordering notes.</h3>
@@ -326,17 +326,16 @@ VL_1_BIT_ZMUX from being redefined.  Ugly ugly!  Maybe add attributes like
   :parents (gateredux)
   :short "Maybe transform a complex gate into something simpler."
 
-  :long "<p><b>Signature:</b> @(call vl-gateinst-gateredux) returns <tt>(mv
-warnings new-gateinsts new-modinsts add-mods)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-gateinst-gateredux) returns @('(mv
+warnings new-gateinsts new-modinsts add-mods)').</p>
 
-<p><tt>X</tt> is a gate instance, which belongs to some module, say <tt>M</tt>;
-<tt>warnings</tt> is an accumulator for warnings.</p>
+<p>@('X') is a gate instance, which belongs to some module, say @('M');
+@('warnings') is an accumulator for warnings.</p>
 
 <p>Our job is to return a lists of gate and module instances,
-<tt>new-gateinsts</tt> and <tt>new-modinsts</tt>, which can be used to replace
-<tt>X</tt> in <tt>M</tt>.  Assuming that <tt>add-mods</tt> can be added to the
-module list, the resulting module will be a conservative approximation of
-<tt>M</tt>.</p>"
+@('new-gateinsts') and @('new-modinsts'), which can be used to replace @('X')
+in @('M').  Assuming that @('add-mods') can be added to the module list, the
+resulting module will be a conservative approximation of @('M').</p>"
 
   (defund vl-gateinst-gateredux (x warnings)
     "Returns (MV WARNINGS NEW-GATEINSTS NEW-MODINSTS ADD-MODS)"

@@ -35,7 +35,7 @@ gates, parameters, etc., into simple, hierarchical modules that do nothing more
 than instantiate other modules, with these primitive modules at the tips.</p>
 
 <p><b>BOZO</b> This set of primitives modules could be simplified, for instance
-we could rewrite all of the basic gate modules into <tt>nand</tt> or some other
+we could rewrite all of the basic gate modules into @('nand') or some other
 basic form.  We haven't done this yet, under the (probably misguided) theory
 that having a richer set of primitives might somehow be more efficient for our
 symbolic simulator.</p>")
@@ -99,12 +99,12 @@ symbolic simulator.</p>")
   :short "Primitive X generator."
   :long "<p>The Verilog definition of this module is:</p>
 
-<code>
+@({
 module VL_1_BIT_X (out) ;
   output out;
   assign out = 1'bx;
 endmodule
-</code>
+})
 
 <p>VL takes this as a primitive.  This module is mainly used by @(see
 weirdint-elim) to eliminate explicit X values from literals.</p>
@@ -133,12 +133,12 @@ weirdint-elim) to eliminate explicit X values from literals.</p>
   :short "Primitive Z generator."
   :long "<p>The Verilog definition of this module is:</p>
 
-<code>
+@({
 module VL_1_BIT_Z (out) ;
   output out;
   assign out = 1'bz;
 endmodule
-</code>
+})
 
 <p>VL takes this as a primitive.  This module is mainly used by @(see
 weirdint-elim) to eliminate explicit Z values from literals.</p>
@@ -167,13 +167,13 @@ weirdint-elim) to eliminate explicit Z values from literals.</p>
   :short "Primitive assignment module."
   :long "<p>The Verilog definition of this module is:</p>
 
-<code>
+@({
 module VL_1_BIT_ASSIGN (out, in) ;
   output out;
   input in;
   assign out = in;
 endmodule
-</code>
+})
 
 <p>VL takes this as a primitive.  This module is also the basis for wider
 assignment modules; see @(see vl-make-n-bit-assign).</p>
@@ -181,11 +181,10 @@ assignment modules; see @(see vl-make-n-bit-assign).</p>
 <p>The corresponding @(see esim) primitive is @(see acl2::*esim-id*).</p>
 
 <p>Something subtle is that there is probably no way to implement
-<tt>VL_1_BIT_ASSIGN</tt> in hardware.  One obvious approach would be to use a
-buffer, but then <tt>out</tt> would be X when <tt>in</tt> is Z.  Another
-approach would be to just wire together out and in, but then other assignments
-to <tt>out</tt> would also affect <tt>in</tt>, and in Verilog this isn't the
-case.</p>
+@('VL_1_BIT_ASSIGN') in hardware.  One obvious approach would be to use a
+buffer, but then @('out') would be X when @('in') is Z.  Another approach would
+be to just wire together out and in, but then other assignments to @('out')
+would also affect @('in'), and in Verilog this isn't the case.</p>
 
 <p>Originally our @(see occform) transformation tried to use buffers for
 assignments since this seemed to be more conservative.  But these extra buffers
@@ -215,13 +214,13 @@ modules that involve transistors.</p>")
   :short "Primitive assignment with delay."
   :long "<p>The Verilog definition of this module is:</p>
 
-<code>
+@({
 module VL_1_BIT_DELAY_1 (out, in) ;
   output out;
   input in;
   assign #1 out = in;
 endmodule
-</code>
+})
 
 <p>VL takes this as a primitive.  It is used by our @(see assigndelays)
 transform to separate delays from assignment statements.</p>
@@ -255,17 +254,17 @@ an ordinary @(see *vl-1-bit-assign*).</p>")
   :short "Primitive buffer module."
   :long "<p>The Verilog definition of this module is:</p>
 
-<code>
+@({
 module VL_1_BIT_BUF (out, in) ;
   output out;
   input in;
   buf gate (out, in);
 endmodule
-</code>
+})
 
-<p>VL takes this as a primitive.  We use this in place of <tt>buf</tt> gates,
-but probably not for much else since ordinary assignments are handled with
-@(see *vl-1-bit-assign*), instead.</p>
+<p>VL takes this as a primitive.  We use this in place of @('buf') gates, but
+probably not for much else since ordinary assignments are handled with @(see
+*vl-1-bit-assign*), instead.</p>
 
 <p>The corresponding @(see esim) primitive is @(see acl2::*esim-buf*).</p>")
 
@@ -296,17 +295,17 @@ but probably not for much else since ordinary assignments are handled with
   :short "Primitive not-gate module."
   :long "<p>The Verilog definition of this module is:</p>
 
-<code>
+@({
 module VL_1_BIT_NOT (out, in) ;
   output out;
   input in;
   not gate (out, in);
 endmodule
-</code>
+})
 
-<p>VL takes this as a primitive.  We use this in place of <tt>not</tt> gates
-and <tt>~</tt> operators, and also in many modules we generate for other
-operators like <tt>+</tt>.</p>
+<p>VL takes this as a primitive.  We use this in place of @('not') gates and
+@('~') operators, and also in many modules we generate for other operators like
+@('+').</p>
 
 <p>The corresponding @(see esim) primitive is @(see acl2::*esim-not*).</p>")
 
@@ -337,18 +336,18 @@ operators like <tt>+</tt>.</p>
   :short "Primitive and-gate module."
   :long "<p>The Verilog definition of this module is:</p>
 
-<code>
+@({
 module VL_1_BIT_AND (out, a, b) ;
   output out;
   input a;
   input b;
   and gate (out, a, b);
 endmodule
-</code>
+})
 
-<p>VL takes this as a primitive.  We use this in place of <tt>and</tt> gates
-and <tt>&amp;</tt> operators, and also in many modules we generate for other
-operators like <tt>+</tt>.</p>
+<p>VL takes this as a primitive.  We use this in place of @('and') gates and
+@('&') operators, and also in many modules we generate for other operators like
+@('+').</p>
 
 <p>The corresponding @(see esim) primitive is @(see acl2::*esim-and*)</p>")
 
@@ -381,18 +380,18 @@ operators like <tt>+</tt>.</p>
   :short "Primitive or-gate module."
   :long "<p>The Verilog definition of this module is:</p>
 
-<code>
+@({
 module VL_1_BIT_OR (out, a, b) ;
   output out;
   input a;
   input b;
   or gate (out, a, b);
 endmodule
-</code>
+})
 
-<p>VL takes this as a primitive.  We use this in place of <tt>or</tt> gates and
-<tt>|</tt> operators, and also in many modules we generate for other operators
-like <tt>+</tt>.</p>
+<p>VL takes this as a primitive.  We use this in place of @('or') gates and
+@('|') operators, and also in many modules we generate for other operators like
+@('+').</p>
 
 <p>The corresponding @(see esim) primitive is @(see acl2::*esim-or*)</p>")
 
@@ -425,18 +424,18 @@ like <tt>+</tt>.</p>
   :short "Primitive xor-gate module."
   :long "<p>The Verilog definition of this module is:</p>
 
-<code>
+@({
 module VL_1_BIT_XOR (out, a, b) ;
   output out;
   input a;
   input b;
   xor gate (out, a, b);
 endmodule
-</code>
+})
 
-<p>VL takes this as a primitive.  We use this in place of <tt>xor</tt> gates
-and <tt>^</tt> operators, and also in many modules we generate for other
-operators like <tt>+</tt>.</p>
+<p>VL takes this as a primitive.  We use this in place of @('xor') gates and
+@('^') operators, and also in many modules we generate for other operators like
+@('+').</p>
 
 <p>The corresponding @(see esim) primitive is @(see acl2::*esim-xor*)</p>")
 
@@ -469,17 +468,17 @@ operators like <tt>+</tt>.</p>
   :short "Primitive nand-gate module."
   :long "<p>The Verilog definition of this module is:</p>
 
-<code>
+@({
 module VL_1_BIT_NAND (out, a, b) ;
   output out;
   input a;
   input b;
   nand gate (out, a, b);
 endmodule
-</code>
+})
 
-<p>VL takes this as a primitive.  We use this in place of <tt>nand</tt> gates
-but probably not much else.</p>
+<p>VL takes this as a primitive.  We use this in place of @('nand') gates but
+probably not much else.</p>
 
 <p>The corresponding @(see esim) primitive is @(see acl2::*esim-nand*)</p>")
 
@@ -512,17 +511,17 @@ but probably not much else.</p>
   :short "Primitive nor-gate module."
   :long "<p>The Verilog definition of this module is:</p>
 
-<code>
+@({
 module VL_1_BIT_NOR (out, a, b) ;
   output out;
   input a;
   input b;
   nor gate (out, a, b);
 endmodule
-</code>
+})
 
-<p>VL takes this as a primitive.  We use this in place of <tt>nor</tt> gates,
-but probably not much else.</p>
+<p>VL takes this as a primitive.  We use this in place of @('nor') gates, but
+probably not much else.</p>
 
 <p>The corresponding @(see esim) primitive is @(see acl2::*esim-nor*)</p>")
 
@@ -555,17 +554,17 @@ but probably not much else.</p>
   :short "Primitive xnor-gate module."
   :long "<p>The Verilog definition of this module is:</p>
 
-<code>
+@({
 module VL_1_BIT_XNOR (out, a, b) ;
   output out;
   input a;
   input b;
   xnor gate (out, a, b);
 endmodule
-</code>
+})
 
-<p>VL takes this as a primitive.  We use this in place of <tt>xnor</tt> gates,
-but probably not much else.</p>
+<p>VL takes this as a primitive.  We use this in place of @('xnor') gates, but
+probably not much else.</p>
 
 <p>The corresponding @(see esim) primitive is @(see acl2::*esim-xnor*)</p>")
 
@@ -599,22 +598,22 @@ but probably not much else.</p>
   :short "Primitive tri-state buffer module."
   :long "<p>The Verilog meaning of this module is:</p>
 
-<code>
+@({
 module VL_1_BIT_ZMUX (out, sel, a);
   output out;
   input sel;
   input a;
   assign out = sel ? a : 1'bZ;
 endmodule
-</code>
+})
 
 <p>VL takes this as a primitive.  It is used in @(see vl-mux-occform) as the
-basis for conditional expressions with <tt>Z</tt> branches that are typically
-used to implement muxes.</p>
+basis for conditional expressions with @('Z') branches that are typically used
+to implement muxes.</p>
 
 <p>Verilog truth table:</p>
 
-<code>
+@({
   sel    a    |   out         sel    a        out
  -------------+---------     -------------+-----------
    0     0    |    z           x     0    |    x
@@ -625,11 +624,11 @@ used to implement muxes.</p>
    1     1    |    1           z     1    |    x
    1     x    |    x           z     x    |    x
    1     z    |    z           z     z    |    x
-</code>
+})
 
 <p>The corresponding @(see esim) primitive is @(see *esim-tri*), which drives
-its output to <tt>(tristate sel a)</tt>; see @(see 4v-tristate).  This matches
-the Verilog truth table exactly.</p>")
+its output to @('(tristate sel a)'); see @(see 4v-tristate).  This matches the
+Verilog truth table exactly.</p>")
 
 (defconsts *vl-1-bit-zmux*
   (b* ((name "VL_1_BIT_ZMUX")
@@ -657,28 +656,28 @@ the Verilog truth table exactly.</p>")
 
 (defxdoc *vl-1-bit-ceq*
   :parents (primitives)
-  :short "Primitive <tt>===</tt> module."
+  :short "Primitive @('===') module."
   :long "<p>The Verilog definition of this module is:</p>
 
-<code>
+@({
 module VL_1_BIT_CEQ (out, a, b) ;
   output out;
   input a;
   input b;
   assign out = (a === b);
 endmodule
-</code>
+})
 
-<p>VL takes this as a primitive, and uses it to implement <tt>===</tt> and
-<tt>!==</tt> operators.</p>
+<p>VL takes this as a primitive, and uses it to implement @('===') and @('!==')
+operators.</p>
 
-<p>These operators are inherently unsound because they do not treat <tt>X</tt>
-as an unknown.  For our back-end tools, we usually conservatively approximate
-<tt>VL_1_BIT_CEQ</tt> with an <tt>xnor</tt> gate.  But a less conservative tool
-might choose to give it a different interpretation.</p>
+<p>These operators are inherently unsound because they do not treat @('X') as
+an unknown.  For our back-end tools, we usually conservatively approximate
+@('VL_1_BIT_CEQ') with an @('xnor') gate.  But a less conservative tool might
+choose to give it a different interpretation.</p>
 
 <p>The corresponding @(see esim) primitive is @(see acl2::*esim-ceq*), which is
-just an <tt>xnor</tt> gate.</p>")
+just an @('xnor') gate.</p>")
 
 (defconsts *vl-1-bit-ceq*
   ;; BOZO this should probably be a non-primitive.
@@ -711,20 +710,20 @@ just an <tt>xnor</tt> gate.</p>")
   :short "Primitive edge-triggered register."
   :long "<p>The Verilog meaning of this module is:</p>
 
-<code>
+@({
 module VL_1_BIT_FLOP (q, clk, d) ;
   output reg q;
   input clk;
   input d;
 
   always @@(posedge clk)
-     q &lt;= d;
+     q <= d;
 
 endmodule
-</code>
+})
 
 <p>VL takes this as a primitive.  The @(see flop-inference) transform converts
-certain <tt>always</tt> statements into instances of this module.</p>
+certain @('always') statements into instances of this module.</p>
 
 <p>The corresponding @(see esim) primitive is @(see acl2::*esim-flop*).</p>")
 
@@ -763,20 +762,20 @@ certain <tt>always</tt> statements into instances of this module.</p>
   :short "Primitive level-sensitive latch."
   :long "<p>The Verilog meaning of this module is:</p>
 
-<code>
+@({
 module VL_1_BIT_LATCH (q, clk, d);
    output reg q;
    input clk;
    input d;
 
    always @@(d or clk)
-     q &lt;= clk ? d : q;
+     q <= clk ? d : q;
 
 endmodule
-</code>
+})
 
 <p>VL takes this as a primitive.  The @(see latch-inference) transform converts
-certain <tt>always</tt> statements into instances of this module.</p>
+certain @('always') statements into instances of this module.</p>
 
 <p>The corresponding @(see esim) primitive is @(see acl2::*esim-latch*).</p>")
 
@@ -826,7 +825,7 @@ certain <tt>always</tt> statements into instances of this module.</p>
 ;;   :short "Primitive module that resolves multiple drivers on a wire."
 ;;   :long "<p>The Verilog definition of this module is:</p>
 
-;; <code>
+;; @({
 ;; module VL_1_BIT_RESOLVE_WIRE (out, a, b) ;
 ;;   output out;
 ;;   input a;
@@ -834,7 +833,7 @@ certain <tt>always</tt> statements into instances of this module.</p>
 ;;   assign out = a;
 ;;   assign out = b;
 ;; endmodule
-;; </code>
+;; })
 
 ;; <p>VL takes this as a primitive.  This module, and wrappers that extend it to
 ;; higher arities and wider signals, may be introduced by the @(see multidrive)
@@ -888,12 +887,11 @@ certain <tt>always</tt> statements into instances of this module.</p>
 
 ;; Commenting this out for now, until we implement WAND/WOR.
 
-;; (defxdoc *vl-1-bit-resolve-wor*
-;;   :parents (primitives)
-;;   :short "Primitive module that resolves multiple drivers on a <tt>wor</tt> net."
-;;   :long "<p>The Verilog definition of this module is:</p>
+;; (defxdoc *vl-1-bit-resolve-wor* :parents (primitives) :short "Primitive
+;;   module that resolves multiple drivers on a @('wor') net."  :long "<p>The
+;;   Verilog definition of this module is:</p>
 
-;; <code>
+;; @({
 ;; module VL_1_BIT_RESOLVE_WOR (out, a, b) ;
 ;;   output out;
 ;;   input a;
@@ -904,7 +902,7 @@ certain <tt>always</tt> statements into instances of this module.</p>
 ;;   assign out = a;
 ;;   assign out = b;
 ;; endmodule
-;; </code>
+;; })
 
 ;; <p>VL takes this as a primitive.  This module, and wrappers that extend it to
 ;; higher arities and wider signals, may be introduced by the @(see multidrive)

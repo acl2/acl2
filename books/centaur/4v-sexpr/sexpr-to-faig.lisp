@@ -47,17 +47,16 @@ hardware proofs.</p>
 
 <p><b>Signature:</b> @(call 4v-sexpr-to-faig) builds an @(see faig).</p>
 
-<p><tt>x</tt> is the sexpr you want to convert into an FAIG.</p>
+<p>@('x') is the sexpr you want to convert into an FAIG.</p>
 
-<p><tt>onoff</tt> argument should be an alist that assigns an initial FAIG for
-every variable of <tt>x</tt>.  Commonly the <tt>onoff</tt> alist should bind
-each variable <tt>v</tt> to some pair of fresh variables like <tt>(v1
-. v0)</tt>, i.e., <tt>v1</tt> is the onset variable and <tt>v0</tt> is the
-offset variable for <tt>v</tt>, but other uses are also possible.  It is
-beneficial for <tt>onoff</tt> to be a fast alist, but it will be made fast if
-necessary.</p>
+<p>@('onoff') argument should be an alist that assigns an initial FAIG for
+every variable of @('x').  Commonly the @('onoff') alist should bind each
+variable @('v') to some pair of fresh variables like @('(v1 . v0)'), i.e.,
+@('v1') is the onset variable and @('v0') is the offset variable for @('v'),
+but other uses are also possible.  It is beneficial for @('onoff') to be a fast
+alist, but it will be made fast if necessary.</p>
 
-<p><tt>optimize</tt> is an optional flag that defaults to <tt>t</tt>.  When
+<p>@('optimize') is an optional flag that defaults to @('t').  When
 optimization is allowed, we convert the sexpr in a smarter way that is
 generally faster and produces smaller FAIGs which may be easier for other tools
 to analyze.  You almost certainly want optimization <b>unless</b> you are doing
@@ -67,17 +66,17 @@ optimization.)</p>
 
 <p>The basic idea of the optimization is to take advantage of the fact that
 many sexpr operations are actually \"three-valued,\" i.e., they never produce
-Z.  For instance, when we are converting a sexpr like <tt>(NOT (AND A B))</tt>
-into an @(see faig), since we know the result of an <tt>AND</tt> gate is never
-Z, it suffices to use @(see t-aig-not) instead of @(see f-aig-not).  There are
+Z.  For instance, when we are converting a sexpr like @('(NOT (AND A B))') into
+an @(see faig), since we know the result of an @('AND') gate is never Z, it
+suffices to use @(see t-aig-not) instead of @(see f-aig-not).  There are
 similar reductions for many gates; see @(see faig-constructors) for some
 details.</p>
 
-<p>You might regard <tt>4v-sexpr-to-faig</tt> as a somewhat low-level function.
+<p>You might regard @('4v-sexpr-to-faig') as a somewhat low-level function.
 Its correctness theorem is rather elaborate and to make use of it you generally
-need to construct an <tt>onoff</tt> alist that sensibly accomplishes your goal.
-A good starting place and example might be @(see 4v-sexpr-eval-by-faig), which
-generates an appropriate <tt>onoff</tt> so that it can carry out a @(see
+need to construct an @('onoff') alist that sensibly accomplishes your goal.  A
+good starting place and example might be @(see 4v-sexpr-eval-by-faig), which
+generates an appropriate @('onoff') so that it can carry out a @(see
 4v-sexpr-eval) computation using FAIG evaluation as the engine.</p>")
 
 
@@ -135,8 +134,8 @@ i.e., the four possible constant FAIGs.</p>
   :parents (4v-sexpr-to-faig)
   :short "Identity for FAIG constants, or constant X otherwise."
   :long "<p>Note that an older version of this function independently coerced
-the car/cdr of <tt>t</tt> to a Booleans when they were conses, but it seems
-simpler to just say anything malformed gets fixed to <tt>X</tt>.</p>"
+the car/cdr of @('t') to a Booleans when they were conses, but it seems simpler
+to just say anything malformed gets fixed to @('X').</p>"
 
   (defun faig-const-fix (x)
     (declare (xargs :guard t))
@@ -327,7 +326,7 @@ faig-constructors)."
   :parents (4v-sexpr-to-faig)
   :short "Non-optimized conversion from sexprs into faigs."
   :long "<p>This is a straightforward, non-optimizing conversion where we just
-use the <tt>f-</tt> versions of the @(see faig-constructors) at each level.</p>"
+use the @('f-') versions of the @(see faig-constructors) at each level.</p>"
 
   (mutual-recursion
    (defun 4v-sexpr-to-faig-plain (x onoff)

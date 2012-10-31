@@ -27,8 +27,8 @@
   :short "Recognizes RAM modules."
 
   :long "<p>@(call vl-rammodule-p) determines whether a module is a RAM.  This
-is done by looking for the <tt>VL_RAM</tt> attribute, which is set by VL's
-parser when it creates RAM modules.</p>"
+is done by looking for the @('VL_RAM') attribute, which is set by VL's parser
+when it creates RAM modules.</p>"
 
   (defund vl-rammodule-p (x)
     (declare (xargs :guard (vl-module-p x)))
@@ -43,7 +43,7 @@ parser when it creates RAM modules.</p>"
   :short "Get the address width from a RAM module."
 
   :long "<p>@(call vl-rammodule->addr-width) returns the number of address bits
-for a RAM module.  This information is saved in the <tt>VL_RAM_ADDR_WIDTH</tt>
+for a RAM module.  This information is saved in the @('VL_RAM_ADDR_WIDTH')
 attribute when VL's parser creates RAM modules.</p>"
 
   (defund vl-rammodule->addr-width (x)
@@ -72,7 +72,7 @@ attribute when VL's parser creates RAM modules.</p>"
   :short "Get the data width from a RAM module."
 
   :long "<p>@(call vl-rammodule->data-width) returns the width of each entry in
-a RAM module.  This information is saved in the <tt>VL_RAM_DATA_WIDTH</tt>
+a RAM module.  This information is saved in the @('VL_RAM_DATA_WIDTH')
 attribute when VL's parser creates RAM modules.</p>"
 
   (defund vl-rammodule->data-width (x)

@@ -47,8 +47,8 @@
   :parents (occform)
   :short "Helper function for creating ports in generated modules."
 
-  :long "<p><b>Signature:</b> @(call vl-occform-mkwire) returns <tt>(mv expr
-netdecl)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-occform-mkwire) returns @('(mv expr
+netdecl)').</p>
 
 <p>Imagine that we are trying to programmatically generate a module, and we
 want to add a wire with the given name and width.  This function just generates
@@ -80,8 +80,8 @@ and is \"already sized.\"</p>"
   :parents (occform)
   :short "Helper for creating ports in generated modules."
 
-  :long "<p><b>Signature:</b> @(call vl-occform-mkport) returns <tt>(mv expr
-port portdecl netdecl)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-occform-mkport) returns @('(mv expr
+port portdecl netdecl)').</p>
 
 <p>Imagine that we are trying to programmatically generate a module, and we
 want to add a port with the given name, direction, and width.  This function

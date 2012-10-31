@@ -118,16 +118,15 @@ individual bits of the wire, in msb-first order.</p>
 
 <ul>
 
-<li>Given a range-free Verilog wire named <tt>w</tt>, we bind the string
-<tt>\"w\"</tt> to <tt>(ACL2::w)</tt>, i.e., a singleton list with just one
-symbol; and</li>
+<li>Given a range-free Verilog wire named @('w'), we bind the string @('\"w\"')
+to @('(ACL2::w)'), i.e., a singleton list with just one symbol; and</li>
 
-<li>Given a Verilog wire, <tt>w</tt>, with range <tt>[high:low]</tt>, we bind
-<tt>\"w\"</tt> to <tt>(ACL2::w[high] ... ACL2::w[low])</tt>, i.e., a list of
-symbols from high to low, inclusive.</li>
+<li>Given a Verilog wire, @('w'), with range @('[high:low]'), we bind
+@('\"w\"') to @('(ACL2::w[high] ... ACL2::w[low])'), i.e., a list of symbols
+from high to low, inclusive.</li>
 
-<li>Given a Verilog wire, <tt>w</tt>, with range <tt>[low:high]</tt>, we bind
-<tt>\"w\"</tt> to <tt>(ACL2::w[low] ... ACL2::w[high])</tt>.</li>
+<li>Given a Verilog wire, @('w'), with range @('[low:high]'), we bind
+@('\"w\"') to @('(ACL2::w[low] ... ACL2::w[high])').</li>
 
 </ul>
 
@@ -136,8 +135,8 @@ wires no matter what their names.  We can guarantee that the bits produced in a
 wire alist are unique as long as the net and register declarations for the
 module are uniquely named.</p>
 
-<p>We take special care to avoid generating the names <tt>T</tt>, <tt>NIL</tt>,
-and <tt>F</tt>, since these have a special special meaning in Emod; see @(see
+<p>We take special care to avoid generating the names @('T'), @('NIL'), and
+@('F'), since these have a special special meaning in Emod; see @(see
 vl-plain-wire-name).</p>
 
 <h3>Efficiency Considerations</h3>
@@ -146,14 +145,14 @@ vl-plain-wire-name).</p>
 expensive.</p>
 
 <p>In particular, the first time we build a wire alist for a module, we are
-generally doing \"first-time\" <tt>intern</tt>s for the names of every bit.
-It is far more expensive to <tt>intern</tt> a string for the first time than
-to subsequently <tt>intern</tt> it again.  For instance, when we run the
-following code in a fresh CCL session, we find that it takes 2.2 seconds to
-intern 100,000 fresh strings the first time, but it only takes 0.15 seconds to
-intern them all again.</p>
+generally doing \"first-time\" @('intern')s for the names of every bit.  It is
+far more expensive to @('intern') a string for the first time than to
+subsequently @('intern') it again.  For instance, when we run the following
+code in a fresh CCL session, we find that it takes 2.2 seconds to intern
+100,000 fresh strings the first time, but it only takes 0.15 seconds to intern
+them all again.</p>
 
-<code>
+@({
  (defpackage \"FOO\" (:use))
 
  (ccl::egc nil)
@@ -169,11 +168,11 @@ intern them all again.</p>
 
  ;; 0.15 seconds, no allocation
  (time (loop for str in *strings* do (intern str \"FOO\")))
-</code>
+})
 
 <p>When we are interning millions of symbols, the package's size also has a
 huge impact on interning performance.  Because of this, we typically build ACL2
-with <tt>ACL2_SIZE=3000000</tt> to avoid very slow interning.</p>
+with @('ACL2_SIZE=3000000') to avoid very slow interning.</p>
 
 <p>Moreover, whether we intern these symbols \"eagerly\" by constructing a wire
 alist or \"lazily\" as they are needed, we will end up doing the same number of
@@ -233,35 +232,34 @@ instead).</p>"
 
 (defsection vl-plain-wire-name
   :parents (vl-wirealist-p)
-  :short "@(call vl-plain-wire-name) is given <tt>name</tt>, a string, and
-typically returns the symbol <tt>ACL2::name</tt>."
+  :short "@(call vl-plain-wire-name) is given @('name'), a string, and
+typically returns the symbol @('ACL2::name')."
 
-  :long "<p>Typically, for a wire named <tt>foo</tt>, we generate the symbol
-<tt>ACL2::|foo|</tt>.  But there are three special cases.</p>
+  :long "<p>Typically, for a wire named @('foo'), we generate the symbol
+@('ACL2::|foo|').  But there are three special cases.</p>
 
-<p>The symbols <tt>ACL2::T</tt> and <tt>ACL2::F</tt> were historically given a
-special interpretation by the EMOD hardware simulator, and represented the
-constant true and false functions.  These wires no longer have a special
-meaning in ESIM, but throughout VL our notion of emodwires still assumes that T
-and F stand for constant true and false, and, e.g., we still rely on this in
-@(see make-esim).  We might eventually get away from this by using a transform
+<p>The symbols @('ACL2::T') and @('ACL2::F') were historically given a special
+interpretation by the EMOD hardware simulator, and represented the constant
+true and false functions.  These wires no longer have a special meaning in
+ESIM, but throughout VL our notion of emodwires still assumes that T and F
+stand for constant true and false, and, e.g., we still rely on this in @(see
+make-esim).  We might eventually get away from this by using a transform
 analagous to @(see weirdint-elim) to introduce T/F wires and eliminate
 constants.</p>
 
-<p>The symbol <tt>ACL2::NIL</tt> is also special, but for a different and more
+<p>The symbol @('ACL2::NIL') is also special, but for a different and more
 fundamental reason: NIL has a special meaning in @(see acl2::patterns), so to
 make sure that every @(see vl-emodwire-p) is a good atom in the sense of
 patterns, we do not allow NIL to even be an emodwire.</p>
 
-<p>At any rate, if we encounter a Verilog wire named <tt>T</tt>, <tt>F</tt>, or
-<tt>NIL</tt>, we must use some other name.  What other name should we use?  We
-want to pick something that will not clash with other wire names, but which
-reflects the original name of the wire.</p>
+<p>At any rate, if we encounter a Verilog wire named @('T'), @('F'), or
+@('NIL'), we must use some other name.  What other name should we use?  We want
+to pick something that will not clash with other wire names, but which reflects
+the original name of the wire.</p>
 
-<p>We have chosen to use <tt>T[0]</tt>, <tt>F[0]</tt>, and <tt>NIL[0]</tt> as
-the replacements.  This should not be too confusing since, e.g., in Verilog
-<tt>T[0]</tt> is typically a valid way to reference a wire named
-<tt>T</tt>.</p>"
+<p>We have chosen to use @('T[0]'), @('F[0]'), and @('NIL[0]') as the
+replacements.  This should not be too confusing since, e.g., in Verilog
+@('T[0]') is typically a valid way to reference a wire named @('T').</p>"
 
 ; Performance comparison:
 ;   Logic:  6.286, 6.285, 6.298
@@ -342,10 +340,10 @@ the replacements.  This should not be too confusing since, e.g., in Verilog
 (defsection vl-emodwires-from-high-to-low
   :parents (vl-wirealist-p)
   :short "@(call vl-emodwires-from-high-to-low) returns a list of @(see
- vl-emodwire-p)s: <tt>(name[high] name[high-1] ... name[low])</tt>"
+vl-emodwire-p)s: @('(name[high] name[high-1] ... name[low])')"
 
-  :long "<p>The range is inclusive on both sides, so if <tt>low</tt> and
-<tt>high</tt> are the same you still get one wire.</p>"
+  :long "<p>The range is inclusive on both sides, so if @('low') and @('high')
+are the same you still get one wire.</p>"
 
 ;; Here's a stupid performance testing loop.  It's somewhat sensitive to
 ;; how full the ACL2 package is.  The times below were gathered in a fresh
@@ -589,10 +587,10 @@ the replacements.  This should not be too confusing since, e.g., in Verilog
 (defsection vl-emodwires-from-msb-to-lsb
   :parents (vl-wirealist-p)
   :short "@(call vl-emodwires-from-msb-to-lsb) returns a list of @(see
- vl-emodwire-p)s: <tt>(name[msb] name[msb +/- 1] ... name[lsb])</tt>"
+vl-emodwire-p)s: @('(name[msb] name[msb +/- 1] ... name[lsb])')"
 
-  :long "<p>The range is inclusive on both sides, so if <tt>msb</tt> and
-<tt>lsb</tt> are the same you still get one wire.</p>"
+  :long "<p>The range is inclusive on both sides, so if @('msb') and @('lsb')
+are the same you still get one wire.</p>"
 
 ; I'm just leaving this enabled.
 
@@ -618,8 +616,8 @@ the replacements.  This should not be too confusing since, e.g., in Verilog
   :parents (vl-wirealist-p)
   :short "The @(see vl-emodwire-p)s for a net declaration, in MSB-first order."
 
-  :long "<p><b>Signature:</b> @(call vl-netdecl-msb-emodwires) returns <tt>(mv
-successp warnings wires)</tt>.</p>"
+  :long "<p><b>Signature:</b> @(call vl-netdecl-msb-emodwires) returns @('(mv
+successp warnings wires)').</p>"
 
   (defund vl-netdecl-msb-emodwires (x warnings)
     (declare (xargs :guard (and (vl-netdecl-p x)
@@ -686,13 +684,12 @@ successp warnings wires)</tt>.</p>"
   :short "Generate a (fast) wirealist from a @(see vl-netdecllist-p)."
 
   :long "<p><b>Signature</b>: @(call vl-netdecllist-to-wirealist) returns
-<tt>(mv successp warnings walist)</tt>.</p>
+@('(mv successp warnings walist)').</p>
 
-<p>The <tt>successp</tt> flag indicates whether <em>all</em> nets were
-successfully converted into wire-alist entires; even if <tt>successp</tt> is
-<tt>nil</tt>, we will produce at least a partial wire alist for this module
-which is as complete as possible.  Any failure will result in at least one
-fatal warning.</p>"
+<p>The @('successp') flag indicates whether <em>all</em> nets were successfully
+converted into wire-alist entires; even if @('successp') is @('nil'), we will
+produce at least a partial wire alist for this module which is as complete as
+possible.  Any failure will result in at least one fatal warning.</p>"
 
   (defund vl-netdecllist-to-wirealist (x warnings)
     (declare (xargs :guard (and (vl-netdecllist-p x)
@@ -827,15 +824,15 @@ fatal warning.</p>"
   :parents (vl-wirealist-p)
   :short "Safely generate the (fast) wirealist for a module."
 
-  :long "<p><b>Signature:</b> @(call vl-module-wirealist) returns <tt>(mv
-successp warnings walist)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-module-wirealist) returns @('(mv
+successp warnings walist)').</p>
 
 <p>Note: this function is memoized and generates fast alists.  You should be
 sure to clear its memo table so that these fast alists can be garbage
 collected.</p>
 
-<p>This function can fail, setting <tt>successp</tt> to <tt>nil</tt> and
-adding fatal warnings, when:</p>
+<p>This function can fail, setting @('successp') to @('nil') and adding fatal
+warnings, when:</p>
 
 <ul>
 
@@ -1183,15 +1180,15 @@ theorem:</p>
   :parents (vl-msb-expr-bitlist)
   :short "Produce the @(see vl-emodwire-p)s for a @(see vl-constint-p)."
 
-  :long "<p><b>Signature:</b> @(call vl-msb-constint-bitlist) returns
-<tt>(mv successp warnings bits)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-msb-constint-bitlist) returns @('(mv
+successp warnings bits)').</p>
 
-<p>In <tt>defm</tt> commands, the symbols <tt>ACL2::t</tt> and <tt>ACL2::f</tt>
-are interpreted as literal 1 and 0 bits.</p>
+<p>In @('defm') commands, the symbols @('ACL2::t') and @('ACL2::f') are
+interpreted as literal 1 and 0 bits.</p>
 
 <p>We are given an atomic, constant integer expression.  This expression has
 some width and value.  We return a <i>width</i>-long list of symbols
-<tt>ACL2::T</tt> or <tt>ACL2::F</tt> that represent this <i>value</i>.</p>"
+@('ACL2::T') or @('ACL2::F') that represent this <i>value</i>.</p>"
 
   (local (include-book "arithmetic-3/floor-mod/floor-mod" :dir :system))
 
@@ -1324,8 +1321,8 @@ some width and value.  We return a <i>width</i>-long list of symbols
   :parents (vl-msb-expr-bitlist)
   :short "Produce the @(see vl-emodwire-p)s for a @(see vl-id-p)."
 
-  :long "<p><b>Signature:</b> @(call vl-msb-wire-bitlist) returns
-<tt>(mv successp warnings bits)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-msb-wire-bitlist) returns @('(mv
+successp warnings bits)').</p>
 
 <p>We are given an atomic, identifier expression.  This expression has some
 width and refers to a particular wire.  We return a wires associated with this
@@ -1412,14 +1409,14 @@ name in MSB order.</p>"
   :parents (vl-msb-expr-bitlist)
   :short "Produce the @(see vl-emodwire-p)s for a part-select."
 
-  :long "<p><b>Signature:</b> @(call vl-msb-partselect-bitlist) returns <tt>(mv
-successp warnings bits)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-msb-partselect-bitlist) returns @('(mv
+successp warnings bits)').</p>
 
-<p>We are given an part-select expression, <tt>x</tt>, a wire alist,
-<tt>walist</tt>, and an @(see warnings) accumulator, <tt>warnings</tt>.
-accumulator.  We attempt to return the list of wires that correspond to this
-part select, in MSB order.  We are careful to ensure that the range is
-resolved, the indices are in bounds, and so on.</p>"
+<p>We are given an part-select expression, @('x'), a wire alist, @('walist'),
+and an @(see warnings) accumulator, @('warnings').  accumulator.  We attempt to
+return the list of wires that correspond to this part select, in MSB order.  We
+are careful to ensure that the range is resolved, the indices are in bounds,
+and so on.</p>"
 
   (defund vl-msb-partselect-bitlist (x walist warnings)
     (declare (xargs :guard (and (vl-expr-p x)
@@ -1544,14 +1541,14 @@ resolved, the indices are in bounds, and so on.</p>"
   :parents (vl-msb-expr-bitlist)
   :short "Produce the @(see vl-emodwire-p)s for a bit-select."
 
-  :long "<p><b>Signature:</b> @(call vl-msb-bitselect-bitlist) returns <tt>(mv
-successp warnings bits)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-msb-bitselect-bitlist) returns @('(mv
+successp warnings bits)').</p>
 
-<p>We are given an bit-select expression, <tt>x</tt>, a wire alist,
-<tt>walist</tt>, and an @(see warnings) accumulator, <tt>warnings</tt>.
-accumulator.  We attempt to return the list of wires that correspond to this
-bit select.  In practice this will be a singleton wire, or nil on failure.  We
-are careful to ensure that the selected bit is in bounds, etc.</p>"
+<p>We are given an bit-select expression, @('x'), a wire alist, @('walist'),
+and an @(see warnings) accumulator, @('warnings').  accumulator.  We attempt to
+return the list of wires that correspond to this bit select.  In practice this
+will be a singleton wire, or nil on failure.  We are careful to ensure that the
+selected bit is in bounds, etc.</p>"
 
   (defund vl-msb-bitselect-bitlist (x walist warnings)
     (declare (xargs :guard (and (vl-expr-p x)
@@ -1653,11 +1650,11 @@ are careful to ensure that the selected bit is in bounds, etc.</p>"
 
 (defsection vl-msb-replicate-bitlist
   :parents (vl-msb-expr-bitlist)
-  :short "@(call vl-msb-replicate-bitlist) appends <tt>bits</tt> onto itself
-repeatedly, making <tt>n</tt> copies of <tt>bits</tt> as a single list."
+  :short "@(call vl-msb-replicate-bitlist) appends @('bits') onto itself
+repeatedly, making @('n') copies of @('bits') as a single list."
 
-    :long "<p>This is used for multiple concatenations, e.g., <tt>{4
-{a,b,c}}</tt>.</p>"
+    :long "<p>This is used for multiple concatenations, e.g., @('{4
+{a,b,c}}').</p>"
 
   (defund vl-msb-replicate-bitlist (n bits)
     (declare (xargs :guard (and (natp n)
@@ -1699,13 +1696,13 @@ repeatedly, making <tt>n</tt> copies of <tt>bits</tt> as a single list."
   :parents (vl-wirealist-p)
   :short "Produce the E-language, MSB-ordered list of bits for an expression."
 
-  :long "<p><b>Signature:</b> @(call vl-msb-expr-bitlist) returns <tt>(mv
-successp warnings bitlist)</tt></p>
+  :long "<p><b>Signature:</b> @(call vl-msb-expr-bitlist) returns @('(mv
+successp warnings bitlist)')</p>
 
-<p>When we translate module and gate instances into E, the arguments
-of the instance are Verilog expressions, and we need to convert them into
-E-language patterns.  By the end of our simplification process, we think that
-each such expression should contain only:</p>
+<p>When we translate module and gate instances into E, the arguments of the
+instance are Verilog expressions, and we need to convert them into E-language
+patterns.  By the end of our simplification process, we think that each such
+expression should contain only:</p>
 
 <ul>
  <li>Constant integers</li>
@@ -1716,8 +1713,8 @@ each such expression should contain only:</p>
  <li>Replications (multiconcats)</li>
 </ul>
 
-<p>This routine is intended to convert arbitrary expressions that include
-only the above forms into a list of <b>MSB order</b> bits.</p>"
+<p>This routine is intended to convert arbitrary expressions that include only
+the above forms into a list of <b>MSB order</b> bits.</p>"
 
   (mutual-recursion
 

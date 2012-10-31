@@ -79,6 +79,9 @@ a:hover {
   background-color: #ffffb0;
   text-decoration: underline;
 }
+.code a {
+    color: #309030;
+}
 
 .srclink {
   font-family: "Consolas", "Bitstream Vera Sans Mono", "DejaVu Sans Mono", "Lucida Console", monospace;

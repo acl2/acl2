@@ -48,13 +48,13 @@ but not defined.")
 (defsection vl-modulelist-everinstanced
   :parents (hierarchy)
   :short "@(call vl-modulelist-everinstanced) gathers the names of every module
-instanced anywhere in a module list <tt>x</tt>."
+instanced anywhere in a module list @('x')."
 
   :long "<p>We leave this function enabled.  It is logically equal to:</p>
 
-<code>
-  (vl-modinstlist-&gt;modnames (vl-modulelist-&gt;modinsts x))
-</code>
+@({
+  (vl-modinstlist->modnames (vl-modulelist->modinsts x))
+})
 
 <p>But it is implemented more efficiently.  The list returned will typically
 contain duplicates.  Even so, constructing the list of all instance names may
@@ -106,7 +106,7 @@ require a lot of consing.</p>
 (defsection vl-modulelist-meganames
   :parents (hierarchy)
   :short "@(call vl-modulelist-meganames) gather the names of every module that
-is ever defined or instantiated in <tt>x</tt>, and returns them as an ordered
+is ever defined or instantiated in @('x'), and returns them as an ordered
 set."
 
   :long "<p>We give this function a funny name because it is rather weird.
@@ -151,13 +151,13 @@ not be complete.</p>"
 (defsection vl-module-complete-p
   :parents (hierarchy completeness)
   :short "@(call vl-module-complete-p) determines if every module that is
-instantiated by <tt>x</tt> is defined in <tt>mods</tt>."
+instantiated by @('x') is defined in @('mods')."
 
   :long "<p>We leave this function enabled, preferring to reason about it as a
 subset check.</p>
 
 <p>This function is not efficient, and carries out a linear search of
-<tt>mods</tt> for every module instance of <tt>x</tt>.  See @(see
+@('mods') for every module instance of @('x').  See @(see
 vl-fast-module-complete-p) for a faster alternative.</p>"
 
   (defun vl-module-complete-p (x mods)
@@ -222,7 +222,7 @@ vl-fast-module-complete-p) for a faster alternative.</p>"
 (defsection vl-modulelist-complete-p
   :parents (hierarchy completeness)
   :short "@(call vl-modulelist-complete-p) determines if every module that is
-instantiated in <tt>x</tt> is defined in <tt>mods</tt>."
+instantiated in @('x') is defined in @('mods')."
 
   :long "<p>We leave this function enabled, preferring to reason about it
 as a subset check.</p>
@@ -269,10 +269,10 @@ to provide it with the modalist to use.</p>"
 
 (defsection vl-module-check-complete
   :parents (hierarchy completeness)
-  :short "@(call vl-module-check-complete) annotates <tt>x</tt> with any
+  :short "@(call vl-module-check-complete) annotates @('x') with any
 warnings about @(see completeness)."
 
-  :long "<p>If <tt>x</tt> is incomplete, a fatal warning is added that says
+  :long "<p>If @('x') is incomplete, a fatal warning is added that says
 which missing modules it instantiates.</p>"
 
   (defund vl-module-check-complete (x mods modalist)
@@ -336,8 +336,8 @@ which missing modules it instantiates.</p>"
 (defsection vl-modulelist-missing
   :parents (hierarchy missing)
   :short "@(call vl-modulelist-missing) gathers the names of any modules which
-are instantiated in the module list <tt>x</tt> but are not defined in
-<tt>x</tt>, and returns them as an ordered set."
+are instantiated in the module list @('x') but are not defined in
+@('x'), and returns them as an ordered set."
 
   (defund vl-modulelist-missing (x)
     (declare (xargs :guard (vl-modulelist-p x)))
@@ -386,8 +386,8 @@ are instantiated in the module list <tt>x</tt> but are not defined in
 (defsection vl-modulelist-toplevel
   :parents (hierarchy)
   :short "@(call vl-modulelist-toplevel) gathers the names of any modules which
-are defined in the module list <tt>x</tt> but are never instantiated in
-<tt>x</tt>, and returns them as an ordered set."
+are defined in the module list @('x') but are never instantiated in
+@('x'), and returns them as an ordered set."
 
   (defund vl-modulelist-toplevel (x)
     (declare (xargs :guard (vl-modulelist-p x)))
@@ -434,7 +434,7 @@ when it is never instantiated by another module.  Similarly, we say that
 modules are <b>high level</b> when they are \"near the top level\".</p>
 
 <p>@(call vl-modulelist-highlevel) gathers the names of all modules which are
-within <tt>n</tt> levels of the top.  When <tt>n</tt> is relatively small,
+within @('n') levels of the top.  When @('n') is relatively small,
 these modules are possibly the \"big units\" in the chip.</p>
 
 <p>Historic note.  This function was once used in the \"unreasonable modules
@@ -582,9 +582,9 @@ report.\" It may not be in use any more.</p>"
   :parents (hierarchy)
   :short "Build a dependency graph for use in @(see vl-dependent-modules)."
 
-  :long "<p>Given a list of modules <tt>x</tt>, whose names are unique, @(call
+  :long "<p>Given a list of modules @('x'), whose names are unique, @(call
 vl-depalist) constructs a fast association list which maps each module name in
-<tt>x</tt> to an ordered set of the names of its parents.  A more precise
+@('x') to an ordered set of the names of its parents.  A more precise
 description is given by the following theorem:</p>
 
   @(thm correctness-of-vl-depalist)
@@ -638,12 +638,12 @@ vl-dependent-module).  It satisfies @(see alistp), @(see vl-depalist-p), and
 (defsection vl-dependent-modules-direct
   :parents (hierarchy)
   :short "@(call vl-dependent-modules-direct) gathers the names of all modules
-in <tt>mods</tt> that directly instantiate any module in <tt>names</tt>, and
+in @('mods') that directly instantiate any module in @('names'), and
 returns them as an ordered set."
 
   :long "<p>See @(see vl-dependent-modules) for some additional discussion.  In
 short, this function produces the set of all modules which \"directly depend
-on\" any module in <tt>names</tt>.</p>"
+on\" any module in @('names').</p>"
 
   (defund vl-dependent-modules-direct (names mods depalist)
     (declare (xargs :guard (and (setp names)
@@ -748,37 +748,37 @@ on\" any module in <tt>names</tt>.</p>"
 
 <p>Inputs:</p>
 <ul>
-  <li><tt>prev</tt> and <tt>curr</tt> are sets of module names</li>
-  <li><tt>mods</tt> is a set of modules with unique names</li>
-  <li><tt>depalist</tt> is the precomputed @(see vl-depalist) for <tt>mods</tt></li>
+  <li>@('prev') and @('curr') are sets of module names</li>
+  <li>@('mods') is a set of modules with unique names</li>
+  <li>@('depalist') is the precomputed @(see vl-depalist) for @('mods')</li>
 </ul>
 
-<p>Note additionally that we assume every module named in <tt>prev</tt> and
-<tt>curr</tt> is defined in <tt>mods</tt>, and that the list of modules are
+<p>Note additionally that we assume every module named in @('prev') and
+@('curr') is defined in @('mods'), and that the list of modules are
 @(see vl-modulelist-complete-p) so that every module which is ever instanced is
-also in <tt>mods</tt>.</p>
+also in @('mods').</p>
 
 <p>At a high level, the goal of this function is to compute the set of all
-dependents of <tt>prev U curr</tt>.  The computation proceeds iteratively
-by searching for new dependents and expanding <tt>prev U curr</tt> until a
+dependents of @('prev U curr').  The computation proceeds iteratively
+by searching for new dependents and expanding @('prev U curr') until a
 fixed point is reached.</p>
 
-<p>The separation between <tt>prev</tt> and <tt>curr</tt> is a useful device
+<p>The separation between @('prev') and @('curr') is a useful device
 for limiting where we are going to look next.  In particular, we assume as an
-invariant that every direct dependent of any member of <tt>prev</tt> is already
-in <tt>prev U curr</tt>.  Because of this, we do not need to look for any new,
-direct dependents of <tt>prev</tt>, and can just focus on <tt>curr</tt>.</p>
+invariant that every direct dependent of any member of @('prev') is already
+in @('prev U curr').  Because of this, we do not need to look for any new,
+direct dependents of @('prev'), and can just focus on @('curr').</p>
 
 <p>The algorithm proceeds as follows.  First, we look up the direct dependents
-of <tt>curr</tt>.  Call these dependents <tt>newinsts</tt>.  If all of these
-<tt>newinsts</tt> are already in <tt>curr U prev</tt>, we have reached a fixed point
+of @('curr').  Call these dependents @('newinsts').  If all of these
+@('newinsts') are already in @('curr U prev'), we have reached a fixed point
 and we can stop.</p>
 
 <p>Otherwise, we wish to recur.  Taking the high-level view once again, our new
-set is <tt>newinsts U curr U prev</tt>.  However, in the recursive call we set
-<tt>prev</tt> to <tt>curr U prev</tt>, since all of their direct dependents
-have now been accounted for.  The new value of <tt>curr</tt> is then simply
-<tt>newinsts - (curr U prev)</tt>.</p>
+set is @('newinsts U curr U prev').  However, in the recursive call we set
+@('prev') to @('curr U prev'), since all of their direct dependents
+have now been accounted for.  The new value of @('curr') is then simply
+@('newinsts - (curr U prev)').</p>
 
 <h3>Termination</h3>
 
@@ -787,32 +787,32 @@ level, here.</p>
 
 <h5>Goal</h5>
 
-<code>
+@({
    (not (Newinsts \\subseteq (Curr U Prev)))
-     --&gt;
-   |Modnames - (Curr U Prev)| &gt;= |Modnames - (Newinsts U Curr U Prev)|
-</code>
+     -->
+   |Modnames - (Curr U Prev)| >= |Modnames - (Newinsts U Curr U Prev)|
+})
 
 <h5>Proof</h5>
 
 <p>First, note that:</p>
-<code>
+@({
    |Modnames - (Curr U Prev)|
       = |Modnames| - |(Curr U Prev) \\cap Modnames|
 
    |Modnames - (Newinsts U Curr U Prev)|
       = |Modnames| - |(Newinsts U Curr U Prev) \\cap Modnames|
-</code>
+})
 
 <p>So our goal simplifies to:</p>
-<code>
-    - |(Curr U Prev) \\cap Modnames| &gt;= - |(Newinsts U Curr U Prev) \\cap Modnames|
-</code>
+@({
+    - |(Curr U Prev) \\cap Modnames| >= - |(Newinsts U Curr U Prev) \\cap Modnames|
+})
 
 <p>Which is just:</p>
-<code>
-    |(Curr U Prev) \\cap Modnames| &lt;= |(Newinsts U Curr U Prev) \\cap Modnames|
-</code>
+@({
+    |(Curr U Prev) \\cap Modnames| <= |(Newinsts U Curr U Prev) \\cap Modnames|
+})
 
 <p>We claim this follows from two facts.  First, the left-hand side is
 trivially a subset of the right-hand side.  Second, as we demonstrate below,
@@ -820,11 +820,11 @@ that there is an element in the right-hand side which is not in the left-hand
 side.  In other words, the rhs is a proper superset of the lhs, hence it has
 greater cardinality.</p>
 
-<p>To see the existence of such an element, let <tt>e</tt> be a member of
-<tt>Newinsts - (Curr U Prev)</tt>.  We know such an <tt>e</tt> exists because
-our hypothesis is that <tt>Newinsts</tt> is not a subset of <tt>(Curr U
-Prev)</tt>.  Furthermore, <tt>e</tt> is in <tt>modnames</tt> because
-<tt>Newinsts</tt> is a subset of <tt>modnames</tt>.  Hence <tt>e</tt> is in the
+<p>To see the existence of such an element, let @('e') be a member of
+@('Newinsts - (Curr U Prev)').  We know such an @('e') exists because
+our hypothesis is that @('Newinsts') is not a subset of @('(Curr U
+Prev)').  Furthermore, @('e') is in @('modnames') because
+@('Newinsts') is a subset of @('modnames').  Hence @('e') is in the
 right-hand side, but not in the left-hand side.</p>
 
 <p><i>Q.E.D.</i></p>"
@@ -944,7 +944,7 @@ right-hand side, but not in the left-hand side.</p>
 (defsection vl-dependent-modules
   :parents (hierarchy)
   :short "@(call vl-dependent-modules) gathers the names of all modules in
-<tt>mods</tt> which, transitively, instantiate any module in <tt>names</tt>,
+@('mods') which, transitively, instantiate any module in @('names'),
 and returns them as an ordered set."
 
   :long "<p>We define the <i>depends on</i> relationship for modules as
@@ -959,18 +959,18 @@ follows.</p>
 from our list of modules, we typically need to throw away the modules that
 depend on M, as well.</p>
 
-<p><tt>vl-dependent-modules</tt> is the main function for gathering dependent
+<p>@('vl-dependent-modules') is the main function for gathering dependent
 modules.  It takes as arguments:</p>
 
 <ul>
- <li><tt>names</tt>, a list of module names,</li>
- <li><tt>x</tt>, an ordered set of modules with unique names, and</li>
- <li><tt>depalist</tt>, the pre-computed @(see vl-depalist) for <tt>x</tt>.</li>
+ <li>@('names'), a list of module names,</li>
+ <li>@('x'), an ordered set of modules with unique names, and</li>
+ <li>@('depalist'), the pre-computed @(see vl-depalist) for @('x').</li>
 </ul>
 
 <p>It produces a set of strings which are the names of all modules that depend
-on any module in <tt>names</tt>.  Note that this set will include every member
-of <tt>names</tt>, since, per the above definition, every module depends upon
+on any module in @('names').  Note that this set will include every member
+of @('names'), since, per the above definition, every module depends upon
 itself.</p>"
 
   (defund vl-dependent-modules (names mods depalist)
@@ -1084,14 +1084,14 @@ itself.</p>"
 (defsection vl-necessary-direct-for-module
   :parents (vl-necessary-modules)
   :short "@(call vl-necessary-direct-for-module) gathers the names of all
-modules which are directly instantiated by the module <tt>x</tt>, and returns
+modules which are directly instantiated by the module @('x'), and returns
 them as an ordered set."
 
   :long "<p>Logically, this function is nothing more than</p>
 
-<code>
-  (mergesort (vl-modinstlist-&gt;modnames (vl-module-&gt;modinsts x)))
-</code>
+@({
+  (mergesort (vl-modinstlist->modnames (vl-module->modinsts x)))
+})
 
 <p>However, memoizing this function provides an efficiency boost to @(see
 vl-necessary-modules).</p>"
@@ -1120,8 +1120,8 @@ vl-necessary-modules).</p>"
 (defsection vl-necessary-modules-direct-slow
   :parents (vl-necessary-modules)
   :short "@(call vl-necessary-modules-direct-slow) gathers the names of all
-modules in <tt>mods</tt> which are directly instanced by any module in
-<tt>names</tt>, and returns them as an ordered set."
+modules in @('mods') which are directly instanced by any module in
+@('names'), and returns them as an ordered set."
 
   :long "<p>This is a logically simple function which we do not typically
 run.  See @(see vl-fast-necessary-modules) for a faster alternative which use a
@@ -1395,8 +1395,8 @@ run.  See @(see vl-fast-necessary-modules) for a faster alternative which use a
 (defsection vl-necessary-modules
   :parents (hierarchy)
   :short "@(call vl-necessary-modules) gathers the names of all modules in
-<tt>mods</tt> which, transitively, are instantiated by any module in
-<tt>names</tt>, and returns them as an ordered set."
+@('mods') which, transitively, are instantiated by any module in
+@('names'), and returns them as an ordered set."
 
     :long "<p>We define the <i>necessary for</i> relationship for modules as
 follows.</p>
@@ -1504,7 +1504,7 @@ in order for M to be fully defined.</p>"
 (defsection vl-remove-unnecessary-modules
   :parents (hierarchy)
   :short "@(call vl-remove-unnecessary-modules) throws away any modules in
-<tt>mods</tt> which are not necessary for the modules named in <tt>keep</tt>."
+@('mods') which are not necessary for the modules named in @('keep')."
 
   :long "<p>Historically this function was used to implement the \"modules of
 interest\" feature, which allowed us to throw away modules that we were not
@@ -1607,7 +1607,7 @@ submodules.</p>"
 (defsection vl-maximal-deporder
   :parents (vl-deporder)
   :short "@(call vl-maximal-deporder) returns the maximum level for any module
-in <tt>names</tt>, according to the @(see vl-deporder-alist)."
+in @('names'), according to the @(see vl-deporder-alist)."
 
   (defund vl-maximal-deporder (names alist)
     (declare (xargs :guard (and (true-listp names)
@@ -1636,15 +1636,15 @@ in <tt>names</tt>, according to the @(see vl-deporder-alist)."
   :short "@(call vl-deporder-pass) extends a partial @(see vl-deporder-alist)
 with entries for the modules whose level is now apparent."
 
-  :long "<p><tt>mods</tt> are a list of modules, <tt>alist</tt> is a partial
-@(see vl-deporder-alist), and <tt>sorted-cars</tt> are the sorted cars of
+  :long "<p>@('mods') are a list of modules, @('alist') is a partial
+@(see vl-deporder-alist), and @('sorted-cars') are the sorted cars of
 alist (which we have precomputed so we don't have to be recomputing it all the
 time.).</p>
 
 <p>We walk down the list of modules, processing each in turn.  Suppose we are
-processing module <tt>M</tt>.  Then, we consider the modules that <tt>M</tt>
+processing module @('M').  Then, we consider the modules that @('M')
 instantates.  If all of these instantiated modules have their deporder
-computed, then the deporder of <tt>M</tt> 1 more than their @(see
+computed, then the deporder of @('M') 1 more than their @(see
 vl-maximal-deporder).  Otherwise, we will wait for a subsequent pass.</p>"
 
   (defund vl-deporder-pass (mods alist sorted-cars)
@@ -1779,7 +1779,7 @@ order."
 
 (defsection vl-deporder-sort
   :parents (hierarchy)
-  :short "@(call vl-deporder-sort) reorders <tt>mods</tt> so that they are
+  :short "@(call vl-deporder-sort) reorders @('mods') so that they are
 listed in dependency order."
 
   (defund vl-deporder-sort (mods)

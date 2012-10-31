@@ -25,26 +25,26 @@
 
 (defxdoc origexprs
   :parents (transforms)
-  :short "Add <tt>VL_ORIG_EXPR</tt> annotations to some expressions."
+  :short "Add @('VL_ORIG_EXPR') annotations to some expressions."
 
   :long "<p>In this transformation, we annotate many expressions with their
-<tt>VL_ORIG_EXPR</tt> attribute (see @(see attributes)).  The idea is to
-associate each expression with its \"original version,\" as it was read from
-the source file, before any simplification has taken place.</p>
+@('VL_ORIG_EXPR') attribute (see @(see attributes)).  The idea is to associate
+each expression with its \"original version,\" as it was read from the source
+file, before any simplification has taken place.</p>
 
 <p>Why do we want to do this?  Transformations like @(see oprewrite) can, for
-instance, simplify expressions such as <tt>a == b</tt> into <tt>&amp;(a ~^
-b)</tt>, and these reduced expressions may not correspond to anything the logic
-designer actually wrote in the source file.  So, if we want to print an error
-message or warning about this expression, we would prefer to write it as <tt>a
-== b</tt> instead.  By saving the original version of the expression as an
-attribute, we can easily remember where the expression came from.</p>
+instance, simplify expressions such as @('a == b') into @('&(a ~^ b)'), and
+these reduced expressions may not correspond to anything the logic designer
+actually wrote in the source file.  So, if we want to print an error message or
+warning about this expression, we would prefer to write it as @('a == b')
+instead.  By saving the original version of the expression as an attribute, we
+can easily remember where the expression came from.</p>
 
 <p>The core function, @(see vl-expr-origexprs), is rather cute.  As we
-encounter each expression, say <tt>x</tt>, we just cons together a new
-expression with the same fields, except that we add an <tt>VL_ORIG_EXPR</tt>
-attribute whose value is <tt>x</tt> itself.  This is really quite fast, and we
-do not need to do any pretty-printing ahead of time.</p>
+encounter each expression, say @('x'), we just cons together a new expression
+with the same fields, except that we add an @('VL_ORIG_EXPR') attribute whose
+value is @('x') itself.  This is really quite fast, and we do not need to do
+any pretty-printing ahead of time.</p>
 
 <p>In error messages, we typically use this attribute implicitly, by calling
 @(see vl-pps-origexpr).</p>
@@ -55,10 +55,10 @@ such as always statements.</p>")
 
 (defsection vl-expr-origexprs
   :parents (origexprs)
-  :short "Recursively annotate an expression with <tt>VL_ORIG_EXPR</tt>
+  :short "Recursively annotate an expression with @('VL_ORIG_EXPR')
 attributes."
   :long "<p><b>Signature:</b> @(call vl-expr-origexprs) returns
-<tt>x-prime</tt>.</p>
+@('x-prime').</p>
 
 <p>Even though we recursively annotate an expression, this function is really
 very fast.  We need not do any pretty-printing, because we are only consing the
@@ -129,9 +129,9 @@ original version of X into its attributes.</p>"
          (type-s       (symbol-name type))
          (thm-type-s   (cat type-s "-OF-" name-s))
          (thm-type     (intern-in-package-of-symbol thm-type-s name))
-         (short        (cat "Add <tt>VL_ORIG_EXPR</tt> annotations throughout "
+         (short (cat "Add @('VL_ORIG_EXPR') annotations throughout "
                             "a @(see " type-s ")"))
-         (long         (cat "<p><b>Signature:</b> @(call " name-s ") returns <tt>x-prime</tt>.</p>")))
+         (long         (cat "<p><b>Signature:</b> @(call " name-s ") returns @('x-prime').</p>")))
     `(defsection ,name
        :parents (origexprs)
        :short ,short
@@ -154,10 +154,10 @@ original version of X into its attributes.</p>"
          (type-s (symbol-name type))
          (thm-type-s (cat (symbol-name type) "-OF-" (symbol-name name) "-1"))
          (thm-type   (intern-in-package-of-symbol thm-type-s name))
-         (short      (cat "Add <tt>VL_ORIG_EXPR</tt> annotations throughout "
+         (short      (cat "Add @('VL_ORIG_EXPR') annotations throughout "
                           "a @(see " type-s ")"))
          (long       (cat "<p><b>Signature:</b> @(call " name-s ") returns
-<tt>x-prime</tt>.</p>")))
+@('x-prime').</p>")))
 
     `(defsection ,name
        :parents (origexprs)

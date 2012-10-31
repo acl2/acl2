@@ -55,37 +55,37 @@
   :parents (defmodules)
   :short "The result of translating Verilog modules."
 
-  :long "<p>The @(see defmodules) command produces a <tt>vl-translation-p</tt>
+  :long "<p>The @(see defmodules) command produces a @('vl-translation-p')
 object as its result.</p>
 
 <p>See @(see translation-interface) for high-level functions for extracting E
 modules.</p>
 
-<p>Each <tt>vl-translation-p</tt> object bundles together:</p>
+<p>Each @('vl-translation-p') object bundles together:</p>
 
 <ul>
 
-<li><tt>mods</tt>, a list of fully simplified, successfully translated modules,
+<li>@('mods'), a list of fully simplified, successfully translated modules,
 represented as @(see vl-module-p)s,</li>
 
-<li><tt>failmods</tt>, a list of partially simplified modules which could not
-be fully simplified, represented as @(see vl-module-p)s,</li>
+<li>@('failmods'), a list of partially simplified modules which could not be
+fully simplified, represented as @(see vl-module-p)s,</li>
 
-<li><tt>filemap</tt>, a @(see vl-filemap-p) structure that records the actual
+<li>@('filemap'), a @(see vl-filemap-p) structure that records the actual
 Verilog source code that was read,</li>
 
-<li><tt>defines</tt>, a @(see vl-defines-p) structure that records all of the
-<tt>`define</tt> directives encountered</li>
+<li>@('defines'), a @(see vl-defines-p) structure that records all of the
+@('`define') directives encountered</li>
 
-<li><tt>loadwarnings</tt>, a @(see vl-warninglist-p) that records any warnings
+<li>@('loadwarnings'), a @(see vl-warninglist-p) that records any warnings
 encountered by the @(see loader).  Note that this list does not include any
 warnings produced by the simplifier: such warning are found in the modules of
-<tt>mods</tt> and <tt>failmods</tt>.</li>
+@('mods') and @('failmods').</li>
 
-<li><tt>useset-report</tt>, a @(see vl-useset-report-p) that records the
-results of the @(see use-set) tool.</li>
+<li>@('useset-report'), a @(see vl-useset-report-p) that records the results of
+the @(see use-set) tool.</li>
 
-<li><tt>dregs</tt>, the @(see design-regs) alist for this translation.</li>
+<li>@('dregs'), the @(see design-regs) alist for this translation.</li>
 
 </ul>")
 
@@ -103,16 +103,16 @@ parts of this translation.</p>")
   :short "Check whether a module was successfully translated."
 
   :long "<p><b>Signature:</b> @(call vl-translation-has-module) returns a
-<tt>t</tt> or <tt>nil</tt>.</p>
+@('t') or @('nil').</p>
 
-<p>The <tt>modname</tt> should be the desired module's name as a string, e.g.,
-<tt>\"fadd\"</tt>.  If the module's name includes parameters, you will need to
-say which version you want, e.g., <tt>\"adder$width=4\"</tt>.</p>
+<p>The @('modname') should be the desired module's name as a string, e.g.,
+@('\"fadd\"').  If the module's name includes parameters, you will need to say
+which version you want, e.g., @('\"adder$width=4\"').</p>
 
-<p>We return <tt>t</tt> only when the module was successfully translated with
-no \"fatal\" warnings.  (See @(see vl-translation-p); failed modules are found
-in the translation's <tt>failmods</tt> field, whereas successful modules are
-kept in the <tt>mods</tt> field.)</p>"
+<p>We return @('t') only when the module was successfully translated with no
+\"fatal\" warnings.  (See @(see vl-translation-p); failed modules are found in
+the translation's @('failmods') field, whereas successful modules are kept in
+the @('mods') field.)</p>"
 
   (defund vl-translation-has-module (modname x)
     (declare (xargs :guard (and (stringp modname)

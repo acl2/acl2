@@ -81,8 +81,8 @@ not a very satisfying state of affairs.</p>
 
 <h4>Supported Directives</h4>
 
-<p>Our preprocessor has pretty good support for the <tt>define</tt>- and
-<tt>ifdef</tt>-related directives:</p>
+<p>Our preprocessor has pretty good support for the @('define')- and
+@('ifdef')-related directives:</p>
 
 <ul>
  <li>define</li>
@@ -94,16 +94,16 @@ not a very satisfying state of affairs.</p>
 </ul>
 
 <p>However, we do not currently accept definitions with arguments, e.g.,
-<tt>`max(a,b)</tt>, and we place some (reasonable) restrictions on the above
+@('`max(a,b)'), and we place some (reasonable) restrictions on the above
 macros.  For instance, we do not allow definitions to include most compiler
-directives---we allow the body of <tt>`foo</tt> to include <tt>`bar</tt>, but
-not <tt>`endif</tt>.  These restrictions are intended to ensure that we do not
+directives---we allow the body of @('`foo') to include @('`bar'), but not
+@('`endif').  These restrictions are intended to ensure that we do not
 \"mispreprocess\" anything.  See @(see preprocessor-define-minutia) for some
 details and additional discussion.</p>
 
-<p>We also have pretty good support for <tt>include</tt> directives.  This is
-quite underspecified, and we have basically tried to mimic the behavior of
-Verilog-XL and NCVerilog.  See also @(see preprocessor-include-minutia).</p>
+<p>We also have pretty good support for @('include') directives.  This is quite
+underspecified, and we have basically tried to mimic the behavior of Verilog-XL
+and NCVerilog.  See also @(see preprocessor-include-minutia).</p>
 
 
 <h4>Ignored Directives</h4>
@@ -123,22 +123,22 @@ these directives is ever kept.  A consequence of this is, upon having loaded
 some VL modules, there is not really any way to know whether these directives
 were included anywhere in the source code.</p>
 
-<p>In the case of <tt>celldefine</tt> and <tt>endcelldefine</tt>, this seems
-pretty reasonable.  It seems that these directives only mark modules as
-\"cells\" for certain PLI directives or other tools.  None of the tools we are
-developing care about this, so for now we just ignore this directive.</p>
+<p>In the case of @('celldefine') and @('endcelldefine'), this seems pretty
+reasonable.  It seems that these directives only mark modules as \"cells\" for
+certain PLI directives or other tools.  None of the tools we are developing
+care about this, so for now we just ignore this directive.</p>
 
-<p>The <tt>resetall</tt> directive is tool dependent and it seems valid to
-ignore it entirely.  We do not try to enforce the restriction that
-<tt>resetall</tt> must not occur within a module definition.</p>
+<p>The @('resetall') directive is tool dependent and it seems valid to ignore
+it entirely.  We do not try to enforce the restriction that @('resetall') must
+not occur within a module definition.</p>
 
-<p>We also ignore <tt>timescale</tt> directives.  This is not ideal, but is
-pretty reasonable for things like ESIM where timing is irrelevant.  It is also
-fairly reasonable even for something like a transistor analyzer that cares
-about unit delays, as long as differnet timescales are not being mixed
-together.  (Mixing timescales within a single design seems insane, and after
-all what is the \"default\" timescale supposed to be?  BOZO maybe add a warning
-if more than one kind of timescale is seen.</p>
+<p>We also ignore @('timescale') directives.  This is not ideal, but is pretty
+reasonable for things like ESIM where timing is irrelevant.  It is also fairly
+reasonable even for something like a transistor analyzer that cares about unit
+delays, as long as differnet timescales are not being mixed together.  (Mixing
+timescales within a single design seems insane, and after all what is the
+\"default\" timescale supposed to be?  BOZO maybe add a warning if more than
+one kind of timescale is seen.</p>
 
 <p>As future work, there might be some benefit to somehow preserving these
 directives so that they can be printed out again in the simplified Verilog we
@@ -160,23 +160,23 @@ a \"drop-in replacement\" for the unsimplified Verilog.</p>
  <li>`unconnected_drive</li>
 </ul>
 
-<p>It might be good to ignore <tt>begin_keywords \"1364-2005\"</tt> and just
-cause an error if a different set of keywords is requested.  We could also
-ignore <tt>end_keywords</tt>.  But trying to add anything more sophisticated
-than this seems very tricky and messy.</p>
+<p>It might be good to ignore @('begin_keywords \"1364-2005\"') and just cause
+an error if a different set of keywords is requested.  We could also ignore
+@('end_keywords').  But trying to add anything more sophisticated than this
+seems very tricky and messy.</p>
 
-<p>It would be good to add proper support for <tt>`line</tt>.  Failing that, it
+<p>It would be good to add proper support for @('`line').  Failing that, it
 would be quite easy to just ignore it, like the other ignored directives.  We
-should probably also ignore <tt>`pragma</tt> directives, and this should be
-easy to do.</p>
+should probably also ignore @('`pragma') directives, and this should be easy to
+do.</p>
 
-<p>It would be somewhat difficult to support <tt>default_nettype</tt> and
-<tt>unconnected_drive</tt>.  Probably the thing to do would be build a table of
+<p>It would be somewhat difficult to support @('default_nettype') and
+@('unconnected_drive').  Probably the thing to do would be build a table of
 when the declarations are made, and then use some trick like comment injection
 to mark modules appropriately.  We would then have to change the @(see
-make-implicit-wires) transform to consider the <tt>default_nettype</tt> for the
-module, and probably use a separate transform to handle
-<tt>unconnected_drive</tt> stuff.</p>")
+make-implicit-wires) transform to consider the @('default_nettype') for the
+module, and probably use a separate transform to handle @('unconnected_drive')
+stuff.</p>")
 
 
 
@@ -213,17 +213,17 @@ module, and probably use a separate transform to handle
 these, but we need to recognize all of them so that we can complain when we
 run into ones we don't support, etc.</p>
 
-<p><b>Centaur Extension</b>.  We also add <tt>centaur_define</tt>, which we
-treat exactly as <tt>define</tt>.</p>")
+<p><b>Centaur Extension</b>.  We also add @('centaur_define'), which we treat
+exactly as @('define').</p>")
 
 
 
 (defxdoc preprocessor-ifdef-minutia
   :parents (preprocessor)
-  :short "Subtle notes about or <tt>`define</tt> and <tt>`ifdef</tt> handling."
+  :short "Subtle notes about or @('`define') and @('`ifdef') handling."
 
-  :long "<p>There are many subtleties related to <tt>`define</tt> and
-<tt>`ifdef</tt> that make my head hurt.</p>
+  :long "<p>There are many subtleties related to @('`define') and @('`ifdef')
+that make my head hurt.</p>
 
 <p><b>BOZO</b> most of my testing was done on Verilog-XL before I really knew
 much about NCVerilog.  It would be good to double-check all of these things on
@@ -232,112 +232,110 @@ NCVerilog and make sure it behaves the same.</p>
 
 <h5>Define is Lazy</h5>
 
-<p>An important thing to realize is that the text which follows \"<tt>`define
-foo</tt>\" is not preprocessed once when it is read.  Instead, it is separately
+<p>An important thing to realize is that the text which follows \"@('`define
+foo')\" is not preprocessed once when it is read.  Instead, it is separately
 preprocessed each time `foo is encountered.  Hence, upon running</p>
 
-<code>
+@({
 `define foo 3
 `define bar `foo
 `undef foo
 `define foo 4
-</code>
+})
 
 <p>the value of `bar will be 4.</p>
 
 
-<h5>Includes are not followed if they are <tt>ifdef</tt>ed away.</h5>
+<h5>Includes are not followed if they are @('ifdef')ed away.</h5>
 
-<p>On both Verilog-XL and NCVerilog, it appears that an <tt>`include</tt>
-directives within <tt>ifdef</tt>-ed away blocks are NOT expanded.  An easy
-way to test this is by writing a file called <tt>endif.v</tt> which simply
-contains:</p>
+<p>On both Verilog-XL and NCVerilog, it appears that an @('`include')
+directives within @('ifdef')-ed away blocks are NOT expanded.  An easy way to
+test this is by writing a file called @('endif.v') which simply contains:</p>
 
-<code>
+@({
 `endif
-</code>
+})
 
 <p>Then we can do things like this:</p>
 
-<code>
+@({
 `define foo
 `ifdef foo
   `include \"endif.v\"
 // the `ifdef has now ended
-</code>
+})
 
 <p>And this:</p>
 
-<code>
+@({
 // suppose bar is undefined
 `ifdef bar
   `include \"endif.v\"
   // the `ifdef has not ended yet, so the include is not expanded
 `endif
-</code>
+})
 
 <p>We think this is pretty reasonable so we mimic this behavior.</p>
 
 
 <h5>We Prohibit Certain Directives In Defines</h5>
 
-<p>In Verilog-XL, <tt>`define</tt> can interact with the <tt>`ifdef</tt> tree
-in subtle ways.  For instance, Verilog-XL accepts the following input:</p>
+<p>In Verilog-XL, @('`define') can interact with the @('`ifdef') tree in subtle
+ways.  For instance, Verilog-XL accepts the following input:</p>
 
-<code>
+@({
 `define condition 1
 `define myendif `endif
 `ifdef condition
    assign w1 = 1 ;
 `myendif
-</code>
+})
 
-<p>Yet when <tt>`foo</tt> is used inside of an ifdef'd-away section, it is not
+<p>Yet when @('`foo') is used inside of an ifdef'd-away section, it is not
 expanded.  And so, the above example becomes a parse error if you merely remove
-the <tt>`define condition 1</tt> line.</p>
+the @('`define condition 1') line.</p>
 
 <p>Another subtlety.  As expected, defines found within ifdefed-away parts of
 the code have no effect.  For example, if not_defined is not defined, then upon
 running</p>
 
-<code>
+@({
 `define foo 3
 `ifdef not_defined
    `define foo 4
 `endif
-</code>
+})
 
-<p>the value of <tt>`foo</tt> will correctly be 3.  Similarly, writing
-<tt>`undef foo</tt> in the not_defined block does not actually undefine foo.
-But the preprocessor is not mindlessly skipping text until an `else or `elseif
-is encountered.  For example, the following is well-formed and does not
-result in a too-many-endifs warning.</p>
+<p>the value of @('`foo') will correctly be 3.  Similarly, writing @('`undef
+foo') in the not_defined block does not actually undefine foo.  But the
+preprocessor is not mindlessly skipping text until an `else or `elseif is
+encountered.  For example, the following is well-formed and does not result in
+a too-many-endifs warning.</p>
 
-<code>
+@({
 `ifdef not_defined
    `define myendif `endif
 `endif
-</code>
+})
 
-<p>This is insane, so we prohibit things like <tt>`define myendif `endif</tt>
-by disallowing the use of built-in directives in macro text.  Note that we
-still permit the use of <tt>`define foo `bar</tt>, with the same lazy semantics
-that Verilog-XL uses.</p>
+<p>This is insane, so we prohibit things like @('`define myendif `endif') by
+disallowing the use of built-in directives in macro text.  Note that we still
+permit the use of @('`define foo `bar'), with the same lazy semantics that
+Verilog-XL uses.</p>
 
 
 <h5>We Prohibit Defining or Testing Built-in Directive Names</h5>
 
-<p>We do not allow compiler directive names to be <tt>`define</tt>d, or to be
-used within <tt>ifdef</tt>, <tt>ifndef</tt>, or <tt>elsif</tt> directives.
-Why is this?</p>
+<p>We do not allow compiler directive names to be @('`define')d, or to be used
+within @('ifdef'), @('ifndef'), or @('elsif') directives.  Why is this?</p>
 
 <p>Note that macro names can be simple or escaped identifiers.  In Section
 3.7.1, we are told that the leading backslash character and trailing whitespace
 are not considered part of an escaped identifier, and that the escaped
-identifier <tt>\\cpu3</tt> is to be treated the same as <tt>cpu3</tt>.  Indeed,
-in Verilog-XL we find that the following works as expected:</p>
+identifier @('\\cpu3') is to be treated the same as @('cpu3').  Indeed, in
+Verilog-XL we find that the following works as expected:</p>
 
-<code>
+@({
 `define foo 3
 `define \\bar 4
 
@@ -345,54 +343,54 @@ assign w1 = `foo ;
 assign w2 = `\\foo ;
 assign w3 = `bar ;
 assign w4 = '\\bar ;
-</code>
+})
 
 <p>In Section 19.3.1, we are told that all compiler directives shall be
 considered predefined macro names, and it shall be illegal to redefine a
 compiler directive as a macro name.  And Verilog-XL seems to rightfully complain
 about things like:</p>
 
-<code>
+@({
 `define define 5
 `define ifdef 6
-</code>
+})
 
 <p>And yet, Verilog-XL permits the following:</p>
 
-<code>
+@({
 `define \\define 5
 `define \\ifdef 6
 
 assign w1 = `\\define ;
 assign w2 = `\\ifdef ;
-</code>
+})
 
 <p>While the following will be errors:</p>
 
-<code>
+@({
 assign w3 = `define ;
 assign w4 = `ifdef ;
-</code>
+})
 
-<p>Should <tt>\\define</tt> be treated differently from <tt>define</tt>?
-Maybe.  After all, the point of escaped identifiers is probably to not clash
-with regular keywords.  But on the other hand, if the predefined names are to
-be considered predefined, then shouldn't things like this</p>
+<p>Should @('\\define') be treated differently from @('define')?  Maybe.  After
+all, the point of escaped identifiers is probably to not clash with regular
+keywords.  But on the other hand, if the predefined names are to be considered
+predefined, then shouldn't things like this</p>
 
-<code>
+@({
 `ifdef define
-</code>
+})
 
-<p>always evaluate to true?  But in Verilog-XL this is false unless you have done
-a <tt>`define \\define</tt> like above.  Verilog-XL also does not complain about
-<tt>`undef</tt> define, which seems strange.</p>
+<p>always evaluate to true?  But in Verilog-XL this is false unless you have
+done a @('`define \\define') like above.  Verilog-XL also does not complain
+about @('`undef') define, which seems strange.</p>
 
 <p>At any rate, to entirely avoid the question of what the right behavior is
 here, we simply prohibit the use of compiler directives, whether escaped or
-not, as names anywhere in <tt>defines</tt>, <tt>undefs</tt>, <tt>ifdefs</tt>,
-<tt>ifndefs</tt>, and <tt>elsifs</tt>.  In practice this only prevents people
-from writing things like <tt>`define define</tt> and <tt>`ifdef undef</tt>,
-anyway, so this should not be too controversial.</p>
+not, as names anywhere in @('defines'), @('undefs'), @('ifdefs'), @('ifndefs'),
+and @('elsifs').  In practice this only prevents people from writing things
+like @('`define define') and @('`ifdef undef'), anyway, so this should not be
+too controversial.</p>
 
 
 <h5>We make certain restrictions to disambiguate line continuations and
@@ -403,8 +401,8 @@ comments.</h5>
 <ul>
  <li>any arbitrary text specified on the same line as the macro name,</li>
 
- <li>except that the sequence <tt>\\&lt;newline&gt;</tt> may be used to extend
-     the macro text across multiple lines,</li>
+ <li>except that the sequence @('\\<newline>') may be used to extend the macro
+     text across multiple lines,</li>
 
  <li>and single-line comments are not to become part of the substituted
      text.</li>
@@ -415,7 +413,7 @@ exactly how comments and these line continuations are supposed to interact.
 And Verilog-XL, in particular, has some very strange and seemingly inconsistent
 rules:</p>
 
-<code>
+@({
 `define foo 5 \// comment             (accepted)
          'h4
 
@@ -430,17 +428,21 @@ rules:</p>
 
 `define foo 5 /* comment              (rejected)
       */ 'h4
-</code>
+})
 
 <p>To prevent any amiguity, we prohibit any combination of comments and
 continuations that seems difficult to understand.  In particular, we impose the
 following \"cowardly\" restrictions on macro text:</p>
 
 <ol>
-<li>Single-line comments are not allowed to end with <tt>\\</tt></li>
+
+<li>Single-line comments are not allowed to end with @('\\')</li>
+
 <li>Block comments are not allowed to contain newlines</li>
-<li>The sequences <tt>\\//</tt> and <tt>\\/*</tt> are not allowed
-except within comments, string literals, and escaped identifiers</li>
+
+<li>The sequences @('\\//') and @('\\/*') are not allowed except within
+comments, string literals, and escaped identifiers</li>
+
 </ol>
 
 <p>These constriants make reading until the end of the macro text fairly
@@ -460,35 +462,34 @@ Verilog-XL and other tools.</p>")
             (booleanp-of-vl-iframe->some-thing-satisfiedp (booleanp some-thing-satisfiedp))
             (booleanp-of-vl-iframe->already-saw-elsep (booleanp already-saw-elsep)))
   :parents (preprocessor)
-  :short "<tt>`ifdef</tt> stack frame objects."
+  :short "@('`ifdef') stack frame objects."
 
   :long "<p>Iframes (\"ifdef frames\") are essential in our approach to
-handling <tt>`ifdef</tt> directives.  Our main preprocessing function, @(see
+handling @('`ifdef') directives.  Our main preprocessing function, @(see
 vl-preprocess-loop), takes three arguments that have to do with handling
 ifdefs:</p>
 
 <ul>
 
-<li><tt>defines</tt> is the current @(see vl-defines-p) alist.  For now, just
+<li>@('defines') is the current @(see vl-defines-p) alist.  For now, just
 assume that we are able to appropriately keep this list updated as we encounter
 defines and undefs.</li>
 
-<li><tt>activep</tt> is a boolean which is true whenever the characters are are
-now reading from the file ought to be given to the lexer -- the idea is that
-when we encounter an <tt>`ifdef</tt> whose condition isn't satisfied, we turn
-off <tt>activep</tt> until the closing <tt>`endif</tt> is encountered.</li>
+<li>@('activep') is a boolean which is true whenever the characters are are now
+reading from the file ought to be given to the lexer -- the idea is that when
+we encounter an @('`ifdef') whose condition isn't satisfied, we turn off
+@('activep') until the closing @('`endif') is encountered.</li>
 
-<li><tt>istack</tt> is a stack of <tt>vl-iframe-p</tt> objects which explain
-how to manage <tt>activep</tt> as we descend through a nest of <tt>`ifdef</tt>,
-<tt>`ifndef</tt>, <tt>`elsif</tt>, <tt>`else</tt>, and <tt>`endif</tt>
-directives.</li>
+<li>@('istack') is a stack of @('vl-iframe-p') objects which explain how to
+manage @('activep') as we descend through a nest of @('`ifdef'), @('`ifndef'),
+@('`elsif'), @('`else'), and @('`endif') directives.</li>
 
 </ul>
 
 <p>Let us temporarily ignore nested directives.  Then, our task would be to
 decide when activep should be turned on during sequences like this:</p>
 
-<code>
+@({
     `if[n]def THING
       stuff1
     `elsif THING2
@@ -498,39 +499,39 @@ decide when activep should be turned on during sequences like this:</p>
     `else
       stuff4
     `endif
-</code>
+})
 
 <p>The semantics of this (Section 19.4) are essentially: figure out the first
 <i>THING</i> that is satisfied, include its stuff, and ignore the rest.  So for
 instance, if <i>THING2</i> and <i>THING3</i> are both satisfied, we still only
 want to include <i>stuff2</i> since it comes first.</p>
 
-<p>To implement this, the basic idea is that when we encounter an
-<tt>`ifdef</tt> or <tt>`ifndef</tt> directive, we construct an iframe that
-helps us set <tt>activep</tt> correctly.  The first two fields of the iframe
-are:</p>
+<p>To implement this, the basic idea is that when we encounter an @('`ifdef')
+or @('`ifndef') directive, we construct an iframe that helps us set
+@('activep') correctly.  The first two fields of the iframe are:</p>
 
 <dl>
 
-<dt><tt>some-thing-satisfiedp</tt></dt>
-<dd>which indicates if any of the <i>THING</i>s we have seen so far
- was satisfied, and</dd>
+<dt>@('some-thing-satisfiedp')</dt>
 
-<dt><tt>already-saw-elsep</tt></dt>
-<dd>which indicates whether we have seen an <tt>`else</tt> and is
-used only as a sanity check to prevent multiple <tt>`else</tt>
-clauses.</dd>
+<dd>which indicates if any of the <i>THING</i>s we have seen so far was
+satisfied, and</dd>
+
+<dt>@('already-saw-elsep')</dt>
+
+<dd>which indicates whether we have seen an @('`else') and is used only as a
+sanity check to prevent multiple @('`else') clauses.</dd>
 
 </dl>
 
 <p>And as we descend through the above sequences, we update the iframe and
-ensure that <tt>activep</tt> is set exactly when the current <i>THING</i> is
+ensure that @('activep') is set exactly when the current <i>THING</i> is
 satisfied and no previous <i>THING</i> was satisfied.</p>
 
 <p>But the story is not quite complete yet, because we also have to handle
- nested ifdefs.  For example, imagine we have:</p>
+nested ifdefs.  For example, imagine we have:</p>
 
-<code>
+@({
    `ifdef OUTER
      ...
      `ifdef INNER_THING1
@@ -542,28 +543,31 @@ satisfied and no previous <i>THING</i> was satisfied.</p>
      `endif
      ...
    `endif
-</code>
+})
 
 <p>This is almost the same, except that now we only want to turn on
-<tt>activep</tt> when <i>OUTER</i> is also satisfied.  To keep track of this,
-we add another field to our iframe objects:</p>
+@('activep') when <i>OUTER</i> is also satisfied.  To keep track of this, we
+add another field to our iframe objects:</p>
 
 <dl>
-<dt><tt>initially-activep</tt></dt>
-<dd>which indicates whether <tt>activep</tt> was set when we encountered
-the <tt>`ifdef</tt> or <tt>ifndef</tt> for this iframe.</dd>
+
+<dt>@('initially-activep')</dt>
+
+<dd>which indicates whether @('activep') was set when we encountered the
+@('`ifdef') or @('ifndef') for this iframe.</dd>
+
 </dl>
 
-<p>Now, <tt>activep</tt> should be enabled exactly when:</p>
+<p>Now, @('activep') should be enabled exactly when:</p>
 
 <ul>
 
 <li>(inner criteria): the current <i>THING</i> is satisfied and no previous
-   <i>THING</i> was sastified, and</li>
+<i>THING</i> was sastified, and</li>
 
-<li>(outer-criteria): <tt>initially-activep</tt> was also set, i.e., this chunk
-   of code is not being blocked by some <i>THING</i> in an outer <tt>ifdef</tt>
-   tree.</li>
+<li>(outer-criteria): @('initially-activep') was also set, i.e., this chunk of
+code is not being blocked by some <i>THING</i> in an outer @('ifdef')
+tree.</li>
 
 </ul>")
 
@@ -575,19 +579,18 @@ the <tt>`ifdef</tt> or <tt>ifndef</tt> for this iframe.</dd>
 
 (defsection vl-process-ifdef
   :parents (preprocessor)
-  :short "Handler for <tt>ifdef</tt>, <tt>ifndef</tt>, and <tt>elsif</tt>
-directives."
+  :short "Handler for @('ifdef'), @('ifndef'), and @('elsif') directives."
 
-  :long "<p><b>Signature:</b> @(call vl-process-ifdef) returns <tt>(mv successp
-new-istack new-activep remainder)</tt></p>
+  :long "<p><b>Signature:</b> @(call vl-process-ifdef) returns @('(mv successp
+new-istack new-activep remainder)')</p>
 
 <p>See the discussion in @(see vl-iframe-p) for details.</p>
 
-<p>Here, <tt>directive</tt> is either <tt>ifdef</tt>, <tt>ifndef</tt>, or
-<tt>elsif</tt>; we assume that we have just read <tt>`directive</tt> from
-<tt>echars</tt>.  We need to read the identifier that should follow this
-directive, look it up in the defines table, and make the appropriate changes to
-the <tt>istack</tt> and <tt>activep</tt>.</p>"
+<p>Here, @('directive') is either @('ifdef'), @('ifndef'), or @('elsif'); we
+assume that we have just read @('`directive') from @('echars').  We need to
+read the identifier that should follow this directive, look it up in the
+defines table, and make the appropriate changes to the @('istack') and
+@('activep').</p>"
 
   (defund vl-process-ifdef (loc directive echars defines istack activep)
     "Returns (MV SUCCESSP NEW-ISTACK NEW-ACTIVEP REMAINDER)"
@@ -703,10 +706,10 @@ the <tt>istack</tt> and <tt>activep</tt>.</p>"
 
 (defsection vl-process-else
   :parents (preprocessor)
-  :short "Handler for <tt>else</tt> directives."
+  :short "Handler for @('else') directives."
 
-  :long "<p><b>Signature:</b> @(call vl-process-else) returns <tt>(mv successp
-new-istack new-activep)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-process-else) returns @('(mv successp
+new-istack new-activep)').</p>
 
 <p>See the discussion in @(see vl-iframe-p) for details.</p>"
 
@@ -753,10 +756,10 @@ new-istack new-activep)</tt>.</p>
 
 (defsection vl-process-endif
   :parents (preprocessor)
-  :short "Handler for <tt>endif</tt> directives."
+  :short "Handler for @('endif') directives."
 
-  :long "<p><b>Signature:</b> @(call vl-process-endif) returns <tt>(mv successp
-new-istack new-activep)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-process-endif) returns @('(mv successp
+new-istack new-activep)').</p>
 
 <p>See the discussion in @(see vl-iframe-p) for details.</p>"
 
@@ -791,10 +794,10 @@ new-istack new-activep)</tt>.</p>
 
 (defsection vl-read-until-end-of-define
   :parents (preprocessor)
-  :short "Read from <tt>`define</tt> until the end of the line."
+  :short "Read from @('`define') until the end of the line."
 
   :long "<p><b>Signature:</b> @(call vl-read-until-end-of-define) returns
-<tt>(mv successp prefix remainder)</tt>.</p>
+@('(mv successp prefix remainder)').</p>
 
 <p>This is really tricky!  See @(see preprocessor-ifdef-minutia) for an
 overview of some of the problems we face.</p>"
@@ -1039,15 +1042,15 @@ overview of some of the problems we face.</p>"
 
 (defsection vl-process-define
   :parents (preprocessor)
-  :short "Handler for <tt>define</tt> directives."
+  :short "Handler for @('define') directives."
 
-  :long "<p><b>Signature:</b> @(call vl-process-define) returns <tt>(mv
-successp new-defines remainder)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-process-define) returns @('(mv successp
+new-defines remainder)').</p>
 
-<p>We assume that <tt>`define</tt> has just been read and <tt>echars</tt>
-is the text which comes right after the <tt>`define</tt> directive.  We
-read the name and text for this new macro definition, and update the
-defines table appropriately if <tt>activep</tt> is set.</p>"
+<p>We assume that @('`define') has just been read and @('echars') is the text
+which comes right after the @('`define') directive.  We read the name and text
+for this new macro definition, and update the defines table appropriately if
+@('activep') is set.</p>"
 
   (defund vl-process-define (loc echars defines activep)
     "Returns (MV SUCCESSP NEW-DEFINES REMAINDER)"
@@ -1143,14 +1146,14 @@ defines table appropriately if <tt>activep</tt> is set.</p>"
 
 (defsection vl-process-undef
   :parents (preprocessor)
-  :short "Handler for <tt>undef</tt> directives."
+  :short "Handler for @('undef') directives."
 
-  :long "<p><b>Signature:</b> @(call vl-process-undef) returns <tt>(mv successp
-new-defines remainder)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-process-undef) returns @('(mv successp
+new-defines remainder)').</p>
 
-<p>We assume that an <tt>`undef</tt> has just been read and <tt>echars</tt> is
-the text which follows it.  We try to read the name we are to undefine, then
-update the defines table appropriately.</p>"
+<p>We assume that an @('`undef') has just been read and @('echars') is the text
+which follows it.  We try to read the name we are to undefine, then update the
+defines table appropriately.</p>"
 
   (defund vl-process-undef (loc echars defines activep)
     "Returns (MV SUCCESSP NEW-DEFINES REMAINDER)"
@@ -1261,16 +1264,16 @@ update the defines table appropriately.</p>"
 
 (defxdoc preprocessor-include-minutia
   :parents (preprocessor)
-  :short "Subtle notes about <tt>`include</tt> handling."
+  :short "Subtle notes about @('`include') handling."
 
-  :long "<p>The Verilog spec is very vague about how <tt>include</tt>
-directives are to be processed.</p>
+  :long "<p>The Verilog spec is very vague about how @('include') directives
+are to be processed.</p>
 
-<p>It does nicely explain that we are to simply replace the <tt>`include
-\"foo.v\"</tt> directive with the entire contents of <tt>foo.b</tt>, and
-explains some things related to the syntax of the directive.  It also says that
-the included file can itself contain <tt>include</tt> directives, which of
-course seems perfectly reasonable.</p>
+<p>It does nicely explain that we are to simply replace the @('`include
+\"foo.v\"') directive with the entire contents of @('foo.b'), and explains some
+things related to the syntax of the directive.  It also says that the included
+file can itself contain @('include') directives, which of course seems
+perfectly reasonable.</p>
 
 <p>The spec explicitly says the filename can be an absolute or relative
 pathname.  In the case of an absolute pathname, the intention seems pretty
@@ -1287,12 +1290,12 @@ These directories are similar to, but distinct from, the <i>library
 directories</i> which are used to load \"missing\" modules.  These directories
 are configured with command-line options like:</p>
 
-<code>
+@({
  +incdir+/home/jared/dir1 +incdir+/home/jared/dir2 ...
-</code>
+})
 
-<p>When these tools see <tt>`include \"foo.v\"</tt>, they seem to search for
-<tt>foo.v</tt> in these include directories, and include the first file that is
+<p>When these tools see @('`include \"foo.v\"'), they seem to search for
+@('foo.v') in these include directories, and include the first file that is
 found.</p>
 
 <p>Because of this, it does <i>not</i> work to just try to write includes
@@ -1303,19 +1306,19 @@ to whatever the include path is going to be.</p>")
 
 (defsection vl-read-include
   :parents (preprocessor)
-  :short "Read an <tt>`include</tt> directive."
+  :short "Read an @('`include') directive."
 
-  :long "<p><b>Signature:</b> @(call vl-read-include) returns <tt>(mv successp
-filename remainder)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-read-include) returns @('(mv successp
+filename remainder)').</p>
 
-<p><tt>echars</tt> are the characters we are reading; we assume that an
-<tt>`include</tt> was just read and removed from <tt>echars</tt>.  We try to
-read the filename part and return it (without the quotes).  Per Section 19.5 of
-the Verilog spec, the syntax is:</p>
+<p>@('echars') are the characters we are reading; we assume that an
+@('`include') was just read and removed from @('echars').  We try to read the
+filename part and return it (without the quotes).  Per Section 19.5 of the
+Verilog spec, the syntax is:</p>
 
-<code>
+@({
  `include \"filename\"
-</code>
+})
 
 <p>We are told that filename here can be a relative or absolute path, but there
 is not any discussion of the actual syntax of the filename (e.g., as it relates
@@ -1324,21 +1327,20 @@ evidence for this belief:</p>
 
 <ul>
 
-<li>In Section 19.7 where <tt>`line</tt> directives are covered, we are told
-that the filename for <tt>`line</tt> directives is a string constant, so if
-there is any justice in the world the filenames for <tt>`includes</tt> should
-be the same.</li>
+<li>In Section 19.7 where @('`line') directives are covered, we are told that
+the filename for @('`line') directives is a string constant, so if there is any
+justice in the world the filenames for @('`includes') should be the same.</li>
 
-<li>I tried using Verilog-XL and NCVerilog to <tt>`include
-\"test\\055latch.v\"</tt>, where 055 is the octal character code for the dash
+<li>I tried using Verilog-XL and NCVerilog to @('`include
+\"test\\055latch.v\"'), where 055 is the octal character code for the dash
 character, and both systems were happy with this.  So, it seems like these
 tools are treating it as an ordinary string constant.</li>
 
 </ul>
 
 <p>NOTE: We are told in Section 19.5 that only whitespace or a comment can
-appear on the same line as an <tt>`include</tt> directive.  We don't currently
-try to enforce this restriction since it is somewhat awkward to do so.</p>"
+appear on the same line as an @('`include') directive.  We don't currently try
+to enforce this restriction since it is somewhat awkward to do so.</p>"
 
   (defund vl-read-include (echars)
     "Returns (MV FILENAME PREFIX REMAINDER)"

@@ -78,7 +78,7 @@ ensures that every wire has exactly one driver.</li>
 outputs are properly marked and there is no <see topic='@(url
 backflow)'>backflow</see> occurring.</p>
 
-<p>The resulting E module for each Verilog module is saved in the <tt>esim</tt>
+<p>The resulting E module for each Verilog module is saved in the @('esim')
 field of each @(see vl-module-p).</p>")
 
 ; -----------------------------------------------------------------------------
@@ -233,28 +233,27 @@ field of each @(see vl-module-p).</p>")
   :parents (e-conversion)
   :short "Convert a Verilog module into an E module."
 
-  :long "<p><b>Signature:</b> @(call vl-module-to-e) returns <tt>(mv x'
-eal')</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-module-to-e) returns @('(mv x'
+eal')').</p>
 
 <ul>
 
-<li><tt>x</tt> is the module that we want to convert into an E module.  We
-assume that the module has no unsupported constructs, okay port bits, etc,
-since these are checked in @(see vl-modulelist-to-e).</li>
+<li>@('x') is the module that we want to convert into an E module.  We assume
+that the module has no unsupported constructs, okay port bits, etc, since these
+are checked in @(see vl-modulelist-to-e).</li>
 
-<li><tt>mods</tt> is the list of all modules; <tt>modalist</tt> is its @(see
+<li>@('mods') is the list of all modules; @('modalist') is its @(see
 vl-modalist) for fast lookups.  We use this mainly for looking up submodules.
-This stays fixed as we recur, so the modules here don't have their
-<tt>esim</tt> fields filled in yet.</li>
+This stays fixed as we recur, so the modules here don't have their @('esim')
+fields filled in yet.</li>
 
-<li><tt>eal</tt> is an @(see vl-ealist-p) that we are constructing and
-extending, and allows us to look up the esims for previously processed
-modules.</li>
+<li>@('eal') is an @(see vl-ealist-p) that we are constructing and extending,
+and allows us to look up the esims for previously processed modules.</li>
 
 </ul>
 
-<p>We try to compute the <tt>esim</tt> for <tt>x</tt>, install it into
-<tt>x</tt>, and extend <tt>eal</tt> with the newly produced <tt>esim</tt>.</p>"
+<p>We try to compute the @('esim') for @('x'), install it into @('x'), and
+extend @('eal') with the newly produced @('esim').</p>"
 
   (local (defthm c0
            (implies (vl-emodwirelist-p (vl-eocclist-allnames occs))

@@ -34,16 +34,16 @@
 
   :long "<p>Using the VL @(see printer), we implement pretty-printing routines
 to display our @(see modules) and other parse-tree structures.  These functions
-produce either plain text or html output, depending upon the <tt>htmlp</tt>
-setting in the printer state, @(see ps).</p>")
+produce either plain text or html output, depending upon the @('htmlp') setting
+in the printer state, @(see ps).</p>")
 
 
 
 
 (defsection vl-ps->show-atts-p
   :parents (verilog-printing)
-  :short "Controls whether Verilog-2005 <tt>(* key = val *)</tt>-style
-attributes should be displayed."
+  :short "Controls whether Verilog-2005 @('(* key = val *)')-style attributes
+should be displayed."
 
   (defun vl-ps->show-atts-p-fn (ps)
     (declare (xargs :stobjs ps))
@@ -78,11 +78,10 @@ attributes should be displayed."
   :short "Add escape characters to an identifier name, but only if they are
 necessary."
 
-  :long "<p>@(call vl-maybe-escape-identifier) is given <tt>x</tt>, the name of
-an identifier as a string.  Usually <tt>x</tt> contains only ordinary
-characters and does not need to be escaped, and in such cases we return
-<tt>x</tt> unchanged.  Otherwise, we add the leading <tt>\\</tt> character and
-trailing space.</p>
+  :long "<p>@(call vl-maybe-escape-identifier) is given @('x'), the name of an
+identifier as a string.  Usually @('x') contains only ordinary characters and
+does not need to be escaped, and in such cases we return @('x') unchanged.
+Otherwise, we add the leading @('\\') character and trailing space.</p>
 
 <p>This function assumes that the name has no embedded spaces and at least one
 character, and will cause a run-time error if these conditions are
@@ -138,18 +137,18 @@ violated.</p>"
   :short "@(call vl-print-modname) prints a module's name."
 
   :long "<p>When we are printing plain-text output, this function behaves the
-same as @(see vl-print) except that we may escape <tt>x</tt> if necessary; see
+same as @(see vl-print) except that we may escape @('x') if necessary; see
 @(see vl-maybe-escape-identifier).</p>
 
 <p>When we are printing HTML output, we print something like:</p>
 
-<code>
-&lt;a class=\"vl_modlink\" href=\"javascript:showModule('foo')\"&gt;foo&lt;/a&gt;
-</code>
+@({
+<a class=\"vl_modlink\" href=\"javascript:showModule('foo')\">foo</a>
+})
 
 <p>This function is used in various warning messages, reports, and other
 displays.  The module browser's web pages are responsible for defining the
-<tt>showModule</tt> function to carry out some sensible behavior.</p>"
+@('showModule') function to carry out some sensible behavior.</p>"
 
   :body
   (vl-ps-span
@@ -173,16 +172,16 @@ displays.  The module browser's web pages are responsible for defining the
 the names of identifiers within a module -- most commonly wire names, but we also
 use it for the names of blocks, module instances, and so on.</p>
 
-<p>In text mode, we just print <tt>x</tt>, escaping it if necessary.  In HTML mode,
+<p>In text mode, we just print @('x'), escaping it if necessary.  In HTML mode,
 we print something like:</p>
 
-<code>
-&lt;a class=\"vl_wirelink\" href=\"javascript:showWire('foo')\"&gt;foo&lt;/a&gt;
-</code>
+@({
+<a class=\"vl_wirelink\" href=\"javascript:showWire('foo')\">foo</a>
+})
 
 <p>This function is used in various warning messages, reports, and other
 displays.  The module browser's web pages are responsible for defining the
-<tt>showWire</tt> function to carry out some sensible behavior.</p>"
+@('showWire') function to carry out some sensible behavior.</p>"
 
   :body
   (vl-ps-span
@@ -215,15 +214,15 @@ displays.  The module browser's web pages are responsible for defining the
   :long "<p>This is almost identical to @(see vl-print-wirename), but is intended
 for messages where the module might not be apparent.</p>
 
-<p>In text mode, we just print <tt>x</tt>, escaping it if necessary.  In HTML mode,
+<p>In text mode, we just print @('x'), escaping it if necessary.  In HTML mode,
 we print something like:</p>
 
-<code>
-&lt;a class=\"vl_wirelink\" href=\"javascript:showWireExt('mod', 'w')\"&gt;w&lt;/a&gt;
-</code>
+@({
+<a class=\"vl_wirelink\" href=\"javascript:showWireExt('mod', 'w')\">w</a>
+})
 
 <p>The module browser's web pages are responsible for defining the
-<tt>showWireExt</tt> function to carry out some sensible behavior.</p>"
+@('showWireExt') function to carry out some sensible behavior.</p>"
 
   :body
   (vl-ps-span
@@ -248,17 +247,17 @@ we print something like:</p>
 @(see vl-location-string).  But when HTML mode is active, we instead print
 something along the lines of:</p>
 
-<code>
-&lt;a class=\"vl_loclink\"
+@({
+<a class=\"vl_loclink\"
    href=\"javascript:void(0);\"
-   onClick=\"showLoc('foo', 'line', 'col')\"&gt;
+   onClick=\"showLoc('foo', 'line', 'col')\">
   foo:line:col
-&lt;/a&gt;
-</code>
+</a>
+})
 
 <p>This function is used in various warning messages, reports, and other
 displays.  The module browser's web pages are responsible for defining the
-<tt>showLoc</tt> function to carry out some sensible behavior.</p>"
+@('showLoc') function to carry out some sensible behavior.</p>"
 
   :body
   (if (not (vl-ps->htmlp))
@@ -1008,11 +1007,11 @@ displays.  The module browser's web pages are responsible for defining the
   :long "<p><b>Signature:</b> @(call vl-pps-origexpr) returns a string.</p>
 
 <p>This function is similar to @(see vl-pps-expr), in that it pretty-prints
-<tt>x</tt> and returns the result as a string.  However, if <tt>x</tt> has a
-<tt>VL_ORIG_EXPR</tt> attribute (see @(see origexprs)), we actually
-pretty-print the original version of <tt>x</tt> rather than the current
-version (which may be simplified, and hence not correspond as closely to the
-original source code.)</p>"
+@('x') and returns the result as a string.  However, if @('x') has a
+@('VL_ORIG_EXPR') attribute (see @(see origexprs)), we actually pretty-print
+the original version of @('x') rather than the current version (which may be
+simplified, and hence not correspond as closely to the original source
+code.)</p>"
 
   (defpp vl-pp-origexpr (x)
     :guard (vl-expr-p x)
@@ -2291,8 +2290,7 @@ original source code.)</p>"
 function type, for pretty-printing."
 
   :long "<p>We just return the empty don't print anything for
-<tt>:vl-unsigned</tt>, but it seems like it would be valid to print
-<tt>reg</tt>.</p>"
+@(':vl-unsigned'), but it seems like it would be valid to print @('reg').</p>"
 
   (local (in-theory (enable vl-taskporttype-p)))
 
@@ -2431,16 +2429,16 @@ function type, for pretty-printing."
   :short "Pretty-print a module to @(see ps)."
 
   :long "<p>@(call vl-pp-module) extends @(see ps) with a pretty-printed
-representation of the module <tt>x</tt>.</p>
+representation of the module @('x').</p>
 
 <p>You may prefer @(see vl-ppc-module), which preserves the order of module
 elements and its comments.  For interactive use, you may prefer @(see
 vl-pps-module) or @(see vl-ppcs-module), which write to a string instead of
 @(see ps).</p>
 
-<p>The <tt>mods</tt> here should be the list of all modules and
-<tt>modalist</tt> is its @(see vl-modalist); these arguments are only needed
-for hyperlinking to submodules in HTML mode.</p>"
+<p>The @('mods') here should be the list of all modules and @('modalist') is
+its @(see vl-modalist); these arguments are only needed for hyperlinking to
+submodules in HTML mode.</p>"
 
   :guard (and (vl-module-p x)
               (vl-modulelist-p mods)
@@ -2479,9 +2477,9 @@ for hyperlinking to submodules in HTML mode.</p>"
   :parents (verilog-printing)
   :short "Pretty-print a module to a plain-text string."
 
-  :long "<p>@(call vl-pps-module) pretty-prints the @(see vl-module-p)
-<tt>x</tt> into a plain-text string.  You may prefer @(see vl-ppcs-module)
-which preserves the order of module elements and its comments.</p>"
+  :long "<p>@(call vl-pps-module) pretty-prints the @(see vl-module-p) @('x')
+into a plain-text string.  You may prefer @(see vl-ppcs-module) which preserves
+the order of module elements and its comments.</p>"
 
   (defund vl-pps-module (x)
     (declare (xargs :guard (vl-module-p x)))

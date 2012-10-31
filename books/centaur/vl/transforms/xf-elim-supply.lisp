@@ -27,12 +27,11 @@
 
 (defxdoc elim-supplies
   :parents (transforms)
-  :short "Elimination of <tt>supply0</tt> and <tt>supply1</tt> wires"
+  :short "Elimination of @('supply0') and @('supply1') wires"
 
-  :long "<p>In this transformation, we throw away declarations like <tt>supply0
-a</tt> and <tt>supply1 b</tt>, and replace occurrences of <tt>a</tt> and
-<tt>b</tt> throughout expressions with <tt>0</tt> and <tt>1</tt>,
-respectively.</p>
+  :long "<p>In this transformation, we throw away declarations like @('supply0
+a') and @('supply1 b'), and replace occurrences of @('a') and @('b') throughout
+expressions with @('0') and @('1'), respectively.</p>
 
 <p><b>BOZO.</b> This transformation is sort of okay, but we should come up with
 something better.  As it turns out, something as simple as eliminating supplies

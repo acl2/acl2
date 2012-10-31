@@ -46,7 +46,7 @@
 
   :long "<p>Originally I used the following function to split the list.</p>
 
-<code>
+@({
   (defun split-list-old (x)
     (declare (xargs :guard (true-listp x)))
     (cond ((endp x) (mv nil nil))
@@ -55,13 +55,13 @@
                      (split-list-old (cddr x))
                      (mv (cons (car x) part1)
                          (cons (cadr x) part2)))))))
-</code>
+})
 
 <p>But David Rager noted that this was not tail recursive, and accordingly it
 ran into trouble on large data sets.  Accordingly, in Version 0.91, I rewrote
 this to be tail recursive:</p>
 
-<code>
+@({
  (defun split-list (x acc acc2)
    (declare (xargs :guard (true-listp x)))
    (cond ((endp x)
@@ -71,13 +71,12 @@ this to be tail recursive:</p>
          (t (split-list (cddr x)
                         (cons (car x) acc)
                         (cons (cadr x) acc2)))))
-</code>
+})
 
-<p>Since then, I wrote the <tt>defsort/defsort</tt> library, which uses some
-tricks to provide a faster mergesort.  One key optimization is to take the
-first and second halves of the list, rather than splitting the list in terms of
-evens and odds.  This allows you to split the list with half as much
-consing.</p>
+<p>Since then, I wrote the @('defsort/defsort') library, which uses some tricks
+to provide a faster mergesort.  One key optimization is to take the first and
+second halves of the list, rather than splitting the list in terms of evens and
+odds.  This allows you to split the list with half as much consing.</p>
 
 <p>Defsort's approach uses a lot of arithmetic optimization.  I later wrote a
 mergesort for Milawa, where arithmetic is expensive.  Here, I implemented
@@ -235,9 +234,9 @@ really we could avoid that by just being a bit smarter, like in defsort.</p>"
 
 (defsection mergesort
   :parents (osets)
-  :short "@(call mergesort) converts the list <tt>X</tt> into an ordered set."
+  :short "@(call mergesort) converts the list @('X') into an ordered set."
 
-  :long "<p>Logically, <tt>(mergesort x)</tt> is exactly the same as repeated
+  :long "<p>Logically, @('(mergesort x)') is exactly the same as repeated
 insertion, so it is fairly easy to reason about.  But in the execution,
 mergesort is implemented with a reasonably efficient sort with O(n log n)
 performance instead of O(n^2) like repeated insertion.</p>

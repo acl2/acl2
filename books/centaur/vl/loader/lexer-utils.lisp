@@ -30,26 +30,25 @@
   :parents (lexer)
   :short "Introduce prefix/remainder theorems for a lexing function."
 
-  :long "<p>Many of our lexing routines take <tt>echars</tt>, an @(see
-vl-echarlist-p), as input, and split this list into a <tt>prefix</tt> and
-<tt>remainder</tt>.  This macro allows us to quickly prove several common
+  :long "<p>Many of our lexing routines take @('echars'), an @(see
+vl-echarlist-p), as input, and split this list into a @('prefix') and
+@('remainder').  This macro allows us to quickly prove several common
 properties about such a function.  In particular, we show:</p>
 
 <ul>
 
-<li><tt>prefix</tt> is always a true-listp, and furthermore it is also a
-vl-echarlist-p as long as the <tt>echars</tt> is.</li>
+<li>@('prefix') is always a true-listp, and furthermore it is also a
+vl-echarlist-p as long as the @('echars') is.</li>
 
-<li><tt>remainder</tt> is a true-listp exactly when <tt>echars</tt> is,
-and furthermore it is a vl-echarlist-p whenever <tt>echars</tt> is.</li>
+<li>@('remainder') is a true-listp exactly when @('echars') is, and furthermore
+it is a vl-echarlist-p whenever @('echars') is.</li>
 
-<li>Appending the <tt>prefix</tt> and <tt>remainder</tt> always returns
-the original <tt>echars</tt>.  A corollary is that whenever <tt>prefix</tt>
-is empty, <tt>remainder</tt> is the whole of <tt>echars</tt>.</li>
+<li>Appending the @('prefix') and @('remainder') always returns the original
+@('echars').  A corollary is that whenever @('prefix') is empty, @('remainder')
+is the whole of @('echars').</li>
 
-<li>The acl2-count of <tt>remainder</tt> is never greater than that of
-<tt>echars</tt>, and strictly decreases whenever <tt>prefix</tt> is
-non-nil.</li>
+<li>The acl2-count of @('remainder') is never greater than that of @('echars'),
+and strictly decreases whenever @('prefix') is non-nil.</li>
 
 </ul>"
 
@@ -57,7 +56,7 @@ non-nil.</li>
                                           (formals '(echars))
                                           (prefix-n '0)
                                           (remainder-n '1))
-    (let ((mksym-package-symbol 'vl))
+    (let ((mksym-package-symbol 'vl::foo))
       `(encapsulate
         ()
         (local (in-theory (enable ,fn)))
@@ -116,24 +115,16 @@ vl-echarlist-p)."
   :long "<p><b>Signature:</b> @(call vl-matches-string-p) returns a
 boolean.</p>
 
-<p>This function determines if some <tt>string</tt> occurs at the front of
-<tt>echars</tt>.  More exactly, it computes:</p>
+<p>This function determines if some @('string') occurs at the front of
+@('echars').  More exactly, it computes:</p>
 
-<code>
+@({
  (prefixp (coerce string 'list)
-          (vl-echarlist-&gt;chars echars))
-</code>
+          (vl-echarlist->chars echars))
+})
 
 <p>But we actually implement the operation with a fast function that does not
-call <tt>coerce</tt> or build the list of characters.</p>
-
-<h3>Definition and Theorems</h3>
-
-@(def vl-matches-string-p-impl)
-@(def vl-matches-string-p)
-@(thm len-when-vl-matches-string-p-fc)
-@(thm consp-when-vl-matches-string-p-fc)
-@(thm vl-matches-string-p-when-acl2-count-zero)"
+call @('coerce') or build the list of characters.</p>"
 
   (defund vl-matches-string-p-impl (string i len echars)
     (declare (type string string)
@@ -204,21 +195,15 @@ call <tt>coerce</tt> or build the list of characters.</p>
   :parents (lexer)
   :short "Match a literal string."
 
-  :long "<p><b>Signature:</b> @(call vl-read-literal) returns <tt>(mv prefix
-remainder)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-read-literal) returns @('(mv prefix
+remainder)').</p>
 
 <p>This is a standard prefix/remainder style function which satisfies the
 properties described in @(see def-prefix/remainder-thms).</p>
 
-<p>We try to match <tt>echars</tt> against some literal <tt>string</tt>.  On
-success, <tt>prefix</tt> is the matching prefix of <tt>echars</tt>; otherwise
-it is <tt>nil</tt>.</p>
-
-<h3>Definition and Additional Theorems</h3>
-
-@(def vl-read-literal)
-@(thm vl-echarlist->chars-of-prefix-of-vl-read-literal)
-@(thm vl-echarlist->string-of-prefix-of-vl-read-literal)"
+<p>We try to match @('echars') against some literal @('string').  On success,
+@('prefix') is the matching prefix of @('echars'); otherwise it is
+@('nil').</p>"
 
   (definlined vl-read-literal (string echars)
     (declare (type string string)
@@ -254,18 +239,16 @@ it is <tt>nil</tt>.</p>
   :parents (lexer)
   :short "Match one of many literal strings."
 
-  :long "<p><b>Signature:</b> @(call vl-read-some-literal) returns <tt>(mv
-prefix remainder)</tt></p>
+  :long "<p><b>Signature:</b> @(call vl-read-some-literal) returns @('(mv
+prefix remainder)')</p>
 
 <p>This is a standard prefix/remainder style function which satisfies the
 properties described in @(see def-prefix/remainder-thms).</p>
 
-<p>We try to match <tt>echars</tt> against any member of <tt>strings</tt>, a
-list of strings.  We try each string in order, so that <tt>prefix</tt> will
-contain the characters for the first match.  If none of the strings match,
-<tt>prefix</tt> will be <tt>nil</tt>.</p>
-
-@(def vl-read-some-literal)"
+<p>We try to match @('echars') against any member of @('strings'), a list of
+strings.  We try each string in order, so that @('prefix') will contain the
+characters for the first match.  If none of the strings match, @('prefix') will
+be @('nil').</p>"
 
   (defund vl-read-some-literal (strings echars)
     (declare (xargs :guard (and (string-listp strings)
@@ -290,24 +273,16 @@ contain the characters for the first match.  If none of the strings match,
   :parents (lexer)
   :short "Match any characters up until some literal."
 
-  :long "<p><b>Signature:</b> @(call vl-read-until-literal) returns <tt>(mv
-successp prefix remainder)</tt></p>
+  :long "<p><b>Signature:</b> @(call vl-read-until-literal) returns @('(mv
+successp prefix remainder)')</p>
 
 <p>This is a standard prefix/remainder style function which satisfies the
 properties described in @(see def-prefix/remainder-thms).</p>
 
-<p>On success, <tt>prefix</tt> contains all characters leading up to, <i>but
-not including</i>, the first occurrence of <tt>string</tt>.  If <tt>string</tt>
-never occurs in <tt>echars</tt>, then <tt>prefix</tt> is the entire list of
-<tt>echars</tt> and <tt>remainder</tt> is its final cdr.</p>
-
-<h3>Definition and Additional Theorems</h3>
-
-@(def vl-read-until-literal-impl)
-@(def vl-read-until-literal)
-@(thm type-of-vl-read-until-literal-1)
-@(thm len-of-vl-read-until-literal)
-@(thm vl-matches-string-p-after-vl-read-until-literal)"
+<p>On success, @('prefix') contains all characters leading up to, <i>but not
+including</i>, the first occurrence of @('string').  If @('string') never
+occurs in @('echars'), then @('prefix') is the entire list of @('echars') and
+@('remainder') is its final cdr.</p>"
 
   (defund vl-read-until-literal-impl (string echars acc)
     (declare (type string string)
@@ -378,21 +353,16 @@ never occurs in <tt>echars</tt>, then <tt>prefix</tt> is the entire list of
   :parents (lexer)
   :short "Match any characters until and through some literal."
 
-  :long "<p><b>Signature:</b> @(call vl-read-through-literal) returns <tt>(mv
-successp prefix remainder)</tt></p>
+  :long "<p><b>Signature:</b> @(call vl-read-through-literal) returns @('(mv
+successp prefix remainder)')</p>
 
 <p>This is a standard prefix/remainder style function which satisfies the
 properties described in @(see def-prefix/remainder-thms).</p>
 
-<p>On success, <tt>prefix</tt> contains all characters leading up to, <i>and
-including</i>, the first occurrence of <tt>string</tt>.  If <tt>string</tt>
-never occurs in <tt>echars</tt>, then <tt>prefix</tt> is the entire list of
-<tt>echars</tt> and <tt>remainder</tt> is its final cdr.</p>
-
-<h3>Definition</h3>
-
-@(def revappend-of-take)
-@(def vl-read-through-literal)"
+<p>On success, @('prefix') contains all characters leading up to, <i>and
+including</i>, the first occurrence of @('string').  If @('string') never
+occurs in @('echars'), then @('prefix') is the entire list of @('echars') and
+@('remainder') is its final cdr.</p>"
 
   (defun revappend-of-take (n x y)
     (declare (xargs :guard (and (natp n)
@@ -446,14 +416,9 @@ never occurs in <tt>echars</tt>, then <tt>prefix</tt> is the entire list of
 underscore character from a @(see vl-echarlist-p)."
 
   :long "<p>Verilog uses underscores as a digit separator, e.g., you can write
-<tt>1_000_000</tt> instead of <tt>1000000</tt> for greater readability on long
-numbers.  This function strips away the underscores so we can interpret the
-remaining digits with @(see vl-echarlist-unsigned-value).</p>
-
-<h3>Definition and Theorems</h3>
-
-@(def vl-echarlist-kill-underscores)
-@(thm vl-echarlist-p-of-vl-echarlist-kill-underscores)"
+@('1_000_000') instead of @('1000000') for greater readability on long numbers.
+This function strips away the underscores so we can interpret the remaining
+digits with @(see vl-echarlist-unsigned-value).</p>"
 
   (defund vl-echarlist-kill-underscores (x)
     (declare (xargs :guard (vl-echarlist-p x)))
@@ -476,37 +441,18 @@ remaining digits with @(see vl-echarlist-unsigned-value).</p>
   :parents (lexer)
   :short "Match as many characters of some type as possible."
 
-  :long "<p><b>Signature:</b> @(call vl-read-while-ctype) returns <tt>(mv
-prefix remainder)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-read-while-ctype) returns @('(mv prefix
+remainder)').</p>
 
 <p>This is a generic function.  See @(see defchar) for a convenient way to
 instantiate this function, and its corresponding theory, for your own character
 recognizers.</p>
 
-<p><tt>(vl-ctype-p x)</tt> is a constrained function that we imagine represents
-some recognizer for certain <tt>characterp</tt> objects.  Using this function,
-@(call vl-read-while-ctype) splits <tt>echars</tt> into a prefix and remainder,
-where <tt>prefix</tt> holds all of the leading characters of <tt>echars</tt>
-that satisfy <tt>vl-ctype-p</tt>, and <tt>remainder</tt> holds the rest.</p>
-
-<h3>Definitions</h3>
-
-@(def vl-ctype-list-p)
-@(def vl-read-while-ctype-impl)
-@(def vl-read-while-ctype)
-
-<h3>Theorems</h3>
-
-@(thm prefix-of-vl-read-while-ctype)
-@(thm equiv-of-vl-read-while-ctype-impl)
-@(thm remainder-of-vl-read-while-ctype)
-@(thm prefix-of-vl-read-while-ctype-when-vl-ctype-p)
-@(thm vl-read-while-ctype-sound)
-@(thm vl-read-while-ctype-complete)
-@(thm append-of-vl-read-while-ctype)
-@(thm no-change-loser-of-vl-read-while-ctype)
-@(thm acl2-count-of-vl-read-while-ctype-weak)
-@(thm acl2-count-of-vl-read-while-ctype-strong)"
+<p>@('(vl-ctype-p x)') is a constrained function that we imagine represents
+some recognizer for certain @('characterp') objects.  Using this function,
+@(call vl-read-while-ctype) splits @('echars') into a prefix and remainder,
+where @('prefix') holds all of the leading characters of @('echars') that
+satisfy @('vl-ctype-p'), and @('remainder') holds the rest.</p>"
 
   (encapsulate
    (((vl-ctype-p *) => *))
@@ -635,66 +581,64 @@ that satisfy <tt>vl-ctype-p</tt>, and <tt>remainder</tt> holds the rest.</p>
   :parents (lexer)
   :short "Introduce lexing utilites from a character recognizer."
 
-  :long "<p><tt>Defchar</tt> is a macro for instantiating @(see
+  :long "<p>@('Defchar') is a macro for instantiating @(see
 vl-read-while-ctype).</p>
 
 <h5>General Form</h5>
-<code>
+@({
  (DEFCHAR BASENAME CRITERIA
    [:PREFIX prefix]
    [:PKG pkg])
-</code>
+})
 
 <h5>Example</h5>
-<code>
+@({
  (defchar whitespace
   (or (eql x #\Space)
       (eql x #\Tab)
       (eql x #\Page) ;; \"form feed\"
       (eql x #\Newline)))
-</code>
+})
 
-<p>The <tt>basename</tt>, <tt>prefix</tt>, and <tt>pkg</tt> are each symbols
-which influence the names of the new definitions and theorems we introduce.
-In particular,</p>
+<p>The @('basename'), @('prefix'), and @('pkg') are each symbols which
+influence the names of the new definitions and theorems we introduce.  In
+particular,</p>
 
 <ul>
 
-<li>The <tt>basename</tt> is the name of the main part of the new character
-type you are introducing.</li>
+<li>The @('basename') is the name of the main part of the new character type
+you are introducing.</li>
 
-<li>The <tt>prefix</tt> is prepended to the symbol names we generate, and
-defaults to the symbol <tt>'vl-</tt>.  For instance, in the above example, the
-single-character recognizer will be named <tt>vl-whitespace-p</tt>.</li>
+<li>The @('prefix') is prepended to the symbol names we generate, and defaults
+to the symbol @(''vl-').  For instance, in the above example, the
+single-character recognizer will be named @('vl-whitespace-p').</li>
 
-<li>The <tt>pkg</tt> is used to control what package the new functions and
-theorems are defined in.  It defaults to <tt>'VL::foo</tt>, so in the above
-example the symbols are introduced in the <tt>VL::</tt> package.
-</li>
+<li>The @('pkg') is used to control what package the new functions and theorems
+are defined in.  It defaults to @(''VL::foo'), so in the above example the
+symbols are introduced in the @('VL::') package.  </li>
 
 </ul>
 
-<p>Finally, the <tt>criteria</tt> is some term about the variable <tt>x</tt>.
-You may assume that <tt>x</tt> is an ordinary <tt>characterp</tt>, and specify
-what kinds of characters you want using functions such as <tt>eql</tt> and
-<tt>char&lt;=</tt>.</p>
+<p>Finally, the @('criteria') is some term about the variable @('x').  You may
+assume that @('x') is an ordinary @('characterp'), and specify what kinds of
+characters you want using functions such as @('eql') and @('char<=').</p>
 
 <p>Calling this macro introduces the following functions:</p>
 
 <ul>
 
-<li><tt>(PKG::PREFIX-BASENAME-P X)</tt>, recognizes those <tt>characterp</tt>s
-which satsify <tt>criteria</tt>,</li>
+<li>@('(PKG::PREFIX-BASENAME-P X)'), recognizes those @('characterp')s which
+satsify @('criteria'),</li>
 
-<li><tt>(PKG::PREFIX-BASENAME-ECHAR-P X)</tt>, recognizes those @(see
-vl-echar-p)s whose character satisfies <tt>criteria</tt>,</li>
+<li>@('(PKG::PREFIX-BASENAME-ECHAR-P X)'), recognizes those @(see vl-echar-p)s
+whose character satisfies @('criteria'),</li>
 
-<li><tt>(PKG::PREFIX-BASENAME-LIST-P X)</tt>, recognizes those <tt>character-listp</tt>s
-where every character satisfies <tt>criteria</tt>,</li>
+<li>@('(PKG::PREFIX-BASENAME-LIST-P X)'), recognizes those
+@('character-listp')s where every character satisfies @('criteria'),</li>
 
-<li><tt>(PKG::PREFIX-READ-WHILE-BASENAME ECHARS)</tt> splits <tt>echars</tt>
-into a prefix and remainder, where <tt>prefix</tt> is the longest leading
-list of characters that satisfy <tt>criteria</tt>.</li>
+<li>@('(PKG::PREFIX-READ-WHILE-BASENAME ECHARS)') splits @('echars') into a
+prefix and remainder, where @('prefix') is the longest leading list of
+characters that satisfy @('criteria').</li>
 
 </ul>
 

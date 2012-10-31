@@ -34,7 +34,7 @@
   :long "<p>A full-adder is a one-bit adder that produces a sum and carry.  We
 use the following definition:</p>
 
-<code>
+@({
 module VL_1_BIT_ADDER_CORE (sum, cout, a, b, cin) ;
   output sum, cout;
   input a, b, cin;
@@ -42,16 +42,16 @@ module VL_1_BIT_ADDER_CORE (sum, cout, a, b, cin) ;
 
   assign t1 = a ^ b;
   assign sum = t1 ^ cin;
-  assign t2 = t1 &amp; cin;
-  assign t3 = a &amp; b;
+  assign t2 = t1 & cin;
+  assign t3 = a & b;
   assign cout = t2 | t3;
 
 endmodule
-</code>
+})
 
 <p>This is only a \"core.\" It doesn't quite correspond to an addition like
-<tt>assign {carry, sum} = a + b + cin</tt> in Verilog because of X handling.
-See @(see vl-make-n-bit-plusminus) for the real module generator.</p>"
+@('assign {carry, sum} = a + b + cin') in Verilog because of X handling.  See
+@(see vl-make-n-bit-plusminus) for the real module generator.</p>"
 
   (defconst *vl-1-bit-adder-core-support*
     (list *vl-1-bit-xor*
@@ -95,7 +95,7 @@ See @(see vl-make-n-bit-plusminus) for the real module generator.</p>"
 
   :long "<p>We generate a gate-based module with the following interface:</p>
 
-<code>
+@({
 module VL_N_BIT_ADDER_CORE (sum, cout, a, b, cin);
   output [n-1:0] sum;
   output cout;
@@ -104,14 +104,14 @@ module VL_N_BIT_ADDER_CORE (sum, cout, a, b, cin);
   input cin;
   ...
 endmodule
-</code>
+})
 
 <p>This is a basic ripple-carry adder formed by chaining together several
 full-adders; see @(see *vl-1-bit-adder-core*) and @(see vl-make-full-adders).</p>
 
 <p>This module does NOT correspond to a full addition in Verilog.  It computes
-something akin to <tt>assign {cout, sum} = a + b + cin</tt>, but it does not
-handle X's like Verilog does.  See @(see vl-make-n-bit-plusminus) for the full
+something akin to @('assign {cout, sum} = a + b + cin'), but it does not handle
+X's like Verilog does.  See @(see vl-make-n-bit-plusminus) for the full
 addition and subtraction modules.</p>
 
 <p>We could probably make a leaner module by using a half-adder for the first
@@ -176,11 +176,11 @@ the last bit, but we think it's best to keep things simple.</p>"
 (def-vl-modgen vl-make-n-bit-plusminus (type n)
   :short "Generate an addition or subtraction module."
 
-  :long "<p>Depending on the <tt>type</tt>, which should be either
-<tt>:vl-binary-plus</tt> or <tt>:vl-binary-minus</tt>, we generate a gate-based
+  :long "<p>Depending on the @('type'), which should be either
+@(':vl-binary-plus') or @(':vl-binary-minus'), we generate a gate-based
 addition or subtraction module that is semantically equivalent to:</p>
 
-<code>
+@({
 module VL_N_BIT_{PLUS,MINUS} (out, a, b) ;
   output [n-1:0] out;
   input [n-1:0] a;
@@ -192,11 +192,11 @@ module VL_N_BIT_{PLUS,MINUS} (out, a, b) ;
   assign out = a - b;  // For MINUS
 
 endmodule
-</code>
+})
 
 <p>These modules capture the behavior specified by Verilog for addition and
-subtraction, including the requirement that if any bit of <tt>a</tt> or
-<tt>b</tt> is X/Z then the entire output is entirely X.</p>
+subtraction, including the requirement that if any bit of @('a') or @('b') is
+X/Z then the entire output is entirely X.</p>
 
 <p>We basically combine a simple ripple-carry adder with some additional
 X-detection and propagation circuitry.  This makes our adder rather bulky and

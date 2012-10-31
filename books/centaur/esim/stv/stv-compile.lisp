@@ -81,8 +81,8 @@
 
 (defsection stv-gensyms
   :parents (stv-compile)
-  :short "@(call stv-gensyms) produces the list of symbols <tt>(prefix[0]
-  ... prefix[n-1])</tt>."
+  :short "@(call stv-gensyms) produces the list of symbols @('(prefix[0]
+  ... prefix[n-1])')."
 
   ;; I originally used VL's emodwire stuff for this, but it's nice to eliminate
   ;; that dependency and just generate our own symbols.
@@ -197,7 +197,7 @@
 
 (defsection stv-forge-state-bit
   :parents (stv-compile)
-  :short "Generate the name for a state bit, like <tt>foo!bar!baz!inst!S</tt>,
+  :short "Generate the name for a state bit, like @('foo!bar!baz!inst!S'),
 given a list of instance names and the name of the state bit."
 
   ;; BOZO have to keep this in sync with mod-state/occ-state
@@ -234,17 +234,17 @@ their initial values."
   :long "<p><b>Signature:</b> @(call stv-initial-line-binding) returns a sexpr
 alist.</p>
 
-<p>The <tt>path</tt> is any path into <tt>mod</tt>.  It need not be canonical.
-We will follow the path with @(see follow-path-backwards), and we expect that
-new path we arrive at will be either an @(see *esim-flop*) or to an @(see
-*esim-latch*).  If not, we cause a run-time error.</p>
+<p>The @('path') is any path into @('mod').  It need not be canonical.  We will
+follow the path with @(see follow-path-backwards), and we expect that new path
+we arrive at will be either an @(see *esim-flop*) or to an @(see *esim-latch*).
+If not, we cause a run-time error.</p>
 
-<p>The <tt>sexpr</tt> is a sexpr that we want to use as the initial value for
-<tt>path</tt>.  The basic idea is to bind <tt>sexpr</tt> to the state bits we
-have found.  A slight twist is that, if walking from <tt>path</tt> to the state
-bits took us through an inversion, then we will bind the state bits to <tt>(not
-sexpr)</tt> instead.  This should ensure that our initial bindings to state
-bits do indeed initialize <tt>path</tt> to the desired value.</p>
+<p>The @('sexpr') is a sexpr that we want to use as the initial value for
+@('path').  The basic idea is to bind @('sexpr') to the state bits we have
+found.  A slight twist is that, if walking from @('path') to the state bits
+took us through an inversion, then we will bind the state bits to @('(not
+sexpr)') instead.  This should ensure that our initial bindings to state bits
+do indeed initialize @('path') to the desired value.</p>
 
 <p>If the path leads to a latch then there is just one state bit, and our alist
 will contain only a single entry.</p>
@@ -359,24 +359,24 @@ whether the master or slave bit gets initialized.</p>"
   :parents (stv-compile)
   :short "Convert an :initial line into an alist binding state bits to sexprs."
 
-  :long "<p><b>Signature:</b> @(call stv-initial-line-bindings) returns <tt>(mv
-bindings usersyms)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call stv-initial-line-bindings) returns @('(mv
+bindings usersyms)').</p>
 
-<p>The <tt>line</tt> is an :initial line from the STV.  Note that its name
-should be a list of E paths in lsb-first order.  That is, Verilog-style names
-shoudl have already been expanded away using @(see stv-expand-names) or
-similar.  These paths don't need to be canonical, and they don't need to refer
-to state bits.  We'll walk back from them to find the associated latch/flop
-that drives them.</p>
+<p>The @('line') is an :initial line from the STV.  Note that its name should
+be a list of E paths in lsb-first order.  That is, Verilog-style names shoudl
+have already been expanded away using @(see stv-expand-names) or similar.
+These paths don't need to be canonical, and they don't need to refer to state
+bits.  We'll walk back from them to find the associated latch/flop that drives
+them.</p>
 
-<p><tt>usersyms</tt> is a fast alist that binds the names of simulation
-variables like <tt>opcode</tt> to lists of bits that we generate for these
-symbols, i.e., <tt>(opcode[0] ... opcode[n])</tt>.  This allows us to check for
-name collisions with generated symbols and width mismatches.  That is, we will
-allow the same variable to be given to multiple inputs at multiple phases, but
-for that to be sensible these inputs had better have the same width.</p>
+<p>@('usersyms') is a fast alist that binds the names of simulation variables
+like @('opcode') to lists of bits that we generate for these symbols, i.e.,
+@('(opcode[0] ... opcode[n])').  This allows us to check for name collisions
+with generated symbols and width mismatches.  That is, we will allow the same
+variable to be given to multiple inputs at multiple phases, but for that to be
+sensible these inputs had better have the same width.</p>
 
-<p>The <tt>mod</tt> is needed to do various path lookups.</p>"
+<p>The @('mod') is needed to do various path lookups.</p>"
 
   (local (defthm len-of-bool-to-4v-sexpr-lst
            (equal (len (bool-to-4v-sexpr-lst x))
@@ -550,8 +550,8 @@ input signal names."
   :short "Convert a single user-level input value (e.g., 17, X, abus, etc) into
 a list of @(see 4v-sexprs)."
 
-  :long "<p><b>Signature:</b> @(call stv-expand-input-entry) returns <tt>(mv
-new-val gensyms usersyms)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call stv-expand-input-entry) returns @('(mv
+new-val gensyms usersyms)').</p>
 
 <p>This function basically defines what each value in an :input line means.  We
 transform each such value into a list of @(see 4v-sexprs).  These are the
@@ -560,25 +560,25 @@ our expansion strategy is:</p>
 
 <ul>
 
-<li><b>NAT</b>.  Expands to a list of <tt>*4vt-sexpr*</tt> and
-<tt>*4vf-sexpr*</tt>'s, in LSB order, of the appropriate width.</li>
+<li><b>NAT</b>.  Expands to a list of @('*4vt-sexpr*') and @('*4vf-sexpr*')'s,
+in LSB order, of the appropriate width.</li>
 
-<li><b>X</b>.  Expands to a list of <tt>*4vx-sexpr*</tt> of the appropriate
+<li><b>X</b>.  Expands to a list of @('*4vx-sexpr*') of the appropriate
 width.</li>
 
-<li><b>:ONES</b>.  Expands to a list of <tt>*4vt-sexpr*</tt> of the appropriate
+<li><b>:ONES</b>.  Expands to a list of @('*4vt-sexpr*') of the appropriate
 width.</li>
 
 <li><b>~</b>.  Expands to a singleton list whose one entry is either
-<tt>*4vf-sexpr*</tt> or <tt>*4vt-sexpr*</tt>, based on the previous value for
-this signal.</li>
+@('*4vf-sexpr*') or @('*4vt-sexpr*'), based on the previous value for this
+signal.</li>
 
 <li><b>_</b>.  Expands to a list of variables, whose names are derived from the
-names of input bits for this line.  Basically, <tt>|foo[0]|</tt> gets turned
-into <tt>|foo[0].P4|</tt> in the 4th phase, etc.</li>
+names of input bits for this line.  Basically, @('|foo[0]|') gets turned into
+@('|foo[0].P4|') in the 4th phase, etc.</li>
 
-<li><b>Simulation variables</b>.  A simulation variable like <tt>opcode</tt> is
-turned into a list like <tt>(|opcode[0]| ... |opcode[n]|)</tt>.</li>
+<li><b>Simulation variables</b>.  A simulation variable like @('opcode') is
+turned into a list like @('(|opcode[0]| ... |opcode[n]|)').</li>
 
 </ul>
 
@@ -586,35 +586,35 @@ turned into a list like <tt>(|opcode[0]| ... |opcode[n]|)</tt>.</li>
 
 <ul>
 
-<li><tt>name</tt> is the name of this input, and should be a list of E input
-bits in lsb-first order.  (That is, Verilog-style names should have already
-been expanded away using @(see stv-expand-names) or similar.)</li>
+<li>@('name') is the name of this input, and should be a list of E input bits
+in lsb-first order.  (That is, Verilog-style names should have already been
+expanded away using @(see stv-expand-names) or similar.)</li>
 
-<li><tt>width</tt> is the pre-computed width of this input, i.e., it must be
-exactly equal to <tt>(len name)</tt>.</li>
+<li>@('width') is the pre-computed width of this input, i.e., it must be
+exactly equal to @('(len name)').</li>
 
-<li><tt>pnum</tt> is the current phase number (and starts at 0).  We use this
-to know what suffix to put onto the generated variable names for <tt>_</tt>
-values, e.g.,  <tt>|foo[0].P4|</tt></li>
+<li>@('pnum') is the current phase number (and starts at 0).  We use this to
+know what suffix to put onto the generated variable names for @('_') values,
+e.g., @('|foo[0].P4|')</li>
 
-<li><tt>entry</tt> is the actual entry we are trying to expand.  For instance,
-it might be <tt>5</tt>, <tt>:ones</tt>, <tt>_</tt>, or whatever else the user
-wrote down for this input at this phase number.</li>
+<li>@('entry') is the actual entry we are trying to expand.  For instance, it
+might be @('5'), @(':ones'), @('_'), or whatever else the user wrote down for
+this input at this phase number.</li>
 
-<li><tt>gensyms</tt> is a flat list of all the names we have generated so far
-for <tt>_</tt> entries, which we may extend.  This allows us to check for name
+<li>@('gensyms') is a flat list of all the names we have generated so far for
+@('_') entries, which we may extend.  This allows us to check for name
 collisions later on.</li>
 
-<li><tt>usersyms</tt> is a fast alist that binds the names of simulation
-variables like <tt>opcode</tt> to lists of bits that we generate for these
-symbols, i.e., <tt>(opcode[0] ... opcode[n])</tt>.  This allows us to check for
-name collisions with generated symbols and width mismatches.  That is, we will
-allow the same variable to be given to multiple inputs at multiple phases, but
-for that to be sensible these inputs had better have the same width.</li>
+<li>@('usersyms') is a fast alist that binds the names of simulation variables
+like @('opcode') to lists of bits that we generate for these symbols, i.e.,
+@('(opcode[0] ... opcode[n])').  This allows us to check for name collisions
+with generated symbols and width mismatches.  That is, we will allow the same
+variable to be given to multiple inputs at multiple phases, but for that to be
+sensible these inputs had better have the same width.</li>
 
-<li><tt>prev-val</tt> is the sexpr list that this signal expanded to in the
+<li>@('prev-val') is the sexpr list that this signal expanded to in the
 previous phase, or NIL if this is the first phase of the simulation.  We use
-this to figure out the new value of a <tt>~</tt> entry.</li>
+this to figure out the new value of a @('~') entry.</li>
 
 </ul>"
 
@@ -778,12 +778,12 @@ to @(see 4v-sexprs) derived from the symbolic test vector."
 
   :long "<p>@(call stv-restrict-alist) produces an alist.</p>
 
-<p><tt>lines</tt> are the output from @(see stv-expand-input-lines).  We expect
+<p>@('lines') are the output from @(see stv-expand-input-lines).  We expect
 that the lines have been widened, had their names resolved into E bits, and had
 their entries turned into 4v-sexpr lists.</p>
 
-<p><tt>acc</tt> is an alist that we extend.  Typically it is the alist that has
-the <tt>:initial</tt> bindings.</p>
+<p>@('acc') is an alist that we extend.  Typically it is the alist that has the
+@(':initial') bindings.</p>
 
 <p>We construct an ordinary (slow) alist that binds the input names we are
 going to use in our fully-general simulation to their bindings according to the
@@ -792,9 +792,8 @@ the variables at all phases, plus (presumably, via acc) any initial bindings
 for state bits.</p>
 
 <p>The sexprs in this alist will often be constants (e.g., when natural
-numbers, <tt>:ones</tt>, <tt>x</tt>, or <tt>~</tt> values are used), but they
-can also have free variables from <tt>_</tt> symbols and also simulation
-variable bits.</p>
+numbers, @(':ones'), @('x'), or @('~') values are used), but they can also have
+free variables from @('_') symbols and also simulation variable bits.</p>
 
 <p>The general intent is to make the resulting alist fast, and use it along
 with @(see 4v-sexpr-restrict) to specialize the fully general simulation,
@@ -835,39 +834,38 @@ effectively \"assuming\" the STV.</p>"
   :short "Convert a single user-level output/internal value (e.g., _, result)
 into a list of @(see 4v-sexprs)."
 
-  :long "<p><b>Signature:</b> @(call stv-expand-output-entry) returns <tt>(mv
-new-val usersyms)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call stv-expand-output-entry) returns @('(mv
+new-val usersyms)').</p>
 
-<p>The only valid entries for output lines are <tt>_</tt> (for signals we don't
-care about) and simulation variables.  Here, we just leave any <tt>_</tt>
-values alone, but we replace simulation variables with lists of new variables
-that we generate from their names.  That is, a simulation variable like
-<tt>result</tt> will be converted into a list of bits like <tt>(result[0]
-... result[4])</tt>.</p>
+<p>The only valid entries for output lines are @('_') (for signals we don't
+care about) and simulation variables.  Here, we just leave any @('_') values
+alone, but we replace simulation variables with lists of new variables that we
+generate from their names.  That is, a simulation variable like @('result')
+will be converted into a list of bits like @('(result[0] ... result[4])').</p>
 
 <p>We are given:</p>
 
 <ul>
 
-<li><tt>name</tt> is the name of this output.  It should be a list of E input
-bits in lsb-first order.  That is, Verilog-style names should have already
-been expanded away using @(see stv-expand-names) or similar.</li>
+<li>@('name') is the name of this output.  It should be a list of E input bits
+in lsb-first order.  That is, Verilog-style names should have already been
+expanded away using @(see stv-expand-names) or similar.</li>
 
-<li><tt>width</tt> is the pre-computed width of this output.  It must be
-exactly equal to <tt>(len name)</tt>.  This lets us know how many variables to
-generate when we hit a simulation variable.</li>
+<li>@('width') is the pre-computed width of this output.  It must be exactly
+equal to @('(len name)').  This lets us know how many variables to generate
+when we hit a simulation variable.</li>
 
-<li><tt>pnum</tt> is the current phase number (and starts at 0).  This is
+<li>@('pnum') is the current phase number (and starts at 0).  This is
 semantically irrelevant; we use it only to generate better error messages.</li>
 
-<li><tt>entry</tt> is the actual entry we are trying to expand, i.e., it's what
-the user wrote down for this output at this phase.  To be well-formed, the
-entry needs to be <tt>_</tt> or a simulation variable, but the user can write
-down anything so we have to check that it is valid.</li>
+<li>@('entry') is the actual entry we are trying to expand, i.e., it's what the
+user wrote down for this output at this phase.  To be well-formed, the entry
+needs to be @('_') or a simulation variable, but the user can write down
+anything so we have to check that it is valid.</li>
 
-<li><tt>usersyms</tt> is a fast alist binding simulation variables to the lists
-of bits that we've generated to represent them.  We assume this only contains
-the output simulation variables.  This lets us make sure that output variables
+<li>@('usersyms') is a fast alist binding simulation variables to the lists of
+bits that we've generated to represent them.  We assume this only contains the
+output simulation variables.  This lets us make sure that output variables
 aren't being reused.</li>
 
 </ul>"
@@ -1040,38 +1038,38 @@ after each phase."
 
   :long "<p>@(call stv-extraction-alists) takes the total number of phases, the
 output or internal lines (which we assume have already been expanded), and an
-accumulator which should initially be <tt>nil</tt>.</p>
+accumulator which should initially be @('nil').</p>
 
 <p>It returns a list of alists that say, after each step, which output bits we
 want to collect, and how we want to name them.  The basic idea is that if we have
 a list of outputs like this:</p>
 
-<code>
+@({
    (foo  _ _ a _)
    (bar  _ b _ c)
    (baz  _ _ d _)
-</code>
+})
 
 <p>Then we will want to create four alists, one for each phase.  The P0 alist
 is empty.  The P1 alist binds something like</p>
 
-<code>
+@({
    ((bar[0] . b[0])
     (bar[1] . b[1])
     ...
     (bar[n] . b[n]))
-</code>
+})
 
 <p>The P2 alist binds something like:</p>
 
-<code>
+@({
  ((foo[0] . a[0])
    ...
   (foo[n] . a[n])
   (baz[0] . d[0])
    ...
   (baz[0] . d[k]))
-</code>
+})
 
 <p>And so on.  That is, each of these extraction alists says, for a particular
 phase, the names of the output signals we want to extract from the simulation,
@@ -1120,8 +1118,8 @@ evaluation, debugging, etc."
   :long "<p><b>Signature:</b> @(call stv-compile) returns a @(see
 compiled-stv-p).</p>
 
-<p>Here, <tt>mod</tt> should be a valid @(see esim) module, and <tt>stv</tt>
-should be an @(see stvdata-p) that has already had its lines widened and any
+<p>Here, @('mod') should be a valid @(see esim) module, and @('stv') should be
+an @(see stvdata-p) that has already had its lines widened and any
 Verilog-style names expanded; see for instance @(see stv-widen) and @(see
 stv-expand-names).</p>
 
@@ -1143,11 +1141,11 @@ multiple evaluations of an STV.</p>
 
 <p>Note that to reuse the same @(see esim) simulations across related STVs, our
 basic approach in @(see stv-run) is to do a fully general simulation of the
-module for N cycles.  In this general simulation, we set <tt>|foo[0]|</tt> to
-<tt>|foo[0].P3|</tt> during phase 3, and so forth.  The idea is that instead of
+module for N cycles.  In this general simulation, we set @('|foo[0]|') to
+@('|foo[0].P3|') during phase 3, and so forth.  The idea is that instead of
 re-running @(see esim) for each STV, we will just specialize this alist by
-using @(see 4v-sexpr-restrict) to replace <tt>|foo[0].P3|</tt> with whatever value
-we want for <tt>|foo[0]|</tt> at phase 3.</p>
+using @(see 4v-sexpr-restrict) to replace @('|foo[0].P3|') with whatever value
+we want for @('|foo[0]|') at phase 3.</p>
 
 <p>The function @(see stv-restrict-alist) pre-computes these bindings.
 Essentially it just needs to build a big alist that binds the suffixed input

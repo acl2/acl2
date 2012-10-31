@@ -92,26 +92,26 @@
   :short "@(call vl-hidexpr-p) recognizes well-formed hierarchical identifier
 expressions."
 
-  :long "<p>We represent hierarchical identifiers like <tt>foo.bar[3].baz</tt>
-as ordinary @(see vl-expr-p) objects.  But <tt>vl-expr-p</tt> is really too
-weak, and it permits nonsensical expressions like <tt>foo.5.bar.(1+2)</tt>.
-The function <tt>vl-hidexpr-p</tt> provides a stronger check to ensure that an
-expression is a well-formed hierarchical identifier.</p>
+  :long "<p>We represent hierarchical identifiers like @('foo.bar[3].baz') as
+ordinary @(see vl-expr-p) objects.  But @('vl-expr-p') is really too weak, and
+it permits nonsensical expressions like @('foo.5.bar.(1+2)').  The function
+@('vl-hidexpr-p') provides a stronger check to ensure that an expression is a
+well-formed hierarchical identifier.</p>
 
-<p>In particular, <tt>vl-hidexpr-p</tt> requires three things:</p>
+<p>In particular, @('vl-hidexpr-p') requires three things:</p>
 
-<p>1. Except for indicies like <tt>3</tt> in <tt>foo.bar[3].baz</tt>, all atoms
+<p>1. Except for indicies like @('3') in @('foo.bar[3].baz'), all atoms
 throughout the expression must be @(see vl-hidpiece-p) atoms.  This prohibits
-ill-formed expressions like <tt>foo.5.bar</tt>.</p>
+ill-formed expressions like @('foo.5.bar').</p>
 
 <p>2. Except for indicies, the only operators that are permitted are
-<tt>:vl-hid-dot</tt> and <tt>:vl-hid-arraydot</tt>, which represent expressions
-like <tt>foo.bar</tt> and <tt>foo[3].bar</tt>, respectively.</p>
+@(':vl-hid-dot') and @(':vl-hid-arraydot'), which represent expressions like
+@('foo.bar') and @('foo[3].bar'), respectively.</p>
 
 <p>3. We require that the HID is always \"right-associated.\"  A picture helps
 to make this more clear:</p>
 
-<code>
+@({
              .          |           .
             / \\         |          / \\
          foo   .        |         .   baz
@@ -119,19 +119,19 @@ to make this more clear:</p>
            bar   baz    |     foo   bar
                         |
           Good          |         Bad
-</code>
+})
 
-<p>More formally, we require that the first argument to each
-<tt>:vl-hid-dot</tt> and <tt>:vl-hid-arraydot</tt> operation is a single @(see
-vl-hidpiece-p) atom, and not some more complex expression.  This essentially
-allows us to traverse any well-formed HID in a purely linear fashion.</p>
+<p>More formally, we require that the first argument to each @(':vl-hid-dot')
+and @(':vl-hid-arraydot') operation is a single @(see vl-hidpiece-p) atom, and
+not some more complex expression.  This essentially allows us to traverse any
+well-formed HID in a purely linear fashion.</p>
 
-<p>Note that <tt>vl-hidexpr-p</tt> does <b>not</b> restrict in any way the
+<p>Note that @('vl-hidexpr-p') does <b>not</b> restrict in any way the
 expressions may occur in the index positions.  For instance, there is a valid
-<tt>vl-hidexpr-p</tt> that represents <tt>foo.bar[3+a*b].baz</tt>.</p>
+@('vl-hidexpr-p') that represents @('foo.bar[3+a*b].baz').</p>
 
-<p>Note also that <tt>vl-hidexpr-p</tt> does not have any length requirement,
-and regards even lone <tt>vl-hidpiece-p</tt> atoms as valid.</p>"
+<p>Note also that @('vl-hidexpr-p') does not have any length requirement, and
+regards even lone @('vl-hidpiece-p') atoms as valid.</p>"
 
   (defund vl-hidexpr-p (x)
     (declare (xargs :guard (vl-expr-p x)))
@@ -400,8 +400,8 @@ format."
 
 (defsection vl-hid-fixed-p
   :parents (hid-tools)
-  :short "@(call vl-hid-fixed-p) determines if <tt>x</tt> is canonical in
-the sense of @(see vl-hid-fix)."
+  :short "@(call vl-hid-fixed-p) determines if @('x') is canonical in the sense
+of @(see vl-hid-fix)."
 
   (defund vl-hid-fixed-p (x)
     (declare (xargs :guard (and (vl-expr-p x)
@@ -507,8 +507,8 @@ the sense of @(see vl-hid-fix)."
 (defsection vl-hid-final-name
   :parents (hid-tools)
   :short "@(call vl-hid-final-name) returns the final name component of the
-hierarchical identifier <tt>x</tt> as a string.  For example, given
-<tt>top.foo.bar.w</tt>, it returns the string <tt>\"w\"</tt>."
+hierarchical identifier @('x') as a string.  For example, given
+@('top.foo.bar.w'), it returns the string @('\"w\"')."
 
   :long "<p>This function can be used on any @(see vl-hidexpr-p).</p>"
 
@@ -542,9 +542,9 @@ hierarchical identifier <tt>x</tt> as a string.  For example, given
 (defsection vl-flatten-hidexpr
   :parents (hid-tools)
   :short "@(call vl-flatten-hidexpr) converts a hierarchical identifier
-expression into a string like <tt>foo.bar[3].baz</tt>."
+expression into a string like @('foo.bar[3].baz')."
 
-  :long "<p>Note that <tt>x</tt> must satisfy @(see vl-hidexpr-p) and @(see
+  :long "<p>Note that @('x') must satisfy @(see vl-hidexpr-p) and @(see
 vl-hid-indicies-resolved-p).</p>"
 
   (defund vl-flatten-hidexpr (x)
@@ -603,15 +603,15 @@ expression list)."
 of returning the names of simple identifiers, we return sub-expressions.</p>
 
 <p>We only return the \"top\" HID expressions we find.  All this means is that
-if your expression contains an HID like <tt>foo.bar.baz</tt>, then the result
-from <tt>tophids</tt> will only include <tt>foo.bar.baz</tt>, and won't contain
-<tt>bar.baz</tt> or <tt>baz</tt>.</p>
+if your expression contains an HID like @('foo.bar.baz'), then the result from
+@('tophids') will only include @('foo.bar.baz'), and won't contain @('bar.baz')
+or @('baz').</p>
 
 <p>The resulting list is guaranteed to be a list of expressions, but there's no
 guarantee that these expressions will satisfy @(see vl-hidexpr-p).</p>
 
 <p>We use a tail-recursive implementation for efficiency, and also optimize
-with <tt>nreverse</tt> under the hood.</p>"
+with @('nreverse') under the hood.</p>"
 
   (local (in-theory (disable (force))))
 
@@ -740,14 +740,14 @@ with <tt>nreverse</tt> under the hood.</p>"
   :parents (hid-tools)
   :short "Break a hierarchical identifier into a list of strings and numbers."
 
-  :long "<p>@(call vl-explode-hid) is given <tt>hid</tt>, a @(see
-vl-hidexpr-p), and returns a list of strings and numbes corresponding to the
-components of <tt>hid</tt>.  For example, the explosion of <tt>foo.bar.baz</tt>
-is <tt>(\"foo\" \"bar\" \"baz\")</tt>.</p>
+  :long "<p>@(call vl-explode-hid) is given @('hid'), a @(see vl-hidexpr-p),
+and returns a list of strings and numbes corresponding to the components of
+@('hid').  For example, the explosion of @('foo.bar.baz') is @('(\"foo\"
+\"bar\" \"baz\")').</p>
 
 <p>The elements of the exploded list are typically strings, but may also be
-natural numbers.  For instance, the explosion of <tt>foo.bar[3].baz</tt> is
-<tt>(\"foo\" \"bar\" 3 \"baz\")</tt>.</p>"
+natural numbers.  For instance, the explosion of @('foo.bar[3].baz') is
+@('(\"foo\" \"bar\" 3 \"baz\")').</p>"
 
   (local (in-theory (enable vl-hidexpr-p)))
 
@@ -782,9 +782,9 @@ natural numbers.  For instance, the explosion of <tt>foo.bar[3].baz</tt> is
   :short "Recognizes hierarchical identifiers that begin with a certain
 prefix."
 
-  :long "<p>@(call vl-hid-prefixp) is a more efficient version of
-<tt>(prefixp pieces (@(see vl-explode-hid) hid))</tt> which avoids the
-construction of the intermediate list.</p>"
+  :long "<p>@(call vl-hid-prefixp) is a more efficient version of @('(prefixp
+pieces (@(see vl-explode-hid) hid))') which avoids the construction of the
+intermediate list.</p>"
 
   (local (in-theory (enable vl-hidexpr-p vl-explode-hid)))
 

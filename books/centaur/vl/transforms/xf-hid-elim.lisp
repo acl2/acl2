@@ -46,16 +46,16 @@
 throughout a module with new wires.  Intuitively, if we see something
 like:</p>
 
-<code>
+@({
  assign w = foo.bar.baz;
-</code>
+})
 
 <p>We'll rewrite it into:</p>
 
-<code>
+@({
  wire (* special attributes *) \foo.bar.baz ;
  assign w = \foo.bar.baz ;
-</code>
+})
 
 <p>This transformation has two phases that must occur separately.</p>
 
@@ -72,12 +72,12 @@ range resolution, but before any expression sizing.</li>
 
 <h3>Motivation</h3>
 
-<p>Hierarchical identifiers such as <tt>top.foo.bar.baz</tt> seem very
-difficult to synthesize.  Why?  Here are some scenarios.  In these diagrams,
-names represent modules and lines represent instantiation.</p>
+<p>Hierarchical identifiers such as @('top.foo.bar.baz') seem very difficult to
+synthesize.  Why?  Here are some scenarios.  In these diagrams, names represent
+modules and lines represent instantiation.</p>
 
 <h5>Scenario A: access unrelated data</h5>
-<code>
+@({
           1st-common-parent
                /    \\
               /      \\
@@ -88,10 +88,10 @@ names represent modules and lines represent instantiation.</p>
        /                    \\
       /                      \\
   WHERE YOU ARE         THING YOU WANT
-</code>
+})
 
 <h5>Scenario B: access submodule data</h5>
-<code>
+@({
               WHERE YOU ARE
                    |
                    |
@@ -102,10 +102,10 @@ names represent modules and lines represent instantiation.</p>
                    |
                    |
              THING YOU WANT
-</code>
+})
 
 <h5>Scenario C: access parent data</h5>
-<code>
+@({
       THING YOU WANT
             |
             |
@@ -116,7 +116,7 @@ names represent modules and lines represent instantiation.</p>
             |
             |
       WHERE YOU ARE
-</code>
+})
 
 <p>Restricting our attention to reading data, if you want to synthesize
 something like Scenario A into a gate-level hardware description, you would
@@ -196,8 +196,8 @@ wire is.</p>
 <p>Here's the problem.  In order for all of the sizes to be computed, we will
 have needed to carry out unparameterization and range resolution.  But by the
 time we have gotten that far, we might have thrown some modules away already,
-in particular we may have thrown away modules like <tt>top</tt> that are part
-of the hierarchical reference!  Ugh!</p>
+in particular we may have thrown away modules like @('top') that are part of
+the hierarchical reference!  Ugh!</p>
 
 <h4>Pre-Resolving HIDs</h4>
 
@@ -208,22 +208,22 @@ adding wire declarations for implicit wires, we are going to find every
 hierarchical reference in the module list and figure out what module it points
 at.  That is, given a hierarchical reference like:</p>
 
-<code>
+@({
 top.foo.bar[3].baz.w;
-</code>
+})
 
-<p>We are going to figure out what module is <tt>baz</tt> an instance of.
-Suppose it is an instance of <tt>bazmod</tt>.  Then, we will annotate this
-hierarchical identifier with the attribute:</p>
+<p>We are going to figure out what module is @('baz') an instance of.  Suppose
+it is an instance of @('bazmod').  Then, we will annotate this hierarchical
+identifier with the attribute:</p>
 
-<code>
+@({
 VL_HID_RESOLVED_MODULE_NAME = \"bazmod\"
-</code>
+})
 
 <p>Later on, when we go to figure out the size of our new flattened wire for
-<tt>top.foo.bar[3].baz.w</tt>, we don't have to traverse the hierarchy again.
+@('top.foo.bar[3].baz.w'), we don't have to traverse the hierarchy again.
 Instead, we will just look up the resolved module name, and go find the size of
-<tt>w</tt> in that module.</p>
+@('w') in that module.</p>
 
 <p>Note that the resolved name is the <b>origname</b> of the module.  After we
 unparameterize, the actual module name might have changed.</p>
@@ -231,8 +231,8 @@ unparameterize, the actual module name might have changed.</p>
 <h4>Pre-Collecting Sizes</h4>
 
 <p>After implementing this plan, I discovered a problem.  Many times, even the
-module named by <tt>VL_HID_RESOLVED_MODULE_NAME</tt> is unreasonable!  For
-instance, many references point to things like clocks in <tt>processor</tt>, so
+module named by @('VL_HID_RESOLVED_MODULE_NAME') is unreasonable!  For
+instance, many references point to things like clocks in @('processor'), so
 waiting until after unparameterization and range resolution to try to detect
 wire sizes seems difficult because these modules are going to be thrown
 away.</p>
@@ -243,10 +243,10 @@ additional attributes:</p>
 
 <ul>
 
-<li><tt>VL_HID_RESOLVED_RANGE_P</tt> is added if the width of the wire can
-already be determined at name-resolution time.  In particular, we can determine
-the range if it is already resolved, or if it is a single wire that has no
-range declaration.</li>
+<li>@('VL_HID_RESOLVED_RANGE_P') is added if the width of the wire can already
+be determined at name-resolution time.  In particular, we can determine the
+range if it is already resolved, or if it is a single wire that has no range
+declaration.</li>
 
 </ul>
 
@@ -254,18 +254,18 @@ range declaration.</li>
 
 <ul>
 
-<li><tt>VL_HID_RESOLVED_RANGE_LEFT</tt> is associated with the expression for
-the left-hand side of a range, and</li>
+<li>@('VL_HID_RESOLVED_RANGE_LEFT') is associated with the expression for the
+left-hand side of a range, and</li>
 
-<li><tt>VL_HID_RESOLVED_RANGE_RIGHT</tt> is associated with the expression for
-the right-hand side of the range.</li>
+<li>@('VL_HID_RESOLVED_RANGE_RIGHT') is associated with the expression for the
+right-hand side of the range.</li>
 
 </ul>
 
 <p>This way, in the second pass, we only need to try to look up the width if we
 don't find these attributes already available.  In practice, almost all ranges
 in unparameterized modules are already resolved, so this nicely handles
-hierarchical references to wires inside of <tt>processor</tt>, etc.</p>")
+hierarchical references to wires inside of @('processor'), etc.</p>")
 
 
 ; For part 1, see xf-follow-hids.lisp.

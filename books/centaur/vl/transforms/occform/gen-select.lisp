@@ -32,13 +32,12 @@
   :parents (occform)
   :short "Degenerate 1-bit dynamic bit-selection module."
 
-  :long "<p>The module <tt>VL_1_BIT_DYNAMIC_BITSELECT(out, in, idx)</tt>
-implements <tt>assign out = in[idx]</tt> in the (essentially degenerate) case
-that <tt>in</tt> is only one-bit wide, and <tt>idx</tt> is only one-bit wide:
-if <tt>idx</tt> is zero, we return <tt>in</tt>, otherwise the index is
-out-of-bounds and X is returned.</p>
+  :long "<p>The module @('VL_1_BIT_DYNAMIC_BITSELECT(out, in, idx)') implements
+@('assign out = in[idx]') in the (essentially degenerate) case that @('in') is
+only one-bit wide, and @('idx') is only one-bit wide: if @('idx') is zero, we
+return @('in'), otherwise the index is out-of-bounds and X is returned.</p>
 
-<code>
+@({
 module VL_1_BIT_DYNAMIC_BITSELECT (out, in, idx);
 
   output out;
@@ -55,7 +54,7 @@ module VL_1_BIT_DYNAMIC_BITSELECT (out, in, idx);
   or(out, a, b);
 
 endmodule
-</code>"
+})"
 
   (defconst *vl-1-bit-dynamic-bitselect*
     (b* ((name (hons-copy "VL_1_BIT_DYNAMIC_BITSELECT"))
@@ -87,11 +86,11 @@ endmodule
   :parents (occform)
   :short "Primitive dynamic bit-selection module."
 
-  :long "<p><tt>VL_2_BIT_DYNAMIC_BITSELECT(out, in, idx)</tt> conservatively
-approximates <tt>out = in[idx]</tt> and is used to implement bit-selects where
-the index is not fixed.  Its Verilog definition is as follows:</p>
+  :long "<p>@('VL_2_BIT_DYNAMIC_BITSELECT(out, in, idx)') conservatively
+approximates @('out = in[idx]') and is used to implement bit-selects where the
+index is not fixed.  Its Verilog definition is as follows:</p>
 
-<code>
+@({
 module VL_2_BIT_DYNAMIC_BITSELECT (out, in, idx) ;
 
    output out;
@@ -117,19 +116,19 @@ module VL_2_BIT_DYNAMIC_BITSELECT (out, in, idx) ;
    xor (out, idx_x, main);
 
 endmodule
-</code>
+})
 
 <p>The only place we this inexactly approximates the real Verilog semantics is
-when <tt>in</tt> contains Z's.  In Verilog, such a Z can be selected and
-returned, but in our module X is returned instead.  Actually this seems good --
-our behavior probably more closely corresponds to what real hardware would do
-for a dynamic bit-select, anyway.</p>
+when @('in') contains Z's.  In Verilog, such a Z can be selected and returned,
+but in our module X is returned instead.  Actually this seems good -- our
+behavior probably more closely corresponds to what real hardware would do for a
+dynamic bit-select, anyway.</p>
 
 <p>The XOR gates at the end are needed to obtain this X behavior.  Without
-them, in cases where <tt>in[1] === in[0]</tt>, we might return 0 or 1 even when
-idx is <tt>X</tt>.  This wouldn't be okay: the Verilog specification mandates
-that if any bit of <tt>idx</tt> is <tt>X</tt>, then <tt>X</tt> is returned from
-the bit select.</p>"
+them, in cases where @('in[1] === in[0]'), we might return 0 or 1 even when idx
+is @('X').  This wouldn't be okay: the Verilog specification mandates that if
+any bit of @('idx') is @('X'), then @('X') is returned from the bit
+select.</p>"
 
   (defconst *vl-2-bit-dynamic-bitselect*
     (b* ((name (hons-copy "VL_2_BIT_DYNAMIC_BITSELECT"))
@@ -176,20 +175,19 @@ the bit select.</p>"
   :short "Generates a dynamic bit-selection module for wire widths that are
 powers of 2."
 
-  :long "<p>We construct <tt>VL_{2^N}_BIT_DYNAMIC_BITSELECT(out, in, idx)</tt>,
-a conservative approximation of <tt>out = in[idx]</tt> where <tt>in</tt> has
-width <tt>2^N</tt>.  We generate this module inductively/recursively by using
-smaller selectors.</p>
+  :long "<p>We construct @('VL_{2^N}_BIT_DYNAMIC_BITSELECT(out, in, idx)'), a
+conservative approximation of @('out = in[idx]') where @('in') has width
+@('2^N').  We generate this module inductively/recursively by using smaller
+selectors.</p>
 
 <p>As a basis, when N is 0 or 1, we use the 1-bit or 2-bit selectors that we
 pre-define; see @(see *vl-1-bit-dynamic-bitselect*) and @(see
 *vl-2-bit-dynamic-bitselect*).</p>
 
-<p>When <tt>N &gt; 1</tt>, let <tt>M</tt> be <tt>2^N</tt> and <tt>K</tt> be
-<tt>2^(N-1)</tt>.  We define <tt>VL_M_BIT_DYNAMIC_BITSELECT</tt> in Verilog as
-follows:</p>
+<p>When @('N > 1'), let @('M') be @('2^N') and @('K') be @('2^(N-1)').  We
+define @('VL_M_BIT_DYNAMIC_BITSELECT') in Verilog as follows:</p>
 
-<code>
+@({
 module VL_M_BIT_DYNAMIC_BITSELECT(out, in, idx) ;
 
    output out;
@@ -221,7 +219,7 @@ module VL_M_BIT_DYNAMIC_BITSELECT(out, in, idx) ;
    xor (out, idx_x, main);
 
 endmodule
-</code>"
+})"
 
   :guard (natp n)
   :verify-guards nil
@@ -306,21 +304,21 @@ endmodule
 (def-vl-modgen vl-make-n-bit-dynamic-bitselect (n)
   :short "Generate a basic dynamic bit-selection module."
 
-  :long "<p>We construct <tt>VL_N_BIT_DYNAMIC_BITSELECT(out, in, idx)</tt>, a
-conservative approximation of <tt>out = in[idx]</tt> where <tt>in</tt> has
-width <tt>N</tt> and <tt>idx</tt> has the minimum width necessary to select
-from N bits.  In particular, the width of <tt>idx</tt> is the smallest number W
-such that N &lt;= 2^W.</p>
+  :long "<p>We construct @('VL_N_BIT_DYNAMIC_BITSELECT(out, in, idx)'), a
+conservative approximation of @('out = in[idx]') where @('in') has width @('N')
+and @('idx') has the minimum width necessary to select from N bits.  In
+particular, the width of @('idx') is the smallest number W such that N &lt;=
+2^W.</p>
 
-<p>When <tt>N</tt> is a power of 2, we simply construct the desired module
-using @(see vl-make-2^n-bit-dynamic-bitselect).</p>
+<p>When @('N') is a power of 2, we simply construct the desired module using
+@(see vl-make-2^n-bit-dynamic-bitselect).</p>
 
-<p>Otherwise, the basic strategy is to instantiate the next biggest power
-of 2, and then pad <tt>in</tt> with however many X bits are necessary to
-obtain an input of this larger size.  As an example, we implement a 6-bit
-select by using an 8-bit select as follows:</p>
+<p>Otherwise, the basic strategy is to instantiate the next biggest power of 2,
+and then pad @('in') with however many X bits are necessary to obtain an input
+of this larger size.  As an example, we implement a 6-bit select by using an
+8-bit select as follows:</p>
 
-<code>
+@({
 module VL_6_BIT_DYNAMIC_BITSELECT(out, in, idx) ;
 
    output out;
@@ -330,7 +328,7 @@ module VL_6_BIT_DYNAMIC_BITSELECT(out, in, idx) ;
    VL_8_BIT_DYNAMIC_BITSELECT core(out, {2'bxx, in}, idx);
 
 endmodule
-</code>"
+})"
 
   :guard (posp n)
   :body
@@ -386,20 +384,19 @@ endmodule
    :short "Generate a dynamic bit-selection module for an N bit wire and an M
 bit select."
 
-   :long "<p>We produce <tt>VL_N_BIT_DYNAMIC_BITSELECT_M(out, in, idx)</tt>, a
-conservative approximation of <tt>out = in[idx]</tt> where <tt>in</tt> has
-width <tt>N</tt> and <tt>idx</tt> has width <tt>M</tt>.</p>
+   :long "<p>We produce @('VL_N_BIT_DYNAMIC_BITSELECT_M(out, in, idx)'), a
+conservative approximation of @('out = in[idx]') where @('in') has width @('N')
+and @('idx') has width @('M').</p>
 
 <p>Prerequisite: see @(see vl-make-n-bit-dynamic-bitselect), which can be used
-to introduce a module <tt>VL_N_BIT_DYNAMIC_BITSELECT(out, in, idx)</tt>, where
-<tt>in</tt> has width <tt>N</tt> and <tt>idx</tt> has width <tt>W</tt> where W
-is the the smallest number W such that N &lt;= 2^W.</p>
+to introduce a module @('VL_N_BIT_DYNAMIC_BITSELECT(out, in, idx)'), where
+@('in') has width @('N') and @('idx') has width @('W') where W is the the
+smallest number W such that N &lt;= 2^W.</p>
 
-<p>The problem with just using <tt>VL_N_BIT_DYNAMIC_BITSELECT</tt> directly to
-synthesize expressions of the form <tt>in[idx]</tt> is that, in practice, the
-width of <tt>idx</tt> may be smaller or larger than W.  When smaller, we need
-to pad it with zeros.  When larger, we need to do additional out-of-bounds
-checking.</p>"
+<p>The problem with just using @('VL_N_BIT_DYNAMIC_BITSELECT') directly to
+synthesize expressions of the form @('in[idx]') is that, in practice, the width
+of @('idx') may be smaller or larger than W.  When smaller, we need to pad it
+with zeros.  When larger, we need to do additional out-of-bounds checking.</p>"
 
 ; BOZO consider adding a warning when M > K.  The user could chop down the
 ; index to be the right number of bits.

@@ -30,18 +30,17 @@ module item."
 
   :long "<p>These functions gather up what we regard as the \"top level\"
 expressions used throughout various module items.  That is, consider an
-assignment statement such as <tt>foo = a + b</tt>; the associated list of
-allexprs would include two expressions: one for <tt>foo</tt>, and one for <tt>a
-+ b</tt>.</p>
+assignment statement such as @('foo = a + b'); the associated list of allexprs
+would include two expressions: one for @('foo'), and one for @('a + b').</p>
 
 <p>Note that despite the name \"allexprs\", we actually do not gather
-expressions within <tt>(* foo = bar *)</tt>-style attributes.</p>")
+expressions within @('(* foo = bar *)')-style attributes.</p>")
 
 (defmacro def-vl-allexprs (&key type
                                 exec-body
                                 body)
 
-  (let* ((mksym-package-symbol 'vl)
+  (let* ((mksym-package-symbol 'vl::foo)
 
          (rec            (mksym type '-p))
          (collect-exec   (mksym type '-allexprs-exec))
@@ -62,7 +61,7 @@ expressions within <tt>(* foo = bar *)</tt>-style attributes.</p>")
 rec-s "), as described in @(see allexprs).</p>
 
 <p>For efficiency we use a tail-recursive, accumulator-style functions to do
-the collection.  Under the hood, we also use <tt>nreverse</tt>
+the collection.  Under the hood, we also use @('nreverse')
 optimization.</p>")))
 
     `(defsection ,collect
@@ -107,7 +106,7 @@ optimization.</p>")))
 
 
 (defmacro def-vl-allexprs-list (&key list element)
-  (let* ((mksym-package-symbol 'vl)
+  (let* ((mksym-package-symbol 'vl::foo)
 
          (list-rec             (mksym list '-p))
          (list-collect         (mksym list '-allexprs))
@@ -481,8 +480,7 @@ vl-exprlist-p).</p>
 @(see vl-stmt-p), as described in @(see allexprs).</p>
 
 <p>For efficiency we use a tail-recursive, accumulator-style functions to do
-the collection.  Under the hood, we also use <tt>nreverse</tt>
-optimization.</p>"
+the collection.  Under the hood, we also use @('nreverse') optimization.</p>"
 
   (mutual-recursion
 

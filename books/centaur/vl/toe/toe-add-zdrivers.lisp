@@ -35,16 +35,16 @@ every wire of a module is driven by some occurrence (or is an input).  But in
 Verilog there is no such requirement, e.g., one can legally write a module like
 this:</p>
 
-<code>
+@({
 module does_nothing(out, a, b);
   output out;
   input a;
   input b;
   wire internal;
 endmodule
-</code>
+})
 
-<p>Where there aren't any drivers on <tt>out</tt> or <tt>internal</tt>.</p>
+<p>Where there aren't any drivers on @('out') or @('internal').</p>
 
 <p>To correct for this, in our @(see e-conversion) we look for any output bits
 and also any internal wires that are used as inputs to a submodule but are
@@ -86,13 +86,13 @@ occurrences.</p>
 
 <ul>
 
-<li><tt>IDX</tt> is a name index used for fresh name generation.  We expect
-that it is initially set to the highest index of any emodwire in the module
-whose basename is <tt>vl_zdrive</tt>.  We increment it whenever we need to
-create a new, fresh occurrence name.</li>
+<li>@('idx') is a name index used for fresh name generation.  We expect that it
+is initially set to the highest index of any emodwire in the module whose
+basename is @('vl_zdrive').  We increment it whenever we need to create a new,
+fresh occurrence name.</li>
 
-<li><tt>outs</tt> are an @(see vl-emodwirelist-p) that should include all of
-the output bits that weren't driven by the preliminary occurrences.</li>
+<li>@('outs') are an @(see vl-emodwirelist-p) that should include all of the
+output bits that weren't driven by the preliminary occurrences.</li>
 
 </ul>"
 
@@ -132,18 +132,19 @@ the output bits that weren't driven by the preliminary occurrences.</li>
 (defsection vl-add-zdrivers
   :parents (adding-z-drivers)
   :short "Top-level function for adding drivers for undriven outputs."
-  :long "<p><b>Signature:</b> @(call vl-add-zdrivers) returns <tt>occs'</tt>.</p>
 
-<p><tt>occs</tt> should be the initial list of occurrences that we generate
-from the module instances; see for instance @(see vl-modinst-to-eocc).</p>
+  :long "<p><b>Signature:</b> @(call vl-add-zdrivers) returns @('occs'').</p>
 
-<p><tt>flat-outs</tt> should be the already-flattened list of the module's
-output bits, i.e., <tt>(pat-flatten (gpl :o mod))</tt>.</p>
+<p>@('occs') should be the initial list of occurrences that we generate from
+the module instances; see for instance @(see vl-modinst-to-eocc).</p>
 
-<p><tt>flat-ins</tt> should be the already-flattened list of the module's input
-bits, i.e., <tt>(pat-flatten (gpl :i mod))</tt>.</p>
+<p>@('flat-outs') should be the already-flattened list of the module's output
+bits, i.e., @('(pat-flatten (gpl :o mod))').</p>
 
-<p><tt>all-names</tt> must be a @(see vl-emodwirelist-p)s that captures the
+<p>@('flat-ins') should be the already-flattened list of the module's input
+bits, i.e., @('(pat-flatten (gpl :i mod))').</p>
+
+<p>@('all-names') must be a @(see vl-emodwirelist-p)s that captures the
 module's namespace.  We expect it to include at least:</p>
 
 <ul>
@@ -152,11 +153,10 @@ module's namespace.  We expect it to include at least:</p>
 <li>The names of all occs (i.e., the :u from each occ)</li>
 </ul>
 
-<p>However, as a special exception, <tt>all-names</tt> may exclude names that
-we know cannot have the basename <tt>vl_zdrive</tt>.  This includes, for
-instance, all of the wires that are added during @(see vl-add-res-modules), and
-the special wires that are added to drive T and F in @(see
-vl-module-make-esim).</p>"
+<p>However, as a special exception, @('all-names') may exclude names that we
+know cannot have the basename @('vl_zdrive').  This includes, for instance, all
+of the wires that are added during @(see vl-add-res-modules), and the special
+wires that are added to drive T and F in @(see vl-module-make-esim).</p>"
 
   (defund vl-add-zdrivers (all-names flat-ins flat-outs occs)
     (declare (xargs :guard (and (vl-emodwirelist-p all-names)

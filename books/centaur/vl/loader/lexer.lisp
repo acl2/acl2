@@ -36,9 +36,9 @@ standard.  Our lexer is believed to be complete and should understand all
 Verilog tokens.  This contrasts with our @(see preprocessor) and @(see parser),
 which are not similarly complete.</p>
 
-<p>Lexers are traditionally implemented as a <tt>get-token</tt> routine, the
-idea being that, at the parser's request, the lexer should read just enough
-from the input stream to provide the next token.</p>
+<p>Lexers are traditionally implemented as a @('get-token') routine, the idea
+being that, at the parser's request, the lexer should read just enough from the
+input stream to provide the next token.</p>
 
 <p>In contrast, our lexer processes the whole list of input characters that are
 produced by the @(see preprocessor), and generates a whole list of tokens (see
@@ -46,11 +46,10 @@ produced by the @(see preprocessor), and generates a whole list of tokens (see
 parser).</p>
 
 <p>Our approach is obviously inefficient.  On the other hand, memory is
-abundant and lexing is almost intrinsically <tt>O(n)</tt>, so we think
-performance is not very important.  Our approach allows our parser to be
-state-free, with arbitrary lookahead, and also gives us the convenience of
-list-based (rather than file-based) debugging and unit testing throughout
-the whole process.</p>")
+abundant and lexing is almost intrinsically @('O(n)'), so we think performance
+is not very important.  Our approach allows our parser to be state-free, with
+arbitrary lookahead, and also gives us the convenience of list-based (rather
+than file-based) debugging and unit testing throughout the whole process.</p>")
 
 
 (defmacro def-token/remainder-thms (fn &key
@@ -1262,13 +1261,13 @@ the whole process.</p>")
   :short "Extend (or truncate) a bit-list to match the size specifier for an
 integer token."
 
-  :long "<p><b>Signature:</b> @(call vl-correct-bitlist) returns <tt>(mv
-warnings' bits')</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-correct-bitlist) returns @('(mv
+warnings' bits')').</p>
 
-<p><tt>bits</tt> is a bitlist which might be shorter or longer than
-<tt>width</tt>, which is the size specified for this integer or is <tt>nil</tt>
-if no size was specified.  For instance, the user may have written
-<tt>3'bx</tt> instead of <tt>3'bxxx</tt>.</p>
+<p>@('bits') is a bitlist which might be shorter or longer than @('width'),
+which is the size specified for this integer or is @('nil') if no size was
+specified.  For instance, the user may have written @('3'bx') instead of
+@('3'bxxx').</p>
 
 <p>Our goal is to produce a new list of bits that has the desired width.  Note
 that we emulate a 32-bit Verilog implementation and treat unsized numbers as
@@ -1288,9 +1287,7 @@ extended to 32 bits, so we detect and warn about this case.)</li>
 the least significant width-many bits.  We produce a truncation warning in this
 case.</li>
 
-</ul>
-
-@(def vl-correct-bitlist)"
+</ul>"
 
   (defund vl-correct-bitlist (loc bits width warnings)
     "Returns (MV WARNINGS' BITS')"

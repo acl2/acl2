@@ -26,45 +26,44 @@
 
 (defxdoc condcheck
   :parents (checkers)
-  :short "Check for <tt>?:</tt>-expressions with strange conditions."
+  :short "Check for @('?:')-expressions with strange conditions."
 
   :long "<p>This is a heuristic for generating warnings.  We look for things
-like the following, except that we target the <tt>?:</tt> operator instead of
-<tt>if</tt> statements.</p>
+like the following, except that we target the @('?:') operator instead of
+@('if') statements.</p>
 
-<code>
+@({
     if A { ... }
     else if B { ... }
     else if A { ... }   // already checked A above, so this is unreachable
     else if C { ... }
     else ...
-</code>
+})
 
 <p>And also things like:</p>
 
-<code>
+@({
     if A { ... }
     else if B { ... }
     else if !A { ... }   // already checked A above, so this is just true
     else if C { ... }
     else ...
-</code>
+})
 
-<p>And for <tt>if(constant) {...}</tt>.</p>
+<p>And for @('if(constant) {...}').</p>
 
-<p>All of this could be adapted to <tt>if</tt> statements too, but we target
-the <tt>?:</tt> operator because we care a lot less about procedural code (like
-test benches) than we do about the actual hardware modules.  Note that the
-@(see qmarksize-check) can also be used for some additional checking on
-<tt>?:</tt> operators, but it tries to identify a different class of
-problems.</p>
+<p>All of this could be adapted to @('if') statements too, but we target the
+@('?:') operator because we care a lot less about procedural code (like test
+benches) than we do about the actual hardware modules.  Note that the @(see
+qmarksize-check) can also be used for some additional checking on @('?:')
+operators, but it tries to identify a different class of problems.</p>
 
 <p>Since this is just a heuristic and it is completely unrelated to soundness,
 we feel justified in doing a couple of seemingly unsound things.  In
-particular, we basically ignore widths of test expressions and treat <tt>!</tt>
-and <tt>~</tt> as equivalent.  We also treat <tt>^</tt> as <tt>!=</tt> and
-<tt>~^</tt> as <tt>==</tt>.  This is completely wrong in general, but it makes
-sense if you assume that the tests are all going to be one-bit wide.</p>
+particular, we basically ignore widths of test expressions and treat @('!')
+and @('~') as equivalent.  We also treat @('^') as @('!=') and @('~^') as
+@('==').  This is completely wrong in general, but it makes sense if you assume
+that the tests are all going to be one-bit wide.</p>
 
 <p>This check has no prerequisites and can in principle be run at any time.
 But it is probably best to run it very early before throwing things out, and it
@@ -83,17 +82,17 @@ kinds of not-necessarily-sound rewriting to try to further canonicalize things.
 These rewrites might possibly help us recognize a broader class of errors, but
 probably aren't super important.</p>
 
-<code>
-    !A     --&gt; ~A               unsound, but sort of valid for one-bit ops
+@({
+    !A     --> ~A               unsound, but sort of valid for one-bit ops
 
-    A != B --&gt; ~(A == B)        and we sort the args
-    A ~^ B --&gt; A == B           unsound, but sort of valid for one-bit ops
-    A ^ B  --&gt; ~(A == B)        unsound, but sort of valid for one-bit ops
+    A != B --> ~(A == B)        and we sort the args
+    A ~^ B --> A == B           unsound, but sort of valid for one-bit ops
+    A ^ B  --> ~(A == B)        unsound, but sort of valid for one-bit ops
 
-    A &lt; B  --&gt; ~(A &gt;= B)
-    A &gt; B  --&gt; ~(B &gt;= A)
-    A &lt;= B --&gt; B &gt;= A
-</code>
+    A < B  --> ~(A >= B)
+    A > B  --> ~(B >= A)
+    A <= B --> B >= A
+})
 
 <p>We also put arguments of commutative operators into @(see <<) order.  Note
 that we only apply these rewrites at the top-level and not in any deep way,
@@ -178,10 +177,10 @@ expression is one-bit wide.</p>"
 (defsection vl-condcheck-negate
   :parents (condcheck)
   :short "Smartly negate a canonicalized expression."
-  :long "<p>We assume <tt>X</tt> is already canonicalized in the sense of @(see
-  vl-condcheck-fix).  We \"smartly\" negate it so that, e.g., <tt>A</tt>
-  becomes <tt>~A</tt>, but <tt>~A</tt> becomes <tt>A</tt> instead of
-  <tt>~~A</tt>.</p>"
+
+  :long "<p>We assume @('X') is already canonicalized in the sense of @(see
+vl-condcheck-fix).  We \"smartly\" negate it so that, e.g., @('A') becomes
+@('~A'), but @('~A') becomes @('A') instead of @('~~A').</p>"
 
   (defund vl-condcheck-negate (x)
     (declare (xargs :guard (vl-expr-p x)))
@@ -202,28 +201,27 @@ expression is one-bit wide.</p>"
 (defsection vl-expr-condcheck
   :parents (condcheck)
   :short "Look for strange conditions throughout an expression."
+
   :long "<p>@(call vl-expr-condcheck) returns a list of warnings.</p>
 
-<p>We recursively look throughout <tt>x</tt> for problematic tests.</p>
+<p>We recursively look throughout @('x') for problematic tests.</p>
 
-<p>The <tt>tests-above</tt> are all the tests we have seen as we have descended
+<p>The @('tests-above') are all the tests we have seen as we have descended
 through expressions of the form</p>
 
-<code>
+@({
     test ? then : else
-</code>
+})
 
-<p>Except:</p>
-<ul>
- <li>all of the <tt>tests-above</tt> have been fixed with @(see vl-condcheck-fix), and</li>
- <li>when we descend into the else branch, we add <tt>~test</tt> to <tt>tests-above</tt>;
-     more precisely, we use @(see vl-condcheck-negate) to form this term.</li>
-</ul>
+<p>Except:</p> <ul> <li>all of the @('tests-above') have been fixed with @(see
+vl-condcheck-fix), and</li> <li>when we descend into the else branch, we add
+@('~test') to @('tests-above'); more precisely, we use @(see
+vl-condcheck-negate) to form this term.</li> </ul>
 
-<p>The basic idea is that <tt>tests-above</tt> acts as a list of things we can
-assume must be true as we are seeing <tt>X</tt>.</p>
+<p>The basic idea is that @('tests-above') acts as a list of things we can
+assume must be true as we are seeing @('X').</p>
 
-<p><tt>ctx</tt> is a @(see vl-context-p) that should explain where this expression
+<p>@('ctx') is a @(see vl-context-p) that should explain where this expression
 occurs, and is used in any warning messages we produce.</p>"
 
   (mutual-recursion

@@ -592,14 +592,14 @@
   :short "Pretty print a module with comments to @(see ps)."
 
   :long "<p>@(call vl-ppc-module) extends @(see ps) with a pretty-printed
-representation of the module <tt>x</tt>.</p>
+representation of the module @('x').</p>
 
 <p>For interactive use you may prefer @(see vl-ppcs-module) which writes
 to a string instead of @(see ps).</p>
 
-<p>The <tt>mods</tt> here should be the list of all modules and
-<tt>modalist</tt> is its @(see vl-modalist); these arguments are only needed
-for hyperlinking to submodules in HTML mode.</p>"
+<p>The @('mods') here should be the list of all modules and @('modalist') is
+its @(see vl-modalist); these arguments are only needed for hyperlinking to
+submodules in HTML mode.</p>"
 
   :guard (and (vl-module-p x)
               (vl-modulelist-p mods)
@@ -654,8 +654,8 @@ for hyperlinking to submodules in HTML mode.</p>"
   :parents (verilog-printing vl-module-p)
   :short "Pretty-print a module with comments to a plain-text string."
 
-  :long "<p>@(call vl-ppcs-module) pretty-prints the @(see vl-module-p)
-<tt>x</tt> into a plain-text string.  See also @(see vl-ppc-module).</p>"
+  :long "<p>@(call vl-ppcs-module) pretty-prints the @(see vl-module-p) @('x')
+into a plain-text string.  See also @(see vl-ppc-module).</p>"
 
   (defund vl-ppcs-module (x)
     (declare (xargs :guard (vl-module-p x)))

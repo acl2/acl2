@@ -84,18 +84,18 @@ constants, e.g., in forever-loop conversion.</p>")
 
 <p>The basic rewrite this performs is:</p>
 
-<code>
+@({
  wait (condition) body
-   --&gt;
+   -->
  begin
    while(condition)
      ; // this is just a null statement
    body
  end
-</code>
+})
 
 <p>This might not be a very useful thing to do.  It seems hard to synthesize
-arbitrary while loops.  On the other hand, it does eliminate any <tt>wait</tt>
+arbitrary while loops.  On the other hand, it does eliminate any @('wait')
 statement, perhaps simplifying the target language for a back-end to
 implement.</p>
 
@@ -130,17 +130,16 @@ valid?  What if the condition is X/Z?</p>"
   :short "Convert forever statements into while loops."
   :long "<p>The basic rewrite this performs is:</p>
 
-<code>
+@({
  forever body
-   --&gt;
+   -->
  while(1)
    body
-</code>
+})
 
 <p>This might not be a very useful thing to do.  It seems hard to synthesize
-arbitrary while loops.  On the other hand, it does eliminate any
-<tt>forever</tt> statement, simplifying the target language for a back-end to
-implement.</p>"
+arbitrary while loops.  On the other hand, it does eliminate any @('forever')
+statement, simplifying the target language for a back-end to implement.</p>"
 
   (defund vl-foreverstmt-rewrite (body atts)
     (declare (xargs :guard (and (vl-stmt-p body)
@@ -168,29 +167,29 @@ implement.</p>"
   :short "Unroll deterministic repeat statements."
   :long "<p>The basic rewrite this performs is:</p>
 
-<code>
- repeat(n) body;   // with 0 &lt;= n &lt;= unroll-limit
-   --&gt;
+@({
+ repeat(n) body;   // with 0 <= n <= unroll-limit
+   -->
  begin
    body   }
    body   }  n times
    ...    }
    body   }
  end
-</code>
+})
 
 <p>We actually use @(see vl-rangeexpr-reduce) to try to evaluate condition,
-which allows us to unroll things like <tt>width - 1</tt> after @(see
+which allows us to unroll things like @('width - 1') after @(see
 unparameterization) has occurred.</p>
 
-<p>The <tt>unroll-limit</tt> is just meant to avoid the possibility of dying
-spectacularly when we run into a <tt>repeat</tt> statement with a giant
-<tt>n</tt>.  If the actual <tt>n</tt> we encounter is too large, or if it isn't
-something we can statically resolve with the very simple expression evaluation
-capabilities of <tt>vl-rangeexpr-reduce</tt>, then we do not perform the
-rewrite and just preserve the <tt>repeat</tt> statement.  This might leave us
-with a statement that is too complicated for a backend to process.  We issue a
-non-fatal warning in either of these cases.</p>"
+<p>The @('unroll-limit') is just meant to avoid the possibility of dying
+spectacularly when we run into a @('repeat') statement with a giant @('n').  If
+the actual @('n') we encounter is too large, or if it isn't something we can
+statically resolve with the very simple expression evaluation capabilities of
+@('vl-rangeexpr-reduce'), then we do not perform the rewrite and just preserve
+the @('repeat') statement.  This might leave us with a statement that is too
+complicated for a backend to process.  We issue a non-fatal warning in either
+of these cases.</p>"
 
   (defund vl-repeatstmt-rewrite (condition body atts warnings unroll-limit)
     "Returns (MV WARNINGS STMT-PRIME)"
@@ -409,10 +408,10 @@ non-fatal warning in either of these cases.</p>"
 
 (defsection vl-flatten-blocks
   :parents (vl-blockstmt-rewrite)
-  :short "Collapse nested <tt>begin/end</tt> and <tt>fork/join</tt> blocks."
+  :short "Collapse nested @('begin/end') and @('fork/join') blocks."
   :long "<p>This function carries out rewrites such as:</p>
 
-<code>
+@({
    begin
      foo = a;
      begin
@@ -422,7 +421,7 @@ non-fatal warning in either of these cases.</p>"
      goo = d;
    end
 
- --&gt;
+ -->
 
    begin
      foo = a
@@ -430,7 +429,7 @@ non-fatal warning in either of these cases.</p>"
      baz = c;
      goo = d;
    end
-</code>
+})
 
 <p>It can also collapse fork/join blocks with inner fork/join blocks.</p>
 
@@ -439,11 +438,11 @@ vl-stmtlist-p).</p>
 
 <ul>
 
-<li><tt>sequentialp</tt> says whether the top-level block we're working in is
+<li>@('sequentialp') says whether the top-level block we're working in is
 sequential (begin/end) or not (fork/join).  It's only sound to merge subblocks
 of the same type.</li>
 
-<li><tt>stmts</tt> are initially the statements from the top-level block.</li>
+<li>@('stmts') are initially the statements from the top-level block.</li>
 
 </ul>
 
@@ -513,10 +512,10 @@ just some useless computation if it's not necessary.</p>"
 <ul>
 
 <li>We collapse simple (name/decl-free), empty blocks (i.e., literally
-\"<tt>begin end</tt>\") into null statements</li>
+\"@('begin end')\") into null statements</li>
 
-<li>We rewrite simple (name/decl-free) single-statment blocks (i.e., \"<tt>begin stmt end</tt>\")
-to just <tt>stmt</tt>.</li>
+<li>We rewrite simple (name/decl-free) single-statment blocks (i.e., \"@('begin
+stmt end')\") to just @('stmt').</li>
 
 </ul>
 

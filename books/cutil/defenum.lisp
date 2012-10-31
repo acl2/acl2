@@ -24,52 +24,54 @@
 
 (defxdoc defenum
   :parents (cutil)
-  :short "Introduce an enumeration type, like an <tt>enum</tt> in C."
+  :short "Introduce an enumeration type, like an @('enum') in C."
+
   :long "<p>General form:</p>
-<code>
+@({
  (defenum name
    elements
-   &amp;key mode         ; current defun-mode by default
+   &key mode         ; current defun-mode by default
         parents      ; '(acl2::undocumented) by default
         short        ; nil by default
         long         ; nil by default
         )
-</code>
+})
 
 <p>For example,</p>
-<code>
+
+@({
  (defenum day-p
    (:monday :tuesday :wednesday :thursday :friday :saturday :sunday))
-</code>
+})
 
-<p>results in a new function, <tt>(day-p x)</tt>, that recognizes
-<tt>:monday</tt>, <tt>:tuesday</tt>, etc.</p>
+<p>results in a new function, @('(day-p x)'), that recognizes @(':monday'),
+@(':tuesday'), etc.</p>
 
 <h3>Usage and Options</h3>
 
 <p>I often use keyword symbols as the elements, but any objects (even conses)
 can be used.</p>
 
-<p>The optional <tt>:mode</tt> keyword can be set to <tt>:logic</tt> or
-<tt>:program</tt> to introduce the recognizer in logic or program mode.  The
-default is whatever the current default defun-mode is for ACL2, i.e., if you
-are already in program mode, it will default to program mode, etc.</p>
+<p>The optional @(':mode') keyword can be set to @(':logic') or @(':program')
+to introduce the recognizer in logic or program mode.  The default is whatever
+the current default defun-mode is for ACL2, i.e., if you are already in program
+mode, it will default to program mode, etc.</p>
 
-<p>The optional <tt>:parents</tt>, <tt>:short</tt>, and <tt>:long</tt>
-parameters are like those in @(see xdoc::defxdoc).  The definition of the
-function and theorems about it will automatically be appended to anything you
-put into <tt>:long</tt>.</p>
+<p>The optional @(':parents'), @(':short'), and @(':long') parameters are like
+those in @(see xdoc::defxdoc).  The definition of the function and theorems
+about it will automatically be appended to anything you put into
+@(':long').</p>
 
 <h3>Performance Notes</h3>
 
 <p>The recognizer just tests its argument against the elements, in order.
 Because of this, you might want to order your elements so that the most common
-elements come first.  For instance, <tt>day-p</tt> will be fastest on
-<tt>:monday</tt> and slowest on <tt>:sunday</tt>.</p>
+elements come first.  For instance, @('day-p') will be fastest on @(':monday')
+and slowest on @(':sunday').</p>
 
-<p>The recognizer uses <tt>EQ</tt> or <tt>EQL</tt> checks where possible, so
-if your enumeration includes a mix of, say, conses and atom like symbols, you
-may wish to put the atoms first.</p>
+<p>The recognizer uses @(see eq) or @(see eql) checks where possible, so if
+your enumeration includes a mix of, say, conses and atom like symbols, you may
+wish to put the atoms first.</p>
 
 <p>Checking the argument against each element is probably a perfectly good
 strategy when the number of elements is small (perhaps fewer than 20) and when

@@ -48,19 +48,19 @@ probably kill your Lisp.</p>
 <p>Sparse bitsets are a more forgiving alternative.  They can handle very large
 set elements, but still achieve bitset-like efficiencies in many cases.</p>
 
-<p>Sparse bitsets are represented as ordered lists of <tt>(offset . block)</tt>
-pairs.  Loosely speaking, each such pair in the set <tt>X</tt> means that:</p>
+<p>Sparse bitsets are represented as ordered lists of @('(offset . block)')
+pairs.  Loosely speaking, each such pair in the set @('X') means that:</p>
 
-<code>
+@({
   offset*blocksize + 0             \\in X  iff  (logbitp 0 block)
   offset*blocksize + 1             \\in X  iff  (logbitp 1 block)
     ...
   offset*blocksize + (blocksize-1) \\in X  iff  (logbitp (blocksize-1) block)
-</code>
+})
 
-<p>The <tt>blocksize</tt> is a some constant determined by @(see
-*sbitset-block-size*).  We'll assume it is 60 (which makes each <tt>block</tt>
-a fixnum on 64-bit CCL).</p>
+<p>The @('blocksize') is a some constant determined by @(see
+*sbitset-block-size*).  We'll assume it is 60 (which makes each @('block') a
+fixnum on 64-bit CCL).</p>
 
 <h4>Efficiency Considerations</h4>
 
@@ -72,7 +72,7 @@ members, perhaps separated by wide gaps.  Here, sparse bitsets give you some of
 the same benefits of bitsets, viz. word-at-a-time operations like union and the
 space efficiency of using bit masks to represent the set members.</p>
 
-<p>For completely dense sets, e.g., all integers in <tt>[0, 1000]</tt>, sparse
+<p>For completely dense sets, e.g., all integers in @('[0, 1000]'), sparse
 bitsets are:</p>
 
 <ul>
@@ -98,9 +98,9 @@ segments of 0 bits that waste space and take time to process during set
 operations.</li>
 
 <li>Somewhat worse than ordered sets.  For instance, a set like {0, 60, 120}
-would be encoded as <tt>((0 . 1) (1 . 1) (2 . 1))</tt>, which is similar to its
-ordered set representation except for the additional overhead of using <tt>(1
-. 1)</tt> to represent 60, etc.</li>
+would be encoded as @('((0 . 1) (1 . 1) (2 . 1))'), which is similar to its
+ordered set representation except for the additional overhead of using @('(1
+. 1)') to represent 60, etc.</li>
 
 </ul>
 
@@ -109,9 +109,9 @@ ordered set representation except for the additional overhead of using <tt>(1
 
 <p>The sbitsets library can be loaded with:</p>
 
-<code>
+@({
   (include-book \"bitops/sbitsets\" :dir :cbooks)
-</code>
+})
 
 <p>Valid sparse bitsets are recognized by @(see sbitsetp), and there is a
 standard fixing function, @(see sbitset-fix).</p>
@@ -132,9 +132,9 @@ representation.</p>")
   :long "<p>The block size can be any positive number, but for good performance
 you probably want to use the maximal number such that:</p>
 
-<code>
+@({
  (fixnump (1- (expt 2 *sbitset-block-size*))) = T
-</code>
+})
 
 <p>On CCL and SBCL, 60 is the right number.  For other Lisps, 60 is logically
 fine, but other numbers may give you better performance.</p>
@@ -443,8 +443,8 @@ omitted from the set.</p>"
 
 (defsection sbitset-pairp
   :parents (sbitsets)
-  :short "@(call sbitset-pairp) recognizes a valid <tt>(offset . block)</tt>
-pair for sparse bitsets."
+  :short "@(call sbitset-pairp) recognizes a valid @('(offset . block)') pair
+for sparse bitsets."
 
   (definline sbitset-pairp (x)
     (declare (xargs :guard t))
@@ -517,9 +517,8 @@ pair for sparse bitsets."
   :short "@(call sbitset-pair-members) extracts the members of a single @(see
 sbitset-pair)."
 
-  :long "<p>For instance, if the pair is <tt>(0 . 7)</tt>, we produce the set
-<tt>{0, 1, 2}</tt>; if the set is <tt>(1 . 7)</tt>, we produce <tt>{60, 61,
-62}</tt>.</p>
+  :long "<p>For instance, if the pair is @('(0 . 7)'), we produce the set
+@('{0, 1, 2}'); if the set is @('(1 . 7)'), we produce @('{60, 61, 62}').</p>
 
 <p>This serves as the logical definition we use to reason about member
 extraction.</p>
@@ -528,8 +527,8 @@ extraction.</p>
 can instead use the optimized @(see bits-0-31) or @(see 60bits-0-59) routines
 instead.  But, if you change the block size to something else, this function
 <b>will</b> be executed and its performance will probably be bad.  In this
-case, you might want to write a custom <tt>bits-0-32</tt> style routine for
-your block size.</p>"
+case, you might want to write a custom @('bits-0-32') style routine for your
+block size.</p>"
 
   (defund sbitset-pair-members (x)
     (declare (xargs :guard (sbitset-pairp x)))
@@ -670,8 +669,8 @@ your block size.</p>"
 
 (defsection sbitsetp
   :parents (sbitsets)
-  :short "@(call sbitsetp) determines whether <tt>X</tt> is a well-formed
-sparse bitset."
+  :short "@(call sbitsetp) determines whether @('X') is a well-formed sparse
+bitset."
 
   (defund sbitsetp (x)
     (declare (xargs :guard t))
@@ -1042,7 +1041,7 @@ is not performed for other block sizes.</p>"
 (defsection sbitset-singleton-pair
   :parents (sbitset-singleton)
   :short "@(call sbitset-singleton-pair) creates a @(see sbitset-pairp) whose
-only member is <tt>a</tt>."
+only member is @('a')."
 
   (local (in-theory (enable sbitset-blockp)))
 
@@ -1074,7 +1073,7 @@ only member is <tt>a</tt>."
 
 (defsection sbitset-singleton
   :parents (sbitsets)
-  :short "@(call sbitset-singleton) constructs the singleton set <tt>{a}</tt>."
+  :short "@(call sbitset-singleton) constructs the singleton set @('{a}')."
 
   (definlined sbitset-singleton (a)
     (declare (xargs :guard (natp a)))
@@ -1098,7 +1097,7 @@ only member is <tt>a</tt>."
 
 (defsection sbitset-union
   :parents (sbitsets)
-  :short "@(call sbitset-union) constructs the set <tt>X U Y</tt>."
+  :short "@(call sbitset-union) constructs the set @('X U Y')."
 
   (defthm sbitset-blockp-of-logior
     (implies (and (force (sbitset-blockp x))

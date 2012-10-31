@@ -51,28 +51,27 @@ wire, but you can select bit 0 from w[0:0], etc.</p>
 But we now try to permit designs that use ranges that go from both high to low
 and low to high.</p>
 
-<p>The difference is that for a wire like <tt>wire [5:0] w</tt>, the most
-significant bit is <tt>w[5]</tt> and the least significant is <tt>w[0]</tt>,
-whereas for <tt>wire [0:5] v</tt>, the most significant bit is <tt>v[0]</tt>
-and the least significant is <tt>v[5]</tt>.</p>
+<p>The difference is that for a wire like @('wire [5:0] w'), the most
+significant bit is @('w[5]') and the least significant is @('w[0]'), whereas
+for @('wire [0:5] v'), the most significant bit is @('v[0]') and the least
+significant is @('v[5]').</p>
 
 <p>Regardless of how the range is written, the wire behaves the same as far as
 operations like addition, concatenation, and so forth are concerned.  This
 might seem pretty surprising.  For instance,</p>
 
-<code>
+@({
 wire [3:0] a = 4'b0001;
 wire [0:3] b = 4'b1000;
 wire [7:0] c = {a, b};
-</code>
+})
 
-<p>Results in <tt>c</tt> having the value <tt>8'b 0001_1000</tt>.  Basically
-the way that the bits of <tt>b</tt> are represented doesn't affect its value as
-an integer, and when we just write <tt>b</tt> we're referring to that
-value.</p>
+<p>Results in @('c') having the value @('8'b 0001_1000').  Basically the way
+that the bits of @('b') are represented doesn't affect its value as an integer,
+and when we just write @('b') we're referring to that value.</p>
 
 <p>Where it <i>does</i> matter is when bits or parts are selected from the
-wire.  That is, <tt>b[0]</tt> is 1 since its indices go from low to high.</p>")
+wire.  That is, @('b[0]') is 1 since its indices go from low to high.</p>")
 
 
 (defsection vl-range-resolved-p
@@ -130,9 +129,9 @@ wire.  That is, <tt>b[0]</tt> is 1 since its indices go from low to high.</p>")
 
 (defsection vl-make-n-bit-range
   :parents (range-tools)
-  :short "Create the range <tt>[n-1:0]</tt>, but only if necessary.  That is,
-if <tt>n</tt> is <tt>1</tt>, we just return <tt>nil</tt>, which is still valid
-for use in any net or reg declaration."
+  :short "Create the range @('[n-1:0]'), but only if necessary.  That is, if
+@('n') is @('1'), we just return @('nil'), which is still valid for use in any
+net or reg declaration."
 
   (defund vl-make-n-bit-range (n)
     "Returns MAYBE-RANGE"

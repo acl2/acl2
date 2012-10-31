@@ -65,10 +65,10 @@ See also @(see chareqv).</p>"
   :parents (equivalences)
   :short "Case-sensitive character equivalence test."
 
-  :long "<p>@(call chareqv) determines if <tt>x</tt> and <tt>y</tt> are
-equivalent when interpreted as characters.  That is, non-characters are first
-coerced to be the NUL character (via @(see char-fix)), then we see if these
-coerced arguments are equal.</p>
+  :long "<p>@(call chareqv) determines if @('x') and @('y') are equivalent when
+interpreted as characters.  That is, non-characters are first coerced to be the
+NUL character (via @(see char-fix)), then we see if these coerced arguments are
+equal.</p>
 
 <p>See also @(see ichareqv) for a case-insensitive alternative.</p>"
 
@@ -91,7 +91,7 @@ coerced arguments are equal.</p>
 
 (defsection char<-order-thms
   :parents (char<)
-  :short "Basic ordering facts about <tt>char&lt;</tt>."
+  :short "Basic ordering facts about @('char<')."
 
   (local (in-theory (enable char<)))
 
@@ -127,10 +127,9 @@ coerced arguments are equal.</p>
   :parents (equivalences)
   :short "Case-sensitive character-list equivalence test."
 
-  :long "<p>@(call charlisteqv) determines if <tt>x</tt> and <tt>y</tt> are
-equivalent when interpreted as character lists.  That is, <tt>x</tt> and
-<tt>y</tt> must have the same length and their elements must be @(see chareqv)
-to one another.</p>
+  :long "<p>@(call charlisteqv) determines if @('x') and @('y') are equivalent
+when interpreted as character lists.  That is, @('x') and @('y') must have the
+same length and their elements must be @(see chareqv) to one another.</p>
 
 <p>See also @(see icharlisteqv) for a case-insensitive alternative.</p>"
 

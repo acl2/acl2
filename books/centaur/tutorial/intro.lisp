@@ -82,11 +82,11 @@
 
   :long "<p>To see the centaur books tutorial, please go to this file:</p>
 
-<code>
+@({
 centaur/tutorial/intro.lisp
-</code>
+})
 
-<p>in your ACL2 books directory (sometimes called <tt>:dir :system</tt>).</p>")
+<p>in your ACL2 books directory (sometimes called @(':dir :system')).</p>")
 
 
 ; NEXT STEP:

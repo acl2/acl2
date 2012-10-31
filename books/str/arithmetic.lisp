@@ -249,3 +249,24 @@
                  (t
                   (char-code a))))
     :hints(("Goal" :in-theory (disable code-char-char-code-is-identity)))))
+
+
+
+
+
+(defthm characterp-of-car-when-character-listp
+  (implies (character-listp x)
+           (equal (characterp (car x))
+                  (consp x))))
+
+(defthm character-listp-of-cdr-when-character-listp
+  (implies (character-listp x)
+           (character-listp (cdr x))))
+
+(defthm equal-of-empty-string-rewrite
+  (implies (stringp x)
+           (equal (equal x "")
+                  (equal 0 (length x))))
+  :hints(("Goal"
+          :in-theory (disable len-of-nonempty-string-is-positive)
+          :use ((:instance len-of-nonempty-string-is-positive)))))

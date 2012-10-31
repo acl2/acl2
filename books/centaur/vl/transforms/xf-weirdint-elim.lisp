@@ -35,16 +35,16 @@
 generated wires."
 
   :long "<p>In this transformation, we replace any @(see vl-weirdint-p) atoms
-with concatenations of the special wires <tt>vl-x-value</tt> and
-<tt>vl-z-value</tt> (for X and Z bits), and one-bit constants <tt>1'b0</tt> and
-<tt>1'b1</tt> (for 1 and 0 bits).  If necessary, we then add instances of the
+with concatenations of the special wires @('vl-x-value') and
+@('vl-z-value') (for X and Z bits), and one-bit constants @('1'b0') and
+@('1'b1') (for 1 and 0 bits).  If necessary, we then add instances of the
 primitive @(see *vl-1-bit-x*) and @(see *vl-1-bit-z*) modules to drive the X
 and Z wires.</p>
 
 <p>The net effect is that after this transformation, no modules besides
-<tt>VL_1_BIT_X</tt> and <tt>VL_1_BIT_Z</tt> will contain any weird literals.
-This transformation is convenient for our conversion to E, where X and Z are
-not valid literals.</p>
+@('VL_1_BIT_X') and @('VL_1_BIT_Z') will contain any weird literals.  This
+transformation is convenient for our conversion to E, where X and Z are not
+valid literals.</p>
 
 <h3>Order Considerations</h3>
 

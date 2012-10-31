@@ -28,9 +28,9 @@
   :short "Efficient way to take leading characters from a string."
 
   :long "<p>@(call firstn-chars) is logically equal to:</p>
-<code>
-    (take (min n (length x)) (coerce x 'list))
-</code>
+
+@({ (take (min n (length x)) (coerce x 'list)) })
+
 <p>But it is implemented more efficiently, via @(see char).</p>"
 
   (defund firstn-chars-aux (x n acc)

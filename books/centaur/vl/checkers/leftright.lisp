@@ -26,22 +26,22 @@
 
 (defxdoc leftright-check
   :parents (checkers)
-  :short "Check for strange expressions like <tt>A [op] A</tt>."
+  :short "Check for strange expressions like @('A [op] A')."
 
   :long "<p>This is a heuristic for generating warnings, inspired by PVS
 Studio.  It has found a few pretty minor things that we were able to clean up,
 and also found one interesting copy/paste bug.</p>
 
 <p>We look for identical sub-expressions on the left and right of most binary
-operations, for instance <tt>A | A</tt> and <tt>A == A</tt>.  It is usually
-pretty strange to write such an expression, and sometimes these indicate
-copy/paste errors.  We do similar checking for the then- and else-branches of
-<tt>?:</tt> operators.</p>
+operations, for instance @('A | A') and @('A == A').  It is usually pretty
+strange to write such an expression, and sometimes these indicate copy/paste
+errors.  We do similar checking for the then- and else-branches of @('?:')
+operators.</p>
 
 <p>We also look for part-selects that use the same expressions for both
-indices, e.g., <tt>foo[3:3]</tt>, but these are somewhat more common and minor,
-and sometimes result from macros or parameterized modules, so we generally
-think these are pretty minor and uninteresting.</p>")
+indices, e.g., @('foo[3:3]'), but these are somewhat more common and minor, and
+sometimes result from macros or parameterized modules, so we generally think
+these are pretty minor and uninteresting.</p>")
 
 (defenum vl-op-ac-p
   (:vl-binary-plus
@@ -78,22 +78,22 @@ think these are pretty minor and uninteresting.</p>")
   :long "<p><b>Signature:</b> @(call vl-collect-ac-args) returns an @(see
 vl-exprlist-p).</p>
 
-<p><tt>op</tt> should be one of Verilog's associative and commutative binary
+<p>@('op') should be one of Verilog's associative and commutative binary
 operators; see @(see vl-op-ac-p).</p>
 
-<p><tt>x</tt> is an expression; typically it is itself an argument to an
-<tt>op</tt>.</p>
+<p>@('x') is an expression; typically it is itself an argument to an
+@('op').</p>
 
-<p>If <tt>x</tt> is itself an <tt>op</tt> expression, we recursively collect up
-the ac-args of its sub-expressions.  Otherwise we just collect <tt>x</tt>.  For
-instance, if <tt>op</tt> is <tt>|</tt> and <tt>x</tt> is:</p>
+<p>If @('x') is itself an @('op') expression, we recursively collect up the
+ac-args of its sub-expressions.  Otherwise we just collect @('x').  For
+instance, if @('op') is @('|') and @('x') is:</p>
 
-<code>
- (a | (b + c)) | (d &amp; e)
-</code>
+@({
+ (a | (b + c)) | (d & e)
+})
 
-<p>Then we return a list with three expressions: <tt>a</tt>, <tt>b + c</tt>,
-and <tt>d &amp; e</tt>.</p>"
+<p>Then we return a list with three expressions: @('a'), @('b + c'), and @('d &
+e').</p>"
 
   (defund vl-collect-ac-args (op x)
     (declare (xargs :guard (and (vl-op-ac-p op)
@@ -123,15 +123,14 @@ and <tt>d &amp; e</tt>.</p>"
 
 (defsection vl-expr-leftright-check
   :parents (leftright-check)
-  :short "Search for strange expressions like <tt>A [op] A</tt>."
+  :short "Search for strange expressions like @('A [op] A')."
   :long "<p><b>Signature:</b> @(call vl-expr-leftright-check) returns a
 @(see vl-warninglist-p).</p>
 
-<p>We search through the expression <tt>x</tt> for sub-expressions of the form
-<tt>A [op] A</tt>, and generate a warning whenever we find one.  The
-<tt>ctx</tt> is a @(see vl-context-p) that says where <tt>x</tt> occurs, for
-more helpful warnings.  We also use it to suppress warnings in certain
-cases.</p>"
+<p>We search through the expression @('x') for sub-expressions of the form @('A
+[op] A'), and generate a warning whenever we find one.  The @('ctx') is a @(see
+vl-context-p) that says where @('x') occurs, for more helpful warnings.  We
+also use it to suppress warnings in certain cases.</p>"
 
   (mutual-recursion
 

@@ -31,8 +31,7 @@
 
 (defsection add-to-each
   :parents (bitops)
-  :short "@(call add-to-each) adds <tt>offset</tt> to each member of
-<tt>x</tt>."
+  :short "@(call add-to-each) adds @('offset') to each member of @('x')."
 
   :long "<p>This is used in the development of @(see bitset-members).</p>"
 
@@ -81,8 +80,8 @@
 
 (defsection bits-between
   :parents (bitops)
-  :short "@(call bits-between) returns a proper, ordered set of all <tt>i</tt>
-in <tt>[n, m)</tt> such that <tt>(@(see logbitp) i x)</tt>."
+  :short "@(call bits-between) returns a proper, ordered set of all @('i') in
+@('[n, m)') such that @('(@(see logbitp) i x)')."
 
   :long "<p>This is a key function in the definition of @(see
 bitset-members).</p>"
@@ -325,12 +324,12 @@ bitset-members).</p>"
 (defsection bits-0-31
   :parents (bits-between)
   :short "Partially unrolled version of @(see bits-between) that collects the
-bits from a 32-bit unsigned <tt>x</tt> and adds <tt>offset</tt> to each."
+bits from a 32-bit unsigned @('x') and adds @('offset') to each."
 
   :long "<p>This is about 2.8x faster than bits-between, according to the
 following loops (on fv-1):</p>
 
-<code>
+@({
  (progn
   (gc$)
   ;; 25.759 seconds
@@ -340,7 +339,7 @@ following loops (on fv-1):</p>
   (gc$)
   (time (loop for x fixnum from 1 to 50000000 do
               (bits-0-31 0 x nil))))
-</code>
+})
 
 <p>The inner loop is unrolled 8 times.  Unrolling 16 times was a slightly
 better, but the case explosion in the equivalence proof ended up causing ACL2 a
@@ -403,13 +402,13 @@ benefit.</p>"
 
 (defsection 60bits-0-59
   :parents (bits-between)
-  :short "Partially unrolled version of @(see bits-between) that collects
-the bits from a 60-bit unsigned <tt>x</tt> and adds <tt>offset</tt> to each."
+  :short "Partially unrolled version of @(see bits-between) that collects the
+bits from a 60-bit unsigned @('x') and adds @('offset') to each."
 
   :long "<p>In CCL, 60-bit unsigned numbers are fixnums and, according to
 the following loops, this is about 3.6x faster than bits-between.</p>
 
-<code>
+@({
  (progn
   (gc$)
   ;; 21.540 seconds
@@ -419,7 +418,7 @@ the following loops, this is about 3.6x faster than bits-between.</p>
   (gc$)
   (time (loop for x fixnum from 1 to 30000000 do
               (60bits-0-59 0 x nil))))
-</code>"
+})"
 
   (defund 60bits-0-7 (offset x acc)
     ;; Identical to bits-0-7, but for 60-bit unsigned ints

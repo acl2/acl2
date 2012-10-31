@@ -29,7 +29,7 @@
                   xdoc-extend defsection defsection-progn cutil lnfix
                   getprop formals justification def-bodies current-acl2-world def-body
                   access theorem untranslated-theorem guard xdoc xdoc! unquote
-                  undocumented))
+                  undocumented assert!))
    ;; Things to remove:
    '(
      )))

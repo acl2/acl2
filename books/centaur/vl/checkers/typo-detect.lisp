@@ -117,11 +117,10 @@ as:</p>
 Soundex would probably not produce anything meaningful.  On the other hand,
 these names seem quite easy to split up into pieces.  And, probably, as someone
 trying to type one of these names, I am at least going to get most of these
-pieces right.  For instance, if I am trying to write <tt>rnRomEnSel_A</tt>, I
-might forget the abbreviations used and type something like
-<tt>rnRomEnableSel_A</tt>, or forget the underscore and type
-<tt>rnRomEnSelA</tt>, or miscapitalize and type something like
-<tt>rnRomEnsel_A</tt>.</p>
+pieces right.  For instance, if I am trying to write @('rnRomEnSel_A'), I might
+forget the abbreviations used and type something like @('rnRomEnableSel_A'), or
+forget the underscore and type @('rnRomEnSelA'), or miscapitalize and type
+something like @('rnRomEnsel_A').</p>
 
 <p>So, our first move is to split up the wire names into lists of pieces.
 Then, we can compare signal names on a piece-by-piece basis.  To carry out this
@@ -132,20 +131,19 @@ partitioning, we adopt the following strategy:</p>
 
 <li>We split into pieces upon encountering any underscore or other
 non-alphanumeric characters, and these special characters are simply dropped.
-For instance, given a name like <tt>rnRomEnSel_A</tt>, we will split into
-<tt>rnRomEnSel</tt> and <tt>A</tt>.</li>
+For instance, given a name like @('rnRomEnSel_A'), we will split into
+@('rnRomEnSel') and @('A').</li>
 
 <li>We split on every transition from a lowercase character to an uppercase
-character.  For instance, in <tt>rnRomEnSel_A</tt>, this rule leads us to split
-into <tt>rn</tt>, <tt>Rom</tt>, <tt>En</tt>, and <tt>Sel_A</tt> (which is
-further split into <tt>Sel</tt> and <tt>A</tt> by the previous rule).</li>
+character.  For instance, in @('rnRomEnSel_A'), this rule leads us to split
+into @('rn'), @('Rom'), @('En'), and @('Sel_A') (which is further split into
+@('Sel') and @('A') by the previous rule).</li>
 
 <li>If we see two uppercase characters followed by a lowercase character, we
-split between the uppercase characters.  For instance, in
-<tt>bcDWCBAEnt_C0_P</tt>, this rule leads us to split between <tt>bcDWCBA</tt>
-and <tt>Ent_C0_P</tt> (which are further split by the previous rules into
-<tt>bc</tt>, <tt>DWCBA</tt>, <tt>Ent</tt>, <tt>C0</tt>, and <tt>P</tt>.</li>
-</ul>
+split between the uppercase characters.  For instance, in @('bcDWCBAEnt_C0_P'),
+this rule leads us to split between @('bcDWCBA') and @('Ent_C0_P') (which are
+further split by the previous rules into @('bc'), @('DWCBA'), @('Ent'),
+@('C0'), and @('P').</li> </ul>
 
 
 <h5>Comparing Partitioned Names</h5>
@@ -171,15 +169,15 @@ another that we will not consider <i>x</i> to be a typo of <i>y</i>.</p>
 
 <li>First, we require that the two pieces have the same (case insensitive)
 leading character.  The motivation here is to prevent considering a wire like
-<tt>bcDWCBAEnt_C0_P</tt> to be a typo of <tt>bcDWCBAEnt_D0_P</tt>.</li>
+@('bcDWCBAEnt_C0_P') to be a typo of @('bcDWCBAEnt_D0_P').</li>
 
-<li>We additionally require that adding a trailing <tt>b</tt> or <tt>B</tt>
-to either name does not cause them to become identical.</li>
+<li>We additionally require that adding a trailing @('b') or @('B') to either
+name does not cause them to become identical.</li>
 
 <li>Finally, if the pieces have the same length, and are identical except that
 they end with distinct numbers, we reject the match.  This is intended to
-prevent matching between signals like <tt>bcDWCBAEnt_C0_P</tt> and
-<tt>bcDWCBAEnt_C1_P</tt>.</li>
+prevent matching between signals like @('bcDWCBAEnt_C0_P') and
+@('bcDWCBAEnt_C1_P').</li>
 
 </ul>
 ")

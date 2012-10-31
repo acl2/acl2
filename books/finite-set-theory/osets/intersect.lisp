@@ -181,11 +181,10 @@
 
 (defsection intersect
   :parents (osets)
-  :short "@(call intersect) constructs the intersection of <tt>X</tt> and
-<tt>Y</tt>."
+  :short "@(call intersect) constructs the intersection of @('X') and @('Y')."
 
   :long "<p>The logical definition is very simple, and the essential
-correctness property is given by <tt>intersect-in</tt>.</p>
+correctness property is given by @('intersect-in').</p>
 
 <p>The execution uses a better, O(n) algorithm to intersect the sets by
 exploiting the set order.</p>
@@ -296,11 +295,11 @@ consing.</p>"
 
 (defsection intersectp
   :parents (osets)
-  :short "@(call intersectp) checks whether <tt>X</tt> and <tt>Y</tt> have any
-common members."
+  :short "@(call intersectp) checks whether @('X') and @('Y') have any common
+members."
 
-  :long "<p>Logically we just check whether the @(see intersect) of <tt>X</tt>
-and <tt>Y</tt> is @(see empty).</p>
+  :long "<p>Logically we just check whether the @(see intersect) of @('X') and
+@('Y') is @(see empty).</p>
 
 <p>In the execution, we use a faster function that checks for any common
 members and doesn't build any new sets.</p>"

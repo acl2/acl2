@@ -100,7 +100,7 @@ may leave them as X.</p>
 <p>X values also allow us to model some circuits which cannot be expressed with
 just Boolean logic.  For instance, imagine a scenario like:</p>
 
-<code>
+@({
          Diagram                      Verilog
           ____
          |    \\                    assign C = ~A;
@@ -110,7 +110,7 @@ just Boolean logic.  For instance, imagine a scenario like:</p>
          |    \\       |
    B  ---|     o------+
          |____/
-</code>
+})
 
 <p>Here the wire C is being driven by two separate sources.  When these sources
 have different values, e.g., suppose A is T and B is F, then C is
@@ -126,11 +126,11 @@ But other kinds of circuits do not necessarily drive their output.  For
 instance, in Verilog one might describe a mux whose selects must be one-hot as
 follows:</p>
 
-<code>
+@({
  assign C = S1 ? A : 1'bz;
  assign C = S2 ? B : 1'bz;
  ...
-</code>
+})
 
 <p>By adopting Z into our logic, we can model these kinds of assignments
 directly, e.g., see @(see 4v-tristate) and @(see 4v-res).</p>")
@@ -148,14 +148,13 @@ Loosely speaking,</p>
 
 <ul>
 
-<li><tt>NIL</tt> is special and always evaluates to X.</li>
+<li>@('NIL') is special and always evaluates to X.</li>
 
-<li>All atoms other than <tt>NIL</tt> represent variables and get their values
-from an environment.</li>
+<li>All atoms other than @('NIL') represent variables and get their values from
+an environment.</li>
 
-<li><tt>(f a1 a2 ... an)</tt> is a function application of <tt>f</tt> to
-arguments <tt>a1</tt> ... <tt>an</tt>, where each <tt>ai</tt> is itself a
-sexpr.</li>
+<li>@('(f a1 a2 ... an)') is a function application of @('f') to arguments
+@('a1') ... @('an'), where each @('ai') is itself a sexpr.</li>
 
 </ul>
 
@@ -163,16 +162,15 @@ sexpr.</li>
 we just have constant functions.  That is, in any environment,</p>
 
 <ul>
-<li><tt>(T)</tt> produces T,</li>
-<li><tt>(F)</tt> produces F,</li>
-<li><tt>(Z)</tt> produces Z, and</li>
-<li><tt>(X)</tt> produces X.</li>
+<li>@('(T)') produces T,</li>
+<li>@('(F)') produces F,</li>
+<li>@('(Z)') produces Z, and</li>
+<li>@('(X)') produces X.</li>
 </ul>
 
-<p>We also have around a dozen functions like <tt>AND</tt>, <tt>OR</tt>,
-<tt>NOT</tt>, <tt>ITE</tt>, etc., that correspond to the @(see 4v-operations).
-The particular set of understood functions are determined by @(see
-4v-sexpr-eval).</p>
+<p>We also have around a dozen functions like @('AND'), @('OR'), @('NOT'),
+@('ITE'), etc., that correspond to the @(see 4v-operations).  The particular
+set of understood functions are determined by @(see 4v-sexpr-eval).</p>
 
 <p>A wonderful feature of our 4v sexpr language is that, since all of these
 operations are <see topic='@(url 4v-monotonicity)'>monotonic</see>,

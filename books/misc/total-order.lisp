@@ -22,10 +22,10 @@ somewhat rare.</p>
 <p>ACL2's built-in @(see alphorder) to first checks checks whether the elements
 are real or complex numbers, then characters, then finally strings or symbols.
 This order isn't great if the conjecture above is true.  It seems especially
-unfortunate as <tt>real/rationalp</tt> and <tt>complex/complex-rationalp</tt>
-seem to be relatively expensive.  For instance, in CCL the following loop:</p>
+unfortunate as @(see real/rationalp) and @(see complex/complex-rationalp) seem
+to be relatively expensive.  For instance, in CCL the following loop:</p>
 
-<code>
+@({
  (loop for a in
    '(\"foo\" 3 #\a 'foo (expt 2 80) 1/3 (complex 3 4))
     do (format t \"---- ~a ------~%\" a)
@@ -41,24 +41,24 @@ seem to be relatively expensive.  For instance, in CCL the following loop:</p>
                 do (real/rationalp a)))
        (time (loop for i fixnum from 1 to 1000000000
                  do (complex/complex-rationalp a))))
-</code>
+})
 
 <p>Appears to indicate that:</p>
 
 <ul>
- <li><tt>characterp</tt> is the very fastest (~.7 seconds)</li>
- <li><tt>symbolp</tt> is the next fastest (~1 second)</li>
- <li><tt>integerp</tt> and <tt>stringp</tt> are the next fastest (~1.6 seconds)</li>
- <li><tt>complex/complex-rationalp</tt> is slower (~3.6 seconds)</li>
- <li><tt>real/rationalp</tt> is much slower (4-6 seconds seconds)</li>
+ <li>@(see characterp) is the very fastest (~.7 seconds)</li>
+ <li>@(see symbolp) is the next fastest (~1 second)</li>
+ <li>@(see integerp) and @(see stringp) are the next fastest (~1.6 seconds)</li>
+ <li>@(see complex/complex-rationalp) is slower (~3.6 seconds)</li>
+ <li>@(see real/rationalp) is much slower (4-6 seconds seconds)</li>
 </ul>
 
-<p>The <tt>fast-alphorder</tt> function just rearranges things so that we first
+<p>The @('fast-alphorder') function just rearranges things so that we first
 check for integers, strings, and symbols, which optimizes for our expected data
 distribution and avoids these expensive checks.  This seems to give us a nice
 speedup for our expected kinds of data:</p>
 
-<code>
+@({
  (loop for elem in
    '( (1 . 2)                 ; 1.004 sec vs .769 sec
       (\"foo\" . \"bar\")         ; 6.03 sec vs. 4.72 sec
@@ -73,7 +73,7 @@ speedup for our expected kinds of data:</p>
               do (alphorder a b)))
      (time (loop for i fixnum from 1 to 100000000
               do (fast-alphorder a b)))))
-</code>"
+})"
 
   (local (in-theory (enable alphorder)))
 
@@ -170,7 +170,7 @@ speedup for our expected kinds of data:</p>
 
 <p>This seems to give us a nice speedup:</p>
 
-<code>
+@({
  (loop for elem in
    '( (1 . 2)                                  ;  1.238 vs 0.835
       (\"foo\" . \"bar\")                          ;  6.525 vs 4.833
@@ -187,7 +187,7 @@ speedup for our expected kinds of data:</p>
               do (lexorder a b)))
      (time (loop for i fixnum from 1 to 100000000
               do (fast-lexorder a b)))))
-</code>"
+})"
 
   (defund fast-lexorder (x y)
     (declare (xargs :guard t))
@@ -375,7 +375,7 @@ is probably faster because:</p>
   :short "A total ordering on ACL2 objects."
 
   :long "<p>@(call <<) is a total ordering on ACL2 objects, defined in the
-<tt>misc/total-order</tt> book.  For more information about the development of
+@('misc/total-order') book.  For more information about the development of
 this order, see the associated workshop paper:</p>
 
 <p>Matt Kaufmann and Pete Manolios.  <i><a
@@ -383,8 +383,8 @@ href='http://www.cs.utexas.edu/users/moore/acl2/workshop-2002/contrib/manolios-k
 a Total Order to ACL2</a>.</i> ACL2 Workshop, 2002.</p>
 
 <p>Efficiency note.  In the implementation, we generally use @(see fast-<<) and
-@(see fast-lexorder), which are probably faster alternatives to
-<tt>&lt;&lt;</tt> and <tt>lexorder</tt>, respectively.</p>"
+@(see fast-lexorder), which are probably faster alternatives to @('<<') and
+@('lexorder'), respectively.</p>"
 
   (defund << (x y)
     (declare (xargs :guard t

@@ -34,13 +34,13 @@ like developing graphical user interfaces, to interact with ACL2.  It extends
 ACL2 with a server that can accept connections from client programs and run
 commands on their behalf.  The basic picture is:</p>
 
-<code>
+@({
    _____________                    _______________________
   |             |                  |                       |
   |   ACL2   [bridge]--------------|  client program       |
   |             |      socket      |  java, c, perl, ...   |
   |_____________|                  |_______________________|
-</code>
+})
 
 <p>On the ACL2 side, the bridge is a simple listen/accept style server that
 waits for new clients.  When a client connects, it creates a new worker thread
@@ -61,7 +61,7 @@ with types so that the client can tell what kind of output it's receiving.</p>
 
 <p>Some things are missing.  There's currently no support for Lisp functions
 that want to read from standard input after they've been invoked.  For
-instance, there's not really any way to interact with break loops, <tt>ld</tt>,
+instance, there's not really any way to interact with break loops, @('ld'),
 etc.  There's also currently no direct way to send an interrupt.  However,
 workers announce their name to the client when they say hello, so a client
 could presumably open another connection and interrupt that way.  We haven't
@@ -119,22 +119,22 @@ message format is very simple.  It is easy for a client to reliably parse, and
 doesn't require us to think about character encoding.  Informally, the format
 is:</p>
 
-<code>
+@({
  type len[newline]
  contents[newline]
-</code>
+})
 
-<p>To make this extremely clear: we first print the <tt>type</tt>, then a
-space, then the <tt>len</tt>, then a newline character, then the
-<tt>contents</tt>, then another newline character.</p>
+<p>To make this extremely clear: we first print the @('type'), then a space,
+then the @('len'), then a newline character, then the @('contents'), then
+another newline character.</p>
 
-<p>The <tt>type</tt> here is a label that describes what kind of message this
-is.  It matches <tt>[A-Z][A-Z0-9_]*</tt>.  That is, it starts with an uppercase
+<p>The @('type') here is a label that describes what kind of message this is.
+It matches @('[A-Z][A-Z0-9_]*').  That is, it starts with an uppercase
 alphabetic character, and then contains only uppercase alphabetic, numeric, and
 underscore characters.</p>
 
-<p>The <tt>len</tt> says how many characters are in <tt>contents</tt>.  It
-matches <tt>[0-9]+</tt>, i.e., it is a base-10 natural number.</p>")
+<p>The @('len') says how many characters are in @('contents').  It matches
+@('[0-9]+'), i.e., it is a base-10 natural number.</p>")
 
 
 (defxdoc command
@@ -146,26 +146,26 @@ be processed individually.</p>
 
 <p>The command format is identical to the @(see message) format, and is meant
 to be very easy for the client to generate.  Clients should typically
-<tt>flush</tt> the stream after printing their command to ensure that the
-server gets the input.</p>
+@('flush') the stream after printing their command to ensure that the server
+gets the input.</p>
 
-<p>The <tt>type</tt> of the command governs how the server should send the
-result back to the client.  The currently supported command types are:</p>
+<p>The @('type') of the command governs how the server should send the result
+back to the client.  The currently supported command types are:</p>
 
 <ul>
 
-<li><tt>LISP</tt> -- send only the first return value, and just use
-<tt>prin1</tt> to encode it.</li>
+<li>@('LISP') -- send only the first return value, and just use @('prin1') to
+encode it.</li>
 
-<li><tt>LISP_MV</tt> -- send all of the return values, essentially by doing
-<tt>prin1</tt> on the <tt>multiple-value-list</tt> of the result.</li>
+<li>@('LISP_MV') -- send all of the return values, essentially by doing
+@('prin1') on the @('multiple-value-list') of the result.</li>
 
-<li><tt>JSON</tt> -- send the @(see json-encoding) of the first return value.
-Note that this encoder only handles good ACL2 objects.</li>
+<li>@('JSON') -- send the @(see json-encoding) of the first return value.  Note
+that this encoder only handles good ACL2 objects.</li>
 
-<li><tt>JSON_MV</tt> -- send the @(see json-encoding) of the
-<tt>multiple-value-list</tt> of the result.  Note that this encoder only
-handles good ACL2 objects.</li>
+<li>@('JSON_MV') -- send the @(see json-encoding) of the
+@('multiple-value-list') of the result.  Note that this encoder only handles
+good ACL2 objects.</li>
 
 </ul>
 
@@ -181,7 +181,7 @@ add pretty-printing.</p>")
 programming language that has sockets.</p>
 
 <p>There is a nice <a href='http://www.ruby-lang.org/'>Ruby</a> interface in
-<tt>books/centaur/bridge/ruby</tt>.</p>
+@('books/centaur/bridge/ruby').</p>
 
 <p>For other programming languages, implementing a client should be a very easy
 exercise: just read about @(see command)s and @(see message)s to understand the
@@ -197,24 +197,24 @@ Bridge until you have read about @(see security).</p>
 
 <p>Unix Domain Socket Examples (recommended):</p>
 
-<code>
+@({
  (bridge::start \"./my-socket\")
  (bridge::start \"/tmp/my-socket\")
-</code>
+})
 
 <p>TCP/IP Socket Examples (<b>very scary</b> -- see @(see security)!!!):</p>
 
-<code>
+@({
  (bridge::start nil)     ;; Listen on TCP/IP port 55432
  (bridge::start 12345)   ;; Listen on TCP/IP port 12345
-</code>
+})
 
 <p>Additional keyword options:</p>
 
 <ul>
-<li><tt>:stack-size</tt> -- stack size for worker threads (in bytes)</li>
-<li><tt>:tstack-size</tt> -- temporary stack size for worker threads (in bytes)</li>
-<li><tt>:vstack-size</tt> -- value stack size for worker threads (in bytes)</li>
+<li>@(':stack-size') -- stack size for worker threads (in bytes)</li>
+<li>@(':tstack-size') -- temporary stack size for worker threads (in bytes)</li>
+<li>@(':vstack-size') -- value stack size for worker threads (in bytes)</li>
 </ul>"
 
   (defun start-fn (socket-name-or-port-number
@@ -295,9 +295,9 @@ restart a server.</p>"
   :long "<p>This is a special form that is only meant to be used by ACL2 Bridge
 clients when they issue commands.  A syntax example is:</p>
 
-<code>
+@({
  (bridge::in-main-thread (memoize 'fib) (fib 37))
-</code>
+})
 
 <p>This is really just a hack that lets you use commands that, for one reason
 or another, must only ever be executed in the \"main\" thread (in CCL parlance,

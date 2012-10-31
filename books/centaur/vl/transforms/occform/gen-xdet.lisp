@@ -32,24 +32,24 @@
 
   :long "<p>We generate a gate-based module with the following signature:</p>
 
-<code>
+@({
 module VL_N_BIT_XDETECT (out, in) ;
   output out;
   input [n-1:0] in;
 
   ...
 endmodule
-</code>
+})
 
-<p>We set <tt>out</tt> to X whenever any bit of <tt>in</tt> is X or Z.
-Otherwise, we set <tt>out</tt> to 0.</p>
+<p>We set @('out') to X whenever any bit of @('in') is X or Z.  Otherwise, we
+set @('out') to 0.</p>
 
 <p>This module is useful because many of Verilog's arithmetic
 expressions (compares, additions, subtractions, etc.) require that if any input
 bit is X or Z, then the entire output should be X.  The basic idea is to use
-<tt>VL_N_BIT_XDETECT</tt> to see if any input bit is X or Z, then XOR the
-output bit with every bit of the answer from a compare, addition, subtraction,
-etc.  If the X-DET bit is zero, then XOR'ing it with the answer just yields the
+@('VL_N_BIT_XDETECT') to see if any input bit is X or Z, then XOR the output
+bit with every bit of the answer from a compare, addition, subtraction, etc.
+If the X-DET bit is zero, then XOR'ing it with the answer just yields the
 original answer.  But if it is X, then the resulting bits are all X.</p>"
 
   :guard (posp n)
@@ -106,7 +106,7 @@ original answer.  But if it is X, then the resulting bits are all X.</p>"
   :long "<p>We generate a module that uses gates and is semantically equivalent
 to:</p>
 
-<code>
+@({
 module VL_N_BIT_XOR_EACH (out, a, b)
   output [n-1:0] out;
   input a;
@@ -116,10 +116,10 @@ module VL_N_BIT_XOR_EACH (out, a, b)
   ...
   assign out[n-1] = a ^ b[n-1];
 endmodule
-</code>
+})
 
-<p>In other words, we xor <tt>a</tt> with each bit of <tt>b</tt> and return the
-xor'ed vector.</p>"
+<p>In other words, we xor @('a') with each bit of @('b') and return the xor'ed
+vector.</p>"
 
   :guard (posp n)
   :body
@@ -155,18 +155,18 @@ xor'ed vector.</p>"
 
   :long "<p>We generate a gate-based module that has the following interface:</p>
 
-<code>
+@({
 module VL_N_BY_M_XPROP (out, ans, a, b);
   output [m-1:0] out;
   input [m-1:0] ans;
   input [n-1:0] a;
   input [n-1:0] b;
 endmodule
-</code>
+})
 
-<p>This propagator module can be understood as: if any bit of <tt>a</tt> or
-<tt>b</tt> is X/Z, then <tt>out</tt> will be all X bits.  Otherwise
-<tt>out</tt> is just a copy of <tt>ans</tt>.</p>"
+<p>This propagator module can be understood as: if any bit of @('a') or @('b')
+is X/Z, then @('out') will be all X bits.  Otherwise @('out') is just a copy of
+@('ans').</p>"
 
   :guard (and (posp n)
               (posp m))

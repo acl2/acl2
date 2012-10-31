@@ -31,27 +31,26 @@
 
 (defxdoc flop-inference
   :parents (transforms)
-  :short "Convert certain <tt>always</tt> statements into flop-module
-instances."
+  :short "Convert certain @('always') statements into flop-module instances."
 
   :long "<p>This transformation basically looks for statements like</p>
 
-<code>always @@(posedge clk) lhs &lt;= rhs;</code>
+@({always @@(posedge clk) lhs <= rhs;})
 
 <p>And rewrites them into:</p>
 
-<code>VL_N_BIT_FLOP foo ( .q(lhs), .d(rhs), .clk(clk) );</code>
+@({VL_N_BIT_FLOP foo ( .q(lhs), .d(rhs), .clk(clk) );})
 
 <p>However, we only carry out this transformation under certain conditions that
-we think makes it sound.  Note also that <tt>lhs</tt> must be simultaneously
-converted from a <tt>reg</tt> into a <tt>wire</tt>.</p>")
+we think makes it sound.  Note also that @('lhs') must be simultaneously
+converted from a @('reg') into a @('wire').</p>")
 
 
 
 
 (defsection vl-make-1-bit-flop-instances
   :parents (vl-make-n-bit-flop)
-  :short "Build a list of <tt>VL_1_BIT_FLOP</tt> instances."
+  :short "Build a list of @('VL_1_BIT_FLOP') instances."
 
   :long "<p><b>Signature:</b> @(call vl-make-1-bit-flop-instances) returns a
 list of module instances.</p>
@@ -59,20 +58,20 @@ list of module instances.</p>
 <p>We are given as inputs:</p>
 
 <ul>
-<li><tt>q-wires</tt>, a list of expressions, <tt>q[0], ..., q[n-1]</tt>,</li>
-<li><tt>clk-wire</tt>, an expression, <tt>clk</tt>, </li>
-<li><tt>d-wires</tt>, a list of expressions, <tt>d[0], ..., d[n-1]</tt>, and</li>
-<li><tt>n</tt>, which is our current index (for nice name generation)</li>
+<li>@('q-wires'), a list of expressions, @('q[0], ..., q[n-1]'),</li>
+<li>@('clk-wire'), an expression, @('clk'), </li>
+<li>@('d-wires'), a list of expressions, @('d[0], ..., d[n-1]'), and</li>
+<li>@('n'), which is our current index (for nice name generation)</li>
 </ul>
 
 <p>We produce a list of module instances, i.e., </p>
 
-<code>
+@({
    VL_1_BIT_FLOP bit_0 (q[0], clk, d[0]) ;
    VL_1_BIT_FLOP bit_1 (q[1], clk, d[1]) ;
    ...
    VL_1_BIT_FLOP bit_{n-1} (q[{n-1}], clk, d[{n-1}]) ;
-</code>"
+})"
 
   (defund vl-make-1-bit-flop-instances (q-wires clk-wire d-wires n)
     (declare (xargs :guard (and (vl-exprlist-p q-wires)
@@ -108,15 +107,15 @@ list of module instances.</p>
 (defsection vl-make-n-bit-flop
   ;; BOZO maybe switch to def-vl-modgen
   :parents (flop-inference)
-  :short "Generate <tt>VL_<i>N</i>_BIT_FLOP</tt> for some <i>N</i>."
+  :short "Generate @('VL_<i>N</i>_BIT_FLOP') for some <i>N</i>."
 
   :long "<p><b>Signature:</b> @(call vl-make-n-bit-flop) returns a list of
 modules.</p>
 
 <p>The first module in the list is the requested module, whose name will be
-<tt>VL_<i>N</i>_BIT_FLOP</tt>.  The other modules in the list include any
-submodules of <tt>VL_<i>N</i>_BIT_FLOP</tt> (typically <tt>VL_1_BIT_FLOP</tt>)
-that need to be added to the module list for completeness.</p>"
+@('VL_<i>N</i>_BIT_FLOP').  The other modules in the list include any
+submodules of @('VL_<i>N</i>_BIT_FLOP') (typically @('VL_1_BIT_FLOP')) that
+need to be added to the module list for completeness.</p>"
 
   (defund vl-make-n-bit-flop (n)
     (declare (xargs :guard (posp n)))
@@ -154,24 +153,24 @@ that need to be added to the module list for completeness.</p>"
 
 (defsection vl-pattern-match-flop
   :parents (flop-inference)
-  :short "Recognize and deconstruct <tt>always</tt> statements that might be
+  :short "Recognize and deconstruct @('always') statements that might be
 suitable for flop inference."
 
   :long "<p><b>Signature:</b> @(call vl-pattern-match-flop) returns
-<tt>(mv successp clk-expr lhs-expr rhs-expr delay)</tt>.</p>
+@('(mv successp clk-expr lhs-expr rhs-expr delay)').</p>
 
-<p><tt>x</tt> is an always statement (see @(see vl-always-p)).  We try to
-determine if <tt>x</tt> has the form:</p>
+<p>@('x') is an always statement (see @(see vl-always-p)).  We try to determine
+if @('x') has the form:</p>
 
-<code>
+@({
 always @@(posedge clk)
-   lhs [&lt;]= [#delay] rhs;  // i.e., \"lhs &lt;=rhs\" or \"lhs = rhs\"
-</code>
+   lhs [<]= [#delay] rhs;  // i.e., \"lhs <=rhs\" or \"lhs = rhs\"
+})
 
-<p>We extract and return the expressions for <tt>clk</tt>, <tt>lhs</tt>, and
-<tt>rhs</tt>.  We only allow simple delays like <tt>#3</tt> and return them as
-a @(see vl-maybe-natp).  We used to require that <tt>clk</tt> and <tt>lhs</tt>
-be simple identifier expressions, but now check that separately (see @(see
+<p>We extract and return the expressions for @('clk'), @('lhs'), and @('rhs').
+We only allow simple delays like @('#3') and return them as a @(see
+vl-maybe-natp).  We used to require that @('clk') and @('lhs') be simple
+identifier expressions, but now check that separately (see @(see
 vl-match/check-flop)).</p>"
 
   (defund vl-pattern-match-flop (x)
@@ -247,16 +246,16 @@ vl-match/check-flop)).</p>"
 
 (defsection vl-match/check-flop
   :parents (flop-inference)
-  :short "Recognize and deconstruct <tt>always</tt> statements that might be
+  :short "Recognize and deconstruct @('always') statements that might be
 suitable for flop inference, with extra checks for soundness."
 
-  :long "<p><b>Signature:</b> @(call vl-match/check-flop) returns
-<tt>(mv successp clk-expr lhs-expr rhs-expr delay)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-match/check-flop) returns @('(mv
+successp clk-expr lhs-expr rhs-expr delay)').</p>
 
-<p><tt>x</tt> is an always statement (see @(see vl-always-p)).  We first
-determine whether it has the correct form for a flop; see @(see
-vl-pattern-match-flop).  Then we check whether the <tt>clk</tt> and
-<tt>lhs</tt> expressions are simple identifiers, and fail if not.</p>"
+<p>@('x') is an always statement (see @(see vl-always-p)).  We first determine
+whether it has the correct form for a flop; see @(see vl-pattern-match-flop).
+Then we check whether the @('clk') and @('lhs') expressions are simple
+identifiers, and fail if not.</p>"
 
   (defund vl-match/check-flop (x)
     "Returns (mv successp clk-expr lhs-expr rhs-expr delay)"
@@ -301,7 +300,7 @@ vl-pattern-match-flop).  Then we check whether the <tt>clk</tt> and
 
 (defsection vl-make-1-bit-latch-instances
   :parents (flop-inference)
-  :short "Build a list of <tt>VL_1_BIT_LATCH</tt> instances."
+  :short "Build a list of @('VL_1_BIT_LATCH') instances."
 
   :long "<p><b>Signature:</b> @(call vl-make-1-bit-latch-instances) returns a
 list of module instances.</p>
@@ -309,20 +308,20 @@ list of module instances.</p>
 <p>We are given as inputs:</p>
 
 <ul>
-<li><tt>q-wires</tt>, a list of expressions, <tt>q[0], ..., q[n-1]</tt>,</li>
-<li><tt>clk-wire</tt>, an expression, <tt>clk</tt>, </li>
-<li><tt>d-wires</tt>, a list of expressions, <tt>d[0], ..., d[n-1]</tt>, and</li>
-<li><tt>n</tt>, which is our current index (for nice name generation)</li>
+<li>@('q-wires'), a list of expressions, @('q[0], ..., q[n-1]'),</li>
+<li>@('clk-wire'), an expression, @('clk'), </li>
+<li>@('d-wires'), a list of expressions, @('d[0], ..., d[n-1]'), and</li>
+<li>@('n'), which is our current index (for nice name generation)</li>
 </ul>
 
 <p>We produce a list of module instances, i.e., </p>
 
-<code>
+@({
    VL_1_BIT_LATCH bit_0 (q[0], clk, d[0]) ;
    VL_1_BIT_LATCH bit_1 (q[1], clk, d[1]) ;
    ...
    VL_1_BIT_LATCH bit_{n-1} (q[{n-1}], clk, d[{n-1}]) ;
-</code>"
+})"
 
   (defund vl-make-1-bit-latch-instances (q-wires clk-wire d-wires n)
     (declare (xargs :guard (and (vl-exprlist-p q-wires)
@@ -357,16 +356,15 @@ list of module instances.</p>
 
 (defsection vl-make-n-bit-latch
   :parents (flop-inference)
-  :short "Generate <tt>VL_<i>N</i>_BIT_LATCH</tt> for some <i>N</i>."
+  :short "Generate @('VL_<i>N</i>_BIT_LATCH') for some <i>N</i>."
 
   :long "<p><b>Signature:</b> @(call vl-make-n-bit-latch) returns a list of
 modules.</p>
 
 <p>The first module in the list is the requested module, whose name will be
-<tt>VL_<i>N</i>_BIT_LATCH</tt>.  The other modules in the list include any
-submodules of <tt>VL_<i>N</i>_BIT_LATCH</tt> (typically
-<tt>VL_1_BIT_LATCH</tt>) that need to be added to the module list for
-completeness.</p>"
+@('VL_<i>N</i>_BIT_LATCH').  The other modules in the list include any
+submodules of @('VL_<i>N</i>_BIT_LATCH') (typically @('VL_1_BIT_LATCH')) that
+need to be added to the module list for completeness.</p>"
 
   (defund vl-make-n-bit-latch (n)
     (declare (xargs :guard (posp n)))
@@ -755,48 +753,47 @@ extra sanity checking."
 
 (defsection vl-always-infer-latch/flop
   :parents (flop-inference)
-  :short "Try to infer a flop or latch from an <tt>always</tt> block."
+  :short "Try to infer a flop or latch from an @('always') block."
 
-  :long "<p><b>Signature:</b> @(call vl-always-infer-latch/flop) returns
-<tt>(mv successp warnings reg inst addmods decls assigns nf)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-always-infer-latch/flop) returns @('(mv
+successp warnings reg inst addmods decls assigns nf)').</p>
 
 <h5>Inputs</h5>
 <ul>
- <li><tt>x</tt>, an always block we may infer a flop from</li>
- <li><tt>mod</tt>, the module in which <tt>x</tt> resides</li>
- <li><tt>warnings</tt>, a warnings accumulator</li>
- <li><tt>nf</tt>, a @(see vl-namefactory-p) for generating fresh wire names.</li>
+ <li>@('x'), an always block we may infer a flop from</li>
+ <li>@('mod'), the module in which @('x') resides</li>
+ <li>@('warnings'), a warnings accumulator</li>
+ <li>@('nf'), a @(see vl-namefactory-p) for generating fresh wire names.</li>
 </ul>
 
-<p>We may extend <tt>warnings</tt> when <tt>x</tt> looks like it should
-be a flop, but it does not appear safe to convert it.</p>
+<p>We may extend @('warnings') when @('x') looks like it should be a flop, but
+it does not appear safe to convert it.</p>
 
-<p><tt>successp</tt> is true only when we wish to convert this always statement
-into a flop or latch.  Aside from <tt>successp</tt> and <tt>warnings</tt>, the
-other outputs are only useful when <tt>successp</tt> holds.</p>
+<p>@('successp') is true only when we wish to convert this always statement
+into a flop or latch.  Aside from @('successp') and @('warnings'), the other
+outputs are only useful when @('successp') holds.</p>
 
 <h5>Outputs (when successp)</h5>
 
 <ul>
 
-<li><tt>reg</tt> is the @(see vl-regdecl-p) that needs to be converted into an
+<li>@('reg') is the @(see vl-regdecl-p) that needs to be converted into an
 ordinary wire,</li>
 
-<li><tt>inst</tt> is a new instance of a <tt>VL_<i>N</i>_BIT_FLOP</tt> or
-<tt>VL_<i>N</i>_BIT_LATCH</tt> that must be added to the module to replace this
+<li>@('inst') is a new instance of a @('VL_<i>N</i>_BIT_FLOP') or
+@('VL_<i>N</i>_BIT_LATCH') that must be added to the module to replace this
 always block,</li>
 
-<li><tt>addmods</tt> are any modules that need to be added to the module list
-to ensure that we retain @(see completeness) as we introduce
-<tt>inst</tt>,</li>
+<li>@('addmods') are any modules that need to be added to the module list to
+ensure that we retain @(see completeness) as we introduce @('inst'),</li>
 
-<li><tt>decls</tt> are any new @(see vl-netdecl-p)s that need to be added
-to the module,</li>
+<li>@('decls') are any new @(see vl-netdecl-p)s that need to be added to the
+module,</li>
 
-<li><tt>assigns</tt> are any new @(see vl-assign-p)s that need to be added to
-the module.</li>
+<li>@('assigns') are any new @(see vl-assign-p)s that need to be added to the
+module.</li>
 
-<li><tt>nf</tt> is the updated name factory.</li>
+<li>@('nf') is the updated name factory.</li>
 
 </ul>"
 
@@ -1017,39 +1014,38 @@ the module.</li>
 
 (defsection vl-alwayslist-infer-latches/flops
   :parents (flop-inference)
-  :short "Try to infer latches and flops from a list of <tt>always</tt>
+  :short "Try to infer latches and flops from a list of @('always')
 blocks."
 
   :long "<p><b>Signature:</b> @(call vl-alwayslist-infer-latches/flops) returns
-<tt>(mv warnings alwayses regs insts addmods decls assigns nf)</tt>.</p>
+@('(mv warnings alwayses regs insts addmods decls assigns nf)').</p>
 
-<p>We are given <tt>x</tt>, the list of always blocks for the module
-<tt>mod</tt>, a name index for <tt>mod</tt>, and the warnings accumulator for
-<tt>mod</tt>.  We try to infer flops for each <tt>always</tt> in the list, and
-return:</p>
+<p>We are given @('x'), the list of always blocks for the module @('mod'), a
+name index for @('mod'), and the warnings accumulator for @('mod').  We try to
+infer flops for each @('always') in the list, and return:</p>
 
 <ul>
 
-<li><tt>alwayses</tt>, a new list of alwayses where we remove any always
- statements that have been successfully converted into flops,</li>
+<li>@('alwayses'), a new list of alwayses where we remove any always statements
+that have been successfully converted into flops,</li>
 
-<li><tt>regs</tt>, a list of regdecls that need to be converted into wires,</li>
+<li>@('regs'), a list of regdecls that need to be converted into wires,</li>
 
-<li><tt>insts</tt>, a list of module instances that need to be added to the
+<li>@('insts'), a list of module instances that need to be added to the
 module (e.g., this list will contain the explicit flop instances that represent
 the deleted always blocks),</li>
 
-<li><tt>addmods</tt>, a list of modules that need to be added to the module
-list (e.g., this list might include <tt>VL_3_BIT_FLOP</tt> if we've instantiated
+<li>@('addmods'), a list of modules that need to be added to the module
+list (e.g., this list might include @('VL_3_BIT_FLOP') if we've instantiated
 it.)</li>
 
-<li><tt>decls</tt> are any new @(see vl-netdecl-p)s that need to be added
-to the module,</li>
+<li>@('decls') are any new @(see vl-netdecl-p)s that need to be added to the
+module,</li>
 
-<li><tt>assigns</tt> are any new @(see vl-assign-p)s that need to be added to
-the module.</li>
+<li>@('assigns') are any new @(see vl-assign-p)s that need to be added to the
+module.</li>
 
-<li><tt>nf</tt> is the updated name factory.</li>
+<li>@('nf') is the updated name factory.</li>
 
 </ul>"
 

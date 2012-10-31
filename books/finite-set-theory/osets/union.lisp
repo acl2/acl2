@@ -115,10 +115,10 @@
 
 (defsection union
   :parents (osets)
-  :short "@(call union) constructs the union of <tt>X</tt> and <tt>Y</tt>."
+  :short "@(call union) constructs the union of @('X') and @('Y')."
 
   :long "<p>The logical definition is very simple, and the essential
-correctness property is given by <tt>union-in</tt>.</p>
+correctness property is given by @('union-in').</p>
 
 <p>The execution uses a better, O(n) algorithm to merge the sets by exploiting
 the set order.</p>"

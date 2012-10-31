@@ -30,20 +30,20 @@
   :short "Parse a natural number from the beginning of a character list."
 
   :long "<p>@(call parse-nat-from-charlist) tries to read a natural number from
-the beginning of the character list <tt>x</tt>.</p>
+the beginning of the character list @('x').</p>
 
 <ul>
 
-<li><tt>val</tt> is an accumulator for the value of the digits we have read so
-far, and typically should be set to 0 to begin with.</li>
+<li>@('val') is an accumulator for the value of the digits we have read so far,
+and typically should be set to 0 to begin with.</li>
 
-<li><tt>len</tt> is an accumulator for the number of digits we have read, and
+<li>@('len') is an accumulator for the number of digits we have read, and
 should typically be set to 0 to begin with.</li>
 
 </ul>
 
-<p>We return <tt>(mv val len rest)</tt>, where <tt>x</tt> after reading as many
-digits as possible.</p>
+<p>We return @('(mv val len rest)'), where @('x') after reading as many digits
+as possible.</p>
 
 <p>See also @(call digit-list-value), which is simpler for interpreting strings
 where all of the characters are digits.</p>"
@@ -172,35 +172,34 @@ where all of the characters are digits.</p>"
 
 <ul>
 
-<li><tt>x</tt> is a string that we want to parse a value from</li>
+<li>@('x') is a string that we want to parse a value from</li>
 
-<li><tt>val</tt> is an accumulator for the value we have parsed, and it should
+<li>@('val') is an accumulator for the value we have parsed, and it should
 generally be 0 to begin with.</li>
 
-<li><tt>len</tt> is an accumulator for the number of characters we have read
-so far, and should generally be 0 to begin with.</li>
+<li>@('len') is an accumulator for the number of characters we have read so
+far, and should generally be 0 to begin with.</li>
 
-<li><tt>n</tt> is an offset into <tt>x</tt> where we should begin parsing.  It
-must be a valid index into the string, i.e., <tt>0 &lt;= n &lt; (length
-x)</tt>.</li>
+<li>@('n') is an offset into @('x') where we should begin parsing.  It must be
+a valid index into the string, i.e., @('0 <= n < (length x)').</li>
 
-<li><tt>xl</tt> must be exactly equal to <tt>(length x)</tt>, and only serves
-as a cache to avoid recomputing the length.</li>
+<li>@('xl') must be exactly equal to @('(length x)'), and only serves as a
+cache to avoid recomputing the length.</li>
 
 </ul>
 
-<p>We return <tt>(mv val len)</tt>, the final values of the accumulators, which
-are respectively the natural number we have just parsed and the number of
-digits that we parsed.</p>
+<p>We return @('(mv val len)'), the final values of the accumulators, which are
+respectively the natural number we have just parsed and the number of digits
+that we parsed.</p>
 
-<p>Both <tt>val</tt> and <tt>len</tt> are guaranteed to be natural numbers;
-failure is indicated by a return <tt>len</tt> of zero.</p>
+<p>Both @('val') and @('len') are guaranteed to be natural numbers; failure is
+indicated by a return @('len') of zero.</p>
 
-<p>Because of leading zeroes, the <tt>len</tt> may be much larger than you
-would expect based on <tt>val</tt> alone.  The <tt>len</tt> argument is
-generally useful if you want to continue parsing through the string, i.e., the
-<tt>n</tt> you started with plus the <tt>len</tt> you got out will be the next
-position in the string after the number.</p>
+<p>Because of leading zeroes, the @('len') may be much larger than you would
+expect based on @('val') alone.  The @('len') argument is generally useful if
+you want to continue parsing through the string, i.e., the @('n') you started
+with plus the @('len') you got out will be the next position in the string
+after the number.</p>
 
 <p>See also @(see parse-nat-from-charlist) for a simpler function that reads a
 number from the start of a character list.  This function also serves as part
@@ -329,9 +328,9 @@ of our logical definition.</p>"
   :parents (ordering)
   :short "Mixed alphanumeric character-list less-than test."
 
-  :long "<p>@(call charlistnat<) determines if the character list <tt>x</tt> is
-\"smaller\" than the character list <tt>y</tt>, using an ordering that is nice
-for humans.</p>
+  :long "<p>@(call charlistnat<) determines if the character list @('x') is
+\"smaller\" than the character list @('y'), using an ordering that is nice for
+humans.</p>
 
 <p>This is almost an ordinary case-sensitive lexicographic ordering.  But,
 unlike a simple lexicographic order, we identify sequences of natural number
@@ -342,12 +341,12 @@ strings instead since they are easier to write down.  If you give most string
 sorts a list of inputs like \"x0\" through \"x11\", they will end up in a
 peculiar order:</p>
 
-<code>\"x0\", \"x1\", \"x10\", \"x11\", \"x2\", \"x3\", ... \"x9\"</code>
+@({\"x0\", \"x1\", \"x10\", \"x11\", \"x2\", \"x3\", ... \"x9\"})
 
-<p>But in <tt>charlistnat&lt;</tt>, we see the adjacent digits as bundles and
-sort them as numbers.  This leads to a nicer ordering:</p>
+<p>But in @('charlistnat<'), we see the adjacent digits as bundles and sort
+them as numbers.  This leads to a nicer ordering:</p>
 
-<code>\"x0\", \"x1\", \"x2\", ..., \"x9\", \"x10\", \"x11\"</code>
+@({\"x0\", \"x1\", \"x2\", ..., \"x9\", \"x10\", \"x11\"})
 
 <p>This is almost entirely straightforward.  One twist is how to accommodate
 leading zeroes.  Our approach is: instead of grouping adjacent digits and
@@ -855,8 +854,8 @@ one index.</p>"
   :parents (ordering)
   :short "Mixed alphanumeric string less-than test."
 
-  :long "<p>@(call strnat<) determines if the string <tt>x</tt> is \"smaller\"
-than the string <tt>y</tt>, using an ordering that is nice for humans.</p>
+  :long "<p>@(call strnat<) determines if the string @('x') is \"smaller\"
+than the string @('y'), using an ordering that is nice for humans.</p>
 
 <p>See @(see charlistnat<) for a description of this order.</p>
 

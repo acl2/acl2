@@ -32,8 +32,8 @@
 want to issue a variety of warnings.</p>
 
 <p>Our original approach to handling warnings was quite ad-hoc.  We sometimes
-printed messages to standard output using the <tt>cw</tt> function, and we
-sometimes caused errors using <tt>er</tt>.  But this approach had a number of
+printed messages to standard output using the @('cw') function, and we
+sometimes caused errors using @('er').  But this approach had a number of
 problems.  In particular,</p>
 
 <ul>
@@ -52,9 +52,9 @@ there are 30 if-statements to clean up.</li>
 users might not even see the warnings that had been generated for the modules
 they are working on.</li>
 
-<li>There is no way to recover form an error created with <tt>er</tt>, so if we
-ran into some bad problem with a particular module, it could actually prevent
-us from translating <i>any</i> of the modules.</li>
+<li>There is no way to recover form an error created with @('er'), so if we ran
+into some bad problem with a particular module, it could actually prevent us
+from translating <i>any</i> of the modules.</li>
 
 </ul>
 
@@ -69,8 +69,8 @@ warnings.</p>
 <p>During some transformation or well-formedness check, we might notice that
 something is wrong and decide to issue a warning.  In a typical object-oriented
 programming language, this would be entirely straightforward: our module class
-would have some kind of <tt>add-warning</tt> method, which would allow us to
-change the module by adding an extra warning.</p>
+would have some kind of @('add-warning') method, which would allow us to change
+the module by adding an extra warning.</p>
 
 <p>Since our programming language is truly functional, so we cannot modify
 existing modules.  Instead, whenever some subsidiary function wants to produce
@@ -78,9 +78,9 @@ a warning, its caller must take measures to ensure that the warning is
 eventually added to the appropriate module.</p>
 
 <p>Our usual approach is to add a <b>warnings accumulator</b> as an argument to
-our functions.  Typically this argument is named <tt>warnings</tt>, and
-functions that take a warnings accumulator return the (possibly extended)
-accumulator as one of their return values.</p>
+our functions.  Typically this argument is named @('warnings'), and functions
+that take a warnings accumulator return the (possibly extended) accumulator as
+one of their return values.</p>
 
 <p>At a high level, then, a high-level module transforming function begins by
 obtaining the current warnings for the module, and using these warnings as the
@@ -110,10 +110,10 @@ subsidiary function wants to throw away a module, then we need to somehow
 communicate that to the caller, etc.</p>
 
 <p>Since we are already accumulating warnings, it is convenient to simply
-extend our warning objects with a <tt>fatalp</tt> field that indicates whether
-the warning is severe.  Using this approach, most subsidiary functions can
-simply add a fatal warning to their warnings accumulator when a true problem
-is encountered.</p>
+extend our warning objects with a @('fatalp') field that indicates whether the
+warning is severe.  Using this approach, most subsidiary functions can simply
+add a fatal warning to their warnings accumulator when a true problem is
+encountered.</p>
 
 <p>After carrying out some transformation, we can scan the list of modules for
 any fatal warnings, and these modules (and their dependents) can be easily
@@ -142,29 +142,29 @@ thrown out using @(see vl-propagate-errors).</p>")
 
   :short "Fundamental warning object used throughout VL."
 
-  :long "<p>The <tt>type</tt> of each warning is a symbol (typically a keyword
+  :long "<p>The @('type') of each warning is a symbol (typically a keyword
 symbol) that describes very broadly what kind of warning this is.  There is not
 currently any particular discipline or strategy for assigning types to
 warnings, but the goal is to be able to use types to filter out or group
 warnings.</p>
 
-<p>The <tt>msg</tt> of each warning is a more detailed message describing what
-went wrong.  This string should be acceptable to @(see vl-fmt); it is similar
-to the \"format strings\" used by ACL2's <tt>cw</tt> function, but there are
-some important differences.  In particular, we do <b>NOT</b> support all of the
+<p>The @('msg') of each warning is a more detailed message describing what went
+wrong.  This string should be acceptable to @(see vl-fmt); it is similar to the
+\"format strings\" used by ACL2's @('cw') function, but there are some
+important differences.  In particular, we do <b>NOT</b> support all of the
 directives that ACL2's printer can use, and we have certain extra support for
 printing locations, module names, and so on.</p>
 
-<p>The <tt>args</tt> are composed with the tilde directives in <tt>msg</tt>
-when the warning is displayed to the user.  That is, a directive like
-<tt>~x0</tt> refers to the first argument, <tt>~x1</tt> to the second, etc.</p>
+<p>The @('args') are composed with the tilde directives in @('msg') when the
+warning is displayed to the user.  That is, a directive like @('~x0') refers to
+the first argument, @('~x1') to the second, etc.</p>
 
-<p>The <tt>fatalp</tt> flag indicates whether this error is so severe that the
+<p>The @('fatalp') flag indicates whether this error is so severe that the
 module ought to be thrown away and not subjected to further translation.  See
 the general discussion in @(see warning) for more information on how this is
 used.</p>
 
-<p>The <tt>fn</tt> is supposed to be the name of the function that caused the
+<p>The @('fn') is supposed to be the name of the function that caused the
 warning.  We added this later, so some warnings might not have this field set
 at the moment.</p>")
 
@@ -270,7 +270,7 @@ at the moment.</p>")
 (defsection vl-remove-warnings
   :parents (warnings)
   :short "@(call vl-remove-warnings) removes all warnings of types in
-<tt>types</tt> from <tt>x</tt>, a @(see vl-warninglist-p)."
+@('types') from @('x'), a @(see vl-warninglist-p)."
 
   :long "<p>This is sometimes useful to filter out certain mundane warnings
 that you do not want to bother the user with.  See also @(see
@@ -297,7 +297,7 @@ vl-keep-warnings).</p>"
 (defsection vl-keep-warnings
   :parents (warnings)
   :short "@(call vl-keep-warnings) remove all warnings whose types are not
-mentioned in <tt>types</tt> from <tt>x</tt>, a @(see vl-warninglist-p)."
+mentioned in @('types') from @('x'), a @(see vl-warninglist-p)."
 
   :long "<p>This is sometimes useful to highlight certain warnings that are
 of particular interest.  See also @(see vl-remove-warnings).</p>"
@@ -322,8 +322,8 @@ of particular interest.  See also @(see vl-remove-warnings).</p>"
 
 (defsection vl-some-warning-fatalp
   :parents (warnings)
-  :short "@(call vl-some-warning-fatalp) determines if any warning in
-<tt>x</tt>, a @(see vl-warninglist-p), is marked as \"fatal\"."
+  :short "@(call vl-some-warning-fatalp) determines if any warning in @('x'), a
+@(see vl-warninglist-p), is marked as \"fatal\"."
 
   (defund vl-some-warning-fatalp (x)
     (declare (xargs :guard (vl-warninglist-p x)))
@@ -369,8 +369,8 @@ of particular interest.  See also @(see vl-remove-warnings).</p>"
 (defsection vl-some-warning-of-type-p
   :parents (warnings)
   :short "@(call vl-some-warning-of-type-p) determines if any warning in
-<tt>x</tt>, a @(see vl-warninglist-p), has a type mentioned in <tt>types</tt>,
-a symbol-list."
+@('x'), a @(see vl-warninglist-p), has a type mentioned in @('types'), a
+symbol-list."
 
   :long "<p>Note that we leave this function enabled.</p>"
 

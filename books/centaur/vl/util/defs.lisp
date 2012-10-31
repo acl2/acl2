@@ -85,13 +85,13 @@ working with Verilog modules.")
 
 (defsection same-lengthp
   :parents (utilities)
-  :short "@(call same-lengthp) is a fast way to compute <tt>(= (len x) (len
-  y))</tt>."
+  :short "@(call same-lengthp) is a fast way to compute @('(equal (len x) (len
+y))')."
 
-  :long "<p>In the logic, @(call same-lengthp) is exactly <tt>(= (len x) (len
-y))</tt>.  However, for greater efficiency, it walks down both lists together
-and never does any arithmetic.  We leave <tt>same-lengthp</tt> enabled, and
-reason about <tt>len</tt> instead.</p>"
+  :long "<p>In the logic, @(call same-lengthp) is exactly @('(equal (len
+x) (len y))').  However, for greater efficiency, it walks down both lists
+together and never does any arithmetic.  We leave @('same-lengthp') enabled,
+and reason about @('len') instead.</p>"
 
   (defun same-lengthp (x y)
     (declare (xargs :guard t))
@@ -105,34 +105,34 @@ reason about <tt>len</tt> instead.</p>"
 
 (defsection redundant-mergesort
   :parents (utilities)
-  :short "Same as <tt>mergesort</tt>, but avoids re-sorting lists that
-are already sorted."
+  :short "Same as @('mergesort'), but avoids re-sorting lists that are already
+sorted."
 
-  :long "<p>In the logic, <tt>(redundant-mergesort x)</tt> is just
-<tt>(mergesort x)</tt>.  But in the execution, it first checks to see if
-<tt>x</tt> is already sorted, and if so returns <tt>x</tt> unchanged.</p>
+  :long "<p>In the logic, @('(redundant-mergesort x)') is just @('(mergesort
+x)').  But in the execution, it first checks to see if @('x') is already
+sorted, and if so returns @('x') unchanged.</p>
 
-<p>I use this function when I do not want to go to the trouble of
-proving that some cons-based operation happens to produce a set.  In practice,
-this should be much faster than a mergesort because checking <tt>(setp x)</tt>
-is linear and requires no consing.</p>
+<p>I use this function when I do not want to go to the trouble of proving that
+some cons-based operation happens to produce a set.  In practice, this should
+be much faster than a mergesort because checking @('(setp x)') is linear and
+requires no consing.</p>
 
 <h3>Performance Warnings</h3>
 
-<p>By default, <tt>redundant-mergesort</tt> is silent and will simply sort its
+<p>By default, @('redundant-mergesort') is silent and will simply sort its
 argument if necessary.  However, you can also instruct it to emit warnings.  A
 typical example is:</p>
 
-<code>
+@({
  (defun my-function (x)
     (let ((x-sort (redundant-mergesort x :warnp t :from 'my-function)))
        ...))
-</code>
+})
 
-<p>Here, <tt>:warnp</tt> specifies that warnings should be printed when
-<tt>x</tt> is not sorted.  The <tt>:from</tt> argument is used to indicate
-where this call of <tt>redundant-mergesort</tt> originates, which may be
-helpful in determining why the mergesort is not actually redundant.</p>"
+<p>Here, @(':warnp') specifies that warnings should be printed when @('x') is
+not sorted.  The @(':from') argument is used to indicate where this call of
+@('redundant-mergesort') originates, which may be helpful in determining why
+the mergesort is not actually redundant.</p>"
 
   (defun redundant-mergesort-fn (x warnp from)
     (declare (xargs :guard (and (booleanp warnp)
@@ -160,10 +160,10 @@ helpful in determining why the mergesort is not actually redundant.</p>"
 
 (defsection vl-maybe-integerp
   :parents (utilities)
-  :short "Recognizer for integers and <tt>nil</tt>."
+  :short "Recognizer for integers and @('nil')."
 
-  :long "<p>@(call vl-maybe-integerp) is like an option type, where either there
-is some integer value or nothing.</p>"
+  :long "<p>@(call vl-maybe-integerp) is like an option type, where either
+there is some integer value or nothing.</p>"
 
   (definlined vl-maybe-integerp (x)
     (declare (xargs :guard t))
@@ -182,10 +182,10 @@ is some integer value or nothing.</p>"
 
 (defsection vl-maybe-natp
   :parents (utilities)
-  :short "Recognizer for naturals and <tt>nil</tt>."
+  :short "Recognizer for naturals and @('nil')."
 
-  :long "<p>@(call vl-maybe-natp) is like an option type, where either there
-is some natural number value or nothing.</p>"
+  :long "<p>@(call vl-maybe-natp) is like an option type, where either there is
+some natural number value or nothing.</p>"
 
   (definlined vl-maybe-natp (n)
     (declare (xargs :guard t))
@@ -205,10 +205,10 @@ is some natural number value or nothing.</p>"
 
 (defsection vl-maybe-posp
   :parents (utilities)
-  :short "Recognizer for positive naturals and <tt>nil</tt>."
+  :short "Recognizer for positive naturals and @('nil')."
 
-  :long "<p>@(call vl-maybe-posp) is like an option type, where either there
-is some positive, natural number value or nothing.</p>"
+  :long "<p>@(call vl-maybe-posp) is like an option type, where either there is
+some positive, natural number value or nothing.</p>"
 
   (definlined vl-maybe-posp (x)
     (declare (xargs :guard t))
@@ -229,7 +229,7 @@ is some positive, natural number value or nothing.</p>"
 (defsection vl-maybe-string-p
   ;; BOZO name consistency with other functions here
   :parents (utilities)
-  :short "Recognizer for strings and <tt>nil</tt>."
+  :short "Recognizer for strings and @('nil')."
 
   :long "<p>@(call vl-maybe-string-p) is like an option type, where either
 there is some string value or nothing.</p>"
@@ -284,20 +284,20 @@ there is some string value or nothing.</p>"
 
 (defsection debuggable-and
   :parents (utilities)
-  :short "Alternative to <tt>and</tt> that prints a message where it fails."
+  :short "Alternative to @('and') that prints a message where it fails."
 
-  :long "<p><tt>(debuggable-and ...)</tt> is the same as <tt>(and ...)</tt>,
-but prints a message when any of the conjuncts fails.  For instance,</p>
+  :long "<p>@('(debuggable-and ...)') is the same as @('(and ...)'), but prints
+a message when any of the conjuncts fails.  For instance,</p>
 
-<code>
-VL !&gt;(debuggable-and (natp 3)
+@({
+VL !>(debuggable-and (natp 3)
                      (symbolp 'foo)
                      (consp 4)
                      (symbolp 'bar))
 Debuggable-and failure: (CONSP 4).
 NIL
-VL !&gt;
-</code>
+VL !>
+})
 
 <p>This can be useful when writing unit tests, checking guards, etc.</p>"
 
@@ -319,14 +319,14 @@ VL !&gt;
   :short "Make a fast-alist for use with @(see fast-memberp)."
 
   :long "<p>@(call make-lookup-alist) produces a fast-alist binding every
-member of <tt>x</tt> to <tt>t</tt>.</p>
+member of @('x') to @('t').</p>
 
 <p>Constructing a lookup alist allows you to use @(see fast-memberp) in lieu of
 @(see member) or @(see member-equal), which may be quite a lot faster on large
 lists.</p>
 
-<p>Don't forget to free the alist after you are done using it, via
-@(see flush-hons-get-hash-table-link).</p>"
+<p>Don't forget to free the alist after you are done using it, via @(see
+flush-hons-get-hash-table-link).</p>"
 
   (defund make-lookup-alist (x)
     (declare (xargs :guard t))
@@ -368,13 +368,13 @@ lists.</p>
   :short "Fast list membership using @(see make-lookup-alist)."
 
   :long "<p>In the logic, @(call fast-memberp) is just a list membership check;
-we leave <tt>fast-memberp</tt> enabled and always reason about
-<tt>member-equal</tt> instead.</p>
+we leave @('fast-memberp') enabled and always reason about @('member-equal')
+instead.</p>
 
-<p>However, our guard requires that <tt>alist</tt> is the result of running
-@(see make-lookup-alist) on <tt>x</tt>.  Because of this, in the execution, the
-call of @(see member-equal) call is instead carried out using @(see hons-get)
-on the alist, and hence is a hash table lookup.</p>"
+<p>However, our guard requires that @('alist') is the result of running @(see
+make-lookup-alist) on @('x').  Because of this, in the execution, the call of
+@(see member-equal) call is instead carried out using @(see hons-get) on the
+alist, and hence is a hash table lookup.</p>"
 
   (definline fast-memberp (a x alist)
     (declare (xargs :guard (equal alist (make-lookup-alist x)))
@@ -386,13 +386,13 @@ on the alist, and hence is a hash table lookup.</p>"
 
 (defsection all-equalp
   :parents (utilities)
-  :short "@(call all-equalp) determines if every members of <tt>x</tt> is
-equal to <tt>a</tt>."
+  :short "@(call all-equalp) determines if every members of @('x') is equal to
+@('a')."
 
-  :long "<p>In the logic, we define <tt>all-equalp</tt> in terms of
-<tt>repeat</tt>.</p>
+  :long "<p>In the logic, we define @('all-equalp') in terms of
+@('repeat').</p>
 
-<p>We usually leave this enabled and prefer to reason about <tt>repeat</tt>
+<p>We usually leave this enabled and prefer to reason about @('repeat')
 instead.  On the other hand, we also sometimes disable it and reason about it
 recursively, so we do prove a few theorems about it.</p>
 
@@ -473,12 +473,11 @@ consing.</p>"
 
 (defsection remove-equal-without-guard
   :parents (utilities)
-  :short "Same as <tt>remove-equal</tt>, but doesn't require
-<tt>true-listp</tt>."
+  :short "Same as @('remove-equal'), but doesn't require @('true-listp')."
 
-  :long "<p>In the logic, we define this function as <tt>remove-equal</tt> and
-we leave it enabled.  You should never reason about it directly; reason about
-<tt>remove-equal</tt> instead.</p>"
+  :long "<p>In the logic, we define this function as @('remove-equal') and we
+leave it enabled.  You should never reason about it directly; reason about
+@('remove-equal') instead.</p>"
 
   (defun remove-equal-without-guard (a x)
     (declare (xargs :guard t))
@@ -494,8 +493,8 @@ we leave it enabled.  You should never reason about it directly; reason about
 
 (defsection all-have-len
   :parents (utilities)
-  :short "@(call all-have-len) determines if every element of <tt>x</tt> has
-length <tt>n</tt>."
+  :short "@(call all-have-len) determines if every element of @('x') has length
+@('n')."
 
   (defund all-have-len (x n)
     (declare (xargs :guard t))
@@ -531,8 +530,8 @@ length <tt>n</tt>."
 
 (defsection remove-from-alist
   :parents (utilities)
-  :short "@(call remove-from-alist) removes all bindings for <tt>key</tt>
-from <tt>alist</tt>."
+  :short "@(call remove-from-alist) removes all bindings for @('key') from
+@('alist')."
 
   (defund remove-from-alist (key alist)
     (declare (xargs :guard (alistp alist)))
@@ -563,8 +562,8 @@ from <tt>alist</tt>."
 
 (defsection vl-remove-keys
   :parents (utilities)
-  :short "@(call vl-remove-keys) removes all bindings for the given <tt>keys</tt>
-from <tt>alist</tt>."
+  :short "@(call vl-remove-keys) removes all bindings for the given @('keys')
+from @('alist')."
 
   :long "<p><b>BOZO</b> name consistency with @(see remove-from-alist).</p>"
 
@@ -617,19 +616,16 @@ from <tt>alist</tt>."
 
 (defsection redundant-list-fix
   :parents (utilities)
-  :short "@(call redundant-list-fix) is the same as <tt>(list-fix x)</tt>, but
-avoids consing when <tt>x</tt> is already a true-listp."
+  :short "@(call redundant-list-fix) is the same as @('(list-fix x)'), but
+avoids consing when @('x') is already a true-listp."
 
-  :long "<p>I sometimes want to <tt>list-fix</tt> something that I know is
-almost certainly already a <tt>true-listp</tt> in practice.  In such cases,
-<tt>redundant-list-fix</tt> may be a better choice than <tt>list-fix</tt>,
-because checking <tt>true-listp</tt> is much cheaper than re-consing the
-a list.</p>
+  :long "<p>I sometimes want to @('list-fix') something that I know is almost
+certainly already a @('true-listp') in practice.  In such cases,
+@('redundant-list-fix') may be a better choice than @('list-fix'), because
+checking @('true-listp') is much cheaper than re-consing the a list.</p>
 
 <p>I leave this function enabled.  Logically it is just an alias for
-<tt>list-fix</tt>, so you should never need to reason about it.</p>
-
-@(def redundant-list-fix)"
+@('list-fix'), so you should never need to reason about it.</p>"
 
   (defun redundant-list-fix (x)
     (declare (xargs :guard t))
@@ -664,9 +660,9 @@ a list.</p>
 
 (defsection longest-common-prefix
   :parents (utilities)
-  :short "@(call longest-common-prefix) returns the longest list, <tt>p</tt>,
-such that <tt>p</tt> is a prefix of both <tt>x</tt> and <tt>y</tt>, in the
-sense of <tt>prefixp</tt>."
+  :short "@(call longest-common-prefix) returns the longest list, @('p'), such
+that @('p') is a prefix of both @('x') and @('y'), in the sense of
+@('prefixp')."
 
   :long "<p>See also @(see longest-common-prefix-list), which extends this
 function to a list of lists.</p>"
@@ -721,8 +717,8 @@ function to a list of lists.</p>"
     (prefixp p x)
     :guard t
     :parents (utilities)
-    :short "@(call prefix-of-eachp) returns true exactly when <tt>p</tt> is a
-prefix of every member of <tt>x</tt>.")
+    :short "@(call prefix-of-eachp) returns true exactly when @('p') is a
+prefix of every member of @('x').")
 
   (defthm prefix-of-eachp-when-prefixp
     (implies (and (prefix-of-eachp a x)
@@ -740,8 +736,8 @@ prefix of every member of <tt>x</tt>.")
 
 (defsection longest-common-prefix-list
   :parents (utilities)
-  :short "@(call longest-common-prefix-list) returns the longest list, <tt>p</tt>,
-such that <tt>p</tt> is a prefix of every list in <tt>x</tt>."
+  :short "@(call longest-common-prefix-list) returns the longest list, @('p'),
+such that @('p') is a prefix of every list in @('x')."
   :long "<p>See also @(see longest-common-prefix).</p>"
 
   (defund longest-common-prefix-list (x)
@@ -892,8 +888,8 @@ such that <tt>p</tt> is a prefix of every list in <tt>x</tt>."
 
 (defsection vl-starname
   :parents (utilities)
-  :short "@(call vl-starname) is given a string, say <tt>\"foo\"</tt>,
-and return a symbol in the ACL2 package, e.g., <tt>ACL2::*foo*</tt>."
+  :short "@(call vl-starname) is given a string, say @('\"foo\"'), and return a
+symbol in the ACL2 package, e.g., @('ACL2::*foo*')."
 
   :long "<p>Such names are the convention for naming modules in E.</p>"
 
@@ -913,12 +909,12 @@ and return a symbol in the ACL2 package, e.g., <tt>ACL2::*foo*</tt>."
 
 (defsection longer-than-p
   :parents (utilities)
-  :short "@(call longer-than-p) determines if the list <tt>x</tt> is
-longer than <tt>n</tt>."
+  :short "@(call longer-than-p) determines if the list @('x') is longer than
+@('n')."
 
-  :long "<p>This can be slightly faster than <tt>(len x)</tt> when the
-list is long and <tt>n</tt> is small.  We leave this function enabled
-and reason about <tt>len</tt> instead.</p>"
+  :long "<p>This can be slightly faster than @('(len x)') when the list is long
+and @('n') is small.  We leave this function enabled and reason about @('len')
+instead.</p>"
 
   (local (defthm l0
            (equal (len (cdr x))
@@ -956,15 +952,15 @@ and reason about <tt>len</tt> instead.</p>"
 (defsection append-domains
   :parents (utilities)
   :short "@(call append-domains) appends all of the values from the alist
-<tt>x</tt> into a single list."
+@('x') into a single list."
 
-  :long "<p>Our guard is merely <tt>t</tt>, but typically <tt>x</tt> is an
-alist of <tt>(key . value)</tt> pairs where every <tt>value</tt> is a list of
-elements.  We walk through the alist, appending together all of the elements of
-each <tt>value</tt> into a single, flat list.</p>
+  :long "<p>Our guard is merely @('t'), but typically @('x') is an alist of
+@('(key . value)') pairs where every @('value') is a list of elements.  We walk
+through the alist, appending together all of the elements of each @('value')
+into a single, flat list.</p>
 
-<p>Note that we do not really treat <tt>x</tt> as an association list.  That
-is, we will include the values from any \"shadowed pairs\" in the list.</p>"
+<p>Note that we do not really treat @('x') as an association list.  That is, we
+will include the values from any \"shadowed pairs\" in the list.</p>"
 
   (defund append-domains-exec (x acc)
     (declare (xargs :guard t))
@@ -1067,8 +1063,8 @@ contains only one element or many elements, e.g.,</p>
 </ul>
 
 <p>@(call vl-plural-p) is a stupid function to distinguish between the cases.
-It returns true for a list like <tt>(foo bar baz)</tt> with more than one element,
-or false for a list like <tt>(foo)</tt> with exactly one element.</p>
+It returns true for a list like @('(foo bar baz)') with more than one element,
+or false for a list like @('(foo)') with exactly one element.</p>
 
 <p>We consider lists that have no elements to be plural.  This gives the proper
 behavior in cases like:</p>
@@ -1109,8 +1105,10 @@ behavior in cases like:</p>
 
 (defsection and*
   :parents (utilities)
-  :short "<tt>and*</tt> is like <tt>and</tt> but is a (typically disabled) function."
-  :long "<p>This is occasionally useful for avoiding case-splitting in theorems.</p>"
+  :short "@('and*') is like @('and') but is a (typically disabled) function."
+
+  :long "<p>This is occasionally useful for avoiding case-splitting in
+theorems.</p>"
 
   (defund binary-and* (x y)
     (declare (xargs :guard t))
@@ -1135,8 +1133,10 @@ behavior in cases like:</p>
 
 (defsection or*
   :parents (utilities)
-  :short "<tt>or*</tt> is like <tt>or</tt> but is a (typically disabled) function."
-  :long "<p>This is occasionally useful for avoiding case-splitting in theorems.</p>"
+  :short "@('or*') is like @('or') but is a (typically disabled) function."
+
+  :long "<p>This is occasionally useful for avoiding case-splitting in
+theorems.</p>"
 
   (defund binary-or* (x y)
     (declare (xargs :guard t))
@@ -1160,8 +1160,9 @@ behavior in cases like:</p>
 
 (defsection not*
   :parents (utilities)
-  :short "<tt>not*</tt> is like <tt>not</tt> but is not built-in to ACL2 and is
+  :short "@('not*') is like @('not') but is not built-in to ACL2 and is
 typically disabled."
+
   :long "<p>This might occasionally be useful for avoiding case-splitting in
 theorems.</p>"
 
@@ -1174,8 +1175,8 @@ theorems.</p>"
 
 (defsection keys-boundp
   :parents (utilities)
-  :short "@(call keys-boundp) determines if every key in <tt>keys</tt> is bound
-in the alist <tt>alist</tt>."
+  :short "@(call keys-boundp) determines if every key in @('keys') is bound in
+the alist @('alist')."
 
   (defund keys-boundp-fal (keys alist)
     (declare (xargs :guard t))

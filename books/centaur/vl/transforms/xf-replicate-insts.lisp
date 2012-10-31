@@ -33,22 +33,22 @@
   :long "<p>We now introduce a transformation which eliminates \"ranges\" from
 gate and module instances.  The basic idea is to transform things like this:</p>
 
-<code>
+@({
    type instname [N:0] (arg1, arg2, ..., argM) ;
-</code>
+})
 
 <p>Into things like this:</p>
 
-<code>
+@({
    type instname_0 (arg1-0, arg2-0, ..., argM-0);
    type instname_1 (arg1-1, arg2-1, ..., argM-1);
    ...
    type instname_N (arg1-N, arg2-N, ..., argM-N);
-</code>
+})
 
-<p>Here, <tt>type</tt> might be a gate type (e.g., <tt>not</tt>, <tt>xor</tt>,
-etc.) or a module name, <tt>instname</tt> is the name of this instance array,
-and the arguments are expressions which represent the inputs and outputs.</p>
+<p>Here, @('type') might be a gate type (e.g., @('not'), @('xor'), etc.) or a
+module name, @('instname') is the name of this instance array, and the
+arguments are expressions which represent the inputs and outputs.</p>
 
 <p><b>Ordering Notes</b>.  We require that (1) @(see argresolve) has been
 applied so there are only plain argument lists to deal with, that (2) all
@@ -85,43 +85,43 @@ of the transformed module's state to the original module.</p>
 
 <p>Suppose we are transforming an instance like this:</p>
 
-<code>
+@({
    type foo [N:0] (arg1, arg2, ..., argM);
-</code>
+})
 
-<p><b>Signature:</b> @(call vl-replicated-instnames) returns <tt>(MV
-WARNINGS' NAMES NF')</tt>.</p>
+<p><b>Signature:</b> @(call vl-replicated-instnames) returns @('(MV WARNINGS'
+NAMES NF')').</p>
 
 <p>We are given:</p>
 
 <ul>
 
-<li><tt>instname</tt>, a string that is the name of the instance array,
-e.g., <tt>foo</tt>.</li>
+<li>@('instname'), a string that is the name of the instance array, e.g.,
+@('foo').</li>
 
-<li><tt>instrange</tt>, the associated range, e.g., <tt>[N:0]</tt>.</li>
+<li>@('instrange'), the associated range, e.g., @('[N:0]').</li>
 
-<li><tt>nf</tt>, a @(see vl-namefactory-p) for generating new names.</li>
+<li>@('nf'), a @(see vl-namefactory-p) for generating new names.</li>
 
-<li><tt>warnings</tt>, a @(see warnings) accumulator that we may extend
-with a non-fatal warning if our preferred names are unavailable.</li>
+<li>@('warnings'), a @(see warnings) accumulator that we may extend with a
+non-fatal warning if our preferred names are unavailable.</li>
 
-<li><tt>inst</tt>, the whole instance, which is semantically irrelevant and
-used only as a context for warnings.</li>
+<li>@('inst'), the whole instance, which is semantically irrelevant and used
+only as a context for warnings.</li>
 
 </ul>
 
-<p>We produce <tt>names</tt>, a list of <tt>N+1</tt> names that are to be used
-as the instance names for the split up arguments.</p>
+<p>We produce @('names'), a list of @('N+1') names that are to be used as the
+instance names for the split up arguments.</p>
 
-<p>We try to use names of the form <tt>instname_index</tt> if they are
-available, e.g., for a range like [N:0], we would prefer to generate
-names like <tt>foo_N, ..., foo_0</tt>.</p>
+<p>We try to use names of the form @('instname_index') if they are available,
+e.g., for a range like [N:0], we would prefer to generate names like @('foo_N,
+..., foo_0').</p>
 
 <p>We want to return the names so that the name corresponding to the most
-significant bits comes first.  If the range is like <tt>[N:0]</tt>, then we
-return <tt>foo_N, ..., foo_0</tt>.  But if the range goes the other way, i.e.,
-<tt>[0:N]</tt>, then we return <tt>foo_0, ..., foo_N</tt>.</p>"
+significant bits comes first.  If the range is like @('[N:0]'), then we return
+@('foo_N, ..., foo_0').  But if the range goes the other way, i.e., @('[0:N]'),
+then we return @('foo_0, ..., foo_N').</p>"
 
   (defund vl-preferred-replicate-names (low high instname)
     ;; Preferred names from low to high, inclusive, e.g., (foo_3 foo_4 foo_5)
@@ -332,89 +332,87 @@ individual instances."
   :long "<p>Recall that in the @(see replicate) transform we are basically
 rewriting instance arrays like this:</p>
 
-<code>
+@({
    type instname [N:0] (arg1, arg2, ..., argM) ;
-</code>
+})
 
 <p>Into things like this:</p>
 
-<code>
+@({
    type instname_0 (arg1-0, arg2-0, ..., argM-0);
    type instname_1 (arg1-1, arg2-1, ..., argM-1);
    ...
    type instname_N (arg1-N, arg2-N, ..., argM-N);
-</code>
+})
 
-<p>Let us consider a particular, non-blank argument, <tt>ArgI</tt>, whose width
-is <tt>ArgI-W</tt>.  Suppose this argument is connected to a non-blank port
-with width <tt>P-W</tt>.</p>
+<p>Let us consider a particular, non-blank argument, @('ArgI'), whose width is
+@('ArgI-W').  Suppose this argument is connected to a non-blank port with width
+@('P-W').</p>
 
-<p>Let's be clear on what we mean by <tt>P-W</tt>.  If we are talking about
-module instances then this is quite straightforward: the module has a list of
-ports, and we can see how wide these ports are supposed to be by looking at the
-widths of their port expressions; see @(see vl-port-p).  The argument
-<tt>ArgI</tt> corresponds to some particular port, and so the width of that
-port is what <tt>P-W</tt> is going to be.  If we are talking about gates, then
-P-W is always 1.</p>
+<p>Let's be clear on what we mean by @('P-W').  If we are talking about module
+instances then this is quite straightforward: the module has a list of ports,
+and we can see how wide these ports are supposed to be by looking at the widths
+of their port expressions; see @(see vl-port-p).  The argument @('ArgI')
+corresponds to some particular port, and so the width of that port is what
+@('P-W') is going to be.  If we are talking about gates, then P-W is always
+1.</p>
 
 <p>According to the semantics laid forth in 7.1.6, there are only two valid
 cases.</p>
 
-<p><b>Case 1.</b> <tt>ArgI-W = P-W.</tt> In this case, the argument is simply
-to be replicated, verbatim, across all of the new instances.</p>
+<p><b>Case 1.</b> @('ArgI-W = P-W.') In this case, the argument is simply to be
+replicated, verbatim, across all of the new instances.</p>
 
-<p><b>Case 2.</b> <tt>ArgI-W = P-W * K</tt>, where <tt>K</tt> is the number of
+<p><b>Case 2.</b> @('ArgI-W = P-W * K'), where @('K') is the number of
 instances specified by this array.  That is, if our instance array declaration
 is:</p>
 
-<code>
+@({
     type instname [N:0] (arg1, arg2, ...);
-</code>
+})
 
-<p>then <tt>K</tt> is <tt>N+1</tt>.  In this case, we are going to slice up
-<tt>ArgI</tt> into <tt>K</tt> segments of <tt>P-W</tt> bits each, and send them
-off to the instances.  For example, in the code:</p>
+<p>then @('K') is @('N+1').  In this case, we are going to slice up @('ArgI')
+into @('K') segments of @('P-W') bits each, and send them off to the instances.
+For example, in the code:</p>
 
-<code>
+@({
     wire w[3:0];
     not g [3:0] (w, 4'b0011);
-</code>
+})
 
-<p>The <tt>ArgI-W</tt> of both <tt>w</tt> and <tt>4'b0011</tt> is four, while
-the <tt>P-W</tt> is 1.  In this case, we create four one-bit slices of
-<tt>w</tt>, and four one-bit slices of <tt>4'b0011</tt>, and connect them with
-four separate not-gates.</p>
+<p>The @('ArgI-W') of both @('w') and @('4'b0011') is four, while the @('P-W')
+is 1.  In this case, we create four one-bit slices of @('w'), and four one-bit
+slices of @('4'b0011'), and connect them with four separate not-gates.</p>
 
-<p>When we are dealing with gates, <tt>P-W</tt> is always 1.  But when we talk
-about modules, <tt>P-W</tt> might be larger.  For example, consider the
-module:</p>
+<p>When we are dealing with gates, @('P-W') is always 1.  But when we talk
+about modules, @('P-W') might be larger.  For example, consider the module:</p>
 
-<code>
+@({
    module two_bit_and (o, a, b) ;
       output [1:0] o;
       input [1:0] a;
       input [1:0] b;
-      assign o = a &amp; b;
+      assign o = a & b;
    endmodule
-</code>
+})
 
 <p>And here we have an array of these two_bit_and modules:</p>
 
-<code>
+@({
    wire [7:0] j;
    two_bit_and myarray [3:0] (j, 8'b 11_00_10_01, 2'b 01);
-</code>
+})
 
 <p>This array is equivalent to:</p>
 
-<code>
+@({
    two_bit_and myarray_0 (j[7:6], 2'b 11, 2'b 01) ;
    two_bit_and myarray_1 (j[5:4], 2'b 00, 2'b 01) ;
    two_bit_and myarray_2 (j[3:2], 2'b 10, 2'b 01) ;
    two_bit_and myarray_3 (j[1:0], 2'b 01, 2'b 01) ;
-</code>
+})
 
-<p>And so the value of <tt>j</tt> will be <tt>8'b 0100_0001</tt>.</p>
+<p>And so the value of @('j') will be @('8'b 0100_0001').</p>
 
 <p>That is, since all of the ports of two_bit_and are 2 bits, and we are
 creating four instances, each of the array arguments can only be 2 or 8 bits
@@ -427,52 +425,51 @@ are replicated.</p>")
   :parents (argument-partitioning)
   :short "Group up a list of bits into N-bit concatenations."
 
-  :long "<p>The basic way that we partition an expression into <tt>N</tt>-bit
+  :long "<p>The basic way that we partition an expression into @('N')-bit
 slices is to break it up into individual bits with @(see vl-msb-bitslice-expr),
-then group these bits together into <tt>N</tt>-bit concatenations.</p>
+then group these bits together into @('N')-bit concatenations.</p>
 
 <p><b>Signature:</b> @(call vl-partition-msb-bitslices) returns a @(see
 vl-exprlist-p).</p>
 
 <ul>
 
-<li><tt>n</tt> must be a positive number that must evenly divide <tt>(len
-x)</tt>.</li>
+<li>@('n') must be a positive number that must evenly divide @('(len x)').</li>
 
-<li><tt>x</tt> must be a list of 1-bit, unsigned expressions.  Typically we
-expect that <tt>x</tt> is the result of calling @(see vl-msb-bitslice-expr) to
-slice up an expression into such bits.</li>
+<li>@('x') must be a list of 1-bit, unsigned expressions.  Typically we expect
+that @('x') is the result of calling @(see vl-msb-bitslice-expr) to slice up an
+expression into such bits.</li>
 
 </ul>
 
-<p>We return a new list of expressions, each of is a concatenation of
-<tt>n</tt> successive bits of <tt>x</tt>.  For instance, if</p>
+<p>We return a new list of expressions, each of is a concatenation of @('n')
+successive bits of @('x').  For instance, if</p>
 
 <ul>
- <li><tt>x</tt> is <tt>(bit_99 bit_98 ... bit_0)</tt>, and</li>
- <li><tt>n</tt> is <tt>5</tt>,</li>
+ <li>@('x') is @('(bit_99 bit_98 ... bit_0)'), and</li>
+ <li>@('n') is @('5'),</li>
 </ul>
 
 <p>Then the resulting list of expressions will be:</p>
 
 <ul>
- <li><tt>{bit_99, bit_98, bit_97, bit_96, bit_95}</tt></li>
- <li><tt>{bit_94, bit_93, bit_92, bit_91, bit_90}</tt></li>
+ <li>@('{bit_99, bit_98, bit_97, bit_96, bit_95}')</li>
+ <li>@('{bit_94, bit_93, bit_92, bit_91, bit_90}')</li>
  <li>...</li>
- <li><tt>{bit_4,  bit_3,  bit_2,  bit_1,  bit_0}</tt></li>
+ <li>@('{bit_4,  bit_3,  bit_2,  bit_1,  bit_0}')</li>
 </ul>
 
-<p>We prove that the resulting expressions all have width <tt>n</tt>, that
-there are the right number of resulting expressions, and that they are all
-well-typed assuming that the input bit-expressions are well-typed.</p>
+<p>We prove that the resulting expressions all have width @('n'), that there
+are the right number of resulting expressions, and that they are all well-typed
+assuming that the input bit-expressions are well-typed.</p>
 
 <h3>Aesthetic Notes</h3>
 
 <p>An arguably unfortunate consequence of our partitioning approach is that the
 resulting concatenations of bits can be large and ugly in certain cases.  For
-instance, part selects like <tt>foo[31:0]</tt> will get blown up into things
-like <tt>{ foo[31], foo[30], ..., foo[0] }</tt>, which is overly verbose and
-perhaps hard to read.</p>
+instance, part selects like @('foo[31:0]') will get blown up into things like
+@('{ foo[31], foo[30], ..., foo[0] }'), which is overly verbose and perhaps
+hard to read.</p>
 
 <p>My original implementation of partitioning also had a \"cleaning\" phase
 that tried to correct for this, essentially by identifying these descending
@@ -579,38 +576,38 @@ case there are any bugs, but perhaps we should re-integrate it.</p>"
   :parents (argument-partitioning)
   :short "Partition a plain argument into slices."
 
-  :long "<p><b>Signature:</b> @(call vl-partition-plainarg) returns <tt>(mv
-successp warnings plainargs)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-partition-plainarg) returns @('(mv
+successp warnings plainargs)').</p>
 
 <p>As inputs,</p>
 
 <ul>
 
-<li><tt>arg</tt> is a plainarg which we may need to replicate,</li>
+<li>@('arg') is a plainarg which we may need to replicate,</li>
 
-<li><tt>port-width</tt> is the width of the port this argument is connected
+<li>@('port-width') is the width of the port this argument is connected
 to.</li>
 
-<li><tt>insts</tt> is the number of instances in this array,</li>
+<li>@('insts') is the number of instances in this array,</li>
 
-<li><tt>mod</tt> is the superior module that the instance array occurs in,
-which is needed for proper bit-splitting,</li>
+<li>@('mod') is the superior module that the instance array occurs in, which is
+needed for proper bit-splitting,</li>
 
-<li><tt>ialist</tt> is the @(see vl-moditem-alist) for <tt>mod</tt>, for
-fast wire lookups,</li>
+<li>@('ialist') is the @(see vl-moditem-alist) for @('mod'), for fast wire
+lookups,</li>
 
-<li><tt>elem</tt> is a @(see vl-modelement-p) for good error messages,</li>
+<li>@('elem') is a @(see vl-modelement-p) for good error messages,</li>
 
-<li><tt>warnings</tt> is an accumulator for warnings, and may be extended with
+<li>@('warnings') is an accumulator for warnings, and may be extended with
 fatal warnings.</li>
 
 </ul>
 
-<p>Our goal is to create a list of the <tt>insts</tt>-many plainargs which this
-port is to be partitioned into.  On success, <tt>plainargs</tt> will be a list
-of <tt>insts</tt> arguments, each of which has width <tt>port-width</tt>.  The
-arguments are in \"msb-first\" order, i.e., the \"msb-most slice\" of
-<tt>arg</tt> comes first.</p>
+<p>Our goal is to create a list of the @('insts')-many plainargs which this
+port is to be partitioned into.  On success, @('plainargs') will be a list of
+@('insts') arguments, each of which has width @('port-width').  The arguments
+are in \"msb-first\" order, i.e., the \"msb-most slice\" of @('arg') comes
+first.</p>
 
 <p>We might fail with a fatal warning if there is some problem with the actual;
 we expect the actual to be already sized, <see url='@(url
@@ -747,15 +744,14 @@ width of the port, as described in @(see argument-partitioning).</p>"
   :parents (argument-partitioning)
   :short "Extend @(see vl-partition-plainarg) across a list of arguments."
 
-  :long "<p><b>Signature:</b> @(call vl-partition-plainarglist) returns <tt>(mv
-successp warnings result)</tt>, where <tt>result</tt> is a @(see
+  :long "<p><b>Signature:</b> @(call vl-partition-plainarglist) returns @('(mv
+successp warnings result)'), where @('result') is a @(see
 vl-plainarglistlist-p).</p>
 
-<p>Supposing that <tt>args</tt> has length <i>N</i>, the <tt>result</tt> we
-return on success is a list of <i>N</i> plainarglists (one for each argument),
-and each of these lists has <tt>insts</tt>-many plainargs.  That is, each
-element of the <tt>result</tt> is the partitioning of the corresponding
-argument.</p>"
+<p>Supposing that @('args') has length <i>N</i>, the @('result') we return on
+success is a list of <i>N</i> plainarglists (one for each argument), and each
+of these lists has @('insts')-many plainargs.  That is, each element of the
+@('result') is the partitioning of the corresponding argument.</p>"
 
   (defund vl-partition-plainarglist (args port-widths insts mod ialist elem warnings)
     "Returns (MV SUCCESSP WARNINGS PLAINARGLISTS)"
@@ -819,28 +815,28 @@ argument.</p>"
   :long "<p><b>Signature:</b> @(call vl-reorient-partitioned-args) returns a
 @(see vl-plainarglistlist-p).</p>
 
-<p>We are given <tt>lists</tt>, which should be a @(see vl-plainarglistlist-p)
-formed by calling @(see vl-partition-plainarglist), and <tt>n</tt>, the number
-of instances we are trying to generate.  Note that every list in <tt>lists</tt>
-has length <tt>n</tt>.</p>
+<p>We are given @('lists'), which should be a @(see vl-plainarglistlist-p)
+formed by calling @(see vl-partition-plainarglist), and @('n'), the number of
+instances we are trying to generate.  Note that every list in @('lists') has
+length @('n').</p>
 
 <p>At this point, the args are bundled up in a bad order.  That is, to create
 the new instances, we want to have lists of the form</p>
 
-<code>
+@({
    (arg1-slice1 arg2-slice1 arg3-slice1 ...) for the first instance,
    (arg1-slice2 arg2-slice2 arg3-slice2 ...) for the second instance,
    etc.
-</code>
+})
 
 <p>But instead, what @(see vl-partition-plainarglist) does is create lists
 of the slices, e.g., </p>
 
-<code>
+@({
    (arg1-slice1 arg1-slice2 arg1-slice3 ...)
    (arg2-slice1 arg2-slice2 arg2-slice3 ...)
    etc.
-</code>
+})
 
 <p>So our goal is simply to simply transpose this matrix and aggregate the
 data by slice, rather than by argument.</p>"
@@ -893,7 +889,7 @@ data by slice, rather than by argument.</p>"
   :long "<p><b>Signature:</b> @(call vl-assemble-gateinsts) returns a @(see
 vl-gateinstlist-p).</p>
 
-<p><tt>names</tt> are the names to give the instances and <tt>args</tt> are the
+<p>@('names') are the names to give the instances and @('args') are the
 reoriented, partitioned arguments (see @(see vl-partition-plainarglist) and
 @(see vl-reorient-partitioned-args); the other arguments are replicated from
 the gate instance.  We create the new gates.</p>"
@@ -953,25 +949,25 @@ the gate instance.  We create the new gates.</p>"
   :parents (replicate)
   :short "Convert a gate into a list of simpler gates, if necessary."
 
-  :long "<p><b>Signature:</b> @(call vl-replicate-gateinst) returns <tt>(mv
-warnings new-gateinsts new-nf)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-replicate-gateinst) returns @('(mv
+warnings new-gateinsts new-nf)').</p>
 
 <ul>
 
-<li><tt>x</tt> is some gate</li>
+<li>@('x') is some gate</li>
 
-<li><tt>warnings</tt> is an accumulator for warnings,</li>
+<li>@('warnings') is an accumulator for warnings,</li>
 
-<li><tt>mod</tt> is the module that <tt>x</tt> occurs in, and <tt>ialist</tt>
-is its @(see vl-moditem-alist),</li>
+<li>@('mod') is the module that @('x') occurs in, and @('ialist') is its @(see
+vl-moditem-alist),</li>
 
-<li><tt>nf</tt> is a @(see vl-namefactory-p) for generating names.</li>
+<li>@('nf') is a @(see vl-namefactory-p) for generating names.</li>
 
 </ul>
 
-<p>If <tt>x</tt> has a range, i.e., it is an array of gate instances, then we
-try to split it into a list of <tt>nil</tt>-ranged, simple gates.  The
-<tt>new-gateinsts</tt> should replace <tt>x</tt> in the module.</p>"
+<p>If @('x') has a range, i.e., it is an array of gate instances, then we try
+to split it into a list of @('nil')-ranged, simple gates.  The
+@('new-gateinsts') should replace @('x') in the module.</p>"
 
 
   (defund vl-replicate-gateinst (x nf mod ialist warnings)
@@ -1074,11 +1070,11 @@ try to split it into a list of <tt>nil</tt>-ranged, simple gates.  The
   :short "Extend @(see vl-replicate-gateinst) across a @(see
 vl-gateinstlist-p)."
 
-  :long "<p><b>Signature</b>: @(call vl-replicate-gateinstlist) returns <tt>(mv
-warnings new-gateinsts new-nf)</tt>.</p>
+  :long "<p><b>Signature</b>: @(call vl-replicate-gateinstlist) returns @('(mv
+warnings new-gateinsts new-nf)').</p>
 
-<p><tt>new-gateinsts</tt> is a list of new gates, which should replace
-<tt>x</tt> in the module.</p>"
+<p>@('new-gateinsts') is a list of new gates, which should replace @('x') in
+the module.</p>"
 
   (defund vl-replicate-gateinstlist (x nf mod ialist warnings)
     "Returns (MV WARNINGS NEW-GATEINSTS NEW-NF)"
@@ -1150,34 +1146,34 @@ warnings new-gateinsts new-nf)</tt>.</p>
   :parents (replicate)
   :short "Partition arguments for a module instance"
 
-  :long "<p><b>Signature:</b> @(call vl-replicate-arguments) returns <tt>(mv
-successp warnings arg-lists)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-replicate-arguments) returns @('(mv
+successp warnings arg-lists)').</p>
 
 <ul>
 
-<li><tt>args</tt> is a single @(see vl-arguments-p) object, which should be the
-<tt>portargs</tt> from a @(see vl-modinst-p).  We expect that the arguments
-have already been resolved, so that <tt>args</tt> contains a plainarglist
-rather than named arguments.</li>
+<li>@('args') is a single @(see vl-arguments-p) object, which should be the
+@('portargs') from a @(see vl-modinst-p).  We expect that the arguments have
+already been resolved, so that @('args') contains a plainarglist rather than
+named arguments.</li>
 
-<li><tt>port-widths</tt> are the widths from the corresponding ports, and we
-check to ensure that there are as many <tt>port-widths</tt> as there are
-arguments in <tt>args</tt>.</li>
+<li>@('port-widths') are the widths from the corresponding ports, and we check
+to ensure that there are as many @('port-widths') as there are arguments in
+@('args').</li>
 
-<li><tt>insts</tt> is the number of instances that we are splitting these
-arguments into.</li>
+<li>@('insts') is the number of instances that we are splitting these arguments
+into.</li>
 
-<li><tt>mod</tt> is the module we are working in, and <tt>ialist</tt> is its
-@(see vl-moditem-alist).</li>
+<li>@('mod') is the module we are working in, and @('ialist') is its @(see
+vl-moditem-alist).</li>
 
-<li><tt>elem</tt> is a @(see vl-modelement-p) for better warnings, and
-<tt>warnings</tt> is an accumulator for warnings.</li>
+<li>@('elem') is a @(see vl-modelement-p) for better warnings, and
+@('warnings') is an accumulator for warnings.</li>
 
 </ul>
 
-<p>The <tt>arg-lists</tt> we produce is a @(see vl-argumentslist-p) of length
-<tt>insts</tt>, and contains the new arguments to use in the split up
-module instances.</p>"
+<p>The @('arg-lists') we produce is a @(see vl-argumentslist-p) of length
+@('insts'), and contains the new arguments to use in the split up module
+instances.</p>"
 
   (defund vl-replicate-arguments (args port-widths insts mod ialist elem warnings)
     "Returns (MV SUCCESSP WARNINGS ARG-LISTS)"
@@ -1258,18 +1254,18 @@ module instances.</p>"
   :parents (replicate)
   :short "Determine the widths of a module's ports."
 
-  :long "<p><b>Signature:</b> @(call vl-module-port-widths) returns a <tt>(mv
-successp warnings widths)</tt>, where <tt>widths</tt> is a list of positive
+  :long "<p><b>Signature:</b> @(call vl-module-port-widths) returns a @('(mv
+successp warnings widths)'), where @('widths') is a list of positive
 numbers.</p>
 
 <ul>
 
-<li><tt>ports</tt> are the module's ports.</li>
+<li>@('ports') are the module's ports.</li>
 
-<li><tt>inst</tt> is the module instance that we are trying to replicate, and
-is only used to generate more useful error messages.</li>
+<li>@('inst') is the module instance that we are trying to replicate, and is
+only used to generate more useful error messages.</li>
 
-<li><tt>warnings</tt> is an ordinary @(see warnings) accumulator.</li>
+<li>@('warnings') is an ordinary @(see warnings) accumulator.</li>
 
 </ul>
 
@@ -1330,9 +1326,9 @@ vl-modinstlist-p).</p>
 
 <ul>
 
-<li><tt>names</tt> are the names to give to the module instances.</li>
+<li>@('names') are the names to give to the module instances.</li>
 
-<li><tt>args</tt> are the sliced up arguments (see @(see
+<li>@('args') are the sliced up arguments (see @(see
 vl-replicate-arguments)).</li>
 
 <li>The other arguments are taken from the original module instance that we are
@@ -1499,27 +1495,27 @@ the replicate transform."
   :short "Convert a module instance into a list of simpler instances, if
 necessary."
 
-  :long "<p><b>Signature:</b> @(call vl-replicate-modinst) returns <tt>(mv
-warnings new-modinsts new-nf)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-replicate-modinst) returns @('(mv
+warnings new-modinsts new-nf)').</p>
 
 <ul>
 
-<li><tt>x</tt> is some module instance, which may have a range that we want
-    to eliminate.</li>
+<li>@('x') is some module instance, which may have a range that we want to
+eliminate.</li>
 
-<li><tt>mods</tt> and <tt>modalist</tt> are the global list of modules and
-its corresponding @(see vl-modalist) for fast module lookups; we need this
-to be able to determine the sizes of ports when we are slicing arguments.</li>
+<li>@('mods') and @('modalist') are the global list of modules and its
+corresponding @(see vl-modalist) for fast module lookups; we need this to be
+able to determine the sizes of ports when we are slicing arguments.</li>
 
-<li><tt>nf</tt> is a @(see vl-namefactory-p) for generating fresh names.</li>
+<li>@('nf') is a @(see vl-namefactory-p) for generating fresh names.</li>
 
-<li><tt>warnings</tt> is an accumulator for warnings.</li>
+<li>@('warnings') is an accumulator for warnings.</li>
 
 </ul>
 
-<p>If <tt>x</tt> has a range, i.e., it is an array of module instances,
-then we try to split it into a list of <tt>nil</tt>-ranged, simple instances.
-The <tt>new-modinsts</tt> should replace <tt>x</tt> in the module.</p>"
+<p>If @('x') has a range, i.e., it is an array of module instances, then we try
+to split it into a list of @('nil')-ranged, simple instances.  The
+@('new-modinsts') should replace @('x') in the module.</p>"
 
   (defund vl-replicate-modinst (x mods modalist nf mod ialist warnings)
     "Returns (MV WARNINGS NEW-MODINSTS NF-PRIME)"
@@ -1640,8 +1636,8 @@ The <tt>new-modinsts</tt> should replace <tt>x</tt> in the module.</p>"
   :parents (replicate)
   :short "Extend @(see vl-replicate-modinst) across a @(see vl-modinstlist-p)"
 
-  :long "<p><b>Signature:</b> @(call vl-replicate-modinstlist) returns <tt>(mv
-warnings x-prime nf-prime)</tt>.</p>"
+  :long "<p><b>Signature:</b> @(call vl-replicate-modinstlist) returns @('(mv
+warnings x-prime nf-prime)').</p>"
 
   (defund vl-replicate-modinstlist (x mods modalist nf mod ialist warnings)
     (declare (xargs :guard (and (vl-modinstlist-p x)
@@ -1715,11 +1711,10 @@ warnings x-prime nf-prime)</tt>.</p>"
   :long "<p><b>Signature:</b> @(call vl-module-replicate) returns an updated
 module.</p>
 
-<p><tt>x</tt> is the module to alter, <tt>mods</tt> is the global list of
-modules, and <tt>modalist</tt> is the @(see vl-modalist) for <tt>mods</tt> for
-fast lookups.  We produce a new version of <tt>x</tt> by eliminating any gate
-or module instance arrays, and replacing them with explicit lists of
-instances.</p>"
+<p>@('x') is the module to alter, @('mods') is the global list of modules, and
+@('modalist') is the @(see vl-modalist) for @('mods') for fast lookups.  We
+produce a new version of @('x') by eliminating any gate or module instance
+arrays, and replacing them with explicit lists of instances.</p>"
 
   (defund vl-module-replicate (x mods modalist)
     (declare (xargs :guard (and (vl-module-p x)

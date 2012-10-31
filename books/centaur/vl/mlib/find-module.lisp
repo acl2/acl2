@@ -29,15 +29,14 @@
 
 (defsection vl-has-module
   :parents (hierarchy)
-  :short "@(call vl-has-module) determines if a module named <tt>name</tt> is
-defined in <tt>mods</tt>."
+  :short "@(call vl-has-module) determines if a module named @('name') is
+defined in @('mods')."
 
   :long "<p>We leave this function enabled.  In the logic, it is defined as
-nothing more than membership in <tt>(@(see vl-modulelist->names)
-mods)</tt>.</p>
+nothing more than membership in @('(@(see vl-modulelist->names) mods)').</p>
 
-<p>This function is not efficient.  It carries out an <tt>O(n)</tt> search of
-the modules.  See @(see vl-fast-has-module) for a faster alternative.</p>"
+<p>This function is not efficient.  It carries out an @('O(n)') search of the
+modules.  See @(see vl-fast-has-module) for a faster alternative.</p>"
 
   (defun vl-has-module (name mods)
     (declare (xargs :guard (and (stringp name)
@@ -55,14 +54,14 @@ the modules.  See @(see vl-fast-has-module) for a faster alternative.</p>"
 
 (defsection vl-find-module
   :parents (hierarchy)
-  :short "@(call vl-find-module) retrieves the first module named <tt>x</tt>
-from <tt>mods</tt>."
+  :short "@(call vl-find-module) retrieves the first module named @('x') from
+@('mods')."
 
   :long "<p>This is the logically simplest expression of looking up a module,
 and is our preferred normal form for rewriting.</p>
 
-<p>This function is not efficient.  It carries out an <tt>O(n)</tt> search of
-the modules.  See @(see vl-fast-find-module) for a faster alternative.</p>"
+<p>This function is not efficient.  It carries out an @('O(n)') search of the
+modules.  See @(see vl-fast-find-module) for a faster alternative.</p>"
 
   (defund vl-find-module (name mods)
     (declare (xargs :guard (and (stringp name)
@@ -206,16 +205,16 @@ module lookups.</p>"
 
 (defsection vl-has-modules
   :parents (hierarchy)
-  :short "@(call vl-has-modules) determines if every module in named in
-<tt>x</tt> is defined in <tt>mods</tt>."
+  :short "@(call vl-has-modules) determines if every module in named in @('x')
+is defined in @('mods')."
 
-  :long "<p>We leave this function enabled.  In the logic, it is defined
-as nothing more a subsetp-equal check in <tt>(@(see vl-modulelist->names)
-mods)</tt>.</p>
+  :long "<p>We leave this function enabled.  In the logic, it is defined as
+nothing more a subsetp-equal check in @('(@(see vl-modulelist->names)
+mods)').</p>
 
 <p>This function is not efficient.  It carries out a linear search through the
-list of modules for each name in <tt>x</tt>, making it quadratic.  See also
-@(see vl-fast-has-modules) for a faster alternative.</p>"
+list of modules for each name in @('x'), making it quadratic.  See also @(see
+vl-fast-has-modules) for a faster alternative.</p>"
 
   (defun vl-has-modules (x mods)
     (declare (xargs :guard (and (string-listp x)
@@ -246,14 +245,14 @@ list of modules for each name in <tt>x</tt>, making it quadratic.  See also
 
 (defsection vl-find-modules
   :parents (hierarchy)
-  :short "@(call vl-find-modules) gathers every module in named in <tt>x</tt>
-from <tt>mods</tt> and returns them as a list."
+  :short "@(call vl-find-modules) gathers every module in named in @('x') from
+@('mods') and returns them as a list."
 
   :long "<p>This is a simple projection over @(see vl-find-module), and is our
 logically simplest way of gathering modules by name.</p>
 
 <p>This function is not efficient.  It carries out a linear search over the
-module list for each module in <tt>x</tt>, making it quadratic.  For better
+module list for each module in @('x'), making it quadratic.  For better
 performance, see @(see vl-fast-find-modules).</p>"
 
   (defprojection vl-find-modules (x mods)

@@ -31,10 +31,7 @@
 the comments put inline with the module elements.</p>
 
 <p>The sort is introduced with defsort, so it is a stable mergesort.  Note that
-we ignore file names.</p>
-
-@(def vl-commentmap-entry-<)
-@(def vl-commentmap-entry-sort)"
+we ignore file names.</p>"
 
   (defund vl-commentmap-entry-p (x)
     (declare (xargs :guard t))
@@ -93,10 +90,7 @@ we ignore file names.</p>
 two locations."
 
   :long "<p>See also @(see vl-gather-comments-fal), which implements a much faster
-routine for gathering comments.</p>
-
-@(def vl-gather-comments-aux)
-@(def vl-gather-comments)"
+routine for gathering comments.</p>"
 
   (defund vl-gather-comments-aux (min max cmap acc)
     (declare (xargs :guard (and (vl-location-p min)
@@ -195,18 +189,15 @@ line number to the subset of the comment map which is about that line.</p>
 
 <p>That is, each entry in our commentmap-fal has the form:</p>
 
-<code>
- line --&gt; comment-map
-</code>
+@({
+ line --> comment-map
+})
 
-<p>where the <tt>comment-map</tt> has only the comments for this line and, in
+<p>where the @('comment-map') has only the comments for this line and, in
 practice, is typically a singleton.</p>
 
 <p>To extract all of the comments, we simply walk over the lines between min
-and max, gathering their comments.</p>
-
-@(def vl-commentmap-lines-agreep)
-@(def vl-commentmap-falp)"
+and max, gathering their comments.</p>"
 
   (defund vl-commentmap-lines-agreep (line x)
     (declare (xargs :guard (vl-commentmap-p x)))
@@ -268,9 +259,7 @@ and max, gathering their comments.</p>
 (defsection vl-commentmap-fal
   :parents (vl-commentmap-p)
   :short "Construct the @(see vl-commentmap-falp) for a @(see vl-commentmap-p)."
-  :long "<p>Note: returns a fast alist.</p>
-@(def vl-commentmap-fal-aux)
-@(def vl-commentmap-fal)"
+  :long "<p>Note: returns a fast alist.</p>"
 
   (defund vl-commentmap-fal-aux (x alist)
     (declare (xargs :guard (vl-commentmap-p x)))
@@ -313,7 +302,6 @@ and max, gathering their comments.</p>
 (defsection vl-gather-comments-fal
   :parents (vl-commentmap-p)
   :short "Efficient routine for gathering comments using an @(see vl-commentmap-falp)."
-  :long "@(def vl-gather-comments-fal-aux) @(def vl-gather-comments-fal)"
 
   (defund vl-gather-comments-fal-aux (minl maxl n min max fal acc)
     (declare (xargs :guard (and (natp n)

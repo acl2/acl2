@@ -31,7 +31,6 @@
 
 (defxdoc use-set
   :parents (vl)
-
   :short "Tool for detecting unused and unset wires."
 
   :long "<p><b>USE-SET</b> is a simple tool for detecting wires which may be
@@ -64,9 +63,9 @@ wire should satisfy the following properties:</p>
 are only used or set in these statements, they may not be reported
 correctly.</li>
 
-<li>USE-SET is not at all clever: it will not realize that <tt>bar</tt> is
-unused in code such as <tt>assign foo = 1'b0 &amp; bar;</tt> or <tt>assign foo = {0
-{bar}};</tt></li>
+<li>USE-SET is not at all clever: it will not realize that @('bar') is unused
+in code such as @('assign foo = 1'b0 & bar;') or @('assign foo = {0
+{bar}};')</li>
 
 <li>USE-SET does not know about the C code that implements RAM modules in
 speedsim, etc., and will think that such wires are unset.</li>
@@ -74,13 +73,13 @@ speedsim, etc., and will think that such wires are unset.</li>
 <li>USE-SET does not consider the individual bits of a vector. For instance, if
 you just write:
 
-<code>
+@({
 wire [7:0] foo;
 assign foo[0] = 1'b0;
-</code>
+})
 
-It treats the entire wire <tt>foo</tt> as set, even though <tt>foo[0]</tt> is
-the only bit that has really been set.</li>
+It treats the entire wire @('foo') as set, even though @('foo[0]') is the only
+bit that has really been set.</li>
 
 </ul>
 

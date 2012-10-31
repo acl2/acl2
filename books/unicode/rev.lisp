@@ -19,6 +19,7 @@
 (include-book "revappend")
 (include-book "reverse")
 (include-book "append")
+(local (include-book "make-character-list"))
 
 (defun revappend-without-guard (x y)
   (declare (xargs :guard t))
@@ -123,3 +124,15 @@
    (equal (equal (rev x) (rev y))
           (equal (list-fix x) (list-fix y)))
    :hints(("Goal" :induct (cdr-cdr-induction x y)))))
+
+
+
+(defthm make-character-list-of-rev
+  ;; blah, probably belongs in make-character-list.lisp instead, but put it here
+  ;; to avoid circular dependency problems
+  (equal (make-character-list (rev x))
+         (rev (make-character-list x)))
+  :hints(("Goal" :in-theory (enable make-character-list))))
+
+
+

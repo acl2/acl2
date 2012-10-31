@@ -32,11 +32,11 @@
 
   :long "<p>ACL2 provides @(see digit-char-p) which is more flexible and can
 recognize numeric characters in other bases.  @(call digitp) only recognizes
-base-10 digits, but is roughly twice as fast as <tt>digit-char-p</tt>, at least
-on CCL.  Here is an experiment you can run in raw lisp, with times reported in
-CCL on the machine Lisp2.</p>
+base-10 digits, but is roughly twice as fast as @('digit-char-p'), at least on
+CCL.  Here is an experiment you can run in raw lisp, with times reported in CCL
+on the machine Lisp2.</p>
 
-<code>
+@({
   (defconstant *chars*
     (loop for i from 0 to 256 collect (code-char i)))
 
@@ -47,7 +47,7 @@ CCL on the machine Lisp2.</p>
   ;; 10.819 seconds, no garbage
   (time (loop for i fixnum from 1 to 10000000 do
               (loop for c in *chars* do (digitp c))))
-</code>"
+})"
 
   (definlined digitp (x)
     (declare (type character x))
@@ -94,8 +94,8 @@ CCL on the machine Lisp2.</p>
   :parents (numbers)
   :short "Coerces a @(see digitp) character into an integer."
 
-  :long "<p>For instance, the digit-val of #\3 is 3.  For any
-non-<tt>digitp</tt>, 0 is returned.</p>"
+  :long "<p>For instance, @('(digit-val #\\3)') is 3.  For any non-@('digitp'),
+0 is returned.</p>"
 
   (definlined digit-val (x)
     (declare (type character x)
@@ -190,8 +190,7 @@ non-<tt>digitp</tt>, 0 is returned.</p>"
   :parents (numbers)
   :short "Coerces a @(see digit-listp) into a natural number."
 
-  :long "<p>For instance, the <tt>digit-list-value</tt> of <tt>'(#\1 #\0
-#\3)</tt> is 103.</p>
+  :long "<p>For instance, @('(digit-list-value '(#\1 #\0 #\3))') is 103.</p>
 
 <p>See also @(see parse-nat-from-charlist) for a more flexible function that
 can tolerate non-numeric characters after the number.</p>"

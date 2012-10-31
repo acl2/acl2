@@ -56,16 +56,16 @@
 backwards (that is, through module boundaries, identity assignments,
 buffers, and inverters) to its source."
 
-  :long "<p><b>Signature:</b> @(call follow-path-backwards) returns <tt>(mv
-new-path inverted-p)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call follow-path-backwards) returns @('(mv
+new-path inverted-p)').</p>
 
-<p>The given <tt>path</tt> should be a valid ESIM path into <tt>mod</tt>, which
-should be a good ESIM module.  The path does NOT need to be canonical.</p>
+<p>The given @('path') should be a valid ESIM path into @('mod'), which should
+be a good ESIM module.  The path does NOT need to be canonical.</p>
 
 <p>We follow path \"backwards\" to try to find out where it originates from.
 For instance, suppose we started wtih a Verilog module like:</p>
 
-<code>
+@({
 module mymod (...) ;
    wire a = b;
    wire b = ~c;
@@ -73,23 +73,22 @@ module mymod (...) ;
    and(d, e, f);
    ...
 endmodule
-</code>
+})
 
-<p>Then, if we try to follow backwards starting from the initial path
-<tt>a</tt>, we will walk through <tt>b</tt> and <tt>c</tt> until we reach
-<tt>d</tt>.  We can't walk past <tt>d</tt> because it is driven by an AND
-gate, and we only walk through buffers, inverters, and plain assignments.</p>
+<p>Then, if we try to follow backwards starting from the initial path @('a'),
+we will walk through @('b') and @('c') until we reach @('d').  We can't walk
+past @('d') because it is driven by an AND gate, and we only walk through
+buffers, inverters, and plain assignments.</p>
 
-<p>The <tt>new-path</tt> we obtain is not necessarily canonical, but it should
-always point to somewhere within <tt>mod</tt>.  The \"best\" we can do is to
-follow a path all the way back to an input of <tt>mod</tt>.  But often the
-resulting path may end up pointing somewhere into a submodule, e.g., suppose we
-have:</p>
+<p>The @('new-path') we obtain is not necessarily canonical, but it should
+always point to somewhere within @('mod').  The \"best\" we can do is to follow
+a path all the way back to an input of @('mod').  But often the resulting path
+may end up pointing somewhere into a submodule, e.g., suppose we have:</p>
 
-<code>
+@({
 module sub (o1, o2, a, b) ;
   assign o1 = a | b;
-  assign o2 = a &amp; b;
+  assign o2 = a & b;
 endmodule
 
 module top (...) ;
@@ -99,13 +98,13 @@ module top (...) ;
   sub mysub (disjoin, conjoin, w1, w2);
   ...
 endmodule
-</code>
+})
 
-<p>Then if we start by following path <tt>disjoin</tt> in top, we will end up
-with a new path that is <tt>(mysub . o1)</tt>.</p>
+<p>Then if we start by following path @('disjoin') in top, we will end up with
+a new path that is @('(mysub . o1)').</p>
 
-<p>The <tt>inverted-p</tt> output says whether we've gone through an odd number
-of inverters.</p>"
+<p>The @('inverted-p') output says whether we've gone through an odd number of
+inverters.</p>"
 
   (defund follow-path-backwards-aux
     (path ; path we're currently trying to follow

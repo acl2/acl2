@@ -25,10 +25,10 @@
 
 (defxdoc designwires
   :parents (transforms)
-  :short "Introduce <tt>VL_DESIGN_WIRE</tt> annotations."
+  :short "Introduce @('VL_DESIGN_WIRE') annotations."
 
   :long "<p>In this transformation, we annotate every net and reg declaration
-with a <tt>VL_DESIGN_WIRE</tt> attribute (see @(see attributes)).  Later, when
+with a @('VL_DESIGN_WIRE') attribute (see @(see attributes)).  Later, when
 \"temporary\" wires are added to the module, they will not have this attribute.
 The idea is to allow us to distinguish between (1) the wires that are really
 present and visible in the design, and (2) the wires that VL has added during
@@ -109,7 +109,7 @@ design.</p>")
 
 (defsection vl-modulelist-designwires
   :parents (designwires)
-  :short "Add <tt>VL_DESIGN_WIRE</tt> annotations throughout a module list."
+  :short "Add @('VL_DESIGN_WIRE') annotations throughout a module list."
   :long "<p>This transformation is so simple that we just present its source
 code below, in a top-down style.</p>"
 

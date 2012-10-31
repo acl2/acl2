@@ -23,7 +23,7 @@
 
 (defxdoc primitives
   :parents (osets)
-  :short "Replacements for <tt>car</tt>, <tt>cdr</tt>, etc., that respect the
+  :short "Replacements for @('car'), @('cdr'), etc., that respect the
 <i>non-set convention</i>."
 
   :long "<p>Since the osets library uses ordered lists as the underlying
@@ -32,19 +32,18 @@ primitives</b> (car, cdr, endp, cons) to operate on sets.  A problem with using
 these functions directly is that they do not follow the non-set convention.</p>
 
 <p>The <b>non-set convention</b> is: set operations should treat improper
-sets (i.e., non-<tt>nil</tt> atoms and lists that have duplicated or
-mis-ordered elements) as the empty set.  We adopt this convention throughout
-the library.  It allows most of our rewrite rules to have no @(see setp)
-hypotheses.</p>
+sets (i.e., non-@('nil') atoms and lists that have duplicated or mis-ordered
+elements) as the empty set.  We adopt this convention throughout the library.
+It allows most of our rewrite rules to have no @(see setp) hypotheses.</p>
 
 <p>The primitive list functions do follow the non-set convention.  For
 instance:</p>
 
 <ul>
- <li><tt>(car '(1 1 1)) = 1</tt>, but <tt>(car nil) = nil</tt></li>
- <li><tt>(cdr '(1 1 1)) = (1 1)</tt>, but <tt>(cdr nil) = nil</tt></li>
- <li><tt>(cons 1 '(1 1 1)) = (1 1 1 1)</tt>, but <tt>(cons 1 nil) = (1)</tt></li>
- <li><tt>(endp '(1 1 1)) = nil</tt>, but <tt>(endp nil) = t</tt></li>
+ <li>@('(car '(1 1 1)) = 1'),            but @('(car nil) = nil')</li>
+ <li>@('(cdr '(1 1 1)) = (1 1)'),        but @('(cdr nil) = nil')</li>
+ <li>@('(cons 1 '(1 1 1)) = (1 1 1 1)'), but @('(cons 1 nil) = (1)')</li>
+ <li>@('(endp '(1 1 1)) = nil'),         but @('(endp nil) = t')</li>
 </ul>
 
 <p>These behaviors make it harder to reason about set operations that are
@@ -57,10 +56,10 @@ are mostly like the list primitives, except that they follow the non-set
 convention.  These primitives are:</p>
 
 <ul>
- <li><tt>(@(see head) X)</tt> - the first element of a set, nil for non/empty sets</li>
- <li><tt>(@(see tail) X)</tt> - all rest of the set, nil for non/empty sets</li>
- <li><tt>(@(see insert) a X)</tt> - ordered insert of <tt>a</tt> into <tt>X</tt></li>
- <li><tt>(@(see empty) X)</tt> - recognizer for non/empty sets.</li>
+ <li>@('(head X)') - the first element of a set, nil for non/empty sets</li>
+ <li>@('(tail X)') - all rest of the set, nil for non/empty sets</li>
+ <li>@('(insert a X)') - ordered insert of @('a') into @('X')</li>
+ <li>@('(empty X)') - recognizer for non/empty sets.</li>
 </ul>
 
 <p>The general idea is that set operations should be written in terms of these
@@ -77,8 +76,8 @@ level structure of sets.</p>")
 fully ordered under @(see <<).  Note that this implicitly means that sets have
 no duplicate elements.</p>
 
-<p>Testing <tt>setp</tt> is necessarily somewhat slow: we have to check that
-the elements are in order.  Its cost is linear in the size of <tt>n</tt>.</p>"
+<p>Testing @('setp') is necessarily somewhat slow: we have to check that the
+elements are in order.  Its cost is linear in the size of @('n').</p>"
 
   (defun setp (X)
     (declare (xargs :guard t :verify-guards nil))
@@ -109,7 +108,7 @@ the elements are in order.  Its cost is linear in the size of <tt>n</tt>.</p>"
   :short "@(call empty) recognizes empty sets."
 
   :long "<p>This function is like @(see endp) for lists, but it respects the
-non-set convention and always returns <tt>t</tt> for ill-formed sets.</p>"
+non-set convention and always returns true for ill-formed sets.</p>"
 
   (defun empty (X)
     (declare (xargs :guard (setp X)))
@@ -146,7 +145,7 @@ non-set convention and always returns <tt>t</tt> for ill-formed sets.</p>"
 non-@(see setp) into the empty set.</p>
 
 <p>This does for sets what functions like @(see nfix) or @(see rfix) do for
-numbers.  It is often useful to use <tt>sfix</tt> in the base case of a set
+numbers.  It is often useful to use @('sfix') in the base case of a set
 operation to ensure that an ordered set is always produced.</p>"
 
   (defun sfix (X)
@@ -190,7 +189,7 @@ operation to ensure that an ordered set is always produced.</p>"
   :short "@(call head) returns the smallest element in a set."
 
   :long "<p>This is like @(see car), but respects the non-set convention and
-always returns <tt>nil</tt> for ill-formed sets.</p>"
+always returns @('nil') for ill-formed sets.</p>"
 
   (defun head (X)
     (declare (xargs :guard (and (setp X)
@@ -235,7 +234,7 @@ always returns <tt>nil</tt> for ill-formed sets.</p>"
 head)."
 
   :long "<p>This is like @(see cdr), but respects the non-set convention and
-always returns <tt>nil</tt> for ill-formed sets.</p>"
+always returns @('nil') for ill-formed sets.</p>"
 
   (defun tail (X)
     (declare (xargs :guard (and (setp X)
@@ -293,27 +292,27 @@ always returns <tt>nil</tt> for ill-formed sets.</p>"
 
 (defsection insert
   :parents (primitives)
-  :short "@(call insert) adds the element <tt>a</tt> to the set <tt>X</tt>."
+  :short "@(call insert) adds the element @('a') to the set @('X')."
 
   :long "<p>This is the fundamental set constructor.  It is similar to @(see
 cons) for lists, but of course performs an ordered insertion.  It respects the
 non-set convention and treats any ill-formed input as the empty set.</p>
 
-<p>Efficiency note.  Insert is <tt>O(n)</tt>.  It is very inefficient to call
-it repeatedly.  Instead, consider building sets with @(see mergesort) or out of
+<p>Efficiency note.  Insert is @('O(n)').  It is very inefficient to call it
+repeatedly.  Instead, consider building sets with @(see mergesort) or out of
 other sets using @(see union).</p>
 
 <p>The :exec version just inlines the set primitives and does one level of loop
 unrolling.  On CCL, it runs about 1.65x faster than the :logic version on the
 following loop:</p>
 
-<code>
+@({
  ;; 1.92 seconds :logic, 1.16 seconds :exec
  (let ((acc nil))
   (gc$)
   (time$ (loop for i fixnum from 1 to 10000 do
                (setq acc (sets::insert i acc)))))
-</code>"
+})"
 
   (local (in-theory (disable nonempty-means-set
                              empty-set-unique

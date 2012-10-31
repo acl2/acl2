@@ -47,7 +47,7 @@ simply inaccessible in the superior module.</p>
 <p>In either case, we simply replace the blank argument with a new, fresh,
 otherwise undriven wire of the appropriate size.  This approach works equally
 well for inputs and outputs.  We give these wires names such as
-<tt>blank_27</tt>.</p>
+@('blank_27').</p>
 
 <p>Unlike @(see drop-blankports) which can be applied at any time after @(see
 argresolve), the blankargs transformation requires that expression sizes have
@@ -62,33 +62,34 @@ has been run to ensure that no instances have ranges.</p>")
   :parents (blankargs)
   :short "Fill in any blank arguments in a module instance's argument list."
 
-  :long "<p>Signature: @(call vl-modinst-plainarglist-blankargs) returns <tt>(mv
-warnings args-prime netdecls nf-prime)</tt>.</p>
+  :long "<p>Signature: @(call vl-modinst-plainarglist-blankargs) returns @('(mv
+warnings args-prime netdecls nf-prime)').</p>
 
 <p>As inputs:</p>
 
 <ul>
 
-<li><tt>args</tt> should be a list of @(see vl-plainarg-p)s for a module
+<li>@('args') should be a list of @(see vl-plainarg-p)s for a module
 instance,</li>
 
-<li><tt>ports</tt> should be the corresponding ports from the submodule being
+<li>@('ports') should be the corresponding ports from the submodule being
 instantiated,</li>
 
-<li><tt>nf</tt> is a @(see vl-namefactory-p) for fresh name generation in the
+<li>@('nf') is a @(see vl-namefactory-p) for fresh name generation in the
 superior module,</li>
 
-<li><tt>warnings</tt> is an @(see warnings) accumulator for the superior module,</li>
+<li>@('warnings') is an @(see warnings) accumulator for the superior
+module,</li>
 
-<li><tt>inst</tt> is semantically meaningless and is only used for warning
+<li>@('inst') is semantically meaningless and is only used for warning
 messages; it's the actual module instance that these arguments come from.</li>
 
 </ul>
 
 <p>We replace any blank arguments with fresh wires of the appropriate size.
-The rewritten arguments are returned as <tt>args-prime</tt>, and any new
-netdecls are that should be added to the superior module are returned as
-<tt>netdecls</tt>.</p>"
+The rewritten arguments are returned as @('args-prime'), and any new netdecls
+are that should be added to the superior module are returned as
+@('netdecls').</p>"
 
   (defund vl-modinst-plainarglist-blankargs (args ports nf warnings inst)
     "Returns (MV WARNINGS ARGS-PRIME NETDECLS NF')"
@@ -173,8 +174,8 @@ netdecls are that should be added to the superior module are returned as
   :parents (blankargs)
   :short "Apply the @(see blankargs) transform to a module instance."
 
-  :long "<p><b>Signature:</b> @(call vl-modinst-blankargs) returns <tt>(mv
-warnings x-prime netdecls nf-prime)</tt></p>
+  :long "<p><b>Signature:</b> @(call vl-modinst-blankargs) returns @('(mv
+warnings x-prime netdecls nf-prime)')</p>
 
 <p>This is just a thin wrapper around @(see vl-modinst-plainarglist-blankargs) that
 takes care of looking up the ports for the module being instanced.</p>"
@@ -322,18 +323,18 @@ takes care of looking up the ports for the module being instanced.</p>"
   :short "Replace any blank arguments in a gate instance with fresh wires."
 
   :long "<p>Signature: @(call vl-gateinst-plainarglist-blankargs) returns
-<tt>(mv args-prime netdecls nf-prime)</tt>.</p>
+@('(mv args-prime netdecls nf-prime)').</p>
 
-<p>As inputs, <tt>args</tt> should be a list of @(see vl-plainarg-p)s for a
-gate instance, and <tt>nf</tt> should be a @(see vl-namefactory-p) for fresh
-name generation in the module.  The <tt>inst</tt> is the gate instance for
-these arguments, and is only used for location information.</p>
+<p>As inputs, @('args') should be a list of @(see vl-plainarg-p)s for a gate
+instance, and @('nf') should be a @(see vl-namefactory-p) for fresh name
+generation in the module.  The @('inst') is the gate instance for these
+arguments, and is only used for location information.</p>
 
 <p>This function is simpler than @(see vl-plainarglist-blankargs) because we do
 not have to consider ports: we know that every \"port\" of a gate exists and
 has size 1.  We just replace any blank arguments with fresh wires of size 1.
-The rewritten arguments are returned as <tt>args-prime</tt>, and any new net
-declarations that should be added are returned as <tt>netdecls</tt>.</p>"
+The rewritten arguments are returned as @('args-prime'), and any new net
+declarations that should be added are returned as @('netdecls').</p>"
 
   (defund vl-gateinst-plainarglist-blankargs (args nf inst)
     "Returns (MV ARGS-PRIME NETDECLS NF)"
@@ -382,8 +383,8 @@ declarations that should be added are returned as <tt>netdecls</tt>.</p>"
   :parents (blankargs)
   :short "Apply the @(see blankargs) transform to a gate instance."
 
-  :long "<p><b>Signature:</b> @(call vl-gateinst-blankargs) returns <tt>(mv
-warnings x-prime netdecls nf-prime)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-gateinst-blankargs) returns @('(mv
+warnings x-prime netdecls nf-prime)').</p>
 
 <p>This is a thin wrapper around @(see vl-gateinst-plainarglist-blankargs).</p>"
 

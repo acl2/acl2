@@ -42,8 +42,8 @@
 
 (defsection install-bit
   :parents (bitops)
-  :short "@(call install-bit) sets <tt>x[n] = val</tt>, where <tt>x</tt> is an
-integer, <tt>n</tt> is a bit position, and <tt>val</tt> is a bit."
+  :short "@(call install-bit) sets @('x[n] = val'), where @('x') is an integer,
+@('n') is a bit position, and @('val') is a bit."
 
   (defund install-bit (n val x)
     (declare (xargs :guard (and (natp n)

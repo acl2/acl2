@@ -39,22 +39,22 @@
 
 (defsection extend-internal-paths
   :parents (mod-internal-paths)
-  :short "@(call extend-internal-paths) constructs a new list where <tt>a</tt>
-has been consed onto each element of <tt>x</tt>."
+  :short "@(call extend-internal-paths) constructs a new list where @('a') has
+been consed onto each element of @('x')."
 
   :long "<p>This is used to extend a list of paths with a new level of the
-module hierarchy.  That is, suppose <tt>a</tt> is the name of a submodule
-occurrence, and that <tt>x = (x1 x2 ... xn)</tt> is the list of paths for all
+module hierarchy.  That is, suppose @('a') is the name of a submodule
+occurrence, and that @('x = (x1 x2 ... xn)') is the list of paths for all
 internal wires of that submodule.  Then we generate the list:</p>
 
-<code>
+@({
  (list (hons a x1)
        (hons a x2)
        ...
        (hons a xn))
-</code>
+})
 
-<p>which can loosely be thought of as, <tt>a.x1</tt>, <tt>a.x2</tt>, etc.</p>"
+<p>which can loosely be thought of as, @('a.x1'), @('a.x2'), etc.</p>"
 
   (defund extend-internal-paths-exec (a x acc)
     (declare (xargs :guard t))
@@ -113,29 +113,29 @@ canonical internal wires in a module."
 
   :long "<p>An example of a \"path\" is:</p>
 
-<code>
+@({
  (|core0| |rf_instd| |vl_mux_168| . |sbar_b[54]|)
-</code>
+})
 
-<p>In this example, <tt>|core0|</tt>, <tt>|rf_instd|</tt>, and
-<tt>|vl_mux_168|</tt> are instance names, whereas <tt>|sbar_b[54]|</tt> is a
-wire name.  The Verilog syntax for referring to such a wire would be:</p>
+<p>In this example, @('|core0|'), @('|rf_instd|'), and @('|vl_mux_168|') are
+instance names, whereas @('|sbar_b[54]|') is a wire name.  The Verilog syntax
+for referring to such a wire would be:</p>
 
-<code>
+@({
   core0.rf_instd.vl_mux_168.sbar_b[54]
-</code>
+})
 
-<p>We memoize both <tt>mod-internal-paths</tt> and <tt>occ-internal-paths</tt>
-since they both involve a good deal of consing.  Our original version of this
-function created symbols like <tt>|core0/rf_instd/vl_mux_168/sbar_b[54]|</tt>
+<p>We memoize both @('mod-internal-paths') and @('occ-internal-paths') since
+they both involve a good deal of consing.  Our original version of this
+function created symbols like @('|core0/rf_instd/vl_mux_168/sbar_b[54]|')
 instead of paths (lists of symbols), but that approach had poor performance due
 to the amounts of string manipulation and interning required.  We now just cons
 together instance and wire names to create paths, which is much faster.</p>
 
 <p>We say that a path is <b>canonical</b> when it does not lead to an input or
 output of the target module.  That is, the above path is canonical exactly if
-<tt>|sbar_b[54]|</tt> is an internal wire (not an input or output) of the
-module in which it resides.</p>
+@('|sbar_b[54]|') is an internal wire (not an input or output) of the module in
+which it resides.</p>
 
 <p>We produce only canonical paths, because it greatly reduces the number of
 paths we need to construct.  Given some non-canonical path, it is possible to
@@ -290,40 +290,36 @@ fast-canonicalize-path).</p>"
   :short "@(call fast-canonicalize-path) produces the canonical version of a
 path to an internal wire in a module."
 
-  :long "<p><b>Signature:</b> @(call fast-canonicalize-path) returns <tt>(mv
-successp new-path)</tt>.  On success, <tt>new-path</tt> is a member of one
-of the following:</p>
-<ul>
- <li><tt>(@(see mod-internal-paths) mod)</tt></li>
- <li><tt>(gpl :i mod)</tt>, or </li>
- <li><tt>(gpl :o mod)</tt>.</li>
-</ul>
+  :long "<p><b>Signature:</b> @(call fast-canonicalize-path) returns @('(mv
+successp new-path)').  On success, @('new-path') is a member of one of the
+following:</p> <ul> <li>@('(@(see mod-internal-paths) mod)')</li>
+<li>@('(gpl :i mod)'), or </li> <li>@('(gpl :o mod)').</li> </ul>
 
 <p>To understand this function, note that the set of @(see mod-internal-paths)
 does not include any non-canonical paths (inputs or outputs of the target
 module).  For instance, if we have in Verilog something like:</p>
 
-<code>
+@({
   my_mux2 result_mux (.o(main_result), ...)
-</code>
+})
 
 <p>Then a path such as:</p>
 
-<code>
+@({
   (|foo| |bar| |baz| |result_mux| . |o|)
-</code>
+})
 
 <p>is not regarded as canonical and will not be included among the internal
 signals alist produced esim's new-probe mode.  However, if we assume that
-<tt>main_result</tt> is not one of the inputs or outputs of
-<tt>foo.bar.baz</tt>, then the following path <i>is</i> canonical and it is
-equivalent in that it describes the same wire:</p>
+@('main_result') is not one of the inputs or outputs of @('foo.bar.baz'), then
+the following path <i>is</i> canonical and it is equivalent in that it
+describes the same wire:</p>
 
-<code>
+@({
   (|foo| |bar| |baz| . |main_result|)
-</code>
+})
 
-<p><tt>Fast-canonicalize-path</tt> should be given a valid path in the sense of
+<p>@('Fast-canonicalize-path') should be given a valid path in the sense of
 @(see mod-all-paths), and tries to return the canonical equivalent.  Failure
 indicates that the given path is invalid, but we do only minimal error
 checking.  In other words, you should not rely on this function to see whether
@@ -423,14 +419,14 @@ a path is valid.</p>"
 module it points to."
 
   :long "<p>@(call follow-esim-path) returns an ESIM module on success, or
-<tt>nil</tt> for failure.</p>
+@('nil') for failure.</p>
 
-<p>We are given <tt>instnames</tt>, which should be a list of instance names,
-and <tt>mod</tt>, which should be a good @(see esim) module.  We try to follow
-these names down through the occurrences of <tt>mod</tt> and return the
-submodule they point to.</p>
+<p>We are given @('instnames'), which should be a list of instance names, and
+@('mod'), which should be a good @(see esim) module.  We try to follow these
+names down through the occurrences of @('mod') and return the submodule they
+point to.</p>
 
-<p>Note that <tt>instnames</tt> need not be a true-listp, so you can use this
+<p>Note that @('instnames') need not be a true-listp, so you can use this
 function to look up the module associated with an ESIM path without needing to
 list-fix the path or similar.</p>"
 

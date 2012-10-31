@@ -17,6 +17,10 @@
 
 (in-package "ACL2")
 
+;; I think it's probably best to non-locally include this, since it can be
+;; introduced into goals due to rules like coerce-inverse-1-better.
+(include-book "make-character-list")
+
 (local (defthm coerce-string-lemma
          (implies (and (character-listp x)
                        (character-listp y)
@@ -51,3 +55,55 @@
 
 (defthm character-listp-of-coerce-list
   (character-listp (coerce x 'list)))
+
+(defthm coerce-list-under-iff
+  (implies (stringp string)
+           (iff (coerce string 'list)
+                (not (equal "" string))))
+  :hints(("Goal"
+          :in-theory (disable acl2::equal-of-coerce-lists)
+          :use ((:instance acl2::equal-of-coerce-lists
+                           (acl2::x string)
+                           (acl2::y ""))))))
+
+(defthm length-of-coerce
+  ;; Wow, coerce is sort of awful in that (coerce "foo" 'string) returns ""
+  ;; and (coerce '(1 2 3) 'list) returns nil.  This leads to a weird length
+  ;; theorem.  We normally just leave length enabled, so this rule won't
+  ;; have many uses.
+  (equal (length (coerce x y))
+         (cond ((equal y 'list)
+                (if (stringp x)
+                    (length x)
+                  0))
+               (t
+                (if (stringp x)
+                    0
+                  (len x)))))
+  :hints(("Goal"
+          :use ((:instance completion-of-coerce
+                           (x x)
+                           (y y))))))
+
+(defthm len-of-coerce-to-string
+  (equal (len (coerce x 'string))
+         0))
+
+(defthm coerce-inverse-1-better
+  (equal (coerce (coerce x 'string) 'list)
+         (if (stringp x)
+             nil
+           (make-character-list x)))
+  :hints(("Goal"
+          :use ((:instance acl2::completion-of-coerce
+                           (acl2::x x)
+                           (acl2::y 'string))))))
+
+(defthm coerce-inverse-2-better
+  (equal (coerce (coerce x 'list) 'string)
+         (if (stringp x)
+             x
+           "")))
+
+(in-theory (disable coerce-inverse-1 coerce-inverse-2))
+

@@ -62,7 +62,7 @@ precision.</p>
 
 <p>I encode every ACL2 atom as a JSON string.  For example:</p>
 
-<code>
+@({
       Lisp Atom           JSON
     ---------------------------------------
        NIL                \"NIL\"
@@ -76,7 +76,7 @@ precision.</p>
        -1/2               \"-1/2\"
        #c(17/2 -3/8)      \"#C(17/2 -3/8)\"
     ---------------------------------------
-</code>
+})
 
 <p>This has many quirks.  The main weirdness is that there are many ACL2
 objects which, although they are not EQUAL, cannot be told apart from one
@@ -84,10 +84,10 @@ another in the JSON world.  For instance, the atoms on each line below have
 identical JSON encodings:</p>
 
 <ul>
- <li><tt>ACL2::FOO,    VL::FOO,     \"FOO\"          </tt></li>
- <li><tt>ACL2::F,      VL::F,       \"F\",      #\\F </tt></li>
- <li><tt>ACL2::|123|,  VL::|123|,   \"123\",    123  </tt></li>
- <li><tt>:FOO,         \":FOO\",    ACL2::|:FOO|     </tt></li>
+<li>@('ACL2::FOO,    VL::FOO,     \"FOO\"          ')</li>
+<li>@('ACL2::F,      VL::F,       \"F\",      #\\F ')</li>
+<li>@('ACL2::|123|,  VL::|123|,   \"123\",    123  ')</li>
+<li>@(':FOO,         \":FOO\",    ACL2::|:FOO|     ')</li>
 </ul>
 
 <p>Some motivation behind this approach:</p>
@@ -118,7 +118,7 @@ best thing to do.</li>
 containing its encoded elements, and I encode any \"improper\" list as a JSON
 array containing its encoded elements AND its final cdr.  For example:</p>
 
-<code>
+@({
        Lisp Object                     JSON
     -------------------------------------------------------------
        (a . nil)                       [\"A\"]
@@ -127,7 +127,7 @@ array containing its encoded elements AND its final cdr.  For example:</p>
        (a b . c)                       [\"A\",\"B\",\"C\"]
        (a b c . nil)                   [\"A\",\"B\",\"C\"]
        ((a . b) (c . d) . e)           [[\"A\",\"B\"],[\"C\",\"D\"],\"E\"]
-</code>
+})
 
 <p>This has its own quirks.  For instance, as with atoms, you can't tell the
 difference between Lisp objects like: (A B C) and (A B . C).</p>
@@ -135,13 +135,13 @@ difference between Lisp objects like: (A B C) and (A B . C).</p>
 <p>The exception is that, for proper ALISTS whose every key is an atom, I
 instead generate the corresponding JSON Object.  For example:</p>
 
-<code>
+@({
        Lisp Object                     JSON
     -------------------------------------------------------------
        ((a . b))                      {\"A\":\"B\"}
        ((a . b) (c . d))              {\"A\":\"B\",\"C\":\"D\"}
        ((a . b) (c . d) . e)          [[\"A\",\"B\"],[\"C\",\"D\"],\"E\"]
-</code>
+})
 
 <p>In certain cases, this runs the risk that you might see a different encoding
 for an alist, depending on whether or not you have inserted a cons.  But many
@@ -151,7 +151,7 @@ instead of a nested array of arrays.</p>
 
 <h3>Note about Top-Level JSON Objects</h3>
 
-<p>Top-level <tt>JSON-text</tt> objects must, according to the JSON grammer, be
+<p>Top-level @('JSON-text') objects must, according to the JSON grammer, be
 either JSON Objects or Arrays.  Note that <b>WE DO NOT OBEY THIS.</b> If the
 object we're given is an ordinary ACL2 atom, we just encode it as a JSON
 string.</p>
@@ -167,9 +167,9 @@ okay.</p>")
 (defsection json-encode-weird-char
   :parents (json-encoding)
   :long "<p>This accumulates the special \\uXXXX style encoding of a character
-whose code is <tt>code</tt> onto <tt>acc</tt>.  This lets us properly encode
-weird things like control characters.  We don't have to escape everything this
-way, e.g., using \\n or \\t would be more readable.</p>"
+whose code is @('code') onto @('acc').  This lets us properly encode weird
+things like control characters.  We don't have to escape everything this way,
+e.g., using \\n or \\t would be more readable.</p>"
 
   (local (defthm crock
            (<= (acl2::loghead 4 code) 15)
@@ -400,9 +400,9 @@ character list."
   :parents (json-encoding)
   :short "Main function for JSON encoding."
 
-  :long "<p>@(call json-encode) accumulates the JSON encoding of <tt>x</tt>
-onto <tt>acc</tt>.  That is, <tt>acc</tt> is extended with the reverse-order
-characters for <tt>x</tt>'s encoding in reverse order.</p>
+  :long "<p>@(call json-encode) accumulates the JSON encoding of @('x') onto
+@('acc').  That is, @('acc') is extended with the reverse-order characters for
+@('x')'s encoding in reverse order.</p>
 
 <p>This function <b>does not</b> necessarily produce a valid JSON object.  Per
 the JSON RFC, plain JSON values other than arrays and objects are not valid

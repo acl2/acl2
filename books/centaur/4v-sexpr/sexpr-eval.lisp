@@ -34,9 +34,6 @@
   :parents (4v-sexprs)
   :short "Basic structural induction scheme for s-expressions."
 
-  :long "<p>We omit <tt>4v-</tt> from the name since this is not really
-specific to four-valued sexprs.  BOZO maybe we should name it 4v- anyway.</p>"
-
   (mutual-recursion
    (defun 4v-sexpr-ind (x)
      (declare (xargs :guard t))
@@ -94,11 +91,11 @@ specific to four-valued sexprs.  BOZO maybe we should name it 4v- anyway.</p>"
   :short "Evaluate a sexpr under an environment."
 
   :long "<p>@(call 4v-sexpr-eval) evaluates the <see topic='@(url
-4v-sexprs)'>4v-sexpr</see> <tt>x</tt> under the environment <tt>env</tt>,
-producing a @(see 4vp).</p>
+4v-sexprs)'>4v-sexpr</see> @('x') under the environment @('env'), producing a
+@(see 4vp).</p>
 
-<p>This environment is an alist binding the variables of <tt>x</tt> to
-four-valued logic constants.  It must be a fast alist.</p>
+<p>This environment is an alist binding the variables of @('x') to four-valued
+logic constants.  It must be a fast alist.</p>
 
 <ul>
  <li>Unbound variables evaluate to X.</li>
@@ -112,8 +109,8 @@ Moreover, the main theorems about other 4v-sexpr operations are usually stated
 in terms of the evaluations of their results.</p>
 
 <p>We @(see memoize) evaluation to avoid having to recomputing shared
-subexpressions.  Note that we do not memoize with <tt>:forget t</tt> because
-you frequently want to evaluate several related expressions under the same
+subexpressions.  Note that we do not memoize with @(':forget t') because you
+frequently want to evaluate several related expressions under the same
 environment, as in @(see 4v-sexpr-eval-alist).  As a consequence, you'll
 generally need to manage its memo table yourself.</p>
 
@@ -232,13 +229,13 @@ counterpart.</p>")
   :parents (4v-sexpr-eval)
   :short "Extension of @(see 4v-sexpr-eval) to alists."
 
-  :long "<p>@(call 4v-sexpr-eval-alist) is given an alist <tt>x</tt> that
-should bind names to sexprs.  It evaluates the sexprs under <tt>env</tt> and
-returns a new alist that binds the same names to the resulting four-valued
-constants.  The new alist is an ordinary, non-fast alist.</p>
+  :long "<p>@(call 4v-sexpr-eval-alist) is given an alist @('x') that should
+bind names to sexprs.  It evaluates the sexprs under @('env') and returns a new
+alist that binds the same names to the resulting four-valued constants.  The
+new alist is an ordinary, non-fast alist.</p>
 
-<p>It is beneficial for <tt>env</tt> to be a fast alist; if it is not fast, we
-we temporarily make it fast.</p>"
+<p>It is beneficial for @('env') to be a fast alist; if it is not fast, we we
+temporarily make it fast.</p>"
 
   (defund 4v-sexpr-eval-alist1 (x env)
     "Assumes ENV is fast"
@@ -359,14 +356,14 @@ we temporarily make it fast.</p>"
   :parents (4v-sexprs)
   :short "Basic substitution operation for @(see 4v-sexprs)."
 
-  :long "<p>@(call 4v-sexpr-restrict) takes a sexpr, <tt>x</tt>, and a fast
-alist, <tt>al</tt> that should bind variables to sexprs.  It constructs a new
-sexpr that is just a copy of <tt>x</tt> where any variables bound in
-<tt>al</tt> have been replaced with their bound values.</p>
+  :long "<p>@(call 4v-sexpr-restrict) takes a sexpr, @('x'), and a fast alist,
+@('al') that should bind variables to sexprs.  It constructs a new sexpr that
+is just a copy of @('x') where any variables bound in @('al') have been
+replaced with their bound values.</p>
 
 <p>We @(see memoize) this function to avoid repeatedly restricting shared
 subexpressions, but this only helps when you are restricting with the same
-alist.  We don't use <tt>:forget t</tt> because you frequently want to restrict
+alist.  We don't use @(':forget t') because you frequently want to restrict
 several related expressions under the same alist, as in @(see
 4v-sexpr-restrict-alist).  So, you'll generally need to manage clearing the
 memoization table yourself.</p>
@@ -425,13 +422,13 @@ counterpart.</p>")
   :parents (4v-sexpr-restrict)
   :short "Extension of @(see 4v-sexpr-restrict) to alists."
 
-  :long "<p>@(call 4v-sexpr-restrict-alist) is given an alist <tt>x</tt> that
+  :long "<p>@(call 4v-sexpr-restrict-alist) is given an alist @('x') that
 typically binds names to sexprs.  It restricts each of these sexprs using
-<tt>al</tt>, and returns a new alist that binds the same names to the resulting
+@('al'), and returns a new alist that binds the same names to the resulting
 sexprs.  The resulting alist is an ordinary, non-fast alist.</p>
 
-<p>It is beneficial for <tt>env</tt> to be a fast alist; if it is not fast, we
-we temporarily make it fast.</p>"
+<p>It is beneficial for @('env') to be a fast alist; if it is not fast, we we
+temporarily make it fast.</p>"
 
   (defund 4v-sexpr-restrict-alist1 (x al)
     "Assumes AL is fast"
@@ -491,18 +488,18 @@ we temporarily make it fast.</p>"
   :parents (4v-sexprs)
   :short "Alternate substitution operation for @(see 4v-sexprs)."
 
-  :long "<p>@(call 4v-sexpr-compose) is takes a sexpr, <tt>x</tt>, and a fast
-alist <tt>al</tt> that binds variables to sexprs.</p>
+  :long "<p>@(call 4v-sexpr-compose) is takes a sexpr, @('x'), and a fast alist
+@('al') that binds variables to sexprs.</p>
 
-<p>We construct a new sexpr by copying <tt>x</tt>, except that we
-<b>unconditionally</b> replace every variable in <tt>x</tt> with its binding in
-<tt>al</tt>, regardless of whether such a binding actually exists.  Any unbound
+<p>We construct a new sexpr by copying @('x'), except that we
+<b>unconditionally</b> replace every variable in @('x') with its binding in
+@('al'), regardless of whether such a binding actually exists.  Any unbound
 variables are just replaced by NIL, which in our @(see 4v-sexpr) format always
 evaluates to X.</p>
 
 <p>We @(see memoize) this function, but this only helps when you are composing
-with the same alist.  We don't use <tt>:forget t</tt> because you frequently
-want to compose several related expressions under the same alist, as in @(see
+with the same alist.  We don't use @(':forget t') because you frequently want
+to compose several related expressions under the same alist, as in @(see
 4v-sexpr-restrict-alist).  So, you'll generally need to manage clearing the
 memoization table yourself.</p>"
 
@@ -542,13 +539,13 @@ memoization table yourself.</p>"
   :parents (4v-sexpr-compose)
   :short "Extension of @(see 4v-sexpr-compose) to alists."
 
-  :long "<p>@(call 4v-sexpr-compose-alist) is given an alist <tt>x</tt> that
+  :long "<p>@(call 4v-sexpr-compose-alist) is given an alist @('x') that
 typically binds names to sexprs.  It composes each of these sexprs with
-<tt>al</tt>, and returns a new alist that binds the same names to the resulting
+@('al'), and returns a new alist that binds the same names to the resulting
 sexprs.  The resulting alist is an ordinary, non-fast alist.</p>
 
-<p>It is beneficial for <tt>env</tt> to be a fast alist; if it is not fast, we
-we temporarily make it fast.</p>"
+<p>It is beneficial for @('env') to be a fast alist; if it is not fast, we we
+temporarily make it fast.</p>"
 
   (defund 4v-sexpr-compose-alist1 (x al)
     "Assumes AL is fast"
@@ -609,31 +606,29 @@ we temporarily make it fast.</p>"
   :short "Extract a portion of a @(see 4v-sexpr) alist."
   :long "<p>@(call 4v-sexpr-alist-extract) is given:</p>
 
-<ul>
- <li><tt>keys</tt>, a list of names, and</li>
- <li><tt>al</tt>, a fast alist binding names to sexprs.</li>
-</ul>
+<ul> <li>@('keys'), a list of names, and</li> <li>@('al'), a fast alist binding
+ names to sexprs.</li> </ul>
 
-<p>It produces a new alist that binds all of the names in <tt>keys</tt> to
-their corresponding sexprs in <tt>al</tt>.  The result is an ordinary, non-fast
+<p>It produces a new alist that binds all of the names in @('keys') to their
+corresponding sexprs in @('al').  The result is an ordinary, non-fast
 alist.</p>
 
-<p>More precisely, the new alist binds each <tt>k</tt> in <tt>keys</tt> to:</p>
+<p>More precisely, the new alist binds each @('k') in @('keys') to:</p>
 
 <ul>
- <li><tt>al[k]</tt> when <tt>k</tt> is bound in <tt>al</tt>, or</li>
- <li><tt>NIL</tt> (which just evaluates to X) otherwise.</li>
+ <li>@('al[k]') when @('k') is bound in @('al'), or</li>
+ <li>@('NIL') (which just evaluates to X) otherwise.</li>
 </ul>
 
 <p>This is just slightly different than @(see fal-extract): whereas fal-extract
 omits missing keys, this binds them to nil.</p>
 
 <p>This function can be a useful for removing any \"extraneous\" bindings from
-an the sexpr-alist <tt>al</tt>.  Some equivalence relations like @(see
+an the sexpr-alist @('al').  Some equivalence relations like @(see
 4v-sexpr-alist-equiv) check whether alists have the same bindings because this
 allows for powerful composition theorems.  For instance, the following rule
-would not hold if <tt>a-equiv</tt> were allowed to contain bind variables not
-bound by <tt>a</tt>:</p>
+would not hold if @('a-equiv') were allowed to contain bind variables not bound
+by @('a'):</p>
 
 @(thm 4v-sexpr-alist-equiv-implies-4v-sexpr-alist-equiv-append-1)"
 

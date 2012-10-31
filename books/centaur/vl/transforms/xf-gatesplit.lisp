@@ -32,8 +32,8 @@
   :long "<h3>Gate Splitting</h3>
 
 <p>This transformation is responsible for splitting up multi-input gates into
-multiple one-input gates for <tt>buf</tt> and <tt>not</tt>, or two-input gates
-for <tt>and</tt>, <tt>or</tt>, etc.</p>
+multiple one-input gates for @('buf') and @('not'), or two-input gates for
+@('and'), @('or'), etc.</p>
 
 <p><b>Ordering Notes.</b> This transformation must be done after widths have
 been computed, and after @(see replicate) has been run to eliminate any arrays.
@@ -57,21 +57,21 @@ gates come from.</p>")
   :short "Generate expressions and declarations for some fresh (one-bit)
 wires."
 
-  :long "<p><b>Signature:</b> @(call vl-make-temporary-wires) returns <tt>(mv
-exprs netdecls nf-prime)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-make-temporary-wires) returns @('(mv
+exprs netdecls nf-prime)').</p>
 
 <ul>
-<li><tt>prefix</tt> is the prefix to use for name generation,</li>
-<li><tt>i</tt> is the number of wires you want to create,</li>
-<li><tt>nf</tt> is a @(see vl-namefactory-p) for generating wire names, and</li>
-<li><tt>loc</tt> is the location you want to use for the wire declarations.</li>
+<li>@('prefix') is the prefix to use for name generation,</li>
+<li>@('i') is the number of wires you want to create,</li>
+<li>@('nf') is a @(see vl-namefactory-p) for generating wire names, and</li>
+<li>@('loc') is the location you want to use for the wire declarations.</li>
 </ul>
 
-<p>The <tt>exprs</tt> we return are expressions for each of the new one-bit,
+<p>The @('exprs') we return are expressions for each of the new one-bit,
 unsigned wires, and are already annotated with their widths and signedness.</p>
 
-<p>The <tt>netdecls</tt> are declarations for these wires, each of which is
-said to occur at location <tt>loc</tt>.</p>
+<p>The @('netdecls') are declarations for these wires, each of which is said to
+occur at location @('loc').</p>
 
 <p>We also return the updated name factory.</p>"
 
@@ -127,26 +127,31 @@ said to occur at location <tt>loc</tt>.</p>
 
 (defsection vl-make-gates-for-buf/not
   :parents (vl-gatesplit-buf/not)
-  :short "Produce a list of <tt>buf</tt> or <tt>not</tt> gates."
+  :short "Produce a list of @('buf') or @('not') gates."
 
   :long "<p><b>Signature:</b> @(call vl-make-gates-for-buf/not) returns
-<tt>(mv warnings' new-gateinsts nf')</tt></p>
+@('(mv warnings' new-gateinsts nf')')</p>
 
 <ul>
- <li><tt>in</tt> is a @(see vl-plainarg-p), and is the input terminal to a
-     multi-output <tt>buf</tt> or <tt>not</tt> gate.</li>
- <li><tt>outs</tt> are a list of plainargs, and are the output terminals for
-     the gate.</li>
- <li><tt>x</tt> is the actual gateinst we are splitting, from which <tt>in</tt>
-     and <tt>outs</tt> are derived.  (This is used for good error messages, and
-     also to identify which kind of gate we are working with, its location,
-     etc.)</li>
- <li><tt>nf</tt> is a @(see vl-namefactory-p) for generating fresh names.</li>
- <li><tt>warnings</tt> is an accumulator for any warnings.</li>
+
+<li>@('in') is a @(see vl-plainarg-p), and is the input terminal to a
+multi-output @('buf') or @('not') gate.</li>
+
+<li>@('outs') are a list of plainargs, and are the output terminals for the
+gate.</li>
+
+<li>@('x') is the actual gateinst we are splitting, from which @('in') and
+@('outs') are derived.  (This is used for good error messages, and also to
+identify which kind of gate we are working with, its location, etc.)</li>
+
+<li>@('nf') is a @(see vl-namefactory-p) for generating fresh names.</li>
+
+<li>@('warnings') is an accumulator for any warnings.</li>
+
 </ul>
 
-<p>We produce a list of gateinsts of the appropriate type, one to drive
-each output in <tt>outs</tt> with <tt>in</tt>.</p>"
+<p>We produce a list of gateinsts of the appropriate type, one to drive each
+output in @('outs') with @('in').</p>"
 
   (defund vl-make-gates-for-buf/not (in outs x nf warnings)
     (declare (xargs :guard (and (vl-plainarg-p in)
@@ -235,35 +240,37 @@ each output in <tt>outs</tt> with <tt>in</tt>.</p>"
 
 (defsection vl-gatesplit-buf/not
   :parents (gatesplit)
-  :short "Split up a multi-output <tt>buf</tt> or <tt>not</tt> gate, if
-necessary."
+  :short "Split up a multi-output @('buf') or @('not') gate, if necessary."
 
-  :long "<p>From Section 7.3, <tt>buf</tt> and <tt>not</tt> gates have one
-input (the last terminal) and one or more outputs (all other terminals).  We
-split up multi-output versions of these gates into many single-output versions,
+  :long "<p>From Section 7.3, @('buf') and @('not') gates have one input (the
+last terminal) and one or more outputs (all other terminals).  We split up
+multi-output versions of these gates into many single-output versions,
 e.g.,</p>
 
-<code>
+@({
 not(o1, o2, ..., on, i);
-  --&gt;
+  -->
 not(o1, i);
 not(o2, i);
   ...
 not(on, i);
-</code>
+})
 
-<p>We verified this with Cadence, in <tt>xf-gatesplit.v</tt>.</p>
+<p>We verified this with Cadence, in @('xf-gatesplit.v').</p>
 
-<p><b>Signature:</b> @(call vl-gatesplit-buf/not) returns <tt>(mv warnings'
-new-gateinsts nf')</tt>.</p>
+<p><b>Signature:</b> @(call vl-gatesplit-buf/not) returns @('(mv warnings'
+new-gateinsts nf')').</p>
 
 <ul>
- <li><tt>x</tt> is an instance of a <tt>buf</tt> or <tt>not</tt> gate.</li>
- <li><tt>nf</tt> is a @(see vl-namefactory-p) for generating fresh names.</li>
+
+<li>@('x') is an instance of a @('buf') or @('not') gate.</li>
+
+<li>@('nf') is a @(see vl-namefactory-p) for generating fresh names.</li>
+
 </ul>
 
-<p>The <tt>new-gateinsts</tt> we return should be used to replace <tt>x</tt>
-in the module.</p>"
+<p>The @('new-gateinsts') we return should be used to replace @('x') in the
+module.</p>"
 
   (defund vl-gatesplit-buf/not (x nf warnings)
     (declare (xargs :guard (and (vl-gateinst-p x)
@@ -340,32 +347,32 @@ in the module.</p>"
 
 (defsection vl-make-gates-for-and/etc
   :parents (vl-gatesplit-and/etc)
-  :short "Produce a list of two-input <tt>and</tt>, <tt>or</tt>,
-<tt>xor</tt>, or <tt>xnor</tt> gates to replace a multi-input gate."
+  :short "Produce a list of two-input @('and'), @('or'), @('xor'), or @('xnor')
+gates to replace a multi-input gate."
 
-  :long "<p><b>Signature:</b> @(call vl-make-gates-for-and/etc) returns
-<tt>(mv warnings' new-gateinsts nf')</tt></p>
+  :long "<p><b>Signature:</b> @(call vl-make-gates-for-and/etc) returns @('(mv
+warnings' new-gateinsts nf')')</p>
 
-<p>This function generates the replacement gates for a multi-input <tt>and</tt>,
-<tt>or</tt>, <tt>xor</tt>, or <tt>xnor</tt> gate.  The main inputs are
-@(see vl-plainarglist-p)s which have equal lengths:</p>
+<p>This function generates the replacement gates for a multi-input @('and'),
+@('or'), @('xor'), or @('xnor') gate.  The main inputs are @(see
+vl-plainarglist-p)s which have equal lengths:</p>
 
-<code>
+@({
  OUTS:  (temp1  temp2  ...     tempN-2  Out)
  LHSES: (i1     temp1  temp2   ...      tempN-2)
  RHSES: (i2     i3     ....    iN-1     iN)
-</code>
+})
 
 <p>The other inputs are as follows.</p>
 
 <ul>
-<li><tt>TYPE</tt>, the type of the gates being introduced (i.e., AND, OR, XOR, XNOR),</li>
-<li><tt>NAME</tt>, the original name of this gate (or \"&lt;unnamed gate&gt;\"),</li>
-<li><tt>LOC</tt>, the location for the original gate,</li>
-<li><tt>ATTS</tt>, the attributes for the original gate, which have already been
-updated with a <tt>VL_GATESPLIT</tt> annotation,</li>
-<li><tt>NF</tt>, the @(see vl-namefactory-p) for generating names,</li>
-<li><tt>WARNINGS</tt>, an accumulator for warnings.</li>
+<li>@('TYPE'), the type of the gates being introduced (i.e., AND, OR, XOR, XNOR),</li>
+<li>@('NAME'), the original name of this gate (or \"&lt;unnamed gate&gt;\"),</li>
+<li>@('LOC'), the location for the original gate,</li>
+<li>@('ATTS'), the attributes for the original gate, which have already been
+updated with a @('VL_GATESPLIT') annotation,</li>
+<li>@('NF'), the @(see vl-namefactory-p) for generating names,</li>
+<li>@('WARNINGS'), an accumulator for warnings.</li>
 </ul>
 
 <p>We march down the three main input-lists, zipping them together into new
@@ -493,37 +500,36 @@ original gate.</p>"
 
 (defsection vl-gatesplit-and/etc
   :parents (gatesplit)
-  :short "Split up a multi-input <tt>and</tt>, <tt>or</tt>, <tt>xor</tt>, or
-<tt>xnor</tt> gate, if necessary."
+  :short "Split up a multi-input @('and'), @('or'), @('xor'), or @('xnor')
+gate, if necessary."
 
-  :long "<p>From Section 7.2, <tt>and</tt>, <tt>or</tt>, <tt>xor</tt>, and
-<tt>xnor</tt> gates have one output and many inputs.  The behavior for more
-than 2 inputs is described as the \"natural extension\".  We have used Cadence
-to verify (<tt>xf-gatesplit.v</tt>) that, at least for <tt>n = 4</tt>, they
-behave as follows:</p>
+  :long "<p>From Section 7.2, @('and'), @('or'), @('xor'), and @('xnor') gates
+have one output and many inputs.  The behavior for more than 2 inputs is
+described as the \"natural extension\".  We have used Cadence to
+verify (@('xf-gatesplit.v')) that, at least for @('n = 4'), they behave as
+follows:</p>
 
-<code>
+@({
 gate(out, i1, i2, ..., iN);
-  --&gt;
+  -->
 gate(temp1, i1,      i2);
 gate(temp2, temp1,   i3);
  ...
 gate(out,   tempN-2, iN);
-</code>
+})
 
-<p><b>Signature:</b> @(call vl-gatesplit-and/etc) returns <tt>(mv warnings'
-new-decls new-insts nf')</tt>.</p>
+<p><b>Signature:</b> @(call vl-gatesplit-and/etc) returns @('(mv warnings'
+new-decls new-insts nf')').</p>
 
-<p>We decide if <tt>x</tt>, which should be an <tt>and</tt>, <tt>or</tt>,
-<tt>xor</tt>, or <tt>xnor</tt> gate, needs to be split up.  If so, we go ahead
-and carry out the split.  <tt>nf</tt> is a @(see vl-namefactory-p) for
-generating fresh wire names and <tt>warnings</tt> is an accumulator for
-warnings.</p>
+<p>We decide if @('x'), which should be an @('and'), @('or'), @('xor'), or
+@('xnor') gate, needs to be split up.  If so, we go ahead and carry out the
+split.  @('nf') is a @(see vl-namefactory-p) for generating fresh wire names
+and @('warnings') is an accumulator for warnings.</p>
 
-<p>The <tt>new-decls</tt> we produce are a list of new net declarations that
-should be added to the module.  These declarations are for the temporary wires
-as suggested above.  The <tt>new-insts</tt> are new gate instances which should
-replace <tt>x</tt>.</p>"
+<p>The @('new-decls') we produce are a list of new net declarations that should
+be added to the module.  These declarations are for the temporary wires as
+suggested above.  The @('new-insts') are new gate instances which should
+replace @('x').</p>"
 
   (local (in-theory (enable len)))
 
@@ -634,43 +640,41 @@ replace <tt>x</tt>.</p>"
 
 (defsection vl-gatesplit-nand/nor
   :parents (gatesplit)
-  :short "Split up a multi-input <tt>nand</tt> or <tt>nor</tt> gate, if
-necessary."
-  :long "<p>From Section 7.2, <tt>nand</tt> and <tt>nor</tt> gates have one
+  :short "Split up a multi-input @('nand') or @('nor') gate, if necessary."
+  :long "<p>From Section 7.2, @('nand') and @('nor') gates have one
 output and many inputs.  The behavior for more than 2 inputs is described as
-the \"natural extension\".  We have used Cadence (see <tt>xf-gatesplit.v</tt>)
-to verify that they behave as follows for <tt>n = 4</tt>.</p>
+the \"natural extension\".  We have used Cadence (see @('xf-gatesplit.v'))
+to verify that they behave as follows for @('n = 4').</p>
 
-<code>
+@({
 nand(o, i1, i2, ..., iN)
- --&gt;
+ -->
 and(temp, i1, i2, ..., iN)
 not(o, temp);
-</code>
+})
 
-<code>
+@({
 nor(o, i1, i2, ..., iN)
- --&gt;
+ -->
 or(temp, i1, i2, ..., iN)
 not(o, temp);
-</code>
+})
 
-<p><b>Signature:</b> @(call vl-gatesplit-nand/nor) returns <tt>(mv warnings'
-new-decls new-insts nf')</tt>.</p>
+<p><b>Signature:</b> @(call vl-gatesplit-nand/nor) returns @('(mv warnings'
+new-decls new-insts nf')').</p>
 
 <p>This function decides if a nand/nor needs to be split up, and if so goes
 ahead and performs the split.  We are given:</p>
 
 <ul>
-<li><tt>x</tt>, an instance of an <tt>nand</tt> or <tt>nor</tt> gate,</li>
-<li><tt>nf</tt>, a @(see vl-namefactory-p) for generating new wires,</li>
-<li><tt>warnings</tt>, an accumulator for warnings.</li>
+<li>@('x'), an instance of an @('nand') or @('nor') gate,</li>
+<li>@('nf'), a @(see vl-namefactory-p) for generating new wires,</li>
+<li>@('warnings'), an accumulator for warnings.</li>
 </ul>
 
-<p>The <tt>new-decls</tt> we produce are a list of net declarations that
-need to be added to the module, and <tt>new-insts</tt> are gate instances
-that are to replace <tt>x</tt>.  We also return the updated warnings and
-name factory.</p>
+<p>The @('new-decls') we produce are a list of net declarations that need to be
+added to the module, and @('new-insts') are gate instances that are to replace
+@('x').  We also return the updated warnings and name factory.</p>
 
 <p>This is basically similar to @(see vl-gatesplit-and/etc), except that
 we need to add a \"not\" gate at the end.</p>"
@@ -805,24 +809,24 @@ we need to add a \"not\" gate at the end.</p>"
 (defsection vl-gateinst-gatesplit
   :parents (gatesplit)
   :short "Main routine for splitting high-arity gate instances."
-  :long "<p><b>Signature:</b> @(call vl-gateinst-gatesplit) returns <tt>(mv
-warnings' new-decls new-gateinsts nf')</tt>.</p>
+
+  :long "<p><b>Signature:</b> @(call vl-gateinst-gatesplit) returns @('(mv
+warnings' new-decls new-gateinsts nf')').</p>
 
 <p>The inputs:</p>
 <ul>
-<li><tt>x</tt> is a gateinst that occurs somewhere within mod,</li>
-<li><tt>nf</tt> is a @(see vl-namefactory-p) for generating fresh names,</li>
-<li><tt>warnings</tt> is an accumulator for warnings</li>
+<li>@('x') is a gateinst that occurs somewhere within mod,</li>
+<li>@('nf') is a @(see vl-namefactory-p) for generating fresh names,</li>
+<li>@('warnings') is an accumulator for warnings</li>
 </ul>
 
 <p>The outputs:</p>
 <ul>
-<li><tt>new-decls</tt> are a list of wire declarations that need to be
-added to the module, for any temporary wires we need to use.</li>
-<li><tt>new-gateinsts</tt> are a list of gate instances that should
-replace <tt>x</tt> in the module.</li>
-<li><tt>warnings'</tt> and <tt>nf'</tt> are the updated warnings and
-name factory.</li>
+<li>@('new-decls') are a list of wire declarations that need to be added to the
+module, for any temporary wires we need to use.</li>
+<li>@('new-gateinsts') are a list of gate instances that should replace @('x')
+in the module.</li>
+<li>@('warnings'') and @('nf'') are the updated warnings and name factory.</li>
 </ul>"
 
   (defund vl-gateinst-gatesplit (x nf warnings)

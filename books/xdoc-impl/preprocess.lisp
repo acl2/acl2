@@ -22,53 +22,10 @@
 ; preprocess.lisp  -- the xdoc preprocessor
 
 (in-package "XDOC")
-(include-book "../xdoc/names")
-(include-book "str/top" :dir :system)
+(include-book "autolink")
+(local (include-book "misc/assert" :dir :system))
 (set-state-ok t)
 (program)
-
-
-(defun fmt-to-chars (string alist state)
-
-; Use ACL2's fancy new string-printing stuff to pretty-print an object into a
-; string.
-
-  (b* (((mv channel state)  (open-output-channel :string :character state))
-       ((mv & state)        (fmt string alist channel state nil))
-       ((mv err str state)  (get-output-stream-string$ channel state)))
-    (or (not err)
-        (er hard? 'fmt-to-chars "Error with get-output-stream-string$???"))
-    (mv (coerce str 'list) state)))
-
-(defun fmt-to-chars-and-encode (string alist state acc) ;; ==> (MV ACC-PRIME STATE)
-
-; Like fmt, but HTML-escape the result and accumulate it onto acc (in reverse
-; order) instead of printing it.
-
-  (mv-let (data state)
-          (fmt-to-chars string alist state)
-          ;; We cdr the data because fmt puts in a newline.
-          (let ((acc (simple-html-encode-chars (cdr data) acc)))
-            (mv acc state))))
-
-(defun xml-ppr-obj (x state)
-
-; First, pretty-print an ACL2 object with ~x0 to create a string.  Then,
-; convert characters in this string like < into &lt;.  The resulting string can
-; then be injected into <code> sections.
-
-  (b* ((hard-right-margin (f-get-global 'acl2::fmt-hard-right-margin state))
-       (soft-right-margin (f-get-global 'acl2::fmt-soft-right-margin state))
-       (print-case        (f-get-global 'acl2::print-case state))
-       (state (set-fmt-hard-right-margin 62 state))
-       (state (set-fmt-soft-right-margin 58 state))
-       (state (set-print-case :downcase state))
-       ((mv acc state)
-        (xdoc::fmt-to-chars-and-encode "~x0" (list (cons #\0 x)) state nil))
-       (state (set-fmt-hard-right-margin hard-right-margin state))
-       (state (set-fmt-soft-right-margin soft-right-margin state))
-       (state (set-print-case print-case state)))
-    (mv (reverse (coerce acc 'string)) state)))
 
 
 
@@ -257,7 +214,15 @@
 (get-event-aux 'ugly (w state))
 (get-event 'ugly (w state))
 
-(xml-ppr-obj (get-event 'ugly (w state)) state)
+(xml-ppr-obj (get-event 'ugly (w state))
+             state
+             :topics-fal (make-fast-alist '((acl2::consp . t)
+                                            (acl2::defun . t)
+                                            (acl2::declare . t)
+                                            (acl2::xargs . t)
+                                            (xdoc::ugly . t)
+                                            (acl2::cdr . t)))
+             :base-pkg 'xdoc::foo)
 
 |#
 
@@ -332,155 +297,9 @@
 
 ; -------------- Preprocessor Command Parsing  ------------------
 
-; Throughout these functions, X is a string we are traversing, N is our current
-; position in the string, XL is the length of the string, and an imagined guard
-; is:
-;
-;  (declare (xargs :guard (and (stringp x)
-;                              (natp n)
-;                              (natp xl)
-;                              (= xl (length x))
-;                              (<= n xl)))
-;
-; We could do a lot of this in logic mode, but there doesn't seem to be much
-; point to that.
 
-(defun error-context (x n xl) ;; ==> STRING
-  ;; Tries to show what text is near an error.
-  (declare (type string x))
-  (let ((min (nfix (- n 20)))
-        (max (min (+ n 20) xl)))
-    (subseq x min max)))
-
-; What a pain.  We have to implement a symbol parser.
-
-(defun parse-symbol-name-part (x n xl bar-escape-p slash-escape-p some-chars-p acc)
-  ;; ==> (MV ERROR NAME N-PRIME)
-  (declare (type string x))
-
-; This tries to read just one part of a symbol name (i.e., the package part,
-; or the name part.)
-
-  (if (= xl n)
-
-      ; End of string?  Error if we were escaped, or if we have not actually read
-      ; some characters yet.  Otherwise, it was okay.
-
-      (let ((result (reverse (coerce acc 'string))))
-        (if (or bar-escape-p slash-escape-p (not some-chars-p))
-            (mv (concatenate 'string "Near " (error-context x n xl)
-                             ": unexpected end of string while reading symbol.  "
-                             "Characters read so far: " result)
-                result n)
-          (mv nil result n)))
-
-    (let ((n+1  (+ n 1))
-          (char (char x n)))
-      (cond (slash-escape-p
-             ;; Slash escape is on, so just add next char verbatim and turn off
-             ;; slash escape.
-             (parse-symbol-name-part x n+1 xl bar-escape-p nil t (cons char acc)))
-            ((eql char #\|)
-             ;; Bar just toggles bar-escaped-ness.
-             (parse-symbol-name-part x n+1 xl (not bar-escape-p) nil t acc))
-            ((eql char #\\)
-             ;; Slash starts a slash-escape.
-             (parse-symbol-name-part x n+1 xl bar-escape-p t t acc))
-            (bar-escape-p
-             ;; Bar-escape is on and not a special char.  Read verbatim through it's
-             ;; turned off.
-             (parse-symbol-name-part x n+1 xl t nil t (cons char acc)))
-            ((member char '(#\Space #\( #\) #\Newline #\Tab #\Page #\: #\, #\' #\`))
-             ;; Whitespace, paren, colon, comma, quote, backquote, outside of a
-             ;; bar escape; end of symbol.  We can stop as long as we've actually
-             ;; read some characters.
-             (if some-chars-p
-                 (mv nil (reverse (coerce acc 'string)) n)
-               (mv (concatenate 'string "Near " (error-context x n xl) ": expected to read "
-                                "some part of a symbol, but found " (coerce (list char) 'string) ".")
-                   "" n)))
-            ((or (and (char<= #\a char) (char<= char #\z)))
-             ;; lowercase letters outside of bar escape get capitalized
-             (parse-symbol-name-part x n+1 xl nil nil t (cons (char-upcase char) acc)))
-            (t
-             ;; Otherwise add the char verbatim
-             (parse-symbol-name-part x n+1 xl nil nil t (cons char acc)))))))
-
-(defun parse-symbol (x n xl base-pkg) ;; ==> (MV ERROR SYMBOL N-PRIME)
-  (declare (type string x))
-
-; This extends parse-symbol-name-part to read both parts.  We support keywords,
-; etc.  This is definitely not going to handle everything in Common Lisp, but
-; whatever.
-
-  (if (= xl n)
-      (mv (concatenate 'string "Near " (error-context x n xl) ": end of string while "
-                       "trying to parse a symbol.")
-          nil n)
-    (let ((char (char x n)))
-      (if (eql char #\:)
-          ;; Starts with a colon.  Maybe it's keyword symbol?
-          (b* (((mv error name n)
-                (parse-symbol-name-part x (+ n 1) xl nil nil nil nil)))
-              (if error
-                  (mv error nil n)
-                (mv nil (intern-in-package-of-symbol name :keyword) n)))
-
-        ;; Doesn't start with a colon.
-        (b* (((mv error part1 n)
-              (parse-symbol-name-part x n xl nil nil nil nil))
-             ((when error)
-              (mv error nil n)))
-
-            (if (and (< (+ n 1) xl)
-                     (eql (char x n) #\:)
-                     (eql (char x (+ n 1)) #\:))
-                ;; "::" is matched.
-                (b* (((mv error part2 n)
-                      (parse-symbol-name-part x (+ n 2) xl nil nil nil nil))
-                     ((when error)
-                      (mv error nil n)))
-                    ;; Things look pretty good here.  One weird thing we will try
-                    ;; to detect is if there are extra colons, e.g.,
-                    ;; foo::bar::baz should be disallowed.  We really want a
-                    ;; whitespace or paren or quote or something
-                    (if (eql (char x n) #\:)
-                        (mv (concatenate 'string "Near " (error-context x n xl)
-                                         ": Three layers of colons in symbol name?")
-                            nil n)
-                      (mv nil (intern$ part2 part1) n)))
-
-              ;; Didn't match ::.
-              (if (and (< n xl)
-                       (eql (char x n) #\:))
-                  (mv (concatenate 'string "Near " (error-context x n xl)
-                                   ": Lone colon after symbol name?")
-                      nil n)
-
-                ;; We seem to have an okay package name, but no ::, so put
-                ;; it into the base package.
-                (mv nil (intern-in-package-of-symbol part1 base-pkg) n))))))))
-
-;; (defun test (x)
-;;   (declare (xargs :mode :program))
-;;   (parse-symbol x 0 (length x) 'acl2::foo))
-
-;; (test "foo")
-;; (test "bar")
-;; (test "123")
-;; (test "xdoc::bar)")
-;; (test "xdoc::|foo|)")
-;; (test "xdoc::bar12 ")
-;; (test ":foo)")
-;; (test ":|foo|)")
-;; (test ":")
-;; (test ":||")
-;; (test "||:")
-;; (test "::|foo|)")
-;; (test "acl2:::bar)")
-;; (test "acl2::bar)")
-;; (test "acl2::bar:")
-;; (test "acl2::bar|:|)")
+; Convention: X is a string we are traversing, N is our current position in the
+; string, and XL is the length of the string.  See autolink.lisp.
 
 (defun read-literal (x n xl chars) ;; ==> (MV SUCCESSP N-PRIME)
   ;; Try to read CHARS, verbatim.
@@ -517,17 +336,19 @@
         (t
          n)))
 
-(defun parse-directive (x n xl base-pkg) ;; ==> (MV ERROR COMMAND ARG N-PRIME)
+(defun parse-directive (x n xl base-pkg kpa) ;; ==> (MV ERROR COMMAND ARG N-PRIME)
   ;; Every directive has the form @(command arg)
   ;; Where command and arg are symbols.
   ;; We assume @( has just been read, and N is now pointing right after the open paren.
   (declare (type string x))
   (b* ((n                    (skip-past-ws x n xl))
-       ((mv error command n) (parse-symbol x n xl (pkg-witness "XDOC")))
+       ;; We want to get nice error messages here, because if there'a a directive we
+       ;; really do expect it to be a valid symbol.
+       ((mv error command n) (parse-symbol x n xl (pkg-witness "XDOC") kpa t))
        ((when error)
         (mv error nil nil n))
        (n                    (skip-past-ws x n xl))
-       ((mv error arg n)     (parse-symbol x n xl base-pkg)))
+       ((mv error arg n)     (parse-symbol x n xl base-pkg kpa t)))
       (cond
        ;; Some error parsing arg.  Add a little more context.
        (error (mv (concatenate 'string "In " (symbol-name command) " directive: " error)
@@ -685,19 +506,17 @@
        (state (close-output-channel channel state)))
       (mv acc state)))
 
-(defun process-body-directive (arg state acc) ;; ===> (MV ACC STATE)
+(defun process-body-directive (arg topics-fal base-pkg state acc) ;; ===> (MV ACC STATE)
 
 ; @(body foo) -- look up the body and pretty-print it in a <code> block.
 
   (b* ((body           (get-body arg (w state)))
        (acc            (str::revappend-chars "<code>" acc))
-       ((mv acc state) (fmt-to-chars-and-encode "~x0"
-                                                (list (cons #\0 body))
-                                                state acc))
+       ((mv acc state) (xml-ppr-obj-aux body topics-fal base-pkg state acc))
        (acc            (str::revappend-chars "</code>" acc)))
       (mv acc state)))
 
-(defun process-def-directive (arg dir state acc) ;; ===> (MV ACC STATE)
+(defun process-def-directive (arg dir topics-fal base-pkg state acc) ;; ===> (MV ACC STATE)
 
 ; @(def foo) -- look up the definition for foo, pretty-print it in a <code>
 ; block, along with a source-code link.
@@ -707,13 +526,11 @@
        ((mv acc state) (process-srclink-directive arg dir state acc))
        (acc            (str::revappend-chars "</p>" acc))
        (acc            (str::revappend-chars "<code>" acc))
-       ((mv acc state) (fmt-to-chars-and-encode "~x0"
-                                                (list (cons #\0 def))
-                                                state acc))
+       ((mv acc state) (xml-ppr-obj-aux def topics-fal base-pkg state acc))
        (acc            (str::revappend-chars "</code>" acc)))
       (mv acc state)))
 
-(defun process-gdef-directive (arg base-pkg state acc) ;; ===> (MV ACC STATE)
+(defun process-gdef-directive (arg topics-fal base-pkg state acc) ;; ===> (MV ACC STATE)
 
 ; @(gdef foo) -- Look up the definition for foo, pretty-print it as in @def,
 ; but don't use a source-code link because this is a "Generated Definition" for
@@ -724,13 +541,11 @@
        (acc            (sym-mangle arg base-pkg acc))
        (acc            (str::revappend-chars "</p>" acc))
        (acc            (str::revappend-chars "<code>" acc))
-       ((mv acc state) (fmt-to-chars-and-encode "~x0"
-                                                (list (cons #\0 def))
-                                                state acc))
+       ((mv acc state) (xml-ppr-obj-aux def topics-fal base-pkg state acc))
        (acc            (str::revappend-chars "</code>" acc)))
       (mv acc state)))
 
-(defun process-thm-directive (arg dir state acc) ;; ===> (MV ACC STATE)
+(defun process-thm-directive (arg dir topics-fal base-pkg state acc) ;; ===> (MV ACC STATE)
 
 ; @(thm foo) -- Look up the theorem named foo, and pretty-print its event along
 ; with a source link.
@@ -740,13 +555,11 @@
        ((mv acc state) (process-srclink-directive arg dir state acc))
        (acc            (str::revappend-chars "</p>" acc))
        (acc            (str::revappend-chars "<code>" acc))
-       ((mv acc state) (fmt-to-chars-and-encode "~x0"
-                                                (list (cons #\0 theorem))
-                                                state acc))
+       ((mv acc state) (xml-ppr-obj-aux theorem topics-fal base-pkg state acc))
        (acc            (str::revappend-chars "</code>" acc)))
       (mv acc state)))
 
-(defun process-gthm-directive (arg base-pkg state acc) ;; ===> (MV ACC STATE)
+(defun process-gthm-directive (arg topics-fal base-pkg state acc) ;; ===> (MV ACC STATE)
 
 ; @(gthm foo) -- Like @(thm foo), but don't provide a source link since this is
 ; a generated theorem.
@@ -756,24 +569,20 @@
        (acc            (sym-mangle arg base-pkg acc))
        (acc            (str::revappend-chars "</p>" acc))
        (acc            (str::revappend-chars "<code>" acc))
-       ((mv acc state) (fmt-to-chars-and-encode "~x0"
-                                                (list (cons #\0 theorem))
-                                                state acc))
+       ((mv acc state) (xml-ppr-obj-aux theorem topics-fal base-pkg state acc))
        (acc            (str::revappend-chars "</code>" acc)))
       (mv acc state)))
 
-(defun process-formals-directive (arg state acc) ;; ===> (MV ACC STATE)
+(defun process-formals-directive (arg base-pkg state acc) ;; ===> (MV ACC STATE)
 
 ; @(formals foo) -- just find the formals for foo and print them without any
 ; extra formatting.
 
   (b* ((formals        (get-formals arg (w state)))
-       ((mv acc state) (fmt-to-chars-and-encode "~x0"
-                                                (list (cons #\0 formals))
-                                                state acc)))
+       ((mv acc state) (fmt-and-encode-to-acc formals base-pkg state acc)))
       (mv acc state)))
 
-(defun process-call-directive (arg state acc) ;; ===> (MV ACC STATE)
+(defun process-call-directive (arg base-pkg state acc) ;; ===> (MV ACC STATE)
 
 ; @(call foo) -- find the formals to foo and insert <tt>(foo x y z)</tt>.
 ; BOZO consider adding an emacs link.
@@ -781,13 +590,11 @@
   (b* ((formals        (get-formals arg (w state)))
        (call           (cons arg formals))
        (acc            (str::revappend-chars "<tt>" acc))
-       ((mv acc state) (fmt-to-chars-and-encode "~x0"
-                                                (list (cons #\0 call))
-                                                state acc))
+       ((mv acc state) (fmt-and-encode-to-acc call base-pkg state acc))
        (acc            (str::revappend-chars "</tt>" acc)))
       (mv acc state)))
 
-(defun process-ccall-directive (arg state acc) ;; ===> (MV ACC STATE)
+(defun process-ccall-directive (arg base-pkg state acc) ;; ===> (MV ACC STATE)
 
 ; @(ccall foo) -- "code call" is like @(call foo), but uses <code> instead
 ; of <tt> tags.
@@ -795,45 +602,41 @@
   (b* ((formals        (get-formals arg (w state)))
        (call           (cons arg formals))
        (acc            (str::revappend-chars "<code>" acc))
-       ((mv acc state) (fmt-to-chars-and-encode "~x0"
-                                                (list (cons #\0 call))
-                                                state acc))
+       ((mv acc state) (fmt-and-encode-to-acc call base-pkg state acc))
        (acc            (str::revappend-chars "</code>" acc)))
       (mv acc state)))
 
-(defun process-measure-directive (arg state acc) ;; ===> (MV ACC STATE)
+(defun process-measure-directive (arg base-pkg state acc) ;; ===> (MV ACC STATE)
 
 ; @(measure foo) -- find the measure for foo and print it without any extra
 ; formatting.
 
   (b* ((measure        (get-measure arg (w state)))
-       ((mv acc state) (fmt-to-chars-and-encode "~x0"
-                                                (list (cons #\0 measure))
-                                                state acc)))
+       ((mv acc state) (fmt-and-encode-to-acc measure base-pkg state acc)))
       (mv acc state)))
 
 
-(defun process-directive (command arg dir base-pkg state acc) ;; ===> (MV ACC STATE)
+(defun process-directive (command arg dir topics-fal base-pkg state acc) ;; ===> (MV ACC STATE)
 
 ; Command and Arg are the already-parsed symbols we have read from the
 ; documentation string.  Carry out whatever directive we've been asked to do.
 ; DIR is the output dir.  Acc is the accumulator for our output characters.
 
   (case command
-    (def       (process-def-directive arg dir state acc))
-    (thm       (process-thm-directive arg dir state acc))
+    (def       (process-def-directive     arg dir topics-fal base-pkg state acc))
+    (thm       (process-thm-directive     arg dir topics-fal base-pkg state acc))
     (srclink   (process-srclink-directive arg dir state acc))
-    (gdef      (process-gdef-directive arg base-pkg state acc))
-    (gthm      (process-gthm-directive arg base-pkg state acc))
-    (body      (process-body-directive arg state acc))
-    (formals   (process-formals-directive arg state acc))
-    (measure   (process-measure-directive arg state acc))
-    (call      (process-call-directive arg state acc))
-    (ccall     (process-ccall-directive arg state acc))
-    (url       (process-url-directive arg state acc))
-    (see       (process-see-directive arg base-pkg state acc))
+    (gdef      (process-gdef-directive    arg topics-fal base-pkg state acc))
+    (gthm      (process-gthm-directive    arg topics-fal base-pkg state acc))
+    (body      (process-body-directive    arg topics-fal base-pkg state acc))
+    (formals   (process-formals-directive arg base-pkg state acc))
+    (measure   (process-measure-directive arg base-pkg state acc))
+    (call      (process-call-directive    arg base-pkg state acc))
+    (ccall     (process-ccall-directive   arg base-pkg state acc))
+    (url       (process-url-directive     arg state acc))
+    (see       (process-see-directive     arg base-pkg state acc))
     (csee      (process-see-cap-directive arg base-pkg state acc))
-    (sym       (process-sym-directive arg base-pkg state acc))
+    (sym       (process-sym-directive     arg base-pkg state acc))
     (csym      (process-sym-cap-directive arg base-pkg state acc))
     (otherwise
      (prog2$
@@ -909,16 +712,19 @@
 (defun read-code-segment (x n xl acc always-spacep)
   "Returns (MV N ACC ALWAYS-SPACEP)"
 
-; We assume we're inside a <code> block.  We read until a < character is
-; encountered, gathering the characters we see and tracking whether each
-; newline is followed by a space.
+; We assume we're inside a <code> block.  We read until </code> is found,
+; gathering the characters we see and tracking whether each newline is followed
+; by a space.
 
   (b* (((when (>= n xl))
         (mv n acc always-spacep))
 
        (char-n (char x n))
-       ((when (eql char-n #\<))
-        ;; We assume this is the </code> tag and stop reading.
+       ((when (and (eql char-n #\<)
+                   (str::strprefixp-impl "</code>" x 0 n
+                                         7 ;; (length "</code>")
+                                         xl)))
+        ;; Found </code> tag, so stop reading
         (mv n acc always-spacep))
 
        (acc (cons char-n acc))
@@ -980,13 +786,179 @@
 ;; "<p>This is 
 ;; some regular text</p>
 ;; <code>
-;;   blah1
-;; blah2
-;;   blah3
+;;     blah1
+;;     <blah>blah2</blah>
+;;     blah3
 ;; </code>
 ;; <p>And more text</p>")
 
-(defun preprocess-aux (x n xl dir base-pkg state acc)
+(defun advance-line (x n xl)
+  ;; Returns the index of the next newline after character N, or else XL
+  (b* (((when (= n xl))
+        n)
+       (c (char x n))
+       ((when (eql c #\Newline))
+        n))
+    (advance-line x (+ 1 n) xl)))
+
+(defun all-lines-start-with-space-p (x n xl)
+  ;; Assumptions:
+  ;;  - We are starting a line
+  ;;  - Every line we've seen so far starts with a space
+  (b* (((when (>= n xl))
+        ;; DO NOT WEAKEN TO (= N XL).  We unusually allow this to exceed the
+        ;; string length; consider the call of advance-line below.
+        ;; Success, reached end of string, no space required
+        t)
+       (c (char x n))
+       ((when (eql c #\Newline))
+        ;; Fine, blank line, no space required
+        (all-lines-start-with-space-p x (+ 1 n) xl))
+       ((when (eql c #\Space))
+        ;; Fine, has a space, skip to next line
+        (b* ((n (advance-line x (+ 1 n) xl)))
+          (all-lines-start-with-space-p x (+ 1 n) xl))))
+    ;; Nope, found a non-space char at start of the line.
+    nil))
+
+(encapsulate
+  ()
+  (logic)
+
+  (local
+   (progn
+
+     (defun test (x)
+       (declare (xargs :mode :program))
+       (all-lines-start-with-space-p x 0 (length x)))
+
+     (assert! (test " foo
+ bar
+ baz"))
+
+     (assert! (not (test " foo
+bar
+ baz")))
+
+     (assert! (test " foo
+
+ bar
+ baz
+"))
+
+     (assert! (not (test "foo
+ bar
+baz
+"))))))
+
+(defun delete-leading-line-space (x n xl acc)
+  ;; Assumes (all-lines-start-with-space-p x n xl)
+  (b* (((when (>= n xl))
+        acc)
+       (c (char x n))
+       ((when (eql c #\Newline))
+        (delete-leading-line-space x (+ 1 n) xl (cons c acc)))
+       ;; Else it must be a space.  Skip the space but copy the other chars
+       ;; through the end of the line.
+       (start (+ 1 n))
+       (end   (advance-line x start xl))
+       ;; BOZO abuse of revappend-chars-aux to only copy until end...
+       ;; should fix its guard to allow this sort of thing
+       (acc   (str::revappend-chars-aux x start end acc)))
+    (delete-leading-line-space x end xl acc)))
+
+(defun maybe-fix-spaces-in-sub (x)
+  (declare (type string x))
+  (b* ((xl (length x))
+       ((unless (all-lines-start-with-space-p x 0 xl))
+        ;; Fine, don't do anything
+        x)
+       (acc (delete-leading-line-space x 0 xl nil)))
+    (reverse (coerce acc 'string))))
+
+(encapsulate
+  ()
+  (logic)
+
+  (local
+   (progn
+
+     (defun test (x expect)
+       (declare (xargs :mode :program))
+       (equal (maybe-fix-spaces-in-sub x) expect))
+
+     (assert! (test " foo
+ bar
+ baz"
+                    "foo
+bar
+baz"))
+
+     (assert! (test " foo
+bar
+ baz"
+                    " foo
+bar
+ baz"))
+
+     (assert! (test " foo
+
+ bar
+ baz
+"
+                    "foo
+
+bar
+baz
+"))
+
+     (assert! (test "foo
+ bar
+baz
+"
+                    "foo
+ bar
+baz
+")))))
+
+
+(defun fancy-trim-start (x n xl new-start)
+  (b* (((when (= n xl))
+        ;; saw nothing but spaces and newlines, turn it into the empty string.
+        n)
+       (c (char x n))
+       (n (+ 1 n))
+       ((when (eql c #\Space))
+        (fancy-trim-start x n xl new-start))
+       ((when (eql c #\Newline))
+        (fancy-trim-start x n xl n)))
+    new-start))
+
+(defun fancy-trim-stop (x n start)
+  ;; N counts down from (length x) to start.
+  (b* (((when (<= n start))
+        ;; saw nothing but spaces and newlines, turn it into the empty string.
+        start)
+       (n (- n 1))
+       (c (char x n))
+       ((when (or (eql c #\Space)
+                  (eql c #\Newline)
+                  (eql c #\Tab)))
+        (fancy-trim-stop x n start)))
+    n))
+
+(defun fancy-extract-block (x start end)
+  (b* ((start (fancy-trim-start x start end start))
+       (end   (+ 1 (fancy-trim-stop x end start)))
+       ((unless (<= start end))
+        ""))
+    (subseq x start end)))
+
+
+
+
+
+(defun preprocess-aux (x n xl dir topics-fal base-pkg kpa state acc)
   "Returns (MV ACC STATE)"
   (declare (type string x))
 
@@ -1001,22 +973,49 @@
         (cond ((and (< (+ n 1) xl)
                     (eql (char x (+ n 1)) #\@))
                ;; @@ --> @
-               (preprocess-aux x (+ n 2) xl dir base-pkg state (cons #\@ acc)))
+               (preprocess-aux x (+ n 2) xl dir topics-fal base-pkg kpa state (cons #\@ acc)))
 
               ((and (< (+ n 1) xl)
                     (eql (char x (+ n 1)) #\())
                ;; @( --> directive
-               (b* (((mv error command arg n) (parse-directive x (+ n 2) xl base-pkg))
+               (b* (((when (and (< (+ n 2) xl)
+                                (eql (char x (+ n 2)) #\')))
+                     ;; @(' directive -- turns into raw <tt> block with auto linking
+                     (b* ((end (str::strpos-fast "')" x (+ n 2) 2 xl))
+                          ((unless end)
+                           (prog2$ (cw "; xdoc error: no closing ') found for @(' ...~%")
+                                   (mv acc state)))
+                          (sub (fancy-extract-block x (+ n 3) end))
+                          (acc (str::revappend-chars "<tt>" acc))
+                          (acc (autolink-and-encode sub 0 (length sub) topics-fal base-pkg kpa acc))
+                          (acc (str::revappend-chars "</tt>" acc)))
+                       (preprocess-aux x (+ end 2) xl dir topics-fal base-pkg kpa state acc)))
+
+                    ((when (and (< (+ n 2) xl)
+                                (eql (char x (+ n 2)) #\{)))
+                     ;; @({ directive -- turns into raw <code> block with auto linking
+                     (b* ((end (str::strpos-fast "})" x (+ n 2) 2 xl))
+                          ((unless end)
+                           (prog2$ (cw "; xdoc error: no closing }) found for @({ ...~%")
+                                   (mv acc state)))
+                          (sub (maybe-fix-spaces-in-sub (fancy-extract-block x (+ n 3) end)))
+                          (acc (str::revappend-chars "<code>" acc))
+                          (acc (autolink-and-encode sub 0 (length sub) topics-fal base-pkg kpa acc))
+                          (acc (str::revappend-chars "</code>" acc)))
+                       (preprocess-aux x (+ end 2) xl dir topics-fal base-pkg kpa state acc)))
+
+
+                    ((mv error command arg n) (parse-directive x (+ n 2) xl base-pkg kpa))
                     ((when error)
                      (prog2$ (cw "; xdoc error: ~x0.~%" error)
                              (mv acc state)))
                     ((mv acc state)
-                     (process-directive command arg dir base-pkg state acc)))
-                 (preprocess-aux x n xl dir base-pkg state acc)))
+                     (process-directive command arg dir topics-fal base-pkg state acc)))
+                 (preprocess-aux x n xl dir topics-fal base-pkg kpa state acc)))
 
               (t
                ;; @ sign in some other context.
-               (preprocess-aux x (+ n 1) xl dir base-pkg state (cons #\@ acc)))))
+               (preprocess-aux x (+ n 1) xl dir topics-fal base-pkg kpa state (cons #\@ acc)))))
 
        ((when (eql char #\Newline))
         ;; Gross hack #1: eat initial newlines from the start of a <code>
@@ -1025,27 +1024,30 @@
             (if (and (< (+ n 1) xl)
                      (eql (char x (+ n 1)) #\Newline))
                 ;; Avoid eating multiple newlines at the start of a code block.
-                (preprocess-aux x (+ n 2) xl dir base-pkg state (cons #\Newline acc))
-              (preprocess-aux x (+ n 1) xl dir base-pkg state acc))
+                (preprocess-aux x (+ n 2) xl dir topics-fal base-pkg kpa state (cons #\Newline acc))
+              (preprocess-aux x (+ n 1) xl dir topics-fal base-pkg kpa state acc))
           ;; Gross hack #2: the XSLT transformer in firefox seems to have some
           ;; problems if there aren't spaces at the end of lines, e.g., it will
           ;; run together the hover-text in the hierarchical description in
           ;; preview.html.  Fix by putting a space before newlines.  Horrible.
-          (preprocess-aux x (+ n 1) xl dir base-pkg state (list* #\Newline #\Space acc)))))
+          (preprocess-aux x (+ n 1) xl dir topics-fal base-pkg kpa state
+                          (list* #\Newline #\Space acc)))))
 
     ;; Otherwise just keep the char and keep going.
-    (preprocess-aux x (+ n 1) xl dir base-pkg state (cons char acc))))
+    (preprocess-aux x (+ n 1) xl dir topics-fal base-pkg kpa state (cons char acc))))
 
-(defun preprocess-main (x dir base-pkg state acc)
+(defun preprocess-main (x dir topics-fal base-pkg state acc)
   (declare (type (or string null) x))
   (b* ((x (or x ""))
-       (current-pkg    (acl2::f-get-global 'current-package state))
+       ;; (current-pkg    (acl2::f-get-global 'current-package state))
        ;; Temporarily make "fmt" print as if it's in base-pkg.
-       ((mv & & state) (acl2::set-current-package (symbol-package-name base-pkg) state))
+       ;; ((mv & & state) (acl2::set-current-package (symbol-package-name base-pkg) state))
+       (kpa            (known-package-alist state))
        (x              (transform-code x))
-       ((mv acc state) (preprocess-aux x 0 (length x) dir base-pkg state acc))
+       ((mv acc state) (preprocess-aux x 0 (length x) dir topics-fal base-pkg kpa state acc))
        ;; Restore base-pkg for whoever called us.
-       ((mv & & state) (acl2::set-current-package current-pkg state)))
+       ;; ((mv & & state) (acl2::set-current-package current-pkg state))
+       )
       (mv acc state)))
 
 

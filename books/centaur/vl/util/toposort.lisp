@@ -33,16 +33,16 @@
 
 (defsection topologically-ordered-p
   :parents (toposort)
-  :short "@(call topologically-ordered-p) determines if a list of <tt>nodes</tt>
-is topologically ordered with respect to a <tt>graph</tt>."
+  :short "@(call topologically-ordered-p) determines if a list of @('nodes') is
+topologically ordered with respect to a @('graph')."
 
-  :long "<p>The <tt>graph</tt> is an alist that binds nodes to their
-dependents.  We check that, for every node <tt>a</tt> in the list of
-<tt>nodes</tt>, the dependents of <tt>a</tt> come before <tt>a</tt>.</p>
+  :long "<p>The @('graph') is an alist that binds nodes to their dependents.
+We check that, for every node @('a') in the list of @('nodes'), the dependents
+of @('a') come before @('a').</p>
 
 <p>This is a weak check in a couple of ways: we don't require that the
-<tt>nodes</tt> are unique, and we don't check that every node in the graph is
-among the <tt>nodes</tt>.</p>
+@('nodes') are unique, and we don't check that every node in the graph is among
+the @('nodes').</p>
 
 <p>We can determine if the nodes are topologically sorted in linear time,
 assuming constant-time hashing.</p>"
@@ -69,14 +69,13 @@ assuming constant-time hashing.</p>"
 
 (defsection dependency-chain-p
   :parents (toposort)
-  :short "@(call dependency-chain-p) determines if a list of <tt>nodes</tt>
-indeed follows a set of dependencies in <tt>graph</tt>."
+  :short "@(call dependency-chain-p) determines if a list of @('nodes') indeed
+follows a set of dependencies in @('graph')."
 
-  :long "<p>The <tt>graph</tt> is an alist that binds nodes to their
-dependents.  Let <tt>nodes</tt> be <tt>(n1 n2 ... nk)</tt>.  We check that
-<tt>n2</tt> is a dependent of <tt>n1</tt>, <tt>n3</tt> is a dependent of
-<tt>n2</tt>, and so forth.  This is mainly used as a sanity check on any loops
-we claim to have found.</p>"
+  :long "<p>The @('graph') is an alist that binds nodes to their dependents.
+Let @('nodes') be @('(n1 n2 ... nk)').  We check that @('n2') is a dependent of
+@('n1'), @('n3') is a dependent of @('n2'), and so forth.  This is mainly used
+as a sanity check on any loops we claim to have found.</p>"
 
   (defund dependency-chain-p (nodes graph)
     (declare (xargs :guard t))
@@ -101,32 +100,37 @@ we claim to have found.</p>"
 (defsection toposort-aux
   :parents (toposort)
   :short "Main depth-first topological sorting routine."
-  :long "<p><b>Signature</b>: @(call toposort-aux) returns <tt>(mv successp
-seen)</tt>.</p>
+  :long "<p><b>Signature</b>: @(call toposort-aux) returns @('(mv successp
+seen)').</p>
 
-<p><tt>queue</tt> is all of the nodes we have left to explore.  Initially it is
-just <tt>(alist-keys graph)</tt>.</p>
+<p>@('queue') is all of the nodes we have left to explore.  Initially it is
+just @('(alist-keys graph)').</p>
 
-<p><tt>seen</tt> is a fast alist that records the status of nodes.  Each
-node is either:</p>
+<p>@('seen') is a fast alist that records the status of nodes.  Each node is
+either:</p>
+
 <ul>
- <li>unbound, if we haven't started it yet, or bound to</li>
- <li><tt>:started</tt> if we are currently exploring its dependents, or</li>
- <li><tt>:finished</tt> if we are done exploring it.</li>
+
+<li>unbound, if we haven't started it yet, or bound to</li>
+
+<li>@(':started') if we are currently exploring its dependents, or</li>
+
+<li>@(':finished') if we are done exploring it.</li>
+
 </ul>
 
-<p><tt>graph</tt> is the graph itself, which remains constant as we recur; it
-is a fast alist binding nodes to the lists of their dependents.</p>
+<p>@('graph') is the graph itself, which remains constant as we recur; it is a
+fast alist binding nodes to the lists of their dependents.</p>
 
 <p>We return successfully only if we're able to explore all of the nodes in the
 queue without finding a loop.</p>
 
 <p>On success, a topologically sorted list of nodes can be extracted from
-<tt>seen</tt> by looking at the <tt>:finished</tt> nodes.  See @(see
+@('seen') by looking at the @(':finished') nodes.  See @(see
 extract-topological-order).</p>
 
-<p>On failure, the loop we found can be extracted from <tt>seen</tt> by looking
-at the <tt>:started</tt> nodes.  See @(see extract-topological-loop).</p>"
+<p>On failure, the loop we found can be extracted from @('seen') by looking at
+the @(':started') nodes.  See @(see extract-topological-loop).</p>"
 
   (local (defthm len-sd-cons-right-1
            (implies (member-equal a y)
@@ -478,34 +482,33 @@ toposort-aux)."
   :parents (utilities)
   :short "General-purpose, depth-first topological sort for dependency graphs."
 
-  :long "<p><b>Signature: </b> @(call toposort) returns <tt>(mv successp
-result)</tt>.</p>
+  :long "<p><b>Signature: </b> @(call toposort) returns @('(mv successp
+result)').</p>
 
-<p>The <tt>graph</tt> should be an alist that binds nodes to the lists of nodes
+<p>The @('graph') should be an alist that binds nodes to the lists of nodes
 that they (directly) depend on.  Note that:</p>
 
 <ul>
 
-<li><tt>graph</tt> is expected to be complete, i.e., every node that is ever
-listed as a dependent should be bound in <tt>graph</tt>; we will <b>cause a
-hard error</b> if this is not the case.</li>
+<li>@('graph') is expected to be complete, i.e., every node that is ever listed
+as a dependent should be bound in @('graph'); we will <b>cause a hard error</b>
+if this is not the case.</li>
 
-<li><tt>graph</tt> is treated like an alist.  That is, any shadowed pairs are
+<li>@('graph') is treated like an alist.  That is, any shadowed pairs are
 ignored.</li>
 
-<li>It is beneficial for <tt>graph</tt> to be a fast alist, but this is not
+<li>It is beneficial for @('graph') to be a fast alist, but this is not
 necessary; ordinary alists will be made fast via @(see with-fast-alist).</li>
 
 </ul>
 
 <p>We carry out a depth-first topological sort of the graph.  If the graph is
-loop-free, this produces <tt>(mv t nodes)</tt>, where <tt>nodes</tt> are set
-equivalent to <tt>(alist-keys graph)</tt> and are in dependency order.</p>
+loop-free, this produces @('(mv t nodes)'), where @('nodes') are set equivalent
+to @('(alist-keys graph)') and are in dependency order.</p>
 
-<p>If the graph has loops, we will find some loop and return <tt>(mv nil
-loop)</tt>, where <tt>loop</tt> is a list of nodes such as <tt>(a b c a)</tt>,
-where <tt>a</tt> depends on <tt>b</tt>, which depends on <tt>c</tt>, which
-depends on <tt>a</tt>.</p>
+<p>If the graph has loops, we will find some loop and return @('(mv nil
+loop)'), where @('loop') is a list of nodes such as @('(a b c a)'), where
+@('a') depends on @('b'), which depends on @('c'), which depends on @('a').</p>
 
 <h3>Usage Notes</h3>
 

@@ -77,12 +77,11 @@ sexpr-rewrite) should be duplicated here.</p>")
 
 (defsection 4vs-t
   :parents (4vs-constructors)
-  :short "@(call 4vs-t) returns <tt>(T)</tt>, the s-expression for a constant
-true value."
+  :short "@(call 4vs-t) returns @('(T)'), the s-expression for a constant true
+value."
 
-  :long "<p>This is potentially nicer than using <tt>*4vt-sexpr*</tt> directly
-because it can be disabled so that rules about <tt>cons</tt> will not
-apply.</p>"
+  :long "<p>This is potentially nicer than using @('*4vt-sexpr*') directly
+because it can be disabled so that rules about @('cons') will not apply.</p>"
 
   (definlined 4vs-t ()
     (declare (xargs :guard t))
@@ -102,12 +101,11 @@ apply.</p>"
 
 (defsection 4vs-f
   :parents (4vs-constructors)
-  :short "@(call 4vs-f) returns <tt>(F)</tt>, the s-expression for a constant
-false value."
+  :short "@(call 4vs-f) returns @('(F)'), the s-expression for a constant false
+value."
 
-  :long "<p>This is potentially nicer than using <tt>*4vf-sexpr*</tt> directly
-because it can be disabled so that rules about <tt>cons</tt> will not
-apply.</p>"
+  :long "<p>This is potentially nicer than using @('*4vf-sexpr*') directly
+because it can be disabled so that rules about @('cons') will not apply.</p>"
 
   (definlined 4vs-f ()
     (declare (xargs :guard t))
@@ -127,12 +125,11 @@ apply.</p>"
 
 (defsection 4vs-x
   :parents (4vs-constructors)
-  :short "@(call 4vs-x) returns <tt>(X)</tt>, the s-expression for a constant
+  :short "@(call 4vs-x) returns @('(X)'), the s-expression for a constant
 unknown value."
 
-  :long "<p>This is potentially nicer than using <tt>*4vx-sexpr*</tt>
-directly because it can be disabled so that rules about <tt>cons</tt>
-will not apply.</p>"
+  :long "<p>This is potentially nicer than using @('*4vx-sexpr*') directly
+because it can be disabled so that rules about @('cons') will not apply.</p>"
 
   (definlined 4vs-x ()
     (declare (xargs :guard t))
@@ -152,12 +149,11 @@ will not apply.</p>"
 
 (defsection 4vs-z
   :parents (4vs-constructors)
-  :short "@(call 4vs-z) returns <tt>(Z)</tt>, the s-expression for a constant
+  :short "@(call 4vs-z) returns @('(Z)'), the s-expression for a constant
 undriven/floating value."
 
-  :long "<p>This is potentially nicer than using <tt>*4vz-sexpr*</tt>
-directly because it can be disabled so that rules about <tt>cons</tt>
-will not apply.</p>"
+  :long "<p>This is potentially nicer than using @('*4vz-sexpr*') directly
+because it can be disabled so that rules about @('cons') will not apply.</p>"
 
   (definlined 4vs-z ()
     (declare (xargs :guard t))
@@ -177,7 +173,7 @@ will not apply.</p>"
 
 (defsection 4vs-buf
   :parents (4vs-constructors)
-  :short "@(call 4vs-buf) constructs a 4v-sexpr equivalent to <tt>(buf a)</tt>."
+  :short "@(call 4vs-buf) constructs a 4v-sexpr equivalent to @('(buf a)')."
 
   (defund 4vs-buf (a)
     (declare (xargs :guard t))
@@ -215,7 +211,7 @@ will not apply.</p>"
 
 (defsection 4vs-not
   :parents (4vs-constructors)
-  :short "@(call 4vs-not) constructs a 4v-sexpr equivalent to <tt>(not a)</tt>."
+  :short "@(call 4vs-not) constructs a 4v-sexpr equivalent to @('(not a)')."
 
   (defund 4vs-not (a)
     (declare (xargs :guard t))
@@ -318,7 +314,7 @@ will not apply.</p>"
 
 (defsection 4vs-and
   :parents (4vs-constructors)
-  :short "@(call 4vs-and) constructs a 4v-sexpr equivalent to <tt>(and a b)</tt>."
+  :short "@(call 4vs-and) constructs a 4v-sexpr equivalent to @('(and a b)')."
 
   (defund 4vs-and (a b)
     (declare (xargs :guard t))
@@ -351,7 +347,7 @@ will not apply.</p>"
 (defsection 4vs-and-list
   :parents (4vs-constructors)
   :short "@(call 4vs-and-list) reduction ands together all the sexprs in the
-list <tt>x</tt>, producing a single sexpr representing their conjunction."
+list @('x'), producing a single sexpr representing their conjunction."
 
   (defund 4vs-and-list (sexprs)
     (declare (xargs :guard t))
@@ -396,7 +392,7 @@ separate lists, forming a new sexpr list."
 
 (defsection 4vs-and-dumb
   :parents (4vs-constructors)
-  :short "@(call 4vs-and-dumb) constructs exactly the 4v-sexpr <tt>(and a b)</tt>."
+  :short "@(call 4vs-and-dumb) constructs exactly the 4v-sexpr @('(and a b)')."
   :long "<p>This is dumb in that it doesn't do the simple optimizations of
 @(see 4vs-and), but it has a nicer @(see 4v-sexpr-vars) theorem because of
 this.</p>"
@@ -420,8 +416,8 @@ this.</p>"
 
 (defsection 4vs-and-list-dumb
   :parents (4vs-constructors)
-  :short "@(call 4vs-and-list-dumb) reduction ands together all the sexprs in the
-list <tt>x</tt>, producing a single sexpr representing their conjunction."
+  :short "@(call 4vs-and-list-dumb) reduction ands together all the sexprs in
+the list @('x'), producing a single sexpr representing their conjunction."
   :long "<p>This is dumb in that it doesn't do the simple optimizations of
 @(see 4vs-and-list), but it has a nicer @(see 4v-sexpr-vars) theorem because of
 this.</p>"
@@ -448,7 +444,7 @@ this.</p>"
 
 (defsection 4vs-ite*-dumb
   :parents (4vs-constructors)
-  :short "@(call 4vs-ite*-dumb) constructs <tt>(ITE* C A B)</tt>, i.e., the
+  :short "@(call 4vs-ite*-dumb) constructs @('(ITE* C A B)'), i.e., the
 s-expression for a conservative multiplexor."
 
   (definlined 4vs-ite*-dumb (c a b)
@@ -477,7 +473,7 @@ s-expression for a conservative multiplexor."
 
 (defsection 4vs-or
   :parents (4vs-constructors)
-  :short "@(call 4vs-or) constructs a 4v-sexpr equivalent to <tt>(or a b)</tt>."
+  :short "@(call 4vs-or) constructs a 4v-sexpr equivalent to @('(or a b)')."
 
   (defund 4vs-or (a b)
     (declare (xargs :guard t))
@@ -501,8 +497,8 @@ s-expression for a conservative multiplexor."
 
 (defsection 4vs-or-list
   :parents (4vs-constructors)
-  :short "@(call 4vs-or-list) reduction ors together all the sexprs in the
-list <tt>x</tt>, producing a single sexpr representing their disjunction."
+  :short "@(call 4vs-or-list) reduction ors together all the sexprs in the list
+@('x'), producing a single sexpr representing their disjunction."
 
   (defund 4vs-or-list (x)
     (declare (xargs :guard t))
@@ -530,8 +526,7 @@ separate lists, forming a new sexpr list."
 
 (defsection 4vs-xor
   :parents (4vs-constructors)
-  :short "@(call 4vs-xor) constructs a sexpr representing <tt>(xor a
-b)</tt>."
+  :short "@(call 4vs-xor) constructs a sexpr representing @('(xor a b)')."
 
   (defund 4vs-xor (a b)
     (declare (xargs :guard t))
@@ -575,10 +570,9 @@ separate lists, forming a new sexpr list."
 
 (defsection 4vs-iff
   :parents (4vs-constructors)
-  :short "@(call 4vs-iff) constructs a sexpr representing <tt>(iff a
-b)</tt>."
+  :short "@(call 4vs-iff) constructs a sexpr representing @('(iff a b)')."
   :long "<p>To make this better agree with @(see sexpr-rewrite), I just
-implement this as the not of the <tt>xor</tt>.</p>"
+implement this as the not of the @('xor').</p>"
 
   (defund 4vs-iff (a b)
     (declare (xargs :guard t))
@@ -610,9 +604,9 @@ lists x and y, forming a new sexpr list."
 
 (defsection 4vs-implies
   :parents (4vs-constructors)
-  :short "@(call 4vs-implies) constructs a new sexpr representing
-<tt>(implies a b)</tt>."
-  :long "<p>This is just an abbreviation for <tt>(or (not a) b)</tt>, so we
+  :short "@(call 4vs-implies) constructs a new sexpr representing @('(implies a
+b)')."
+  :long "<p>This is just an abbreviation for @('(or (not a) b)'), so we
 leave it enabled.</p>"
 
   (defun 4vs-implies (a b)

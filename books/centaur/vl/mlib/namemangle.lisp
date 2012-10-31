@@ -34,7 +34,7 @@ they are given fresh names.</p>")
 (defsection vl-namemangle-modinsts
   :parents (namemangle)
   :short "Safely rename module instances, preferring names of the form
-<tt>prefix_{current-name}</tt>."
+@('prefix_{current-name}')."
 
   (defund vl-namemangle-modinsts (prefix modinsts nf)
     "Returns (MV MODINSTS' NF')"
@@ -70,7 +70,7 @@ they are given fresh names.</p>")
 (defsection vl-namemangle-gateinsts
   :parents (namemangle)
   :short "Safely rename gate instances, preferring names of the form
-<tt>prefix_{current-name}</tt>."
+@('prefix_{current-name}')."
 
   (defund vl-namemangle-gateinsts (prefix gateinsts nf)
     "Returns (MV GATEINSTS' NF')"
@@ -106,14 +106,14 @@ they are given fresh names.</p>")
 (defsection vl-namemangle-netdecls
   :parents (namemangle)
   :short "Safely try to give these netdecls new names of the form
-<tt>prefix_{current-name}.</tt>"
+@('prefix_{current-name}.')"
 
   :long "<p>You'll generally want to do something like:</p>
 
-<code>
-   (pairlis$ (vl-netdecllist-&gt;names old-netdecls)
-             (vl-netdecllist-&gt;names renamed-netdecls))
-</code>
+@({
+   (pairlis$ (vl-netdecllist->names old-netdecls)
+             (vl-netdecllist->names renamed-netdecls))
+})
 
 <p>And then use this as a substitution.</p>"
 

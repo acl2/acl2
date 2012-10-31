@@ -35,8 +35,8 @@ already been applied.  Recall that the @(see split) transformation brings
 all assignments into one of the following forms:</p>
 
 <ol>
- <li><tt>lvalue = atom</tt></li>
- <li><tt>lvalue = (op atom1 atom2 ... atomN)</tt></li>
+ <li>@('lvalue = atom')</li>
+ <li>@('lvalue = (op atom1 atom2 ... atomN)')</li>
 </ol>
 
 <p>Unfortunately, Verilog allows for implicit truncations during assignments,
@@ -47,17 +47,17 @@ expression's, the expression will be expanded to match.</p>
 
 <p>And so we now introduce a rewrite which corrects for this, and results in
 assignments where the expressions always agree on the desired sizes.  The basic
-transformation is as follows.  We are looking at the assignment <tt>lvalue =
-expr</tt>.  If <tt>lvalue</tt> is shorter than <tt>expr</tt>, we replace this
-assignment with something like:</p>
+transformation is as follows.  We are looking at the assignment @('lvalue =
+expr').  If @('lvalue') is shorter than @('expr'), we replace this assignment
+with something like:</p>
 
-<code>
+@({
   wire [expr.width-1:0] trunc_12345;
   assign trunc_12345 = expr;
   assign lvalue = trunc_12345[lvalue.width-1:0];
-</code>
+})
 
-<p>where <tt>trunc_12345</tt> is a fresh variable name.  All of the resulting
+<p>where @('trunc_12345') is a fresh variable name.  All of the resulting
 assignments are between lvalues and expressions that agree.</p>")
 
 
@@ -68,10 +68,10 @@ assignments are between lvalues and expressions that agree.</p>")
   :long "<p><b>Signature:</b> @(call vl-make-chopped-id) returns a @(see
 vl-expr-p).</p>
 
-<p>Given <tt>name</tt>, the name of some unsigned wire, <tt>width</tt>, the
-width of the wire, and <tt>trunc</tt>, some number which is strictly less than
-<tt>width</tt>, we construct the expression <tt>name[trunc-1:0]</tt>, with all
-of the intermediate widths set up correctly.</p>"
+<p>Given @('name'), the name of some unsigned wire, @('width'), the width of
+the wire, and @('trunc'), some number which is strictly less than @('width'),
+we construct the expression @('name[trunc-1:0]'), with all of the intermediate
+widths set up correctly.</p>"
 
   (defund vl-make-chopped-id (name name-width trunc-width)
     (declare (xargs :guard (and (stringp name)
@@ -201,20 +201,19 @@ of the intermediate widths set up correctly.</p>"
 (defsection vl-assign-trunc
   :parents (trunc)
   :short "Make any implicit truncation in an assignment explicit."
-  :long "<p><b>Signature:</b> @(call vl-assign-trunc) returns <tt>(mv
-warnings-prime netdecls assigns nf-prime)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-assign-trunc) returns @('(mv
+warnings-prime netdecls assigns nf-prime)').</p>
 
 <p>Inputs.</p>
 
 <ul>
 
-<li><tt>x</tt> is the assignment statement which may need to be truncated,
-</li>
+<li>@('x') is the assignment statement which may need to be truncated, </li>
 
-<li><tt>nf</tt> is a @(see vl-namefactory-p) for generating fresh variable
-names, and</li>
+<li>@('nf') is a @(see vl-namefactory-p) for generating fresh variable names,
+and</li>
 
-<li><tt>warnings</tt> is an accumulator for warnings.</li>
+<li>@('warnings') is an accumulator for warnings.</li>
 
 </ul>
 
@@ -222,15 +221,15 @@ names, and</li>
 
 <ul>
 
-<li><tt>warnings-prime</tt> is the updated list of warnings,</li>
+<li>@('warnings-prime') is the updated list of warnings,</li>
 
-<li><tt>netdecls</tt> are any new wire declarations that must be added
-to the module,</li>
+<li>@('netdecls') are any new wire declarations that must be added to the
+module,</li>
 
-<li><tt>new-assigns</tt> is a new list of assignments which will <b>replace</b>
-<tt>x</tt> in the module, and</li>
+<li>@('new-assigns') is a new list of assignments which will <b>replace</b>
+@('x') in the module, and</li>
 
-<li><tt>nf-prime</tt> is the updated name factory.</li>
+<li>@('nf-prime') is the updated name factory.</li>
 
 </ul>"
 

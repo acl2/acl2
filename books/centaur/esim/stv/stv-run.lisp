@@ -51,34 +51,34 @@ to naturals) into a bit-level alist for @(see 4v-sexpr-eval)."
 
 <ul>
 
-<li><tt>user-alist</tt>, the alist provided by the user that gives values to
-the input simulation variables.  Each value should be a natural number that is
-in the range for that simulation variable.</li>
+<li>@('user-alist'), the alist provided by the user that gives values to the
+input simulation variables.  Each value should be a natural number that is in
+the range for that simulation variable.</li>
 
-<li><tt>in-usersyms</tt>, a fast alist that binds each input simulation
-variable for the STV with a list of variables that represent its bits; see
-@(see stv-compile), but in particular see the <tt>usersyms</tt> output of @(see
+<li>@('in-usersyms'), a fast alist that binds each input simulation variable
+for the STV with a list of variables that represent its bits; see @(see
+stv-compile), but in particular see the @('usersyms') output of @(see
 stv-expand-input-entry).</li>
 
 </ul>
 
-<p>We try to translate every user-level binding, like <tt>(opcode . 7)</tt>,
-into a set of bit-level bindings, say something like:</p>
+<p>We try to translate every user-level binding, like @('(opcode . 7)'), into a
+set of bit-level bindings, say something like:</p>
 
-<code>
+@({
   ((opcode[0] . *4vt*)
    (opcode[1] . *4vt*)
    (opcode[2] . *4vt*)
    (opcode[3] . *4vf*)
    ...)
-</code>
+})
 
 <p>For each input simulation variable bound in the user-level alist, we
-basically just need to look up the names of its bits in the
-<tt>in-usersyms</tt> alist, explode the value into @(see 4vp) bits, and then
-pairing up the bit names with the values.  In the process, we do some basic
-sanity checking to make sure that the names being bound exist and that the
-provided values are in range.</p>
+basically just need to look up the names of its bits in the @('in-usersyms')
+alist, explode the value into @(see 4vp) bits, and then pairing up the bit
+names with the values.  In the process, we do some basic sanity checking to
+make sure that the names being bound exist and that the provided values are in
+range.</p>
 
 <p>The net result is a new alist that is suitable for @(see 4v-sexpr-eval) that
 we can use to evaluate output expressions.</p>
@@ -140,22 +140,22 @@ user-level bindings of the output simulation variables to naturals or X."
 
 <ul>
 
-<li><tt>bit-out-alist</tt>, a fast alist that binds the output simulation
-variable bit names to their @(see 4vp) constants.  This alist should have been
-produced by calling @(see 4v-sexpr-eval) on the <tt>relevant-signals</tt>
-s-expressions of a @(see processed-stv-p).</li>
+<li>@('bit-out-alist'), a fast alist that binds the output simulation variable
+bit names to their @(see 4vp) constants.  This alist should have been produced
+by calling @(see 4v-sexpr-eval) on the @('relevant-signals') s-expressions of a
+@(see processed-stv-p).</li>
 
-<li><tt>out-usersyms</tt>, an alist that binds each output simulation variable
-for the STV with a list of variables that represent its bits; see @(see
-stv-compile), but in particular see the <tt>usersyms</tt> output of @(see
+<li>@('out-usersyms'), an alist that binds each output simulation variable for
+the STV with a list of variables that represent its bits; see @(see
+stv-compile), but in particular see the @('usersyms') output of @(see
 stv-expand-output-entry).</li>
 
 </ul>
 
-<p>We recur down <tt>out-usersyms</tt>.  For each output variable, we look up
-the values of its bits in <tt>bit-out-alist</tt>, and then try to combine these
-bits into a single integer value.  If any bit is X, we just say the whole
-output is X.</p>"
+<p>We recur down @('out-usersyms').  For each output variable, we look up the
+values of its bits in @('bit-out-alist'), and then try to combine these bits
+into a single integer value.  If any bit is X, we just say the whole output is
+X.</p>"
 
   (defund stv-assemble-output-alist (bit-out-alist out-usersyms)
     (declare (xargs :guard t))
@@ -199,14 +199,14 @@ output is X.</p>"
   :long "<p><b>Signature:</b> @(call stv-run) returns an alist that binds
 user-level outputs to natural numbers or X.</p>
 
-<p>The basic form of <tt>stv-run</tt> only requires two inputs:</p>
+<p>The basic form of @('stv-run') only requires two inputs:</p>
 
 <ul>
 
-<li>The <tt>pstv</tt> is an @(see processed-stv-p) that should have been
-produced by @(see stv-process).</li>
+<li>The @('pstv') is an @(see processed-stv-p) that should have been produced
+by @(see stv-process).</li>
 
-<li>The <tt>input-alist</tt> is an alist that should bind some of the input
+<li>The @('input-alist') is an alist that should bind some of the input
 simulation variables to natural numbers, or to the symbol X.  Any inputs that
 aren't mentioned are implicitly bound to X.</li>
 
@@ -216,7 +216,7 @@ aren't mentioned are implicitly bound to X.</li>
 
 <ol>
 
-<li>We translate the <tt>input-alist</tt> into bit-level bindings; see @(see
+<li>We translate the @('input-alist') into bit-level bindings; see @(see
 stv-simvar-inputs-to-bits).</li>
 
 <li>We evaluate the relevant output bits from the processed STV, using these
@@ -229,19 +229,18 @@ stv-assemble-output-alist).</li>
 
 </ol>
 
-<p>The optional <tt>skip</tt> argument may allow you to optimize this process,
+<p>The optional @('skip') argument may allow you to optimize this process,
 especially in the context of @(see GL) proofs, when you don't care about the
 values of certain output simulation variables.  For instance, suppose you have
 a module that emits several flags in addition to its result, but you don't care
-about the flags for some instructions.  Then, you can tell <tt>stv-run</tt> to
-skip computing the flags as you verify these instructions, which may lead to a
-big savings when BDDs are involved.</p>
+about the flags for some instructions.  Then, you can tell @('stv-run') to skip
+computing the flags as you verify these instructions, which may lead to a big
+savings when BDDs are involved.</p>
 
-<p>By default, <tt>stv-run</tt> will print certain debugging information.  This
-is generally convenient in @(see def-gl-thm) forms involving an
-<tt>stv-run</tt>, and will allow you to see nicely-formatted debugging info
-when counter-examples are found.  You can suppress this output with <tt>:quiet
-nil</tt>.</p>"
+<p>By default, @('stv-run') will print certain debugging information.  This is
+generally convenient in @(see def-gl-thm) forms involving an @('stv-run'), and
+will allow you to see nicely-formatted debugging info when counter-examples are
+found.  You can suppress this output with @(':quiet nil').</p>"
 
   (defund stv-run-fn (pstv input-alist skip quiet)
     (declare (xargs :guard (processed-stv-p pstv)))

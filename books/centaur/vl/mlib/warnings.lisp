@@ -27,10 +27,10 @@
   :parents (warnings)
   :short "Clean the warnings of every module in a module list."
   :long "<p><b>Signature:</b> @(call vl-modulelist-clean-warnings) returns
-<tt>X-PRIME</tt>.</p>
+@('X-PRIME').</p>
 
-<p>We change every module in <tt>X</tt> by applying @(see vl-clean-warnings) to
-its warnings, and return the updated list of modules.  It may occasionally be
+<p>We change every module in @('X') by applying @(see vl-clean-warnings) to its
+warnings, and return the updated list of modules.  It may occasionally be
 useful to run this transformation to clean up any redundant warnings that have
 crept into the module list.</p>"
 
@@ -173,8 +173,8 @@ either the orignames or names of the modules to their related warnings.</p>"
 warning alist.</p>
 
 <p>This function is useful in the incremental construction of warning alists;
-it adds a particular <tt>warning</tt> to the existing warnings for
-<tt>modname</tt> in <tt>walist</tt>.</p>"
+it adds a particular @('warning') to the existing warnings for @('modname') in
+@('walist').</p>"
 
   (defund vl-extend-modwarningalist (modname warning walist)
     (declare (xargs :guard (and (stringp modname)
@@ -202,8 +202,8 @@ it adds a particular <tt>warning</tt> to the existing warnings for
 warning alist.</p>
 
 <p>This function is useful in the incremental construction of warning alists;
-it adds the list of <tt>warnings</tt> to the existing warnings for
-<tt>modname</tt> in <tt>walist</tt>.</p>"
+it adds the list of @('warnings') to the existing warnings for @('modname') in
+@('walist').</p>"
 
   (defund vl-extend-modwarningalist-list (modname warnings walist)
     (declare (xargs :guard (and (stringp modname)
@@ -229,12 +229,12 @@ it adds the list of <tt>warnings</tt> to the existing warnings for
 vl-modwarningalist-p)."
 
   :long "<p><b>Signature:</b> @(call vl-apply-modwarningalist) returns
-<tt>mods-prime</tt>.</p>
+@('mods-prime').</p>
 
-<p>We are given <tt>x</tt>, a @(see vl-modulelist-p), and <tt>alist</tt>, a
-@(see vl-modwarningalist-p), which should be a fast alist.  We change
-<tt>x</tt> by adding any warnings that are associated with each module's name
-in <tt>alist</tt>.</p>"
+<p>We are given @('x'), a @(see vl-modulelist-p), and @('alist'), a @(see
+vl-modwarningalist-p), which should be a fast alist.  We change @('x') by
+adding any warnings that are associated with each module's name in
+@('alist').</p>"
 
   (defund vl-apply-modwarningalist-aux (x alist)
     (declare (xargs :guard (and (vl-module-p x)
@@ -277,7 +277,7 @@ in <tt>alist</tt>.</p>"
 vl-modwarningalist-p) and cleans all of its warning lists with @(see
 vl-clean-warnings)."
 
-  :long "<p>We return a new fast-alist that is independent of <tt>x</tt>.  Any
+  :long "<p>We return a new fast-alist that is independent of @('x').  Any
 modules which have no warnings are eliminated.</p>"
 
   (defund vl-clean-modwarningalist-aux (x acc)
@@ -318,19 +318,18 @@ modules which have no warnings are eliminated.</p>"
 (defsection vl-origname-modwarningalist
   :parents (warnings)
   :short "@(call vl-origname-modwarningalist) constructs a @(see
-vl-modwarningalist-p) from a module list, using <tt>orignames</tt> as the
-keys."
+vl-modwarningalist-p) from a module list, using @('orignames') as the keys."
 
   :long "<p>Unparameterization causes problems for printing warnings about each
-module, because, e.g., instead of having warnings about <tt>adder</tt>, we
-actually have warnings about <tt>adder$width=5</tt> and
-<tt>adder$width=13</tt>, etc.  Yet the end-user typically shouldn't be bothered
-with looking at the warnings for each specialized version of <tt>adder</tt>; he
-just wants to see all of the warnings.</p>
+module, because, e.g., instead of having warnings about @('adder'), we actually
+have warnings about @('adder$width=5') and @('adder$width=13'), etc.  Yet the
+end-user typically shouldn't be bothered with looking at the warnings for each
+specialized version of @('adder'); he just wants to see all of the
+warnings.</p>
 
 <p>This function gathers up all warnings associated with each module, and
-builds a @(see vl-modwarningalist-p) that maps <tt>orignames</tt> to warnings.
-We take care to ensure that all of the warnings associated with each name are
+builds a @(see vl-modwarningalist-p) that maps @('orignames') to warnings.  We
+take care to ensure that all of the warnings associated with each name are
 properly cleaned up and merged.</p>"
 
   (defund vl-origname-modwarningalist-aux (x acc)

@@ -26,17 +26,12 @@
   :parents (preprocessor)
   :short "Alist for definitions."
 
-  :long "<p>We keep track of the <tt>`defines</tt> which have been issued
-using a simple alist that maps strings to their values.  Each value is an
-@(see vl-echarlist-p) of the characters in the definition.</p>
+  :long "<p>We keep track of the @('`defines') which have been issued using a
+simple alist that maps strings to their values.  Each value is an @(see
+vl-echarlist-p) of the characters in the definition.</p>
 
 <p>This model is too simple to support macros with arguments, but for now it
-is adequate.</p>
-
-<h3>Definition and Theorems</h3>
-
-@(def vl-defines-p)
-@(thm alistp-when-vl-defines-p)"
+is adequate.</p>"
 
   (defund vl-defines-p (x)
     (declare (xargs :guard t))
@@ -80,14 +75,13 @@ is adequate.</p>
   :short "@(call vl-lookup-in-defines) looks up a string in a @(see
 vl-defines-p)."
 
-  :long "<p>We introduce <tt>vl-lookup-in-defines</tt> instead of just using
-<tt>hons-assoc-equal</tt> because its stronger guard is good for type checking.
+  :long "<p>We introduce @('vl-lookup-in-defines') instead of just using
+@('hons-assoc-equal') because its stronger guard is good for type checking.
 But for reasoning, we just leave this function enabled and reason
-about<tt>hons-assoc-equal</tt> instead.</p>
+about@('hons-assoc-equal') instead.</p>
 
-<p>Note that the defines aren't a fast alist and we aren't using
-<tt>hons-get</tt>; we're just using <tt>hons-assoc-equal</tt> as our normal
-form.</p>"
+<p>Note that the defines aren't a fast alist and we aren't using @('hons-get');
+we're just using @('hons-assoc-equal') as our normal form.</p>"
 
   (defun vl-lookup-in-defines (name x)
     (declare (xargs :guard (and (stringp name)
@@ -151,8 +145,8 @@ form.</p>"
 (defsection vl-make-initial-defines
   :parents (vl-defines-p)
   :short "@(call vl-make-initial-defines) is given a list of strings, and
-builds a @(see vl-defines-p) structure that <tt>`define</tt>s each of these
-names to <tt>1</tt>."
+builds a @(see vl-defines-p) structure that @('`define')s each of these names
+to @('1')."
 
   (defund vl-make-initial-defines (x)
     (declare (xargs :guard (string-listp x)))

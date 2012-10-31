@@ -31,21 +31,21 @@
   :parents (pad-trim)
   :short "Pad a character-list with spaces on the right."
 
-  :long "<p>@(call rpadchars) extends the character list <tt>x</tt> to length
-<tt>len</tt> by adding spaces on the right.  For instance,</p>
+  :long "<p>@(call rpadchars) extends the character list @('x') to length
+@('len') by adding spaces on the right.  For instance,</p>
 
-<code>
-  (rpadchars '(#\f #\o #\o) 5)
+@({
+  (rpadchars '(#\\f #\\o #\\o) 5)
      --&gt;
-  '(#\f #\o #\o #\Space #\Space)
-</code>
+  '(#\\f #\\o #\\o #\\Space #\\Space)
+})
 
 <p>This is completely dumb: we don't try to account for newlines, tabs, or
-anything like that, and just add <tt>#\Space</tt> characters until reaching the
+anything like that, and just add @('#\\Space') characters until reaching the
 desired width.</p>
 
-<p>If no new spaces are needed, <tt>x</tt> is returned unchanged and no consing
-is performed.</p>"
+<p>If no new spaces are needed, @('x') is returned unchanged and no consing is
+performed.</p>"
 
   (defund rpadchars (x len)
     (declare (xargs :guard (and (character-listp x)
@@ -77,21 +77,21 @@ is performed.</p>"
   :parents (pad-trim)
   :short "Pad a string with spaces on the right."
 
-  :long "<p>@(call rpadstr) extends the string <tt>x</tt> to length
-<tt>len</tt> by adding spaces on the right.  For instance,</p>
+  :long "<p>@(call rpadstr) extends the string @('x') to length @('len') by
+adding spaces on the right.  For instance,</p>
 
-<code>
+@({
   (rpadchars \"foo\" 5)
      --&gt;
   \"foo  \"
-</code>
+})
 
 <p>This is completely dumb: we don't try to account for newlines, tabs, or
-anything like that, and just add <tt>#\Space</tt> characters until reaching the
+anything like that, and just add @('#\\Space') characters until reaching the
 desired width.</p>
 
-<p>If no new spaces are needed, <tt>x</tt> is returned unchanged and no consing
-or coercion is performed.</p>"
+<p>If no new spaces are needed, @('x') is returned unchanged and no consing or
+coercion is performed.</p>"
 
   (local (in-theory (enable rpadchars append-chars)))
 
@@ -132,21 +132,21 @@ or coercion is performed.</p>"
   :parents (pad-trim)
   :short "Pad a character-list with spaces on the left."
 
-  :long "<p>@(call lpadchars) extends the character list <tt>x</tt> to length
-<tt>len</tt> by adding spaces on the left.  For instance,</p>
+  :long "<p>@(call lpadchars) extends the character list @('x') to length
+@('len') by adding spaces on the left.  For instance,</p>
 
-<code>
-  (lpadchars '(#\f #\o #\o) 5)
+@({
+  (lpadchars '(#\\f #\\o #\\o) 5)
      --&gt;
-  '(#\Space #\Space #\f #\o #\o)
-</code>
+  '(#\\Space #\\Space #\\f #\\o #\\o)
+})
 
 <p>This is completely dumb: we don't try to account for newlines, tabs, or
-anything like that, and just add <tt>#\Space</tt> characters until reaching the
+anything like that, and just add @('#\\Space') characters until reaching the
 desired width.</p>
 
-<p>If no new spaces are needed, <tt>x</tt> is returned unchanged and no consing
-is performed.</p>"
+<p>If no new spaces are needed, @('x') is returned unchanged and no consing is
+performed.</p>"
 
   (defund lpadchars (x len)
     (declare (xargs :guard (and (character-listp x)
@@ -178,21 +178,21 @@ is performed.</p>"
   :parents (pad-trim)
   :short "Pad a string with spaces on the left."
 
-  :long "<p>@(call lpadstr) extends the string <tt>x</tt> to length
-<tt>len</tt> by adding spaces on the left.  For instance,</p>
+  :long "<p>@(call lpadstr) extends the string @('x') to length @('len') by
+adding spaces on the left.  For instance,</p>
 
-<code>
+@({
   (lpadstr \"foo\" 5)
      --&gt;
   \"  foo\"
-</code>
+})
 
 <p>This is completely dumb: we don't try to account for newlines, tabs, or
-anything like that, and just add <tt>#\Space</tt> characters until reaching the
+anything like that, and just add @('#\\Space') characters until reaching the
 desired width.</p>
 
-<p>If no new spaces are needed, <tt>x</tt> is returned unchanged and no consing
-is performed.</p>"
+<p>If no new spaces are needed, @('x') is returned unchanged and no consing is
+performed.</p>"
 
   (local (in-theory (enable lpadchars)))
 
@@ -228,7 +228,7 @@ is performed.</p>"
   :short "Remove whitespace from the front and end of a string."
 
   :long "<p>@(call trim) removes whitespace characters from the front and end
-of the string <tt>x</tt>.</p>
+of the string @('x').</p>
 
 <p>BOZO eventually make this efficient.</p>"
 

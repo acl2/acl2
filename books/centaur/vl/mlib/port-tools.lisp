@@ -53,28 +53,28 @@ the top of each module declaration can be one of the following:</p>
 </ul>
 
 <p>Note that nested concatenations are not permitted under these rules, e.g.,
-whereas <tt>.a({b,c,d})</tt> is a valid port, <tt>.a({b,{c,d}})</tt> is not.
-Simple tests suggest that indeed Cadence permits only one concatenation, not
-nested concatenations.</p>
+whereas @('.a({b,c,d})') is a valid port, @('.a({b,{c,d}})') is not.  Simple
+tests suggest that indeed Cadence permits only one concatenation, not nested
+concatenations.</p>
 
 <p>We now introduce a recognizer that tolerates most of these expressions,
 except that we make two additional restrictions:</p>
 
 <ul>
 
-<li>For any bit-select, <tt>w[i]</tt>, the bit <tt>i</tt> being selected must
-be a resolved, constant integer, and</li>
+<li>For any bit-select, @('w[i]'), the bit @('i') being selected must be a
+resolved, constant integer, and</li>
 
-<li>For any part-select, <tt>w[a,b]</tt> the indexes <tt>a</tt> and <tt>b</tt>
-must be resolved, constant integers, with <tt>a &gt;= b</tt>.</li>
+<li>For any part-select, @('w[a,b]') the indexes @('a') and @('b') must be
+resolved, constant integers, with @('a >= b').</li>
 
 </ul>
 
 <p>Note that Cadence seems to impose similar restrictions, e.g., it rejects
-attempts to write <tt>w[width-1]</tt> where <tt>width</tt> is one of the
-module's parameters.  On the other hand, Cadence does tolerate port expressions
-such as <tt>w[3-1]</tt>.  I think the right way for VL to support these kinds
-of expressions is to apply @(see vl-expr-selresolve) to the port expressions
+attempts to write @('w[width-1]') where @('width') is one of the module's
+parameters.  On the other hand, Cadence does tolerate port expressions such as
+@('w[3-1]').  I think the right way for VL to support these kinds of
+expressions is to apply @(see vl-expr-selresolve) to the port expressions
 before considering whether they are valid.</p>
 
 <p>We call the first three kinds of expressions <em>basic</em> port expressions
@@ -231,15 +231,14 @@ list.</p>
 the names of the internal wires that are connected to the port.  For instance,
 in the following module,</p>
 
-<code>
+@({
 module mod (a, .b(foo), .c({bar[2], baz})) ;
   ...
 endmodule
-</code>
+})
 
-<p>the internal wires for the first port are <tt>(\"a\")</tt>, the second port
-to <tt>(\"foo\")</tt>, and for the third port to <tt>(\"bar\"
-\"baz\")</tt>.</p>
+<p>the internal wires for the first port are @('(\"a\")'), the second port to
+@('(\"foo\")'), and for the third port to @('(\"bar\" \"baz\")').</p>
 
 <p>We ignore any bit- or part-selects involved in the port expression and just
 return a list of strings.</p>"
@@ -278,37 +277,36 @@ return a list of strings.</p>"
   :parents (vl-port-p)
   :short "Attempt to determine the direction for a port."
 
-  :long "<p><b>Signature:</b> @(call vl-port-direction) returns <tt>(mv
-warnings maybe-dir)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-port-direction) returns @('(mv warnings
+maybe-dir)').</p>
 
 <p>As inputs:</p>
 
 <ul>
 
-<li><tt>port</tt> is the @(see vl-port-p) whose direction is being
-decided,</li>
+<li>@('port') is the @(see vl-port-p) whose direction is being decided,</li>
 
-<li><tt>portdecls</tt> should be the list of all @(see vl-portdecl-p)s for this
+<li>@('portdecls') should be the list of all @(see vl-portdecl-p)s for this
 module,</li>
 
-<li><tt>palist</tt> is the @(see vl-portdecl-alist) that provides fast lookups
-for these portdecls, and</li>
+<li>@('palist') is the @(see vl-portdecl-alist) that provides fast lookups for
+these portdecls, and</li>
 
-<li><tt>warnings</tt> is an ordinary warnings accumulator, which we may extend
-with non-fatal warnings.</li>
+<li>@('warnings') is an ordinary warnings accumulator, which we may extend with
+non-fatal warnings.</li>
 
 </ul>
 
 <p>We attempt to determine the direction of this port and return it.</p>
 
 <p>This function can fail if the port is not well-formed or if there is no port
-declaration corresponding to this port.  In this case we return <tt>nil</tt> as
-the <tt>maybe-dir</tt>, and add a non-fatal warning describing the problem.</p>
+declaration corresponding to this port.  In this case we return @('nil') as the
+@('maybe-dir'), and add a non-fatal warning describing the problem.</p>
 
 <p>Non-fatal warnings can also be added if a complex port has conflicting
-directions, e.g., imagine a port such as <tt>.foo({bar,baz})</tt>, where
-<tt>bar</tt> is an input and <tt>baz</tt> is an output.  We regard such a port
-as an <tt>inout</tt>, and add a warning that this case is very unusual.</p>"
+directions, e.g., imagine a port such as @('.foo({bar,baz})'), where @('bar')
+is an input and @('baz') is an output.  We regard such a port as an @('inout'),
+and add a warning that this case is very unusual.</p>"
 
   (defund vl-port-direction-aux (names portdecls palist warnings port)
     "Returns (MV SUCCESSP WARNINGS DIRECTIONS)"

@@ -205,10 +205,6 @@ and :save commands are executed.
  :dir :system)
 
 (extract-documentation-from-books
- ("hons-archive/hons-archive")
- :dir :system)
-
-(extract-documentation-from-books
  ("serialize/serialize")
  :dir :system)
 

@@ -149,8 +149,7 @@
   :short "Maximum member in a list of naturals."
 
   :long "<p>Typically you would only use this on non-empty lists, but as a
-reasonable default we say the maximum member of the empty list is
-<tt>0</tt>.</p>"
+reasonable default we say the maximum member of the empty list is @('0').</p>"
 
   (defund max-nats (x)
     (declare (xargs :guard (nat-listp x)))
@@ -194,7 +193,7 @@ reasonable default we say the maximum member of the empty list is
   :short "Minimum member in a list of naturals."
 
   :long "<p>Typically you would only use this on non-empty lists, but as a
-reasonable default we say the minimum of the empty list is <tt>0</tt>.</p>"
+reasonable default we say the minimum of the empty list is @('0').</p>"
 
   (defund min-nats (x)
     (declare (xargs :guard (nat-listp x)))
@@ -222,7 +221,7 @@ reasonable default we say the minimum of the empty list is <tt>0</tt>.</p>"
 
 (defsection nats-from
   :parents (utilities)
-  :short "@(call nats-from) enumerates the naturals from <tt>[a, b)</tt>."
+  :short "@(call nats-from) enumerates the naturals from @('[a, b)')."
 
 ;; copied from aigpu, minus a couple of theorems.
 

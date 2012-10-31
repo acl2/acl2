@@ -524,8 +524,8 @@ initially kept in a big, mixed list.</p>"
              (vl-modelement-p elem)))
   :parents (ctxexprs)
   :short "Description of where an expression occurs."
-  :long "<p>The <tt>mod</tt> field names the module where this expression
-was taken from.</p>
+  :long "<p>The @('mod') field names the module where this expression was taken
+from.</p>
 
-<p>The <tt>elem</tt> is a @(see vl-modelement-p) that describes more precisely
-where the expression occurred in <tt>mod</tt>.</p>")
+<p>The @('elem') is a @(see vl-modelement-p) that describes more precisely
+where the expression occurred in @('mod').</p>")

@@ -33,15 +33,14 @@ names, and also for partitioning lists into named and unnamed subsets.</p>
 
 <p>Our implementations are logically simple, but we use MBE to make them fairly
 efficient.  In particular, suppose we want to keep, delete, or filter the list
-<tt>X</tt> using some list of <tt>NAMES</tt>.  If there are only a few names,
-we use naive algorithm that calls <tt>member-equal</tt> repeatedly, and this is
-effectively <tt>O(|X|)</tt>.</p>
+@('X') using some list of @('NAMES').  If there are only a few names, we use
+naive algorithm that calls @('member-equal') repeatedly, and this is
+effectively @('O(|X|)').</p>
 
 <p>When there are many names, we use @(see make-lookup-alist) to construct a
 temporary, fast alist, and use @(see fast-memberp) to perform the lookups.
 Assuming that hashing operations are constant time, constructing this table is
-<tt>O(|NAMES|)</tt>, and the subsequent processing of <tt>X</tt> is
-<tt>O(|X|)</tt>.</p>")
+@('O(|NAMES|)'), and the subsequent processing of @('X') is @('O(|X|)').</p>")
 
 (defund def-vl-filter-by-name-fn
   (type          ;; should be 'netdecl, 'regdecl, 'vardecl, 'module, etc.
@@ -79,15 +78,15 @@ Assuming that hashing operations are constant time, constructing this table is
          :short ,(cat "Keep @(see vl-" (symbol-name type) "-p)s by "
 short-name ".")
 
-         :long ,(cat "<p>We are given <tt>names</tt>, a list of strings, and
-<tt>x</tt>, a list of @(see vl-" (symbol-name type) "-p)s.  We return all of the
-members of <tt>x</tt> whose " short-name "s are in <tt>names</tt>.</p>"
+         :long ,(cat "<p>We are given @('names'), a list of strings, and
+@('x'), a list of @(see vl-" (symbol-name type) "-p)s.  We return all of the
+members of @('x') whose " short-name "s are in @('names').</p>"
 
 keep-long
 
 "<h3>Definition</h3>
 
-<p>Note that we actually use <tt>nreverse</tt> under the hood.</p>
+<p>Note that we actually use @('nreverse') under the hood.</p>
 
 @(def " (symbol-name keep-fn) ")
 @(def " (symbol-name slow-keep-fn) ")
@@ -99,15 +98,15 @@ keep-long
          :short ,(cat "Remove @(see vl-" (symbol-name type) "-p)s by "
 short-name ".")
 
-         :long ,(cat "<p>We are given <tt>names</tt>, a list of strings, and
-<tt>x</tt>, a list of @(see vl-" (symbol-name type) "-p)s.  We remove all of the
-members of <tt>x</tt> whose " short-name "s are in <tt>names</tt>.</p>"
+         :long ,(cat "<p>We are given @('names'), a list of strings, and
+@('x'), a list of @(see vl-" (symbol-name type) "-p)s.  We remove all of the
+members of @('x') whose " short-name "s are in @('names').</p>"
 
 del-long
 
 "<h3>Definition</h3>
 
-<p>Note that we actually use <tt>nreverse</tt> under the hood.</p>
+<p>Note that we actually use @('nreverse') under the hood.</p>
 
 @(def " (symbol-name del-fn) ")
 @(def " (symbol-name slow-del-fn) ")
@@ -118,20 +117,19 @@ del-long
          :short ,(cat "Partition a list of @(see vl-" (symbol-name
 type) "-p)s by " short-name ".")
 
-         :long ,(cat "<p><b>Signature</b>: @(call " (symbol-name fn) ")
-returns <tt>(mv named unnamed)</tt>.</p>
+         :long ,(cat "<p><b>Signature</b>: @(call " (symbol-name fn) ") returns
+@('(mv named unnamed)').</p>
 
-<p>The only reason to use this function is efficiency.  Logically,
-<tt>named</tt> is equal to @(see " (symbol-name keep-fn) ") and
-<tt>unnamed</tt> is equal to @(see " (symbol-name del-fn) ").  We leave
-this function enabled and would think it odd to ever prove a theorem
-about it.</p>"
+<p>The only reason to use this function is efficiency.  Logically, @('named')
+is equal to @(see " (symbol-name keep-fn) ") and @('unnamed') is equal to
+@(see " (symbol-name del-fn) ").  We leave this function enabled and would
+think it odd to ever prove a theorem about it.</p>"
 
 filter-long
 
 "<h3>Definition</h3>
 
-<p>Note that we actually use <tt>nreverse</tt> under the hood.</p>
+<p>Note that we actually use @('nreverse') under the hood.</p>
 
 @(def " (symbol-name fn) ")
 @(def " (symbol-name fast-fn) ")"))
@@ -411,8 +409,8 @@ vl-remove-unnecessary-modules), and @(see vl-propagate-errors).</p>"
 
   :keep-long "<p><b>Note</b>: it is often better to use the related function
 @(see vl-fast-find-modules).  When the list of names is short,
-<tt>vl-fast-find-modules</tt> basically just requires a few hash table lookups,
-whereas <tt>vl-keep-modules</tt> has to recur over the entire list of
+@('vl-fast-find-modules') basically just requires a few hash table lookups,
+whereas @('vl-keep-modules') has to recur over the entire list of
 modules.</p>")
 
 (defthm no-duplicatesp-equal-of-vl-modulelist->names-of-vl-delete-modules

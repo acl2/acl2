@@ -93,11 +93,10 @@
   :parents (substrings)
   :short "Locate the first occurrence of a substring."
 
-  :long "<p>@(call strpos) searches through the string <tt>y</tt> for the first
-occurrence of the substring <tt>x</tt>.  If <tt>x</tt> occurs somewhere in
-<tt>y</tt>, it returns the starting index of the first occurrence.  Otherwise,
-it returns <tt>nil</tt> to indicate that <tt>x</tt> never occurs in
-<tt>y</tt>.</p>
+  :long "<p>@(call strpos) searches through the string @('y') for the first
+occurrence of the substring @('x').  If @('x') occurs somewhere in @('y'), it
+returns the starting index of the first occurrence.  Otherwise, it returns
+@('nil') to indicate that @('x') never occurs in @('y').</p>
 
 <p>The function is \"efficient\" in the sense that it does not coerce its
 arguments into lists, but rather traverses both strings with @(see char).  On
@@ -105,7 +104,7 @@ the other hand, it is a naive string search which operates by repeatedly
 calling @(see strprefixp), rather than some better algorithm.</p>
 
 <p>Corner case: we say that the empty string <b>is</b> a prefix of any other
-string.  That is, <tt>(strpos \"\" x)</tt> is 0 for all <tt>x</tt>.</p>"
+string.  That is, @('(strpos \"\" x)') is 0 for all @('x').</p>"
 
   (definlined strpos (x y)
     (declare (type string x)

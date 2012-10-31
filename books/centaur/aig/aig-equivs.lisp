@@ -29,8 +29,8 @@
 
 (defsection aig-equiv
   :parents (aig)
-  :short "We say the AIGs <tt>X</tt> and <tt>Y</tt> are equivalent when they
-always evaluate to the same value, per @(see aig-eval)."
+  :short "We say the AIGs @('X') and @('Y') are equivalent when they always
+evaluate to the same value, per @(see aig-eval)."
   :long "@(def aig-equiv)"
 
   (def-universal-equiv aig-equiv
@@ -45,8 +45,8 @@ always evaluate to the same value, per @(see aig-eval)."
 
 (defsection aig-alist-equiv
   :parents (aig)
-  :short "We say the AIG Alists <tt>X</tt> and <tt>Y</tt> are equivalent when
-they bind the same keys to equivalent AIGs, in the sense of @(see aig-equiv)."
+  :short "We say the AIG Alists @('X') and @('Y') are equivalent when they bind
+the same keys to equivalent AIGs, in the sense of @(see aig-equiv)."
   :long "@(def aig-alist-equiv)"
 
   (def-universal-equiv aig-alist-equiv
@@ -66,8 +66,8 @@ they bind the same keys to equivalent AIGs, in the sense of @(see aig-equiv)."
 
 (defsection aig-env-equiv
   :parents (aig)
-  :short "We say the environments <tt>X</tt> and <tt>Y</tt> are equivalent when
-they give equivalent values to variables looked up with @(see aig-env-lookup)."
+  :short "We say the environments @('X') and @('Y') are equivalent when they
+give equivalent values to variables looked up with @(see aig-env-lookup)."
   :long "@(def aig-env-equiv)"
 
   (def-universal-equiv aig-env-equiv
@@ -86,8 +86,8 @@ they give equivalent values to variables looked up with @(see aig-env-lookup)."
 
 (defsection faig-equiv
   :parents (faig)
-  :short "We say the FAIGs <tt>X</tt> and <tt>Y</tt> are equivalent when they
-always evaluate to the same value, per @(see faig-eval)."
+  :short "We say the FAIGs @('X') and @('Y') are equivalent when they always
+evaluate to the same value, per @(see faig-eval)."
 
   (def-universal-equiv faig-equiv
     :qvars env
@@ -100,8 +100,8 @@ always evaluate to the same value, per @(see faig-eval)."
 
 (defsection faig-alist-equiv
   :parents (faig)
-  :short "We say the FAIG Alists <tt>X</tt> and <tt>Y</tt> are equivalent when
-they bind the same keys to equivalent FAIGs, in the sense of @(see faig-equiv)."
+  :short "We say the FAIG Alists @('X') and @('Y') are equivalent when they
+bind the same keys to equivalent FAIGs, in the sense of @(see faig-equiv)."
 
   (def-universal-equiv faig-alist-equiv
     :qvars k

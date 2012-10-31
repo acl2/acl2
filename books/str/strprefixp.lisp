@@ -106,17 +106,18 @@
 (defsection strprefixp
   :parents (substrings)
   :short "Case-sensitive string prefix test."
-  :long "<p>@(call strprefixp) determines if the string <tt>x</tt> is a prefix
-of the string <tt>y</tt>, in a case-sensitive manner.</p>
+
+  :long "<p>@(call strprefixp) determines if the string @('x') is a prefix of
+the string @('y'), in a case-sensitive manner.</p>
 
 <p>Logically, this is identical to</p>
 
-<code>
+@({
  (prefixp (coerce x 'list) (coerce y 'list))
-</code>
+})
 
-<p>But we use a more efficient implementation which avoids coercing the
-strings into character lists.</p>"
+<p>But we use a more efficient implementation which avoids coercing the strings
+into character lists.</p>"
 
   (definline strprefixp (x y)
     (declare (type string x)

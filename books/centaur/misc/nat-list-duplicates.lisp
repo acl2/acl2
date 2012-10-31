@@ -36,9 +36,9 @@
 
   :long "<p>@(call nat-list-remove-duplicates) is logically equal to:</p>
 
-<code>
+@({
     (revappend (hons-remove-duplicates x) nil)
-</code>
+})
 
 <p>We leave this definition enabled, so typically you will want to just reason
 about @(see hons-remove-duplicates) and @(see revappend).</p>
@@ -61,11 +61,11 @@ information, only require one bit per entry.</p>
 that are particularly large numbers.  The storage required for the bit array is
 just based upon the maximum element in the list.  Here are some examples:</p>
 
-<code>
+@({
   2^21: 256 KB    2^24: 2 MB    2^27: 16 MB
   2^22: 512 KB    2^25: 4 MB    2^28: 32 MB
   2^23: 1 MB      2^26: 8 MB    2^29: 64 MB
-</code>
+})
 
 <p>In some rare cases, it may actually be worth allocating hundreds of
 megabytes of memory to remove duplicates from a list.  But most of the time, if

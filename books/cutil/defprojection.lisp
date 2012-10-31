@@ -31,16 +31,15 @@
   :short "Project a transformation across a list."
 
   :long "<p>Defprojection allows you to quickly introduce a function like
-<tt>map f</tt>.  That is, given an element-transforming function, <tt>f</tt>,
-it can define a new function that applies <tt>f</tt> to every element in a
-list.</p>
+@('map f').  That is, given an element-transforming function, @('f'), it can
+define a new function that applies @('f') to every element in a list.</p>
 
 <p>General form:</p>
 
-<code>
+@({
  (defprojection name formals
    element
-   &amp;key guard                   ; t by default
+   &key guard                   ; t by default
         verify-guards           ; t by default
         nil-preservingp         ; nil by default
         result-type             ; nil by default
@@ -53,73 +52,70 @@ list.</p>
         long                    ; nil by default
         parallelize             ; nil by default
         )
-</code>
+})
 
 <p>For example,</p>
 
-<code>
+@({
  (defprojection my-strip-cars (x)
    (car x)
    :guard (alistp x))
-</code>
+})
 
-<p>defines a new function, <tt>my-strip-cars</tt>, that is like the built-in
-ACL2 function <tt>strip-cars</tt>.</p>
+<p>defines a new function, @('my-strip-cars'), that is like the built-in ACL2
+function @('strip-cars').</p>
 
 <p>Note that <b>x</b> is treated in a special way: it refers to the whole list
 in the formals and guards, but refers to individual elements of the list in the
-<tt>element</tt> portion.  This is similar to how other macros like @(see
-deflist), @(see defalist), and @(see defmapappend) handle <tt>x</tt>.</p>
+@('element') portion.  This is similar to how other macros like @(see deflist),
+@(see defalist), and @(see defmapappend) handle @('x').</p>
 
 <h3>Usage and Arguments</h3>
 
-<p>Let <tt>pkg</tt> be the package of <tt>name</tt>.  All functions, theorems,
-and variables are created in this package.  One of the formals must be
-<tt>pkg::x</tt>, and this argument represents the list that will be
-transformed.  Otherwise, the only restriction on formals is that you may not
-use the names <tt>pkg::a</tt>, <tt>pkg::n</tt>, <tt>pkg::y</tt>, and
-<tt>pkg::acc</tt>, because we use these variables in the theorems we
-generate.</p>
+<p>Let @('pkg') be the package of @('name').  All functions, theorems, and
+variables are created in this package.  One of the formals must be @('pkg::x'),
+and this argument represents the list that will be transformed.  Otherwise, the
+only restriction on formals is that you may not use the names @('pkg::a'),
+@('pkg::n'), @('pkg::y'), and @('pkg::acc'), because we use these variables in
+the theorems we generate.</p>
 
-<p>The optional <tt>:guard</tt> and <tt>:verify-guards</tt> are given to the
-<tt>defund</tt> event that we introduce.  Often @(see deflist) is convenient
-for introducing the necessary guard.</p>
+<p>The optional @(':guard') and @(':verify-guards') are given to the
+@('defund') event that we introduce.  Often @(see deflist) is convenient for
+introducing the necessary guard.</p>
 
-<p>The optional <tt>:nil-preservingp</tt> argument can be set to <tt>t</tt>
-when the element transformation satisfies <tt>(element nil ...) = nil</tt>.
-This allows <tt>defprojection</tt> to produce slightly better theorems.</p>
+<p>The optional @(':nil-preservingp') argument can be set to @('t') when the
+element transformation satisfies @('(element nil ...) = nil').  This allows
+@('defprojection') to produce slightly better theorems.</p>
 
-<p>The optional <tt>:result-type</tt> keyword defaults to <tt>nil</tt>, and in
-this case no additional \"type theorem\" will be inferred.  But, if you instead
-give the name of a unary predicate like <tt>nat-listp</tt>, then a defthm will
-be generated that looks like <tt>(implies (force guard) (nat-listp (name
-...)))</tt> while <tt>name</tt> is still enabled.  This is not a very general
-mechanism, but it is often good enough to save a lot of work.</p>
+<p>The optional @(':result-type') keyword defaults to @('nil'), and in this
+case no additional \"type theorem\" will be inferred.  But, if you instead give
+the name of a unary predicate like @('nat-listp'), then a defthm will be
+generated that looks like @('(implies (force guard) (nat-listp (name ...)))')
+while @('name') is still enabled.  This is not a very general mechanism, but it
+is often good enough to save a lot of work.</p>
 
-<p>The optional <tt>:already-definedp</tt> keyword can be set if you have
-already defined the function.  This can be used to generate all of the ordinary
-<tt>defprojection</tt> theorems without generating a <tt>defund</tt> event, and
-is useful when you are dealing with mutually recursive transformations.</p>
+<p>The optional @(':already-definedp') keyword can be set if you have already
+defined the function.  This can be used to generate all of the ordinary
+@('defprojection') theorems without generating a @('defund') event, and is
+useful when you are dealing with mutually recursive transformations.</p>
 
-<p>The optional <tt>:mode</tt> keyword can be set to <tt>:logic</tt> or
-<tt>:program</tt> to introduce the recognizer in logic or program mode.  The
-default is whatever the current default defun-mode is for ACL2, i.e., if you
-are already in program mode, it will default to program mode, etc.</p>
+<p>The optional @(':mode') keyword can be set to @(':logic') or @(':program')
+to introduce the recognizer in logic or program mode.  The default is whatever
+the current default defun-mode is for ACL2, i.e., if you are already in program
+mode, it will default to program mode, etc.</p>
 
-<p>The optional <tt>:optimize</tt> keyword can be set to <tt>nil</tt> if you do
-not want the projection to be optimized with <tt>nreverse</tt>.  This will
-result in a slightly slower transformation function, but avoids a ttag.</p>
+<p>The optional @(':optimize') keyword can be set to @('nil') if you do not
+want the projection to be optimized with @('nreverse').  This will result in a
+slightly slower transformation function, but avoids a ttag.</p>
 
-<p>The optional <tt>:parents</tt>, <tt>:short</tt>, and <tt>:long</tt> keywords
-are as in @(see defxdoc).  Typically you only need to specify
-<tt>:parents</tt>, and suitable documentation will be automatically generated
-for <tt>:short</tt> and <tt>:long</tt>.  If you don't like this documentation,
-you can supply your own <tt>:short</tt> and/or <tt>:long</tt> to override
-it.</p>
+<p>The optional @(':parents'), @(':short'), and @(':long') keywords are as in
+@(see defxdoc).  Typically you only need to specify @(':parents'), and suitable
+documentation will be automatically generated for @(':short') and @(':long').
+If you don't like this documentation, you can supply your own @(':short')
+and/or @(':long') to override it.</p>
 
-<p>The optional <tt>:parallelize</tt> keyword should be set to non-<tt>nil</tt>
-when the user wishes to parallelize the execution of the defined
-function.</p>")
+<p>The optional @(':parallelize') keyword should be set to non-@('nil') when
+the user wishes to parallelize the execution of the defined function.</p>")
 
 (defthmd defprojection-append-of-nil
   (implies (true-listp a)

@@ -29,21 +29,25 @@
   :short "Support for one-hot detection."
   :long "<p>It is difficult to write a parameterized module that detects
 one-hotness for an arbitrary-sized wire using only synthesizable constructs.
-Instead, we define the module <tt>VL_N_BIT_ONEHOT</tt> (see
-<tt>VL_N_BIT_ONEHOT.v</tt> in the VL directory), which uses a for-loop to
-iterate over the bits of the input wire, and produces:</p>
+Instead, we define the module @('VL_N_BIT_ONEHOT') (see @('VL_N_BIT_ONEHOT.v')
+in the VL directory), which uses a for-loop to iterate over the bits of the
+input wire, and produces:</p>
 
 <ul>
-  <li><tt>1</tt>, if <tt>in</tt> is definitely one-hot, </li>
-  <li><tt>0</tt>, if <tt>in</tt> is definitely not one-hot, and</li>
-  <li><tt>X</tt>, if <tt>in</tt> contains X or Z values that make its
-      one-hotness uncertain.</li>
+
+<li>@('1'), if @('in') is definitely one-hot, </li>
+
+<li>@('0'), if @('in') is definitely not one-hot, and</li>
+
+<li>@('X'), if @('in') contains X or Z values that make its one-hotness
+uncertain.</li>
+
 </ul>
 
 <p>We have built this module into VL in a deep way.  When @(see
 unparameterization) encounters an instance of this module, instead of
 specializing it in the normal way, we produce a new module, say
-<tt>VL_3_BIT_ONEHOT</tt>, that performs the same function but uses only
+@('VL_3_BIT_ONEHOT'), that performs the same function but uses only
 synthesizable constructs.</p>")
 
 (defsection *vl-1-bit-onehot*
@@ -52,13 +56,13 @@ synthesizable constructs.</p>")
   :long "<p>@(srclink *vl-1-bit-onehot*) is a @(see vl-module-p) whose Verilog
 definition is the following:</p>
 
-<code>
+@({
 module VL_1_BIT_ONEHOT (out, in);
   output out;
   input in;
   buf (out, in);
 endmodule
-</code>
+})
 
 <p>It is useful as a base case in @(see vl-make-n-bit-onehot).</p>"
 
@@ -88,13 +92,13 @@ endmodule
   :long "<p>@(srclink *vl-2-bit-onehot*) is a @(see vl-module-p) whose Verilog
 definition is the following:</p>
 
-<code>
+@({
 module VL_2_BIT_ONEHOT (out, in);
   output out;
   input [1:0] in;
   assign out = ^in;
 endmodule
-</code>
+})
 
 <p>It is useful as a base case in @(see vl-make-n-bit-onehot).</p>"
 
@@ -138,19 +142,29 @@ duplicates!</p>
 one-hot detector for a wire of size A + B.  The basic approach is as follows.</p>
 
 <ul>
- <li>Let <tt>LEFT</tt> be the highest A bits of the input wire.</li>
- <li>Let <tt>RIGHT</tt> be the lowest B bits of the input wire.</li>
- <li>Use an A-bit one-hot detector to determine if <tt>LEFT</tt> is one-hot.</li>
- <li>Use a B-bit one-hot detector to determine if <tt>RIGHT</tt> is one-hot.</li>
- <li>Use <tt>~|left</tt> to determine if any bit of <tt>LEFT</tt> is set.</li>
- <li>Use <tt>~|right</tt> to determine if any bit of <tt>RIGHT</tt> is set.</li>
+
+<li>Let @('LEFT') be the highest A bits of the input wire.</li>
+
+<li>Let @('RIGHT') be the lowest B bits of the input wire.</li>
+
+<li>Use an A-bit one-hot detector to determine if @('LEFT') is one-hot.</li>
+
+<li>Use a B-bit one-hot detector to determine if @('RIGHT') is one-hot.</li>
+
+<li>Use @('~|left') to determine if any bit of @('LEFT') is set.</li>
+
+<li>Use @('~|right') to determine if any bit of @('RIGHT') is set.</li>
+
 </ul>
 
 <p>The entire input wire is now one-hot exactly when either:</p>
 
 <ul>
-  <li><tt>LEFT</tt> is one-hot and no bits of <tt>RIGHT</tt> are set, or</li>
-  <li><tt>RIGHT</tt> is one-hot and no bits of <tt>LEFT</tt> are set.</li>
+
+<li>@('LEFT') is one-hot and no bits of @('RIGHT') are set, or</li>
+
+<li>@('RIGHT') is one-hot and no bits of @('LEFT') are set.</li>
+
 </ul>
 
 <p>We now implement a scheme that uses this approach to generate a one-hot

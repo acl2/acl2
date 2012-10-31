@@ -351,8 +351,8 @@ can tolerate non-bit digits after the number.</p>"
   :parents (numbers)
   :short "Interpret a string as a decimal number."
   :long "<p>@(call strval) tries to interpret a string as a base-10 natural
-number.  For example, <tt>(strval \"35\")</tt> is 35.  If the string has any
-non-decimal digit characters or is empty, we return <tt>nil</tt>.</p>"
+number.  For example, @('(strval \"35\")') is 35.  If the string has any
+non-decimal digit characters or is empty, we return @('nil').</p>"
 
   (definlined strval (x)
     (declare (type string x))
@@ -373,8 +373,8 @@ non-decimal digit characters or is empty, we return <tt>nil</tt>.</p>"
   :parents (numbers)
   :short "Interpret a string as an octal number."
   :long "<p>@(call strval8) is like @(see strval) but for octal instead of
-decimal numbers.  For example, <tt>(strval8 \"10\")</tt> is 8.  If the string
-is empty or has any non-octal digit characters, we return <tt>nil</tt>.</p>"
+decimal numbers.  For example, @('(strval8 \"10\")') is 8.  If the string is
+empty or has any non-octal digit characters, we return @('nil').</p>"
 
   (definlined strval8 (x)
     (declare (type string x))
@@ -393,9 +393,8 @@ is empty or has any non-octal digit characters, we return <tt>nil</tt>.</p>"
   :parents (numbers)
   :short "Interpret a string as a hexadecimal number."
   :long "<p>@(call strval16) is like @(see strval) but for hexadecimal instead
-of decimal numbers.  For example, <tt>(strval16 \"10\")</tt> is 16.  If the
-string is empty or has any non-hex digit characters, we return
-<tt>nil</tt>.</p>"
+of decimal numbers.  For example, @('(strval16 \"10\")') is 16.  If the string
+is empty or has any non-hex digit characters, we return @('nil').</p>"
 
   (definlined strval16 (x)
     (declare (type string x))
@@ -414,8 +413,8 @@ string is empty or has any non-hex digit characters, we return
   :parents (numbers)
   :short "Interpret a string as a binary number."
   :long "<p>@(call strval2) is like @(see strval) but for binary instead of
-decimal numbers.  For example, <tt>(strval16 \"10\")</tt> is 2.  If the string
-is empty or has any non-binary digit characters, we return <tt>nil</tt>.</p>"
+decimal numbers.  For example, @('(strval16 \"10\")') is 2.  If the string is
+empty or has any non-binary digit characters, we return @('nil').</p>"
 
   (definlined strval2 (x)
     (declare (type string x))

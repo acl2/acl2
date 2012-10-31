@@ -31,11 +31,11 @@
   :long "<p>This is some rough code for finding expressions that might have
 precedence problems.</p>
 
-<p>Consider the expression <tt>a &amp; b &lt; c</tt>.  Due to the Verilog
-precedence rules, this gets parsed as <tt>a &amp; (b &lt; c)</tt>.  Well, that
-might be quite surprising.  We try to look for expressions like this and,
-unless the code contains explicit parens around the (b &lt; c) part, we issue a
-warning that it might not have the expected precedence.</p>
+<p>Consider the expression @('a & b < c').  Due to the Verilog precedence
+rules, this gets parsed as @('a & (b < c)').  Well, that might be quite
+surprising.  We try to look for expressions like this and, unless the code
+contains explicit parens around the @('(b < c)') part, we issue a warning that
+it might not have the expected precedence.</p>
 
 <p>This has found a few good bugs!</p>")
 
@@ -44,15 +44,15 @@ warning that it might not have the expected precedence.</p>
   :parents (oddexpr-check)
   :short "Heuristically estimate an expression's size."
 
-  :long "<p>This returns a size or <tt>nil</tt> for failure.  There's no reason
+  :long "<p>This returns a size or @('nil') for failure.  There's no reason
 to believe the size it returns will be the eventual size of the expression
 because size propagation hasn't been taken into account; in fact we may just
-fail and return <tt>nil</tt> for a number of reasons (for instance the wire
+fail and return @('nil') for a number of reasons (for instance the wire
 ranges may not be resolved yet), there's no way to get the failure reason.</p>
 
 <p>On the other hand, I think it should be the case that the final size of the
 expression will always be at least as much as this selfsize, if it returns a
-non-<tt>nil</tt> value.  And we can use this before resolving ranges, etc.,
+non-@('nil') value.  And we can use this before resolving ranges, etc.,
 which makes it useful for simple linting.</p>"
 
   (defconst *fake-modelement*
@@ -123,36 +123,36 @@ particular combination of operators, then just leave it out of the table.</p>
 
 <p>The keys in the table have the form (outer-class . inner-class).  For
 details about these classes see @(see vl-odd-binop-class).  Loosely speaking, a
-key like <tt>(:shift-class . :plus-class)</tt> matches expressions of the
-following forms:</p>
+key like @('(:shift-class . :plus-class)') matches expressions of the following
+forms:</p>
 
 <ol>
-<li>(a + b) &lt;&lt; c</li>
-<li>a &lt;&lt; (b + c)</li>
+<li>@('(a + b) << c')</li>
+<li>@('a << (b + c)')</li>
 </ol>
 
 <p>Whereas a key like (:plus-class . :shift-class) would match expressions of
 the following forms:</p>
 
 <ol>
-<li>(a &lt;&lt; b) + c</li>
-<li>a + (b &lt;&lt; c)</li>
+<li>@('(a << b) + c')</li>
+<li>@('a + (b << c)')</li>
 </ol>
 
-<p>In other words, the inner-op is the \"sub\" operation, and the outer-op is the
-\"top\" operation.</p>
+<p>In other words, the inner-op is the \"sub\" operation, and the outer-op is
+the \"top\" operation.</p>
 
 <p>Note that we never have keys where the outer-op has a higher precedence than
-the inner operation, such as <tt>(:plus-class . :shift-class)</tt>.  Why not?</p>
+the inner operation, such as @('(:plus-class . :shift-class)').  Why not?</p>
 
-<p>Because of the precedence rules, <tt>a &lt;&lt; b + c</tt> gets parsed as
-<tt>a &lt;&lt; (b + c)</tt>.  In other words, the only reason we'd ever get an
-expression that matches <tt>(:plus-class . :shift-class)</tt> is that the user
-explicitly put in their own parens around the shift operator.  If they've done
-that, then they are explicitly saying what precedence they want, and there's no
-chance they are going to be surprised by Verilog's precedence rules.  This same
-reasoning holds for any combination of operators where the outer op is higher
-precedence than the inner op.</p>
+<p>Because of the precedence rules, @('a << b + c') gets parsed as @('a << (b +
+c)').  In other words, the only reason we'd ever get an expression that matches
+@('(:plus-class . :shift-class)') is that the user explicitly put in their own
+parens around the shift operator.  If they've done that, then they are
+explicitly saying what precedence they want, and there's no chance they are
+going to be surprised by Verilog's precedence rules.  This same reasoning holds
+for any combination of operators where the outer op is higher precedence than
+the inner op.</p>
 
 <p><b>NOTE</b> see the source code for this table for additional comments
 giving motivation for these actions, etc.</p>
@@ -405,20 +405,21 @@ giving motivation for these actions, etc.</p>
   :parents (oddexpr-check)
   :short "Check the top-level of a binary expression for precedence problems."
 
-  :long "<p>Note that any particular binary expression, say <tt>P OP Q</tt>,
-might have sub-structure in either the P argument or in the Q argument.  To
-deal with this, in @(see vl-warn-odd-binary-expression), we call this function
-twice:</p>
+  :long "<p>Note that any particular binary expression, say @('P OP Q'), might
+have sub-structure in either the P argument or in the Q argument.  To deal with
+this, in @(see vl-warn-odd-binary-expression), we call this function twice:</p>
 
 <ul>
- <li>First with <tt>(OP P Q)</tt> and <tt>FLIPPED=NIL</tt>,</li>
- <li>Then with <tt>(OP Q P)</tt> and <tt>FLIPPED=T</tt>.</li>
+
+<li>First with @('(OP P Q)') and @('FLIPPED=NIL'),</li>
+
+<li>Then with @('(OP Q P)') and @('FLIPPED=T').</li>
+
 </ul>
 
 <p>The first argument, A, we regard as the \"simple\" argument; we don't try to
-decompose it any more.  However, we try to match X against <tt>B OP2 C</tt>.
-Then, we see if we think the sequence <tt>A op (B op2 C)</tt> seems
-reasonable.</p>"
+decompose it any more.  However, we try to match X against @('B OP2 C').  Then,
+we see if we think the sequence @('A op (B op2 C)') seems reasonable.</p>"
 
   (defund vl-warn-odd-binary-expression-main (op1 a x flipped mod ialist)
     (declare (xargs :guard (and (vl-op-p op1)
@@ -674,9 +675,9 @@ reasonable.</p>"
 
 (defsection vl-module-oddexpr-check
   :parents (oddexpr-check)
-  :short "@(call vl-module-oddexpr-check) carries our our @(see
-oddexpr-check) on all the expressions in a module, and adds any resulting
-warnings to the module."
+  :short "@(call vl-module-oddexpr-check) carries our our @(see oddexpr-check)
+on all the expressions in a module, and adds any resulting warnings to the
+module."
 
   (defund vl-module-oddexpr-check (x)
     (declare (xargs :guard (vl-module-p x)))

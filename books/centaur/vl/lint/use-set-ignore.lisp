@@ -33,23 +33,23 @@
 
 (defsection vl-uncomment-string
   :parents (vl-commentmap-p)
-  :short "Eat the leading <tt>//</tt> from a comment string, or eliminate the
-<tt>/* ... */</tt> pair from a comment string."
+  :short "Eat the leading @('//') from a comment string, or eliminate the @('/*
+... */') pair from a comment string."
 
   :long "<p><b>Signature:</b> @(call vl-eliminate-comment-characters) returns a
 string.</p>
 
-<p><tt>x</tt> must be a string.  It should be either a <tt>//</tt>-style
-comment or a <tt>/*...*/</tt>-style comment; otherwise we just return it
-unchanged.  Typically such strings are found in a @(see vl-commentmap-p).</p>
+<p>@('x') must be a string.  It should be either a @('//')-style comment or a
+@('/*...*/')-style comment; otherwise we just return it unchanged.  Typically
+such strings are found in a @(see vl-commentmap-p).</p>
 
-<p>If <tt>x</tt> is a single-line comment (i.e., it literally starts with
-<tt>//</tt>, and note that we don't look past whitespace), then we strip the
-leading <tt>//</tt> but we don't strip any associated newline.</p>
+<p>If @('x') is a single-line comment (i.e., it literally starts with @('//'),
+and note that we don't look past whitespace), then we strip the leading @('//')
+but we don't strip any associated newline.</p>
 
-<p>If <tt>x</tt> is a multi-line comment (i.e., it literally starts with
-<tt>/*</tt> and ends with <tt>*/</tt>, without looking at any whitespace), then
-we strip these characters.</p>"
+<p>If @('x') is a multi-line comment (i.e., it literally starts with @('/*')
+and ends with @('*/'), without looking at any whitespace), then we strip these
+characters.</p>"
 
   (defund vl-uncomment-string (x)
     (declare (type string x))
@@ -80,12 +80,12 @@ we strip these characters.</p>"
   :long "<p><b>Signature:</b> @(call vl-comment-body-echars) returns an @(see
 vl-echarlist-p).</p>
 
-<p><tt>x</tt> must be a string.  It should be either a <tt>//</tt>-style
-comment or a <tt>/*...*/</tt>-style comment.  We strip these comment characters
-and turn the remaining characters into echars.  If <tt>x</tt> isn't a Verilog
-comment, we just turn the whole thing into echars.</p>
+<p>@('x') must be a string.  It should be either a @('//')-style comment or a
+@('/*...*/')-style comment.  We strip these comment characters and turn the
+remaining characters into echars.  If @('x') isn't a Verilog comment, we just
+turn the whole thing into echars.</p>
 
-<p>The <tt>loc</tt> is a location to use as the starting location for these
+<p>The @('loc') is a location to use as the starting location for these
 comment's characters.  However, note from @(see vl-commentmap-p) that locations
 of comments are shifted over and ordinarily aren't very reliable.  The
 locations in the resulting echars are therefore also somewhat unreliable!</p>"
@@ -121,8 +121,8 @@ locations in the resulting echars are therefore also somewhat unreliable!</p>"
 
 (defsection vl-prefix-warning
   :parents (warnings)
-  :short "@(call vl-prefix-warning) adds the given <tt>prefix</tt> to the
-message for warning <tt>x</tt>, creating a new, extended warning."
+  :short "@(call vl-prefix-warning) adds the given @('prefix') to the message
+for warning @('x'), creating a new, extended warning."
 
   (defund vl-prefix-warning (prefix x)
     (declare (type string prefix)
@@ -147,8 +147,8 @@ message for warning <tt>x</tt>, creating a new, extended warning."
 
 (defsection vl-warninglist-change-types
   :parents (warnings)
-  :short "@(call vl-warninglist-change-types) changes the <tt>type</tt> of
-every warning in @(see x) to <tt>new-type</tt>."
+  :short "@(call vl-warninglist-change-types) changes the @('type') of every
+warning in @(see x) to @('new-type')."
 
   (defund vl-warninglist-change-types (new-type x)
     (declare (xargs :guard (and (symbolp new-type)

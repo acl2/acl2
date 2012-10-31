@@ -32,7 +32,7 @@
   :short "Collect the set of variables in an s-expression."
 
   :long "<p>@(call 4v-sexpr-vars) is one way to produce a list of all the
-variables that occur in the sexpr <tt>x</tt>.</p>
+variables that occur in the sexpr @('x').</p>
 
 <p><color rgb=\"#ff0000\">WARNING</color>: Variable collection is surprisingly
 difficult to do efficiently, and is also <b>often unnecessary</b>.</p>
@@ -55,9 +55,9 @@ assigned to the input and state bits is probably readily available.</p>
 extraneous bindings for variables that aren't in the sexpr.</p>
 
 <p>Depending on your application, @(see 4v-sexpr-vars-1pass) may be a more
-efficient way to collect variables than <tt>4v-sexpr-vars</tt>.</p>
+efficient way to collect variables than @('4v-sexpr-vars').</p>
 
-<p>The basic approach taken by <tt>4v-sexpr-vars</tt> is to</p>
+<p>The basic approach taken by @('4v-sexpr-vars') is to</p>
 
 <ul>
 

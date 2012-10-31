@@ -39,14 +39,14 @@
   :short "Introduce a recognizer for a typed list."
 
   :long "<p>Deflist allows you to quickly introduce a recognizer for a typed
-list (e.g., <tt>nat-listp</tt>), and proves basic theorems about it.</p>
+list (e.g., @('nat-listp')), and proves basic theorems about it.</p>
 
 <p>General form:</p>
 
-<code>
+@({
  (deflist name formals
    element
-   &amp;key guard               ; t by default
+   &key guard               ; t by default
         verify-guards       ; t by default
         guard-hints         ; nil by default
         guard-debug         ; nil by default
@@ -59,122 +59,119 @@ list (e.g., <tt>nat-listp</tt>), and proves basic theorems about it.</p>
         short               ; nil by default
         long                ; nil by default
         )
-</code>
+})
 
 <p>Basic example:</p>
 
-<p>The following introduces a new function, <tt>my-integer-listp</tt>, which
-recognizes lists whose every element satisfies <tt>integerp</tt>, and also
+<p>The following introduces a new function, @('my-integer-listp'), which
+recognizes lists whose every element satisfies @('integerp'), and also
 introduces many theorems about this new function.</p>
 
-<code>
+@({
  (deflist my-integer-listp (x)
    (integerp x))
-</code>
+})
 
 <p>Note that <b>x</b> is treated in a special way: it refers to the whole list
 in formals and guards, but refers to individual elements of the list in the
-<tt>:element</tt> portion.  This is similar to how other macros like @(see
-defalist), @(see defprojection), and @(see defmapappend) handle <tt>x</tt>.</p>
+@(':element') portion.  This is similar to how other macros like @(see
+defalist), @(see defprojection), and @(see defmapappend) handle @('x').</p>
 
 <p>More examples:</p>
 
 <p>Recognizer for lists with no natural numbers:</p>
 
-<code>
+@({
  (deflist nat-free-listp (x)
    (natp x)
    :negatedp t)
-</code>
+})
 
 <p>Recognizer for lists whose elements must exceed some minimum:</p>
 
-<code>
+@({
  (deflist all-greaterp (min x)
-   (&gt; x min)
+   (> x min)
    :guard (and (natp min)
                (nat-listp x)))
-</code>
+})
 
 
 <h3>Usage and Optional Arguments</h3>
 
-<p>Let <tt>pkg</tt> be the package of <tt>name</tt>.  All functions, theorems,
-and variables are created in this package.  One of the formals must be
-<tt>pkg::x</tt>, and this argument represents the list to check.  Otherwise,
-the only restriction on the formals is that you may not use the names
-<tt>pkg::a</tt>, <tt>pkg::n</tt>, or <tt>pkg::y</tt>, because we use these
-variables in the theorems we generate.</p>
+<p>Let @('pkg') be the package of @('name').  All functions, theorems, and
+variables are created in this package.  One of the formals must be @('pkg::x'),
+and this argument represents the list to check.  Otherwise, the only
+restriction on the formals is that you may not use the names @('pkg::a'),
+@('pkg::n'), or @('pkg::y'), because we use these variables in the theorems we
+generate.</p>
 
-<p>The optional <tt>:guard</tt>, <tt>:verify-guards</tt>,
-<tt>:guard-debug</tt>, and <tt>:guard-hints</tt> are options for the @(see
-defun) we introduce.  In other words, these are for the guards of the new list
-recognizer, not the element recognizer.</p>
+<p>The optional @(':guard'), @(':verify-guards'), @(':guard-debug'), and
+@(':guard-hints') are options for the @(see defun) we introduce.  In other
+words, these are for the guards of the new list recognizer, not the element
+recognizer.</p>
 
-<p>The optional <tt>:already-definedp</tt> keyword can be set if you have
-already defined the function.  This can be used to generate all of the ordinary
-<tt>deflist</tt> theorems without generating a <tt>defund</tt> event, and is
-useful when you are dealing with mutually recursive recognizers.</p>
+<p>The optional @(':already-definedp') keyword can be set if you have already
+defined the function.  This can be used to generate all of the ordinary
+@('deflist') theorems without generating a @('defund') event, and is useful
+when you are dealing with mutually recursive recognizers.</p>
 
-<p>The optional <tt>:true-listp</tt> keyword can be used to require that the
-new recognizer is \"strict\" and will only accept lists that are
-<tt>nil</tt>-terminated; by default the recognizer will be \"loose\" and will
-not pay attention to the final <tt>cdr</tt>.  There are various reasons to
-prefer one behavior or another; see @(see strict-list-recognizers) for
-details.</p>
+<p>The optional @(':true-listp') keyword can be used to require that the new
+recognizer is \"strict\" and will only accept lists that are
+@('nil')-terminated; by default the recognizer will be \"loose\" and will not
+pay attention to the final @('cdr').  There are various reasons to prefer one
+behavior or another; see @(see strict-list-recognizers) for details.</p>
 
-<p>The optional <tt>:elementp-of-nil</tt> keyword can be used when
-<tt>(elementp nil ...)</tt> is always known to be <tt>t</tt> or <tt>nil</tt>.
-When it is provided, <tt>deflist</tt> can generate slightly better
-theorems.</p>
+<p>The optional @(':elementp-of-nil') keyword can be used when @('(elementp nil
+...)') is always known to be @('t') or @('nil').  When it is provided,
+@('deflist') can generate slightly better theorems.</p>
 
-<p>The optional <tt>:negatedp</tt> keyword can be used to recognize a list
-whose every element does not satisfy elementp.</p>
+<p>The optional @(':negatedp') keyword can be used to recognize a list whose
+every element does not satisfy elementp.</p>
 
-<p>The optional <tt>:mode</tt> keyword can be set to <tt>:logic</tt> or
-<tt>:program</tt> to introduce the recognizer in logic or program mode.  The
-default is whatever the current default defun-mode is for ACL2, i.e., if you
-are already in program mode, it will default to program mode, etc.</p>
+<p>The optional @(':mode') keyword can be set to @(':logic') or @(':program')
+to introduce the recognizer in logic or program mode.  The default is whatever
+the current default defun-mode is for ACL2, i.e., if you are already in program
+mode, it will default to program mode, etc.</p>
 
-<p>The optional <tt>:parents</tt>, <tt>:short</tt>, and <tt>:long</tt> keywords
-are as in @(see defxdoc).  Typically you only need to specify
-<tt>:parents</tt>, and suitable documentation will be automatically generated
-for <tt>:short</tt> and <tt>:long</tt>.  If you don't like this documentation,
-you can supply your own <tt>:short</tt> and/or <tt>:long</tt> to override
-it.</p>")
+<p>The optional @(':parents'), @(':short'), and @(':long') keywords are as in
+@(see defxdoc).  Typically you only need to specify @(':parents'), and suitable
+documentation will be automatically generated for @(':short') and @(':long').
+If you don't like this documentation, you can supply your own @(':short')
+and/or @(':long') to override it.</p>")
 
 (defxdoc strict-list-recognizers
   :parents (deflist)
-  :short "Should your list recognizers require <tt>nil</tt>-terminated lists?"
+  :short "Should your list recognizers require @('nil')-terminated lists?"
 
   :long "<p>Here are two ways that you could write a list recognizer:</p>
 
 <p>The \"strict\" way:</p>
 
-<code>
+@({
    (defun foo-listp (x)
      (if (atom x)
          (not x)
        (and (foop (car x))
             (foo-listp (cdr x)))))
-</code>
+})
 
 <p>The \"loose\" way:</p>
 
-<code>
+@({
    (defun foo-listp (x)
      (if (atom x)
          t
        (and (foop (car x))
             (foo-listp (cdr x)))))
-</code>
+})
 
 <p>The only difference is that in the base case, the strict recognizer requires
 X to be NIL, whereas the loose recognizer allows X to be any atom.</p>
 
 <p>By default, the recognizers introduced by @(see deflist) follow the loose
-approach.  You can use the <tt>:true-listp</tt> option to change this behavior,
-and instead introduce a strict recognizer.</p>
+approach.  You can use the @(':true-listp') option to change this behavior, and
+instead introduce a strict recognizer.</p>
 
 <p>Why in the world would we use a loose recognizer?  Well, there are
 advantages to either approach.</p>
@@ -198,40 +195,40 @@ each structure.</p>
 NIL, and produce the same result regardless of the final cdr.\" More formally,
 you might say that F respects the list-fix convention when you can prove</p>
 
-<code>
+@({
    (defcong list-equiv equal (f ... x ...) n)
-</code>
+})
 
 <p>Where list-equiv is equality up to the final cdr, e.g.,</p>
 
-<code>
+@({
    (list-equiv x y) = (equal (list-fix x) (list-fix y))
-</code>
+})
 
 <p>Many functions follow this convention or something similar to it, and
 because of this there are sometimes nicer theorems about loose list recognizers
 than about strict list recognizers.  For instance, consider @(see append).  In
 the loose style, we can prove:</p>
 
-<code>
+@({
    (equal (foo-listp (append x y))
           (and (foo-listp x)
                (foo-listp y)))
-</code>
+})
 
 <p>In the strict style, we have to prove something uglier, e.g.,</p>
 
-<code>
+@({
    (equal (foo-listp (append x y))
           (and (foo-listp (list-fix x))
                (foo-listp y)))
-</code>
+})
 
 <p>There are many other nice theorems, but just as a few examples, each of
 these theorems are very nice in the loose style, and are uglier in the strict
 style:</p>
 
-<code>
+@({
    (equal (foo-listp (list-fix x))
           (foo-listp x))
 
@@ -244,7 +241,7 @@ style:</p>
    (implies (and (subsetp-equal x y)
                  (foo-listp y))
             (foo-listp x))
-</code>
+})
 
 <p>@(see deflist) originally came out of <a
 href='http://www.cs.utexas.edu/users/jared/milawa/Web/'>Milawa</a>, where I
@@ -436,10 +433,11 @@ of which recognizers require true-listp and which don't.</p>")
        (long (or long
                  (and parents
                       (if true-listp
-                          "<p>This is a strict @(see cutil::deflist).  That is, it
-requires <tt>x</tt> to be a \"properly\" nil-terminated list.</p>"
-                        "<p>This is a loose @(see cutil::deflist).  That is, it
-does not care whether <tt>x</tt> is nil-terminated.</p>"))))
+                          "<p>This is an ordinary @(see cutil::deflist).  It is
+\"strict\" in that it requires @('x') to be a \"properly\" nil-terminated
+list.</p>"
+                        "<p>This is an ordinary @(see cutil::deflist).  It is
+\"loose\" in that it does not care whether @('x') is nil-terminated.</p>"))))
 
        (def (if already-definedp
                 nil

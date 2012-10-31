@@ -35,9 +35,9 @@
 error-prone, and subtle aspect</b> of processing Verilog expressions.  One
 reason for this is that the size and signedness of subexpressions depends upon
 the other terms in the expressions that contain them.  For instance, the result
-of <tt>((4'd14 + 4'd3) &gt;&gt; 4'd1)</tt> might be either 8 or 0, depending on
-where it is being used.  Another reason is just how elaborate the rules for
-sizing are, and how many corner cases there are.</p>
+of @('((4'd14 + 4'd3) >> 4'd1)') might be either 8 or 0, depending on where it
+is being used.  Another reason is just how elaborate the rules for sizing are,
+and how many corner cases there are.</p>
 
 <p>These issues mean that great care must be taken even when writing
 simple-looking reductions like constant folding.  Moreover, you really need to
@@ -48,7 +48,6 @@ generates Verilog expressions.</p>
 Verilog's basic algorithm for how sizes and types are determined.  You may also
 wish to familiarize yourself with the VL notion of <see topic=\"@(url
 vl-expr-welltyped-p)\">well-typed</see> expressions.</p>
-
 
 <p>The expression-sizing transformation attempts to determine expression sizes
 and types throughout a module.  Prerequisite transformations:</p>
@@ -88,9 +87,9 @@ operand-specific rules and corner cases.</li>
 Approximately true: if the final signedness is signed, then we globally
 sign-extend every operand to the final width; if the final signedness is
 unsigned, we instead always zero-extend the operands.  After this extension,
-the operands all agree on a size, and the inputs to operators like <tt>+</tt>
-will have the same width, and the output of the operator will also have this
-same width.  But again, the real story has many rules and corner cases to
+the operands all agree on a size, and the inputs to operators like @('+') will
+have the same width, and the output of the operator will also have this same
+width.  But again, the real story has many rules and corner cases to
 cover.</li>
 
 </ol>
@@ -103,31 +102,30 @@ phases is a critical first step to making any sense of the rules.</p>
 <h4>Final-Size Computation</h4>
 
 <p>First, the claim that \"final size of the expression is the maximum size of
-any of its operands\" is basically true for expressions like <tt>a + b</tt>.
-But it is completely wrong for, e.g., <tt>|foo</tt> or <tt>foo == bar</tt>,
-which basically produce one-bit wide answers.  Another example is
-concatenations like <tt>{foo, bar}</tt> where the width should be the sum of
-its arguments widths.</p>
+any of its operands\" is basically true for expressions like @('a + b').  But
+it is completely wrong for, e.g., @('|foo') or @('foo == bar'), which basically
+produce one-bit wide answers.  Another example is concatenations like @('{foo,
+bar}') where the width should be the sum of its arguments widths.</p>
 
 <p>The actual rules for computing the final width of an expression are given in
 Table 5-22 of the Verilog spec, which we now reproduce: </p>
 
-<code>
+@({
  Expression                     Bit Length         Notes
  -----------------------------------------------------------------------------
  Unsized constants              \"Same as integer\"  (see ** below)
  Sized constants                As given
- i [+ - * / % &amp; | ^ ^~ ~^] j    max{L(i),L(j)}
+ i [+ - * / % & | ^ ^~ ~^] j    max{L(i),L(j)}
  [+ - ~] i                      L(i)
- i [=== !== == != &gt; &gt;= &lt; &lt;=] j  1 bit              i,j sized to max(L(i),L(j))
- i [&amp;&amp; ||] j                    1 bit              i,j self-determined
- [&amp; ~&amp; | ~| ^ ~^ ^~ !] i        1 bit              i self-determined
- i [&gt;&gt; &lt;&lt; ** &gt;&gt;&gt; &lt;&lt;&lt;] j         L(i)               j self-determined
+ i [=== !== == != > >= < <=] j  1 bit              i,j sized to max(L(i),L(j))
+ i [&& ||] j                    1 bit              i,j self-determined
+ [& ~& | ~| ^ ~^ ^~ !] i        1 bit              i self-determined
+ i [>> << ** >>> <<<] j         L(i)               j self-determined
  i ? j : k                      max(L(j),L(k))     i self-determined
  {i, ..., j}                    L(i)+...+L(j)      all self-determined
  {i {j, ..., k}}                i*(L(j)+...+L(k))  all self-determined
  -----------------------------------------------------------------------------
-</code>
+})
 
 <p>(**) What does \"same as integer\" mean?  From Section 4.8: Verilog
 implementations may limit the size of integer variables.  The limit must be at
@@ -142,15 +140,15 @@ whose behavior might be implementation-dependent.  But I eventually decided
 that this approach overly complicated the sizing code.  Today, the VL @(see
 lexer) automatically treats unsized constants as if they were 32 bits so the
 whole matter of \"how large is integer-size?\" is effectively settle a priori.
-But the lexer also marks any unsized constants with the <tt>:wasunsized</tt>
+But the lexer also marks any unsized constants with the @(':wasunsized')
 property, which allows us to still carry out this compatibility checking.</p>
 
 <p>At any rate, the \"bit length\" column in the above table gives an almost
 full story about how to determine the finalwidth of an expression.  But as a
 final twist, when assignment statements are sized, the bit-length of the
 left-hand side of the assignment also plays a role in the finalwidth
-computation.  Essentially, the finalwidth of <tt>rhs</tt> in <tt>assign lhs =
-rhs</tt> is <tt>max{L(lhs), L(rhs)}</tt>.</p>
+computation.  Essentially, the finalwidth of @('rhs') in @('assign lhs = rhs')
+is @('max{L(lhs), L(rhs)}').</p>
 
 <p>Our main function for computing the desired finalwidth of an expression is
 @(see vl-expr-selfsize).</p>
@@ -159,11 +157,11 @@ rhs</tt> is <tt>max{L(lhs), L(rhs)}</tt>.</p>
 <h4>Signedness Computation</h4>
 
 <p>The above claim that \"the final signedness will be unsigned unless all
-operands are signed\" is basically true for expressions like <tt>a + b</tt>.
-For instance, if the full expression is <tt>(3 + 4) + 0</tt>, then its final
-signedness is signed because all of its operands are signed.  On the other
-hand, if we change this to <tt>(3 + 4) + 1'b0</tt>, then the final signedness
-is unsigned because <tt>1'b0</tt> is unsigned.</p>
+operands are signed\" is basically true for expressions like @('a + b').  For
+instance, if the full expression is @('(3 + 4) + 0'), then its final signedness
+is signed because all of its operands are signed.  On the other hand, if we
+change this to @('(3 + 4) + 1'b0'), then the final signedness is unsigned
+because @('1'b0') is unsigned.</p>
 
 <p>The Verilog rules for signedness are covered in Section 5.5.1 and 5.5.4.
 We summarize these rules here:</p>
@@ -171,23 +169,23 @@ We summarize these rules here:</p>
 <ul>
 
 <li>Constants are either signed or unsigned depending upon how they are written
-in the source code, e.g., plain numbers like <tt>5</tt> are signed, and
-otherwise the signedness is controlled by the base specifier, e.g.,
-<tt>10'b0</tt> is unsigned but <tt>10'sb0</tt> is signed.  (All of this is
-handled by our @(see lexer) and built into the <tt>:origtype</tt> field of our
-@(see vl-constint-p) and @(see vl-weirdint-p) atomguts.)</li>
+in the source code, e.g., plain numbers like @('5') are signed, and otherwise
+the signedness is controlled by the base specifier, e.g., @('10'b0') is
+unsigned but @('10'sb0') is signed.  (All of this is handled by our @(see
+lexer) and built into the @(':origtype') field of our @(see vl-constint-p) and
+@(see vl-weirdint-p) atomguts.)</li>
 
 <li>Bit-selects, part-selects, concatenations (and presumably multiple
-concatenations), and comparison results (e.g., from <tt>a == b</tt>) are
-always unsigned.</li>
+concatenations), and comparison results (e.g., from @('a == b')) are always
+unsigned.</li>
 
 <li>Reals converted to integers are signed (but we don't handle reals, so
 this doesn't affect us).</li>
 
 <li>The signedness of self-determined subexpressions is determined by the
 subexpression itself, and doesn't depend on any other terms from the
-expression, e.g., <tt>{ 3, 1'b0 }</tt> is a concatenation with one signed and
-one unsigned subexpression.</li>
+expression, e.g., @('{ 3, 1'b0 }') is a concatenation with one signed and one
+unsigned subexpression.</li>
 
 <li>For nonself-determined operands, if any operand is real the result is real;
 if any operand is unsigned the result is unsigned; otherwise all operands are
@@ -285,14 +283,14 @@ Verilog implementations to see what they seem to do.</p>
 <h4>Conditional Operator</h4>
 
 <p>Verilog-XL and NCVerilog agree that the answer for both of the following
-expressions are <tt>1111101</tt>.  This can only happen if the branch operands
-are being sign-extended.  Hence, it seems taht these implementations treat the
-sign of the condition as irrelevant to the result type.</p>
+expressions are @('1111101').  This can only happen if the branch operands are
+being sign-extended.  Hence, it seems that these implementations treat the sign
+of the condition as irrelevant to the result type.</p>
 
-<code>
+@({
 wire [6:0] y0 = 1'b0 ? 3'sb 100 : 3'sb 101;
 wire [6:0] y1 = 1'sb0 ? 3'sb 100 : 3'sb 101;
-</code>
+})
 
 <h4>Power Operator</h4>
 
@@ -300,10 +298,10 @@ wire [6:0] y1 = 1'sb0 ? 3'sb 100 : 3'sb 101;
 only are able to test with NCVerilog.  NCVerilog reports 1984 (-64) as the
 result for both of the following,</p>
 
-<code>
+@({
 wire [10:0] p2 = (3'sb100 ** 2'b11);
 wire [10:0] p3 = (3'sb100 ** 2'sb11);
-</code>
+})
 
 <p>Hence it seems that the type of the exponent is not relevant to the result
 type.  If it were, then in p2 we would have to zero-extend the base to 4,
@@ -315,16 +313,16 @@ rather than sign-extend it to -4, and the result for p2 would be 64 instead of
 <p>For good measure we also tried a shift-operator, even though we think the
 spec is clear here.</p>
 
-<code>
-wire [4:0] v1 = 1'sd 1 &gt;&gt; 1'b0;
-</code>
+@({
+wire [4:0] v1 = 1'sd 1 >> 1'b0;
+})
 
-<p>Here, ignoring the sign of the right-hand side would produce <tt>11111</tt>,
+<p>Here, ignoring the sign of the right-hand side would produce @('11111'),
 since the left-hand side would be sign-extended to 5 bits and then unchanged by
 the shift.  On the other hand, if we allow the right-hand side to play a role,
 then the result is unsigned and we would zero-extend the left-hand side
 instead, producing a final result of 1.  Both Verilog-XL and NCVerilog get
-<tt>11111</tt>, which we think is correct.</p>
+@('11111'), which we think is correct.</p>
 
 <h4>Conclusions</h4>
 
@@ -339,27 +337,32 @@ details.</p>
 
 <h3>Q2.  What is the type of a reduction or logical operation?</h3>
 
-<p>The ambiguity in Q1 is also a problem for the logical
-operators (<tt>&amp;&amp;</tt>, <tt>||</tt>, and <tt>!</tt>) and reduction
-operators (<tt>&amp;</tt>, <tt>~&amp;</tt>, <tt>|</tt>, <tt>~|</tt>,
-<tt>^</tt>, <tt>~^</tt>, and <tt>^~</tt>).</p>
+<p>The ambiguity in Q1 is also a problem for:</p>
+<ul>
+
+<li>the logical operators (@('&&'), @('||'), and @('!')) and</li>
+
+<li>the reduction operators (@('&'), @('~&'), @('|'), @('~|'), @('^'), @('~^'),
+and @('^~')).</li>
+
+</ul>
 
 <p>In these cases, there are no nonself-determined operators that R2 might
 allow us to use to get an answer.  5.1.11 (reduction operators) doesn't provide
 any help, and neither does 5.1.9 (logical operators).  So, we are again reduced
 to testing.  Here are some simple cases:</p>
 
-<code>
+@({
 wire [4:0] q0 = | 17;
 wire [4:0] q1 = ! 3'sd 0;
-wire [4:0] q2 = &amp; 5'sb11111;
-wire [4:0] q3 = 3 &amp;&amp; 5;
-</code>
+wire [4:0] q2 = & 5'sb11111;
+wire [4:0] q3 = 3 && 5;
+})
 
-<p>In Verilog-XL and NCVerilog, all of these expressions produce
-<tt>00001</tt>, meaning that in each case they are being zero-extended instead
-of sign extended.  This is somewhat further evidence that R2 is not supposed to
-apply to self-determined operands.</p>
+<p>In Verilog-XL and NCVerilog, all of these expressions produce @('00001'),
+meaning that in each case they are being zero-extended instead of sign
+extended.  This is somewhat further evidence that R2 is not supposed to apply
+to self-determined operands.</p>
 
 <p>Some internet searching revealed <a
 href=\"http://www.eda.org/svdb/bug_view_page.php?bug_id=0001072\">Issue
@@ -367,26 +370,26 @@ href=\"http://www.eda.org/svdb/bug_view_page.php?bug_id=0001072\">Issue
 is wrong and should say reduction operators and logical operators produce
 unsigned 1-bit values.</p>
 
-<p>We therefore treat these as unsigned 1-bit values, but we take special
-care to generate warnings if this treatment affects the final signedness of
-an expression.  See @(see vl-expr-typedecide) for details.</p>
+<p>We therefore treat these as unsigned 1-bit values, but we take special care
+to generate warnings if this treatment affects the final signedness of an
+expression.  See @(see vl-expr-typedecide) for details.</p>
 
 
 <h3>Q3.  What does shifting by a negative number mean?</h3>
 
 <p>This question is silly because it seems that the Verilog specification
-somewhat clearly says in 5.1.12 that <em>the right operand is always treated
-as an unsigned number</em>.</p>
+somewhat clearly says in 5.1.12 that <em>the right operand is always treated as
+an unsigned number</em>.</p>
 
 <p>Unfortunately, Verilog-XL and NCVerilog produce different results for:</p>
 
-<code>
-wire [9:0] v0 = 10'b 0000_11_0000 &gt;&gt; ( 2'sd 0 + 1'sd 1 );
-</code>
+@({
+wire [9:0] v0 = 10'b 0000_11_0000 >> ( 2'sd 0 + 1'sd 1 );
+})
 
-<p>In Verilog-XL, the answer is <tt>0001_10_0000</tt>, i.e., the result appears
-to have been left-shifted by one place; in NCVerilog, the answer is
-<tt>0000_00_0110</tt>, i.e., the result appears to have been right-shifted by 3
+<p>In Verilog-XL, the answer is @('0001_10_0000'), i.e., the result appears to
+have been left-shifted by one place; in NCVerilog, the answer is
+@('0000_00_0110'), i.e., the result appears to have been right-shifted by 3
 places.</p>
 
 <p>In both cases, the right-hand side seems to indeed be self-determined and
@@ -399,7 +402,8 @@ List Archives, specifically a <a
 href=\"http://www.boydtechinc.com/btf/archive/btf_1999/0642.html\">signed shift
 errata?</a> thread started by Stuart Sutherland on Monday, July 19, 1999, the
 followup to which suggests that Verilog-XL is in the wrong and that this is one
-area where NCVerilog was designed to match the standard instead of Verilog-XL.</p>
+area where NCVerilog was designed to match the standard instead of
+Verilog-XL.</p>
 
 <p>We follow NCVerilog's behavior, but issue a warning if we see a signed
 right-hand side (unless it is a signed constant whose sign-bit is zero) so that
@@ -421,10 +425,10 @@ details.</p>")
   :long "<p><b>Warning</b>: this function should typically only be called by
 the @(see expression-sizing) transform.</p>
 
-<p><b>Signature:</b> @(call vl-atom-selfsize) returns <tt>(mv warnings
-size)</tt></p>
+<p><b>Signature:</b> @(call vl-atom-selfsize) returns @('(mv warnings
+size)')</p>
 
-<p>We attempt to compute the \"self-determined size\" of the atom <tt>x</tt>.
+<p>We attempt to compute the \"self-determined size\" of the atom @('x').
 Another way to look at this function is as an extension of \"origwidth\" from
 constint/weirdint atoms to include identifiers.</p>
 
@@ -436,12 +440,12 @@ size of a constant, and we never fail to do so.</p>
 <p>For identifiers, we must look up the identifier in the module to try to
 determine its size.  This can fail if the identifier is not declared in the
 module, or if its size is not resolved.  In these cases, we add a fatal warning
-to <tt>warnings</tt> and return <tt>nil</tt> as the size.</p>
+to @('warnings') and return @('nil') as the size.</p>
 
 <p>We do not try to size other atoms, such as strings, real numbers, individual
-HID pieces, function names, etc.; instead we just return <tt>nil</tt> as the
-size.  But we do not issue a warning in this case, because it seems like these
-things are not really supposed to have sizes.</p>"
+HID pieces, function names, etc.; instead we just return @('nil') as the size.
+But we do not issue a warning in this case, because it seems like these things
+are not really supposed to have sizes.</p>"
 
   (defund vl-atom-selfsize (x mod ialist elem warnings)
     "Returns (MV WARNINGS SIZE)"
@@ -569,21 +573,21 @@ things are not really supposed to have sizes.</p>"
   :long "<p><b>Warning</b>: this function should typically only be called by
 the @(see expression-sizing) transform.</p>
 
-<p>This might as well have been part of @(see vl-op-selfsize).  I
-decided to separate it out so that it can be more easily managed if it grows
-into a complex function.  At the moment we only support <tt>$random</tt>.</p>
+<p>This might as well have been part of @(see vl-op-selfsize).  I decided to
+separate it out so that it can be more easily managed if it grows into a
+complex function.  At the moment we only support @('$random').</p>
 
 <h3>$random</h3>
 
 <p>From Section 17.9.1 on page 311, <i>\"The system function
-<tt>$random</tt>... returns a new 32-bit random number each time it is called.
-The random number is a signed integer; it can be positive or negative...</i>
-This is rather vague, but I think it probably means two separate things.
-First, that the values produced by <tt>$random</tt> are in the range
-<tt>[-2^31, 2^31)</tt>.  Second, that the \"return type\" of <tt>$random</tt>
-is <tt>integer</tt>, which of course has an implementation-dependent size which
-some implementation might treat as 64-bits.  But since we emulate a 32-bit
-implementation, we just regard the size of <tt>$random</tt> as 32.</p>"
+@('$random')... returns a new 32-bit random number each time it is called.  The
+random number is a signed integer; it can be positive or negative...</i> This
+is rather vague, but I think it probably means two separate things.  First,
+that the values produced by @('$random') are in the range @('[-2^31, 2^31)').
+Second, that the \"return type\" of @('$random') is @('integer'), which of
+course has an implementation-dependent size which some implementation might
+treat as 64-bits.  But since we emulate a 32-bit implementation, we just regard
+the size of @('$random') as 32.</p>"
 
   (defund vl-syscall-selfsize (args arg-sizes context elem warnings)
     "Returns (MV WARNINGS SIZE)"
@@ -862,17 +866,16 @@ implementation, we just regard the size of <tt>$random</tt> as 32.</p>"
   :long "<p><b>Warning</b>: this function should typically only be called by
 the @(see expression-sizing) transform.</p>
 
-<p><b>Signature:</b> @(call vl-op-selfsize) returns <tt>(mv warnings
-size)</tt></p>
+<p><b>Signature:</b> @(call vl-op-selfsize) returns @('(mv warnings size)')</p>
 
 <p>We attempt to determine the size of the expression formed by applying some
-operator, <tt>op</tt>, to some arguments, <tt>args</tt>.  We assume that each
-argument has already had its self-size computed successfully and that the
-results of these computations are given as the <tt>arg-sizes</tt>.</p>
+operator, @('op'), to some arguments, @('args').  We assume that each argument
+has already had its self-size computed successfully and that the results of
+these computations are given as the @('arg-sizes').</p>
 
-<p>The <tt>context</tt> is irrelevant and is only used to form better error
+<p>The @('context') is irrelevant and is only used to form better error
 messages; it is supposed to be the expression we are trying to size.  The
-<tt>elem</tt> is similarly irrelevant, and gives the broader context for this
+@('elem') is similarly irrelevant, and gives the broader context for this
 expression.</p>
 
 <p>This function basically implements Table 5-22; see @(see
@@ -1126,24 +1129,28 @@ expression-sizing).</p>"
   :long "<p><b>Warning</b>: this function should typically only be called by
 the @(see expression-sizing) transform.</p>
 
-<p><b>Signature: </b> @(call vl-expr-selfsize) returns <tt>(mv warnings
-size)</tt>.</p>
+<p><b>Signature: </b> @(call vl-expr-selfsize) returns @('(mv warnings
+size)').</p>
 
 <p>As inputs:</p>
 
 <ul>
-<li><tt>x</tt> is the expression whose size we wish to compute.</li>
-<li><tt>mod</tt> is the module that contains this expression; we use it to look
-up expression sizes from their declarations.</li>
-<li><tt>ialist</tt> is the precomputed @(see vl-moditem-alist) for
-<tt>mod</tt>; we use it for fast wire lookups.</li>
-<li><tt>elem</tt> is a semantically irrelevant; it is a @(see vl-modelement-p)
-that provides a context for @(see warnings).</li>
+
+<li>@('x') is the expression whose size we wish to compute.</li>
+
+<li>@('mod') is the module that contains this expression; we use it to look up
+expression sizes from their declarations.</li>
+
+<li>@('ialist') is the precomputed @(see vl-moditem-alist) for @('mod'); we use
+it for fast wire lookups.</li>
+
+<li>@('elem') is a semantically irrelevant; it is a @(see vl-modelement-p) that
+provides a context for @(see warnings).</li>
+
 </ul>
 
-<p>The <tt>size</tt> we return is a @(see vl-maybe-natp); a <tt>size</tt> of
-<tt>nil</tt> indicates that we had some problem determining the expression's
-size.</p>
+<p>The @('size') we return is a @(see vl-maybe-natp); a @('size') of @('nil')
+indicates that we had some problem determining the expression's size.</p>
 
 <p>Some failures are expected, e.g., we do not know how to size some system
 calls.  In these cases we do not cause any warnings.  But in other cases, a
@@ -1154,7 +1161,7 @@ array.  In these cases we generate fatal warnings.</p>
 <p>BOZO we might eventually add as inputs the full list of modules and a
 modalist so that we can look up HIDs.  An alternative would be to use the
 annotations left by @(see vl-modulelist-follow-hids) like (e.g.,
-<tt>VL_HID_RESOLVED_RANGE_P</tt>) to see how wide HIDs are.</p>"
+@('VL_HID_RESOLVED_RANGE_P')) to see how wide HIDs are.</p>"
 
   (mutual-recursion
 
@@ -1347,8 +1354,8 @@ annotations left by @(see vl-modulelist-follow-hids) like (e.g.,
 (defsection vl-exprtype-max
   :parents (vl-expr-typedecide)
   :short "@(see vl-exprtype-max) is given @(see vl-exprtype-p)s as arguments;
-it returns <tt>:vl-unsigned</tt> if any argument is unsigned, or
-<tt>:vl-signed</tt> when all arguments are signed."
+it returns @(':vl-unsigned') if any argument is unsigned, or @(':vl-signed')
+when all arguments are signed."
 
   (local (in-theory (enable vl-exprtype-p)))
 
@@ -1398,17 +1405,17 @@ it returns <tt>:vl-unsigned</tt> if any argument is unsigned, or
   :long "<p><b>Warning</b>: this function should typically only be called by
 the @(see expression-sizing) transform.</p>
 
-<p><b>Signature:</b> @(call vl-atom-typedecide) returns <tt>(mv warnings
-type)</tt>.</p>
+<p><b>Signature:</b> @(call vl-atom-typedecide) returns @('(mv warnings
+type)').</p>
 
-<p>We compute what the type of the atom <tt>x</tt> would be if it were in a
+<p>We compute what the type of the atom @('x') would be if it were in a
 self-determined location.  Another way to look at this function is as an
-extension of \"origtype\" from constint/weirdint atoms to include
-identifiers and strings.</p>
+extension of \"origtype\" from constint/weirdint atoms to include identifiers
+and strings.</p>
 
-<p>The <tt>type</tt> we return is a @(see vl-maybe-exprtype-p).  Similarly to
-@(see vl-atom-selfsize), we might fail and return <tt>nil</tt> for the type,
-perhaps producing some warnings.</p>"
+<p>The @('type') we return is a @(see vl-maybe-exprtype-p).  Similarly to @(see
+vl-atom-selfsize), we might fail and return @('nil') for the type, perhaps
+producing some warnings.</p>"
 
   (defund vl-atom-typedecide (x mod ialist elem warnings)
     "Returns (MV WARNINGS TYPE)"
@@ -1546,26 +1553,26 @@ perhaps producing some warnings.</p>"
   :long "<p><b>Warning</b>: this function should typically only be called by
 the @(see expression-sizing) transform.</p>
 
-<p><b>Signature:</b> @(call vl-expr-typedecide-aux) returns <tt>(mv warnings
-type)</tt></p>
+<p><b>Signature:</b> @(call vl-expr-typedecide-aux) returns @('(mv warnings
+type)')</p>
 
 <p>These are the same arguments as @(see vl-expr-typedecide) except for
-<tt>mode</tt>.  You should probably read @(see expression-sizing-minutia) to
+@('mode').  You should probably read @(see expression-sizing-minutia) to
 understand the valid modes:</p>
 
 <ul>
 
-<li>In <tt>:probably-wrong</tt> mode, we treat reduction/logical operations as
-if they produce signed values when their argument is signed, and we allow the
+<li>In @(':probably-wrong') mode, we treat reduction/logical operations as if
+they produce signed values when their argument is signed, and we allow the
 types of self-determined operands in conditional operators, shifts, and so
 forth to affect the resulting expression type.  We do not think this is how
 sizing is supposed to be done, but a Verilog implementation that was based on a
 reading of the specification might mistakenly do it this way.</li>
 
-<li>In <tt>:probably-right</tt> mode, we try to behave like other Verilog
-systems and ignore the type of self-determined operands when computing the
-resulting types of expressions, and we also treat reduction/logical operations
-as if they produce unsigned values.</li>
+<li>In @(':probably-right') mode, we try to behave like other Verilog systems
+and ignore the type of self-determined operands when computing the resulting
+types of expressions, and we also treat reduction/logical operations as if they
+produce unsigned values.</li>
 
 </ul>"
 
@@ -1894,39 +1901,39 @@ as if they produce unsigned values.</li>
   :long "<p><b>Warning</b>: this function should typically only be called by
 the @(see expression-sizing) transform.</p>
 
-<p><b>Signature:</b> @(call vl-expr-typedecide) returns <tt>(mv warnings
-type)</tt>.  The arguments are as in @(see vl-expr-selfsize).</p>
+<p><b>Signature:</b> @(call vl-expr-typedecide) returns @('(mv warnings
+type)').  The arguments are as in @(see vl-expr-selfsize).</p>
 
 <p>We determine the signedness of an expression.  This function must
 <b>only</b> be used on \"top-level\" and self-determined portions of
 expressions.  That is, consider an assignment like:</p>
 
-<code>
+@({
   assign w = {foo + bar, a + b} | (baz + 1) ;
-</code>
+})
 
-<p>Here, it is legitimate to call <tt>vl-expr-typedecide</tt> to determine the
+<p>Here, it is legitimate to call @('vl-expr-typedecide') to determine the
 signs of:</p>
 
 <ul>
- <li><tt>foo + bar</tt>, because it is self-determined,</li>
- <li><tt>a + b</tt>, because it is self-determined, and</li>
- <li><tt>{foo + bar, a + b} | (baz + 1)</tt>, because it is top-level.</li>
+ <li>@('foo + bar'), because it is self-determined,</li>
+ <li>@('a + b'), because it is self-determined, and</li>
+ <li>@('{foo + bar, a + b} | (baz + 1)'), because it is top-level.</li>
 </ul>
 
-<p>But it is <b>not</b> legitimate to try to decide the sign of, <tt>baz +
-1</tt> in isolation, and doing so could yield an nonsensical result.  For
-instance, if <tt>baz</tt> is signed then, by itself, <tt>baz + 1</tt> looks
-like a signed addition.  But concatenations are always unsigned, so in the
-larger context we can see that this addition is in fact unsigned.</p>
+<p>But it is <b>not</b> legitimate to try to decide the sign of, @('baz + 1')
+in isolation, and doing so could yield an nonsensical result.  For instance, if
+@('baz') is signed then, by itself, @('baz + 1') looks like a signed addition.
+But concatenations are always unsigned, so in the larger context we can see
+that this addition is in fact unsigned.</p>
 
-<p>The <tt>sign</tt> we return is only a @(see vl-maybe-exprtype-p).  We might
-return <tt>nil</tt> for two reasons.  First, there could be some kind of actual
+<p>The @('sign') we return is only a @(see vl-maybe-exprtype-p).  We might
+return @('nil') for two reasons.  First, there could be some kind of actual
 error with the module or the expression, e.g., the use of a wire which is not
 declared; in these cases we add fatal @(see warnings).  But we may also
 encounter expressions whose type we do not know how to compute (e.g., perhaps
 the expression is an unsupported system call).  In such cases we just return
-<tt>nil</tt> for the sign without adding any warnings.</p>"
+@('nil') for the sign without adding any warnings.</p>"
 
   (defund vl-expr-typedecide (x mod ialist elem warnings)
     "Returns (MV WARNINGS TYPE)"
@@ -2014,14 +2021,14 @@ finalwidth."
   :long "<p><b>Warning</b>: this function should typically only be called by
 the @(see expression-sizing) transform.</p>
 
-<p><b>Signature:</b> @(call vl-expandsizes-zeroextend) returns <tt>(mv successp
-warnings expanded-expr)</tt>.</p>
+<p><b>Signature:</b> @(call vl-expandsizes-zeroextend) returns @('(mv successp
+warnings expanded-expr)').</p>
 
-<p>The <tt>finalwidth</tt> must be at least as large as the finalwidth of
-<tt>x</tt>.  If an extension is needed, we introduce an explicit concatenation,
-e.g., if we are expanding <tt>foo</tt> from 3 to 7 bits, we produce an
-<tt>expanded-expr</tt> of the form <tt>{ 4'b0, foo }</tt>.  When no extension
-is needed, we just return <tt>x</tt> unchanged.</p>"
+<p>The @('finalwidth') must be at least as large as the finalwidth of @('x').
+If an extension is needed, we introduce an explicit concatenation, e.g., if we
+are expanding @('foo') from 3 to 7 bits, we produce an @('expanded-expr') of
+the form @('{ 4'b0, foo }').  When no extension is needed, we just return
+@('x') unchanged.</p>"
 
   (defund vl-expandsizes-zeroextend (x finalwidth elem warnings)
     "Returns (MV SUCCESSP WARNINGS EXPANDED-EXPR)"
@@ -2127,21 +2134,20 @@ is needed, we just return <tt>x</tt> unchanged.</p>"
 (defsection vl-sign-extend-constint
   :parents (vl-expr-expandsizes)
   :short "@(call vl-sign-extend-constint) returns a new value, which is the
-sign extension of the <tt>origwidth</tt>-bit <tt>value</tt> to
-<tt>finalwidth</tt> bits."
+sign extension of the @('origwidth')-bit @('value') to @('finalwidth') bits."
 
   :long "<p>When the MSB is true we need to add the appropriate number of 1
 bits.  There are probably any number of ways to do this.  My method is
 relatively simple:</p>
 
-<code>
+@({
                          |---- finalwidth -------------|
                                        |-- origwidth --|
                value  == 0000...0000   1bb...bbbbbbbbbbb
    (logior)    mask   == 1111...1111   000...00000000000
  ----------------------------------------------------------
                result == 1111...1111   1bb...bbbbbbbbbbb
-</code>"
+})"
 
   (defund vl-sign-extend-constint (value origwidth finalwidth)
     (declare (xargs :guard (and (natp value)
@@ -2209,24 +2215,24 @@ integer atom."
   :long "<p><b>Warning</b>: this function should typically only be called by
 the @(see expression-sizing) transform.</p>
 
-<p><b>Signature:</b> @(call vl-constint-atom-expandsizes) returns <tt>(mv
-successp warnings x-prime)</tt>.</p>
+<p><b>Signature:</b> @(call vl-constint-atom-expandsizes) returns @('(mv
+successp warnings x-prime)').</p>
 
 <p>We expect that the finalwidth is at least as large as the constant's
 original width, and that if the constant was originally unsigned then the
 finaltype should also be unsigned.  If these conditions are not met, expansion
 fails with fatal warnings.</p>
 
-<p>The new atom we build, <tt>x-prime</tt> will have a new @(see vl-constint-p)
-for its guts, where the origwidth and origtype have been modified to match the
+<p>The new atom we build, @('x-prime') will have a new @(see vl-constint-p) for
+its guts, where the origwidth and origtype have been modified to match the
 final width and type of the atom.  We have no choice but to do this in the case
 of a true sign extension, because the new value might not fit into the original
 width.  So for consistency we do it in all cases.  <b>BOZO</b> having
-<tt>:finalwidth</tt> and <tt>:finaltype</tt> fields for atoms seems somewhat
-redundant if we are changing the width and type of the guts.  We could consider
-forcing these fields to either be nil or to agree with the constint's
-width/type (and similarly for weirdints).  Otherwise we can make this part of
-well-typed expressions, but I'm partial to the former.</p>
+@(':finalwidth') and @(':finaltype') fields for atoms seems somewhat redundant
+if we are changing the width and type of the guts.  We could consider forcing
+these fields to either be nil or to agree with the constint's width/type (and
+similarly for weirdints).  Otherwise we can make this part of well-typed
+expressions, but I'm partial to the former.</p>
 
 <h3>Compatibility Warnings</h3>
 
@@ -2236,27 +2242,26 @@ It is scary to expand originally-unsized numbers (most frequently plain decimal
 numbers) past 32-bits because this could perhaps result in
 implementation-dependent behavior.  For instance, consider:</p>
 
-<code>
+@({
 wire signed [47:0] foo, bar;
 assign bar = ...;
 assign foo = bar + 'h 8000_0000 ;  // bar + 2^31
-</code>
+})
 
-<p>Suppose <tt>bar</tt> is zero.  On a 32-bit system, the 2^31 represents a
+<p>Suppose @('bar') is zero.  On a 32-bit system, the 2^31 represents a
 negative number, so when we sign-extend it to 48 bits we get
-<tt>FFFF_8000_0000</tt>.  The final value of <tt>foo</tt> is thus
-<tt>FFFF_8000_0000</tt>.  But on a 64-bit system, the 2^31 represents a
-positive number and we would instead end up sign-extending <tt>bar</tt> to 64
-bits.  The 64-bit addition produces <tt>0000_0000_8000_0000</tt> which is then
-truncated to 48 bits.  The final value of <tt>foo</tt> is thus
-<tt>0000_8000_0000</tt>, which does not match the 32-bit implementation.</p>
+@('FFFF_8000_0000').  The final value of @('foo') is thus @('FFFF_8000_0000').
+But on a 64-bit system, the 2^31 represents a positive number and we would
+instead end up sign-extending @('bar') to 64 bits.  The 64-bit addition
+produces @('0000_0000_8000_0000') which is then truncated to 48 bits.  The
+final value of @('foo') is thus @('0000_8000_0000'), which does not match the
+32-bit implementation.</p>
 
 <p>So, when can these kinds of problems arise?</p>
 
 <p>If bar was unsigned, then I think there is no problem because we will need
-to zero-extend the 2^31 to 48 bits, which yields <tt>0000_8000_0000</tt>
-regardless of whether we are on a 32-bit, 64-bit, or other-bit
-implementation.</p>
+to zero-extend the 2^31 to 48 bits, which yields @('0000_8000_0000') regardless
+of whether we are on a 32-bit, 64-bit, or other-bit implementation.</p>
 
 <p>I once imagined that the sign-bit of the constant had to be 1 to cause
 problems, but it is still possible to demonstrate a compatibility problem with
@@ -2264,17 +2269,17 @@ a zero sign bit.  On the other hand, because examples I can think of seem to
 rely upon shift operations and hence be relatively unlikely, I mark these as
 minor warnings.  Here is an example of such a problem:</p>
 
-<code>
+@({
 wire signed [47:0] foo, bar;
 assign bar = ...;
-assign foo = (bar + 5) &gt;&gt; 1;
-</code>
+assign foo = (bar + 5) >> 1;
+})
 
-<p>Suppose bar is <tt>FFFF_FFFF_FFFF</tt>.  On the 64-bit implementation, the
-addition produces is done in 64 bits and produces <tt>1_0000_0000_0004</tt>,
-which is then shifted to obtain <tt>8000_0000_0002</tt>.  On a 32-bit
-implementation, the addition is only done in 48 bits and the carry is lost, so
-the sum is <tt>4</tt> and the final result is <tt>2</tt>.</p>"
+<p>Suppose bar is @('FFFF_FFFF_FFFF').  On the 64-bit implementation, the
+addition produces is done in 64 bits and produces @('1_0000_0000_0004'), which
+is then shifted to obtain @('8000_0000_0002').  On a 32-bit implementation, the
+addition is only done in 48 bits and the carry is lost, so the sum is @('4')
+and the final result is @('2').</p>"
 
 ; BOZO can we push the sanity checks into the guard?
 
@@ -2468,8 +2473,8 @@ integer atom."
   :long "<p><b>Warning</b>: this function should typically only be called by
 the @(see expression-sizing) transform.</p>
 
-<p><b>Signature:</b> @(call vl-weirdint-atom-expandsizes) returns <tt>(mv
-successp warnings x-prime)</tt>.</p>
+<p><b>Signature:</b> @(call vl-weirdint-atom-expandsizes) returns @('(mv
+successp warnings x-prime)').</p>
 
 <p>See @(see vl-constint-atom-expandsizes); this function is the same except
 that it deals with @(see vl-weirdint-p)s.</p>"
@@ -2655,8 +2660,8 @@ identifier atom."
   :long "<p><b>Warning</b>: this function should typically only be called by
 the @(see expression-sizing) transform.</p>
 
-<p><b>Signature:</b> @(call vl-idatom-expandsizes) returns <tt>(mv successp
-warnings x-prime)</tt>.</p>"
+<p><b>Signature:</b> @(call vl-idatom-expandsizes) returns @('(mv successp
+warnings x-prime)').</p>"
 
 ; BOZO can we push the sanity checks into the guard?
 
@@ -2829,8 +2834,8 @@ integer atom."
   :long "<p><b>Warning</b>: this function should typically only be called by
 the @(see expression-sizing) transform.</p>
 
-<p><b>Signature:</b> @(call vl-string-atom-expandsizes) returns <tt>(mv
-successp warnings x-prime)</tt>.</p>
+<p><b>Signature:</b> @(call vl-string-atom-expandsizes) returns @('(mv successp
+warnings x-prime)').</p>
 
 <p>See @(see vl-constint-atom-expandsizes); this function is the same except
 that it deals with @(see vl-string-p)s.</p>"
@@ -2963,8 +2968,8 @@ that it deals with @(see vl-string-p)s.</p>"
   :long "<p><b>Warning</b>: this function should typically only be called by
 the @(see expression-sizing) transform.</p>
 
-<p><b>Signature:</b> @(call vl-atom-expandsizes) returns <tt>(mv successp
-warnings x-prime)</tt>.</p>"
+<p><b>Signature:</b> @(call vl-atom-expandsizes) returns @('(mv successp
+warnings x-prime)').</p>"
 
   (defund vl-atom-expandsizes (x finalwidth finaltype mod ialist elem warnings)
     "Returns (MV SUCCESSP WARNINGS X-PRIME)"
@@ -3193,28 +3198,28 @@ expressions.  Each of these has several arguments in common:</p>
 
 <ul>
 
-<li><tt>x</tt>, an expression (or expression list) that we want to size;</li>
+<li>@('x'), an expression (or expression list) that we want to size;</li>
 
-<li><tt>mod</tt>, the module in which <tt>x</tt> occurs; we use this to look up
-wire widths;</li>
+<li>@('mod'), the module in which @('x') occurs; we use this to look up wire
+widths;</li>
 
-<li><tt>ialist</tt>, the @(see vl-moditem-alist) for <tt>mod</tt>, so that we
-can perform fast lookups;</li>
+<li>@('ialist'), the @(see vl-moditem-alist) for @('mod'), so that we can
+perform fast lookups;</li>
 
-<li><tt>elem</tt>, a @(see vl-modelement-p) which is semantically irrelevant
-and only provides a context for warnings;</li>
+<li>@('elem'), a @(see vl-modelement-p) which is semantically irrelevant and
+only provides a context for warnings;</li>
 
-<li><tt>warnings</tt>, an ordinary @(see warnings) accumulator, which we may
-extend with fatal or non-fatal warnings.</li>
+<li>@('warnings'), an ordinary @(see warnings) accumulator, which we may extend
+with fatal or non-fatal warnings.</li>
 
 </ul>
 
-<p>And each function returns <tt>(mv successp warnings x-prime)</tt>, where
-<tt>successp</tt> indicates whether all sizing was successful,
-<tt>warnings</tt> is the updated warnings accumulator, and <tt>x-prime</tt> is
-essentially <tt>(if successp x sized-x)</tt>.  That is, on failure we do not
-modify <tt>x</tt>, but on success we returned a new version of <tt>x</tt> where
-all the sizes and types have been computed.</p>
+<p>And each function returns @('(mv successp warnings x-prime)'), where
+@('successp') indicates whether all sizing was successful, @('warnings') is the
+updated warnings accumulator, and @('x-prime') is essentially @('(if successp x
+sized-x)').  That is, on failure we do not modify @('x'), but on success we
+returned a new version of @('x') where all the sizes and types have been
+computed.</p>
 
 <p>There are four functions in the recursion.</p>
 
@@ -3222,37 +3227,37 @@ all the sizes and types have been computed.</p>
 
 <dt>@(call vl-expr-size)</dt>
 
-<dd>Here, the <tt>lhs-size</tt> is a @(see vl-maybe-natp).  To size an
-expression <tt>x</tt> which occurs in an assignment such as <tt>assign lhs =
-x</tt>, the <tt>lhs-size</tt> should be the width of <tt>lhs</tt>.  To size
-other expressions that do not occur in assignments, such as a self-determined
-subexpression, the <tt>lhs-size</tt> should be nil.</dd>
+<dd>Here, the @('lhs-size') is a @(see vl-maybe-natp).  To size an expression
+@('x') which occurs in an assignment such as @('assign lhs = x'), the
+@('lhs-size') should be the width of @('lhs').  To size other expressions that
+do not occur in assignments, such as a self-determined subexpression, the
+@('lhs-size') should be nil.</dd>
 
 <dd>This function implements the two-phase algorithm described in @(see
 expression-sizing).  That is, it first determines the maximum size of any
-operand in <tt>x</tt> and the desired type of <tt>x</tt>, using @(see
-vl-expr-selfsize) and @(see vl-expr-typedecide) (which are not part of the
-mutual recursion).  It then propagates this size and type into the operands,
-using <tt>vl-expr-expandsizes</tt>.</dd>
+operand in @('x') and the desired type of @('x'), using @(see vl-expr-selfsize)
+and @(see vl-expr-typedecide) (which are not part of the mutual recursion).  It
+then propagates this size and type into the operands, using
+@('vl-expr-expandsizes').</dd>
 
 <dt>@(call vl-expr-expandsizes)</dt>
 
 <dd>This function carries out the propagation phase.  We are given the
-<tt>finalwidth</tt> and <tt>finaltype</tt> that have been determined by the
-first phase of the sizing algorithm, and we must expand every
-context-determined operand to match this finalwidth and finaltype.</dd>
+@('finalwidth') and @('finaltype') that have been determined by the first phase
+of the sizing algorithm, and we must expand every context-determined operand to
+match this finalwidth and finaltype.</dd>
 
 <dt>@(call vl-exprlist-size)</dt>
 
-<dd>Here, <tt>x</tt> should be a list of self-determined expressions.  We use
-<tt>vl-expr-size</tt> (with <tt>lhs-size = nil</tt>) to size each of the
-expressions in <tt>x</tt>.</dd>
+<dd>Here, @('x') should be a list of self-determined expressions.  We use
+@('vl-expr-size') (with @('lhs-size = nil')) to size each of the expressions in
+@('x').</dd>
 
 <dt>@(call vl-exprlist-expandsizes)</dt>
 
-<dd>Here, <tt>x</tt> should be a list of context-determined expressions.  We
-use <tt>vl-expr-expandsizes</tt> to expand the operands within each member of
-<tt>x</tt> to the desired <tt>finalwidth</tt> and <tt>finaltype</tt>.</dd>
+<dd>Here, @('x') should be a list of context-determined expressions.  We use
+@('vl-expr-expandsizes') to expand the operands within each member of @('x') to
+the desired @('finalwidth') and @('finaltype').</dd>
 
 </dl>"
 
@@ -4457,8 +4462,8 @@ context-determined expressions."
          (thm-type   (intern-in-package-of-symbol thm-type-s name))
          (short      (cat "Compute sizes and types of expressions
 throughout a @(see " type-s ")"))
-         (long       (cat "<p><b>Signature:</b> @(call " name-s ") returns
-<tt>(mv successp warnings x-prime)</tt>.</p>" long))
+         (long (cat "<p><b>Signature:</b> @(call " name-s ") returns @('(mv
+successp warnings x-prime)').</p>" long))
          (formals    (append '(x mod ialist)
                              (if takes-elem '(elem) nil)
                              '(warnings))))
@@ -4502,8 +4507,8 @@ throughout a @(see " type-s ")"))
          (thm-true   (intern-in-package-of-symbol thm-true-s name))
          (short      (cat "Compute sizes and types of expressions throughout
 a @(see " type-s ")"))
-         (long       (cat "<p><b>Signature:</b> @(call " name-s ") returns
-<tt>(mv successp warnings x-prime)</tt>.</p>"))
+         (long (cat "<p><b>Signature:</b> @(call " name-s ") returns @('(mv
+successp warnings x-prime)').</p>"))
          (formals   (append '(x mod ialist)
                             (if takes-elem '(elem) nil)
                             '(warnings))))
@@ -4833,10 +4838,10 @@ ultimately agree with the target port, but I am feeling pretty confident that
 the port's width does <b>not</b> play a role in sizing the expression.  A good
 reason for this is that, if you go and read xf-replicate-insts, and look at the
 rules for splitting up instance arrays, it seems like there is more than one
-possibility for the context width in this case, namely <tt>FW</tt> or <tt>N *
-FW</tt>, where <tt>FW</tt> is the width of the formal and <tt>N</tt> is the
-size of the array, so it doesn't seem like the port's width could in any
-sensible way used to size the expression.</p>"
+possibility for the context width in this case, namely @('FW') or @('N * FW'),
+where @('FW') is the width of the formal and @('N') is the size of the array,
+so it doesn't seem like the port's width could in any sensible way used to size
+the expression.</p>"
 
   :body (b* (((vl-plainarg x) x)
              ((unless x.expr)

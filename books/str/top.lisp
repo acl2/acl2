@@ -45,6 +45,7 @@
 (include-book "strtok")
 (include-book "strval")
 (include-book "substrp")
+(include-book "subseq")
 (include-book "suffixp")
 
 (defxdoc str
@@ -58,40 +59,29 @@ straightforward to reason about.</p>
 <h3>Loading the library</h3>
 
 <p>Ordinarily, to use the library one should run</p>
-<code>
+@({
  (include-book \"str/top\" :dir :system)
-</code>
+})
 
-<p>The documentation is then available by typing <tt>:xdoc STR::str</tt>.  All
-of the library's functions are found in the <tt>STR</tt> package, so you will
-need to do one of the following.</p>
+<p>The documentation is then available by typing @(':xdoc str').  All of the
+library's functions are found in the @('STR') package.</p>
 
 <p>If you are willing to accept a trust tag, you may also include the
-<tt>fast-cat</tt> book for faster string-concatenation; see @(see cat) for
+@('fast-cat') book for faster string-concatenation; see @(see cat) for
 details.</p>
-
-<ol>
-
-<li>Type STR:: before the names of the functions,  OR</li>
-
-<li>Additionally load a set of ACL2-package macros which are aliases for the
-functions in the STR package.  To do this, run: <tt>(include-book
-\"str/abbrevs\" :dir :system)</tt></li>
-
-</ol>
 
 <h3>Copyright Information</h3>
 
 <p>ACL2 String Library<br/>
-Copyright (C) 2009-2011 <a href=\"http://www.centtech.com\">Centaur
-Technology</a>.</p>
+Copyright (C) 2009-2011
+<a href=\"http://www.centtech.com\">Centaur Technology</a>.</p>
 
 <p>Contact:</p>
-<code>
+@({
 Centaur Technology Formal Verification Group
 7600-C N. Capital of Texas Highway, Suite 300
 Austin, TX 78731, USA.
-</code>
+})
 
 <p>This program is free software; you can redistribute it and/or modify it
 under the terms of the GNU General Public License as published by the Free

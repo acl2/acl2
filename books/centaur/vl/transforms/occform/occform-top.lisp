@@ -116,51 +116,54 @@ assignments into occurrences of new, primitive modules.</p>
 
 <p>We expect to see assignments of the form:</p>
 
-<code>
+@({
     assign LVALUE = EXPR ;
-</code>
+})
 
-<p>where <tt>EXPR</tt> consists either of a single operand or of a single
-operation applied to operands.  We expect to not encounter certain operators
-such as <tt>==</tt> and <tt>||</tt> which are handled by @(see oprewrite).</p>
+<p>where @('EXPR') consists either of a single operand or of a single operation
+applied to operands.  We expect to not encounter certain operators such as
+@('==') and @('||') which are handled by @(see oprewrite).</p>
 
 <p>We typically replace each assignment with an instance of a newly-generated
-module.  For instance, if our operation is <tt>a + b</tt>, where the operation
-is being done in <tt>n</tt> bits, we introduce a new <tt>VL_N_BIT_PLUS</tt>
-module, and replace the assignment with an instance of this module.</p>
+module.  For instance, if our operation is @('a + b'), where the operation is
+being done in @('n') bits, we introduce a new @('VL_N_BIT_PLUS') module, and
+replace the assignment with an instance of this module.</p>
 
-<p>Each of our <tt>-occform</tt> functions takes as arguments:</p>
+<p>Each of our @('-occform') functions takes as arguments:</p>
 
 <ul>
-<li><tt>x</tt>, an assignment that typically must be of some particular
-form,</li>
-<li><tt>nf</tt>, a @(see vl-namefactory-p) to use when generating new names,
+
+<li>@('x'), an assignment that typically must be of some particular form,</li>
+
+<li>@('nf'), a @(see vl-namefactory-p) to use when generating new names,
 and</li>
-<li><tt>warnings</tt>, an ordinary @(see warnings) accumulator.</li>
+
+<li>@('warnings'), an ordinary @(see warnings) accumulator.</li>
+
 </ul>
 
-<p>And returns <tt>(mv new-warnings new-modules new-modinsts new-nf)</tt>,
+<p>And returns @('(mv new-warnings new-modules new-modinsts new-nf)'),
 where:</p>
 
 <ul>
 
-<li><tt>new-warnings</tt> is the new warnings accumulator which has been
-extended with any warnings,</li>
+<li>@('new-warnings') is the new warnings accumulator which has been extended
+with any warnings,</li>
 
-<li><tt>new-modules</tt> are any newly generated modules that need to be added
-so that we can instantiate them---that is, this list will define modules like
-<tt>VL_13_BIT_PLUS</tt> that will be used to replace this assignment,</li>
+<li>@('new-modules') are any newly generated modules that need to be added so
+that we can instantiate them---that is, this list will define modules like
+@('VL_13_BIT_PLUS') that will be used to replace this assignment,</li>
 
-<li><tt>new-modinsts</tt> and <tt>new-assigns</tt> are any new module instances
-and assignments that, taken together, can replace <tt>x</tt>, and</li>
+<li>@('new-modinsts') and @('new-assigns') are any new module instances and
+assignments that, taken together, can replace @('x'), and</li>
 
-<li><tt>new-nf</tt> is the updated @(see vl-namefactory-p) that is used to
-generate module instance names.</li>
+<li>@('new-nf') is the updated @(see vl-namefactory-p) that is used to generate
+module instance names.</li>
 
 </ul>
 
-<p>Typically <tt>new-assigns</tt> will be empty on success, and will just be
-<tt>(list x)</tt> on failure.</p>")
+<p>Typically @('new-assigns') will be empty on success, and will just be
+@('(list x)') on failure.</p>")
 
 (defmacro def-vl-occform (name &key
                                (parents '(occform))
@@ -177,8 +180,8 @@ generate module instance names.</li>
        :parents ,parents
        :short ,short
        :long ,(cat "<p><b>Signature:</b> @(call " (symbol-name name) ")
-produces <tt>(mv new-warnings new-modules new-modinsts new-n)</tt>, as
-described in @(see occform).</p>" long)
+produces @('(mv new-warnings new-modules new-modinsts new-n)'), as described in
+@(see occform).</p>" long)
 
        (defund ,name (x nf warnings)
          "Returns (mv new-warnings new-modules new-modinsts new-gateinsts new-nf)"
@@ -233,12 +236,13 @@ described in @(see occform).</p>" long)
   :short "Transform an assignment of a basic binary operation into
 occurrences."
 
-  :long "<p><tt>x</tt> should have one of the following forms:</p>
+  :long "<p>@('x') should have one of the following forms:</p>
+
 <ul>
- <li>assign lhs = <tt>a &amp; b</tt></li>
- <li>assign lhs = <tt>a | b</tt></li>
- <li>assign lhs = <tt>a ^ b</tt></li>
- <li>assign lhs = <tt>a ^~ b</tt></li>
+<li>assign lhs = @('a & b')</li>
+<li>assign lhs = @('a | b')</li>
+<li>assign lhs = @('a ^ b')</li>
+<li>assign lhs = @('a ^~ b')</li>
 </ul>"
 
   :ops (:vl-binary-bitand :vl-binary-bitor :vl-binary-xor :vl-binary-xnor)
@@ -289,7 +293,7 @@ occurrences."
 
 
 (def-vl-occform vl-unary-not-occform
-  :short "Transform <tt>assign lhs = ~a</tt> into occurrences."
+  :short "Transform @('assign lhs = ~a') into occurrences."
   :ops (:vl-unary-bitnot)
   :body
   (b* (((vl-assign x) x)
@@ -325,10 +329,9 @@ occurrences."
 (def-vl-occform vl-plain-occform
   :short "Transform a plain assignment into occurrences."
 
-  :long "<p><tt>x</tt> should have the form <tt>assign lhs = rhs</tt>, where
-<tt>rhs</tt> is a <see topic='@(url vl-expr-sliceable-p)'>sliceable</see>
-expression, such as a plain identifier, bit-select, part-select, or
-concatenation of wires.</p>"
+  :long "<p>@('x') should have the form @('assign lhs = rhs'), where @('rhs')
+is a <see topic='@(url vl-expr-sliceable-p)'>sliceable</see> expression, such
+as a plain identifier, bit-select, part-select, or concatenation of wires.</p>"
 
   :guard (vl-expr-sliceable-p (vl-assign->expr x))
   :body
@@ -365,11 +368,11 @@ concatenation of wires.</p>"
   :short "Transform an assignment of a reduction operation into an equivalent
 module instance."
 
-  :long "<p><tt>x</tt> should have one of the following forms:</p>
+  :long "<p>@('x') should have one of the following forms:</p>
 <ul>
-  <li><tt>assign lhs = &amp;rhs;</tt></li>
-  <li><tt>assign lhs = |rhs;</tt></li>
-  <li><tt>assign lhs = ^rhs;</tt></li>
+  <li>@('assign lhs = &rhs;')</li>
+  <li>@('assign lhs = |rhs;')</li>
+  <li>@('assign lhs = ^rhs;')</li>
 </ul>"
 
   :ops (:vl-unary-bitand :vl-unary-bitor :vl-unary-xor)
@@ -410,10 +413,10 @@ module instance."
 (def-vl-occform vl-plusminus-occform
   :short "Transform an assignment of a addition/subtraction into occurrences."
 
-  :long "<p><tt>x</tt> should have one of the following forms:</p>
+  :long "<p>@('x') should have one of the following forms:</p>
 <ul>
- <li><tt>assign lhs = a + b;</tt></li>
- <li><tt>assign lhs = a - b;</tt></li>
+ <li>@('assign lhs = a + b;')</li>
+ <li>@('assign lhs = a - b;')</li>
 </ul>"
 
   :ops (:vl-binary-plus :vl-binary-minus)
@@ -467,7 +470,7 @@ module instance."
 
 
 (def-vl-occform vl-mult-occform
-  :short "Transform <tt>assign lhs = a * b</tt> into occurrences."
+  :short "Transform @('assign lhs = a * b') into occurrences."
   :ops (:vl-binary-times)
   :body
   (b* (((vl-assign x) x)
@@ -514,7 +517,7 @@ module instance."
 
 
 (def-vl-occform vl-gte-occform
-  :short "Transform <tt>assign lhs = a &gt; b</tt> into occurrences."
+  :short "Transform @('assign lhs = a > b') into occurrences."
   :ops (:vl-binary-gte)
   :body
   (b* (((vl-assign x) x)
@@ -575,23 +578,23 @@ module instance."
 (def-vl-occform vl-mux-occform
   :short "Transform an assignment of a conditional expression into occurrences."
 
-  :long "<p><tt>x</tt> should have the form <tt>assign lhs = a ? b : c;</tt>.</p>
+  :long "<p>@('x') should have the form @('assign lhs = a ? b : c;').</p>
 
-<p>As a special case, <tt>sel ? a : n'bZ</tt> is transformed into a zmux, and
-in @(see oprewrite) we rewrite <tt>sel ? n'bZ : a</tt> into <tt>sel ? a :
-n'bZ</tt> so this covers both cases.  Otherwise, we create an ordinary mux.</p>
+<p>As a special case, @('sel ? a : n'bZ') is transformed into a zmux, and in
+@(see oprewrite) we rewrite @('sel ? n'bZ : a') into @('sel ? a : n'bZ') so
+this covers both cases.  Otherwise, we create an ordinary mux.</p>
 
 <p>Advanced note.  Ordinarily, we produce an approx mux as described in the
 documentation for @(see vl-make-n-bit-mux).  An advanced user can choose to use
-the non-approx version by adding the attribute <tt>VL_X_SELECT</tt> to the
+the non-approx version by adding the attribute @('VL_X_SELECT') to the
 conditional operator.  An example of the syntax for doing this is as
 follows:</p>
 
 <box> assign out = sel ? (* VL_X_SELECT *) a : b ; </box>
 
-<p>If this attribute is provided, a non-approx mux will be created instead.  This
-may be necessary if you want to reason about <tt>out</tt> even when <tt>sel</tt>
-is <tt>X</tt> or <tt>Z</tt>.</p>"
+<p>If this attribute is provided, a non-approx mux will be created instead.
+This may be necessary if you want to reason about @('out') even when @('sel')
+is @('X') or @('Z').</p>"
 
   :ops (:vl-qmark)
   :body
@@ -653,10 +656,10 @@ is <tt>X</tt> or <tt>Z</tt>.</p>"
 (def-vl-occform vl-shift-occform
   :short "Transform an assignment of a shift expression into occurrences."
 
-  :long "<p><tt>x</tt> should have one of these forms:</p>
+  :long "<p>@('x') should have one of these forms:</p>
 <ul>
- <li><tt>assign lhs = a &lt;&lt; b;</tt></li>
- <li><tt>assign lhs = a &gt;&gt; b;</tt></li>
+ <li>@('assign lhs = a << b;')</li>
+ <li>@('assign lhs = a >> b;')</li>
 </ul>"
 
   :ops (:vl-binary-shl :vl-binary-shr)
@@ -703,11 +706,11 @@ is <tt>X</tt> or <tt>Z</tt>.</p>"
 
 
 (def-vl-occform vl-bitselect-occform
-  :short "Transform <tt>assign lhs = foo[i]</tt> into occurrences (dynamic
+  :short "Transform @('assign lhs = foo[i]') into occurrences (dynamic
 bitselects only!)."
 
   :long "<p>This is only for dynamic bitselects, not static selects like
-<tt>foo[3]</tt>.  See @(see vl-assign-occform): any sliceable expressions get
+@('foo[3]').  See @(see vl-assign-occform): any sliceable expressions get
 handled by @(see vl-plain-occform), and any static bitselects are
 sliceable.</p>"
 
@@ -761,9 +764,9 @@ sliceable.</p>"
 
 
 (def-vl-occform vl-ceq-occform
-  :short "Transform an assignment of a <tt>===</tt> expression into occurrences."
+  :short "Transform an assignment of a @('===') expression into occurrences."
 
-  :long "<p><tt>x</tt> should have the form: <tt>assign lhs = (a === b);</tt></p>"
+  :long "<p>@('x') should have the form: @('assign lhs = (a === b);')</p>"
 
   :ops (:vl-binary-ceq)
   :body

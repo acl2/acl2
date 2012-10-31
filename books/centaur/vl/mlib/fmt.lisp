@@ -31,14 +31,14 @@
 
   :long "<p>@(call vl-fmt) extends the basic @(see formatted-printing) routine,
 @(see vl-basic-fmt), with new directives for more conveniently printing Verilog
-modules.  In particular, while <tt>vl-basic-fmt</tt> only supports a small set
-of directives like <tt>~|</tt>, <tt>~%</tt>, <tt>~x0</tt>, and <tt>~s0</tt>,
-<tt>vl-fmt</tt> additionally supports <tt>~a</tt> and <tt>~m</tt>, which are
-convenient when we want to tell the user about some parse-tree construct.</p>
+modules.  In particular, while @('vl-basic-fmt') only supports a small set of
+directives like @('~|'), @('~%'), @('~x0'), and @('~s0'), @('vl-fmt')
+additionally supports @('~a') and @('~m'), which are convenient when we want to
+tell the user about some parse-tree construct.</p>
 
-<p>Although <tt>vl-basic-fmt</tt> does not yet implement many ACL2 directives,
-we might imagine wanting to support its other directives.  So we have kept our
-directives separate from those mentioned in <tt>:doc fmt</tt>.</p>
+<p>Although @('vl-basic-fmt') does not yet implement many ACL2 directives, we
+might imagine wanting to support its other directives.  So we have kept our
+directives separate from those mentioned in @(':doc fmt').</p>
 
 <dl>
 

@@ -164,6 +164,10 @@
       str::natstr
 
 
+      ;; To make VL::VL show up as just VL in the ACL2 package, e.g., to
+      ;; make the XDOC index prettier.
+      vl
+
       ))
 
    ;; Things to remove:

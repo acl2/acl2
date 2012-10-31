@@ -31,7 +31,7 @@
 (defxdoc defwellformed
   :parents (well-formedness)
 
-  :short "<tt>Defwellformed</tt> is a macro for introducing well-formedness
+  :short "@('Defwellformed') is a macro for introducing well-formedness
 checking functions."
 
   :long "<h3>Motivation</h3>
@@ -42,13 +42,13 @@ we often want to have two versions of the check:</p>
 
 <ol>
 
-<li>A <b>vanilla</b> Boolean-valued predicate, <tt>foo-okp</tt>, that causes no
+<li>A <b>vanilla</b> Boolean-valued predicate, @('foo-okp'), that causes no
 side effects and is easy to reason about, and</li>
 
-<li>A <b>debugging</b> function, <tt>foo-okp-warn</tt> that generates useful
-@(see warnings) that explain precisely why the object is malformed.  In
-particular, <tt>foo-okp-warn</tt> takes a warnings accumulator as an extra
-argument, and returns <tt>(mv okp warnings')</tt>.</li>
+<li>A <b>debugging</b> function, @('foo-okp-warn') that generates useful @(see
+warnings) that explain precisely why the object is malformed.  In particular,
+@('foo-okp-warn') takes a warnings accumulator as an extra argument, and
+returns @('(mv okp warnings')').</li>
 
 </ol>
 
@@ -60,33 +60,32 @@ accumulated; we only want to know whether some structure is well-formed.  If we
 try to use the debugging function directly for this purpose, we might write
 theorems such as:</p>
 
-<code>
+@({
  (implies (and (foo-p x)
                (car (foo-okp-warn x warnings)))
           (consequence x))
-</code>
+})
 
-<p>The problem with such a theorem is that <tt>warnings</tt> is a free
-variable, which can cause problems for ACL2 when it tries to apply the rule.</p>
+<p>The problem with such a theorem is that @('warnings') is a free variable,
+which can cause problems for ACL2 when it tries to apply the rule.</p>
 
 <p>So, our approach is to introduce <b>both</b> versions of the well-formedness
 check, and then add a theorem that shows the first value returned by
-<tt>foo-okp-warn</tt> is exactly the value returned by <tt>foo-okp</tt>.
-Accordingly, we can run <tt>foo-okp-warn</tt> in our code and get useful
-warning messages, but we can always reason about the simpler function
-<tt>foo-okp</tt>.</p>
+@('foo-okp-warn') is exactly the value returned by @('foo-okp').  Accordingly,
+we can run @('foo-okp-warn') in our code and get useful warning messages, but
+we can always reason about the simpler function @('foo-okp').</p>
 
 <p>Unfortunately, writing two versions of a function comes at its own cost; we
 have to duplicate the code, keep both versions in sync, and write these
 boilerplate theorems.  The macro @(srclink defwellformed) allows us to automate
 this process.</p>
 
-<h3>Using <tt>defwellformed</tt></h3>
+<h3>Using @('defwellformed')</h3>
 
-<p>The <tt>defwellformed</tt> macro is similar to <tt>defun</tt>.  The general
-form is:</p>
+<p>The @('defwellformed') macro is similar to @('defun').  The general form
+is:</p>
 
-<code>
+@({
  (defwellformed foo-okp (x other-args ...)
    :guard (and (foop x) ...)
    :body [...]
@@ -94,29 +93,29 @@ form is:</p>
    :parents ...
    :short ...
    :long ...)
-</code>
+})
 
-<p>Here, <tt>foo-okp</tt> is the name of the new vanilla function, and <tt>(x
-other-args ...)</tt> are the formals.  The <tt>:guard</tt> and <tt>:body</tt>
-are used in the <tt>defun</tt> form we generate, as are any
-<tt>:extra-decls</tt> that you need.  Finally, the <tt>parents</tt>,
-<tt>short</tt>, and <tt>long</tt> fields are as in @(see defxdoc).</p>
+<p>Here, @('foo-okp') is the name of the new vanilla function, and @('(x
+other-args ...)') are the formals.  The @(':guard') and @(':body') are used in
+the @('defun') form we generate, as are any @(':extra-decls') that you need.
+Finally, the @('parents'), @('short'), and @('long') fields are as in @(see
+defxdoc).</p>
 
-<p>The debugging function is always named by appending <tt>-warn</tt> to the
-name of the vanilla function.  Having such a convention is necessary for our
-implementation of <tt>(@wf-call ...)</tt>.</p>
+<p>The debugging function is always named by appending @('-warn') to the name
+of the vanilla function.  Having such a convention is necessary for our
+implementation of @('(@wf-call ...)').</p>
 
 <h5>Meta-macros</h5>
 
-<p>The tricky part to using defwellformed is to write a <tt>:body</tt> that
-serves both as the vanilla definition and as the debugging definition.  To
-accomplish this, we make use of certain \"meta-macros\", which can be
-identifier with the prefix <tt>@wf-</tt>.</p>
+<p>The tricky part to using defwellformed is to write a @(':body') that serves
+both as the vanilla definition and as the debugging definition.  To accomplish
+this, we make use of certain \"meta-macros\", which can be identifier with the
+prefix @('@wf-').</p>
 
 <p>In particular, the bodies of our well-formedness checks generally look
 something like this:</p>
 
-<code>
+@({
  (let ((bar ...)
        (baz ...))
    (@wf-progn
@@ -125,59 +124,63 @@ something like this:</p>
     (@wf-note condition type msg args)
     (@wf-call other-wf-check ...)
     ...))
-</code>
+})
 
-<p>These <tt>@wf-</tt> expressions are only valid in the body of the
-<tt>defwellformed</tt> command, and are given <b>different expansions</b>
-depending upon whether we are in the vanilla or debugging version of the
-function.</p>
+<p>These @('@wf-') expressions are only valid in the body of the
+@('defwellformed') command, and are given <b>different expansions</b> depending
+upon whether we are in the vanilla or debugging version of the function.</p>
 
 <p>In the vanilla function,</p>
 <ul>
-  <li><tt>(@wf-progn ...)</tt> becomes <tt>(and ...)</tt></li>
-  <li><tt>(@wf-and ...)</tt> becomes <tt>(and ...)</tt></li>
-  <li><tt>(@wf-assert condition ...)</tt> becomes <tt>(if condition t nil)</tt></li>
-  <li><tt>(@wf-note condition ...)</tt> becomes <tt>t</tt></li>
-  <li><tt>(@wf-call other-wf-check ...)</tt> becomes <tt>(other-wf-check ...)</tt></li>
+  <li>@('(@wf-progn ...)') becomes @('(and ...)')</li>
+  <li>@('(@wf-and ...)') becomes @('(and ...)')</li>
+  <li>@('(@wf-assert condition ...)') becomes @('(if condition t nil)')</li>
+  <li>@('(@wf-note condition ...)') becomes @('t')</li>
+  <li>@('(@wf-call other-wf-check ...)') becomes @('(other-wf-check ...)')</li>
 </ul>
 
 <p>But in the debugging function, a more complex expansion is used.</p>
 
 <dl>
 <dt>(@wf-progn ...)</dt>
-<dd>This becomes an appropriate <tt>mv-let</tt> strucutre to handle the return
-    values from <tt>@wf-assert</tt> and <tt>@</tt> commands.  Note that in the
-    debugging version <b>execution continues</b> after a violation is
-    discovered so that we uncover as many problems as possible.  This behavior
-    can cause problems for guard verification: you cannot rely upon the earlier
-    assertions having \"passed\" in the guards of your later assertions.  Hence
-    the introduction of <tt>@wf-and</tt>.</dd>
+
+<dd>This becomes an appropriate @('mv-let') strucutre to handle the return
+values from @('@wf-assert') and @('@') commands.  Note that in the debugging
+version <b>execution continues</b> after a violation is discovered so that we
+uncover as many problems as possible.  This behavior can cause problems for
+guard verification: you cannot rely upon the earlier assertions having
+\"passed\" in the guards of your later assertions.  Hence the introduction of
+@('@wf-and').</dd>
 
 <dt>(@wf-and ...)</dt>
-<dd>This becomes an <tt>mv-let</tt> structure as in <tt>@wf-progn</tt>, but
-    <b>execution stops</b> when any assertion is violated.</dd>
+
+<dd>This becomes an @('mv-let') structure as in @('@wf-progn'), but
+<b>execution stops</b> when any assertion is violated.</dd>
 
 <dt>(@wf-assert condition type msg args)</dt>
-<dd>If the condition is violated, <tt>okp</tt> becomes <tt>nil</tt> and we add
-    a (non-fatal) warning of the indicated type, message, and arguments.</dd>
+
+<dd>If the condition is violated, @('okp') becomes @('nil') and we add
+a (non-fatal) warning of the indicated type, message, and arguments.</dd>
 
 <dt>(@wf-note condition type msg args)</dt>
+
 <dd>We add a warning of the indicated type, message, and args, to the list of
-    warnings, but we do not set <tt>okp</tt> to <tt>nil</tt>.  That is, this is
-    just a way to note suspicious things that aren't necessarily outright
-    problems.</dd>
+warnings, but we do not set @('okp') to @('nil').  That is, this is just a way
+to note suspicious things that aren't necessarily outright problems.</dd>
 
 <dt>(@wf-call other-wf-check ...)</dt>
-<dd>Becomes <tt>(other-wf-check-warn ...)</tt>.  In other words, this allows
-    you to call the vanilla version of some subsidiary well-formedness check
-    from the vanilla version of your function, and the debugging version from
-    your debugging function.</dd>
+
+<dd>Becomes @('(other-wf-check-warn ...)').  In other words, this allows you to
+call the vanilla version of some subsidiary well-formedness check from the
+vanilla version of your function, and the debugging version from your debugging
+function.</dd>
+
 </dl>
 
 <p>Note also that @(srclink defwellformed-list) allows you to call a
 well-formedness predicate on every element in a list, and that @(srclink
-mutual-defwellformed) is a replacement for <tt>mutual-recursion</tt> that
-allows for the mutually-recursive use of <tt>defwellformed</tt>.</p>")
+mutual-defwellformed) is a replacement for @('mutual-recursion') that allows
+for the mutually-recursive use of @('defwellformed').</p>")
 
 (defmacro @wf-progn (&rest args)
   (declare (ignorable args))

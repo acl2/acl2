@@ -91,24 +91,24 @@ gateredux).</p>")
   :parents (gate-elim)
   :short "Try to convert a single gate into one of VL's primitive modules."
 
-  :long "<p><b>Signature:</b> @(call vl-gateinst-gate-elim) returns <tt>(mv warnings
-gateinsts modinsts addmods)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-gateinst-gate-elim) returns @('(mv
+warnings gateinsts modinsts addmods)').</p>
 
-<p>We try to convert the gate instance <tt>x</tt> into an instance of the
+<p>We try to convert the gate instance @('x') into an instance of the
 corresponding <see topic='@(url primitives)'>primitive</see> VL module.  We
-return new lists of <tt>gateinsts</tt> and <tt>modinsts</tt> that should
-collectively replace this gate instance.  The idea is that the replacement
+return new lists of @('gateinsts') and @('modinsts') that should collectively
+replace this gate instance.  The idea is that the replacement
 gateinsts/modinsts should be equivalent to the gate being eliminated.</p>
 
-<p>We may fail to eliminate <tt>x</tt> for several reasons, for instance:</p>
+<p>We may fail to eliminate @('x') for several reasons, for instance:</p>
 
 <ul>
 
-<li>it is not one of the basic gate types (more complex gates can be handled
-    by @(see gateredux)),</li>
+<li>it is not one of the basic gate types (more complex gates can be handled by
+@(see gateredux)),</li>
 
 <li>it has more than the usual number of arguments (higher arity gates can
-    simplified by @(see gatesplit),</li>
+simplified by @(see gatesplit),</li>
 
 <li>it is an array of gates (these can be split up by @(see replicate)),</li>
 

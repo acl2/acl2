@@ -124,50 +124,55 @@
 dependents being thrown away."
 
   :long "<p>@(call vl-blame-alist) constructs a blame alist when given
-<tt>bads</tt>, the names of the bad modules, and <tt>mods</tt>, the list of all
+@('bads'), the names of the bad modules, and @('mods'), the list of all
 modules.</p>
 
-<p><b>Fast alist warning:</b> the returned alist is a fast alist, and should
-be freed by the caller with <tt>flush-hons-get-hash-table-link</tt> to avoid
-memory leaks.</p>
+<p><b>Fast alist warning:</b> the returned alist is a fast alist, and should be
+freed by the caller with @('flush-hons-get-hash-table-link') to avoid memory
+leaks.</p>
 
 <h3>Explanation of Blame Alists</h3>
 
-<p>Suppose we are transforming a list of modules, and we run into
-problems in some module, <tt>M</tt>.  Our basic error handling strategy is
-to:</p>
+<p>Suppose we are transforming a list of modules, and we run into problems in
+some module, @('M').  Our basic error handling strategy is to:</p>
 
 <ul>
- <li>Add a warning onto <tt>M</tt> that says why we had the problem, and</li>
- <li>Remove <tt>M</tt> from the list of modules, so that we can continue with
-     the other modules.</li>
+
+<li>Add a warning onto @('M') that says why we had the problem, and</li>
+
+<li>Remove @('M') from the list of modules, so that we can continue with the
+other modules.</li>
+
 </ul>
 
-<p>But this is not quite sufficient.  In addition to removing <tt>M</tt>, we
-need to remove any dependents (@(see vl-dependent-modules)) of <tt>M</tt>,
-since removing <tt>M</tt> would cause these modules to be incomplete.  As we
-remove these dependent modules, we would also like to annotate them with
-warnings explaining why they are being removed, and that <tt>M</tt> is at
-fault.</p>
+<p>But this is not quite sufficient.  In addition to removing @('M'), we need
+to remove any dependents (@(see vl-dependent-modules)) of @('M'), since
+removing @('M') would cause these modules to be incomplete.  As we remove these
+dependent modules, we would also like to annotate them with warnings explaining
+why they are being removed, and that @('M') is at fault.</p>
 
 <p>In general, instead of a single \"bad\" module, imagine that we have a list
-of bad modules, <tt>B1</tt>, ..., <tt>Bn</tt>.  Additionally,</p>
+of bad modules, @('B1'), ..., @('Bn').  Additionally,</p>
+
 <ul>
- <li>Let <tt>deps(Bi)</tt> be the set of all modules that (transitively) depend
-     on <tt>Bi</tt>.</li>
- <li>Let <tt>D</tt> be the union over <tt>deps(Bi)</tt>, i.e., <tt>D</tt> is the
-     set of all modules that depend on any bad module)</li>
+
+<li>Let @('deps(Bi)') be the set of all modules that (transitively) depend on
+@('Bi').</li>
+
+<li>Let @('D') be the union over @('deps(Bi)'), i.e., @('D') is the set of all
+modules that depend on any bad module)</li>
+
 </ul>
 
-<p>Note that there is no generally reason to think that <tt>deps(Bi)</tt> is
-disjoint from <tt>deps(Bj)</tt>.  If a module <tt>M</tt> instantiates both
-<tt>Bi</tt> and <tt>Bj</tt>, then it will be in the dependents for both of
-them.  So, which one should be blamed?</p>
+<p>Note that there is no generally reason to think that @('deps(Bi)') is
+disjoint from @('deps(Bj)').  If a module @('M') instantiates both @('Bi') and
+@('Bj'), then it will be in the dependents for both of them.  So, which one
+should be blamed?</p>
 
 <p>Our approach is to blame both of them.  To do this, we first construct a
-<b>blame alist</b>.  This alist includes an entry for every module <tt>M</tt>
-in <tt>D</tt>.  In particular, we associate each such <tt>M</tt> with <tt>{ Bi
-: M in deps(Bi) }</tt>.  Once the blame alist is constructed, we can easily use
+<b>blame alist</b>.  This alist includes an entry for every module @('M') in
+@('D').  In particular, we associate each such @('M') with @('{ Bi
+: M in deps(Bi) }').  Once the blame alist is constructed, we can easily use
 it to annotate each module in its domain with a warning that says which modules
 are to blame for its removal.</p>"
 
@@ -230,25 +235,34 @@ are to blame for its removal.</p>"
   :short "Annotates transitively-bad modules with warnings, and throws them
 away."
 
-  :long "<p>@(call vl-apply-blame-alist) returns <tt>(mv survivors victims)</tt>.</p>
+  :long "<p>@(call vl-apply-blame-alist) returns @('(mv survivors
+  victims)').</p>
 
 <p>Inputs:</p>
+
 <ul>
-  <li><tt>mods</tt> are the list of all \"good\" modules,</li>
-  <li><tt>alist</tt> is a blame alist formed by @(see vl-blame-alist),</li>
+
+<li>@('mods') are the list of all \"good\" modules,</li>
+
+<li>@('alist') is a blame alist formed by @(see vl-blame-alist),</li>
+
 </ul>
 
 <p>Outputs:</p>
+
 <ul>
-  <li><tt>survivors</tt> contains the modules from <tt>mods</tt> which are not
-      transitively bad, and are not being thrown away.</li>
-  <li><tt>victims</tt> contains the modules from <tt>mods</tt> that are being
-      thrown away, each of which has been updated with a warning explaining which
-      modules are to blame.</li>
+
+<li>@('survivors') contains the modules from @('mods') which are not
+transitively bad, and are not being thrown away.</li>
+
+<li>@('victims') contains the modules from @('mods') that are being thrown
+away, each of which has been updated with a warning explaining which modules
+are to blame.</li>
+
 </ul>
 
 <p>Note that the survivors are returned in the same order as they occur in
-<tt>mods</tt>.</p>"
+@('mods').</p>"
 
   ;; just a speed hint
   (local (in-theory (disable hons-assoc-equal
@@ -427,29 +441,36 @@ away."
 (defsection vl-remove-bad-modules
   :parents (mlib)
   :short "Safely remove some faulty modules and their dependents."
-  :long "<p><b>Signature:</b> @(call vl-remove-bad-modules) returns <tt>(mv
-survivors victims)</tt></p>
+  :long "<p><b>Signature:</b> @(call vl-remove-bad-modules) returns @('(mv
+survivors victims)')</p>
 
-<p><tt>vl-remove-bad-modules</tt> is a high-level, convenient operation for
-safely eliminating modules.  Given</p>
+<p>@('vl-remove-bad-modules') is a high-level, convenient operation for safely
+eliminating modules.  Given</p>
+
 <ul>
-  <li><tt>names</tt>, a list of the names of the modules which are to be
-eliminated, and</li>
-  <li><tt>mods</tt>, the list of all current modules,</li>
+
+<li>@('names'), a list of the names of the modules which are to be eliminated,
+and</li>
+
+<li>@('mods'), the list of all current modules,</li>
+
 </ul>
 
-<p>it determines which modules depend upon <tt>names</tt>, annotates them with
+<p>it determines which modules depend upon @('names'), annotates them with
 warnings explaining that they are being removed because they instantiate bad
 modules, and ultimately returns</p>
 
 <ul>
-  <li><tt>survivors</tt>, a list of those modules in <tt>mods</tt> which are
-still okay, and </li>
-  <li><tt>victims</tt>, a list of the modules which have been eliminated.</li>
+
+<li>@('survivors'), a list of those modules in @('mods') which are still okay,
+and </li>
+
+<li>@('victims'), a list of the modules which have been eliminated.</li>
+
 </ul>
 
 <p>The returned survivors are in the same order as they occur in
-<tt>mods</tt>.</p>"
+@('mods').</p>"
 
   (defund vl-remove-bad-modules (names mods)
     (declare (xargs :guard (and (string-listp names)
@@ -523,7 +544,7 @@ still okay, and </li>
   :parents (warnings)
   :short "Identify modules with fatal warnings."
   :long "<p>@(call vl-modulelist-zombies) gathers and returns the names of all
-modules in <tt>x</tt> which have some fatal warning (as determined by @(see
+modules in @('x') which have some fatal warning (as determined by @(see
 vl-some-warning-fatalp).  This function is mainly used in @(see
 vl-propagate-errors).</p>"
 
@@ -550,14 +571,14 @@ vl-propagate-errors).</p>"
 
   :short "Eliminate modules with fatal warnings (and their dependents)."
 
-  :long "<p><b>Signature:</b> @(call vl-propagate-errors) returns <tt>(mv
-survivors victims)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-propagate-errors) returns @('(mv
+survivors victims)').</p>
 
-<p>Given a list of modules, <tt>x</tt>, we find all modules that have fatal
-@(see warnings) using @(see vl-modulelist-zombies).  We then use @(see
+<p>Given a list of modules, @('x'), we find all modules that have fatal @(see
+warnings) using @(see vl-modulelist-zombies).  We then use @(see
 vl-remove-bad-modules) to safely remove these modules and all of their
-dependents from the module list.  The resulting <tt>survivors</tt> are
-kept in the same order as they occur in <tt>x</tt>.</p>"
+dependents from the module list.  The resulting @('survivors') are kept in the
+same order as they occur in @('x').</p>"
 
   (defund vl-propagate-errors (x)
     (declare (xargs :guard (and (vl-modulelist-p x)
@@ -619,12 +640,12 @@ kept in the same order as they occur in <tt>x</tt>.</p>"
   :short "@(call vl-propagate-new-errors) is a trivial wrapper for @(call
 vl-propagate-errors) which accumulates victims."
 
-  :long "<p><b>Signature:</b> @(call vl-propagate-new-errors) returns
-<tt>(mv survivors victims)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-propagate-new-errors) returns @('(mv
+survivors victims)').</p>
 
-<p>This function just extends @(see vl-propagate-new-errors) by adding the
-new victims to <tt>old-victims</tt>, so that no external appending needs
-to be considered.</p>"
+<p>This function just extends @(see vl-propagate-new-errors) by adding the new
+victims to @('old-victims'), so that no external appending needs to be
+considered.</p>"
 
   (defund vl-propagate-new-errors (x old-victims)
     (declare (xargs :guard (and (vl-modulelist-p x)

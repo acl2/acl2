@@ -33,18 +33,17 @@
 vl::primitives)."
 
   :long "<p>The patterns used for the :i and :o ports here might look strange.
-For instance, why do we use <tt>((|a|) (|b|))</tt> as the input pattern for an
-AND gate instead of <tt>(|a| |b|)</tt>?  This allows our primitives to be
-directly compatible with VL's primitives, as far as @(see vl-portdecls-to-i/o)
-is concerned.</p>
+For instance, why do we use @('((|a|) (|b|))') as the input pattern for an AND
+gate instead of @('(|a| |b|)')?  This allows our primitives to be directly
+compatible with VL's primitives, as far as @(see vl-portdecls-to-i/o) is
+concerned.</p>
 
 <p><b>BOZO</b> Things to consider:</p>
 
 <ul>
 
 <li>Do we want to add NAND and NOR primitives to @(see 4v-sexprs)?  We
-currently implement them as <tt>(not (and a b))</tt> and <tt>(not (or a
-b))</tt>.</li>
+currently implement them as @('(not (and a b))') and @('(not (or a b))').</li>
 
 <li>Do we want to change LATCH and FLOP to use @(see 4v-ite*) instead of @(see
 4v-ite)?  It probably won't help with combinational loops at all, but it may
@@ -182,13 +181,13 @@ for real BUF gates, not for ordinary assignments; see also @(see
   :x (:out ((|out| . (iff |a| |b|)))))
 
 (def-esim-primitive *esim-ceq*
-  :short "Primitive E module for a Verilog <tt>===</tt> operator."
+  :short "Primitive E module for a Verilog @('===') operator."
   :long "<p>We use this to implement @(see vl::*vl-1-bit-ceq*).</p>
 
-<p>However, the <tt>===</tt> operator is inherently unsound and cannot be
-modeled in esim because it is violates @(see 4v-monotonicity).  We just
-conservatively approximate <tt>===</tt> with an xnor gate.  That is, this
-module is nothing more than a @(see *esim-xnor*).</p>"
+<p>However, the @('===') operator is inherently unsound and cannot be modeled
+in esim because it is violates @(see 4v-monotonicity).  We just conservatively
+approximate @('===') with an xnor gate.  That is, this module is nothing more
+than a @(see *esim-xnor*).</p>"
 
   :i ((|a|) (|b|))
   :o ((|out|))

@@ -31,18 +31,18 @@
 
 (defsection vl-elim-nested-concats
   :parents (expr-cleaning)
-  :short "Flatten out nested concatenations like <tt>{a, b, {c, d}, { { e, f }
-  }}</tt> into <tt>{a, b, c, d, e, f}</tt>."
+  :short "Flatten out nested concatenations like @('{a, b, {c, d}, { { e, f }
+  }}') into @('{a, b, c, d, e, f}')."
 
-  :long "<p>@(call vl-elim-nested-concats) is given <tt>x</tt>, a list of
+  :long "<p>@(call vl-elim-nested-concats) is given @('x'), a list of
 expressions which we assume are the arguments to a concatenation.  We flatten
-out any top-level nested concatenations in <tt>x</tt>, and return the possibly
+out any top-level nested concatenations in @('x'), and return the possibly
 simplified list of expressions.</p>
 
 <p>This may help @(see vl-maybe-merge-selects) to be more effective.  For
 instance, with the help of flattening, it can merge selects such as:</p>
 
-<code>{foo[3], {foo[2], foo[1]}, foo[0]}</code>"
+@({{foo[3], {foo[2], foo[1]}, foo[0]}})"
 
   (defund vl-elim-nested-concats-pass (x)
     "Returns (MV PROGRESSP X-PRIME)"
@@ -114,37 +114,36 @@ instance, with the help of flattening, it can merge selects such as:</p>
   :parents (expr-cleaning)
   :short "Identify a sequence of decreasing bit- and part-selects."
 
-  :long "<p>@(call vl-maybe-merge-selects-aux) returns <tt>(mv min
-rest)</tt>.</p>
+  :long "<p>@(call vl-maybe-merge-selects-aux) returns @('(mv min rest)').</p>
 
 <p>We look for a sequence of decreasing bit- and part- selects that count
-downward from <tt>from[n]</tt>.</p>
+downward from @('from[n]').</p>
 
 <p>We return the index of the final bit select that matches this criteria as
-<tt>min</tt>, and the remainder of <tt>x</tt> as <tt>rest</tt>.</p>
+@('min'), and the remainder of @('x') as @('rest').</p>
 
 <p>Here are some examples.</p>
 
 <p>Suppose FROM is the idexpr \"foo\", and N is 6.</p>
 
 <p>Then, given a sequence x = (foo[5] foo[4] foo[3] bar baz), we return</p>
-<code>
+@({
    MIN = 3
    REST = (bar baz)
-</code>
+})
 
 <p>But if x = (bar baz), we just immediately return</p>
-<code>
+@({
    MIN = 6
    REST = (bar baz)
-</code>
+})
 
 <p>We also handle part selects, e.g., if X is (foo[5:3], foo[2], bar, baz),
 we return</p>
-<code>
+@({
    MIN = 2
    REST = (bar baz)
-</code>"
+})"
 
   (defund vl-maybe-merge-selects-aux (x from n)
     "Returns (MIN REST)"
@@ -216,23 +215,23 @@ we return</p>
 
 (defsection vl-maybe-merge-selects
   :parents (expr-cleaning)
-  :short "Merge together concatenations like <tt>{foo[3], foo[2], foo[1]}</tt>
-into prettier expressions like <tt>foo[3:1]</tt>."
+  :short "Merge together concatenations like @('{foo[3], foo[2], foo[1]}') into
+prettier expressions like @('foo[3:1]')."
 
   :long "<p><b>Signature:</b> @(call vl-maybe-merge-selects) returns
-<tt>x'</tt>.</p>
+@('x'').</p>
 
-<p>Here, <tt>x</tt> is a list of expressions which we assume is found within
-either a concatenation or a multiple concatenation.  The <tt>mod</tt> and
-<tt>ialist</tt> are the module and its @(see vl-moditem-alist) so we can look
-up wires in <tt>x</tt> to see their ranges.</p>
+<p>Here, @('x') is a list of expressions which we assume is found within either
+a concatenation or a multiple concatenation.  The @('mod') and @('ialist') are
+the module and its @(see vl-moditem-alist) so we can look up wires in @('x') to
+see their ranges.</p>
 
-<p>Note: to make this function more effective, <tt>x</tt> can be preprocessed
-with @(see vl-elim-nested-concats).</p>
+<p>Note: to make this function more effective, @('x') can be preprocessed with
+@(see vl-elim-nested-concats).</p>
 
-<p>We walk over <tt>x</tt>, looking for sequences of selects that can be merged
-together.  For instance, <tt>foo[3:1], foo[0]</tt> could generally be merged
-into <tt>foo[3:0]</tt>.</p>"
+<p>We walk over @('x'), looking for sequences of selects that can be merged
+together.  For instance, @('foo[3:1], foo[0]') could generally be merged into
+@('foo[3:0]').</p>"
 
   (local (in-theory (enable vl-maybe-natp)))
 
@@ -340,18 +339,19 @@ into <tt>foo[3:0]</tt>.</p>"
   :short "Flatten concatenations and try to merge adjacent, compatible wires
 within them into larger part-selects."
 
-  :long "<p><b>Signature:</b> @(call vl-expr-clean-concats) returns <tt>x'</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-expr-clean-concats) returns
+@('x'').</p>
 
-<p>Here, <tt>x</tt> is any expression that occurs in the module <tt>mod</tt>,
-and <tt>ialist</tt> is the @(see vl-moditem-alist) for <tt>mod</tt> so that we
-can quickly look up wires to ensure that our simplifications are sound.</p>
+<p>Here, @('x') is any expression that occurs in the module @('mod'), and
+@('ialist') is the @(see vl-moditem-alist) for @('mod') so that we can quickly
+look up wires to ensure that our simplifications are sound.</p>
 
-<p>We try to simplify the concatenations within <tt>x</tt>, by flattening out
-nested concatenations and merging concatenations like <tt>{foo[3:1],
-foo[0]}</tt> into selects like <tt>foo[3:0]</tt>.</p>
+<p>We try to simplify the concatenations within @('x'), by flattening out
+nested concatenations and merging concatenations like @('{foo[3:1], foo[0]}')
+into selects like @('foo[3:0]').</p>
 
-<p>We return a new expression, <tt>x'</tt>, which is semantically equal to
-<tt>x</tt> but may be aesthetically better.</p>"
+<p>We return a new expression, @('x''), which is semantically equal to @('x')
+but may be aesthetically better.</p>"
 
   (mutual-recursion
 
@@ -607,23 +607,24 @@ foo[0]}</tt> into selects like <tt>foo[3:0]</tt>.</p>
   :parents (expr-cleaning)
   :short "Simplify concatenations and selects in an expression."
 
-  :long "<p><b>Signature:</b> @(call vl-expr-clean-selects) returns <tt>x'</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-expr-clean-selects) returns
+@('x'').</p>
 
-<p>We are given <tt>x</tt>, an expression that occurs within the module <tt>mod</tt>,
-and <tt>ialist</tt>, the @(see vl-moditem-alist) for <tt>mod</tt>.</p>
+<p>We are given @('x'), an expression that occurs within the module @('mod'),
+and @('ialist'), the @(see vl-moditem-alist) for @('mod').</p>
 
-<p>We try to simplify <tt>x</tt> in a fairly advanced way, and return the simplified
-expression <tt>x'</tt>.  There are two phases to the simplification:</p>
+<p>We try to simplify @('x') in a fairly advanced way, and return the
+simplified expression @('x'').  There are two phases to the simplification:</p>
 
 <ul>
 
-<li>We clean up the concatenations using @(see vl-expr-clean-concats),
-in order to eliminate nested concatenations and merge together expressions like
-<tt>{foo[3:1], foo[0]}</tt> info <tt>foo[3:0]</tt>.</li>
+<li>We clean up the concatenations using @(see vl-expr-clean-concats), in order
+to eliminate nested concatenations and merge together expressions like
+@('{foo[3:1], foo[0]}') info @('foo[3:0]').</li>
 
 <li>We walk over the reduced expression, trying to notice any unnecessary
-selects, e.g., if we have <tt>wire [3:0] w</tt>, then we will replace
-occurrences of <tt>w[3:0]</tt> with just <tt>w</tt>.</li>
+selects, e.g., if we have @('wire [3:0] w'), then we will replace occurrences
+of @('w[3:0]') with just @('w').</li>
 
 </ul>"
 

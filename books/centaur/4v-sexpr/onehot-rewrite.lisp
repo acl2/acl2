@@ -41,50 +41,47 @@ are one-hot."
 <p>Sometimes you know that certain inputs to a module are supposed to be
 one-hot.  Using this information, it may be possible to simplify the sexprs
 produced during @(see esim) runs.  For example, if we know that the variables
-<tt>A1</tt> and <tt>A2</tt> are one-hot, we might like to rewrite a sexpr
-like:</p>
+@('A1') and @('A2') are one-hot, we might like to rewrite a sexpr like:</p>
 
-<code>
+@({
  (ITE A1 (AND A2 FOO) BAR)
-</code>
+})
 
-<p>Here, we can \"see\" that <tt>A2</tt> has to be false in the true-branch
-since to get there we must have that <tt>A1</tt> is true.  Accordingly, we
-would like to replace the sexpr with something like:</p>
+<p>Here, we can \"see\" that @('A2') has to be false in the true-branch since
+to get there we must have that @('A1') is true.  Accordingly, we would like to
+replace the sexpr with something like:</p>
 
-<code>
+@({
  (AND (NOT A1) BAR)
-</code>
+})
 
 <p>This sort of rewriting may occasionally help to avoid combinational loops
 that are only broken when the inputs are truly one-hot, e.g., notice how the
-variable <tt>FOO</tt> has dropped out of the expression above.</p>
+variable @('FOO') has dropped out of the expression above.</p>
 
 
 <h3>The Basic Transformation</h3>
 
-<p>Our main function for onehot rewriting is @(see 4v-onehot-rw-sexpr).
-Given a list of variables <tt>A1...AN</tt> that we think are one-hot, and an
-s-expression <tt>SEXPR</tt> to rewrite, it basically constructs:</p>
+<p>Our main function for onehot rewriting is @(see 4v-onehot-rw-sexpr).  Given
+a list of variables @('A1...AN') that we think are one-hot, and an s-expression
+@('SEXPR') to rewrite, it basically constructs:</p>
 
-<code>
+@({
  (ITE* ONEHOT-P SEXPR' (X))
-</code>
+})
 
 <p>Where:</p>
 
-<ul>
-<li><tt>ONEHOT-P</tt> is constructed by @(see 4vs-onehot) and evaluates to
-<tt>T</tt> when the <tt>A1...N</tt> are one-hot, and</li>
-<li><tt>SEXPR'</tt> is formed from <tt>SEXPR</tt> by assuming <tt>A1...N</tt>
-are indeed one-hot; see @(see 4v-onehot-sexpr-prime) for details.</li>
-</ul>
+<ul> <li>@('ONEHOT-P') is constructed by @(see 4vs-onehot) and evaluates to
+@('T') when the @('A1...N') are one-hot, and</li> <li>@('SEXPR'') is formed
+from @('SEXPR') by assuming @('A1...N') are indeed one-hot; see @(see
+4v-onehot-sexpr-prime) for details.</li> </ul>
 
-<p>We prove this conservatively approximates <tt>SEXPR</tt>, but keep in mind
-that this approximation is <b>not an equivalent</b> term!  For instance, the
-rewritten expression will always produce <tt>X</tt> if it turns out that the
-inputs were not really one-hot.  Accordingly, you should only use this rewrite
-when you are really are certain the variables will be one-hot.</p>
+<p>We prove this conservatively approximates @('SEXPR'), but keep in mind that
+this approximation is <b>not an equivalent</b> term!  For instance, the
+rewritten expression will always produce @('X') if it turns out that the inputs
+were not really one-hot.  Accordingly, you should only use this rewrite when
+you are really are certain the variables will be one-hot.</p>
 
 
 <h3>The Alist Transformation</h3>
@@ -403,8 +400,7 @@ sexprs.</p>")
 (defsection 4vs-ite*-list-dumb
   :parents (4vs-constructors onehot-rewriting)
   :short "@(call 4vs-ite*-list-dumb) produces a list of sexprs, basically
-<tt>(4V-ITE* C Ai Bi)</tt> for the corresponding elements of <tt>AS</tt> and
-<tt>BS</tt>."
+@('(4V-ITE* C Ai Bi)') for the corresponding elements of @('AS') and @('BS')."
 
   (defund 4vs-ite*-list-dumb (c as bs)
     (declare (xargs :guard (equal (len as) (len bs))))
@@ -471,7 +467,7 @@ sexprs.</p>")
 (defsection 4v-onehot-list-p
   :parents (4vs-onehot onehot-rewriting)
   :short "@(call 4v-onehot-list-p) determines if a list of @(see 4vp)s has
-exactly one member that is <tt>T</tt> while the rest are <tt>F</tt>."
+exactly one member that is @('T') while the rest are @('F')."
 
   (defund 4v-onehot-list-p (x)
     (declare (xargs :guard t))
@@ -500,14 +496,14 @@ exactly one member that is <tt>T</tt> while the rest are <tt>F</tt>."
 
 (defsection 4vs-onehot
   :parents (4vs-constructors onehot-rewriting)
-  :short "@(call 4vs-onehot) constructs an s-expression that is <tt>T</tt>
-when the members of <tt>X</tt> are one-hot."
+  :short "@(call 4vs-onehot) constructs an s-expression that is @('T') when the
+members of @('X') are one-hot."
 
-  :long "<p><tt>X</tt> should be a list of s-expressions, say <tt>(A1
-... AN)</tt>.  The s-expression we construct to check whether these are
-one-hot is somewhat ugly, and looks something like this:</p>
+  :long "<p>@('X') should be a list of s-expressions, say @('(A1 ... AN)').
+The s-expression we construct to check whether these are one-hot is somewhat
+ugly, and looks something like this:</p>
 
-<code>
+@({
   (ITE* A1
         (AND (NOT A2) (NOT A3) ... (NOT AN))
     (ITE* A2
@@ -515,12 +511,12 @@ one-hot is somewhat ugly, and looks something like this:</p>
       (ITE* AN
             (T)
           (F)) ...))
-</code>
+})
 
 <p>Note that although the printed representation is particularly large looking,
-the <tt>AND</tt> terms here can be mostly structure shared.  For instance, the
-<tt>[~A2...~AN]</tt> term is really just <tt>(AND (NOT A2) [~A3...~AN])</tt>,
-so by honsing sexprs we get a lot of reuse here.</p>
+the @('AND') terms here can be mostly structure shared.  For instance, the
+@('[~A2...~AN]') term is really just @('(AND (NOT A2) [~A3...~AN])'), so by
+honsing sexprs we get a lot of reuse here.</p>
 
 <p>See also @(see 4v-onehot-list-p).</p>"
 
@@ -601,8 +597,8 @@ so by honsing sexprs we get a lot of reuse here.</p>
 
 (defsection 4v-onehot-sexpr-prime
   :parents (onehot-rewriting)
-  :short "@(call 4v-onehot-sexpr-prime) rewrites <tt>sexpr</tt> under the
-assumption that <tt>vars</tt> are one-hot."
+  :short "@(call 4v-onehot-sexpr-prime) rewrites @('sexpr') under the
+assumption that @('vars') are one-hot."
 
   :long "<p>How is this reduction accomplished?  Well, in the implementation of
 @(see 4v-shannon-expansion), reduced expressions are formed by using @(see
@@ -610,15 +606,15 @@ sexpr-restrict) to assume that the variable being is first true, and then
 false.  Our approach is basically similar, and our new sexpr is essentially the
 following:</p>
 
-<code>
+@({
  (ITE* A1 SEXPR|_{A1=T,A2=NIL,A3=NIL,...AN=NIL)
   (ITE* A2 SEXPR|_{A1=NIL,A2=T,A3=NIL,...AN=NIL}
    ...
     (ITE* AN SEXPR|_{A1=NIL,A2=NIL,A3=NIL,...,AN=T} (X)) ...))
-</code>
+})
 
-<p>We prove this produces a conservative approximation of <tt>SEXPR</tt> under
-the assumption that the <tt>Ai</tt> really are one-hot.</p>"
+<p>We prove this produces a conservative approximation of @('SEXPR') under the
+assumption that the @('Ai') really are one-hot.</p>"
 
   (defund 4v-onehot-false-bindings (vars)
     ;; Make an alist binding each var to (F)
@@ -1004,8 +1000,8 @@ function we execute is basically a wide version of @(see
 <p>What is this performance hack all about?  Our main goal in onehot rewriting
 is to simplify the update functions of modules that have one-hot inputs.  In
 this context, we have some particular set of variables that we think are
-one-hot, say <tt>A1...An</tt>, and a whole list of (related) update functions,
-represented as the s-expressions <tt>S1...Sk</tt>.</p>
+one-hot, say @('A1...An'), and a whole list of (related) update functions,
+represented as the s-expressions @('S1...Sk').</p>
 
 <p>We want to apply our onehot rewrite on on each of these expressions. The
 simplest thing to do would be to call @(see 4v-onehot-rw-sexpr) on each
@@ -1016,17 +1012,17 @@ to reuse memoized results.</p>
 <p>Why?  The problem is that each sexpr needs to be restrict/rewritten with a
 number of alists.  Recall that we effectively replace each sexpr with:</p>
 
-<code>
+@({
  (ITE* A1 SEXPR|_{A1=T,A2=NIL,A3=NIL,...AN=NIL)
   (ITE* A2 SEXPR|_{A1=NIL,A2=T,A3=NIL,...AN=NIL}
    ...
     (ITE* AN SEXPR|_{A1=NIL,A2=NIL,A3=NIL,...,AN=T} (X)) ...))
-</code>
+})
 
-<p>But these alists only depend on the variables <tt>Ai</tt>, not on the sexprs
-<tt>Si</tt>.  For better performance, we want to use the same alist to rewrite
-all of the sexprs at once, since there is presumably a lot of sharing between
-the update functions.  It turns out this optimization is not too bad to
+<p>But these alists only depend on the variables @('Ai'), not on the sexprs
+@('Si').  For better performance, we want to use the same alist to rewrite all
+of the sexprs at once, since there is presumably a lot of sharing between the
+update functions.  It turns out this optimization is not too bad to
 implement.</p>"
 
   (defund 4v-onehot-sexpr-list-prime-exec
@@ -1165,14 +1161,12 @@ implement.</p>"
   :parents (onehot-rewriting)
   :short "Apply @(see onehot-rewriting) to a single s-expression."
 
-  :long "<p>@(call 4v-onehot-rw-sexpr) is given:</p>
-<ul>
- <li><tt>vars</tt>, which must be a <tt>nil</tt>-free list of atoms, and</li>
- <li><tt>sexpr</tt>, the s-expression we want to reduce.</li>
-</ul>
+  :long "<p>@(call 4v-onehot-rw-sexpr) is given:</p> <ul> <li>@('vars'), which
+must be a @('nil')-free list of atoms, and</li> <li>@('sexpr'), the
+s-expression we want to reduce.</li> </ul>
 
 <p>It returns a new sexpression that is a (possibly simpler) conservative
-approximation of <tt>sexpr</tt> where the vars are assumed to be one-hot.</p>
+approximation of @('sexpr') where the vars are assumed to be one-hot.</p>
 
 <p>We usually don't call this function in practice, because @(see
 4v-onehot-rw-sexpr-alist) uses a more efficient scheme that bypasses it.
@@ -1226,11 +1220,10 @@ On the other hand, it's a nice function for reasoning about.</p>"
 provide a more efficient implementation; see @(see 4v-onehot-sexpr-list-prime)
 for the basic idea and motivation.</p>
 
-<p>This is only an <tt>-aux</tt> function because it applies the onehot rewrite
-to <b>every</b> sexpr in the alist.  Our main function, @(see
-4v-onehot-rw-sexpr-alist), first filters the alist to avoid rewriting
-sexprs that don't mention any of the variables we are assuming to be
-one-hot.</p>"
+<p>This is only an @('-aux') function because it applies the onehot rewrite to
+<b>every</b> sexpr in the alist.  Our main function, @(see
+4v-onehot-rw-sexpr-alist), first filters the alist to avoid rewriting sexprs
+that don't mention any of the variables we are assuming to be one-hot.</p>"
 
   (defund 4v-onehot-rw-sexpr-alist-fast (vars sexpr-alist)
     (declare (xargs :guard (and (atom-listp vars)
@@ -1383,16 +1376,14 @@ one-hot.</p>"
   :parents (onehot-rewriting)
   :short "Apply @(see onehot-rewriting) to a sexpr alist."
 
-  :long "<p>@(call 4v-onehot-rw-sexpr-alist) is given:</p>
-<ul>
- <li><tt>vars</tt>, which must be a <tt>nil</tt>-free list of atoms, and</li>
- <li><tt>sexpr-alist</tt>, an alist binding names to sexprs.</li>
-</ul>
+  :long "<p>@(call 4v-onehot-rw-sexpr-alist) is given:</p> <ul> <li>@('vars'),
+which must be a @('nil')-free list of atoms, and</li> <li>@('sexpr-alist'), an
+alist binding names to sexprs.</li> </ul>
 
 <p>We return a new, ordinary (slow) sexpr-alist which is a (possibly simpler)
 conservative approximation of the original.  The basic idea is to apply @(see
-4v-onehot-rw-sexpr) to any sexprs that mention any of the <tt>vars</tt>,
-and leave any other sexprs unchanged.</p>"
+4v-onehot-rw-sexpr) to any sexprs that mention any of the @('vars'), and leave
+any other sexprs unchanged.</p>"
 
 ; Note.  We currently don't do anything to the irrelevant-part.
 ;

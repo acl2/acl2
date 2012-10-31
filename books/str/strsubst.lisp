@@ -79,12 +79,13 @@
 (defsection strsubst
   :parents (str)
   :short "Replace substrings throughout a string."
-  :long "<p>@(call strsubst) replaces each occurrence <tt>old</tt> with
-<tt>new</tt> throughout <tt>x</tt>.  Each argument is a string, and a new
-string is returned.  The replacement is done globally and non-recursively.</p>
+
+  :long "<p>@(call strsubst) replaces each occurrence @('old') with @('new')
+throughout @('x').  Each argument is a string, and a new string is returned.
+The replacement is done globally and non-recursively.</p>
 
 Examples:
-<code>
+@({
  (strsubst \"World\" \"Star\" \"Hello, World!\")
    --&gt;
  \"Hello, Star!\"
@@ -92,7 +93,7 @@ Examples:
  (strsubst \"oo\" \"aa\" \"xoooyoo\")
    --&gt;
  \"xaaoyaa\"
-</code>"
+})"
 
 ;; BOZO probably worthwhile to check if old occurs, and if not don't bother to
 ;; do any coercion, etc.

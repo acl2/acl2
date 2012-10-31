@@ -46,15 +46,15 @@ hierarchical identifiers that lead into functions.</p>
 makes its use fairly meaningless (essentially we only implement functions that
 behave the same whether automatic or not.)</p>
 
-<p>The return type can be <tt>:vl-signed</tt> or <tt>:vl-unsigned</tt> (which
-is our representation of a \"plain\" return type) and a range is permitted.
-But we do not support functions whose return type is integer, real, realtime,
-or time.</p>
+<p>The return type can be @(':vl-signed') or @(':vl-unsigned') (which is our
+representation of a \"plain\" return type) and a range is permitted.  But we do
+not support functions whose return type is integer, real, realtime, or
+time.</p>
 
-<p>There may be any number of inputs of type <tt>:vl-signed</tt> or
-<tt>:vl-unsigned</tt> (which is our representation for plain and <tt>reg</tt>
-type inputs).  Each input may optionally have a range.  But we do not support
-inputs whose types are integer, real, realtime, or time.</p>
+<p>There may be any number of inputs of type @(':vl-signed') or
+@(':vl-unsigned') (which is our representation for plain and @('reg') type
+inputs).  Each input may optionally have a range.  But we do not support inputs
+whose types are integer, real, realtime, or time.</p>
 
 <p>There may be any number of reg declarations, each of which may be signed or
 not and may have a range.  We do not permit regs with array dimensions.  We
@@ -89,29 +89,29 @@ ensure that a function's result depends only upon its inputs and the other,
 current state of the module that it is inspecting.  For instance, we allow you
 to write functions such as:</p>
 
-<code>
+@({
 function foo ;
   input a;
   input b;
   reg r1;
   reg r2;
   begin
-   r1 = a &amp; b;
-   r2 = r1 &amp; c;  // c is presumably a wire in the module
+   r1 = a & b;
+   r2 = r1 & c;  // c is presumably a wire in the module
    foo = r1 ^ r2;
   end
 endfunction
-</code>
+})
 
 <p>But we do NOT allow you to switch the order of these statements, e.g.,</p>
 
-<code>
+@({
   begin
-   r2 = r1 &amp; c;  // using the old value of r1
-   r1 = a &amp; b;
+   r2 = r1 & c;  // using the old value of r1
+   r1 = a & b;
    foo = r1 ^ r2;
   end
-</code>
+})
 
 <p>Because this can lead to very strange, timing-sensitive interactions when
 there are multiple calls of the function, and generally seems like an
@@ -127,7 +127,7 @@ are Lisp programmers or something?</p>
 could take for eliminating functions and replacing them with ordinary
 assignments.  Here is a sample module that we can consider.</p>
 
-<code>
+@({
 module foo (...);
   wire w = ...;
 
@@ -137,32 +137,32 @@ module foo (...);
     f = (a ^ w) | tmp;
   endfunction
 
-  wire r1 = f(v1, v2) &amp; f(v2, v3);
+  wire r1 = f(v1, v2) & f(v2, v3);
   wire r2 = f(v3, v4);
 endmodule
-</code>
+})
 
 <p>An <b>inlining approach</b> would be to mangle the names of the wires in the
 function and lift its assignments up into the containing module, e.g.,</p>
 
-<code>
+@({
 module foo (...);
   wire w = ...;
 
   wire _tmp_f1 = (v1 ^ w) | v2;
   wire _tmp_f2 = (v2 ^ w) | v3;
-  wire r1 = _tmp_f1 &amp; _tmp_f2;
+  wire r1 = _tmp_f1 & _tmp_f2;
 
   wire _tmp_f3 = (v3 ^ w) | v4;
   wire r2 = _tmp_f2;
 endmodule
-</code>
+})
 
 <p>Alternately a <b>submodule approach</b> would be to write a new module that
 implements the function, and replace calls of the function with instances of
 this submodule.  For instance:</p>
 
-<code>
+@({
 module \foo$f (o, a, b, w);
   input a, b, w;
   output o;
@@ -176,23 +176,23 @@ module foo (...);
 
   \foo$f _finst_1 (_tmp_f1, v1, v2, w);
   \foo$f _finst_2 (_tmp_f2, v2, v3, w);
-  wire r1 = _tmp_f1 &amp; _tmp_f2;
+  wire r1 = _tmp_f1 & _tmp_f2;
 
   \foo$f _finst_3 (_tmp_f3, v3, v4, w);
   wire r2 = _tmp_f3;
 endmodule
-</code>
+})
 
 <p>Both approaches have some good and bad things about them.  Inlining is nice
 because we don't have to think very hard about how the use of non-inputs works.
-For instance, in the submodule approach we have to realize that <tt>f</tt>
-reads from <tt>w</tt>, an ordinary wire in the module, and so <tt>foo$f</tt>
-has to take this extra input.  But with the inlining approach, using <tt>w</tt>
-is no big deal and we can probably avoid some of this complication.</p>
+For instance, in the submodule approach we have to realize that @('f') reads
+from @('w'), an ordinary wire in the module, and so @('foo$f') has to take this
+extra input.  But with the inlining approach, using @('w') is no big deal and
+we can probably avoid some of this complication.</p>
 
 <p>Another nice thing about inlining is that most hierarchical references that
 originate within the function will probably still be working correctly.  That
-is, if we refer to <tt>submod.wire</tt> from within the function, then this is
+is, if we refer to @('submod.wire') from within the function, then this is
 still a submodule that we can see from the expanded code.</p>
 
 <p>The submodule approach is kind of nice in that it avoids introducing a pile
@@ -200,14 +200,14 @@ of additional wires and assignments into the main module, and probably helps to
 keep the transformed output smaller when the functions involved are large.  It
 would probably be possible to account for hierarchical identifiers that are
 being used within the function through some kind of flattening, e.g., if
-<tt>submod.wire</tt> is used by the function's code, then the submodule we
-create could have an extra input that receives it.</p>
+@('submod.wire') is used by the function's code, then the submodule we create
+could have an extra input that receives it.</p>
 
 <p>Either approach has problems with hierarchical identifiers that point into
 the function itself.  I'm not sure how to resolve that, but it doesn't seem
-particularly meaningful to write a HID that points at, say, <tt>foo.f.a</tt>,
-since there are multiple instances of <tt>f</tt> and so which one is being
-referred to?</p>
+particularly meaningful to write a HID that points at, say, @('foo.f.a'), since
+there are multiple instances of @('f') and so which one is being referred
+to?</p>
 
 <p>For now, I use the inlining approach because it seems somewhat simpler.  But
 it would probably not be too difficult to switch to the submodule
@@ -252,12 +252,12 @@ self-dependency.</p>"
 
 (defsection vl-reorder-fundecls
   :parents (vl-fundecllist-p filtering-by-name vl-depsort-functions)
-  :short "@(call vl-reorder-fundecls) extract the named functions from
-<tt>x</tt>, a @(see vl-fundecllist-p), in the same order as <tt>names</tt>."
+  :short "@(call vl-reorder-fundecls) extract the named functions from @('x'),
+a @(see vl-fundecllist-p), in the same order as @('names')."
 
   :long "<p>This is similar to @(see vl-keep-fundecls), but
-<tt>vl-keep-fundecls</tt> preserves the order of <tt>x</tt>, whereas this
-explicitly reorders <tt>x</tt> to match <tt>names</tt>.</p>"
+@('vl-keep-fundecls') preserves the order of @('x'), whereas this explicitly
+reorders @('x') to match @('names').</p>"
 
   (defund vl-reorder-fundecls (names x)
     (declare (xargs :guard (and (string-listp names)
@@ -346,15 +346,15 @@ explicitly reorders <tt>x</tt> to match <tt>names</tt>.</p>"
   :short "Rearrange function declarations so that they are in dependency order,
 if possible."
 
-  :long "<p><b>Signature:</b> @(call vl-depsort-functions) returns <tt>(mv
-successp warnings sorted-fundecls)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-depsort-functions) returns @('(mv
+successp warnings sorted-fundecls)').</p>
 
 <p>Since functions can call one another and can be listed in any order, it is
 useful to be able to put them into a dependency order; we take advantage of
 this when we flatten their templates, see @(see vl-flatten-funtemplates).</p>
 
 <p>We will fail if there are any circular function dependencies or recursive
-functions; in this case <tt>successp</tt> is nil and a fatal warning will be
+functions; in this case @('successp') is nil and a fatal warning will be
 added.</p>"
 
   (local (defthm crock
@@ -435,12 +435,12 @@ added.</p>"
   :short "Ensure that a function's parameters are defined before they are used."
 
   :long "<p><b>Signature:</b> @(call vl-check-fun-parameters-deforder) returns
-<tt>(mv okp warnings)</tt>.</p>
+@('(mv okp warnings)').</p>
 
-<p>Here, <tt>bad-params</tt> is initially the list of all parameter declaration
+<p>Here, @('bad-params') is initially the list of all parameter declaration
 names for this function.  We remove their names as we encounter their
 declarations, and add fatal warnings if we find a declaration that is using
-<tt>bad-params</tt>.</p>
+@('bad-params').</p>
 
 <p>The Verilog specification does not address whether parameters need to be
 introduced before being used, but other tools like Verilog-XL and NCVerilog
@@ -452,14 +452,14 @@ NCVerilog the shadowing only happens after they are introduced.  This can lead
 to strange behavior, e.g., if we have a function with declarations like
 these:</p>
 
-<code>
+@({
  reg [width-1:0] r;
  parameter width = 5;
  reg [width-1:0] s;
-</code>
+})
 
-<p>Then if there's a <tt>width</tt> parameter defined outside the function, in
-the module, <tt>r</tt> and <tt>s</tt> can end up having different widths!</p>
+<p>Then if there's a @('width') parameter defined outside the function, in the
+module, @('r') and @('s') can end up having different widths!</p>
 
 <p>We think that is crazy and therefore don't allow function parameters to
 shadow module parameters.  But, it seems useful to still check that if there
@@ -517,12 +517,12 @@ better come after the parameter is introduced.</p>"
 module."
 
   :long "<p><b>Signature:</b> @(call vl-check-fun-params-no-overlap) returns
-<tt>(mv okp warnings)</tt>.</p>
+@('(mv okp warnings)').</p>
 
-<p>Here, <tt>x</tt> is the list of parameter declarations for the function and
-<tt>mod</tt> is the module that the function occurs in; <tt>warnings</tt> is an
-ordinary @(see warnings) accumulator, which may be extended, and
-<tt>function</tt> is just used as a context for error messages.</p>
+<p>Here, @('x') is the list of parameter declarations for the function and
+@('mod') is the module that the function occurs in; @('warnings') is an
+ordinary @(see warnings) accumulator, which may be extended, and @('function')
+is just used as a context for error messages.</p>
 
 <p>We don't allow parameters to shadow other things in the module since that
 seems weird and has various corner cases with respect to declarations being
@@ -568,7 +568,7 @@ vl-moditem-alist).</p>"
 handle."
 
   :long "<p><b>Signature:</b> @(call vl-fun-paramdecllist-types-okp) returns
-<tt>(mv okp warnings)</tt>.</p>
+@('(mv okp warnings)').</p>
 
 <p>We make sure that all of the parameters in the function are plain parameters
 with no ranges or weird types.  This restriction might not be necessary, but we
@@ -635,17 +635,16 @@ binds parameter names to their values."
 (defsection vl-fundecl-expand-params
   :parents (expand-functions)
   :short "Eliminate parameters from a function."
-  :long "<p><b>Signature:</b> @(call vl-fundecl-expand-params) returns <tt>(mv
-successp warnings x-prime)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-fundecl-expand-params) returns @('(mv
+successp warnings x-prime)').</p>
 
-<p>As inputs, <tt>x</tt> is a @(see vl-fundecl-p) that might have parameters
-and <tt>mod</tt> is the module in which it resides; <tt>warnings</tt> is an
-ordinary @(see warnings) accumulator which may be extended, possibly with
-fatal warnings.</p>
+<p>As inputs, @('x') is a @(see vl-fundecl-p) that might have parameters and
+@('mod') is the module in which it resides; @('warnings') is an ordinary @(see
+warnings) accumulator which may be extended, possibly with fatal warnings.</p>
 
-<p>We try to rewrite <tt>x</tt> to eliminate any parameters.  There doesn't
-seem to be any way to actually provide values for the parameters of a function,
-so function parameters seem to just be a way to use named constants within a
+<p>We try to rewrite @('x') to eliminate any parameters.  There doesn't seem to
+be any way to actually provide values for the parameters of a function, so
+function parameters seem to just be a way to use named constants within a
 function.</p>
 
 <p>The basic idea is to just construct a substitution list from the parameters
@@ -886,13 +885,12 @@ them.</li>
   :short "Ensure that a function's statement conforms to the Function Rules in
 10.4.4."
 
-  :long "<p><b>Signature:</b> @(call vl-fun-stmt-okp) returns <tt>(mv okp
-warnings)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-fun-stmt-okp) returns @('(mv okp
+warnings)').</p>
 
-<p>Here, <tt>x</tt> is a statement (presumably a function's body or a
-sub-statement of a function's body), <tt>warnings</tt> is an ordinary @(see
-warnings) accumulator, and <tt>function</tt> is just a context for error
-messages.</p>
+<p>Here, @('x') is a statement (presumably a function's body or a sub-statement
+of a function's body), @('warnings') is an ordinary @(see warnings)
+accumulator, and @('function') is just a context for error messages.</p>
 
 <p>We check to see if the statement conforms to the Function Rules in 10.4.4.
 In particular, we want to ensure that the function's body:</p>
@@ -989,33 +987,33 @@ forbidden\" stuff first.</p>"
   :parents (vl-fun-assignorder-okp)
   :short "Main checking for @(see vl-fun-assignorder-okp)."
 
-  :long "<p><b>Signature:</b> @(call vl-fun-assignorder-okp-aux) returns <tt>(mv
-okp warnings written-regs read-regs read-inputs)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-fun-assignorder-okp-aux) returns @('(mv
+okp warnings written-regs read-regs read-inputs)').</p>
 
 <ul>
 
-<li><tt>x</tt> is a @(see vl-assignlist-p) derived from the function's body.</li>
+<li>@('x') is a @(see vl-assignlist-p) derived from the function's body.</li>
 
-<li><tt>innames</tt> are the names of all inputs to the function.</li>
+<li>@('innames') are the names of all inputs to the function.</li>
 
-<li><tt>regnames</tt> are the names of all registers declared in the function.</li>
+<li>@('regnames') are the names of all registers declared in the function.</li>
 
-<li><tt>written-regs</tt> is an accumulator that names all of the registers we
+<li>@('written-regs') is an accumulator that names all of the registers we
 wrote to so far; this allows us to check that all registers are written before
 they are read, and that no register is written to more than once.</li>
 
-<li><tt>read-regs</tt> is an accumulator that names all of the registers we've
-read from so far; it is just useful for reporting unused registers.</li>
+<li>@('read-regs') is an accumulator that names all of the registers we've read
+from so far; it is just useful for reporting unused registers.</li>
 
-<li><tt>read-inputs</tt> is an accumulator that names all the inputs we've read
+<li>@('read-inputs') is an accumulator that names all the inputs we've read
 from so far; it is just useful for unused-input reporting.</li>
 
-<li><tt>warnings</tt> is an ordinary @(see warnings) accumulator.</li>
+<li>@('warnings') is an ordinary @(see warnings) accumulator.</li>
 
-<li><tt>function</tt> is the function itself, which is mainly useful as a
-context for warnings, but also gives us the function's name so we can check
-that the function's name is the last thing written to and isn't written to
-until the end.</li>
+<li>@('function') is the function itself, which is mainly useful as a context
+for warnings, but also gives us the function's name so we can check that the
+function's name is the last thing written to and isn't written to until the
+end.</li>
 
 </ul>"
 
@@ -1170,13 +1168,13 @@ until the end.</li>
 registers before they read from them, never write to a register twice, and end
 with a write to the function's name."
 
-  :long "<p><b>Signature:</b> @(call vl-fun-assignorder-okp) returns <tt>(mv
-okp warnings)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-fun-assignorder-okp) returns @('(mv okp
+warnings)').</p>
 
-<p>Here, <tt>x</tt> is a @(see vl-assignlist-p) derived from the function's
-body and <tt>warnings</tt> is an ordinary @(see warnings) accumulator, which may
-be extended with fatal warnings.  The <tt>function</tt> is the function itself,
-and is mainly used as a context for error messages, and also to determine the
+<p>Here, @('x') is a @(see vl-assignlist-p) derived from the function's body
+and @('warnings') is an ordinary @(see warnings) accumulator, which may be
+extended with fatal warnings.  The @('function') is the function itself, and is
+mainly used as a context for error messages, and also to determine the
 function's name.</p>
 
 <p>The checks we perform are intended to ensure that it is legitimate to
@@ -1285,16 +1283,16 @@ registers and inputs.</p>"
 into a @(see vl-assignlist-p)."
 
   :long "<p><b>Signature:</b> @(call vl-funbody-to-assignments-aux) returns
-<tt>(mv successp warnings assigns)</tt>.</p>
+@('(mv successp warnings assigns)').</p>
 
-<p>Here, <tt>x</tt> is a \"flattened\" list of statements that come from the
+<p>Here, @('x') is a \"flattened\" list of statements that come from the
 function's body.  If this function is reasonable and in our supported subset,
-then <tt>x</tt> should just be a list of blocking assignment statements.  We
+then @('x') should just be a list of blocking assignment statements.  We
 convert each statement into a @(see vl-assign-p) with the same left-hand side
 and right-hand-side.  The superior function, @(see vl-funbody-to-assignments),
 will then check that this conversion is reasonable.</p>
 
-<p>If <tt>x</tt> contains anything other than supported, blocking assignment
+<p>If @('x') contains anything other than supported, blocking assignment
 statements (well, and null statements), we'll just fail because this isn't a
 supported function.</p>"
 
@@ -1357,16 +1355,16 @@ supported function.</p>"
   :short "Transform a function's body into a list of assignment statements if
 it is safe to do so."
 
-  :long "<p><b>Signature:</b> @(call vl-funbody-to-assignments) returns <tt>(mv
-successp warnings assigns)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-funbody-to-assignments) returns @('(mv
+successp warnings assigns)').</p>
 
-<p>Here <tt>x</tt> is a function declaration and <tt>warnings</tt> is an
-ordinary @(see warnings) accumulator.</p>
+<p>Here @('x') is a function declaration and @('warnings') is an ordinary @(see
+warnings) accumulator.</p>
 
-<p>If <tt>x</tt> is a function that we think we can safely support, we convert
-its body into a list of assignments which capture its effect.  This is a fairly
-elaborate process with a lot of checking to make sure things are
-reasonable.  At a high level:</p>
+<p>If @('x') is a function that we think we can safely support, we convert its
+body into a list of assignments which capture its effect.  This is a fairly
+elaborate process with a lot of checking to make sure things are reasonable.
+At a high level:</p>
 
 <ul>
 
@@ -1498,12 +1496,12 @@ functions we use while inlining function calls."
 
   :long "<p>For each of the module's functions, we generate a template that
 will allow us to expand calls of the function.  Each template has the same
-<tt>name</tt> as the function, but all of its inputs and reg declarations have
-been turned into net declarations (the <tt>inputs</tt> and <tt>locals</tt>,
-respectively), and we have added a net declaration for the function's return
-value (<tt>out</tt>).  The function's body is converted into <tt>assigns</tt>,
-an ordinary @(see vl-assignlist-p), and we assume that these assignments are
-well-formed in the sense of @(see vl-fun-assignorder-okp).</p>
+@('name') as the function, but all of its inputs and reg declarations have been
+turned into net declarations (the @('inputs') and @('locals'), respectively),
+and we have added a net declaration for the function's return value (@('out')).
+The function's body is converted into @('assigns'), an ordinary @(see
+vl-assignlist-p), and we assume that these assignments are well-formed in the
+sense of @(see vl-fun-assignorder-okp).</p>
 
 <p>Why do we bother introducing these templates at all?  One nice thing about
 them is that there is a certain amount of \"static\" processing that needs to
@@ -1697,16 +1695,15 @@ vl-fun-regdecllist-types-okp).</p>"
   :short "Generate the initial template for expanding a function."
 
   :long "<p><b>Signature:</b> @(call vl-fundecl-expansion-template) returns
-<tt>(mv template/nil warnings)</tt>.</p>
+@('(mv template/nil warnings)').</p>
 
-<p>Here <tt>x</tt> is a function declaration and <tt>warnings</tt> is an
-ordinary @(see warnings) accumulator.</p>
+<p>Here @('x') is a function declaration and @('warnings') is an ordinary @(see
+warnings) accumulator.</p>
 
-<p>We try to generate a @(see vl-funtemplate-p) corresponding to <tt>x</tt>.
-On success, the template we generate is only an <b>initial</b> template; it
-isn't necessarily \"flat\" and might have function calls within its
-assignments.  We later flatten these initial templates with @(see
-vl-flatten-funtemplates).</p>
+<p>We try to generate a @(see vl-funtemplate-p) corresponding to @('x').  On
+success, the template we generate is only an <b>initial</b> template; it isn't
+necessarily \"flat\" and might have function calls within its assignments.  We
+later flatten these initial templates with @(see vl-flatten-funtemplates).</p>
 
 <p>Creating the template for a function is a pretty elaborate process which
 involves a lot of sanity checking, and will fail if the function includes
@@ -1896,17 +1893,17 @@ unsupported constructs or doesn't meet our other sanity criteria.</p>"
 locations; this is used to give new names to the wires in a function call."
 
   :long "<p><b>Signature:</b> @(call vl-funexpand-rename-netdecls) returns
-<tt>(mv x-prime nf)</tt>.</p>
+@('(mv x-prime nf)').</p>
 
-<p><tt>x</tt> is a list of net declarations, typically some nets from a @(see
+<p>@('x') is a list of net declarations, typically some nets from a @(see
 vl-funtemplate-p); we try to generate names that correspond to the original
 names being used in the function.</p>
 
-<p><tt>nf</tt> is a @(see vl-namefactory-p) that we use to safely generate
-fresh names.</p>
+<p>@('nf') is a @(see vl-namefactory-p) that we use to safely generate fresh
+names.</p>
 
-<p><tt>loc</tt> is the location of the function call, so that when we introduce
-the new wires, we put them near the site of their use.</p>"
+<p>@('loc') is the location of the function call, so that when we introduce the
+new wires, we put them near the site of their use.</p>"
 
   (defund vl-funexpand-rename-netdecls (x nf loc)
     "Returns (MV X-PRIME NF)"
@@ -1952,31 +1949,31 @@ the new wires, we put them near the site of their use.</p>"
   :parents (expand-functions)
   :short "Main routine for expanding a single function call."
 
-  :long "<p><b>Signature:</b> @(call vl-expand-function-call) returns <tt>(mv
-successp warnings nf expr netdecls assigns)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-expand-function-call) returns @('(mv
+successp warnings nf expr netdecls assigns)').</p>
 
 <p>We need several inputs:</p>
 
 <ul>
 
-<li><tt>x</tt>, the @(see vl-funtemplate-p) for the function we want to
+<li>@('x'), the @(see vl-funtemplate-p) for the function we want to
 expand.</li>
 
-<li><tt>actuals</tt>, the list of actuals for a particular call of this
+<li>@('actuals'), the list of actuals for a particular call of this
 function.</li>
 
-<li><tt>nf</tt>, a @(see vl-namefactory-p) for generating fresh names.</li>
+<li>@('nf'), a @(see vl-namefactory-p) for generating fresh names.</li>
 
-<li><tt>netdecls</tt>, an accumulator for wire declarations that we will need
-to add to the module, which we will extend.</li>
+<li>@('netdecls'), an accumulator for wire declarations that we will need to
+add to the module, which we will extend.</li>
 
-<li><tt>assigns</tt>, an accumulator for assignments that we will need to add
-to the module, which we will extend.</li>
+<li>@('assigns'), an accumulator for assignments that we will need to add to
+the module, which we will extend.</li>
 
-<li><tt>warnings</tt>, an ordinary @(see warnings) accumulator, which we may
-extend with fatal warnings.</li>
+<li>@('warnings'), an ordinary @(see warnings) accumulator, which we may extend
+with fatal warnings.</li>
 
-<li><tt>ctx</tt>, a @(see vl-modelement-p) that says where this function call
+<li>@('ctx'), a @(see vl-modelement-p) that says where this function call
 occurs, which we use for warning messages and also to indicate the location the
 new module elements (wires and assignments) should be generated at.</li>
 
@@ -1988,21 +1985,21 @@ new module elements (wires and assignments) should be generated at.</li>
 
 <li>We generate fresh wire names that will serve as the inputs, locals, and the
 return value wire for this function call; the corresponding declarations are
-added to the <tt>netdecls</tt> accumulator.</li>
+added to the @('netdecls') accumulator.</li>
 
 <li>We generate new assignments that initialize the generated input wire names
-with the actuals; these assignments are added to the <tt>assigns</tt>
+with the actuals; these assignments are added to the @('assigns')
 accumulator.</li>
 
 <li>We rewrite the function's assignments so that they use these newly
 generated wire names instead of their local names; these assignments are added
-to the <tt>assigns</tt> accumulator.</li>
+to the @('assigns') accumulator.</li>
 
 </ul>
 
-<p>The <tt>expr</tt> we return is a simple identifier atom for the generated
+<p>The @('expr') we return is a simple identifier atom for the generated
 return-value wire.  The idea is to replace the function-call expression with
-this <tt>expr</tt>.</p>"
+this @('expr').</p>"
 
   (defund vl-expand-function-call (x actuals nf netdecls assigns warnings ctx)
     "Returns (MV SUCCESSP WARNINGS NF EXPR NETDECLS ASSIGNS)"
@@ -2100,28 +2097,28 @@ this <tt>expr</tt>.</p>"
   :parents (expand-functions)
   :short "Cause fatal warnings if function calls are in unacceptable places."
 
-  :long "<p><b>Signature:</b> @(call vl-check-bad-funcalls) returns <tt>(mv okp
-warnings)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-check-bad-funcalls) returns @('(mv okp
+warnings)').</p>
 
 <ul>
 
-<li><tt>ctx</tt> is some @(see vl-modelement-p) that provides a context
-for the error messages we may produce.</li>
+<li>@('ctx') is some @(see vl-modelement-p) that provides a context for the
+error messages we may produce.</li>
 
-<li><tt>exprs</tt> are a list of expressions that are <b>not</b> allowed have
-any function calls.</li>
+<li>@('exprs') are a list of expressions that are <b>not</b> allowed have any
+function calls.</li>
 
-<li><tt>description</tt> is a short string that says what these expressions
+<li>@('description') is a short string that says what these expressions
 are (some examples: \"delay expressions\", \"left-hand sides of assignments\"),
 which will be incorporated into the error message.</li>
 
-<li><tt>warnings</tt> is an ordinary @(see warnings) accumulator, which we
-may extend.</li>
+<li>@('warnings') is an ordinary @(see warnings) accumulator, which we may
+extend.</li>
 
 </ul>
 
 <p>If these expressions contain any function calls, we add a fatal warning and
-set <tt>okp</tt> to <tt>nil</tt>.</p>
+set @('okp') to @('nil').</p>
 
 <h3>Motivation</h3>
 
@@ -2138,7 +2135,7 @@ range declaration?</p>
 
 <p>These things probably make some sense, especially if the function is being
 applied to constant arguments and can be completely resolved at \"elaboration
-time.\"  But it does not seem like it makes any sense for functions that are
+time.\" But it does not seem like it makes any sense for functions that are
 dealing with wires.  At any rate, for now I am not going to try to support this
 osrt of thing, because (1) handling all of this properly raises so many
 questions regarding widths, etc., and (2) it seems more elaborate than we
@@ -2195,17 +2192,17 @@ since it will be so tricky to get right.</p>"
   :short "Expand function calls throughout an expression."
 
   :long "<p><b>Signature:</b> @(call vl-expr-expand-function-calls) returns
-<tt>(mv successp warnings nf x-prime netdecls assigns)</tt>.</p>
+@('(mv successp warnings nf x-prime netdecls assigns)').</p>
 
-<p>Here, <tt>x</tt> is the expression to expand function calls in, and
-<tt>templates</tt> is the list of all the templates we've generated from the
+<p>Here, @('x') is the expression to expand function calls in, and
+@('templates') is the list of all the templates we've generated from the
 function declarations (a @(see vl-funtemplatelist-p)).  The other arguments are
 the same as in @(see vl-expand-function-call).</p>
 
-<p>We recursively try to expand function calls throughout <tt>x</tt>.  We
-return a new expression, <tt>x-prime</tt>, which is equivalent to
-<tt>x</tt> (assuming that the generated netdecls and assigns are added to the
-module), and which is free of function calls on success.</p>"
+<p>We recursively try to expand function calls throughout @('x').  We return a
+new expression, @('x-prime'), which is equivalent to @('x') (assuming that the
+generated netdecls and assigns are added to the module), and which is free of
+function calls on success.</p>"
 
   (mutual-recursion
 
@@ -2438,7 +2435,7 @@ module), and which is free of function calls on success.</p>"
          (thm-basics   (intern-in-package-of-symbol thm-basics-s name))
          (short        (cat "Expand function calls throughout a @(see " type-s ")"))
          (long         (cat "<p><b>Signature:</b> @(call " name-s ") returns
-<tt>(mv successp warnings nf x-prime netdecls assigns)</tt></p>"))
+@('(mv successp warnings nf x-prime netdecls assigns)')</p>"))
          (ctx-part     (if ctxp '(ctx) nil)))
 
   `(defsection ,name
@@ -2489,7 +2486,7 @@ module), and which is free of function calls on success.</p>"
          (thm-true    (intern-in-package-of-symbol thm-true-s name))
          (short       (cat "Expand function calls throughout a @(see " type-s ")"))
          (long        (cat "<p><b>Signature:</b> @(call " name-s ") returns
-<tt>(mv successp warnings nf x-prime netdecls assigns)</tt></p>"))
+@('(mv successp warnings nf x-prime netdecls assigns)')</p>"))
          (ctx-part    (if ctxp '(ctx) nil)))
 
   `(defsection ,name
@@ -3068,28 +3065,28 @@ module), and which is free of function calls on success.</p>"
   :short "Flatten the templates for each function, inlining any calls of other
 functions so that the templates are function-call free."
 
-  :long "<p><b>Signature:</b> @(call vl-flatten-funtemplates) returns <tt>(mv
-successp warnings nf done)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-flatten-funtemplates) returns @('(mv
+successp warnings nf done)').</p>
 
 <p>Our flattening algorithm basically takes two @(see vl-funtemplatelist-p)s,
-<tt>todo</tt> and <tt>done</tt>.  Initially the <tt>todo</tt> list has the
-template for every function and the <tt>done</tt> list is empty.</p>
+@('todo') and @('done').  Initially the @('todo') list has the template for
+every function and the @('done') list is empty.</p>
 
 <p>We assume that these are in dependency order; see @(see
-vl-depsort-functions).  This ensures that the <tt>done</tt> list contains a
-template for any function that is called in the <tt>todo</tt> list.  Moreover,
-as we work we maintain the invariant that the templates in the done-list are
+vl-depsort-functions).  This ensures that the @('done') list contains a
+template for any function that is called in the @('todo') list.  Moreover, as
+we work we maintain the invariant that the templates in the done-list are
 function-call free.</p>
 
-<p>For each <tt>todo</tt> template, all we need to do is expand any function
-calls in the assignments by using our normal function for function inlining,
-@(see vl-assignlist-expand-function-calls), using the <tt>done</tt> list as
-the templates.  This produces some new assignments that we add to the template,
-and some new net declarations that we add as new locals.</p>
+<p>For each @('todo') template, all we need to do is expand any function calls
+in the assignments by using our normal function for function inlining, @(see
+vl-assignlist-expand-function-calls), using the @('done') list as the
+templates.  This produces some new assignments that we add to the template, and
+some new net declarations that we add as new locals.</p>
 
 <p>Here is an example of the idea.  Suppose we have:</p>
 
-<code>
+@({
     function buf;
       input a;
       reg b;
@@ -3103,12 +3100,12 @@ and some new net declarations that we add as new locals.</p>
       r = buf(i);
       doublebuf = buf(r);
     endfunction
-</code>
+})
 
 <p>Then, adopting a pseudo-code for representing the templates, we will have
 initial templates that look like this:</p>
 
-<code>
+@({
   buf_template {
     inputs:  wire a;
     locals:  wire b;
@@ -3124,12 +3121,12 @@ initial templates that look like this:</p>
     assigns: assign r = buf(i);
              assign doublebuf = buf(r);
   }
-</code>
+})
 
 <p>To flatten the doublebuf_template, we basically want to convert it into
 this:</p>
 
-<code>
+@({
   doublebuf_template {
     inputs:  wire i;
     locals:  wire r, a1, b1, buf1, a2, b2, buf2;
@@ -3141,7 +3138,7 @@ this:</p>
              assign buf2 = ~b2;
              assign doublebuf = buf2;
   }
-</code>
+})
 
 <p>And hence we've eliminated all the function calls from
 doublebuf_template.</p>"

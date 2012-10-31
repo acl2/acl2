@@ -29,43 +29,43 @@
 
   :long "<p>This is a heuristic for generating warnings.</p>
 
-<p>We think it would be strange to see an expression like <tt>A ? B : C</tt>
-where <tt>A</tt> is not one bit wide.  It found a few minor things that we
-were able to clean up, but nothing that was really a bug.</p>
+<p>We think it would be strange to see an expression like @('A ? B : C') where
+@('A') is not one bit wide.  It found a few minor things that we were able to
+clean up, but nothing that was really a bug.</p>
 
-<p>Since the <tt>?:</tt> operator has the lowest precedence, expressions like
-<tt>A &amp; B ? C : D</tt> are parsed as <tt>(A &amp; B) ? C : D</tt>, which
-might not be what is intended.  In some cases, an actual precedence problem
-might be revealed by seeing that the size of the test expression isn't 1.</p>")
+<p>Since the @('?:') operator has the lowest precedence, expressions like @('A
+& B ? C : D') are parsed as @('(A & B) ? C : D'), which might not be what is
+intended.  In some cases, an actual precedence problem might be revealed by
+seeing that the size of the test expression isn't 1.</p>")
 
 
 (defsection vl-qmark-test-size
   :parents (qmarksize-check)
-  :short "Determine the \"original size\" of the test expression for a
-<tt>?:</tt> operator."
+  :short "Determine the \"original size\" of the test expression for a @('?:')
+operator."
 
   :long "<p>This is an ugly hack.  @(call vl-qmark-test-size) is given an
-exprsesion <tt>x</tt> which should be the <tt>test</tt> expression from a
-conditional expression like:</p>
+exprsesion @('x') which should be the @('test') expression from a conditional
+expression like:</p>
 
-<code>
+@({
     test ? then : else
-</code>
+})
 
-<p>Also, <tt>x</tt> should have already been sized.</p>
+<p>Also, @('x') should have already been sized.</p>
 
-<p>Since @(see oprewrite) is applied before sizing, <tt>x</tt> has been
-transformed and either looks like <tt>|A</tt> or <tt>~(|A)</tt>, where
-<tt>A</tt> is the original version of <tt>x</tt>.</p>
+<p>Since @(see oprewrite) is applied before sizing, @('x') has been transformed
+and either looks like @('|A') or @('~(|A)'), where @('A') is the original
+version of @('x').</p>
 
-<p>We want to return the width of <tt>A</tt>, rather than the width of
-<tt>x</tt> (which is always just 1), so that we can detect cases where the test
+<p>We want to return the width of @('A'), rather than the width of
+@('x') (which is always just 1), so that we can detect cases where the test
 expression that was given was wider than 1 bit.</p>
 
-<p>To support this, @(see oprewrite) is set up so that it annotates the
-<tt>|</tt> and <tt>~</tt> expressions it introduces with the
-<tt>VL_CONDITIONAL_FIX</tt> attribute.  We check for this attribute in
-order to know where to find <tt>A</tt>.</p>"
+<p>To support this, @(see oprewrite) is set up so that it annotates the @('|')
+and @('~') expressions it introduces with the @('VL_CONDITIONAL_FIX')
+attribute.  We check for this attribute in order to know where to find
+@('A').</p>"
 
   (defund vl-qmark-test-size (x)
     (declare (xargs :guard (vl-expr-p x)))
@@ -96,16 +96,16 @@ order to know where to find <tt>A</tt>.</p>"
 
 (defsection vl-expr-qmarksize-check
   :parents (qmarksize-check)
-  :short "Look throughout an expression for any <tt>?:</tt> expressions that
-have wide tests."
+  :short "Look throughout an expression for any @('?:') expressions that have
+wide tests."
 
   :long "<p><b>Signature:</b> @(call vl-expr-qmarksize-check) returns a
 @(see vl-warninglist-p).</p>
 
-<p>We look through the expression <tt>x</tt> for any <tt>?:</tt>
-sub-expressions with wide tests, and produce a warning whenever we find one.
-The <tt>ctx</tt> is a @(see vl-context-p) that says where <tt>x</tt> occurs,
-and is just used to generate more meaningful error messages.</p>"
+<p>We look through the expression @('x') for any @('?:') sub-expressions with
+wide tests, and produce a warning whenever we find one.  The @('ctx') is a
+@(see vl-context-p) that says where @('x') occurs, and is just used to generate
+more meaningful error messages.</p>"
 
   (mutual-recursion
 

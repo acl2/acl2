@@ -58,29 +58,29 @@ optimization often saves a lot of consing.</p>
 
 <h3>Using Name Factories</h3>
 
-<p>Typically, given some module <tt>mod</tt>, the user begins by constructing a
-name factory using <tt>(@(see vl-starting-namefactory) mod)</tt>.  Note that it
-is quite cheap to construct a name factory in this way; all expense is delayed
-until the first use of the factory.  It is also possible to create a name
-factory without a module using @(see vl-empty-namefactory), which is
-occasionally useful when generating new modules.</p>
+<p>Typically, given some module @('mod'), the user begins by constructing a
+name factory using @('(vl-starting-namefactory mod)').  Note that it is quite
+cheap to construct a name factory in this way; all expense is delayed until the
+first use of the factory.  It is also possible to create a name factory without
+a module using @(see vl-empty-namefactory), which is occasionally useful when
+generating new modules.</p>
 
 <p>Once constructed, name factories must be used in a single-threaded
 discipline.  That is, the functions for generating names actually return
-<tt>(mv fresh-name factory-prime)</tt>, and to ensure that a sequence of
+@('(mv fresh-name factory-prime)'), and to ensure that a sequence of
 generated names are unique, one must always use the most recently returned
 factory to generate subsequent names.</p>
 
 <p>Two functions are provided for generating names:</p>
 
-<p><tt>(@(see vl-namefactory-indexed-name) prefix nf)</tt> produces a name that
-looks like <tt>prefix_n</tt>, where <tt>n</tt> is the smallest positive natural
-number <tt>n</tt> such that the name <tt>prefix_n</tt> is not in use.</p>
+<p>@('(vl-namefactory-indexed-name prefix nf)') produces a name that looks like
+@('prefix_n'), where @('n') is the smallest positive natural number @('n') such
+that the name @('prefix_n') is not in use.</p>
 
-<p><tt>(@(see vl-namefactory-plain-name) name nf)</tt> attempts to return
-<tt>name</tt> verbatim.  When this is not possible, a name of the form
-<tt>name_n</tt>, a note will be printed to standard output and instead we will
-produce a name with <tt>vl-namefactory-indexed-name</tt>.</p>
+<p>@('(vl-namefactory-plain-name name nf)') attempts to return @('name')
+verbatim.  When this is not possible, a name of the form @('name_n'), a note
+will be printed to standard output and instead we will produce a name with
+@('vl-namefactory-indexed-name').</p>
 
 <p>We use these functions for different purposes.  We think that @(see
 vl-namefactory-indexed-name) should be used for \"throwaway\" names that don't
@@ -90,31 +90,31 @@ vl-namefactory-plain-name) should be used for splitting up instance names or in
 any other cases where a reliable name is desired.</p>
 
 <p>Because name factories make use of fast alists, they should be destroyed
-with <tt>(@(see vl-free-namefactory) nf)</tt> when you are done using them.</p>
+with @('(vl-free-namefactory nf)') when you are done using them.</p>
 
 
 <h3>Freshness Guarantee</h3>
 
 <p>To establish that name factories generate only fresh names, we introduce the
-function <tt>(@(see vl-namefactory-allnames) nf)</tt>.  This function returns a
-list of all names that the name factory currently considers to be in use.  We
+function @('(vl-namefactory-allnames nf)').  This function returns a list of
+all names that the name factory currently considers to be in use.  We
 prove:</p>
 
 <ul>
 
-<li>The <tt>allnames</tt> of the empty name factory is empty.</li>
+<li>The @('allnames') of the empty name factory is empty.</li>
 
-<li>Every name in the @(see vl-module->modnamespace) of <tt>mod</tt> is among
-the <tt>allnames</tt> of the initial name factory produced by
-<tt>(vl-starting-namefactory mod).</tt></li>
+<li>Every name in the @(see vl-module->modnamespace) of @('mod') is among the
+@('allnames') of the initial name factory produced by
+@('(vl-starting-namefactory mod).')</li>
 
-<li>The <tt>fresh-name</tt>s returned by @(see vl-namefactory-indexed-name) or
-@(see vl-namefactory-plain-name) are not members of the <tt>allnames</tt> of
-the input factory.</li>
+<li>The @('fresh-name')s returned by @(see vl-namefactory-indexed-name) or
+@(see vl-namefactory-plain-name) are not members of the @('allnames') of the
+input factory.</li>
 
-<li>The <tt>allnames</tt> of the resulting <tt>factory-prime</tt> include
-exactly the <tt>allnames</tt> of the input <tt>factory</tt>, along with the
-generated <tt>fresh-name</tt>.</li>
+<li>The @('allnames') of the resulting @('factory-prime') include exactly the
+@('allnames') of the input @('factory'), along with the generated
+@('fresh-name').</li>
 
 </ul>
 
@@ -130,17 +130,15 @@ names are needed.  Toward this goal, our original approach was as follows:</p>
 
 <ul>
 
-<li>Our generated names always looked like <tt>_gen_1</tt>, <tt>_gen_2</tt>,
-etc.</li>
+<li>Our generated names always looked like @('_gen_1'), @('_gen_2'), etc.</li>
 
 <li>When the first name was needed, a transform would examine the module's
-namespace for the largest <tt>n</tt> such that <tt>_gen_n</tt> was already in
-use.  The name <tt>_gen_{n+1}</tt> would then be used as the first new
-name.</li>
+namespace for the largest @('n') such that @('_gen_n') was already in use.  The
+name @('_gen_{n+1}') would then be used as the first new name.</li>
 
 <li>Subsequently, any number of fresh names could then be generated by simply
 increasing the index.  That is, the second name fresh name would be
-<tt>_gen_{n+2}</tt>, the third <tt>_gen_{n+3}</tt>, and so on.</li>
+@('_gen_{n+2}'), the third @('_gen_{n+3}'), and so on.</li>
 
 </ul>
 
@@ -154,19 +152,19 @@ even computed.</p>
 or predictable.  This was particularly problematic when instance arrays
 like:</p>
 
-<code>
+@({
 basic_flop data [(width - 1):0] (q, ph1, d);
-</code>
+})
 
 <p>would be transformed into something like:</p>
 
-<code>
+@({
 basic_flop _gen_19 (q[0], ph1, d[0]);
 basic_flop _gen_18 (q[1], ph1, d[1]);
 basic_flop _gen_17 (q[2], ph1, d[2]);
-</code>
+})
 
-<p>that is, here the instance name <tt>data</tt> has been entirely lost and
+<p>that is, here the instance name @('data') has been entirely lost and
 replaced with a bunch of unrelated, stupid names that might easily change when
 the module is translated in the future.</p>
 
@@ -179,15 +177,17 @@ generated, while still being quite efficient.</p>
 <p>A name factory has two fields:</p>
 
 <ul>
-<li><tt>mod</tt>, the module that we are generating names for, or <tt>nil</tt>
-if there is no such module (e.g., for empty name factories).</li>
-<li><tt>namedb</tt> is an ordinary @(see vl-namedb-p) that we use to generate
-fresh names.</li>
+
+<li>@('mod'), the module that we are generating names for, or @('nil') if there
+is no such module (e.g., for empty name factories).</li>
+
+<li>@('namedb') is an ordinary @(see vl-namedb-p) that we use to generate fresh
+names.</li>
+
 </ul>
 
 <p>The invariant we maintain is that either the namedb is empty, or every name
-in the @(see vl-module->modnamespace) of <tt>mod</tt> must be bound in
-it.</p>")
+in the @(see vl-module->modnamespace) of @('mod') must be bound in it.</p>")
 
 (defthm subsetp-equal-of-modnamespace-when-vl-namefactory-p
   (implies (and (vl-namedb->names (vl-namefactory->namedb x))
@@ -329,13 +329,12 @@ vl-namefactory-p) for all name factory documentation.</p>"
 a module."
 
   :long "<p>Usually you should use @(see vl-starting-namefactory) instead;
-<tt>vl-starting-namefactory</tt> automatically regards all of the names in the
-module as used, whereas <tt>vl-empty-namefactory</tt> regards no names as
-used.</p>
+@('vl-starting-namefactory') automatically regards all of the names in the
+module as used, whereas @('vl-empty-namefactory') regards no names as used.</p>
 
-<p>On the other hand, <tt>vl-empty-namefactory</tt> may be useful when you are
+<p>On the other hand, @('vl-empty-namefactory') may be useful when you are
 generating modules from scratch and, hence, don't have a module to give to
-<tt>vl-starting-namefactory</tt> yet.</p>"
+@('vl-starting-namefactory') yet.</p>"
 
   (defund vl-empty-namefactory ()
     (declare (xargs :guard t))
@@ -358,8 +357,8 @@ generating modules from scratch and, hence, don't have a module to give to
 (defsection vl-namefactory-indexed-name
   :parents (vl-namefactory-p)
   :short "@(call vl-namefactory-indexed-name) constructs a fresh name that
-looks like <tt>prefix_n</tt> for some natural number <tt>n</tt>, and returns
-<tt>(mv fresh-name factory-prime)</tt>."
+looks like @('prefix_n') for some natural number @('n'), and returns @('(mv
+fresh-name factory-prime)')."
 
   (defund vl-namefactory-indexed-name (prefix factory)
     "Returns (MV FRESH-NAME FACTORY-PRIME)"
@@ -419,10 +418,10 @@ looks like <tt>prefix_n</tt> for some natural number <tt>n</tt>, and returns
 
 (defsection vl-namefactory-plain-name
   :parents (vl-namefactory-p)
-  :short "@(call vl-namefactory-plain-name) returns <tt>(mv fresh-name
-factory-prime)</tt>.  When possible, <tt>fresh-name</tt> is just <tt>name</tt>.
-When this is not possible, a note is printed and <tt>fresh-name</tt> looks like
-<tt>name_n</tt> instead."
+  :short "@(call vl-namefactory-plain-name) returns @('(mv fresh-name
+factory-prime)').  When possible, @('fresh-name') is just @('name').  When this
+is not possible, a note is printed and @('fresh-name') looks like @('name_n')
+instead."
 
   (defund vl-namefactory-plain-name (name factory)
     "Returns (MV FRESH-NAME FACTORY-PRIME)"
@@ -473,7 +472,8 @@ When this is not possible, a note is printed and <tt>fresh-name</tt> looks like
 (defsection vl-free-namefactory
   :parents (vl-namefactory-p)
   :short "@(call vl-free-namefactory) frees the fast alists associated with a
-name factory and returns <tt>nil</tt>."
+name factory and returns @('nil')."
+
   :long "<p>The name factory should never be used after this function is
 called, since doing so will result in fast-alist discipline failures.</p>
 
@@ -488,11 +488,11 @@ called, since doing so will result in fast-alist discipline failures.</p>
 
 (defsection vl-namefactory-plain-names
   :parents (vl-namefactory-p)
-  :short "@(call vl-namefactory-plain-names) returns <tt>(mv fresh-names
-factory-prime)</tt>.  When possible, <tt>fresh-names</tt> are just
-<tt>names</tt>.  If this is not possible due to name collisions, then some of
-the <tt>fresh_names</tt> may have additional indexes as in @(see
-vl-namefactory-indexed-name) and some notes may be printed."
+  :short "@(call vl-namefactory-plain-names) returns @('(mv fresh-names
+factory-prime)').  When possible, @('fresh-names') are just @('names').  If
+this is not possible due to name collisions, then some of the @('fresh_names')
+may have additional indexes as in @(see vl-namefactory-indexed-name) and some
+notes may be printed."
 
   (defund vl-namefactory-plain-names (names factory)
     "Returns (MV NAMES' FACTORY')"

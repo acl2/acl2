@@ -79,9 +79,9 @@ instance @(see all-by-membership), @(see pick-a-point-subset-strategy), and
 @(see double-containment).</p>
 
 <p>You can load the library with:</p>
-<code>
+@({
  (include-book \"finite-set-theory/osets/sets\" :dir :system)
-</code>
+})
 
 <p>Besides this @(see xdoc::xdoc) documentation, you may be interested in the
 2004 ACL2 workshop paper, <a

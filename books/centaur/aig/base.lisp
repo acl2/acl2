@@ -53,12 +53,12 @@ BDDs, AIGs are:</p>
 <ul>
 
 <li>cheaper to construct, e.g., if we want to <i>or</i> together the functions
-<tt>f</tt> and <tt>g</tt>, it only takes a few conses with AIGs, whereas with
-BDDs we need to walk through <tt>f</tt> and <tt>g</tt> to construct a new
-structure (which might be quite large); but</li>
+@('f') and @('g'), it only takes a few conses with AIGs, whereas with BDDs we
+need to walk through @('f') and @('g') to construct a new structure (which
+might be quite large); but</li>
 
-<li>more expensive to compare, e.g., with BDDs we can determine if <tt>f</tt>
-and <tt>g</tt> are equal via pointer equality, whereas with AIGs this is a
+<li>more expensive to compare, e.g., with BDDs we can determine if @('f') and
+@('g') are equal via pointer equality, whereas with AIGs this is a
 satisfiablity problem.</li>
 
 </ul>
@@ -69,20 +69,20 @@ after they have been constructed, but before comparing them.  For instance, our
 \"prune\" branches of the AIG that turn out to be irrelevant, it can be much
 more efficient than directly constructing BDDs.  A more sophisticated tool is
 @(see abc), which provides various kinds of rewriting and reductions on AIGs.
-These reductions can be used before calling a SAT solver or <tt>bddify</tt> to
-make the input AIGs much smaller and easier to process.</p>
+These reductions can be used before calling a SAT solver or @('bddify') to make
+the input AIGs much smaller and easier to process.</p>
 
 <p>Another alternative would be to use a richer language such as Lisp-style
 s-expressions, where operations other than <i>and</i> and <i>not</i> could be
 used directly.  On the surface, this approach would appear to be more compact,
-e.g., we can represent <tt>(or a b)</tt> as a single operation instead of as
-something like <tt>(not (and (not a) (not b)))</tt>.</p>
+e.g., we can represent @('(or a b)') as a single operation instead of as
+something like @('(not (and (not a) (not b)))').</p>
 
 <p>But another critical part of memory efficiency is structure sharing.  That
-is, suppose that we already need <tt>(not a)</tt> and <tt>(not b)</tt>
-elsewhere in the function.  With s-expressions, these terms would have nothing
-in common with <tt>(or a b)</tt>, but with AIGs we can reuse the existing parts
-of <tt>(not (and (not a) (not b)))</tt>.</p>
+is, suppose that we already need @('(not a)') and @('(not b)') elsewhere in the
+function.  With s-expressions, these terms would have nothing in common with
+@('(or a b)'), but with AIGs we can reuse the existing parts of
+@('(not (and (not a) (not b)))').</p>
 
 
 <h3>Representation of AIGs</h3>
@@ -93,18 +93,17 @@ we interpret as follows:</p>
 
 <ul>
 
-<li><tt>T</tt> represents the constant-true function.</li>
+<li>@('T') represents the constant-true function.</li>
 
-<li><tt>NIL</tt> represents the constant-false function.</li>
+<li>@('NIL') represents the constant-false function.</li>
 
 <li>Any other atom represents a Boolean variable (i.e., an input to the
 function.)</li>
 
-<li>A cons of the form <tt>(A . NIL)</tt> represents the negation of
-<tt>A</tt>.</li>
+<li>A cons of the form @('(A . NIL)') represents the negation of @('A').</li>
 
-<li>Any other cons, <tt>(A . B)</tt>, represents the conjunction of <tt>A</tt>
-and <tt>B</tt>.</li>
+<li>Any other cons, @('(A . B)'), represents the conjunction of @('A') and
+@('B').</li>
 
 </ul>
 
@@ -156,18 +155,18 @@ with @(see aig-env-lookup-missing-action).</p>"
   :short "Configure warnings about missing variables in AIG evaluation."
 
   :long "<p>Ordinarily @(see aig-eval) treats any variables that are not bound
-in the environment as having value <tt>t</tt>.  But a missing bindings could be
-the result of a bug in your program, so by default <tt>aig-eval</tt> is set up
-to print a warning if this happens.</p>
+in the environment as having value @('t').  But a missing bindings could be the
+result of a bug in your program, so by default @('aig-eval') is set up to print
+a warning if this happens.</p>
 
 <p>@(call aig-env-lookup-missing-action) allows you to control whether these
 warnings are printed, and also whether @(see break$) should be called.  The
-valid <tt>action</tt>s are:</p>
+valid @('action')s are:</p>
 
 <ul>
- <li><tt>nil</tt>, silently bind the variable to <tt>t</tt>,</li>
- <li><tt>:warn</tt> (the default), print a warning but do not <tt>break$</tt>, and</li>
- <li><tt>:break</tt>, to print the warning and then call <tt>break$</tt>.</li>
+ <li>@('nil'), silently bind the variable to @('t'),</li>
+ <li>@(':warn') (the default), print a warning but do not @('break$'), and</li>
+ <li>@(':break'), to print the warning and then call @('break$').</li>
 </ul>"
 
   (defconst *aig-env-lookup-warn-missing-binding*
@@ -252,21 +251,21 @@ encountered."
 
 (defsection aig-eval
   :parents (aig)
-  :short "@(call aig-eval) evaluates <tt>x</tt>, an @(see aig), under the
-environment <tt>env</tt>, producing a Boolean result."
+  :short "@(call aig-eval) evaluates @('x'), an @(see aig), under the
+environment @('env'), producing a Boolean result."
 
-  :long "<p>The <tt>env</tt> should be a fast alist (see @(see fast-alists))
-that binds variables in the AIG to values.  Typically it should bind every
-variable in the AIG to a Boolean value.</p>
+  :long "<p>The @('env') should be a fast alist (see @(see fast-alists)) that
+binds variables in the AIG to values.  Typically it should bind every variable
+in the AIG to a Boolean value.</p>
 
 <p>This function is @(see memoize)d.  You should typically free its memo table
-after you are done with whatever <tt>env</tt> you are using, to avoid excessive
-memory usage.  (We don't use <tt>:forget t</tt> because you often want to
-evaluate several related AIGs.)</p>
+after you are done with whatever @('env') you are using, to avoid excessive
+memory usage.  (We don't use @(':forget t') because you often want to evaluate
+several related AIGs.)</p>
 
-<p>Unbound variables are given the default value <tt>t</tt> instead of
-<tt>nil</tt> because this makes theorems about @(see faig) evaluation work out
-more nicely (it makes unbound FAIG variables evaluate to <tt>X</tt>).</p>
+<p>Unbound variables are given the default value @('t') instead of @('nil')
+because this makes theorems about @(see faig) evaluation work out more
+nicely (it makes unbound FAIG variables evaluate to @('X')).</p>
 
 <p>This function essentially defines the semantics of AIGs.</p>"
 
@@ -323,7 +322,7 @@ more nicely (it makes unbound FAIG variables evaluate to <tt>X</tt>).</p>
   :short "@(call aig-eval-alist) evaluates an AIG Alist (an alist binding keys
 to AIGs)."
 
-  :long "<p>The alist <tt>x</tt> does not need to be fast, and we produce an
+  :long "<p>The alist @('x') does not need to be fast, and we produce an
 ordinary (slow) alist as a result.</p>"
 
   (defun aig-eval-alist (x env)
@@ -362,7 +361,7 @@ ordinary (slow) alist as a result.</p>"
 (defsection aig-vars
   :parents (aig)
   :short "@(call aig-vars) returns the list of variables used in the AIG
-<tt>X</tt>."
+@('X')."
 
 ;; BOZO the :long here refers to the unreleased sexpr library, but I don't want
 ;; to redo all that documentation for AIGs.
@@ -419,9 +418,9 @@ discussion.</p>"
 
 (defsection aig-not
   :parents (aig-constructors)
-  :short "@(call aig-not) constructs an AIG representing <tt>(not x)</tt>."
+  :short "@(call aig-not) constructs an AIG representing @('(not x)')."
 
-  :long "<p>This could be implemented as <tt>(hons x nil)</tt>, but we at least
+  :long "<p>This could be implemented as @('(hons x nil)'), but we at least
 take care to fold constants and avoid creating double negatives.</p>"
 
   (defund aig-not (x)
@@ -443,11 +442,10 @@ take care to fold constants and avoid creating double negatives.</p>"
 
 (defsection aig-and
   :parents (aig-constructors)
-  :short "@(call aig-and) constructs an AIG representing <tt>(and x y)</tt>."
+  :short "@(call aig-and) constructs an AIG representing @('(and x y)')."
 
-  :long "<p>This could have been implemented as <tt>(hons x y)</tt>, but we
-take care to fold constants and reduce <tt>x &amp; x</tt> and <tt>x &amp;
-~x</tt>.</p>"
+  :long "<p>This could have been implemented as @('(hons x y)'), but we take
+care to fold constants and reduce @('x & x') and @('x & ~x').</p>"
 
   (defund aig-and (x y)
     (declare (xargs :guard t))
@@ -481,7 +479,7 @@ take care to fold constants and reduce <tt>x &amp; x</tt> and <tt>x &amp;
 
 (defsection aig-or
   :parents (aig-constructors)
-  :short "@(call aig-or) constructs an AIG representing <tt>(or x y)</tt>."
+  :short "@(call aig-or) constructs an AIG representing @('(or x y)')."
 
   (defund aig-or (x y)
     (declare (xargs :guard t))
@@ -498,7 +496,7 @@ take care to fold constants and reduce <tt>x &amp; x</tt> and <tt>x &amp;
 
 (defsection aig-xor
   :parents (aig-constructors)
-  :short "@(call aig-xor) constructs an AIG representing <tt>(xor x y)</tt>."
+  :short "@(call aig-xor) constructs an AIG representing @('(xor x y)')."
 
   (defund aig-xor (x y)
     (declare (xargs :guard t))
@@ -516,7 +514,7 @@ take care to fold constants and reduce <tt>x &amp; x</tt> and <tt>x &amp;
 
 (defsection aig-iff
   :parents (aig-constructors)
-  :short "@(call aig-iff) constructs an AIG representing <tt>(iff x y)</tt>."
+  :short "@(call aig-iff) constructs an AIG representing @('(iff x y)')."
 
   (defund aig-iff (x y)
     (declare (xargs :guard t))
@@ -534,7 +532,8 @@ take care to fold constants and reduce <tt>x &amp; x</tt> and <tt>x &amp;
 
 (defsection aig-implies
   :parents (aig-constructors)
-  :short "@(call aig-implies) constructs an AIG representing <tt>(implies x y)</tt>."
+  :short "@(call aig-implies) constructs an AIG representing @('(implies x
+  y)')."
 
   (defund aig-implies (x y)
     (declare (xargs :guard t))
@@ -551,7 +550,7 @@ take care to fold constants and reduce <tt>x &amp; x</tt> and <tt>x &amp;
 
 (defsection aig-ite
   :parents (aig-constructors)
-  :short "@(call aig-ite) constructs an AIG representing <tt>(if a b c)</tt>."
+  :short "@(call aig-ite) constructs an AIG representing @('(if a b c)')."
 
   (defund aig-ite (a b c)
     (declare (xargs :guard t))
@@ -574,7 +573,7 @@ take care to fold constants and reduce <tt>x &amp; x</tt> and <tt>x &amp;
 
 (defsection aig-not-list
   :parents (aig-constructors)
-  :short "@(call aig-not-list) negates every AIG in the list <tt>x</tt>."
+  :short "@(call aig-not-list) negates every AIG in the list @('x')."
 
   (defun aig-not-list (x)
     (declare (xargs :guard t))
@@ -587,7 +586,7 @@ take care to fold constants and reduce <tt>x &amp; x</tt> and <tt>x &amp;
 (defsection aig-and-list
   :parents (aig-constructors)
   :short "@(call aig-and-list) ands together all of the AIGs in the list
-<tt>x</tt>."
+@('x')."
 
   (defun aig-and-list (x)
     (declare (xargs :guard t))
@@ -599,8 +598,7 @@ take care to fold constants and reduce <tt>x &amp; x</tt> and <tt>x &amp;
 
 (defsection aig-or-list
   :parents (aig-constructors)
-  :short "@(call aig-or-list) ors together all of the AIGs in the list
-<tt>x</tt>."
+  :short "@(call aig-or-list) ors together all of the AIGs in the list @('x')."
 
   (defun aig-or-list (x)
     (declare (xargs :guard t))
@@ -612,7 +610,7 @@ take care to fold constants and reduce <tt>x &amp; x</tt> and <tt>x &amp;
 (defsection aig-and-lists
   :parents (aig-constructors)
   :short "@(call aig-and-lists) pairwise <i>and</i>s together the AIGs from the
-lists <tt>x</tt> and <tt>y</tt>."
+lists @('x') and @('y')."
 
   (defun aig-and-lists (x y)
     (if (or (atom x) (atom y))
@@ -624,7 +622,7 @@ lists <tt>x</tt> and <tt>y</tt>."
 (defsection aig-or-lists
   :parents (aig-constructors)
   :short "@(call aig-or-lists) pairwise <i>or</i>s together the AIGs from the
-lists <tt>x</tt> and <tt>y</tt>."
+lists @('x') and @('y')."
 
   (defun aig-or-lists (x y)
     (declare (xargs :guard t))
@@ -637,7 +635,7 @@ lists <tt>x</tt> and <tt>y</tt>."
 (defsection aig-iff-lists
   :parents (aig-constructors)
   :short "@(call aig-iff-lists) pairwise <i>iff</i>s together the AIGs from the
-lists <tt>x</tt> and <tt>y</tt>."
+lists @('x') and @('y')."
 
   (defun aig-iff-lists (x y)
     (declare (xargs :guard t))
@@ -650,7 +648,7 @@ lists <tt>x</tt> and <tt>y</tt>."
 (defsection aig-xor-lists
   :parents (aig-constructors)
   :short "@(call aig-xor-lists) pairwise <i>xor</i>s together the AIGs from the
-lists <tt>x</tt> and <tt>y</tt>."
+lists @('x') and @('y')."
 
   (defun aig-xor-lists (x y)
     (declare (xargs :guard t))
@@ -662,8 +660,8 @@ lists <tt>x</tt> and <tt>y</tt>."
 
 (defsection aig-implies-lists
   :parents (aig-constructors)
-  :short "@(call aig-implies-lists) pairwise <i>implies</i> together the AIGs from the
-lists <tt>x</tt> and <tt>y</tt>."
+  :short "@(call aig-implies-lists) pairwise <i>implies</i> together the AIGs
+from the lists @('x') and @('y')."
 
   (defun aig-implies-lists (x y)
     (declare (xargs :guard t))
@@ -684,20 +682,20 @@ lists <tt>x</tt> and <tt>y</tt>."
 (defsection aig-restrict
   :parents (aig)
   :short "@(call aig-restrict) performs variable substitution throughout the
-AIG <tt>x</tt>, replacing any variables bound in <tt>sigma</tt> with their
+AIG @('x'), replacing any variables bound in @('sigma') with their
 corresponding values."
 
-  :long "<p><tt>sigma</tt> should be a fast alist; its name is intended to
-evoke the notion of substitution lists in logic.  Any variables that are not
-mentioned in <tt>sigma</tt> are left unchanged.</p>
+  :long "<p>@('sigma') should be a fast alist; its name is intended to evoke
+the notion of substitution lists in logic.  Any variables that are not
+mentioned in @('sigma') are left unchanged.</p>
 
 <p>This function is @(see memoize)d.  You should typically free its memo table
-after you are done with whatever <tt>sigma</tt> you are using, to avoid
-excessive memory usage.  (We don't use <tt>:forget t</tt> because you often
-want to restrict several related AIGs.)</p>
+after you are done with whatever @('sigma') you are using, to avoid excessive
+memory usage.  (We don't use @(':forget t') because you often want to restrict
+several related AIGs.)</p>
 
-<p>When all of the variables in <tt>x</tt> are bound in <tt>sigma</tt>, and all
-of the values are Boolean, this is equivalent to @(see aig-eval).</p>
+<p>When all of the variables in @('x') are bound in @('sigma'), and all of the
+values are Boolean, this is equivalent to @(see aig-eval).</p>
 
 <p>Some related functions are @(see aig-compose) and @(see
 aig-partial-eval).</p>"
@@ -735,7 +733,7 @@ aig-partial-eval).</p>"
   :short "@(call aig-restrict-alist) substitutes into an AIG Alist (an alist
 binding keys to AIGs)."
 
-  :long "<p>The alist <tt>x</tt> does not need to be fast, and we produce an
+  :long "<p>The alist @('x') does not need to be fast, and we produce an
 ordinary (slow) alist as a result.</p>"
 
   (defun aig-restrict-alist (x sigma)
@@ -777,22 +775,21 @@ ordinary (slow) alist as a result.</p>"
 (defsection aig-compose
   :parents (aig)
   :short "@(call aig-compose) performs variable substitution throughout the AIG
-<tt>x</tt>, <b>unconditionally</b> replacing every variable in <tt>x</tt> with
-its binding in <tt>sigma</tt>."
+@('x'), <b>unconditionally</b> replacing every variable in @('x') with its
+binding in @('sigma')."
 
-  :long "<p><tt>sigma</tt> should be a fast alist; its name is intended to
-evoke the notion of substitution lists in logic.</p>
+  :long "<p>@('sigma') should be a fast alist; its name is intended to evoke
+the notion of substitution lists in logic.</p>
 
 <p>This function is @(see memoize)d.  You should typically free its memo table
-after you are done with whatever <tt>sigma</tt> you are using, to avoid
-excessive memory usage.  (We don't use <tt>:forget t</tt> because you often
-want to compose several related AIGs.)</p>
+after you are done with whatever @('sigma') you are using, to avoid excessive
+memory usage.  (We don't use @(':forget t') because you often want to compose
+several related AIGs.)</p>
 
 <p>This operation is similar to @(see aig-restrict), except that whereas
-<tt>aig-restrict</tt> leaves unbound variables alone, <tt>aig-compose</tt>
-replaces them with <tt>t</tt>.  (This has the logically nice property that the
-variables after composition are just the variables in the AIGs of
-<tt>sigma</tt>.)</p>"
+@('aig-restrict') leaves unbound variables alone, @('aig-compose') replaces
+them with @('t').  (This has the logically nice property that the variables
+after composition are just the variables in the AIGs of @('sigma').)</p>"
 
   (defun aig-compose (x sigma)
     (declare (xargs :guard t))
@@ -824,7 +821,7 @@ variables after composition are just the variables in the AIGs of
   :short "@(call aig-compose-alist) composes into an AIG Alist (an alist
 binding keys to AIGs)."
 
-  :long "<p>The alist <tt>x</tt> does not need to be fast, and we produce an
+  :long "<p>The alist @('x') does not need to be fast, and we produce an
 ordinary (slow) alist as a result.</p>"
 
   (defun aig-compose-alist (x sigma)
@@ -860,30 +857,30 @@ ordinary (slow) alist as a result.</p>"
 
 (defsection aig-partial-eval
   :parents (aig)
-  :short "@(call aig-partial-eval) evaluates <tt>x</tt>, an AIG, under the
-partial environment <tt>env</tt>, producing a new AIG as a result."
+  :short "@(call aig-partial-eval) evaluates @('x'), an AIG, under the partial
+environment @('env'), producing a new AIG as a result."
 
-  :long "<p><tt>env</tt> should be a fast alist that binds some of the
-variables in the AIG to Boolean values.</p>
+  :long "<p>@('env') should be a fast alist that binds some of the variables in
+the AIG to Boolean values.</p>
 
 <p>This function is @(see memoize)d.  You should typically free its memo table
-after you are done with whatever <tt>env</tt> you are using, to avoid excessive
-memory usage.  (We don't use <tt>:forget t</tt> because you often want to
-evaluate several related AIGs.)</p>
+after you are done with whatever @('env') you are using, to avoid excessive
+memory usage.  (We don't use @(':forget t') because you often want to evaluate
+several related AIGs.)</p>
 
 <p>In ordinary AIG evaluation with @(see aig-eval), any variables that are
-missing from <tt>env</tt> are just assumed to have a default value.  Because
-of this, every variable can be given a Boolean value and we can evaluate the
-whole AIG to produce a Boolean result.</p>
+missing from @('env') are just assumed to have a default value.  Because of
+this, every variable can be given a Boolean value and we can evaluate the whole
+AIG to produce a Boolean result.</p>
 
-<p>In partial evaluation, variables that aren't bound in <tt>env</tt> are left
+<p>In partial evaluation, variables that aren't bound in @('env') are left
 alone.  Because of this, the result of a partial evaluation is a
 new (presumably smaller) AIG, instead of a Boolean.</p>
 
 <p>Another way to do partial evaluations is with @(see aig-restrict).  The only
-difference between <tt>aig-restrict</tt> and <tt>aig-partial-eval</tt> is that
-<tt>aig-partial-eval</tt> Boolean-fixes the values in the alist as it looks
-them up.  This has logically nice properties, e.g., since we never replace a
+difference between @('aig-restrict') and @('aig-partial-eval') is that
+@('aig-partial-eval') Boolean-fixes the values in the alist as it looks them
+up.  This has logically nice properties, e.g., since we never replace a
 variable by a subtree, only by a Boolean, we know unconditionally that the
 variables of the resulting AIG are a subset of the variables of the
 original.</p>"
@@ -922,7 +919,7 @@ original.</p>"
   :short "@(call aig-partial-eval-alist) partially evaluates an AIG Alist (an
 alist binding keys to AIGs)."
 
-  :long "<p>The alist <tt>x</tt> does not need to be fast, and we produce an
+  :long "<p>The alist @('x') does not need to be fast, and we produce an
 ordinary (slow) alist as a result.</p>"
 
   (defun aig-partial-eval-alist (x env)
@@ -965,15 +962,20 @@ useful in hardware verification.</p>
 four possible values of an FAIG are:</p>
 
 <ul>
- <li><tt>(nil . nil)</tt>, which we call Z,</li>
- <li><tt>(t . nil)</tt>, which we call True,</li>
- <li><tt>(nil . t)</tt>, which we call False, and</li>
- <li><tt>(t . t)</tt>, which we call X.</li>
+
+<li>@('(nil . nil)'), which we call Z,</li>
+
+<li>@('(t . nil)'), which we call True,</li>
+
+<li>@('(nil . t)'), which we call False, and</li>
+
+<li>@('(t . t)'), which we call X.</li>
+
 </ul>
 
 <p>We generally think of the onset as being a Boolean functions that should
-evaluate to <tt>T</tt> when the wire is being driven to 1.  The offset is
-similar, but indicates whether the wire is being driven to 0.  So, the Z value
+evaluate to @('T') when the wire is being driven to 1.  The offset is similar,
+but indicates whether the wire is being driven to 0.  So, the Z value
 represents a situation where the wire is completely undriven, and the X value
 represents a bad case where the wire is simultaneously driven to both True and
 False.</p>
@@ -989,12 +991,12 @@ don't bother to hons the FAIG conses that put these AIGs together.</p>
 
 (defsection faig-eval
   :parents (faig)
-  :short "@(call faig-eval) evaluates <tt>x</tt>, a @(see faig), under the
-environment <tt>env</tt>, producing a pair of Boolean values."
+  :short "@(call faig-eval) evaluates @('x'), a @(see faig), under the
+environment @('env'), producing a pair of Boolean values."
 
-  :long "<p>See @(see aig-eval); the <tt>env</tt> should be a fast alist and
-you will want to clear the memoize table for <tt>aig-eval</tt> when you are
-done using the <tt>env</tt>.</p>"
+  :long "<p>See @(see aig-eval); the @('env') should be a fast alist and you
+will want to clear the memoize table for @('aig-eval') when you are done using
+the @('env').</p>"
 
   (defun faig-eval (x env)
     (declare (xargs :guard t))
@@ -1021,7 +1023,7 @@ done using the <tt>env</tt>.</p>"
   :short "@(call faig-eval-list) evaluates an FAIG alist (an alist binding
 keys to FAIGs)."
 
-  :long "<p>The alist <tt>x</tt> does not need to be fast, and we produce an
+  :long "<p>The alist @('x') does not need to be fast, and we produce an
 ordinary (slow) alist as a result.</p>"
 
   (defun faig-eval-alist (x env)
@@ -1042,12 +1044,12 @@ ordinary (slow) alist as a result.</p>"
 (defsection faig-restrict
   :parents (faig)
   :short "@(call faig-restrict) performs variable substitution throughout the
-FAIG <tt>x</tt>, replacing any variables bound in <tt>sigma</tt> with their
+FAIG @('x'), replacing any variables bound in @('sigma') with their
 corresponding values."
 
-  :long "<p>See @(see aig-restrict); the <tt>env</tt> should be a fast alist
-and you will want to clear the memoize table for <tt>aig-restrict</tt> when you
-are done using the <tt>env</tt>.</p>"
+  :long "<p>See @(see aig-restrict); the @('env') should be a fast alist and
+you will want to clear the memoize table for @('aig-restrict') when you are
+done using the @('env').</p>"
 
   (defun faig-restrict (x sigma)
     (declare (xargs :guard t))
@@ -1062,7 +1064,7 @@ are done using the <tt>env</tt>.</p>"
   :short "@(call faig-restrict-alist) substitutes into an FAIG alist (an alist
 binding keys to FAIGs)."
 
-  :long "<p>The alist <tt>x</tt> does not need to be fast, and we produce an
+  :long "<p>The alist @('x') does not need to be fast, and we produce an
 ordinary (slow) alist as a result.</p>"
 
   (defun faig-restrict-alist (x sigma)
@@ -1093,12 +1095,12 @@ ordinary (slow) alist as a result.</p>"
 (defsection faig-compose
   :parents (faig)
   :short "@(call faig-compose) performs variable substitution throughout the
-FAIG <tt>x</tt>, <b>unconditionally</b> replacing every variable in <tt>x</tt>
-with its binding in <tt>sigma</tt>."
+FAIG @('x'), <b>unconditionally</b> replacing every variable in @('x') with its
+binding in @('sigma')."
 
-  :long "<p>See @(see aig-compose); the <tt>sigma</tt> should be a fast alist
-and you will want to clear the memoize table for <tt>aig-compose</tt> when you
-are done using the <tt>env</tt>.</p>"
+  :long "<p>See @(see aig-compose); the @('sigma') should be a fast alist and
+you will want to clear the memoize table for @('aig-compose') when you are done
+using the @('env').</p>"
 
   (defun faig-compose (x sigma)
     (declare (xargs :guard t))
@@ -1113,7 +1115,7 @@ are done using the <tt>env</tt>.</p>"
   :short "@(call faig-compose-alist) composes into an FAIG Alist (an alist
 binding keys to FAIGs)."
 
-  :long "<p>The alist <tt>x</tt> does not need to be fast, and we produce an
+  :long "<p>The alist @('x') does not need to be fast, and we produce an
 ordinary (slow) alist as a result.</p>"
 
   (defun faig-compose-alist (x sigma)
@@ -1132,12 +1134,12 @@ ordinary (slow) alist as a result.</p>"
 
 (defsection faig-partial-eval
   :parents (faig)
-  :short "@(call faig-partial-eval) evaluates <tt>x</tt>, an FAIG, under the
-partial environment <tt>env</tt>, producing a new FAIG as a result."
+  :short "@(call faig-partial-eval) evaluates @('x'), an FAIG, under the
+partial environment @('env'), producing a new FAIG as a result."
 
-  :long "<p>See @(see aig-partial-eval); the <tt>env</tt> should be a fast
-alist and you will want to clear the memoize table for
-<tt>aig-partial-eval</tt> when you are done using the <tt>env</tt>.</p>"
+  :long "<p>See @(see aig-partial-eval); the @('env') should be a fast alist
+and you will want to clear the memoize table for @('aig-partial-eval') when you
+are done using the @('env').</p>"
 
   (defun faig-partial-eval (x env)
     (declare (xargs :guard t))
@@ -1152,7 +1154,7 @@ alist and you will want to clear the memoize table for
   :short "@(call faig-partial-eval-alist) partially evaluates an FAIG alist (an
 alist binding keys to FAIGs)."
 
-  :long "<p>The alist <tt>x</tt> does not need to be fast, and we produce an
+  :long "<p>The alist @('x') does not need to be fast, and we produce an
 ordinary (slow) alist as a result.</p>"
 
   (defun faig-partial-eval-alist (x env)
@@ -1185,7 +1187,7 @@ alists."
 (defsection faig-fix
   :parents (faig)
   :short "@(call faig-fix) is the identity for FAIGs, but coerces atoms to
-<tt>(t . t)</tt>, i.e., X."
+@('(t . t)'), i.e., X."
 
   :long "<p>This is sometimes when reasoning about FAIG operations.</p>"
 

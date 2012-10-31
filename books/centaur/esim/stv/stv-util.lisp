@@ -68,18 +68,18 @@ understand these fields.</p>
 
 <ul>
 
-<li>The <tt>mod</tt> is the @(see esim) module for this STV.  We save this in
-the processed STV so that we re-simulate it later, if necessary, for @(see
+<li>The @('mod') is the @(see esim) module for this STV.  We save this in the
+processed STV so that we re-simulate it later, if necessary, for @(see
 stv-debug).</li>
 
-<li>The <tt>user-stv</tt> is the user-level, pre-compiled STV.  This may be
-useful when generating documentation for STVs.</li>
+<li>The @('user-stv') is the user-level, pre-compiled STV.  This may be useful
+when generating documentation for STVs.</li>
 
-<li>The <tt>compiled-stv</tt> is a @(see compiled-stv-p) and should be the
-compiled version of the user's STV; see @(see stv-compile).</li>
+<li>The @('compiled-stv') is a @(see compiled-stv-p) and should be the compiled
+version of the user's STV; see @(see stv-compile).</li>
 
-<li>The <tt>relevant-signals</tt> is an alist computed by @(see stv-process)
-that maps each the bits for each internal/output simulation variable to
+<li>The @('relevant-signals') is an alist computed by @(see stv-process) that
+maps each the bits for each internal/output simulation variable to
 already-restricted @(see 4v-sexprs).  That is, these s-expressions are
 generally in terms of the input simulation variable bits, and ready to be
 evaluated by @(see stv-run).</li>
@@ -138,8 +138,8 @@ that are used in any line of a symbolic test vector."
 
 (defsection stv-suffix-signals
   :parents (symbolic-test-vectors)
-  :short "@(call stv-suffix-signals) converts <tt>x</tt>, a list of atoms, into
-a list of symbols with the given <tt>suffix</tt>."
+  :short "@(call stv-suffix-signals) converts @('x'), a list of atoms, into a
+list of symbols with the given @('suffix')."
 
   (defund stv-suffix-signals (x suffix)
     (declare (xargs :guard (and (atom-listp x)
@@ -158,9 +158,9 @@ a list of symbols with the given <tt>suffix</tt>."
 
 (defsection safe-pairlis-onto-acc
   :parents (stv-compile)
-  :short "@(call safe-pairlis-onto-acc) pairs up <tt>x</tt> and <tt>y</tt>, and
-accumulates them onto <tt>acc</tt>.  It is \"safe\" in that it causes an error
-if <tt>x</tt> and <tt>y</tt> aren't the same length."
+  :short "@(call safe-pairlis-onto-acc) pairs up @('x') and @('y'), and
+accumulates them onto @('acc').  It is \"safe\" in that it causes an error if
+@('x') and @('y') aren't the same length."
 
   (defun safe-pairlis-onto-acc (x y acc)
     (declare (xargs :guard t))
@@ -190,11 +190,11 @@ if <tt>x</tt> and <tt>y</tt> aren't the same length."
 input and initial lines of a symbolic test vector.  For instance, if you have
 an input line like:</p>
 
-<code>
+@({
  (\"a_bus\"  _ _ _ a1 _ a2 _ _)
-</code>
+})
 
-<p>Then the returned list will include <tt>a1</tt> and <tt>a2</tt>.</p>"
+<p>Then the returned list will include @('a1') and @('a2').</p>"
 
   (defund stv->ins (x)
     (declare (xargs :guard (processed-stv-p x)))
@@ -211,11 +211,11 @@ an input line like:</p>
 the output and internals lines of a symbolic test vector.  For instance, if you
 have an output line like:</p>
 
-<code>
+@({
  (\"main_result\"  _ _ _ res1 _ res2 _ _)
-</code>
+})
 
-<p>Then the returned list will include <tt>res1</tt> and <tt>res2</tt>.</p>"
+<p>Then the returned list will include @('res1') and @('res2').</p>"
 
   (defund stv->outs (x)
     (declare (xargs :guard (processed-stv-p x)))
@@ -243,13 +243,13 @@ outputs)."
   :long "<p>@(call stv-out->width) returns the bit-length of an output
 simulation variable.  For instance, if you have an STV output line like:</p>
 
-<code>
+@({
  (\"main_result\"  _ _ _ res1 _ res2 _ _)
-</code>
+})
 
-<p>Then <tt>(stv-out-&gt;width 'res1 stv)</tt> will return the width of
-<tt>main_result</tt>, say 64.  If <tt>x</tt> isn't one of the STV's outputs, we
-cause a runtime error and logically return 0.</p>"
+<p>Then @('(stv-out->width 'res1 stv)') will return the width of
+@('main_result'), say 64.  If @('x') isn't one of the STV's outputs, we cause a
+runtime error and logically return 0.</p>"
 
   (defun stv-out->width (x stv)
     (declare (xargs :guard (and (symbolp x)
@@ -271,13 +271,13 @@ cause a runtime error and logically return 0.</p>"
   :long "<p>@(call stv-in->width) returns the bit-length of an input simulation
 variable.  For instance, if you have an STV input line like:</p>
 
-<code>
+@({
  (\"a_bus\"  _ _ _ a1 _ a2 _ _)
-</code>
+})
 
-<p>Then <tt>(stv-in-&gt;width 'a1 stv)</tt> will return the width of
-<tt>a_bus</tt>, say 128.  If <tt>x</tt> isn't one of the STV's inputs, we cause
-a runtime error and logically return 0.</p>"
+<p>Then @('(stv-in->width 'a1 stv)') will return the width of @('a_bus'), say
+128.  If @('x') isn't one of the STV's inputs, we cause a runtime error and
+logically return 0.</p>"
 
   (defun stv-in->width (x stv)
     (declare (xargs :guard (and (symbolp x)

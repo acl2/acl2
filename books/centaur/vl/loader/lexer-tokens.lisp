@@ -28,18 +28,16 @@
   :parents (lexer)
   :short "Determine if a string is a Verilog keyword."
 
-  :long "<p>For every keyword, <tt>foo</tt>, we associate a symbol whose
-name is <tt>:vl-kwd-foo</tt>, which we use as the token's type.  For instance,
-<tt>:vl-kwd-module</tt> is our token type for the <tt>module</tt> keyword.</p>
+  :long "<p>For every keyword, @('foo'), we associate a symbol whose name is
+@(':vl-kwd-foo'), which we use as the token's type.  For instance,
+@(':vl-kwd-module') is our token type for the @('module') keyword.</p>
 
-<p>@(call vl-keyword-lookup) is given a string <tt>x</tt> of characters that
-have just been read.  If <tt>x</tt> is a keyword, we return the corresponding
-symbol.  Otherwise, we return <tt>nil</tt>.</p>
+<p>@(call vl-keyword-lookup) is given a string @('x') of characters that have
+just been read.  If @('x') is a keyword, we return the corresponding symbol.
+Otherwise, we return @('nil').</p>
 
 <p>The function just carries out a fast alist lookup against the pre-computed
-<tt>*vl-keyword-table*</tt>.</p>
-
-@(def vl-keyword-lookup)"
+@('*vl-keyword-table*').</p>"
 
   (defconst *vl-list-of-keywords*
 
@@ -235,12 +233,12 @@ symbol.  Otherwise, we return <tt>nil</tt>.</p>
  <i>plain</i> because they do not have any extended information beyond what
  kind of token they are and which characters formed them.</p>
 
-<p><tt>etext</tt> is the @(see vl-echarlist-p) that gave rise to this token
-from the Verilog source code.  Having this text is useful for error reporting,
-e.g., it includes location information.</p>
+<p>@('etext') is the @(see vl-echarlist-p) that gave rise to this token from
+the Verilog source code.  Having this text is useful for error reporting, e.g.,
+it includes location information.</p>
 
-<p><tt>type</tt> is a keyword symbol that identifies what kind of token this
-is.  There are many valid types for plain tokens.  In fact, there are about 125
+<p>@('type') is a keyword symbol that identifies what kind of token this is.
+There are many valid types for plain tokens.  In fact, there are about 125
 symbols for the various keyword tokens (see @(srclink *vl-keyword-table*)) and
 about 50 other symbols for the various whitespace, comments, operators,
 punctuation tokens, and real numbers (see @(srclink
@@ -277,15 +275,14 @@ punctuation tokens, and real numbers (see @(srclink
 
   :short "Tokens for string literals."
 
-  :long "<p><tt>etext</tt> is a @(see vl-echarlist-p) that gave rise to this
-string literal from the Verilog source.  Note that this text is \"verbatim\"
-and, as a consequence, character sequences like <tt>\\n</tt> will not have been
-converted into newlines, etc.</p>
+  :long "<p>@('etext') is a @(see vl-echarlist-p) that gave rise to this string
+literal from the Verilog source.  Note that this text is \"verbatim\" and, as a
+consequence, character sequences like @('\\n') will not have been converted
+into newlines, etc.</p>
 
-<p><tt>expansion</tt> is an ordinary ACL2 string object that holds the
-\"expanded\" version of the string literal.  That is, character sequences like
-<tt>\\n</tt> in the <tt>etext</tt> become real newline characters in the
-<tt>expansion</tt>.</p>
+<p>@('expansion') is an ordinary ACL2 string object that holds the \"expanded\"
+version of the string literal.  That is, character sequences like @('\\n') in
+the @('etext') become real newline characters in the @('expansion').</p>
 
 <p>The expansion is carried out per Table 3-1, on page 14 of the Verilog
 specification.</p>")
@@ -309,18 +306,17 @@ specification.</p>")
   :parents (lexer)
   :short "Tokens for ordinary identifiers."
   :long "<p>Note that we distinguish between plain identifiers and system
-identifiers, such as <tt>$display</tt>.  We only generate a <tt>vl-idtoken</tt>
-for a plain identifier.</p>
+identifiers, such as @('$display').  We only generate a @('vl-idtoken') for a
+plain identifier.</p>
 
-<p><tt>etext</tt> is the actual characters that gave rise to this token.</p>
+<p>@('etext') is the actual characters that gave rise to this token.</p>
 
-<p><tt>name</tt> is an ACL2 string whose characters are formed from the
-<tt>etext</tt>.  Usually <tt>name</tt> matches up with <tt>etext</tt>, but note
-that from Section 3.7.1 that in escaped identifiers, the initial backslash is
-not considered to be part of the identifier's name.  So, if we process a
-Verilog file which includes the identifiers <tt>\\foo</tt> and <tt>foo</tt>,
-the resulting tokens will have different <tt>etext</tt> but the same
-<tt>name</tt>.</p>")
+<p>@('name') is an ACL2 string whose characters are formed from the @('etext').
+Usually @('name') matches up with @('etext'), but note that from Section 3.7.1
+that in escaped identifiers, the initial backslash is not considered to be part
+of the identifier's name.  So, if we process a Verilog file which includes the
+identifiers @('\\foo') and @('foo'), the resulting tokens will have different
+@('etext') but the same @('name').</p>")
 
 (deflist vl-idtoken-list-p (x)
   (vl-idtoken-p x)
@@ -410,31 +406,28 @@ in any sort of useful way.</p>")
   :short "Tokens for integer constants."
   :long "<p>Integers are our most complicated tokens.</p>
 
-<p><tt>etext</tt> represents the actual characters from the source code
-that led to this token.</p>
+<p>@('etext') represents the actual characters from the source code that led to
+this token.</p>
 
-<p><tt>width</tt> is a positive natural number that indicates the width of this
+<p>@('width') is a positive natural number that indicates the width of this
 integer.  Note that VL acts like a 32-bit Verilog implementation and, for an
-unsized integer like <tt>3</tt> or <tt>'b101</tt> we will produce a 32-bit
-token.  See also some additional discussion in @(see vl-constint-p).</p>
+unsized integer like @('3') or @(''b101') we will produce a 32-bit token.  See
+also some additional discussion in @(see vl-constint-p).</p>
 
-<p><tt>signedp</tt> is a boolean that says whether this number is to be
-treated as a signed value.  This is decided by in Section 3.5.1, and for
-instance <tt>19</tt> is signed, <tt>'d19</tt> is unsigned, <tt>'sd19</tt> is
-signed, and so on.</p>
+<p>@('signedp') is a boolean that says whether this number is to be treated as
+a signed value.  This is decided by in Section 3.5.1, and for instance @('19')
+is signed, @(''d19') is unsigned, @(''sd19') is signed, and so on.</p>
 
-<p><tt>value</tt> is <tt>nil</tt> if there are any <tt>X</tt> or <tt>Z</tt>
-digits.  Otherwise, it contains a natural number that reflects the actual value
-of this constant.  Note that there are no negative numbers because, e.g.,
-<tt>-5</tt> basically is interpreted as a unary-minus operator applied to
-5.</p>
+<p>@('value') is @('nil') if there are any @('X') or @('Z') digits.  Otherwise,
+it contains a natural number that reflects the actual value of this constant.
+Note that there are no negative numbers because, e.g., @('-5') basically is
+interpreted as a unary-minus operator applied to 5.</p>
 
-<p><tt>bits</tt> is only used when there are any <tt>X</tt> or <tt>Z</tt>
-digits.  In these cases, it is a @(see vl-bitlist-p) of precisely
-<tt>width</tt>-many bits.</p>
+<p>@('bits') is only used when there are any @('X') or @('Z') digits.  In these
+cases, it is a @(see vl-bitlist-p) of precisely @('width')-many bits.</p>
 
-<p><tt>wasunsized</tt> indicates whether the constant was originally unsized.
-If so, VL acts like a 32-bit implementation and the resulting integer will have
+<p>@('wasunsized') indicates whether the constant was originally unsized.  If
+so, VL acts like a 32-bit implementation and the resulting integer will have
 width 32.  See also @(see vl-constint-p).</p>")
 
 (defthm upper-bound-of-vl-inttoken->value
@@ -464,8 +457,8 @@ width 32.  See also @(see vl-constint-p).</p>")
 (defsection vl-token-p
   :parents (lexer)
   :short "Token structure produced by our lexer."
-  :long "<p><tt>vl-token-p</tt> is a sum-of-products style recognizer.  Every
-token is either a</p>
+  :long "<p>@('vl-token-p') is a sum-of-products style recognizer.  Every token
+is either a</p>
 
 <ul>
   <li>@(see vl-plaintoken-p),</li>
@@ -483,11 +476,7 @@ inspected with the following operations:</p>
   <li>@(see vl-token->type), get the token's type</li>
   <li>@(see vl-token->etext), get the token's actual text</li>
   <li>@(see vl-token->loc), get the location of the token's first character</li>
-</ul>
-
-<h3>Definition</h3>
-
-@(def vl-token-p)"
+</ul>"
 
   (defund vl-token-p (x)
     (declare (xargs :guard t))
@@ -541,23 +530,19 @@ inspected with the following operations:</p>
   :long "<p><b>Signature:</b> @(call vl-token->type) returns a keyword
 symbol.</p>
 
-<p>For plain tokens, the symbol we return is the <tt>type</tt> field of the
-@(see vl-plaintoken-p).  You can see a list of the valid types by inspecting
-the value of @(srclink *vl-plaintoken-types*), and examples include
-<tt>:vl-ws</tt> for whitespace tokens, <tt>:vl-kwd-always</tt> for the Verilog
-keyword <tt>always</tt>, and <tt>:vl-comma</tt> for commas.</p>
+<p>For plain tokens, the symbol we return is the @('type') field of the @(see
+vl-plaintoken-p).  You can see a list of the valid types by inspecting the
+value of @(srclink *vl-plaintoken-types*), and examples include @(':vl-ws') for
+whitespace tokens, @(':vl-kwd-always') for the Verilog keyword @('always'), and
+@(':vl-comma') for commas.</p>
 
 <p>For any other token, such as @(see vl-inttoken-p) or @(see vl-idtoken-p)
-objects, the type is simply the <tt>tag</tt> from the @(see defaggregate).
-That is, an integer token has type <tt>:vl-inttoken</tt>, an identifier has
-type <tt>:vl-idtoken</tt>, and so on.</p>
+objects, the type is simply the @('tag') from the @(see defaggregate).  That
+is, an integer token has type @(':vl-inttoken'), an identifier has type
+@(':vl-idtoken'), and so on.</p>
 
 <p>This is one of the most heavily used functions throughout our parser, so its
-efficient implementation is beneficial.</p>
-
-<h3>Definition</h3>
-
-@(def vl-token->type)"
+efficient implementation is beneficial.</p>"
 
   (definlined vl-token->type (x)
     (declare (xargs :guard (vl-token-p x)
@@ -647,14 +632,10 @@ efficient implementation is beneficial.</p>
   :long "<p><b>Signature:</b> @(call vl-token->etext) returns a @(see
 vl-echarlist-p).</p>
 
-<p>Each of the valid @(see vl-token-p) objects includes an <tt>etext</tt> field
+<p>Each of the valid @(see vl-token-p) objects includes an @('etext') field
 which reflects the original characters in the source code that led to the
-creation of that token.  Accordingly, we can extract the <tt>etext</tt> from
-any token.</p>
-
-<h3>Definition</h3>
-
-@(def vl-token->etext)"
+creation of that token.  Accordingly, we can extract the @('etext') from any
+token.</p>"
 
   (definlined vl-token->etext (x)
     (declare (xargs :guard (vl-token-p x)
@@ -782,13 +763,8 @@ any token.</p>
   :long "<p><b>Signature:</b> @(call vl-token->loc) returns a @(see
 vl-location-p)</p>.
 
-<p>Because <tt>etext</tt> is always required to be a non-empty, we can say that
- each token has a location, namely the location of its first character.</p>
-
-<h3>Definition and Theorems</h3>
-
-@(def vl-token->loc)
-@(thm vl-location-p-of-vl-token-loc)"
+<p>Because @('etext') is always required to be a non-empty, we can say that
+each token has a location, namely the location of its first character.</p>"
 
   (definlined vl-token->loc (x)
     (declare (xargs :guard (vl-token-p x)))

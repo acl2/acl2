@@ -50,35 +50,35 @@
   :short "We try to detect missing signals from expressions."
 
   :long "<p>Related wires often have similar names, e.g., in one module we
-found wires with names like <tt>bcL2RB0NoRtry_P</tt>, <tt>bcL2RB1NoRtry_P</tt>,
-and so on, up to <tt>bcL2RB7NoRtry_P</tt>.  Such signals might sometimes be
-combined later on, e.g., we later found:</p>
+found wires with names like @('bcL2RB0NoRtry_P'), @('bcL2RB1NoRtry_P'), and so
+on, up to @('bcL2RB7NoRtry_P').  Such signals might sometimes be combined later
+on, e.g., we later found:</p>
 
-<code>
+@({
 assign bcL2NoRtry_P = bcL2RB7NoRtry_P | bcL2RB6NoRtry_P
                     | bcL2RB5NoRtry_P | bcL2RB4NoRtry_P
                     | bcL2RB3NoRtry_P | bcL2RB2NoRtry_P
                     | bcL2RB1NoRtry_P | bcL2RB0NoRtry_P;
-</code>
+})
 
 <p>Skip detection pertains to expressions like the above.  In short, it would
-be pretty odd if <tt>bcL2RB4NoRtry_P</tt> been omitted (\"skipped\") in the
-above expression, or if say <tt>bcL2RB3NoRtry_P</tt> occurred more than once.
-We try to detect such situations.</p>
+be pretty odd if @('bcL2RB4NoRtry_P') been omitted (\"skipped\") in the above
+expression, or if say @('bcL2RB3NoRtry_P') occurred more than once.  We try to
+detect such situations.</p>
 
 <p>Note that some expressions might involve more than one group of these
 kind of signals.  For instance, we found:</p>
 
-<code>
+@({
 assign bcNxtWCBEntSrc_P =
-   bcDataSrcLd_P ? ({3{bcWCB0DBSYQual_P}} &amp; bcWCB0Ent_P)
-                 | ({3{bcWCB1DBSYQual_P}} &amp; bcWCB1Ent_P)
-                 | ({3{bcWCB2DBSYQual_P}} &amp; bcWCB2Ent_P)
-                 | ({3{bcWCB3DBSYQual_P}} &amp; bcWCB3Ent_P)
-                 | ({3{bcWCB4DBSYQual_P}} &amp; bcWCB4Ent_P)
-                 | ({3{bcWCB5DBSYQual_P}} &amp; bcWCB5Ent_P)
+   bcDataSrcLd_P ? ({3{bcWCB0DBSYQual_P}} & bcWCB0Ent_P)
+                 | ({3{bcWCB1DBSYQual_P}} & bcWCB1Ent_P)
+                 | ({3{bcWCB2DBSYQual_P}} & bcWCB2Ent_P)
+                 | ({3{bcWCB3DBSYQual_P}} & bcWCB3Ent_P)
+                 | ({3{bcWCB4DBSYQual_P}} & bcWCB4Ent_P)
+                 | ({3{bcWCB5DBSYQual_P}} & bcWCB5Ent_P)
                  : bcWCBEntSrc_P;
-</code>
+})
 
 <p>We try to also detect skipped signals in these kinds of expressions.</p>")
 
@@ -94,28 +94,27 @@ assign bcNxtWCBEntSrc_P =
   :short "Keys are derived from wire names and are the basis of our skip
 detection."
 
-  :long "<p>The <tt>pat</tt> for each key is a string, and is the same as the
-wire name except that some embedded number (perhaps spanning many digits) may
-have been replaced by a <tt>*</tt> character.</p>
+  :long "<p>The @('pat') for each key is a string, and is the same as the wire
+name except that some embedded number (perhaps spanning many digits) may have
+been replaced by a @('*') character.</p>
 
-<p>The <tt>index</tt> is the parsed value of the number that has been replaced,
-or <tt>nil</tt> if no replacement was made.</p>
+<p>The @('index') is the parsed value of the number that has been replaced, or
+@('nil') if no replacement was made.</p>
 
-<p>The <tt>orig</tt> field is the original wire name.  This is somewhat
-unnecessary since it can be recovered by just replacing <tt>*</tt> in
-<tt>pat</tt> with the characters for <tt>index</tt>, but we thought it was
-convenient to keep around.</p>
+<p>The @('orig') field is the original wire name.  This is somewhat unnecessary
+since it can be recovered by just replacing @('*') in @('pat') with the
+characters for @('index'), but we thought it was convenient to keep around.</p>
 
 <p>The idea of keys is to cause related signals to have the same pattern.  For
-instance, <tt>bcWCB0Ent_P</tt> and <tt>bcWCB1Ent_P</tt> will both give rise to
-the pattern <tt>bcWCB*Ent_P</tt>.</p>
+instance, @('bcWCB0Ent_P') and @('bcWCB1Ent_P') will both give rise to the
+pattern @('bcWCB*Ent_P').</p>
 
 <p>Because a particular wire name might include many numbers, we may generate a
-list of keys for a single wire.  For instance, for <tt>bcL2RB1NoRtry_P</tt> we
-will generate one key with the pattern <tt>bcL*RB1NoRtry_P</tt> and another
-with the pattern <tt>bcL2RB*NoRtry_P</tt>.  We had previously considered using
-a list of indices, but found it easier to just generate multiple keys, each with
-a single index.</p>")
+list of keys for a single wire.  For instance, for @('bcL2RB1NoRtry_P') we will
+generate one key with the pattern @('bcL*RB1NoRtry_P') and another with the
+pattern @('bcL2RB*NoRtry_P').  We had previously considered using a list of
+indices, but found it easier to just generate multiple keys, each with a single
+index.</p>")
 
 (deflist sd-keylist-p (x)
   (sd-key-p x)
@@ -129,8 +128,8 @@ a single index.</p>")
 
 (defsection sd-keygen
   :parents (skip-detection)
-  :short "@(call sd-keygen) derives a list of @(see sd-key-p)s from <tt>x</tt>,
-a wire name, and accumulates them into <tt>acc</tt>."
+  :short "@(call sd-keygen) derives a list of @(see sd-key-p)s from @('x'), a
+wire name, and accumulates them into @('acc')."
 
   (defund sd-keygen-aux (n x xl acc)
     (declare (xargs :guard (and (natp n)
@@ -292,24 +291,24 @@ patterns, producing a @(see sd-patalist-p)."
 
   :long "<ul>
 
-<li><tt>type</tt> says what kind of problem this is.  At the moment the type is
-always <tt>:skipped</tt> and means that we think some wire is suspiciously
-skipped.  But we imagine that we could add other kinds of analysis that look,
-e.g., for wires that are oddly duplicated, etc., and hence have other types.</li>
+<li>@('type') says what kind of problem this is.  At the moment the type is
+always @(':skipped') and means that we think some wire is suspiciously skipped.
+But we imagine that we could add other kinds of analysis that look, e.g., for
+wires that are oddly duplicated, etc., and hence have other types.</li>
 
-<li><tt>priority</tt> is a heuristic score that we give to problems to indicate
-how likely they are to be a real problem.  For instance, we assign extra
-priority to a sequence of wires like <tt>foo1</tt>, <tt>foo2</tt>,
-<tt>foo4</tt>, <tt>foo5</tt> because the skipped wire is in the middle.  We also
-might assign extra priority if one of the other wires is duplicated.</li>
+<li>@('priority') is a heuristic score that we give to problems to indicate how
+likely they are to be a real problem.  For instance, we assign extra priority
+to a sequence of wires like @('foo1'), @('foo2'), @('foo4'), @('foo5') because
+the skipped wire is in the middle.  We also might assign extra priority if one
+of the other wires is duplicated.</li>
 
-<li><tt>groupsize</tt> says how many wires had this same pattern.  We generally
+<li>@('groupsize') says how many wires had this same pattern.  We generally
 think that the larger the group size is, the more likely the problem is to be
 legitimate.</li>
 
-<li><tt>key</tt> is the @(see sd-key-p) for the missing wire.</li>
+<li>@('key') is the @(see sd-key-p) for the missing wire.</li>
 
-<li><tt>ctx</tt> says where this problem originates.</li>
+<li>@('ctx') says where this problem originates.</li>
 
 </ul>")
 
@@ -401,24 +400,23 @@ legitimate.</li>
   :short "Perform skip-detection for a single pattern within an expression."
 
   :long "<p><b>Signature:</b> @(call sd-keylist-find-skipped) returns a
-<tt>nil</tt> or a @(see sd-problem-p).</p>
+@('nil') or a @(see sd-problem-p).</p>
 
-<p>As inputs, we are given <tt>x</tt> and <tt>y</tt>, which are two lists of
-@(see sd-key-p)s.</p>
+<p>As inputs, we are given @('x') and @('y'), which are two lists of @(see
+sd-key-p)s.</p>
 
-<p>We expect that all of the keys in <tt>x</tt> and <tt>y</tt> have the same
-pattern.  In practice, assuming the original wire names are free of <tt>*</tt>
-characters, this means that all keys throughout <tt>x</tt> and <tt>y</tt>
-should differ only by their indices.  More specifically, our expectation here
-is that the keys in <tt>x</tt> have been generated from the wires in some
-particular expression, while the keys in <tt>y</tt> were generated by looking
-at the entire module.</p>
+<p>We expect that all of the keys in @('x') and @('y') have the same pattern.
+In practice, assuming the original wire names are free of @('*') characters,
+this means that all keys throughout @('x') and @('y') should differ only by
+their indices.  More specifically, our expectation here is that the keys in
+@('x') have been generated from the wires in some particular expression, while
+the keys in @('y') were generated by looking at the entire module.</p>
 
 <p>Our goal is to investigate whether this expression uses \"all but one\" of
-the wires of this pattern.  That is, it would be suspicious for <tt>x</tt> to
+the wires of this pattern.  That is, it would be suspicious for @('x') to
 mention all of foo1, foo2, foo3, and foo5, but not foo4.  If there are a lot of
-wires in <tt>x</tt> and <tt>y</tt>, then this is a very easy comparison.  The
-hard cases are when there aren't very many wires in the first place.</p>
+wires in @('x') and @('y'), then this is a very easy comparison.  The hard
+cases are when there aren't very many wires in the first place.</p>
 
 <p>If there is only one wire that matches this pattern, then there are only two
 cases -- the expression mentions the wire or it doesn't -- and neither of these
@@ -432,11 +430,10 @@ them, then this is starting to get slightly suspicious.  We'll go ahead and
 flag it.</p>
 
 <p>Beyond that point, if we find that exactly one wire is missing, we flag it
-with an <tt>alarm</tt> level equal to the number of wires that match the
-pattern.  In other words, the alarm level is somehow like a confidence
-indicator that says how suspicious this omission is -- it's not too suspicious
-to omit one out of three wires, but it's really suspicious to omit one out of
-ten.</p>"
+with an @('alarm') level equal to the number of wires that match the pattern.
+In other words, the alarm level is somehow like a confidence indicator that
+says how suspicious this omission is -- it's not too suspicious to omit one out
+of three wires, but it's really suspicious to omit one out of ten.</p>"
 
   (defund sd-keylist-find-skipped (x y ctx)
     (declare (xargs :guard (and (sd-keylist-p x)
@@ -512,23 +509,22 @@ ten.</p>"
 
 <ul>
 
-<li><tt>ctx</tt> says where the expression is from.</li>
+<li>@('ctx') says where the expression is from.</li>
 
-<li><tt>y</tt> is the global @(see sd-patalist-p) that we assume was produced
-for the entire module.</li>
+<li>@('y') is the global @(see sd-patalist-p) that we assume was produced for
+the entire module.</li>
 
-<li><tt>x</tt> is the pattern alist produced for this particular
-expression.</li>
+<li>@('x') is the pattern alist produced for this particular expression.</li>
 
-<li><tt>dom</tt> is, in practice, the strip-cars of <tt>x</tt>.  That is, it is
-the list of all pattern names that were found in the expression, and which we
-need to investigate.</li>
+<li>@('dom') is, in practice, the strip-cars of @('x').  That is, it is the
+list of all pattern names that were found in the expression, and which we need
+to investigate.</li>
 
 </ul>
 
-<p>We recur over <tt>dom</tt>.  For each pattern named in the expression, we
-use @(see sd-keylist-find-skipped) to try to find any skipped wires, collecting
-any problems that have been reported.</p>"
+<p>We recur over @('dom').  For each pattern named in the expression, we use
+@(see sd-keylist-find-skipped) to try to find any skipped wires, collecting any
+problems that have been reported.</p>"
 
   (defund sd-patalist-compare (dom x y ctx)
     (declare (xargs :guard (and (sd-patalist-p x)
@@ -564,17 +560,17 @@ any problems that have been reported.</p>"
 
 <ul>
 
-<li><tt>ctxexprs</tt> is an @(see vl-exprctxalist-p) that associates
-expressions with their contexts.  Generally we expect that this alist includes
-every expression in a module.</li>
+<li>@('ctxexprs') is an @(see vl-exprctxalist-p) that associates expressions
+with their contexts.  Generally we expect that this alist includes every
+expression in a module.</li>
 
-<li><tt>global-pats</tt> is the @(see sd-patalist-p) that was constructed for
-all names in the module, which is needed by @(see sd-patalist-compare).</li>
+<li>@('global-pats') is the @(see sd-patalist-p) that was constructed for all
+names in the module, which is needed by @(see sd-patalist-compare).</li>
 
 </ul>
 
 <p>We just call @(see sd-patalist-compare) for every expression in
-<tt>ctxexprs</tt> and combine the results.</p>"
+@('ctxexprs') and combine the results.</p>"
 
   (defund sd-analyze-ctxexprs (ctxexprs global-pats)
     (declare (xargs :guard (and (vl-exprctxalist-p ctxexprs)

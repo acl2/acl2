@@ -26,14 +26,13 @@
 (defsection ichareqv
   :parents (equivalences)
   :short "Case-insensitive character equivalence test."
-  :long "<p>@(call ichareqv) determines if <tt>x</tt> and <tt>y</tt> are equivalent
-when interpreted as characters without regard to case.  For instance, upper-case C
-is equivalent to lower-case c under this relation.</p>
+  :long "<p>@(call ichareqv) determines if @('x') and @('y') are equivalent
+when interpreted as characters without regard to case.  For instance,
+upper-case C is equivalent to lower-case c under this relation.</p>
 
 <p>ACL2 has a built-in version of this function, @(see char-equal), but it is
 irritating to use because it has @(see standard-char-p) guards.  In contrast,
-<tt>ichareqv</tt> works on arbitrary characters, with some loss of
-efficiency.</p>"
+@('ichareqv') works on arbitrary characters, with some loss of efficiency.</p>"
 
   (definlined ichareqv (x y)
     (declare (type character x)
@@ -50,9 +49,9 @@ efficiency.</p>"
   :parents (equivalences)
   :short "Case-insensitive character-list equivalence test."
 
-  :long "<p>@(call icharlisteqv) determines if <tt>x</tt> and <tt>y</tt> are
-case-insensitively equivalent character lists.  That is, <tt>x</tt> and <tt>y</tt>
-must have the same length and their elements must be @(see ichareqv) to one
+  :long "<p>@(call icharlisteqv) determines if @('x') and @('y') are
+case-insensitively equivalent character lists.  That is, @('x') and @('y') must
+have the same length and their elements must be @(see ichareqv) to one
 another.</p>
 
 <p>See also @(see charlisteqv) for a case-sensitive alternative.</p>"
@@ -116,16 +115,15 @@ another.</p>
   :parents (equivalences)
   :short "Case-insensitive string equivalence test."
 
-  :long "<p>@(call istreqv) determines if <tt>x</tt> and <tt>y</tt> are
-case-insensitively equivalent strings.  That is, <tt>x</tt> and <tt>y</tt> must
-have the same length and their elements must be @(see ichareqv) to one
-another.</p>
+  :long "<p>@(call istreqv) determines if @('x') and @('y') are
+case-insensitively equivalent strings.  That is, @('x') and @('y') must have
+the same length and their elements must be @(see ichareqv) to one another.</p>
 
 <p>Logically this is identical to</p>
 
-<code>
+@({
  (icharlisteqv (coerce x 'list) (coerce y 'list))
-</code>
+})
 
 <p>But we use a more efficient implementation which avoids coercing the
 strings into lists.</p>

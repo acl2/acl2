@@ -32,9 +32,9 @@
 assignments where some bit is on both the left- and right-hand sides.  For
 instance, it would warn about something like this:</p>
 
-<code>
+@({
  assign foo = a ? b : foo;
-</code>
+})
 
 <p>Such assignments might be combinational loops.  Of course, most
 combinational loops are not so simple, and this is just an extremely stupid
@@ -42,8 +42,8 @@ check that will only catch the most obvious problems.</p>
 
 <p>I started by just seeing how bad it would be if I just gathered names on
 both side of the expression using vl-expr-names to gather up the names.  But
-that produced too much noise about assignments like <code>foo[1] =
-foo[0]</code>.</p>
+that produced too much noise about assignments like @({foo[1] =
+foo[0]}).</p>
 
 <p>So I now essentially collect up the bits of expressions, fudging for
 bit/part selects that aren't resolved.  If this is done only after ranges are
@@ -54,9 +54,9 @@ are split, etc.</p>
 otherwise-unused wire to itself, and one which was not actually a problem because
 essentially it had the form:</p>
 
-<code>
+@({
 assign {foo, bar} = {baz, foo};
-</code>")
+})")
 
 
 (defsection vl-expr-approx-bits
@@ -68,12 +68,17 @@ wires involved in an expression."
 list.</p>
 
 <ul>
- <li><tt>x</tt> is the @(see vl-expr-p) to gather bits from</li>
- <li><tt>mod</tt> is the module that <tt>x</tt> occurs in (for wire lookups)</li>
- <li><tt>ialist</tt> is the @(see vl-moditem-alist) for <tt>mod</tt> (for fast lookups)</li>
+
+<li>@('x') is the @(see vl-expr-p) to gather bits from</li>
+
+<li>@('mod') is the module that @('x') occurs in (for wire lookups)</li>
+
+<li>@('ialist') is the @(see vl-moditem-alist) for @('mod') (for fast
+lookups)</li>
+
 </ul>
 
-<p>We try to return a list of strings like <tt>\"foo[3]\"</tt> that are
+<p>We try to return a list of strings like @('\"foo[3]\"') that are
 approximately the bits indicated by the expression.  This routine is at the
 core of our @(see selfassigns) check, which is just an informal heuristic and
 doesn't need to be particularly correct or accurate.</p>
@@ -85,15 +90,15 @@ other errors in some questionable ways:</p>
 
 <ul>
 
-<li>If we encounter an unresolved bit- or part-select from <tt>w</tt>, or if we
- encounter a plain <tt>w</tt> that is not defined, we just return
- <tt>\"w[0]\"</tt>.</li>
+<li>If we encounter an unresolved bit- or part-select from @('w'), or if we
+encounter a plain @('w') that is not defined, we just return
+@('\"w[0]\"').</li>
 
 <li>We don't do any index checking, so if we see an out-of-bounds bit- or
- part-select we just return strings that refer to non-existent bits.</li>
+part-select we just return strings that refer to non-existent bits.</li>
 
-<li>If we encounter a plain, undefined wire <tt>w</tt>, we just return
- <tt>\"w[0]\"</tt>.</li>
+<li>If we encounter a plain, undefined wire @('w'), we just return
+@('\"w[0]\"').</li>
 
 </ul>
 
@@ -233,9 +238,10 @@ bits that occur on the lhs and rhs."
 (defsection vl-module-check-selfassigns
   :parents (selfassigns)
   :short "Check the assignments of a module for self-assignments to bits."
-  :long "<p>@(call vl-module-check-selfassigns) checks all of the
-assignments in the module <tt>x</tt> for @(see selfassigns), and adds any
-warnings to the module.</p>"
+
+  :long "<p>@(call vl-module-check-selfassigns) checks all of the assignments
+in the module @('x') for @(see selfassigns), and adds any warnings to the
+module.</p>"
 
   (defund vl-module-check-selfassigns (x)
     (declare (xargs :guard (vl-module-p x)))

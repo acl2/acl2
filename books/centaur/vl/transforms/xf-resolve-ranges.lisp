@@ -26,27 +26,27 @@
 
 (defxdoc rangeresolve
   :parents (transforms)
-  :short "Simplification of ranges, e.g., <tt>reg [6-1:0]</tt>"
+  :short "Simplification of ranges, e.g., @('reg [6-1:0]')"
 
   :long "<p>We sometimes need to statically evaluate expressions until a
 constant is reached, particularly to deal with the results of @(see
 unparameterization).  For instance, </p>
 
-<code>
+@({
    reg [width-1:0] r ;
-</code>
+})
 
 <p>May have been converted into something like:</p>
 
-<code>
+@({
     reg [6-1:0] r ;
-</code>
+})
 
-<p>And so in order to determine what the size of <tt>r</tt> is, we need to evaluate
+<p>And so in order to determine what the size of @('r') is, we need to evaluate
 these expressions.  This leads us to a precarious place, because normally in
 order to evaluate a Verilog expression, we need to have computed its size and
-the sizes of all its subexpressions.  And so, we want to restrict ourselves
-to a subset of the Verilog expressions which we can confidently resolve to a
+the sizes of all its subexpressions.  And so, we want to restrict ourselves to
+a subset of the Verilog expressions which we can confidently resolve to a
 constant without having their widths available.</p>
 
 <p>In short, we carve out a very small set of Verilog expressions which includes
@@ -59,8 +59,8 @@ only:</p>
 
 <p>In practice, at Centaur we don't even need this much -- subtraction would do
 just fine.  But it was so easy to add the others that I went ahead and did it
-anyway, on the off chance that some day we will want <tt>2 * width</tt> or
-<tt>width + 1</tt> or something along those lines.</p>
+anyway, on the off chance that some day we will want @('2 * width') or @('width
++ 1') or something along those lines.</p>
 
 <p>These constant expressions occur in net and register declarations, and also
 may occur in expressions such as bit-selects, part-selects, and multiple
@@ -84,7 +84,7 @@ concatenations.</p>")
  done.  However, it is safe to use this inside of range expressions, because
  there is no left-hand side to provide us a context.</p>
 
-<p>We return a signed, 32-bit integer on success, or <tt>nil</tt> on failure.</p>")
+<p>We return a signed, 32-bit integer on success, or @('nil') on failure.</p>")
 
 
 (defund vl-rangeexpr-reduce (x)
@@ -457,17 +457,16 @@ concatenations.</p>")
 (defsection vl-op-selresolve
   :parents (rangeresolve)
   :short "Main function for simplifying selects"
-  :long "<p><b>Signature:</b> @(call vl-op-selresolve) returns <tt>(mv
-warnings-prime args-prime)</tt></p>
+  :long "<p><b>Signature:</b> @(call vl-op-selresolve) returns @('(mv
+warnings-prime args-prime)')</p>
 
-<p><tt>op</tt> is some operator being applied to <tt>args</tt>.
-<tt>warnings</tt> is an accumulator for warnings, which we may extend, and
-<tt>context</tt> is irrelevant and is only used to generate more useful
-warnings.</p>
+<p>@('op') is some operator being applied to @('args').  @('warnings') is an
+accumulator for warnings, which we may extend, and @('context') is irrelevant
+and is only used to generate more useful warnings.</p>
 
-<p>If <tt>op</tt> is a bit-select, part-select, or multiple concatenation,
-we try to evaluate expressions within it, e.g., replacing <tt>6-1</tt> with
-<tt>5</tt>, which may have arisen during the course of unparameterization.</p>"
+<p>If @('op') is a bit-select, part-select, or multiple concatenation, we try
+to evaluate expressions within it, e.g., replacing @('6-1') with @('5'), which
+may have arisen during the course of unparameterization.</p>"
 
   (defund vl-op-selresolve (op args warnings context)
     "Returns (MV WARNINGS-PRIME ARGS-PRIME)"

@@ -29,8 +29,8 @@
   :parents (concatenation)
   :short "Concatenate strings."
 
-  :long "<p><tt>(str::cat x y z ...)</tt> is like <tt>(@(see concatenate)
-'string x y z ...)</tt>, but is less to type.</p>
+  :long "<p>@('(str::cat x y z ...)') is like @('(concatenate 'string x y z
+...)'), but is less to type.</p>
 
 <p>Warning: concatenating strings is fundamentally slow.  This is because
 Common Lisp strings are just arrays of characters, but there is not really any
@@ -38,30 +38,30 @@ mechanism that allows you to efficiently splice arrays together.  In other
 words, any kind of string concatenation minimally requires creating a
 completely new array and copying all of the input characters into it.</p>
 
-<p>This makes it especially slow to repeatedly use <tt>cat</tt> to build up a
+<p>This makes it especially slow to repeatedly use @('cat') to build up a
 string.  If that's your goal, you might instead consider using the approach
 outlined in @(see revappend-chars).</p>
 
-<p>In some Lisps, using <tt>(concatenate 'string ...)</tt> to join strings can
-be even worse than just the cost of creating and initializing a new array.  The
-<tt>concatenate</tt> function is quite flexible and can handle many types of
+<p>In some Lisps, using @('(concatenate 'string ...)') to join strings can be
+even worse than just the cost of creating and initializing a new array.  The
+@(see concatenate) function is quite flexible and can handle many types of
 input, and this flexibility can cause some overhead if the Lisp does not
-optimize for the <tt>'string</tt> case.</p>
+optimize for the @(''string') case.</p>
 
 <p>So, if you are willing to accept a trust tag, then you may <b>optionally</b>
 load the book:</p>
 
-<code>
+@({
   (include-book \"str/fast-cat\" :dir :system)
-</code>
+})
 
-<p>which may improve the performance of <tt>str::cat</tt>.  How does this work?
-Basically <tt>str::cat</tt> calls one of <tt>fast-string-append</tt> or
-<tt>fast-string-append-lst</tt>, depending on how many arguments it is given.
-By default, these functions are aliases for ACL2's @(see string-append) and
-<tt>string-append-lst</tt> functions.  But if you load the <tt>fast-cat</tt>
-book, these functions will be redefined to use raw Lisp array operations, and
-the result may be faster.</p>"
+<p>which may improve the performance of @('str::cat').  How does this work?
+Basically @('str::cat') calls one of @('fast-string-append') or
+@('fast-string-append-lst'), depending on how many arguments it is given.  By
+default, these functions are aliases for ACL2's @(see string-append) and
+@('string-append-lst') functions.  But if you load the @('fast-cat') book,
+these functions will be redefined to use raw Lisp array operations, and the
+result may be faster.</p>"
 
   (defun fast-string-append (str1 str2)
     "May be redefined under-the-hood in str/fast-cat.lisp"
@@ -103,16 +103,16 @@ the result may be faster.</p>"
   :parents (concatenation)
   :short "Append a string's characters onto a list."
 
-  :long "<p>@(call append-chars) takes the characters from the string
-<tt>x</tt> and appends them onto <tt>y</tt>.</p>
+  :long "<p>@(call append-chars) takes the characters from the string @('x')
+and appends them onto @('y').</p>
 
-<p>Its logical definition is nothing more than <tt>(append (coerce x 'list)
-y)</tt>.</p>
+<p>Its logical definition is nothing more than @('(append (coerce x 'list)
+y)').</p>
 
-<p>In the execution, we traverse the string <tt>x</tt> using @(see char) to
-avoid the overhead of @(see coerce)-ing it into a character list before
-performing the @(see append).  This reduces the overhead from <tt>2n</tt>
-conses to <tt>n</tt> conses, where <tt>n</tt> is the length of <tt>x</tt>.</p>"
+<p>In the execution, we traverse the string @('x') using @(see char) to avoid
+the overhead of @(see coerce)-ing it into a character list before performing
+the @(see append).  This reduces the overhead from @('2n') conses to @('n')
+conses, where @('n') is the length of @('x').</p>"
 
   (defund append-chars-aux (x n y)
     "Appends the characters from x[0:n] onto y"
@@ -174,37 +174,37 @@ conses to <tt>n</tt> conses, where <tt>n</tt> is the length of <tt>x</tt>.</p>"
   :short "Append a string's characters onto a list, in reverse order."
 
   :long "<p>@(call revappend-chars) takes the characters from the string
-<tt>x</tt>, reverses them, and appends the result onto <tt>y</tt>.</p>
+@('x'), reverses them, and appends the result onto @('y').</p>
 
-<p>Its logical definition is nothing more than <tt>(revappend (coerce x 'list)
-y)</tt>.</p>
+<p>Its logical definition is nothing more than @('(revappend (coerce x 'list)
+y)').</p>
 
-<p>In the execution, we traverse the string <tt>x</tt> using @(see char) to
-avoid the overhead of @(see coerce)-ing it into a character list before
-performing the @(see revappend).  This reduces the overhead from <tt>2n</tt>
-conses to <tt>n</tt> conses, where <tt>n</tt> is the length of <tt>x</tt>.</p>
+<p>In the execution, we traverse the string @('x') using @(see char) to avoid
+the overhead of @(see coerce)-ing it into a character list before performing
+the @(see revappend).  This reduces the overhead from @('2n') conses to @('n')
+conses, where @('n') is the length of @('x').</p>
 
 <p>This function may seem strange at first glance, but it provides a convenient
 way to efficiently, incrementally build a string out of small parts.  For
 instance, a sequence such as:</p>
 
-<code>
+@({
  (let* ((acc nil)
         (acc (str::revappend-chars \"Hello, \" acc))
         (acc (str::revappend-chars \"World!\" acc))
         (acc ...))
     (reverse (coerce acc 'string)))
-</code>
+})
 
 <p>Is essentially the same as:</p>
 
-<code>
+@({
  (let* ((acc \"\")
         (acc (str::cat acc \"Hello, \"))
         (acc (str::cat acc \"World!\"))
         (acc ...))
    acc)
-</code>
+})
 
 <p>But it is comparably much more efficient because it avoids the creation of
 the intermediate strings.  See the performance discussion in @(see str::cat)
@@ -295,7 +295,7 @@ for more details.</p>"
   :short "Concatenates a prefix onto every string in a list of strings."
 
   :long "<p>@(call prefix-strings) produces a new string list by concatenating
-<tt>prefix</tt> onto every member of <tt>x</tt>.</p>"
+@('prefix') onto every member of @('x').</p>"
 
   (defund prefix-strings (prefix x)
     (declare (xargs :guard (and (stringp prefix)

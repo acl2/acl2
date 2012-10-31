@@ -27,8 +27,7 @@
 
 (defsection html-encoding
   :parents (str)
-  :short "Routines to encode HTML entities such as &lt; and &amp; into
-&amp;lt;, &amp;amp;, etc."
+  :short "Routines to encode HTML entities, e.g., @('<') becomes @('&lt;')."
 
   :long "<p>In principle, our conversion routines may not be entirely
 legitimate in the sense of some precise HTML specification, because we do not
@@ -36,8 +35,8 @@ account for non-printable characters or other similarly unlikely garbage in the
 input.  But it seems like what we implement is pretty reasonable, and handles
 most ordinary characters.</p>
 
-<p>Note that we convert <tt>#\Newline</tt> characters into the sequence
-<tt>&lt;br/&gt;#\Newline</tt>.  This may not be the desired behavior in certain
+<p>Note that we convert @('#\\Newline') characters into the sequence
+@('<br/>#\\Newline').  This may not be the desired behavior in certain
 applications, but seems basically reasonable for converting plain text into
 HTML.</p>")
 
@@ -80,8 +79,8 @@ HTML.</p>")
 (defsection html-encode-chars-aux
   :parents (html-encoding)
   :short "Convert a character list into HTML."
-  :long "<p>@(call html-encode-chars-aux) converts the character-list <tt>x</tt>
-into HTML, producing new characters which are accumulated onto <tt>acc</tt> in
+  :long "<p>@(call html-encode-chars-aux) converts the character-list @('x')
+into HTML, producing new characters which are accumulated onto @('acc') in
 reverse order.</p>
 
 <p>As inputs:</p>
@@ -92,9 +91,9 @@ reverse order.</p>
      HTML characters, in reverse order.</li>
 </ul>
 
-<p>We return <tt>(mv col' acc')</tt>, where <tt>col'</tt> is the new column
-number and <tt>acc'</tt> is the updated accumulator, which includes the HTML
-encoding of <tt>X</tt> in reverse.</p>"
+<p>We return @('(mv col' acc')'), where @('col'') is the new column number and
+@('acc'') is the updated accumulator, which includes the HTML encoding of
+@('X') in reverse.</p>"
 
   (defund html-encode-chars-aux (x col tabsize acc)
     (declare (xargs :guard (and (character-listp x)
@@ -146,16 +145,19 @@ encoding of <tt>X</tt> in reverse.</p>"
 (defsection html-encode-string-aux
   :parents (html-encoding)
   :short "Convert a string into HTML."
-  :long "<p>@(call html-encode-string-aux) returns <tt>(mv col acc)</tt>.</p>
+  :long "<p>@(call html-encode-string-aux) returns @('(mv col acc)').</p>
 
 <p>This is similar to @(see html-encode-chars-aux), but encodes part of a the
-string <tt>x</tt> instead of a character list.  The additional arguments are as
+string @('x') instead of a character list.  The additional arguments are as
 follows:</p>
 
 <ul>
-<li><tt>xl</tt> - the pre-computed length of the string</li>
-<li><tt>n</tt> - current position in the string where we are encoding; this
-should typically be 0 to begin with.</li>
+
+<li>@('xl') - the pre-computed length of the string</li>
+
+<li>@('n') - current position in the string where we are encoding; this should
+typically be 0 to begin with.</li>
+
 </ul>"
 
   (defund html-encode-string-aux (x n xl col tabsize acc)
@@ -233,8 +235,8 @@ tab:	  <boo> & \"foo\" blah blah")
 
 (defsection html-encode-string
   :parents (html-encoding)
-  :short "@(call html-encode-string) converts the string <tt>x</tt> into HTML,
-and returns the result as a new string."
+  :short "@(call html-encode-string) converts the string @('x') into HTML, and
+returns the result as a new string."
 
   (defund html-encode-string (x tabsize)
     (declare (xargs :guard (and (stringp x)

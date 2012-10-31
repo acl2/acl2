@@ -41,37 +41,37 @@ that.</p>
 
 <p>To convert each Verilog module instance into preliminary E occurrences, we
 need to create E language @(see acl2::patterns) that represent (1) the inputs
-and outputs of each module, i.e., the <tt>:i</tt> and <tt>:o</tt> patterns for
-each module, and (2) the corresponding \"actuals\" of each module instance,
-i.e., the <tt>:i</tt> and <tt>:o</tt> patterns for each occurrence.</p>
+and outputs of each module, i.e., the @(':i') and @(':o') patterns for each
+module, and (2) the corresponding \"actuals\" of each module instance, i.e.,
+the @(':i') and @(':o') patterns for each occurrence.</p>
 
 
 <h4>Basic Idea</h4>
 
 <p>Suppose we have a module with port declarations like:</p>
 
-<code>
+@({
 input [3:0] a;
 input b;
 input [5:3] c;
 
 ...
-</code>
+})
 
 <p>Then we are going to generate an input pattern like:</p>
 
-<code>
+@({
 :i ( (a[0] a[1] a[2] a[3])
      (b)
      (c[3] c[4] c[5])
      ...)
-</code>
+})
 
-<p>Here, individual bits like <tt>a[2]</tt> and <tt>b</tt> are @(see
-vl-emodwire-p)s.  The bits for each vector form a @(see vl-emodwirelist-p) like
-<tt>(a[0] a[1] a[2] a[3])</tt> or <tt>(b)</tt>.  Finally, our full <tt>:i</tt>
-and <tt>:o</tt> patterns are lists of such vectors, and are recognized with
-@(see vl-emodwirelistlist-p).</p>
+<p>Here, individual bits like @('a[2]') and @('b') are @(see vl-emodwire-p)s.
+The bits for each vector form a @(see vl-emodwirelist-p) like @('(a[0] a[1]
+a[2] a[3])') or @('(b)').  Finally, our full @(':i') and @(':o') patterns are
+lists of such vectors, and are recognized with @(see
+vl-emodwirelistlist-p).</p>
 
 
 <h4>Module I/O Patterns</h4>
@@ -79,44 +79,44 @@ and <tt>:o</tt> patterns are lists of such vectors, and are recognized with
 <p>Recall the difference between port declarations (see @(see vl-portdecl-p))
 and ports (see @(see vl-port-p)).  For instance:</p>
 
-<code>
-module mymod (.low(vec[3:0]), .high(vec[5:4]), foo)   &lt;-- ports
+@({
+module mymod (.low(vec[3:0]), .high(vec[5:4]), foo)   <-- ports
   input foo;
-  input [5:0] vec;   &lt;-- port declarations
+  input [5:0] vec;   <-- port declarations
 endmodule
-</code>
+})
 
-<p>We generate the <tt>:i</tt> and <tt>:o</tt> patterns for each module from
-their port <i>declarations</i>, not from thir ports; see @(see
-vl-portdecls-to-i/o) for details.  Because of this, the actual input pattern
-for <tt>mymod</tt> would look like this:</p>
+<p>We generate the @(':i') and @(':o') patterns for each module from their port
+<i>declarations</i>, not from thir ports; see @(see vl-portdecls-to-i/o) for
+details.  Because of this, the actual input pattern for @('mymod') would look
+like this:</p>
 
-<code>
+@({
 :i ((foo)
     (vec[0] vec[1] vec[2] vec[3] vec[4] vec[5]))
-</code>
+})
 
 
 <h4>Port Patterns</h4>
 
 <p>An instance of this mymod might look something like this:</p>
 
-<code>
+@({
 mymod myinstance (a[3:0], b[1:0], c[7]);
-</code>
+})
 
-<p>Unfortunately, the I/O patterns we have generated for <tt>mymod</tt> are not
-very useful when we want to translate <tt>myinstance</tt>, because its entries
-are not at all in the same shape or order as the ports.</p>
+<p>Unfortunately, the I/O patterns we have generated for @('mymod') are not
+very useful when we want to translate @('myinstance'), because its entries are
+not at all in the same shape or order as the ports.</p>
 
 <p>To correct for this, we build a <b>port pattern</b> for each module.  For
-instance, the port pattern for <tt>mymod</tt> would be:</p>
+instance, the port pattern for @('mymod') would be:</p>
 
-<code>
+@({
  ((vec[3] vec[2] vec[1] vec[0])
   (vec[5] vec[4])
   (foo))
-</code>
+})
 
 <p>The port pattern matches the shape of the module's port expressions, and
 lists the wires each port is connected to, in MSB-first order.</p>
@@ -131,23 +131,22 @@ and output wire without duplication; see @(see port-bit-checking).</p>
 <p>Port patterns make it pretty easy to create the E occurrence for a module
 instance.  In particular, for any valid module instance, we can explode the
 \"actuals\" into wires that line up perfectly with the port pattern.  In the
-case of <tt>myinstance</tt>, we sort of intuitively might imagine generating
-the following \"actual pattern\":</p>
+case of @('myinstance'), we sort of intuitively might imagine generating the
+following \"actual pattern\":</p>
 
-<code>
+@({
  ((a[3] a[2] a[1] a[0])
   (b[1] b[0])
   (c[7]))
-</code>
+})
 
 <p>We don't actually build this pattern.  Instead, we directly construct an
 alist that binds each formal to its actual; see @(see
 vl-modinst-eocc-bindings).</p>
 
-<p>The <tt>:i</tt> and <tt>:o</tt> patterns for the module may then be
-instantiated with this pattern to form the <tt>:i</tt> and <tt>:o</tt> fields
-for the occurrence.  The main function that does all of this is @(see
-vl-modinst-to-eocc).</p>")
+<p>The @(':i') and @(':o') patterns for the module may then be instantiated
+with this pattern to form the @(':i') and @(':o') fields for the occurrence.
+The main function that does all of this is @(see vl-modinst-to-eocc).</p>")
 
 
 
@@ -162,21 +161,21 @@ vl-modinst-to-eocc).</p>")
 
 (defsection vl-portdecls-to-i/o
   :parents (modinsts-to-eoccs)
-  :short "Compute the <tt>:i</tt> and <tt>:o</tt> fields for a module."
+  :short "Compute the @(':i') and @(':o') fields for a module."
 
-  :long "<p><b>Signature:</b> @(call vl-portdecls-to-i/o) returns
-<tt>(mv successp warnings in-wires out-wires)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-portdecls-to-i/o) returns @('(mv
+successp warnings in-wires out-wires)').</p>
 
 <p>We don't take a warnings accumulator because we memoize this function.</p>
 
 <p>See @(see vl-emodwirelistlist-p) for some discussion about the kinds of
 patterns we generate.</p>
 
-<p>Historic note.  We originally tried to base our <tt>:i</tt> and <tt>:o</tt>
-patterns on the order of a module's ports.  We now instead use the order of the
-port declarations.  This is particularly nice for ports whose expressions are
-concatenations such as <tt>{foo, bar, baz}</tt>, since the individual
-components might not even have the same direction.</p>"
+<p>Historic note.  We originally tried to base our @(':i') and @(':o') patterns
+on the order of a module's ports.  We now instead use the order of the port
+declarations.  This is particularly nice for ports whose expressions are
+concatenations such as @('{foo, bar, baz}'), since the individual components
+might not even have the same direction.</p>"
 
   (defund vl-portdecls-to-i/o (portdecls walist)
     "Returns (MV SUCCESSP WARNINGS IN-WIRES OUT-WIRES)"
@@ -278,8 +277,8 @@ components might not even have the same direction.</p>"
   :parents (modinsts-to-eoccs)
   :short "Compute the port pattern for a single port."
 
-  :long "<p><b>Signature:</b> @(call vl-port-msb-bits) returns <tt>(mv successp
-warnings msb-bits)</tt>.</p>"
+  :long "<p><b>Signature:</b> @(call vl-port-msb-bits) returns @('(mv successp
+warnings msb-bits)').</p>"
 
   (defund vl-port-msb-bits (x walist)
     "Returns (MV SUCCESSP WARNINGS MSB-BITS)"
@@ -328,7 +327,7 @@ warnings msb-bits)</tt>.</p>"
   :short "Compute the port pattern for a module."
 
   :long "<p><b>Signature:</b> @(call vl-portlist-msb-bit-pattern) returns
-<tt>(mv successp warnings pattern)</tt>.</p>
+@('(mv successp warnings pattern)').</p>
 
 <p>We don't take a warnings accumulator because we memoize this function.</p>"
 
@@ -388,9 +387,9 @@ appropriately.</p>")
   :short "Ensure the port pattern for a module is reasonable."
 
   :long "<p>@(call vl-check-port-bits) separately builds up the bit patterns
-for ports and the port declarations of the module <tt>x</tt>, then makes sure
-that there is exactly one port bit for every port declaration bit and vice
-versa.  We extend <tt>X</tt> with a fatal warning if this doesn't hold.</p>"
+for ports and the port declarations of the module @('x'), then makes sure that
+there is exactly one port bit for every port declaration bit and vice versa.
+We extend @('X') with a fatal warning if this doesn't hold.</p>"
 
   (local
    (encapsulate
@@ -578,13 +577,13 @@ to look up these patterns.</p>")
   :short "Build the list of @(see vl-emodwire-p)s for a @(see vl-plainarg-p),
 in <b>LSB-first</b> order."
 
-  :long "<p><b>Signature:</b> @(call vl-plainarg-lsb-bits) returns <tt>(mv
-successp warnings lsb-bits)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-plainarg-lsb-bits) returns @('(mv
+successp warnings lsb-bits)').</p>
 
 <p>See @(see vl-msb-expr-bitlist).  This function just makes sure a @(see
-vl-plainarg-p) isn't blank and then calls <tt>vl-msb-expr-bitlist</tt> to do
-the work.  We return the bits in LSB-first order to match the convention
-throughout E.</p>"
+vl-plainarg-p) isn't blank and then calls @('vl-msb-expr-bitlist') to do the
+work.  We return the bits in LSB-first order to match the convention throughout
+E.</p>"
 
   (defund vl-plainarg-lsb-bits (x walist warnings)
     "Returns (MV SUCCESSP WARNINGS LSB-BITS)"
@@ -628,7 +627,7 @@ throughout E.</p>"
   :short "Build lists of @(see vl-emodwire-p)s for a @(see vl-plainarglist-p)."
 
   :long "<p><b>Signature:</b> @(call vl-plainarglist-lsb-pattern) returns
-<tt>(mv successp warnings pattern)</tt>.</p>
+@('(mv successp warnings pattern)').</p>
 
 <p>We project @(see vl-plainarg-lsb-bits) across a list of arguments, and cons
 together the resulting bits to produce an @(see vl-emodwirelistlist-p) where
@@ -680,26 +679,26 @@ each sub-list is in LSB-order.</p>"
   :short "Build a (slow) alist binding the \"formals\" for a module to the
 \"actuals\" from an instance."
 
-  :long "<p><b>Signature:</b> @(call vl-modinst-eocc-bindings) returns
-<tt>(mv successp warnings binding-alist)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-modinst-eocc-bindings) returns @('(mv
+successp warnings binding-alist)').</p>
 
 <ul>
 
-<li><tt>actuals</tt> are the arguments in the module instance.</li>
+<li>@('actuals') are the arguments in the module instance.</li>
 
-<li><tt>portpat</tt> is the port pattern for the module being instanced; see
-@(see modinsts-to-eoccs).  We assume (in the guard) that it is the same
-length as the actuals (i.e., the module instance has the proper arity), but we
-still have to check the lengths on the sub-lists.</li>
+<li>@('portpat') is the port pattern for the module being instanced; see @(see
+modinsts-to-eoccs).  We assume (in the guard) that it is the same length as the
+actuals (i.e., the module instance has the proper arity), but we still have to
+check the lengths on the sub-lists.</li>
 
-<li><tt>walist</tt> is the wire alist for the superior module.  It is used to
+<li>@('walist') is the wire alist for the superior module.  It is used to
 generate the E wires for the actuals.</li>
 
-<li><tt>warnings</tt> is a @(see warnings) accumulator for the superior
+<li>@('warnings') is a @(see warnings) accumulator for the superior
 module.</li>
 
-<li>The <tt>inst</tt> is the module instance we're processing.  It is
-semantically irrelevant and is only used as a context for warnings.</li>
+<li>The @('inst') is the module instance we're processing.  It is semantically
+irrelevant and is only used as a context for warnings.</li>
 
 </ul>"
 
@@ -817,10 +816,9 @@ semantically irrelevant and is only used as a context for warnings.</li>
   :long "<p>Our main E conversion transform proceeds in dependency order, so
 that the E modules for all submodules should already be available.</p>
 
-<p>A <tt>vl-ealist-p</tt> is an alist that binds module names to the E modules
-we have generated for them.  We use it to look up the definitions for
-submodules.  To make lookups fast, we generally expect it to be a fast
-alist.</p>")
+<p>A @('vl-ealist-p') is an alist that binds module names to the E modules we
+have generated for them.  We use it to look up the definitions for submodules.
+To make lookups fast, we generally expect it to be a fast alist.</p>")
 
 
 (defsection vl-modinst-to-eocc
@@ -828,26 +826,26 @@ alist.</p>")
   :short "Main function for transforming a Verilog module instance into
 an (preliminary) E language occurrence."
 
-  :long "<p><b>Signature:</b> @(call vl-modinst-to-eocc) returns
-<tt>(mv successp warnings eocc).</tt></p>
+  :long "<p><b>Signature:</b> @(call vl-modinst-to-eocc) returns @('(mv
+successp warnings eocc).')</p>
 
 <ul>
 
-<li><tt>x</tt> is the module instance that we want to convert into an E
+<li>@('x') is the module instance that we want to convert into an E
 occurrence.</li>
 
-<li><tt>walist</tt> is the wire alist for the superior module.  We use it to
-build the wire lists for the actuals.</li>
+<li>@('walist') is the wire alist for the superior module.  We use it to build
+the wire lists for the actuals.</li>
 
-<li><tt>mods</tt> is the list of all modules; <tt>modalist</tt> is its
-corresponding @(see vl-modalist) for fast module lookups.  We use these to look
-up the submodule being instantiated, so we can compute its port pattern.</li>
+<li>@('mods') is the list of all modules; @('modalist') is its corresponding
+@(see vl-modalist) for fast module lookups.  We use these to look up the
+submodule being instantiated, so we can compute its port pattern.</li>
 
-<li><tt>eal</tt> is the already-processed @(see vl-ealist-p) that binds module
+<li>@('eal') is the already-processed @(see vl-ealist-p) that binds module
 names to the E modules we've built for them so far.  We use this to look up the
-definiton of the submodule for the <tt>:op</tt> field of the E occurrence.</li>
+definiton of the submodule for the @(':op') field of the E occurrence.</li>
 
-<li><tt>warnings</tt> is the @(see warnings) accumulator for the superior
+<li>@('warnings') is the @(see warnings) accumulator for the superior
 module.</li>
 
 </ul>
@@ -855,7 +853,7 @@ module.</li>
 <p>We do a lot of sanity checking to make sure the module instance is simple
 enough to transform, that the submodule exists and was translated into an E
 module successfully, etc.  Then, we figure out the bindings to use for the
-<tt>:i</tt> and <tt>:o</tt> fields of the occurrence, as described in @(see
+@(':i') and @(':o') fields of the occurrence, as described in @(see
 modinsts-to-eoccs).</p>"
 
   (defund vl-modinst-to-eocc (x walist mods modalist eal warnings)

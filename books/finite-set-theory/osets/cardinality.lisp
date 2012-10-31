@@ -17,7 +17,7 @@
 
 (defsection cardinality
   :parents (osets)
-  :short "@(call cardinality) computes the number of elements in <tt>X</tt>."
+  :short "@(call cardinality) computes the number of elements in @('X')."
 
   :long "<p>This is like @(see length), but respects the non-set convention and
 always returns 0 for ill-formed sets.</p>"

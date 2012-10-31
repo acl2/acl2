@@ -73,61 +73,60 @@
 
   :short "Main function for following hierarchical identifiers."
 
-  :long "<p><b>Signature:</b> @(call vl-find-hid-module-aux) returns
-<tt>(mv warnings x-prime modname range-resolvedp range)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-find-hid-module-aux) returns @('(mv
+warnings x-prime modname range-resolvedp range)').</p>
 
 <p>This is our main function for following hierarchical identifiers and
-annotating them with <tt>VL_HID_RESOLVED_MODULE_NAME</tt>,
-<tt>VL_HID_RESOLVED_RANGE_P</tt>, etc., as described in @(see hid-elim).</p>
+annotating them with @('VL_HID_RESOLVED_MODULE_NAME'),
+@('VL_HID_RESOLVED_RANGE_P'), etc., as described in @(see hid-elim).</p>
 
 <h5>Inputs</h5>
 
 <ul>
 
-<li><tt>X</tt> is some hierarchical identifier expression that we want to
-resolve.  We recur down <tt>X</tt>.</li>
+<li>@('X') is some hierarchical identifier expression that we want to resolve.
+We recur down @('X').</li>
 
-<li><tt>CURR</tt> is a module, and we assume that <tt>X</tt> is relative to
-module <tt>CURR</tt>.  That is, <tt>CURR</tt> typically begins as <tt>top</tt>
-for global hierarchical identifiers, or is set to the current module when
-resolving local hierarchical names.</li>
+<li>@('CURR') is a module, and we assume that @('X') is relative to module
+@('CURR').  That is, @('CURR') typically begins as @('top') for global
+hierarchical identifiers, or is set to the current module when resolving local
+hierarchical names.</li>
 
-<li><tt>MODS</tt> are the full module list, and <tt>MODALIST</tt> is the
-associated @(see vl-modalist) for fast lookups.</li>
+<li>@('MODS') are the full module list, and @('MODALIST') is the associated
+@(see vl-modalist) for fast lookups.</li>
 
-<li><tt>WARNINGS</tt> is an ordinary @(see warnings) accumulator.</li>
+<li>@('WARNINGS') is an ordinary @(see warnings) accumulator.</li>
 
-<li><tt>CTX-HID</tt> and <tt>CTX-MODNAME</tt> are only used to provide context
-to error messages.  <tt>CTX-HID</tt> is the full, original hierarchical
-identifier we were trying to resolve, and <tt>CTX-MODNAME</tt> is the name of
-the module wherein <tt>CTX-HID</tt> was found.</li>
+<li>@('CTX-HID') and @('CTX-MODNAME') are only used to provide context to error
+messages.  @('CTX-HID') is the full, original hierarchical identifier we were
+trying to resolve, and @('CTX-MODNAME') is the name of the module wherein
+@('CTX-HID') was found.</li>
 
 </ul>
 
 <p>Our goal is to follow X and see what module it leads to.  That is, given an
-identifier like <tt>foo.bar.baz.wire</tt>, we try to find out what kind of
-module <tt>baz</tt> is.  Furthermore, if we can tell how wide <tt>wire</tt> is,
-we would like to report this information as well.</p>
+identifier like @('foo.bar.baz.wire'), we try to find out what kind of module
+@('baz') is.  Furthermore, if we can tell how wide @('wire') is, we would like
+to report this information as well.</p>
 
 <h5>Outputs</h5>
 
 <ul>
 
-<li><tt>WARNINGS</tt> is the updated warnings accumulator, which may include
-new fatal warnings if we are unable to follow <tt>X</tt>,</li>
+<li>@('WARNINGS') is the updated warnings accumulator, which may include new
+fatal warnings if we are unable to follow @('X'),</li>
 
-<li><tt>X-PRIME</tt> is a changed version of <tt>X</tt> where every HID
-expression within <tt>X</tt> has been annotated with
-<tt>VL_HID_CURRENT_MOD</tt> attributes that say, e.g., for <tt>foo.bar</tt>,
-what module is \"foo\" in?</li>
+<li>@('X-PRIME') is a changed version of @('X') where every HID expression
+within @('X') has been annotated with @('VL_HID_CURRENT_MOD') attributes that
+say, e.g., for @('foo.bar'), what module is \"foo\" in?</li>
 
-<li><tt>MODNAME</tt> is <tt>NIL</tt> on failure, or the name of the ultimate
-target module on success,</li>
+<li>@('MODNAME') is @('NIL') on failure, or the name of the ultimate target
+module on success,</li>
 
-<li><tt>RANGE-RESOLVEDP</tt> says whether the ultimate target wire's range was
+<li>@('RANGE-RESOLVEDP') says whether the ultimate target wire's range was
 resolved, and</li>
 
-<li><tt>RANGE</tt> is the actual range on the ultimate target wire.</li>
+<li>@('RANGE') is the actual range on the ultimate target wire.</li>
 
 </ul>
 
@@ -436,40 +435,40 @@ unsigned restriction, but arrdims might be more difficult.</p>"
   :parents (hid-elim)
   :short "Top-level function for following hierarchical identifiers."
 
-  :long "<p><b>Signature:</b> @(call vl-find-hid-module) returns <tt>(mv
-warnings x-prime modname range-resolvedp range localp)</tt></p>
+  :long "<p><b>Signature:</b> @(call vl-find-hid-module) returns @('(mv
+warnings x-prime modname range-resolvedp range localp)')</p>
 
 <p>Hierarchical identifiers can be either local (i.e., beginning with the name
 of a submodule), or global (i.e., beginning with the name of some top-level
-module).  The main task of this function is to determine whether <tt>X</tt> is
+module).  The main task of this function is to determine whether @('X') is
 local or global, then call upon @(see vl-find-hid-module-aux) to do the real
-work of following <tt>X</tt>.</p>
+work of following @('X').</p>
 
 <h5>Inputs</h5>
 
 <ul>
 
-<li><tt>X</tt> is a hierarchical identifier that occurs somewhere within
-<tt>MOD</tt>.</li>
+<li>@('X') is a hierarchical identifier that occurs somewhere within
+@('MOD').</li>
 
-<li><tt>MODS</tt> is the list of all modules, and <tt>MODALIST</tt> is the
-@(see vl-modalist) for <tt>MODS</tt> for fast lookups.</li>
+<li>@('MODS') is the list of all modules, and @('MODALIST') is the @(see
+vl-modalist) for @('MODS') for fast lookups.</li>
 
-<li><tt>TOPLEV</tt> are the names of all top-level modules in <tt>MODS</tt>;
-see @(see vl-modulelist-toplevel).</li>
+<li>@('TOPLEV') are the names of all top-level modules in @('MODS'); see @(see
+vl-modulelist-toplevel).</li>
 
-<li><tt>WARNINGS</tt> is the @(see warnings) accumulator for <tt>MOD</tt>.</li>
+<li>@('WARNINGS') is the @(see warnings) accumulator for @('MOD').</li>
 
 </ul>
 
 <p>Our goal is to follow X and see what module it leads to.  That is, given an
-identifier like <tt>foo.bar.baz.wire</tt>, we try to find out what kind of
-module <tt>baz</tt> is.  Furthermore, if we can tell how wide <tt>wire</tt> is,
-we would like to report this information as well.</p>
+identifier like @('foo.bar.baz.wire'), we try to find out what kind of module
+@('baz') is.  Furthermore, if we can tell how wide @('wire') is, we would like
+to report this information as well.</p>
 
-<p>Except for <tt>LOCALP</tt>, the outputs are as in @(see
-vl-find-hid-module-aux).  On success, <tt>LOCALP</tt> says whether this is a
-local hierarchical identifier.</p>"
+<p>Except for @('LOCALP'), the outputs are as in @(see vl-find-hid-module-aux).
+On success, @('LOCALP') says whether this is a local hierarchical
+identifier.</p>"
 
   (defund vl-find-hid-module (x mod mods modalist toplev warnings)
     "Returns (WARNINGS X-PRIME MODNAME RANGE-RESOLVEDP RANGE LOCALP)"
@@ -648,32 +647,32 @@ local hierarchical identifier.</p>"
   :parents (hid-elim)
 
   :short "Annotate hierarchical identifiers throughout an expression with
-attributes such as <tt>VL_HID_RESOLVED_MODULE_NAME</tt>, as described in @(see
+attributes such as @('VL_HID_RESOLVED_MODULE_NAME'), as described in @(see
 hid-elim)."
 
-  :long "<p><b>Signature</b>: @(call vl-expr-follow-hids) returns <tt>(mv
-warnings x-prime)</tt>.</p>
+  :long "<p><b>Signature</b>: @(call vl-expr-follow-hids) returns @('(mv
+warnings x-prime)').</p>
 
 <h5>Inputs</h5>
 
 <ul>
 
-<li><tt>X</tt> is any expression, which we are recurring over.</li>
+<li>@('X') is any expression, which we are recurring over.</li>
 
-<li><tt>MOD</tt> is the module that <tt>X</tt> comes from.</li>
+<li>@('MOD') is the module that @('X') comes from.</li>
 
-<li><tt>MODS</tt> is the list of all modules, and <tt>MODALIST</tt> is the
-@(see vl-modalist) for <tt>MODS</tt> (for fast lookups).</li>
+<li>@('MODS') is the list of all modules, and @('MODALIST') is the @(see
+vl-modalist) for @('MODS') (for fast lookups).</li>
 
-<li><tt>TOPLEV</tt> is the list of all top-level modules; see @(see
+<li>@('TOPLEV') is the list of all top-level modules; see @(see
 vl-modulelist-toplevel).</li>
 
-<li><tt>WARNINGS</tt> is the @(see warnings) accumulator for <tt>MOD</tt>.</li>
+<li>@('WARNINGS') is the @(see warnings) accumulator for @('MOD').</li>
 
 </ul>
 
-<p>We try to annotate every hierarchical identifier throughout <tt>X</tt> with
-the attributes described in @(see hid-elim) and return the updated expression.
+<p>We try to annotate every hierarchical identifier throughout @('X') with the
+attributes described in @(see hid-elim) and return the updated expression.
 Fatal warnings will be added if we have problems following any hierarchical
 identifier.</p>"
 
@@ -840,10 +839,10 @@ identifier.</p>"
          (thm-warn   (intern-in-package-of-symbol thm-warn-s name))
          (thm-type   (intern-in-package-of-symbol thm-type-s name))
          (short (cat "Annotate hierarchical identifiers throughout a @(see " type-s
-") with attributes such as <tt>VL_HID_RESOLVED_MODULE_NAME</tt>, as described in @(see
-hid-elim)."))
+") with attributes such as @('VL_HID_RESOLVED_MODULE_NAME'), as described in
+@(see hid-elim)."))
          (long  (cat "<p><b>Signature:</b> @(call " name-s ") returns
-<tt>(mv warnings x-prime)</tt>.</p>")))
+@('(mv warnings x-prime)').</p>")))
 
   `(defsection ,name
      :parents (hid-elim)
@@ -885,10 +884,10 @@ hid-elim)."))
          (thm-type   (intern-in-package-of-symbol thm-type-s name))
          (thm-true   (intern-in-package-of-symbol thm-true-s name))
          (short (cat "Annotate hierarchical identifiers throughout a @(see " type-s
-") with attributes such as <tt>VL_HID_RESOLVED_MODULE_NAME</tt>, as described in @(see
-hid-elim)."))
+") with attributes such as @('VL_HID_RESOLVED_MODULE_NAME'), as described in
+@(see hid-elim)."))
          (long  (cat "<p><b>Signature:</b> @(call " name-s ") returns
-<tt>(mv warnings x-prime)</tt>.</p>")))
+@('(mv warnings x-prime)').</p>")))
 
   `(defsection ,name
      :parents (hid-elim)

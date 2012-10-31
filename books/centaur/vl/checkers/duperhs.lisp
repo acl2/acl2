@@ -29,13 +29,13 @@
   :short "Check for assignments with the same right-hand side."
   :long "<p>This is a trivially simple check for cases like:</p>
 
-<code>
+@({
    assign a = rhs;
    assign b = rhs;
-</code>
+})
 
-<p>That is, where <tt>rhs</tt> is literally identical in both assignments.
-Such assignments are not necessarily errors, but are kind of odd.</p>")
+<p>That is, where @('rhs') is literally identical in both assignments.  Such
+assignments are not necessarily errors, but are kind of odd.</p>")
 
 
 (defalist vl-duperhs-alistp (x)

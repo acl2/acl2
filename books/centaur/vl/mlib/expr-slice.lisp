@@ -48,11 +48,11 @@
   :parents (mlib)
   :short "Functions for slicing up expressions into bits or segments."
 
-  :long "<p>We say a Verilog expression <tt>x</tt> is <b>sliceable</b> when it
-may be \"easily\" converted into a concatenation, say <tt>{ bit_N, bit_N-1,
-..., bit0 }</tt>, where each <tt>bit_i</tt> is either a one-bit wide
-constant (i.e., <tt>1'b0</tt>, <tt>1'b1</tt>, <tt>1'bX</tt>, or <tt>1'bZ</tt>),
-or is a bit-select from a plain identifier (i.e., <tt>foo[3]</tt>).</p>
+  :long "<p>We say a Verilog expression @('x') is <b>sliceable</b> when it may
+be \"easily\" converted into a concatenation, say @('{ bit_N, bit_N-1, ...,
+bit0 }'), where each @('bit_i') is either a one-bit wide constant (i.e.,
+@('1'b0'), @('1'b1'), @('1'bX'), or @('1'bZ')), or is a bit-select from a plain
+identifier (i.e., @('foo[3]')).</p>
 
 <p>Sliceable expressions are of interest because they can be easily partitioned
 into lists of individual bits or broken into segments, without having to
@@ -76,19 +76,19 @@ function names) as sliceable.</p>
 <p>Beyond these atoms, we regard resolved bit- and part-selects from
 identifiers as sliceable.  It is pretty obvious that the indicies of a
 part-select need to be resolved for easy partitioning.  But even though we know
-that <tt>foo[i]</tt> is only a single-bit wide, we also insist that bit selects
-be resolved because this is useful in functions like @(see
-vl-msb-bitslice-expr) which convert sliceable expressions into actual lists of
-bits, and also in @(see vl-assign-occform) where we assume we can just use
-plain assignments on any sliceable expressions.</p>
+that @('foo[i]') is only a single-bit wide, we also insist that bit selects be
+resolved because this is useful in functions like @(see vl-msb-bitslice-expr)
+which convert sliceable expressions into actual lists of bits, and also in
+@(see vl-assign-occform) where we assume we can just use plain assignments on
+any sliceable expressions.</p>
 
 <p>We say that concatenations of sliceable arguments as sliceable, as are
 replications of sliceable arguments with resolved multiplicities.</p>
 
 <p>Other expressions aren't sliceable.  This seems generally sensible, e.g.,
-what are the bits of <tt>a + b</tt>?  With enough context it would be possible
-to slice up hierarchical identifiers, but we don't try to do this since it
-would be quite a bit more complex.</p>")
+what are the bits of @('a + b')?  With enough context it would be possible to
+slice up hierarchical identifiers, but we don't try to do this since it would
+be quite a bit more complex.</p>")
 
 
 
@@ -100,8 +100,8 @@ would be quite a bit more complex.</p>")
 
 (defsection vl-expr-sliceable-p
   :parents (expr-slicing)
-  :short "@(call vl-expr-sliceable-p) determines if the expression <tt>x</tt>
-is sliceable."
+  :short "@(call vl-expr-sliceable-p) determines if the expression @('x') is
+sliceable."
 
   (mutual-recursion
 
@@ -184,12 +184,11 @@ is sliceable."
   :long "<p><b>Signature:</b> @(call vl-msb-bitslice-constint) returns a list
 of one-bit wide, unsigned expressions.</p>
 
-<p>We require that <tt>X</tt> is a well-typed constant integer expression,
-i.e., our @(see expression-sizing) transform should have already been run.
-Note that the \"propagation step\" of expression sizing should have already
-handled any sign/zero extensions, so we assume here that the atom's
-<tt>finalwidth</tt> is already correct and that no extensions are
-necessary.</p>"
+<p>We require that @('X') is a well-typed constant integer expression, i.e.,
+our @(see expression-sizing) transform should have already been run.  Note that
+the \"propagation step\" of expression sizing should have already handled any
+sign/zero extensions, so we assume here that the atom's @('finalwidth') is
+already correct and that no extensions are necessary.</p>"
 
   (local (include-book "arithmetic-3/floor-mod/floor-mod" :dir :system))
   (local (in-theory (disable acl2::functional-commutativity-of-minus-*-left)))
@@ -354,12 +353,11 @@ necessary.</p>"
   :long "<p><b>Signature:</b> @(call vl-msb-bitslice-weirdint) returns a list
 of one-bit wide expressions.</p>
 
-<p>We require that <tt>X</tt> is a well-typed constant integer expression,
-i.e., our @(see expression-sizing) transform should have already been run.
-Note that the \"propagation step\" of expression sizing should have already
-handled any sign/zero extensions, so we assume here that the atom's
-<tt>finalwidth</tt> is already correct and that no extensions are
-necessary.</p>"
+<p>We require that @('X') is a well-typed constant integer expression, i.e.,
+our @(see expression-sizing) transform should have already been run.  Note that
+the \"propagation step\" of expression sizing should have already handled any
+sign/zero extensions, so we assume here that the atom's @('finalwidth') is
+already correct and that no extensions are necessary.</p>"
 
 ; The bits of a weirdint are already in msb-first order, so we just need to
 ; convert them into individual bits in the same order.
@@ -735,11 +733,11 @@ necessary.</p>"
   :short "Explode a <see topic='@(url vl-expr-welltyped-p)'>well-typed</see>,
 @(see vl-id-p) atom into MSB-ordered, single-bit expressions."
 
-  :long "<p><b>Signature:</b> @(call vl-msb-bitslice-id) returns <tt>(mv
-successp warnings bits)</tt>, where <tt>bits</tt> is a list of one-bit wide
+  :long "<p><b>Signature:</b> @(call vl-msb-bitslice-id) returns @('(mv
+successp warnings bits)'), where @('bits') is a list of one-bit wide
 expressions on success.</p>
 
-<p>We require that <tt>X</tt> is a well-typed identifier expression, i.e., our
+<p>We require that @('X') is a well-typed identifier expression, i.e., our
 @(see expression-sizing) transform should have already been run.  See also the
 discussion in @(see vl-atom-welltyped-p) and note that the finalwidth and
 finaltype of the identifier may differ from its declaration.  We expect these
@@ -749,18 +747,18 @@ are used to indicate zero/sign extensions.</p>
 <p>The list of bits we want to return here depends on the order of the msb
 and lsb indices for the wire.  For instance, if the wire is declared as:</p>
 
-<code>
+@({
 wire [3:0] w;
-</code>
+})
 
-<p>Then we want to return <tt>{w[3], w[2], w[1], w[0]}</tt>.  But if the
-wire is instead declared as:</p>
+<p>Then we want to return @('{w[3], w[2], w[1], w[0]}').  But if the wire is
+instead declared as:</p>
 
-<code>
+@({
 wire [0:3] w;
-</code>
+})
 
-<p>Then we will want to return <tt>{w[0], w[1], w[2], w[3]}</tt> instead.</p>"
+<p>Then we will want to return @('{w[0], w[1], w[2], w[3]}') instead.</p>"
 
   (local (in-theory (enable vl-atom-welltyped-p
                             vl-maybe-range-p
@@ -926,28 +924,28 @@ wire [0:3] w;
   :short "Explode a <see topic='@(url vl-expr-welltyped-p)'>well-typed</see>,
 part-select into into MSB-ordered, single-bit expressions."
 
-  :long "<p><b>Signature:</b> @(call vl-msb-bitslice-partselect) returns
-<tt>(mv successp warnings bits)</tt>, where <tt>bits</tt> is a list of one-bit
-wide expressions on success.</p>
+  :long "<p><b>Signature:</b> @(call vl-msb-bitslice-partselect) returns @('(mv
+successp warnings bits)'), where @('bits') is a list of one-bit wide
+expressions on success.</p>
 
-<p>We require that <tt>X</tt> is a well-typed, and also @(see
-vl-expr-sliceable-p) part-select expression, i.e., our @(see expression-sizing)
-transform should have already been run.</p>
+<p>We require that @('X') is a well-typed, and also @(see vl-expr-sliceable-p)
+part-select expression, i.e., our @(see expression-sizing) transform should
+have already been run.</p>
 
-<p>The list of bits we want to return here depends on the order of the msb
-and lsb indices for the wire.  To consider the cases, imagine:</p>
+<p>The list of bits we want to return here depends on the order of the msb and
+lsb indices for the wire.  To consider the cases, imagine:</p>
 
-<code>
+@({
 wire [3:0] a;
 wire [0:3] b;
-</code>
+})
 
 <p>There are four kinds of selects we might encounter, basically:</p>
 
 <ul>
-<li><tt>a[2:0]</tt>, which should become <tt>{a[2], a[1], a[0]}</tt></li>
-<li><tt>b[0:2]</tt>, which should become <tt>{b[0], b[1], b[2]}</tt></li>
-<li><tt>a[0:2]</tt> or <tt>b[2:0]</tt>, which should be disallowed.</li>
+<li>@('a[2:0]'), which should become @('{a[2], a[1], a[0]}')</li>
+<li>@('b[0:2]'), which should become @('{b[0], b[1], b[2]}')</li>
+<li>@('a[0:2]') or @('b[2:0]'), which should be disallowed.</li>
 </ul>"
 
   (local (in-theory (enable vl-expr-sliceable-p
@@ -1128,25 +1126,25 @@ wire [0:3] b;
 <see topic='@(url vl-expr-sliceable-p)'>sliceable</see> expression into a list
 of MSB-ordered, single-bit expressions."
 
-  :long "<p><b>Signature:</b> @(call vl-msb-bitslice-expr) returns <tt>(mv
-successp warnings bits)</tt>, where <tt>bits</tt> is a list of one-bit wide
+  :long "<p><b>Signature:</b> @(call vl-msb-bitslice-expr) returns @('(mv
+successp warnings bits)'), where @('bits') is a list of one-bit wide
 expressions on success.</p>
 
-<p>We require that <tt>X</tt> is a well-typed expression, i.e., our @(see
+<p>We require that @('X') is a well-typed expression, i.e., our @(see
 expression-sizing) transform should have already been run.  On success, we
 split the expression into its individual bits, and as basic correctness
-properties, we prove that on success the resulting <tt>bits</tt> is a list of
+properties, we prove that on success the resulting @('bits') is a list of
 well-typed expressions where:</p>
 
 <ul>
- <li><tt>(len bits)</tt> is the <tt>finalwidth</tt> of <tt>x</tt>, and</li>
- <li>each <tt>bit_i</tt> is unsigned and has a <tt>finalwidth</tt> of 1.</li>
+ <li>@('(len bits)') is the @('finalwidth') of @('x'), and</li>
+ <li>each @('bit_i') is unsigned and has a @('finalwidth') of 1.</li>
 </ul>
 
-<p>The only reason this function will fail is if some identifier within
-<tt>x</tt> is not declared in the module or has a <tt>finalwidth</tt> that is
-smaller than its declared width.  These situations should not arise in practice
-if the expressions have been sized correctly.</p>"
+<p>The only reason this function will fail is if some identifier within @('x')
+is not declared in the module or has a @('finalwidth') that is smaller than its
+declared width.  These situations should not arise in practice if the
+expressions have been sized correctly.</p>"
 
   (defxdoc vl-msb-bitslice-exprlist
     :parents (expr-slicing)

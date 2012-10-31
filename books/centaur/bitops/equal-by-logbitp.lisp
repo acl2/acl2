@@ -66,8 +66,8 @@
 (defsection logbitp-mismatch
   :parents (bitops)
   :short "@(call logbitp-mismatch) finds the minimal bit-position for which
-<tt>a</tt> and <tt>b</tt> differ, or returns <tt>NIL</tt> if no such bit
-exists."
+@('a') and @('b') differ, or returns @('NIL') if no such bit exists."
+
   :long "<p>This is mainly useful for proving @(see equal-by-logbitp), but
 it's also occasionally useful as a witness in other theorems.</p>"
 
@@ -135,18 +135,17 @@ it's also occasionally useful as a witness in other theorems.</p>"
 
 (defsection equal-by-logbitp
   :parents (bitops)
-  :short "Show <tt>a = b</tt> by showing their bits are equal."
+  :short "Show @('a = b') by showing their bits are equal."
 
-  :long "<p><tt>Equal-by-logbitp</tt> may be functionally instantiated to prove
-<tt>(equal a b)</tt> by showing that:</p>
+  :long "<p>@('Equal-by-logbitp') may be functionally instantiated to prove
+@('(equal a b)') by showing that:</p>
 
-<code>
+@({
  (equal (logbitp bit a) (logbitp bit b))
-</code>
+})
 
-<p>for any arbitrary <tt>bit</tt> less than the maximum @(see integer-length)
-of <tt>a</tt> or <tt>b</tt>, where <tt>a</tt> and <tt>b</tt> are known to be
-integers.</p>
+<p>for any arbitrary @('bit') less than the maximum @(see integer-length) of
+@('a') or @('b'), where @('a') and @('b') are known to be integers.</p>
 
 <p>This unusual (but occasionally useful) proof strategy is similar to the
 <i>pick-a-point</i> proofs found in the ordered sets or <see topic=\"@(url
@@ -155,16 +154,16 @@ ubdds)\">ubdd</see> libraries.</p>
 <p>There are a couple of ways to invoke the hint.  First, you might manually
 appeal to the theorem using a hint such as:</p>
 
-<code>
+@({
  :use ((:functional-instance equal-by-logbitp
          (logbitp-hyp (lambda () my-hyps))
          (logbitp-lhs (lambda () my-lhs))
          (logbitp-rhs (lambda () my-rhs))))
-</code>
+})
 
 <p>But this can be irritating if your particular hyps, lhs, and rhs are large
 or complex terms.  See the @(see equal-by-logbitp-hint) computed hint, which
-can generate the appropriate <tt>:functional-instance</tt> automatically.</p>"
+can generate the appropriate @(':functional-instance') automatically.</p>"
 
   (encapsulate
     (((logbitp-hyp) => *)
@@ -540,28 +539,28 @@ can generate the appropriate <tt>:functional-instance</tt> automatically.</p>"
 (defsection equal-by-logbitp-hint
   :parents (bitops)
   :short "Basic automation for @(see equal-by-logbitp)."
-  :long "<p>The <tt>equal-by-logbitp-hint</tt> computed hint looks for goals of
-the form:</p>
+  :long "<p>The @('equal-by-logbitp-hint') computed hint looks for goals of the
+form:</p>
 
-<code>
+@({
  (implies (and hyp1 hyp2 ...)
           (equal lhs rhs))
-</code>
+})
 
-<p>And automatically generates an appropriate <tt>:functional-instance</tt> of
-the @(see equal-by-logbitp) theorem.  A typical use of this hint might be:</p>
+<p>And automatically generates an appropriate @(':functional-instance') of the
+@(see equal-by-logbitp) theorem.  A typical use of this hint might be:</p>
 
-<code>
+@({
  :hints((\"Goal\"
          :in-theory (enable foo bar))
         (and stable-under-simplificationp
              (equal-by-logbitp-hint)))
-</code>
+})
 
 <p>Note that this hint is very aggressive.  For instance, it doesn't try to
-determine whether <tt>lhs</tt> and <tt>rhs</tt> are numbers, it'll will try to
-use @(see equal-by-logbitp) anyway.  Because of this, you would never want to
-add this to the @(see default-hints).</p>"
+determine whether @('lhs') and @('rhs') are numbers, it'll will try to use
+@(see equal-by-logbitp) anyway.  Because of this, you would never want to add
+this to the @(see default-hints).</p>"
 
   (defun equal-by-logbitp-hint-fn (clause)
     (declare (xargs :mode :program))
@@ -586,24 +585,24 @@ add this to the @(see default-hints).</p>"
 
 (defsection open-logbitp-of-const-meta
   :parents (logbitp)
-  :short "Rewrite terms like <tt>(logbitp foo 7)</tt> to <tt>(or (not (natp
-foo)) (member-equal foo '(0 1 2)))</tt>."
+  :short "Rewrite terms like @('(logbitp foo 7)') to @('(or (not (natp
+foo)) (member-equal foo '(0 1 2)))')."
 
   :long "<p>This meta rule targets terms of the form</p>
 
-<code>
+@({
  (logbitp term const)
-</code>
+})
 
-<p>where <tt>const</tt> is a quoted constant, typically a number.  We know that
-such a term can only be true when <tt>term</tt> happens to be one of the bit
-positions that has a <tt>1</tt> bit set in <tt>const</tt>, so we can split into
-cases based on which bits of <tt>const</tt> are set.</p>
+<p>where @('const') is a quoted constant, typically a number.  We know that
+such a term can only be true when @('term') happens to be one of the bit
+positions that has a @('1') bit set in @('const'), so we can split into cases
+based on which bits of @('const') are set.</p>
 
-<p>Note that this rule basically is going to split into <tt>n</tt> cases, where
-<tt>n</tt> is the number of <tt>1</tt> bits in <tt>const</tt>!  Because of this
-we keep it disabled.  But if you see a <tt>logbitp</tt> term applied to a
-constant, you might want to consider enabling this rule.</p>"
+<p>Note that this rule basically is going to split into @('n') cases, where
+@('n') is the number of @('1') bits in @('const')!  Because of this we keep it
+disabled.  But if you see a @('logbitp') term applied to a constant, you might
+want to consider enabling this rule.</p>"
 
   (defevaluator lbpc-ev lbpc-ev-lst
     ((logbitp a b)

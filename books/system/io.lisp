@@ -113,15 +113,14 @@
   :parents (io)
   :short "How file reading operations are modeled in the ACL2 logic."
 
-  :long "<p>ACL2's file input operations are available in <tt>:logic</tt>
-mode (see @(see defun-mode)).  This is somewhat tricky to justify in the logic,
-since, e.g., the contents of a file is external to ACL2, can be changed over
-time, and so on.</p>
+  :long "<p>ACL2's file input operations are available in @(':logic') mode (see
+@(see defun-mode)).  This is somewhat tricky to justify in the logic, since,
+e.g., the contents of a file is external to ACL2, can be changed over time, and
+so on.</p>
 
 <p>Practically speaking, most users don't need to pay any attention to the
-details of this story.  Instead, see the book <tt>system/io</tt>, which
-develops the basic theorems that are necessary to reason about the io
-primitives.</p>
+details of this story.  Instead, see the book @('system/io'), which develops
+the basic theorems that are necessary to reason about the io primitives.</p>
 
 <p>If, for some reason, you do want to understand the logical story, you might
 start with this paper:</p>
@@ -143,41 +142,41 @@ about ACL2 File Input</a>.  ACL2 Workshop 2006.</p>")
   :parents (io)
   :short "Open a file for reading."
 
-  :long "<p><b>Signature:</b> @(call open-input-channel) returns <tt>(mv
-channel state)</tt></p>
+  :long "<p><b>Signature:</b> @(call open-input-channel) returns @('(mv channel
+state)')</p>
 
 <ul>
 
-<li><tt>file-name</tt> is a string that names the file to open.</li>
+<li>@('file-name') is a string that names the file to open.</li>
 
-<li><tt>typ</tt> is the type of input to be used and must be one of the valid
-@(see *file-types*).</li>
+<li>@('typ') is the type of input to be used and must be one of the valid @(see
+*file-types*).</li>
 
-<li><tt>state</tt> is the ACL2 @(see state).</li>
+<li>@('state') is the ACL2 @(see state).</li>
 
 </ul>
 
 <p>This is a @(see logic)-mode function, but its logical definition is tricky;
 see @(see logical-story-of-io).  The main logical consequence is that (on
-success) <tt>channel</tt> will become an open input channel of the indicated
-type, and hence can be read from or closed.</p>
+success) @('channel') will become an open input channel of the indicated type,
+and hence can be read from or closed.</p>
 
 <p>Under the hood, we use Lisp's file operations to try to open the file.  On
-success, <tt>channel</tt> is a symbol in the <tt>ACL2-INPUT-CHANNEL</tt>
-package.  Under the hood, this symbol will be associated with a raw Lisp file
-stream.  Note that to avoid resource leaks, you should eventually use @(see
+success, @('channel') is a symbol in the @('ACL2-INPUT-CHANNEL') package.
+Under the hood, this symbol will be associated with a raw Lisp file stream.
+Note that to avoid resource leaks, you should eventually use @(see
 close-input-channel) to free this stream.</p>
 
-<p>There are various reasons and ways that <tt>open-input-channel</tt> can
-fail.  For instance:</p>
+<p>There are various reasons and ways that @('open-input-channel') can fail.
+For instance:</p>
 
 <ul>
 
-<li>If you try to open a file that does not exist, <tt>channel</tt> will be
-<tt>nil</tt>.</li>
+<li>If you try to open a file that does not exist, @('channel') will be
+@('nil').</li>
 
 <li>If you try to open a file for which you do not have permission, say
-<tt>/etc/shadow</tt>, a hard Lisp error can result.</li>
+@('/etc/shadow'), a hard Lisp error can result.</li>
 
 </ul>
 
@@ -235,25 +234,25 @@ explanation of why opening the file failed.</p>"
   :short "Close an input channel."
 
   :long "<p><b>Signature</b>: @(call close-input-channel) returns
-<tt>state</tt>.</p>
+@('state').</p>
 
 <ul>
 
-<li><tt>channel</tt> is a symbol that must refer to a currently open input
-channel; see @(see open-input-channel).</li>
+<li>@('channel') is a symbol that must refer to a currently open input channel;
+see @(see open-input-channel).</li>
 
-<li><tt>state</tt> is the ACL2 @(see state).</li>
+<li>@('state') is the ACL2 @(see state).</li>
 
 </ul>
 
 <p>This is a @(see logic)-mode function, but its logical definition is tricky;
 see @(see logical-story-of-io).  The main logical consequence is that
-<tt>channel</tt> will no longer be an open input channel, and hence can no
-longer be read from or closed.</p>
+@('channel') will no longer be an open input channel, and hence can no longer
+be read from or closed.</p>
 
-<p>Under the hood, we close the raw Lisp stream associated with
-<tt>channel</tt>.  It is generally necessary to close the input channels when
-you are done with them to avoid resource leaks.</p>"
+<p>Under the hood, we close the raw Lisp stream associated with @('channel').
+It is generally necessary to close the input channels when you are done with
+them to avoid resource leaks.</p>"
 
   (defthm state-p1-of-close-input-channel-free
     ;; type is a free variable here.  the two variants that follow try to get
@@ -288,21 +287,20 @@ you are done with them to avoid resource leaks.</p>"
 
 (defsection read-char$
   :parents (io)
-  :short "Read one character from an open <tt>:character</tt> stream."
+  :short "Read one character from an open @(':character') stream."
 
   :long "<p>NOTE: We generally prefer to avoid @(see read-char$).  It is easy
 to use @(see read-byte$) instead, which is generally more efficient and avoids
 certain character-encoding issues; see below for details.</p>
 
-<p><b>Signature:</b> @(call read-char$) returns <tt>(mv char/nil
-state)</tt>.</p>
+<p><b>Signature:</b> @(call read-char$) returns @('(mv char/nil state)').</p>
 
 <ul>
 
-<li><tt>channel</tt> is a symbol that must refer to an open <tt>:character</tt>
-input channel; see @(see open-input-channel).</li>
+<li>@('channel') is a symbol that must refer to an open @(':character') input
+channel; see @(see open-input-channel).</li>
 
-<li><tt>state</tt> is the ACL2 @(see state).</li>
+<li>@('state') is the ACL2 @(see state).</li>
 
 </ul>
 
@@ -311,8 +309,8 @@ see @(see logical-story-of-io).  The main logical consequence are to update the
 state.</p>
 
 <p>Under the hood, we read a <see topic='@(url characters)'>character</see>
-from the Lisp input stream that is associated with <tt>channel</tt>.  If we
-reach the end of the file, <tt>nil</tt> is returned.</p>
+from the Lisp input stream that is associated with @('channel').  If we reach
+the end of the file, @('nil') is returned.</p>
 
 <h3>Character versus Byte Input</h3>
 
@@ -320,20 +318,20 @@ reach the end of the file, <tt>nil</tt> is returned.</p>
 channels for characters and bytes.  After all, ACL2 has exactly 256 @(see
 characters) corresponding to bytes 0-255, and provides functions like @(see
 char-code) and @(see code-char) for converting between these characters and
-bytes.  So, one could easily define <tt>read-char$</tt> as a wrapper that calls
-<tt>code-char</tt> on <tt>read-byte$</tt>, or could define <tt>read-byte$</tt>
-as a wrapper for <tt>read-char$</tt> that calls <tt>char-code</tt>.</p>
+bytes.  So, one could easily define @('read-char$') as a wrapper that calls
+@('code-char') on @('read-byte$'), or could define @('read-byte$') as a wrapper
+for @('read-char$') that calls @('char-code').</p>
 
 <p>That being said, we generally prefer to use byte input.  Common Lisp
 implementations have some freedom in how they implement characters.  Because of
 this, and because different Lisps might try to use different encodings when
-reading files, ACL2's <tt>read-char$</tt> has some extra checks to make sure
-that the characters being read in are legal.  At any rate, for a basic timing
-test on CCL, we measured <tt>read-char$</tt> at 12.5% slower than
-<tt>read-byte$</tt> with <tt>code-char</tt>.</p>
+reading files, ACL2's @('read-char$') has some extra checks to make sure that
+the characters being read in are legal.  At any rate, for a basic timing test
+on CCL, we measured @('read-char$') at 12.5% slower than @('read-byte$') with
+@('code-char').</p>
 
-<p>On the other hand, there is no equivalent of <tt>peek-char$</tt> for
-<tt>:byte</tt> input streams.  So, that might be worth considering.</p>"
+<p>On the other hand, there is no equivalent of @('peek-char$') for @(':byte')
+input streams.  So, that might be worth considering.</p>"
 
   ;; Performance testing code
   #||
@@ -415,16 +413,16 @@ test on CCL, we measured <tt>read-char$</tt> at 12.5% slower than
 (defsection peek-char$
   :parents (io)
   :short "Inspect the next character that will be read from an open
-<tt>:character</tt> input stream."
+@(':character') input stream."
 
-  :long "<p><b>Signature:</b> @(call peek-char$) returns <tt>char/nil</tt>.</p>
+  :long "<p><b>Signature:</b> @(call peek-char$) returns @('char/nil').</p>
 
 <ul>
 
-<li><tt>channel</tt> is a symbol that must refer to an open <tt>:character</tt>
-input channel; see @(see open-input-channel).</li>
+<li>@('channel') is a symbol that must refer to an open @(':character') input
+channel; see @(see open-input-channel).</li>
 
-<li><tt>state</tt> is the ACL2 @(see state).</li>
+<li>@('state') is the ACL2 @(see state).</li>
 
 </ul>
 
@@ -435,9 +433,9 @@ see @(see logical-story-of-io).</p>
 be retrieved next by @(see read-char$), without altering the contents of the
 stream.  This provides only a single character of lookahead.</p>
 
-<p>You should typically never need to reason about <tt>peek-char$</tt>.  We
-prove it returns the same thing as <tt>read-char$</tt>, so you should be able
-to just reason about <tt>read-char$</tt> instead.</p>"
+<p>You should typically never need to reason about @('peek-char$').  We prove
+it returns the same thing as @('read-char$'), so you should be able to just
+reason about @('read-char$') instead.</p>"
 
   (defthm peek-char$-removal
     (equal (peek-char$ channel state)
@@ -447,17 +445,17 @@ to just reason about <tt>read-char$</tt> instead.</p>"
 
 (defsection read-byte$
   :parents (io)
-  :short "Read one byte from an open <tt>:byte</tt> stream."
+  :short "Read one byte from an open @(':byte') stream."
 
-  :long "<p><b>Signature:</b> @(call read-byte$) returns <tt>(mv byte/nil
-state)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call read-byte$) returns @('(mv byte/nil
+state)').</p>
 
 <ul>
 
-<li><tt>channel</tt> is a symbol that must refer to an open <tt>:byte</tt>
-input channel; see @(see open-input-channel).</li>
+<li>@('channel') is a symbol that must refer to an open @(':byte') input
+channel; see @(see open-input-channel).</li>
 
-<li><tt>state</tt> is the ACL2 @(see state).</li>
+<li>@('state') is the ACL2 @(see state).</li>
 
 </ul>
 
@@ -466,8 +464,8 @@ see @(see logical-story-of-io).  The main logical consequence are to update the
 state.</p>
 
 <p>Under the hood, we read a byte (i.e., a number between 0 and 255, inclusive)
-from the Lisp input stream that is associated with <tt>channel</tt>.  If we
-reach the end of the file, <tt>nil</tt> is returned.</p>"
+from the Lisp input stream that is associated with @('channel').  If we reach
+the end of the file, @('nil') is returned.</p>"
 
   (defthm state-p1-of-read-byte$
     (implies (and (state-p1 state)
@@ -517,17 +515,17 @@ reach the end of the file, <tt>nil</tt> is returned.</p>"
 
 (defsection read-object
   :parents (io)
-  :short "Read one object from an open <tt>:object</tt> stream."
+  :short "Read one object from an open @(':object') stream."
 
-  :long "<p><b>Signature:</b> @(call read-object) returns <tt>(mv eofp obj
-state)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call read-object) returns @('(mv eofp obj
+state)').</p>
 
 <ul>
 
-<li><tt>channel</tt> is a symbol that must refer to an open <tt>:object</tt>
-input channel; see @(see open-input-channel).</li>
+<li>@('channel') is a symbol that must refer to an open @(':object') input
+channel; see @(see open-input-channel).</li>
 
-<li><tt>state</tt> is the ACL2 @(see state).</li>
+<li>@('state') is the ACL2 @(see state).</li>
 
 </ul>
 
@@ -536,35 +534,33 @@ see @(see logical-story-of-io).  The main logical consequence are to update the
 state.</p>
 
 <p>Under the hood, we use the Lisp reader to try to read an object from the
-Lisp input stream that is associated with <tt>channel</tt>.</p>
+Lisp input stream that is associated with @('channel').</p>
 
 <p>Ideally, the input stream contains well-formed S-expressions that are free
-of \"bad\" objects like <tt>0.75</tt>, symbols from packages that ACL2 doesn't
-know about, etc; see @(see ACL2::|About Types|).  In this case,
-<tt>read-object</tt> reads the first S-expression in the file and returns it as
-<tt>obj</tt>, setting <tt>eofp</tt> to <tt>nil</tt>.  If there are no more
-S-expressions in the file, <tt>eofp</tt> is <tt>t</tt> and <tt>obj</tt> is
-<tt>nil</tt>.</p>
+of \"bad\" objects like @('0.75'), symbols from packages that ACL2 doesn't know
+about, etc; see @(see ACL2::|About Types|).  In this case, @('read-object')
+reads the first S-expression in the file and returns it as @('obj'), setting
+@('eofp') to @('nil').  If there are no more S-expressions in the file,
+@('eofp') is @('t') and @('obj') is @('nil').</p>
 
 <p>But the input stream can also be malformed.  For instance, we might
 encounter malformed S-expressions without enough closing parens, or bad objects
-like <tt>0.75</tt>.  These sorts of problems will cause hard errors or raw Lisp
+like @('0.75').  These sorts of problems will cause hard errors or raw Lisp
 errors!</p>
 
 <p>Note that if the input contains plain symbols without explicit package name
-prefixes, e.g., <tt>foo</tt> instead of <tt>acl2::foo</tt>, then these symbols
-will be treated as coming from the current package.  If that isn't what you
-want, you can explicily call @(see in-package) to switch into whatever package
-you want to be the default.  For example, if the file <tt>temp</tt> contains
-exactly:</p>
+prefixes, e.g., @('foo') instead of @('acl2::foo'), then these symbols will be
+treated as coming from the current package.  If that isn't what you want, you
+can explicily call @(see in-package) to switch into whatever package you want
+to be the default.  For example, if the file @('temp') contains exactly:</p>
 
-<code>
+@({
 foo
-</code>
+})
 
 <p>Then the following book:</p>
 
-<code>
+@({
  (in-package \"ACL2\")
  (include-book \"tools/bstar\" :dir :system)
  (include-book \"centaur/vl/portcullis\" :dir :system)
@@ -575,10 +571,10 @@ foo
        ((mv ?eofp obj state) (read-object channel state))
        (state                (close-input-channel channel state)))
     (value `(defconst *foo* ',obj))))
-</code>
+})
 
-<p>Defines <tt>*foo*</tt> as the symbol <tt>vl::foo</tt>, instead of
-<tt>acl2::foo</tt>.</p>"
+<p>Defines @('*foo*') as the symbol @('vl::foo'), instead of
+@('acl2::foo').</p>"
 
   (defthm state-p1-of-read-object
     (implies (and (state-p1 state)
@@ -674,39 +670,39 @@ foo
   :parents (io)
   :short "Open a file for writing."
 
-  :long "<p><b>Signature:</b> @(call open-output-channel) returns <tt>(mv
-channel state)</tt></p>
+  :long "<p><b>Signature:</b> @(call open-output-channel) returns @('(mv
+channel state)')</p>
 
 <ul>
 
-<li><tt>file-name</tt> can be either <tt>:string</tt> (to indicate that you
-want to print to a string stream), or a string like <tt>\"temp.txt\"</tt>that
-names the file to write to.</li>
+<li>@('file-name') can be either @(':string') (to indicate that you want to
+print to a string stream), or a string like @('\"temp.txt\"')that names the
+file to write to.</li>
 
-<li><tt>typ</tt> is the type of input to be used and must be one of the valid
-@(see *file-types*).</li>
+<li>@('typ') is the type of input to be used and must be one of the valid @(see
+*file-types*).</li>
 
-<li><tt>state</tt> is the ACL2 @(see state).</li>
+<li>@('state') is the ACL2 @(see state).</li>
 
 </ul>
 
 <p>This is a @(see logic)-mode function, but its logical definition is tricky;
 see @(see logical-story-of-io).  The main logical consequence is that (on
-success) <tt>channel</tt> will become an open output channel of the indicated
-type, and hence can be written to or closed.</p>
+success) @('channel') will become an open output channel of the indicated type,
+and hence can be written to or closed.</p>
 
 <p>Under the hood, we either create a new Lisp string stream in memory (when
-<tt>file-name</tt> is <tt>:string</tt>) or we use Lisp's file operations to open
-<tt>file-name</tt> for writing.  Note that if <tt>file-name</tt> refers to a
-file that already exists, it will be overwritten (i.e., not appended to).</p>
+@('file-name') is @(':string')) or we use Lisp's file operations to open
+@('file-name') for writing.  Note that if @('file-name') refers to a file that
+already exists, it will be overwritten (i.e., not appended to).</p>
 
-<p>On success, <tt>channel</tt> is a symbol in the <tt>ACL2-OUTPUT-CHANNEL</tt>
+<p>On success, @('channel') is a symbol in the @('ACL2-OUTPUT-CHANNEL')
 package.  Under the hood, this symbol will be associated with the Lisp stream.
 Note that to avoid resource leaks, you should eventually use @(see
 close-output-channel) to free this stream.</p>
 
-<p>There are various reasons and ways that <tt>open-output-channel</tt> can
-fail, which can be platform dependent.  For instance:</p>
+<p>There are various reasons and ways that @('open-output-channel') can fail,
+which can be platform dependent.  For instance:</p>
 
 <ul>
 
@@ -715,7 +711,7 @@ SBCL you will get a raw Lisp error but on CCL the directory will be
 created.</li>
 
 <li>If you try to open a file for which you do not have permission, say
-<tt>/etc/shadow</tt>, a hard Lisp error can result.</li>
+@('/etc/shadow'), a hard Lisp error can result.</li>
 
 </ul>"
 
@@ -768,27 +764,26 @@ created.</li>
   :short "Close an output channel."
 
   :long "<p><b>Signature</b>: @(call close-output-channel) returns
-<tt>state</tt>.</p>
+@('state').</p>
 
 <ul>
 
-<li><tt>channel</tt> is a symbol that must refer to a currently open output
+<li>@('channel') is a symbol that must refer to a currently open output
 channel; see @(see open-output-channel).</li>
 
-<li><tt>state</tt> is the ACL2 @(see state).</li>
+<li>@('state') is the ACL2 @(see state).</li>
 
 </ul>
 
 <p>This is a @(see logic)-mode function, but its logical definition is tricky;
 see @(see logical-story-of-io).  The main logical consequence is that
-<tt>channel</tt> will no longer be an open output channel, and hence can no
-longer be written to or closed.</p>
+@('channel') will no longer be an open output channel, and hence can no longer
+be written to or closed.</p>
 
-<p>Under the hood, we close the raw Lisp stream associated with
-<tt>channel</tt>.  This typically involves flushing the buffers associated with
-the file (i.e., actually writing your output to disk).  It is generally
-necessary to close output channels when you are done with them to avoid
-resource leaks.</p>"
+<p>Under the hood, we close the raw Lisp stream associated with @('channel').
+This typically involves flushing the buffers associated with the file (i.e.,
+actually writing your output to disk).  It is generally necessary to close
+output channels when you are done with them to avoid resource leaks.</p>"
 
   (defthm state-p1-of-close-output-channel-free
     ;; type is a free variable here.  the two variants that follow try to get
@@ -1064,10 +1059,9 @@ number.</p>
 
 <ul>
 
-<li><tt>channel</tt> may be any symbol but is typically an open input
-channel.</li>
+<li>@('channel') may be any symbol but is typically an open input channel.</li>
 
-<li><tt>state-state</tt> is typically the ACL2 @(see state).</li>
+<li>@('state-state') is typically the ACL2 @(see state).</li>
 
 </ul>
 
@@ -1082,8 +1076,8 @@ executed on the real ACL2 @(see state).</p>
 <p>History.  Jared wrote an initial version of this function for the Unicode
 books.  Sol then extended it with a hack that allows us to prove it decreasing
 without assuming state-p1 in the object case.  (Really it's just a workaround
-for the fact that read-object checks <tt>(cdr entry)</tt> as a substitute for
-<tt>(consp (cdr entry))</tt> to find whether there are objects remaining.</p>"
+for the fact that read-object checks @('(cdr entry)') as a substitute for
+@('(consp (cdr entry))') to find whether there are objects remaining.</p>"
 
   (defun file-measure (channel state-state)
     (declare (xargs :guard (and (symbolp channel)

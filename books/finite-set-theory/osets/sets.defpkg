@@ -53,7 +53,9 @@
                COMPUTED-HINTS::rewriting-conc-lit
                def-ruleset
                def-ruleset!
-               add-to-ruleset)
+               add-to-ruleset
+               ;; To make Sets::Osets print as just Osets in the XDOC index
+               osets)
              *acl2-exports*
              *common-lisp-symbols-from-main-lisp-package*)
 

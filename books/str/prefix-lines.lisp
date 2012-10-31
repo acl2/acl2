@@ -25,21 +25,21 @@
 (defsection prefix-lines
   :parents (str)
   :short "Add a prefix to every line in a string."
-  :long "<p>@(call prefix-lines) builds a new string by adding <tt>prefix</tt>
-to the start of every line in the string <tt>x</tt>.  The start of <tt>x</tt>
-is regarded as the start of a line, and also gets the prefix.  For instance,</p>
+  :long "<p>@(call prefix-lines) builds a new string by adding @('prefix') to
+the start of every line in the string @('x').  The start of @('x') is regarded
+as the start of a line, and also gets the prefix.  For instance,</p>
 
-<code>
+@({
  (prefix-lines \"hello world
  goodbye world\" \"  ** \")
-</code>
+})
 
 <p>Would create the following result:</p>
 
-<code>
+@({
  \"  ** hello world
    ** goodbye world\"
-</code>
+})
 
 <p>This is sometimes useful for indenting blobs of text when you are trying to
 pretty-print things.  The operation is fairly efficient: we cons everything

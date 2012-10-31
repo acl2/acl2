@@ -145,7 +145,7 @@ E, and VL can be used to implement other Verilog tools.  For instance:</p>
 <ul>
 
 <li>We have used it to developed linting tools like @(see use-set) and a more
-powerful linter which is available in <tt>vl/lint</tt> but is not yet
+powerful linter which is available in @('vl/lint') but is not yet
 documented.</li>
 
 <li>We have implemented an equivalence checking tool (which is not yet
@@ -184,10 +184,9 @@ Page and section numbers given throughout the VL documentation are in reference
 to this document.  VL does not have any support for SystemVerilog.</p>
 
 <p>VL's @(see preprocessor) is somewhat incomplete.  It basically just supports
-<tt>`define</tt> and <tt>`ifdef</tt>-related stuff and can <tt>`include</tt>
-files in the style of the <tt>+incdir</tt> options for tools like
-Verilog-XL (but we often use search paths, which are more similar to
-<tt>+libdir</tt> arguments.)</p>
+@('`define') and @('`ifdef')-related stuff and can @('`include') files in the
+style of the @('+incdir') options for tools like Verilog-XL (but we often use
+search paths, which are more similar to @('+libdir') arguments.)</p>
 
 <p>The @(see lexer) is complete.</p>
 
@@ -205,10 +204,9 @@ with:</p>
 
 <ul>
 
-<li>transistor-level things like <tt>tran</tt> gates and <tt>inout</tt>
-ports, or</li>
+<li>transistor-level things like @('tran') gates and @('inout') ports, or</li>
 
-<li>simulation-level things like hierarchical identifiers and <tt>always</tt>
+<li>simulation-level things like hierarchical identifiers and @('always')
 statements beyond the simplest latches and flops.</li>
 
 </ul>
@@ -239,11 +237,11 @@ vl-ppcs-module) and perhaps more generally the VL @(see printer).</p>
 
 <p>After getting a feel for how modules are represented, it would be good to
 look at the available @(see transforms).  A good way to do this might be to
-look at the code for @(see vl-simplify) (see <tt>centaur/vl/top.lisp</tt>) to
-see the order that we normally apply the transforms in.  You could also look at
-<tt>centaur/vl/lint/lint.lisp</tt> which uses a different transformation
-sequence that is more geared toward linting.  You should probably also read
-through how VL deals with @(see warnings).</p>
+look at the code for @(see vl-simplify) (see @('centaur/vl/top.lisp')) to see
+the order that we normally apply the transforms in.  You could also look at
+@('centaur/vl/lint/lint.lisp') which uses a different transformation sequence
+that is more geared toward linting.  You should probably also read through how
+VL deals with @(see warnings).</p>
 
 <p>If you are going to write any transforms or checkers of your own, you should
 probably look at @(see mlib).  This provides many functions for working with
@@ -255,13 +253,13 @@ level.</p>")
 
 (defsection vl-warn-problem-module
   :parents (vl-simplify)
-  :short "@(call vl-warn-problem-module) determines if the module <tt>x</tt> is
+  :short "@(call vl-warn-problem-module) determines if the module @('x') is
 considered a \"problem module\", and if so annotates it with a fatal warning
 explaining this."
 
   :long "<p>See @(see vl-simplify) for a description of problem modules.
-<tt>problems</tt> are a list of the problem module names that have been
-supplied by the caller.</p>"
+@('problems') are a list of the problem module names that have been supplied by
+the caller.</p>"
 
   (defund vl-warn-problem-module (x problems)
     (declare (xargs :guard (and (vl-module-p x)
@@ -548,9 +546,9 @@ assignment truncation, etc."
   :long "<p>Because @(see vl-simplify) is so complex, we split it into a couple
 of parts.</p>
 
-<p><b>Signature:</b> @(call vl-simplify-part2) returns <tt>(mv mods
-failmods-prime)</tt>.  The input <tt>failmods</tt> are any <tt>failmods</tt>
-from @(see vl-simplify-part1).</p>"
+<p><b>Signature:</b> @(call vl-simplify-part2) returns @('(mv mods
+failmods-prime)').  The input @('failmods') are any @('failmods') from @(see
+vl-simplify-part1).</p>"
 
   (defund vl-simplify-part2 (mods failmods safe-mode-p unroll-limit)
     (declare (xargs :guard (and (vl-modulelist-p mods)
@@ -783,9 +781,9 @@ instances, supply elimination, dependency-order sorting, E translation."
   :long "<p>Because @(see vl-simplify) is so complex, we split it into a couple
 of parts.</p>
 
-<p><b>Signature:</b> @(call vl-simplify-part3) returns <tt>(mv mods
-failmods-prime)</tt>.  The input <tt>failmods</tt> are any <tt>failmods</tt>
-from @(see vl-simplify-part2).</p>"
+<p><b>Signature:</b> @(call vl-simplify-part3) returns @('(mv mods
+failmods-prime)').  The input @('failmods') are any @('failmods') from @(see
+vl-simplify-part2).</p>"
 
   (defund vl-simplify-part3 (mods failmods safe-mode-p)
     (declare (xargs :guard (and (vl-modulelist-p mods)
@@ -1019,8 +1017,8 @@ from @(see vl-simplify-part2).</p>"
   :parents (vl)
   :short "Top level interface for simplifying Verilog modules."
 
-  :long "<p><b>Signature:</b> @(call vl-simplify) returns <tt>(mv mods
-failmods use-set-report)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-simplify) returns @('(mv mods failmods
+use-set-report)').</p>
 
 <p>This is a high-level routine that applies our @(see transforms) in a
 suitable order to simplify Verilog modules and to produce E modules.</p>
@@ -1029,23 +1027,23 @@ suitable order to simplify Verilog modules and to produce E modules.</p>
 
 <ul>
 
-  <li>The <tt>mods</tt> are parsed Verilog modules, typically produced by
-running @(see vl-load).</li>
+  <li>The @('mods') are parsed Verilog modules, typically produced by running
+@(see vl-load).</li>
 
-  <li><tt>safe-mode-p</tt> is a Boolean which can be set to <tt>t</tt> to
-enable any extra run-time checks that may help to catch problems, but which may
-slow down simplification.</li>
+  <li>@('safe-mode-p') is a Boolean which can be set to @('t') to enable any
+extra run-time checks that may help to catch problems, but which may slow down
+simplification.</li>
 
-  <li><tt>unroll-limit</tt> is a natural number that says the maximum number of
+  <li>@('unroll-limit') is a natural number that says the maximum number of
 times to unroll any loop in statements.  We usually use 100.  It's mainly
 intended to stop us from committing suicide by trying to unrolling a loops with
 some ridiculous number of iterations.</li>
 
-  <li><tt>problem-mods</tt> are any modules which should be thrown away
-after parsing, perhaps because they cause problems later on.</li>
+  <li>@('problem-mods') are any modules which should be thrown away after
+parsing, perhaps because they cause problems later on.</li>
 
-  <li><tt>omit-wires</tt> are the names of any wires to omit from the
-use-set report.</li>
+  <li>@('omit-wires') are the names of any wires to omit from the use-set
+report.</li>
 
 </ul>
 
@@ -1053,13 +1051,13 @@ use-set report.</li>
 
 <ul>
 
-  <li><tt>mods</tt> are the successfully loaded and simplified modules.</li>
+  <li>@('mods') are the successfully loaded and simplified modules.</li>
 
-  <li><tt>failmods</tt> are modules which were thrown out due to errors.</li>
+  <li>@('failmods') are modules which were thrown out due to errors.</li>
 
-  <li><tt>use-set-report</tt> is an @(see vl-useset-report-p) that includes
-the use-set report for all of the modules.  BOZO consider integrating this
-into each module itself.</li>
+  <li>@('use-set-report') is an @(see vl-useset-report-p) that includes the
+use-set report for all of the modules.  BOZO consider integrating this into
+each module itself.</li>
 
 </ul>"
 
@@ -1117,7 +1115,7 @@ into each module itself.</li>
   :short "High level command to load Verilog files, transform them, and
 introduce the corresponding E modules."
 
-  :long "<p>The <tt>defmodules</tt> macro allows you to load Verilog files into
+  :long "<p>The @('defmodules') macro allows you to load Verilog files into
 your ACL2 session \"on the fly.\"</p>
 
 <p>Defmodules is is the preferred way to load \"small\" Verilog modules for
@@ -1130,81 +1128,80 @@ simplification are printed for you to inspect.</p>
 <h3>Using Defmodules</h3>
 
 <p>The simplest case is that you want to load some \"self-contained\" Verilog
-files.  The list of files to parse is given in the <tt>start-files</tt>
-argument; these files will be parsed in the order they are given.</p>
+files.  The list of files to parse is given in the @('start-files') argument;
+these files will be parsed in the order they are given.</p>
 
-<code>
+@({
  (defmodules *foo*
     :start-files (list \"foo_control.v\" \"foo_datapath.v\"))
-</code>
+})
 
 <p><b>BOZO</b> fix me, this doesn't currently introduce the E modules.</p>
 
 <p>After submitting this event, E modules for all successfully translated
-modules will be introduced, e.g., <tt>|*foo_control*|</tt>.  Additionally, the
-constant <tt>*foo*</tt> will be defined as a @(see vl-translation-p) that
-allows you to inspect the translation in other ways.</p>
+modules will be introduced, e.g., @('|*foo_control*|').  Additionally, the
+constant @('*foo*') will be defined as a @(see vl-translation-p) that allows
+you to inspect the translation in other ways.</p>
 
 
 <h4>Search Paths and Include Dirs</h4>
 
 <p>Verilog files often rely on modules defined in other files.</p>
 
-<p>VL can use a <tt>search-path</tt>, which is a list of directories that will
-be searched, in order, for any modules that are used but not defined (and not
-explicitly <tt>`include</tt>d in the start-files).  For example:</p>
+<p>VL can use a @('search-path'), which is a list of directories that will be
+searched, in order, for any modules that are used but not defined (and not
+explicitly @('`include')d in the start-files).  For example:</p>
 
-<code>
+@({
  (defmodules foo
     :start-files (list \"foo_control.v\" \"foo_datapath.v\")
     :search-path (list \"/my/project/libs1\" \"/my/project/libs2\" ...))
-</code>
+})
 
-<p>By default only <tt>.v</tt> files will be loaded in this way, but the
-<tt>:searchext</tt> option can also be used to give more extensions, e.g., you
+<p>By default only @('.v') files will be loaded in this way, but the
+@(':searchext') option can also be used to give more extensions, e.g., you
 could write:</p>
 
-<code>
+@({
  (defmodules foo
     :start-files (list \"foo_control.v\" \"foo_datapath.v\")
     :search-path (list \"/my/project/libs1\" \"/my/project/libs2\" ...)
     :searchext   (list \"v\" \"V\"))
-</code>
+})
 
-<p>to include both <tt>.v</tt> and <tt>.V</tt> files.</p>
+<p>to include both @('.v') and @('.V') files.</p>
 
 
-<p>You can separately set up the <tt>include-dirs</tt> that should be searched
-when loading files with <tt>`include</tt>.  By default, <tt>`include
-\"foo.v\"</tt> only looks for <tt>foo.v</tt> in the current directory (i.e.,
-<tt>\".\"</tt>).  But you can add additional include directories, which will be
-searched in priority order (with <tt>\".\"</tt>, always implicitly taking
-priority).  For instance,</p>
+<p>You can separately set up the @('include-dirs') that should be searched when
+loading files with @('`include').  By default, @('`include \"foo.v\"') only
+looks for @('foo.v') in the current directory (i.e., @('\".\"')).  But you can
+add additional include directories, which will be searched in priority
+order (with @('\".\"'), always implicitly taking priority).  For instance,</p>
 
-<code>
+@({
  (defmodules foo
    :start-files (list \"foo_wrapper.v\")
    :include-dirs (list \"./foo_extra1\" \"./foo_extra2\"))
-</code>
+})
 
 
 <h4>Initial `defines</h4>
 
-<p>The <tt>:defines</tt> option can be used to set up any extra
-<tt>`define</tt> directives.  For instance, the following:</p>
+<p>The @(':defines') option can be used to set up any extra @('`define')
+directives.  For instance, the following:</p>
 
-<code>
+@({
  (defmodules foo
     :start-files (list \"foo_control.v\" \"foo_datapath.v\")
     :defines     (list \"FOO_BAR\" \"FOO_BAZ\"))
-</code>
+})
 
 <p>is essentially like writing:</p>
 
-<code>
+@({
 `define FOO_BAR 1
 `define FOO_BAZ 1
-</code>
+})
 
 <p>at the top of your first start-file.  If you need more sophisticated
 defines, you might add an extra start-file, instead.</p>
@@ -1212,58 +1209,58 @@ defines, you might add an extra start-file, instead.</p>
 
 <h4>Overriding and Customizing Modules</h4>
 
-<p>You can also specify an <tt>:override-dirs</tt> argument to \"safely\"
-replace particular Verilog modules with custom definitions.  See @(see
-overrides) for details on how to write override files.</p>
+<p>You can also specify an @(':override-dirs') argument to \"safely\" replace
+particular Verilog modules with custom definitions.  See @(see overrides) for
+details on how to write override files.</p>
 
 <p>VL also supports a special comment syntax:</p>
 
-<code>
+@({
 //+VL single-line version
 /*+VL multi-line version */
-</code>
+})
 
 <p>Which can be used to hide VL-specific code from other tools, e.g., if
 you need your modules to work with an older Verilog implementation that
 doesn't support Verilog-2005 style attributes, you might write something
 like:</p>
 
-<code>
+@({
 //+VL (* my_attribute *)
 assign foo = bar;
-</code>
+})
 
 <p>There is also a special, more concise syntax for attributes:</p>
 
-<code>
+@({
 //@VL my_attribute
-</code>
+})
 
 
 <h4>Start Modnames</h4>
 
-<p>Instead of (or in addition to) explicitly providing <tt>start-files</tt>,
-you can provide the names of some modules that you want to load from the search
+<p>Instead of (or in addition to) explicitly providing @('start-files'), you
+can provide the names of some modules that you want to load from the search
 path, e.g.,:</p>
 
-<code>
+@({
  (defmodules foo
     :start-modnames (list \"foo_control\" \"foo_datapath\")
     :search-path (list \".\" \"/my/project/libs1\" \"/my/project/libs2\" ...))
-</code>
+})
 
 
 <h4>Advanced Options</h4>
 
 <p>If some module causes errors that are not handled gracefully, you can mark
-it as a <tt>:problem-module</tt> so that it will not be simplified.  For
+it as a @(':problem-module') so that it will not be simplified.  For
 instance,</p>
 
-<code>
+@({
  (defmodules foo
     :start-files (list \"foo_control.v\" \"foo_datapath.v\")
     :problem-modules (list \"bad_module_1\" \"bad_module_2\"))
-</code>
+})
 
 <p>The other options taken by @(see vl-simplify) and @(see vl-load) are given
 sensible defaults that are not currently configurable.  We may add these

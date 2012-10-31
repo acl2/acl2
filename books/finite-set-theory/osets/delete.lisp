@@ -18,18 +18,17 @@
 
 (defsection delete
   :parents (osets)
-  :short "@(call delete) removes the element <tt>a</tt> from the set
-<tt>X</tt>."
+  :short "@(call delete) removes the element @('a') from the set @('X')."
 
-  :long "<p>If <tt>a</tt> is not a member of <tt>X</tt>, then the result is
-just <tt>X</tt> itself.</p>
+  :long "<p>If @('a') is not a member of @('X'), then the result is just @('X')
+itself.</p>
 
-<p>Efficiency note.  Delete is <tt>O(n)</tt>.  It is very inefficient to call
-it repeatedly.  Instead, consider removing multiple elements with @(see
+<p>Efficiency note.  Delete is @('O(n)').  It is very inefficient to call it
+repeatedly.  Instead, consider removing multiple elements with @(see
 difference) or @(see intersect).</p>
 
-<p>The theorem <tt>delete-in</tt> is the essential correctness property for
-<tt>delete</tt>.</p>"
+<p>The theorem @('delete-in') is the essential correctness property for
+@('delete').</p>"
 
   (defun delete (a X)
     (declare (xargs :guard (setp X)

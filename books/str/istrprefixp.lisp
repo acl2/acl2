@@ -46,16 +46,17 @@
 (defsection istrprefixp
   :parents (substrings)
   :short "Case-insensitive string prefix test."
-  :long "<p>@(call istrprefixp) determines if the string <tt>x</tt> is a
-case-insensitive prefix of the string <tt>y</tt>.</p>
+
+  :long "<p>@(call istrprefixp) determines if the string @('x') is a
+case-insensitive prefix of the string @('y').</p>
 
 <p>Logically, this is identical to</p>
-<code>
+@({
   (iprefixp (coerce x 'list) (coerce y 'list))
-</code>
+})
 
-<p>But we use a more efficient implementation which avoids coercing the
-strings to lists.</p>"
+<p>But we use a more efficient implementation which avoids coercing the strings
+to lists.</p>"
 
   (defund istrprefixp-impl (x y xn yn xl yl)
     (declare (type string x)

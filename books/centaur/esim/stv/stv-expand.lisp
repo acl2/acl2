@@ -91,8 +91,8 @@
   :parents (stv-expand)
   :short "Match a Verilog-style wire name, bit-select, or part-select."
 
-  :long "<p><b>Signature:</b> @(call stv-wirename-parse) returns <tt>(mv
-basename msb-idx lsb-idx)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call stv-wirename-parse) returns @('(mv
+basename msb-idx lsb-idx)').</p>
 
 <p>Examples:</p>
 
@@ -154,14 +154,14 @@ bus, or</li>
 <li>An explicit list of E bits (in LSB-first order).</li>
 </ul>
 
-<p>This function is given <tt>x</tt>, the actual name that occurs on such a
-line.  Our goal is to convert <tt>x</tt> into the explicit bit list form.  If
-<tt>x</tt> is already a list of bits then this is trivial.  Otherwise, we have
-to look it up in the module.</p>
+<p>This function is given @('x'), the actual name that occurs on such a line.
+Our goal is to convert @('x') into the explicit bit list form.  If @('x') is
+already a list of bits then this is trivial.  Otherwise, we have to look it up
+in the module.</p>
 
-<p>Type is either <tt>:i</tt> or <tt>:o</tt> and says whether this should be
-the name of an input or output, and <tt>mod</tt> is the whole E module so that
-we can look up its inputs and outputs.</p>
+<p>Type is either @(':i') or @(':o') and says whether this should be the name
+of an input or output, and @('mod') is the whole E module so that we can look
+up its inputs and outputs.</p>
 
 <p>We do basic error checking to make sure that the name refers to valid input
 or output bits.</p>"
@@ -336,8 +336,8 @@ of STV :input or :output lines."
   :short "Match a Verilog-style plain or hierarchical name, perhaps with a bit-
 or part-select on the end of it."
 
-  :long "<p><b>Signature:</b> @(call stv-hid-parse) returns <tt>(mv
-instnames wirename msb-idx lsb-idx)</tt></p>
+  :long "<p><b>Signature:</b> @(call stv-hid-parse) returns @('(mv instnames
+wirename msb-idx lsb-idx)')</p>
 
 <p>This is sort of misnamed because it works for normal identifiers as well as
 hierarchical identifiers.</p>
@@ -345,10 +345,10 @@ hierarchical identifiers.</p>
 <p>Examples:</p>
 
 <ul>
- <li>\"foo[3]\" becomes <tt>(mv nil \"foo\" 3 3)</tt></li>
- <li>\"foo.bar.baz\" becomes <tt>(mv '(\"foo\" \"bar\") \"baz\" nil nil)</tt></li>
- <li>\"foo.bar.baz[3]\" becomes <tt>(mv '(\"foo\" \"bar\") \"baz\" 3 3)</tt></li>
- <li>\"foo.bar.baz[3:0]\" becomes <tt>(mv '(\"foo\" \"bar\") \"baz\" 3 0)</tt></li>
+ <li>\"foo[3]\" becomes @('(mv nil \"foo\" 3 3)')</li>
+ <li>\"foo.bar.baz\" becomes @('(mv '(\"foo\" \"bar\") \"baz\" nil nil)')</li>
+ <li>\"foo.bar.baz[3]\" becomes @('(mv '(\"foo\" \"bar\") \"baz\" 3 3)')</li>
+ <li>\"foo.bar.baz[3:0]\" becomes @('(mv '(\"foo\" \"bar\") \"baz\" 3 0)')</li>
 </ul>
 
 <p>If the input string name isn't of an acceptable form, an error is
@@ -439,12 +439,11 @@ in the sense of @(see acl2::mod-internal-paths).</p>
 
 <ul>
 
-<li><tt>x</tt> is a string like <tt>foo</tt>, <tt>foo[3:0]</tt>,
-<tt>foo.bar.baz</tt>, <tt>foo.bar.baz[3]</tt>, etc.  That is, it should either
-be a plain or hierarchical Verilog identifier, perhaps with a bit or
-part-select on the end.</li>
+<li>@('x') is a string like @('foo'), @('foo[3:0]'), @('foo.bar.baz'),
+@('foo.bar.baz[3]'), etc.  That is, it should either be a plain or hierarchical
+Verilog identifier, perhaps with a bit or part-select on the end.</li>
 
-<li><tt>mod</tt> is the E module that X is based in.</li>
+<li>@('mod') is the E module that X is based in.</li>
 
 </ul>"
 

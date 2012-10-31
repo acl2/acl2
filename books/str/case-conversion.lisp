@@ -26,15 +26,17 @@
 
 (in-package "STR")
 (include-book "char-case")
-(local (include-book "unicode/rev" :dir :system))
+(include-book "cat")
 (local (include-book "arithmetic"))
-
+(local (include-book "unicode/rev" :dir :system))
+(local (include-book "unicode/coerce" :dir :system))
+(local (include-book "unicode/take" :dir :system))
+(local (include-book "unicode/nthcdr" :dir :system))
+(local (include-book "subseq"))
 
 (local (defthm append-singleton-crock
          (equal (append (append a (list x)) y)
                 (append a (cons x y)))))
-
-
 
 (defsection upcase-charlist
   :parents (case-conversion)
@@ -43,13 +45,13 @@
   :long "<p>@(call upcase-charlist) maps @(see upcase-char) across a character
 list.</p>
 
-<p>ACL2 has a built-in alternative to this function, <tt>string-upcase1</tt>,
-but it is irritating to use because it has @(see standard-char-p) guards.  In
-contrast, <tt>upcase-charlist</tt> works on arbitrary characters.</p>
+<p>ACL2 has a built-in alternative to this function, @('string-upcase1'), but
+it is irritating to use because it has @(see standard-char-p) guards.  In
+contrast, @('upcase-charlist') works on arbitrary characters.</p>
 
-<p>For sometimes-better performance, we avoid consing and simply return
-<tt>x</tt> unchanged when it has no characters that need to be converted.  Of
-course, deciding whether some conversion is necessary will marginally slow this
+<p>For sometimes-better performance, we avoid consing and simply return @('x')
+unchanged when it has no characters that need to be converted.  Of course,
+deciding whether some conversion is necessary will marginally slow this
 function down when some conversion is necessary, but we think the gain of not
 consing outweighs this.  At any rate, this optimization does not affect the
 logical definition.</p>"
@@ -125,13 +127,13 @@ logical definition.</p>"
   :long "<p>@(call downcase-charlist) maps @(see downcase-char) across a
 character list.</p>
 
-<p>ACL2 has a built-in alternative to this function, <tt>string-downcase1</tt>,
-but it is irritating to use because it has @(see standard-char-p) guards.  In
-contrast, <tt>downcase-charlist</tt> works on arbitrary characters.</p>
+<p>ACL2 has a built-in alternative to this function, @('string-downcase1'), but
+it is irritating to use because it has @(see standard-char-p) guards.  In
+contrast, @('downcase-charlist') works on arbitrary characters.</p>
 
-<p>For sometimes-better performance, we avoid consing and simply return
-<tt>x</tt> unchanged when it has no characters that need to be converted.  Of
-course, deciding whether some conversion is necessary will marginally slow this
+<p>For sometimes-better performance, we avoid consing and simply return @('x')
+unchanged when it has no characters that need to be converted.  Of course,
+deciding whether some conversion is necessary will marginally slow this
 function down when some conversion is necessary, but we think the gain of not
 consing outweighs this.  At any rate, this optimization does not affect the
 logical definition.</p>"
@@ -207,22 +209,22 @@ by transforming each of its characters with @(see upcase-char).</p>
 
 <p>ACL2 has a built-in alternative to this function, @(see
 acl2::string-upcase), but it is irritating to use because it has @(see
-standard-char-p) guards.  In contrast, <tt>upcase-string</tt> works on strings
-with arbitrary characters.</p>
+standard-char-p) guards.  In contrast, @('upcase-string') works on strings with
+arbitrary characters.</p>
 
 <p>We try to make this fast.  For better performance, we avoid consing and
-simply return <tt>x</tt> unchanged when it has no characters that need to be
+simply return @('x') unchanged when it has no characters that need to be
 converted.  Of course, deciding whether some conversion is necessary will
 marginally slow this function down when some conversion is necessary, but we
 think the gain of not consing outweighs this.  At any rate, this optimization
 does not affect the logical definition.</p>
 
-<p>Despite trying to make this fast, the builtin <tt>string-upcase</tt> can
-really outperform us since it doesn't have to build the intermediate list, etc.
-It's really a shame that <tt>string-upcase</tt> has such a terrible guard.
-Well, at least we're better when no work needs to be done:</p>
+<p>Despite trying to make this fast, the builtin @('string-upcase') can really
+outperform us since it doesn't have to build the intermediate list, etc.  It's
+really a shame that @('string-upcase') has such a terrible guard.  Well, at
+least we're better when no work needs to be done:</p>
 
-<code>
+@({
     (time (loop for i fixnum from 1 to 1000000 do
             (str::upcase-string \"Hello, World!\")))  ;; 1.2 seconds, 336 MB
     (time (loop for i fixnum from 1 to 1000000 do
@@ -232,7 +234,7 @@ Well, at least we're better when no work needs to be done:</p>
             (str::upcase-string \"HELLO, WORLD!\")))  ;; .15 seconds, 0 MB
     (time (loop for i fixnum from 1 to 1000000 do
             (string-upcase \"HELLO, WORLD!\")))       ;; .23 seconds, 64 MB
-</code>"
+})"
 
   (defund string-has-some-down-alpha-p (x n xl)
     (declare (type string x)
@@ -335,8 +337,8 @@ downcase-char).</p>
 
 <p>ACL2 has a built-in alternative to this function, @(see
 acl2::string-downcase), but it is irritating to use because it has @(see
-standard-char-p) guards.  In contrast, <tt>downcase-string</tt> works on
-strings with arbitrary characters.</p>
+standard-char-p) guards.  In contrast, @('downcase-string') works on strings
+with arbitrary characters.</p>
 
 <p>See also @(see upcase-string), which has more discussion on how we try to
 make this fast.</p>"
@@ -501,4 +503,147 @@ make this fast.</p>"
 
   (verify-guards downcase-string-list))
 
+
+
+(defsection upcase-first-charlist
+  :parents (case-conversion)
+  :short "Convert the first character of a character list to upper case."
+
+  (defund upcase-first-charlist (x)
+    (declare (xargs :guard (character-listp x)))
+    (mbe :logic
+         (if (atom x)
+             nil
+           (cons (upcase-char (car x)) (cdr x)))
+         :exec
+         (cond ((atom x)
+                nil)
+               ((down-alpha-p (car x))
+                (cons (upcase-char (car x)) (cdr x)))
+               (t
+                x))))
+
+  (local (in-theory (enable upcase-first-charlist)))
+
+  (defthm upcase-first-charlist-when-atom
+    (implies (atom x)
+             (equal (upcase-first-charlist x)
+                    nil)))
+
+  (defthm character-listp-of-upcase-first-charlist
+    (implies (character-listp x)
+             (character-listp (upcase-first-charlist x))))
+
+  (defthm len-of-upcase-first-charlist
+    (equal (len (upcase-first-charlist x))
+           (len x))))
+
+
+
+(defsection upcase-first
+  :parents (case-conversion)
+  :short "Convert the first character of a string to upper case."
+
+  :long "<p>@(call upcase-first) returns a copy of the string @('x') except
+that the first character is upcased using @(see upcase-char).  If the string is
+empty, we return it unchanged.</p>
+
+<p>For sometimes-better performance, we avoid consing and simply return @('x')
+unchanged when its first character is not a lower-case letter.</p>"
+
+  (defund upcase-first (x)
+    (declare (type string x)
+             (xargs :verify-guards nil))
+    (mbe :logic
+         (coerce (upcase-first-charlist (coerce x 'list)) 'string)
+         :exec
+         (if (eql (length x) 0)
+             x
+           (let ((c (char x 0)))
+             (if (down-alpha-p c)
+                 (cat (upcase-char-str c) (subseq x 1 nil))
+               x)))))
+
+  (local (in-theory (enable upcase-first-charlist
+                            upcase-first
+                            subseq
+                            subseq-list)))
+
+  (verify-guards upcase-first)
+
+  (defthm stringp-of-upcase-first
+    (stringp (upcase-first x))
+    :rule-classes :type-prescription))
+
+
+
+
+(defsection downcase-first-charlist
+  :parents (case-conversion)
+  :short "Convert the first character of a character list to downper case."
+
+  (defund downcase-first-charlist (x)
+    (declare (xargs :guard (character-listp x)))
+    (mbe :logic
+         (if (atom x)
+             nil
+           (cons (downcase-char (car x)) (cdr x)))
+         :exec
+         (cond ((atom x)
+                nil)
+               ((up-alpha-p (car x))
+                (cons (downcase-char (car x)) (cdr x)))
+               (t
+                x))))
+
+  (local (in-theory (enable downcase-first-charlist)))
+
+  (defthm downcase-first-charlist-when-atom
+    (implies (atom x)
+             (equal (downcase-first-charlist x)
+                    nil)))
+
+  (defthm character-listp-of-downcase-first-charlist
+    (implies (character-listp x)
+             (character-listp (downcase-first-charlist x))))
+
+  (defthm len-of-downcase-first-charlist
+    (equal (len (downcase-first-charlist x))
+           (len x))))
+
+
+(defsection downcase-first
+  :parents (case-conversion)
+  :short "Convert the first character of a string to downper case."
+
+  :long "<p>@(call downcase-first) returns a copy of the string @('x') except
+that the first character is downcased using @(see downcase-char).  If the
+string is empty, we return it unchanged.</p>
+
+<p>For sometimes-better performance, we avoid consing and simply return @('x')
+unchanged when its first character is not an upper-case letter.</p>"
+
+  (defund downcase-first (x)
+    (declare (type string x)
+             (xargs :verify-guards nil))
+    (mbe :logic
+         (coerce (downcase-first-charlist (coerce x 'list)) 'string)
+         :exec
+         (if (eql (length x) 0)
+             x
+           (let ((c (char x 0)))
+             (if (up-alpha-p c)
+                 (cat (downcase-char-str c) (subseq x 1 nil))
+               x)))))
+
+  (local (in-theory (enable downcase-first-charlist
+                            downcase-first
+                            subseq
+                            subseq-list)))
+
+  (verify-guards downcase-first)
+
+  (defthm stringp-of-downcase-first
+    (stringp (downcase-first x))
+    :rule-classes :type-prescription))
 

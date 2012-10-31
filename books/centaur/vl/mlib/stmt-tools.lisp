@@ -188,33 +188,20 @@
 
 (defsection if-statements
   :parents (vl-stmt-p)
-  :short "Utilities for manipulating <tt>if</tt> statements."
+  :short "Utilities for manipulating @('if') statements."
 
   :long "<p>These functions allow you to conveniently construct and access
-parts of <tt>if</tt> statements without needing to know the details of their
+parts of @('if') statements without needing to know the details of their
 representation.</p>
 
 <h4>General Form:</h4>
 
-<code>
-if (&lt;condition&gt;)
-   &lt;truebranch&gt;
+@({
+if (<condition>)
+   <truebranch>
 else
-   &lt;falsebranch&gt;
-</code>
-
-<h3>Constructor</h3>
-
-  @(def vl-ifstmt)
-
-<p>We also provide <tt>make-vl-ifstmt</tt>, an @(see defaggregate)-style
-macro for invoking this constructor.</p>
-
-<h3>Accessors</h3>
-
-  @(def vl-ifstmt->condition)
-  @(def vl-ifstmt->truebranch)
-  @(def vl-ifstmt->falsebranch)"
+   <falsebranch>
+})"
 
   (defthmd vl-compoundstmt-parts-when-vl-ifstmt
     ;; Just the natural consequence of basic-checks for if statements.
@@ -371,35 +358,23 @@ macro for invoking this constructor.</p>
 
 (defsection while-statements
   :parents (vl-stmt-p)
-  :short "Utilities for manipulating <tt>while</tt> statements."
+  :short "Utilities for manipulating @('while') statements."
 
   :long "<p>These functions allow you to conveniently construct and access
-parts of <tt>while</tt> statements without needing to know the details of their
+parts of @('while') statements without needing to know the details of their
 representation.</p>
 
 <h4>General Form:</h4>
 
-<code>
-while (&lt;condition&gt;)
-   &lt;body&gt;
-</code>
+@({
+while (<condition>)
+   <body>
+})
 
 <p>See Section 9.6 (page 130).  The semantics are like those of while loops in
 C; <i>body</i> is executed until <i>condition</i> becomes false.  If
 <i>condition</i> is false to begin with, then <i>body</i> is not executed at
-all.</p>
-
-<h3>Constructor</h3>
-
-  @(def vl-whilestmt)
-
-<p>We also provide <tt>make-vl-whilestmt</tt>, an @(see defaggregate)-style
-macro for invoking this constructor.</p>
-
-<h3>Accessors</h3>
-
-  @(def vl-whilestmt->condition)
-  @(def vl-whilestmt->body)"
+all.</p>"
 
   (defthmd vl-compoundstmt-parts-when-vl-whilestmt
     ;; Just the natural consequence of basic-checks for if statements.
@@ -518,35 +493,23 @@ macro for invoking this constructor.</p>
 
 (defsection repeat-statements
   :parents (vl-stmt-p)
-  :short "Utilities for manipulating <tt>repeat</tt> statements."
+  :short "Utilities for manipulating @('repeat') statements."
 
   :long "<p>These functions allow you to conveniently construct and access
-parts of <tt>repeat</tt> statements without needing to know the details of their
+parts of @('repeat') statements without needing to know the details of their
 representation.</p>
 
 <h4>General Form:</h4>
 
-<code>
-repeat (&lt;condition&gt;)
-   &lt;body&gt;
-</code>
+@({
+repeat (<condition>)
+   <body>
+})
 
 <p>See Section 9.6 (page 130).  The <i>condition</i> is presumably evaluated to
 a natural number, and then <i>body</i> is executed that many times.  If the
-expression evaluates to <tt>X</tt> or <tt>Z</tt>, it is supposed to be treated
-as zero and the statement is not executed at all.  (What a crock!)</p>
-
-<h3>Constructor</h3>
-
-  @(def vl-repeatstmt)
-
-<p>We also provide <tt>make-vl-repeatstmt</tt>, an @(see defaggregate)-style
-macro for invoking this constructor.</p>
-
-<h3>Accessors</h3>
-
-  @(def vl-repeatstmt->condition)
-  @(def vl-repeatstmt->body)"
+expression evaluates to @('X') or @('Z'), it is supposed to be treated as zero
+and the statement is not executed at all.  (What a crock!)</p>"
 
   (defthmd vl-compoundstmt-parts-when-vl-repeatstmt
     ;; Just the natural consequence of basic-checks for if statements.
@@ -665,36 +628,25 @@ macro for invoking this constructor.</p>
 
 (defsection wait-statements
   :parents (vl-stmt-p)
-  :short "Utilities for manipulating <tt>wait</tt> statements."
+  :short "Utilities for manipulating @('wait') statements."
 
   :long "<p>These functions allow you to conveniently construct and access
-parts of <tt>wait</tt> statements without needing to know the details of their
+parts of @('wait') statements without needing to know the details of their
 representation.</p>
 
 <h4>General Form:</h4>
 
-<code>
-wait (&lt;condition&gt;)
-   &lt;body&gt;
-</code>
+@({
+wait (<condition>)
+   <body>
+})
 
-<p>See Section 9.7.6 (page 136).  The wait statement first evaluates <i>condition</i>.
-If the result is true, <i>body</i> is executed.  Otherwise, this flow of execution
-blocks until <i>condition</i> becomes 1, at which point it resumes and <i>body</i>
-is executed.  There is no discussion of what happens when the <i>condition</i> is
-X or Z.  I would guess it is treated as 0 like in if statements, but who knows.</p>
-
-<h3>Constructor</h3>
-
-  @(def vl-waitstmt)
-
-<p>We also provide <tt>make-vl-waitstmt</tt>, an @(see defaggregate)-style
-macro for invoking this constructor.</p>
-
-<h3>Accessors</h3>
-
-  @(def vl-waitstmt->condition)
-  @(def vl-waitstmt->body)"
+<p>See Section 9.7.6 (page 136).  The wait statement first evaluates
+<i>condition</i>.  If the result is true, <i>body</i> is executed.  Otherwise,
+this flow of execution blocks until <i>condition</i> becomes 1, at which point
+it resumes and <i>body</i> is executed.  There is no discussion of what happens
+when the <i>condition</i> is X or Z.  I would guess it is treated as 0 like in
+if statements, but who knows.</p>"
 
   (defthmd vl-compoundstmt-parts-when-vl-waitstmt
     ;; Just the natural consequence of basic-checks for if statements.
@@ -812,31 +764,20 @@ macro for invoking this constructor.</p>
 
 (defsection forever-statements
   :parents (vl-stmt-p)
-  :short "Utilities for manipulating <tt>forever</tt> statements."
+  :short "Utilities for manipulating @('forever') statements."
 
   :long "<p>These functions allow you to conveniently construct and access
-parts of <tt>forever</tt> statements without needing to know the details of their
+parts of @('forever') statements without needing to know the details of their
 representation.</p>
 
 <h4>General Form:</h4>
 
-<code>
-forever &lt;body&gt;;
-</code>
+@({
+forever <body>;
+})
 
 <p>See Section 9.6 (page 130).  The forever statement continuously executes
-<i>body</i>.</p>
-
-<h3>Constructor</h3>
-
-  @(def vl-foreverstmt)
-
-<p>We also provide <tt>make-vl-foreverstmt</tt>, an @(see defaggregate)-style
-macro for invoking this constructor.</p>
-
-<h3>Accessors</h3>
-
-  @(def vl-foreverstmt->body)"
+<i>body</i>.</p>"
 
   (defthmd vl-compoundstmt-parts-when-vl-foreverstmt
     ;; Just the natural consequence of basic-checks for if statements.
@@ -927,41 +868,25 @@ macro for invoking this constructor.</p>
 
 (defsection for-statements
   :parents (vl-stmt-p)
-  :short "Utilities for manipulating <tt>for</tt> statements."
+  :short "Utilities for manipulating @('for') statements."
 
   :long "<p>These functions allow you to conveniently construct and access
-parts of <tt>for</tt> statements without needing to know the details of their
+parts of @('for') statements without needing to know the details of their
 representation.</p>
 
 <h4>General Form:</h4>
 
-<code>
-for( &lt;initlhs&gt; = &lt;initrhs&gt; ; &lt;test&gt; ; &lt;nextlhs&gt; = &lt;nextrhs&gt; )
-   &lt;body&gt;
-</code>
+@({
+for( <initlhs> = <initrhs> ; <test> ; <nextlhs> = <nextrhs> )
+   <body>
+})
 
 <p>See Section 9.6 (page 130).  The wait statement acts like a while-statement
-in C.  First, outside the loop, it executes the assignment <tt>initlhs =
-initrhs</tt>.  Then it evalutes <i>test</i>.  If <i>test</i> evaluates to
-zero (or to X or Z) then the loop exists.  Otherwise, <i>body</i> is executed,
-the assignment <tt>nextlhs = nextrhs</tt> is performed, and we loop back to
-evaluating <i>test</i>.</p>
-
-<h3>Constructor</h3>
-
-  @(def vl-forstmt)
-
-<p>We also provide <tt>make-vl-forstmt</tt>, an @(see defaggregate)-style
-macro for invoking this constructor.</p>
-
-<h3>Accessors</h3>
-
-  @(def vl-forstmt->initlhs)
-  @(def vl-forstmt->initrhs)
-  @(def vl-forstmt->test)
-  @(def vl-forstmt->nextlhs)
-  @(def vl-forstmt->nextrhs)
-  @(def vl-forstmt->body)"
+in C.  First, outside the loop, it executes the assignment @('initlhs =
+initrhs').  Then it evalutes <i>test</i>.  If <i>test</i> evaluates to zero (or
+to X or Z) then the loop exists.  Otherwise, <i>body</i> is executed, the
+assignment @('nextlhs = nextrhs') is performed, and we loop back to evaluating
+<i>test</i>.</p>"
 
   (defthmd vl-compoundstmt-parts-when-vl-forstmt
     ;; Just the natural consequence of basic-checks for if statements.
@@ -1214,8 +1139,8 @@ macro for invoking this constructor.</p>
 
 (defsection block-statements
   :parents (vl-stmt-p)
-  :short "Utilities for manipulating sequential block (i.e., <tt>begin
-... end</tt>, or <tt>fork ... join</tt>) statements."
+  :short "Utilities for manipulating sequential block (i.e., @('begin
+... end'), or @('fork ... join')) statements."
 
   :long "<p>These functions allow you to conveniently construct and access
 parts of block statements without needing to know the details of their
@@ -1223,19 +1148,19 @@ representation.</p>
 
 <h4>General Form:</h4>
 
-<code>
-begin [ : &lt;name&gt; &lt;declarations&gt; ]
-  &lt;statements&gt;
+@({
+begin [ : <name> <declarations> ]
+  <statements>
 end
 
-fork [ :&lt;name&gt; &lt;declarations&gt; ]
-  &lt;statements&gt;
+fork [ :<name> <declarations> ]
+  <statements>
 join
-</code>
+})
 
 <p>See Section 9.8.  The difference betwen the two kinds of blocks is that in a
-<tt>begin/end</tt> block, statements are to be executed in order, whereas in a
-<tt>fork/join</tt> block, statements are executed simultaneously.</p>
+@('begin/end') block, statements are to be executed in order, whereas in a
+@('fork/join') block, statements are executed simultaneously.</p>
 
 <p>Blocks that are named can have local declarations, and can be referenced by
 other statements (e.g., disable statements).  With regards to declarations:
@@ -1246,21 +1171,7 @@ them.\"</p>
 <p>A further remark is that \"Block names give a means of uniquely identifying
 all variables at any simulation time.\" This seems to suggest that one might
 try to flatten all of the declarations in a module by, e.g., prepending the
-block name to each variable name.</p>
-
-<h3>Constructor</h3>
-
-  @(def vl-blockstmt)
-
-<p>We also provide <tt>make-vl-blockstmt</tt>, an @(see defaggregate)-style
-macro for invoking this constructor.</p>
-
-<h3>Accessors</h3>
-
-  @(def vl-blockstmt->sequentialp)
-  @(def vl-blockstmt->name)
-  @(def vl-blockstmt->decls)
-  @(def vl-blockstmt->stmts)"
+block name to each variable name.</p>"
 
   (defthmd vl-compoundstmt-parts-when-vl-blockstmt
     ;; Just the natural consequence of basic-checks for if statements.
@@ -1457,29 +1368,17 @@ representation.</p>
 
 <h4>General Form:</h4>
 
-<code>
-&lt;ctrl&gt; &lt;body&gt;
-</code>
+@({
+<ctrl> <body>
+})
 
 <h4>Examples:</h4>
 
-<code>
+@({
 #3 foo = bar;
 @@(posedge clk) foo = bar;
 @@(bar or baz) foo = bar | baz;
-</code>
-
-<h3>Constructor</h3>
-
-  @(def vl-timingstmt)
-
-<p>We also provide <tt>make-vl-timingstmt</tt>, an @(see defaggregate)-style
-macro for invoking this constructor.</p>
-
-<h3>Accessors</h3>
-
-  @(def vl-timingstmt->ctrl)
-  @(def vl-timingstmt->body)"
+})"
 
   (defthmd vl-compoundstmt-parts-when-vl-timingstmt
     ;; Just the natural consequence of basic-checks for if statements.
@@ -1598,23 +1497,23 @@ macro for invoking this constructor.</p>
 
 (defsection case-statements
   :parents (vl-stmt-p)
-  :short "Utilities for manipulating <tt>case</tt> statements."
+  :short "Utilities for manipulating @('case') statements."
 
   :long "<p>These functions allow you to conveniently construct and access
-parts of <tt>case</tt> statements without needing to know the details of their
+parts of @('case') statements without needing to know the details of their
 representation.</p>
 
 <h4>General Form:</h4>
 
-<code>
-case ( &lt;test&gt; )
-   &lt;match-1&gt; : &lt;body-1&gt;
-   &lt;match-2&gt; : &lt;body-2&gt;
+@({
+case ( <test> )
+   <match-1> : <body-1>
+   <match-2> : <body-2>
    ...
-   &lt;match-N&gt; : &lt;body-N&gt;
-   default : &lt;default-body&gt;
+   <match-N> : <body-N>
+   default : <default-body>
 endcase
-</code>
+})
 
 <p>Note that in Verilog, case statements can include multiple <i>match</i>
 expressions on the same line, but our parser splits these up into separate
@@ -1625,39 +1524,23 @@ statement.</p>
 <p>Case statements are discussed in Section 9.5 (page 127).  There are three
 kinds of case statements, which we identify with @(see vl-casetype-p).</p>
 
-<h3>Constructor</h3>
-
-  @(def vl-casestmt)
-
-<p>We also provide <tt>make-vl-casestmt</tt>, an @(see defaggregate)-style
-macro for invoking this constructor.</p>
-
-<h3>Accessors</h3>
-
 <ul>
 
- <li><tt>vl-casestmt-&gt;casetype</tt> returns the case type (i.e., <tt>case</tt>,
- <tt>casex</tt>, or <tt>casez</tt>); see @(see vl-casetype-p).</li>
+<li>@('vl-casestmt->casetype') returns the case type (i.e., @('case'),
+@('casex'), or @('casez')); see @(see vl-casetype-p).</li>
 
- <li><tt>vl-casestmt-&gt;test</tt> returns the <i>test</i> expression.</li>
+<li>@('vl-casestmt->test') returns the <i>test</i> expression.</li>
 
- <li><tt>vl-casestmt-&gt;default</tt> returns the <i>default-body</i>
- statement.</li>
+<li>@('vl-casestmt->default') returns the <i>default-body</i> statement.</li>
 
- <li><tt>vl-casestmt-&gt;exprs</tt> returns a list of
-expressions, (<i>match-1</i> ...  <i>match-N</i>).</li>
+<li>@('vl-casestmt->exprs') returns a list of expressions, (<i>match-1</i> ...
+<i>match-N</i>).</li>
 
- <li><tt>vl-casestmt-&gt;bodies</tt> returns a list of bodies that go along
-with the match expressions; note that the <i>default-body</i> is NOT included
-in this list.</li>
+<li>@('vl-casestmt->bodies') returns a list of bodies that go along with the
+match expressions; note that the <i>default-body</i> is NOT included in this
+list.</li>
 
-</ul>
-
-  @(def vl-casestmt->casetype)
-  @(def vl-casestmt->test)
-  @(def vl-casestmt->default)
-  @(def vl-casestmt->exprs)
-  @(def vl-casestmt->bodies)"
+</ul>"
 
   (defthmd vl-compoundstmt-parts-when-vl-casestmt
     ;; Just the natural consequence of basic-checks for if statements.

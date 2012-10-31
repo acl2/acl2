@@ -40,39 +40,43 @@ notably the representation of module input and output lists.</p>
 <p>A definition for patterns is:</p>
 
 <ul>
-<li><tt>NIL</tt> is a special, empty pattern</li>
+
+<li>@('NIL') is a special, empty pattern</li>
+
 <li>Any non-nil atom is a <b>pattern variable</b> (a kind of pattern), and</li>
+
 <li>A cons of two patterns is a pattern.</li>
+
 </ul>
 
 <p>This means that any ACL2 object is a pattern, but here is perhaps a typical
 example of a pattern:</p>
 
-<code>
+@({
  (a (b0 b1) (c (d0 d1) e))    ;; example pattern
-</code>
+})
 
 <p>We say that this pattern is <b>compatible</b> with certain other ACL2
 objects that have a similar cons structure, such as:</p>
 
-<code>
+@({
  (1 (2 3) (4 (5 6) 7))        ;; example data
-</code>
+})
 
 <p>The general idea is that the example data \"fits\" into the pattern by
 saying:</p>
 
-<code>
+@({
   a = 1   b0 = 2   c = 4   d0 = 5   e = 7
           b1 = 3           d1 = 6
-</code>
+})
 
 <p>Another way of thinking about patterns is as follows.  Consider an alist
-like <tt>((a . 1) (b . 2) (c . 3))</tt>.  It is often convenient to have the
-keys and values together.  But if you remember that your keys are <tt>(a b
-c)</tt>, then you could separately work with your values, <tt>(1 2 3)</tt>.
-This is the basic idea behind patterns, except that the keys and values can be
-structured instead of just being lists.</p>
+like @('((a . 1) (b . 2) (c . 3))').  It is often convenient to have the keys
+and values together.  But if you remember that your keys are @('(a b c)'), then
+you could separately work with your values, @('(1 2 3)').  This is the basic
+idea behind patterns, except that the keys and values can be structured instead
+of just being lists.</p>
 
 <p>This is a little awkward, and it would probably usually be better to just
 work with alists everywhere.</p>")
@@ -80,8 +84,8 @@ work with alists everywhere.</p>")
 
 (defsection data-for-patternp
   :parents (patterns)
-  :short "@(call data-for-patternp) determines whether <tt>data</tt> is
-compatible with the pattern <tt>pat</tt>."
+  :short "@(call data-for-patternp) determines whether @('data') is compatible
+with the pattern @('pat')."
 
   (defun data-for-patternp (pat data)
     (declare (xargs :guard t))
@@ -96,8 +100,8 @@ compatible with the pattern <tt>pat</tt>."
 
 (defsection similar-patternsp
   :parents (patterns)
-  :short "@(call similar-patternsp) determines whether <tt>pat1</tt> and
-<tt>pat2</tt> are compatible with the same data."
+  :short "@(call similar-patternsp) determines whether @('pat1') and @('pat2')
+are compatible with the same data."
 
   (defun similar-patternsp (pat1 pat2)
     (declare (xargs :guard t))
@@ -125,24 +129,24 @@ compatible with the pattern <tt>pat</tt>."
 
 (defsection pat->al
   :parents (patterns)
-  :short "@(call pat->al) extends the alist <tt>al</tt> by associating the
-variables from <tt>pat</tt> with the data from <tt>data</tt>."
+  :short "@(call pat->al) extends the alist @('al') by associating the
+variables from @('pat') with the data from @('data')."
 
   :long "<p>The cars of the new pairs are precisely all the non-NIL atoms of
-the pattern <tt>pat</tt>.  The cdrs of the new pairs are the objects at
-corresponding locations in <tt>data</tt>.  For instance,</p>
+the pattern @('pat').  The cdrs of the new pairs are the objects at
+corresponding locations in @('data').  For instance,</p>
 
-<code>
-   (pat-&gt;al '(a (b) (c d))
+@({
+   (pat->al '(a (b) (c d))
              '(1 (2) (3 4))
              nil)
-     --&gt;
+     -->
    ((a . 1) (b . 2) (c . 3) (d . 4))
-</code>
+})
 
-<p>The alist is extended with ordinary <tt>cons</tt> operations; that is, it
-probably doesn't make much sense for <tt>al</tt> to be a fast alist, because
-the new alist won't be fast.  See @(see pat->fal) for an alternative.</p>"
+<p>The alist is extended with ordinary @('cons') operations; that is, it
+probably doesn't make much sense for @('al') to be a fast alist, because the
+new alist won't be fast.  See @(see pat->fal) for an alternative.</p>"
 
   (defun pat->al (pat data al)
     (declare (xargs :guard (data-for-patternp pat data)))
@@ -180,7 +184,7 @@ the new alist won't be fast.  See @(see pat->fal) for an alternative.</p>"
 (defsection pat->fal
   :parents (patterns)
   :short "Alternative to @(see pat->al) that generates a fast alist."
-  :long "<p>The input <tt>al</tt> also needs to be fast.</p>"
+  :long "<p>The input @('al') also needs to be fast.</p>"
 
   (defun pat->fal (pat data al)
     (declare (xargs :guard (data-for-patternp pat data)))
@@ -198,20 +202,20 @@ the new alist won't be fast.  See @(see pat->fal) for an alternative.</p>"
 (defsection al->pat
   :parents (patterns)
   :short "@(call al->pat) builds a new data object that is compatible with
-<tt>pat</tt>, using the data from <tt>al</tt> and providing the <tt>default</tt>
-value for missing keys."
+@('pat'), using the data from @('al') and providing the @('default') value for
+missing keys."
 
   :long "<p>For instance,</p>
 
-<code>
- (al-&gt;pat '((a (b c)) d)
+@({
+ (al->pat '((a (b c)) d)
           '((a . 1) (b . 2) (d . 4))
           'oops)
-   --&gt;
+   -->
  ((1 (2 oops)) 4)
-</code>
+})
 
-<p>Note that <tt>al</tt> should be a fast alist.</p>"
+<p>Note that @('al') should be a fast alist.</p>"
 
   (defun al->pat (pat al default)
     (declare (xargs :guard t))
@@ -239,17 +243,17 @@ value for missing keys."
 (defsection pat-flatten
   :parents (patterns)
   :short "Flatten a pattern into a list of atoms (with an accumulator)."
-  :long "<p>@(call pat-flatten) flattens <tt>pat</tt>, appending its atoms onto
-<tt>acc</tt>, in order.  For instance,</p>
+  :long "<p>@(call pat-flatten) flattens @('pat'), appending its atoms onto
+@('acc'), in order.  For instance,</p>
 
-<code>
+@({
   (pat-flatten '((a) (b c)) '(x y z))
-  --&gt;
+  -->
   (a b c x y z)
-</code>
+})
 
 <p>The accumulator argument is occasionally useful.  But for reasoning, we
-rewrite <tt>pat-flatten</tt> into @(see pat-flatten1) with the following
+rewrite @('pat-flatten') into @(see pat-flatten1) with the following
 theorem:</p>
 
 @(def pat-flatten-is-pat-flatten1)"
@@ -326,8 +330,8 @@ generally convenient to reason about.</p>"
 
 (defsection member-of-pat-flatten
   :parents (patterns)
-  :short "@(call member-of-pat-flatten) is an optimized way to ask if
-<tt>a</tt> is a member of <tt>(pat-flatten1 pat)</tt>."
+  :short "@(call member-of-pat-flatten) is an optimized way to ask if @('a') is
+a member of @('(pat-flatten1 pat)')."
 
   :long "<p>This just avoids actually flattening the pattern, and picks a
 function with optimized EQ/EQL/EQUAL testing.</p>"
@@ -390,8 +394,8 @@ function with optimized EQ/EQL/EQUAL testing.</p>"
 
 (defsection subsetp-of-pat-flatten
   :parents (patterns)
-  :short "@(call subsetp-of-pat-flatten) is an optimized way to ask if
-<tt>x</tt> is a subset of <tt>(pat-flatten1 pat)</tt>."
+  :short "@(call subsetp-of-pat-flatten) is an optimized way to ask if @('x')
+is a subset of @('(pat-flatten1 pat)')."
 
   :long "<p>This just avoids flattening the pattern.  Don't expect it to be
 super fast; it's still O(n^2).</p>"

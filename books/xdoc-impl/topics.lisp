@@ -31,77 +31,88 @@
 
 (defxdoc xdoc
   :short "<em>XDOC</em> is a tool for documenting ACL2 libraries, and is
-intended as a replacement for ACL2 facilities such as <tt>defdoc</tt>,
-<tt>:doc</tt>, and so on."
+intended as a replacement for ACL2 facilities such as @('defdoc'), @(':doc'),
+and so on."
 
   :long "<p>To use the XDOC system, the first step is:</p>
 
-<code>
+@({
  (include-book \"xdoc/top\" :dir :system)
-</code>
+})
 
 <p>This is a regular ACL2 book that loads quickly, requires no ttags, and
 provides a (nearly) complete interface to the XDOC system, including:</p>
 
 <ul>
+
 <li>@(see defxdoc), the basic command for adding documentation, which is the
-XDOC replacement for ACL2's <tt>defdoc</tt> command.</li>
-<li>The <tt>:xdoc</tt> command for viewing documentation within the terminal,
-which is the XDOC replacement for ACL2's <tt>:doc</tt> command.</li>
+XDOC replacement for ACL2's @('defdoc') command.</li>
+
+<li>The @(':xdoc') command for viewing documentation within the terminal, which
+is the XDOC replacement for ACL2's @(':doc') command.</li>
+
 <li>The @(see save) command, which exports all XDOC documentation as XML files
 that can be viewed in a web browser or transformed into formats like HTML.</li>
+
 </ul>
 
-<p>The <tt>:xdoc</tt> command actually consults both the XDOC database, and the
-existing ACL2 documentation, so you can always use <tt>:xdoc foo</tt> without
-having to know which documentation system was used to document the topic.</p>")
+<p>The @(':xdoc') command consults the XDOC database <b>and</b> ACL2's
+@(':doc') database, so you can always use @(':xdoc foo') without having to know
+which documentation system was used to document the topic.</p>")
 
 
 (defxdoc defxdoc
   :parents (xdoc)
   :short "Add documentation to the @(see xdoc) database."
 
-  :long "<p><tt>Defxdoc</tt> is the XDOC alternative to ACL2's built-in
-<tt>defdoc</tt> command.  The general usage is:</p>
+  :long "<box><p>Note: @('defxdoc') is very basic.  You will usually want to
+use @(see defsection) instead.</p></box>
 
-<code>
+<p>@('Defxdoc') is the XDOC alternative to ACL2's built-in @('defdoc') command.
+The general form is:</p>
+
+@({
  (defxdoc name
    :parents (topic1 topic2 ...)
    :short \"short description\"
    :long \"longer description\")
-</code>
+})
 
 <p>All of the keyword arguments are optional.</p>
 
 <ul>
-<li><tt>name</tt> is the name of this documentation topic, and should be a
+
+<li>@('name') is the name of this documentation topic, and should be a
 symbol.</li>
-<li><tt>parents</tt> let you associate this documentation with other topics.  A
+
+<li>@('parents') let you associate this documentation with other topics.  A
 topic can have many parents, but circular parents are not allowed and will lead
 to errors when generating documentation.</li>
-<li><tt>short</tt> should be a short description of this topic and should be
-suitable for inlining in other pages.  (For instance, it is displayed in the
-full index, and as \"hover\" text in the listing frames.)</li>
-<li><tt>long</tt> should be the full, detailed documentation for this
-topic.</li>
+
+<li>@('short') should be a short description of this topic and should be
+suitable for inlining in other pages.  For instance, it is displayed in the
+full index, and as \"hover\" text in the navigation page.</li>
+
+<li>@('long') should be the full, detailed documentation for this topic.</li>
+
 </ul>
 
-<p>The <tt>short</tt> and <tt>long</tt> strings may be written using the XDOC
-@(see markup) language, and may also use @(see preprocessor) commands to insert
+<p>The @('short') and @('long') strings may be written using the XDOC @(see
+markup) language, and may also use @(see preprocessor) commands to insert
 function definitions, theorems, topic links, and so on.</p>
 
-<p>See also <tt>books/xdoc/topics.lisp</tt> for several examples of using
-XDOC.</p>
+<p>Many examples of using XDOC can be found throughout the <tt>acl2/books</tt>
+directory.  See for instance the @(see acl2::str) or @(see acl2::osets)
+libraries.</p>
 
-<h3>Notes for Advanced Users</h3>
+<h3>Note for Advanced Users</h3>
 
-<p>XDOC just stores its documentation in an ordinary ACL2 table, so if you
-want to do something like automatically generate documentation from macros,
-you might decide to bypass @(srclink defxdoc) and just manipulate the table
-directly.</p>
+<p>XDOC just stores its documentation in an ordinary ACL2 table, so if you want
+to do something like automatically generate documentation from macros, you
+might decide to bypass @('defxdoc') and just manipulate the table directly.</p>
 
-<p>It is not possible to directly use <tt>defxdoc</tt> from raw Lisp, but
-@(see defxdoc-raw) is an alternative which can be used instead.</p>")
+<p>It is not possible to directly use @('defxdoc') from raw Lisp, but you can
+use @(see defxdoc-raw) instead.</p>")
 
 
 (defxdoc markup
@@ -130,41 +141,48 @@ end in balance.</p>
 etc., from the ACL2 world.  But sometimes you want to write other kinds of code
 fragments as examples.</p>
 
+<p>The raw markup options are:</p>
+
 <ul>
 
-<li>Use the <tt>&lt;tt&gt;</tt> tag for short, inline pieces of code,
-such as <tt>(+ 1 x)</tt>.</li>
+<li>Use the @('<tt>') tag for short, inline pieces of code, such as <tt>(+ 1
+x)</tt>.</li>
 
-<li>Use the <tt>&lt;code&gt;</tt> tag for longer code examples that should be
-indented and \"preformatted,\" i.e., newlines and spaces should be
-preserved.</li>
+<li>Use the @('<code>') tag for longer code examples that should be indented
+and \"preformatted,\" i.e., newlines and spaces should be preserved.</li>
 
 </ul>
 
-<p>Within <tt>&lt;code&gt;</tt> blocks, lisp forms should usually be
-<b>indented one space</b> to prevent Emacs problems.  For instance:</p>
+<p><b>However</b>, it's often better to use the preprocessor's @('@@('...')')
+and @('@@({...})') macros.  These are nice because they automatically escape
+special HTML characters like &lt; into &amp;lt;, and also automatically add
+hyperlinks to documented functions.</p>
 
-<code>
+<p>If you do decide to write raw @('&lt;code&gt;') blocks, your lisp forms
+should usually be <b>indented one space</b> to prevent Emacs problems.  For
+instance:</p>
+
+@({
  (defdoc foo
-   :long \"&lt;h3&gt;How to format &amp;lt;code&amp;gt; blocks&lt;/h3&gt;
+   :long \"<h3>How to format @('<code>') blocks</h3>
 
- &lt;p&gt;GOOD -- the form is indented one space:&lt;/p&gt;
- &lt;code&gt;
+ <p>GOOD -- the form is indented one space:</p>
+ <code>
   (my-lisp-form (foo ...)
                 (bar ...))
- &lt;/code&gt;
+ </code>
 
- &lt;p&gt;BAD -- the form is directly on the left-margin:&lt;/p&gt;
- &lt;code&gt;
+ <p>BAD -- the form is directly on the left-margin:</p>
+ <code>
  (my-lisp-form (foo ...)
                (bar ...))
- &lt;/code&gt;\")
-</code>
+ </code>
+})
 
-<p>Without this space, Emacs can become confused and think that
-<tt>(my-lisp-form ...)</tt>, rather than <tt>(defdoc foo ...)</tt>, is the
-top-level expression, which can ruin syntax highlighting and also commands like
-<tt>C-t e</tt> for sending s-expressions to the <tt>*shell*</tt> window.</p>
+<p>Without this leading space, Emacs can become confused and think that
+@('(my-lisp-form ...)'), rather than @('(defdoc foo ...)'), is the top-level
+expression.  This can ruin syntax highlighting and also commands like @('C-t
+e') for sending s-expressions to the @('*shell*') window.</p>
 
 
 
@@ -175,12 +193,12 @@ top-level expression, which can ruin syntax highlighting and also commands like
 tags-search links</i> into the source code are handled by the @(see
 preprocessor).</p>
 
-<p>It is also posible to add <i>external links</i> to web pages with ordinary
-HTML-style links, e.g.,</p>
+<p>You can add <i>external links</i> to web pages with ordinary HTML-style
+links, e.g.,</p>
 
-<code>
-&lt;a href=\"http://www.centtech.com/\"&gt;Centaur Technology&lt;/a&gt;
-</code>
+@({
+<a href=\"http://www.centtech.com/\">Centaur Technology</a>
+})
 
 <p>Produces a link to <a href=\"http://www.centtech.com/\">Centaur
 Technology</a>.</p>
@@ -188,32 +206,35 @@ Technology</a>.</p>
 
 <h3>Structuring Documents</h3>
 
-<p>For section headings, <tt>&lt;h1&gt;</tt> creates the biggest heading,
-<tt>&lt;h2&gt;</tt> the next biggest, and so on.  The smallest heading is
-<tt>&lt;h5&gt;</tt>.</p>
+<p>For section headings,</p>
+<ul>
+ <li>@('<h1>') creates the biggest heading,</li>
+ <li>@('<h2>') the next biggest,</li>
+ <li>... and so on ...</li>
+ <li>@('<h5>') is the smallest heading.</li>
+</ul>
 
-<p>Paragraphs should be wrapped in <tt>&lt;p&gt;</tt> and <tt>&lt;/p&gt;</tt>
-tags.</p>
+<p>@('<p>') tags should be put around paragraphs.</p>
 
-<blockquote>You can use <tt>&lt;blockquote&gt;</tt> to create indented
-paragraphs like this one.  (Let's put enough text here to make it word-wrap.
-Mumble mumble mumble.  Mumble.  Mumble mumble.)</blockquote>
+<blockquote>@('<blockquote>') can be used to create indented paragraphs like
+this one.  (Let's put enough text here to make it word-wrap.  Mumble mumble
+mumble.  Mumble.  Mumble mumble.)</blockquote>
 
-<p><tt>&lt;br/&gt;</tt> can be used<br/>
+<p>@('<br/>') can be used<br/>
 to write haikus and so on<br/>
 but is discouraged</p>
 
 <p>Bulleted and numbered lists work as in HTML.  The list itself begins with
-<tt>&lt;ul&gt;</tt> (for bulleted lists) or <tt>&lt;ol&gt;</tt> (for numbered lists).
-Each list element is an <tt>&lt;li&gt;</tt> tag.  For instance,</p>
+@('<ul>') (for bulleted lists) or @('<ol>') (for numbered lists).  Each list
+element is an @('<li>') tag.  For instance,</p>
 
-<code>
-&lt;ul&gt;
-  &lt;li&gt;one&lt;/li&gt;
-  &lt;li&gt;two&lt;/li&gt;
-  &lt;li&gt;three&lt;/li&gt;
-&lt;/ul&gt;
-</code>
+@({
+<ul>
+  <li>one</li>
+  <li>two</li>
+  <li>three</li>
+</ul>
+})
 
 <p>Produces:</p>
 
@@ -225,18 +246,17 @@ Each list element is an <tt>&lt;li&gt;</tt> tag.  For instance,</p>
 </ul>
 </box>
 
-<p>You can also use definition lists, which are comprised
-of <tt>&lt;dl&gt;</tt>, <tt>&lt;dt&gt;</tt>, and <tt>&lt;dd&gt;</tt> tags.  For
-instance,</p>
+<p>You can also use definition lists, which are comprised of @('<dl>'),
+@('<dt>'), and @('<dd>') tags.  For instance,</p>
 
-<code>
-&lt;dl&gt;
-  &lt;dt&gt;Inputs&lt;/dt&gt;
-  &lt;dd&gt;&lt;tt&gt;x&lt;/tt&gt;, the list we are traversing&lt;/dd&gt;
-  &lt;dd&gt;&lt;tt&gt;max&lt;/tt&gt;, limit on how many we can accumulate&lt;/dd&gt;
-  &lt;dd&gt;&lt;tt&gt;acc&lt;/tt&gt;, accumulator for our results&lt;/dd&gt;
-&lt;/dl&gt;
-</code>
+@({
+<dl>
+  <dt>Inputs</dt>
+  <dd><tt>x</tt>, the list we are traversing</dd>
+  <dd><tt>max</tt>, limit on how many we can accumulate</dd>
+  <dd><tt>acc</tt>, accumulator for our results</dd>
+</dl>
+})
 
 <p>Produces:</p>
 
@@ -249,7 +269,7 @@ instance,</p>
 </dl>
 </box>
 
-<p>These framed boxes are generated with the <tt>&lt;box&gt;</tt> tag.</p>
+<p>These framed boxes are generated with the @('<box>') tag.</p>
 
 <p>It's relatively easy to add new tags.  We'll probably add some kind of image
 support in the future, and maybe other tags that users want.</p>")
@@ -259,116 +279,123 @@ support in the future, and maybe other tags that users want.</p>")
   :parents (xdoc)
   :short "In addition to its @(see markup) language, XDOC includes a
 preprocessor which can be used to interpret certain directives of the form
-<tt>@@(...)</tt>."
+@('@(...)')."
 
   :long "<h3>Functions and Theorems</h3>
 
-<p>To insert function definitions (or pieces of definitions) into your
-documentation, you can use:</p>
+<p>To look up function definitions (or pieces of definitions) from the ACL2
+world and insert them into your documentation, you can use:</p>
 
 <ul>
- <li><tt>@@(def fn)</tt>, insert the definition of the function (or macro)
-     <i>fn</i></li>
- <li><tt>@@(body fn)</tt>, just the body of <i>fn</i></li>
- <li><tt>@@(formals fn)</tt>, just the formals of <i>fn</i></li>
- <li><tt>@@(measure fn)</tt>, just the measure of <i>fn</i></li>
- <li><tt>@@(call fn)</tt>, a generic function call of <i>fn</i></li>
+ <li>@('@(def fn)'), insert the definition of <i>fn</i><br/>
+     (also works for theorems, macros, ...)</li>
+ <li>@('@(body fn)'), just the body of <i>fn</i></li>
+ <li>@('@(formals fn)'), just the formals of <i>fn</i></li>
+ <li>@('@(measure fn)'), just the measure of <i>fn</i></li>
+ <li>@('@(call fn)'), a generic function call of <i>fn</i></li>
 </ul>
 
-<p>We expect that <tt>def</tt> and <tt>body</tt> directives will
-expand to large code fragments, so they are automatically wrapped in
-<tt>&lt;code&gt;</tt> blocks and other formatting.</p>
+<p>We expect that @('def') and @('body') directives will expand to large code
+fragments, so they are automatically wrapped in @('<code>') blocks.</p>
 
-<p>The <tt>call</tt> directive is automatically wrapped in &lt;tt&gt;
-tags, i.e., <tt>@@(call fib)</tt> might become &lt;tt&gt;(fib x)&lt;/tt&gt;.
-An alternative is to use <tt>@@(ccall fib)</tt>, for \"code call,\" which
-inserts &lt;code&gt; tags instead.</p>
+<p>The @('call') directive is automatically wrapped in @('<tt>') tags, i.e.,
+@('@(call fib)') might become @('<tt>(fib x)</tt>').  An alternative is to use
+@('@(ccall fib)'), for \"code call,\" which inserts @('<code>') tags instead;
+this could be more appropriate for functions with many arguments.</p>
 
 <p>The other directives just become plain text, and you can wrap whatever
 formatting commands you like around them and use them inline in paragraphs,
 etc.</p>
 
-<p>You can also insert theorems:</p>
+<h3>Adding Examples or Code Fragments</h3>
+
+<p>There's a special syntax to put in \"raw\" text.  This is especially
+useful for examples and code fragments.</p>
 
 <ul>
- <li><tt>@@(thm name)</tt>, expands to the statement of the theorem <i>name</i></li>
+<li><tt>@@('...')</tt> inserts @('...') into @('<tt>') tags.</li>
+<li><tt>@@({...})</tt> inserts @('...') into @('<code>') tags.</li>
 </ul>
 
-<p>As with <tt>def</tt> and <tt>body</tt> directives, <tt>thm</tt> directives
-automatically insert <tt>&lt;code&gt;</tt> blocks.</p>
+<p>These have a special feature for automatically linking to documented topics.
+For instance, <tt>@@('consp x')</tt> produces @('(consp x)'), and
+<tt>@@({ (consp x) })</tt> produces:</p>
+
+@({
+ (consp x)
+})
+
 
 <h3>Documentation Links</h3>
 
-<p>The easiest way to link between topics is to use <tt>@@(see name)</tt>,
-which expands into a link to <tt>name</tt>.  The text shown to the reader is
-just the name of the topic, in lower case.  Note also that <tt>@@(csee
-name)</tt> can be used for links whose first letter should be capitalized.</p>
+<p>The easiest way to link between topics is to use @('@(see name)'), which
+expands into a link to @('name').  The text shown to the reader is just the
+name of the topic, in lower case.  Note also that @('@(csee name)') can be used
+for links whose first letter should be capitalized.</p>
 
-<p>For most purposes, <tt>@@(see name)</tt> is adequate and it is also
-recommended.  Finer-grained control (e.g., changing the link text) is also
-possible, but requires some considerations for mangling file names, etc.
-Basically, <tt>@@(see name)</tt> expands to:</p>
+<p>For most purposes, @('@(see name)') is adequate and it is also recommended.
+Finer-grained control (e.g., changing the link text) is also possible, but then
+you have to understand how file names get mangled.  The basic story is that
+@('@(see name)') expands to:</p>
 
-<code>
-&lt;see topic=\"mangled-topic-name\"&gt;printed-topic-name&lt;/see&gt;
-</code>
+@({
+<see topic=\"mangled-topic-name\">printed-topic-name</see>
+})
 
 <p>Where:</p>
 
 <ul>
-<li><tt>mangled-topic-name</tt> is a canonical, url/file-name friendly,
-   human-hostile mangling of <tt>name</tt>'s package and symbol names, and</li>
 
-<li><tt>printed-topic-name</tt> is an XML-escaped (i.e., \"&lt;\" becomes
-   \"&amp;lt;\") variant of <tt>name</tt> which, depending on the package of the
-   current topic's name, may or may not include the package portion of
-   <tt>name</tt>.</li>
+<li>@('mangled-topic-name') is a canonical, url/file-name friendly,
+human-hostile mangling of @('name')'s package and symbol names, and</li>
+
+<li>@('printed-topic-name') is an XML-escaped variant of @('name'), e.g., where
+@('<') becomes @('&lt;'), etc.; depending on the package of the current topic's
+name, it may or may not include the package portion of @('name').</li>
+
 </ul>
 
 <p>So, to support custom links, we provide</p>
 
 <ul>
- <li><tt>@@(url name)</tt>, which expands to <tt>mangled-topic-name</tt></li>
- <li><tt>@@(sym name)</tt>, which expands to <tt>printed-topic-name</tt></li>
- <li><tt>@@(csym name)</tt>, like <tt>sym</tt>, but with the first letter capitalized</li>
+ <li>@('@(url name)'), which expands to @('mangled-topic-name')</li>
+ <li>@('@(sym name)'), which expands to @('printed-topic-name')</li>
+ <li>@('@(csym name)'), like @('sym'), but with the first letter capitalized</li>
 </ul>
 
-<p>and these can be used to write your own <tt>&lt;see&gt;</tt> tags.</p>
+<p>You can use these to write your own @('<see>') tags.  You should probably
+<i>never</i> write a @('<see>') tag yourself without using @('@(url ...)').</p>
 
 
 <h3>Emacs Links</h3>
 
-<p>The <tt>@@(srclink name)</tt> directive inserts a source-code link for users
-who have configured their web browser as described in @(see emacs-links).</p>
+<p>The @('@(srclink name)') directive inserts a source-code link for users who
+have configured their web browser as described in @(see emacs-links).</p>
 
-<p>It is often unnecessary to use <tt>srclink</tt> directly, because these
-links are automatically inserted by the <tt>@@(def fn)</tt> and <tt>@@(thm
-foo)</tt> directives.  One good reason to use <tt>srclink</tt> is to link to
-macros like @(srclink defxdoc), which often are written using backquote and
-hence do not display nicely.</p>
+<p>It is often unnecessary to use @('srclink') directly, because these links
+are automatically inserted by @('@(def fn)').  One good reason to use
+@('srclink') is to link to macros like @(srclink defxdoc), which often are
+written using backquote and hence do not display nicely.</p>
 
 <p>Source links are sometimes inappropriate, e.g., for definitions or theorems
 that are generated by macros.  You can suppress the automatic source links on
-<tt>def</tt> and <tt>thm</tt> commands by using <tt>@@(gdef fn)</tt> or
-<tt>@@(gthm foo)</tt> instead, which stand for \"generated def\" and
-\"generated thm.\"</p>
-
+@('def') commands by using @('@(gdef fn)') instead.  This stands for
+\"generated definition.\"</p>
 
 
 <h3>Escaping of @</h3>
 
-<p>Since <tt>@@(</tt> is intercepted by the preprocessor, you may occasionally
-need to escape it.  You can write <tt>@@@@</tt> to generate a single <tt>@</tt>
-sign.</p>
+<p>Since @('@(') is intercepted by the preprocessor, you may occasionally need
+to escape it.  You can write @('@@') to generate a single @('@') sign.</p>
 
-<p>Besides <tt>@@(</tt> and <tt>@@@@</tt>, the preprocessor leaves any other uses
-of <tt>@</tt> in tact.  So, most uses of <tt>@</tt>, such as in email
-addresses, do not need to be escaped.</p>")
+<p>Besides @('@(') and @('@@'), the preprocessor leaves any other uses of
+@('@') in tact.  So, most uses of @('@'), such as in email addresses, do not
+need to be escaped.</p>")
 
 
 (defxdoc save
   :parents (xdoc)
-  :short "Saves the XDOC database as <tt>.xml</tt> files (which can also be
+  :short "Saves the XDOC database as @('.xml') files (which can also be
 translated into HTML or other formats)."
 
   :long "<p>Once you have documented your library with @(see defxdoc), you may
@@ -377,12 +404,12 @@ wish to create a manual that can be viewed from a web browser.</p>
 
 <h3>Saving a Manual</h3>
 
-<p>The <tt>xdoc::save</tt> command allows you to save all of the documented
-topics as <tt>.xml</tt> files.  Here's an example:</p>
+<p>The @('xdoc::save') command allows you to save all of the documented topics
+as @('.xml') files.  Here's an example:</p>
 
-<code>
+@({
  (xdoc::save \"/home/jared/mylib-manual\")
-</code>
+})
 
 <p>The argument is the name of a directory where the documentation should be
 saved.  If the directory does not exist, it will be created.  If there are
@@ -392,34 +419,34 @@ overwritten</color>.</p>
 
 <h3>Structure of a Manual</h3>
 
-<p>The resulting <tt>mylib-manual</tt> directory includes:</p>
+<p>The resulting @('mylib-manual') directory includes:</p>
 
 <ul>
 
-<li><tt>xml/</tt>, a subdirectory with a <tt>.xml</tt> file for each topic and
-some supporting files, and</li>
+<li>@('xml/'), a subdirectory with a @('.xml') file for each topic and some
+supporting files, and</li>
 
-<li><tt>Makefile</tt>, a Makefile for converting these files into other
-formats, and</li>
+<li>@('Makefile'), a Makefile for converting these files into other formats,
+and</li>
 
-<li><tt>preview.html</tt>, a web page that lets you directly view the XML files
+<li>@('preview.html'), a web page that lets you directly view the XML files
 using your web browser.</li>
 
 </ul>
 
 <p>Many web browsers can now directly display XML files.  So, you may be able
-to view <tt>preview.html</tt> without any additional steps.</p>
+to view @('preview.html') without any additional steps.</p>
 
 
 <h3>HTML and Other Formats</h3>
 
 <p>You can generate a plain HTML or TEXT version of your manual by using
-<tt>make html</tt> or <tt>make text</tt>.  We might add support for TEXINFO or
-other formats in the future.</p>
+@('make html') or @('make text').  We might add support for TEXINFO or other
+formats in the future.</p>
 
-<p>After running <tt>make html</tt>, you may wish to open <tt>frames2.html</tt>
-and <tt>frames3.html</tt>, which allow you to navigate the HTML manual much
-like <tt>preview.html</tt> allows you to navigate the XML version.</p>
+<p>After running @('make html'), you may wish to open @('frames2.html') and
+@('frames3.html'), which allow you to navigate the HTML manual much like
+@('preview.html') allows you to navigate the XML version.</p>
 
 <p>Converting to HTML is a good idea because it ensures that all of your tags
 are balanced on every page.  Without this sanity check, your manual might
@@ -431,11 +458,11 @@ browser.</p>")
   :parents (xdoc)
   :short "Instructions for integrating XDOC web pages with Emacs."
 
-  :long "<p>@(csee preprocessor) directives such as <tt>@@(def
-get-xdoc-table)</tt> result in the introduction of special links for Emacs.  It
-is possible to configure your web browser so that clicking on these links will
-cause Emacs to directly open up the appropriate source file and jump to the
-named function.  Here is what such a link looks like:</p>
+  :long "<p>@(csee preprocessor) directives such as @('@(def get-xdoc-table)')
+result in the introduction of special links for Emacs.  It is possible to
+configure your web browser so that clicking on these links will cause Emacs to
+directly open up the appropriate source file and jump to the named function.
+Here is what such a link looks like:</p>
 
 @(def get-xdoc-table)
 
@@ -443,11 +470,11 @@ named function.  Here is what such a link looks like:</p>
 
 <ul>
 
- <li>These Emacs links point to <tt>xdoc-link</tt> files.</li>
+<li>These Emacs links point to @('xdoc-link') files.</li>
 
- <li>We instruct your web browser to send these files to Emacs.</li>
+<li>We instruct your web browser to send these files to Emacs.</li>
 
- <li>We instruct Emacs to carry out a tags search instead of loading these
+<li>We instruct Emacs to carry out a tags search instead of loading these
 files.</li>
 
 </ul>
@@ -461,14 +488,13 @@ depending on your web browser, it may not be too hard to set up.</p>
 
 <h4>Loading the XDOC Elisp</h4>
 
-<p>The XDOC directory includes a file called <tt>xdoc.el</tt>, which tells
-emacs what to do with these <tt>xdoc-link</tt> files.  To tell emacs to load
-this file at startup, you can just add a command to your <tt>.emacs</tt> file
-such as:</p>
+<p>The XDOC directory includes a file called @('xdoc.el'), which tells emacs
+what to do with these @('xdoc-link') files.  To tell emacs to load this file at
+startup, you can just add a command to your @('.emacs') file such as:</p>
 
-<code>
+@({
  (load \"/path/to/xdoc/xdoc.el\")
-</code>
+})
 
 
 <h4>Managing your TAGS tables</h4>
@@ -479,49 +505,50 @@ href=\"http://www.gnu.org/software/emacs/manual/html_node/emacs/Tags.html\">tags
 tables</a> loaded for all of the libraries you are using.</p>
 
 <p>If you aren't familiar with tags, you basically just need to:</p>
-<ul>
-  <li>Occasionally generate <tt>TAGS</tt> files for your libraries,
-      using the command <tt>etags *.lisp</tt> or similar.</li>
 
-  <li>Tell Emacs to \"visit\" these tags tables with
-      <tt>visit-tags-table</tt>.</li>
+<ul>
+
+<li>Occasionally generate @('TAGS') files for your libraries, using the command
+@('etags *.lisp') or similar.</li>
+
+<li>Tell Emacs to \"visit\" these tags tables with @('visit-tags-table').</li>
+
 </ul>
 
 <h5>Jared's Approach:</h5>
 
 <ul>
 
-<li>I add a <tt>TAGS</tt> target to my Makefiles, so that when I build my
-library the <tt>etags *.lisp</tt> command is re-run and the <tt>TAGS</tt>
-file is kept up to date.  The Makefile syntax is:
+<li>I add a @('TAGS') target to my Makefiles, so that when I build my library
+the @('etags *.lisp') command is re-run and the @('TAGS') file is kept up to
+date.  The Makefile syntax is:
 
-<code>
+@({
 TAGS: $(wildcard *.lisp)
       etags *.lisp
-</code></li>
+})</li>
 
-<li>Then, in my <tt>.emacs</tt> file, I have a series of commands like the
+<li>Then, in my @('.emacs') file, I have a series of commands like the
 following:
 
-<code>
+@({
  (ignore-errors (visit-tags-table \"/path/to/acl2/TAGS\"))
  (ignore-errors (visit-tags-table \"/path/to/acl2/books/xdoc/TAGS\"))
  (ignore-errors (visit-tags-table \"/path/to/my/stuff/TAGS\"))
-</code>
+})
 
-This ensures that the relevant <tt>TAGS</tt> files are loaded every time I
-start Emacs.  The use of <tt>ignore-errors</tt> prevents Emacs from complaining
-if one of these <tt>TAGS</tt> files was deleted in a \"make clean\" or
-similar.</li>
+This ensures that the relevant @('TAGS') files are loaded every time I start
+Emacs.  The use of @('ignore-errors') prevents Emacs from complaining if one of
+these @('TAGS') files was deleted in a \"make clean\" or similar.</li>
 
-<li>One final addition to the <tt>.emacs</tt> file is:
+<li>One final addition to the @('.emacs') file is:
 
-<code>
+@({
  (setq tags-revert-without-query t)
-</code>
+})
 
-which tells Emacs to go ahead and reload these files when they are rebuilt
-by Make, instead of prompting you if you want to reload them.</li>
+which tells Emacs to go ahead and reload these files when they are rebuilt by
+Make, instead of prompting you if you want to reload them.</li>
 
 </ul>
 
@@ -534,33 +561,34 @@ everything to open up in a new instance of Emacs, you can skip this section.
 But I prefer to use a single Emacs for everything, and just have links open up
 in new buffers.</p>
 
-<p>This is quite easy.  First, add <tt>(server-start)</tt> to your
-<tt>.emacs</tt> file and restart Emacs.</p>
+<p>This is quite easy.  First, add @('(server-start)') to your @('.emacs') file
+and restart Emacs.</p>
 
 <p>Next, to ensure everything is working properly, launch a separate terminal
 and type:</p>
 
-<code>
+@({
 emacsclient --no-wait my-file
-</code>
+})
 
-<p>If all is well, <tt>my-file</tt> will be loaded into your already-running
-emacs as a new buffer.</p>
+<p>If all is well, @('my-file') will be loaded into your already-running emacs
+as a new buffer.</p>
 
 
 
 <h2>Configuring the Web Browser</h2>
 
 <p>The last thing we need to do is instruct your web browser to send
-<tt>xdoc-link</tt> files to Emacs.  How this is done depends on your
-web browser.</p>
+@('xdoc-link') files to Emacs.  How this is done depends on your web
+browser.</p>
 
-<h4>Firefox (works)</h4>
+<p>Here are old instructions for Firefox, but I don't believe mime-edit still
+exists/works, so you may need to do something else now.</p>
 
 <p><b>Note:</b> I have not yet found a way to get Firefox to call
-<tt>emacsclient</tt> with the <tt>--no-wait</tt> option.  To work around this,
-I wrote a trivial script called <tt>emacsclient-wrapper.sh</tt>, which is
-included in the XDOC directory.</p>
+@('emacsclient') with the @('--no-wait') option.  To work around this, I wrote
+a trivial script called @('emacsclient-wrapper.sh'), which is included in the
+XDOC directory.</p>
 
 <ol>
 
@@ -568,12 +596,12 @@ included in the XDOC directory.</p>
 href=\"https://addons.mozilla.org/en-US/firefox/addon/4498\">MIME Edit</a>
 firefox plugin.  This is quite easy, but requires firefox to be restarted.</li>
 
-<li>Use MIME-EDIT to tell firefox to give <tt>.xdoc-link</tt> files to emacs:
+<li>Use MIME-EDIT to tell firefox to give @('.xdoc-link') files to emacs:
 
 <ul>
-  <li>Choose (from the menu bar): <tt>Tools</tt>, <tt>MIME Edit</tt></li>
-  <li>Pick the <tt>Edit</tt> tab</li>
-  <li>Click <tt>New Type</tt></li>
+  <li>Choose (from the menu bar): @('Tools'), @('MIME Edit')</li>
+  <li>Pick the @('Edit') tab</li>
+  <li>Click @('New Type')</li>
   <li>MIME Type: <u>application/acl2-xdoc-link</u></li>
   <li>Description: <u>Link to ACL2 Source Code</u></li>
   <li>Extension: <u>xdoc-link</u></li>
@@ -583,57 +611,41 @@ firefox plugin.  This is quite easy, but requires firefox to be restarted.</li>
 </li>
 </ol>
 
-<h4>Safari (not working yet)</h4>
-
-<p>I am mainly unfamiliar with MacOS, so perhaps someone can figure this out.
-I did not see any mechanism to edit MIME types directly within Safari.  However,
-there is a free program called <a href=\"http://mac.clauss-net.de/misfox/\">MisFox</a>
-program which allows you to set up file mappings.  But its \"choose\" dialog for
-picking the program refuses to accept <tt>emacsclient</tt> or a wrapper script, for
-whatever reason that I do not understand.</p>
-
-<p>I lost access to the Mac laptop I was using, maybe somemone else can figure
-this out.</p>
-
-<h4>Internet Explorer</h4>
-
-<p>Someone else will have to figure this out.</p>
-
-
 <h2>Possibly Necessary: Configuring the Web Server</h2>
 
 <p>This step shouldn't be needed if you're viewing the documentation on your
 hard drive.  But if you are using a web server like Apache to serve your
 documentation, you may need to use something like:</p>
 
-<code>
+@({
 AddType application/x-acl2-xdoc-link .xdoc-link
-</code>
+})
 
-<p>to your <tt>httpd.conf</tt> or an <tt>.htaccess</tt> file as appropriate.
-Without this step, your web server might report that <tt>.xdoc-link</tt> files
-are just text files to the web browser, and the web browser will not load them
-with the content-handler.</p>")
+<p>to your @('httpd.conf') or an @('.htaccess') file as appropriate.  Without
+this step, your web server might report that @('.xdoc-link') files are just
+text files to the web browser, and the web browser will not load them with the
+content-handler.</p>")
 
 
 
 (defxdoc extract-keyword-from-args
   :parents (defsection) ; bozo hrmn, where should this go, really?
-  :short "Get the value for a keyword argument like <tt>:foo value</tt>."
+  :short "Get the value for a keyword argument like @(':foo value')."
 
-  :long "<p>@(call extract-keyword-from-args) is given <tt>kwd</tt>, which
-should be a keyword symbol, and a list of <tt>args</tt> which are typically the
-<tt>&amp;rest args</tt> given to a macro.  It scans the list of <tt>args</tt>,
-looking for the indicated keyword, and returns <tt>(kwd . value)</tt>, or
-<tt>nil</tt> if no such keyword is found.</p>
+  :long "<p>@(call extract-keyword-from-args) is given @('kwd'), which should
+be a keyword symbol, and a list of @('args') which are typically the @('&rest
+args') given to a macro.  It scans the list of @('args'), looking for the
+indicated keyword, and returns @('(kwd . value)'), or @('nil') if no such
+keyword is found.  For instance,</p>
 
-<code>
+@({
  (extract-keyword-from-args :bar '(:foo 3 :bar 5 :baz 7))
-   ;; returns (:bar . 5)
-</code>
+   -->
+ (:bar . 5)
+})
 
-<p>This function is mainly useful for writing macros that mix <tt>&amp;rest</tt>
-parts with keyword arguments.  See also @(see throw-away-keyword-parts).</p>
+<p>This function is mainly useful for writing macros that mix @('&rest') parts
+with keyword arguments.  See also @(see throw-away-keyword-parts).</p>
 
 @(def extract-keyword-from-args)")
 
@@ -644,34 +656,33 @@ parts with keyword arguments.  See also @(see throw-away-keyword-parts).</p>
 argument list."
 
   :long "<p>@(call throw-away-keyword-parts) is given a list of arguments that
-are typically the <tt>&amp;rest args</tt> given to a macro.  It scans the
-arguments for any keyword symbols such as <tt>:foo</tt>, and throws away both
-the keyword and the argument that follows it.  For instance,</p>
+are typically the @('&rest args') given to a macro.  It scans the arguments for
+any keyword symbols such as @(':foo'), and throws away both the keyword and the
+argument that follows it.  For instance,</p>
 
-<code>
+@({
  (throw-away-keyword-parts '(x y z :foo 3 :bar 5 blah blah blah))
-   --&gt;
+   -->
  '(x y z blah blah blah)
-</code>
+})
 
-<p>This function is mainly useful for writing macros that mix
-<tt>&amp;rest</tt> parts with keyword arguments.  See also @(see
-extract-keyword-from-args).</p>
+<p>This function is mainly useful for writing macros that mix @('&rest') parts
+with keyword arguments.  See also @(see extract-keyword-from-args).</p>
 
 @(def throw-away-keyword-parts)")
 
 
 (defxdoc defsection
   :parents (xdoc)
-  :short "Fancy <tt>(encapsulate nil ...)</tt> with a name and @(see xdoc)
+  :short "Fancy @('(encapsulate nil ...)') with a name and @(see xdoc)
 support."
 
-  :long "<p>The main reasons to use <tt>defsection</tt> instead of
-<tt>(encapsulate nil ...)</tt></p>
+  :long "<p>The main reasons to use @('defsection') instead of @('(encapsulate
+nil ...)')</p>
 
 <ul>
- <li>It is easier to identify in the <tt>:pbt</tt> history,</li>
- <li>It indents more nicely than <tt>encapsulate</tt> in a vanilla emacs,</li>
+ <li>It is easier to identify in the @(':pbt') history,</li>
+ <li>It indents more nicely than @('encapsulate') in a vanilla emacs,</li>
  <li>It settles the question of where to put the @(see defxdoc) command, and</li>
  <li>It can automatically add the definitions/theorems you supply into the
      documentation for your section.</li>
@@ -679,7 +690,7 @@ support."
 
 <p>General form:</p>
 
-<code>
+@({
  (defsection name
     [:parents   parents]
     [:short     short]
@@ -687,93 +698,90 @@ support."
     [:autodoc   autodoc]
     [:extension topic]
     ... events ...)
-</code>
+})
 
 <p>For example,</p>
 
-<code>
+@({
  (defsection foo
    :parents (parent1 parent2 ...)
-   :short \"@@(call foo) is like @@(see bar), but better when...\"
-   :long \"The main difference is ...\"
+   :short \"@(call foo) is like @(see bar), but better when...\"
+   :long \"<p>The main difference is ...</p>\"
 
    (defund foo (x) ...)
    (local (in-theory (enable foo)))
    (defthm foo-thm1 ...)
    (defthm foo-thm2 ...))
-</code>
+})
 
 <h3>Ordinary Sections</h3>
 
-<p>The <tt>:parents</tt>, <tt>:short</tt>, and <tt>:long</tt> keywords are
-optional.  If any of these keywords are provided, they will be used to
-introduce a @(see defxdoc) command; otherwise no documentation will be
-generated.</p>
+<p>The @(':parents'), @(':short'), and @(':long') keywords are optional.  If
+any of these keywords are provided, they will be used to introduce a @(see
+defxdoc) command; otherwise no documentation will be generated.</p>
 
-<p>By default, the <tt>:long</tt> string you give will be automatically
-extended with a \"Definitions and Theorems\" part that lists all
-the (non-local) definitions and theorems introduced in the section.  This makes
-it easy to keep the documentation up-to-date as you add and remove theorems to
-the section.  In the above example, the <tt>:long</tt> field would be extended
-with:</p>
+<p>By default, the @(':long') string you give will be automatically extended
+with a \"Definitions and Theorems\" part that lists all the (non-local)
+definitions and theorems introduced in the section.  This makes it easy to keep
+the documentation up-to-date as you add and remove theorems to the section.  In
+the above example, the @(':long') field would be extended with:</p>
 
-<code>
- &lt;h3&gt;Definition and Theorems&lt;/h3&gt;
- @@(def foo)
- @@(thm foo-thm1)
- @@(thm foo-thm2)
-</code>
+@({
+ <h3>Definition and Theorems</h3>
+ @(def foo)
+ @(thm foo-thm1)
+ @(thm foo-thm2)
+})
 
 <p>If you do not want this automatic documentation, you can turn it off with
-<tt>:autodoc nil</tt>.</p>
+@(':autodoc nil').</p>
 
-<p>By the way, I particularly like to use the above style, where a
-<tt>defund</tt> is immediately followed by a local <tt>enable</tt>, because if
-I want to add a new theorem, say <tt>foo-thm3</tt>, then I can just re-submit
-the defsection without undoing the previous one, and all of the enabling and
-disabling still happens correctly.</p>
+<p>By the way, I particularly like to use the above style, where a @('defund')
+is immediately followed by a local @('enable'), because if I want to add a new
+theorem, say @('foo-thm3'), then I can just re-submit the defsection without
+undoing the previous one, and all of the enabling and disabling still happens
+correctly.</p>
 
 <h3>Extended Sections</h3>
 
-<p>The <tt>:extension</tt> keyword allows you to say that this section is a
-continuation of a previously introduced concept.  When <tt>:extension
-topic</tt> is provided, then <tt>topic</tt> must be the name of a previously
-documented @(see xdoc) section, and you are not allowed to use
-<tt>:parents</tt> or <tt>:short</tt> since the topic already exists.</p>
+<p>The @(':extension') keyword allows you to say that this section is a
+continuation of a previously introduced concept.  When @(':extension topic') is
+provided, then @('topic') must be the name of a previously documented @(see
+xdoc) section, and you are not allowed to use @(':parents') or @(':short')
+since the topic already exists.</p>
 
-<p>The main purpose of an <tt>:extension</tt> section is to add additional
-documentation, either via the <tt>:long</tt> string or via the automatic
-documentation generation features of <tt>defsection</tt>.  The documentation
-obtained this way is just appended onto the existing <tt>:long</tt> for the
+<p>The main purpose of an @(':extension') section is to add additional
+documentation, either via the @(':long') string or via the automatic
+documentation generation features of @('defsection').  The documentation
+obtained this way is just appended onto the existing @(':long') for the
 topic.</p>
 
-<p>For example, if we have already given the section <tt>foo</tt> with basic
+<p>For example, if we have already given the section @('foo') with basic
 theorems, above we now want to add a bunch of additional \"advanced\" theorems
 about it, we might write something like this:</p>
 
-<code>
+@({
  (defsection advanced-theorems-about-foo
    :extension foo
    (defthm foo-thm3 ...)
    (defthm foo-thm4 ...))
-</code>
+})
 
-<p>This will then append the definitions of <tt>foo-thm3</tt> and
-<tt>foo-thm4</tt> onto the end of the documentation for <tt>foo</tt>.</p>")
+<p>This will then append the definitions of @('foo-thm3') and @('foo-thm4')
+onto the end of the documentation for @('foo').</p>")
 
 
 (defxdoc defsection-progn
   :parents (xdoc)
-  :short "Fancy <tt>(progn ...)</tt> with a name and @(see xdoc) support."
+  :short "Fancy @('(progn ...)') with a name and @(see xdoc) support."
 
-  :long "<p>The <tt>defsection-progn</tt> macro is like @(see defsection)
-except that it generates a <tt>(progn ...)</tt> instead of an <tt>(encapsulate
-nil ...)</tt>.</p>
+  :long "<p>The @('defsection-progn') macro is like @(see defsection) except
+that it generates a @('(progn ...)') instead of an @('(encapsulate nil
+...)').</p>
 
 <p>This has a number of consequences, mostly having to do with the scope of
-<tt>local</tt> events within the section.  A <tt>defsection-progn</tt>
-basically does not introduce a new scope, whereas a <tt>defsection</tt>
-does.</p>")
+@('local') events within the section.  A @('defsection-progn') basically does
+not introduce a new scope, whereas a @('defsection') does.</p>")
 
 
 (defxdoc undocumented

@@ -26,53 +26,52 @@
   :short "Introduce type-prescription rules for a function that returns
 multiple values."
 
-  :long "<p>Defmvtypes is just a shorthand that allows you to quickly
-introduce type-prescription rules for a function that returns multiple
-values.</p>
+  :long "<p>Defmvtypes is just a shorthand that allows you to quickly introduce
+type-prescription rules for a function that returns multiple values.</p>
 
 <p>General form:</p>
 
-<code>
+@({
  (defmvtypes fn return-types
-    &amp;key hyp)
-</code>
+    &key hyp)
+})
 
 <p>For example,</p>
 
-<code>
+@({
  (defmvtypes foo
    (true-listp nil booleanp (and (consp x) (true-listp x))))
-</code>
+})
 
 <p>introduces three type-prescription rules:</p>
 <ol>
- <li><tt>(true-listp (mv-nth 0 (foo ...))</tt></li>
- <li><tt>(booleanp (mv-nth 2 (foo ...))</tt></li>
- <li><tt>(and (consp (mv-nth 3 (foo ...)))
-              (true-listp (mv-nth 3 (foo ...))))</tt></li>
+ <li>@('(true-listp (mv-nth 0 (foo ...))')</li>
+ <li>@('(booleanp (mv-nth 2 (foo ...))')</li>
+ <li>@('(and (consp (mv-nth 3 (foo ...)))
+             (true-listp (mv-nth 3 (foo ...))))')</li>
 </ol>
 
 <h3>Usage and Arguments</h3>
 
-<p>Each of the <tt>return-types</tt> should either be a plain symbol like
-<tt>true-listp</tt>, or a term whose only free variable is <tt>pkg::x</tt>,
-where <tt>pkg</tt> is the package of <tt>fn</tt>.</p>
+<p>Each of the @('return-types') should either be a plain symbol like
+@('true-listp'), or a term whose only free variable is @('pkg::x'), where
+@('pkg') is the package of @('fn').</p>
 
-<p>The theorems introduced will be unconditional unless a <tt>:hyp</tt>
-argument is provided.  For instance,</p>
+<p>The theorems introduced will be unconditional unless a @(':hyp') argument is
+provided.  For instance,</p>
 
-<code>
+@({
  (defmvtypes foo
    (nil nil true-listp)
    :hyp (bar a b c))
-</code>
+})
 
 <p>Would result in:</p>
 
-<code>
+@({
  (implies (bar a b c)
           (true-listp (mv-nth 2 (foo ...))))
-</code>")
+})")
 
 (defun defmvtypes-element-to-thm (spec ; the type specifier (symbol/term)
                                   hyp fn args

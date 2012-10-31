@@ -32,14 +32,14 @@
   :short "Collect an @(see vl-emodwirelist-p) of every wire that is mentioned
 in an expression."
 
-  :long "<p><b>Signature:</b> @(call vl-expr-allwires) returns <tt>(mv warnings
-wires)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-expr-allwires) returns @('(mv warnings
+wires)').</p>
 
 <p>This is similar to @(see vl-msb-expr-bitlist), but can be applied to more
-kinds of expressions.  For instance, given the expression <tt>a + b</tt>, this
-function will collect the wires of <tt>a</tt> and the wires of <tt>b</tt>,
-whereas <tt>vl-msb-expr-bitlist</tt> will just fail since this isn't a
-sliceable expression.</p>
+kinds of expressions.  For instance, given the expression @('a + b'), this
+function will collect the wires of @('a') and the wires of @('b'), whereas
+@('vl-msb-expr-bitlist') will just fail since this isn't a sliceable
+expression.</p>
 
 <p>This function tries to be very permissive and does not necessarily do the
 same level of error checking as @(see vl-msb-expr-bitlist).  Also, the wires

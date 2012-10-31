@@ -28,9 +28,9 @@
   :parents (ordering)
   :short "Case-insensitive character less-than test."
 
-  :long "<p>@(call ichar<) determines if <tt>x</tt> is \"smaller\" than
-<tt>y</tt>, but ignoring case.  Our approach is basically to downcase
-upper-case letters and then compare the resulting character codes.</p>
+  :long "<p>@(call ichar<) determines if @('x') is \"smaller\" than @('y'), but
+ignoring case.  Our approach is basically to downcase upper-case letters and
+then compare the resulting character codes.</p>
 
 <p>Something subtle about this is that, in the ASCII character ordering, the
 upper-case characters do not immediately preceede the lower-case ones.  That
@@ -118,10 +118,10 @@ letters.</p>"
   :parents (ordering)
   :short "Case-insensitive character-list less-than test."
 
-  :long "<p>@(call icharlist<) determines whether the character list <tt>x</tt>
-preceeds <tt>y</tt> in alphabetical order without regards to case.  The
-characters are compared with @(see ichar<) and shorter strings are considered
-smaller than longer strings.</p>"
+  :long "<p>@(call icharlist<) determines whether the character list @('x')
+preceeds @('y') in alphabetical order without regards to case.  The characters
+are compared with @(see ichar<) and shorter strings are considered smaller than
+longer strings.</p>"
 
   (defund icharlist< (x y)
     (declare (xargs :guard (and (character-listp x)
@@ -200,16 +200,16 @@ smaller than longer strings.</p>"
   :parents (ordering)
   :short "Case-insensitive string less-than test."
 
-  :long "<p>@(call icharlist<) determines whether the string <tt>x</tt>
-preceeds <tt>y</tt> in alphabetical order without regards to case.  The
-characters are compared with @(see ichar<) and shorter strings are considered
-smaller than longer strings.</p>
+  :long "<p>@(call icharlist<) determines whether the string @('x') preceeds
+@('y') in alphabetical order without regards to case.  The characters are
+compared with @(see ichar<) and shorter strings are considered smaller than
+longer strings.</p>
 
 <p>Logically, this is identical to:</p>
 
-<code>
-  (icharlist&lt; (coerce x 'list) (coerce y 'list))
-</code>
+@({
+  (icharlist< (coerce x 'list) (coerce y 'list))
+})
 
 <p>But we use a more efficient implementation which avoids coercing the strings
 into lists.</p>

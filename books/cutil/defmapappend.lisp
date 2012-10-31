@@ -27,15 +27,15 @@
 
   :long "<p>Defmapappend allows you to quickly introduce a function like</p>
 
-<code>
+@({
  (loop for elem in x append (f elem))
-</code>
+})
 
 <p>and produces some basic theorems about this new function.</p>
 
 <p>General form:</p>
 
-<code>
+@({
  (defmapappend name formals
     transform
     &amp;key guard                   ; t by default
@@ -47,108 +47,108 @@
          short                   ; nil by default
          long                    ; nil by default
          )
-</code>
+})
 
 <p>For instance,</p>
 
-<code>
+@({
  (defmapappend append-square-lists (x)
     (square-lists x)
     :guard (integer-list-listp x))
-</code>
+})
 
-<p>would introduce a new function, <tt>append-square-lists</tt>, that applies
-<tt>square-lists</tt> to every element of its argument and appends together
-all of the results.</p>
+<p>would introduce a new function, @('append-square-lists'), that applies
+@('square-lists') to every element of its argument and appends together all of
+the results.</p>
 
 <p>Note that <b>x</b> is treated in a special way: it refers to the whole list
 in the formals and guards, but refers to the individual elements of the list in
-the <tt>element</tt> portion.  This is similar to how other macros like @(see
-deflist), @(see defalist), and @(see defprojection) handle <tt>x</tt>.</p>
+the @('element') portion.  This is similar to how other macros like @(see
+deflist), @(see defalist), and @(see defprojection) handle @('x').</p>
 
 
 
 <h3>Usage and Arguments</h3>
 
-<p>Let <tt>pkg</tt> be the package of <tt>name</tt>.  All functions, theorems,
-and variables are created in this package.  One of the formals must be
-<tt>pkg::x</tt>, and this argument represents the list that will be
-transformed.  Otherwise, the only restriction on formals is that you may not
-use the names <tt>pkg::a</tt>, <tt>pkg::y</tt>, and <tt>pkg::acc</tt>, because
-we use these variables in the theorems we generate.</p>
+<p>Let @('pkg') be the package of @('name').  All functions, theorems, and
+variables are created in this package.  One of the formals must be @('pkg::x'),
+and this argument represents the list that will be transformed.  Otherwise, the
+only restriction on formals is that you may not use the names @('pkg::a'),
+@('pkg::y'), and @('pkg::acc'), because we use these variables in the theorems
+we generate.</p>
 
-<p>The <tt>transform</tt> should indicate an element transforming function that
+<p>The @('transform') should indicate an element transforming function that
 produces a list of some kind as its output.  Adopting an ML-like syntax,
-<tt>transform</tt> should have a signature such as the following:</p>
+@('transform') should have a signature such as the following:</p>
 
-<code>
+@({
   transform : elem -&gt; A list
-</code>
+})
 
-<p>We produce a new function of the given <tt>name</tt>, which has the
+<p>We produce a new function of the given @('name'), which has the
 signature:</p>
 
-<code>
+@({
   name : elem list -&gt; A list
-</code>
+})
 
-<p>Our new function applies <tt>transform</tt> to every element in its input
-list, and appends together all of the results.  That is, the logical definition
-of the new function we introduce is as follows:</p>
+<p>Our new function applies @('transform') to every element in its input list,
+and appends together all of the results.  That is, the logical definition of
+the new function we introduce is as follows:</p>
 
-<code>
+@({
  (defun name (x)
    (if (atom x)
        nil
      (append (transform (car x))
              (name (cdr x)))))
-</code>
+})
 
 <p>The new function will be more efficient than the above.  In particular, we
-write a <tt>mappappend-exec</tt> function that builds the answer in reverse
-using revappend and reverses it at the end.  An even more efficient version is
-possible when the <tt>:transform-exec</tt> option is provided; see below for
+write a @('mappappend-exec') function that builds the answer in reverse using
+revappend and reverses it at the end.  An even more efficient version is
+possible when the @(':transform-exec') option is provided; see below for
 details.</p>
 
-<p>The optional <tt>:guard</tt> and <tt>:verify-guards</tt> are given to the
-<tt>defund</tt> event that we introduce.  Often @(see deflist) is convenient
-for introducing the necessary guard.</p>
+<p>The optional @(':guard') and @(':verify-guards') are given to the
+@('defund') event that we introduce.  Often @(see deflist) is convenient for
+introducing the necessary guard.</p>
 
-<p>The optional <tt>:mode</tt> keyword can be set to <tt>:logic</tt> or
-<tt>:program</tt> to introduce the recognizer in logic or program mode.  The
-default is whatever the current default defun-mode is for ACL2, i.e., if you
-are already in program mode, it will default to program mode, etc.</p>
+<p>The optional @(':mode') keyword can be set to @(':logic') or @(':program')
+to introduce the recognizer in logic or program mode.  The default is whatever
+the current default defun-mode is for ACL2, i.e., if you are already in program
+mode, it will default to program mode, etc.</p>
 
-<p>The optional <tt>:transform-true-list-p</tt> argument can be set to
-<tt>t</tt> whenever the transformation is known to unconditionally produce a
-true list, and allows us to slightly optimize our function.</p>
+<p>The optional @(':transform-true-list-p') argument can be set to @('t')
+whenever the transformation is known to unconditionally produce a true list,
+and allows us to slightly optimize our function.</p>
 
 <h4>The :transform-exec argument</h4>
 
-<p>When provided, the optional <tt>:transform-exec</tt> argument should be the
-name of a function that satisfies the following property:</p>
+<p>When provided, the optional @(':transform-exec') argument should be the name
+of a function that satisfies the following property:</p>
 
-<code>
+@({
   (implies (true-listp acc)
            (equal (transform-exec x acc)
                   (append (rev (transform x)) acc)))
-</code>
+})
 
 <p>Note that such functions are automatically introduced by @(see
 defprojection).  For instance,</p>
 
-<code>
+@({
  (defprojection square-list (x)
    (square x))
-</code>
+})
 
-<p>generates a suitable function named <tt>square-list-exec</tt>.  Amusingly,
+<p>generates a suitable function named @('square-list-exec').  Amusingly,
 suitable functions are also generated by defmapappend, itself.</p>
 
 <p>When such a function is provided, we can use it to generate a more efficient
 implementation, which uses the tail-recursive function to build the answer in
 reverse, and then reverses it at the very end, avoiding even the intermediate
-computation of the lists emitted by <tt>transform</tt>.</p>")
+computation of the lists emitted by @('transform').</p>")
 
 (defun defmapappend-fn (name formals transform
                              guard verify-guards
@@ -227,7 +227,7 @@ computation of the lists emitted by <tt>transform</tt>.</p>")
                   (and parents
                        (str::cat "@(call " (symbol-name name)
                                  ") applies @(see " (symbol-name transform-fn)
-                                 ") to every member of the list <tt>x</tt>, "
+                                 ") to every member of the list @('x'), "
                                  "and appends together all the resulting lists."))))
 
        (long (or long

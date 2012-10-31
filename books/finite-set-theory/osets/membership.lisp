@@ -30,10 +30,9 @@
 
 (defsection in
   :parents (osets)
-  :short "@(call in) determines if <tt>a</tt> is a member of the set
-<tt>X</tt>."
+  :short "@(call in) determines if @('a') is a member of the set @('X')."
 
-  :long "<p>The logical definition of <tt>in</tt> makes no mention of the set
+  :long "<p>The logical definition of @('in') makes no mention of the set
 order, except implicitly by the use of the set @(see primitives) like @(see
 head) and @(see tail).</p>
 
@@ -41,36 +40,36 @@ head) and @(see tail).</p>
 unrolling.  On CCL, it seems to run about 2.6x faster on the following
 loop:</p>
 
-<code>
+@({
  ;; 4.703 sec logic, 1.811 sec exec
  (let ((big-set (loop for i from 1 to 100000 collect i)))
    (gc$)
    (time (loop for i fixnum from 1 to 30000 do (sets::in i big-set))))
-</code>
+})
 
-<p>There are other ways we could optimize <tt>in</tt>.  Since the set is
-ordered, we could try to use the set order @(see <<) to stop early when we ran
-into an element that is larger than the one we are looking for.  For instance,
-when looking for 1 in the set '(2 3 4), we know that since <tt>1 &lt;&lt;
-2</tt> that <tt>1</tt> cannot be a member of this set.</p>
+<p>There are other ways we could optimize @('in').  Since the set is ordered,
+we could try to use the set order @(see <<) to stop early when we ran into an
+element that is larger than the one we are looking for.  For instance, when
+looking for 1 in the set '(2 3 4), we know that since @('1 << 2') that @('1')
+cannot be a member of this set.</p>
 
-<p>The simplest way to do this is to use <tt>&lt;&lt;</tt> at every element.
-But set order comparisons can be very expensive, especially when sets contain
-large cons structures.  So while it is easy to contrive situations where
-exploiting the order would be advantageous, like</p>
+<p>The simplest way to do this is to use @('<<') at every element.  But set
+order comparisons can be very expensive, especially when sets contain large
+cons structures.  So while it is easy to contrive situations where exploiting
+the order would be advantageous, like</p>
 
-<code>
+@({
  (in 1 '(2 3 4 .... 100000))
-</code>
+})
 
 <p>where we could return instantly, there are also times where it would be
 slower.  For instance, on</p>
 
-<code>
+@({
  (in 100001 '(1 2 3 4 ... 100000))
-</code>
+})
 
-<p>we would incur the extra cost of 100,000 calls to <tt>&lt;&lt;</tt>.</p>
+<p>we would incur the extra cost of 100,000 calls to @('<<').</p>
 
 <p>For this reason, we do not currently implement any short-circuiting.  The
 reasoning is:</p>
@@ -79,13 +78,13 @@ reasoning is:</p>
 
 <li>it is not clear which would be faster in all cases,</li>
 
-<li>it is not clear what the typical usage behavior of <tt>in</tt> is, so even
-if we wanted to benchmark alternate implementations, it may be hard to come up
+<li>it is not clear what the typical usage behavior of @('in') is, so even if
+we wanted to benchmark alternate implementations, it may be hard to come up
 with the right benchmarking suite</li>
 
-<li>both solutions are O(n) anyway, and <tt>in</tt> isn't a function that
-should probably be used in any kind of loop so its performance shouldn't be
-especially critical to anything</li>
+<li>both solutions are O(n) anyway, and @('in') isn't a function that should
+probably be used in any kind of loop so its performance shouldn't be especially
+critical to anything</li>
 
 <li>the current method is arguably no less efficient than an unordered
 implementation.</li>
@@ -93,8 +92,8 @@ implementation.</li>
 </ul>
 
 <p>Future note.  In principle membership in an ordered list might be done in
-<tt>O(log_2 n)</tt>.  We are considering using a <i>galloping</i> membership
-check in the future to obtain something along these lines.</p>"
+@('O(log_2 n)').  We are considering using a <i>galloping</i> membership check
+in the future to obtain something along these lines.</p>"
 
   (defun in (a X)
     (declare (xargs :guard (setp X)
@@ -237,13 +236,13 @@ element.  Accordingly, the set order plays a role in the induction scheme that
 we get from @(see insert)'s definition.  This makes insert somewhat different
 than other set operations (membership, union, cardinality, etc.) that just use
 a simple @(see tail)-based induction, where the set order is already hidden by
-<tt>tail</tt>.</p>
+@('tail').</p>
 
 <p>When we are proving theorems about sets, we generally want to avoid thinking
-about the set order, but we sometimes need to induct over <tt>insert</tt>.  So,
+about the set order, but we sometimes need to induct over @('insert').  So,
 here we introduce a new induction scheme that allows us to induct over insert
 but hides the set order.  We disable the ordinary induction scheme that insert
-uses, and set up an induction hint so that <tt>weak-insert-induction</tt> will
+uses, and set up an induction hint so that @('weak-insert-induction') will
 automatically be used instead.</p>"
 
   (defthm weak-insert-induction-helper-1
@@ -285,7 +284,7 @@ automatically be used instead.</p>"
 
 (defsection subset
   :parents (osets)
-  :short "@(call subset) determines if <tt>X</tt> is a subset of <tt>Y</tt>."
+  :short "@(call subset) determines if @('X') is a subset of @('Y')."
 
   :long "<p>We use a logically simple definition, but using MBE we exploit the
 set order to implement a tail-recursive, linear subset check.</p>
@@ -294,12 +293,12 @@ set order to implement a tail-recursive, linear subset check.</p>
 the way the order check is done.  It is about 3x faster than the :logic version
 of fast-subset on the following loop:</p>
 
-<code>
+@({
  ;; 3.83 sec logic, 1.24 seconds exec
  (let ((x (loop for i from 1 to 1000 collect i)))
    (gc$)
    (time$ (loop for i fixnum from 1 to 100000 do (sets::subset x x))))
-</code>
+})
 
 <p>In the future we may investigate developing a faster subset check based on
 galloping.</p>"
@@ -387,18 +386,17 @@ galloping.</p>"
   :parents (osets)
   :short "A way to quantify over sets."
 
-  :long "<p><tt>all-by-membership</tt> is a generic theorem that can be used to
+  :long "<p>@('all-by-membership') is a generic theorem that can be used to
 prove that a property holds of a set by showing that a related property holds
 of the set elements.</p>
 
-<p>The most important role of <tt>all-by-membership</tt> is to allow for
+<p>The most important role of @('all-by-membership') is to allow for
 pick-a-point proofs of @(see subset).  That is, it allows us to show that
-<tt>(subset X Y)</tt> holds by showing that every element of X satisfies
-<tt>(in a Y)</tt>.</p>
+@('(subset X Y)') holds by showing that every element of X satisfies @('(in a
+Y)').</p>
 
 <p>More generally, we could show that a set satisfies a predicate like
-<tt>integer-setp</tt> because each of its elements satisfies
-<tt>integerp</tt>.</p>
+@('integer-setp') because each of its elements satisfies @('integerp').</p>
 
 
 <h3>Pick-a-Point Proofs in ACL2</h3>
@@ -407,76 +405,73 @@ pick-a-point proofs of @(see subset).  That is, it allows us to show that
 In traditional mathematics, @(see subset) is defined using quantification over
 members, e.g., as follows:</p>
 
-<code>
+@({
   (equal (subset X Y)
          (forall a (implies (in a X) (in a Y))))
-</code>
+})
 
 <p>This definition is very useful for <b>pick-a-point</b> proofs that some set
-<tt>X</tt> is a subset of <tt>Y</tt>.  Such a proof begins by picking an
-arbitrary point <tt>a</tt> that is a member of <tt>X</tt>.  Then, if we can
-show that <tt>a</tt> must be a member of <tt>Y</tt>, we have established
-<tt>(subset X Y)</tt>.</p>
+@('X') is a subset of @('Y').  Such a proof begins by picking an arbitrary
+point @('a') that is a member of @('X').  Then, if we can show that @('a') must
+be a member of @('Y'), we have established @('(subset X Y)').</p>
 
 <p>These kinds of arguments are extremely useful, and we would like to be able
 to carry them out in ACL2 about osets.  But since ACL2 does not have explicit
 quantifiers, we cannot even write a theorem like this:</p>
 
-<code>
+@({
  (implies (forall a (implies (in a X) (in a Y)))
           (subset X Y))
-</code>
+})
 
 <p>But consider the contrapositive of this theorem:</p>
 
-<code>
+@({
  (implies (not (subset X Y))
           (exists a (and (in a X) (not (in a Y)))))
-</code>
+})
 
 <p>We <i>can</i> prove something like this, by writing an explicit function to
-search for an element of <tt>X</tt> that is not an element of <tt>Y</tt>.  That
-is, we can prove:</p>
+search for an element of @('X') that is not an element of @('Y').  That is, we
+can prove:</p>
 
-<code>
+@({
  (implies (not (subset X Y))
           (let ((a (find-witness X Y)))
             (and (in a X)
                  (not (in a Y)))))
-</code>
+})
 
 <p>Once we prove the above, we still need to be able to \"reduce\" a proof of
-<tt>(subset X Y)</tt> to a proof of <tt>(implies (in a X) (in a Y))</tt>.
-While we can't do this with a direct rewrite rule, we can sort of fake it using
+@('(subset X Y)') to a proof of @('(implies (in a X) (in a Y))').  While we
+can't do this with a direct rewrite rule, we can sort of fake it using
 functional instantiation.  As groundwork:</p>
 
 <ul>
 
-<li>Using @(see encapsulate), we introduce functions <tt>sub</tt> and
-<tt>super</tt> with the constraint that
-<code>
+<li>Using @(see encapsulate), we introduce functions @('sub') and @('super')
+with the constraint that @({
  (implies (in a (sub))
           (in a (super)))
-</code></li>
+})</li>
 
 <li>Using this constraint, we prove the generic theorem:
-<code>
+@({
  (subset (sub) (super))
-</code></li>
+})</li>
 
 </ul>
 
-<p>Then, when we want to prove <tt>(subset X Y)</tt> for some particular
-<tt>X</tt> and <tt>Y</tt>, we can functionally instantiate the generic theorem
-with</p>
+<p>Then, when we want to prove @('(subset X Y)') for some particular @('X') and
+@('Y'), we can functionally instantiate the generic theorem with</p>
 
-<code>
-   sub   &lt;-- (lambda () X)
-   super &lt;-- (lambda () Y)
-</code>
+@({
+   sub   <-- (lambda () X)
+   super <-- (lambda () Y)
+})
 
-<p>And this allows us to prove <tt>(subset X Y)</tt> as long as we can relieve
-the constraint, i.e., <tt>(implies (in a X) (in a Y))</tt>.</p>
+<p>And this allows us to prove @('(subset X Y)') as long as we can relieve the
+constraint, i.e., @('(implies (in a X) (in a Y))').</p>
 
 
 <h3>Generalizing Pick-a-Point Proofs</h3>
@@ -485,42 +480,42 @@ the constraint, i.e., <tt>(implies (in a X) (in a Y))</tt>.</p>
 reduce subset proofs to pick-a-point style membership arguments.  But we later
 generalized the approach to arbitrary predicates instead.</p>
 
-<p>First, notice that if you let the predicate <tt>(P a)</tt> be defined as
-<tt>(in a Y)</tt>, then <tt>(subset X Y)</tt> is just</p>
+<p>First, notice that if you let the predicate @('(P a)') be defined as @('(in
+a Y)'), then @('(subset X Y)') is just</p>
 
-<code>
+@({
  (forall a, (implies (in a X) (P a)))
-</code>
+})
 
-<p>Our generalization basically lets you reduce a proof of <tt>(P-setp X)</tt>
-to a proof of <tt>(implies (in a X) (P a))</tt>, for an arbitrary predicate
-<tt>P</tt>.  This can be used to prove subset by just chooisng <tt>P</tt> as
-described above, but it can also be used for many other ideas by just changing
-the meaning of <tt>P</tt>.  For instance, if <tt>P</tt> is @(see integerp),
-then we can show that <tt>X</tt> is an <tt>integer-setp</tt> or similar.</p>
+<p>Our generalization basically lets you reduce a proof of @('(P-setp X)') to a
+proof of @('(implies (in a X) (P a))'), for an arbitrary predicate @('P').
+This can be used to prove subset by just chooisng @('P') as described above,
+but it can also be used for many other ideas by just changing the meaning of
+@('P').  For instance, if @('P') is @(see integerp), then we can show that
+@('X') is an @('integer-setp') or similar.</p>
 
 <p>The mechanism is just an adaptation of that described in the previous
 section.</p>
 
 <ul>
 
-<li>We begin by introducing a completely arbitrary <tt>predicate</tt>.</li>
+<li>We begin by introducing a completely arbitrary @('predicate').</li>
 
-<li>Based on <tt>predicate</tt>, we introduce a new function, <tt>all</tt>,
-which checks to see if every member in a set satisfies <tt>predicate</tt>.</li>
+<li>Based on @('predicate'), we introduce a new function, @('all'), which
+checks to see if every member in a set satisfies @('predicate').</li>
 
 <li>We set up an encapsulate which allows us to assume that some hypotheses are
-true and that any member of some set satisfies <tt>predicate</tt>.</li>
+true and that any member of some set satisfies @('predicate').</li>
 
 </ul>
 
-<p>Finally, we prove <tt>all-by-membership</tt>, which shows that under these
-assumptions, the set satisfies <tt>all</tt>.  This theorem can be functionally
-instantiated to reduce a proof of <tt>(all X)</tt> to a proof of</p>
+<p>Finally, we prove @('all-by-membership'), which shows that under these
+assumptions, the set satisfies @('all').  This theorem can be functionally
+instantiated to reduce a proof of @('(all X)') to a proof of</p>
 
-<code>
+@({
   (implies (in a X) (P a))
-</code>"
+})"
 
   (encapsulate
     (((predicate *) => *))
@@ -569,25 +564,25 @@ instantiated to reduce a proof of <tt>(all X)</tt> to a proof of</p>
   :parents (osets)
   :short "Automatic pick-a-point proofs of @(see subset)."
 
-  :long "<p>The rewrite rule <tt>pick-a-point-subset-strategy</tt> tries to
+  :long "<p>The rewrite rule @('pick-a-point-subset-strategy') tries to
 automatically reduce proof goals such as:</p>
 
-<code>
+@({
  (implies hyps
           (subset X Y))
-</code>
+})
 
 <p>To proofs of:</p>
 
-<code>
+@({
  (implies (and hyps (in a X))
           (in a Y))
-</code>
+})
 
 <p>The mechanism for doing this is somewhat elaborate: the rewrite rule
-replaces the <tt>(subset X Y)</tt> with <tt>(subset-trigger X Y)</tt>.  This
-trigger is recognized by a computed hint, which then suggest proving the
-theorem via functional instantiation of @(see all-by-membership).</p>
+replaces the @('(subset X Y)') with @('(subset-trigger X Y)').  This trigger is
+recognized by a computed hint, which then suggest proving the theorem via
+functional instantiation of @(see all-by-membership).</p>
 
 <p>The pick-a-point method is often a good way to prove subset relations.  On
 the other hand, this rule is very heavy-handed, and you may need to disable it
@@ -713,7 +708,7 @@ of one another."
   :long "<p>Double containment can be a good way to prove that two sets are
 equal to one another.</p>
 
-<p>Unfortunately, because this rule targets <tt>equal</tt> it can get quite
+<p>Unfortunately, because this rule targets @('equal') it can get quite
 expensive.  You may sometimes wish to disable it to speed up your proofs, as
 directed by @(see accumulated-persistence).</p>"
 

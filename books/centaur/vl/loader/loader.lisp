@@ -52,7 +52,7 @@ follows:</p>
 list of @(see extended-characters) in memory.</li>
 
 <li>The @(see preprocessor) then expands away compiler directives such as
-<tt>`define</tt>, producing a new list of characters.</li>
+@('`define'), producing a new list of characters.</li>
 
 <li>The @(see lexer) tokenizes this character list into a list of @(see
 vl-token-p)s.</li>
@@ -71,8 +71,8 @@ for modules in other files.</p>")
   :parents (vl-load)
   :short "Load an individual file."
 
-  :long "<p><b>Signature:</b> @(call vl-load-file) returns
-<tt>(mv successp mods filemap oused mtokens defines warnings walist state)</tt></p>
+  :long "<p><b>Signature:</b> @(call vl-load-file) returns @('(mv successp mods
+filemap oused mtokens defines warnings walist state)')</p>
 
 <p>This is our main file-loading routine.  The filename to load and initial
 defines to use have already been provided.  We read the file, preprocess it,
@@ -195,17 +195,16 @@ and finally parse it into a list of modules.</p>"
   :parents (vl-load)
   :short "Extend @(see vl-load-file) for a list of files."
 
-  :long "<p><b>Signature:</b> @(call vl-load-files) returns <tt>(mv successp
-mods filemap oused mtokens defines warnings walist state)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-load-files) returns @('(mv successp
+mods filemap oused mtokens defines warnings walist state)').</p>
 
-<p>We just call @(see vl-load-file) on each file in <tt>filenames</tt> and
-append together all of the modules, origsrc entries, and warnings which
-result.</p>
+<p>We just call @(see vl-load-file) on each file in @('filenames') and append
+together all of the modules, origsrc entries, and warnings which result.</p>
 
-<p>In this function, <tt>successp</tt> indicates if <b>all</b> of the files
-were loaded successfully.  But even if <tt>successp</tt> is <tt>nil</tt>, the
-resulting module-list may contain at least some partial results.  That is, we
-try to load as much as possbile, even in the face of errors in some files.</p>"
+<p>In this function, @('successp') indicates if <b>all</b> of the files were
+loaded successfully.  But even if @('successp') is @('nil'), the resulting
+module-list may contain at least some partial results.  That is, we try to load
+as much as possbile, even in the face of errors in some files.</p>"
 
   (defund vl-load-files (filenames include-dirs defines overrides warnings walist filemapp state)
     "Returns (MV SUCCESSP MODS FILEMAP OUSED MTOKENS DEFINES WARNINGS WALIST STATE)"
@@ -273,25 +272,24 @@ try to load as much as possbile, even in the face of errors in some files.</p>"
   :parents (vl-load)
   :short "Try to load a module from the search path."
 
-  :long "<p><b>Signature:</b> @(call vl-load-module) returns <tt>(mv successp
-mods filemap oused mtokens defines warnings walist state)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-load-module) returns @('(mv successp
+mods filemap oused mtokens defines warnings walist state)').</p>
 
 <p>This is a thin wrapper around @(see vl-load-file) which, instead of taking a
 filename, takes a module name, e.g., \"foo\", and uses the search path to
 decide where the corresponding \"foo.v\" file is.</p>
 
-<p>The search is controlled by the <tt>searchpath</tt>, which is a list of
-strings.  We look for a file named <tt>foo.v</tt> in each directory in the
-search path, and try to process the first such file that we find using
-@(see vl-load-file).</p>
+<p>The search is controlled by the @('searchpath'), which is a list of strings.
+We look for a file named @('foo.v') in each directory in the search path, and
+try to process the first such file that we find using @(see vl-load-file).</p>
 
 <p>Note that this process can lead us to load any additional modules besides
-<tt>foo</tt> that happen to be defined in <tt>foo.v</tt>.  Also, if
-<tt>foo.v</tt> does not actually include a definition for <tt>foo</tt>, this
-may not yield <tt>foo</tt> at all.</p>
+@('foo') that happen to be defined in @('foo.v').  Also, if @('foo.v') does not
+actually include a definition for @('foo'), this may not yield @('foo') at
+all.</p>
 
 <p>In other words, the successful return of this function only actually results
-in a module <tt>foo</tt> being loaded if the logic designers are disciplined in
+in a module @('foo') being loaded if the logic designers are disciplined in
 their file naming.</p>"
 
   (defund vl-load-module (modname searchpath searchext include-dirs defines overrides
@@ -358,13 +356,13 @@ their file naming.</p>"
   :parents (vl-load)
   :short "Extend @(see vl-load-module) to a list of modules."
 
-  :long "<p><b>Signature:</b> @(call vl-load-modules) returns <tt>(mv successp
-mods filemap oused mtokens defines warnings walist state)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-load-modules) returns @('(mv successp
+mods filemap oused mtokens defines warnings walist state)').</p>
 
-<p>As with @(see vl-load-filenames), here <tt>successp</tt> indicates whether
-<b>all</b> of the files were loaded successfully.  Even if <tt>successp</tt> is
-<tt>nil</tt>, the resulting mods may contain at least some of the modules.
-That is, we try to load as much as possible, even in the face of errors.</p>
+<p>As with @(see vl-load-filenames), here @('successp') indicates whether
+<b>all</b> of the files were loaded successfully.  Even if @('successp') is
+@('nil'), the resulting mods may contain at least some of the modules.  That
+is, we try to load as much as possible, even in the face of errors.</p>
 
 <p>Note that as in @(see vl-load-module), a successful return does not
 necessarily indicate that we have loaded modules of the desired names, and we
@@ -443,8 +441,8 @@ for details.</p>"
   :parents (vl-load)
   :short "Attempt to find and load any missing modules."
 
-  :long "<p><b>Signature:</b> @(call vl-flush-out-modules) returns <tt>(mv
-successp mods filemap oused mtokens defines warnings walist state)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-flush-out-modules) returns @('(mv
+successp mods filemap oused mtokens defines warnings walist state)').</p>
 
 <p>After some initial files have been loaded, it is generally necessary to
 track down and load any submodules that have been referenced but not defined.
@@ -457,15 +455,15 @@ modules that will also need to be loaded.</p>
 <p>One could probably argue that flushing out will reach a fixed point so long
 as the file system is finite.  But there isn't any good way to argue that this
 function terminates within the ACL2 logic, so we simply cap the maximum number
-of times we will look for new modules with the counter <tt>n</tt>.</p>
+of times we will look for new modules with the counter @('n').</p>
 
 <p>We return successfully only if, after some number of iterations, we arrive
 at a <see topic=\"@(url completeness)\">complete</see> module list, i.e., one
 where every referenced module is defined.</p>
 
-<p>However, even when <tt>successp</tt> is <tt>nil</tt>, there may be many
-useful modules in the module list.  We return everything we were able to parse.
-You can get a complete subset of these modules by, e.g., using @(see
+<p>However, even when @('successp') is @('nil'), there may be many useful
+modules in the module list.  We return everything we were able to parse.  You
+can get a complete subset of these modules by, e.g., using @(see
 vl-remove-bad-modules) to eliminate all of the modules named by @(see
 vl-modulelist-missing).</p>"
 
@@ -667,16 +665,16 @@ vl-modulelist-missing).</p>"
   :short "Add warnings about modules with multiple definitions, and throw away
 all but the first definition of any multiply-defined module."
 
-  :long "<p><b>Signature:</b> @(call vl-handle-multidef-mods) returns
-<tt>(mv x-prime warnings)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-handle-multidef-mods) returns @('(mv
+x-prime warnings)').</p>
 
-<p>The new list of modules, <tt>x-prime</tt>, has uniquely named modules and is
-formed by removing from <tt>x</tt> all but the first definition of any module
-that has been encountered.  Non-fatal warnings are also added to any surviving
+<p>The new list of modules, @('x-prime'), has uniquely named modules and is
+formed by removing from @('x') all but the first definition of any module that
+has been encountered.  Non-fatal warnings are also added to any surviving
 modules which had multiple definitions.</p>
 
-<p>The list of <tt>warnings</tt> contains no additional information, but merely
-collects up the warnings that have been added to modules in <tt>x</tt>.</p>"
+<p>The list of @('warnings') contains no additional information, but merely
+collects up the warnings that have been added to modules in @('x').</p>"
 
   (defund vl-gather-multidef-locstrings (name mods)
     "Returns a string list."
@@ -816,16 +814,16 @@ collects up the warnings that have been added to modules in <tt>x</tt>.</p>"
 
 (defsection scope-of-defines
   :parents (loader)
-  :short "How VL and other tools handle the scope of <tt>`defines</tt>."
+  :short "How VL and other tools handle the scope of @('`defines')."
 
-  :long "<p><i>What is the scope of a <tt>`define</tt>?</i></p>
+  :long "<p><i>What is the scope of a @('`define')?</i></p>
 
-<p>Until the end of 2009, we treated <tt>`define</tt>s as having file-scope,
-and processed every file using only the initial <tt>define</tt>s to begin with.
-But now we are treating <tt>`define</tt>s as cumulative, allowing them to spill
-over from one file into the next.  This is convenient in that it allows us to
-see what defines have been encountered, and hence we can programmatically
-extract the values associated with particular <tt>`define</tt> symbols.</p>
+<p>Until the end of 2009, we treated @('`define')s as having file-scope, and
+processed every file using only the initial @('define')s to begin with.  But
+now we are treating @('`define')s as cumulative, allowing them to spill over
+from one file into the next.  This is convenient in that it allows us to see
+what defines have been encountered, and hence we can programmatically extract
+the values associated with particular @('`define') symbols.</p>
 
 <p>This is scary.  The order of file loading is not especially predictable when
 @(see vl-flush-out-modules) is used, so different things might happen depending
@@ -836,19 +834,19 @@ tools do.  We found that, on both Verilog-XL and NCVerilog,</p>
 
 <ul>
 
-<li><tt>`define</tt>s that occur before an <tt>`include</tt> do seem to carry
-over into the included file.</li>
+<li>@('`define')s that occur before an @('`include') do seem to carry over into
+the included file.</li>
 
-<li>When we give the tool multiple files, e.g., <tt>verilog foo.v bar.v</tt> or
-<tt>ncverilog foo.v bar.v</tt>, the includes from the earlier files do carry
-over to the later files.  Hence, switching the argument order can affect
-simulation results.</li>
+<li>When we give the tool multiple files, e.g., @('verilog foo.v bar.v') or
+@('ncverilog foo.v bar.v'), the includes from the earlier files do carry over
+to the later files.  Hence, switching the argument order can affect simulation
+results.</li>
 
-<li><tt>`define</tt>s that occur in the main files (those that are given as
+<li>@('`define')s that occur in the main files (those that are given as
 explicit command line arguments) are indeed carried over into library
 files</li>
 
-<li><tt>`define</tt>s from earlier-loaded library files are carried over into
+<li>@('`define')s from earlier-loaded library files are carried over into
 later-loaded library files.</li>
 
 </ul>
@@ -861,10 +859,10 @@ what modules are missing and try to load them in alphabetical order.  Other
 tools probably use different orders and may produce very different
 behaviors.</p>
 
-<p>BOZO we could probably defend against this by tracking which <tt>ifdef</tt>
+<p>BOZO we could probably defend against this by tracking which @('ifdef')
 tests have ever been considered and what their values are.  If we find that two
-files have ever done an <tt>ifdef</tt> and gotten different results, we could
-add a warning that maybe something is amiss with file loading.</p>")
+files have ever done an @('ifdef') and gotten different results, we could add a
+warning that maybe something is amiss with file loading.</p>")
 
 
 
@@ -872,50 +870,50 @@ add a warning that maybe something is amiss with file loading.</p>")
   :parents (loader)
   :short "Top level interface for loading Verilog sources."
 
-  :long "<p><b>Signature:</b> @(call vl-load) returns <tt>(mv successp mods
-filemap defines warnings state)</tt></p>
+  :long "<p><b>Signature:</b> @(call vl-load) returns @('(mv successp mods
+filemap defines warnings state)')</p>
 
 <h5>Inputs</h5>
 
 <ul>
 
-<li><tt>override-dirs</tt> give the directories to find any @(see overrides)
-that you wish to use.</li>
+<li>@('override-dirs') give the directories to find any @(see overrides) that
+you wish to use.</li>
 
-<li><tt>start-files</tt> is a list of file names (not module names) that you
-want to load.  We begin by trying to read, preprocess, lex, and parse the
-contents of these files.</li>
+<li>@('start-files') is a list of file names (not module names) that you want
+to load.  We begin by trying to read, preprocess, lex, and parse the contents
+of these files.</li>
 
-<li><tt>start-modnames</tt> is a list of module names that you want to load.
-We look for these in the search path unless they are defined after we have
-loaded the <tt>start-files</tt>.</li>
+<li>@('start-modnames') is a list of module names that you want to load.  We
+look for these in the search path unless they are defined after we have loaded
+the @('start-files').</li>
 
-<li><tt>search-path</tt> is a list of directories that may contain additional
-Verilog files.  After we load the <tt>start-files</tt>, we will start looking
-for any <see topic=\"@(url vl-modulelist-missing)\">missing modules</see> in
-the search path.  This is similar to the \"library directories\" of tools like
+<li>@('search-path') is a list of directories that may contain additional
+Verilog files.  After we load the @('start-files'), we will start looking for
+any <see topic=\"@(url vl-modulelist-missing)\">missing modules</see> in the
+search path.  This is similar to the \"library directories\" of tools like
 Verilog-XL and NCVerilog; see @(see vl-load-module) and @(see
 vl-flush-out-modules) for details.</li>
 
-<li><tt>searchext</tt> is a list of file extensions to consider Verilog files
-when looking in the <tt>search-path</tt>.  The default is <tt>(\"v\")</tt>,
-meaning that only files such as <tt>foo.v</tt> are considered.</li>
+<li>@('searchext') is a list of file extensions to consider Verilog files when
+looking in the @('search-path').  The default is @('(\"v\")'), meaning that
+only files such as @('foo.v') are considered.</li>
 
-<li><tt>include-dirs</tt> is a list of directories that will be searched when
-<tt>`include</tt> directives are encountered.  This is similar to the \"include
+<li>@('include-dirs') is a list of directories that will be searched when
+@('`include') directives are encountered.  This is similar to the \"include
 directories\" for Verilog-XL.  Any includes with relative path names are
 searched for in (1) the current directory, then (2) these include dirs, in the
 specified order.</li>
 
-<li><tt>defines</tt> is a @(see vl-defines-p) alist which will be given to the
-@(see preprocessor), and can be used to set up any initial <tt>`defines</tt>
-that you want to use.  See also @(see scope-of-defines).</li>
+<li>@('defines') is a @(see vl-defines-p) alist which will be given to the
+@(see preprocessor), and can be used to set up any initial @('`defines') that
+you want to use.  See also @(see scope-of-defines).</li>
 
-<li><tt>filemapp</tt> is a flag that says whether to generate a filemap; see
-below where we describe the <tt>filemap</tt> output.</li>
+<li>@('filemapp') is a flag that says whether to generate a filemap; see below
+where we describe the @('filemap') output.</li>
 
-<li><tt>state</tt> is the ACL2 state stobj, which is needed since this
-function reads from files.</li>
+<li>@('state') is the ACL2 state stobj, which is needed since this function
+reads from files.</li>
 
 </ul>
 
@@ -923,26 +921,26 @@ function reads from files.</li>
 
 <ul>
 
-<li><tt>successp</tt> indicates whether all modules were loaded successfully.
-Even when <tt>successp</tt> is <tt>nil</tt>, there may be at least some
-portion of the modules that have been loaded successfully.</li>
+<li>@('successp') indicates whether all modules were loaded successfully.  Even
+when @('successp') is @('nil'), there may be at least some portion of the
+modules that have been loaded successfully.</li>
 
-<li><tt>mods</tt> are our representation of any @(see modules) that have been
+<li>@('mods') are our representation of any @(see modules) that have been
 successfully parsed from the files.  The modules have not been transformed, and
 is intended to capture the actual source code as it occurs on the disk.  The
 modules in the list are guaranteed to have unique names.  To accomplish this,
 we keep only the first definition of any module we encounter.</li>
 
-<li><tt>filemap</tt> is an ordinary alist that maps filenames to their
-contents; see @(see vl-filemap-p).  This alist is only constructed if
-<tt>filemapp</tt> is <tt>t</tt>.</li>
+<li>@('filemap') is an ordinary alist that maps filenames to their contents;
+see @(see vl-filemap-p).  This alist is only constructed if @('filemapp') is
+@('t').</li>
 
-<li><p><tt>defines</tt> is an updated @(see vl-defines-p) alist, which represents
+<li><p>@('defines') is an updated @(see vl-defines-p) alist, which represents
 the final list of define bindings at the end of the loading process.</p>
 
 </li>
 
-<li><tt>warnings</tt> are any \"floating\" @(see warnings) that were generated
+<li>@('warnings') are any \"floating\" @(see warnings) that were generated
 during the loading process.  Note that most warnings generated during the
 parsing of modules are automatically associated with their modules, and these
 warnings are <i>not</i> included.  Instead, this list will have warnings

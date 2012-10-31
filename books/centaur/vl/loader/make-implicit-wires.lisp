@@ -82,13 +82,12 @@ expect that every wire should have a declaration.</p>
 <p>Verilog allows wires to be implicitly declared in certain cases.</p>
 
 <p>When a wire is implicitly declared, its type is controlled by the
-<tt>`default_nettype</tt> compiler directive (Section 19.2).  But VL's @(see
+@('`default_nettype') compiler directive (Section 19.2).  But VL's @(see
 preprocessor) does not yet support this directive and will cause an error if it
 is used, so for now we can safely assume any implicit wires should just have
-type <tt>wire</tt>.  (We can probably add support <tt>default_nettype</tt>
-without too much work, since our new approach of going through the module
-elements sequentially means that we have easy access to location
-information.)</p>
+type @('wire').  (We can probably add support @('default_nettype') without too
+much work, since our new approach of going through the module elements
+sequentially means that we have easy access to location information.)</p>
 
 <p>We think wires need to be declared, explicitly or implicitly, before being
 used.  The standard seems not to explicitly say whether or not this is the
@@ -102,10 +101,10 @@ identifier has not been <b>declared previously</b> in the scope...</i>.\"</p>
 <p>Section 4.5 outlines the conditions under which an implicit wire declaration
 is supposed to be made.  In each case, the implicit declaration is to be added
 to the nearest scope, but it seems like this only matters in the case of
-<tt>generate</tt> blocks, which we don't currently support.  (You might think
-that it would matter for functions, tasks, and named blocks as well, but it
-doesn't seem possible to use implicit wires in these contexts, see bullet #4
-below for details).</p>
+@('generate') blocks, which we don't currently support.  (You might think that
+it would matter for functions, tasks, and named blocks as well, but it doesn't
+seem possible to use implicit wires in these contexts, see bullet #4 below for
+details).</p>
 
 <p>Note: I think that throughout Section 4.5, the words <i>port expression
 declaration</i> are a typo that should be <i>port declaration</i>; nowhere else
@@ -114,15 +113,15 @@ according to Acrobat's find function.)</p>
 
 <h4>Case 1</h4>
 
-<p>If there is a port declaration like <tt>input [3:0] i;</tt> that has no
+<p>If there is a port declaration like @('input [3:0] i;') that has no
 corresponding wire declaration, then we are supposed to infer an implicit net
 with the vector width of the \"port expression declaration,\" which I think
-means the <tt>[3:0]</tt> part.  This seems basically reasonable when you just
-read it, but there are a lot of subtle issues that arise; see #7 below for some
+means the @('[3:0]') part.  This seems basically reasonable when you just read
+it, but there are a lot of subtle issues that arise; see #7 below for some
 experiments.</p>
 
-<p>Note that per 12.3.3, a port declaration like <tt>input wire [3:0] i;</tt>
-is treated as both an input declaration and an explicit wire declaration.  We
+<p>Note that per 12.3.3, a port declaration like @('input wire [3:0] i;') is
+treated as both an input declaration and an explicit wire declaration.  We
 don't have to do anything special to handle this, because the parser
 automatically builds both a @(see vl-portdecl-p) and a @(see vl-netdecl-p) for
 such declarations; see @(srclink vl-parse-port-declaration-noatts).</p>
@@ -143,7 +142,7 @@ regardless of whether it's a gate/udp/module.</p>
 
 <h3>Implicit Wires in Verilog Implementations</h3>
 
-<p>We developed some tests (see <tt>test/test-implicit.v</tt>) to see how
+<p>We developed some tests (see @('test/test-implicit.v')) to see how
 Verilog-XL and NCVerilog handle implicit wires.  Here are our findings.</p>
 
 <p><b>#1</b>.  As expected, both allow implicit wires to be inferred from the
@@ -151,26 +150,26 @@ arguments of gate and module instances.  This seems to be the intent of Case
 2.</p>
 
 <p><b>#2</b>.  As expected, both complain about undeclared wires on the
-right-hand side of an <tt>assign</tt> statement.  This seems to agree with Case
+right-hand side of an @('assign') statement.  This seems to agree with Case
 2.</p>
 
 <p><b>#3</b>.  As expected, NCVerilog allows us to infer implicit nets from the
-left-hand sides of <tt>assign</tt> elements.  Unfortunately, Verilog-XL
-complains about such wires, which seems to contradict the standard.  As a
-compromise, our approach is to mimick NCVerilog and infer the implicit net, but
-warn that some other tools like Verilog-XL may not allow the construct.</p>
+left-hand sides of @('assign') elements.  Unfortunately, Verilog-XL complains
+about such wires, which seems to contradict the standard.  As a compromise, our
+approach is to mimick NCVerilog and infer the implicit net, but warn that some
+other tools like Verilog-XL may not allow the construct.</p>
 
 <p>A subtle case is, what if #2 and #3 overlap, i.e., an undeclared wire occurs
 on both the left-hand and right-hand sides?  NCVerilog seems to process the
 left-hand side first, and hence it allows us to infer an implicit wire for
-<tt>w</tt> when we give it an assignment like <tt>assign w = w</tt>.  This
-isn't entirely contrived; someone might occasionally write things like
-<tt>assign {a, abar} = {foo, ~a}</tt>.</p>
+@('w') when we give it an assignment like @('assign w = w').  This isn't
+entirely contrived; someone might occasionally write things like @('assign {a,
+abar} = {foo, ~a}').</p>
 
 <p><b>#4</b>.  Mostly as expected, neither tool allows undeclared wires on
 either side of an assignment in an always block.  The tools even reject
-implicit wires in procedural continuous assignments, e.g., <tt>always @@(b)
-assign w = a;</tt>.  But this seems arguably incorrect: is not a procedural
+implicit wires in procedural continuous assignments, e.g., @('always @@(b)
+assign w = a;').  But this seems arguably incorrect: is not a procedural
 continuous assignment also a continuous assignment, whose LHS should therefore
 be able to contain implicit wires?</p>
 
@@ -179,71 +178,71 @@ might perhaps be interpreted as allowing it, because it allows us to avoid
 certain scoping issues.</p>
 
 <p>In particular, suppose we see a procedural continuous assignment statement,
-<tt>assign w = ...</tt>, where <tt>w</tt> is not declared.  If this statement
-occurs in a task or a named block within an initial/always statement, should
-the declaration for <tt>w</tt> be added to the module or to this more local
-scope?  I'm not sure.  So, the good thing about not inferring implicit nets for
-these assignments is that I don't have to be able to answer the question,
-because I'm not going to infer a net anyway.</p>
+@('assign w = ...'), where @('w') is not declared.  If this statement occurs in
+a task or a named block within an initial/always statement, should the
+declaration for @('w') be added to the module or to this more local scope?  I'm
+not sure.  So, the good thing about not inferring implicit nets for these
+assignments is that I don't have to be able to answer the question, because I'm
+not going to infer a net anyway.</p>
 
 <p><b>#5</b>.  As expected, neither implementation tolerates undeclared wires
 on either side of assignments in function bodies.  This seems perfectly
 reasonable since functions aren't allowed to have procedural continuous
 assignments (10.4.4 E).</p>
 
-<p><b>#6</b>  As expected, both Verilog-XL and NCVerilog require that all wires
+<p><b>#6</b> As expected, both Verilog-XL and NCVerilog require that all wires
 be declared (either explicitly or implicitly) before they are used.  For
-instance, they if <tt>a</tt> is declared but <tt>w</tt> is not, then they
-reject code fragments such as:</p>
+instance, they if @('a') is declared but @('w') is not, then they reject code
+fragments such as:</p>
 
-<code>
+@({
 assign a = w;   // error here, saying w is undeclared
 wire w;
-</code>
+})
 
 <p>And also for code like this:</p>
 
-<code>
+@({
 not(a, w);
 wire w;         // error here, saying w is implicitly declared above
-</code>
+})
 
 
 <p><b>#7</b> The whole declare-before-use thing is pretty strange for ports.
-Suppose <tt>c</tt> is a port of the module.  Then, both NCVerilog and
-Verilog-XL will complain if you try to write:</p>
+Suppose @('c') is a port of the module.  Then, both NCVerilog and Verilog-XL
+will complain if you try to write:</p>
 
-<code>
+@({
 wire c2 = c;    // error here, saying c is not declared.
 input c;
-</code>
+})
 
 <p>Verilog-XL seems to require the port declaration to come before the wire
 declaration, if any.  That is, it considers the following an error, whereas
 NCVerilog allows it:</p>
 
-<code>
+@({
 wire c;
 input c;
-</code>
+})
 
 <p>This seems to hold for implicit declarations, too.  For instance, Verilog-XL
 rejects the following, but NCVerilog allows it:</p>
 
-<code>
+@({
 buf(c, c2);     // implicit declaration of wire c here
 input c;
-</code>
+})
 
 <p>But both Verilog-XL and NCVerilog allow the following, even though you might
-think the buf gate would introduce an implicit declaration of <tt>c</tt> that
-would conflict with the explicit declaration.</p>
+think the buf gate would introduce an implicit declaration of @('c') that would
+conflict with the explicit declaration.</p>
 
-<code>
+@({
 input c;
 buf(c, c2);
 wire c;
-</code>
+})
 
 <p>We try to be permissive and mimick NCVerilog, but add a (non-fatal) warning
 if a wire's net declaration comes before its port declaration to explain that
@@ -278,8 +277,8 @@ signedness of the port, which isn't discussed above, but appears to be the
 correct thing to do; see @(see portdecl-sign) for details.  We place the
 implicit wire declaration at the same location as the corresponding port
 declaration, which seems like the easiest place to put it.  We also mark each
-implicit wire declaration with the <tt>VL_PORT_IMPLICIT</tt> attribute, though
-we have no particular use for this.</p>
+implicit wire declaration with the @('VL_PORT_IMPLICIT') attribute, though we
+have no particular use for this.</p>
 
 <p>With regard to Case 2, we add one-bit wire declarations for any undeclared
 wires that occur within the port arguments of gate and module instances, and
@@ -287,8 +286,8 @@ which occur in the left-hand sides of continuous assignments.  For assignments,
 we always issue a non-fatal warning that says Verilog-XL doesn't add implicit
 nets here, and we always process the left-hand side first (like NCVerilog).  We
 add the wire declarations at the locations in which they are implicitly
-declared, and mark them with the <tt>VL_IMPLICIT</tt> attribute, which is
-useful in @(see typo-detection).</p>")
+declared, and mark them with the @('VL_IMPLICIT') attribute, which is useful in
+@(see typo-detection).</p>")
 
 
 
@@ -308,11 +307,11 @@ useful in @(see typo-detection).</p>")
   :short "@(call vl-make-ordinary-implicit-wires) generates net declarations for
 one-bit implicit wires."
 
-  :long "<p>We are given <tt>x</tt>, a string list that should initially
-contain the names of some implicit wires that we are supposed to introduce, and
-<tt>loc</tt>, a @(see vl-location-p) that should be the <tt>minloc</tt> for the
-module.  We produce a list of one-bit @(see vl-netdecl-p)s, one for each name
-in <tt>x</tt>.</p>"
+  :long "<p>We are given @('x'), a string list that should initially contain
+the names of some implicit wires that we are supposed to introduce, and
+@('loc'), a @(see vl-location-p) that should be the @('minloc') for the module.
+We produce a list of one-bit @(see vl-netdecl-p)s, one for each name in
+@('x').</p>"
 
   (defund vl-make-ordinary-implicit-wires (loc names)
     (declare (xargs :guard (and (vl-location-p loc)
@@ -348,9 +347,9 @@ in <tt>x</tt>.</p>"
   :short "@(call vl-modinst-exprs-for-implicit-wires) gets the expressions from
 module instances for making implicit wires."
 
-  :long "<p>We return <tt>(mv main other)</tt>, two expression lists where
-<tt>main</tt> has the expressions from the modinst's port list where implicit
-wires are allowed, and <tt>other</tt> has the other expressions in the module
+  :long "<p>We return @('(mv main other)'), two expression lists where
+@('main') has the expressions from the modinst's port list where implicit wires
+are allowed, and @('other') has the other expressions in the module
 instance (its range, parameter list, etc.) where implicit wires aren't
 allowed.</p>"
 
@@ -389,9 +388,9 @@ allowed.</p>"
   :short "@(call vl-gateinst-exprs-for-implicit-wires) gets the expressions
 from a gate instance for making implicit wires."
 
-  :long "<p>We return <tt>(mv main other)</tt>, two expression lists where
-<tt>main</tt> has the expressions from the gateinst's port list where implicit
-wires are allowed, and <tt>other</tt> has the other expressions in the gate
+  :long "<p>We return @('(mv main other)'), two expression lists where
+@('main') has the expressions from the gateinst's port list where implicit
+wires are allowed, and @('other') has the other expressions in the gate
 instance (its range, delay) where implicit wires aren't allowed.</p>"
 
   (defund vl-gateinst-exprs-for-implicit-wires (x)
@@ -423,8 +422,8 @@ instance (its range, delay) where implicit wires aren't allowed.</p>"
 
 (defsection vl-remove-declared-wires
   :parents (vl-make-implicit-wires)
-  :short "@(call vl-remove-declared-wires) filters <tt>names</tt> by removing
-any wires that we've already seen declarations for (whether they're port
+  :short "@(call vl-remove-declared-wires) filters @('names') by removing any
+wires that we've already seen declarations for (whether they're port
 declarations or ordinary declarations)."
   :long "<p>See @(see vl-make-implicit-wires-aux) to understand the
 arguments.</p>"
@@ -451,7 +450,7 @@ arguments.</p>"
 (defsection vl-warn-about-undeclared-wires
   :parents (vl-make-implicit-wires)
   :short "@(call vl-warn-about-undeclared-wires) checks if there are any
-<tt>names</tt> for which we haven't yet seen declarations, and if so it adds a
+@('names') for which we haven't yet seen declarations, and if so it adds a
 fatal warning about them."
   :long "<p>See @(see vl-make-implicit-wires-aux) to understand the
 arguments.</p>"
@@ -486,7 +485,7 @@ arguments.</p>"
 (defsection vl-blockitem-check-undeclared
   :parents (vl-make-implicit-wires)
   :short "@(call vl-blockitem-check-undeclared) checks for undeclared wires in
-an arbitrary @(see vl-blockitem-p) and extends <tt>decls</tt> with the newly
+an arbitrary @(see vl-blockitem-p) and extends @('decls') with the newly
 declared name."
   :long "<p>See @(see vl-make-implicit-wires-aux) to understand the
 arguments.</p>"
@@ -661,16 +660,16 @@ statement.</p>
 <p>BOZO a problem with our approach is that paramterized function inputs won't
 exactly work, e.g., for</p>
 
-<code>
+@({
 function foo ;
   parameter p = 4;
   input [p-1:0] in;
   ...
 endfunction
-</code>
+})
 
-<p>We will think that <tt>p</tt> is undeclared when we see <tt>in</tt>, because
-we aren't maintaining the mixed order of inputs and parameters.</p>
+<p>We will think that @('p') is undeclared when we see @('in'), because we
+aren't maintaining the mixed order of inputs and parameters.</p>
 
 <p>Well, this is a pretty obscure, so I don't want to fix it until it becomes a
 problem.</p>"
@@ -774,24 +773,24 @@ it has the same problems with parameters.</p>"
   :short "Main function for adding implicit wires."
 
   :long "<p><b>Signature: </b> @(call vl-make-implicit-wires-aux) returns
-<tt>(mv warnings portdecls decls acc)</tt>.</p>
+@('(mv warnings portdecls decls acc)').</p>
 
-<p><tt>x</tt> is the @(see vl-modelementlist-p) of module elements to process,
+<p>@('x') is the @(see vl-modelementlist-p) of module elements to process,
 which we assume are in the order of parsing.</p>
 
-<p><tt>portdecls</tt> is a fast alist that binds the names (strings) of port
+<p>@('portdecls') is a fast alist that binds the names (strings) of port
 declarations we've seen to their associated declarations.</p>
 
-<p><tt>decls</tt> is a fast alist that binds the names (strings) of all other
-kinds of declarations to <tt>nil</tt>.  We include bindings here for any wires
-we've added implicit declarations for.</p>
+<p>@('decls') is a fast alist that binds the names (strings) of all other kinds
+of declarations to @('nil').  We include bindings here for any wires we've
+added implicit declarations for.</p>
 
-<p><tt>acc</tt> is an accumulator for module elements which starts out as
-<tt>nil</tt> and essentially becomes a copy of <tt>x</tt>, along with any
-implicit wire declarations that we've added.  Items are accumulated in reverse
-order, of course.</p>
+<p>@('acc') is an accumulator for module elements which starts out as @('nil')
+and essentially becomes a copy of @('x'), along with any implicit wire
+declarations that we've added.  Items are accumulated in reverse order, of
+course.</p>
 
-<p><tt>warnings</tt> is an ordinary @(see warnings) accumulator, which we may
+<p>@('warnings') is an ordinary @(see warnings) accumulator, which we may
 extend with fatal warnings (e.g., for undeclared identifiers) or non-fatal
 warnings (e.g., for compatibility warnings like <i>Verilog-XL doesn't infer an
 implicit wire here.</i>).</p>
@@ -980,10 +979,10 @@ later on.  We handle that in @(see vl-make-implicit-wires).</p>"
   :short "@(call vl-make-port-implicit-wires) generates net declarations for
 ports that don't have corresponding net declarations."
 
-  :long "<p>We are given <tt>portdecls</tt>, an alist of names to port
-declarations, and <tt>decls</tt>, a fast alist binding declared names in the
-module to nil.  We build a list of new net declarations, one for each port
-declaration without a corresponding ordinary declaration.</p>
+  :long "<p>We are given @('portdecls'), an alist of names to port
+declarations, and @('decls'), a fast alist binding declared names in the module
+to nil.  We build a list of new net declarations, one for each port declaration
+without a corresponding ordinary declaration.</p>
 
 <p>BOZO what about scalaredp, vectoredp, cstrength, delay?  I think we don't
 care, but it might be good to look into this again.</p>"
@@ -1025,13 +1024,13 @@ care, but it might be good to look into this again.</p>"
   :short "Augment a list of module elements with declarations for any implicit
 nets, and make sure that every identifier being used has a declaration."
 
-  :long "<p><b>Signature:</b> @(call vl-make-implicit-wires) returns <tt>(mv
-warnings new-elems)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-make-implicit-wires) returns @('(mv
+warnings new-elems)').</p>
 
-<p>Here, <tt>elems</tt> is a @(see vl-modelementlist-p) that should contain all
-of the module elements for a single module, in the order they were parsed, and
-<tt>warnings</tt> is an ordinary @(see warnings) accumulator, which may be
-extended with fatal and/or nonfatal warnings.</p>
+<p>Here, @('elems') is a @(see vl-modelementlist-p) that should contain all of
+the module elements for a single module, in the order they were parsed, and
+@('warnings') is an ordinary @(see warnings) accumulator, which may be extended
+with fatal and/or nonfatal warnings.</p>
 
 <p>We try to add declarations for any implicit wires.  Unless there is a fatal
 warning, the resulting module element list will have declarations for all of

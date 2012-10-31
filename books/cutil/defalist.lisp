@@ -27,24 +27,22 @@
   :short "Introduce a recognizer for a typed alist."
 
   :long "<p>Defalist allows you to quickly introduce a recognizer for a typed
-association list (e.g., <tt>string-nat-alistp</tt>) and proves basic theorems
-about it.</p>
+association list (e.g., @('string-nat-alistp')) and proves basic theorems about
+it.</p>
 
-<p>Unlike many ACL2 alist recognizers, (unless one uses a non-<tt>nil</tt>
-value for <tt>true-listp</tt>, as shown below) the recognizers introduced by
-defalist do not imply <tt>(alistp x)</tt>, but they do imply something like
-<tt>(cons-listp x)</tt>.  That is, we require that each element is a cons, but,
-by default, we do not require the alists to be nil-terminated.  This is
-sometimes unfortunate when you want to use functions like <tt>strip-cars</tt>
-or <tt>strip-cdrs</tt> that expect their argument to be a true-list.  But it
-means you can use size hints, names, etc., for fast alists.  See @(see
-strict-list-recognizers) for further discussion.</p>
+<p>Unlike many ACL2 alist recognizers, the recognizers introduced by defalist
+do not, by default, imply @('(alistp x)'), but they do imply something like
+@('(cons-listp x)').  That is, we require that each element is a cons, but we
+do not require the alists to be nil-terminated.  This is sometimes unfortunate
+when you want to use functions like @('strip-cars') or @('strip-cdrs') that
+expect their argument to be a true-list.  But it means you can use size hints,
+names, etc., for fast alists.</p>
 
 <p>General form:</p>
 
-<code>
+@({
  (defalist name formals
-    &amp;key key               ; required
+    &key key               ; required
          val               ; required
          guard             ; t by default
          verify-guards     ; t by default
@@ -56,66 +54,61 @@ strict-list-recognizers) for further discussion.</p>
          short             ; nil by default
          long              ; nil by default
          )
-</code>
+})
 
 <p>For example,</p>
 
-<code>
+@({
  (defalist string-nat-alistp (x)
     :key (stringp x)
     :val (natp x))
-</code>
+})
 
-<p>introduces a new function, <tt>string-nat-alistp</tt>, that recognizes
-alists whose keys are strings and whose values are natural numbers.  It also
-proves many theorems about this new function.</p>
+<p>introduces a new function, @('string-nat-alistp'), that recognizes alists
+whose keys are strings and whose values are natural numbers.  It also proves
+many theorems about this new function.</p>
 
 <p>Note that <b>x</b> is treated in a special way: it refers to the whole alist
 in the formals and guards, but refers to individual keys or values in the
-<tt>:key</tt> and <tt>:val</tt> positions.  This is similar to how @(see
-deflist), @(see defprojection), and @(see defmapappend) handle <tt>x</tt>.</p>
+@(':key') and @(':val') positions.  This is similar to how @(see deflist),
+@(see defprojection), and @(see defmapappend) handle @('x').</p>
 
 <h3>Usage and Arguments</h3>
 
-<p>Let <tt>pkg</tt> be the package of <tt>name</tt>.  All functions, theorems,
-and variables are created in this package.  One of the formals must be
-<tt>pkg::x</tt>, and this argument represents the alist to check.  Otherwise,
-the only restriction on the formals is that you may not use the names
-<tt>pkg::a</tt>, <tt>pkg::n</tt>, or <tt>pkg::y</tt>, because we use these
-variables in the theorems we generate.</p>
+<p>Let @('pkg') be the package of @('name').  All functions, theorems, and
+variables are created in this package.  One of the formals must be @('pkg::x'),
+and this argument represents the alist to check.  Otherwise, the only
+restriction on the formals is that you may not use the names @('pkg::a'),
+@('pkg::n'), or @('pkg::y'), because we use these variables in the theorems we
+generate.</p>
 
-<p>The <tt>:key</tt> and <tt>:val</tt> arguments are required and should be
-simple function calls involving some subset of the formals.  The basic idea is
-that you write <tt>x</tt> for the particular key or value that is being
-inspected.</p>
+<p>The @(':key') and @(':val') arguments are required and should be simple
+function calls involving some subset of the formals.  The basic idea is that
+you write @('x') for the particular key or value that is being inspected.</p>
 
-<p>The optional <tt>:guard</tt> and <tt>:verify-guards</tt> are given to the
-<tt>defund</tt> event that we introduce.  In other words, these are the guards
-that will be used for the list recognizer, not the element recognizer.</p>
+<p>The optional @(':guard') and @(':verify-guards') are given to the
+@('defund') event that we introduce.  In other words, these are the guards that
+will be used for the list recognizer, not the element recognizer.</p>
 
-<p>The optional <tt>:true-listp</tt> keyword can be used to require that the
-new recognizer is \"strict\" and will only accept lists that are
-<tt>nil</tt>-terminated; by default the recognizer will be \"loose\" and will
-not pay attention to the final <tt>cdr</tt>.  There are various reasons to
-prefer one behavior or another; see @(see strict-list-recognizers) for
-details.</p>
+<p>The optional @(':true-listp') argument can be used to make the new
+recognizer \"strict\" and only accept alists that are @('nil')-terminated; by
+default the recognizer will be \"loose\" and will not pay attention to the
+final <tt>cdr</tt>.  See @(see strict-list-recognizers) for further
+discussion.</p>
 
-<p>The optional <tt>:keyp-of-nil</tt> (similarly <tt>:valp-of-nil</tt>)
-keywords can be used when <tt>(key-recognizer nil ...)</tt> (similarly
-<tt>(val-recognzier nil ...)</tt>) is always known to be <tt>t</tt> or
-<tt>nil</tt>.  When it is provided, <tt>defalist</tt> can generate slightly
-better theorems.</p>
+<p>The optional @(':keyp-of-nil') (similarly @(':valp-of-nil')) keywords can be
+used when @('(key-recognizer nil ...)') (similarly @('(val-recognzier nil
+...)')) is always known to be @('t') or @('nil').  When it is provided,
+@('defalist') can generate slightly better theorems.</p>
 
-<p>The optional <tt>:mode</tt> keyword can be set to <tt>:program</tt> to
-introduce the recognizer in program mode.  In this case, no theorems are
-introduced.</p>
+<p>The optional @(':mode') keyword can be set to @(':program') to introduce the
+recognizer in program mode.  In this case, no theorems are introduced.</p>
 
-<p>The optional <tt>:parents</tt>, <tt>:short</tt>, and <tt>:long</tt> keywords
-are as in @(see defxdoc).  Typically you only need to specify
-<tt>:parents</tt>, and suitable documentation will be automatically generated
-for <tt>:short</tt> and <tt>:long</tt>.  If you don't like this documentation,
-you can supply your own <tt>:short</tt> and/or <tt>:long</tt> to override
-it.</p>")
+<p>The optional @(':parents'), @(':short'), and @(':long') keywords are as in
+@(see defxdoc).  Typically you only need to specify @(':parents'), and suitable
+documentation will be automatically generated for @(':short') and @(':long').
+If you don't like this documentation, you can supply your own @(':short')
+and/or @(':long') to override it.</p>")
 
 (defun defalist-fn (name formals key val
                          guard verify-guards
@@ -442,7 +435,7 @@ each value satisfies @(see " (symbol-name valp) ")."))))
                          (,name ,@formals))
                   :hints(("Goal" :cases ((,name ,@formals)))
                          ,last-ditch-hint))))
-         
+
        (defthm ,(mksym name '-of-last)
          (implies (force (,name ,@formals))
                   (equal (,name ,@(subst `(last ,x) x formals))

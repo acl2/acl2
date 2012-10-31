@@ -57,10 +57,10 @@ before unparameterization is invoked.</p>")
             (string-listp-of-vl-useless-params->names      (string-listp names)))
   :parents (clean-params)
   :short "Records of which parameters are useless."
-  :long "<p>The <tt>names</tt> are the names of any irrelevant parameters and
-the <tt>positions</tt> are their zero-indexed positions in the parameter
-declaration order.  We apply these structures to module instances to eliminate
-any useless parameters.</p>")
+  :long "<p>The @('names') are the names of any irrelevant parameters and the
+@('positions') are their zero-indexed positions in the parameter declaration
+order.  We apply these structures to module instances to eliminate any useless
+parameters.</p>")
 
 
 (defsection vl-useless-params-map-p
@@ -308,11 +308,11 @@ after identifying the names of the useless parameters.</p>"
 (defsection vl-module-clean-params
   :parents (clean-params)
   :short "Identify and remove useless parameters from a module."
-  :long "<p><b>Signature:</b> @(call vl-module-clean-params) returns <tt>(mv
-x-prime useless)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-module-clean-params) returns @('(mv
+x-prime useless)').</p>
 
-<p>Here, <tt>x-prime</tt> is the updated module, and <tt>useless</tt> is either
-<tt>nil</tt> to indicate that no parameters are useless, or is a @(see
+<p>Here, @('x-prime') is the updated module, and @('useless') is either
+@('nil') to indicate that no parameters are useless, or is a @(see
 vl-useless-params-p) structure that indicates the names and positions of any
 useless parameters that have been eliminated.</p>
 

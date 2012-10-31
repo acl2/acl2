@@ -139,10 +139,10 @@
 
 (defsection difference
   :parents (osets)
-  :short "@(call difference) removes all members of <tt>Y</tt> from <tt>X</tt>."
+  :short "@(call difference) removes all members of @('Y') from @('X')."
 
   :long "<p>The logical definition is very simple, and the essential
-correctness property is given by <tt>difference-in</tt>.</p>
+correctness property is given by @('difference-in').</p>
 
 <p>The execution uses a better, O(n) algorithm to remove the elements by
 exploiting the set order.</p>"

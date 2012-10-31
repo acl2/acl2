@@ -33,16 +33,16 @@
   :parents (vl-read-file)
   :short "Main loop for reading characters from a file."
 
-  :long "<p><b>Signature:</b> @(call vl-read-file-aux) returns <tt>(mv data
-state)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-read-file-aux) returns @('(mv data
+state)').</p>
 
 <p>We read bytes from the channel until EOF is encountered, turning them into
-characters via ACL2's <tt>code-char</tt> function.  We remembers the name of
-the file, and keeps track of a line and column number, in order to generate the
+characters via ACL2's @('code-char') function.  We remembers the name of the
+file, and keeps track of a line and column number, in order to generate the
 proper @(see vl-location-p) for each extended character we produced.</p>
 
 <p>This function is tail recursive and accumulates the resulting extended
-characters into <tt>acc</tt>.  See @(see vl-read-file-spec) for a non
+characters into @('acc').  See @(see vl-read-file-spec) for a non
 tail-recursive alternative, which is more useful for reasoning.</p>"
 
   (defund vl-read-file-aux (channel state filename line col acc)
@@ -78,9 +78,8 @@ tail-recursive alternative, which is more useful for reasoning.</p>"
   :long "<p>@(call vl-read-file-spec) is a logically nicer description of the
 loop performed by @(see vl-read-file-aux).</p>
 
-<p>Note that although the <tt>:exec</tt> definition is close to what we really
-use, we actually optimize this function even more, using
-<tt>nreverse</tt>.</p>"
+<p>Note that although the @(':exec') definition is close to what we really use,
+we actually optimize this function even more, using @('nreverse').</p>"
 
   (defund vl-read-file-spec (channel state filename line col)
     (declare (xargs :guard (and (state-p state)
@@ -202,25 +201,25 @@ use, we actually optimize this function even more, using
   :short "Read the entire contents of a file into a list of extended
 characters."
 
-  :long "<p><b>Signature:</b> @(call vl-read-file) returns <tt>(mv result
-state)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-read-file) returns @('(mv result
+state)').</p>
 
 <p>This is a low-level function for reading files.  It attempts to read the
-file specified by the string <tt>filename</tt>, and return its contents as a
-list of @(see extended-characters).  In the process, each character is
-annotated with its location (see @(see vl-location-p)).</p>
+file specified by the string @('filename'), and return its contents as a list
+of @(see extended-characters).  In the process, each character is annotated
+with its location (see @(see vl-location-p)).</p>
 
-<p>If there is an error opening the file, <tt>result</tt> will be an ACL2
-string indicating that an error has occurred.  <b>BOZO</b> this is a poor way
-to handle errors.  We should probably add a <tt>successp</tt> return value
+<p>If there is an error opening the file, @('result') will be an ACL2 string
+indicating that an error has occurred.  <b>BOZO</b> this is a poor way to
+handle errors.  We should probably add a @('successp') return value
 instead.</p>
 
-<p>We originally styled this function after <tt>read-file-characters</tt> from
-the Unicode library (which, despite being part of the \"Unicode\" library,
-actually only reads normal ACL2 characters.)  We later decided to switch to a
-<tt>read-byte$</tt> based approach, because it simply seems more reliable than
-<tt>read-char$</tt>.  In particular, the Lisp implementation might be trying to
-use Unicode, and we don't want ACL2 to get confused if it sees some odd
+<p>We originally styled this function after @('read-file-characters') from the
+Unicode library (which, despite being part of the \"Unicode\" library, actually
+only reads normal ACL2 characters.)  We later decided to switch to a
+@('read-byte$') based approach, because it simply seems more reliable than
+@('read-char$').  In particular, the Lisp implementation might be trying to use
+Unicode, and we don't want ACL2 to get confused if it sees some odd
 character.</p>"
 
   (defund vl-read-file (filename state)

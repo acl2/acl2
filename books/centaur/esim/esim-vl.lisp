@@ -75,14 +75,14 @@ of every bit that is visible in the original Verilog module."
 <p>This list should include the E names for every bit that is declared in the
 original Verilog module; see VL's @(see designwires) transform.  It should
 <b>not</b> include the new, intermediate wire names that VL generates during
-transformations like @(see split) and @(see occform).  Note that some
-of the names in this list might be unused, and hence might not occur in the
-<tt>occs</tt> of the module.</p>
+transformations like @(see split) and @(see occform).  Note that some of the
+names in this list might be unused, and hence might not occur in the @('occs')
+of the module.</p>
 
-<p>Run-time checks ensure that the <tt>:design-wires</tt> attribute of the
-module contains a valid @(see vl-emodwirelist-p).  This should work for any E
-module produced by VL, but may cause an error if used on other modules.  We
-@(see memoize) the function to minimize the expense of these checks.</p>"
+<p>Run-time checks ensure that the @(':design-wires') attribute of the module
+contains a valid @(see vl-emodwirelist-p).  This should work for any E module
+produced by VL, but may cause an error if used on other modules.  We @(see
+memoize) the function to minimize the expense of these checks.</p>"
 
   (defund esim-vl-designwires (mod)
     (declare (xargs :guard t))
@@ -119,16 +119,16 @@ module produced by VL, but may cause an error if used on other modules.  We
   :parents (esim-vl)
   :short "Obtain the @(see vl-wirealist-p) for an E module produced by VL."
 
-  :long "<p>@(call esim-vl-wirealist) returns a <tt>vl-wirealist-p</tt>.</p>
+  :long "<p>@(call esim-vl-wirealist) returns a @('vl-wirealist-p').</p>
 
 <p>This is the \"final\" wirealist for the module, and typically will include
-temporary wires introduced by VL.  The wirealist will be <tt>nil</tt> for
-certain primitive modules.</p>
+temporary wires introduced by VL.  The wirealist will be @('nil') for certain
+primitive modules.</p>
 
-<p>Run-time checks ensure the <tt>:wire-alist</tt> annotation of the module is
-a valid wirealist.  This should work for any E module produced by VL, but it
-may cause an error if used on other modules.  We @(see memoize) the function
-to minimize the expense of these checks.</p>"
+<p>Run-time checks ensure the @(':wire-alist') annotation of the module is a
+valid wirealist.  This should work for any E module produced by VL, but it may
+cause an error if used on other modules.  We @(see memoize) the function to
+minimize the expense of these checks.</p>"
 
   (defund esim-vl-wirealist (mod)
     (declare (xargs :guard t))
@@ -163,7 +163,7 @@ to minimize the expense of these checks.</p>"
 (defsection all-equalp-of-vl-emodwirelist->basenames
   :parents (esim-vl-iopattern-p)
   :short "@(call all-equalp-of-vl-emodwirelist->basenames) ensures that all of
-the @(see vl-emodwire-p)s in <tt>x</tt> have this <tt>basename</tt>."
+the @(see vl-emodwire-p)s in @('x') have this @('basename')."
 
   (defun all-equalp-of-vl-emodwirelist->basenames (basename x)
     (declare (xargs :guard (and (stringp basename)
@@ -240,36 +240,36 @@ is shared by all the members of a @(see esim-vl-iopattern-entry-p)."
 
 (defsection esim-vl-iopattern-p
   :parents (esim-vl)
-  :short "Recognize a good <tt>:i</tt> or <tt>:o</tt> pattern for a
-VL-translated module."
+  :short "Recognize a good @(':i') or @(':o') pattern for a VL-translated
+module."
 
   :long "<p>@(call esim-vl-iopattern-p) is a basic syntax check to make ensure
-that <tt>x</tt> has the proper shape for a <tt>:i</tt> or <tt>:o</tt> field of
-an E module that VL produces.</p>
+that @('x') has the proper shape for a @(':i') or @(':o') field of an E module
+that VL produces.</p>
 
-<p>Basically, VL writes out <tt>:i</tt> and <tt>:o</tt> fields for an E module
-as two-level lists of @(see vl-emodwire-p)s.  For instance the <tt>:i</tt>
-pattern for a module whose input declarations are:</p>
+<p>Basically, VL writes out @(':i') and @(':o') fields for an E module as
+two-level lists of @(see vl-emodwire-p)s.  For instance the @(':i') pattern for
+a module whose input declarations are:</p>
 
-<code>
+@({
  input [3:0] A;
  input B;
  input [0:3] C;
-</code>
+})
 
 <p>Should look like this:</p>
 
-<code>
+@({
  :i ((A[0] A[1] A[2] A[3])    ;; lsb first
      (B)
      (C[3] C[2] C[1] C[0]))   ;; lsb first
-</code>
+})
 
 <p>See @(see make-defm-command) for details.</p>
 
 <p>We @(see memoize) this function to minimize the expense of these checks.
 Note that esim-vl-iopattern-p is nonrecursive, so we should only need two memo
-table entries per module, one for the <tt>:i</tt> and one for the <tt>:o</tt>
+table entries per module, one for the @(':i') and one for the @(':o')
 entry.</p>"
 
   (defund esim-vl-iopattern-p (x)
@@ -284,7 +284,7 @@ entry.</p>"
 (defsection esim-vl-find-io-main
   :parents (esim-vl-find-io)
   :short "@(call esim-vl-find-io-main) finds the first iopattern entry in
-<tt>x</tt> with this <tt>basename</tt>."
+@('x') with this @('basename')."
 
   (defund esim-vl-find-io-main (basename x)
     (declare (xargs :guard (and (stringp basename)
@@ -315,41 +315,41 @@ particular input or output of the original Verilog module."
 
   :long "<p>@(call esim-vl-find-io) returns a @(see vl-emodwirelist-p).</p>
 
-<p>The <tt>basename</tt> is a string that names a wire in the original Verilog
-module.  The <tt>pat</tt> should be either the <tt>:i</tt> or <tt>:o</tt> of an
-E module that VL has produced.</p>
+<p>The @('basename') is a string that names a wire in the original Verilog
+module.  The @('pat') should be either the @(':i') or @(':o') of an E module
+that VL has produced.</p>
 
 <p>Example.  If your Verilog module is something like:</p>
 
-<code>
+@({
  module mymodule (o, a, b);
    input [3:0] a;
    input b;
    ...
  endmodule
-</code>
+})
 
-<p>Then the resulting <tt>:i</tt> pattern for the E module <tt>|*mymodule*|</tt>
-should be something like:</p>
+<p>Then the resulting @(':i') pattern for the E module @('|*mymodule*|') should
+be something like:</p>
 
-<code>
+@({
  :i ((a[0] a[1] a[2] a[3])
      (b))
-</code>
+})
 
-<p>And here are some examples of using <tt>esim-vl-find-io</tt>:</p>
+<p>And here are some examples of using @('esim-vl-find-io'):</p>
 
-<code>
- (esim-vl-find-io \"a\" (gpl :i |*mymodule*|)) --&gt; (a[0] a[1] a[2] a[3])
- (esim-vl-find-io \"b\" (gpl :i |*mymodule*|)) --&gt; (b)
- (esim-vl-find-io \"c\" (gpl :i |*mymodule*|)) --&gt; NIL
-</code>
+@({
+ (esim-vl-find-io \"a\" (gpl :i |*mymodule*|)) --> (a[0] a[1] a[2] a[3])
+ (esim-vl-find-io \"b\" (gpl :i |*mymodule*|)) --> (b)
+ (esim-vl-find-io \"c\" (gpl :i |*mymodule*|)) --> NIL
+})
 
 <p>On success the list of returned bits is non-empty.  The least significant
-bit comes first.  <tt>NIL</tt> indicates that the wire was not found.</p>
+bit comes first.  @('NIL') indicates that the wire was not found.</p>
 
-<p>If <tt>pat</tt> is not a valid i/o pattern for an E module produced by VL,
-i.e., it does not satisfy @(see esim-vl-iopattern-p), a hard error will be
+<p>If @('pat') is not a valid i/o pattern for an E module produced by VL, i.e.,
+it does not satisfy @(see esim-vl-iopattern-p), a hard error will be
 caused.</p>"
 
   (local (in-theory (enable esim-vl-iopattern-p)))

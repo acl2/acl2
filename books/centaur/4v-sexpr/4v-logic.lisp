@@ -41,10 +41,10 @@
   :short "Recognizer for four-valued logic constants."
 
   :long "<p>When we are programming and want to refer to a particular logical
-value, we generally use <tt>(4vx)</tt>, <tt>(4vz)</tt>, <tt>(4vt)</tt>, and
-<tt>(4vf)</tt>.  These are just macros that expand to the symbols X, Z, T, and
-F, in the ACL2 package.  We don't write these symbols directly, to try to make
-it easy to change their representation if desired.</p>"
+value, we generally use @('(4vx)'), @('(4vz)'), @('(4vt)'), and @('(4vf)').
+These are just macros that expand to the symbols X, Z, T, and F, in the ACL2
+package.  We don't write these symbols directly, to try to make it easy to
+change their representation if desired.</p>"
 
   (defmacro 4vx () '(quote x))
   (defmacro 4vz () '(quote z))
@@ -71,32 +71,31 @@ it easy to change their representation if desired.</p>"
   :parents (4v)
   :short "Macro for cases on the 4-valued logic constants."
 
-  :long "<p>This looks like a case statement, except that <tt>t</tt>,
-<tt>f</tt>, and <tt>z</tt> match with <tt>(4vt)</tt>, <tt>(4vf)</tt>, and
-<tt>(4vz)</tt>, respectively.</p>
+  :long "<p>This looks like a case statement, except that @('t'), @('f'), and
+@('z') match with @('(4vt)'), @('(4vf)'), and @('(4vz)'), respectively.</p>
 
-<p>The <tt>x</tt> case should be the default (last) case.  Anything other than
-<tt>t</tt>, <tt>f</tt>, or <tt>z</tt> will result in the default case; we
-typically use <tt>&amp;</tt> or <tt>otherwise</tt>.</p>
+<p>The @('x') case should be the default (last) case.  Anything other than
+@('t'), @('f'), or @('z') will result in the default case; we typically use
+@('&') or @('otherwise').</p>
 
 <p>For example:</p>
 
-<code>
+@({
  (defun 4v-not (a)
    (4vcases a
      (t (4vf))
      (f (4vt))
-     (&amp; (4vx))))
-</code>
+     (& (4vx))))
+})
 
 <p>Is like writing:</p>
 
-<code>
+@({
  (defun 4v-not (a)
    (cond ((eq a (4vt)) (4vf))
          ((eq a (4vf)) (4vt))
          (t (4vx))))
-</code>"
+})"
 
   (defun 4vcases-cases (cases)
     (declare (xargs :mode :program))
@@ -120,8 +119,8 @@ typically use <tt>&amp;</tt> or <tt>otherwise</tt>.</p>
   :parents (4v)
   :short "Fixing function for four-valued constants."
 
-  :long "<p>@(call 4v-fix) interprets <tt>a</tt> as a four-valued constant.
-Any non-@(see 4vp) objects are coerced to X.</p>"
+  :long "<p>@(call 4v-fix) interprets @('a') as a four-valued constant.  Any
+non-@(see 4vp) objects are coerced to X.</p>"
 
   (definline 4v-fix (a)
     (declare (xargs :guard t))
@@ -162,7 +161,7 @@ input should just be regarded as an X.</p>
 
 <p>To see why, let us consider a simple inverter.</p>
 
-<code>
+@({
                       power
                         |
                      ___|
@@ -178,13 +177,13 @@ input should just be regarded as an X.</p>
                         |
                         |
                       ground
-</code>
+})
 
-<p>When <tt>in</tt> is Z, the behavior of these transistors can't be accurately
+<p>When @('in') is Z, the behavior of these transistors can't be accurately
 predicted.  Hence, we should treat a Z as if it were an X.  The situation for
 other kinds of ordinary logic gates (ands, ors, xors) is similar.  So, when we
 define operations like @(see 4v-not) and @(see 4v-and) that are intended to
-model gates, we generally apply <tt>4v-unfloat</tt> to the inputs so that any Z
+model gates, we generally apply @('4v-unfloat') to the inputs so that any Z
 values are treated as X.</p>"
 
   (definline 4v-unfloat (a)
@@ -211,12 +210,12 @@ values are treated as X.</p>"
 
 (defsection 4v-not
   :parents (4v-operations)
-  :short "Four-valued semantics for <tt>not</tt> gates."
+  :short "Four-valued semantics for @('not') gates."
 
   :long "<p>@(call 4v-not) returns the value specified by the following
 truth table:</p>
 
-<code>
+@({
     a  |  out
   -----+-------
     T  |   F
@@ -224,7 +223,7 @@ truth table:</p>
     X  |   X
     Z  |   X
   -----+-------
-</code>
+})
 
 <p>See @(see 4v-unfloat) for an explanation of the Z case.</p>"
 
@@ -247,7 +246,7 @@ truth table:</p>
 
 (defsection 4v-and
   :parents (4v-operations)
-  :short "Four-valued semantics for <tt>and</tt> gates."
+  :short "Four-valued semantics for @('and') gates."
 
   :long "<p>@(call 4v-and) returns:</p>
 
@@ -281,7 +280,7 @@ truth table:</p>
 
 (defsection 4v-or
   :parents (4v-operations)
-  :short "Four-valued semantics for <tt>or</tt> gates."
+  :short "Four-valued semantics for @('or') gates."
 
   :long "<p>@(call 4v-or) returns:</p>
 
@@ -315,7 +314,7 @@ truth table:</p>
 
 (defsection 4v-xor
   :parents (4v-operations)
-  :short "Four-valued semantics for <tt>xor</tt> gates."
+  :short "Four-valued semantics for @('xor') gates."
 
   :long "<p>@(call 4v-xor) returns:</p>
 
@@ -349,7 +348,7 @@ truth table:</p>
 
 (defsection 4v-iff
   :parents (4v-operations)
-  :short "Four-valued semantics for <tt>xnor</tt> gates."
+  :short "Four-valued semantics for @('xnor') gates."
 
   :long "<p>@(call 4v-iff) returns:</p>
 
@@ -396,7 +395,7 @@ truth table:</p>
 <p>In both versions, C is the selector, and A/B are data inputs.  The mux we
 are modeling would typically be drawn as:</p>
 
-<code>
+@({
         A     B
         |     |
      ___|_____|___
@@ -406,7 +405,7 @@ are modeling would typically be drawn as:</p>
            |
            |
           Out
-</code>
+})
 
 
 <h3>Semantics</h3>
@@ -428,8 +427,8 @@ will be selected, we can only say that the output is X.</li>
 
 </ul>
 
-<p>The trickiest case, and the one where <tt>4v-ite</tt> and <tt>4v-ite*</tt>
-differ, is when:</p>
+<p>The trickiest case, and the one where @('4v-ite') and @('4v-ite*') differ,
+is when:</p>
 
 <ul>
  <li>C is X or Z, and</li>
@@ -439,37 +438,40 @@ differ, is when:</p>
 <p>In this case,</p>
 
 <ul>
- <li><tt>4v-ite*</tt> (more conservatively) produces an X, whereas</li>
- <li><tt>4v-ite</tt> (less conservatively) produces the value shared by A
-and B.</li>
+
+<li>@('4v-ite*') (more conservatively) produces an X, whereas</li>
+
+<li>@('4v-ite') (less conservatively) produces the value shared by A and
+B.</li>
+
 </ul>
 
 
 <h3>Comparison</h3>
 
-<p>It might be that the <tt>4v-ite</tt> behavior is necessary when analyzing
-some circuits.  But we do not think this should be the case very frequently,
-and we think you really should probably not design circuits this way.</p>
+<p>It might be that the @('4v-ite') behavior is necessary when analyzing some
+circuits.  But we do not think this should be the case very frequently, and we
+think you really should probably not design circuits this way.</p>
 
-<p>But unless there is some special reason that <tt>4v-ite</tt> is needed, we
-think <tt>4v-ite*</tt> is usually the better way to go.  There are two reasons
-for this:</p>
+<p>But unless there is some special reason that @('4v-ite') is needed, we think
+@('4v-ite*') is usually the better way to go.  There are two reasons for
+this:</p>
 
 
 <h5>1. Modeling considerations</h5>
 
 <p>Some mux implementations, specifically those based on pass transistors, may
 not produce a good value on their output when the select is undriven.  The
-<tt>4v-ite</tt> semantics are <b>totally wrong</b> for such muxes.</p>
+@('4v-ite') semantics are <b>totally wrong</b> for such muxes.</p>
 
-<p>The <tt>4v-ite*</tt> semantics are safer, but do not entirely address the
+<p>The @('4v-ite*') semantics are safer, but do not entirely address the
 problem because, when the select is undriven, such circuits can have \"backward
 flow\" where their output drives the input.  We have no way to model this.</p>
 
 <p>Of course, gate-based mux implementations do not have this problem.  If a
-mux is implemented along the lines of <tt>(C &amp; A) | (~C &amp; B)</tt>, then
-any Boolean value of C will give us the shared answer as <tt>4v-ite</tt>
-produces, so either implementation is probably okay.</p>
+mux is implemented along the lines of @('(C & A) | (~C & B)'), then any Boolean
+value of C will give us the shared answer as @('4v-ite') produces, so either
+implementation is probably okay.</p>
 
 <p>BOZO what about if C is Z?  Are the less-conservative semantics okay in this
 case, even for a gate-based mux?  This could be iffy.</p>
@@ -477,25 +479,25 @@ case, even for a gate-based mux?  This could be iffy.</p>
 
 <h5>2. Symbolic simulation performance.</h5>
 
-<p>The <tt>4v-ite*</tt> semantics may permit faster symbolic simulations.  In
+<p>The @('4v-ite*') semantics may permit faster symbolic simulations.  In
 particular, suppose we are interested in analyzing a small part of a large
 circuit, and we have set many signals we think are irrelevant to X.
 Furthermore, suppose one of these Xed out signals is C, i.e., it is being used
 as the select for some mux.</p>
 
-<p>With a <tt>4v-ite</tt> mux, the resulting expression for the output wire
-will be some function that involves checking whether the expressions for A and
-B have the same value.  This resulting expression will contain the expressions
-for A and B, so if these input expressions are large, the resulting expression
-will be large.</p>
+<p>With a @('4v-ite') mux, the resulting expression for the output wire will be
+some function that involves checking whether the expressions for A and B have
+the same value.  This resulting expression will contain the expressions for A
+and B, so if these input expressions are large, the resulting expression will
+be large.</p>
 
-<p>But with a <tt>4v-ite*</tt> mux, regardless of the expressions on A and B
-the result is simply the constant function X.</p>
+<p>But with a @('4v-ite*') mux, regardless of the expressions on A and B the
+result is simply the constant function X.</p>
 
-<p>In other words, <tt>4v-ite*</tt> based muxes have a very nice property: if
-the select is X, the output expression is just X and all of the presumably
-irrelevant logic driving the mux is discarded, whereas <tt>4v-ite</tt> muxes
-don't get to carry out this kind of optimization.</p>"
+<p>In other words, @('4v-ite*') based muxes have a very nice property: if the
+select is X, the output expression is just X and all of the presumably
+irrelevant logic driving the mux is discarded, whereas @('4v-ite') muxes don't
+get to carry out this kind of optimization.</p>"
 
 ; BOZO naming.  Consider renaming 4v-ite to 4v-unsafe-ite or something.
 ; Alternately, consider getting rid of 4v-ite altogether.
@@ -559,7 +561,7 @@ don't get to carry out this kind of optimization.</p>"
 
   :long "<p>This is our model of a simple tri-state buffer:</p>
 
-<code>
+@({
           A
           |
        ___|___
@@ -569,7 +571,7 @@ don't get to carry out this kind of optimization.</p>"
           V
           |
          Out
-</code>
+})
 
 <p>@(call 4v-tristate) returns:</p>
 
@@ -581,9 +583,9 @@ don't get to carry out this kind of optimization.</p>"
 
 <p>This exactly matches the Verilog semantics for:</p>
 
-<code>
+@({
   wire c = sel ? a : 1'bz;
-</code>
+})
 
 <p>Such buffers are typically used to model muxes with multiple selectors.  See
 also @(see 4v-res).</p>"
@@ -614,14 +616,14 @@ also @(see 4v-res).</p>"
 is floating, it instead produces true.  That is, it returns the value specified
 by the following truth table:</p>
 
-<code>
+@({
    a  |  out
  -----+-------
    F  |   F
    T  |   T
    X  |   X
    Z  |   T
-</code>"
+})"
 
 ; BOZO what good are pullup resistors?  I don't think we're currently using
 ; them in VL/ESIM, can we get rid of them?
@@ -645,7 +647,7 @@ happens when multiple signals are wired together.</p>
 
 <p>Suppose we have the following circuit:</p>
 
-<code>
+@({
   .------------.   A           ...
   | some cloud |-----+          |
   |  of logic  |     |       ___|
@@ -655,12 +657,12 @@ happens when multiple signals are wired together.</p>
   | some cloud |-----+          |
   |  of logic  |   B           ...
   '------------'
-</code>
+})
 
 <p>Because @(see esim) does support driving a single wire with multiple
 sources, we model such a circuit by inserting a \"resolution\" module:</p>
 
-<code>
+@({
   .------------.   A                  ...
   | some cloud |-----+                 |
   |  of logic  |     |              ___|
@@ -671,7 +673,7 @@ sources, we model such a circuit by inserting a \"resolution\" module:</p>
   | some cloud |-----+                 |
   |  of logic  |   B                  ...
   '------------'
-</code>
+})
 
 <p>@(call 4v-res) produces the value for C as follows:</p>
 
@@ -742,7 +744,7 @@ wired and arrangement.</p>
 Verilog semantics for wired ors (Section 4.6.2 of the Verilog 2005
 specification).</p>
 
-<code>
+@({
        |   F   T   X   Z  |
   -----+------------------+
     F  |   F   F   F   F  |
@@ -750,7 +752,7 @@ specification).</p>
     X  |   F   X   X   X  |
     Z  |   F   T   X   Z  |
   -----+------------------+
-</code>"
+})"
 
   (defun 4v-wand (a b)
     (declare (xargs :guard t))
@@ -823,7 +825,7 @@ wired-or arrangement.</p>
 Verilog semantics for wired ors (Section 4.6.2 of the Verilog
 specification).</p>
 
-<code>
+@({
        |   F   T   X   Z  |
   -----+------------------+
     F  |   F   T   X   F  |
@@ -831,7 +833,7 @@ specification).</p>
     X  |   X   T   X   X  |
     Z  |   F   T   X   Z  |
   -----+------------------+
-</code>"
+})"
 
   (defun 4v-wor (a b)
     (declare (xargs :guard t))
@@ -913,22 +915,22 @@ specification).</p>
   :long "<p>@(call 4v-<=) is true when A is B or X.</p>
 
 <p>This is a partial ordering on the <see topic='@(url 4vp)'>four-valued
-constants</see>.  We generally just write <tt>a &lt;= b</tt> instead of
-<tt>(4v-&lt;= a b)</tt>.</p>
+constants</see>.  We generally just write @('a <= b') instead of @('(4v-<= a
+b)').</p>
 
 <p>We say that X is smaller than any other value.  Furthermore, this is
-reflexive, i.e., <tt>A &lt;= A</tt> for any value <tt>A</tt>.  Finally,
-there is no order imposed between T, F, and Z.</p>
+reflexive, i.e., @('A <= A') for any value @('A').  Finally, there is no order
+imposed between T, F, and Z.</p>
 
 <p>Drawn as a lattice, the picture is:</p>
 
-<code>
+@({
    T     F     Z
     \\    |    /
       \\  |  /
         \\|/
          X
-</code>
+})
 
 <p>This ordering plays a key role in @(see 4v-monotonicity).</p>"
 
@@ -994,16 +996,16 @@ of its arguments, e.g., a binary function is monotonic if:</p>
 </box>
 
 <p>This monotonicity requirement ensures that our operations respect the
-special status of X as an unknown.  For instance, an operation <tt>h</tt>
-would not be monotonic if <tt>h(X) = T</tt> but <tt>h(T) = F</tt>.</p>
+special status of X as an unknown.  For instance, an operation @('h') would not
+be monotonic if @('h(X) = T') but @('h(T) = F').</p>
 
-<p>Another way of looking at this is, if <tt>h</tt> is monotonic and we know
-that <tt>h(X) = T</tt>, then this means that <tt>h(v) = T</tt> for <b>any</b>
-value <tt>v</tt>, regardless of whether it is T, F, X, or Z.</p>
+<p>Another way of looking at this is, if @('h') is monotonic and we know that
+@('h(X) = T'), then this means that @('h(v) = T') for <b>any</b> value @('v'),
+regardless of whether it is T, F, X, or Z.</p>
 
-<p>On the other hand, if we only know that <tt>h(X) = X</tt>, then we cannot
-conclude anything about <tt>h(T)</tt>.  It only means that if we are unsure of
-the value of the input, then we are unsure of the value of the output.</p>"
+<p>On the other hand, if we only know that @('h(X) = X'), then we cannot
+conclude anything about @('h(T)').  It only means that if we are unsure of the
+value of the input, then we are unsure of the value of the output.</p>"
 
   (defun p4vm-suffix-args (args)
     (declare (xargs :mode :program))

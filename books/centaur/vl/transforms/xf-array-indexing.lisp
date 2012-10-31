@@ -26,14 +26,14 @@
 
 (defxdoc array-indexing
   :parents (transforms)
-  :short "Introduce <tt>:vl-array-index</tt> operators."
+  :short "Introduce @(':vl-array-index') operators."
 
-  :long "<p>When our parser encounters a subexpression like <tt>foo[i]</tt>, it
-does not know whether <tt>foo</tt> is an ordinary vector like <tt>wire [3:0]
-foo</tt> or an array like <tt>reg [63:0] foo [128:0];</tt>.  So, the parser
-just puts in <tt>:vl-bitselect</tt> operators everywhere that this syntax
-occurs.  In this transform, we convert these so-called bit-selects that
-actually refer to arrays into <tt>:vl-array-index</tt> operations.</p>")
+  :long "<p>When our parser encounters a subexpression like @('foo[i]'), it
+does not know whether @('foo') is an ordinary vector like @('wire [3:0] foo')
+or an array like @('reg [63:0] foo [128:0];').  So, the parser just puts in
+@(':vl-bitselect') operators everywhere that this syntax occurs.  In this
+transform, we convert these so-called bit-selects that actually refer to arrays
+into @(':vl-array-index') operations.</p>")
 
 
 
@@ -87,7 +87,8 @@ actually refer to arrays into <tt>:vl-array-index</tt> operations.</p>")
 
 (defsection vl-expr-make-array-indexing
   :parents (array-indexing)
-  :short "Introduce <tt>:vl-array-index</tt> operators throughout a @(see vl-expr-p)."
+  :short "Introduce @(':vl-array-index') operators throughout a @(see
+vl-expr-p)."
 
   (mutual-recursion
 
@@ -213,11 +214,11 @@ actually refer to arrays into <tt>:vl-array-index</tt> operations.</p>")
          (thm-type-s (cat type-s "-OF-" name-s))
          (thm-warn   (intern-in-package-of-symbol thm-warn-s name))
          (thm-type   (intern-in-package-of-symbol thm-type-s name))
-         (short      (cat "Introduce <tt>:vl-array-index</tt> operators throughout
-a @(see " type-s ")"))
+         (short (cat "Introduce @(':vl-array-index') operators throughout a
+@(see " type-s ")"))
 
-         (long       (cat "<p><b>Signature:</b> @(call " name-s ") returns
-<tt>(mv warnings-prime x-prime)</tt></p>")))
+         (long (cat "<p><b>Signature:</b> @(call " name-s ") returns @('(mv
+warnings-prime x-prime)')</p>")))
 
   `(defsection ,name
      :parents (array-indexing)
@@ -251,10 +252,10 @@ a @(see " type-s ")"))
          (thm-warn   (intern-in-package-of-symbol thm-warn-s name))
          (thm-type   (intern-in-package-of-symbol thm-type-s name))
          (thm-true   (intern-in-package-of-symbol thm-true-s name))
-         (short      (cat "Introduce <tt>:vl-array-index</tt> operators throughout
-a @(see " type-s ")"))
+         (short (cat "Introduce @(':vl-array-index') operators throughout a
+@(see " type-s ")"))
          (long       (cat "<p><b>Signature:</b> @(call " name-s ") returns
-<tt>(mv warnings-prime x-prime)</tt></p>")))
+@('(mv warnings-prime x-prime)')</p>")))
 
   `(defsection ,name
      :parents (array-indexing)

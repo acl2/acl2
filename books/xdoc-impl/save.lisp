@@ -88,7 +88,6 @@
 
 ; ---------------- Hierarchical Index Generation ----------------
 
-
 (defun normalize-parents (x)
 
 ; Given an xdoc entry, remove duplicate parents and self-parents.
@@ -155,37 +154,34 @@
     (cons (cdr (assoc :name (car x)))
           (gather-topic-names (cdr x)))))
 
-(defun find-orphaned-topics-1 (child parents names-fal acc)
+(defun topics-fal (x)
+  (make-fast-alist (pairlis$ (gather-topic-names x) nil)))
+
+
+(defun find-orphaned-topics-1 (child parents topics-fal acc)
   ;; Returns an alist of (CHILD . MISSING-PARENT)
   (cond ((atom parents)
          acc)
-        ((hons-get (car parents) names-fal)
-         (find-orphaned-topics-1 child (cdr parents) names-fal acc))
+        ((hons-get (car parents) topics-fal)
+         (find-orphaned-topics-1 child (cdr parents) topics-fal acc))
         (t
-         (find-orphaned-topics-1 child (cdr parents) names-fal
+         (find-orphaned-topics-1 child (cdr parents) topics-fal
                                  (cons (cons child (car parents))
                                        acc)))))
 
-(defun find-orphaned-topics-main (x names-fal acc)
+(defun find-orphaned-topics (x topics-fal acc)
   (b* (((when (atom x))
         acc)
        (child   (cdr (assoc :name (car x))))
        (parents (cdr (assoc :parents (car x))))
-       (acc     (find-orphaned-topics-1 child parents names-fal acc)))
-    (find-orphaned-topics-main (cdr x) names-fal acc)))
-
-(defun find-orphaned-topics (x)
-  (b* ((names     (gather-topic-names x))
-       (names-fal (make-fast-alist (pairlis$ names nil)))
-       (orphans   (find-orphaned-topics-main x names-fal nil)))
-    (fast-alist-free names-fal)
-    orphans))
+       (acc     (find-orphaned-topics-1 child parents topics-fal acc)))
+    (find-orphaned-topics (cdr x) topics-fal acc)))
 
 
 
 (mutual-recursion
 
- (defun make-hierarchy-aux (path dir index-pkg all id expand-level acc state)
+ (defun make-hierarchy-aux (path dir topics-fal index-pkg all id expand-level acc state)
 
 ; - Path is our current location in the hierarchy, and is used to avoid loops.
 ;   (The first element in path is the current topic we are on.)
@@ -238,7 +234,7 @@
         (acc (str::revappend-chars "<hindex_short id=\"" acc))
         (acc (revappend id-chars acc))
         (acc (str::revappend-chars "\">" acc))
-        ((mv acc state) (preprocess-main short dir base-pkg state acc))
+        ((mv acc state) (preprocess-main short dir topics-fal base-pkg state acc))
         (acc (str::revappend-chars "</hindex_short>" acc))
 
         (acc (str::revappend-chars "<hindex_children id=\"" acc))
@@ -250,13 +246,13 @@
 
         (id   (+ id 1))
         ((mv acc id state)
-         (make-hierarchy-list-aux children path dir index-pkg all id expand-level acc state))
+         (make-hierarchy-list-aux children path dir topics-fal index-pkg all id expand-level acc state))
         (acc (str::revappend-chars "</hindex_children>" acc))
         (acc (str::revappend-chars "</hindex>" acc))
         (acc (cons #\Newline acc)))
        (mv acc id state)))
 
- (defun make-hierarchy-list-aux (children path dir index-pkg all id expand-level acc state)
+ (defun make-hierarchy-list-aux (children path dir topics-fal index-pkg all id expand-level acc state)
 
 ; - Children are the children of this path.
 ; - Path is our current location in the hierarchy.
@@ -264,14 +260,14 @@
    (if (atom children)
        (mv acc id state)
      (b* (((mv acc id state)
-           (make-hierarchy-aux (cons (car children) path) dir index-pkg all id
+           (make-hierarchy-aux (cons (car children) path) dir topics-fal index-pkg all id
                                expand-level acc state))
           ((mv acc id state)
-           (make-hierarchy-list-aux (cdr children) path dir index-pkg all id
+           (make-hierarchy-list-aux (cdr children) path dir topics-fal index-pkg all id
                                     expand-level acc state)))
          (mv acc id state)))))
 
-(defun save-hierarchy (x dir index-pkg expand-level state)
+(defun save-hierarchy (x dir topics-fal index-pkg expand-level state)
 
 ; X is all topics.  We assume all parents are normalized.
 
@@ -285,7 +281,7 @@
        (acc   (cons #\Newline acc))
        (acc   (str::revappend-chars "<hindex_root>" acc))
        (acc   (cons #\Newline acc))
-       ((mv acc & state) (make-hierarchy-list-aux roots nil dir index-pkg x 0
+       ((mv acc & state) (make-hierarchy-list-aux roots nil dir topics-fal index-pkg x 0
                                                   expand-level acc state))
        (acc   (str::revappend-chars "</hindex_root>" acc))
        (acc   (cons #\Newline acc))
@@ -302,7 +298,7 @@
 
 ; ------------------ Making Flat Indexes ------------------------
 
-(defun index-add-topic (x dir index-pkg state acc)
+(defun index-add-topic (x dir topics-fal index-pkg state acc)
 
 ; X is a single topic entry in the xdoc table.  Index-pkg says the base package
 ; for symbols seen frmo the index.
@@ -321,7 +317,7 @@
        (acc   (cons #\Newline acc))
        (acc   (str::revappend-chars "<index_body>" acc))
        (acc   (cons #\Newline acc))
-       ((mv acc state) (preprocess-main short dir base-pkg state acc))
+       ((mv acc state) (preprocess-main short dir topics-fal base-pkg state acc))
        (acc   (cons #\Newline acc))
        (acc   (str::revappend-chars "</index_body>" acc))
        (acc   (cons #\Newline acc))
@@ -329,16 +325,16 @@
        (acc   (cons #\Newline acc)))
       (mv acc state)))
 
-(defun index-add-topics (x dir index-pkg state acc)
+(defun index-add-topics (x dir topics-fal index-pkg state acc)
 
 ; X is a list of topics.  Index-pkg says the base package for these symbols.
 
   (if (atom x)
       (mv acc state)
-    (b* (((mv acc state) (index-add-topic (car x) dir index-pkg state acc)))
-        (index-add-topics (cdr x) dir index-pkg state acc))))
+    (b* (((mv acc state) (index-add-topic (car x) dir topics-fal index-pkg state acc)))
+        (index-add-topics (cdr x) dir topics-fal index-pkg state acc))))
 
-(defun index-topics (x title dir index-pkg state acc)
+(defun index-topics (x title dir topics-fal index-pkg state acc)
 
 ; X is a list of topics.  Generate <index>...</index> for these topics and
 ; add to acc.
@@ -347,12 +343,12 @@
        (acc (str::revappend-chars title acc))
        (acc (str::revappend-chars "\">" acc))
        (acc (cons #\Newline acc))
-       ((mv acc state) (index-add-topics x dir index-pkg state acc))
+       ((mv acc state) (index-add-topics x dir topics-fal index-pkg state acc))
        (acc (str::revappend-chars "</index>" acc))
        (acc (cons #\Newline acc)))
       (mv acc state)))
 
-(defun save-index (x dir index-pkg state)
+(defun save-index (x dir topics-fal index-pkg state)
 
 ; Write index.xml for the whole list of all topics.
 
@@ -363,7 +359,7 @@
        (acc (cons #\Newline acc))
        (acc (str::revappend-chars "<page>" acc))
        (acc (cons #\Newline acc))
-       ((mv acc state) (index-topics x "Full Index" dir index-pkg state acc))
+       ((mv acc state) (index-topics x "Full Index" dir topics-fal index-pkg state acc))
        (acc (str::revappend-chars "</page>" acc))
        (filename (acl2::extend-pathname dir "index.xml" state))
        ((mv channel state) (open-output-channel filename :character state))
@@ -400,7 +396,7 @@
          (gather-topics names (cdr all-topics)))))
 
 
-(defun preprocess-topic (x all-topics dir state)
+(defun preprocess-topic (x all-topics dir topics-fal state)
   (b* ((name     (cdr (assoc :name x)))
        (base-pkg (cdr (assoc :base-pkg x)))
        (short    (or (cdr (assoc :short x)) ""))
@@ -437,7 +433,7 @@
 
        ;; Previously: ((mv acc state) (preprocess-main short dir base-pkg state acc))
 
-       ((mv short-acc state) (preprocess-main short dir base-pkg state nil))
+       ((mv short-acc state) (preprocess-main short dir topics-fal base-pkg state nil))
        (short-str  (reverse (coerce short-acc 'string)))
        (acc        (append short-acc acc))
        ((mv err &) (parse-xml short-str))
@@ -452,7 +448,7 @@
        (acc    (str::revappend-chars "<long>" acc))
 
        ;; Previously: ((mv acc state) (preprocess-main long dir base-pkg state acc))
-       ((mv long-acc state) (preprocess-main long dir base-pkg state nil))
+       ((mv long-acc state) (preprocess-main long dir topics-fal base-pkg state nil))
        (long-str (reverse (coerce long-acc 'string)))
        (acc      (append long-acc acc))
        ((mv err &) (parse-xml long-str))
@@ -470,7 +466,7 @@
 
        ((mv acc state) (if (not topics)
                            (mv acc state)
-                         (index-topics topics "Subtopics" dir base-pkg state acc)))
+                         (index-topics topics "Subtopics" dir topics-fal base-pkg state acc)))
 
        (acc    (str::revappend-chars "</topic>" acc))
        (acc    (cons #\Newline acc))
@@ -478,10 +474,10 @@
        (acc    (cons #\Newline acc)))
       (mv (reverse (coerce acc 'string)) state)))
 
-(defun save-topic (x all-topics dir state)
+(defun save-topic (x all-topics dir topics-fal state)
   (b* ((name               (cdr (assoc :name x)))
        (-                  (cw "Saving ~s0::~s1.~%" (symbol-package-name name) (symbol-name name)))
-       ((mv text state)    (preprocess-topic x all-topics dir state))
+       ((mv text state)    (preprocess-topic x all-topics dir topics-fal state))
        (filename           (concatenate 'string
                                         (reverse (coerce (file-name-mangle name nil) 'string))
                                         ".xml"))
@@ -491,11 +487,11 @@
        (state              (close-output-channel channel state)))
       state))
 
-(defun save-topics-aux (x all-topics dir state)
+(defun save-topics-aux (x all-topics dir topics-fal state)
   (if (atom x)
       state
-    (let ((state (save-topic (car x) all-topics dir state)))
-      (save-topics-aux (cdr x) all-topics dir state))))
+    (let ((state (save-topic (car x) all-topics dir topics-fal state)))
+      (save-topics-aux (cdr x) all-topics dir topics-fal state))))
 
 
 
@@ -561,16 +557,20 @@
        (x      (time$ (normalize-parents-list x)
                       :msg "; Normalizing parents: ~st sec, ~sa bytes~%"
                       :mintime 1/2))
-       (state  (time$ (save-topics-aux x x dir state)
+       (topics-fal (time$ (topics-fal x)
+                          :msg "; Generating topics fal: ~st sec, ~sa bytes~%"
+                          :mintime 1/2))
+       (state  (time$ (save-topics-aux x x dir topics-fal state)
                       :msg "; Saving topics: ~st sec, ~sa bytes~%"
                       :mintime 1/2))
-       (state  (time$ (save-index x dir index-pkg state)
+       (state  (time$ (save-index x dir topics-fal index-pkg state)
                       :msg "; Saving flat index: ~st sec, ~sa bytes~%"
                       :mintime 1/2))
-       (state  (time$ (save-hierarchy x dir index-pkg expand-level state)
+       (state  (time$ (save-hierarchy x dir topics-fal index-pkg expand-level state)
                       :msg "; Saving hierarchical index: ~st sec, ~sa bytes~%"))
-       (state  (save-success-file (len x) dir state))
-       (orphans (find-orphaned-topics x)))
+       (orphans (find-orphaned-topics x topics-fal nil))
+       (-       (fast-alist-free topics-fal))
+       (state   (save-success-file (len x) dir state)))
     (or (not orphans)
         (cw "~|~%WARNING: found topics with non-existent parents:~%~x0~%These ~
              topics may only show up in the index pages.~%~%" orphans))

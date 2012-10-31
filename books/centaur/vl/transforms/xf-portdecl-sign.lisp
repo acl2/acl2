@@ -34,12 +34,12 @@ corresponding net declaration have the same signedness.</p>
 <p>A Verilog module may include both a port declaration and a net/reg
 declaration for the same wire.  For instance, the following is valid:</p>
 
-<code>
+@({
 module mymod (a, b, c, ...) ;
-  input [3:0] a;   // &lt;-- port declaration
-  wire [3:0] a;    // &lt;-- net declaration
+  input [3:0] a;   // <-- port declaration
+  wire [3:0] a;    // <-- net declaration
 endmodule
-</code>
+})
 
 <p>Indeed, if a port is not also given a net declaration, we infer one
 in the @(see make-implicit-wires) transform.</p>
@@ -141,19 +141,19 @@ and returns the names of any signed reg declarations as a list of strings.</p>"
   :short "Change some port declarations to make them signed."
 
   :long "<p><b>Signature:</b> @(call vl-make-portdecls-signed) returns
-<tt>x-prime</tt>.</p>
+@('x-prime').</p>
 
 <ul>
 
-<li><tt>names</tt> is a list of strings that names any port declarations which
+<li>@('names') is a list of strings that names any port declarations which
 should be made signed, and </li>
 
-<li><tt>x</tt> is the original list of port declarations.</li>
+<li>@('x') is the original list of port declarations.</li>
 
 </ul>
 
-<p>We walk through <tt>x</tt>, marking all of the named ports as signed, and
-return the updated port declarations as <tt>x-prime</tt>.</p>"
+<p>We walk through @('x'), marking all of the named ports as signed, and return
+the updated port declarations as @('x-prime').</p>"
 
   (defund vl-make-portdecls-signed (names x)
     (declare (xargs :guard (and (string-listp names)
@@ -181,19 +181,19 @@ return the updated port declarations as <tt>x-prime</tt>.</p>"
   :short "Change some net declarations to make them signed."
 
   :long "<p><b>Signature:</b> @(call vl-make-netdecls-signed) returns
-<tt>x-prime</tt>.</p>
+@('x-prime').</p>
 
 <ul>
 
-<li><tt>names</tt> is a list of strings that names any net declarations which
+<li>@('names') is a list of strings that names any net declarations which
 should be made signed, and </li>
 
-<li><tt>x</tt> is the original list of net declarations.</li>
+<li>@('x') is the original list of net declarations.</li>
 
 </ul>
 
-<p>We walk through <tt>x</tt>, marking all of the named nets as signed, and
-return the updated net declarations as <tt>x-prime</tt>.</p>"
+<p>We walk through @('x'), marking all of the named nets as signed, and return
+the updated net declarations as @('x-prime').</p>"
 
   (defund vl-make-netdecls-signed (names x)
     (declare (xargs :guard (and (string-listp names)
@@ -221,19 +221,19 @@ return the updated net declarations as <tt>x-prime</tt>.</p>"
   :short "Change some reg declarations to make them signed."
 
   :long "<p><b>Signature:</b> @(call vl-make-regdecls-signed) returns
-<tt>x-prime</tt>.</p>
+@('x-prime').</p>
 
 <ul>
 
-<li><tt>names</tt> is a list of strings that names any reg declarations which
+<li>@('names') is a list of strings that names any reg declarations which
 should be made signed, and </li>
 
-<li><tt>x</tt> is the original list of reg declarations.</li>
+<li>@('x') is the original list of reg declarations.</li>
 
 </ul>
 
-<p>We walk through <tt>x</tt>, marking all of the named regs as signed, and
-return the updated reg declarations as <tt>x-prime</tt>.</p>"
+<p>We walk through @('x'), marking all of the named regs as signed, and return
+the updated reg declarations as @('x-prime').</p>"
 
   (defund vl-make-regdecls-signed (names x)
     (declare (xargs :guard (and (string-listp names)
@@ -258,11 +258,11 @@ return the updated reg declarations as <tt>x-prime</tt>.</p>"
 
 (defsection vl-module-portdecl-sign
   :parents (portdecl-sign)
-  :short "Cross-check <tt>signed</tt> declarations between port declarations
-and net/reg declarations in a module."
+  :short "Cross-check @('signed') declarations between port declarations and
+net/reg declarations in a module."
 
-  :long "<p>@(call vl-module-portdecl-sign) is given a module, <tt>x</tt>, and
-returns an updated module, <tt>x-prime</tt>, where the @(see portdecl-sign)
+  :long "<p>@(call vl-module-portdecl-sign) is given a module, @('x'), and
+returns an updated module, @('x-prime'), where the @(see portdecl-sign)
 transformation has been carried out.</p>"
 
   (defund vl-module-portdecl-sign (x)
@@ -342,10 +342,11 @@ transformation has been carried out.</p>"
 
 (defsection vl-modulelist-portdecl-sign
   :parents (portdecl-sign)
-  :short "Cross-check <tt>signed</tt> declarations between port declarations
-and net/reg declarations in a module list."
-  :long "<p>Simple projection of @(see vl-module-portdecl-sign)
-across a list of modules.</p>"
+  :short "Cross-check @('signed') declarations between port declarations and
+net/reg declarations in a module list."
+
+  :long "<p>Simple projection of @(see vl-module-portdecl-sign) across a list
+of modules.</p>"
 
   (defprojection vl-modulelist-portdecl-sign (x)
     (vl-module-portdecl-sign x)

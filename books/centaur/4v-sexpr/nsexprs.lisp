@@ -64,9 +64,9 @@ requiring all of the variables in an s-expression to be natural numbers; see
 
 <p>We typically leave these disabled and reason about, e.g.,</p>
 
-<code>
+@({
  (nat-listp (4v-sexpr-vars x))
-</code>"
+})"
 
   (mutual-recursion
    (defund 4v-nsexpr-p (x)
@@ -254,12 +254,12 @@ an @(see 4v-nsexpr-p)."
   :short "Optimized version of @(see 4v-sexpr-vars) for sexprs whose variables
 are natural numbers."
 
-  :long "<p><tt>(4v-nsexpr-vars x)</tt> is logically just @(see 4v-sexpr-vars).
+  :long "<p>@('(4v-nsexpr-vars x)') is logically just @(see 4v-sexpr-vars).
 However, its guard requires that all variables in the sexpr are natural
 numbers; see @(see 4v-nsexpr-p).</p>
 
 <p>In the execution, we use a strategy that is quite similar to the ordinary
-<tt>4v-sexpr-vars</tt> function: we memoize the entire computation and build
+@('4v-sexpr-vars') function: we memoize the entire computation and build
 variable sets for every sexpr subexpression.  But, instead of using ordered
 lists of variables, we use either @(see bitsets) or <see topic='@(url
 sbitsets)'>sparse bitsets</see> as our set representation.  This turns out to
@@ -269,9 +269,9 @@ make a very significant performance difference.</p>
 significantly outperform ordinary bitsets when dealing with large modules.
 However, you can instead choose to use ordinary bitsets by running:</p>
 
-<code>
+@({
  (4v-nsexpr-vars x :sparsep nil)
-</code>
+})
 
 <p>The real computation is done by @(see 4v-nsexpr-vars-sparse) or by @(see
 4v-nsexpr-vars-nonsparse).  You will probably want to clear the memo tables for

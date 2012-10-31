@@ -60,24 +60,24 @@ ports properly declared as INPUT or OUTPUT ports.  We do NOT try to handle
 inout ports.  Why?  Well, here is our basic strategy.  If we have a module
 like:</p>
 
-<code>
+@({
     module mymod ( output o, input a, input b ) ; ... endmodule
-</code>
+})
 
 <p>And we want to inline an instance such as:</p>
 
-<code>
+@({
     mymod myinst (w, 1'b1, c + d) ;
-</code>
+})
 
 <p>Then the basic idea is to replace myinst with:</p>
 
-<code>
+@({
      assign w = mangled_o;
      assign mangled_a = 1'b1;
      assign mangled_b = c + d;
      [... mangled body of mymod ...]
-</code>
+})
 
 <p>These assignment statements are unidirectional and if, for instance, you
 incorrectly mark an output as an input, then the assignment will flow in the
@@ -453,8 +453,8 @@ a module."
 
 (defsection vl-inline-mods
   :parents (inline-mods)
-  :short "@(call vl-inline-mods) inlines all modules in <tt>x</tt> throughout
-<tt>all-mods</tt>."
+  :short "@(call vl-inline-mods) inlines all modules in @('x') throughout
+@('all-mods')."
 
   (defund vl-inline-mods (x all-mods)
     (declare (xargs :guard (and (vl-modulelist-p x)

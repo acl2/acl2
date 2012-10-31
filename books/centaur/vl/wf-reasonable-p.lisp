@@ -80,11 +80,10 @@ is @(see reasonable)."
 
 <ul>
 
-<li>We only permit port declarations of type <tt>supply0</tt>,
-<tt>supply1</tt>, and <tt>wire</tt>, excluding other types such as
-<tt>tri0</tt>, <tt>wor</tt>, etc.</li>
+<li>We only permit port declarations of type @('supply0'), @('supply1'), and
+@('wire'), excluding other types such as @('tri0'), @('wor'), etc.</li>
 
-<li>We do not permit <tt>inout</tt> ports.</li>
+<li>We do not permit @('inout') ports.</li>
 
 </ul>"
 
@@ -147,14 +146,12 @@ is @(see reasonable)."
   :long "<p>We restrict wire declarations in the following ways:</p>
 <ul>
 
-<li>The only allowed types are <tt>supply0</tt>, <tt>supply1</tt>, and plain
-<tt>wire</tt>s.  Not permitted are types such as <tt>wor</tt> and
-<tt>tri0</tt>.</li>
+<li>The only allowed types are @('supply0'), @('supply1'), and plain
+@('wire')s.  Not permitted are types such as @('wor') and @('tri0').</li>
 
 <li>Arrays of wires are not supported.  (Note that we do support wires with
-ranges, e.g., <tt>wire [7:0] w</tt>.  What we do not support are, e.g.,
-<tt>wire w [7:0]</tt>, or multi-dimensional arrays such as <tt>wire [7:0] w
-[3:0]</tt>.</li>
+ranges, e.g., @('wire [7:0] w').  What we do not support are, e.g., @('wire w
+[7:0]'), or multi-dimensional arrays such as @('wire [7:0] w [3:0]').</li>
 
 </ul>"
 
@@ -705,9 +702,9 @@ ranges, e.g., <tt>wire [7:0] w</tt>.  What we do not support are, e.g.,
 
 (defsection vl-module-check-reasonable
   :parents (reasonable)
-  :short "@(call vl-module-check-reasonable) annotates <tt>x</tt> with any
-warnings about whether it is @(see reasonable).  Furthermore, if <tt>x</tt>
-is unreasonable, a fatal warning is added that mentions this."
+  :short "@(call vl-module-check-reasonable) annotates @('x') with any warnings
+about whether it is @(see reasonable).  Furthermore, if @('x') is unreasonable,
+a fatal warning is added that mentions this."
 
   (defund vl-module-check-reasonable (x)
     (declare (xargs :guard (vl-module-p x)))
@@ -744,8 +741,8 @@ is unreasonable, a fatal warning is added that mentions this."
 
 (defsection vl-modulelist-check-reasonable
   :parents (reasonable)
-  :short "@(call vl-modulelist-check-reasonable) annotates each module
-in <tt>x</tt> with any warnings regarding whether it is @(see reasonable);
+  :short "@(call vl-modulelist-check-reasonable) annotates each module in
+@('x') with any warnings regarding whether it is @(see reasonable);
 furthermore, any unreasonable modules are annotated with a fatal warning."
 
   :long "<p>This function may be used in conjunction with @(see

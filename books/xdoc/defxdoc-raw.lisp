@@ -59,22 +59,24 @@
  (defxdoc-raw defxdoc-raw
    :parents (xdoc)
    :short "Add documentation in raw mode."
-   :long "<p><tt>Defxdoc-raw</tt> allows you to document raw-lisp code with
-XDOC.  It isn't possible to do this with the ordinary @(see defxdoc) command
-because <tt>defxdoc</tt> is a macro that expands to a <tt>make-event</tt>, and
-<tt>make-event</tt> is not permitted in raw Lisp.</p>
 
-<p><tt>Defxdoc-raw</tt> is not available just by including <tt>xdoc/top</tt>,
-because it requires a ttag.  So, to use it you will need:</p>
-<code>
+   :long "<p>@('Defxdoc-raw') allows you to document raw-lisp code with XDOC.
+It isn't possible to do this with the ordinary @(see defxdoc) command because
+@('defxdoc') is a macro that expands to a @('make-event'), and @('make-event')
+is not permitted in raw Lisp.</p>
+
+<p>@('Defxdoc-raw') is not available just by including @('xdoc/top'), because
+it requires a ttag.  So, to use it you will need:</p>
+
+@({
  (include-book \"xdoc/defxdoc-raw\" :dir :system)
-</code>
+})
 
-<p><tt>Defxdoc-raw</tt> takes the same arguments as @(see defxdoc), but adds
-its documentation to a Lisp variable rather than to the XDOC table.  Note that
-the <tt>:xdoc</tt> and @(see save) commands already know about this table, so
-to the end-user, documentation added by <tt>defxdoc-raw</tt> is not any
-different than documentation added by <tt>defxdoc</tt>.</p>")
+<p>@('Defxdoc-raw') takes the same arguments as @(see defxdoc), but adds its
+documentation to a Lisp variable rather than to the XDOC table.  Note that the
+@(':xdoc') and @(see save) commands already know about this table, so to the
+end-user, documentation added by @('defxdoc-raw') is not any different than
+documentation added by @('defxdoc').</p>")
 
  (defun all-xdoc-topics (state)
    (if (not (acl2::live-state-p state))

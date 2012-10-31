@@ -38,7 +38,7 @@
     "Returns (mv successp condition-expr lhs-expr rhs-expr)"
     (declare (xargs :guard (and (vl-always-p x)
                                 (vl-warninglist-p warnings))))
-    
+
     (b* (((mv successp ctrl condition lhs rhs)
           (vl-pattern-match-latch x))
          ((unless successp)
@@ -52,11 +52,11 @@
          (need-wires (if starp
                          nil
                        (append rhs-wires condition-wires)))
-         
+
          (have-wires (if starp
                          nil
                        (vl-idexprlist->names (vl-evatomlist->exprs atoms))))
-         
+
          ((unless (subsetp-equal need-wires have-wires))
           (mv (cons (make-vl-warning
                      :type :vl-latch-fail
@@ -113,48 +113,47 @@
 
 (defsection vl-always-careless-infer-latch/flop
   :parents (flop-inference)
-  :short "Try to infer a flop or latch from an <tt>always</tt> block."
+  :short "Try to infer a flop or latch from an @('always') block."
 
-  :long "<p><b>Signature:</b> @(call vl-always-careless-infer-latch/flop) returns
-<tt>(mv successp warnings regs inst addmods decls assigns nf)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-always-careless-infer-latch/flop)
+returns @('(mv successp warnings regs inst addmods decls assigns nf)').</p>
 
 <h5>Inputs</h5>
 <ul>
- <li><tt>x</tt>, an always block we may infer a flop from</li>
- <li><tt>mod</tt>, the module in which <tt>x</tt> resides</li>
- <li><tt>warnings</tt>, a warnings accumulator</li>
- <li><tt>nf</tt>, a @(see vl-namefactory-p) for generating fresh wire names.</li>
+ <li>@('x'), an always block we may infer a flop from</li>
+ <li>@('mod'), the module in which @('x') resides</li>
+ <li>@('warnings'), a warnings accumulator</li>
+ <li>@('nf'), a @(see vl-namefactory-p) for generating fresh wire names.</li>
 </ul>
 
-<p>We may extend <tt>warnings</tt> when <tt>x</tt> looks like it should
-be a flop, but it does not appear safe to convert it.</p>
+<p>We may extend @('warnings') when @('x') looks like it should be a flop, but
+it does not appear safe to convert it.</p>
 
-<p><tt>successp</tt> is true only when we wish to convert this always statement
-into a flop or latch.  Aside from <tt>successp</tt> and <tt>warnings</tt>, the
-other outputs are only useful when <tt>successp</tt> holds.</p>
+<p>@('successp') is true only when we wish to convert this always statement
+into a flop or latch.  Aside from @('successp') and @('warnings'), the other
+outputs are only useful when @('successp') holds.</p>
 
 <h5>Outputs (when successp)</h5>
 
 <ul>
 
-<li><tt>regs</tt> are the @(see vl-regdecl-p)s that need to be converted into
+<li>@('regs') are the @(see vl-regdecl-p)s that need to be converted into
 ordinary wires,</li>
 
-<li><tt>inst</tt> is a new instance of a <tt>VL_<i>N</i>_BIT_FLOP</tt> or
-<tt>VL_<i>N</i>_BIT_LATCH</tt> that must be added to the module to replace this
+<li>@('inst') is a new instance of a @('VL_<i>N</i>_BIT_FLOP') or
+@('VL_<i>N</i>_BIT_LATCH') that must be added to the module to replace this
 always block,</li>
 
-<li><tt>addmods</tt> are any modules that need to be added to the module list
-to ensure that we retain @(see completeness) as we introduce
-<tt>inst</tt>,</li>
+<li>@('addmods') are any modules that need to be added to the module list to
+ensure that we retain @(see completeness) as we introduce @('inst'),</li>
 
-<li><tt>decls</tt> are any new @(see vl-netdecl-p)s that need to be added
-to the module,</li>
+<li>@('decls') are any new @(see vl-netdecl-p)s that need to be added to the
+module,</li>
 
-<li><tt>assigns</tt> are any new @(see vl-assign-p)s that need to be added to
-the module.</li>
+<li>@('assigns') are any new @(see vl-assign-p)s that need to be added to the
+module.</li>
 
-<li><tt>nf</tt> is the updated name factory.</li>
+<li>@('nf') is the updated name factory.</li>
 
 </ul>"
 
@@ -363,39 +362,38 @@ the module.</li>
 
 (defsection vl-alwayslist-careless-infer-latches/flops
   :parents (flop-inference)
-  :short "Try to infer latches and flops from a list of <tt>always</tt>
-blocks."
+  :short "Try to infer latches and flops from a list of @('always') blocks."
 
-  :long "<p><b>Signature:</b> @(call vl-alwayslist-careless-infer-latches/flops) returns
-<tt>(mv warnings alwayses regs insts addmods decls assigns nf)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call
+vl-alwayslist-careless-infer-latches/flops) returns @('(mv warnings alwayses
+regs insts addmods decls assigns nf)').</p>
 
-<p>We are given <tt>x</tt>, the list of always blocks for the module
-<tt>mod</tt>, a name index for <tt>mod</tt>, and the warnings accumulator for
-<tt>mod</tt>.  We try to infer flops for each <tt>always</tt> in the list, and
-return:</p>
+<p>We are given @('x'), the list of always blocks for the module @('mod'), a
+name index for @('mod'), and the warnings accumulator for @('mod').  We try to
+infer flops for each @('always') in the list, and return:</p>
 
 <ul>
 
-<li><tt>alwayses</tt>, a new list of alwayses where we remove any always
- statements that have been successfully converted into flops,</li>
+<li>@('alwayses'), a new list of alwayses where we remove any always statements
+ that have been successfully converted into flops,</li>
 
-<li><tt>regs</tt>, a list of regdecls that need to be converted into wires,</li>
+<li>@('regs'), a list of regdecls that need to be converted into wires,</li>
 
-<li><tt>insts</tt>, a list of module instances that need to be added to the
+<li>@('insts'), a list of module instances that need to be added to the
 module (e.g., this list will contain the explicit flop instances that represent
 the deleted always blocks),</li>
 
-<li><tt>addmods</tt>, a list of modules that need to be added to the module
-list (e.g., this list might include <tt>VL_3_BIT_FLOP</tt> if we've instantiated
+<li>@('addmods'), a list of modules that need to be added to the module
+list (e.g., this list might include @('VL_3_BIT_FLOP') if we've instantiated
 it.)</li>
 
-<li><tt>decls</tt> are any new @(see vl-netdecl-p)s that need to be added
-to the module,</li>
+<li>@('decls') are any new @(see vl-netdecl-p)s that need to be added to the
+module,</li>
 
-<li><tt>assigns</tt> are any new @(see vl-assign-p)s that need to be added to
-the module.</li>
+<li>@('assigns') are any new @(see vl-assign-p)s that need to be added to the
+module.</li>
 
-<li><tt>nf</tt> is the updated name factory.</li>
+<li>@('nf') is the updated name factory.</li>
 
 </ul>"
 

@@ -52,22 +52,22 @@
 ;   ...
 
 (def-vl-modgen vl-make-n-bit-shl-place-p (n p)
-  :short "Generate a module that conditionally shifts an <tt>N</tt> bit
-number by <tt>2**(P-1)</tt> bits to the left."
+  :short "Generate a module that conditionally shifts an @('N') bit number by
+@('2**(P-1)') bits to the left."
 
   :long "<p>We generate a gate-based module that is semantically equivalent
 to:</p>
 
-<code>
+@({
 module VL_N_BIT_SHL_PLACE_P (out, in, shiftp) ;
   output [n-1:0] out;
   input [n-1:0] in;
   input shiftp;
 
-  assign out = shiftp ? (in &lt;&lt; 2**(p-1)) : in;
+  assign out = shiftp ? (in << 2**(p-1)) : in;
 
 endmodule
-</code>
+})
 
 <p>These \"place shifters\" can be combined to form a full shifter that
 operates on O(log_2 n) muxes.</p>"
@@ -164,15 +164,15 @@ operates on O(log_2 n) muxes.</p>"
 
 (defsection vl-make-list-of-netdecls
   :parents (occform)
-  :short "@(call vl-make-list-of-netdecls) generates <tt>n</tt> distinct wires
-  with the given <tt>range</tt>."
+  :short "@(call vl-make-list-of-netdecls) generates @('n') distinct wires with
+  the given @('range')."
 
   :long "<p><b>Signature:</b> @(call vl-make-list-of-netdecls) returns a list
-of net declarations, for <tt>basename_n</tt> down to <tt>basename_1</tt>.</p>
+of net declarations, for @('basename_n') down to @('basename_1').</p>
 
-<p>As inputs, <tt>n</tt> should be a natural number, <tt>basename</tt> should
-be a string, and <tt>range</tt> is a range that will be given to every
-generated net declaration.</p>"
+<p>As inputs, @('n') should be a natural number, @('basename') should be a
+string, and @('range') is a range that will be given to every generated net
+declaration.</p>"
 
   (defund vl-make-list-of-netdecls (n basename range)
     "Returns (MV NETDECLS NF')"
@@ -239,20 +239,20 @@ generated net declaration.</p>"
 
 
 (def-vl-modgen vl-make-n-bit-shl-by-m-bits (n m)
-  :short "Generate a module that shifts an <tt>N</tt> bit number left by an
-<tt>M</tt> bit number."
+  :short "Generate a module that shifts an @('N') bit number left by an @('M')
+bit number."
 
   :long "<p>We generate a gate-based module that is semantically equivalent
 to:</p>
 
-<code>
+@({
 module VL_N_BIT_SHL_BY_M_BITS (out, a, b) ;
   output [n-1:0] out;
   input [n-1:0] a;
   input [m-1:0] b;
-  assign out = a &lt;&lt; b;
+  assign out = a << b;
 endmodule
-</code>"
+})"
 
   :guard (and (posp n)
               (posp m))

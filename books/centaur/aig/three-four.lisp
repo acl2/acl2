@@ -57,10 +57,10 @@ that holds of the outputs of most logic gates, e.g., a NOT gate might produce
 an X, but it will never produce a Z.</p>
 
 <p>Because of this, we have two versions of most of our FAIG constructors.  The
-<tt>t-aig-*</tt> functions make the assumption that their inputs are
-non-floating and can never evaluate to Z, and are more efficient.  The
-<tt>f-aig-*</tt> functions do not make this assumption and can operate on any
-FAIG inputs, but are not as efficient and yield larger FAIGs.</p>")
+@('t-aig-*') functions make the assumption that their inputs are non-floating
+and can never evaluate to Z, and are more efficient.  The @('f-aig-*')
+functions do not make this assumption and can operate on any FAIG inputs, but
+are not as efficient and yield larger FAIGs.</p>")
 
 
 
@@ -113,8 +113,8 @@ FAIGs.</p>"
 
 (defsection t-aig-not
   :parents (faig-constructors)
-  :short "@(call t-aig-not) negates the FAIG <tt>a</tt>, assuming that it
-cannot evaluate to Z."
+  :short "@(call t-aig-not) negates the FAIG @('a'), assuming that it cannot
+evaluate to Z."
 
   (defn t-aig-not (a)
     (b* (((faig a1 a0) a))
@@ -125,7 +125,7 @@ cannot evaluate to Z."
 
 (defsection f-aig-not
   :parents (faig-constructors)
-  :short "@(call f-aig-not) negates the FAIG <tt>a</tt>."
+  :short "@(call f-aig-not) negates the FAIG @('a')."
 
   (defn f-aig-not (a)
     (b* (((faig a1 a0) a))
@@ -138,8 +138,8 @@ cannot evaluate to Z."
 
 (defsection t-aig-and
   :parents (faig-constructors)
-  :short "@(call t-aig-and) <i>and</i>s together the FAIGs <tt>a</tt> and
-<tt>b</tt>, assuming they cannot evaluate to Z."
+  :short "@(call t-aig-and) <i>and</i>s together the FAIGs @('a') and @('b'),
+assuming they cannot evaluate to Z."
 
   (defn t-aig-and (a b)
     (b* (((faig a1 a0) a)
@@ -151,8 +151,7 @@ cannot evaluate to Z."
 
 (defsection f-aig-and
   :parents (faig-constructors)
-  :short "@(call f-aig-and) <i>and</i>s together the FAIGs <tt>a</tt> and
-<tt>b</tt>."
+  :short "@(call f-aig-and) <i>and</i>s together the FAIGs @('a') and @('b')."
 
   (defn f-aig-and (a b)
     (let ((a (t-aig-fix a))
@@ -165,8 +164,8 @@ cannot evaluate to Z."
 
 (defsection t-aig-or
   :parents (faig-constructors)
-  :short "@(call t-aig-or) <i>or</i>s together the FAIGs <tt>a</tt> and
-<tt>b</tt>, assuming they cannot evaluate to Z."
+  :short "@(call t-aig-or) <i>or</i>s together the FAIGs @('a') and @('b'),
+assuming they cannot evaluate to Z."
 
   (defn t-aig-or (a b)
     (b* (((faig a1 a0) a)
@@ -178,8 +177,7 @@ cannot evaluate to Z."
 
 (defsection f-aig-or
   :parents (faig-constructors)
-  :short "@(call f-aig-or) <i>or</i>s together the FAIGs <tt>a</tt> and
-<tt>b</tt>."
+  :short "@(call f-aig-or) <i>or</i>s together the FAIGs @('a') and @('b')."
 
   (defn f-aig-or (a b)
     (let ((a (t-aig-fix a))
@@ -192,8 +190,8 @@ cannot evaluate to Z."
 
 (defsection t-aig-xor
   :parents (faig-constructors)
-  :short "@(call t-aig-xor) <i>xor</i>s together the FAIGs <tt>a</tt> and
-<tt>b</tt>, assuming they cannot evaluate to Z."
+  :short "@(call t-aig-xor) <i>xor</i>s together the FAIGs @('a') and @('b'),
+assuming they cannot evaluate to Z."
 
   (defn t-aig-xor (a b)
     (t-aig-or (t-aig-and a (t-aig-not b))
@@ -203,8 +201,7 @@ cannot evaluate to Z."
 
 (defsection f-aig-xor
   :parents (faig-constructors)
-  :short "@(call f-aig-xor) <i>xor</i>s together the FAIGs <tt>a</tt> and
-<tt>b</tt>."
+  :short "@(call f-aig-xor) <i>xor</i>s together the FAIGs @('a') and @('b')."
 
   (defn f-aig-xor (a b)
     (let ((a (t-aig-fix a))
@@ -217,8 +214,8 @@ cannot evaluate to Z."
 
 (defsection t-aig-iff
   :parents (faig-constructors)
-  :short "@(call t-aig-iff) <i>iff</i>s together the FAIGs <tt>a</tt> and
-<tt>b</tt>, assuming they cannot evaluate to Z."
+  :short "@(call t-aig-iff) <i>iff</i>s together the FAIGs @('a') and @('b'),
+assuming they cannot evaluate to Z."
 
   (defn t-aig-iff (a b)
     (t-aig-or (t-aig-and a b)
@@ -229,8 +226,7 @@ cannot evaluate to Z."
 
 (defsection f-aig-iff
   :parents (faig-constructors)
-  :short "@(call f-aig-iff) <i>iff</i>s together the FAIGs <tt>a</tt> and
-<tt>b</tt>."
+  :short "@(call f-aig-iff) <i>iff</i>s together the FAIGs @('a') and @('b')."
 
   (defn f-aig-iff (a b)
     (let ((a (t-aig-fix a))
@@ -245,11 +241,11 @@ cannot evaluate to Z."
 (defsection t-aig-ite
   :parents (faig-constructors)
   :short "@(call t-aig-ite) constructs a (less conservative) FAIG representing
-<tt>(if c a b)</tt>, assuming these input FAIGs cannot evaluate to Z."
+@('(if c a b)'), assuming these input FAIGs cannot evaluate to Z."
 
   :long "<p>This is a less-conservative version of @(see t-aig-ite*) that emits
-<tt>a</tt> in the case that <tt>c</tt> is unknown but <tt>a = b</tt>.  See
-@(see 4v-ite) for discussion related to this issue.</p>"
+@('a') in the case that @('c') is unknown but @('a = b').  See @(see 4v-ite)
+for discussion related to this issue.</p>"
 
   (defn t-aig-ite (c a b)
     (b* (((faig a1 a0) a)
@@ -265,11 +261,11 @@ cannot evaluate to Z."
 (defsection f-aig-ite
   :parents (faig-constructors)
   :short "@(call f-aig-ite) constructs a (less conservative) FAIG representing
-<tt>(if c a b)</tt>."
+@('(if c a b)')."
 
   :long "<p>This is a less-conservative version of @(see f-aig-ite*) that emits
-<tt>a</tt> in the case that <tt>c</tt> is unknown but <tt>a = b</tt>.  See
-@(see 4v-ite) for discussion related to this issue.</p>"
+@('a') in the case that @('c') is unknown but @('a = b').  See @(see 4v-ite)
+for discussion related to this issue.</p>"
 
   (defn f-aig-ite (c a b)
     (let* ((c (t-aig-fix c))
@@ -284,11 +280,11 @@ cannot evaluate to Z."
 (defsection t-aig-ite*
   :parents (faig-constructors)
   :short "@(call t-aig-ite*) constructs a (more conservative) FAIG representing
-<tt>(if c a b)</tt>, assuming these input FAIGs cannot evaluate to Z."
+@('(if c a b)'), assuming these input FAIGs cannot evaluate to Z."
 
   :long "<p>This is a more-conservative version of @(see t-aig-ite) that emits
-<tt>X</tt> in the case that <tt>c</tt> is unknown, even when <tt>a = b</tt>.
-See @(see 4v-ite) for discussion related to this issue.</p>"
+@('X') in the case that @('c') is unknown, even when @('a = b').  See @(see
+4v-ite) for discussion related to this issue.</p>"
 
   (defn t-aig-ite* (c a b)
     (b* (((faig a1 a0) a)
@@ -305,11 +301,11 @@ See @(see 4v-ite) for discussion related to this issue.</p>"
 (defsection f-aig-ite*
   :parents (faig-constructors)
   :short "@(call f-aig-ite*) constructs a (more conservative) FAIG representing
-<tt>(if c a b)</tt>, assuming these input FAIGs cannot evaluate to Z."
+@('(if c a b)'), assuming these input FAIGs cannot evaluate to Z."
 
   :long "<p>This is a more-conservative version of @(see f-aig-ite) that emits
-<tt>X</tt> in the case that <tt>c</tt> is unknown, even when <tt>a = b</tt>.
-See @(see 4v-ite) for discussion related to this issue.</p>"
+@('X') in the case that @('c') is unknown, even when @('a = b').  See @(see
+4v-ite) for discussion related to this issue.</p>"
 
   (defn f-aig-ite* (c a b)
     (let* ((c (t-aig-fix c))

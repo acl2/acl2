@@ -45,22 +45,22 @@ are not driven by any occurrence.  This is something we explicitly check for in
 
 <ol>
 
-<li>Identify when a wire <tt>W</tt> has multiple occurrences driving it.
+<li>Identify when a wire @('W') has multiple occurrences driving it.
 Fortunately, this is completely trivial:
 
-<code>
+@({
  (duplicated-members (collect-signal-list :o occs))
-</code>
+})
 
 </li>
 
-<li>Rewrite each occurrence driving <tt>W</tt> so that it instead drives some
-new, unique, freshly generated wire (say <tt>W_1</tt>, <tt>W_2</tt>, ...).  We
-also need to remember the names we used for each wire, for step 3.  We do this
-with the function @(see vl-res-rewrite-occs).</li>
+<li>Rewrite each occurrence driving @('W') so that it instead drives some new,
+unique, freshly generated wire (say @('W_1'), @('W_2'), ...).  We also need to
+remember the names we used for each wire, for step 3.  We do this with the
+function @(see vl-res-rewrite-occs).</li>
 
-<li>Insert new occurrences that drive <tt>W</tt> with the <tt>(RES W_1 W_2
-...)</tt>.  This is done with @(see vl-make-res-occs).</li>
+<li>Insert new occurrences that drive @('W') with the @('(RES W_1 W_2 ...)').
+This is done with @(see vl-make-res-occs).</li>
 
 </ol>
 
@@ -77,32 +77,31 @@ these steps together.</p>")
   :short "An alist that records the fresh wires we introduce for multiply
 driven wires."
 
-  :long "<p>The basic idea is that if <tt>W</tt> is a multiply-driven wire, and
-we are going to rewrite the occurrences so that they drive <tt>W_1</tt>,
-<tt>W_2</tt>, ... instead of <tt>W</tt>, then this alist should bind</p>
+  :long "<p>The basic idea is that if @('W') is a multiply-driven wire, and we
+are going to rewrite the occurrences so that they drive @('W_1'), @('W_2'),
+... instead of @('W'), then this alist should bind</p>
 
-<code>
-  W --&gt; (W_1 W_2 ...)
-</code>
+@({
+  W --> (W_1 W_2 ...)
+})
 
 <p>In short, this alist will end up saying which wires need to be resolved
-together to drive <tt>W</tt>; see @(see vl-make-res-occs).</p>")
+together to drive @('W'); see @(see vl-make-res-occs).</p>")
 
 
 (defsection vl-res-rewrite-pat
   :parents (vl-res-rewrite-occs)
   :short "Rewrite an output pattern to eliminate multiple drivers."
 
-  :long "<p><b>Signature</b>: @(call vl-res-rewrite-pat) returns <tt>(mv pat'
-  idx' sigma')</tt>.</p>
+  :long "<p><b>Signature</b>: @(call vl-res-rewrite-pat) returns @('(mv pat'
+idx' sigma')').</p>
 
-<p><tt>PAT</tt> should be the output pattern for some occurrence, e.g.,
-<tt>(gpl :o occ)</tt>.  The other arguments are as in @(see
-vl-res-rewrite-occs).</p>
+<p>@('PAT') should be the output pattern for some occurrence, e.g., @('(gpl :o
+occ)').  The other arguments are as in @(see vl-res-rewrite-occs).</p>
 
 <p>We replace any multiply driven wires with new, freshly generated names, and
-update <tt>IDX</tt> and <tt>SIGMA</tt> appropriately to account for the newly
-generated names.</p>"
+update @('IDX') and @('SIGMA') appropriately to account for the newly generated
+names.</p>"
 
   (defund vl-res-rewrite-pat (pat mds idx sigma)
     "Returns (MV PAT' IDX' SIGMA')"
@@ -192,26 +191,26 @@ generated names.</p>"
   :short "Rewrite occurrences to drive new, fresh wires instead of multiply
 driven wires."
 
-  :long "<p><b>Signature:</b> @(call vl-res-rewrite-occs) returns <tt>(mv occs'
-idx' sigma')</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-res-rewrite-occs) returns @('(mv occs'
+idx' sigma')').</p>
 
 <ul>
 
-<li><tt>MDS</tt> (\"multiply drivens\") says which wires have multiple drivers.
+<li>@('MDS') (\"multiply drivens\") says which wires have multiple drivers.
 Since we need to be able to quickly look up whether a wire needs to be
 rewritten, MDS is a fast alist whose keys are the @(see vl-emodwire-p)s that
 are multiply driven.  The values are irrelevant.  This alist isn't changed
 during the course of the rewriting.</li>
 
-<li><tt>IDX</tt> is a name index used for fresh name generation.  We expect
-that it is initially set to the highest index of any emodwire in the module
-whose basename is <tt>vl_res</tt>.  We increment it whenever we need to create
-a new, fresh wire.</li>
+<li>@('IDX') is a name index used for fresh name generation.  We expect that it
+is initially set to the highest index of any emodwire in the module whose
+basename is @('vl_res').  We increment it whenever we need to create a new,
+fresh wire.</li>
 
-<li><tt>SIGMA</tt> is a @(see vl-res-sigma-p) that we use to record the names
-of the new wires that are being driven.  It starts empty and eventually should
-bind every emodwire <tt>w</tt> in <tt>MDS</tt> to the list of new names being
-driven instead of <tt>w</tt>.</li>
+<li>@('SIGMA') is a @(see vl-res-sigma-p) that we use to record the names of
+the new wires that are being driven.  It starts empty and eventually should
+bind every emodwire @('w') in @('MDS') to the list of new names being driven
+instead of @('w').</li>
 
 </ul>"
 
@@ -396,7 +395,7 @@ for N=1 (in which case it acts like an ordinary assignment).</p>"
 wire to multiple values."
 
   :long "<p>@(call vl-make-res-occ) builds an E occurrence that simultaneously
-drives <tt>out</tt> to all of the values on <tt>ins</tt>.</p>"
+drives @('out') to all of the values on @('ins').</p>"
 
   (defund vl-make-res-occ (name out ins)
     (declare (xargs :guard (and (vl-emodwire-p out)
@@ -447,17 +446,17 @@ drives <tt>out</tt> to all of the values on <tt>ins</tt>.</p>"
   :short "Convert the @(see vl-res-sigma-p) database into a list of E
 occurrences to drive each multiply driven wire."
 
-  :long "<p>@(call vl-make-res-occs) takes <tt>idx</tt>, an index for fresh
-name generation, and <tt>sigma</tt>, which should be the <b>already shrunk</b>
-@(see vl-res-sigma-p) obtained from @(see vl-res-rewrite-occs).  Recall that
-the alist binds, e.g.,</p>
+  :long "<p>@(call vl-make-res-occs) takes @('idx'), an index for fresh name
+generation, and @('sigma'), which should be the <b>already shrunk</b> @(see
+vl-res-sigma-p) obtained from @(see vl-res-rewrite-occs).  Recall that the
+alist binds, e.g.,</p>
 
-<code>
-  W --&gt; (W_1 W_2 ... W_n)
-</code>
+@({
+  W --> (W_1 W_2 ... W_n)
+})
 
-<p>Where <tt>W</tt> was the name of some original, multiply-driven wire, and
-<tt>W_1, \dots</tt> are the freshly generated names that are now being driven
+<p>Where @('W') was the name of some original, multiply-driven wire, and
+@('W_1, \dots') are the freshly generated names that are now being driven
 instead of W.  The idea is to build a new occurrence that drives W to the
 resolution of W1...Wn, for each such W.</p>"
 
@@ -513,15 +512,15 @@ resolution of W1...Wn, for each such W.</p>"
 occurrences."
 
   :long "<p><b>Signature:</b> @(call vl-add-res-modules) returns
-<tt>occs'</tt>.</p>
+@('occs'').</p>
 
-<p><tt>occs</tt> should be a preliminary list of occurrences, e.g., generated
+<p>@('occs') should be a preliminary list of occurrences, e.g., generated
 perhaps by @(see vl-modinst-to-eocc) along with other occurrences for driving
 T/F, undriven outputs, etc.  These occurrences are presumably not yet
 well-formed because the same wire may be driven by multiple occs.</p>
 
-<p><tt>all-names</tt> must be a @(see vl-emodwirelist-p) that captures the
-module's namespace.  We expect it to include at least:</p>
+<p>@('all-names') must be a @(see vl-emodwirelist-p) that captures the module's
+namespace.  We expect it to include at least:</p>
 
 <ul>
 <li>All signals in :i and :o for the module</li>
@@ -529,11 +528,11 @@ module's namespace.  We expect it to include at least:</p>
 <li>The names of all occs (i.e., the :u from each occ)</li>
 </ul>
 
-<p>However, as a special exception, <tt>all-names</tt> may exclude names that
-we know cannot have the basename <tt>vl_res</tt>, because any wires we are
-going to introduce are either already used in <tt>occs</tt> or are going to
-have the form <tt>vl_res[k]</tt>.  This includes, for instance, the names
-added during @(see vl-add-zdrivers) and for driving the T and F wires.</p>"
+<p>However, as a special exception, @('all-names') may exclude names that we
+know cannot have the basename @('vl_res'), because any wires we are going to
+introduce are either already used in @('occs') or are going to have the form
+@('vl_res[k]').  This includes, for instance, the names added during @(see
+vl-add-zdrivers) and for driving the T and F wires.</p>"
 
   (defund vl-add-res-modules (all-names occs)
     "Returns OCCS'"

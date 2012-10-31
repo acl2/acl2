@@ -32,17 +32,17 @@
 wires (which are just bits)."
 
   :long "<p>A significant difference between E and Verilog is that there are no
-vectors in E.  Whereas our Verilog module might have a vector like <tt>wire
-[7:0] w</tt>, our E module will instead have eight individual wires, whose
-names are <tt>ACL2::|w[7]|</tt> through <tt>ACL2::|w[0]|</tt>.</p>
+vectors in E.  Whereas our Verilog module might have a vector like @('wire
+[7:0] w'), our E module will instead have eight individual wires, whose names
+are @('ACL2::|w[7]|') through @('ACL2::|w[0]|').</p>
 
 <p>There is a fair bit of code geared towards making this bit-level conversion
 safe and efficient.  As a quick summary:</p>
 
 <ul>
 
-<li>We represent each of these \"exploded\" wires like <tt>ACL2::|w[0]|</tt> as
-an @(see vl-emodwire-p).  This representation includes an encoding scheme that
+<li>We represent each of these \"exploded\" wires like @('ACL2::|w[0]|') as an
+@(see vl-emodwire-p).  This representation includes an encoding scheme that
 usually produces readable names and avoids name clashes, even when escaped
 identifiers are used.</li>
 
@@ -54,8 +54,8 @@ guarantees.</li>
 <li>Certain \"simple\" expressions (similar to <see topic='@(url
 expr-slicing)'>sliceable</see> expressions) can be converted into wires using
 @(see vl-msb-expr-bitlist), which does lots of sanity checking to ensure that
-the sizes and bounds of the expressions are correct and that only defined
-wires are being used.</li>
+the sizes and bounds of the expressions are correct and that only defined wires
+are being used.</li>
 
 </ul>
 
@@ -153,40 +153,40 @@ brackets, dots, etc.</p>
 <p>These special characters could pose certain problems.  The most obvious is
 in a module such as this:</p>
 
-<code>
+@({
   wire [7:0] w ;
   wire \w[3] ;
-</code>
+})
 
-<p>Here, the E wires corresponding to <tt>w</tt> would be <tt>ACL2::|w[7]|</tt>
-on down to <tt>ACL2::|w[0]|</tt>.  But if we naively translate <tt>\w[3] </tt>
-into <tt>ACL2::|w[3]|</tt> then there could be a name clash.</p>
+<p>Here, the E wires corresponding to @('w') would be @('ACL2::|w[7]|') on down
+to @('ACL2::|w[0]|').  But if we naively translate @('\w[3] ') into
+@('ACL2::|w[3]|') then there could be a name clash.</p>
 
 <p>To avoid this kind of problem, we use a simple encoding scheme that ensures
 there are no brackets in the basename of a @(see vl-emodwire-p).  We originally
 used the following, trivial encoding scheme:</p>
 
 <ul>
-<li>[ ---&gt; {1</li>
-<li>] ---&gt; {2</li>
-<li>{ ---&gt; {3</li>
+<li>[ ---> {1</li>
+<li>] ---> {2</li>
+<li>{ ---> {3</li>
 </ul>
 
 <p>But later we decided to slightly extend this scheme, to ensure that the
-special characters <tt>.</tt>, <tt>!</tt>, and <tt>/</tt> also do not occur.
-Why?  We think having <tt>.</tt> in a name could be confusing to some tools
-since it is used as a hierarchical identifier in Verilog.  Meanwhile,
-<tt>!</tt> is used as a hierarchical identifier in E (e.g., @(see
-acl2::mod-state)).  And we have occasionally seen other Verilog tools that use
-<tt>/</tt> as a hierarchical separator.</p>
+special characters @('.'), @('!'), and @('/') also do not occur.  Why?  We
+think having @('.') in a name could be confusing to some tools since it is used
+as a hierarchical identifier in Verilog.  Meanwhile, @('!') is used as a
+hierarchical identifier in E (e.g., @(see acl2::mod-state)).  And we have
+occasionally seen other Verilog tools that use @('/') as a hierarchical
+separator.</p>
 
 <p>To ensure these characters also do not occur, we extend our encoding scheme
 in a simple way:</p>
 
 <ul>
-<li>. ---&gt; {4</li>
-<li>! ---&gt; {5</li>
-<li>/ ---&gt; {6</li>
+<li>. ---> {4</li>
+<li>! ---> {5</li>
+<li>/ ---> {6</li>
 </ul>
 
 <p>This encoding is done automatically by the @(see vl-emodwire) constructor
@@ -603,10 +603,10 @@ names for E modules."
   :long "<p>E uses a permissive pattern system that allows almost any atom to
 be used as a wire name.  But when VL is used to translate Verilog modules, we
 always produce wire names that are symbols, whose names are either <b>simple
-names</b> like <tt>\"reset\"</tt> or <b>indexed names</b> like
-<tt>\"opcode[3]\"</tt>.</p>
+names</b> like @('\"reset\"') or <b>indexed names</b> like
+@('\"opcode[3]\"').</p>
 
-<p>We always generate wire names in the <tt>ACL2</tt> package.  This is due to
+<p>We always generate wire names in the @('ACL2') package.  This is due to
 historic convention, but also is a good idea for efficiency: we can control the
 size of the ACL2 package at the time we build ACL2, but we have no
 method (well, ttags I suppose) to construct a new package with a larger size.
@@ -847,8 +847,9 @@ details.</p>"
 (defsection vl-emodwirelistlist-p
   :parents (exploding-vectors)
   :short "A list of @(see vl-emodwire-p) lists."
-  :long "<p>These are notably used as the <tt>:i</tt> and <tt>:o</tt> patterns
-for modules; see @(see modinsts-to-eoccs) for details.</p>"
+
+  :long "<p>These are notably used as the @(':i') and @(':o') patterns for
+modules; see @(see modinsts-to-eoccs) for details.</p>"
 
   (deflist vl-emodwirelistlist-p (x)
     (vl-emodwirelist-p x)
@@ -869,15 +870,14 @@ for modules; see @(see modinsts-to-eoccs) for details.</p>"
 automatically encode it if necessary; see @(see emodwire-encoding).</p>
 
 <p>We take special measures to optimize this function: we pre-generate strings
-<tt>\"[0]\"</tt>, <tt>\"[1]\"</tt>, ..., <tt>\"[255]\"</tt> so that for
-indicies under 256 we can avoid some concatenations.  This appears to reduce
-memory usage by about half and reduces run-time by about 30% for a simple loop
-that builds the wire name <tt>foo[33]</tt> millions of times, but this timing
-is based on the fast-cat book and may change if CCL gets a compiler-macro for
-CONCATENATE.</p>
+@('\"[0]\"'), @('\"[1]\"'), ..., @('\"[255]\"') so that for indicies under 256
+we can avoid some concatenations.  This appears to reduce memory usage by about
+half and reduces run-time by about 30% for a simple loop that builds the wire
+name @('foo[33]') millions of times, but this timing is based on the fast-cat
+book and may change if CCL gets a compiler-macro for CONCATENATE.</p>
 
-<p>Note that we emulate @(see defaggregate) and add <tt>make-vl-emodwire</tt>
-and <tt>change-vl-emodwire</tt> macros.</p>"
+<p>Note that we emulate @(see defaggregate) and add @('make-vl-emodwire') and
+@('change-vl-emodwire') macros.</p>"
 
   (defun vl-make-indexed-wire-names-array (n)
     (declare (xargs :ruler-extenders :all))
@@ -1013,9 +1013,8 @@ and <tt>change-vl-emodwire</tt> macros.</p>"
   :short "Returns the name of an @(see vl-emodwire-p), excluding the index, as
 a string."
 
-  :long "<p>For instance, the basename of <tt>|opcode[3]|</tt> is
-<tt>\"opcode\"</tt>, and the basename of <tt>|reset|</tt> is
-<tt>\"reset\"</tt>.</p>"
+  :long "<p>For instance, the basename of @('|opcode[3]|') is @('\"opcode\"'),
+and the basename of @('|reset|') is @('\"reset\"').</p>"
 
   (local (in-theory (enable vl-emodwire-p)))
 
@@ -1052,11 +1051,11 @@ a string."
 
 (defsection vl-emodwire->index
   :parents (vl-emodwire-p)
-  :short "Return the index of an @(see vl-emodwire-p) as a natural, or
-<tt>nil</tt> if there is no index."
+  :short "Return the index of an @(see vl-emodwire-p) as a natural, or @('nil')
+if there is no index."
 
-  :long "<p>For instance, the index of <tt>|opcode[3]|</tt> is
-<tt>3</tt>, and the index of <tt>|reset|</tt> is <tt>nil</tt>.</p>"
+  :long "<p>For instance, the index of @('|opcode[3]|') is @('3'), and the
+index of @('|reset|') is @('nil').</p>"
 
 (local (in-theory (enable vl-emodwire-p)))
 
@@ -1193,7 +1192,7 @@ a string."
                                 len
                                 nth)
                                (consp-under-iff-when-true-listp
-                                coerce-list-under-iff)))))))
+                                acl2::coerce-list-under-iff)))))))
 
 ; Reduction 3.  Because of the restrictions made in vl-emodwire-p on the name,
 ; there aren't any special characters except perhaps for { in the basename
@@ -1321,18 +1320,17 @@ a string."
 
 (defsection vl-emodwirelist-highest
   :parents (vl-emodwire-p)
-  :short "@(call vl-emodwirelist-highest) returns a number <tt>n</tt> that is
-at least as large as the index of any wire with this <tt>basename</tt> in
-<tt>x</tt>."
+  :short "@(call vl-emodwirelist-highest) returns a number @('n') that is at
+least as large as the index of any wire with this @('basename') in @('x')."
 
   :long "<p>We use this in a few places during @(see e-conversion) to generate
 new, fresh E wires.</p>
 
 <p>The scheme is basically similar to that of a @(see vl-namedb-p) or @(see
-vl-namefactory-p): we first find an <tt>n</tt> that is larger than any
-<tt>foo[k]</tt> currently in use, then start generating <tt>foo[n]</tt>,
-<tt>foo[n+1]</tt>, etc.  We don't use a namedb or namefactory because we need
-to generate @(see vl-emodwire-p)s instead of strings.</p>"
+vl-namefactory-p): we first find an @('n') that is larger than any @('foo[k]')
+currently in use, then start generating @('foo[n]'), @('foo[n+1]'), etc.  We
+don't use a namedb or namefactory because we need to generate @(see
+vl-emodwire-p)s instead of strings.</p>"
 
   (defund vl-emodwirelist-highest (basename x)
     (declare (xargs :guard (and (stringp basename)

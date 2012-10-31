@@ -66,10 +66,10 @@ substitution to be more generally useful, and prefer to use fast alists.</p>")
   :parents (substitution)
   :short "Substitute into a @(see vl-expr-p)."
 
-  :long "<p>@(call vl-expr-subst) is given <tt>sigma</tt>, @(see vl-sigma-p),
-and <tt>x</tt>, a @(see vl-expr-p), and produces a new expression by replacing
-any simple identifiers (i.e., atoms which are @(see vl-id-p)'s) that are bound
-in <tt>sigma</tt> with their values.</p>
+  :long "<p>@(call vl-expr-subst) is given @('sigma'), @(see vl-sigma-p), and
+@('x'), a @(see vl-expr-p), and produces a new expression by replacing any
+simple identifiers (i.e., atoms which are @(see vl-id-p)'s) that are bound in
+@('sigma') with their values.</p>
 
 <p>Note that this function does not descend into attributes.  It is not clear
 whether that is the right behavior, but it seems that the handling of

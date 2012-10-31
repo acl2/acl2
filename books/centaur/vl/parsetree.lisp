@@ -50,90 +50,88 @@ regular view of the source code.</p>")
 for @(see vl-nonatom-p) expressions.  It is preferred not to access this table
 directly, but rather to use @(see vl-op-p) and @(see vl-op-arity).</p>
 
-<p>The <tt>*vl-ops-table*</tt> is an alist that maps our operators (keyword
+<p>The @('*vl-ops-table*') is an alist that maps our operators (keyword
 symbols) to their arities.  For operations that do not have fixed
 arities (e.g., concatenation, function calls, ...), we map the operator to
-<tt>nil</tt>.</p>
+@('nil').</p>
 
 <p>Here is how we represent the various Verilog operators:</p>
 
 <h5>Basic Unary Operators (arity 1)</h5>
 
 <ul>
-<li><tt> +        </tt> becomes <tt>:vl-unary-plus</tt></li>
-<li><tt> -        </tt> becomes <tt>:vl-unary-minus</tt></li>
-<li><tt> !        </tt> becomes <tt>:vl-unary-lognot</tt></li>
-<li><tt> ~        </tt> becomes <tt>:vl-unary-bitnot</tt></li>
-<li><tt> &amp;    </tt> becomes <tt>:vl-unary-bitand</tt></li>
-<li><tt> ~&amp;   </tt> becomes <tt>:vl-unary-nand</tt></li>
-<li><tt> |        </tt> becomes <tt>:vl-unary-bitor</tt></li>
-<li><tt> ~|       </tt> becomes <tt>:vl-unary-nor</tt></li>
-<li><tt> ^        </tt> becomes <tt>:vl-unary-xor</tt></li>
-<li><tt> ^~ </tt> or <tt> ~^ </tt> becomes <tt>:vl-unary-xnor</tt></li>
+<li>@(' +  ') becomes @(':vl-unary-plus')</li>
+<li>@(' -  ') becomes @(':vl-unary-minus')</li>
+<li>@(' !  ') becomes @(':vl-unary-lognot')</li>
+<li>@(' ~  ') becomes @(':vl-unary-bitnot')</li>
+<li>@(' &  ') becomes @(':vl-unary-bitand')</li>
+<li>@(' ~& ') becomes @(':vl-unary-nand')</li>
+<li>@(' |  ') becomes @(':vl-unary-bitor')</li>
+<li>@(' ~| ') becomes @(':vl-unary-nor')</li>
+<li>@(' ^  ') becomes @(':vl-unary-xor')</li>
+<li>@(' ^~ ') or @(' ~^ ') becomes @(':vl-unary-xnor')</li>
 </ul>
 
 <h5>Basic Binary Operators (arity 2)</h5>
 
 <ul>
-<li><tt> +        </tt> becomes <tt>:vl-binary-plus</tt></li>
-<li><tt> -        </tt> becomes <tt>:vl-binary-minus</tt></li>
-<li><tt> *        </tt> becomes <tt>:vl-binary-times</tt></li>
-<li><tt> /        </tt> becomes <tt>:vl-binary-div</tt></li>
-<li><tt> %        </tt> becomes <tt>:vl-binary-rem</tt></li>
-<li><tt> ==       </tt> becomes <tt>:vl-binary-eq</tt></li>
-<li><tt> !=       </tt> becomes <tt>:vl-binary-neq</tt></li>
-<li><tt> ===      </tt> becomes <tt>:vl-binary-ceq</tt></li>
-<li><tt> !==      </tt> becomes <tt>:vl-binary-cne</tt></li>
-<li><tt> &amp;&amp; </tt> becomes <tt>:vl-binary-logand</tt></li>
-<li><tt> ||       </tt> becomes <tt>:vl-binary-logor</tt></li>
-<li><tt> **       </tt> becomes <tt>:vl-binary-power</tt></li>
-<li><tt> &lt;     </tt> becomes <tt>:vl-binary-lt</tt></li>
-<li><tt> &lt;=    </tt> becomes <tt>:vl-binary-lte</tt></li>
-<li><tt> &gt;     </tt> becomes <tt>:vl-binary-gt</tt></li>
-<li><tt> &gt;=    </tt> becomes <tt>:vl-binary-gte</tt></li>
-<li><tt> &amp;    </tt> becomes <tt>:vl-binary-bitand</tt></li>
-<li><tt> |        </tt> becomes <tt>:vl-binary-bitor</tt></li>
-<li><tt> ^        </tt> becomes <tt>:vl-binary-xor</tt></li>
-<li><tt> ^~ </tt> or <tt> ~^ </tt> becomes <tt>:vl-binary-xnor</tt></li>
-<li><tt> &gt;&gt;     </tt> becomes <tt>:vl-binary-shr</tt></li>
-<li><tt> &lt;&lt;     </tt> becomes <tt>:vl-binary-shl</tt></li>
-<li><tt> &gt;&gt;&gt; </tt> becomes <tt>:vl-binary-ashr</tt></li>
-<li><tt> &lt;&lt;&lt; </tt> becomes <tt>:vl-binary-ashl</tt></li>
+<li>@(' +   ') becomes @(':vl-binary-plus')</li>
+<li>@(' -   ') becomes @(':vl-binary-minus')</li>
+<li>@(' *   ') becomes @(':vl-binary-times')</li>
+<li>@(' /   ') becomes @(':vl-binary-div')</li>
+<li>@(' %   ') becomes @(':vl-binary-rem')</li>
+<li>@(' ==  ') becomes @(':vl-binary-eq')</li>
+<li>@(' !=  ') becomes @(':vl-binary-neq')</li>
+<li>@(' === ') becomes @(':vl-binary-ceq')</li>
+<li>@(' !== ') becomes @(':vl-binary-cne')</li>
+<li>@(' &&  ') becomes @(':vl-binary-logand')</li>
+<li>@(' ||  ') becomes @(':vl-binary-logor')</li>
+<li>@(' **  ') becomes @(':vl-binary-power')</li>
+<li>@(' <   ') becomes @(':vl-binary-lt')</li>
+<li>@(' <=  ') becomes @(':vl-binary-lte')</li>
+<li>@(' >   ') becomes @(':vl-binary-gt')</li>
+<li>@(' >=  ') becomes @(':vl-binary-gte')</li>
+<li>@(' &   ') becomes @(':vl-binary-bitand')</li>
+<li>@(' |   ') becomes @(':vl-binary-bitor')</li>
+<li>@(' ^   ') becomes @(':vl-binary-xor')</li>
+<li>@(' ^~  ') or @(' ~^ ') becomes @(':vl-binary-xnor')</li>
+<li>@(' >>  ') becomes @(':vl-binary-shr')</li>
+<li>@(' <<  ') becomes @(':vl-binary-shl')</li>
+<li>@(' >>> ') becomes @(':vl-binary-ashr')</li>
+<li>@(' <<< ') becomes @(':vl-binary-ashl')</li>
 </ul>
 
 <h5>Basic Ternary Operators (arity 3)</h5>
 
 <ul>
-<li><tt>a ? b : c</tt> becomes <tt>:vl-qmark</tt>
-      (conditional operator)</li>
-<li><tt>a : b : c</tt> becomes <tt>:vl-mintypmax</tt>
-      (min/typ/max delay operator)</li>
+<li>@('a ? b : c') becomes @(':vl-qmark')     (conditional operator)</li>
+<li>@('a : b : c') becomes @(':vl-mintypmax') (min/typ/max delay operator)</li>
 </ul>
 
 <h5>Selection Operators</h5>
 
 <ul>
-<li><tt>foo[1]</tt> becomes <tt>:vl-bitselect</tt> or <tt>:vl-array-index</tt> (arity 2)</li>
-<li><tt>foo[3 : 1]</tt> becomes <tt>:vl-partselect-colon</tt> (arity 3)</li>
-<li><tt>foo[3 +: 1]</tt> becomes <tt>:vl-partselect-pluscolon</tt> (arity 3)</li>
-<li><tt>foo[3 -: 1]</tt> becomes <tt>:vl-partselect-minuscolon</tt> (arity 3)</li>
+<li>@('foo[1]')      becomes @(':vl-bitselect') or @(':vl-array-index') (arity 2)</li>
+<li>@('foo[3 : 1]')  becomes @(':vl-partselect-colon') (arity 3)</li>
+<li>@('foo[3 +: 1]') becomes @(':vl-partselect-pluscolon') (arity 3)</li>
+<li>@('foo[3 -: 1]') becomes @(':vl-partselect-minuscolon') (arity 3)</li>
 </ul>
 
-<p>Note that upon parsing, there are no <tt>:vl-array-index</tt> operators;
-these must be introduced by the @(see array-indexing) transform.</p>
+<p>Note that upon parsing, there are no @(':vl-array-index') operators; these
+must be introduced by the @(see array-indexing) transform.</p>
 
 <h5>Concatenation and Replication Operators</h5>
 
 <ul>
-<li><tt>{1, 2, 3, ...}</tt> becomes <tt>:vl-concat</tt> (arity <tt>nil</tt>)</li>
-<li><tt>{ 3 { 2, 1 } }</tt> becomes <tt>:vl-multiconcat</tt> (arity 2)</li>
+<li>@('{1, 2, 3, ...}') becomes @(':vl-concat') (arity @('nil'))</li>
+<li>@('{ 3 { 2, 1 } }') becomes @(':vl-multiconcat') (arity 2)</li>
 </ul>
 
 <h5>Function Calls</h5>
 
 <ul>
-<li><tt>foo(1,2,3)</tt> becomes <tt>:vl-funcall</tt> (arity <tt>nil</tt>)</li>
-<li><tt>$foo(1,2,3)</tt> becomes <tt>:vl-syscall</tt> (arity <tt>nil</tt>)</li>
+<li>@('foo(1,2,3)') becomes @(':vl-funcall') (arity @('nil'))</li>
+<li>@('$foo(1,2,3)') becomes @(':vl-syscall') (arity @('nil'))</li>
 </ul>
 
 <h5>Hierarchical Identifiers</h5>
@@ -142,8 +140,8 @@ these must be introduced by the @(see array-indexing) transform.</p>
 hierarchical identifiers.</p>
 
 <ul>
-<li><tt>foo.bar</tt> becomes <tt>:vl-hid-dot</tt> (arity 2)</li>
-<li><tt>foo[3].bar</tt> becomes <tt>:vl-hid-arraydot</tt> (arity 3)</li>
+<li>@('foo.bar') becomes @(':vl-hid-dot') (arity 2)</li>
+<li>@('foo[3].bar') becomes @(':vl-hid-arraydot') (arity 3)</li>
 </ul>"
 
   (defconst *vl-ops-table*
@@ -215,12 +213,12 @@ hierarchical identifiers.</p>
   :parents (vl-expr-p)
   :short "Recognizer for valid operators."
 
-  :long "<p>@(call vl-op-p) checks that <tt>x</tt> is one of the operators
-listed in the @(see *vl-ops-table*).</p>
+  :long "<p>@(call vl-op-p) checks that @('x') is one of the operators listed
+in the @(see *vl-ops-table*).</p>
 
-<p>We prefer to use <tt>vl-op-p</tt> instead of looking up operators directly
-in the table, since this way we can disable <tt>vl-op-p</tt> and avoid large
-case splits.</p>"
+<p>We prefer to use @('vl-op-p') instead of looking up operators directly in
+the table, since this way we can disable @('vl-op-p') and avoid large case
+splits.</p>"
 
   ;; Per basic testing, assoc is faster than hons-get here.
 
@@ -251,14 +249,14 @@ case splits.</p>"
   :parents (vl-expr-p)
   :short "Look up the arity of an operator."
 
-  :long "<p>@(call vl-op-arity) determines the arity of the operator
-<tt>x</tt> by consulting the @(see *vl-ops-table*).  If <tt>x</tt> does
-not have a fixed arity (e.g., it might be a function call or concatenation
-operation), then we return <tt>nil</tt>.</p>
+  :long "<p>@(call vl-op-arity) determines the arity of the operator @('x') by
+consulting the @(see *vl-ops-table*).  If @('x') does not have a fixed
+arity (e.g., it might be a function call or concatenation operation), then we
+return @('nil').</p>
 
-<p>We prefer to use <tt>vl-op-arity</tt> instead of looking up operators
-directly in the table, since this way we can disable <tt>vl-op-arity</tt> and
-avoid large case splits.</p>"
+<p>We prefer to use @('vl-op-arity') instead of looking up operators directly
+in the table, since this way we can disable @('vl-op-arity') and avoid large
+case splits.</p>"
 
   (definlined vl-op-arity (x)
     (declare (xargs :guard (vl-op-p x)))
@@ -275,19 +273,19 @@ avoid large case splits.</p>"
 (defenum vl-exprtype-p (:vl-signed :vl-unsigned)
   :parents (vl-expr-p)
   :short "Valid types for expressions."
-  :long "<p>Each expression should be either <tt>:vl-signed</tt> or
-<tt>:vl-unsigned</tt>.  We may eventually expand this to include other types,
-such as real and string.</p>")
+  :long "<p>Each expression should be either @(':vl-signed') or
+@(':vl-unsigned').  We may eventually expand this to include other types, such
+as real and string.</p>")
 
 
 
 (defsection vl-maybe-exprtype-p
   :parents (vl-expr-p)
-  :short "Recognizer for an @(see vl-exprtype-p) or <tt>nil</tt>."
+  :short "Recognizer for an @(see vl-exprtype-p) or @('nil')."
 
-  :long "<p>As with @(see vl-maybe-exprwidth-p), we use this for the
-<tt>sign</tt> fields in our expressions, which allows us to represent
-expressions whose signs have not yet been computed.</p>"
+  :long "<p>As with @(see vl-maybe-exprwidth-p), we use this for the @('sign')
+fields in our expressions, which allows us to represent expressions whose signs
+have not yet been computed.</p>"
 
   (definlined vl-maybe-exprtype-p (x)
     (declare (xargs :guard t))
@@ -343,44 +341,42 @@ expressions whose signs have not yet been computed.</p>"
   :short "Representation for constant integer literals with no X or Z bits."
 
   :long "<p>Constant integers are produced from source code constructs like
-<tt>5</tt>, <tt>4'b0010</tt>, and <tt>3'h0</tt>.</p>
+@('5'), @('4'b0010'), and @('3'h0').</p>
 
-<p>The most important part of a constant integer is its <tt>value</tt>, which
-even immediately upon parsing has already been determined and is available to
-you as an ordinary natural number.  Note that the value of a constant integer
-is never negative.  In Verilog there are no negative literals; instead, an
-expression like <tt>-5</tt> is basically parsed the same as <tt>-(5)</tt>, so
-the negative sign is not part of the literal.  See Section 3.5.1 of the
-spec.</p>
+<p>The most important part of a constant integer is its @('value'), which even
+immediately upon parsing has already been determined and is available to you as
+an ordinary natural number.  Note that the value of a constant integer is never
+negative.  In Verilog there are no negative literals; instead, an expression
+like @('-5') is basically parsed the same as @('-(5)'), so the negative sign is
+not part of the literal.  See Section 3.5.1 of the spec.</p>
 
-<p>The <tt>origwidth</tt> and <tt>origtype</tt> fields are subtle and should
-generally <b>not be used</b> unless you think you know what you are doing.
-These fields indicate the <i>original</i> width and signedness of the literal
-as specified in the source code, e.g., if the source code contains <tt>8'sd
-65</tt>, then the origwidth will be 8 and the origtype will be
-<tt>:vl-signed.</tt> These fields are subtle because expression sizing will
-generally alter the widths and types of subexpressions, so these may not
-represent the final widths and types used in expressions.  Instead, the
-preferred way to determine a constint's final width and sign is to inspect the
-<tt>vl-atom-p</tt> that contains it.</p>
+<p>The @('origwidth') and @('origtype') fields are subtle and should generally
+<b>not be used</b> unless you think you know what you are doing.  These fields
+indicate the <i>original</i> width and signedness of the literal as specified
+in the source code, e.g., if the source code contains @('8'sd 65'), then the
+origwidth will be 8 and the origtype will be @(':vl-signed.') These fields are
+subtle because expression sizing will generally alter the widths and types of
+subexpressions, so these may not represent the final widths and types used in
+expressions.  Instead, the preferred way to determine a constint's final width
+and sign is to inspect the @('vl-atom-p') that contains it.</p>
 
-<p>We insist that <tt>0 &lt;= value &lt;= 2^origwidth</tt> for every constant
-integer.  If our @(see lexer) encounters something ill-formed like <tt>3'b
-1111</tt>, it emits a warning and truncates from the left, as required by
-Section 3.5.1 (page 10) of the spec.</p>
+<p>We insist that @('0 <= value <= 2^origwidth') for every constant integer.
+If our @(see lexer) encounters something ill-formed like @('3'b 1111'), it
+emits a warning and truncates from the left, as required by Section 3.5.1 (page
+10) of the spec.</p>
 
-<p>Note that in Verilog, unsized integer constants like <tt>5</tt> or
-<tt>'b101</tt> have an implementation-dependent size of at least 32 bits.  VL
-historically tried to treat such numbers in an abstract way, saying they had
-\"integer size\".  But we eventually decided that this was too error-prone and
-we now instead act like a 32-bit implementation even at the level of our lexer.
-This conveniently makes the width of a constant integer just a positive number.
-On the other hand, some expressions may produce different results on 32-bit
+<p>Note that in Verilog, unsized integer constants like @('5') or @(''b101')
+have an implementation-dependent size of at least 32 bits.  VL historically
+tried to treat such numbers in an abstract way, saying they had \"integer
+size\".  But we eventually decided that this was too error-prone and we now
+instead act like a 32-bit implementation even at the level of our lexer.  This
+conveniently makes the width of a constant integer just a positive number.  On
+the other hand, some expressions may produce different results on 32-bit
 versus, say, 64-bit implementations.  Because of this, we added the
-<tt>wasunsized</tt> attribute so that we might later statically check for
+@('wasunsized') attribute so that we might later statically check for
 problematic uses of unsized constants.  This attribute will be set for unsized
-constants like <tt>5</tt> and <tt>'b0101</tt>, but not for sized constants like
-<tt>4'b0101</tt>.</p>
+constants like @('5') and @(''b0101'), but not for sized constants like
+@('4'b0101').</p>
 
 <p>All constints are automatically created with @(see hons).  This is probably
 pretty trivial, but it seems nice.  For instance, the constant integers from
@@ -416,15 +412,14 @@ and wire ranges, so sharing their memory may be useful.</p>")
   :short "Representation for constant integer literals with X or Z bits."
 
   :long "<p>Weird integers are produced by source code constructs like
-<tt>1'bz</tt>, <tt>3'b0X1</tt>, and so on.</p>
+@('1'bz'), @('3'b0X1'), and so on.</p>
 
-<p>The <tt>origwidth</tt>, <tt>origtype</tt>, and <tt>wasunsized</tt> fields
-are analogous to those from @(see vl-constint-p); see the discussion there for
-details.</p>
+<p>The @('origwidth'), @('origtype'), and @('wasunsized') fields are analogous
+to those from @(see vl-constint-p); see the discussion there for details.</p>
 
-<p>Unlike a constint, a weirdint does not have a <tt>value</tt> but instead has
-a list of <tt>bits</tt>, stored in MSB-first order as a @(see vl-bitlist-p) of
-the appropriate width.</p>
+<p>Unlike a constint, a weirdint does not have a @('value') but instead has a
+list of @('bits'), stored in MSB-first order as a @(see vl-bitlist-p) of the
+appropriate width.</p>
 
 <p>Like constinsts, all weirdints are automatically constructed with @(see
 hons).  This may not be worthwhile since there are probably usually not too
@@ -442,9 +437,9 @@ many weirdints, but by the same reasoning it shouldn't be too harmful.</p>")
   :parents (vl-expr-p)
   :short "Representation for string literals."
 
-  :long "<p>The <tt>value</tt> of a string literal is an ordinary ACL2 string,
-where special sequences like <tt>\\n</tt> and <tt>\\t</tt> have been replaced
-with actual newline and tab characters, etc.</p>")
+  :long "<p>The @('value') of a string literal is an ordinary ACL2 string,
+where special sequences like @('\\n') and @('\\t') have been replaced with
+actual newline and tab characters, etc.</p>")
 
 
 
@@ -459,10 +454,10 @@ with actual newline and tab characters, etc.</p>")
   :short "Representation of real (floating point) literals."
 
   :long "<p>We currently provide virtually no support for working with real
-numbers.  The <tt>value</tt> field simply stores the actual characters found in
-the source code, i.e., it might be a string such as <tt>\"3.41e+12\"</tt>.  Do
-not rely on this representation; we will almost certainly want to change it as
-soon as we want to do anything with real numbers.</p>")
+numbers.  The @('value') field simply stores the actual characters found in the
+source code, i.e., it might be a string such as @('\"3.41e+12\"').  Do not rely
+on this representation; we will almost certainly want to change it as soon as
+we want to do anything with real numbers.</p>")
 
 
 
@@ -477,15 +472,15 @@ soon as we want to do anything with real numbers.</p>")
   :parents (vl-expr-p)
   :short "Representation for simple identifiers."
 
-  :long "<p><tt>vl-id-p</tt> objects are used to represent identifiers used in
+  :long "<p>@('vl-id-p') objects are used to represent identifiers used in
 expressions, which might be the names of wires, ports, parameters, registers,
-and so on.  The <tt>name</tt> of the identifier is a string, which should
-generally correspond to one of these items.</p>
+and so on.  The @('name') of the identifier is a string, which should generally
+correspond to one of these items.</p>
 
-<p>A wonderful feature of our representation <tt>vl-id-p</tt> atoms are
-guaranteed to not be part of any hierarchical identifier, nor are they the
-names of functions or system functions.  See the discussion in @(see
-vl-hidpiece-p) for more information.</p>
+<p>A wonderful feature of our representation @('vl-id-p') atoms are guaranteed
+to not be part of any hierarchical identifier, nor are they the names of
+functions or system functions.  See the discussion in @(see vl-hidpiece-p) for
+more information.</p>
 
 <p>Note that names created at parse time may include <b>any character</b>
 except for whitespace, and will not be empty.  One might eventually add these
@@ -509,35 +504,35 @@ times throughout all the expressions in a design.</p>")
   :short "Represents one piece of a hierarchical identifier."
 
   :long "<p>We represent hierarchical identifiers like
-<tt>top.processor[2].reset</tt> as non-atomic expressions.  To represent this
+@('top.processor[2].reset') as non-atomic expressions.  To represent this
 particular expression, we build a @(see vl-expr-p) that is something like
 this:</p>
 
-<code>
+@({
  (:vl-hid-dot top (:vl-hid-arraydot processor 2 reset))
-</code>
+})
 
-<p>In other words, the <tt>:vl-hid-dot</tt> operator is used to join pieces
-of a hierarchical identifier, and <tt>:vl-hid-arraydot</tt> is used when
-instance arrays are accessed.</p>
+<p>In other words, the @(':vl-hid-dot') operator is used to join pieces of a
+hierarchical identifier, and @(':vl-hid-arraydot') is used when instance arrays
+are accessed.</p>
 
 <p>To add slightly more precision, our representation is really more like
 the following:</p>
 
-<code>
+@({
  (:vl-hid-dot (hidpiece \"top\")
               (:vl-hid-arraydot (hidpiece \"processor\")
                                 (constint 2)
                                 (hidpiece \"reset\")))
-</code>
+})
 
 <p>In other words, the individual identifiers used throughout a hierarchical
-identifier are actually <tt>vl-hidpiece-p</tt> objects instead of @(see
-vl-id-p) objects.</p>
+identifier are actually @('vl-hidpiece-p') objects instead of @(see vl-id-p)
+objects.</p>
 
 <p>We make this distinction so that in the ordinary course of working with the
-parse tree, you can freely assume that any <tt>vl-id-p</tt> you come across
-really refers to some module item, and not to some part of a hierarchical
+parse tree, you can freely assume that any @('vl-id-p') you come across really
+refers to some module item, and not to some part of a hierarchical
 identifier.</p>")
 
 
@@ -685,7 +680,7 @@ for a discussion of the valid types.</p>"
   :short "Faster version of @(see vl-id-p), given that @(see vl-atomguts-p) is
 already known."
 
-  :long "<p>We leave this function enabled and reason about <tt>vl-id-p</tt>
+  :long "<p>We leave this function enabled and reason about @('vl-id-p')
 instead.</p>"
 
   (definline vl-fast-id-p (x)
@@ -699,8 +694,8 @@ instead.</p>"
   :short "Faster version of @(see vl-constint-p), given that @(see
 vl-atomguts-p) is already known."
 
-  :long "<p>We leave this function enabled and reason about
-<tt>vl-constint-p</tt> instead.</p>"
+  :long "<p>We leave this function enabled and reason about @('vl-constint-p')
+instead.</p>"
 
   (definline vl-fast-constint-p (x)
     (declare (xargs :guard (vl-atomguts-p x)))
@@ -713,8 +708,8 @@ vl-atomguts-p) is already known."
   :short "Faster version of @(see vl-weirdint-p), given that @(see
 vl-atomguts-p) is already known."
 
-  :long "<p>We leave this function enabled and reason about
-<tt>vl-weirdint-p</tt> instead.</p>"
+  :long "<p>We leave this function enabled and reason about @('vl-weirdint-p')
+instead.</p>"
 
   (definline vl-fast-weirdint-p (x)
     (declare (xargs :guard (vl-atomguts-p x)))
@@ -727,8 +722,8 @@ vl-atomguts-p) is already known."
   :short "Faster version of @(see vl-string-p), given that @(see
 vl-atomguts-p) is already known."
 
-  :long "<p>We leave this function enabled and reason about
-<tt>vl-string-p</tt> instead.</p>"
+  :long "<p>We leave this function enabled and reason about @('vl-string-p')
+instead.</p>"
 
   (definline vl-fast-string-p (x)
     (declare (xargs :guard (vl-atomguts-p x)))
@@ -741,8 +736,8 @@ vl-atomguts-p) is already known."
   :short "Faster version of @(see vl-hidpiece-p), given that @(see
 vl-atomguts-p) is already known."
 
-  :long "<p>We leave this function enabled and reason about
-<tt>vl-hidpiece-p</tt> instead.</p>"
+  :long "<p>We leave this function enabled and reason about @('vl-hidpiece-p')
+instead.</p>"
 
   (definline vl-fast-hidpiece-p (x)
     (declare (xargs :guard (vl-atomguts-p x)))
@@ -755,8 +750,8 @@ vl-atomguts-p) is already known."
   :short "Faster version of @(see vl-funname-p), given that @(see
 vl-atomguts-p) is already known."
 
-  :long "<p>We leave this function enabled and reason about
-<tt>vl-funname-p</tt> instead.</p>"
+  :long "<p>We leave this function enabled and reason about @('vl-funname-p')
+instead.</p>"
 
   (definline vl-fast-funname-p (x)
     (declare (xargs :guard (vl-atomguts-p x)))
@@ -770,7 +765,7 @@ vl-atomguts-p) is already known."
 vl-atomguts-p) is already known."
 
   :long "<p>We leave this function enabled and reason about
-<tt>vl-sysfunname-p</tt> instead.</p>"
+@('vl-sysfunname-p') instead.</p>"
 
   (definline vl-fast-sysfunname-p (x)
     (declare (xargs :guard (vl-atomguts-p x)))
@@ -837,7 +832,7 @@ vl-atomguts-p) is already known."
   :parents (vl-expr-p)
   :short "Structural validity of non-atomic expressions."
   :long "<p>This is only a simple structural check, and does not imply
-<tt>vl-expr-p</tt>.  See @(see vl-expr-p) for details.</p>")
+@('vl-expr-p').  See @(see vl-expr-p) for details.</p>")
 
 (defthm acl2-count-of-vl-nonatom->args
   (and (<= (acl2-count (vl-nonatom->args x))
@@ -886,15 +881,24 @@ arguments, each of which were themselves valid subexpressions.</p>
 atomic expression includes some <b>guts</b>, which refer to either an:</p>
 
 <ul>
- <li>@(see vl-constint-p): an integer literal with no X or Z bits,</li>
- <li>@(see vl-weirdint-p): an integer literal with some X or Z bits,</li>
- <li>@(see vl-real-p): a \"real literal\", i.e., a floating point number,</li>
- <li>@(see vl-string-p): a string literal,</li>
- <li>@(see vl-id-p): a simple, non-hierarchical identifier,</li>
- <li>@(see vl-hidpiece-p): one piece of a hierarchical identifier,</li>
- <li>@(see vl-funname-p): the name of an ordinary function, or</li>
- <li>@(see vl-sysfunname-p): the name of a system function (e.g.,
-     <tt>$display</tt>).</li>
+
+<li>@(see vl-constint-p): an integer literal with no X or Z bits,</li>
+
+<li>@(see vl-weirdint-p): an integer literal with some X or Z bits,</li>
+
+<li>@(see vl-real-p): a \"real literal\", i.e., a floating point number,</li>
+
+<li>@(see vl-string-p): a string literal,</li>
+
+<li>@(see vl-id-p): a simple, non-hierarchical identifier,</li>
+
+<li>@(see vl-hidpiece-p): one piece of a hierarchical identifier,</li>
+
+<li>@(see vl-funname-p): the name of an ordinary function, or</li>
+
+<li>@(see vl-sysfunname-p): the name of a system function (e.g.,
+@('$display')).</li>
+
 </ul>
 
 <p>The last three of these are probably not things you would ordinarily think
@@ -904,12 +908,15 @@ are able to achieve the straightforward recursive structure we desire.</p>
 <p>In addition to their guts, each @(see vl-atom-p) includes a</p>
 
 <ul>
- <li><tt>finalwidth</tt>, which is a @(see vl-maybe-natp-p), and</li>
- <li><tt>finaltype</tt>, which is a @(see vl-maybe-exprtype-p).</li>
+
+<li>@('finalwidth'), which is a @(see vl-maybe-natp-p), and</li>
+
+<li>@('finaltype'), which is a @(see vl-maybe-exprtype-p).</li>
+
 </ul>
 
 <p>Typically, when we have just parsed the modules, these fields are left
-<tt>nil</tt>: their values are only filled in during our expression typing and
+@('nil'): their values are only filled in during our expression typing and
 sizing computations.</p>
 
 <h5>Non-Atomic Expressions</h5>
@@ -919,29 +926,27 @@ vl-nonatom-p) is a simple, non-recursive, structural validity check to see if
 this structure is obeyed at the top level.  Note that @(see vl-nonatom-p) is
 <b>not</b> sufficient to ensure that the object is a valid expression, because
 additional constraints (e.g., arity checks, recursive well-formedness) are
-imposed by <tt>vl-expr-p</tt>.</p>
+imposed by @('vl-expr-p').</p>
 
-<p>Like atomic expressions, each <tt>vl-nonatom-p</tt> includes
-<tt>finalwidth</tt> and <tt>finaltype</tt> fields, which are <tt>nil</tt> upon
-parsing and may later be filled in by our expression typing and sizing
-computations.  To be accepted by <tt>vl-nonatom-p</tt>, the <tt>finalwidth</tt>
-and <tt>finaltype</tt> must be valid @(see vl-maybe-natp) and @(see
-vl-maybe-exprtype-p) objects, respectively.</p>
+<p>Like atomic expressions, each @('vl-nonatom-p') includes @('finalwidth') and
+@('finaltype') fields, which are @('nil') upon parsing and may later be filled
+in by our expression typing and sizing computations.  To be accepted by
+@('vl-nonatom-p'), the @('finalwidth') and @('finaltype') must be valid @(see
+vl-maybe-natp) and @(see vl-maybe-exprtype-p) objects, respectively.</p>
 
 <p>Additionally, each non-atomic expression includes:</p>
 
 <ul>
 
-<li><tt>op</tt>, the operation being applied.  For structural validity,
-<tt>op</tt> must be one of the known operators found in @(see
-*vl-ops-table*).</li>
+<li>@('op'), the operation being applied.  For structural validity, @('op')
+must be one of the known operators found in @(see *vl-ops-table*).</li>
 
-<li><tt>args</tt>, the arguments the operation is being applied to.  No
-structural constraints are imposed upon <tt>args</tt>.</li>
+<li>@('args'), the arguments the operation is being applied to.  No structural
+constraints are imposed upon @('args').</li>
 
-<li><tt>atts</tt>, which represent any attributes written in the <tt>(* foo =
-bar, baz *)</tt> style that Verilog-2005 permits.  No structural constraints
-are placed upon <tt>atts</tt>.</li>
+<li>@('atts'), which represent any attributes written in the @('(* foo = bar,
+baz *)') style that Verilog-2005 permits.  No structural constraints are placed
+upon @('atts').</li>
 
 </ul>
 
@@ -1043,7 +1048,7 @@ each operator has the proper arity.</p>"
   :short "Faster version of @(see vl-atom-p), given that @(see vl-expr-p) is
 already known."
 
-  :long "<p>We leave this function enabled and reason about <tt>vl-atom-p</tt>
+  :long "<p>We leave this function enabled and reason about @('vl-atom-p')
 instead.</p>"
 
   (definline vl-fast-atom-p (x)
@@ -1054,7 +1059,7 @@ instead.</p>"
 
 (defsection vl-expr->finalwidth
   :parents (vl-expr-p)
-  :short "Get the <tt>finalwidth</tt> from an expression."
+  :short "Get the @('finalwidth') from an expression."
 
   :long "<p>See @(see vl-expr-p) for a discussion of widths.  The result is a
 @(see vl-maybe-exprwidth-p).</p>"
@@ -1092,7 +1097,7 @@ instead.</p>"
 
 (defsection vl-expr->finaltype
   :parents (vl-expr-p)
-  :short "Get the <tt>finaltype</tt> from an expression."
+  :short "Get the @('finaltype') from an expression."
 
   :long "<p>See @(see vl-expr-p) for a discussion of types.  The result
 is a @(see vl-maybe-exprtype-p).</p>"
@@ -1133,18 +1138,17 @@ is a @(see vl-maybe-exprtype-p).</p>"
 
 (defsection vl-atts-p
   :parents (vl-expr-p)
-  :short "Representation of <tt>(* foo = 3, baz *)</tt> style attributes."
+  :short "Representation of @('(* foo = 3, baz *)') style attributes."
 
   :long "<p>Verilog 2005 allows many constructs, (e.g., module instances, wire
 declarations, assignments, subexpressions, and so on) to be annotated with
 <i>attributes</i>.  Each individual attribute can either be a single key with
-no value (e.g., <tt>baz</tt> above), or can have the form <tt>key = value</tt>.
-The keys are always identifiers, and the values (if provided) are
-expressions.</p>
+no value (e.g., @('baz') above), or can have the form @('key = value').  The
+keys are always identifiers, and the values (if provided) are expressions.</p>
 
 <p>We represent attributes as alists mapping keys to their values.  We use
 ordinary ACL2 strings to represent the keys.  Each value is represented by a
-@(see vl-expr-p) object, and keys with no values are bound to <tt>nil</tt>
+@(see vl-expr-p) object, and keys with no values are bound to @('nil')
 instead.</p>
 
 <h3>Attributes Used by VL</h3>
@@ -1155,94 +1159,92 @@ instead.</p>
 
 <dt>Modules</dt>
 
-<dd><tt>VL_HANDS_OFF</tt> indicates that the module is special and should be
-left alone by transformations.  It is generally intended to be used for
-built-in VL modules like <tt>VL_1_BIT_FLOP</tt> and
-<tt>VL_1_BIT_LATCH</tt>.</dd>
+<dd>@('VL_HANDS_OFF') indicates that the module is special and should be left
+alone by transformations.  It is generally intended to be used for built-in VL
+modules like @('VL_1_BIT_FLOP') and @('VL_1_BIT_LATCH').</dd>
 
 
 <dt>Expressions</dt>
 
-<dd><tt>VL_ORIG_EXPR</tt>, with some value, is added to many expressions in the
+<dd>@('VL_ORIG_EXPR'), with some value, is added to many expressions in the
 @(see origexprs) transformation.  It allows us to remember the \"original
 version\" of the expression before simplification has taken place.</dd>
 
-<dd><tt>VL_ZERO_EXTENSION</tt> is added when we create certain zero-extension
+<dd>@('VL_ZERO_EXTENSION') is added when we create certain zero-extension
 expressions, mainly to pad operands during @(see ctxsize).</dd>
 
 
 <dt>Net Declarations</dt>
 
-<dd><tt>VL_IMPLICIT</tt>, with no value, is given to implicitly declared wires
-by @(see make-implicit-wires).  This attribute also plays a role in @(see
+<dd>@('VL_IMPLICIT'), with no value, is given to implicitly declared wires by
+@(see make-implicit-wires).  This attribute also plays a role in @(see
 typo-detection).</dd>
 
-<dd><tt>VL_PORT_IMPLICIT</tt>, with no value, is given to wires that are
-declared to be ports (i.e., <tt>input a;</tt>) but which are not also declared
-to be wires (i.e., <tt>wire a;</tt>) by @(see make-port-wires)</dd>
+<dd>@('VL_PORT_IMPLICIT'), with no value, is given to wires that are declared
+to be ports (i.e., @('input a;')) but which are not also declared to be
+wires (i.e., @('wire a;')) by @(see make-port-wires)</dd>
 
-<dd><tt>VL_UNUSED</tt> and <tt>VL_MAYBE_UNUSED</tt> may be added by @(see
-use-set) when a wire appears to be unused.</dd>
+<dd>@('VL_UNUSED') and @('VL_MAYBE_UNUSED') may be added by @(see use-set) when
+a wire appears to be unused.</dd>
 
-<dd><tt>VL_UNSET</tt> and <tt>VL_MAYBE_UNSET</tt> may be added by @(see
-use-set) when a wire appears to be unset.</dd>
+<dd>@('VL_UNSET') and @('VL_MAYBE_UNSET') may be added by @(see use-set) when a
+wire appears to be unset.</dd>
 
-<dd><tt>VL_ACTIVE_HIGH</tt> and <tt>VL_ACTIVE_LOW</tt> may be declared by
-the user or inferred in the cross-active transformation.</dd>
+<dd>@('VL_ACTIVE_HIGH') and @('VL_ACTIVE_LOW') may be declared by the user or
+inferred in the cross-active transformation.</dd>
 
-<dd><tt>VL_CONVERTED_REG</tt> may be attached during latch/flop inference,
-when a <tt>reg</tt> is turned into a <tt>wire</tt>.</dd>
+<dd>@('VL_CONVERTED_REG') may be attached during latch/flop inference, when a
+@('reg') is turned into a @('wire').</dd>
 
 
 <dt>Port Declarations</dt>
 
-<dd><tt>VL_ACTIVE_HIGH</tt> and <tt>VL_ACTIVE_LOW</tt> may be declared by
-the user or inferred in the cross-active transformation.</dd>
+<dd>@('VL_ACTIVE_HIGH') and @('VL_ACTIVE_LOW') may be declared by the user or
+inferred in the cross-active transformation.</dd>
 
 
 <dt>Assignments</dt>
 
-<dd><tt>TRUNC_<i>WIDTH</i></tt> attributes are given to assignment statements which
+<dd>@('TRUNC_<i>WIDTH</i>') attributes are given to assignment statements which
 are involve implicit truncations, by @(see trunc).  <b>BOZO</b> probably change
-to <tt>VL_TRUNC = width</tt> format.</dd>
+to @('VL_TRUNC = width') format.</dd>
 
 
 <dt>Gate Instances</dt>
 
-<dd><tt>VL_FROM_GATE_ARRAY</tt>, with no value, is given to gate instances that
-are the result of splitting an array such as <tt>buf foo [13:0] (o, i);</tt> by
-@(see replicate).  This property is also given to module instances as described
+<dd>@('VL_FROM_GATE_ARRAY'), with no value, is given to gate instances that are
+the result of splitting an array such as @('buf foo [13:0] (o, i);') by @(see
+replicate).  This property is also given to module instances as described
 below.</dd>
 
-<dd><tt>VL_GATE_REDUX</tt>, with no value, is added when, e.g., <tt>pullup</tt>
-and <tt>pulldown</tt> gates are converted into <tt>buf</tt> gates, during @(see
-gateredux).  It is also given to certain module instances as described
-below.</dd>
+<dd>@('VL_GATE_REDUX'), with no value, is added when, e.g., @('pullup') and
+@('pulldown') gates are converted into @('buf') gates, during @(see gateredux).
+It is also given to certain module instances as described below.</dd>
 
-<dd><tt>VL_GATESPLIT</tt> is added when certain gates are simplified, e.g.,
-when we split <tt>not(o1,o2,...,on, i);</tt> into <tt>not(o1,i);</tt>,
-<tt>not(o2,i)</tt>, ..., <tt>not(on, i);</tt> in @(see gatesplit).  <b>BOZO</b>
-make this annotation more consistent.</dd>
+<dd>@('VL_GATESPLIT') is added when certain gates are simplified, e.g., when we
+split @('not(o1,o2,...,on, i);') into @('not(o1,i);'), @('not(o2,i)'), ...,
+@('not(on, i);') in @(see gatesplit).  <b>BOZO</b> make this annotation more
+consistent.</dd>
 
 
 <dt>Module Instances</dt>
 
-<dd><tt>VL_FROM_GATE_ARRAY</tt>, with no value, is given to module instances that
-are the result of splitting an array such as <tt>mymod foo [13:0] (o, i);</tt>
-by @(see replicate).  This property is also given to gate instances as described
+<dd>@('VL_FROM_GATE_ARRAY'), with no value, is given to module instances that
+are the result of splitting an array such as @('mymod foo [13:0] (o, i);') by
+@(see replicate).  This property is also given to gate instances as described
 above.  <b>BOZO</b> probably switch this to VL_FROM_MOD_ARRAY.</dd>
 
-<dd><tt>VL_GATE_REDUX</tt>, with no value, is given to module instances that
-are the result of converting gates such as <tt>bufif0</tt>, <tt>notif1</tt>,
-<tt>pmos</tt>, etc., into module instances.  It is also given to certain gate
-instances as described above.</dd>
+<dd>@('VL_GATE_REDUX'), with no value, is given to module instances that are
+the result of converting gates such as @('bufif0'), @('notif1'), @('pmos'),
+etc., into module instances.  It is also given to certain gate instances as
+described above.</dd>
 
 
 <dt>Plain Arguments</dt>
 
-<dd><tt>VL_ACTIVE_HIGH</tt> or <tt>VL_ACTIVE_LOW</tt> may be added during
-@(see argresolve), and indicate whether the corresponding formal is considered
-active high or low.</dd>
+<dd>@('VL_ACTIVE_HIGH') or @('VL_ACTIVE_LOW') may be added during @(see
+argresolve), and indicate whether the corresponding formal is considered active
+high or low.</dd>
 
 </dl>"
 
@@ -1342,7 +1344,7 @@ active high or low.</dd>
 
 (defsection vl-maybe-expr-p
   :parents (modules vl-expr-p)
-  :short "Representation for a @(see vl-expr-p) or <tt>nil</tt>."
+  :short "Representation for a @(see vl-expr-p) or @('nil')."
   :long "<p>This is a basic option type for expressions.</p>"
 
   (definlined vl-maybe-expr-p (x)
@@ -1500,21 +1502,20 @@ declarations, and so forth."
 
   :long "<p>Ranges are discussed in Section 7.1.5.</p>
 
-<p>Ranges in declarations and array instances look like <tt>[msb:lsb]</tt>, but
-do not confuse them with part-select expressions which have the same
-syntax.</p>
+<p>Ranges in declarations and array instances look like @('[msb:lsb]'), but do
+not confuse them with part-select expressions which have the same syntax.</p>
 
-<p>The expressions in the <tt>msb</tt> and <tt>lsb</tt> positions are expected
-to resolve to constants.  Note that the parser does not try to simplify these
+<p>The expressions in the @('msb') and @('lsb') positions are expected to
+resolve to constants.  Note that the parser does not try to simplify these
 expressions, but some simplification is performed in transformations such as
 @(see rangeresolve) and @(see unparameterization).</p>
 
 <p>Even after the expressions have become constants, the Verilog specification
-does not require <tt>msb</tt> to be greater than <tt>lsb</tt>, and neither
-index is required to be zero.  In fact, even negative indicies seem to be
-permitted, which is quite amazing and strange.</p>
+does not require @('msb') to be greater than @('lsb'), and neither index is
+required to be zero.  In fact, even negative indicies seem to be permitted,
+which is quite amazing and strange.</p>
 
-<p>While we do not impose any restrictions in <tt>vl-range-p</tt> itself, some
+<p>While we do not impose any restrictions in @('vl-range-p') itself, some
 transformations expect the indices to be resolved to integers.  However, we now
 try to support the use of both ascending and descending ranges.</p>")
 
@@ -1522,7 +1523,7 @@ try to support the use of both ascending and descending ranges.</p>")
 
 (defsection vl-maybe-range-p
   :parents (modules vl-range-p)
-  :short "Representation for a @(see vl-range-p) or <tt>nil</tt>."
+  :short "Representation for a @(see vl-range-p) or @('nil')."
   :long "<p>This is a basic option type for ranges.</p>"
 
   (definlined vl-maybe-range-p (x)
@@ -1594,34 +1595,34 @@ try to support the use of both ascending and descending ranges.</p>")
 <p>Ports are described in Section 12.3 of the standard.  In simple cases, a
 module's ports look like this:</p>
 
-<code>
-module mod(a,b,c) ;  &lt;-- ports are a, b, and c
+@({
+module mod(a,b,c) ;  <-- ports are a, b, and c
   ...
 endmodule
-</code>
+})
 
 <p>However, an alternate (and less repetitive) syntax can be used instead:</p>
 
-<code>
+@({
 module mod(
-  input [3:0] a;   &lt; ports are a, b, and c
+  input [3:0] a;   < ports are a, b, and c
   input b;
   output c;
 ) ;
    ...
 endmodule
-</code>
+})
 
 <p>More complex ports are also possible, e.g., in this example,</p>
 
-<code>
+@({
 module mod (a, .b(w), c[3:0], .d(c[7:4])) ;
   input a;
   input w;
   input [7:0] c;
   ...
 endmodule
-</code>
+})
 
 <p>the ports have external names which are distinct from their internal
 wiring.</p>
@@ -1629,21 +1630,20 @@ wiring.</p>
 
 <h3>Representation of Ports</h3>
 
-<p>The <tt>name</tt> of every port is a @(see vl-maybe-string-p).  We think of
-this name as the \"externally visible\" name of the port.</p>
+<p>The @('name') of every port is a @(see vl-maybe-string-p).  We think of this
+name as the \"externally visible\" name of the port.</p>
 
-<p>The <tt>expr</tt> of every port is a @(see vl-maybe-expr-p) that determines
-how the port is wired internally within the module.</p>
+<p>The @('expr') of every port is a @(see vl-maybe-expr-p) that determines how
+the port is wired internally within the module.</p>
 
-<p>The <tt>loc</tt> for each port is a @(see vl-location-p) that says where
-the port came from in the Verilog source code.</p>
+<p>The @('loc') for each port is a @(see vl-location-p) that says where the
+port came from in the Verilog source code.</p>
 
 <p>For instance, in the \"complex\" example above, the names of the ports would
-be represented, respectively, as: <tt>\"a\"</tt>, <tt>\"b\"</tt>,
-<tt>nil</tt> (i.e., this port has no externally visible name), and
-<tt>\"d\"</tt>.  Meanwhile, the first two ports are internally wired to
-<tt>a</tt> and <tt>w</tt>, respectively, while the third and fourth ports
-collectively specify the bits of <tt>c</tt>.</p>
+be represented, respectively, as: @('\"a\"'), @('\"b\"'), @('nil') (i.e., this
+port has no externally visible name), and @('\"d\"').  Meanwhile, the first two
+ports are internally wired to @('a') and @('w'), respectively, while the third
+and fourth ports collectively specify the bits of @('c').</p>
 
 
 <h3>Using Ports</h3>
@@ -1661,14 +1661,14 @@ equivalents, and once this has been done there really isn't much reason to have
 port names anymore.  Instead, you can work directly with the port's
 expression.</p>
 
-<p>Our <tt>vl-port-p</tt> structures do not restrict the kinds of expressions
-that may be used as the internal wiring, but we generally expect that each such
+<p>Our @('vl-port-p') structures do not restrict the kinds of expressions that
+may be used as the internal wiring, but we generally expect that each such
 expression should satisfy @(see vl-portexpr-p).</p>
 
-<p>A \"blank\" port expression (represented by <tt>nil</tt>) means the port is
-not connected to any wires within the module.  Our @(see argresolve) transform
-will issue non-fatal @(see warnings) if any non-blank arguments are connected
-to blank ports, or if blank arguments are connected to non-blank ports.  It is
+<p>A \"blank\" port expression (represented by @('nil')) means the port is not
+connected to any wires within the module.  Our @(see argresolve) transform will
+issue non-fatal @(see warnings) if any non-blank arguments are connected to
+blank ports, or if blank arguments are connected to non-blank ports.  It is
 usually not hard to support blank ports in other transformations.</p>
 
 <p>The direction of a port can most safely be obtained by @(see
@@ -1717,8 +1717,8 @@ and @(see ctxsize) for details.</p>")
 
   :long "<p>Each port declaration (see @(see vl-portdecl-p)) includes a
 direction to indicate that the port is either an input, output, or inout.  We
-represent these directions with the keyword <tt>:vl-input</tt>,
-<tt>:vl-output</tt>, and <tt>:vl-inout</tt>, respectively.</p>
+represent these directions with the keyword @(':vl-input'), @(':vl-output'),
+and @(':vl-inout'), respectively.</p>
 
 <p>In our @(see argresolve) transformation, directions are also assigned to all
 arguments of gate instances and most arguments of module instances.  See our
@@ -1728,7 +1728,7 @@ arguments of gate instances and most arguments of module instances.  See our
 
 (defsection vl-maybe-direction-p
   :parents (modules)
-  :short "Representation for a @(see vl-direction-p) or <tt>nil</tt>."
+  :short "Representation for a @(see vl-direction-p) or @('nil')."
   :long "<p>This is a basic option type for directions.</p>"
 
   (definlined vl-maybe-direction-p (x)
@@ -1779,63 +1779,63 @@ arguments of gate instances and most arguments of module instances.  See our
   :long "<p>Port declarations ascribe certain properties (direction,
 signedness, size, and so on) to the ports of a module.  Here is an example:</p>
 
-<code>
+@({
 module m(a, b) ;
-  input [3:0] a ;  // &lt;--- port declaration
+  input [3:0] a ;  // <--- port declaration
   ...
 endmodule
-</code>
+})
 
 <p>Although Verilog allows multiple ports to be declared simultaneously, i.e.,
-<tt>input a, b ;</tt>, our parser splits these merged declarations to create
-separate <tt>vl-portdecl-p</tt> objects for each port.  Because of this, every
-<tt>vl-portdecl-p</tt> has only a single name.</p>
+@('input a, b ;'), our parser splits these merged declarations to create
+separate @('vl-portdecl-p') objects for each port.  Because of this, every
+@('vl-portdecl-p') has only a single name.</p>
 
 <p>Port declarations are described in Section 12.3.3 of the specification.</p>
 
-<p>The <tt>name</tt> of the port is an ordinary string, which should agree
-with the name of some port in the module.  (<b>BOZO</b> Is that
-the external or internal name?  Oh my God...)</p>
+<p>The @('name') of the port is an ordinary string, which should agree with the
+name of some port in the module.  (<b>BOZO</b> Is that the external or internal
+name?  Oh my God...)</p>
 
-<p>The <tt>direction</tt> of the port is a @(see vl-direction-p) that says
-whether this port is an input, output, or bidirectional port.</p>
+<p>The @('direction') of the port is a @(see vl-direction-p) that says whether
+this port is an input, output, or bidirectional port.</p>
 
-<p>The <tt>signedp</tt> flag indicates whether the <tt>signed</tt> keyword was
-present in the declaration.</p>
+<p>The @('signedp') flag indicates whether the @('signed') keyword was present
+in the declaration.</p>
 
 <p><b>Warning</b>: Note that per page 175, port declarations and net/reg
 declarations must be checked against one another: if either declaration
-includes the <tt>signed</tt> keyword, then both are to be considered signed.
-The parser DOES NOT do this cross-referencing automatically; instead the @(see
+includes the @('signed') keyword, then both are to be considered signed.  The
+parser DOES NOT do this cross-referencing automatically; instead the @(see
 portdecl-sign) transformation needs to be run.</p>
 
-<p>The <tt>range</tt> indicates how whether the input is a vector and, if so,
-how large the input is.  Per page 174, if there is also a net declaration then
-the range must agree.  This is checked in @(see vl-overlap-compatible-p) as
-part of our notion of @(see reasonable) modules.</p>
+<p>The @('range') indicates how whether the input is a vector and, if so, how
+large the input is.  Per page 174, if there is also a net declaration then the
+range must agree.  This is checked in @(see vl-overlap-compatible-p) as part of
+our notion of @(see reasonable) modules.</p>
 
-<p>The <tt>loc</tt> is a @(see vl-location-p) that describes where the port
-was declared in the source code.</p>
+<p>The @('loc') is a @(see vl-location-p) that describes where the port was
+declared in the source code.</p>
 
-<p>The <tt>atts</tt> are any attribute (see @(see vl-atts-p)) associated with
-this declaration.</p>
+<p>The @('atts') are any attribute (see @(see vl-atts-p)) associated with this
+declaration.</p>
 
 <h4>A Note about Port Types</h4>
 
 <p>If you look at the grammar for port declarations, you will see that you
 can also do things like:</p>
 
-<code>
+@({
 input wire a;
 input supply0 b;
-</code>
+})
 
-<p>And so on.  For some time, our <tt>vl-port-p</tt> structures included a
-<tt>type</tt> field.  However, upon a closer reading of the specification,
-we have learned that the proper way to handle these is to simultaneously
-introduce a @(see vl-netdecl-p) alongside the <tt>vl-portdecl-p</tt> that
-we would ordinarily create for a port declaration.  See, e.g., the second
-paragraph from the bottom on Page 174.</p>")
+<p>And so on.  For some time, our @('vl-port-p') structures included a
+@('type') field.  However, upon a closer reading of the specification, we have
+learned that the proper way to handle these is to simultaneously introduce a
+@(see vl-netdecl-p) alongside the @('vl-portdecl-p') that we would ordinarily
+create for a port declaration.  See, e.g., the second paragraph from the bottom
+on Page 174.</p>")
 
 (deflist vl-portdecllist-p (x)
   (vl-portdecl-p x)
@@ -1876,14 +1876,14 @@ discussion in 6.13 and the earlier parts of Section 7.  In short:</p>
 </ul>
 
 <p>The parser does not attempt to determine (3) in some cases, so it may be
-left as <tt>nil</tt>.  Simulators that care about this will need to carefully
+left as @('nil').  Simulators that care about this will need to carefully
 review the rules for correctly computing these delays.</p>")
 
 
 
 (defsection vl-maybe-gatedelay-p
   :parents (modules)
-  :short "Representation for a @(see vl-gatedelay-p) or <tt>nil</tt>."
+  :short "Representation for a @(see vl-gatedelay-p) or @('nil')."
   :long "<p>This is a basic option type for gatedelays.</p>"
 
   (definlined vl-maybe-gatedelay-p (x)
@@ -1958,7 +1958,7 @@ specified.</p>")
 
 (defsection vl-maybe-gatestrength-p
   :parents (modules)
-  :short "Representation for a @(see vl-gatestrength-p) or <tt>nil</tt>."
+  :short "Representation for a @(see vl-gatestrength-p) or @('nil')."
   :long "<p>This is a basic option type for gatestrengths.</p>"
 
   (defund vl-maybe-gatestrength-p (x)
@@ -1999,7 +1999,7 @@ are.</p>")
 
 (defsection vl-maybe-cstrength-p
   :parents (modules)
-  :short "Representation for a @(see vl-cstrength-p) or <tt>nil</tt>."
+  :short "Representation for a @(see vl-cstrength-p) or @('nil')."
   :long "<p>This is a basic option type for cstrengths.</p>"
 
   (defund vl-maybe-cstrength-p (x)
@@ -2048,31 +2048,30 @@ are.</p>")
   :long "<p>In the Verilog sources, continuous assignment statements can take
 two forms, as illustrated below.</p>
 
-<code>
+@({
 module m (a, b, c) ;
-  wire w1 = a &amp; b ;     // &lt;-- continuous assignment in a declaration
+  wire w1 = a & b ;     // <-- continuous assignment in a declaration
   wire w2;
-  assign w2 = w1;       // &lt;-- continuous assignment
+  assign w2 = w1;       // <-- continuous assignment
 endmodule
-</code>
+})
 
 <p>Regardless of which form is used, the @(see parser) generates a
-<tt>vl-assign-p</tt> object.  Note that the following is also legal
-Verilog:</p>
+@('vl-assign-p') object.  Note that the following is also legal Verilog:</p>
 
-<code>
+@({
   assign foo = 1, bar = 2;
-</code>
+})
 
-<p>But in such cases, the parser will create two <tt>vl-assign-p</tt> objects,
-one to represent the assignment to <tt>foo</tt>, and the other to represent the
-assignment to <tt>bar</tt>.  Hence, each <tt>vl-assign-p</tt> represents only a
-single assignment.</p>
+<p>But in such cases, the parser will create two @('vl-assign-p') objects, one
+to represent the assignment to @('foo'), and the other to represent the
+assignment to @('bar').  Hence, each @('vl-assign-p') represents only a single
+assignment.</p>
 
 
 <h4>Lvalue</h4>
 
-<p>The <tt>lvalue</tt> field must be an expression, and represents the location
+<p>The @('lvalue') field must be an expression, and represents the location
 being assigned to.  The formal syntax definition for Verilog only permits
 lvalues to be:</p>
 
@@ -2082,46 +2081,46 @@ lvalues to be:</p>
  <li>concatenations of the above.</li>
 </ul>
 
-<p>Furthermore, from Table 6.1, (p. 68), we find that only <tt>net</tt>
-declarations are permitted in continuous assignments; <tt>reg</tt>s,
-<tt>integer</tt>s, and other variables must be assigned only using procedural
-assignments.  We have experimentally verified (see <tt>test-assign.v</tt>) that
-Cadence enforces these rules.</p>
+<p>Furthermore, from Table 6.1, (p. 68), we find that only @('net')
+declarations are permitted in continuous assignments; @('reg')s, @('integer')s,
+and other variables must be assigned only using procedural assignments.  We
+have experimentally verified (see @('test-assign.v')) that Cadence enforces
+these rules.</p>
 
-<p>Our parser does impose these syntactic restrictions, but in
-<tt>vl-assign-p</tt> we are perhaps overly permissive, and we only require that
-the <tt>lvalue</tt> is an expression.  Even so, some transforms may cause fatal
-warnings if these semantic restrictions are violated, so one must be careful
-when generating assignments.</p>
+<p>Our parser does impose these syntactic restrictions, but in @('vl-assign-p')
+we are perhaps overly permissive, and we only require that the @('lvalue') is
+an expression.  Even so, some transforms may cause fatal warnings if these
+semantic restrictions are violated, so one must be careful when generating
+assignments.</p>
 
 <h4>Expr</h4>
 
-<p>The <tt>expr</tt> is the expression being assigned to this lvalue.  We do
-not in any way restrict the expression, nor have we found any restrictions
-discussed in the Verilog standard.  Even so, it seems there must be some
-limits.  For instance, what does it mean to assign, say, a
-minimum/typical/maximum delay expression?  For these sorts of reasons, some
-transforms may wish to only permit a subset of all expressions here.</p>
+<p>The @('expr') is the expression being assigned to this lvalue.  We do not in
+any way restrict the expression, nor have we found any restrictions discussed
+in the Verilog standard.  Even so, it seems there must be some limits.  For
+instance, what does it mean to assign, say, a minimum/typical/maximum delay
+expression?  For these sorts of reasons, some transforms may wish to only
+permit a subset of all expressions here.</p>
 
 
 <h4>Delay</h4>
 
-<p>The <tt>delay</tt> for a continuous assignment is discussed in 6.1.3 (page
-71), and specifies how long it takes for a change in the value of the
-right-hand side to be propagated into the lvalue.  We represent the delay using
-a @(see vl-maybe-gatedelay-p); if the <tt>delay</tt> is <tt>nil</tt>,
-it means that no delay was specified.</p>
+<p>The @('delay') for a continuous assignment is discussed in 6.1.3 (page 71),
+and specifies how long it takes for a change in the value of the right-hand
+side to be propagated into the lvalue.  We represent the delay using a @(see
+vl-maybe-gatedelay-p); if the @('delay') is @('nil'), it means that no delay
+was specified.</p>
 
 <p>Note (6.1.3) that when delays are provided in the combined declaration and
 assignment statement, e.g., </p>
 
-<code>
+@({
   wire #10 a = 1, b = 2;
-</code>
+})
 
 <p>that the delay is to be associated with each assignment, and NOT with the
-net declaration for <tt>a</tt>.  Net delays are different than assignment
-delays; see @(see vl-netdecl-p) for additional discussion.</p>
+net declaration for @('a').  Net delays are different than assignment delays;
+see @(see vl-netdecl-p) for additional discussion.</p>
 
 <p><b>Warning:</b> Although the parser is careful to handle the delay
 correctly, we are generally uninterested in delays and our transforms may not
@@ -2132,9 +2131,9 @@ though.</p>
 
 <h4>Strength</h4>
 
-<p>Strengths on continuous assignments are discussed in 6.1.4.  We represent the
-strength using a @(see vl-maybe-gatestrength-p).  If a strength is not provided,
-the parser sets this to <tt>nil</tt>.</p>
+<p>Strengths on continuous assignments are discussed in 6.1.4.  We represent
+the strength using a @(see vl-maybe-gatestrength-p).  If a strength is not
+provided, the parser sets this to @('nil').</p>
 
 <p><b>Warning:</b> Although the parser is careful to handle the strength
 correctly, we are generally uninterested in strengths and our transforms may not
@@ -2142,10 +2141,10 @@ properly preserve them.</p>
 
 <h4>Loc, Atts</h4>
 
-<p>The <tt>loc</tt> is the location of this continuous assignment in the source
+<p>The @('loc') is the location of this continuous assignment in the source
 code, and is useful for producing error messages; see @(see vl-location-p).</p>
 
-<p>The <tt>atts</tt> are any Verilog-2005 style attributes associated with this
+<p>The @('atts') are any Verilog-2005 style attributes associated with this
 assignment; see @(see vl-atts-p).  We mostly ignore attributes, but we may
 sometimes add them as annotations.</p>")
 
@@ -2194,7 +2193,7 @@ correspond to the possible types.</p>")
 
 (defsection vl-maybe-netdecltype-p
   :parents (modules)
-  :short "Representation for a @(see vl-netdecltype-p) or <tt>nil</tt>."
+  :short "Representation for a @(see vl-netdecltype-p) or @('nil')."
   :long "<p>This is a basic option type for netdecltypes.</p>"
 
   (definlined vl-maybe-netdecltype-p (x)
@@ -2258,79 +2257,79 @@ correspond to the possible types.</p>")
 signedness, size, and so on).  Here are some examples of basic net
 declarations.</p>
 
-<code>
+@({
 module m (a, b, c) ;
-  wire [4:0] w ;       // &lt;-- plain net declaration
-  wire ab = a &amp; b ;    // &lt;-- net declaration with assignment
+  wire [4:0] w ;       // <-- plain net declaration
+  wire ab = a & b ;    // <-- net declaration with assignment
   ...
 endmodule
-</code>
+})
 
 <p>Net declarations can also arise from using the combined form of port
 declarations.</p>
 
-<code>
+@({
 module m (a, b, c) ;
-  input wire a;    // &lt;-- net declaration in a port declaration
+  input wire a;    // <-- net declaration in a port declaration
   ...
 endmodule
-</code>
+})
 
-<p>You can also string together net declarations, e.g., by writing <tt>wire w1,
-w2;</tt>.</p>
+<p>You can also string together net declarations, e.g., by writing @('wire w1,
+w2;').</p>
 
-<p>In all of these cases, our parser generates a <tt>vl-netdecl-p</tt> object
-for each declared wire.  That is, each <tt>vl-netdecl-p</tt> is a declaration
-of a single wire.</p>
+<p>In all of these cases, our parser generates a @('vl-netdecl-p') object for
+each declared wire.  That is, each @('vl-netdecl-p') is a declaration of a
+single wire.</p>
 
 <p>Note that when an assignment is also present, the parser creates a
 corresponding, separate @(see vl-assign-p) object to contain the assignment.
 Similarly, when using the combined net/port declaration format, a separate
-@(see vl-portdecl-p) object is generated.  Hence, each <tt>vl-netdecl-p</tt>
-really and truly only represents a declaration.</p>
+@(see vl-portdecl-p) object is generated.  Hence, each @('vl-netdecl-p') really
+and truly only represents a declaration.</p>
 
 
 <h4>Basic Fields</h4>
 
-<p>The <tt>name</tt>, <tt>type</tt>, <tt>atts</tt>, and <tt>loc</tt> fields
-should be self-explanatory after reading the descriptions of @(see
-vl-netdecltype-p), @(see vl-atts-p), and @(see vl-location-p).</p>
+<p>The @('name'), @('type'), @('atts'), and @('loc') fields should be
+self-explanatory after reading the descriptions of @(see vl-netdecltype-p),
+@(see vl-atts-p), and @(see vl-location-p).</p>
 
 
 <h4>Arrays and Vectors</h4>
 
-<p>The <tt>range</tt> and <tt>arrdims</tt> fields deal with vectors and arrays.
-In particular, <tt>range</tt> is a single, optional range that preceeds the
-wire name.  For instance, the range of <tt>w</tt> is <tt>[4:0]</tt> in the
-following declaration:</p>
+<p>The @('range') and @('arrdims') fields deal with vectors and arrays.  In
+particular, @('range') is a single, optional range that preceeds the wire name.
+For instance, the range of @('w') is @('[4:0]') in the following
+declaration:</p>
 
-<code>
+@({
   wire [4:0] w;
-</code>
+})
 
-<p>In contrast, the <tt>arrdims</tt> are a list of ranges, also optional, which
-follow the wire name.  For instance, the arrdims of <tt>v</tt> below is a
-singleton list with the range <tt>[4:0]</tt>.</p>
+<p>In contrast, the @('arrdims') are a list of ranges, also optional, which
+follow the wire name.  For instance, the arrdims of @('v') below is a singleton
+list with the range @('[4:0]').</p>
 
-<code>
+@({
   wire v [4:0];
-</code>
+})
 
-<p>Be aware that range and arrdims really are <b>different</b> things;
-<tt>w</tt> and <tt>v</tt> are <i>not</i> equivalent except for their names.  In
-particular, <tt>w</tt> is a single, 5-bit wire, while <tt>v</tt> is an array of
-five one-bit wires.</p>
+<p>Be aware that range and arrdims really are <b>different</b> things; @('w')
+and @('v') are <i>not</i> equivalent except for their names.  In particular,
+@('w') is a single, 5-bit wire, while @('v') is an array of five one-bit
+wires.</p>
 
 <p>Things are more complicated when a declaration includes both a range and
 arrdims.  For instance</p>
 
-<code>
+@({
 wire [4:0] a [10:0];
-</code>
+})
 
-<p>declares <tt>a</tt> to be an 11-element array of five bit wires.  The
-<tt>range</tt> for <tt>a</tt> is <tt>[4:0]</tt>, and the arrdims are a list
-with one entry, namely the range <tt>[10:0]</tt>.</p>
+<p>declares @('a') to be an 11-element array of five bit wires.  The @('range')
+for @('a') is @('[4:0]'), and the arrdims are a list with one entry, namely the
+range @('[10:0]').</p>
 
 <p>At present, the translator has almost no support for arrdims.  However, the
 parser should handle them just fine.</p>
@@ -2338,24 +2337,23 @@ parser should handle them just fine.</p>
 
 <h4>Vectorness and Signedness</h4>
 
-<p>The <tt>signedp</tt> flag indicates whether the <tt>signed</tt> keyword was
-supplied on this declaration.  <b>Warning</b>: Note that per page 175, port
-declarations and net/reg declarations must be checked against one another: if
-either declaration includes the <tt>signed</tt> keyword, then both are to be
-considered signed.  The parser DOES NOT do this cross-referencing
-automatically; instead the @(see portdecl-sign) transformation needs to be
-run.</p>
+<p>The @('signedp') flag indicates whether the @('signed') keyword was supplied
+on this declaration.  <b>Warning</b>: Note that per page 175, port declarations
+and net/reg declarations must be checked against one another: if either
+declaration includes the @('signed') keyword, then both are to be considered
+signed.  The parser DOES NOT do this cross-referencing automatically; instead
+the @(see portdecl-sign) transformation needs to be run.</p>
 
-<p>The <tt>vectoredp</tt> and <tt>scalaredp</tt> fields are booleans, which are
-set to <tt>t</tt> when, respectively, the Verilog keywords <tt>vectored</tt>
-and <tt>scalared</tt> are provided.  In other words, these fields might both be
-<tt>nil</tt>.  I do not know what these keywords are supposed to mean; the
-Verilog specification says almost nothing about it, and does not even say what
-the default is.  According to some random guy on the internet, it's supposed to
-be a syntax error to try to bit- or part-select from a vectored net.  Maybe I
-can find a more definitive explanation somewhere.  Hey, in 6.1.3 there are some
-differences mentioned w.r.t. how delays go to scalared and vectored nets.  4.3.2
-has a little bit more.</p>
+<p>The @('vectoredp') and @('scalaredp') fields are booleans, which are set to
+@('t') when, respectively, the Verilog keywords @('vectored') and @('scalared')
+are provided.  In other words, these fields might both be @('nil').  I do not
+know what these keywords are supposed to mean; the Verilog specification says
+almost nothing about it, and does not even say what the default is.  According
+to some random guy on the internet, it's supposed to be a syntax error to try
+to bit- or part-select from a vectored net.  Maybe I can find a more definitive
+explanation somewhere.  Hey, in 6.1.3 there are some differences mentioned
+w.r.t. how delays go to scalared and vectored nets.  4.3.2 has a little bit
+more.</p>
 
 
 <h4>Delay</h4>
@@ -2363,17 +2361,17 @@ has a little bit more.</p>
 <p>Net delays are described in 7.14, and indicate the time it takes for any
 driver on the net to change its value.  The default delay is zero when no delay
 is specified.  Even so, we represent the delay using a @(see
-vl-maybe-gatedelay-p), and use <tt>NIL</tt> when no delay is specified.</p>
+vl-maybe-gatedelay-p), and use @('NIL') when no delay is specified.</p>
 
 <p>Note (from 6.1.3) that when delays are provided in the combined declaration
 and assignment statement, e.g., </p>
 
-<code>
+@({
   wire #10 a = 1, b = 2;
-</code>
+})
 
 <p>that the delay is to be associated with each assignment, and NOT with the
-net declaration for <tt>a</tt>.  See @(see vl-assign-p) for more information.</p>
+net declaration for @('a').  See @(see vl-assign-p) for more information.</p>
 
 <p><b>BOZO</b> consider making it an explicit @(see vl-gatedelay-p) and setting
 it to zero in the parser when it's not specified.</p>
@@ -2390,11 +2388,11 @@ and in such cases the drive strength is a property of the assignments and is
 not a property of the declaration.  Hence, there is no drive strength field
 for net declarations.</p>
 
-<p>The <tt>cstrength</tt> field is only applicable to <tt>trireg</tt>-type
-nets.  It will be <tt>nil</tt> for all other nets, and will also be
-<tt>nil</tt> on <tt>trireg</tt> nets that do not explicitly give a charge
-strength.  Note that <tt>vl-netdecl-p</tt> does not enforce the requirement
-that only triregs have charge strengths, but the parser does.</p>
+<p>The @('cstrength') field is only applicable to @('trireg')-type nets.  It
+will be @('nil') for all other nets, and will also be @('nil') on @('trireg')
+nets that do not explicitly give a charge strength.  Note that
+@('vl-netdecl-p') does not enforce the requirement that only triregs have
+charge strengths, but the parser does.</p>
 
 <p><b>Warning:</b> we have not really paid attention to charge strengths, and
 our transformations may not preserve it correctly.</p>")
@@ -2432,45 +2430,43 @@ our transformations may not preserve it correctly.</p>")
   :long "<p>There are two kinds of argument lists for module instantiations,
 which we call <i>plain</i> and <i>named</i> arguments.</p>
 
-<code>
-  modname instname ( 1, 2, 3 );             &lt;-- \"plain\" arguments
-  modname instname ( .a(1), .b(2), .c(3) ); &lt;-- \"named\" arguments
-</code>
+@({
+  modname instname ( 1, 2, 3 );             <-- \"plain\" arguments
+  modname instname ( .a(1), .b(2), .c(3) ); <-- \"named\" arguments
+})
 
-<p>A <tt>vl-plainarg-p</tt> represents a single argument in a plain argument
+<p>A @('vl-plainarg-p') represents a single argument in a plain argument
 list.</p>
 
-<p>The <tt>expr</tt> is the expression being connected to this port; in
-programming languages parlance, the <tt>expr</tt> is an <i>actual</i>.  Note
-that <tt>expr</tt> is only a @(see vl-maybe-expr-p), and may be <tt>nil</tt>.
-This is because Verilog allows expressions to be \"blank\", in which case they
-represent an unconnected wire.  This seems to be used only very rarely, but is
-supported.</p>
+<p>The @('expr') is the expression being connected to this port; in programming
+languages parlance, the @('expr') is an <i>actual</i>.  Note that @('expr') is
+only a @(see vl-maybe-expr-p), and may be @('nil').  This is because Verilog
+allows expressions to be \"blank\", in which case they represent an unconnected
+wire.  This seems to be used only very rarely, but is supported.</p>
 
-<p>The <tt>atts</tt> are any attributes (see @(see vl-atts-p)) associated with
-this argument.</p>
+<p>The @('atts') are any attributes (see @(see vl-atts-p)) associated with this
+argument.</p>
 
-<p>The <tt>dir</tt> is an @(see vl-maybe-direction-p) object.  This is
-<b>not</b> part of the Verilog syntax, but may sometimes be added by the @(see
-argresolve) transformation to indicate whether this port for this argument is
-an input, output, or inout for the module or gate being instantiated.</p>
+<p>The @('dir') is an @(see vl-maybe-direction-p) object.  This is <b>not</b>
+part of the Verilog syntax, but may sometimes be added by the @(see argresolve)
+transformation to indicate whether this port for this argument is an input,
+output, or inout for the module or gate being instantiated.</p>
 
 <p>Note that after @(see argresolve), all well-formed gate instances will have
-their direction information computed.  You may rely upon the <tt>dir</tt> field
-for gate instances.</p>
+their direction information computed.  You may rely upon the @('dir') field for
+gate instances.</p>
 
 <p>However, for module instances the direction of a port may not be apparent;
 see @(see vl-port-direction) for details.  So even after @(see argresolve) some
-arguments to module instances may not have a <tt>dir</tt> annotation, and so
-the <tt>dir</tt> field should generally not be relied upon for module
-instances.</p>
+arguments to module instances may not have a @('dir') annotation, and so the
+@('dir') field should generally not be relied upon for module instances.</p>
 
-<p>The <tt>portname</tt> is also not part of the Verilog syntax, but may
-sometimes be added by the @(see argresolve) transformation as a convenience for
-error message generation.  This field should <b>never</b> be used for anything
-that is semantically important.  Note that no argument to a gate instance will
-ever have a portname.  Also note that since not every @(see vl-port-p) has a
-name, some arguments to module instances may also not be given portnames.</p>")
+<p>The @('portname') is also not part of the Verilog syntax, but may sometimes
+be added by the @(see argresolve) transformation as a convenience for error
+message generation.  This field should <b>never</b> be used for anything that
+is semantically important.  Note that no argument to a gate instance will ever
+have a portname.  Also note that since not every @(see vl-port-p) has a name,
+some arguments to module instances may also not be given portnames.</p>")
 
 (deflist vl-plainarglist-p (x)
   (vl-plainarg-p x)
@@ -2529,18 +2525,17 @@ name, some arguments to module instances may also not be given portnames.</p>")
   :short "Representation of a single argument in a named argument list."
 
   :long "<p>See @(see vl-plainarg-p) for a general discussion of arguments.
-Each <tt>vl-namedarg-p</tt> represents a single argument in a named argument
-list.  Its fields include:</p>
+Each @('vl-namedarg-p') represents a single argument in a named argument list.
+Its fields include:</p>
 
 <ul>
 
-<li><tt>name</tt>, a string, e.g., <tt>foo</tt> in <tt>.foo(3)</tt>,</li>
+<li>@('name'), a string, e.g., @('foo') in @('.foo(3)'),</li>
 
-<li><tt>expr</tt>, a @(see vl-maybe-expr-p) which is the actual for this port,
-and may be <tt>nil</tt> for blank ports as described in @(see
-vl-plainarg-p), and</li>
+<li>@('expr'), a @(see vl-maybe-expr-p) which is the actual for this port, and
+may be @('nil') for blank ports as described in @(see vl-plainarg-p), and</li>
 
-<li><tt>atts</tt>, any attributes (see @(see vl-atts-p)) associated with this
+<li>@('atts'), any attributes (see @(see vl-atts-p)) associated with this
 argument.</li>
 
 </ul>
@@ -2566,25 +2561,29 @@ for parameters)."
   :long "<p>There are two kinds of argument lists for module instantiations,
 which we call <i>plain</i> and <i>named</i> arguments.</p>
 
-<code>
-  modname instname ( 1, 2, 3 );             &lt;-- \"plain\" arguments
-  modname instname ( .a(1), .b(2), .c(3) ); &lt;-- \"named\" arguments
-</code>
+@({
+  modname instname ( 1, 2, 3 );             <-- \"plain\" arguments
+  modname instname ( .a(1), .b(2), .c(3) ); <-- \"named\" arguments
+})
 
 <p>Similarly, named or plain argument lists can be used in order to give
 parameters to a module, e.g.,</p>
 
-<code>
+@({
   modname #(.width(6)) instname(o, a, b);
   modname #(6) instname(o, a, b);
-</code>
+})
 
-<p>A <tt>vl-arguments-p</tt> structure represents an argument list of either
-variety.  Each <tt>vl-arguments-p</tt> structure is an aggregate of two fields:</p>
+<p>A @('vl-arguments-p') structure represents an argument list of either
+variety.  Each @('vl-arguments-p') structure is an aggregate of two fields:</p>
 
 <ul>
- <li><tt>namedp</tt>, which says whether named or plain arguments are used, and </li>
- <li><tt>args</tt>, the actual list of named or plain arguments.</li>
+
+<li>@('namedp'), which says whether named or plain arguments are used, and
+</li>
+
+<li>@('args'), the actual list of named or plain arguments.</li>
+
 </ul>"
 
   (defund vl-arguments-p (x)
@@ -2712,7 +2711,7 @@ variety.  Each <tt>vl-arguments-p</tt> structure is an aggregate of two fields:<
 instance."
 
   :long "<p>We represent module and user-defined primitive instances in a
-uniform manner with <tt>vl-modinst-p</tt> structures.  Because of this, certain
+uniform manner with @('vl-modinst-p') structures.  Because of this, certain
 fields do not make sense in one context or another.  In particular, a UDP
 instance should never have any parameter arguments, its port arguments should
 always be an plain argument list, and it may not have a instname.  Meanwhile, a
@@ -2720,35 +2719,35 @@ module instance should never have a drive strength or a delay, and should
 always have a instname.</p>
 
 <p>As with variables, nets, etc., we split up combined instantiations such as
-<tt>modname inst1 (...), inst2 (...)</tt> into separate, individual structures,
-one for <tt>inst1</tt>, and one for <tt>inst2</tt>, so that each
-<tt>vl-modinst-p</tt> represents exactly one instance (or instance array).</p>
+@('modname inst1 (...), inst2 (...)') into separate, individual structures, one
+for @('inst1'), and one for @('inst2'), so that each @('vl-modinst-p')
+represents exactly one instance (or instance array).</p>
 
-<p>The <tt>modname</tt> is the name of the module or user-defined primitive
-that is being instantiated, and <tt>instname</tt> is either the name of this
-instance or <tt>nil</tt> if the instance has no name.</p>
+<p>The @('modname') is the name of the module or user-defined primitive that is
+being instantiated, and @('instname') is either the name of this instance or
+@('nil') if the instance has no name.</p>
 
-<p>If present, the <tt>range</tt> indicates that this is an array of instances,
+<p>If present, the @('range') indicates that this is an array of instances,
 instead of a single instance.</p>
 
-<p>The <tt>paramargs</tt> field is a @(see vl-arguments-p) that gives the
-values for the module parameters.  (E.g., in an instance of a parameterized
-adder module, this list might include the <tt>width</tt> of the adder being
+<p>The @('paramargs') field is a @(see vl-arguments-p) that gives the values
+for the module parameters.  (E.g., in an instance of a parameterized adder
+module, this list might include the @('width') of the adder being
 instantiated.)</p>
 
-<p>The <tt>portargs</tt> field is a @(see vl-arguments-p) that gives the values
-for the module's ports.  (E.g., in an instance of an adder module, this list
-would contain the expressions for the inputs and outputs.)</p>
+<p>The @('portargs') field is a @(see vl-arguments-p) that gives the values for
+the module's ports.  (E.g., in an instance of an adder module, this list would
+contain the expressions for the inputs and outputs.)</p>
 
-<p>The <tt>gatestrength</tt> and <tt>gatedelay</tt> should only be used for
+<p>The @('gatestrength') and @('gatedelay') should only be used for
 user-defined primitives.  <b>Warning:</b> we have generally ignored these
 fields and our transforms may not handle them correctly.</p>
 
-<p>The <tt>atts</tt> are any attributes (see @(see vl-atts-p)) associated with
-this module instance.</p>
+<p>The @('atts') are any attributes (see @(see vl-atts-p)) associated with this
+module instance.</p>
 
-<p>The <tt>loc</tt> is a @(see vl-location-p) that says where in the source
-code this module instance was introduced, and is useful for error messages.</p>")
+<p>The @('loc') is a @(see vl-location-p) that says where in the source code
+this module instance was introduced, and is useful for error messages.</p>")
 
 (deflist vl-modinstlist-p (x)
   (vl-modinst-p x)
@@ -2818,53 +2817,50 @@ recognized by @(call vl-gatetype-p).</p>")
   :parents (modules)
   :short "Representation of a single gate instantiation."
 
-  :long "<p><tt>vl-gateinst-p</tt> is our representation for any single gate
+  :long "<p>@('vl-gateinst-p') is our representation for any single gate
 instance (or instance array).</p>
 
 <p>The grammar for gate instantiations is quite elaborate, but the various
 cases are so regular that a unified representation is possible.  Note that the
 Verilog grammar restricts the list of expressions in certain cases, e.g., for
-an <tt>and</tt> gate, the first expression must be an lvalue.  Although our
-parser enforces these restrictions, we do not encode them into the definition
-of <tt>vl-gateinst-p</tt>.</p>
+an @('and') gate, the first expression must be an lvalue.  Although our parser
+enforces these restrictions, we do not encode them into the definition of
+@('vl-gateinst-p').</p>
 
-<p>The <tt>type</tt> of the gate is an @(see vl-gatetype-p) and says what kind
-of gate this is, (e.g., rmos, nand, xor, ...).</p>
+<p>The @('type') of the gate is an @(see vl-gatetype-p) and says what kind of
+gate this is, (e.g., rmos, nand, xor, ...).</p>
 
-<p>The <tt>name</tt> may be a string that names this instance, or may be
-<tt>nil</tt> when the instance has no name.</p>
+<p>The @('name') may be a string that names this instance, or may be @('nil')
+when the instance has no name.</p>
 
-<p>If provided, the <tt>range</tt> indicates that this is an array of
-instances instead of a single instance.</p>
+<p>If provided, the @('range') indicates that this is an array of instances
+instead of a single instance.</p>
 
-<p>The <tt>strength</tt> is represented by a @(see vl-maybe-gatestrength-p).
-The parser leaves this as <tt>nil</tt> unless it is explicitly provided.  Note
-from Section 7.8 that pullup and pulldown gates are special in that the
-strength0 from a pullup source and the strength1 on a pulldown source are
-supposed to be ignored.  <b>Warning:</b> in general we have not paid much
-attention to strengths, so we may not handle them correctly in our various
-transforms.</p>
+<p>The @('strength') is represented by a @(see vl-maybe-gatestrength-p).  The
+parser leaves this as @('nil') unless it is explicitly provided.  Note from
+Section 7.8 that pullup and pulldown gates are special in that the strength0
+from a pullup source and the strength1 on a pulldown source are supposed to be
+ignored.  <b>Warning:</b> in general we have not paid much attention to
+strengths, so we may not handle them correctly in our various transforms.</p>
 
-<p>The <tt>delay</tt> is represented by a @(see vl-maybe-gatedelay-p), and is
-also left as <tt>nil</tt> unless it is explicitly provided.  Note that certain
+<p>The @('delay') is represented by a @(see vl-maybe-gatedelay-p), and is also
+left as @('nil') unless it is explicitly provided.  Note that certain
 gates (tran, rtran, pullup, and pulldown) never have delays according to the
-Verilog grammar, but this is not enforced in our <tt>vl-gateinst-p</tt>
-definition, only by the parser.  <b>Warning:</b> as with strengths, we have
-not paid much attention to delays, and our transforms may not handle them
-correctly.</p>
+Verilog grammar, but this is not enforced in our @('vl-gateinst-p') definition,
+only by the parser.  <b>Warning:</b> as with strengths, we have not paid much
+attention to delays, and our transforms may not handle them correctly.</p>
 
-<p>The <tt>args</tt> are a list of @(see vl-plainarg-p) structures.  Note that
-this differs from module instances where @(see vl-arguments-p) structures are
-used, because gate arguments are never named.  The grammar restricts how many
+<p>The @('args') are a list of @(see vl-plainarg-p) structures.  Note that this
+differs from module instances where @(see vl-arguments-p) structures are used,
+because gate arguments are never named.  The grammar restricts how many
 arguments certain gates can have, but we do not enforce these restrictions in
-the definition of <tt>vl-gateinst-p</tt>.</p>
+the definition of @('vl-gateinst-p').</p>
 
-<p>The <tt>atts</tt> are any attributes (see @(see vl-atts-p)) associated with
-this module instance.</p>
+<p>The @('atts') are any attributes (see @(see vl-atts-p)) associated with this
+module instance.</p>
 
-<p>The <tt>loc</tt> is a @(see vl-location-p) that says where in the source
-code this module instance was introduced, and is useful for error
-messages.</p>")
+<p>The @('loc') is a @(see vl-location-p) that says where in the source code
+this module instance was introduced, and is useful for error messages.</p>")
 
 (defthm symbolp-of-vl-gateinst->type
   (implies (force (vl-gateinst-p x))
@@ -2915,30 +2911,29 @@ single parse tree element by adding an extra reg type to vl-vardecl-p.</p>")
              (vl-location-p loc)))
   :parents (modules)
   :short "Representation of a single variable declaration."
-  :long "<p><tt>vl-vardecl-p</tt> is our representation for a single variable
-declaration, and is used for <tt>integer</tt>, <tt>real</tt>, <tt>time</tt>,
-and <tt>realtime</tt> variable declarations.  As with nets and ports, our
-parser splits up combined declarations such as \"integer a, b\" into multiple,
-individual declarations, so each <tt>vl-vardecl-p</tt> represents only one
-declaration.</p>
+  :long "<p>@('vl-vardecl-p') is our representation for a single variable
+declaration, and is used for @('integer'), @('real'), @('time'), and
+@('realtime') variable declarations.  As with nets and ports, our parser splits
+up combined declarations such as \"integer a, b\" into multiple, individual
+declarations, so each @('vl-vardecl-p') represents only one declaration.</p>
 
-<p>The <tt>name</tt> is an ordinary ACL2 string which contains the name of this
+<p>The @('name') is an ordinary ACL2 string which contains the name of this
 variable.</p>
 
-<p>The <tt>type</tt> is a @(see vl-vardecltype-p) that says whether this is an
+<p>The @('type') is a @(see vl-vardecltype-p) that says whether this is an
 integer, real, time, or realtime variable.</p>
 
-<p>The <tt>arrdims</tt> are a list of @(see vl-range-p) objects that give the
+<p>The @('arrdims') are a list of @(see vl-range-p) objects that give the
 dimensions for arrays of variables.</p>
 
-<p>The <tt>initval</tt> is used when the declaration inclues an initial value
-for the variable, e.g., if one writes <tt>integer i = 3;</tt>, then the
-<tt>initval</tt> will be a @(see vl-expr-p) that represents <tt>3</tt>.</p>
+<p>The @('initval') is used when the declaration inclues an initial value for
+the variable, e.g., if one writes @('integer i = 3;'), then the @('initval')
+will be a @(see vl-expr-p) that represents @('3').</p>
 
-<p>The <tt>atts</tt> are any attributes (see @(see vl-atts-p)) associated
-with this declaration.</p>
+<p>The @('atts') are any attributes (see @(see vl-atts-p)) associated with this
+declaration.</p>
 
-<p>The <tt>loc</tt> is a @(see vl-location-p) that identifies where this
+<p>The @('loc') is a @(see vl-location-p) that identifies where this
 declaration comes from in the source code.</p>")
 
 
@@ -2968,29 +2963,27 @@ declaration comes from in the source code.</p>")
             (vl-location-p-vl-regdecl->loc
              (vl-location-p loc)))
   :parents (modules)
-  :short "Representation of a single <tt>reg</tt> declaration."
-  :long "<p><tt>vl-regdecl-p</tt> is our representation for a single
-<tt>reg</tt> declaration.  Our parser splits up combined declarations such as
+  :short "Representation of a single @('reg') declaration."
+  :long "<p>@('vl-regdecl-p') is our representation for a single
+@('reg') declaration.  Our parser splits up combined declarations such as
 \"reg a, b\" into multiple, individual declarations, so each
-<tt>vl-regdecl-p</tt> represents only one declaration.</p>
+@('vl-regdecl-p') represents only one declaration.</p>
 
-<p>The <tt>name</tt> is the name of this register as an ordinary ACL2
-string.</p>
+<p>The @('name') is the name of this register as an ordinary ACL2 string.</p>
 
-<p>The <tt>signedp</tt> flag indicates whether they keyword <tt>signed</tt> was
-used in the declaration of the register.  (By default, registers are
-unsigned.)</p>
+<p>The @('signedp') flag indicates whether they keyword @('signed') was used in
+the declaration of the register.  (By default, registers are unsigned.)</p>
 
-<p>The <tt>range</tt> and <tt>arrdims</tt> are used for multi-bit regs and
-arrays of regs.  More discussion is available in @(see vl-netdecl-p).</p>
+<p>The @('range') and @('arrdims') are used for multi-bit regs and arrays of
+regs.  More discussion is available in @(see vl-netdecl-p).</p>
 
-<p>The <tt>initval</tt> is an expression that provides an initial value to
-this register, if one was provided.</p>
+<p>The @('initval') is an expression that provides an initial value to this
+register, if one was provided.</p>
 
-<p>The <tt>atts</tt> are any attributes (see @(see vl-atts-p)) associated
-with this declaration.</p>
+<p>The @('atts') are any attributes (see @(see vl-atts-p)) associated with this
+declaration.</p>
 
-<p>The <tt>loc</tt> is a @(see vl-location-p) that identifies where this
+<p>The @('loc') is a @(see vl-location-p) that identifies where this
 declaration comes from in the source code.</p>")
 
 
@@ -3031,28 +3024,28 @@ its definition:</p>
 
 <p>What do these types mean?  Here is the syntax for parameters:</p>
 
-<code>
+@({
 parameter_declaration ::=
     'parameter' ['signed'] [range] list_of_param_assignments
   | 'parameter' parameter_type list_of_param_assignments
 
 parameter_type ::=
    'integer' | 'real' | 'realtime' | 'time'
-</code>
+})
 
 <p>In other words, every declaration either has:</p>
 
 <ul>
 
-<li>A \"parameter_type\" (<tt>integer</tt>, <tt>real</tt>, <tt>realtime</tt>,
-or <tt>time</tt>), in which case we use the symbols <tt>:vl-integer</tt>,
-<tt>:vl-real</tt>, <tt>:vl-time</tt>, or <tt>:vl-realtime</tt>; <b>OR</b></li>
+<li>A \"parameter_type\" (@('integer'), @('real'), @('realtime'), or
+@('time')), in which case we use the symbols @(':vl-integer'), @(':vl-real'),
+@(':vl-time'), or @(':vl-realtime'); <b>OR</b></li>
 
-<li>A <tt>signed</tt> declaration without any other type, in which case we
-use <tt>:vl-signed</tt>, <b>OR</b></li>
+<li>A @('signed') declaration without any other type, in which case we use
+@(':vl-signed'), <b>OR</b></li>
 
 <li>(most commonly) No type or sign declaration whatsoever, in which case we
-use <tt>:vl-plain</tt>.</li>
+use @(':vl-plain').</li>
 
 </ul>")
 
@@ -3077,40 +3070,40 @@ use <tt>:vl-plain</tt>.</li>
             (vl-location-p-of-vl-paramdecl->loc
              (vl-location-p loc)))
   :parents (modules)
-  :short "Representation of a single <tt>parameter</tt> or <tt>localparam</tt>
+  :short "Representation of a single @('parameter') or @('localparam')
 declaration."
   :long "<p>Parameters are discussed in 12.2.  Some examples of parameter
 declarations include:</p>
 
-<code>
+@({
 module mymod (a, b, ...) ;
   parameter WIDTH = 3;
   localparam TWICE_WIDTH = 2 * WIDTH;
   ...
 endmodule
-</code>
+})
 
-<p>The <tt>name</tt> of the parameter is an ordinary ACL2 <tt>stringp</tt>, e.g.,
-<tt>WIDTH</tt> or <tt>TWICE_WIDTH</tt> in the examples above.</p>
+<p>The @('name') of the parameter is an ordinary ACL2 @('stringp'), e.g.,
+@('WIDTH') or @('TWICE_WIDTH') in the examples above.</p>
 
-<p>The <tt>expr</tt> is the default value for this expression.</p>
+<p>The @('expr') is the default value for this expression.</p>
 
-<p>The <tt>type</tt> is a @(see vl-paramdecltype-p) that might indicate the
+<p>The @('type') is a @(see vl-paramdecltype-p) that might indicate the
 parameter is a signed or has a particular type (e.g., integer, realtime).</p>
 
-<p>The <tt>localp</tt> flag is <tt>t</tt> if this delaration was made with
-<tt>localparam</tt>, or <tt>nil</tt> if the declaration was made with
-<tt>parameter</tt>.  The difference is apparently that <tt>localparam</tt>s
-such as <tt>TWICE_WIDTH</tt> cannot be overridden from outside the module,
-except insofar as that they depend upon other, non-local parameters.
-Apparently the use of <tt>localparam</tt> may be useful for introducing
-named constants without polluting the <tt>`define</tt> namespace.</p>
+<p>The @('localp') flag is @('t') if this delaration was made with
+@('localparam'), or @('nil') if the declaration was made with @('parameter').
+The difference is apparently that @('localparam')s such as @('TWICE_WIDTH')
+cannot be overridden from outside the module, except insofar as that they
+depend upon other, non-local parameters.  Apparently the use of @('localparam')
+may be useful for introducing named constants without polluting the
+@('`define') namespace.</p>
 
-<p>The <tt>range</tt> is some ridiculous thing allowed by the grammar and
-who knows what it means.  Some description of it in 12.2.</p>
+<p>The @('range') is some ridiculous thing allowed by the grammar and who knows
+what it means.  Some description of it in 12.2.</p>
 
-<p>The <tt>atts</tt> and <tt>loc</tt> should be obvious; see @(see vl-atts-p)
-and @(see vl-location-p).</p>")
+<p>The @('atts') and @('loc') should be obvious; see @(see vl-atts-p) and @(see
+vl-location-p).</p>")
 
 (deflist vl-vardecllist-p (x)
   (vl-vardecl-p x)
@@ -3143,8 +3136,8 @@ and @(see vl-location-p).</p>")
   :parents (modules)
   :short "Recognizer for a valid block item."
 
-  :long "<p><tt>vl-blockitem-p</tt> is a sum-of-products style type for
-recognizing valid block items.  The valid block item declarations are register
+  :long "<p>@('vl-blockitem-p') is a sum-of-products style type for recognizing
+valid block items.  The valid block item declarations are register
 declarations, variable declarations (integer, real, time, and realtime), event
 declarations, and parameter declarations (parameter and localparam), which we
 represent as @(see vl-regdecl-p), @(see vl-vardecl-p), @(see vl-eventdecl-p),
@@ -3256,8 +3249,8 @@ and @(see vl-paramdecl-p) objects, respectively.</p>"
   :parents (vl-evatom-p)
   :short "Type of an item in an event control list."
   :long "<p>Any particular atom in the event control list might have a
-<tt>posedge</tt>, <tt>negedge</tt>, or have no edge specifier at all, e.g., for
-plain atoms like <tt>a</tt> and <tt>b</tt> in <tt>always @@(a or b)</tt>.</p>")
+@('posedge'), @('negedge'), or have no edge specifier at all, e.g., for plain
+atoms like @('a') and @('b') in @('always @@(a or b)').</p>")
 
 (defaggregate vl-evatom
   (type expr)
@@ -3272,13 +3265,13 @@ plain atoms like <tt>a</tt> and <tt>b</tt> in <tt>always @@(a or b)</tt>.</p>")
   :long "<p>Event expressions and controls are described in Section 9.7.</p>
 
 <p>We represent the expressions for an event control (see @(see
-vl-eventcontrol-p)) as a list of <tt>vl-evatom-p</tt> structures.  Each
-individual evatom is either a plain Verilog expression, or is <tt>posedge</tt>
-or <tt>negedge</tt> applied to a Verilog expression.</p>
+vl-eventcontrol-p)) as a list of @('vl-evatom-p') structures.  Each individual
+evatom is either a plain Verilog expression, or is @('posedge') or @('negedge')
+applied to a Verilog expression.</p>
 
-<p>The <tt>type</tt> is the type of edge; see @(see vl-evatomtype-p).</p>
+<p>The @('type') is the type of edge; see @(see vl-evatomtype-p).</p>
 
-<p>The <tt>expr</tt> is the associated expression.</p>")
+<p>The @('expr') is the associated expression.</p>")
 
 (deflist vl-evatomlist-p (x)
   (vl-evatom-p x)
@@ -3297,19 +3290,19 @@ or <tt>negedge</tt> applied to a Verilog expression.</p>
             (vl-evatomlist-p-of-vl-eventcontrol->atoms
              (vl-evatomlist-p atoms)))
   :parents (modules)
-  :short "Representation of an event controller like <tt>@@(posedge clk)</tt> or
-<tt>@@(a or b)</tt>."
+  :short "Representation of an event controller like @('@@(posedge clk)') or
+@('@@(a or b)')."
 
   :long "<p>Event controls are described in Section 9.7.  We represent each
-event controller as a <tt>vl-eventcontrol-p</tt> aggregates.</p>
+event controller as a @('vl-eventcontrol-p') aggregates.</p>
 
-<p>If the <tt>starp</tt> flag is <tt>T</tt>, then this event control represents
-<tt>@@(*)</tt>.</p>
+<p>If the @('starp') flag is @('T'), then this event control represents
+@('@@(*)').</p>
 
-<p>Otherwise, <tt>atoms</tt> contains a list of @(see vl-evatom-p) structures
-that describe the various events.  Verilog allows two kinds of syntax for these
-lists, e.g., one can write <tt>@@(a or b)</tt> or <tt>@@(a, b)</tt>.  The meaning
-is identical in either case, so we just use a list of atoms.</p>")
+<p>Otherwise, @('atoms') contains a list of @(see vl-evatom-p) structures that
+describe the various events.  Verilog allows two kinds of syntax for these
+lists, e.g., one can write @('@@(a or b)') or @('@@(a, b)').  The meaning is
+identical in either case, so we just use a list of atoms.</p>")
 
 (defaggregate vl-delaycontrol
   (value)
@@ -3318,14 +3311,14 @@ is identical in either case, so we just use a list of atoms.</p>")
   :require ((vl-expr-p-of-vl-delaycontrol->value
              (vl-expr-p value)))
   :parents (modules)
-  :short "Representation of a delay controller like <tt>#6</tt>."
+  :short "Representation of a delay controller like @('#6')."
   :long "<p>Delay controls are described in Section 9.7.  An example is</p>
 
-<code>
-  #10 foo = 1;   &lt;-- The #10 is a delay control
-</code>
+@({
+  #10 foo = 1;   <-- The #10 is a delay control
+})
 
-<p>The <tt>expr</tt> is an expression that represents the delay.</p>")
+<p>The @('expr') is an expression that represents the delay.</p>")
 
 (defaggregate vl-repeateventcontrol
   (expr ctrl)
@@ -3336,19 +3329,18 @@ is identical in either case, so we just use a list of atoms.</p>")
             (vl-eventcontrol-p-of-vl-repeateventcontrol->ctrl
              (vl-eventcontrol-p ctrl)))
   :parents (modules)
-  :short "Representation of <tt>repeat</tt> constructs in intra-assignment
-delays."
+  :short "Representation of @('repeat') constructs in intra-assignment delays."
   :long "<p>See Section 9.7.7.  These are used to represent special
 intra-assignment delays, where the assignment should not occur until some
 number of occurrences of an event.  For instance:</p>
 
-<code>
+@({
    a = repeat(3) @@(posedge clk) b;
-</code>
+})
 
-<p>The <tt>expr</tt> indicates how many times to repeat, e.g., <tt>3</tt>
-in the above example.  The <tt>ctrl</tt> is an @(see vl-eventcontrol-p)
-that says which event is being waited for.</p>
+<p>The @('expr') indicates how many times to repeat, e.g., @('3') in the above
+example.  The @('ctrl') is an @(see vl-eventcontrol-p) that says which event is
+being waited for.</p>
 
 <p><b>BOZO</b> Consider consolidating all of these different kinds of
 controls into a single, unified representation.  E.g., you could at
@@ -3441,12 +3433,12 @@ rid of repeateventcontrol.</p>")
    :vl-force)
   :parents (vl-stmt-p)
   :short "Type of an assignment statement."
-  :long "<p><tt>:vl-blocking</tt> and <tt>:vl-nonblocking</tt> are for
-blocking/nonblocking procedural assignments, e.g., <tt>foo = bar</tt> and
-<tt>foo &lt;= bar</tt>, respectively.</p>
+  :long "<p>@(':vl-blocking') and @(':vl-nonblocking') are for
+blocking/nonblocking procedural assignments, e.g., @('foo = bar') and @('foo <=
+bar'), respectively.</p>
 
-<p><tt>:vl-assign</tt> and <tt>:vl-force</tt> are for procedural continuous
-assignments, e.g., <tt>assign foo = bar</tt> or <tt>force foo = bar</tt>,
+<p>@(':vl-assign') and @(':vl-force') are for procedural continuous
+assignments, e.g., @('assign foo = bar') or @('force foo = bar'),
 respectivley.</p>")
 
 (defaggregate vl-assignstmt
@@ -3472,15 +3464,15 @@ major types of assignment statements.</p>
 
 <h4>Procedural Assignments</h4>
 
-<p>Procedural assignment statements may only be used to assign to <tt>reg</tt>,
-<tt>integer</tt>, <tt>time</tt>, <tt>realtime</tt>, and memory data types, and
-cannot be used to assign to ordinary nets such as <tt>wire</tt>s.  There are
-two kinds of procedural assignments: </p>
+<p>Procedural assignment statements may only be used to assign to @('reg'),
+@('integer'), @('time'), @('realtime'), and memory data types, and cannot be
+used to assign to ordinary nets such as @('wire')s.  There are two kinds of
+procedural assignments: </p>
 
-<code>
+@({
    foo = bar ;     // \"blocking\" -- do the assignment now
-   foo &lt;= bar ;    // \"nonblocking\" -- schedule the assignment to occur
-</code>
+   foo <= bar ;    // \"nonblocking\" -- schedule the assignment to occur
+})
 
 <p>The difference between these two statements has to do with Verilog's timing
 model and simulation semantics.  In particular, a blocking assignment
@@ -3493,38 +3485,38 @@ executing in parallel with what follows it.</p>
 <p>Continuous procedural assignment statements may apparently be used to assign
 to either nets or variables.  There are two kinds:</p>
 
-<code>
+@({
   assign foo = bar ;  // only for variables
   force foo = bar ;   // for variables or nets
-</code>
+})
 
 <p>We represent all of these kinds of assignment statements uniformly as
-<tt>vl-assignstmt-p</tt> objects.</p>
+@('vl-assignstmt-p') objects.</p>
 
-<p>The <tt>type</tt> of the object is a @(see vl-assign-type-p) that says what
-kind of assignment this is.</p>
+<p>The @('type') of the object is a @(see vl-assign-type-p) that says what kind
+of assignment this is.</p>
 
-<p>The <tt>lvalue</tt> is the location being assigned to.  Note that the
+<p>The @('lvalue') is the location being assigned to.  Note that the
 specification places various restrictions on lvalues, e.g., for a procedural
 assignment the lvalue may contain only plain variables, and bit-selects,
 part-selects, memory words, and nested concatenations of these things.  These
-restrictions are not enforced by <tt>vl-assignstmt-p</tt>, where we only
-require that the lvalue is an expression.</p>
+restrictions are not enforced by @('vl-assignstmt-p'), where we only require
+that the lvalue is an expression.</p>
 
-<p>The <tt>expr</tt> is the right-hand side expression that is being assigned
-to this lvalue.</p>
+<p>The @('expr') is the right-hand side expression that is being assigned to
+this lvalue.</p>
 
-<p>All forms of assignment may have a <tt>ctrl</tt> associated with them.  This
-control may be a delay control such as <tt>#(6)</tt> an event control like
-<tt>@@(posedge clk)</tt>, which can affect when the assignment is done.  The
-rules for this are covered in Section 9.2 and appear to perhaps be different
+<p>All forms of assignment may have a @('ctrl') associated with them.  This
+control may be a delay control such as @('#(6)') an event control like
+@('@@(posedge clk)'), which can affect when the assignment is done.  The rules
+for this are covered in Section 9.2 and appear to perhaps be different
 depending upon the type of assignment.  Further coverage seems to be available
 in Section 9.7.7.</p>
 
-<p>The <tt>atts</tt> are any attributes (see @(see vl-atts-p)) associated with
-the assignment.</p>
+<p>The @('atts') are any attributes (see @(see vl-atts-p)) associated with the
+assignment.</p>
 
-<p>The <tt>loc</tt> is a @(see vl-location-p) describing the origin of this
+<p>The @('loc') is a @(see vl-location-p) describing the origin of this
 assignment in the original Verilog sources.</p>")
 
 
@@ -3596,21 +3588,21 @@ identifiers.</p>")
   :long "<p>Event trigger statements are used to explicitly trigger named
 events.  They are discussed in Section 9.7.3 and looks like this:</p>
 
-<code>
- -&gt; foo;
- -&gt; bar[1][2][3];  // I think?
-</code>
+@({
+ -> foo;
+ -> bar[1][2][3];  // I think?
+})
 
-<p>The <tt>id</tt> for an event trigger are the names such as <tt>foo</tt>
-and <tt>bar</tt> above, and may be a hierarchical identifier.  We represent
-the <tt>id</tt> as an expression.</p>
+<p>The @('id') for an event trigger are the names such as @('foo') and @('bar')
+above, and may be a hierarchical identifier.  We represent the @('id') as an
+expression.</p>
 
-<p>The <tt>atts</tt> are any attributes (see @(see vl-atts-p)) associated
-with the statement.</p>
+<p>The @('atts') are any attributes (see @(see vl-atts-p)) associated with the
+statement.</p>
 
 <p><b>BOZO</b> are we handling the syntax correctly?  What about the
 expressions that can follow the trigger?  Maybe they just become part of the
-<tt>id</tt>?</p>")
+@('id')?</p>")
 
 
 
@@ -3624,7 +3616,7 @@ expressions that can follow the trigger?  Maybe they just become part of the
   :short "Representation of an empty statement."
 
   :long "<p>We allow explicit null statements.  This allows us to canonicalize
-<tt>if</tt> expressions so that any missing branches are turned into null
+@('if') expressions so that any missing branches are turned into null
 statements.</p>")
 
 
@@ -3634,7 +3626,7 @@ statements.</p>")
   :parents (vl-stmt-p)
   :short "Representation of an atomic statement."
 
-  :long "<p><tt>vl-atomicstmt-p</tt> is a sum-of-products style recognizer.  Every
+  :long "<p>@('vl-atomicstmt-p') is a sum-of-products style recognizer.  Every
 atomic statement is either a</p>
 
 <ul>
@@ -3753,23 +3745,23 @@ atomic statement is either a</p>
   :short "Recognizes the possible types for compound statements."
 
   :long "<p>See @(see vl-compoundstmt-p) for a description of compound
-statements.  The <tt>type</tt> of each compound statement is one of the keyword
-symbols recognized by <tt>vl-compoundstmttype-p</tt>.</p>
+statements.  The @('type') of each compound statement is one of the keyword
+symbols recognized by @('vl-compoundstmttype-p').</p>
 
 <p>Most of these are obvious, but note that:</p>
 
 <ul>
 
-<li><tt>:vl-casestmt</tt> is used for <tt>case</tt>, <tt>casex</tt>, and
-<tt>casez</tt> statements.  See the compound statement's <tt>casetype</tt>
-field for the detailed type.</li>
+<li>@(':vl-casestmt') is used for @('case'), @('casex'), and @('casez')
+statements.  See the compound statement's @('casetype') field for the detailed
+type.</li>
 
-<li><tt>:vl-blockstmt</tt> is used for both sequential (<tt>begin ... end</tt>)
-and parallel (<tt>fork ... join</tt>) blocks.  See the compound statement's
-<tt>sequentialp</tt> field for the detailed type.</li>
+<li>@(':vl-blockstmt') is used for both sequential (@('begin ... end')) and
+parallel (@('fork ... join')) blocks.  See the compound statement's
+@('sequentialp') field for the detailed type.</li>
 
-<li>Timing statements are used for things like <tt>@@(posedge clk)
-substmt</tt>, <tt>@@(foo or bar) substmt</tt>, and <tt>#6 substmt</tt>.</li>
+<li>Timing statements are used for things like @('@@(posedge clk) substmt'),
+@('@@(foo or bar) substmt'), and @('#6 substmt').</li>
 
 </ul>")
 
@@ -3780,9 +3772,13 @@ substmt</tt>, <tt>@@(foo or bar) substmt</tt>, and <tt>#6 substmt</tt>.</li>
   :parents (vl-stmt-p)
   :short "Recognizes the possible kinds of case statements."
   :long "<ul>
-<li><tt>nil</tt> for ordinary <tt>case</tt> statements,</li>
-<li><tt>:vl-casex</tt> for <tt>casex</tt> statements, and</li>
-<li><tt>:vl-casez</tt> for <tt>casez</tt> statements.</li>
+
+<li>@('nil') for ordinary @('case') statements,</li>
+
+<li>@(':vl-casex') for @('casex') statements, and</li>
+
+<li>@(':vl-casez') for @('casez') statements.</li>
+
 </ul>")
 
 (defsection vl-compoundstmt-basic-checksp
@@ -3792,12 +3788,12 @@ substmt</tt>, <tt>@@(foo or bar) substmt</tt>, and <tt>#6 substmt</tt>.</li>
   :long "<p><b>Note:</b> the reader should first see @(see vl-compoundstmt-p)
 for a general description of our representation of compound statements.</p>
 
-<p><tt>vl-compoundstmt-basic-checksp</tt> is an additional well-formedness
-constraint imposed on <tt>vl-compoundstmt-p</tt> structures.  It is responsible
-for ensuring that, e.g., an <tt>if</tt> statement properly has a single
-expression (its condition), two sub-statements (its true and false branches),
-and no inappropriate fields such as <tt>name</tt>, <tt>decls</tt>, or
-<tt>ctrl</tt> which are only appropriate for other kinds of statements.</p>
+<p>@('vl-compoundstmt-basic-checksp') is an additional well-formedness
+constraint imposed on @('vl-compoundstmt-p') structures.  It is responsible for
+ensuring that, e.g., an @('if') statement properly has a single expression (its
+condition), two sub-statements (its true and false branches), and no
+inappropriate fields such as @('name'), @('decls'), or @('ctrl') which are only
+appropriate for other kinds of statements.</p>
 
 @(def vl-compoundstmt-basic-checksp)"
 
@@ -3928,13 +3924,13 @@ and no inappropriate fields such as <tt>name</tt>, <tt>decls</tt>, or
 
 <p>My original approach to statements was essentially in the SDT (\"syntax
 definition tree\") style.  I had a separate kind of node for each statement,
-e.g., I had a <tt>vl-ifstmt-p</tt>, a <tt>vl-whilestmt-p</tt>, and so on.  This
-was extraordinarily unwieldy and difficult to work with.  I ended up needing to
+e.g., I had a @('vl-ifstmt-p'), a @('vl-whilestmt-p'), and so on.  This was
+extraordinarily unwieldy and difficult to work with.  I ended up needing to
 introduce something like an 11-part mutual-recursion to work with any
 statement, and this was quite cumbersome.</p>
 
 <p>My new approach is to merge the different kinds of compound statements into
-a single <tt>vl-compoundstmt-p</tt> type.  This is a more of an AST (\"abstract
+a single @('vl-compoundstmt-p') type.  This is a more of an AST (\"abstract
 syntax tree\") style, and is basically similar to how <see topic=\"@(url
 vl-expr-p)\">expressions</see> are handled.</p>
 
@@ -3946,56 +3942,56 @@ actual types, etc., making the mutually recursive scheme much simpler.</p>
 
 <h3>Field Descriptions</h3>
 
-<p>The <tt>type</tt> is keyword symbol that says what kind of statement this
-is, e.g., an <tt>if</tt> or <tt>casez</tt> statement.  The <tt>type</tt> must
-be one of the types recognized by @(see vl-compoundstmttype-p).</p>
+<p>The @('type') is keyword symbol that says what kind of statement this is,
+e.g., an @('if') or @('casez') statement.  The @('type') must be one of the
+types recognized by @(see vl-compoundstmttype-p).</p>
 
-<p>The <tt>exprs</tt> are a list of expressions associated with the statement.
-Some statements (e.g., <tt>begin ... end</tt> blocks) have no expressions, but
-other statements, such as <tt>if</tt>, <tt>while</tt>, and <tt>case</tt>
-statements, may have one or many.</p>
+<p>The @('exprs') are a list of expressions associated with the statement.
+Some statements (e.g., @('begin ... end') blocks) have no expressions, but
+other statements, such as @('if'), @('while'), and @('case') statements, may
+have one or many.</p>
 
-<p>The <tt>stmts</tt> are any sub-statements that are associated with the
+<p>The @('stmts') are any sub-statements that are associated with the
 statement.  Every kind of compound statement may have sub-statements, since
 otherwise it would be an atomic statement.</p>
 
-<p>The <tt>name</tt> is only valid on block statements (i.e., <tt>begin
-... end</tt> and <tt>fork ... join</tt> statements).  If present, it is a
-string that names this block.</p>
+<p>The @('name') is only valid on block statements (i.e., @('begin ... end')
+and @('fork ... join') statements).  If present, it is a string that names this
+block.</p>
 
-<p>The <tt>decls</tt> are only valid on block statements, and includes any
+<p>The @('decls') are only valid on block statements, and includes any
 declarations for the block; see @(see vl-blockitem-p).</p>
 
-<p>The <tt>sequentialp</tt> flag is only valid on block statements, and is
-<tt>t</tt> if this is a <tt>begin/end</tt> block, or <tt>nil</tt> if this is
-a <tt>fork/join</tt> block.</p>
+<p>The @('sequentialp') flag is only valid on block statements, and is @('t')
+if this is a @('begin/end') block, or @('nil') if this is a @('fork/join')
+block.</p>
 
-<p>The <tt>casetype</tt> is only valid on case statements, and indicates
-whether this is a <tt>case</tt>, <tt>casex</tt>, or <tt>casez</tt> statement;
-see @(see vl-casetype-p).</p>
+<p>The @('casetype') is only valid on case statements, and indicates whether
+this is a @('case'), @('casex'), or @('casez') statement; see @(see
+vl-casetype-p).</p>
 
-<p>The <tt>ctrl</tt> is only valid on procedural timing control statements
-such as <tt>@@(posedge clk) substmt</tt> or <tt>#6 substmt</tt>.  If present,
-it should be either a @(see vl-eventcontrol-p) that describes what event to
-wait for, e.g., \"<tt>posedge clk</tt>\", or a @(see vl-delaycontrol-p) that
-says how long to delay, e.g., \"<tt>#6</tt>\".</p>
+<p>The @('ctrl') is only valid on procedural timing control statements such as
+@('@@(posedge clk) substmt') or @('#6 substmt').  If present, it should be
+either a @(see vl-eventcontrol-p) that describes what event to wait for, e.g.,
+\"@('posedge clk')\", or a @(see vl-delaycontrol-p) that says how long to
+delay, e.g., \"@('#6')\".</p>
 
-<p>The <tt>atts</tt> are any <see topic=\"@(url vl-atts-p)\">attributes</see>
+<p>The @('atts') are any <see topic=\"@(url vl-atts-p)\">attributes</see>
 associated with the statement.</p>
 
 <h3>Basic Well-Formedness Checks</h3>
 
 <p>A \"problem\" with using a combined representation is that, for instance, an
-<tt>if</tt> statement has various fields like <tt>name</tt>, <tt>decls</tt>,
-and <tt>ctrl</tt> which it really should not have.  A somewhat similar problem
-is that, e.g., <tt>for</tt> statements need a certain number of expressions, so
-how do we know it has the right number?</p>
+@('if') statement has various fields like @('name'), @('decls'), and @('ctrl')
+which it really should not have.  A somewhat similar problem is that, e.g.,
+@('for') statements need a certain number of expressions, so how do we know it
+has the right number?</p>
 
 <p>To address these kinds of concerns, in addition to the simple type checks
 for each field, we use @(see vl-compoundstmt-basic-checksp) to carry out
 additional well-formedness checking on a per-field basis.  This check ensures
-that, for instance, an <tt>if</tt> statement has no <tt>name</tt>, and that
-a <tt>for</tt> statement has the right number of expressions.</p>")
+that, for instance, an @('if') statement has no @('name'), and that a @('for')
+statement has the right number of expressions.</p>")
 
 (defthm acl2-count-of-vl-compoundstmt->stmts
   (and (<= (acl2-count (vl-compoundstmt->stmts x))
@@ -4033,7 +4029,7 @@ a <tt>for</tt> statement has the right number of expressions.</p>")
 Some of these (assignments, event triggers, enables and disables) are
 <b>atomic</b> in that they do not contain any sub-statements.  We call the
 other statements (loops, cases, if statements, etc.) <b>compound</b> since they
-contain sub-statements and are mutually-recursive with <tt>vl-stmt-p</tt>.</p>
+contain sub-statements and are mutually-recursive with @('vl-stmt-p').</p>
 
 <p>Atomic statements are recognized with @(see vl-atomicstmt-p), while compound
 statements are recognized with @(see vl-compoundstmt-p).</p>"
@@ -4132,8 +4128,8 @@ statements are recognized with @(see vl-compoundstmt-p).</p>"
   :short "Faster version of @(see vl-atomicstmt-p), given that @(see vl-stmt-p)
 is already known."
 
-  :long "<p>We leave this function enabled and reason about <tt>vl-atomicstmt-p</tt>
-instead.</p>"
+  :long "<p>We leave this function enabled and reason about
+@('vl-atomicstmt-p') instead.</p>"
 
   (definline vl-fast-atomicstmt-p (x)
     (declare (xargs :guard (vl-stmt-p x)))
@@ -4146,8 +4142,8 @@ instead.</p>"
   :short "Faster version of @(see vl-compoundstmt-p), given that @(see vl-stmt-p)
 is already known."
 
-  :long "<p>We leave this function enabled and reason about <tt>vl-compoundstmt-p</tt>
-instead.</p>"
+  :long "<p>We leave this function enabled and reason about
+@('vl-compoundstmt-p') instead.</p>"
 
   (definline vl-fast-compoundstmt-p (x)
     (declare (xargs :guard (vl-stmt-p x)))
@@ -4160,7 +4156,7 @@ instead.</p>"
   :short "Faster version of @(see vl-nullstmt-p), given that @(see vl-stmt-p)
 is already known."
 
-  :long "<p>We leave this function nulld and reason about <tt>vl-nullstmt-p</tt>
+  :long "<p>We leave this function nulld and reason about @('vl-nullstmt-p')
 instead.</p>"
 
   (definline vl-fast-nullstmt-p (x)
@@ -4174,8 +4170,8 @@ instead.</p>"
   :short "Faster version of @(see vl-assignstmt-p), given that @(see vl-stmt-p)
 is already known."
 
-  :long "<p>We leave this function assignd and reason about <tt>vl-assignstmt-p</tt>
-instead.</p>"
+  :long "<p>We leave this function assignd and reason about
+@('vl-assignstmt-p') instead.</p>"
 
   (definline vl-fast-assignstmt-p (x)
     (declare (xargs :guard (vl-stmt-p x)))
@@ -4188,8 +4184,8 @@ instead.</p>"
   :short "Faster version of @(see vl-enablestmt-p), given that @(see vl-stmt-p)
 is already known."
 
-  :long "<p>We leave this function enabled and reason about <tt>vl-enablestmt-p</tt>
-instead.</p>"
+  :long "<p>We leave this function enabled and reason about
+@('vl-enablestmt-p') instead.</p>"
 
   (definline vl-fast-enablestmt-p (x)
     (declare (xargs :guard (vl-stmt-p x)))
@@ -4265,31 +4261,31 @@ instead.</p>"
   :long "<p>Initial statements in Verilog are used to set up initial values for
 simulation.  For instance,</p>
 
-<code>
+@({
 module mymod (a, b, ...) ;
    reg r, s;
-   initial r = 0;   &lt;-- initial statement
+   initial r = 0;   <-- initial statement
 endmodule
-</code>
+})
 
 <ul>
 
-<li>The <tt>stmt</tt> is a @(see vl-stmt-p) that represents the actual
-statement, e.g., <tt>r = 0</tt> above.  Such a statement is frequently a
-sequential block statement (i.e., <tt>begin ... end</tt>), but as
-shown above it can be anything.</li>
+<li>The @('stmt') is a @(see vl-stmt-p) that represents the actual statement,
+e.g., @('r = 0') above.  Such a statement is frequently a sequential block
+statement (i.e., @('begin ... end')), but as shown above it can be
+anything.</li>
 
-<li>The <tt>atts</tt> are any attribute (see @(see vl-atts-p)) associated with
-this initial statement.</li>
+<li>The @('atts') are any attribute (see @(see vl-atts-p)) associated with this
+initial statement.</li>
 
-<li>The <tt>loc</tt> is a @(see vl-location-p) that describes where this
-initial statement was read from in the source code.</li>
+<li>The @('loc') is a @(see vl-location-p) that describes where this initial
+statement was read from in the source code.</li>
 
 </ul>
 
-<p><b>BOZO</b> Our plan is to eventually generate <tt>initial</tt> statements
-from register and variable declarations with initial values, i.e.,
-<tt>reg r = 0;</tt>.</p>")
+<p><b>BOZO</b> Our plan is to eventually generate @('initial') statements from
+register and variable declarations with initial values, i.e., @('reg r =
+0;').</p>")
 
 
 (defaggregate vl-always
@@ -4308,23 +4304,23 @@ from register and variable declarations with initial values, i.e.,
   :long "<p>Always statements in Verilog are often used to model latches and
 flops, and to set up other simulation events.  A simple example would be:</p>
 
-<code>
+@({
 module mymod (a, b, ...) ;
-  always @@(posedge clk) myreg &lt;= in;
+  always @@(posedge clk) myreg <= in;
 endmodule
-</code>
+})
 
 <ul>
 
-<li>The <tt>stmt</tt> is a @(see vl-stmt-p) that represents the actual
-statement, e.g., <tt>@@(posedge clk) myreg &lt;= in</tt> above.  Such a
-statement need not have a timing control such as <tt>@@(posedge clk)</tt> or
-<tt>@@(a or b or c)</tt>, but often does.</li>
+<li>The @('stmt') is a @(see vl-stmt-p) that represents the actual statement,
+e.g., @('@@(posedge clk) myreg <= in') above.  Such a statement need not have a
+timing control such as @('@@(posedge clk)') or @('@@(a or b or c)'), but often
+does.</li>
 
-<li>The <tt>atts</tt> are any attribute (see @(see vl-atts-p)) associated with
-this always statement.</li>
+<li>The @('atts') are any attribute (see @(see vl-atts-p)) associated with this
+always statement.</li>
 
-<li>The <tt>loc</tt> is a @(see vl-location-p) that describes where this always
+<li>The @('loc') is a @(see vl-location-p) that describes where this always
 statement was read from in the source code.</li>
 
 </ul>")
@@ -4375,27 +4371,27 @@ function inputs."
 task's input, output, or inout declarations.  For instance, a task can have
 ports such as:</p>
 
-<code>
+@({
   task mytask;
     input integer count;  // type :vl-integer
     output signed value;  // type :vl-signed
     inout x;              // type :vl-unsigned
     ...
   endtask
-</code>
+})
 
-<p>There isn't an explicit <tt>unsigned</tt> type that you can write; so note
-that <tt>:vl-unsigned</tt> is really the type for \"plain\" ports that don't
-have an explicit type label.</p>
+<p>There isn't an explicit @('unsigned') type that you can write; so note that
+@(':vl-unsigned') is really the type for \"plain\" ports that don't have an
+explicit type label.</p>
 
 <p>These same types are used for the return values of Verilog functions.  For
-instance, we use <tt>:vl-unsigned</tt> for a function like:</p>
+instance, we use @(':vl-unsigned') for a function like:</p>
 
-<code> function [7:0] add_one ; ... endfunction </code>
+@({ function [7:0] add_one ; ... endfunction })
 
-<p>whereas we use <tt>:vl-real</tt> for a function like:</p>
+<p>whereas we use @(':vl-real') for a function like:</p>
 
-<code> function real get_ratio ; ... endfunction </code>
+@({ function real get_ratio ; ... endfunction })
 
 <p>Likewise, the inputs to Verilog functions use these same kinds of
 types.</p>")
@@ -4422,36 +4418,34 @@ types.</p>")
   :short "Representation of a task port or a function input."
 
   :long "<p>Verilog tasks have ports that are similar to the ports of a module.
-We represent these ports with their own <tt>vl-taskport-p</tt> structures,
-rather than reusing @(see vl-portdecl-p), because unlike module port
-declarations, task ports can have types like <tt>integer</tt> or
-<tt>real</tt>.</p>
+We represent these ports with their own @('vl-taskport-p') structures, rather
+than reusing @(see vl-portdecl-p), because unlike module port declarations,
+task ports can have types like @('integer') or @('real').</p>
 
-<p>While Verilog functions don't have <tt>output</tt> or <tt>inout</tt> ports,
-they do have input ports that are very similar to task ports.  So, we reuse
-<tt>vl-taskport-p</tt> structures for function inputs.</p>
+<p>While Verilog functions don't have @('output') or @('inout') ports, they do
+have input ports that are very similar to task ports.  So, we reuse
+@('vl-taskport-p') structures for function inputs.</p>
 
-<p>The <tt>name</tt> is just a string that is the name of this port.</p>
+<p>The @('name') is just a string that is the name of this port.</p>
 
-<p>The <tt>dir</tt> is a @(see vl-direction-p) that says whether this port is
-an input, output, or inout port.  Note that tasks can have all three kinds of
+<p>The @('dir') is a @(see vl-direction-p) that says whether this port is an
+input, output, or inout port.  Note that tasks can have all three kinds of
 ports, but functions only have inputs.</p>
 
-<p>The <tt>type</tt> is a @(see vl-taskporttype-p) that gives the type for this
+<p>The @('type') is a @(see vl-taskporttype-p) that gives the type for this
 input.</p>
 
-<p>The <tt>range</tt> is a @(see vl-maybe-range-p) that gives the size of this
-input.  This only makes sense when the type is <tt>:vl-unsigned</tt> or
-<tt>:vl-signed</tt>, and is <tt>nil</tt> when other types are used.</p>
+<p>The @('range') is a @(see vl-maybe-range-p) that gives the size of this
+input.  This only makes sense when the type is @(':vl-unsigned') or
+@(':vl-signed'), and is @('nil') when other types are used.</p>
 
-<p>The <tt>atts</tt> are any attributes (see @(see vl-atts-p)) associated with
-this input.  Syntactically, the attributes come before the <tt>input</tt>
-keyword.</p>
+<p>The @('atts') are any attributes (see @(see vl-atts-p)) associated with this
+input.  Syntactically, the attributes come before the @('input') keyword.</p>
 
-<p>The <tt>loc</tt> is the @(see vl-location-p) where the <tt>name</tt> of the
-function was found in the source code.  We use this location, instead of the
-location of the input keyword, because a list of inputs can be declared using
-the same input keyword.</p>")
+<p>The @('loc') is the @(see vl-location-p) where the @('name') of the function
+was found in the source code.  We use this location, instead of the location of
+the input keyword, because a list of inputs can be declared using the same
+input keyword.</p>")
 
 (defthm type-of-vl-taskport->dir
   (implies (force (vl-taskport-p x))
@@ -4512,7 +4506,7 @@ the same input keyword.</p>")
   :long "<p>Functions are described in Section 10.4 of the standard.  An
 example of a function is:</p>
 
-<code>
+@({
 function [3:0] lower_bits;
   input [7:0] a;
   reg [1:0] lowest_pair;
@@ -4523,64 +4517,64 @@ function [3:0] lower_bits;
     lower_bits = {next_lowest_pair, lowest_pair};
   end
 endfunction
-</code>
+})
 
 <p>Note that functions don't have any inout or output ports.  Instead, you
 assign to a function's name to indicate its return value.</p>
 
 <h3>Representation of Functions</h3>
 
-<p>The <tt>name</tt> is a string that names the function, e.g.,
-<tt>\"lower_bits\"</tt>.</p>
+<p>The @('name') is a string that names the function, e.g.,
+@('\"lower_bits\"').</p>
 
-<p>The <tt>automaticp</tt> flag says whether the <tt>automatic</tt> keyword was
+<p>The @('automaticp') flag says whether the @('automatic') keyword was
 provided.  This keyword indicates that the function should be reentrant and
 have its local parameters dynamically allocated for each function call, with
 various consequences.</p>
 
-<p>The <tt>rtype</tt> is a @(see vl-taskporttype-p) that describes the return type
+<p>The @('rtype') is a @(see vl-taskporttype-p) that describes the return type
 of the function, e.g., a function might return an ordinary unsigned or signed
-result of some width, or might return a <tt>real</tt> value, etc.  For
-instance, the return type of <tt>lower_bits</tt> is <tt>:vl-unsigned</tt>.</p>
+result of some width, or might return a @('real') value, etc.  For instance,
+the return type of @('lower_bits') is @(':vl-unsigned').</p>
 
-<p>The <tt>rrange</tt> is a @(see vl-maybe-range-p) that describes the width of
-the function's result.  This only makes sense when the <tt>rtype</tt> is
-<tt>:vl-unsigned</tt> or <tt>:vl-signed</tt>.  For instance, the return range
-of <tt>lower_bits</tt> is <tt>[7:0]</tt>.</p>
+<p>The @('rrange') is a @(see vl-maybe-range-p) that describes the width of the
+function's result.  This only makes sense when the @('rtype') is
+@(':vl-unsigned') or @(':vl-signed').  For instance, the return range of
+@('lower_bits') is @('[7:0]').</p>
 
-<p>The <tt>inputs</tt> are the arguments to the function, e.g., <tt>input [7:0]
-a</tt> above.  We represent these inputs as an @(see vl-taskportlist-p).  There
-are a couple of things to note here:</p>
+<p>The @('inputs') are the arguments to the function, e.g., @('input [7:0] a')
+above.  We represent these inputs as an @(see vl-taskportlist-p).  There are a
+couple of things to note here:</p>
 
 <ul>
 
 <li>Functions must have at least one input.  We check this in our parser, but
-we don't syntactically enforce this requirement in the <tt>vl-fundecl-p</tt>
+we don't syntactically enforce this requirement in the @('vl-fundecl-p')
 structure.</li>
 
 <li>Functions only have inputs (i.e., they don't have outputs or inouts), but
 our @(see vl-taskport-p) structures have a direction.  This direction should
-always be <tt>:vl-input</tt> for a function's input.  We again check this in
-our parser, but not in the <tt>vl-fundecl-p</tt> structure itself.</li>
+always be @(':vl-input') for a function's input.  We again check this in our
+parser, but not in the @('vl-fundecl-p') structure itself.</li>
 
 </ul>
 
-<p>The <tt>decls</tt> are the local variable declarations for the function,
-e.g., the declarations of <tt>lowest_pair</tt> and <tt>next_lowest_pair</tt>
-above.  We represent the declarations as an ordinary @(see vl-blockitemlist-p),
-and it appears that it may even contain event declarations, parameter
-declarations, etc., which seems pretty absurd.</p>
+<p>The @('decls') are the local variable declarations for the function, e.g.,
+the declarations of @('lowest_pair') and @('next_lowest_pair') above.  We
+represent the declarations as an ordinary @(see vl-blockitemlist-p), and it
+appears that it may even contain event declarations, parameter declarations,
+etc., which seems pretty absurd.</p>
 
-<p>The <tt>body</tt> is a @(see vl-stmt-p) that gives the body of the function.
-We represent this as an ordinary statement, but it must follow certain rules as
+<p>The @('body') is a @(see vl-stmt-p) that gives the body of the function.  We
+represent this as an ordinary statement, but it must follow certain rules as
 outlined in 10.4.4, e.g., it cannot have any time controls, cannot enable
 tasks, cannot have non-blocking assignments, etc.</p>
 
-<p>The <tt>atts</tt> are any attributes (see @(see vl-atts-p)) associated with
-this function.  The attributes come before the <tt>function</tt> keyword.</p>
+<p>The @('atts') are any attributes (see @(see vl-atts-p)) associated with this
+function.  The attributes come before the @('function') keyword.</p>
 
-<p>The <tt>loc</tt> is the @(see vl-location-p) where the <tt>function</tt>
-keyword was found in the source code.</p>")
+<p>The @('loc') is the @(see vl-location-p) where the @('function') keyword was
+found in the source code.</p>")
 
 (deflist vl-fundecllist-p (x)
   (vl-fundecl-p x)
@@ -4628,7 +4622,7 @@ keyword was found in the source code.</p>")
   :long "<p>Tasks are described in Section 10.2 of the standard.  An example
 of a task is:</p>
 
-<code>
+@({
 task automatic dostuff;
   input [3:0] count;
   output inc;
@@ -4641,10 +4635,10 @@ task automatic dostuff;
     if (!onehot) $display(\"onehot is %b\", onehot);
     #10;
     inc = count + 1;
-    more = count &gt; prev_count;
+    more = count > prev_count;
   end
 endtask
-</code>
+})
 
 <p>Tasks are somewhat like <see topic='@(url vl-fundecl-p)'>functions</see>,
 but they can have fewer restrictions, e.g., they can have multiple outputs, can
@@ -4652,30 +4646,29 @@ include delays, etc.</p>
 
 <h3>Representation of Tasks</h3>
 
-<p>The <tt>name</tt> is a string that names the function, e.g.,
-<tt>\"dostuff\"</tt>.</p>
+<p>The @('name') is a string that names the function, e.g.,
+@('\"dostuff\"').</p>
 
-<p>The <tt>automaticp</tt> flag says whether the <tt>automatic</tt> keyword was
+<p>The @('automaticp') flag says whether the @('automatic') keyword was
 provided.  This keyword indicates that each invocation of the task has its own
 copy of its variables.  For instance, the task above had probably better be
 automatic if it there are going to be concurrent instances of it running, or
-else <tt>temp</tt> could be corrupted by the other task.</p>
+else @('temp') could be corrupted by the other task.</p>
 
-<p>The <tt>ports</tt> of the task are a @(see vl-taskportlist-p) that says what
-the inputs, outputs, and inouts of the task are.</p>
+<p>The @('ports') of the task are a @(see vl-taskportlist-p) that says what the
+inputs, outputs, and inouts of the task are.</p>
 
-<p>The <tt>decls</tt> are a @(see vl-blockitemlist-p) with the local
-declarations for the task, e.g., the declaration of <tt>temp</tt> would be
-found here.</p>
+<p>The @('decls') are a @(see vl-blockitemlist-p) with the local declarations
+for the task, e.g., the declaration of @('temp') would be found here.</p>
 
-<p>The <tt>body</tt> is a @(see vl-stmt-p) that gives the body of the function.
-We represent this as an ordinary statement.</p>
+<p>The @('body') is a @(see vl-stmt-p) that gives the body of the function.  We
+represent this as an ordinary statement.</p>
 
-<p>The <tt>atts</tt> are any attributes (see @(see vl-atts-p)) associated with
-this task.  The attributes come before the <tt>task</tt> keyword.</p>
+<p>The @('atts') are any attributes (see @(see vl-atts-p)) associated with this
+task.  The attributes come before the @('task') keyword.</p>
 
-<p>The <tt>loc</tt> is the @(see vl-location-p) where the <tt>task</tt> keyword
-was found in the source code.</p>")
+<p>The @('loc') is the @(see vl-location-p) where the @('task') keyword was
+found in the source code.</p>")
 
 
 (deflist vl-taskdecllist-p (x)
@@ -4757,118 +4750,113 @@ many fields.</p>
 
 <h4>Semantically Meaningful Fields</h4>
 
-<p>The <tt>name</tt> is the name of this module as a string.  The name is used
-to instantiate this module, so generally we require that modules in our list
-have unique names.  A module's name is initially set when it is parsed, but is
-not guaranteed to remain fixed throughout simplification.  In particular, it is
+<p>The @('name') is the name of this module as a string.  The name is used to
+instantiate this module, so generally we require that modules in our list have
+unique names.  A module's name is initially set when it is parsed, but is not
+guaranteed to remain fixed throughout simplification.  In particular, it is
 currently changed during @(see unparameterization), e.g., a module named
-<tt>adder</tt> may be renamed to <tt>adder$size=12</tt>.  We may also wish to
-change module names it in other, future transformations.</p>
+@('adder') may be renamed to @('adder$size=12').  We may also wish to change
+module names it in other, future transformations.</p>
 
 <h5>Ports and Parameters</h5>
 
-<p>The <tt>ports</tt> are a list of @(see vl-port-p) objects that describe the
-module's ports, i.e., <tt>a</tt>, <tt>b</tt>, and <tt>c</tt> in <tt>module
-mod(a,b,c);</tt>.</p>
+<p>The @('ports') are a list of @(see vl-port-p) objects that describe the
+module's ports, i.e., @('a'), @('b'), and @('c') in @('module
+mod(a,b,c);').</p>
 
-<p>The <tt>portdecls</tt> are a list of @(see vl-portdecl-p) objects that
-describe the input, output, and inout declarations for this module, e.g.,
-<tt>input [3:0] a;</tt>.</p>
+<p>The @('portdecls') are a list of @(see vl-portdecl-p) objects that describe
+the input, output, and inout declarations for this module, e.g., @('input [3:0]
+a;').</p>
 
-<p>The <tt>paramdecls</tt> are a list of @(see vl-paramdecl-p) objects that
-describe all of the parameter declarations for this module, e.g., <tt>parameter
-width = 1;</tt>.</p>
+<p>The @('paramdecls') are a list of @(see vl-paramdecl-p) objects that
+describe all of the parameter declarations for this module, e.g., @('parameter
+width = 1;').</p>
 
 
 <h5>Other Declarations</h5>
 
-<p>The <tt>netdecls</tt> are a list of @(see vl-netdecl-p) objects that
-describe all of the wire declarations such as <tt>wire [3:0] w;</tt> and
-<tt>tri v;</tt>.  Note that registers and variables (integer, real, ...)  are
-kept separately.</p>
+<p>The @('netdecls') are a list of @(see vl-netdecl-p) objects that describe
+all of the wire declarations such as @('wire [3:0] w;') and @('tri v;').  Note
+that registers and variables (integer, real, ...)  are kept separately.</p>
 
-<p>The <tt>regdecls</tt> are a list of @(see vl-regdecl-p) objects that
-describe all register declarations like <tt>reg [3:0] r;</tt>.</p>
+<p>The @('regdecls') are a list of @(see vl-regdecl-p) objects that describe
+all register declarations like @('reg [3:0] r;').</p>
 
-<p>The <tt>vardecls</tt> are a list of @(see vl-vardecl-p) objects that
-describe all variable declarations like <tt>integer i;</tt> and <tt>real
-foo;</tt>.</p>
+<p>The @('vardecls') are a list of @(see vl-vardecl-p) objects that describe
+all variable declarations like @('integer i;') and @('real foo;').</p>
 
-<p>The <tt>eventdecls</tt> are a list of @(see vl-eventdecl-p) objects that
+<p>The @('eventdecls') are a list of @(see vl-eventdecl-p) objects that
 describe any events for the module.</p>
 
-<p>The <tt>fundecls</tt> are a list of @(see vl-fundecl-p) objects that
-describe any functions for the module.</p>
+<p>The @('fundecls') are a list of @(see vl-fundecl-p) objects that describe
+any functions for the module.</p>
 
 
 
 <h5>Assignments and Instances</h5>
 
-<p>The <tt>assigns</tt> are a list of @(see vl-assign-p) objects that describe
-the continuous assignments in this module, e.g., <tt>assign lhs = rhs;</tt>.</p>
+<p>The @('assigns') are a list of @(see vl-assign-p) objects that describe the
+continuous assignments in this module, e.g., @('assign lhs = rhs;').</p>
 
-<p>The <tt>modinsts</tt> are a list of @(see vl-modinst-p) objects that
-describe all submodule (or user-defined primitive) instances in this module,
-e.g., <tt>adder my_adder1 (...);</tt>.</p>
+<p>The @('modinsts') are a list of @(see vl-modinst-p) objects that describe
+all submodule (or user-defined primitive) instances in this module, e.g.,
+@('adder my_adder1 (...);').</p>
 
-<p>The <tt>gateinsts</tt> are a list of @(see vl-gateinst-p) objects that
-describe any primitive gate instances in this module, e.g., <tt>and (o, a,
-b);</tt>.</p>
+<p>The @('gateinsts') are a list of @(see vl-gateinst-p) objects that describe
+any primitive gate instances in this module, e.g., @('and (o, a, b);').</p>
 
 
 <h5>Statements</h5>
 
-<p>The <tt>alwayses</tt> are a list of @(see vl-always-p) objects that describe
-any <tt>always</tt> statements found in the module.</p>
+<p>The @('alwayses') are a list of @(see vl-always-p) objects that describe any
+@('always') statements found in the module.</p>
 
-<p>The <tt>initials</tt> are a list of @(see vl-initial-p) objects that describe
-any <tt>initial</tt> statements found in the module.</p>
+<p>The @('initials') are a list of @(see vl-initial-p) objects that describe
+any @('initial') statements found in the module.</p>
 
 
 <h5>Miscellaneous</h5>
 
-<p>The <tt>params</tt> are any <tt>defparam</tt> statements found in the
-module.  BOZO eventually provide better support for this and document the
-structure of these defparams.</p>
+<p>The @('params') are any @('defparam') statements found in the module.  BOZO
+eventually provide better support for this and document the structure of these
+defparams.</p>
 
-<p>The <tt>warnings</tt> for a module is an @(see warnings) accumulator that
-stores any problems we have with this module.  Warnings are semantically
-meaningful only in that any <i>fatal</i> warning indicates the module is
-invalid and should not be discarded.  The list of warnings may be extended by
-any transformation or well-formedness check.</p>
+<p>The @('warnings') for a module is an @(see warnings) accumulator that stores
+any problems we have with this module.  Warnings are semantically meaningful
+only in that any <i>fatal</i> warning indicates the module is invalid and
+should not be discarded.  The list of warnings may be extended by any
+transformation or well-formedness check.</p>
 
 
 <h4>Semantically Irrelevant Fields</h4>
 
-<p>The <tt>origname</tt> of a module is its original name in the source code (a
+<p>The @('origname') of a module is its original name in the source code (a
 string).  It is set at parse-time, and is expected to remain fixed throughout
-all simplifications.  That is, while a module named <tt>adder</tt> might be
-renamed to <tt>adder$size=12</tt> during unparameterization, its origname will
-always be <tt>adder</tt>.  The <tt>origname</tt> is only intended to be used
-for display purposes such as hyperlinking.</p>
+all simplifications.  That is, while a module named @('adder') might be renamed
+to @('adder$size=12') during unparameterization, its origname will always be
+@('adder').  The @('origname') is only intended to be used for display purposes
+such as hyperlinking.</p>
 
-<p>The <tt>minloc</tt> and <tt>maxloc</tt> fields are @(see vl-location-p)
-objects that describe the locations of the <tt>module</tt> and
-<tt>endmodule</tt> keywords that we encountered when parsing this module.
-These fields remain fixed throughout the simplification process, and
-are mainly useful for displaying the module.</p>
+<p>The @('minloc') and @('maxloc') fields are @(see vl-location-p) objects that
+describe the locations of the @('module') and @('endmodule') keywords that we
+encountered when parsing this module.  These fields remain fixed throughout the
+simplification process, and are mainly useful for displaying the module.</p>
 
-<p>The <tt>atts</tt> are a @(see vl-atts-p) object for any <tt>(*
-... *)</tt>-style attributes associated with this module.  This list is
-initially set at parse time, and may be consulted or extended by
-transformations.</p>
+<p>The @('atts') are a @(see vl-atts-p) object for any @('(* ... *)')-style
+attributes associated with this module.  This list is initially set at parse
+time, and may be consulted or extended by transformations.</p>
 
-<p>The <tt>comments</tt> field is a @(see vl-commentmap-p) that maps locations
-to source-code comments that occurred in this module.  We expect that comments
-are never consulted for any semantic content, and this field is mainly intended
-for displaying the transformed module with comments preserved.</p>
+<p>The @('comments') field is a @(see vl-commentmap-p) that maps locations to
+source-code comments that occurred in this module.  We expect that comments are
+never consulted for any semantic content, and this field is mainly intended for
+displaying the transformed module with comments preserved.</p>
 
 
 <h4>Fields for E Translation</h4>
 
-<p>The <tt>esim</tt> field is a temporary/historic artifact used in the
-translation to @(see esim).  This is in flux so I'm not going to document it
-right now.</p>")
+<p>The @('esim') field is a temporary/historic artifact used in the translation
+to @(see esim).  This is in flux so I'm not going to document it right
+now.</p>")
 
 (deflist vl-modulelist-p (x)
   (vl-module-p x)
@@ -4921,7 +4909,7 @@ right now.</p>")
 
 (defsection vl-maybe-module-p
   :parents (vl-expr-p)
-  :short "Recognizer for an @(see vl-module-p) or <tt>nil</tt>."
+  :short "Recognizer for an @(see vl-module-p) or @('nil')."
 
   (definlined vl-maybe-module-p (x)
     (declare (xargs :guard t))

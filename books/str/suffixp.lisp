@@ -45,23 +45,22 @@
   :parents (substrings)
   :short "Case-sensitive string suffix test."
 
-  :long "<p>@(call strsuffixp) determines if the string <tt>x</tt> is a suffix
-of the string <tt>y</tt>, in a case-sensitive manner.</p>
+  :long "<p>@(call strsuffixp) determines if the string @('x') is a suffix of
+the string @('y'), in a case-sensitive manner.</p>
 
-<p>Logically, we ask whether <tt>|x| &lt; |y|</tt>, and whether</p>
+<p>Logically, we ask whether @('|x| < |y|'), and whether</p>
 
-<code>
+@({
   (equal (nthcdr (- |y| |x|) (coerce x 'list))
          (coerce y 'list)
-</code>
+})
 
 <p>But we use a more efficient implementation that avoids coercing the strings
-into lists; basically we ask if the last <tt>|x|</tt> characters of <tt>y</tt>
-are equal to <tt>x</tt>.</p>
+into lists; basically we ask if the last @('|x|') characters of @('y') are
+equal to @('x').</p>
 
-<p>As a corner case, note that this regards the empty string as a suffix of
-every other string.  That is, <tt>(strsuffixp \"\" x)</tt> is always
-<tt>t</tt>.</p>"
+<p>Corner case: we regard the empty string as a suffix of every other string.
+That is, @('(strsuffixp \"\" x)') is always true.</p>"
 
   (definlined strsuffixp (x y)
     (declare (xargs :guard (and (stringp x)

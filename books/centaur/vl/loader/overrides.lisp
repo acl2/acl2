@@ -43,11 +43,11 @@ VL does not support (e.g., transistors, multi-dimensional arrays, etc.), you
 may need to <b>override</b> the real definition of these modules with a custom
 definition for VL.</p>
 
-<p>An obvious way to handle overrides would be to set up a <tt>`define</tt> so
-that, e.g., <tt>`ifdef VL</tt> and <tt>`else</tt> can control which version of
-the module is loaded.  But this might not be appropriate in all cases, e.g., it
-may not be desirable for a formal verification team to even have write access
-to the design.</p>
+<p>An obvious way to handle overrides would be to set up a @('`define') so
+that, e.g., @('`ifdef VL') and @('`else') can control which version of the
+module is loaded.  But this might not be appropriate in all cases, e.g., it may
+not be desirable for a formal verification team to even have write access to
+the design.</p>
 
 <p>An alternative is to keep the custom definitions in separate Verilog files,
 then use a custom search path for parsing with VL.  But a challenge here is to
@@ -55,20 +55,19 @@ keep the overridden definitions up-to-date as the original source files are
 modified and extended.</p>
 
 <p>To facilitate this, VL's loading routines can be given a list of
-<tt>:override-dirs</tt>, directories which are expected to contain \"override
-files\" with an <tt>.ov</tt> extension.  The <tt>.ov</tt> files in this
-collection of directories must all have distinct names or an error will be
-caused.</p>
+@(':override-dirs'), directories which are expected to contain \"override
+files\" with an @('.ov') extension.  The @('.ov') files in this collection of
+directories must all have distinct names or an error will be caused.</p>
 
 
 <h3>Override Files</h3>
 
-<p>Before any ordinary Verilog parsing begins, VL reads all of the <tt>.ov</tt>
+<p>Before any ordinary Verilog parsing begins, VL reads all of the @('.ov')
 files in all of the the override directories and constructs a database.  Each
-override file should contain a list of <tt>VL_OVERRIDE</tt> statements.  The
-syntax of these statements is a superset of Verilog:</p>
+override file should contain a list of @('VL_OVERRIDE') statements.  The syntax
+of these statements is a superset of Verilog:</p>
 
-<code>
+@({
 override_file ::= { override }
 
 override ::= 'VL_OVERRIDE' { require_list } original_list replacement 'VL_ENDOVERRIDE'
@@ -84,23 +83,23 @@ original ::= 'VL_ORIGINAL' 'module' id { non_endmodule } 'endmodule'
            | 'VL_ORIGINAL' 'macromodule' id { non_endmodule } 'endmodule'
 
 replacement ::= 'VL_REPLACEMENT' { std_token }
-</code>
+})
 
-<p>Where <tt>std_token</tt> may be any token other than:</p>
+<p>Where @('std_token') may be any token other than:</p>
 
 <ul>
-<li><tt>VL_OVERRIDE</tt>,</li>
-<li><tt>VL_REQUIRE</tt>,</li>
-<li><tt>VL_ORIGINAL</tt>,</li>
-<li><tt>VL_REPLACEMENT</tt>, or</li>
-<li><tt>VL_ENDOVERRIDE</tt>,</li>
+<li>@('VL_OVERRIDE'),</li>
+<li>@('VL_REQUIRE'),</li>
+<li>@('VL_ORIGINAL'),</li>
+<li>@('VL_REPLACEMENT'), or</li>
+<li>@('VL_ENDOVERRIDE'),</li>
 </ul>
 
-<p>and where <tt>non_endmodule</tt> is any <tt>std_token</tt> except for
-<tt>endmodule</tt>.</p>
+<p>and where @('non_endmodule') is any @('std_token') except for
+@('endmodule').</p>
 
 <p>In addition to the syntactic requirements above, we require the names of
-every module or macromodule in an <tt>original</tt> form to be the same as the
+every module or macromodule in an @('original') form to be the same as the
 filename.</p>
 
 
@@ -111,39 +110,39 @@ any ordinary Verilog files.  This database then influences the way that the
 ordinary Verilog files are read.</p>
 
 <p>In particular, when VL encounters the \"current\" definition of each module
-<tt>m</tt> in an ordinary Verilog source file, it first checks to see whether
-there are any overrides for <tt>m</tt>.</p>
+@('m') in an ordinary Verilog source file, it first checks to see whether there
+are any overrides for @('m').</p>
 
 <p>Typically there are not any overrides, so we leave the current definition of
-<tt>m</tt> unchanged.  But when there are overrides for <tt>m</tt>, we try to
-match the current definition of <tt>m</tt> against each definition provided in
-an \"original\" entry.  If we find a match, we replace the current definition
-of <tt>m</tt> with the corresponding \"replacement\" definition.</p>
+@('m') unchanged.  But when there are overrides for @('m'), we try to match the
+current definition of @('m') against each definition provided in an
+\"original\" entry.  If we find a match, we replace the current definition of
+@('m') with the corresponding \"replacement\" definition.</p>
 
-<p>As changes are made to the design, the module <tt>m</tt> may eventually be
+<p>As changes are made to the design, the module @('m') may eventually be
 changed so that its definition no longer matches any of the \"original\"
-entries in the override file.  In this case, we add a fatal warning to
-<tt>m</tt> saying that its override is out of date.</p>
+entries in the override file.  In this case, we add a fatal warning to @('m')
+saying that its override is out of date.</p>
 
 <p>We have now covered the meaning of the \"original\" and \"replacement\"
-forms, but what are requirements?  A particular module <tt>m</tt> that we wish
-to override might instantiate various submodules.  In such cases, for the
-override to be valid we need to ensure that these modules have not been
-changed.  Requirements allow us to do this.</p>
+forms, but what are requirements?  A particular module @('m') that we wish to
+override might instantiate various submodules.  In such cases, for the override
+to be valid we need to ensure that these modules have not been changed.
+Requirements allow us to do this.</p>
 
 <p>Whenever we make a replacement, we make note of all of the corresponding
 requirements.  After all of the modules have been loaded, we can check whether
 the requirements are met, i.e., whether the submodules involved still have the
 expected definitions.  If multiple require statements have the same module
-name, <tt>r</tt>, it means that the current definition of <tt>r</tt> must match
-any one of these definitions.</p>
+name, @('r'), it means that the current definition of @('r') must match any one
+of these definitions.</p>
 
 
 <h3>Sketch of a Typical Override</h3>
 
 <p>Here's a hypothetical override file that demonstrates these features.</p>
 
-<code>
+@({
 VL_OVERRIDE
 
  VL_REQUIRE
@@ -183,20 +182,20 @@ VL_OVERRIDE
     endmodule
 
 VL_ENDOVERRIDE
-</code>
+})
 
-<p>In this scenario, we imagine that <tt>foo</tt> is a module that is currently
+<p>In this scenario, we imagine that @('foo') is a module that is currently
 being used in three different designs named A, B, and C.</p>
 
-<p>The definition of <tt>foo</tt> in Versions A and B are presumably very
-similar, and make use of the same submodules <tt>sub1</tt> and <tt>sub2</tt>.
-Since only minor changes were made to <tt>foo</tt> between versons A and B, we
-can use the same override in either version.</p>
+<p>The definition of @('foo') in Versions A and B are presumably very similar,
+and make use of the same submodules @('sub1') and @('sub2').  Since only minor
+changes were made to @('foo') between versons A and B, we can use the same
+override in either version.</p>
 
-<p>In Version C, the interface of <tt>foo</tt> has been changed, so a different
-replacement is necessary.  We also imagine that <tt>foo</tt> now instances a
-new submodule, <tt>sub3</tt>, and that there have been two different variants
-of this module but they have the same semantics.</p>
+<p>In Version C, the interface of @('foo') has been changed, so a different
+replacement is necessary.  We also imagine that @('foo') now instances a new
+submodule, @('sub3'), and that there have been two different variants of this
+module but they have the same semantics.</p>
 
 
 
@@ -211,7 +210,7 @@ implicit wires is enough to prevent matches.</p>
 <p>Note that we have decided to preprocess overrides files as if they were
 ordinary Verilog files.  This means you can write things like this:</p>
 
-<code>
+@({
 `define bar 3
 
 VL_OVERRIDE
@@ -225,16 +224,16 @@ VL_OVERRIDE
  }
 
 VL_ENDOVERRIDE
-</code>
+})
 
-<p>and you can use <tt>`ifdef</tt>, etc., within override files.</p>
+<p>and you can use @('`ifdef'), etc., within override files.</p>
 
 <p>This can be subtle.  All matching will be done on the already-preprocessed
 source text, so for matching to succeed you must ensure that the relevant
-<tt>`define</tt> directives that we used when reading the override file will
-still be the same when we read the \"current version\" of the module.  Note
-also that any <tt>`define</tt> directives introduced in overrides will \"spill
-out\" and affect the parsing of Verilog files; see also @(see vl-load) for some
+@('`define') directives that we used when reading the override file will still
+be the same when we read the \"current version\" of the module.  Note also that
+any @('`define') directives introduced in overrides will \"spill out\" and
+affect the parsing of Verilog files; see also @(see vl-load) for some
 additional details about this decision.</p>")
 
 (defaggregate vl-override
@@ -261,8 +260,6 @@ additional details about this decision.</p>")
 (defsection vl-override-requirement-names
   :parents (vl-override-p)
   :short "Extract the module names from all \"require\" entries in an override."
-  :long "@(def vl-override-requirement-names)
-@(def vl-override-requirement-names-aux)"
 
   (defund vl-override-requirement-names-aux (requirements)
     (declare (xargs :guard (vl-tokenlistlist-p requirements)))
@@ -313,9 +310,7 @@ additional details about this decision.</p>")
 for each module that has overrides."
 
   :long "<p>We use this as a filter so we only have to consider the overrides
-corresponding to a particular module.</p>
-
- @(def vl-override-db-p)"
+corresponding to a particular module.</p>"
 
   (defund vl-override-db-p (x)
     (declare (xargs :guard t))
@@ -569,10 +564,8 @@ corresponding to a particular module.</p>
   :parents (overrides)
   :short "Load an override file into a @(see vl-override-alistp)."
 
-  :long "<p>Signature: @(call vl-read-override-file) returns <tt>(mv successp
-override-alist filemap defines' comment-map' walist' state)</tt>.</p>
-
-@(def vl-read-override-file)"
+  :long "<p>Signature: @(call vl-read-override-file) returns @('(mv successp
+override-alist filemap defines' comment-map' walist' state)').</p>"
 
   (defund vl-read-override-file (path modname defines comment-map walist filemapp state)
     "Returns (MV SUCCESSP OVERRIDE-LIST FILEMAP DEFINES' COMMENT-MAP' WALIST' STATE)"
@@ -682,14 +675,12 @@ override-alist filemap defines' comment-map' walist' state)</tt>.</p>
   :parents (overrides)
   :short "Load a list of override files into a @(see vl-override-db-p)."
 
-  :long "<p>Signature: @(call vl-read-override-files) returns <tt>(mv successp
-override-db filemap defines' comment-map' walist' state)</tt>.</p>
+  :long "<p>Signature: @(call vl-read-override-files) returns @('(mv successp
+override-db filemap defines' comment-map' walist' state)').</p>
 
-<p><tt>successp</tt> indicates whether all of the files were loaded with no
-problems, and even when <tt>successp</tt> is nil there may be at least a partial
-overrides database loaded.</p>
-
-@(def vl-read-override-files)"
+<p>@('successp') indicates whether all of the files were loaded with no
+problems, and even when @('successp') is nil there may be at least a partial
+overrides database loaded.</p>"
 
   (defund vl-read-override-files (path modnames defines comment-map walist filemapp state)
     "Returns (MV SUCCESSP OVERRIDE-DB FILEMAP DEFINES' COMMENT-MAP' WALIST' STATE)"
@@ -852,15 +843,12 @@ overrides database loaded.</p>
   :short "Scan directories for override files and load them into an @(see
 vl-override-db-p)."
 
-  :long "<p><b>Signature:</b> @(call vl-read-overrides) returns <tt>(mv
-successp override-db defines' comment-map walist state)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-read-overrides) returns @('(mv successp
+override-db defines' comment-map walist state)').</p>
 
 <p>The success flag says whether everything was loaded successfully; even if
 successp is nil, a partial override database will be produced and may be
-useful.</p>
-
-@(def vl-read-overrides)
-@(def vl-read-overrides-aux)"
+useful.</p>"
 
   (defund vl-read-overrides (dirs defines filemapp state)
     "Returns (MV SUCCESSP OVERRIDE-DB FILEMAP DEFINES' COMMENT-MAP WALIST STATE)"
@@ -917,20 +905,17 @@ useful.</p>
 
 (defsection vl-match-through-endmodule
   :parents (overrides)
-  :short "Collect tokens through <tt>endmodule</tt>."
+  :short "Collect tokens through @('endmodule')."
   :long "<p><b>Signature:</b> @(call vl-match-through-endmodule) returns
-<tt>(mv successp prefix rest)</tt>.</p>
+@('(mv successp prefix rest)').</p>
 
-<p>We attept to split the @(see vl-tokenlist-p) <tt>tokens</tt> into
-<tt>prefix</tt> and <tt>rest</tt>, where <tt>prefix</tt> contains everything up
-through the first occurrence of the <tt>endmodule</tt> keyword, and
-<tt>rest</tt> contains whatever follows.</p>
+<p>We attept to split the @(see vl-tokenlist-p) @('tokens') into @('prefix')
+and @('rest'), where @('prefix') contains everything up through the first
+occurrence of the @('endmodule') keyword, and @('rest') contains whatever
+follows.</p>
 
-<p><tt>successp</tt> is true exactly when there is any occurrence of
-<tt>endmodule</tt> within <tt>tokens</tt>.</p>
-
-@(def vl-match-through-endmodule)
-@(def vl-match-through-endmodule-aux)"
+<p>@('successp') is true exactly when there is any occurrence of @('endmodule')
+within @('tokens').</p>"
 
   (defund vl-match-through-endmodule-aux (tokens prefix-rev)
     "Returns (MV SUCCESSP PREFIX-REV REST)"
@@ -1085,9 +1070,7 @@ through the first occurrence of the <tt>endmodule</tt> keyword, and
   :short "Try to find a match for some body in a @(see vl-overridelist-p)."
 
   :long "<p>Signature: @(call vl-find-override) returns an @(see vl-override-p)
-on success or <tt>nil</tt> on failure.</p>
-
-@(def vl-find-override)"
+on success or @('nil') on failure.</p>"
 
   (defund vl-find-override (body overrides)
     (declare (xargs :guard (and (vl-tokenlist-p body)
@@ -1157,42 +1140,42 @@ on success or <tt>nil</tt> on failure.</p>
   :parents (overrides)
   :short "Transform a token list using the overrides database."
 
-  :long "<p><b>Signature:</b> @(call vl-apply-overrides) returns <tt>(mv
-walist-prime x-prime used modtokens)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-apply-overrides) returns @('(mv
+walist-prime x-prime used modtokens)').</p>
 
 <p>Inputs:</p>
 
 <ul>
-<li><tt>x</tt> is the list of tokens to transform, and have presumably just
+
+<li>@('x') is the list of tokens to transform, and have presumably just
 been read from some ordinary Verilog file,</li>
 
-<li><tt>db</tt> is the @(see vl-override-db-p) and is typically constructed by
+<li>@('db') is the @(see vl-override-db-p) and is typically constructed by
 @(see vl-read-overrides), and</li>
 
-<li><tt>walist</tt> is an @(see vl-modwarningalist-p) that we may extend with
-fatal warnings for any modules that we cannot find current overrides for.</li>
+<li>@('walist') is an @(see vl-modwarningalist-p) that we may extend with fatal
+warnings for any modules that we cannot find current overrides for.</li>
+
 </ul>
 
 <p>Outputs:</p>
 
 <ul>
-<li><tt>x-prime</tt>, a new token list that has been transformed by replacing
+
+<li>@('x-prime'), a new token list that has been transformed by replacing
 overridden modules with their replacements,</li>
 
-<li><tt>walist-prime</tt>, the updated warning alist, and</li>
+<li>@('walist-prime'), the updated warning alist, and</li>
 
-<li><tt>used</tt>, the list of overrides we actually used to transform
-<tt>x</tt> into <tt>x-prime</tt>, and from which we can get all of the
-requirements we need to discharge.</li>
+<li>@('used'), the list of overrides we actually used to transform @('x') into
+@('x-prime'), and from which we can get all of the requirements we need to
+discharge.</li>
 
-<li><tt>modtokens</tt> is a (slow) alist that associates the name of each
-module we encounter in <tt>x</tt> with its (possibly overridden) token list.
-We use this eventually to check the \"requirements\" for each override.</li>
+<li>@('modtokens') is a (slow) alist that associates the name of each module we
+encounter in @('x') with its (possibly overridden) token list.  We use this
+eventually to check the \"requirements\" for each override.</li>
 
-</ul>
-
-@(def vl-apply-overrides)
-@(def vl-apply-overrides-aux)"
+</ul>"
 
   (defund vl-apply-overrides-aux (x db walist acc used modtokens)
     (declare (xargs :guard (and (vl-tokenlist-p x)
@@ -1364,21 +1347,19 @@ We use this eventually to check the \"requirements\" for each override.</li>
   :parents (overrides)
   :short "Check that all of the requirements from overrides are met."
 
-  :long "<p><b>Signature:</b> @(call vl-check-override-requirements) returns
-an updated <tt>walist</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-check-override-requirements) returns an
+updated @('walist').</p>
 
-<p>As inputs, we are given the actual list of all <tt>overrides</tt> that were
-actually applied, and the full <tt>modtokens</tt> alist which associates every
-module name with all of the tokens that comprise its (perhaps overridden)
-body.  We are also given <tt>walist</tt>, a @(see vl-modwarningalist-p) that
-will be applied to the list of tokens after our check is done.</p>
+<p>As inputs, we are given the actual list of all @('overrides') that were
+actually applied, and the full @('modtokens') alist which associates every
+module name with all of the tokens that comprise its (perhaps overridden) body.
+We are also given @('walist'), a @(see vl-modwarningalist-p) that will be
+applied to the list of tokens after our check is done.</p>
 
 <p>We extend this warning alist with a fatal warning for any overridden module
 whose requirements were not met.</p>
 
-<p><tt>modtokens</tt> is expected to be a fast alist.</p>
-
-@(def vl-check-override-requirements)"
+<p>@('modtokens') is expected to be a fast alist.</p>"
 
   (defund vl-check-override-requirements-aux (required-names override modtokens walist)
     (declare (xargs :guard (and (string-listp required-names)

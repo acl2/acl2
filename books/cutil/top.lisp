@@ -38,7 +38,7 @@
 <li>Introducing data types (recognizers and basic theorems)
 <ul>
  <li>simple enumerations (@(see defenum)),</li>
- <li>record types like <tt>struct</tt>s in C (@(see defaggregate)),</li>
+ <li>record types like @('struct')s in C (@(see defaggregate)),</li>
  <li>typed lists (@(see deflist)), and</li>
  <li>typed alists (@(see defalist))</li>
 </ul></li>
@@ -53,7 +53,7 @@
 
 <li>Automating other tedious tasks
 <ul>
- <li><tt>:type-prescription</tt>s for <tt>mv</tt>-returning functions (@(see defmvtypes))</li>
+ <li>@(':type-prescription')s for @('mv')-returning functions (@(see defmvtypes))</li>
 </ul></li>
 
 </ol>
@@ -63,9 +63,9 @@
 
 <p>You can load the full library with:</p>
 
-<code>
+@({
  (include-book \"cutil/top\" :dir :system)
-</code>
+})
 
 
 <h3>Copyright Information</h3>
@@ -75,11 +75,11 @@ Copyright (C) 2008-2011 <a href=\"http://www.centtech.com\">Centaur
 Technology</a>.</p>
 
 <p>Contact:</p>
-<code>
+@({
 Centaur Technology Formal Verification Group
 7600-C N. Capital of Texas Highway, Suite 300
 Austin, TX 78731, USA.
-</code>
+})
 
 <p>CUTIL is free software; you can redistribute it and/or modify it under the
 terms of the GNU General Public License as published by the Free Software

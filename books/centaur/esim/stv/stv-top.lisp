@@ -77,7 +77,7 @@ stv-implementation-details).</p>")
 
   :long "<h3>Example Test Vector</h3>
 
-<code>
+@({
  ((:initial
    (\"foo.statemachine.busy\"  0)
    (\"foo.prevStutter\"        stutter))
@@ -106,76 +106,75 @@ stv-implementation-details).</p>")
 
   )
  ;; ---------------------------------------------------------------------------
-</code>
+})
 
 <h3>High-Level Overview</h3>
 
-<p>The <tt>:initial</tt> section controls the initial values of state bits.
-For the above vector, <tt>foo.statemachine.busy</tt> will be initialized to
-zero and <tt>foo.prevStutter</tt> will be some particular value,
-<tt>stutter</tt>, that can be specified at @(see stv-run) time.</p>
+<p>The @(':initial') section controls the initial values of state bits.  For
+the above vector, @('foo.statemachine.busy') will be initialized to zero and
+@('foo.prevStutter') will be some particular value, @('stutter'), that can be
+specified at @(see stv-run) time.</p>
 
-<p>The <tt>:inputs</tt> section controls how the module's inputs will be set
-over the course of the simulation.  For the above vector,</p>
+<p>The @(':inputs') section controls how the module's inputs will be set over
+the course of the simulation.  For the above vector,</p>
 
 <ul>
 
-<li><tt>clock</tt> starts low and then toggles throughout the simulation,</li>
+<li>@('clock') starts low and then toggles throughout the simulation,</li>
 
-<li><tt>ibus[13:10]</tt> is held to 5 (#b101) during the first full cycle, but
-is not constrained afterward,</li>
+<li>@('ibus[13:10]') is held to 5 (#b101) during the first full cycle, but is
+not constrained afterward,</li>
 
-<li><tt>ibus[9:0]</tt> is held to a certain value (call it <tt>op</tt>) during
-the first full cycle, and is not constrained afterward,</li>
+<li>@('ibus[9:0]') is held to a certain value (call it @('op')) during the
+first full cycle, and is not constrained afterward,</li>
 
-<li><tt>fwd</tt> is held constant at 16 during the first full cycle, but is
+<li>@('fwd') is held constant at 16 during the first full cycle, but is
 unconstrained afterward,</li>
 
-<li><tt>a_bus</tt> is held at some particular value during the second full
-cycle (call it <tt>a1</tt>), and at a (possibly different) value, <tt>a2</tt>
-during the third cycle, but is unconstrained otherwise</li>
+<li>@('a_bus') is held at some particular value during the second full
+cycle (call it @('a1')), and at a (possibly different) value, @('a2') during
+the third cycle, but is unconstrained otherwise</li>
 
-<li><tt>b_bus</tt> is held at the same value, call it <tt>b</tt>, for the full
-second and third cycle, but is unconstrained otherwise,</li>
+<li>@('b_bus') is held at the same value, call it @('b'), for the full second
+and third cycle, but is unconstrained otherwise,</li>
 
-<li><tt>reset</tt> is kept off for the entire simulation,</li>
+<li>@('reset') is kept off for the entire simulation,</li>
 
-<li><tt>fuse[0]</tt> is explicitly set to <tt>X</tt> for the whole simulation.
-This is similar to setting it to <tt>_</tt>, but is likely (1) more efficient
-and (2) more likely to lead to false Xes in the outputs.</li>
+<li>@('fuse[0]') is explicitly set to @('X') for the whole simulation.  This is
+similar to setting it to @('_'), but is likely (1) more efficient and (2) more
+likely to lead to false Xes in the outputs.</li>
 
 <li>Any inputs to the module besides those specified above are implicitly
 unconstrained (i.e., they are implicitly _) for the whole simulation.</li>
 
 </ul>
 
-<p>The <tt>:outputs</tt> section controls when the outputs should be sampled.
-For this simulation:</p>
+<p>The @(':outputs') section controls when the outputs should be sampled.  For
+this simulation:</p>
 
 <ul>
 
-<li>The full <tt>result_bus</tt> will be sampled twice.  Its results from
-phases 5 and 6 will be called <tt>res1</tt> and <tt>res2</tt>,
-respectively.</li>
+<li>The full @('result_bus') will be sampled twice.  Its results from phases 5
+and 6 will be called @('res1') and @('res2'), respectively.</li>
 
-<li>The high and low parts of the <tt>result_bus</tt> will also be sampled
-during these cycles.  This might seem redundant, but it can be useful in cases
-where there is an X in only one side of the result bus.</li>
+<li>The high and low parts of the @('result_bus') will also be sampled during
+these cycles.  This might seem redundant, but it can be useful in cases where
+there is an X in only one side of the result bus.</li>
 
 </ul>
 
-<p>The <tt>:internals</tt> section is similar to the outputs section, but it
-allows you to pull out the values of internal signals in the module.</p>
+<p>The @(':internals') section is similar to the outputs section, but it allows
+you to pull out the values of internal signals in the module.</p>
 
 
 <h3>Input Line Format</h3>
 
-<p>Each line in the <tt>:inputs</tt> section explains how a certain input
-should be driven over time.  Each line has the form:</p>
+<p>Each line in the @(':inputs') section explains how a certain input should be
+driven over time.  Each line has the form:</p>
 
-<code>
+@({
  (input-name     value1    value2   ...   valueN)
-</code>
+})
 
 <p>The valid input names are:</p>
 
@@ -202,51 +201,51 @@ values?</p>
 <ul>
 
 <li>A natural number can be used to set the input to a fixed value during this
-particular phase.  The number supplied must be within <tt>[0, 2^n)</tt>, where
-<tt>n</tt> is the size of the input, or an error will be caused.</li>
+particular phase.  The number supplied must be within @('[0, 2^n)'), where
+@('n') is the size of the input, or an error will be caused.</li>
 
-<li>The special <tt>~</tt> value is intended to support clock inputs, and
-basically means <i>invert the previous value of this signal</i>.  This is only
-legal for one-bit inputs whose previous value expanded to <tt>0</tt> or
-<tt>1</tt>.  In practice, this means the only things that can occur before a
-<tt>~</tt> are <tt>0</tt>, <tt>1</tt>, or another <tt>~</tt>.</li>
+<li>The special @('~') value is intended to support clock inputs, and basically
+means <i>invert the previous value of this signal</i>.  This is only legal for
+one-bit inputs whose previous value expanded to @('0') or @('1').  In practice,
+this means the only things that can occur before a @('~') are @('0'), @('1'),
+or another @('~').</li>
 
-<li>The special <tt>_</tt> value represents an unconstrained, four-valued
-variable.  As a rule, use <tt>_</tt> during any phase where you don't care
-about the value on this input.  There is no relationship between separate
-underscores, e.g., in the example above, separate variables are used for
-<tt>a_bus</tt> during the first and second phases.</li>
+<li>The special @('_') value represents an unconstrained, four-valued variable.
+As a rule, use @('_') during any phase where you don't care about the value on
+this input.  There is no relationship between separate underscores, e.g., in
+the example above, separate variables are used for @('a_bus') during the first
+and second phases.</li>
 
-<li>The special <tt>:ONES</tt> value sets an input bus to all 1's, no matter
-what its size.</li>
+<li>The special @(':ONES') value sets an input bus to all 1's, no matter what
+its size.</li>
 
-<li>Besides <tt>x</tt>, any other non-keyword symbols (like <tt>op</tt>,
-<tt>a1</tt>, <tt>a2</tt>, and <tt>b</tt> above) are called <b>simulation
-variables</b>.  A simulation variable lets you supply a particular value for
-the input at this phase when you evaluate the symbolic test vector.</li>
+<li>Besides @('x'), any other non-keyword symbols (like @('op'), @('a1'),
+@('a2'), and @('b') above) are called <b>simulation variables</b>.  A
+simulation variable lets you supply a particular value for the input at this
+phase when you evaluate the symbolic test vector.</li>
 
-<li>(Advanced) the special <tt>X</tt> value allows you to say that an input
-should be explicitly set to X values.  It is similar to using <tt>_</tt>, but
-supplies an explicit X value instead of fresh variables.  The advantage of this
-is that it can be very efficient: X values often remain as X as they propagate
-through gates, whereas free variables generally become larger expressions.  So,
-using explicit Xes may lead to more efficient simulations by avoiding the
+<li>(Advanced) the special @('X') value allows you to say that an input should
+be explicitly set to X values.  It is similar to using @('_'), but supplies an
+explicit X value instead of fresh variables.  The advantage of this is that it
+can be very efficient: X values often remain as X as they propagate through
+gates, whereas free variables generally become larger expressions.  So, using
+explicit Xes may lead to more efficient simulations by avoiding the
 construction of lots of irrelevant expressions.  However, using explicit X
-values can also lead to false Xes, e.g., whereas <tt>(AND A (NOT A))</tt> is
-obviously 0, <tt>(AND X (NOT X))</tt> is <tt>X</tt>.  So, using Xes can lead to
-overly conservative results.</li>
+values can also lead to false Xes, e.g., whereas @('(AND A (NOT A))') is
+obviously 0, @('(AND X (NOT X))') is @('X').  So, using Xes can lead to overly
+conservative results.</li>
 
 </ul>
 
 
 <h3>Output Line Format</h3>
 
-<p>Each line in the <tt>:outputs</tt> section controls when to sample certain
+<p>Each line in the @(':outputs') section controls when to sample certain
 output signals.  The format is:</p>
 
-<code>
+@({
  (output-name     value1    value2   ...   valueN)
-</code>
+})
 
 <p>As with input-names, the output-names can be either (1) a string that names
 a particular output bus, (2) a Verilog-style bit- or part-select, or (3) a list
@@ -256,23 +255,23 @@ of E output bits in LSB-first order.</p>
 
 <ul>
 
-<li><tt>_</tt>, which means don't sample the output at this time, or</li>
+<li>@('_'), which means don't sample the output at this time, or</li>
 
-<li>a symbol, like <tt>res1</tt> or <tt>res2</tt> above, which gives a name to
-the output at this time.  These names have to be unique, since outputs can vary
+<li>a symbol, like @('res1') or @('res2') above, which gives a name to the
+output at this time.  These names have to be unique, since outputs can vary
 over time.</li>
 
 </ul>
 
 <p>To avoid any confusion between input and output lines, we don't allow you to
-use <tt>~</tt>, <tt>X</tt>, or keyword symbols in output lines.</p>
+use @('~'), @('X'), or keyword symbols in output lines.</p>
 
 
 <h3>Internals Line Format</h3>
 
-<p>Except for their names, the lines in the <tt>:internals</tt> section are
-essentially the same as lines in the <tt>:outputs</tt> section.  Generally
-speaking we try to make the differences between outputs and internal signals as
+<p>Except for their names, the lines in the @(':internals') section are
+essentially the same as lines in the @(':outputs') section.  Generally speaking
+we try to make the differences between outputs and internal signals as
 invisible as possible.  For instance, it doesn't matter during @(see stv-run)
 whether a signal is an internal or output signal.</p>
 
@@ -284,15 +283,15 @@ use explicit lsb-first ordered lists of ESIM paths.</p>
 
 <h3>Initial Line Format</h3>
 
-<p>Each line in the <tt>:initial</tt> section explains how to initialize some
-state bits.  Unlike input lines, each initial line has only a single value,
-namely its value at the start of the simulation.  This is because the value the
+<p>Each line in the @(':initial') section explains how to initialize some state
+bits.  Unlike input lines, each initial line has only a single value, namely
+its value at the start of the simulation.  This is because the value the
 register stores during the subsequent phases of the simulation is determined by
 the circuit.  Each initial line has the following format:</p>
 
-<code>
+@({
  (name value)
-</code>
+})
 
 <p>The names in initial lines may be strings that are Verilog-style plain or
 hierarchical identifiers using periods as separators, which may optionally
@@ -300,15 +299,15 @@ include a Verilog-style bit- or part-select at the end.  It is also possible to
 use explicit lsb-first ordered lists of ESIM paths.</p>
 
 <p>STVs are slightly clever in how they interpret these names.  In short, you
-don't have to write down the whole path to a Verilog <tt>reg</tt> or anything
-like that, because the STV compiler will automatically walk backwards from
-whatever paths you give it.  As long as this walk takes it to a flop or latch,
-it will know which state bit to initialize.  In practice, you can give paths
-that are separated from their Verilog <tt>reg</tt>s through any number of
-assignments, inverters, and buffers.</p>
+don't have to write down the whole path to a Verilog @('reg') or anything like
+that, because the STV compiler will automatically walk backwards from whatever
+paths you give it.  As long as this walk takes it to a flop or latch, it will
+know which state bit to initialize.  In practice, you can give paths that are
+separated from their Verilog @('reg')s through any number of assignments,
+inverters, and buffers.</p>
 
-<p>The <tt>value</tt>s here are like those of input lines, except that you
-can't use <tt>~</tt> since there isn't any previous value to invert.</p>")
+<p>The @('value')s here are like those of input lines, except that you can't
+use @('~') since there isn't any previous value to invert.</p>")
 
 
 
@@ -319,7 +318,7 @@ can't use <tt>~</tt> since there isn't any previous value to invert.</p>")
   :long "<p>Here is a high-level overview of how we compile, process, and
 evaluate STVs.  A picture of the flow is:</p>
 
-<code>
+@({
  User-Level STV              ESIM Module
       |                           |
       |   ,-----------------------+
@@ -337,11 +336,11 @@ evaluate STVs.  A picture of the flow is:</p>
       v   v
    stv-run/debug
         |    |
-        |    +-------&gt; Waveform (VCD Dump)
+        |    +-------> Waveform (VCD Dump)
         |    |
         v    v
   Simulation Output Alist
-</code>
+})
 
 
 <p>Here, the user provides:</p>
@@ -465,7 +464,7 @@ specialization steps.</p>")
   :short "Introduce a symbolic test vector as a constant."
   :long "<p>Example:</p>
 
-<code>
+@({
  (defstv my-run
    :mod *my-mod*
    :initial   '((\"foo.bar.myreg\" mr)       ...)
@@ -476,9 +475,9 @@ specialization steps.</p>")
    :parents ...
    :short ...
    :long ...)
-</code>
+})
 
-<p>The <tt>defstv</tt> command is the main interface for defining symbolic test
+<p>The @('defstv') command is the main interface for defining symbolic test
 vectors.  It compiles the STV, does the necessary ESIM simulations, and gets
 everything ready for @(see stv-run) and @(see stv-debug).  It generates
 convenient macros for use in @(see def-gl-thm) commands, and can also produce
@@ -488,14 +487,14 @@ convenient macros for use in @(see def-gl-thm) commands, and can also produce
 
 <ul>
 
-<li><tt>:mod</tt> should be the @(see esim) module you want to simulate, and
+<li>@(':mod') should be the @(see esim) module you want to simulate, and
 <b>must</b> be the name of a non-local @(see defconst).  This unusual
 requirement lets us avoid writing the module into the certificate, which can
 significantly improve performance when including books with STVs.</li>
 
-<li>The <tt>:initial</tt>, <tt>:inputs</tt>, <tt>:outputs</tt>, and
-<tt>:internals</tt> control how to simulate the module.  For the syntax and
-meaning of these lines, see @(see symbolic-test-vector-format).</li>
+<li>The @(':initial'), @(':inputs'), @(':outputs'), and @(':internals') control
+how to simulate the module.  For the syntax and meaning of these lines, see
+@(see symbolic-test-vector-format).</li>
 
 </ul>
 
@@ -503,15 +502,14 @@ meaning of these lines, see @(see symbolic-test-vector-format).</li>
 
 <ul>
 
-<li><tt>:parents</tt>, <tt>:short</tt>, and <tt>:long</tt> are as in @(see
-defxdoc).  If any of these options is given, documentation will be generated
-for the STV.  This documentation includes a fancy table that shows the
-simulation.</li>
+<li>@(':parents'), @(':short'), and @(':long') are as in @(see defxdoc).  If
+any of these options is given, documentation will be generated for the STV.
+This documentation includes a fancy table that shows the simulation.</li>
 
-<li><tt>:labels</tt> are only used for documentation.  If they are provided,
-they must be a symbol list.  These symbols will only be used to label the
-stages of the simulation, with <tt>nil</tt> leaving a blank.  (Having the pipe
-stage names in the diagram is really nice).</li>
+<li>@(':labels') are only used for documentation.  If they are provided, they
+must be a symbol list.  These symbols will only be used to label the stages of
+the simulation, with @('nil') leaving a blank.  (Having the pipe stage names in
+the diagram is really nice).</li>
 
 </ul>
 
@@ -519,71 +517,71 @@ stage names in the diagram is really nice).</li>
 
 <dl>
 
-<dt><tt>(my-run)</tt></dt>
+<dt>@('(my-run)')</dt>
 
 <dd>This is a disabled 0-ary function (i.e., a constant) that is a @(see
 processed-stv-p).  You should generally only interact with this object using
 interfacing functions like @(see stv->vars), @(see stv-out->width), etc., and
-not directly use the <tt>processed-stv-p</tt> accessors (in case we change the
+not directly use the @('processed-stv-p') accessors (in case we change the
 format).</dd>
 
 
-<dt><tt>(my-run-autohyps)</tt></dt>
+<dt>@('(my-run-autohyps)')</dt>
 
 <dd>This is a macro that expands to something like:
 
-<code>
+@({
  (and (unsigned-byte-p 4 opcode)
       (unsigned-byte-p 64 abus)
       (unsigned-byte-p 64 bbus)
       ...)
 
-</code>
+})
 
 That is, it says each input simulation variable is a natural number of the
-proper width.  This is generally useful in the <tt>:hyp</tt> of a @(see
-def-gl-thm) about your STV.</dd>
+proper width.  This is generally useful in the @(':hyp') of a @(see def-gl-thm)
+about your STV.</dd>
 
-<dt><tt>(my-run-autoins)</tt></dt>
+<dt>@('(my-run-autoins)')</dt>
 
 <dd>This is a macro that expands to something like:
 
-<code>
+@({
  (list (cons 'opcode opcode)
        (cons 'abus abus)
        (cons 'bbus bbus)
        ...)
-</code>
+})
 
 That is, it constructs an alist that binds the name of each simulation variable
-to the corresponding ACL2 symbol.  This is generally useful in the
-<tt>:concl</tt> of a @(see def-gl-thm) about your STV, i.e., your conclusion
-might be something like:
+to the corresponding ACL2 symbol.  This is generally useful in the @(':concl')
+of a @(see def-gl-thm) about your STV, i.e., your conclusion might be something
+like:
 
-<code>
+@({
  (b* ((out-alist (stv-run (my-run) (my-run-autoins))))
    (outputs-valid-p out-alist))
-</code>
+})
 
 </dd>
 
-<dt><tt>(my-run-autobinds)</tt></dt>
+<dt>@('(my-run-autobinds)')</dt>
 
 <dd>This is a macro that expands to something like:
 
-<code>
+@({
  (gl::auto-bindings (:nat opcode 4)
                     (:nat abus 64)
                     (:nat bbus 64)
                     ...)
-</code>
+})
 
 See @(see gl::auto-bindings) for some details.  This is generally meant to be
-used in the <tt>:g-bindings</tt> of a @(see def-gl-thm) about your STV.</dd>
+used in the @(':g-bindings') of a @(see def-gl-thm) about your STV.</dd>
 
 <dd>These bindings are <b>probably quite lousy</b>.  For instance, if this is
-some kind of ALU then we probably want to <tt>:mix</tt> the <tt>abus</tt> and
-<tt>bbus</tt>.  But the generated bindings just use whatever variable order is
+some kind of ALU then we probably want to @(':mix') the @('abus') and
+@('bbus').  But the generated bindings just use whatever variable order is
 suggested by the initial and input lines, and doesn't smartly mix together
 signals.</dd>
 
@@ -751,20 +749,19 @@ acl2::defstv).</p>"
   :long "<p>@(call stv-easy-bindings) returns a list of G-bindings.  That is,
 you can write something like:</p>
 
-<code>
+@({
  (def-gl-thm foo
     ...
     :g-bindings
     (stv-easy-bindings (my-stv) '(opcode size special (:mix a b) c)))
-</code>
+})
 
-<p>The format of <tt>x</tt> is simple: you can list out STV inputs and also use
-<tt>(:mix a b c ...)</tt> where <tt>a</tt>, <tt>b</tt>, <tt>c</tt>, ... are all
-STV inputs.</p>
+<p>The format of @('x') is simple: you can list out STV inputs and also use
+@('(:mix a b c ...)') where @('a'), @('b'), @('c'), ... are all STV inputs.</p>
 
 <p>Bindings will be generated in the order specified, e.g., in the above
-example the <tt>opcode</tt> will have the smallest indices, then <tt>size</tt>
-next, etc.</p>
+example the @('opcode') will have the smallest indices, then @('size') next,
+etc.</p>
 
 <p>You do <b>not</b> have to mention all of the STV variables.  All unmentioned
 variables will be assigned indices after mentioned variables.</p>

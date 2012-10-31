@@ -67,8 +67,8 @@ matched substring.</p>"
   :short "Gather strings that have some (case-insensitive) substring."
 
   :long "<p>@(call collect-strs-with-isubstr) returns a list of all the strings
-in the list <tt>x</tt> that have <tt>a</tt> as a case-insensitve substring.
-The substring tests are carried out with @(see isubstrp).</p>
+in the list @('x') that have @('a') as a case-insensitve substring.  The
+substring tests are carried out with @(see isubstrp).</p>
 
 <p>See also @(see collect-syms-with-isubstr), which is similar but for symbol
 lists instead of string lists.</p>"
@@ -115,8 +115,8 @@ lists instead of string lists.</p>"
   :short "Gather symbols whose names have some (case-insensitive) substring."
 
   :long "<p>@(call collect-syms-with-isubstr) returns a list of all the symbols
-in the list <tt>x</tt> that have <tt>a</tt> as a case-insensitve substring of
-their @(see symbol-name).  The substring tests are carried out with @(see
+in the list @('x') that have @('a') as a case-insensitve substring of their
+@(see symbol-name).  The substring tests are carried out with @(see
 isubstrp).</p>
 
 <p>See also @(see collect-strs-with-isubstr), which is similar but for string

@@ -78,7 +78,7 @@
 (def-vl-modgen vl-make-1-bit-delay-m (m)
   :short "Generate a one-bit wide, M-tick delay module."
   :long "<p>The basic idea here is:</p>
-<code>
+@({
 module VL_1_BIT_DELAY_M (out, in) ;
   output out;
   input in;
@@ -90,7 +90,7 @@ module VL_1_BIT_DELAY_M (out, in) ;
   VL_1_BIT_DELAY_1 del{m-1} (temp[m-2], temp[m-3]);
   VL_1_BIT_DELAY_1 del{m}   (out,       temp[m-2]);
 endmodule
-</code>"
+})"
   :guard (posp m)
   :body
   (b* (((when (= m 1))

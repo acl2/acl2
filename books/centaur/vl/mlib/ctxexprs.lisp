@@ -30,7 +30,7 @@ occur."
 
   :long "<p>Like the @(see allexprs) family of functions, these functions
 gather up what we regard as the \"top level\" expressions used throughout some
-module.  But whereas the <tt>allexprs</tt> functions just return flat lists of
+module.  But whereas the @('allexprs') functions just return flat lists of
 expressions, we return a @(see vl-exprctxalist-p) that associates each
 expression with a @(see vl-context-p) describing its origin.</p>")
 
@@ -99,7 +99,7 @@ essentially say where some expressions are from.</p>"
 
 
 (defmacro def-vl-ctxexprs (&key type)
-  (let* ((mksym-package-symbol 'vl)
+  (let* ((mksym-package-symbol 'vl::foo)
          (type-p   (mksym type '-p))
          (collect  (mksym type '-ctxexprs))
          (allexprs (mksym type '-allexprs))
@@ -126,7 +126,7 @@ essentially say where some expressions are from.</p>"
 
 
 (defmacro def-vl-ctxexprs-list (&key element list)
-  (let* ((mksym-package-symbol 'vl)
+  (let* ((mksym-package-symbol 'vl::foo)
          (list-type-p  (mksym list '-p))
          (collect-list (mksym list '-ctxexprs))
          (collect-elem (mksym element '-ctxexprs))

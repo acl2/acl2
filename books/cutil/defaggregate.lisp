@@ -57,18 +57,18 @@
 
 (defxdoc defaggregate
   :parents (cutil)
-  :short "Introduce a record structure, like a <tt>struct</tt> in C."
+  :short "Introduce a record structure, like a @('struct') in C."
 
   :long "<p>Defaggregate introduces a recognizer, constructor, and accessors
-for a new record-like structure.  It is similar to <tt>struct</tt> in C or
-<tt>defstruct</tt> in Lisp.</p>
+for a new record-like structure.  It is similar to @('struct') in C or
+@('defstruct') in Lisp.</p>
 
 <p>General form:</p>
 
-<code>
+@({
  (defaggregate prefix
    fields
-   &amp;key tag         ; required
+   &key tag         ; required
         require     ; nil by default
         legiblep    ; t by default
         hons        ; nil by default
@@ -77,84 +77,84 @@ for a new record-like structure.  It is similar to <tt>struct</tt> in C or
         short       ; nil by default
         long        ; nil by default
         )
-</code>
+})
 
 <p>For example,</p>
 
-<code>
+@({
  (defaggregate employee
    (name salary position)
    :tag :employee)
-</code>
+})
 
 <p>will result in the introduction of:</p>
 
 <ul>
- <li>A recognizer, <tt>(employee-p x)</tt>,</li>
- <li>A constructor, <tt>(employee name salary position)</tt>,</li>
- <li>An accessor for each field, e.g., <tt>(employee-&gt;name x)</tt>,</li>
- <li>An extension of <tt>b*</tt> to easily destructure these aggregates,</li>
+ <li>A recognizer, @('(employee-p x)'),</li>
+ <li>A constructor, @('(employee name salary position)'),</li>
+ <li>An accessor for each field, e.g., @('(employee->name x)'),</li>
+ <li>An extension of @(see b*) to easily destructure these aggregates,</li>
  <li>Macros for making and changing aggregates,
    <ul>
-    <li><tt>(make-employee :name ... :salary ...)</tt></li>
-    <li><tt>(change-employee x :salary ...)</tt></li>
+    <li>@('(make-employee :name ... :salary ...)')</li>
+    <li>@('(change-employee x :salary ...)')</li>
    </ul></li>
  <li>Basic theorems relating these new functions.</li>
 </ul>
 
 <h3>Usage and Options</h3>
 
-<h4>Tags (<tt>:tag</tt> parameter)</h4>
+<h4>Tags (@(':tag') parameter)</h4>
 
-<p>The <tt>:tag</tt> of every aggregate must be a keyword symbol, and typically
+<p>The @(':tag') of every aggregate must be a keyword symbol, and typically
 shares its name with the name of the aggregate.  For instance, in the
-\"employee\" aggregate the tag is <tt>:employee</tt>.</p>
+\"employee\" aggregate the tag is @(':employee').</p>
 
 <p>How is the tag used?  Each instance of the aggregate will be a cons tree
 whose car is the tag.  This requires some overhead---one cons for every
 instance of the aggregate---but allows us to compare tags to differentiate
 between different kinds of aggregates.</p>
 
-<p>To avoid introducing many theorems about <tt>car</tt>, we use an alias named
-@(see tag).  Each use of <tt>defaggregate</tt> results in three tag-related
+<p>To avoid introducing many theorems about @('car'), we use an alias named
+@(see tag).  Each use of @('defaggregate') results in three tag-related
 theorems:</p>
 
 <ol>
 <li>Tag of constructor:
-<code>
+@({
  (defthm tag-of-example
    (equal (tag (example field1 ... fieldN))
           :example))
-</code></li>
+})</li>
 
 <li>Tag when recognized:
-<code>
+@({
  (defthm tag-when-example-p
    (implies (example-p x)
             (equal (tag x) :example))
    :rule-classes ((:rewrite :backchain-limit-lst 0)
                   (:forward-chaining)))
-</code></li>
+})</li>
 
 <li>Not recognized when tag is wrong:
-<code>
+@({
  (defthm example-p-when-wrong-tag
    (implies (not (equal (tag x) :example))
             (equal (example-p x)
                    nil))
    :rule-classes ((:rewrite :backchain-limit-lst 1)))
-</code></li>
+})</li>
 </ol>
 
 <p>These theorems seem to perform well and settle most questions regarding the
 disjointness of different kinds of aggregates.  In case the latter rules become
-expensive, we always add them to the <tt>tag-ruleset</tt>, so you can disable
+expensive, we always add them to the @('tag-ruleset'), so you can disable
 this ruleset to turn off almost all tag-related reasoning.</p>
 
 
-<h4>Requirements (<tt>:require</tt> parameter)</h4>
+<h4>Requirements (@(':require') parameter)</h4>
 
-<p>The <tt>:require</tt> field allows you to list conditions that must be met
+<p>The @(':require') field allows you to list conditions that must be met
 by the fields for the object to be considered well-formed.  These requirements
 are used in three places:</p>
 
@@ -164,57 +164,57 @@ are used in three places:</p>
  <li>As rewrite rules about the accessors.</li>
 </ul>
 
-<p>Here is an example of using <tt>:require</tt> for the employee structure:</p>
+<p>Here is an example of using @(':require') for the employee structure:</p>
 
-<code>
+@({
  (defaggregate employee
    (name salary position)
    :tag :employee
-   :require ((stringp-of-employee-&gt;name
+   :require ((stringp-of-employee->name
               (stringp name)
               :rule-classes :type-prescription)
-             (natp-of-employee-&gt;salary
+             (natp-of-employee->salary
               (natp salary)
               :rule-classes :type-prescription)
-             (position-p-of-employee-&gt;position
+             (position-p-of-employee->position
               (position-p position))
              (properly-oppressed-p
               (salary-bounded-by-position-p salary position))))
-</code>
+})
 
-<p>Each requirement has the form <tt>(name condition [:rule-classes classes])</tt>, where</p>
+<p>Each requirement has the form @('(name condition [:rule-classes classes])'), where</p>
 <ul>
- <li><tt>name</tt> is a symbol that will be used to name the theorem introduced
+ <li>@('name') is a symbol that will be used to name the theorem introduced
      by this form,</li>
- <li><tt>condition</tt> is some requirement about one or more fields of the
+ <li>@('condition') is some requirement about one or more fields of the
      aggregate,</li>
- <li><tt>classes</tt> are optionally rule-classes to give to the theorem that
+ <li>@('classes') are optionally rule-classes to give to the theorem that
      is introduced, and by default is just :rewrite.</li>
 </ul>
 
 <p>By default, the theorems introduced by the requirements mechanism are
-ordinary <tt>:rewrite</tt> rules.  This works well for requirements like:</p>
+ordinary @(':rewrite') rules.  This works well for requirements like:</p>
 
-<code>
- (position-p-of-employee-&gt;position
+@({
+ (position-p-of-employee->position
   (position-p position))
-</code>
+})
 
-<p>where presumably <tt>position-p</tt> is some custom recognizer that we've
+<p>where presumably @('position-p') is some custom recognizer that we've
 previously introduced.  The resulting rule is:</p>
 
-<code>
- (defthm position-p-of-employee-&gt;position
+@({
+ (defthm position-p-of-employee->position
    (implies (force (employee-p x))
-            (position-p (patient-&gt;position x))))
-</code>
+            (position-p (patient->position x))))
+})
 
-<p>But for other fields like <tt>name</tt> and <tt>salary</tt>, the requirement
+<p>But for other fields like @('name') and @('salary'), the requirement
 involves primitive ACL2 types like strings and natural numbers, so you may wish
-to use a <tt>:type-prescription</tt> rule instead.</p>
+to use a @(':type-prescription') rule instead.</p>
 
 
-<h4>Legibility (<tt>:legiblep</tt> parameter)</h4>
+<h4>Legibility (@(':legiblep') parameter)</h4>
 
 <p>By default, an aggregate is represented in a <i>legible</i> way, which means
 the fields of each instance are laid out in an alist.  When such an object is
@@ -222,101 +222,100 @@ printed, it is easy to see what the value of each field is.</p>
 
 <p>However, the structure can be made <i>illegible</i>, which means it will be
 packed into a cons tree of minimum depth.  For instance, a structure whose
-fields are <tt>(foo bar baz)</tt> might be laid out as <tt>((tag . foo) . (bar
-. baz))</tt>.  This can be more efficient because the structure has fewer
+fields are @('(foo bar baz)') might be laid out as @('((tag . foo) . (bar
+. baz))').  This can be more efficient because the structure has fewer
 conses.</p>
 
 <p>We prefer to use legible structures because they can be easier to understand
 when they arise in debugging and proofs.  For instance, compare:</p>
 
 <ul>
- <li>Legible: <tt>(:point3d (x . 5) (y . 6) (z . 7))</tt></li>
- <li>Illegible: <tt>(:point3d 5 6 . 7)</tt></li>
+ <li>Legible: @('(:point3d (x . 5) (y . 6) (z . 7))')</li>
+ <li>Illegible: @('(:point3d 5 6 . 7)')</li>
 </ul>
 
 <p>On the other hand, illegible structures have a more consistent structure,
 which can occasionally be useful.  It's usually best to avoid reasoning about
 the underlying structure of an aggregate.  But, sometimes there are exceptions
 to this rule.  With illegible structures, you know exactly how each object will
-be laid out, and for instance you can prove that two <tt>point3d</tt>
-structures will be equal exactly when their components are equal (which is not
-a theorem for legible structures.)</p>
+be laid out, and for instance you can prove that two @('point3d') structures
+will be equal exactly when their components are equal (which is not a theorem
+for legible structures.)</p>
 
 
-<h4>Honsed aggregates (<tt>:hons</tt> parameter)</h4>
+<h4>Honsed aggregates (@(':hons') parameter)</h4>
 
-<p>By default, <tt>:hons</tt> is nil and the constructor for an aggregate will
-build the object using ordinary conses.  However, when <tt>:hons</tt> is set to
-<tt>t</tt>, we instead always use <tt>hons</tt> when building these aggregates.</p>
+<p>By default, @(':hons') is nil and the constructor for an aggregate will
+build the object using ordinary conses.  However, when @(':hons') is set to
+@('t'), we instead always use @('hons') when building these aggregates.</p>
 
 <p>Honsing is only appropriate for some structures.  It is generally slower
 than cons, and should typically not be used for aggregates that will be
 constructed and used in an ephemeral manner.</p>
 
 <p>Because honsing is somewhat at odds with the notion of legible structures,
-<tt>:hons t</tt> implies <tt>:legiblep nil</tt>.</p>
+@(':hons t') implies @(':legiblep nil').</p>
 
 
-<h4>Defun-mode (<tt>:mode</tt> parameter)</h4>
+<h4>Defun-mode (@(':mode') parameter)</h4>
 
-<p>Mode for the introduced functions -- must be either <tt>:program</tt> or
-<tt>:logic</tt>.  The current defun-mode by default</p>
+<p>Mode for the introduced functions -- must be either @(':program') or
+@(':logic').  The current defun-mode by default</p>
 
 
-<h4>XDOC Integration (<tt>:parents</tt>, <tt>short</tt>, and <tt>long</tt> parameters)</h4>
+<h4>XDOC Integration (@(':parents'), @('short'), and @('long') parameters)</h4>
 
-<p>The <tt>:parents</tt>, <tt>:short</tt>, and <tt>:long</tt> arguments are
-like those in @(see xdoc::defxdoc).  Whatever you supply for <tt>:long</tt>
-will follow some automatically generated documentation that lists the fields
-and requirements for the aggregate.</p>
+<p>The @(':parents'), @(':short'), and @(':long') arguments are like those in
+@(see xdoc::defxdoc).  Whatever you supply for @(':long') will follow some
+automatically generated documentation that lists the fields and requirements
+for the aggregate.</p>
 
 
 <h3>Using Aggregates</h3>
 
 
-<h3><tt>Make</tt> and <tt>Change</tt> Macros</h3>
+<h3>@('Make') and @('Change') Macros</h3>
 
 <p>Direct use of the constructor is discouraged.  Instead, we introduce two
 macros with every aggregate.</p>
 
-<p>The <tt>make</tt> macro constructs a fresh aggregate when given values for
-its fields:</p>
+<p>The @('make') macro constructs a fresh aggregate when given values for its
+fields:</p>
 
-<code>
+@({
  (make-example :field1 val1 :field2 val2 ...)
-    --&gt;
+    -->
  (example val1 val2 ...)
-</code>
+})
 
-<p>The <tt>change</tt> macro is similar, but is given an existing object as a
+<p>The @('change') macro is similar, but is given an existing object as a
 starting point.  It may be thought of as:</p>
 
-<code>
+@({
  (change-example x :field2 val2)
-    --&gt;
- (make-example :field1 (example-&gt;field1 x)
+    -->
+ (make-example :field1 (example->field1 x)
                :field2 val2
-               :field3 (example-&gt;field3 x)
+               :field3 (example->field3 x)
                ...)
-</code>
+})
 
 <p>There are some advantages to using these macros over calling the constructor
 directly.  The person writing the code does not need to remember the order of
 the fields, and the person reading the code can see what values are being given
-to which fields.  Also, any field whose value should be <tt>nil</tt> may be
-omitted from the <i>make</i> macro, and any field whose value should be left
-alone can be omitted from the <i>change</i> macro.  These features make it
-easier to add new fields to the aggregate later on, or to rearrange fields,
-etc.</p>
+to which fields.  Also, any field whose value should be @('nil') may be omitted
+from the <i>make</i> macro, and any field whose value should be left alone can
+be omitted from the <i>change</i> macro.  These features make it easier to add
+new fields to the aggregate later on, or to rearrange fields, etc.</p>
 
 
-<h4>Integration with <tt>B*</tt></h4>
+<h4>Integration with @(see b*)</h4>
 
 <p>Defaggregate automatically introduces a pattern binder that integrates into
-<tt>b*</tt>.  This provides a concise syntax for destructuring aggregates.  For
+@('b*').  This provides a concise syntax for destructuring aggregates.  For
 instance:</p>
 
-<code>
+@({
  (b* ((bonus-percent 1/10)
       ((employee x)  (find-employee name db))
       (bonus         (+ (* x.salary bonus-percent)
@@ -325,27 +324,27 @@ instance:</p>
                             (* x.salary 2)
                           0))))
    bonus)
-</code>
+})
 
 <p>Can loosely be thought of as:</p>
 
-<code>
+@({
  (b* ((bonus-percent 1/10)
       (temp          (find-employee name db))
-      (x.name        (employee-&gt;name temp))
-      (x.salary      (employee-&gt;salary temp))
-      (x.position    (employee-&gt;position temp))
+      (x.name        (employee->name temp))
+      (x.salary      (employee->salary temp))
+      (x.position    (employee->position temp))
       (bonus         (+ (* x.salary bonus-percent)
                         (if (equal x.position :sysadmin)
                             ;; early christmas for me, har har...
                             (* x.salary 2)
                           0))))
    bonus)
-</code>
+})
 
 <p>For greater efficiency in the resulting code, we actually avoid binding
 components which do not appear to be used, e.g., we will not actually bind
-<tt>x.name</tt> above.</p>
+@('x.name') above.</p>
 
 <p>Detecting whether a variable is needed at macro-expansion time is inherently
 broken because we can't truly distinguish between function names, macro names,
@@ -362,11 +361,11 @@ optimization altogether.</p>
 
 <p>BOZO provide explanations of what these examples do.</p>
 
-<code>
+@({
   (defaggregate taco
     (shell meat cheese lettuce sauce)
     :tag :taco
-    :require ((integerp-of-taco-&gt;shell (integerp shell))))
+    :require ((integerp-of-taco->shell (integerp shell))))
 
   (taco 5 'beef 'swiss 'iceberg 'green)
 
@@ -417,7 +416,7 @@ optimization altogether.</p>
     (shell meat cheese lettuce sauce)
     :tag :taco2
     :legiblep nil
-    :require ((integerp-of-taco2-&gt;shell (integerp shell))))
+    :require ((integerp-of-taco2->shell (integerp shell))))
 
   (taco2 5 'beef 'swiss 'iceberg 'green)
 
@@ -437,22 +436,22 @@ optimization altogether.</p>
 		     (taco2-p taco2))
 		(not (equal taco taco2))))
 
-</code>")
+})")
 
 
 
 (defsection tag
   :parents (cutil)
-  :short "Alias for <tt>car</tt> used by @(see defaggregate)."
+  :short "Alias for @('car') used by @(see defaggregate)."
 
-  :long "<p>The types introduced by <tt>defaggregate</tt> are basically objects
-of the form <tt>(tag . field-data)</tt>, where the tag says what kind of object
-is being represented (e.g., \"employee\").</p>
+  :long "<p>The types introduced by @('defaggregate') are basically objects of
+the form @('(tag . field-data)'), where the tag says what kind of object is
+being represented (e.g., \"employee\").</p>
 
-<p>The <tt>tag</tt> function is an alias for <tt>car</tt>, and so it can be
-used to get the tag from these kinds of objects.  We introduce this alias and
-keep it disabled so that reasoning about the tags of objects does not slow down
-reasoning about <tt>car</tt> in general.</p>"
+<p>The @('tag') function is an alias for @('car'), and so it can be used to get
+the tag from these kinds of objects.  We introduce this alias and keep it
+disabled so that reasoning about the tags of objects does not slow down
+reasoning about @('car') in general.</p>"
 
   (definlined tag (x)
     (declare (xargs :guard t))

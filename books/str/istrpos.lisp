@@ -28,9 +28,9 @@
   :short "Case-insensitivly locate the first occurrence of a substring."
 
   :long "<p>@(call istrpos) is like @(see strpos), but the comparisons are done
-in a case insensitive manner.  It returns <tt>nil</tt> if <tt>x</tt> never
-occurs in <tt>y</tt>, or returns the index of the first character of the first
-occurrence otherwise.</p>
+in a case insensitive manner.  It returns @('nil') if @('x') never occurs in
+@('y'), or returns the index of the first character of the first occurrence
+otherwise.</p>
 
 <p>The function is \"efficient\" in the sense that it does not coerce its
 arguments into lists, but rather traverses both strings with @(see char).  On
@@ -38,8 +38,7 @@ the other hand, it is a naive string search which operates by repeatedly
 calling @(see istrprefixp) rather than some better algorithm.</p>
 
 <p>The \"soundness\" and \"completness\" of strpos are established in the
-theorems <tt>iprefixp-of-istrpos</tt> and
-<tt>completeness-of-istrpos</tt>.</p>"
+theorems @('iprefixp-of-istrpos') and @('completeness-of-istrpos').</p>"
 
   (defund istrpos-impl (x y n xl yl)
     (declare (type string x)

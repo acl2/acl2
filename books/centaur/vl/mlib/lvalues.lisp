@@ -41,8 +41,12 @@ lvalue."
 formed by recursively closing</p>
 
 <ul>
- <li>the identifiers (whether simple or hierarchical), and</li>
- <li>bit- and part-selects, including indexed part-selects like <tt>[i +: 3]</tt></li>
+
+<li>the identifiers (whether simple or hierarchical), and</li>
+
+<li>bit- and part-selects, including indexed part-selects like @('[i +:
+3]')</li>
+
 </ul>
 
 <p>under concatenation.  This definition is permissive enough to include the
@@ -142,9 +146,9 @@ driven.  More specifically, you should <b>never</b> assume that the expressions
 returned by lvalexprs functions are in any way accurate or complete.</p>
 
 <p>In some cases, the syntax of the module item makes clear which expressions
-should be gathered by the corresponding <tt>lvalexprs</tt> functions.  For
-example, every assignment statement has a well-defined left-hand and right-hand
-side, and we just need to collect the expression on the left.</p>
+should be gathered by the corresponding @('lvalexprs') functions.  For example,
+every assignment statement has a well-defined left-hand and right-hand side,
+and we just need to collect the expression on the left.</p>
 
 <p>But gathering the lvalues from module instances is more involved.  Here, we
 need to know which ports are inputs and outputs, which we do not know until the
@@ -176,7 +180,7 @@ their \"wires\" since they're in a different namespace.</p>")
                                  exec-body
                                  body)
 
-  (let* ((mksym-package-symbol 'vl)
+  (let* ((mksym-package-symbol 'vl::foo)
 
          (rec            (mksym type '-p))
          (collect-exec   (mksym type '-lvalexprs-exec))
@@ -198,7 +202,7 @@ their \"wires\" since they're in a different namespace.</p>")
 throughout a @(see " rec-s "), as described in @(see lvalexprs).</p>
 
 <p>For efficiency we use a tail-recursive, accumulator-style functions to do
-the collection.  Under the hood, we also use <tt>nreverse</tt>
+the collection.  Under the hood, we also use @('nreverse')
 optimization.</p>")))
 
     `(defsection ,collect
@@ -248,7 +252,7 @@ optimization.</p>")))
 
 
 (defmacro def-vl-lvalexprs-list (&key list element)
-  (let* ((mksym-package-symbol 'vl)
+  (let* ((mksym-package-symbol 'vl::foo)
 
          (list-rec             (mksym list '-p))
          (list-collect         (mksym list '-lvalexprs))
@@ -485,7 +489,7 @@ must be checked, we assume that @(see argresolve) has been run prior to running
 these functions.</p>")
 
 (defmacro def-vl-lvaluecheck (&key type body extra-formals (guard 't) (long '""))
-  (let* ((mksym-package-symbol 'vl)
+  (let* ((mksym-package-symbol 'vl::foo)
 
          (rec            (mksym type '-p))
          (chk            (mksym type '-lvaluecheck))
@@ -496,12 +500,12 @@ these functions.</p>")
          (short (cat "Check well-formedness of lvalues in a @(see " rec-s ")."))
 
          (long (cat "<p><b>Signature</b> @(call " chk-s ") returns
-<tt>warnings-prime</tt>.</p>
+@('warnings-prime').</p>
 
-<p>We are given <tt>x</tt>, a @(see " rec-s "), and <tt>warnings</tt>, an
-ordinary @(see warnings) accumulator.  We check the lvalues throughout
-<tt>x</tt> for well-formedness in the sense of @(see vl-expr-lvaluep), and
-generate non-fatal warnings for any problematic lvalues encountered.</p>"
+<p>We are given @('x'), a @(see " rec-s "), and @('warnings'), an ordinary
+@(see warnings) accumulator.  We check the lvalues throughout @('x') for
+well-formedness in the sense of @(see vl-expr-lvaluep), and generate non-fatal
+warnings for any problematic lvalues encountered.</p>"
 
 long)))
 

@@ -37,8 +37,8 @@
   :parents (natchars)
   :short "Logically simple definition that is mostly similar to @(see natchars)."
 
-  :long "<p>@(call basic-natchars) almost computes <tt>(natchars n)</tt>, but
-when <tt>n</tt> is zero it returns <tt>nil</tt> instead of <tt>(#\\0)</tt>.</p>"
+  :long "<p>@(call basic-natchars) almost computes @('(natchars n)'), but when
+@('n') is zero it returns @('nil') instead of @('(#\\0)').</p>"
 
   (defund basic-natchars (n)
     (declare (xargs :guard (natp n)))
@@ -96,7 +96,7 @@ when <tt>n</tt> is zero it returns <tt>nil</tt> instead of <tt>(#\\0)</tt>.</p>"
 (defsection natchars
   :parents (numbers)
   :short "Convert a natural number into a list of characters."
-  :long "<p>For instance, <tt>(natchars 123)</tt> is <tt>(#\\1 #\\2 #\\3)</tt>.</p>"
+  :long "<p>For instance, @('(natchars 123)') is @('(#\\1 #\\2 #\\3)').</p>"
 
   (local (defthm digit-list-value-of-rev-of-basic-natchars
            (equal (digit-list-value (acl2::rev (basic-natchars n)))
@@ -179,7 +179,7 @@ when <tt>n</tt> is zero it returns <tt>nil</tt> instead of <tt>(#\\0)</tt>.</p>"
 (defsection natstr
   :parents (numbers)
   :short "Convert a natural number into a string."
-  :long "<p>For instance, <tt>(natstr 123)</tt> is <tt>\"123\"</tt>.</p>"
+  :long "<p>For instance, @('(natstr 123)') is @('\"123\"').</p>"
 
   (definlined natstr (n)
     (declare (type integer n)
@@ -238,7 +238,7 @@ when <tt>n</tt> is zero it returns <tt>nil</tt> instead of <tt>(#\\0)</tt>.</p>"
 
 (defsection revappend-natchars
   :parents (numbers)
-  :short "More efficient version of <tt>(revappend (@(see natchars) n) acc).</tt>"
+  :short "More efficient version of @('(revappend (@(see natchars) n) acc).')"
 
   :long "<p>This can be useful when building strings by consing together
 characters in reverse order.</p>"

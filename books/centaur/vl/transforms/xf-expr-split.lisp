@@ -37,30 +37,30 @@ to every gate and module instance are operation-free.</p>
 <p>The basic idea is to introduce temporary variables, e.g., an assignment
 such as</p>
 
-<code>
+@({
      assign w = a + b * c + d;
-</code>
+})
 
 <p>would be transformed into a series of simpler assignments, e.g.,</p>
 
-<code>
+@({
     assign t1 = b * c;
     assign t2 = a + t1;
     assign w = t2 + d;
-</code>
+})
 
 <p>This involves creating new wire declarations and assignments to those wires,
 and requires us to be very careful to avoid name collisions.  This process also
 needs to be quite efficient. (In one module, splitting once resulted in about
 80,000 wires being introduced.)  This led to the development of <see
 topic='@(url vl-namefactory-p)'>name factories</see> to generate fresh names
-like <tt>temp_12</tt> and <tt>temp_46</tt>.</p>
+like @('temp_12') and @('temp_46').</p>
 
 
 <p>We basically try to split up expressions until every assignment involves
 either 0 or 1 operations.  In the past, we even counted \"wiring\" operations
-like bit-selects, part-selects, concatenation, and so forth.  But this led to
-a lot of unnecessary temporaries.  We now instead stop whenever we reach a
+like bit-selects, part-selects, concatenation, and so forth.  But this led to a
+lot of unnecessary temporaries.  We now instead stop whenever we reach a
 sliceable expression; see @(see expr-slicing).</p>")
 
 
@@ -69,30 +69,30 @@ sliceable expression; see @(see expr-slicing).</p>")
   :parents (split)
   :short "Split up complex subexpressions throughout an expression."
 
-  :long "<p><b>Signature:</b> @(call vl-expr-split) returns <tt>(mv
-warnings-prime x-prime decls-prime assigns-prime nf-prime)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-expr-split) returns @('(mv
+warnings-prime x-prime decls-prime assigns-prime nf-prime)').</p>
 
 <p>Inputs.</p>
 
 <ul>
 
-<li><tt>x</tt> is an expression to split, which we recur through.</li>
+<li>@('x') is an expression to split, which we recur through.</li>
 
-<li><tt>mod</tt> is the module in which <tt>x</tt> occurs.  We need the module
-in order to ensure that the new names we are generating are unique.  Our
-original approach was to pre-compute the namespace, but in our new approach we
-only need the namespace at most once, so we can construct it on demand and, in
-so doing, often avoid needing to construct it at all.</li>
+<li>@('mod') is the module in which @('x') occurs.  We need the module in order
+to ensure that the new names we are generating are unique.  Our original
+approach was to pre-compute the namespace, but in our new approach we only need
+the namespace at most once, so we can construct it on demand and, in so doing,
+often avoid needing to construct it at all.</li>
 
-<li><tt>decls</tt> and <tt>assigns</tt> are accumulators for our answers.  Each
-time we split up an expression, we are going to introduce a new wire that will
-hold the intermediate answer.  This new wire will need a declaration which we
-accumulate into decls, and an assignment which we accumulate into assigns.</li>
+<li>@('decls') and @('assigns') are accumulators for our answers.  Each time we
+split up an expression, we are going to introduce a new wire that will hold the
+intermediate answer.  This new wire will need a declaration which we accumulate
+into decls, and an assignment which we accumulate into assigns.</li>
 
-<li><tt>nf</tt> is a @(see vl-namefactory-p) for generating fresh wires.</li>
+<li>@('nf') is a @(see vl-namefactory-p) for generating fresh wires.</li>
 
-<li><tt>elem</tt> is a @(see vl-modelement-p) that says where this expression
-occurs, and is used for better error messages; <tt>warnings</tt> is an ordinary
+<li>@('elem') is a @(see vl-modelement-p) that says where this expression
+occurs, and is used for better error messages; @('warnings') is an ordinary
 @(see warnings) accumulator.</li>
 
 </ul>
@@ -101,24 +101,24 @@ occurs, and is used for better error messages; <tt>warnings</tt> is an ordinary
 
 <ul>
 
-<li><tt>warnings-prime</tt> includes any updated warnings,</li>
+<li>@('warnings-prime') includes any updated warnings,</li>
 
-<li><tt>x-prime</tt> is an atomic expression which serves as a \"replacement\"
-for <tt>x</tt>.  If <tt>x</tt> is already an atomic expression, then
-<tt>x-prime</tt> will just be <tt>x</tt>; otherwise <tt>x-prime</tt> will be
-an identifier atom, which simply contains the name of a new wire that has been
-generated to store the result of <tt>x</tt>,</li>
+<li>@('x-prime') is an atomic expression which serves as a \"replacement\" for
+@('x').  If @('x') is already an atomic expression, then @('x-prime') will just
+be @('x'); otherwise @('x-prime') will be an identifier atom, which simply
+contains the name of a new wire that has been generated to store the result of
+@('x'),</li>
 
-<li><tt>decls-prime</tt> and <tt>assigns-prime</tt> are updated accumulators
-for declarations and assignments for the newly generated wires, and</li>
+<li>@('decls-prime') and @('assigns-prime') are updated accumulators for
+declarations and assignments for the newly generated wires, and</li>
 
-<li><tt>nf-prime</tt> is the updated name factory.</li>
+<li>@('nf-prime') is the updated name factory.</li>
 
 </ul>
 
-<p>A fundamental claim is that if we add the <tt>new-decls</tt> and
-<tt>new-assigns</tt> to mod, then <tt>new-x</tt> and <tt>x</tt> should be
-equivalent in the Verilog semantics.</p>
+<p>A fundamental claim is that if we add the @('new-decls') and
+@('new-assigns') to mod, then @('new-x') and @('x') should be equivalent in the
+Verilog semantics.</p>
 
 <p>This function is mutually recursive with @(call vl-exprlist-split).</p>"
 
@@ -331,22 +331,21 @@ equivalent in the Verilog semantics.</p>
   :parents (split)
   :short "Split up an assignment if the right-hand side is complicated."
 
-  :long "<p><b>Signature:</b> @(call vl-assign-split) returns <tt>(mv
-warnings-prime x-prime decls-prime assigns-prime nf-prime)</tt>.</p>
+  :long "<p><b>Signature:</b> @(call vl-assign-split) returns @('(mv
+warnings-prime x-prime decls-prime assigns-prime nf-prime)').</p>
 
-<p><tt>x</tt> is a @(see vl-assign-p), and the other arguments are as in @(see
+<p>@('x') is a @(see vl-assign-p), and the other arguments are as in @(see
 vl-expr-split).</p>
 
-<p>Contract: we may replace the assignment <tt>x</tt> with <tt>x-prime</tt>, so
-long as <tt>decls-prime</tt> and <tt>assigns-prime</tt> are also added to the
-module.</p>
+<p>Contract: we may replace the assignment @('x') with @('x-prime'), so long as
+@('decls-prime') and @('assigns-prime') are also added to the module.</p>
 
 <p>This is a little more interesting than usual.  We want to split up the
 right-hand side of an assignment only if it is a compound expression that
 involves more than just atoms.  That is, it's fine if we have an assignment
-like <tt>foo = bar</tt>, or <tt>foo = bar + 1</tt>.  But we do want to split
-once we arrive at <tt>foo = bar + (baz + 1)</tt>, because at that point
-<tt>(baz + 1)</tt> is a compound expression instead of an atom.</p>"
+like @('foo = bar'), or @('foo = bar + 1').  But we do want to split once we
+arrive at @('foo = bar + (baz + 1)'), because at that point @('(baz + 1)') is a
+compound expression instead of an atom.</p>"
 
   (defund vl-assign-split (x mod decls assigns nf warnings)
     "Returns (MV WARNINGS' X' DECLS' ASSIGNS' NF')"

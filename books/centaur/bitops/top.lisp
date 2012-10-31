@@ -49,26 +49,26 @@ representing sets of natural numbers with lists of offset/bitmask pairs.</li>
 
 <h3>Loading the Library</h3>
 
-<p>Although there is a <tt>top.lisp</tt> file, it's generally best to load only
+<p>Although there is a @('top.lisp') file, it's generally best to load only
 what you actually want from the bitops library.  For arithmetic support, you
 might try:</p>
 
-<code>
+@({
  (local (include-book \"bitops/ihs-extensions\" :dir :cbooks))
  (local (include-book \"bitops/equal-by-logbitp\" :dir :cbooks))
-</code>
+})
 
 <p>For the bitsets library:</p>
 
-<code>
+@({
  (include-book \"bitops/bitsets\" :dir :cbooks)
-</code>
+})
 
 <p>Or for the sparse bitsets library:</p>
 
-<code>
+@({
  (include-book \"bitops/sbitsets\" :dir :cbooks)
-</code>
+})
 
 <h3>Copyright Information</h3>
 
@@ -78,11 +78,11 @@ might try:</p>
 Technology</a>.</p>
 
 <p>Contact:</p>
-<code>
+@({
 Centaur Technology Formal Verification Group
 7600-C N. Capital of Texas Highway, Suite 300
 Austin, TX 78731, USA.
-</code>
+})
 
 <p>This program is free software; you can redistribute it and/or modify it
 under the terms of the GNU General Public License as published by the Free

@@ -52,22 +52,22 @@
 ;   ...
 
 (def-vl-modgen vl-make-n-bit-shr-place-p (n p)
-  :short "Generate a module that conditionally shifts an <tt>N</tt> bit
-number by <tt>2**(P-1)</tt> bits to the right."
+  :short "Generate a module that conditionally shifts an @('N') bit number by
+@('2**(P-1)') bits to the right."
 
   :long "<p>We generate a gate-based module that is semantically equivalent
 to:</p>
 
-<code>
+@({
 module VL_N_BIT_SHR_PLACE_P (out, in, shiftp) ;
   output [n-1:0] out;
   input [n-1:0] in;
   input shiftp;
 
-  assign out = shiftp ? (in &gt;&gt; 2**(p-1)) : in;
+  assign out = shiftp ? (in >> 2**(p-1)) : in;
 
 endmodule
-</code>
+})
 
 <p>These \"place shifters\" can be combined to form a full shifter that
 operates on O(log_2 n) muxes.</p>"
@@ -155,20 +155,20 @@ operates on O(log_2 n) muxes.</p>"
 
 
 (def-vl-modgen vl-make-n-bit-shr-by-m-bits (n m)
-  :short "Generate a module that shifts an <tt>N</tt> bit number right by an
-<tt>M</tt> bit number."
+  :short "Generate a module that shifts an @('N') bit number right by an @('M')
+bit number."
 
   :long "<p>We generate a gate-based module that is semantically equivalent
 to:</p>
 
-<code>
+@({
 module VL_N_BIT_SHR_BY_M_BITS (out, a, b) ;
   output [n-1:0] out;
   input [n-1:0] a;
   input [m-1:0] b;
-  assign out = a &gt;&gt; b;
+  assign out = a >> b;
 endmodule
-</code>"
+})"
 
   :guard (and (posp n)
               (posp m))

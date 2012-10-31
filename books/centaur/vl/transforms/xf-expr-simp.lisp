@@ -34,9 +34,9 @@ of ?: expressions, and so forth.</p>
 
 <p><b>WARNING</b>: These transforms are almost certainly unsound in general.
 For instance, even something as simple as removing double negatives isn't
-stricly correct, <tt>~~A</tt> will produce <tt>X</tt> when <tt>A</tt> is
-<tt>Z</tt>.  On the other hand, these rewrites are <i>probably</i> okay if we
-only care about the Boolean values of expressions.</p>
+stricly correct, @('~~A') will produce @('X') when @('A') is @('Z').  On the
+other hand, these rewrites are <i>probably</i> okay if we only care about the
+Boolean values of expressions.</p>
 
 <p><b>BUT FOR SERIOUSLY -- WARNING</b>: I am really not too concerned with
 soundness here.  There are probably many things that could go wrong

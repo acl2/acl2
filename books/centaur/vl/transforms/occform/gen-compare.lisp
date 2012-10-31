@@ -30,33 +30,32 @@
   :long "<p>We generate a gate-based module that is semantically equivalent
 to:</p>
 
-<code>
+@({
 module VL_N_BIT_UNSIGNED_GTE (out, a, b) ;
   output out;
   input [n-1:0] a;
   input [n-1:0] b;
-  assign out = a &gt;= b;
+  assign out = a >= b;
 endmodule
-</code>
+})
 
-<p>Note that in @(see oprewrite) we canonicalize any <tt>&lt;</tt>,
-<tt>&lt;=</tt>, and <tt>&gt;</tt> operators into the <tt>&gt;=</tt> form, so
-this module actually handles all inequality comparisons.</p>
+<p>Note that in @(see oprewrite) we canonicalize any @('<'), @('<='), and
+@('>') operators into the @('>=') form, so this module actually handles all
+inequality comparisons.</p>
 
-<p>The basic idea is to compute <tt>a + ~b + 1</tt> and look at the carry
-chain.  We do this by directly instantiating an adder.  This might be somewhat
+<p>The basic idea is to compute @('a + ~b + 1') and look at the carry chain.
+We do this by directly instantiating an adder.  This might be somewhat
 inefficient since we really don't need to be computing the sum.  On the other
 hand, there are really not very many comparison operators so we suspect we do
 not need to be particularly efficient, and hopefully in any AIG or S-Expression
 based representations the extra work will be automatically thrown away.</p>
 
-<p>Note that the Verilog semantics require that if <tt>a</tt> or <tt>b</tt>
-have any X/Z bits, then the answer should be X.  This is true even when the X
-occurs in an insignificant place, e.g., <tt>1000 &gt; 000x</tt> is considered
-to be X even though no matter what the X digit is, we can see that the
-mathematical answer ought to be 1.  (This behavior might be intended to give
-synthesis tools as much freedom as possible when implementing the
-operation.)</p>"
+<p>Note that the Verilog semantics require that if @('a') or @('b') have any
+X/Z bits, then the answer should be X.  This is true even when the X occurs in
+an insignificant place, e.g., @('1000 > 000x') is considered to be X even
+though no matter what the X digit is, we can see that the mathematical answer
+ought to be 1.  (This behavior might be intended to give synthesis tools as
+much freedom as possible when implementing the operation.)</p>"
 
   :guard (posp n)
   :body
@@ -109,20 +108,20 @@ operation.)</p>"
 
   :long "<p>This is a gate-based module that is semantically equivalent to:</p>
 
-<code>
+@({
 module VL_1_BIT_SIGNED_GTE (out, a, b);
   output out;
   input signed a;
   input signed b;
 
-  assign out = a &gt;= b;
+  assign out = a >= b;
 endmodule
-</code>
+})
 
 <p>Since Verilog uses 2's complement as its representation of signed numbers,
 in the degenerate world of sign-bits we should have \"<em>0 means 0 and 1 means
--1</em>\".  So, counterintuitively, <tt>a &gt;= b</tt> holds except when <tt>a =
-1</tt> and <tt>b = 0</tt>.</p>
+-1</em>\".  So, counterintuitively, @('a >= b') holds except when @('a = 1')
+and @('b = 0').</p>
 
 <p><b>Warning:</b> The above is indeed the behavior implemented by NCVerilog.
 But Verilog-XL appears to be buggy and instead produces results that are
@@ -130,13 +129,13 @@ consistent with an unsigned interpretation; see tests/test-scomp.v.</p>
 
 <p>Our actual module is:</p>
 
-<code>
+@({
 module VL_1_BIT_SIGNED_GTE (out, a, b);
   output out;
   input a, b;
   wire bbar, mainbar, main, xa, xb, xab;
 
-  not(bbar, b);                    // assign main = ~(a &amp; ~b)
+  not(bbar, b);                    // assign main = ~(a & ~b)
   and(mainbar, a, bbar);
   not(main, mainbar);
 
@@ -145,7 +144,7 @@ module VL_1_BIT_SIGNED_GTE (out, a, b);
   xor(xab, xa, xb);
   xor(out, xab, main);
 endmodule
-</code>"
+})"
 
   (defconst *vl-1-bit-signed-gte*
 
@@ -192,22 +191,27 @@ endmodule
   :long "<p>We generate a gate-based module that is semantically equivalent
 to:</p>
 
-<code>
+@({
 module VL_N_BIT_SIGNED_GTE (out, a, b) ;
   output out;
   input signed [n-1:0] a;
   input signed [n-1:0] b;
-  assign out = a &gt;= b;
+  assign out = a >= b;
 endmodule
-</code>
+})
 
 <p>We just do the stupidest thing possible and do cases on the sign bit:</p>
 
 <ul>
- <li>A positive, B positive: unsigned comparison of a &gt;= b</li>
- <li>A positive, B negative: 1 since positives &gt; negatives</li>
- <li>A negative, B positive: 0 since negatives &lt; positives</li>
- <li>A negative, B negative: unsigned comparison of a &gt;= b</li>
+
+<li>A positive, B positive: unsigned comparison of @('a >= b')</li>
+
+<li>A positive, B negative: 1 since positives @('>') negatives</li>
+
+<li>A negative, B positive: 0 since negatives @('<') positives</li>
+
+<li>A negative, B negative: unsigned comparison of @('a >= b')</li>
+
 </ul>
 
 <p>The middle two cases would ordinarily fool an unsigned comparison, e.g., if

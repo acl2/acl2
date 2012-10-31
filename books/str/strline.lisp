@@ -132,17 +132,17 @@
   :parents (str)
   :short "Extract a line from a string by its line number."
 
-  :long "<p>@(call strline) extracts the <tt>n</tt>th line from the string
-<tt>x</tt> and returns it as a string.  The string will <b>not</b> contain a
-newline character.</p>
+  :long "<p>@(call strline) extracts the @('n')th line from the string @('x')
+and returns it as a string.  The string will <b>not</b> contain a newline
+character.</p>
 
 <p>Note that we consider the first line of the string to be 1, not 0.  This is
 intended to agree with the convention followed by many text editors, where the
 first line in a file is regarded as line 1 instead of line 0.  Accordingly, we
-require <tt>n</tt> to be a @(see posp).</p>
+require @('n') to be a @(see posp).</p>
 
-<p>If <tt>n</tt> does not refer to a valid line number for <tt>x</tt>, the
-empty string is returned.</p>"
+<p>If @('n') does not refer to a valid line number for @('x'), the empty string
+is returned.</p>"
 
   (local (in-theory (enable charpos-aux)))
 
@@ -185,29 +185,29 @@ baz")))))
   :parents (str)
   :short "Extract a group of lines from a string by their line numbers."
 
-  :long "<p>@(call strlines) extracts the lines between line number <tt>a</tt>
-and line number <tt>b</tt> from the string <tt>x</tt>, and returns them as a
-new string.</p>
+  :long "<p>@(call strlines) extracts the lines between line number @('a') and
+line number @('b') from the string @('x'), and returns them as a new
+string.</p>
 
-<p>The order of <tt>a</tt> and <tt>b</tt> is irrelevant; the extracted text
-will always be a proper substring of <tt>x</tt>, that is, the line with the
-smallest number will come first.</p>
+<p>The order of @('a') and @('b') is irrelevant; the extracted text will always
+be a proper substring of @('x'), that is, the line with the smallest number
+will come first.</p>
 
 <p>Note that we consider the first line of the string to be 1, not 0.  This is
 intended to agree with the convention followed by many text editors, where the
 first line in a file is regarded as line 1 instead of line 0.  Accordingly, we
-require <tt>a</tt> and <tt>b</tt> to be @(see posp)s.</p>
+require @('a') and @('b') to be @(see posp)s.</p>
 
 <p>Out of bounds conditions.  If the larger line number is past the end of the
-text, the full text is obtained.  In other words, <tt>(strlines 0 100000
-x)</tt> is likely to just be <tt>x</tt> except for very large strings.  If both
-line numbers are past the end of the text, the empty string is returned.</p>
+text, the full text is obtained.  In other words, @('(strlines 0 100000 x)') is
+likely to just be @('x') except for very large strings.  If both line numbers
+are past the end of the text, the empty string is returned.</p>
 
 <p>Newline behavior.  When both line numbers are in range and do not refer to
 the last line in the string, the returned string will have a newline after
 every line.  If the last line is to be included, then it will have a newline
-exactly when <tt>x</tt> ends with a newline.  In the out-of-bounds case where
-both indices are too large, the empty string is returned so there are no
+exactly when @('x') ends with a newline.  In the out-of-bounds case where both
+indices are too large, the empty string is returned so there are no
 newlines.</p>
 
 <p>Efficiency.  This function should be much faster than calling @(see strline)
