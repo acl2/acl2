@@ -53,8 +53,13 @@ We also include some auxiliary lemmas which have proven useful.
 Furthermore, in an attempt to make this version of records extensible (by this,
 we mean that a user can define a new record-like object that uses mset and
 mget), we provide a theory event that labels the lemmas we needed when
-extending this record in our own work.  See theory event extend-records below
-for a list of the lemmas we deemed necessary.
+extending this record in our own work.  To understand why this is helpful,
+first see the theory event extend-records below for a list of the lemmas we
+deemed necessary.  Then, after commenting out the form that enables that theory
+in file books/demos/modeling/memories.lisp, try to certify that
+book (memories.lisp).  Notice that it fails with three subgoals (as of ACL2
+5.0).  The memory model needs the lemmas that theory extensible-records
+provides.
 
 We normalize the record structures (which allows the 'equal-ity based rewrite
 rules) as alists where the keys (cars) are ordered using the total-order added
@@ -382,7 +387,7 @@ well-formed record hypothesis.
 
 (in-theory (disable mset mget))
 
-(deftheory extend-records
+(deftheory extensible-records
 
 ; Theory useful for extending records.
 

@@ -53,7 +53,7 @@
                               (memory-val-p val))))      
   (mset i val mem))
 
-(in-theory (enable extend-records))
+(in-theory (enable extensible-records))
 
 (defun+ update-loc (i val mem)
   (declare (xargs :guard (and (memory-p mem)
@@ -68,7 +68,7 @@
                   :output (memory-val-p (lookup-loc i mem))))
   (mget i mem))
 
-(in-theory (disable extend-records))
+(in-theory (disable extensible-records))
 
 (defthm read-of-write
   (equal (lookup-loc i (update-loc i val mem))
