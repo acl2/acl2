@@ -9238,23 +9238,56 @@
 
 ; Essay on Correctness of Meta Reasoning
 
-; Below, we sketch a proof of the following theorem.
+; Below, we sketch a proof of a theorem asserting the correctness of ACL2's
+; meta reasoning.  We state it in terms of extended metafunctions, but the
+; analogous theorem is true for ordinary metafunctions, following trivially by
+; adding mfc and state as ignored arguments.  We assume a call of hyp-fn in the
+; meta rule, but of course this is fully general; just define hyp-fn to return
+; t if it is not already present.  We also assume hypotheses of (pseudo-termp
+; term) and (alistp a), but of course the theorem then holds without these
+; hypotheses -- just add them back in!  And of course, the mention of
+; meta-extract-hyps is harmless if there are no meta-extract hypotheses; in
+; that case, meta-extract-hyps is the empty conjunction.
+
+; Let *mfc* be a metafunction context, and let {*mfc*} denote the formula
+; asserting the validity of *mfc*, as based on its type-alist, its world, and
+; the assumptions in its ttree.  For example, if *mfc* has only one entry in
+; its type-alist, with no assumptions in the ttree of either that entry or of
+; the mfc's ttree, and that entry binds (foo x) to *ts-non-nil*, then {*mfc*}
+; is the conjunction of (not (equal (foo x)) nil) with the conjunction of the
+; list (thm1 thm2 ...) discussed above, representing all theorems stored in w.
 
 ; Theorem.  Suppose that the following is a theorem, where the only axioms for
-; ev are evaluator axioms.
+; ev are evaluator axioms, and extra-hyps is an arbitrary term.
 
-;  (implies (ev (hyp-fn term) a)
-;           (equal (ev term a) (ev (meta-fn term) a)))
+;   (implies (and (pseudo-termp term)
+;                 (alistp a)
+;                 meta-extract-hyps ; see below
+;                 (ev (hyp-fn term mfc state) a))
+;            (equal (ev term a)
+;                   (ev (meta-fn term mfc state) a)))
 
-; Suppose in addition that lhs, hyp, and rhs are terms, and that:
+; Suppose in addition that lhs, hyp, and rhs are terms, and that in an
+; environment where term is bound to lhs, a is bound to an arbitrary formal
+; alist (list (cons 'var1 v1) ... (cons 'varn vn)), mfc is bound to *mfc* (the
+; current metafunction context), and state is bound to the live ACL2 state:
 
-;  (hyp-fn (quote lhs)) = (quote hyp)
-;  (meta-fn (quote lhs)) = (quote rhs)
+;   (hyp-fn term mfc state) evaluates to hyp;
+;   (meta-fn term mfc state) evaluates to rhs; and
+;   meta-extract-hyps is a conjunction of meta-extract hypotheses,
+;     as recognized by remove-meta-extract-contextual-hyps and
+;     remove-meta-extract-global-hyps
+
+; Finally, assume that ev is not ancestral in any defaxiom, in meta-fn, or in
+; hyp-fn, and that no ancestor of ev with an attachment is ancestral in meta-fn
+; or hyp-fn.
+
+; Let {*mfc*} denote the formula asserting the validity of *mfc*, which is
 
 ; Then the following is a theorem:
 
-;  (implies hyp
-;           (equal lhs rhs)).
+;   (implies hyp
+;            (equal lhs rhs)).
 
 ; The proof of the above theorem uses the following lemma.
 
@@ -9268,66 +9301,223 @@
 
 ; Proof:  An easy induction on the structure of term u.  Q.E.D.
 
-; We may now prove the theorem.  Let (v1 .. vn) be the variables
-; occurring free in lhs, rhs, or hyp.  Let a0 be the term
+; We first prove the theorem in the special case that meta-extract-hyps is the
+; empty conjunction.  Let (v1 .. vn) be the variables occurring free in lhs,
+; rhs, or hyp.  Let a0 be the term
 
-;  (list (cons 'v1 v1) ... (cons 'vn vn)).
+;   (list (cons 'v1 v1) ... (cons 'vn vn)).
 
 ; We instantiate the assumed theorem
 
-;   (implies (ev (hyp-fn term) a)
-;            (equal (ev term a) (ev (meta-fn term) a)))
+;   (implies (and (pseudo-termp term)
+;                 (alistp a)
+;                 (ev (hyp-fn term mfc state) a))
+;            (equal (ev term a) (ev (meta-fn term mfc state) a)))
 
-; replacing term by 'lhs and a by a0:
+; replacing term by 'lhs, a by a0, mfc by *mfc*, and state by the live state,
+; to obtain the following.
 
-;   (implies (ev (hyp-fn 'lhs) a0)
-;            (equal (ev 'lhs a0) (ev (meta-fn 'lhs) a0)))
+;   (implies (and (pseudo-termp 'lhs)
+;                 (alistp a0)
+;                 (ev (hyp-fn 'lhs *mfc* *the-live-state*) a0))
+;            (equal (ev 'lhs a0)
+;                   (ev (meta-fn 'lhs *mfc* *the-live-state*) a0)))
 
-; which is provably equal, by computation, to:
+; which is provably equal, by computation (using the hypotheses), to:
 
 ;   (implies (ev 'hyp a0)
 ;            (equal (ev 'lhs a0) (ev 'rhs a0)))
 
-; By functional instantiation, we may replace ev by an "extended" evaluator for
-; a set of function symbols including all those that occur in hyp, lhs, or rhs.
-; (See the comment in defaxiom-supporters.)  Then by the lemma the formula
-; above simplifies to
+; By functional instantiation, we may replace ev in the hypotheses of the
+; theorem by an "extended" evaluator for a set of function symbols including
+; all those that occur in hyp, lhs, or rhs.  (See the comment in
+; defaxiom-supporters.)  Then by the lemma the formula above simplifies to
 
 ;   (implies hyp
 ;            (equal lhs rhs))
 
 ; as desired.
 
-; We extend the argument above to allow use of attachments (see the Essay on
-; Defattach) in metafunctions, assuming that there is no ancestor (including
-; siblings) of ev that is also an ancestor of hyp-fn or meta-fn.  (This check
-; is implemented in function chk-evaluator-use-in-rule.)  The argument above
-; shows then that
+; We next consider the general case for meta-extract-hyps, except restricting
+; to the case that hyp-fn returns a single value as opposed to (mv term ttree).
+; Then the following is a theorem, because it results from the assumed theorem
+; by strengthening hypotheses.
 
-;   (implies (ev 'hyp a0)
-;            (equal (ev 'lhs a0) (ev 'rhs a0)))
+;   (implies
+;    (and (pseudo-termp term)
+;         (alistp a)
+;         (forall (obj1)
+;                 (ev (meta-extract-contextual-fact obj1 mfc state) a))
+;         (forall (obj2 aa)
+;                 (ev (meta-extract-global-fact obj2 state) aa))
+;         (ev (hyp-fn term mfc state) a))
+;    (equal (ev term a) (ev (meta-fn term mfc state) a)))
 
-; is a theorem of the evaluation history, h_e, because of the computation step,
-; as opposed to the current session history, h_s.  It suffices that h_e not
-; contain any attachments to ancestors of ev, because in that case the formula
-; above is actually a theorem of the sub-history h' containing all ancestors of
-; ev in h_e, by the conservativity of history extension.  But h' is contained
-; (as a set) in h_s, so the formula above is in fact a theory of the current
-; history, as desired.  It remains then to restrict each defattach event so
-; that the resulting evaluation history has no attachments to any ancestor of
-; ev, yet still computes (hyp-fn 'lhs) to be 'hyp and (meta-fn 'lhs) to be
-; 'rhs.  This is easy to do: restrict to attachment pairs <f,g> for which f is
-; ancestral in hyp-fn or meta-fn (and hence none is ancestral in ev).  The
+; We instantiate as before -- but using the current metafunction context,
+; *mfc*, and the current state, *the-live-state*, to obtain:
+
+;   (implies
+;    (and (pseudo-termp 'lhs)
+;         (alistp a0)
+;         (forall (obj1)
+;          (ev (meta-extract-contextual-fact obj1 *mfc* *the-live-state*) a0))
+;         (forall (obj2 aa)
+;          (ev (meta-extract-global-fact obj2 *the-live-state*) aa))
+;         (ev (hyp-fn 'lhs *mfc* *the-live-state*) a0))
+;    (equal (ev 'lhs a0)
+;           (ev (meta-fn 'lhs *mfc* *the-live-state*) a0)))
+
+; As before, this reduces by computation to:
+
+;   (implies
+;    (and (forall (obj1)
+;          (ev (meta-extract-contextual-fact obj1 *mfc* *the-live-state*) a0))
+;         (forall (obj2 aa)
+;          (ev (meta-extract-global-fact obj2 *the-live-state*) aa))
+;         (ev 'hyp a0))
+;    (equal (ev 'lhs a0) (ev 'rhs a0)))
+
+; Now we functionally instantiate as before, this time with an evaluator ev'
+; that includes all function symbols in the current state (i.e., those in the
+; world just before admitting the new evaluator).
+
+;   (implies
+;    (and (forall (obj1)
+;          (ev' (meta-extract-contextual-fact obj1 *mfc* *the-live-state*) a0))
+;         (forall (obj2 aa)
+;          (ev' (meta-extract-global-fact obj2 *the-live-state*) aa))
+;         (ev' 'hyp a0))
+;    (equal (ev' 'lhs a0) (ev' 'rhs a0)))
+
+; As before, the lemma allows us to conclude that the following is a theorem in
+; the world, w', obtained from the original w = (w *the-live-state*) by the
+; introduction of ev'.
+
+;   (implies
+;    (and (forall (obj1)
+;          (ev' (meta-extract-contextual-fact obj1 *mfc* *the-live-state*) a0))
+;         (forall (obj2 aa)
+;          (ev' (meta-extract-global-fact obj2 *the-live-state*) aa))
+;         hyp)
+;    (equal lhs rhs))
+
+; Thus, it remains only to modify the rest of the original argument by dealing
+; with the two universally quantified hypotheses.
+
+; Our first step is to show that the second universally quantified hypothesis
+; is a theorem of w'.  We claim, without proof (but by appeal to
+; plausibility!), that the term (meta-extract-global-fact obj *the-live-state*)
+; is provably a member of the list (*t* 'thm1 'thm2 ...), where (thm1 thm2 ...)
+; enumerates the theorems of w that can be returned by meta-extract-global-fact
+; (i.e., by rewrite-rule-term and meta-extract-formula, from the definition of
+; meta-extract-global-fact).  We thus need to show that for each for each
+; member 'THM of this list, (ev 'THM aa) is a theorem of w'.  By the (argument
+; of the) Lemma above, (ev' 'THM aa) is provably equal to the instance of THM
+; obtained by replacing each variable x by the term (cdr (assoc 'x aa)).  Since
+; THM is a theorem of w and hence w', so is this instance.
+
+; Thus, we now know that the following is a theorem of w':
+
+; (*)  (implies
+;       (and (forall (obj1)
+;             (ev' (meta-extract-contextual-fact obj1 *mfc* *the-live-state*)
+;                  a0))
+;            hyp)
+;       (equal lhs rhs))
+
+; Now, {*mfc*} is assumed true by ACL2 in the context where the meta rule is
+; applied, to replace lhs by rhs.  Thus it suffices to prove that the following
+; is a theorem of w', since then it is a theorem of w by conservativity.
+
+;   (implies
+;    (and {*mfc*}
+;         hyp)
+;    (equal lhs rhs))
+
+; This follows from (*), above, provided that the following is a theorem of w',
+; where obj is a fresh variable.
+
+;   (implies
+;    {*mfc*}
+;    (ev' (meta-extract-contextual-fact obj *mfc* *the-live-state*) a0))
+
+; By the Lemma, this is equivalent to:
+
+;   (implies
+;    (ev' '{*mfc*} a0)
+;    (ev' (meta-extract-contextual-fact obj *mfc* *the-live-state*) a0))
+
+; But this is indeed a theorem, as it is really the spec for
+; meta-extract-contextual-fact: informally, that it only produces terms that
+; evaluate to true.  For example, if obj has the form (:rw term obj nil), then
+; the above call of meta-extract-contextual-fact is equal to a term of the form
+; (equal lhs rhs), where rhs is the result of applying mfc-rw-fn to lhs, *mfc*,
+; and a state whose world is w, the world of *mfc*.  The key is that in such a
+; case, mfc-rw-fn rewrites a term to one that is equal to it with respect to
+; the hypotheses of *mfc* and the world, w.  More precisely, since there are no
+; actual axioms stored about mfc-rw-fn (see *unattachable-primitives*), we
+; assert that we could define a function mfc-rw0-fn in :logic mode that has the
+; same functionality as provided by mfc-rw-raw.  Some reflection may cast doubt
+; on this assertion, because such a definition might naturally not terminate.
+; But we really only need mfc-rw0-fn and mfc-rw-raw to agree on all actual
+; executions, and for that we can imagine that mfc-rw0-fn and all its
+; subfunctions take a clock argument (where mfc-rw0-fn returns a term unchanged
+; when "out of time") whose initial value is sufficiently large to accommodate
+; all actual executions of mfc-rw-fn that will ever take place.  A subtle point
+; here is that proving the above theorem is more than a matter of showing for
+; each particular value of obj that it is a theorem; one would need a sort of
+; omega-rule for that, which corresponds to restricting to standard models.
+; But the point is that with a suitable definition of mfc-rw-fn (really, what
+; we are calling mfc-rw0-fn above), a "uniform proof" can be carried out.
+
+; We extend the argument above to allow the use of attachments (see the Essay
+; on Defattach) in metafunctions, assuming that there is no ancestor (including
+; siblings) of ev, say fn, such that fn has an attachment and is also an
+; ancestor of hyp-fn or meta-fn.  (This check is implemented in function
+; chk-evaluator-use-in-rule.)  First note that because of attachments, the
+; argument above actually shows that the formula
+
+;   (implies
+;    (and (forall (obj1)
+;          (ev (meta-extract-contextual-fact obj1 *mfc* *the-live-state*) a0))
+;         (forall (obj2 aa)
+;          (ev (meta-extract-global-fact obj2 *the-live-state*) aa))
+;         (ev 'hyp a0))
+;    (equal (ev 'lhs a0) (ev 'rhs a0)))
+
+; is a theorem of the evaluation history, h_e, because of the computation of
+; (hyp-fn 'lhs *mfc* *the-live-state*) and (meta-fn 'lhs *mfc*
+; *the-live-state*).  Thus, the formula displayed above is not necessarily a
+; theorem of the current session history, h_s.  Let S be the set of function
+; symbols {ev, meta-extract-contextual-fact, meta-extract-global-fact}, and let
+; h' be the history obtained by restricting h_e to the set of ancestors of S in
+; h_e.  Then the formula above is actually a theorem of h', by the
+; conservativity of history extension.  If no ancestor of S in h_e has an
+; attachment, then h' is contained (as a set) in h_s, so the formula above is
+; in fact a theory of the current history, as desired.  So it suffices to
+; replace h_e with an evaluation history for which no ancestor of S in h has an
+; attachment, yet for which the above computations still yield results as
+; before.  This is easy to do: restrict to attachment pairs <f,g> for which f
+; is ancestral in hyp-fn or meta-fn (and hence none is ancestral in S).  The
 ; Attachment Restriction Lemma in the Essay on Defattach justifies that the
 ; result is a legal evaluation history.  Clearly the computations above use
 ; only attachments in this restricted set, because of closure under ancestors
 ; (see in particular the comment about must-be-equal in constraint-info).
 
+; As an optimization, we avoid checking for attachment pairs <f,g> for which f
+; is a common ancestors of ev with meta-extract-contextual-fact or
+; meta-extract-global-fact.  We can do this because
+; meta-extract-contextual-fact and meta-extract-global-fact do not have any
+; ancestors with attachments.  This is clear for meta-extract-global-fact.  For
+; meta-extract-contextual-fact, we imagine that functions such as mfc-rw0-fn,
+; discussed above, are fully defined, as are all their subfunctions.  But since
+; they are not available in the system anyhow, they cannot receive attachments!
+
 ; Finally we sketch how to modify the arguments above in the case of
-; clause-processors.  In that case we assume that the following has been proved
-; in the current session history, where CL and A are variables, B is a term,
-; and <CL-LIST> represents the application of a clause-processor, as described
-; in :doc clause-processor.
+; clause-processors.  As of this writing, extra-hyps is required to be empty in
+; this case.  Assume that the following has been proved in the current session
+; history, where CL and A are variables, B is a term, and <CL-LIST> represents
+; the application of a clause-processor, as described in :doc clause-processor.
 
 ;   (implies (and (pseudo-term-listp CL)
 ;                 (alistp A)

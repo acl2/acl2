@@ -9679,11 +9679,13 @@
           (t (er soft 'read-file "No file found ~x0." name)))))
 
 (defun formals (fn w)
+  (declare (xargs :guard (and (symbolp fn)
+                              (plist-worldp w))))
   (cond ((flambdap fn)
          (lambda-formals fn))
         (t (let ((temp (getprop fn 'formals t 'current-acl2-world w)))
              (cond ((eq temp t)
-                    (er hard 'formals
+                    (er hard? 'formals
                         "Every function symbol is supposed to have a ~
                          'FORMALS property but ~x0 does not!"
                         fn))
@@ -9694,19 +9696,6 @@
         (t (let ((temp (getprop fn 'formals t 'current-acl2-world w)))
              (cond ((eq temp t) nil)
                    (t (length temp)))))))
-
-(defun stobjs-in (fn w)
-
-; Fn must be a function symbol, not a lambda expression and not an
-; undefined symbol.  See the Essay on STOBJS-IN and STOBJS-OUT.
-
-  (if (eq fn 'cons)
-
-; We call this function on cons so often we optimize it.
-
-      '(nil nil)
-
-    (getprop fn 'stobjs-in nil 'current-acl2-world w)))
 
 (defun stobjs-out (fn w)
 
@@ -9802,12 +9791,6 @@
   routine encounters the constant ~c[(QUOTE (A B C D))], it will replace it
   with ~c[*a*], and the usual untranlation routine will print this as
   ~c[*A*].~/")
-
-(defun all-nils (lst)
-  (declare (xargs :guard (true-listp lst)))
-  (cond ((endp lst) t)
-        (t (and (eq (car lst) nil)
-                (all-nils (cdr lst))))))
 
 (defconst *user-defined-functions-table-keys*
 
@@ -12368,7 +12351,7 @@
                               (pseudo-term-listp (strip-cdrs alist))
                               (pseudo-term-listp l))))
   (cond ((endp l)
-         (mv nil nil))
+         (mv nil l))
         (t (mv-let (changedp1 term)
                    (sublis-var1 alist (car l))
                    (mv-let (changedp2 lst)

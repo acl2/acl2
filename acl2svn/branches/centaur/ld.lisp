@@ -3695,18 +3695,21 @@
   abbrev-evisc-tuple is used, if bound; ~pl[set-evisc-tuple].
 
   The ~c[:fns] option.  As mentioned above, by default the ~c[wet] backtrace
-  shows user-defined functions ``supporting'' the form being evaluated.  This
-  default can be overridden by supplying an explicit list, ~c[fns], of
-  functions, using option ~c[:fns fns]; these will then be the functions whose
-  calls are eligible for inclusion in the backtrace.  The special value
-  ~c[:fns :all] will allow all user-defined function calls in the backtrace.
+  shows user-defined functions that syntactically ``support'' the form being
+  evaluated.  This default can be overridden by supplying an explicit list,
+  ~c[fns], of functions, using option ~c[:fns fns]; these will then be the
+  functions whose calls are eligible for inclusion in the backtrace.  The
+  special value ~c[:fns :all] will allow all user-defined function calls in the
+  backtrace.  This value can be useful when using ~ilc[oracle-apply], for
+  example, since the function being applied isn't typically included as
+  a syntactic supporter of the form being evaluated.
 
   The ~c[:compile] option.  ~c[Wet] uses the ~ilc[trace$] utility to modify the
   definitions of affected functions so that they can record information for the
-  backtrace.  As described above, these affected functions are those
-  ``supporting'' the form unless specified by the ~c[:fns] option.  As is the
-  case for ~c[trace$] ~-[] ~pl[trace$] ~-[] the new definitions of these
-  affected functions may or may not be compiled.  For ~c[trace$] and for
+  backtrace.  As described above, these affected functions are those that
+  syntactically ``support'' the form unless specified by the ~c[:fns] option.
+  As is the case for ~c[trace$] ~-[] ~pl[trace$] ~-[] the new definitions of
+  these affected functions may or may not be compiled.  For ~c[trace$] and for
   ~c[wet], the default is to compile the new definition if and only if the
   original definition was compiled, except: For ~c[wet], if option
   ~c[:fns :all] is provided, then the default is not to compile the affected
@@ -5870,7 +5873,7 @@
   documentation topic provides a gentle introduction to ACL2
   ~ilc[arrays] ~-[] ~pl[arrays-example] ~-[] and additional
   documentation has been provided for getting started with proof trees
-  in emacs ~-[] ~pl[proof-tree-emacs].
+  in emacs ~-[] ~pl[proof-tree].
 
   New Makefile targets ~c[fasl] and ~c[o] have been added to the ~c[books/]
   directory of the distribution.  For example, you might first certify
@@ -19456,6 +19459,29 @@
 ; argument specifies the name of the recognizer, which by default for (defrec
 ; foo ...) is the symbol WEAK-FOO-P, in the same package as foo.
 
+; Among the lower-level changes made in support of meta-extract hypotheses are
+; the following:
+
+;   If x is an atom then (sublis-var1-lst alist x) is x; formerly it was nil.
+;   This change was originally made to support meta-extract hypotheses, but
+;   probably is no longer necessary.  Still, it seems like a good change, since
+;   it "almost" allows us to prove that (sublis-var nil x) = x -- "almost"
+;   because this is only true when x is in quote-normal form.
+
+;   Some mfc-xx functions now have implicit constraints because of
+;   meta-extract-contextual-fact, so *unattachable-primitives* has been
+;   extended accordingly.
+
+;   The Essay on Correctness of Meta Reasoning has been substantially
+;   extended.
+
+; The definition of constraint-info has changed very slightly in order to make
+; it easier to make :common-lisp-compliant (as required in order to make
+; meta-extract-formula :common-lisp-compliant).  The main change is that some
+; zero-ary function constraints might not be in quote-normal form, though that
+; actually seems impossible since the changes away from cons-term would only be
+; relevant for executable zero-ary primitives, of which there are none!
+
   :doc
   ":Doc-Section release-notes
 
@@ -19516,6 +19542,19 @@
   to ~c[(1 2 3)] instead of to ~c[(1 2 3 nil)].  Thanks to Jared Davis for
   suggesting a change to the definition of ~c[butlast].
 
+  The utilities ~c[mfc-ts] and ~c[mfc-ap] (~pl[extended-metafunctions])
+  formerly never used forcing (~pl[force]).  Now, by default, forcing is
+  allowed during execution of these functions if and only if it is permitted in
+  the rewriting environment where they are called.  Moreover, these and the
+  ~c[mfc-xx] utilities ~-[] ~c[mfc-rw], ~c[mfc-rw+], and ~c[mfc-relieve-hyp]
+  ~-[] are now macros that take (optional) keyword arguments ~c[:forcep] and
+  ~c[:ttreep].  The ~c[:forcep] argument is ~c[:same] by default, providing the
+  forcing behavior inherited from the environment (as described above); but it
+  can be the symbol ~c[t] or ~c[nil], indicating that forcing is to be enabled
+  or disabled, respectively.  The ~c[:ttree] argument is ~c[nil] by default,
+  but when it is ~c[t], then a second value is returned, which is a tag-tree.
+  ~l[extended-metafunctions].
+
   ~st[NEW FEATURES]
 
   Among the new features for system hackers are analogues of system function
@@ -19536,6 +19575,18 @@
   those functions is marked as guard-verified when ACL2 is started up; but a
   special developer build can be used to check that the indicated book,
   together with its sub-books, proves that those functions are guard-verified.
+
+  Metatheorems (~pl[meta]) may now have additional hypotheses, called
+  ``meta-extract hypotheses'', that allow metafunctions to depend on the
+  validity of certain terms extracted from the context or the logical
+  ~il[world].  ~l[meta-extract].  Thanks to Sol Swords for providing an initial
+  implementation, together with very helpful discussions as well as a community
+  book, ~c[books/clause-processors/meta-extract-user.lisp], that extends the
+  power of meta-extract hypotheses.
+
+  New utilities ~ilc[oracle-funcall], ~ilc[oracle-apply], and
+  ~ilc[oracle-apply-raw] call a function argument on specified arguments.
+  Thanks to Jared Davis for requesting this utility.
 
   ~st[HEURISTIC IMPROVEMENTS]
 
@@ -19586,6 +19637,18 @@
   Fixed a bug in the implementation of ~ilc[wet] (which is actually in the book
   ~c[books/misc/wet.lisp]).
 
+  A directory, ~c[interface/], is no longer part of the ACL2 distribution.
+  Rather, it is a subdirectory of the ACL2 community books.  Thus, if you fetch
+  those books in the usual way (see the installation instructions on the ACL2
+  home page), you will find a directory ~c[books/interface/].  Subdirectory
+  ~c[emacs/] of the ~c[interface] directory provides Emacs support for
+  ~il[proof-tree]s as well an ~c[acl2-mode].  This change has been reflected in
+  ACL2 file ~c[emacs/emacs-acl2.el], so users will probably not be impacted if
+  they load that file into Emacs.
+
+  The distributed books file ~c[books/Makefile-generic] now causes, by default,
+  a backtrace to be printed when there is a raw Lisp error.
+
   ~st[EMACS SUPPORT]
 
   ~st[EXPERIMENTAL VERSIONS]
@@ -19607,6 +19670,11 @@
   A bug has been fixed that could leave one in a ~il[wormhole], awaiting input,
   after an error, such as an error in an ~c[:in-theory] hint during a proof.
   Thanks to Shilpi Goel for bringing this bug to our attention.
+
+  A key checkpoint for a given goal is now printed only once.  Previously, if a
+  key checkpoint led to more than one goal pushed for proof by induction, the
+  key checkpoint would be printed once for each such goal during the proof, and
+  also once for each such goal in the summary at the end.
   ~eq[]
 
   ~/~/")
@@ -24862,12 +24930,84 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
    attempt genuine proofs! If this suggestion isn't applicable to ~
    your situation, contact the authors.~%~%")
 
-; The standard template for introducing an uninterpreted :logic mode
-; function with execute-only-in-meta-level-functions semantics involving
-; :program mode functions is shown below for mfc-ts.
+; We next introduce uninterpreted :logic mode functions with
+; execute-only-in-meta-level-functions semantics, as per
+; *built-in-defun-overrides*.
 
-; To be overritten; see *built-in-defun-overrides*.
-(defstub mfc-ts (term mfc state) t)
+(defstub mfc-ts-fn (term mfc state forcep) t)
+(defstub mfc-ts-ttree (term mfc state forcep) t)
+(defstub mfc-rw-fn (term obj equiv-info mfc state forcep) t)
+(defstub mfc-rw-ttree (term obj equiv-info mfc state forcep) t)
+(defstub mfc-rw+-fn (term alist obj equiv-info mfc state forcep) t)
+(defstub mfc-rw+-ttree (term alist obj equiv-info mfc state forcep) t)
+(defstub mfc-relieve-hyp-fn (hyp alist rune target bkptr mfc state forcep)
+  t)
+(defstub mfc-relieve-hyp-ttree (hyp alist rune target bkptr mfc state forcep)
+  t)
+(defstub mfc-ap-fn (term mfc state forcep) t)
+(defstub mfc-ap-ttree (term mfc state forcep) t)
+
+(defmacro mfc-ts (term mfc st &key
+                       (forcep ':same)
+                       ttreep)
+  (declare (xargs :guard (and (member-eq forcep '(t nil :same))
+                              (booleanp ttreep))))
+  (if ttreep
+      `(mfc-ts-ttree ,term ,mfc ,st ,forcep)
+    `(mfc-ts-fn ,term ,mfc ,st ,forcep)))
+
+(defmacro mfc-rw (term obj equiv-info mfc st &key
+                       (forcep ':same)
+                       ttreep)
+
+; We introduced mfc-rw+ after Version_3.0.1.  It was tempting to eliminate
+; mfc-rw altogether (and then use the name mfc-rw for what we now call
+; mfc-rw+), but we decided to leave mfc-rw unchanged for backward
+; compatibility.  Worth mentioning: An attempt to replace mfc-rw by
+; corresponding calls of mfc-rw+ in books/arithmetic-3/ resulted in a failed
+; proof (of floor-floor-integer in
+; books/arithmetic-3/floor-mod/floor-mod.lisp).
+
+  (declare (xargs :guard (and (member-eq forcep '(t nil :same))
+                              (booleanp ttreep))))
+  (if ttreep
+      `(mfc-rw-ttree ,term ,obj ,equiv-info ,mfc ,st ,forcep)
+    `(mfc-rw-fn ,term ,obj ,equiv-info ,mfc ,st ,forcep)))
+
+(defmacro mfc-rw+ (term alist obj equiv-info mfc st &key
+                        (forcep ':same)
+                        ttreep)
+  (declare (xargs :guard (and (member-eq forcep '(t nil :same))
+                              (booleanp ttreep))))
+  (if ttreep
+      `(mfc-rw+-ttree ,term ,alist ,obj ,equiv-info ,mfc ,st ,forcep)
+    `(mfc-rw+-fn ,term ,alist ,obj ,equiv-info ,mfc ,st ,forcep)))
+
+(defmacro mfc-relieve-hyp (hyp alist rune target bkptr mfc st &key
+                               (forcep ':same)
+                               ttreep)
+  (declare (xargs :guard (and (member-eq forcep '(t nil :same))
+                              (booleanp ttreep))))
+  (if ttreep
+      `(mfc-relieve-hyp-ttree ,hyp ,alist ,rune ,target ,bkptr ,mfc ,st
+                              ,forcep)
+    `(mfc-relieve-hyp-fn ,hyp ,alist ,rune ,target ,bkptr ,mfc ,st
+                         ,forcep)))
+
+(defmacro mfc-ap (term mfc st &key
+                       (forcep ':same)
+                       ttreep)
+  (declare (xargs :guard (and (member-eq forcep '(t nil :same))
+                              (booleanp ttreep))))
+  (if ttreep
+      `(mfc-ap-ttree ,term ,mfc ,st ,forcep)
+    `(mfc-ap-fn ,term ,mfc ,st ,forcep)))
+
+(defmacro defun-overrides (name formals &rest rest)
+  (list 'quote
+        (list `(defun ,name ,formals ,@rest)
+              `(defun-*1* ,name ,formals
+                 (,name ,@formals)))))
 
 (defun congruence-rule-listp (x wrld)
   (if (atom x)
@@ -24899,26 +25039,6 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
          (msg "an element, ~p0, whose cdr is not a term" (cdar alist)))
         (t (term-alistp-failure-msg (cdr alist) wrld))))
 
-; To be overritten; see *built-in-defun-overrides*.
-(defstub mfc-rw (term obj equiv-info mfc state)
-
-; We introduced mfc-rw+ after Version_3.0.1.  It was tempting to eliminate
-; mfc-rw altogether (and then use the name mfc-rw for what we now call
-; mfc-rw+), but we decided to leave mfc-rw unchanged for backward
-; compatibility.  Worth mentioning: An attempt to replace mfc-rw by
-; corresponding calls of mfc-rw+ in books/arithmetic-3/ resulted in a failed
-; proof (of floor-floor-integer in
-; books/arithmetic-3/floor-mod/floor-mod.lisp).
-
-  t)
-
-; To be overritten; see *built-in-defun-overrides*.
-(defstub mfc-rw+ (term alist obj equiv-info mfc state) t)
-
-; To be overritten; see *built-in-defun-overrides*.
-(defstub mfc-relieve-hyp (hyp alist rune target bkptr mfc state)
-  t)
-
 (defun find-runed-linear-lemma (rune lst)
 
 ; Lst must be a list of lemmas.  We find the first one with :rune rune (but we
@@ -24930,15 +25050,28 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
          (car lst))
         (t (find-runed-linear-lemma rune (cdr lst)))))
 
-; To be overritten; see *built-in-defun-overrides*.
-(defstub mfc-ap (term mfc state) t)
+(defun mfc-force-flg (forcep mfc)
+  (cond ((eq forcep :same)
+         (ok-to-force (access metafunction-context mfc :rcnst)))
+        (t forcep)))
+
+(defun update-rncst-for-forcep (forcep rcnst)
+  (cond ((or (eq forcep :same)
+             (iff forcep
+                  (ok-to-force rcnst)))
+         rcnst)
+        (t (change rewrite-constant rcnst
+                   :force-info
+                   (if forcep
+                       t
+                     'weak)))))
 
 #-acl2-loop-only
 (progn
 
 ; See *built-in-defun-overrides*.
 
-(defun-one-output mfc-ts-raw (term mfc state)
+(defun-one-output mfc-ts-raw (term mfc state forcep)
   (declare (xargs :guard (state-p state)))
 
 ; Type-set doesn't really use state.  But we use the presence of the
@@ -24976,20 +25109,16 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
 ; ancestors as an argument, and calls of type-set-rec occur (at least as of
 ; this writing) only in the mutual-recursion nest where type-set is defined.
 
-          (mv-let
-           (ts ttree)
-           (type-set term
-                     nil         ;;; force-flg
-                     nil         ;;; dwp
-                     (access metafunction-context mfc :type-alist)
-                     (access rewrite-constant
-                             (access metafunction-context mfc :rcnst)
-                             :current-enabled-structure)
-                     (access metafunction-context mfc :wrld)
-                     nil         ;;; ttree
-                     nil nil)
-           (declare (ignore ttree))
-           ts))
+          (type-set term
+                    (mfc-force-flg forcep mfc)
+                    nil ;;; dwp
+                    (access metafunction-context mfc :type-alist)
+                    (access rewrite-constant
+                            (access metafunction-context mfc :rcnst)
+                            :current-enabled-structure)
+                    (access metafunction-context mfc :wrld)
+                    nil ;;; ttree
+                    nil nil))
          (t (cw *meta-level-function-problem-1* 'mfc-ts term)
             (throw-raw-ev-fncall ev-fncall-val))))
        (t (cw *meta-level-function-problem-2* 'mfc-ts mfc
@@ -25021,7 +25150,7 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
       (cw *meta-level-function-problem-3* 'mfc-ts)
       (throw-raw-ev-fncall ev-fncall-val)))))
 
-(defun-one-output mfc-rw-raw (term alist obj equiv-info mfc fn state)
+(defun-one-output mfc-rw-raw (term alist obj equiv-info mfc fn state forcep)
   (declare (xargs :guard (state-p state)))
   (let ((ev-fncall-val `(ev-fncall-null-body-er nil mfc-rw-raw ,term ,alist
                                                 ',obj ,equiv-info mfc ,fn
@@ -25045,7 +25174,8 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
            ((member-eq obj '(t nil ?))
             (sl-let
              (rw ttree)
-             (let ((gstack (access metafunction-context mfc :gstack)))
+             (let ((gstack (access metafunction-context mfc :gstack))
+                   (rcnst (update-rncst-for-forcep forcep rcnst)))
                (rewrite-entry
                 (rewrite term alist 'meta)
                 :rdepth (access metafunction-context mfc :rdepth)
@@ -25064,7 +25194,7 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
                                           wrld))))
                               (t (prog2$ (or (congruence-rule-listp
                                               equiv-info
-                                              (w state))
+                                              wrld)
                                              (er hard! fn
                                                  "~x0 has been passed an ~
                                                   equiv-info argument that is ~
@@ -25085,8 +25215,8 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
                 :rcnst rcnst
                 :gstack gstack
                 :ttree nil))
-             (declare (ignore step-limit ttree))
-             rw))
+             (declare (ignore step-limit))
+             (mv rw ttree)))
            (t (cw "~%~%Meta-level function Problem:  Some meta-level function ~
                    called ~x0 with the OBJ argument set to ~x1.  That ~
                    argument must be one of the three symbols ?, T, or NIL."
@@ -25102,7 +25232,8 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
       (cw *meta-level-function-problem-3* fn)
       (throw-raw-ev-fncall ev-fncall-val)))))
 
-(defun-one-output mfc-relieve-hyp-raw (hyp alist rune target bkptr mfc state)
+(defun-one-output mfc-relieve-hyp-raw (hyp alist rune target bkptr mfc state
+                                           forcep)
 
 ; We ignore issues concerning memoization and free variables below.
 ; As we gain experience with the use of this function, we may want
@@ -25192,7 +25323,7 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
                                      ancestors)
                 :simplify-clause-pot-lst (access metafunction-context mfc
                                                  :simplify-clause-pot-lst)
-                :rcnst rcnst
+                :rcnst (update-rncst-for-forcep forcep rcnst)
                 :gstack (access metafunction-context mfc :gstack)
                 :ttree nil)
                (declare (ignore step-limit failure-reason new-unify-subst ttree
@@ -25209,7 +25340,7 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
       (cw *meta-level-function-problem-3* 'mfc-relieve-hyp)
       (throw-raw-ev-fncall ev-fncall-val)))))
 
-(defun-one-output mfc-ap-raw (term mfc state)
+(defun-one-output mfc-ap-raw (term mfc state forcep)
   (declare (xargs :guard (state-p state)))
   (let ((ev-fncall-val `(ev-fncall-null-body-er nil mfc-ap ,term mfc state)))
     (cond
@@ -25220,17 +25351,18 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
        ((eq mfc *metafunction-context*)
         (cond
          ((termp term (access metafunction-context mfc :wrld))
-          (let ((linearized-list
-                 (linearize term
-                            t   ;;; positivep
-                            (access metafunction-context mfc :type-alist)
-                            (access rewrite-constant
-                                    (access metafunction-context mfc :rcnst)
-                                    :current-enabled-structure)
-                            nil   ;;; force-flg
-                            (access metafunction-context mfc :wrld)
-                            nil   ;;; ttree
-                            state)))
+          (let* ((force-flg (mfc-force-flg forcep mfc))
+                 (linearized-list
+                  (linearize term
+                             t ;;; positivep
+                             (access metafunction-context mfc :type-alist)
+                             (access rewrite-constant
+                                     (access metafunction-context mfc :rcnst)
+                                     :current-enabled-structure)
+                             force-flg
+                             (access metafunction-context mfc :wrld)
+                             nil ;;; ttree
+                             state)))
             (cond ((null linearized-list)
                    nil)
                   ((null (cdr linearized-list))
@@ -25252,7 +25384,7 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
                                               (access metafunction-context
                                                       mfc :rcnst)
                                               :current-enabled-structure)
-                                      nil   ;;; force-flg
+                                      force-flg
                                       (access metafunction-context mfc :wrld))
                            (declare (ignore new-arith-db))
                            contradictionp))
@@ -25275,7 +25407,7 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
                                               (access metafunction-context
                                                       mfc :rcnst)
                                               :current-enabled-structure)
-                                      nil   ;;; force-flg
+                                      force-flg
                                       (access metafunction-context mfc :wrld))
                            (declare (ignore new-arith-db))
                            (if contradictionp1
@@ -25297,7 +25429,7 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
                                                           (access metafunction-context
                                                                   mfc :rcnst)
                                                           :current-enabled-structure)
-                                                  nil   ;;; force-flg
+                                                  force-flg
                                                   (access metafunction-context mfc :wrld))
                                        (declare (ignore new-arith-db))
                                        contradictionp2)

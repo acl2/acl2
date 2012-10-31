@@ -1037,6 +1037,9 @@
      (FETCH-DCL-FIELDS2 KWD-LIST)
      (FMT-CHAR)
      (FMT-VAR)
+     (META-EXTRACT-CONTEXTUAL-FACT)
+     (META-EXTRACT-GLOBAL-FACT)
+     (META-EXTRACT-RW+-TERM)
      (MISSING-FMT-ALIST-CHARS)
      (MISSING-FMT-ALIST-CHARS1 CHAR-TO-TILDE-S-STRING-ALIST)
      (PLAUSIBLE-DCLSP LST)
@@ -1095,6 +1098,164 @@
                          ',fns
                          nil))
               (value-triple :CHK-NEW-VERIFIED-GUARDS-SUCCESS))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; meta-extract support
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(verify-termination-boot-strap formals) ; and guards
+(verify-termination-boot-strap constraint-info) ; and guards
+
+(defund meta-extract-formula (name state)
+
+; This function supports meta-extract-global-fact.  It needs to be executable
+; and in :logic mode (hence, as required by the ACL2 build process,
+; guard-verified), since it may be called by meta functions.
+
+; While this function can be viewed as a version of formula, it applies only to
+; symbols (not runes), it is in :logic mode, and there are a few other
+; differences as well.  The present function requires name to be a symbol and
+; only returns a normalp=nil form of body.  (Otherwise, in order to put body in
+; :logic mode, body would need to be guard-verified, which would probably take
+; considerable effort.)
+
+  (declare (xargs :stobjs state
+                  :guard (symbolp name)))
+  (let ((wrld (w state)))
+    (or (getprop name 'theorem nil 'current-acl2-world wrld)
+        (mv-let (flg prop)
+                (constraint-info name wrld)
+                (cond ((eq prop *unknown-constraints*)
+                       *t*)
+                      (flg (ec-call (conjoin prop)))
+                      (t prop))))))
+
+(verify-termination-boot-strap type-set-quote)
+(verify-guards type-set-quote)
+
+(defun typespec-check (ts x)
+  (declare (xargs :guard (integerp ts)))
+  (if (bad-atom x)
+      (< ts 0) ; bad-atom type intersects every complement type
+
+; We would like to write
+;   (ts-subsetp (type-set-quote x) ts)
+; here, but for that we need a stronger guard than (integerp ts), and we prefer
+; to keep this simple.
+
+    (not (eql 0 (logand (type-set-quote x) ts)))))
+
+(defun meta-extract-rw+-term (term alist equiv rhs state)
+
+; This function supports the function meta-extract-contextual-fact.  Neither of
+; these functions is intended to be executed.
+
+; Meta-extract-rw+-term creates (logically) a term claiming that term under
+; alist is equiv to rhs, where equiv=nil represents 'equal and equiv=t
+; represents 'iff.  If equiv is not t, nil, or an equivalence relation, then
+; *t* is returned.
+
+; Note that this function does not support the use of a geneqv for the equiv
+; argument.
+
+  (declare (xargs :mode :program ; becomes :logic with system-verify-guards
+                  :stobjs state
+                  :guard (and (symbol-alistp alist)
+                              (pseudo-term-listp (strip-cdrs alist))
+                              (pseudo-termp term))))
+  (non-exec
+   (let ((lhs (sublis-var alist term)))
+     (case equiv
+       ((nil) `(equal ,lhs ,rhs))
+       ((t)   `(iff ,lhs ,rhs))
+       (otherwise
+        (if (symbolp equiv)
+            (if (equivalence-relationp equiv (w state))
+                `(,equiv ,lhs ,rhs)
+; else bad equivalence relation
+              *t*)
+          *t*))))))
+
+(defun meta-extract-contextual-fact (obj mfc state)
+
+; This function is not intended to be executed.
+
+; This function may be evaled in the hypothesis of a meta rule, because we know
+; it always produces a term that evaluates to non-nil under the mfc where the
+; metafunction is called, using the specific alist A for which we're proving
+; (evl x a) = (evl (metafn x) a).  The terms it produces reflect the
+; correctness of certain prover operations -- currently, accessing type-alist
+; and typeset information, rewriting, and linear arithmetic.
+
+; This function avoids forcing and does not return a tag-tree.
+
+  (declare (xargs :mode :program ; becomes :logic with system-verify-guards
+                  :stobjs state))
+  (non-exec
+   (case-match obj
+     ((':typeset term . &) ; mfc-ts produces correct results
+      `(typespec-check
+        ',(mfc-ts term mfc state :forcep nil :ttreep nil)
+        ,term))
+     ((':rw+ term alist obj equiv . &) ; MFC-RW+ result is equiv to term/alist.
+      (meta-extract-rw+-term term alist equiv
+                             (mfc-rw+ term alist obj equiv mfc state
+                                      :forcep nil :ttreep nil)
+                             state))
+     ((':rw term obj equiv . &) ; as for :rw+, with alist of nil
+      (meta-extract-rw+-term term nil equiv
+                             (mfc-rw term obj equiv mfc state
+                                     :forcep nil :ttreep nil)
+                             state))
+     ((':ap term . &) ; Can linear arithmetic can falsify term?
+      (if (mfc-ap term mfc state
+                  :forcep nil :ttreep nil)
+          `(not ,term)
+        *t*))
+     ((':relieve-hyp hyp alist rune target bkptr . &) ; hyp/alist proved?
+      (if (mfc-relieve-hyp hyp alist rune target bkptr mfc state
+                           :forcep nil :ttreep nil)
+          (sublis-var alist hyp)
+        *t*))
+     (& *t*))))
+
+(defun rewrite-rule-term (x)
+
+; This function is not intended to be executed.  It turns a rewrite-rule record
+; into a term.
+
+  (declare (xargs :guard t))
+  (non-exec
+   (if (eq (access rewrite-rule x :subclass) 'meta)
+       *t*
+     `(implies ,(conjoin (access rewrite-rule x :hyps))
+               (,(access rewrite-rule x :equiv)
+                ,(access rewrite-rule x :lhs)
+                ,(access rewrite-rule x :rhs))))))
+
+(defun meta-extract-global-fact (obj state)
+
+; This function is not intended to be executed.
+
+; This function may be evaled in the hypothesis of a meta rule, because we know
+; it always produces a term that evaluates to non-nil for any alist.  The terms
+; it produces reflect the correctness of certain facts stored in the world.
+
+  (declare (xargs :mode :program ; becomes :logic with system-verify-guards
+                  :stobjs state))
+  (non-exec
+   (case-match obj
+     ((':formula name)
+      (meta-extract-formula name state))
+     ((':lemma fn n)
+      (let* ((lemmas (getprop fn 'lemmas nil 'current-acl2-world (w state)))
+             (rule (nth n lemmas)))
+        ;; This assumes that the LEMMAS property of any symbol in the ACL2 world
+        ;; is a list of rewrite-rule records which reflect known facts.
+        (if (< (nfix n) (len lemmas))
+            (rewrite-rule-term rule)
+          *t*))) ;; fn doesn't exist or n too big
+     (& *t*))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Define and possibly call system-verify-guards
