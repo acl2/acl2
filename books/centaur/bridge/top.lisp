@@ -285,8 +285,17 @@ restart a server.</p>"
 
 
 (defttag :bridge)
+#+ccl
 (include-raw "bridge-raw.lsp")
-
+#-ccl
+(progn!
+ (set-raw-mode t)
+ (defun run-in-main-thread-raw (irrelevant-variable-for-return-last form)
+   (error "Run-in-main-thread is a CCL utility.~%~It is not supported for ~
+           this host Lisp."))
+ (defun try-to-run-in-main-thread-raw (irrelevant-variable-for-return-last form)
+   (error "NOTE: Try-to-run-in-main-thread is a CCL utility.~%~It is not ~
+           supported for this host Lisp.")))
 
 (defsection in-main-thread
   :parents (bridge)
