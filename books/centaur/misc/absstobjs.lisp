@@ -15,7 +15,8 @@
 (defun defabsstobj-missing-defthms-fn (st-name st$c recognizer creator corr-fn
                                                exports doc event-form state)
   (declare (xargs :mode :program :stobjs state))
-  (b* (((er forms) (defabsstobj-fn1
+  (b* (((er &) (set-ld-redefinition-action '(:doit . :overwrite) state))
+       ((er forms) (defabsstobj-fn1
                      st-name st$c recognizer creator corr-fn exports t doc
                      (msg "( DEFABSSTOBJ-MISSING-DEFTHMS ~x0 ...)" st-name)
                      state event-form))

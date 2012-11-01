@@ -2,6 +2,7 @@
 (in-package "ACL2")
 
 (include-book "tools/bstar" :dir :system)
+(include-book "u32-listp")
 (include-book "xdoc/base" :dir :system)
 (include-book "arithmetic/nat-listp" :dir :system)
 (local (include-book "arithmetic/top-with-meta" :dir :system))
@@ -326,10 +327,14 @@
                 (natp default))
            (nat-listp (resize-list lst n default))))
 
-(defthm smme-memp-resize-list
-  (implies (and (smme-memp lst)
+(defthm smme-memp-is-u32-listp
+  (equal (smme-memp x)
+         (u32-listp x)))
+
+(defthm u32-listp-resize-list
+  (implies (and (u32-listp lst)
                 (unsigned-byte-p 32 default))
-           (smme-memp (resize-list lst n default))))
+           (u32-listp (resize-list lst n default))))
 
 (definline smme-maybe-resize-sizes (n smme)
   (declare (xargs :stobjs smme
@@ -502,9 +507,9 @@
   :hints(("Goal" :in-theory (enable smme-maybe-resize-mem)))
   :rule-classes :linear)
 
-(defthm smme-memp-mem-of-smme-maybe-resize-mem
-  (implies (smme-memp (nth *smme-memi* smme))
-           (smme-memp (nth *smme-memi*
+(defthm u32-listp-mem-of-smme-maybe-resize-mem
+  (implies (u32-listp (nth *smme-memi* smme))
+           (u32-listp (nth *smme-memi*
                           (smme-maybe-resize-mem n smme))))
   :hints(("Goal" :in-theory (enable smme-maybe-resize-mem))))
 
@@ -557,18 +562,18 @@
   (implies (equal (len smme) 4)
            (equal (len (smme-mem-clear n max val smme)) 4)))
 
-(local (defthm smme-memp-update-nth
+(local (defthm u32-listp-update-nth
          (implies (and (unsigned-byte-p 32 v)
                        (< (nfix n) (len x))
-                       (smme-memp x))
-                  (smme-memp (update-nth n v x)))
+                       (u32-listp x))
+                  (u32-listp (update-nth n v x)))
          :hints(("Goal" :in-theory (enable update-nth)))))
 
-(defthm smme-memp-of-smme-mem-clear
-  (implies (and (smme-memp (nth *smme-memi* smme))
+(defthm u32-listp-of-smme-mem-clear
+  (implies (and (u32-listp (nth *smme-memi* smme))
                 (<= (nfix max) (len (nth *smme-memi* smme)))
                 (unsigned-byte-p 32 val))
-           (smme-memp (nth *smme-memi* (smme-mem-clear n max val smme)))))
+           (u32-listp (nth *smme-memi* (smme-mem-clear n max val smme)))))
 
 (defthm smme-wfp-implies-smme-sizes-okp
   (implies (smme-wfp smme)
@@ -851,14 +856,36 @@
   :hints(("Goal" :in-theory (enable nth update-nth)
           :induct t)))
 
+(defun u32-list-listp (x)
+  (declare (xargs :guard t))
+  (if (atom x)
+      (eq x nil)
+    (and (u32-listp (car x))
+         (u32-list-listp (cdr x)))))
+
+(defthm u32-listp-nth-of-u32-list-listp
+  (implies (u32-list-listp x)
+           (u32-listp (nth n x)))
+  :hints(("Goal" :in-theory (enable nth))))
+
 (defun smmlp (smm)
-  (declare (xargs :guard t)
-           (ignore smm))
-  t)
+  (declare (xargs :guard t))
+  (u32-list-listp smm))
 
 (defun smml-create ()
   (declare (xargs :guard t))
   nil)
+
+(defthm u32-list-listp-update-nth
+  (implies (and (u32-listp v)
+                (u32-list-listp x))
+           (u32-list-listp (update-nth n v x)))
+  :hints(("Goal" :in-theory (enable update-nth))))
+
+(defthm u32-list-listp-append
+  (implies (and (u32-list-listp x)
+                (u32-list-listp y))
+           (u32-list-listp (append x y))))
 
 (defthm true-list-listp-update-nth
   (implies (and (true-listp v)
@@ -1016,6 +1043,11 @@
 (defthm true-list-listp-smml-fast-write
   (implies (true-list-listp smm)
            (true-list-listp (smml-fast-write a v smm))))
+
+(defthm u32-list-listp-smml-fast-write
+  (implies (and (u32-list-listp smm)
+                (unsigned-byte-p 32 v))
+           (u32-list-listp (smml-fast-write a v smm))))
 
 (defthm len-smml-fast-write
   (equal (len (smml-fast-write a v smm))
@@ -1216,6 +1248,10 @@
                                 (update-nth i v (nth *smme-memi* smme))
                                 smme))))
 
+(defthm u32-listp-of-make-list-ac
+  (implies (and (u32-listp acc)
+                (unsigned-byte-p 32 default))
+           (u32-listp (make-list-ac sz default acc))))
 
 (encapsulate nil
   (local

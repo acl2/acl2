@@ -6,6 +6,7 @@
 (include-book "xdoc/base" :dir :system) ;; for lnfix :-p
 (include-book "misc/definline" :dir :system)
 (include-book "arith-equivs")
+(include-book "u32-listp")
 (set-enforce-redundancy t)
 
 ;; this is a dumb "memory manager" which can allocate new blocks at will, but
@@ -160,10 +161,16 @@
   (declare (xargs :guard t))
   nil)
 
+(defun u32-list-listp (x)
+  (declare (xargs :guard t))
+  (if (atom x)
+      (eq x nil)
+    (and (u32-listp (car x))
+         (u32-list-listp (cdr x)))))
+
 (defun smmlp (smm)
-  (declare (xargs :guard t)
-           (ignore smm))
-  t)
+  (declare (xargs :guard t))
+  (u32-list-listp smm))
 
 
 ;; This is the actual implementation.  It has one memory array that contains
