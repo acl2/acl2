@@ -33819,3 +33819,217 @@
   ~l[defun-notinline].~/~/"
 
   (defun-inline-form name formals lst 'defund *notinline-suffix*))
+
+; Next comes support for time-tracker (but see axioms.lisp for
+; time-tracker-fn).
+
+#+acl2-par
+(deflock *time-tracker-lock*)
+
+(defun msgp (x)
+  (declare (xargs :guard t))
+  (or (stringp x)
+      (and (true-listp x)
+           (stringp (car x)))))
+
+(defun rational-to-decimal-string (x state)
+  (declare (xargs :mode :program
+                  :stobjs state
+                  :guard (rationalp x)))
+  (mv-let (channel state)
+          (open-output-channel :string :character state)
+          (pprogn (print-rational-as-decimal x channel state)
+                  (er-let* ((str (get-output-stream-string$
+                                  channel state nil)))
+                           (pprogn (close-output-channel channel state)
+                                   (value str))))))
+
+#-acl2-loop-only
+(progn
+
+(defvar *time-tracker-alist* nil)
+
+(defvar *time-tracker-print-p* t)
+
+(defstruct time-tracker
+
+; When this structure is created for a given tag, :init is set to the current
+; run-time.  Tracking is on when latest is non-nil, in which case :latest marks
+; the the run-time at the most recent :start.  :Elapsed marks the total
+; elapsed run-time with tracking on, except that if tracking is currently on
+; (i.e., :latest is non-nil), then the elapsed run-time does not include the
+; run-time since :latest.  :Times is a stricly increasing true-list of
+; rationals, conceptually extended by repeatedly adding the value of :interval,
+; if non-nil.  For example, if :times is (1 2 3) and :interval is 10, then we
+; think of :times as (1 2 3 13 23 33 43 ...).
+
+; :Msg is marked as :read-only simply because we currently see no reason to
+; update the :msg field.
+
+  (init ; reset by :init
+   (get-internal-run-time) :type rational :read-only t)
+  (latest   ; reset by :init, :stop, and :start
+   nil :type (or null rational))
+  (elapsed  ; total time tracked, updated when updating latest
+   0 :type rational)
+  (msg      ; printed when updating :times, if *time-tracker-print-p* is true
+   nil :read-only t)
+  (times    ; updated by :print?
+   nil :type (satisfies rational-listp))
+  (interval ; if non-nil, used for updating a singleton value of :times
+   nil :type (or null rational) :read-only t)
+  )
+
+(defun tt-print-msg (tag msg total)
+  (assert msg)
+  (when *time-tracker-print-p*
+    (let* ((state *the-live-state*) ; local state
+           (*file-clock* *file-clock*)
+           (seconds (/ total internal-time-units-per-second)))
+      (mv-let
+       (erp seconds-as-decimal-string state)
+       (rational-to-decimal-string seconds state)
+       (assert$ (null erp)
+                (fms "TIME-TRACKER [~x0]: ~@1~|"
+                     (list (cons #\0 tag)
+                           (cons #\1 msg)
+                           (cons #\t seconds-as-decimal-string))
+                     (proofs-co state) state nil))))))
+
+(defun tt-init (tag times interval msg)
+  (cond
+   ((not (rational-listp times))
+    (er hard 'time-tracker
+        "Illegal value of :TIMES for :INIT (tag ~x0): ~x1 is not a true list ~
+         of rationals.  See :DOC time-tracker."
+        tag times))
+   ((not (or (null interval)
+             (rationalp interval)))
+    (er hard 'time-tracker
+        "Illegal value of :INTERVAL for :INIT (tag ~x0): ~x1 is neither NIL ~
+         nor a rational number.  See :DOC time-tracker."
+        tag interval))
+   ((and msg
+         (not (msgp msg)))
+    (er hard 'time-tracker
+        "Illegal value of :MSG for :INIT (tag ~x0): ~x1 is not a string or a ~
+         true list whose first element is a string.  See :DOC time-tracker."
+        tag msg))
+   ((assoc-eq tag *time-tracker-alist*)
+    (er hard 'time-tracker
+        "It is illegal to specify :INIT for tag ~x0, because this tag is ~
+         already being tracked.  Specify :END first to solve this problem.  ~
+         See :DOC time-tracker."
+        tag))
+   (t (setq *time-tracker-alist*
+            (acons tag
+                   (make-time-tracker
+                    :msg
+                    (or msg "~st")
+                    :times
+                    (mapcar (lambda (x) (* x internal-time-units-per-second))
+                            times)
+                    :interval
+                    (and interval
+                         (* internal-time-units-per-second interval)))
+                   *time-tracker-alist*)))))
+
+(defun tt-end (tag)
+  (cond
+   ((not (assoc-eq tag *time-tracker-alist*))
+    (er hard 'time-tracker
+        "It is illegal to specify :END for tag ~x0, because this tag is not ~
+         being tracked.  Specify :INIT first to solve this problem.  See :DOC ~
+         time-tracker."
+        tag))
+   (t (setq *time-tracker-alist*
+            (delete-assoc-eq tag *time-tracker-alist*)))))
+
+(defun tt-print? (tag min-time msg)
+
+; When we print based on the first of time-tracker-times (because min-time
+; isn't supplied), we update time-tracker-times, taking the cdr but if the
+; result is empty and the :interval is not nil, then leaving an empty singleton
+; list containing the interval.  If min-time is supplied, then
+; time-tracker-times is not updated.
+
+  (cond
+   ((not (or (null min-time)
+             (rationalp min-time)))
+    (er hard 'time-tracker
+        "Illegal value of :MIN-TIME for :PRINT? (tag ~x0): ~x1 is not a ~
+         rational number or nil.  See :DOC time-tracker."
+        tag min-time))
+   ((and msg
+         (not (msgp msg)))
+    (er hard 'time-tracker
+        "Illegal value of :MSG for :PRINT? (tag ~x0): ~x1 is not a string or ~
+         a true list whose first element is a string.  See :DOC time-tracker."
+        tag msg))
+   (t (let ((tt (cdr (assoc-eq tag *time-tracker-alist*))))
+        (when tt
+          (let* ((times (time-tracker-times tt))
+                 (time (or min-time (car times))))
+            (when time
+              (let ((total (let ((latest (time-tracker-latest tt)))
+                             (if latest
+                                 (+ (time-tracker-elapsed tt)
+                                    (- (get-internal-run-time) latest))
+                               (time-tracker-elapsed tt)))))
+                (when (>= total time)
+                  (let ((msg (or msg (time-tracker-msg tt))))
+                    (when msg
+                      (tt-print-msg tag msg total)))
+                  (when (not min-time) ; see comment above discussing this test
+                    (setf (time-tracker-times tt)
+                          (if (null (cdr times))
+                              (let ((interval (time-tracker-interval tt)))
+                                (if interval
+                                    (list (+ time interval))
+                                  nil))
+                            (cdr times)))))))))))))
+
+(defun tt-stop (tag)
+  (let* ((tt (cdr (assoc-eq tag *time-tracker-alist*)))
+         (latest (and tt (time-tracker-latest tt))))
+    (cond
+     ((not tt)
+      (er hard 'time-tracker
+          "It is illegal to specify :STOP for tag ~x0, because this tag is ~
+           not being tracked.  Specify :INIT first to solve this problem.  ~
+           See :DOC time-tracker."
+          tag))
+     ((not latest)
+      (er hard 'time-tracker
+          "It is illegal to specify :STOP for tag ~x0, because tracking for ~
+           this tag is already in a stopped state.  Specify :START first to ~
+           solve this problem.  See :DOC time-tracker."
+          tag))
+     (t (setf (time-tracker-elapsed tt)
+              (+ (time-tracker-elapsed tt)
+                 (- (get-internal-run-time) latest)))
+        (setf (time-tracker-latest tt)
+              nil)))))
+
+(defun tt-start (tag)
+  (let ((tt (cdr (assoc-eq tag *time-tracker-alist*))))
+    (cond
+     ((not tt)
+      (er hard 'time-tracker
+          "It is illegal to specify :START for tag ~x0, because this tag is ~
+           not being tracked.  Specify :INIT first to solve this problem.  ~
+           See :DOC time-tracker."
+          tag))
+     ((time-tracker-latest tt)
+      (er hard 'time-tracker
+          "It is illegal to specify :START for tag ~x0, because tracking for ~
+           this tag is already in a started state.  Specify :STOP first to ~
+           solve this problem.  See :DOC time-tracker."
+          tag))
+     (t (setf (time-tracker-latest tt)
+              (get-internal-run-time))))))
+)
+
+(defmacro time-tracker (tag &optional (kwd 'nil kwdp)
+                            &key times interval min-time msg)
+  `(time-tracker-fn ,tag ,kwd ,kwdp ,times ,interval ,min-time ,msg))

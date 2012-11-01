@@ -27123,6 +27123,8 @@
     throw-or-attach-call
 
     oracle-apply oracle-apply-raw
+
+    time-tracker-fn
   ))
 
 (defconst *primitive-macros-with-raw-code*
@@ -47663,3 +47665,62 @@ Lisp definition."
   #+acl2-loop-only
   (ec-call (oracle-apply fn args state)))
 
+(defun time-tracker-fn (tag kwd kwdp times interval min-time msg)
+  (declare (xargs :guard t))
+  (cond
+   ((and (booleanp tag) kwdp)
+    (er hard? 'time-tracker
+        "It is illegal to call ~x0 with a Boolean tag and more than one ~
+         argument.  See :DOC time-tracker."
+        'time-tracker))
+   ((not (symbolp tag))
+    (er hard? 'time-tracker
+        "Illegal first argument for ~x0 (should be a symbol): ~x1.  See :DOC ~
+         time-tracker."
+        'time-tracker))
+   ((and (not (booleanp tag))
+         (not (member-eq kwd
+                         '(:init :end :print? :stop :start))))
+    (er hard? 'time-tracker
+        "Illegal second argument for ~x0: ~x1.  See :DOC time-tracker."
+        'time-tracker
+        kwd))
+   ((booleanp tag)
+    #-acl2-loop-only
+    (setf (symbol-value '*time-tracker-print-p*) ; setq gives compiler warning
+          tag)
+    nil)
+   ((or (and times
+             (not (eq kwd :init)))
+        (and interval
+             (not (eq kwd :init)))
+        (and min-time
+             (not (eq kwd :print?)))
+        (and msg
+             (not (or (eq kwd :init)
+                      (eq kwd :print?)))))
+    (er hard? 'time-tracker
+        "Illegal call of ~x0: a non-nil keyword argument of ~x1 is illegal ~
+         for a second argument of ~x2.  See :DOC time-tracker."
+        'time-tracker
+        (cond ((and times
+                    (not (eq kwd :init)))
+               :times)
+              ((and interval
+                    (not (eq kwd :init)))
+               :interval)
+              ((and min-time
+                    (not (eq kwd :print?)))
+               :min-time)
+              (t
+               :msg))
+        kwd))
+   (t #-acl2-loop-only
+      (with-lock *time-tracker-lock*
+                 (case kwd
+                   (:init   (tt-init tag times interval msg))
+                   (:end    (tt-end tag))
+                   (:print? (tt-print? tag min-time msg))
+                   (:stop   (tt-stop tag))
+                   (:start  (tt-start tag))))
+      nil)))
