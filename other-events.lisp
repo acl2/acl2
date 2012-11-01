@@ -22918,18 +22918,18 @@
                      (and (eq type :CREATOR)
                           guard-thm-p))
                  (er-cmp ctx
-                         "The keyword ~@0 for the ~x1 field.  ~@2"
+                         "The keyword ~x0 for the ~@1.  ~@2"
                          type
                          (cond (guard-thm-p
-                                ":GUARD-THM is not allowed")
+                                ":GUARD-THM field is not allowed")
                                (correspondence-p
-                                ":CORRESPONDENCE is not allowed")
+                                ":CORRESPONDENCE field is not allowed")
                                (preserved-p
-                                ":PRESERVED is not allowed")
+                                ":PRESERVED field is not allowed")
                                ((not logic-p)
-                                ":LOGIC is required")
+                                ":LOGIC field is required")
                                (t ; (not exec-p)
-                                ":EXEC is required"))
+                                ":EXEC field is required"))
                          see-doc))
                 ((not (and (symbolp logic)
                            (function-symbolp logic wrld)))

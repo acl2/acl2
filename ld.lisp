@@ -19632,6 +19632,10 @@
   ~ilc[STATE] will be printed as ~c[REPLACED-STATE]; and similarly, a
   user-defined ~il[stobj], say ~c[ST], will be printed as ~c[REPLACED-ST].)
 
+  Some possible error messages for ~ilc[defabsstobj] have been fixed that had
+  been ill-formed.  Thanks to Sol Swords for bringing this bug to our
+  attention.
+
   ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]
 
   Fixed a bug in the implementation of ~ilc[wet] (which is actually in the book
