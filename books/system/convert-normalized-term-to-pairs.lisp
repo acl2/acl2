@@ -68,6 +68,17 @@
    (equal (revappend x y)
           (append (rev x) y))))
 
+(local
+ (defthm cntp-evl-conjoin-rev
+   (iff (cntp-evl (conjoin (rev x)) alist)
+        (cntp-evl (conjoin x) alist))))
+
+(local
+ (defthm cntp-evl-conjoin-append
+   (iff (cntp-evl (conjoin (append x y)) alist)
+        (and (cntp-evl (conjoin x) alist)
+             (cntp-evl (conjoin y) alist)))))
+
 (verify-termination dumb-negate-lit)
 
 ; The following definition is straight out of tau.lisp and could be replaced
@@ -86,30 +97,32 @@
    ((fquotep term)
     (if (equal term *nil*)
         (cond ((consp rhyps)
-               (cons (cons (revappend (cdr rhyps) nil) (dumb-negate-lit (car rhyps)))
+               (cons (cons (revappend (cdr rhyps) nil)
+                           (dumb-negate-lit (car rhyps)))
                      ans))
               (t (cons (cons nil *nil*) ans)))
         ans))
    ((eq (ffn-symb term) 'IF)
-    (convert-normalized-term-to-pairs
-     (cons (fargn term 1) rhyps)
-     (fargn term 2)
-     (convert-normalized-term-to-pairs
-      (cons (dumb-negate-lit (fargn term 1)) rhyps)
-      (fargn term 3)
-      ans)))
+    (cond
+     ((equal (fargn term 3) *nil*)
+      (convert-normalized-term-to-pairs
+       rhyps (fargn term 2)
+       (cons (cons (revappend rhyps nil)
+                   (fargn term 1)) ans)))
+     ((equal (fargn term 2) *nil*)
+      (convert-normalized-term-to-pairs
+       rhyps (fargn term 3)
+       (cons (cons (revappend rhyps nil)
+                   (dumb-negate-lit (fargn term 1))) ans)))
+     (t
+      (convert-normalized-term-to-pairs
+       (cons (fargn term 1) rhyps)
+       (fargn term 2)
+       (convert-normalized-term-to-pairs
+        (cons (dumb-negate-lit (fargn term 1)) rhyps)
+        (fargn term 3)
+        ans)))))
    (t (cons (cons (revappend rhyps nil) term) ans))))
-
-(local
- (defthm cntp-evl-conjoin-rev
-   (iff (cntp-evl (conjoin (rev x)) alist)
-        (cntp-evl (conjoin x) alist))))
-
-(local
- (defthm cntp-evl-conjoin-append
-   (iff (cntp-evl (conjoin (append x y)) alist)
-        (and (cntp-evl (conjoin x) alist)
-             (cntp-evl (conjoin y) alist)))))
 
 (defthm convert-normalized-term-to-pairs-correct
   (implies (and (pseudo-termp term)
@@ -123,5 +136,6 @@
                      (cntp-evl (cntp-M ans)
                                alist)))))
 
-; The inductive proof breaks down into 6,396 Subgoals and takes about 78
+; The inductive proof breaks down into about 6,600 Subgoals and takes about 93
 ; seconds on a 2011 Macbook Pro.
+

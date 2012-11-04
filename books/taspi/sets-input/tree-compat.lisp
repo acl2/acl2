@@ -45,7 +45,8 @@
 
 (verify-guards 
  bi-compat           
- :hints (("Subgoal 1'" :in-theory
+ :hints (("Goal'" ; changed by J Moore after v5-0, from "Subgoal 1", for tau system
+          :in-theory
           (disable subset-list-union-cdr)
           :use (:instance 
                 subset-list-union-cdr
@@ -54,7 +55,8 @@
                 (ftlt 
                  (build-taxa-list-tree taxa-list))
                 (z (rev taxa-list))))
-         ("Subgoal 1'''" :in-theory
+         ("Goal''" ; changed by J Moore after v5-0, from "Subgoal 1'''", for tau system
+          :in-theory
           (disable
            subset-list-btrees-to-fringes-of-term-to-bfringes)
           :use (:instance 

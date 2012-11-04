@@ -1022,23 +1022,57 @@
                   (legal-measure ct-legal-measure)
                   (initial-measure ct-initial-measure))
                  :in-theory (disable trlstp))
-          ("Subgoal 32" ; changed after v4-3 from "Subgoal 34", for tau system
+
+; Comment from J Moore for changes after v5-0 for tau:
+
+; This comment contains (:executable-counterpart tau-system) just so that rune
+; is a reliable marker for changes made to support tau.  These have had to be 
+; renamed so often (with changes in tau) that I have lost track of what they
+; used to be!  Just don't be surprised if this proof fails after changing tau!
+
+; However, an earlier version of this file had these notes:
+;         ("Subgoal 32" ; tau on: {"Subgoal 32"} tau off: {"Subgoal 34"}
+;          :in-theory (disable ct-scheduling xy-routing-top))
+;         ("Subgoal 25" ; tau on: {"Subgoal 25"} tau off: {"Subgoal 26"}
+;          :in-theory (disable ct-scheduling ct-scheduling-assumptions xy-routing-top
+;                              simple-extract-simulation))
+;         ("Subgoal 27" ; tau on: {"Subgoal 27"} tau off: {"Subgoal 28"}
+;          :use (:instance CorrectRoutesp-XYRouting (tmissives m)))
+;         ("Subgoal 26" ; tau on: {"Subgoal 26"} tau off: {"Subgoal 27"}
+;          :use (:instance TrLstp-XYRouting (tmissives m)))
+;         ("Subgoal 13.2'" :use (:instance not-in-v-ids-ct (prev nil)))
+;         ("subgoal 10" :in-theory (disable consp-last trlstp))
+;         ("subgoal 10.2" :in-theory (e/d (trlstp) (consp-last)))
+;         ("subgoal 10.1" :use ((:instance tm-ids-tomissives-v-ids (x trlst))
+;                               (:instance tomissives-extract-sublst
+;                                          (l (totmissives trlst))
+;                                          (ids (tm-ids (totmissives trlst))))
+;                               (:instance totmissives-extract-sublst (l trlst) (ids (v-ids trlst)))
+;                               (:instance extract-sublst-identity)))
+;         ("Subgoal 9" :use (:instance ct-scheduled-correctness (prev nil)))
+;         ("Subgoal 9.4" :use (:instance ct-delayed-correctness (st ntkstate) (prev nil)))
+;         ("Subgoal 9.3" :use (:instance subsetp-scheduled-id-ct (prev nil)))
+;         ("Subgoal 8.2" :use (:instance ct-scheduled-correctness (st ntkstate) (prev nil)))))
+
+          ("Subgoal 30"
            :in-theory (disable ct-scheduling xy-routing-top))
-          ("Subgoal 25" ; changed after v4-3 from "Subgoal 26", for tau system
-           :in-theory (disable ct-scheduling ct-scheduling-assumptions xy-routing-top simple-extract-simulation))
-          ("Subgoal 27" ; changed after v4-3 from "Subgoal 28", for tau system
+          ("Subgoal 23"
+           :in-theory (disable ct-scheduling ct-scheduling-assumptions xy-routing-top
+                               simple-extract-simulation))
+          ("Subgoal 25"
            :use (:instance CorrectRoutesp-XYRouting (tmissives m)))
-          ("Subgoal 26" ; changed after v4-3 from "Subgoal 27", for tau system
+          ("Subgoal 24"
            :use (:instance TrLstp-XYRouting (tmissives m)))
           ("Subgoal 13.2'" :use (:instance not-in-v-ids-ct (prev nil)))
-          ("subgoal 10" :in-theory (disable consp-last trlstp))
-          ("subgoal 10.2" :in-theory (e/d (trlstp) (consp-last)))
-          ("subgoal 10.1" :use ((:instance tm-ids-tomissives-v-ids (x trlst))
-                                (:instance tomissives-extract-sublst (l (totmissives trlst)) (ids (tm-ids (totmissives trlst))))
+          ("Subgoal 8" :in-theory (disable consp-last trlstp))
+          ("Subgoal 8.2" :in-theory (e/d (trlstp) (consp-last)))
+          ("Subgoal 8.1" :use ((:instance tm-ids-tomissives-v-ids (x trlst))
+                                (:instance tomissives-extract-sublst
+                                           (l (totmissives trlst))
+                                           (ids (tm-ids (totmissives trlst))))
                                 (:instance totmissives-extract-sublst (l trlst) (ids (v-ids trlst)))
                                 (:instance extract-sublst-identity)))
-          ("Subgoal 9" :use (:instance ct-scheduled-correctness (prev nil)))
-          ("Subgoal 9.4" :use (:instance ct-delayed-correctness (st ntkstate) (prev nil)))
-          ("Subgoal 9.3" :use (:instance subsetp-scheduled-id-ct (prev nil)))
-          ("Subgoal 8.2" :use (:instance ct-scheduled-correctness (st ntkstate) (prev nil)))))
+          ))
+
+
 

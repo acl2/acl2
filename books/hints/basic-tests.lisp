@@ -1177,15 +1177,19 @@
 
  (local
   (defun nonlinearp-default-hint (stable-under-simplificationp hist pspv)
-    (declare (xargs :guard (and (consp pspv)
-                                (consp (car pspv))
-                                (consp (caar pspv))
-                                (consp (cdaar pspv))
-                                (consp (cddaar pspv))
-                                (consp (cdr (cddaar pspv)))
-                                (consp (cddr (cddaar pspv)))
-                                (consp (cdddr (cddaar pspv)))
-                                (consp (cddddr (cddaar pspv))))))
+    (declare
+     (xargs
+      :guard ; Guard change for tau after ACL2 Version 5.0 by J Moore:
+      (and (consp pspv)
+           (consp (car pspv))
+           (consp (car (car pspv)))
+           (consp (cdr (car (car pspv))))
+           (consp (cdr (cdr (car (car pspv)))))
+           (consp (cdr (cdr (cdr (car (car pspv))))))
+           (consp (cdr (cdr (cdr (cdr (car (car pspv)))))))
+           (consp (cdr (cdr (cdr (cdr (cdr (car (car pspv))))))))
+           (consp (cdr (cdr (cdr (cdr (cdr (cdr (car (car pspv)))))))))
+           (consp (car (cdr (cdr (cdr (cdr (cdr (cdr (car (car pspv)))))))))))))
     (cond (stable-under-simplificationp
            (if (not (access rewrite-constant
                             (access prove-spec-var pspv :rewrite-constant)
@@ -1225,15 +1229,19 @@
 
  (local
   (defun nonlinearp-default-hint (stable-under-simplificationp hist pspv)
-    (declare (xargs :guard (and (consp pspv)
-                                (consp (car pspv))
-                                (consp (caar pspv))
-                                (consp (cdaar pspv))
-                                (consp (cddaar pspv))
-                                (consp (cdr (cddaar pspv)))
-                                (consp (cddr (cddaar pspv)))
-                                (consp (cdddr (cddaar pspv)))
-                                (consp (cddddr (cddaar pspv))))))
+    (declare
+     (xargs
+      :guard ; Guard change for tau after ACL2 Version 5.0 by J Moore:
+      (and (consp pspv)
+           (consp (car pspv))
+           (consp (car (car pspv)))
+           (consp (cdr (car (car pspv))))
+           (consp (cdr (cdr (car (car pspv)))))
+           (consp (cdr (cdr (cdr (car (car pspv))))))
+           (consp (cdr (cdr (cdr (cdr (car (car pspv)))))))
+           (consp (cdr (cdr (cdr (cdr (cdr (car (car pspv))))))))
+           (consp (cdr (cdr (cdr (cdr (cdr (cdr (car (car pspv)))))))))
+           (consp (car (cdr (cdr (cdr (cdr (cdr (cdr (car (car pspv)))))))))))))
     (cond (stable-under-simplificationp
            (if (not (access rewrite-constant
                             (access prove-spec-var pspv :rewrite-constant)

@@ -373,7 +373,8 @@
 		      proof-step-p equiv-p rel mul-rel
 		      exists-local-peak replace-local-peak
 		      transform-local-peak exists-rel-bigger))
-	   ("Subgoal 8" :use 
+	   ("Subgoal 7" ; changed by J Moore after v5-0, from "Subgoal 8", for tau
+            :use
 	    (:instance rel-transitive
 		       (x nwm::x) (y nwm::y) (z nwm::z))))))
 

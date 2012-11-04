@@ -420,8 +420,9 @@
 (verify-guards 
  build-term-top
  :hints (("Goal" :do-not-induct t)
-         ("Subgoal 1" :in-theory (disable not-member-through-sort
-                                            valid-bdd-list-through-sort)
+         ("Goal''" ; changed by J Moore after v5-0, from "Subgoal 1", for tau system
+          :in-theory
+          (disable not-member-through-sort valid-bdd-list-through-sort)
           :use ((:instance 
                  not-member-through-sort
                  (x nil)
@@ -429,12 +430,12 @@
                  (ftlt (build-taxa-list-tree taxa-list))
                  (tia (taxa-list-to-taxon-index taxa-list)))
                 (:instance 
-                valid-bdd-list-through-sort
-                (x bdd-fringes)
-                (full-taxa-list-tree
-                 (build-taxa-list-tree taxa-list))
-                (taxon-index-alist
-                 (taxa-list-to-taxon-index taxa-list)))))))
+                 valid-bdd-list-through-sort
+                 (x bdd-fringes)
+                 (full-taxa-list-tree
+                  (build-taxa-list-tree taxa-list))
+                 (taxon-index-alist
+                  (taxa-list-to-taxon-index taxa-list)))))))
 
 (defun build-term-top-guard-t (bdd-fringes taxa-list)
   ":Doc-Section TASPI

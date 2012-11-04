@@ -466,7 +466,7 @@ To certify this book, first, create a world with the following package:
 		  (acl2::divides-p-witness divides-p-witness)
 		  (acl2::unit-p unit-p))
 		 (acl2::x x)))
-	  ("Subgoal 14"
+	  ("Subgoal 11" ; changed by J Moore after v5-0, from "Subgoal 14", for tau
 	   :by (:instance
 		Division-property
 		(x acl2::x)

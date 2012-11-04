@@ -422,7 +422,17 @@
                                           (list i j k m))
                         (equal (uchar=>utf8 (utf8-combine4 i j k m))
                                (list i j k m))))
-          :hints(("Goal" :in-theory (enable utf8-combine4-guard)))))
+          :hints (("Goal"
+                   :in-theory
+                   (e/d (utf8-combine4-guard)
+
+; Note from J Moore about this change after v5-0: There is an extensive note in
+; tau.lisp about lemma4 of utf8-decode.lisp!  There are several ways to deal
+; with a slowdown caused by tau in the following proof.  We chose ``Mechanism
+; D'' of the extensive note mentioned above: disable test-utf8-combine4 for
+; this proof.
+
+                        ((:executable-counterpart test-utf8-combine4)))))))
 
  (comp t)
 

@@ -280,7 +280,14 @@
 ;; are strings or NIL.
 
 (local (defun f (x)
-         (declare (type string x))
+         (declare (type string x)
+; Added by Matt K. foo tau change 11/2012 that pays attention to enabled status
+; of executable counterparts:
+                  (xargs :guard-hints
+                         (("Goal"
+                           :in-theory
+                           (enable (:executable-counterpart regex-p)
+                                   (:executable-counterpart parse-opts-p))))))
          (b* (((match "([A-Z]+)_([0-9]+)"
                       :full f
                       :substrs (word num)) x))

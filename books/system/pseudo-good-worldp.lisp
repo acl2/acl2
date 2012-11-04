@@ -1043,15 +1043,47 @@
   (and (pseudo-evg-singletonsp1 lst)
        (lexordered-ascendingp lst)))
 
+; (defrec tau-interval (domain (lo-rel . lo) . (hi-rel . hi)) t)
+
+(defun pseudo-tau-intervalp (x)
+  (cond
+   ((eq x nil) t)
+   ((and (consp x)
+         (consp (cdr x))
+         (consp (car (cdr x)))
+         (consp (cdr (cdr x))))
+    (let ((dom (car x))
+          (lo-rel (car (cadr x)))
+          (lo (cdr (cadr x)))
+          (hi-rel (car (cddr x)))
+          (hi (cdr (cddr x))))
+      (and (or (eq dom 'integerp)
+               (eq dom 'rationalp)
+               (eq dom 'acl2-numberp)
+               (null dom))
+           (if (eq dom 'integerp)
+               (and (null lo-rel)
+                    (or (null lo) (integerp lo))
+                    (null hi-rel)
+                    (or (null hi) (integerp hi)))
+               (and (booleanp lo-rel)
+                    (or (null lo)
+                        (rationalp lo))
+                    (booleanp hi-rel)
+                    (or (null hi)
+                        (rationalp hi)))))))
+   (t nil)))
+
 (defun pseudo-taup (x)
 
 ; While the defrec for tau is
 ; (defrec tau
-;   ((pos-evg . neg-evgs) . (pos-pairs . neg-pairs))
+;   ((pos-evg . neg-evgs) interval . (pos-pairs . neg-pairs))
 ;   t)
 ; where
 ; pos-evg:   nil or a singleton list containing an evg
 ; neg-evgs:  list of singleton lists of evgs, duplicate-free ordered ascending
+; interval:  pseudo-tau-intervalp
 ; pos-pairs: list of tau-pairs, duplicate-free, ordered descending
 ; neg-pairs: list of tau-pairs, duplicate-free ordered descending
 
@@ -1064,18 +1096,24 @@
          (equal x nil))
         ((atom (car x))
          (and (equal (car x) nil)
-              (cond ((atom (cdr x))
-                     (equal (cdr x) nil))
-                    (t (and (pseudo-tau-pairsp (car (cdr x)))
-                            (pseudo-tau-pairsp (cdr (cdr x))))))))
+              (if (consp (cdr x))
+                  (and (pseudo-tau-intervalp (cadr x))
+                       (cond ((atom (cddr x))
+                              (equal (cddr x) nil))
+                             (t (and (pseudo-tau-pairsp (car (cddr x)))
+                                     (pseudo-tau-pairsp (cdr (cddr x)))))))
+                  (equal (cdr x) nil))))
         (t (and (and (or (null (car (car x)))
                          (pseudo-evg-singletonp (car (car x))))
                      (pseudo-evg-singletonsp (cdr (car x))))
-                (cond
-                 ((atom (cdr x))
-                  (equal (cdr x) nil))
-                 (t (and (pseudo-tau-pairsp (car (cdr x)))
-                         (pseudo-tau-pairsp (cdr (cdr x))))))))))
+                (if (consp (cdr x))
+                    (and (pseudo-tau-intervalp (cadr x))
+                         (cond
+                          ((atom (cddr x))
+                           (equal (cddr x) nil))
+                          (t (and (pseudo-tau-pairsp (car (cddr x)))
+                                  (pseudo-tau-pairsp (cdr (cddr x)))))))
+                    (equal (cdr x) nil))))))
 
 (defun pseudo-taup-listp (x)
   (cond ((atom x) (equal x nil))
@@ -2187,19 +2225,26 @@
 
 (defun pseudo-signaturep (x)
 
-; (defrec signature-rule (input-tau-list output-sign output-recog) t)
+; (defrec signature-rule (input-tau-list (vars . dependent-hyps) output-sign output-recog) t)
 ; where:
 ; :inputs-tau-list  - a list of tau in 1:1 correspondence with formals
-; :output-sign     - T (positive) or NIL (negative)
-; :output-recog    - (i . pred) | (evg) ; i.e., tau-pair or singleton evg list
+; :vars             - a list of distinct symbols
+; :dependent-hyps   - a list of terms
+; :output-sign      - T (positive) or NIL (negative)
+; :output-recog     - (i . pred) | (evg) ; i.e., tau-pair or singleton evg list
 
 
   (and (true-listp x)
-       (equal (len x) 3)
+       (equal (len x) 4)
        (let ((inputs-tau-list (nth 0 x))
-             (output-sign (nth 1 x))
-             (output-recog (nth 2 x)))
+             (vars-and-dependent-hyps (nth 1 x))
+             (output-sign (nth 2 x))
+             (output-recog (nth 3 x)))
          (and (pseudo-taup-listp inputs-tau-list)
+              (consp vars-and-dependent-hyps)
+              (symbol-listp (car vars-and-dependent-hyps))
+              (no-duplicatesp-eq (car vars-and-dependent-hyps))
+              (pseudo-term-listp (cdr vars-and-dependent-hyps))
               (booleanp output-sign)
               (or (pseudo-tau-pairp nil output-recog)
                   (pseudo-evg-singletonp output-recog))))))

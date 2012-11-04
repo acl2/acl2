@@ -38,15 +38,37 @@
 ;;; arithmetic for one round (goal being simplified) only.
 
 (defun nonlinearp-default-hint (stable-under-simplificationp hist pspv)
-  (declare (xargs :guard (and (consp pspv)
-			      (consp (car pspv))
-			      (consp (caar pspv))
-			      (consp (cdaar pspv))
-			      (consp (cddaar pspv))
-			      (consp (cdr (cddaar pspv)))
-			      (consp (cddr (cddaar pspv)))
-			      (consp (cdddr (cddaar pspv)))
-			      (consp (cddddr (cddaar pspv))))))
+
+; Guard change for tau after ACL2 Version 5.0 by J Moore:
+
+; The hideous guard below is just the expected guard for
+
+;  (access rewrite-constant
+;          (access prove-spec-var pspv :rewrite-constant)
+;          :nonlinearp)
+
+; where, by ``expected,'' we mean to exclude the pathological cases allowing
+; car and cdr to be applied to nil.  Unfortuantely, the guard must be changed
+; every time the locations of the two fields change in their respective
+; defrecs.  To get it, translate the access expression above and then write a
+; consp of every subterm but the top-most.  In addition, you must also change
+; the guard on the definition of this function where it is found -- twice! --
+; in books/hints/basic-tests.lisp.
+
+  (declare
+   (xargs
+    :guard
+    (and (consp pspv)
+         (consp (car pspv))
+         (consp (car (car pspv)))
+         (consp (cdr (car (car pspv))))
+         (consp (cdr (cdr (car (car pspv)))))
+         (consp (cdr (cdr (cdr (car (car pspv))))))
+         (consp (cdr (cdr (cdr (cdr (car (car pspv)))))))
+         (consp (cdr (cdr (cdr (cdr (cdr (car (car pspv))))))))
+         (consp (cdr (cdr (cdr (cdr (cdr (cdr (car (car pspv)))))))))
+         (consp (car (cdr (cdr (cdr (cdr (cdr (cdr (car (car pspv)))))))))))))
+
   (cond (stable-under-simplificationp
          (if (not (access rewrite-constant
 			       (access prove-spec-var pspv :rewrite-constant)
