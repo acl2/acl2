@@ -47808,6 +47808,7 @@ Lisp definition."
   #+acl2-loop-only
   (ec-call (oracle-apply fn args state)))
 
+#-acl2-par
 (defun time-tracker-fn (tag kwd kwdp times interval min-time msg)
   (declare (xargs :guard t))
   (cond
@@ -47862,15 +47863,20 @@ Lisp definition."
                :msg))
         kwd))
    (t #-acl2-loop-only
-      (with-lock *time-tracker-lock*
-                 (case kwd
-                   (:init   (tt-init tag times interval msg))
-                   (:end    (tt-end tag))
-                   (:print? (tt-print? tag min-time msg))
-                   (:stop   (tt-stop tag))
-                   (:start  (tt-start tag))))
+      (case kwd
+        (:init   (tt-init tag times interval msg))
+        (:end    (tt-end tag))
+        (:print? (tt-print? tag min-time msg))
+        (:stop   (tt-stop tag))
+        (:start  (tt-start tag)))
       nil)))
 
+#-acl2-par
 (defmacro time-tracker (tag &optional (kwd 'nil kwdp)
                             &key times interval min-time msg)
   `(time-tracker-fn ,tag ,kwd ,kwdp ,times ,interval ,min-time ,msg))
+
+#+acl2-par
+(defmacro time-tracker (&rest args)
+  (declare (ignore args))
+  nil)

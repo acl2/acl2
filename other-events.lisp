@@ -33823,9 +33823,6 @@
 ; Next comes support for time-tracker (but see axioms.lisp for
 ; time-tracker-fn).
 
-#+acl2-par
-(deflock *time-tracker-lock*)
-
 (defun msgp (x)
   (declare (xargs :guard t))
   (or (stringp x)
