@@ -1316,27 +1316,6 @@
          (and (equal rhs (fargn term 1))
               (equal lhs (fargn term 2))))))
 
-(defun complementaryp (lit1 lit2)
-  (declare (xargs :guard (and (pseudo-termp lit1)
-                              (pseudo-termp lit2))))
-
-; Suppose lit1 and lit2 are terms and neither is of the form (NOT (NOT &)).
-; Then we determine whether one is the complement of the other, i.e., one
-; is (NOT lit) where lit is the other.  Note that we do not use any
-; commuativity knowledge.  Thus, 
-
-; WARNING:  (EQUAL A B) and (NOT (EQUAL B A)) are *not* complementaryp, by
-; this definition!
-
-  (or (and (nvariablep lit1)
-           (not (fquotep lit1))
-           (eq (ffn-symb lit1) 'not)
-           (equal (fargn lit1 1) lit2))
-      (and (nvariablep lit2)
-           (not (fquotep lit2))
-           (eq (ffn-symb lit2) 'not)
-           (equal (fargn lit2 1) lit1))))
-
 (defun member-term2 (fn lhs rhs cl)
 
 ; We determine whether either `(,fn ,lhs ,rhs) or `(,fn ,rhs ,lhs) is
@@ -4899,22 +4878,6 @@
 
 )
 
-(defun pairlis-x1 (x1 lst)
-
-; Cons x1 onto the front of each element of lst.
-
-  (cond ((null lst) nil)
-        (t (cons (cons x1 (car lst))
-                 (pairlis-x1 x1 (cdr lst))))))
-
-(defun pairlis-x2 (lst x2)
-
-; Make an alist pairing each element of lst with x2.
-
-  (cond ((null lst) nil)
-        (t (cons (cons (car lst) x2)
-                 (pairlis-x2 (cdr lst) x2)))))
-
 (defrec linear-lemma ((nume . hyps) max-term concl
                       backchain-limit-lst rune
                       .
@@ -4936,6 +4899,14 @@
 ; change the definition in axioms.lisp of the function |Access REWRITE-CONSTANT
 ; record field CURRENT-CLAUSE|.  If you don't, however, the build will fail
 ; loudly (via a redefinition error).
+
+; WARNING: If you change the layout of the rewrite-constant in a way that
+; affects the position on :nonlinearp, you must change the guard on the
+; definitions of nonlinearp-default-hint in (at least) the following
+; distributed books:
+
+; books/arithmetic-5/lib/basic-ops/default-hint.lisp  -- one occurrence
+; books/hints/basic-tests.lisp -- two occurrences
 
 ; WARNING: The name "rewrite-constant" is a misnomer because it is not
 ; really constant during rewriting.  The active-theory is frequently
@@ -4983,8 +4954,9 @@
    (pt restrictions-alist . expand-lst)
    (force-info fns-to-be-ignored-by-rewrite . terms-to-be-ignored-by-rewrite)
    (top-clause . current-clause)
-   .
-   ((current-literal . oncep-override) . (nonlinearp . case-split-limitations)))
+   (current-literal . oncep-override)
+   (nonlinearp . cheap-linearp)
+   . case-split-limitations)
   t)
 
 ; Active-theory is either :standard or :arithmetic.  (It was added first to
@@ -5040,6 +5012,9 @@
 ; Nonlinearp -- A boolean indicating whether nonlinear arithmetic should be
 ; considered to be active.
 
+; Cheap-linearp -- A boolean indicating whether linear arithmetic should avoid
+; rewriting terms to turn into polys and avoid adding linear lemmas.
+
 ; We always obtain our rewrite-constant by loading relevant information into
 ; the following empty constant.  Warning: The constant below is dangerously
 ; useless less the current-enabled-structure is set to an enabled-structure.
@@ -5059,6 +5034,7 @@
         :fns-to-be-ignored-by-rewrite nil
         :force-info nil
         :nonlinearp nil
+        :cheap-linearp nil
         :oncep-override :clear
         :pt nil
         :restrictions-alist nil
@@ -18653,7 +18629,8 @@
         (sl-let
          (contradictionp new-pot-lst)
          (if (and (nvariablep (car new-vars))
-                  (not (flambda-applicationp (car new-vars))))
+                  (not (flambda-applicationp (car new-vars)))
+                  (not (access rewrite-constant rcnst :cheap-linearp)))
              (rewrite-entry
               (add-linear-lemmas (car new-vars)
                                  (getprop (ffn-symb (car new-vars))
@@ -18849,8 +18826,9 @@
     (t (sl-let
         (contradictionp new-pot-lst)
         (cond
-         ((flambda-applicationp
-           (car new-vars))
+         ((or (flambda-applicationp
+               (car new-vars))
+              (access rewrite-constant rcnst :cheap-linearp))
           (mv step-limit nil simplify-clause-pot-lst))
          (t
           (rewrite-entry
@@ -19315,7 +19293,8 @@
      (declare (type (unsigned-byte 29) rdepth))
      (sl-let
       (term-lst ttree-lst)
-      (if (access rewrite-constant rcnst :nonlinearp)
+      (if (and (access rewrite-constant rcnst :nonlinearp)
+               (not (access rewrite-constant rcnst :cheap-linearp)))
 
 ; This call to rewrite-linear-term-lst is new to Version_2.7.
 ; We wish to be able to have a different normal form when doing

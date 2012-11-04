@@ -19482,6 +19482,9 @@
 ; actually seems impossible since the changes away from cons-term would only be
 ; relevant for executable zero-ary primitives, of which there are none!
 
+; We eliminated the nonlinearp condition in add-polys1.  For details, see the
+; comment there about this change.
+
   :doc
   ":Doc-Section release-notes
 
@@ -19554,6 +19557,8 @@
   or disabled, respectively.  The ~c[:ttree] argument is ~c[nil] by default,
   but when it is ~c[t], then a second value is returned, which is a tag-tree.
   ~l[extended-metafunctions].
+
+  Many improvements have been made to the tau system (~pl[tau-system]).
 
   ~st[NEW FEATURES]
 

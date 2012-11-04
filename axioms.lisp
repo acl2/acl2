@@ -7769,14 +7769,20 @@
 
   Because ACL2 is an untyped language it is impossible to type check it.  All
   functions are total.  An ~i[n]-ary function may be applied to any combination
-  of ~i[n] ACL2 objects.  Nevertheless, the system provides a variety of
-  monadic Boolean function symbols, like ~ilc[natp], ~ilc[integerp],
-  ~ilc[alistp], etc., that recognize different ``types'' of objects at runtime.
-  Users typically define many more such recognizers for domain-specific
-  ``types.''  Because of the prevalence of such ``types,'' ACL2 must frequently
-  reason about the inclusion of one ``type'' in another.  It must also reason
-  about the consequences of functions being defined so as to produce objects of
-  certain ``types'' when given arguments of certain other ``types.''
+  of ~i[n] ACL2 objects.  The syntax of ACL2 stipulates that
+  ~c[(]~i[fn a1...an]~c[)] is a well-formed term if ~i[fn] is a function symbol
+  of ~i[n] arguments and the ~i[ai] are well-formed terms.  No mention is made
+  of the ``types'' of terms.  That is what is meant by saying ACL2 is an
+  untyped language.
+
+  Nevertheless, the system provides a variety of monadic Boolean function
+  symbols, like ~ilc[natp], ~ilc[integerp], ~ilc[alistp], etc., that recognize
+  different ``types'' of objects at runtime.  Users typically define many more
+  such recognizers for domain-specific ``types.''  Because of the prevalence of
+  such ``types,'' ACL2 must frequently reason about the inclusion of one
+  ``type'' in another.  It must also reason about the consequences of functions
+  being defined so as to produce objects of certain ``types'' when given
+  arguments of certain other ``types.''
 
   Because the word ``type'' in computer science tends to imply syntactic
   or semantic restrictions on functions, we avoid using that word henceforth.
@@ -7791,20 +7797,55 @@
   provided only tau predicates are involved.
 
   By ``tau predicates'' we mean the application of a monadic Boolean, the
-  equality of something to a quoted constant, or the negation of such a term.
-  Thus ~c[(natp i)], ~c[(not (consp x))], ~c[(equal tag 'ARRAY-HEADER)] and
-  ~c[(not (eq op 'SKIP))] are tau predicates.  The tau system recognizes several
-  variants of ~ilc[EQUAL].
+  equality of something to a quoted constant, an arithmetic comparison
+  between something and a rational constant, or the negation of such a term.
+  Here are some examples of tau predicates:
+  ~bv[]
+  (natp i)
+  (not (consp x))
+  (equal y 'MONDAY)
+  (not (eql 23 k))
+  (< 8 max)
+  (<= max 24)
+  ~ev[]
+  Synonyms for ~ilc[equal] include ~ilc[=], ~ilc[eq], and ~ilc[eql].
+  Comparisons against rational constants may be made with ~ilc[<], ~ilc[<=],
+  ~ilc[>=], and ~ilc[>].
+
+  A ``tau'' is a data object representing a set of signed tau predicates whose
+  meaning the the conjunction of the literals in the set.  (By signed we mean
+  both positive and negative occurrences of the predicates may appear.)  When
+  we say that a term ``has'' a given tau we mean the term satisfies all of the
+  recognizers in that tau.
 
   The tau algorithm is a decision procedure for the logical theory
-  described (only) by the rules in the data base.  The decision procedure can
-  be enabled or disabled.  It is enabled by default.  You can disable it
-  globally using either of the following equivalent forms (~pl[theories], in
-  particular the discussion of runic designators).
+  described (only) by the rules in the data base.  The algorithm takes a term
+  and a list of assumptions mapping subterms (typically variable symbols) to
+  tau, and returns the tau of the given term.
+
+  When the system is called upon to decide whether a term satisfies a given
+  monadic predicate, it computes the tau of the term and asks whether the
+  predicate is in that set.  More generally, to determine if a term satisfies a
+  tau, ~i[s], we compute a tau, ~i[r], for the term and ask whether ~i[s] is a
+  subset of ~i[r].  To determine whether a constant, ~i[c], satisfies tau ~i[s]
+  we evaluate the literals in ~i[s] on ~i[c].
+
+  The tau algorithm procedure can be enabled or disabled.  It is enabled by
+  default.  You can disable it globally using either of the following
+  equivalent forms (~pl[theories], in particular the discussion of runic
+  designators).
+
   ~bv[]
   (in-theory (disable (:executable-counterpart tau-system)))
   (in-theory (disable (tau-system)))
   ~ev[]
+  both of which disable the executable-counterpart of ~c[tau-system].  To
+  disable tau reasoning locally (i.e., for a subgoal and its descendents in a
+  proof attempt), disable the executable-counterpart of ~c[tau-system] in the
+  ~c[in-theory] hint passed to the subgoal (~pl[hints]).
+
+  It is not possible to disable individual rules within the data base.  Either
+  tau uses everything it knows or tau is not used.
 
   The data base contains rules derived from theorems stated by the user.
   Unlike a type system, the tau system cannot automatically infer relations
@@ -7900,6 +7941,9 @@
   ~i[Boolean]:
   (booleanp (fn v))
 
+  ~i[Eval]:
+  (p 'const)                               ; See Note below.
+
   ~i[Simple]:
   (implies (p v) (q v))
 
@@ -7917,7 +7961,7 @@
   ~i[Big Switch]:
   (equal (fn . formals) body),             ; See Note below.
 
-  ~i[MV-NTH Synonym]:                          ; Extend Signature Form 2 to
+  ~i[MV-NTH Synonym]:                      ; Extend Signature Form 2 to
   (equal (nth-alt x y) (mv-nth x y)) or    ; apply not only to mv-nth, but when
   (equal (mv-nth x y) (nth-alt x y))       ; mv-nth is replaced by nth-alt.
   ~ev[]
@@ -7930,12 +7974,51 @@
   automatic mode (~pl[set-tau-auto-mode]), the ~c[:type-prescription] rule will
   suffice for both purposes.
 
-  Note on the Signature Forms: Each of the hypotheses must be a tau-style
-  predicate (monadic Boolean or equality-with-constant), possibly negated,
-  about a single variable.  But there may be multiple hypotheses about a given
-  variable.  For example, one might include both that ~c[(NATP x1)] and
-  ~c[(NOT (EQUAL x1 23))].  Any hypothesis containing a variable other than the
-  ~c[x1], ..., ~c[xn] is ignored.
+  Note on the Eval Form:  Recall that the tau recognizers used above may appear
+  negated.  Thus, example terms of Eval form include
+  ~bv[]
+  (good-statep *initial-system-state*)
+
+  (not (good-statep *example-bad-state*)) ~ev[] Of course, the constant symbols
+  shown above might be replaced by explicit constants like ~c[123] or
+  ~c['(STATE 1 2 3)].  When a ~c[:tau-system] rule of this form is proved, the
+  system stores the value, ~t[T] or ~c[NIL], of the recognizer so that the tau
+  system no longer evaluates that recognizer on that constant but just looks up
+  the stored value.  This can be useful if a tau proof is slow because
+  expensive-to-compute recognizers are being applied.  Unfortunately, there are
+  no tools at the moment to help the user determine which tau recognizers are
+  being applied to which constants!  (However, in the ACL2 source file
+  ~c[tau.lisp], immediately after the definition of the system function
+  ~c[ev-fncall-w-tau-recog], there is a comment which contains some raw Lisp
+  code that can be used to investigate whether tau's use of evaluation on
+  constants is causing a problem.)  However, once a recognizer and the
+  constants on which it is being evaluated are identified, the tau system can
+  be sped up by proving Eval rules to pre-compute and store the values of the
+  recognizer on those constants.  Alternatively, at the possible loss of some
+  completeness in the tau system, the executable counterpart of the recognizer
+  can be disabled.
+
+  Note on the Signature Forms: Typically, each of the hypotheses must be a
+  tau-style predicate, possibly negated, about a single variable; multiple
+  hypotheses about a given variable are permitted.  For example, one might
+  include both that ~c[(NATP x1)] and ~c[(NOT (EQUAL x1 23))].  However,
+  hypotheses that are not tau predicates or their negations are allowed and are
+  relieved, if possible, only by trivial reasoning, i.e., by literally
+  occurring in the governing context.  For example, the formula
+  ~bv[]
+  (implies (and (natp n) (integer-listp x) (< n (len x))) 
+           (integerp (nth n x)))
+  ~ev[]
+  is a legal tau signature rule.  The first two hypotheses restrict the tau of
+  the two arguments to ~c[nth].  The conclusion asserts the tau of a general
+  application of ~c[nth].  However, the third hypothesis is not a tau
+  predicate: it involves two variables and the function symbol ~c[len].  This
+  tau signature could be used to determine that an occurrence of ~c[(NTH a b)]
+  is an integer only if ~c[(< a (LEN b))] governs the occurrence.  However, the
+  other two hypotheses are relieved by recursive use of the tau algorithm on the
+  expressions ~c[a] and ~c[b].  The ~c[nil] hypothesis -- silly under any 
+  circumstances -- is not allowed in tau signature rules; its presence indicates
+  a misunderstanding of tau.
 
   Note on the Big Switch Form: ~c[body], above, must be a ``big switch'' term,
   i.e., one that case splits on tau predicates about a single variable and
@@ -8031,6 +8114,17 @@
 (defconst *tau-system-xnume*
   (+ *force-xnume* 12))
 
+; These constants record the tau indices of the arithmetic predicates.
+(defconst *tau-acl2-numberp-pair* '(0 . ACL2-NUMBERP))
+(defconst *tau-integerp-pair* '(4 . INTEGERP))
+(defconst *tau-rationalp-pair* '(5 . RATIONALP))
+(defconst *tau-natp-pair* '(17 . NATP))
+(defconst *tau-posp-pair* '(18 . POSP))
+(defconst *tau-minusp-pair* '(26 . MINUSP))
+
+; Note: The constants declared above are checked for accuracy after bootstrap
+; by check-built-in-constants in interface-raw.lisp.
+
 ; The following axiom can be proved.  John Cowles has proved some of these and
 ; we have proved others in our efforts to verify the guards in our code.
 ; Eventually we will replace some of these axioms by theorems.  But not now
@@ -8110,10 +8204,17 @@
 ;    (other-kinds-of-objects))
 
 ; Here we prove some rules that the tau system uses to manage primitive type-sets.
+; The rules for natp, posp, and minusp are messy because those concepts are not
+; simply predicates on the signs but also (sometimes) on INTEGERP.
 
 (defthm basic-tau-rules
-  (and (implies (posp v) (not (minusp v)))
-       (implies (posp v) (integerp v))
+  (and (implies (natp v) (not (minusp v)))
+       (implies (natp v) (integerp v))
+
+       (implies (posp v) (natp v))
+
+       (implies (minusp v) (acl2-numberp v))
+
        (implies (integerp v) (rationalp v))
        (implies (rationalp v) (not (complex-rationalp v)))
        (implies (rationalp v) (not (characterp v)))
@@ -18361,21 +18462,20 @@
   ~ev[]
   where ~c[term] is a term that when evaluated will produce a theory
   (~pl[theories]), and ~ilc[doc-string] is an optional ~il[documentation]
-  string not beginning with ``~c[:Doc-Section] ...''.  Except for the
-  variable ~ilc[world], ~c[term] must contain no free variables.  ~c[Term] is
-  evaluated with the variable ~ilc[world] bound to the current ~il[world] to
-  obtain a theory and the corresponding runic theory
+  string not beginning with ``~c[:Doc-Section] ...''.  Because no unique name
+  is associated with an ~c[in-theory] event, there is no way we can store the
+  ~il[documentation] string ~ilc[doc-string] in our ~il[documentation] data
+  base.  Hence, we actually prohibit ~ilc[doc-string] from having the form of
+  an ACL2 ~il[documentation] string; ~pl[doc-string].
+
+  Except for the variable ~ilc[world], ~c[term] must contain no free variables.
+  ~c[Term] is evaluated with the variable ~ilc[world] bound to the current
+  ~il[world] to obtain a theory and the corresponding runic theory
   (~pl[theories]) is then made the current theory.  Thus,
   immediately after the ~c[in-theory], a rule is ~il[enable]d iff its rule name
   is a member of the runic interpretation (~pl[theories]) of some
   member of the value of ~c[term].  ~l[theory-functions] for a list
   of the commonly used theory manipulation functions.
-
-  Because no unique name is associated with an ~c[in-theory] event, there
-  is no way we can store the ~il[documentation] string ~ilc[doc-string] in our
-  ~il[documentation] data base.  Hence, we actually prohibit ~ilc[doc-string]
-  from having the form of an ACL2 ~il[documentation] string;
-  ~pl[doc-string].
 
   Note that it is often useful to surround ~c[in-theory] ~il[events] with
   ~c[local], that is, to use ~c[(local (in-theory ...))].  This use of
@@ -18441,7 +18541,7 @@
   to be a constant list of runes and so have not provided ``arithmetic theory
   manipulation functions'' analogous to ~ilc[CURRENT-THEORY] and ~ilc[ENABLE].
 
-  BECAUSE NO UNIQUE name is associated with an ~c[in-arithmetic-theory] event,
+  Because no unique name is associated with an ~c[in-arithmetic-theory] event,
   there is no way we can store the ~il[documentation] string ~ilc[doc-string]
   in our il[documentation] data base.  Hence, we actually prohibit ~ilc[doc-string]
   from having the form of an ACL2 ~il[documentation] string;
@@ -18477,17 +18577,60 @@
   (regenerate-tau-data-base :doc doc-string)
   ~ev[]
   where ~ilc[doc-string] is an optional ~il[documentation] string not beginning
-  with ``~c[:Doc-Section] ...''.
+  with ``~c[:Doc-Section] ...''.  Because no unique name is associated with a
+  ~c[regenerate-tau-data-base] event, there is no way we can store the
+  ~il[documentation] string ~ilc[doc-string] in our il[documentation] data
+  base.  Hence, we actually prohibit ~ilc[doc-string] from having the form of
+  an ACL2 ~il[documentation] string; ~pl[doc-string].
 
   The tau data base is regenerated by scanning the current logical world and
-  re-processing every event in it relative to the current enabled theory and
-  current tau auto mode settings.
+  re-processing every rule-generating event in it relative to the current
+  enabled theory and current tau auto mode settings.
 
-  BECAUSE NO UNIQUE name is associated with a ~c[regenerate-tau-data-base] event,
-  there is no way we can store the ~il[documentation] string ~ilc[doc-string]
-  in our il[documentation] data base.  Hence, we actually prohibit ~ilc[doc-string]
-  from having the form of an ACL2 ~il[documentation] string;
-  ~pl[doc-string].
+  This command was intended to allow the user to remove a fact from the tau
+  data base, by regenerating the data base without the fact.  But as the
+  following discussion highlights, ~c[regenerate-tau-data-base] does not really
+  solve the problem.  We regard it as a placeholder for a more sophisticated
+  mechanism.  However, we have trouble understanding why a user might wish to
+  remove a fact from the data base and are awaiting further user experiences
+  before designing the more sophisticated mechanism.
+
+  Suppose, for example, that you wanted to remove a signature rule provided by
+  some rule with name ~i[rune].  You could disable ~i[rune] and regenerate the
+  data base.  We discuss why you might ~-[] or might not ~-[] want to do this
+  later.  But suppose you did it.  Unfortunately, the data base you get will
+  not be just like the one you started with minus the signature rule.  The
+  reason is that the data base you started with was generated incrementally and
+  the current theory might have evolved.  For example, suppose at some point in
+  your session you disabled the enabled function ~c[fn], then the commands
+  before that one were processed with ~c[fn] enabled and the commands after
+  were processed with ~c[fn] disabled.  This probably means the resulting tau
+  data base does not correspond to any data base created under a single theory.
+
+  You might hope that the avoidance of ~c[in-theory] events would eliminate the
+  problem but it does not because even the ~ilc[ground-zero] theory is
+  constructed incrementally from the ``pre-history'' commands used to boot up
+  ACL2.  Those pre-history commands include some global ~c[in-theory] commands.
+  For example, one such pre-history command disables the function
+  ~c[booleanp].  Thus, some pre-history commands are processed for tau facts
+  with ~c[booleanp] enabled and others are processed with it disabled.  But a
+  ~c[regenerate-tau-data-base] immediately after starting a session will
+  process all commands with ~c[booleanp] disabled and return a different tau
+  data base than that found in the ~c[ground-zero] state.  Furthermore, every
+  session starts from the ~c[ground-zero] state and so is ``infected'' with
+  global ~c[in-theory] commands.
+
+  The reason we hope that it will not be necessary to remove tau facts is that
+  tau is designed merely to prove goals and that its coverage grows
+  monotonically with the addition of rules.  According to this understanding of
+  tau, adding a signature rule, for example, may allow tau to prove some
+  additional goals but will not prevent it from proving goals it could prove
+  previously.  If this is understanding of tau is accurate, we see no
+  fundamental reason to support the removal of a fact.  This, of course,
+  ignores the possibility that the user wishes to explore alternative proof
+  strategies or measure performance.
+
+  We welcome input on this issue.
 
   ~l[tau-system].~/"
 
@@ -47673,6 +47816,14 @@ Lisp definition."
         "It is illegal to call ~x0 with a Boolean tag and more than one ~
          argument.  See :DOC time-tracker."
         'time-tracker))
+   ((booleanp tag)
+    #-acl2-loop-only
+    (setf (symbol-value '*time-tracker-disabled-p*) ; setq gives compiler warning
+          (not tag))
+    nil)
+   #-acl2-loop-only
+   ((symbol-value '*time-tracker-disabled-p*)
+    nil)
    ((not (symbolp tag))
     (er hard? 'time-tracker
         "Illegal first argument for ~x0 (should be a symbol): ~x1.  See :DOC ~
@@ -47685,11 +47836,6 @@ Lisp definition."
         "Illegal second argument for ~x0: ~x1.  See :DOC time-tracker."
         'time-tracker
         kwd))
-   ((booleanp tag)
-    #-acl2-loop-only
-    (setf (symbol-value '*time-tracker-print-p*) ; setq gives compiler warning
-          tag)
-    nil)
    ((or (and times
              (not (eq kwd :init)))
         (and interval
@@ -47724,3 +47870,7 @@ Lisp definition."
                    (:stop   (tt-stop tag))
                    (:start  (tt-start tag))))
       nil)))
+
+(defmacro time-tracker (tag &optional (kwd 'nil kwdp)
+                            &key times interval min-time msg)
+  `(time-tracker-fn ,tag ,kwd ,kwdp ,times ,interval ,min-time ,msg))

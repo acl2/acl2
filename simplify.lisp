@@ -7600,18 +7600,26 @@
 ; Warning: Keep this in sync with #+acl2-par function
 ; pspv-equal-except-for-tag-tree-and-pool.
 
+; WARNING: If you change the layout of the prove-spec-var in a way that affects
+; the position on :rewrite-constant you must change the guard on the
+; definitions of nonlinearp-default-hint in (at least) the following books:
+
+; books/arithmetic-5/lib/basic-ops/default-hint.lisp  -- one occurrence
+; books/hints/basic-tests.lisp -- two occurrences
+
   ((rewrite-constant induction-hyp-terms . induction-concl-terms)
-   (tag-tree . hint-settings)
+   (tag-tree hint-settings . tau-completion-alist)
    (pool . gag-state)
    user-supplied-term displayed-goal orig-hints . otf-flg)
   t)
 
-; The orig-hints setting is the list of clause-ids and hint-settings
-; supplied to prove.  The hint-settings is the particular hint
-; settings for the current clause.  The only reason we have the
-; orig-hints field is so that we can compute the hints appropriate for
-; the top-level goal if we have to abandon the initial work and revert
-; to the user-supplied term.
+; The orig-hints setting is the list of clause-ids and hint-settings supplied
+; to prove.  The hint-settings is the particular hint settings for the current
+; clause.  The only reason we have the orig-hints field is so that we can
+; compute the hints appropriate for the top-level goal if we have to abandon
+; the initial work and revert to the user-supplied term.  To understand the
+; need for the tau-completion-alist read mini-essay On the Tau Completion Alist
+; (calist) in tau.lisp.
 
 (defrec gag-info
 
@@ -7652,6 +7660,7 @@
         :induction-concl-terms nil
         :tag-tree nil
         :hint-settings nil
+        :tau-completion-alist nil
         :orig-hints nil
         :pool nil
         :gag-state *initial-gag-state*

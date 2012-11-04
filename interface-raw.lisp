@@ -6815,6 +6815,66 @@
                   (fn-rune-nume 'tau-system t t (w *the-live-state*)))))
   (cond
    ((not
+     (equal *tau-acl2-numberp-pair*
+            (getprop 'acl2-numberp 'tau-pair nil
+                     'current-acl2-world (w *the-live-state*))))
+    (interface-er str
+                  '*tau-acl2-numberp-pair*
+                  *tau-acl2-numberp-pair*
+                  (getprop 'acl2-numberp 'tau-pair nil
+                           'current-acl2-world (w *the-live-state*)))))
+  (cond
+   ((not
+     (equal *tau-integerp-pair*
+            (getprop 'integerp 'tau-pair nil
+                     'current-acl2-world (w *the-live-state*))))
+    (interface-er str
+                  '*tau-integerp-pair*
+                  *tau-integerp-pair*
+                  (getprop 'integerp 'tau-pair nil
+                           'current-acl2-world (w *the-live-state*)))))
+  (cond
+   ((not
+     (equal *tau-rationalp-pair*
+            (getprop 'rationalp 'tau-pair nil
+                     'current-acl2-world (w *the-live-state*))))
+    (interface-er str
+                  '*tau-rationalp-pair*
+                  *tau-rationalp-pair*
+                  (getprop 'rationalp 'tau-pair nil
+                           'current-acl2-world (w *the-live-state*)))))
+  (cond
+   ((not
+     (equal *tau-natp-pair*
+            (getprop 'natp 'tau-pair nil
+                     'current-acl2-world (w *the-live-state*))))
+    (interface-er str
+                  '*tau-natp-pair*
+                  *tau-natp-pair*
+                  (getprop 'natp 'tau-pair nil
+                           'current-acl2-world (w *the-live-state*)))))
+  (cond
+   ((not
+     (equal *tau-posp-pair*
+            (getprop 'posp 'tau-pair nil
+                     'current-acl2-world (w *the-live-state*))))
+    (interface-er str
+                  '*tau-posp-pair*
+                  *tau-posp-pair*
+                  (getprop 'posp 'tau-pair nil
+                           'current-acl2-world (w *the-live-state*)))))
+  (cond
+   ((not
+     (equal *tau-minusp-pair*
+            (getprop 'minusp 'tau-pair nil
+                     'current-acl2-world (w *the-live-state*))))
+    (interface-er str
+                  '*tau-minusp-pair*
+                  *tau-minusp-pair*
+                  (getprop 'minusp 'tau-pair nil
+                           'current-acl2-world (w *the-live-state*)))))
+  (cond
+   ((not
      (and (equal
            *min-type-set*
            #-:non-standard-analysis -8192 #+:non-standard-analysis -65536)

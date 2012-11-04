@@ -2818,18 +2818,25 @@
   #+(and (not acl2-loop-only) acl2-rewrite-meter) ; for stats on rewriter depth
   (setq *rewrite-depth-max* 0)
 
-  (pprogn (cond ((null (cdr (get-timer 'other-time state))) ; top-level event
-                 (mv-let (x state)
-                         (main-timer state)
-                         (declare (ignore x))
-                         state))
-                (t ; inbetween events
-                 (increment-timer 'other-time state)))
-          (push-timer 'other-time 0 state)
-          (push-timer 'prove-time 0 state)
-          (push-timer 'print-time 0 state)
-          (push-timer 'proof-tree-time 0 state)
-          (push-warning-frame state)))
+  (progn$
+   (time-tracker :tau :end) ; in case interrupt prevented preceding summary
+   (time-tracker :tau :init
+                 :times '(1 2 3 4 5)
+                 :interval 5
+                 :msg "Elapsed time in tau is ~st secs; see :DOC ~
+                       time-tracker-tau.~|~%")
+   (pprogn (cond ((null (cdr (get-timer 'other-time state))) ; top-level event
+                  (mv-let (x state)
+                          (main-timer state)
+                          (declare (ignore x))
+                          state))
+                 (t ; inbetween events
+                  (increment-timer 'other-time state)))
+           (push-timer 'other-time 0 state)
+           (push-timer 'prove-time 0 state)
+           (push-timer 'print-time 0 state)
+           (push-timer 'proof-tree-time 0 state)
+           (push-warning-frame state))))
 
 (defun print-warnings-summary (state)
   (mv-let
@@ -3703,7 +3710,22 @@
        (print-rules-and-hint-events-summary state) ; call of io? is inside
        (pprogn (print-warnings-summary state)
                (print-time-summary state)
-               (print-steps-summary state))
+               (print-steps-summary state)
+               (progn$ (time-tracker :tau :print?
+                                     :min-time 1
+                                     :msg "For the current proof, the total ~
+                                           time spent in the tau system was ~
+                                           ~st seconds.  See :DOC ~
+                                           time-tracker-tau.~|~%")
+
+; At one time we put (time-tracker :tau :end) here.  But in distributed book
+; books/hints/basic-tests.lisp, the recursive proof attempt failed just below
+; (add-custom-keyword-hint :recurse ...), apparently because the time-tracker
+; wasn't initialized for tag :tau when the proof resumed.  It's harmless anyhow
+; to avoid :end here; after all, we invoke :end before invoking :init anyhow,
+; in case the proof was aborted without printing this part of the summary.
+
+                       state))
        (cond (erp
               (pprogn
                (print-failure ctx state)

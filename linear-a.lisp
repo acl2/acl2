@@ -3544,9 +3544,10 @@
 ; heuristic.  Increasing this number will slow ACL2 down sometimes,
 ; but it may allow more proofs to go through.  So far I have not seen
 ; one which needs more than 100, but less than 500 --- which is too
-; much.
+; much.  After Version_5.0, we eliminated the nonlinearp condition
+; and prune when there are more than 100 polys in the new list.
                
-               ((and nonlinearp 
+               ((and ; nonlinearp
                      (>=-len new-lst 101))
                 (add-polys1 (prune-poly-lst new-lst nil)
                             pot-lst nil pt nonlinearp
@@ -3656,3 +3657,11 @@
 ;         (t (cons (list (car (car type-alist))
 ;                        (decode-type-set (cadr (car type-alist))))
 ;                  (show-type-alist (cdr type-alist))))))
+;
+;
+; (defun number-of-polys (pot-lst)
+;   (cond ((null pot-lst) 0)
+;         (t (+ (len (access linear-pot (car pot-lst) :negatives))
+;               (len (access linear-pot (car pot-lst) :positives))
+;               (number-of-polys (cdr pot-lst))))))
+

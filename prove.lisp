@@ -841,6 +841,142 @@
          (cons (car cl)
                (expand-any-final-implies (cdr cl) wrld)))))
 
+(defun rw-cache-state (wrld)
+  (let ((pair (assoc-eq t (table-alist 'rw-cache-state-table wrld))))
+    (cond (pair (cdr pair))
+          (t *default-rw-cache-state*))))
+
+(defmacro make-rcnst (ens wrld &rest args)
+
+; (Make-rcnst w) will make a rewrite-constant that is the result of filling in
+; *empty-rewrite-constant* with a few obviously necessary values, such as the
+; global-enabled-structure as the :current-enabled-structure.  Then it
+; additionally loads user supplied values specified by alternating keyword/value
+; pairs to override what is otherwise created.  E.g.,
+
+; (make-rcnst w :expand-lst lst)
+
+; will make a rewrite-constant that is like the default one except that it will
+; have lst as the :expand-lst.
+
+; Note: Wrld and ens are used in the "default" setting of certain fields.
+
+  `(change rewrite-constant
+           (change rewrite-constant
+                   *empty-rewrite-constant*
+                   :current-enabled-structure ,ens
+                   :oncep-override (match-free-override ,wrld)
+                   :case-split-limitations (case-split-limitations ,wrld)
+                   :nonlinearp (non-linearp ,wrld)
+                   :backchain-limit-rw (backchain-limit ,wrld :rewrite)
+                   :rw-cache-state (rw-cache-state ,wrld))
+           ,@args))
+
+; We now finish the development of tau-clause...  To recap our story so far: In
+; the file tau.lisp we defined everything we need to implement tau-clause
+; except for its connection to type-alist and the linear pot-lst.  Now we can
+; define tau-clause.
+
+(defun cheap-type-alist-and-pot-lst (cl ens wrld state)
+
+; Given a clause cl, we build a type-alist and linear pot-lst with all of the
+; literals in cl assumed false.  The pot-lst is built with the cheap-linearp
+; flag on, which means we do not rewrite terms before turning them into polys
+; and we add no linear lemmas.  We insure that the type-alist has no
+; assumptions or forced hypotheses.  FYI: Just to be doubly sure that we are
+; not ignoring assumptions and forced hypotheses, you will note that in
+; relieve-dependent-hyps, after calling type-set, we check that no such entries
+; are in the returned ttree.  We return (mv contradictionp type-alist pot-lst)
+
+  (mv-let (contradictionp type-alist ttree)
+          (type-alist-clause cl nil nil nil ens wrld nil nil)
+          (cond
+           ((or (tagged-objectsp 'assumption ttree)
+                (tagged-objectsp 'fc-derivation ttree))
+            (mv (er hard 'cheap-type-alist-and-pot-lst
+                    "Assumptions and/or fc-derivations were found in the ~
+                     ttree constructed by CHEAP-TYPE-ALIST-AND-POT-LST.  This ~
+                     is supposedly impossible!")
+                nil nil))
+           (contradictionp
+            (mv t nil nil))
+           (t (mv-let (new-step-limit provedp pot-lst)
+                      (setup-simplify-clause-pot-lst1
+                       cl nil type-alist
+                       (make-rcnst ens wrld
+                                   :force-info 'weak
+                                   :cheap-linearp t)
+                       wrld state *default-step-limit*)
+                      (declare (ignore new-step-limit))
+                      (cond
+                       (provedp
+                        (mv t nil nil))
+                       (t (mv nil type-alist pot-lst))))))))
+
+(defconst *tau-ttree*
+  (add-to-tag-tree 'lemma
+                   '(:executable-counterpart tau-system)
+                   nil))
+
+(defun tau-clausep (clause ens wrld state calist)
+
+; This function returns (mv flg ttree), where if flg is t then clause is true.
+; The ttree, when non-nil, is just the *tau-ttree*.
+
+; If the executable-counterpart of tau is disabled, this function is a no-op.
+
+  (cond
+   ((enabled-numep *tau-system-xnume* ens)
+    (mv-let
+     (contradictionp type-alist pot-lst)
+     (cheap-type-alist-and-pot-lst clause ens wrld state)
+     (cond
+      (contradictionp
+       (mv t *tau-ttree* calist))
+      (t
+       (let ((triples (merge-sort-car-<
+                       (annotate-clause-with-key-numbers clause
+                                                         (len clause)
+                                                         0 wrld))))
+         (mv-let
+          (flg calist)
+          (tau-clause1p triples nil type-alist pot-lst
+                        clause ens wrld calist)
+          (cond
+           ((eq flg t)
+            (mv t *tau-ttree* calist))
+           (t (mv nil nil calist)))))))))
+   (t (mv nil nil calist))))
+
+(defun tau-clausep-lst-rec (clauses ens wrld ans ttree state calist)
+
+; We return (mv clauses' ttree) where clauses' are provably equivalent to
+; clauses under the tau rules and ttree is either the tau ttree or nil
+; depending on whether anything changed.  Note that this function knows that if
+; tau-clause returns non-nil ttree it is *tau-ttree*: we just OR the ttrees
+; together, not CONS-TAG-TREES them!
+
+  (cond
+   ((endp clauses)
+    (mv (revappend ans nil) ttree calist))
+   (t (mv-let
+       (flg1 ttree1 calist)
+       (tau-clausep (car clauses) ens wrld state calist)
+       (prog2$ (time-tracker :tau :print?)
+               (tau-clausep-lst-rec (cdr clauses) ens wrld
+                                    (if flg1
+                                        ans
+                                      (cons (car clauses) ans))
+                                    (or ttree1 ttree)
+                                    state calist))))))
+
+(defun tau-clausep-lst (clauses ens wrld ans ttree state calist)
+  (prog2$ (time-tracker :tau :start)
+          (mv-let
+           (clauses ttree calist)
+           (tau-clausep-lst-rec clauses ens wrld ans ttree state calist)
+           (prog2$ (time-tracker :tau :stop)
+                   (mv clauses ttree calist)))))
 
 (defun preprocess-clause (cl hist pspv wrld state step-limit)
 
@@ -959,30 +1095,46 @@
 
 ; in type-set-b for more details on this latter criterion.
 
-                         (mv-let
-                          (clauses1 ttree1)
-                          (tau-clause-lst clauses
-                                          (access rewrite-constant
-                                                  rcnst
-                                                  :current-enabled-structure)
-                                          wrld
-                                          nil
-                                          nil)
-                         (cond
-                          ((equal clauses1 (list cl))
+                         (let ((tau-completion-alist
+                                (access prove-spec-var pspv :tau-completion-alist)))
+                           (mv-let
+                            (clauses1 ttree1 new-tau-completion-alist)
+                            (if (or (null hist)
+                                    (eq (car (car hist)) 'settled-down-clause))
+                                (let ((ens (access rewrite-constant
+                                                   rcnst
+                                                   :current-enabled-structure)))
+                                  (if (enabled-numep *tau-system-xnume* ens)
+                                      (tau-clausep-lst clauses
+                                                       ens
+                                                       wrld
+                                                       nil
+                                                       nil
+                                                       state
+                                                       tau-completion-alist)
+                                      (mv clauses nil tau-completion-alist)))
+                                (mv clauses nil tau-completion-alist))
+                            (let ((pspv (if (equal tau-completion-alist
+                                                   new-tau-completion-alist)
+                                            pspv
+                                            (change prove-spec-var pspv
+                                                    :tau-completion-alist
+                                                    new-tau-completion-alist))))
+                              (cond
+                               ((equal clauses1 (list cl))
 
 ; In this case, preprocess-clause has made no changes to the clause.
 
-                           (mv step-limit 'miss nil nil nil))
-                          ((and (consp clauses1)
-                                (null (cdr clauses1))
-                                (no-op-histp hist)
-                                (equal (prettyify-clause
-                                        (car clauses1)
-                                        (let*-abstractionp state)
-                                        wrld)
-                                       (access prove-spec-var pspv
-                                               :displayed-goal)))
+                                (mv step-limit 'miss nil nil nil))
+                               ((and (consp clauses1)
+                                     (null (cdr clauses1))
+                                     (no-op-histp hist)
+                                     (equal (prettyify-clause
+                                             (car clauses1)
+                                             (let*-abstractionp state)
+                                             wrld)
+                                            (access prove-spec-var pspv
+                                                    :displayed-goal)))
 
 ; In this case preprocess-clause has produced a singleton set of
 ; clauses whose only element will be displayed exactly like what the
@@ -1000,18 +1152,18 @@
 ; where we print explanations and clauses to the user we will look for
 ; this tag.
 
-                           (mv step-limit
-                               'hit
-                               clauses1
-                               (add-to-tag-tree
-                                'hidden-clause t
-                                (cons-tag-trees ttree1 ttree))
-                               pspv))
-                          (t (mv step-limit
-                                 'hit
-                                 clauses1
-                                 (cons-tag-trees ttree1 ttree)
-                                 pspv))))))))))))
+                                (mv step-limit
+                                    'hit
+                                    clauses1
+                                    (add-to-tag-tree
+                                     'hidden-clause t
+                                     (cons-tag-trees ttree1 ttree))
+                                    pspv))
+                               (t (mv step-limit
+                                      'hit
+                                      clauses1
+                                      (cons-tag-trees ttree1 ttree)
+                                      pspv))))))))))))))
 
 ; And here is the function that reports on a successful preprocessing.
 
@@ -9462,39 +9614,6 @@
                      (cond
                       (erp (mv erp nil state))
                       (t (value ttree)))))))))
-
-(defun rw-cache-state (wrld)
-  (let ((pair (assoc-eq t (table-alist 'rw-cache-state-table wrld))))
-    (cond (pair (cdr pair))
-          (t *default-rw-cache-state*))))
-
-(defmacro make-rcnst (ens wrld &rest args)
-
-; (Make-rcnst w) will make a rewrite-constant that is the result of filling in
-; *empty-rewrite-constant* with a few obviously necessary values, such as the
-; global-enabled-structure as the :current-enabled-structure.  More generally,
-; you may use args to supply a list of additional alternating keyword/value
-; pairs to override what is otherwise created.  E.g.,
-
-; (make-rcnst w :expand-lst lst)
-
-; will make a rewrite-constant that is like the empty one except that it will
-; have lst as the :expand-lst.
-
-; Note: Wrld and ens are only used in the "default" setting of
-; :current-enabled-structure -- a setting overridden by any explicit one in
-; args.
-
-  `(change rewrite-constant
-           (change rewrite-constant
-                   *empty-rewrite-constant*
-                   :current-enabled-structure ,ens
-                   :oncep-override (match-free-override ,wrld)
-                   :case-split-limitations (case-split-limitations ,wrld)
-                   :nonlinearp (non-linearp ,wrld)
-                   :backchain-limit-rw (backchain-limit ,wrld :rewrite)
-                   :rw-cache-state (rw-cache-state ,wrld))
-           ,@args))
 
 (defmacro make-pspv (ens wrld &rest args)
 

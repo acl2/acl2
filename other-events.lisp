@@ -33849,7 +33849,7 @@
 
 (defvar *time-tracker-alist* nil)
 
-(defvar *time-tracker-print-p* t)
+(defvar *time-tracker-disabled-p* nil)
 
 (defstruct time-tracker
 
@@ -33872,7 +33872,7 @@
    nil :type (or null rational))
   (elapsed  ; total time tracked, updated when updating latest
    0 :type rational)
-  (msg      ; printed when updating :times, if *time-tracker-print-p* is true
+  (msg      ; printed when updating :times
    nil :read-only t)
   (times    ; updated by :print?
    nil :type (satisfies rational-listp))
@@ -33882,19 +33882,18 @@
 
 (defun tt-print-msg (tag msg total)
   (assert msg)
-  (when *time-tracker-print-p*
-    (let* ((state *the-live-state*) ; local state
-           (*file-clock* *file-clock*)
-           (seconds (/ total internal-time-units-per-second)))
-      (mv-let
-       (erp seconds-as-decimal-string state)
-       (rational-to-decimal-string seconds state)
-       (assert$ (null erp)
-                (fms "TIME-TRACKER [~x0]: ~@1~|"
-                     (list (cons #\0 tag)
-                           (cons #\1 msg)
-                           (cons #\t seconds-as-decimal-string))
-                     (proofs-co state) state nil))))))
+  (let* ((state *the-live-state*) ; local state
+         (*file-clock* *file-clock*)
+         (seconds (/ total internal-time-units-per-second)))
+    (mv-let
+     (erp seconds-as-decimal-string state)
+     (rational-to-decimal-string seconds state)
+     (assert$ (null erp)
+              (fms "TIME-TRACKER-NOTE [~x0]: ~@1~|"
+                   (list (cons #\0 tag)
+                         (cons #\1 msg)
+                         (cons #\t seconds-as-decimal-string))
+                   (proofs-co state) state nil)))))
 
 (defun tt-init (tag times interval msg)
   (cond
@@ -33925,7 +33924,7 @@
             (acons tag
                    (make-time-tracker
                     :msg
-                    (or msg "~st")
+                    (or msg "~st s")
                     :times
                     (mapcar (lambda (x) (* x internal-time-units-per-second))
                             times)
@@ -33935,15 +33934,14 @@
                    *time-tracker-alist*)))))
 
 (defun tt-end (tag)
-  (cond
-   ((not (assoc-eq tag *time-tracker-alist*))
-    (er hard 'time-tracker
-        "It is illegal to specify :END for tag ~x0, because this tag is not ~
-         being tracked.  Specify :INIT first to solve this problem.  See :DOC ~
-         time-tracker."
-        tag))
-   (t (setq *time-tracker-alist*
-            (delete-assoc-eq tag *time-tracker-alist*)))))
+
+; We allow :end to run without error even when tag is not being tracked, so
+; that we can run :end in case an anticipated earlier :end was not run because
+; of an interceding interrupt.
+
+  (when (assoc-eq tag *time-tracker-alist*)
+    (setq *time-tracker-alist*
+          (delete-assoc-eq tag *time-tracker-alist*))))
 
 (defun tt-print? (tag min-time msg)
 
@@ -33968,7 +33966,9 @@
         tag msg))
    (t (let ((tt (cdr (assoc-eq tag *time-tracker-alist*))))
         (when tt
-          (let* ((times (time-tracker-times tt))
+          (let* ((min-time (and min-time
+                                (* internal-time-units-per-second min-time)))
+                 (times (time-tracker-times tt))
                  (time (or min-time (car times))))
             (when time
               (let ((total (let ((latest (time-tracker-latest tt)))
@@ -33981,13 +33981,18 @@
                     (when msg
                       (tt-print-msg tag msg total)))
                   (when (not min-time) ; see comment above discussing this test
+                    (pop times)
+                    (loop (cond ((or (null times)
+                                     (< total (car times)))
+                                 (return))
+                                (t (pop times))))
                     (setf (time-tracker-times tt)
-                          (if (null (cdr times))
+                          (if (null times)
                               (let ((interval (time-tracker-interval tt)))
                                 (if interval
                                     (list (+ time interval))
                                   nil))
-                            (cdr times)))))))))))))
+                            times))))))))))))
 
 (defun tt-stop (tag)
   (let* ((tt (cdr (assoc-eq tag *time-tracker-alist*)))
@@ -34029,7 +34034,3 @@
      (t (setf (time-tracker-latest tt)
               (get-internal-run-time))))))
 )
-
-(defmacro time-tracker (tag &optional (kwd 'nil kwdp)
-                            &key times interval min-time msg)
-  `(time-tracker-fn ,tag ,kwd ,kwdp ,times ,interval ,min-time ,msg))
