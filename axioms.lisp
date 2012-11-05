@@ -8518,9 +8518,9 @@
   recognizer for standard characters~/
 
   ~c[(Standard-char-p x)] is true if and only if ~c[x] is a ``standard''
-  character, i.e., a member of the list ~c[*standard-chars*].  This
-  list includes ~c[#\Newline] and ~c[#\Space] ~il[characters], as well as the usual
-  punctuation and alphanumeric ~il[characters].~/
+  character, i.e., a member of the list ~c[*standard-chars*].  This list
+  includes ~c[#\\Newline] and ~c[#\\Space] ~il[characters], as well as the
+  usual punctuation and alphanumeric ~il[characters].~/
 
   ~c[Standard-char-p] has a ~il[guard] requiring its argument to be a
   character.
@@ -8700,9 +8700,9 @@
 
   recognizer for alphabetic characters~/
 
-  ~c[(Alpha-char-p x)] is true if and only if ~c[x] is a alphabetic
-  character, i.e., one of the ~il[characters] ~c[#\a], ~c[#\b], ..., ~c[#\z], ~c[#\A], ~c[#\B],
-  ..., ~c[#\Z].~/
+  ~c[(Alpha-char-p x)] is true if and only if ~c[x] is a alphabetic character,
+  i.e., one of the ~il[characters] ~c[#\\a], ~c[#\\b], ..., ~c[#\\z], ~c[#\\A],
+  ~c[#\\B], ..., ~c[#\\Z].~/
 
   The ~il[guard] for ~c[alpha-char-p] requires its argument to be a character.
 
@@ -8728,8 +8728,8 @@
 
   recognizer for upper case characters~/
 
-  ~c[(Upper-case-p x)] is true if and only if ~c[x] is an upper case
-  character, i.e., a member of the list ~c[#\A], ~c[#\B], ..., ~c[#\Z].~/
+  ~c[(Upper-case-p x)] is true if and only if ~c[x] is an upper case character,
+  i.e., a member of the list ~c[#\\A], ~c[#\\B], ..., ~c[#\\Z].~/
 
   The ~il[guard] for ~c[upper-case-p] requires its argument to be a standard
   character (~pl[standard-char-p]).
@@ -8757,8 +8757,8 @@
 
   recognizer for lower case characters~/
 
-  ~c[(Lower-case-p x)] is true if and only if ~c[x] is a lower case
-  character, i.e., a member of the list ~c[#\A], ~c[#\B], ..., ~c[#\Z].~/
+  ~c[(Lower-case-p x)] is true if and only if ~c[x] is a lower case character,
+  i.e., a member of the list ~c[#\\A], ~c[#\\B], ..., ~c[#\\Z].~/
 
   The ~il[guard] for ~c[lower-case-p] requires its argument to be a standard
   character (~pl[standard-char-p]).
@@ -8786,8 +8786,9 @@
 
   turn lower-case ~il[characters] into upper-case ~il[characters]~/
 
-  ~c[(Char-upcase x)] is equal to ~c[#\A] when ~c[x] is ~c[#\a], ~c[#\B] when ~c[x] is
-  ~c[#\b], ..., and ~c[#\Z] when ~c[x] is ~c[#\z], and is ~c[x] for any other character.~/
+  ~c[(Char-upcase x)] is equal to ~c[#\\A] when ~c[x] is ~c[#\\a], ~c[#\\B]
+  when ~c[x] is ~c[#\\b], ..., and ~c[#\\Z] when ~c[x] is ~c[#\\z], and is
+  ~c[x] for any other character.~/
 
   The ~il[guard] for ~c[char-upcase] requires its argument to be a standard
   character (~pl[standard-char-p]).
@@ -8841,8 +8842,9 @@
 
   turn upper-case ~il[characters] into lower-case ~il[characters]~/
 
-  ~c[(Char-downcase x)] is equal to ~c[#\a] when ~c[x] is ~c[#\A], ~c[#\b] when ~c[x] is
-  ~c[#\B], ..., and ~c[#\z] when ~c[x] is ~c[#\Z], and is ~c[x] for any other character.~/
+  ~c[(Char-downcase x)] is equal to ~c[#\\a] when ~c[x] is ~c[#\\A], ~c[#\\b]
+  when ~c[x] is ~c[#\\B], ..., and ~c[#\\z] when ~c[x] is ~c[#\\Z], and is
+  ~c[x] for any other character.~/
 
   The ~il[guard] for ~c[char-downcase] requires its argument to be a standard
   character (~pl[standard-char-p]).
@@ -12545,7 +12547,7 @@
   is supplied, then the failure message is printed as with ~ilc[fmt] argument
   ~c[~~@0]; ~pl[fmt].  In particular, ~c[:msg] is typically a string or a call
   ~c[(msg str arg-0 arg-1 ... arg-k)], where ~c[str] is a string and each
-  ~c[arg-i] is the value to be associated with ~c[#\i] upon formatted printing
+  ~c[arg-i] is the value to be associated with ~c[#\\i] upon formatted printing
   (as with ~ilc[fmt]) of the string ~c[str].
 
   This form may be put into a book to be certified (~pl[books]), because
@@ -47874,7 +47876,308 @@ Lisp definition."
 #-acl2-par
 (defmacro time-tracker (tag &optional (kwd 'nil kwdp)
                             &key times interval min-time msg)
+
+  ":Doc-Section programming
+
+  display time spent during specified evaluation~/
+
+  The ~c[time-tracker] macro is a utility for displaying runtime (cpu time)
+  spent during specified evaluation.  In general, the user provides this
+  specification.  However, ACL2 itself uses this utility for tracking uses of
+  its ~il[tau-system] reasoning utility (~pl[time-tracker-tau]).  We discuss
+  that use as an example before discussing the general form for calls of
+  ~c[time-tracker].
+
+  Remark for ACL2(p) users (~pl[parallelism]): ~c[time-tracker] is merely a
+  no-op in ACL2(p).
+
+  During the development of the ~il[tau-system], we were concerned about the
+  possibility that it would slow down proofs without any indication of how one
+  might avoid the problem.  We wanted a utility that would alert the user in
+  such situations.  However, the tau-system code does not return ~il[state], so
+  we could not track time spent in the state.  We developed the
+  ~c[time-tracker] utility to track time and print messages, and we did it in a
+  general way so that others can use it in their own code.  Here is an example
+  of such a message that could be printed during a proof.
+  ~bv[]
+  TIME-TRACKER-NOTE [:TAU]: Elapsed runtime in tau is 2.58 secs; see
+  :DOC time-tracker-tau.
+  ~ev[]
+  And here is an example of such a message that could be printed at the end of
+  the proof.
+  ~bv[]
+  TIME-TRACKER-NOTE [:TAU]: For the proof above, the total time spent
+  in the tau system was 20.29 seconds.  See :DOC time-tracker-tau.
+  ~ev[]
+
+  The ~c[time-tracker] utility tracks computation time spent on behalf of a
+  user-specified ``tag''.  In the case of the tau-system, we chose the tag,
+  ~c[:tau].  The first argument of ~c[time-tracker] is the tag, which in our
+  running example is always ~c[:tau].  Note that although all arguments of
+  ~c[time-tracker] are evaluated, the first argument is typically a keyword and
+  the second is always a keyword, and such arguments evaluate to themselves.
+
+  An ACL2 function invoked at the start of a proof includes the following code.
+  ~bv[]
+  (progn$
+   (time-tracker :tau :end)
+   (time-tracker :tau :init
+                 :times '(1 2 3 4 5)
+                 :interval 5
+                 :msg \"Elapsed runtime in tau is ~~st secs; see :DOC ~~
+                       time-tracker-tau.~~|~~%\")
+   ...)
+  ~ev[]
+
+  The first ~c[time-tracker] call (above) ends any existing time-tracking for
+  tag ~c[:tau].  One might have expected it be put into code managing the proof
+  summary, but we decided not to rely on that code being executed, say, in case
+  of an interrupt.  When a given tag is not already being time-tracked, then
+  ~c[:end] is a no-op (rather than an error).
+
+  The second ~c[time-tracker] call (above) initiates time-tracking for the tag,
+  ~c[:tau].  Moreover, it specifies the effect of the ~c[:print?] keyword.
+  Consider the following abbreviated definition from the ACL2 source code.
+  ~bv[]
+  (defun tau-clausep-lst-rec (clauses ens wrld ans ttree state calist)
+    (cond
+     ((endp clauses)
+      (mv (revappend ans nil) ttree calist))
+     (t (mv-let
+         (flg1 ttree1 calist)
+         (tau-clausep (car clauses) ens wrld state calist)
+         (prog2$ (time-tracker :tau :print?)
+                 (tau-clausep-lst-rec (cdr clauses) ...))))))
+  ~ev[]
+  Notice that ~c[(time-tracker :tau :print?)] is executed immediately after
+  ~c[tau-clausep] is called.  The idea is to check whether the total time
+  elapsed inside the tau-system justifies printing a message to the user.  The
+  specification of ~c[:times '(1 2 3 4 5)] in the ~c[:init] form above says
+  that a message should be printed after 1 second, after 2 seconds, ..., and
+  after 5 seconds.  Thereafter, the specification of ~c[:interval 5] in the
+  ~c[:init] form above says that each time we print, at least 5 additional
+  seconds should have been tracked before ~c[(time-tracker :tau :print?)]
+  prints again.  Finally, the ~c[:msg] keyword above specifies just what should
+  be printed.  If it is omitted, then a reasonable default message is
+  printed (as discussed below), but in this case we wanted to print a custom
+  message.  The ~c[:msg] string above is what is printed using formatted
+  printing (~pl[fmt]), where the character ~c[#\\t] is bound to a string giving
+  a decimal representation with two decimal points of the time tracked so far
+  for tag ~c[:tau].  (As our general description below points out, ~c[:msg] can
+  also be a ``message'' list rather than a string.)
+
+  But when is time actually tracked for ~c[:tau]?  Consider the following
+  definition from the ACL2 source code.
+  ~bv[]
+  (defun tau-clausep-lst (clauses ens wrld ans ttree state calist)
+    (prog2$ (time-tracker :tau :start)
+            (mv-let
+             (clauses ttree calist)
+             (tau-clausep-lst-rec clauses ens wrld ans ttree state calist)
+             (prog2$ (time-tracker :tau :stop)
+                     (mv clauses ttree calist)))))
+  ~ev[]
+  The two calls of ~c[time-tracker] above first start, and then stop,
+  time-tracking for the tag, ~c[:tau].  Thus, time is tracked during evaluation
+  of the call of ~c[tau-clausep-lst-rec], which is the function (discussed above)
+  that does the ~il[tau-system]'s work.
+
+  Finally, as noted earlier above, ACL2 may print a time-tracking message for
+  tag ~c[:tau] at the end of a proof.  The ACL2 function ~c[print-summary]
+  contains essentially the following code.
+  ~bv[]
+  (time-tracker :tau :print?
+                :min-time 1
+                :msg \"For the proof above, the total runtime ~~
+                      spent in the tau system was ~~st seconds.  ~~
+                      See :DOC time-tracker-tau.~~|~~%\")
+  ~ev[]
+  The use of ~c[:min-time] says that we are to ignore the ~c[:times] and
+  ~c[:interval] established by the ~c[:init] call described above, and instead,
+  print a message if and only if at least 1 second (since 1 is the value of
+  keyword ~c[:min-time]) has been tracked for tag ~c[:tau].  Formatted printing
+  (~pl[fmt]) is used for the value of ~c[:msg], where the character ~c[#\\t] is
+  bound to a decimal string representation of the time in seconds, as described
+  above.
+
+  The example above covers all legal values for the second argument of
+  ~c[time-tracker] and discusses all the additional legal keyword arguments.
+  We conclude with a precise discussion of all arguments.  Note that all
+  arguments are evaluated; thus when we refer to an argument, we are discussing
+  the value of that argument.  All times discussed are runtimes, i.e., cpu
+  times.
+
+  ~bv[]
+  General forms:
+
+  (time-tracker t)        ; enable time-tracking (default)
+
+  (time-tracker nil)      ; disable time-tracking
+
+  (time-tracker tag       ; a symbol other than t or nil
+                option    ; :init, :end, :start, :stop, or :print?
+                ;; keyword arguments:
+                :times    ; non-nil if and only if option is :init
+                :interval ; may only be non-nil with :init option
+                :min-time ; may only be non-nil with :print? option
+                :msg      ; may only be non-nil with :init and :print? options
+  ~ev[]
+
+  Time-tracking is enabled by default.  If the first argument is ~c[t] or
+  ~c[nil], then no other arguments are permitted and time-tracking is enabled
+  or disabled, respectively.  When time-tracking is disabled, nothing below
+  takes place.  Thus we assume time-tracking is enabled for the remainder of
+  this discussion.  We also assume below that the first argument is neither
+  ~c[t] nor ~c[nil].
+
+  We introduce some basic notions about time-tracking.  A given tag, such as
+  ~c[:tau] in the example above, might or might not currently be ``tracked'':
+  ~c[:init] causes the specified tag to be tracked, while ~c[:end] causes the
+  specified tag not to be tracked.  If the tag is being tracked, the tag might
+  or might not be ``active'': ~c[:start] causes the tag to be in an active
+  state, whie ~c[:stop] causes the tag not to be active.  Note that only
+  tracked tags can be in an active or inactive state.  For a tag that is being
+  tracked, the ``accumulated time'' is the total time spent in an active state
+  since the time that the tag most recently started being tracked, and the
+  ``checkpoint list'' is a non-empty list of rational numbers specifying when
+  printing may take place, as described below.
+
+  We now consider each legal value for the second argument, or ``option'', for
+  a call of ~c[time-tracker] on a given tag.
+
+  ~c[:Init] specifies that the tag is to be tracked.  It also establishes
+  defaults for the operation of ~c[:print?], as described below, using the
+  ~c[:times], ~c[:interval], and ~c[:msg] keywords.  Of these three, only
+  ~c[:times] is required, and its value must be a non-empty list of rational
+  numbers specifying the initial checkpoint list for the tag.  It is an error
+  to specify ~c[:init] if the tag is already being tracked.  (So if you don't
+  care whether or not the tag is already being tracked and you want to initiate
+  tracking for that tag, use ~c[:end] first.)
+
+  ~c[:End] specifies that if the tag is being tracked, then it should nstop
+  being tracked.  If the tag is not being tracked, then ~c[:end] has no effect.
+
+  ~c[:Start] specifies that the tag is to be active.  It is an error to specify
+  ~c[:start] if the tag is already active.
+
+  ~c[:Stop] specifies that the tag is to stop being active.  It is an error to
+  specify ~c[:stop] if the tag is not active.
+
+  ~c[:Print?] specifies that if the tag is being tracked (not necessarily
+  active), then a message should be printed if a suitable condition is met.
+  The nature of that message and that condition depend on the keyword options
+  supplied with ~c[:print?] as well as those supplied with the ~c[:init] option
+  that most recently initiated tracking.  ~c[:Print?] has no effect if the tag
+  is not being tracked, except that if certain keyword values are checked if
+  supplied with ~c[:print?]: ~c[:min-time] must be a rational number or
+  ~c[nil], and ~c[:msg] must be either a string, a true-list whose ~c[car] is a
+  string, or ~c[nil].  The remainder of this documentation describes the
+  ~c[:print?] option in detail under the assumption that the tag is being
+  tracked: first, giving the conditions under which it causes a message to be
+  printed, and second, explaining what is printed.
+
+  When ~c[:print?] is supplied a non-~c[nil] value of ~c[:min-time], that value
+  must be a rational number, in which case a message is printed if the
+  accumulated time for the tag is at least that value.  Otherwise a message is
+  printed if the accumulated time is greater than or equal to the ~c[car] of
+  the checkpoint list for the tag.  In that case, the tracking state for the
+  tag is updated in the following two ways.  First, the checkpoint list is
+  scanned from the front and as long as the accumulated time is greater than or
+  equal to the ~c[car] of the remaining checkpoint list, that ~c[car] is popped
+  off the checkpoint list.  Second, if the checkpoint list has been completely
+  emptied and a non-~c[nil] ~c[:interval] was supplied when tracking was most
+  recently initiated with the ~c[:init] option, then the checkpoint list is set
+  to contain a single element, namely the sum of the accumulated time with that
+  value of ~c[:interval].
+
+  Finally, suppose the above criteria are met, so that ~c[:print?] results in
+  printing of a message.  We describe below the message, ~c[msg], that is
+  printed.  Here is how it is printed (~pl[fmt]), where
+  ~c[seconds-as-decimal-string] is a string denoting the number of seconds of
+  accumulated time for the tag, with two digits after the decimal point.
+  ~bv[]
+  (fms \"TIME-TRACKER-NOTE [~~x0]: ~~@1~~|\"
+       (list (cons #\0 tag)
+             (cons #\1 msg)
+             (cons #\t seconds-as-decimal-string))
+       (proofs-co state) state nil)
+  ~ev[]
+  The value of ~c[msg] is the value of the ~c[:msg] keyword supplied with
+  ~c[:print?], if non-~c[nil]; else, the value of ~c[:msg] supplied when most
+  recently initialization with the ~c[:init] option, if non-~c[nil]; and
+  otherwise, the string ~c[\"~~st s\"] (the final ``s'' abbreviating the word
+  ``seconds'').  It is convenient to supply ~c[:msg] as a call
+  ~c[(msg str arg-0 arg-1 ... arg-k)], where ~c[str] is a string and each
+  ~c[arg-i] is the value to be associated with ~c[#\\i] upon formatted
+  printing (as with ~ilc[fmt]) of the string ~c[str].~/~/"
+
   `(time-tracker-fn ,tag ,kwd ,kwdp ,times ,interval ,min-time ,msg))
+
+(defdoc time-tracker-tau
+
+  ":Doc-Section miscellaneous
+
+  messages about expensive use of the ~il[tau-system]~/
+
+  This ~il[documentation] topic explains messages printing by the theorem
+  prover about the ~il[tau-system], as follows.
+
+  During a proof you may see a message such as the following.
+  ~bv[]
+  TIME-TRACKER-NOTE [:TAU]: Elapsed runtime in tau is 4.95 secs; see
+  :DOC time-tracker-tau.
+  ~ev[]
+
+  Just below a proof summary you may see a message such as the following.
+
+  ~bv[]
+  TIME-TRACKER-NOTE [:TAU]: For the proof above, the total runtime spent
+  in the tau system was 30.01 seconds.  See :DOC time-tracker-tau.
+  ~ev[]
+
+  Both of these messages are intended to let you know that certain prover
+  heuristics (~pl[tau-system]) may be slowing proofs down more than they are
+  helping.  If you are satisfied with the prover's performance, you may ignore
+  these messages or even turn them off by disabling time-tracking
+  entirely (~pl[time-tracker]).  Otherwise, here are some actions that you can
+  take to solve such a performance problem.
+
+  The simplest solution is to disable the tau-system, in either of the
+  following equivalent ways.
+  ~bv[]
+  (in-theory (disable (:executable-counterpart tau-system)))
+  (in-theory (disable (tau-system)))
+  ~ev[]
+
+  But if you want to leave the tau-system enabled, you could investigate the
+  possibility is that the tau-system is causing an expensive
+  ~c[:]~ilc[logic]-mode function to be executed.  You can diagnose that problem
+  by observing the rewriter ~-[] ~pl[dmr] ~-[] or by interrupting the system
+  and getting a backtrace (~pl[set-debugger-enable]).  A solution in that case
+  is to disable the executable-counterpart of that function, for example in
+  either of these equivalent ways.
+  ~bv[]
+  (in-theory (disable (:executable-counterpart foo)))
+  (in-theory (disable (foo)))
+  ~ev[]
+  As a result, the tau-system will be weakened, but perhaps only negligibly.
+
+  In either case above, you may prefer to provide ~c[:]~ilc[in-theory] hints
+  rather than ~c[:in-theory] ~il[events]; ~pl[hints].
+
+  A more sophisticated solution is to record the values of the
+  ~c[:]~ilc[logic]-mode function in question.  In that case the tau-system will
+  look up the necessary values rather than calling the function, even if the
+  executable-counterpart of that function remains enabled.  Here is an example
+  of such a lemma
+  ~bv[]
+  (defthm lemma
+    (and (foo 0)
+         (foo 17)
+         (foo t)
+         (foo '(a b c)))
+    :rule-classes :tau-system)
+  ~ev[]~/~/")
 
 #+acl2-par
 (defmacro time-tracker (&rest args)

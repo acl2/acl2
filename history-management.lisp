@@ -2819,11 +2819,15 @@
   (setq *rewrite-depth-max* 0)
 
   (progn$
+
+; If these time-tracker calls are changed, update :doc time-tracker
+; accordingly.
+
    (time-tracker :tau :end) ; in case interrupt prevented preceding summary
    (time-tracker :tau :init
                  :times '(1 2 3 4 5)
                  :interval 5
-                 :msg "Elapsed time in tau is ~st secs; see :DOC ~
+                 :msg "Elapsed runtime in tau is ~st secs; see :DOC ~
                        time-tracker-tau.~|~%")
    (pprogn (cond ((null (cdr (get-timer 'other-time state))) ; top-level event
                   (mv-let (x state)
@@ -3711,12 +3715,16 @@
        (pprogn (print-warnings-summary state)
                (print-time-summary state)
                (print-steps-summary state)
-               (progn$ (time-tracker :tau :print?
-                                     :min-time 1
-                                     :msg "For the current proof, the total ~
-                                           time spent in the tau system was ~
-                                           ~st seconds.  See :DOC ~
-                                           time-tracker-tau.~|~%")
+               (progn$
+
+; If the time-tracker call below is changed, update :doc time-tracker
+; accordingly.
+
+                (time-tracker :tau :print?
+                              :min-time 1
+                              :msg "For the proof above, the total runtime ~
+                                    spent in the tau system was ~st seconds.  ~
+                                    See :DOC time-tracker-tau.~|~%")
 
 ; At one time we put (time-tracker :tau :end) here.  But in distributed book
 ; books/hints/basic-tests.lisp, the recursive proof attempt failed just below
@@ -3725,7 +3733,7 @@
 ; to avoid :end here; after all, we invoke :end before invoking :init anyhow,
 ; in case the proof was aborted without printing this part of the summary.
 
-                       state))
+                state))
        (cond (erp
               (pprogn
                (print-failure ctx state)
@@ -9312,7 +9320,7 @@
   The first three entries are used only when the ~c[flag] associated with
   ~c[key] is ~c[t], indicating that the argument ~c[arg] of ~c[~~key] is to be
   parsed as starting with a symbol; for example, ~c[~~key[foo bar~]] will bind
-  ~c[#\\\p] to the symbol ~c[FOO].
+  ~c[#\\p] to the symbol ~c[FOO].
 
   The discussion of the above association list for printing ~c[fmt-string]
   applies when printing ~il[documentation] to other than the terminal as well.

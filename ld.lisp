@@ -18200,6 +18200,8 @@
 
 (deflabel note-5-0
 
+; Total release note items: 125.
+
 ; Improved comments about step-limits.
 
 ; Here is a slightly simplified version of the example sent to us by Warren
@@ -19558,7 +19560,9 @@
   but when it is ~c[t], then a second value is returned, which is a tag-tree.
   ~l[extended-metafunctions].
 
-  Many improvements have been made to the tau system (~pl[tau-system]).
+  Many improvements have been made to the tau-system (~pl[tau-system]).  Also
+  ~pl[time-tracker-tau] for discussion of how the new ~ilc[time-tracker]
+  utility can help discover ways to avoid slowdown related to the tau-system.
 
   ~st[NEW FEATURES]
 
@@ -19592,6 +19596,10 @@
   New utilities ~ilc[oracle-funcall], ~ilc[oracle-apply], and
   ~ilc[oracle-apply-raw] call a function argument on specified arguments.
   Thanks to Jared Davis for requesting this utility.
+
+  A new utility makes it convenient to track time spent inside specified
+  function calls or, more generally, during specified evaluation.
+  ~l[time-tracker].
 
   ~st[HEURISTIC IMPROVEMENTS]
 

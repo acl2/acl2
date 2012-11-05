@@ -962,15 +962,24 @@
    (t (mv-let
        (flg1 ttree1 calist)
        (tau-clausep (car clauses) ens wrld state calist)
-       (prog2$ (time-tracker :tau :print?)
-               (tau-clausep-lst-rec (cdr clauses) ens wrld
-                                    (if flg1
-                                        ans
-                                      (cons (car clauses) ans))
-                                    (or ttree1 ttree)
-                                    state calist))))))
+       (prog2$
+
+; If the time-tracker call below is changed, update :doc time-tracker
+; accordingly.
+
+        (time-tracker :tau :print?)
+        (tau-clausep-lst-rec (cdr clauses) ens wrld
+                             (if flg1
+                                 ans
+                               (cons (car clauses) ans))
+                             (or ttree1 ttree)
+                             state calist))))))
 
 (defun tau-clausep-lst (clauses ens wrld ans ttree state calist)
+
+; If the time-tracker calls below are changed, update :doc time-tracker
+; accordingly.
+
   (prog2$ (time-tracker :tau :start)
           (mv-let
            (clauses ttree calist)

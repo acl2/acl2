@@ -25455,6 +25455,7 @@
   ~c[old-untrace], respectively, in raw Lisp rather than in the normal ACL2
   loop.~/~/
 
+  :cite acl2::time-tracker
   :cited-by acl2::other
   :cited-by acl2::programming")
 
@@ -33894,6 +33895,11 @@
 
 (defun tt-init (tag times interval msg)
   (cond
+   ((null times)
+    (er hard 'time-tracker
+        "Illegal :INIT option (tag ~x0): the :TIMES keyword is required, with ~
+         a value that is a non-empty list of rational numbers."
+        tag))
    ((not (rational-listp times))
     (er hard 'time-tracker
         "Illegal value of :TIMES for :INIT (tag ~x0): ~x1 is not a true list ~
@@ -33968,11 +33974,12 @@
                  (times (time-tracker-times tt))
                  (time (or min-time (car times))))
             (when time
-              (let ((total (let ((latest (time-tracker-latest tt)))
-                             (if latest
-                                 (+ (time-tracker-elapsed tt)
-                                    (- (get-internal-run-time) latest))
-                               (time-tracker-elapsed tt)))))
+              (let* ((current-internal-run-time (get-internal-run-time))
+                     (total (let ((latest (time-tracker-latest tt)))
+                              (if latest
+                                  (+ (time-tracker-elapsed tt)
+                                     (- current-internal-run-time latest))
+                                (time-tracker-elapsed tt)))))
                 (when (>= total time)
                   (let ((msg (or msg (time-tracker-msg tt))))
                     (when msg
@@ -33987,7 +33994,7 @@
                           (if (null times)
                               (let ((interval (time-tracker-interval tt)))
                                 (if interval
-                                    (list (+ time interval))
+                                    (list (+ total interval))
                                   nil))
                             times))))))))))))
 
@@ -34004,7 +34011,7 @@
      ((not latest)
       (er hard 'time-tracker
           "It is illegal to specify :STOP for tag ~x0, because tracking for ~
-           this tag is already in a stopped state.  Specify :START first to ~
+           this tag is already in an inactive state.  Specify :START first to ~
            solve this problem.  See :DOC time-tracker."
           tag))
      (t (setf (time-tracker-elapsed tt)
@@ -34025,7 +34032,7 @@
      ((time-tracker-latest tt)
       (er hard 'time-tracker
           "It is illegal to specify :START for tag ~x0, because tracking for ~
-           this tag is already in a started state.  Specify :STOP first to ~
+           this tag is already in an active state.  Specify :STOP first to ~
            solve this problem.  See :DOC time-tracker."
           tag))
      (t (setf (time-tracker-latest tt)

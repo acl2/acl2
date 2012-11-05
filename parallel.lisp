@@ -521,7 +521,9 @@
   CCL is considered to be the ``flagship Lisp'' for parallel execution in ACL2.
   The SBCL and LispWorks implementations are thought to be generally stable.
   However, due to their relatively less common use, the SBCL and LispWorks
-  implementations are likely less robust than the CCL implementation.~/~/")
+  implementations are likely less robust than the CCL implementation.
+
+  The ~ilc[time-tracker] utility is a no-op for ACL2(p).~/~/")
 
 (defdoc waterfall-printing
 

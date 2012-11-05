@@ -2214,7 +2214,7 @@
 ; So we have adopted a slightly inelegant approach: Tau is sensitive to the
 ; enabled status of the executable counterparts of the tau recognizers it needs
 ; to evaluate but suffers unnecessary incompleteness as a result.  For example,
-; on might build a tau in the data base that contains foop and that (at the
+; one might build a tau in the data base that contains foop and that (at the
 ; time it was built) also records that 23 is not in the tau.  But then one
 ; disables foop and thereafter it is unknown whether 23 is in the tau or not.
 
@@ -2255,7 +2255,8 @@
 ; After the defun of ev-fncall-w-tau-recog, below, we include a comment that
 ; shows the raw Lisp code used to accumulate such information.  This is
 ; preserved here for future reference and may be advertised to some users
-; suffering slowdowns.
+; suffering slowdowns.  NOTE: After these notes were written, we implemented
+; the time-tracker mechanism as a way of diagnosing such slowdowns.
 
 ; There are four mechanisms in tau for dealing with this.  Mechanism A is to do
 ; nothing and suffer the slowdown.  Mechanism B is to disable the tau-system!
