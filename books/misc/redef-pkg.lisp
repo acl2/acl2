@@ -370,7 +370,7 @@ nil
                             (package-entry-book-path package-entry)
                             defpkg-book-path
                             w
-                            (f-get-global 'distributed-books-dir state)))
+                            (f-get-global 'system-books-dir state)))
 ||#
 ;;; End code deletion
 ;;; Begin code addition

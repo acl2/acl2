@@ -165,22 +165,24 @@
 ; necessary defthm events (before failing).  We can then copy those defthm
 ; events into the file, for example starting with the following.
 
-(defthm create-st{correspondence}
-  (st$corr (create-st$c) (create-st$a)))
+(DEFTHM CREATE-ST{CORRESPONDENCE}
+  (ST$CORR (CREATE-ST$C) (CREATE-ST$A))
+  :RULE-CLASSES NIL)
 
-(defthm create-st{preserved}
-  (st$ap (create-st$a)))
+(DEFTHM CREATE-ST{PRESERVED}
+  (ST$AP (CREATE-ST$A))
+  :RULE-CLASSES NIL)
 
 ; The hypothesis (st$ap st) below is not needed for the following formula to be
 ; a theorem; similarly for update-misc{correspondence} as well.  However, this
 ; hypothesis is expected by defabsstobj.
 
-(defthm misc{correspondence}
-  (implies (and (st$corr st$c st)
-                (st$ap st))
-           (equal (misc$c st$c)
-                  (misc$a st)))
-  :rule-classes nil)
+(DEFTHM MISC{CORRESPONDENCE}
+  (IMPLIES (AND (ST$CORR ST$C ST)
+                (ST$AP ST))
+           (EQUAL (MISC$C ST$C)
+                  (MISC$A ST)))
+  :RULE-CLASSES NIL)
 
 (defthm update-misc{correspondence}-lemma
   (implies (corr-mem k st$c st)
@@ -189,18 +191,19 @@
                      (update-misc$a v st)))
   :rule-classes nil)
 
-(defthm update-misc{correspondence}
-  (implies (and (st$corr st$c st)
-                (st$ap st))
-           (st$corr (update-misc$c v st$c)
-                    (update-misc$a v st)))
+(DEFTHM UPDATE-MISC{CORRESPONDENCE}
+  (IMPLIES (AND (ST$CORR ST$C ST)
+                (ST$AP ST))
+           (ST$CORR (UPDATE-MISC$C V ST$C)
+                    (UPDATE-MISC$A V ST)))
   :hints (("Goal" :use ((:instance update-misc{correspondence}-lemma
                                    (k 50)))))
-  :rule-classes nil)
+  :RULE-CLASSES NIL)
 
-(defthm update-misc{preserved}
-  (implies (st$ap st)
-           (st$ap (update-misc$a v st))))
+(DEFTHM UPDATE-MISC{PRESERVED}
+  (IMPLIES (ST$AP ST)
+           (ST$AP (UPDATE-MISC$A V ST)))
+  :RULE-CLASSES NIL)
 
 ; There could have been defthm events named misc{guard-thm} and
 ; update-misc{guard-thm} for us to prove.  However, they are recognized as
@@ -221,31 +224,31 @@
                     (lookup$a i st)))
     :rule-classes nil))
 
- (defthm lookup{correspondence}
-   (implies (and (st$corr st$c st)
-                 (integerp i) (<= 0 i) (<= i 49)
-                 (st$ap st))
-            (equal (mem$ci i st$c)
-                   (lookup$a i st)))
+ (DEFTHM LOOKUP{CORRESPONDENCE}
+   (IMPLIES (AND (ST$CORR ST$C ST)
+                 (INTEGERP I) (<= 0 I) (<= I 49)
+                 (ST$AP ST))
+            (EQUAL (MEM$CI I ST$C)
+                   (LOOKUP$A I ST)))
    :hints (("Goal" :use ((:instance corr-mem-memi
                                     (bound 50)))))
-   :rule-classes nil))
+   :RULE-CLASSES NIL))
 
 ; There is no particular reason to make the following required theorem local.
 ; But we do in order to illustrate that it is OK to do so (because required
 ; events are allowed to be missing when skipping proofs).
 
 (local
- (defthm lookup{guard-thm}
-   (implies (and (st$corr st$c c)
-                 (integerp i)
-                 (<= 0 i)
-                 (<= i 49)
-                 (st$ap st))
-            (and (integerp i)
-                 (<= 0 i)
-                 (< i (mem$c-length st$c))))
-   :rule-classes nil)
+ (DEFTHM LOOKUP{GUARD-THM}
+   (IMPLIES (AND (ST$CORR ST$C C)
+                 (INTEGERP I)
+                 (<= 0 I)
+                 (<= I 49)
+                 (ST$AP ST))
+            (AND (INTEGERP I)
+                 (<= 0 I)
+                 (< I (MEM$C-LENGTH ST$C))))
+   :RULE-CLASSES NIL)
  )
 
 ; Th following theorem was originally local to an encapsulate surrounding
@@ -298,35 +301,37 @@
                                    (put-assoc-equal i v (nth 1 st))
                                    st)))))
 
- (defthm update{correspondence}
-   (implies (and (st$corr st$c st)
-                 (integerp i) (<= 0 i) (<= i 49)
-                 (integerp v) (<= 0 v)
-                 (st$ap st)
-                 (mem$c-entryp v))
-            (st$corr (update-mem$ci i v st$c)
-                     (update$a i v st)))
+ (DEFTHM UPDATE{CORRESPONDENCE}
+   (IMPLIES (AND (ST$CORR ST$C ST)
+                 (INTEGERP I) (<= 0 I) (<= I 49)
+                 (INTEGERP V) (<= 0 V)
+                 (ST$AP ST)
+                 (MEM$C-ENTRYP V))
+            (ST$CORR (UPDATE-MEM$CI I V ST$C)
+                     (UPDATE$A I V ST)))
    :hints (("Goal" :in-theory (disable nth update-nth)))
-   :rule-classes nil))
+   :RULE-CLASSES NIL))
 
-(defthm update{preserved}
-  (implies (and (integerp i) (<= 0 i) (<= i 49)
-                (integerp v) (<= 0 v)
-                (st$ap st)
-                (mem$c-entryp v))
-           (st$ap (update$a i v st))))
+(DEFTHM UPDATE{PRESERVED}
+  (IMPLIES (AND (INTEGERP I) (<= 0 I) (<= I 49)
+                (INTEGERP V) (<= 0 V)
+                (ST$AP ST)
+                (MEM$C-ENTRYP V))
+           (ST$AP (UPDATE$A I V ST)))
+  :RULE-CLASSES NIL)
 
-(defthm update{guard-thm}
-  (implies (and (st$corr st$c c)
-                (integerp i) (<= 0 i) (<= i 49)
-                (integerp v) (<= 0 v)
-                (st$ap st)
-                (mem$c-entryp v))
-           (and (integerp i)
-                (<= 0 i)
-                (< i (mem$c-length st$c))
-                (integerp v)
-                (<= 0 v))))
+(DEFTHM UPDATE{GUARD-THM}
+  (IMPLIES (AND (ST$CORR ST$C C)
+                (INTEGERP I) (<= 0 I) (<= I 49)
+                (INTEGERP V) (<= 0 V)
+                (ST$AP ST)
+                (MEM$C-ENTRYP V))
+           (AND (INTEGERP I)
+                (<= 0 I)
+                (< I (MEM$C-LENGTH ST$C))
+                (INTEGERP V)
+                (<= 0 V)))
+  :RULE-CLASSES NIL)
 
 ; Finally, here is our stobj definition.  First we present a compact version;
 ; then we present a more verbose definition.

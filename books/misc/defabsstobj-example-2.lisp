@@ -87,11 +87,13 @@
   (declare (xargs :guard t))
   nil)
 
-(defthm create-memo{correspondence}
-  (memo$corr (create-memo$c) (create-memo$a)))
+(DEFTHM CREATE-MEMO{CORRESPONDENCE}
+  (MEMO$CORR (CREATE-MEMO$C) (CREATE-MEMO$A))
+  :RULE-CLASSES NIL)
 
-(defthm create-memo{preserved}
-  (memo$ap (create-memo$a)))
+(DEFTHM CREATE-MEMO{PRESERVED}
+  (MEMO$AP (CREATE-MEMO$A))
+  :RULE-CLASSES NIL)
 
 ; Our defabsstobj event will export a function fib2, to be a memoized version
 ; of fib.  The :LOGIC version of fib2 is easy to define, as follows.
@@ -262,15 +264,18 @@
                        (RHS (FIB2$A N MEMO)))
                       (AND (EQUAL (MV-NTH 0 LHS) (MV-NTH 0 RHS))
                            (MEMO$CORR (MV-NTH 1 LHS)
-                                      (MV-NTH 1 RHS))))))
+                                      (MV-NTH 1 RHS)))))
+        :RULE-CLASSES NIL)
 
 (DEFTHM FIB2{PRESERVED}
         (IMPLIES (AND (MEMO$AP MEMO) (NATP N))
-                 (MEMO$AP (MV-NTH 1 (FIB2$A N MEMO)))))
+                 (MEMO$AP (MV-NTH 1 (FIB2$A N MEMO))))
+        :RULE-CLASSES NIL)
 
 (DEFTHM FIB2{GUARD-THM}
         (IMPLIES (AND (MEMO$CORR MEMO$C MEMO) (NATP N))
-                 (AND (NATP N) (GOOD-MEMO$CP MEMO$C))))
+                 (AND (NATP N) (GOOD-MEMO$CP MEMO$C)))
+        :RULE-CLASSES NIL)
 
 ; Finally we introduce our abstract stobj, memo.  We use the most compact form
 ; of defabsstobj; for example, :concrete is implicitly memo$c, obtained by
