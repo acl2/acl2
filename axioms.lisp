@@ -47810,8 +47810,13 @@ Lisp definition."
   #+acl2-loop-only
   (ec-call (oracle-apply fn args state)))
 
-#-acl2-par
 (defun time-tracker-fn (tag kwd kwdp times interval min-time msg)
+
+; Do not conditionalize this function on #-acl2-par, even though its only
+; intended use is on behalf of the #-acl2-par definition of time-tracker,
+; because otherwise theories computed for ACL2 and ACL2(p) may differ, for
+; example when including distributed books under arithmetic-5/.
+
   (declare (xargs :guard t))
   (cond
    ((and (booleanp tag) kwdp)
