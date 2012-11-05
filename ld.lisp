@@ -19566,6 +19566,11 @@
   ~pl[time-tracker-tau] for discussion of how the new ~ilc[time-tracker]
   utility can help discover ways to avoid slowdown related to the tau-system.
 
+  The ~ilc[defthm] ~il[events] printed by ~ilc[defabsstobj], namely those that
+  remain to be proved, are now given with ~c[:rule-classes nil] since there is
+  probably no intention to use them as rules.  Thanks to Shilpi Goel for
+  suggesting this change.
+
   ~st[NEW FEATURES]
 
   Among the new features for system hackers are analogues of system function

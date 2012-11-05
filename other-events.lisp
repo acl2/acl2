@@ -23496,13 +23496,12 @@
           (name (car tuple))
           (expected-formula (untranslate (cadr tuple) t wrld))
           (old-formula (untranslate (cddr tuple) t wrld))
+          (expected-defthm `(defthm ,name ,expected-formula
+                              :rule-classes nil))
           (msg (cond (old-formula (msg "~%~Y01[Note discrepancy with existing ~
                                         formula named ~x2:~|  ~Y31~|]~%"
-                                       `(defthm ,name ,expected-formula)
-                                       nil name old-formula))
-                     (t (msg "~%~Y01"
-                             `(defthm ,name ,expected-formula)
-                             nil name old-formula)))))
+                                       expected-defthm nil name old-formula))
+                     (t (msg "~%~Y01" expected-defthm nil name old-formula)))))
      (cond ((endp (cdr missing)) msg)
            (t (msg "~@0~@1"
                    msg
