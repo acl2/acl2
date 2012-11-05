@@ -19,7 +19,7 @@
     <LI><A HREF="#Shortcut-MacPorts">MacPorts for Mac OS X</A>
     <LI><A HREF="#Shortcut-debian">Debian GNU Linux</A>
   </UL>
-  <LI><A HREF="#Sources">Obtaining the Sources and Distributed Books</A>
+  <LI><A HREF="#Sources">Obtaining the Sources and Community Books</A>
   <LI><A HREF="#Create-Image">Creating or Obtaining an Executable Image</A>
   <UL>
 <!-- The following is only for non-incremental releases. -->
@@ -43,9 +43,10 @@
 
 <p><hr size=4 noshade><p>
 
-ACL2 is more than just the executable image.  You should obtain the distributed
-books and a local copy of the documentation.  Start here and we will take
-you through the whole process of obtaining and installing ACL2.
+ACL2 is more than just the executable image.  You should typically
+obtain the distributed books and a local copy of the documentation.
+Start here and we will take you through the whole process of obtaining
+and installing ACL2.
 
 <p>
 
@@ -61,8 +62,8 @@ Otherwise, continue reading here.</H3>
 
 A collection of <em>books</em> (ACL2 input files typically including
 definitions and theorems) has been developed over the years for use
-with ACL2, typically called the "distributed books".  It is important
-that you obtain these books, which are distributed from the Google
+with ACL2, called the "community books".  It is very useful to
+obtain these books, which are distributed from the Google
 Code <a href="https://code.google.com/p/acl2-books/">acl2-books
 project website</a>; directions are included below.
 
@@ -159,7 +160,7 @@ provided by Camm Maguire, to see another way to proceed.
       distinguish it from the ACL2 prompt.
 
      ACL2 Version 5.0.  Level 1.  Cbd "/tmp/a/".
-     Distributed books directory "/tmp/a/usr/share/acl2-5.0/books/".
+     System books directory "/tmp/a/usr/share/acl2-5.0/books/".
      Type :help for help.
      Type (good-bye) to quit completely out of ACL2.
 
@@ -169,7 +170,7 @@ provided by Camm Maguire, to see another way to proceed.
 </UL>
 
 <BR><HR noshade size=8><BR>
-<H2><A NAME="Sources">Obtaining the Sources and Distributed Books</A></H2>
+<H2><A NAME="Sources">Obtaining the Sources and Community Books</A></H2>
 
 Obtain the sources and place them in directory
 <I>dir</I> as follows.
@@ -209,7 +210,8 @@ other than Gnu tar.  You can see if you have Gnu tar by running
 <BR>
 </LI>
 
-<LI><A NAME="Obtaining-books"</A>Now install the distributed books,
+<LI><A NAME="Obtaining-books"</A>We strongly suggest that you now
+       install the community books,
        using <b><font color="red">one</font></b> of the following
        methods, while still connected to the new <acl2-sources/>
        directory.
@@ -219,7 +221,7 @@ other than Gnu tar.  You can see if you have Gnu tar by running
 
   <li><b>Easy download.</b>
     Fetch <CODE><A HREF="http://acl2-books.googlecode.com/files/books-5.0.tar.gz">a
-    gzipped tarfile</A></CODE> of the distributed books from the Google Code website, and then
+    gzipped tarfile</A></CODE> of the community books from the Google Code website, and then
     extract as follows to create a <code>books/</code>
     subdirectory:<BR>
 
@@ -244,15 +246,13 @@ other than Gnu tar.  You can see if you have Gnu tar by running
 
 </UL>
 
-<B><font color="red">NOTE</font></B>:  The second and third methods above
-provide not only the distributed books but
-also <code>workshops/</code> and <code>nonstd/</code> subdirectories
-of <code>books/</code>, which (respectively) are books contributed in
-support of papers presented at ACL2 workshops, and
-books for use with ACL2(r).  However, the first method above does not
-provide the workshops books or nonstd books.  You can fetch them
-easily as gzipped tarfiles, as follows, using the following links
-to the Google Code website.
+<B><font color="red">NOTE</font></B>:  The second and third methods
+provide all of the community books, but the first omits the
+<code>workshops/</code> and <code>nonstd/</code> subdirectories of
+these <code>books/</code>, which (respectively) are books contributed
+in support of papers presented at ACL2 workshops, and books for use
+with ACL2(r).  You can fetch these easily as gzipped tarfiles, as
+follows, using the following links to the Google Code website.
 
 <UL>
 <LI><A HREF="http://acl2-books.googlecode.com/files/workshops-5.0.tar.gz">ACL2 Workshops books</A></LI>
@@ -676,7 +676,7 @@ acl2-sources/
   TAGS     ; Handy for looking at source files with emacs
   *.lisp   ; ACL2 source files
   all-files.txt    ; List of all files in this directory and subdirectories
-  books/   ; NOT INCLUDED; see instructions above to fetch books
+  books/   ; NOT INCLUDED; see instructions above to fetch community books
   doc/     ; ACL2 documentation in various formats
   emacs/   ; Miscellaneous emacs and file utilities, especially emacs-acl2.el
   init.lisp; Useful for building the system

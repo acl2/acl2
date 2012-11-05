@@ -7484,7 +7484,7 @@
 ; Wormholes are known to be a problem in the @par version of the waterfall.  As
 ; such, we skip the following call of waterfall-or-hit-msg-a (also for some
 ; similar calls further down), which we have determined through runs of the
-; regression suite (specifically with book
+; regression suite (specifically with community book
 ; arithmetic-5/lib/floor-mod/floor-mod-basic.lisp) to cause problems.
 
         (io? prove nil state

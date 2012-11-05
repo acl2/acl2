@@ -87,7 +87,7 @@
 ;     stream reaches eof; our other lisps all exit to the operating system.
 ;     This means all the batch jobs we submit via make have to be arranged to
 ;     exit from cmulisp before eof.  This required changing the top-level
-;     makefile and the makefiles of all the books.  I generally put a
+;     makefile and the makefiles of all the community books.  I generally put a
 ;     `:q #+cmu (lisp::quit)' at the end of each workxxx.
 ;     These could be replaced simply by `:q (acl2::exit-lisp)'.
 
@@ -121,7 +121,7 @@
 ;     them, catching errors and producing a HIDE term if we can't eval them,
 ;     we survived the certification of many books before we finally got to a
 ;     proof that couldn't be done without running one of those functions.
-;     The proof, in the bdd books, required evaling (nth -1 nil), which
+;     The proof, in the bdd community books, required evaling (nth -1 nil), which
 ;     according to the axioms is nil but which we couldn't deduce because
 ;     ACL2_*1*_COMMON-LISP::NTH was undefined.
 
@@ -177,9 +177,9 @@
 
 ; Consider using (safety 3) if there is a problem with LispWorks.  It enabled
 ; us to see a stack overflow involving collect-assumptions in the proof of
-; bitn-lam0 from books/rtl/rel2/support/lop3.lisp.  The safety setting of 3
-; helped in this example, because, when the safety is set to 0, the stack is
-; not always automatically extended upon overflow (despite setting
+; bitn-lam0 from community book books/rtl/rel2/support/lop3.lisp.  The safety
+; setting of 3 helped in this example, because, when the safety is set to 0,
+; the stack is not always automatically extended upon overflow (despite setting
 ; system::*stack-overflow-behaviour* to nil in acl2-init.lisp).
 
 ; Safety 1 for CCL has avoided the kernel debugger, e.g. for compiled calls
@@ -211,7 +211,8 @@
 ; 10013.573u 566.983s 33:33.80 525.4%   0+0k 0+0io 0pf+0w
 
 ; Safety 2:
-; [Note: books/clause-processors/SULFA/books/sat-tests/test-incremental.lisp
+; [Note: community book
+; books/clause-processors/SULFA/books/sat-tests/test-incremental.lisp
 ; ran out of space, saving perhaps a minute]
 ; 15637.669u 511.811s 52:02.78 517.1%   0+0k 0+0io 0pf+0w
 
@@ -261,7 +262,7 @@
 
 ; For example, through about March 2012 the default character encoding in CCL
 ; was ISO-8859-1, sometimes known as LATIN-1.  When this changed to UTF-8 a
-; failure was reported when attempting to certify
+; failure was reported when attempting to certify community book
 ; books/workshops/2006/cowles-gamboa-euclid/Euclid/fld-u-poly/coe-fld.lisp,
 ; apparently because of the following line, where the next-to-last character is
 ; actually an accented `o' sometimes known as
@@ -289,7 +290,7 @@
 ; Even for files, we assert there is no soundness issue, in the sense that for
 ; maximum trust we expect each user to certify all books from scratch in a
 ; single environment.  But in practice, users share books (in particular,
-; via the distributed books); so it is desirable to enforce uniform character
+; via the community books); so it is desirable to enforce uniform character
 ; encodings for files.
 
 ; The use of latin-1 could in principle cause problems for those whose default
@@ -654,9 +655,9 @@
       (make-package inv :use nil)))
 
 ; LispWorks has a package named "DEF", and that name conflicts with an ACL2
-; package of that name introduced in books/coi/.  We deal with that issue
-; here.  Thanks to Martin Simmons for providing this code in place of the
-; original code, which instead invoked (rename-package "DEF"
+; package of that name introduced in community book books/coi/.  We deal with
+; that issue here.  Thanks to Martin Simmons for providing this code in place
+; of the original code, which instead invoked (rename-package "DEF"
 ; "DEF-FROM-LW-RENAMED").
 #+lispworks
 (when (find-package "DEF")
@@ -939,10 +940,11 @@ ACL2 from scratch.")
 
 (defparameter *compiled-file-extension*
 
-; Note that books/Makefile-generic, books/Makefile-subdirs, and
-; books/Makefile-psubdirs all deal with compiled file extensions.
-; Thanks to Gary Byers for suggested the following approach for #+ansi-cl,
-; which however appears to work for all Lisps supported as of early 2006.
+; Note that for the community books, files books/Makefile-generic,
+; books/Makefile-subdirs, and books/Makefile-psubdirs all deal with compiled
+; file extensions.  Thanks to Gary Byers for suggested the following approach
+; for #+ansi-cl, which however appears to work for all Lisps supported as of
+; early 2006.
 
   (pathname-type (compile-file-pathname "foo.lisp")))
 

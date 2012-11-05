@@ -7860,9 +7860,9 @@
 ; translation is done under the assumption that the user is granted full access
 ; to the stobjs in state.
 
-; This function was requested by David Rager so that he could make the book
-; books/cutil/wizard.lisp thread-safe for ACL2(p).  We return an error double
-; (mv erp val).
+; This function was requested by David Rager so that he could make the
+; community book books/cutil/wizard.lisp thread-safe for ACL2(p).  We return an
+; error double (mv erp val).
 
 ; Our plan is to introduce simple-translate-and-eval-cmp first, because we have
 ; nice idioms for context-message pairs.  Then we trivially define

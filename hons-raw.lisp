@@ -1241,11 +1241,11 @@
 
 #+static-hons
 (defun hl-nat-combine* (a b)
-  ;; See books/system/hl-addr-combine.lisp for all documentation and a proof
-  ;; that this function is one-to-one.  At one point, this was going to be an
-  ;; inlined version of hl-nat-combine.  We later decided not to inline it,
-  ;; since it's a rare case and slow anyway, to avoid excessive expansion in
-  ;; hl-addr-combine*.
+  ;; See community book books/system/hl-addr-combine.lisp for all documentation
+  ;; and a proof that this function is one-to-one.  At one point, this was
+  ;; going to be an inlined version of hl-nat-combine.  We later decided not to
+  ;; inline it, since it's a rare case and slow anyway, to avoid excessive
+  ;; expansion in hl-addr-combine*.
   (+ (let* ((a+b   (+ a b))
             (a+b+1 (+ 1 a+b)))
        (if (= (logand a+b 1) 0)
@@ -1255,10 +1255,11 @@
 
 #+static-hons
 (defabbrev hl-addr-combine* (a b)
-  ;; Inlined version of hl-addr-combine.  See books/system/hl-addr-combine.lisp
-  ;; for all documentation and a proof that this function is one-to-one.  The
-  ;; only change we make here is to use typep to see if the arguments are fixnums
-  ;; in the comparisons, which speeds up our test loop by about 1/3.
+  ;; Inlined version of hl-addr-combine.  See community book
+  ;; books/system/hl-addr-combine.lisp for all documentation and a proof that
+  ;; this function is one-to-one.  The only change we make here is to use typep
+  ;; to see if the arguments are fixnums in the comparisons, which speeds up
+  ;; our test loop by about 1/3.
   (if (and (typep a 'fixnum)
            (typep b 'fixnum)
            (< (the fixnum a) 1073741824)

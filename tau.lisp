@@ -2187,18 +2187,19 @@
 ; One argument for making the tau system respect the current enabled structure
 ; is that some authors disable :executable-counterparts in their proofs and if
 ; tau does not respect the disabling, it is behaving contrary to the author's
-; wishes.  This happens in books/workshops/1999/embedded/Proof-Of-Contribution/
-; Proof-Of-Equiv-From-M-Corr.lisp by P.G. Bertoli and P. Traverso (which is a
-; chapter in the ACL2 Case Studies book), where the authors execute (in-theory
-; (current-theory 'ground-zero)) near the top of the book, thus disabling
-; almost everything.  The hypothesis (rel-prime-moduli '(11 13 15 17 19)) is
-; used frequently and proofs break if it is evaluated.  This particular book is
-; not a very good argument for respecting ens, since the script could probably
-; have been developed without this Draconian disabling.  A better reason to
-; make tau respect ens is that some executable counterparts could be so
-; inefficient to compute that the user would prefer that they never be run.
-; But tau would run them and lose.  In fact, in that earlier incarnation just
-; mentioned, tau did run them and did lose.  See the example below.
+; wishes.  This happens in the file Proof-Of-Equiv-From-M-Corr.lisp of
+; community book books/workshops/1999/embedded/Proof-Of-Contribution/ by
+; P.G. Bertoli and P. Traverso (which is a chapter in the ACL2 Case Studies
+; book), where the authors execute (in-theory (current-theory 'ground-zero))
+; near the top of the book, thus disabling almost everything.  The hypothesis
+; (rel-prime-moduli '(11 13 15 17 19)) is used frequently and proofs break if
+; it is evaluated.  This particular book is not a very good argument for
+; respecting ens, since the script could probably have been developed without
+; this Draconian disabling.  A better reason to make tau respect ens is that
+; some executable counterparts could be so inefficient to compute that the user
+; would prefer that they never be run.  But tau would run them and lose.  In
+; fact, in that earlier incarnation just mentioned, tau did run them and did
+; lose.  See the example below.
 
 ; On the other side, however, is the tau system convention that if a recognizer
 ; in the pos-pairs of a tau accepts a given evg, then that evg is not included
@@ -2218,9 +2219,9 @@
 ; time it was built) also records that 23 is not in the tau.  But then one
 ; disables foop and thereafter it is unknown whether 23 is in the tau or not.
 
-; The second occurrence of a local LEMMA4 in the book unicode/utf8-decode.lisp
-; provides an interesting test of the available strategies for dealing with
-; expensive calls of ev-fncall-w-tau-recog.
+; The second occurrence of a local LEMMA4 in the community book
+; unicode/utf8-decode.lisp provides an interesting test of the available
+; strategies for dealing with expensive calls of ev-fncall-w-tau-recog.
 
 ; If the tau-system is disabled, that LEMMA4 takes only about 0.06 seconds to
 ; prove (on a 2.6 GHz Intel Core i7 with 16 GB 1600 MHz DDR3 Macbook Pro).  But
@@ -9253,21 +9254,21 @@ at this point because they use some functions not yet defines.
 ; if there are a lot of different partial tau involved in a proof.  But out
 ; experience so far is that the number is reasonable.
 
-; For example, consider the book books/centaur/vl/transforms/xf-expr-simp.lisp
-; and the event within it: (verify-guards vl-expr-simp).  If one modifies these
-; sources so as to ignore the values found in the calist (just choose the
-; second t clause below) then the verify-guards event named above takes about
-; 42 seconds to process (on a 2.6 GHz Intel Core i7 with 16 GB 1600 MHz DDR3
-; Macbook Pro).  If one uses the values in calist, then it takes about 6
-; seconds.  In all, 50 different partial tau are mentioned in this proof.
-; Completion is called about 41,000 times on these various tau -- some as many
-; as 6,000 times each.  49 different complete tau are generated.  27 of the 50
-; partial tau are changed by completion and the other 23 are actually already
-; complete.  (Note that since we know that the val we compute is complete, we
-; could pair it with itself on the new calist.  However, this does not gain
-; anything in this particular test.  Apparently we often compute tau and do not
-; even try to subsequently complete them so remembering the already completed
-; ones is not much help.)  
+; For example, consider the community book
+; books/centaur/vl/transforms/xf-expr-simp.lisp and the event within it:
+; (verify-guards vl-expr-simp).  If one modifies these sources so as to ignore
+; the values found in the calist (just choose the second t clause below) then
+; the verify-guards event named above takes about 42 seconds to process (on a
+; 2.6 GHz Intel Core i7 with 16 GB 1600 MHz DDR3 Macbook Pro).  If one uses the
+; values in calist, then it takes about 6 seconds.  In all, 50 different
+; partial tau are mentioned in this proof.  Completion is called about 41,000
+; times on these various tau -- some as many as 6,000 times each.  49 different
+; complete tau are generated.  27 of the 50 partial tau are changed by
+; completion and the other 23 are actually already complete.  (Note that since
+; we know that the val we compute is complete, we could pair it with itself on
+; the new calist.  However, this does not gain anything in this particular
+; test.  Apparently we often compute tau and do not even try to subsequently
+; complete them so remembering the already completed ones is not much help.)
 
 (defun apply-conjunctive-tau-rules (tau ens wrld calist)
   (cond ((eq tau *tau-contradiction*)
@@ -10657,13 +10658,13 @@ at this point because they use some functions not yet defines.
 ; ids -- which becomes a problem if a hint is stored under the old clause id.
 
 ; As of August, 2011, with the first tau implementation on top of Version_4.3,
-; the following books were changed to support a regression with Tau System
-; enabled.  The "i + j" notes in the left margins mean that i disablings of
-; tau-system were inserted into the book to deal with literal deletion problems
-; and j disablings were inserted to deal with subgoal renumbering problems or
-; other more basic problems (e.g., coi/util/extra-info-test.lisp uses a
-; must-fail event to show that a certain theorem is not provable while some
-; things are disabled and tau must be among them!).
+; the following community books were changed to support a regression with Tau
+; System enabled.  The "i + j" notes in the left margins mean that i disablings
+; of tau-system were inserted into the book to deal with literal deletion
+; problems and j disablings were inserted to deal with subgoal renumbering
+; problems or other more basic problems (e.g., coi/util/extra-info-test.lisp
+; uses a must-fail event to show that a certain theorem is not provable while
+; some things are disabled and tau must be among them!).
 
 ;  2 + 0 books/proofstyles/invclock/c2i/c2i-partial.lisp
 ;  4 + 0 books/proofstyles/invclock/c2i/c2i-total.lisp

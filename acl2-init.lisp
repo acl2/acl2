@@ -29,7 +29,7 @@
 ; want to build a parallel version, which needs this to take place).  At the
 ; time that we add (perhaps once again) support for HONS in other lisps besides
 ; CCL (August, 2012), there has been code developed that depends on mv-let
-; being the same as multiple-value-bind; see for example
+; being the same as multiple-value-bind; see for example community book
 ; books/centaur/aig/bddify.lisp, in particular the raw Lisp definition of
 ; count-branches-to, specifically the use of b* in the labels definition of
 ; lookup.  So we also use multiple-value-bind for mv-let when building the HONS
@@ -67,7 +67,8 @@
 ;       waterfall parallelism
 ;       user-level program parallelism (no examples as of April 2012)
 ;   plet, pargs, pand, por
-;     user-level program parallelism (e.g., books/parallel/fibonacci.lisp) 
+;     user-level program parallelism (e.g., community book
+;                                     books/parallel/fibonacci.lisp)
 
 ; This dependency structure roughly correlates to the following file structure.
 
@@ -1310,7 +1311,7 @@ implementations.")
 
 ; We have also observed that --dynamic-space-size 2000 is necessary in order to
 ; complete an ACL2(h) regression with SBCL 1.0.55 on a Mac OS 10.6 laptop;
-; otherwise Lisp dies during a GC when certifying
+; otherwise Lisp dies during a GC when certifying community book
 ; books/centaur/tutorial/intro.lisp, even with (clear-memoize-tables) executed
 ; at the start of acl2-compile-file and with (gc$ :full t) executed there as
 ; well, and also at the start of write-expansion-file and immediately before
@@ -1480,12 +1481,13 @@ implementations.")
                       eventual-sysout-mem
 
 ; Here we choose a value of 10 for the -m argument.  We have found that without
-; setting -m, we get a stack overflow in books/unicode/read-utf8.lisp at
-; (verify-guards read-utf8-fast ...) when running on CLISP 2.34 on Linux.
-; CLISP documentation at http://clisp.cons.org/clisp.html#opt-memsize says that
-; it is "common to specify 10 MB" for the value of -m; since that suffices to
-; eliminate the stack overflow mentioned above, we use that value.  Note that
-; we use ~dMB instead of ~sMB because the with-standard-io-syntax wrapper in
+; setting -m, we get a stack overflow in community book
+; books/unicode/read-utf8.lisp at (verify-guards read-utf8-fast ...) when
+; running on CLISP 2.34 on Linux.  CLISP documentation at
+; http://clisp.cons.org/clisp.html#opt-memsize says that it is "common to
+; specify 10 MB" for the value of -m; since that suffices to eliminate the
+; stack overflow mentioned above, we use that value.  Note that we use ~dMB
+; instead of ~sMB because the with-standard-io-syntax wrapper in
 ; write-exec-file seems to put a decimal point after the number when using ~s,
 ; and CLISP complains about that when starting up.
 

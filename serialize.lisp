@@ -205,7 +205,7 @@ alternatives to the ~il[serialize] routines~/
 
 ~il[Hons] users could previously use the routines ~c[compact-print-file] and
 ~c[compact-read-file].  These are deprecated and are no longer built into ACL2.
-However, they are still available by loading the new system book,
+However, they are still available by loading the new community book,
 ~c[serialize/compact-print].  Note that loading this book requires a ttag, and
 these routines are still only available in raw lisp.
 
@@ -255,7 +255,7 @@ The moral of the story is that using serialize will only help your
 To avoid this overhead, we have developed an UNSOUND alternative to
 ~c[serialize-read], which is available only by loading an additional book.  So,
 if the above scheme is not performing well for you, you may wish to see
-the book ~c[serialize/unsound-read].~/~/")
+the community book ~c[serialize/unsound-read].~/~/")
 
 (defmacro with-serialize-character (val form)
   (declare (xargs :guard (member val '(nil #\Y #\Z))))

@@ -5164,10 +5164,10 @@
 
 ; A different solution would be to ignore IF calls in lambda bodies when
 ; determining whether to set :force-info to 'weak.  However, that change caused
-; a regression suite failure: in books/symbolic/tiny-fib/tiny-rewrites.lisp,
-; theorem next-instr-pop.  The problem seemed to be premature forcing, of just
-; the sort we are trying to prevent with the above-mentioned check for IF
-; terms.
+; a regression suite failure: in community book
+; books/symbolic/tiny-fib/tiny-rewrites.lisp, theorem next-instr-pop.  The
+; problem seemed to be premature forcing, of just the sort we are trying to
+; prevent with the above-mentioned check for IF terms.
 
 ; Robert Krug points out to us, regarding the efforts here to keep hypotheses
 ; that rewrote to true, that for him the point is simply not to lose Boolean
@@ -7602,7 +7602,8 @@
 
 ; WARNING: If you change the layout of the prove-spec-var in a way that affects
 ; the position on :rewrite-constant you must change the guard on the
-; definitions of nonlinearp-default-hint in (at least) the following books:
+; definitions of nonlinearp-default-hint in (at least) the following community
+; books:
 
 ; books/arithmetic-5/lib/basic-ops/default-hint.lisp  -- one occurrence
 ; books/hints/basic-tests.lisp -- two occurrences
@@ -7740,7 +7741,7 @@
 (defun simplify-clause (cl hist pspv wrld state step-limit)
 
 ; Warning: Keep this in sync with function simplify-clause-rcnst defined in
-; books/misc/computed-hint-rewrite.lisp.
+; community book books/misc/computed-hint-rewrite.lisp.
 
 ; This is a "clause processor" of the waterfall.  Its input and output spec is
 ; consistent with that of all such processors.  See the waterfall for a general
@@ -7932,9 +7933,9 @@
 
 ; Initially we attempted to fix the slowdown mentioned above (the one reported
 ; by Greve and Wilding) by eliminating completely the special treatment of
-; induction-hyp-terms.  However, lemma psuedo-termp-binary-op_tree in
-; books/meta/pseudo-termp-lemmas.lisp showed the folly of this attempt.  The
-; relevant goal was as follows.
+; induction-hyp-terms.  However, lemma psuedo-termp-binary-op_tree in community
+; book books/meta/pseudo-termp-lemmas.lisp showed the folly of this attempt.
+; The relevant goal was as follows.
 
 ; Subgoal *1/5'
 ; (IMPLIES (AND (CONSP L)
@@ -7960,7 +7961,7 @@
 
 ; A later attempt used the simple algorithm that we stop meddling once we have
 ; made a pass through the rewriter, even if there are still
-; induction-concl-terms around.  Lemma flip-eq-subst-commute in
+; induction-concl-terms around.  Lemma flip-eq-subst-commute in community book
 ; books/workshops/1999/ivy/ivy-v2/ivy-sources/flip.lisp showed the problem with
 ; that approach.  Subgoal *1/2' below was produced by preprocess-clause.  It
 ; produces goal Subgoal *1/2.16, which has a new occurrence in the conclusion
@@ -8025,14 +8026,14 @@
 ; We also tried a modification in which we use the same :expand-lst as below,
 ; thus continuing to meddle with induction-concl-terms even after we are done
 ; meddling with induction-hyp-terms.  However, that caused problems with, for
-; example, the proof of exponents-add-1 in
+; example, the proof of exponents-add-1 in community book
 ; books/arithmetic-2/pass1/expt-helper.lisp.  Apparently the forced expansion
 ; of (EXPT R J) looped with rule exponents-add-2 (rewriting r^(i+j)).  At any
 ; rate, it seems reasonable enough to keep suppression of induction-hyp-terms
 ; rewriting in sync with forced expansion of induction-concl-terms.
 
 ; And we tried one more idea: removing the test on whether the clause had been
-; rewritten.  We got one failure, on collect-times-3b in v2-8 in
+; rewritten.  We got one failure, on collect-times-3b in v2-8 in community book
 ; books/arithmetic-2/meta/common-meta.lisp.
 
 ; What happens in the proof attempt is that the induction-concl-terms have been

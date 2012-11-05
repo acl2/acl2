@@ -1010,7 +1010,7 @@
 
   NOTE: An alternative to this utility, which has a lot less functionality but
   doesn't depend on the experimental extension of ACL2 mentioned just below,
-  may be found in distributed book ~c[books/misc/profiling.lisp].
+  may be found in community book ~c[books/misc/profiling.lisp].
 
   This documentation topic relates to an experimental extension of ACL2 under
   development by Bob Boyer and Warren Hunt.  ~l[hons-and-memoization] for a

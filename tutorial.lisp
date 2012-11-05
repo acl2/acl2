@@ -88,7 +88,7 @@
   relatively elementary proof scripts that have been annotated to help train
   the newcomer.
 
-  * Many files (``books'') in the ~c[books/] directory distributed with ACL2
+  * Many files (``books'') in the ACL2 community books (~pl[community-books])
   are extensively annotated.  See the link to ``Lemma Libraries and Utilities''
   on the ACL2 home page (~url[http://www.cs.utexas.edu/users/moore/acl2]).
 
@@ -950,10 +950,10 @@
   attaching rich user interfaces.  These extensions are generally available as
   certifiable ACL2 books, and can be downloaded from
   ~url[http://acl2s.ccs.neu.edu/acl2s/src/acl2-extensions].  (Some code
-  originating from this project has been migrated to the ACL2 system books, but
-  only after it was quite stable.)  Thanks to Peter Dillinger, Pete Manolios,
-  Daron Vroon, and Harsh Raju Chamarthi for their work on the ACL2 Sedan and
-  for making their books available to ACL2 users.  ~/")
+  originating from this project has been migrated to the ACL2 community books,
+  but only after it was quite stable.)  Thanks to Peter Dillinger, Pete
+  Manolios, Daron Vroon, and Harsh Raju Chamarthi for their work on the ACL2
+  Sedan and for making their books available to ACL2 users.  ~/")
 
 (deflabel solution-to-simple-example
   :doc
@@ -1054,8 +1054,8 @@
   list of moves for a tower of ~c[n] disks.  Then we will use ACL2 to prove
   that the number of moves is ~c[(- (expt 2 n) 1)].  For an ACL2 script
   that proves the correctness of (a version of) this function, see the
-  book ~c[\"misc/hanoi.lisp\"] in the ~c[books] directory of your ACL2
-  sources.
+  community book ~c[\"misc/hanoi.lisp\"] in the ~c[books] directory of your
+  ACL2 sources.
 
   In general, this problem has a straightforward recursive solution.
   Suppose that we desire to move ~c[n] disks from ~c[a] to ~c[c], using
@@ -1492,12 +1492,12 @@
   and hopefully devote more of our time to the problem at hand.
   Unfortunately, it is not completely simple for the new user to know
   what ~il[books] are available and what they contain.  We hope later
-  to improve the documentation of the growing collection of ~il[books]
-  available with the ACL2 distribution; for now, the reader is
-  encouraged to look in the README file in the ~c[books] subdirectory.
-  For present purposes, the beginning user can simply take our word
-  that a book exists containing useful alist definitions and facts.
-  These definitions and lemmas can be introduced
+  to improve the documentation of the growing collection of community
+  ~il[books] that are typically downloaded with ACL2; for now, the reader
+  is encouraged to look in the README.html file in the books' top-level
+  directory.  For present purposes, the beginning user can simply take
+  our word that a book exists containing useful alist definitions and
+  facts.  These definitions and lemmas can be introduced
   into the current theory using the ~il[command]:
   ~bv[]
 
@@ -3432,9 +3432,8 @@
   ~b[B9. Use books.]~nl[]
   Consider using previously certified ~il[books], especially for arithmetic
   reasoning.  This cuts down the duplication of effort and starts your
-  specification and proof effort from a richer foundation.  See the
-  file ~c[\"doc/README\"] in the ACL2 distribution for information on ~il[books]
-  that come with the system.
+  specification and proof effort from a richer foundation.
+  ~l[community-books].
 
   ~em[C. DEALING WITH FAILED PROOFS]
 
@@ -3690,7 +3689,7 @@
    ACL2 Demos, at the ``Demos'' link of the ACL2 home page,
    ~url[http://www.cs.utexas.edu/users/moore/acl2].
 
-   Most users of ACL2 have bought the book 
+   Most users of ACL2 have bought the book
 
    ~i[Computer-Aided Reasoning: An Approach], Kaufmann, Manolios, and Moore,
    Kluwer Academic Publishers, June, 2000
@@ -3913,7 +3912,7 @@
    We also recommend that you look at the ACL2 Demos, at the ``demos'' link of 
    the ACL2 home page ~url[http://www.cs.utexas.edu/users/moore/acl2].
 
-   Most users of ACL2 have bought the book 
+   Most users of ACL2 have bought the book
 
    ~i[Computer-Aided Reasoning: An Approach], Kaufmann, Manolios, and Moore,
    Kluwer Academic Publishers, June, 2000
@@ -5797,8 +5796,8 @@
    ~ev[]
    In order to admit this function it is necessary to know that
    ~c[(floor i 2)] is smaller than ~c[i] in the case above.  This can be
-   proved if the book ~c[\"arithmetic-5/top\"] has been included from
-   the ACL2 system directory, i.e.,
+   proved if the community book ~c[\"arithmetic-5/top\"] has been
+   included from the ACL2 system directory, i.e.,
    ~bv[]
    (include-book \"arithmetic-5/top\" :dir :system)
    ~ev[]
@@ -7708,12 +7707,14 @@
    ~bv[]
    (include-book \"arithmetic/top-with-meta\" :dir :system)
    ~ev[]
-   which loads into ACL2 all the rules in one of the books distributed with
-   ACL2.  (~i[Books] are certified files of definitions, lemmas, etc., usually
-   prepared by other ACL2 users and explicitly shared with the community.)  The
-   book \"top-with-meta\" is the most elementary and most widely used
-   arithmetic book.  Others that come with the ACL2 distribution include
-   \"arithmetic-5/top\" and various hardware and floating-point arithmetic books.
+   which loads into ACL2 all the rules in one of the so-called ACL2 ``community
+   books''.  (~i[Books] are certified files of definitions, lemmas, etc.,
+   usually prepared by other ACL2 users and explicitly shared with the
+   community.  The ACL2 installation instructions suggest downloading the
+   community books.)  The book \"top-with-meta\" is the most elementary and
+   most widely used arithmetic book.  Other community books include
+   \"arithmetic-5/top\" and various hardware and floating-point arithmetic
+   books.
 
    ~b[Rules Concluding with Arithmetic Inequalities]:  If you are tempted to
    create a rewrite rule with an arithmetic inequality as its conclusion or
@@ -8064,10 +8065,11 @@
    list of enabled runes and the ~c[in-theory] event can add runes to or delete
    runes from the current theory.
 
-   ~l[include-book] ~warn[] to change the world by loading a certified file of other events.
-   The most common use of ~c[include-book] is to load ``system'' books -- books written by
-   other ACL2 users who have released them for distribution to the community.
-   The most common books loaded are probably the arithmetic books:
+   ~l[include-book] ~warn[] to change the world by loading a certified file of
+   other events.  The most common use of ~c[include-book] is to load
+   ``community books'' -- books written by other ACL2 users who have released
+   them for distribution to the community.  The most common books loaded are
+   probably the arithmetic books:
    ~bv[]
    ; * for the most elementary arithmetic, needed for any problem 
    ;   that involves even simple addition and multiplication like
@@ -8194,7 +8196,7 @@
    ``change of variable'' tactic that can trade in ~i[destructor] functions for
    ~i[constructor] functions.  In analogy with how ACL2 eliminates ~c[(CAR X)]
    and ~c[(CDR X)] by replacing ~c[X] with ~c[(CONS A B)], you can make it
-   eliminate other destructors.  For example, the system book
+   eliminate other destructors.  For example, the community book
    ~c[\"arithmetic-5/top\"] provides an ~c[elim] rule that eliminates ~c[(floor x y)]
    and ~c[(mod x y)] by replacing ~c[x] by ~c[(+ r (* y q))], so that the
    ~c[floor] expression becomes ~c[q] and the ~c[mod] expression becomes ~c[r].
@@ -8882,13 +8884,14 @@
    section on ~c[:induct] hints; also ~pl[induction].
 
    ~b[Q]. ACL2 doesn't know ~b[simple arithmetic] that can simplify the term
-   ~c[(+ 1 -1 x)].  ~b[A]. You should load an arithmetic book whenever you're dealing
-   with an arithmetic problem.  The simplest arithmetic book is loaded with the
-   event ~c[(include-book \"arithmetic/top-with-meta\" :dir :system)].  If
-   you're using ~c[floor] and ~c[mod] or non-linear arithmetic like ~c[(* x y)]
-   you should use ~c[(include-book \"arithmetic-5/top\" :dir :system)].  See
-      also the discussion of arithmetic books under the ``Lemma Libraries and
-   Utilities'' link of the ACL2 home page.
+   ~c[(+ 1 -1 x)].  ~b[A].  You should load an arithmetic book whenever you're
+   dealing with an arithmetic problem.  The simplest arithmetic book is
+   typically loaded with the event
+   ~c[(include-book \"arithmetic/top-with-meta\" :dir :system)].  If you're
+   using ~c[floor] and ~c[mod] or non-linear arithmetic like ~c[(* x y)] you
+   should use ~c[(include-book \"arithmetic-5/top\" :dir :system)].  See also
+   the discussion of arithmetic books under the ``Lemma Libraries and
+   Utilities'' link of the ACL2 home page, and ~pl[community-books].
 
    ~b[Q]. ACL2 is not using an ~b[arithmetic lemma] that I proved.
    ~b[A]. Lemmas concluding with arithmetic inequalities, like
@@ -9050,9 +9053,9 @@
    ~b[Q]. How do I ~b[create my own book] of definitions and theorems?
    ~b[A]. ~l[books].
 
-   ~b[Q]. Where are the ``distributed books'' referenced by ~b[:dir :system]
+   ~b[Q]. Where are the books referenced by ~b[:dir :system]
    on my machine?  ~b[A]. If your ACL2 is installed on the directory
-   ~i[dir]~c[/acl2-sources], then the distributed books are the files under the
+   ~i[dir]~c[/acl2-sources] and you follow the standard installation instructions, then the books are typically the files under the
    directory ~i[dir]~c[/acl2-sources/books/].
 
    ~b[Q]. How can I find out ~b[what books are available]?  ~b[A]. Go to the

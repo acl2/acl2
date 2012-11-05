@@ -1690,7 +1690,7 @@
   you merely want to define a stub or a non-executable function, ~pl[defstub]
   or ~pl[defun-nx], respectively.
 
-  See distributed book ~c[books/misc/defproxy-test.lisp] for an extended (but
+  See community book ~c[books/misc/defproxy-test.lisp] for an extended (but
   simple) example.
 
   ~bv[]
@@ -8658,7 +8658,7 @@
     (certify-book[^;]*:acl2x t
   ~ev[]
   ~l[book-makefiles], and for an example ~c[.acl2] file with a ~c[certify-book]
-  call matching the above pattern, see distributed file
+  call matching the above pattern, see community books file
   ~c[books/make-event/double-cert-test-1.acl2].
 
   Note that ~ilc[include-book] is generally not affected by
@@ -8667,7 +8667,7 @@
   ~il[certificate] file, so when ~ilc[include-book] is applied to a certified
   book, the ~c[.acl2x] file is not consulted.~/
 
-  An example of how to put this all together may be found in distributed book
+  An example of how to put this all together may be found in community book
   ~c[books/make-event/double-cert-test-1.lisp].  There, we see the following
   form.
   ~bv[]
@@ -8721,7 +8721,7 @@
   manually with any ~il[events] you wish into the alist stored in the
   ~c[.acl2x] file.
 
-  Note: Also see the distributed book ~c[make-event/acl2x-help.lisp] for a
+  Note: Also see the community book ~c[make-event/acl2x-help.lisp] for a
   useful utility that can be used to skip proofs during the writing of
   ~c[.acl2x] files.~/"
 
@@ -9252,7 +9252,7 @@
 ;   ...
 ;
 ; And our numbers will not repeat until 2^31 - 1.  In fact, such a generator
-; is found in the distributed book "misc/random."
+; is found in the community book "misc/random."
 ;
 ; Our checksum algorithm uses this idea in a slightly different way.  Given a
 ; 31-bit natural number, K, think of (K * P1) mod M31 as a way to "shuffle" the
@@ -9746,12 +9746,12 @@
 
   The ~c[untranslate-preprocess] approach may suffice for most cases in which a
   user wants to modify the way output is produced by the theorem prover.  We
-  present an example immediately below, but see
+  present an example immediately below, but see community book
   ~c[books/misc/untranslate-patterns.lisp] for a more elaborate example.  If
   the ~c[untranslate-preprocess] approach does not seem sufficient for your
-  purposes, you are invited to look at file ~c[books/misc/rtl-untranslate.lisp]
-  for an example of user-defined ~c[untranslate] (i.e., following the second
-  example displayed above).
+  purposes, you are invited to look at community book
+  ~c[books/misc/rtl-untranslate.lisp] for an example of user-defined
+  ~c[untranslate] (i.e., following the second example displayed above).
 
   Suppose you have a large constant that you would prefer not to see in
   proofs.  For example, you may have submitted the following definition (but
@@ -12785,10 +12785,10 @@
   important respect: ~c[progn!] is illegal unless there is an active ttag;
   ~pl[defttag].
 
-  See ~c[books/hacking/hacker.lisp] for two macros, ~c[with-raw-mode] and
-  ~c[with-redef-allowed], each defined in terms of ~c[progn!], that allow
-  arbitrary forms in contexts that would normally require legal embedded event
-  forms.~/
+  See community book ~c[books/hacking/hacker.lisp] for two macros,
+  ~c[with-raw-mode] and ~c[with-redef-allowed], each defined in terms of
+  ~c[progn!], that allow arbitrary forms in contexts that would normally
+  require legal embedded event forms.~/
 
   Given a form ~c[(progn! form1 form2 ... formk)], ACL2 will evaluate each
   ~c[formi] in turn (for i from 1 to k).  If a form returns more than one value

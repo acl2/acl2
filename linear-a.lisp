@@ -1584,7 +1584,7 @@
 ; Note that this function is something of a hack in that it works
 ; because "F" is later in the alphabet than "B".  It might be better
 ; to allow the user to specify an order; but, if the linear rules
-; present in the books distributed with ACL2 are representative this
+; present in the community books are representative this
 ; is sufficient.  Perhaps this should be reconsidered later.
 
 ;; RAG - I thought about adding lines here for real numbers, but since we
@@ -2583,12 +2583,12 @@
 ;                 (< 0 evil))
 ;            (foo x)))
 
-; The defconst below stops the loop.  We may want to increase it in the
-; future, but it appears to be sufficient for certifying ACL2 books in the
-; current distribution.  It is used together with the field loop-stopper-value
-; of the record linear-pot.  When a linear-pot is first created, its
-; loop-stopper-value is 0 (see add-poly).  See add-linear-lemma for how
-; loop-stopper-value is used to detect loops.
+; The defconst below stops the loop.  We may want to increase it in the future,
+; but it appears to be sufficient for certifying ACL2 community books.  It is
+; used together with the field loop-stopper-value of the record linear-pot.
+; When a linear-pot is first created, its loop-stopper-value is 0 (see
+; add-poly).  See add-linear-lemma for how loop-stopper-value is used to detect
+; loops.
 
 ; Robert has provided the following trace, in which one can still see the first
 ; few iterations of the loop before it is caught by the loop-stopping mechanism

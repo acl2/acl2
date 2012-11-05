@@ -291,7 +291,7 @@
 ; fields are correct at the time the function is admitted, but note that they
 ; might all be local and hence have disappeared by the time these fields are
 ; read.  Thus, we include them only for heuristic purposes, for example as used
-; in books/workshops/2004/legato/support/generic-theories.lisp.
+; in community book books/workshops/2004/legato/support/generic-theories.lisp.
 
 ; A list of justification records is stored under each function symbol by the
 ; defun principle.

@@ -67,10 +67,10 @@
   (load "acl2-init.lisp"))
 
 ; We may need a bigger stack than the default, as evidenced by the failure of
-; the event (verify-guards read-utf8-fast ...) in books/unicode/read-utf8.lisp.
-; We handle this issue here for GCL, and elsewhere for some other lisps.
-; However, we have seen GCL 2.6.6 on Windows break here, so we skip the stack
-; adjustment for Windows.
+; the event (verify-guards read-utf8-fast ...) in community book
+; books/unicode/read-utf8.lisp.  We handle this issue here for GCL, and
+; elsewhere for some other lisps.  However, we have seen GCL 2.6.6 on Windows
+; break here, so we skip the stack adjustment for Windows.
 
 #+(and gcl (not mswindows))
 (progn

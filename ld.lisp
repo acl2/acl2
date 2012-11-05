@@ -837,7 +837,8 @@
   pathname is considered relative to the connected book directory (~pl[cbd]).
   (2) If this variable is not already defined, then its value is set to
   ~c[NONE] when the ACL2 makefile system is invoked (specifically,
-  ~c[books/Makefile-generic]), e.g., for a regression.
+  using community books file ~c[books/Makefile-generic]), e.g., for a
+  regression.
 
   o Otherwise (empty environment variable value), file
   ~c[\"acl2-customization.lsp\"] or ~c[\"acl2-customization.lisp\"] on the
@@ -1432,7 +1433,7 @@
                        (cons #\l (f-get-global 'ld-level state))
                        (cons #\c (f-get-global 'connected-book-directory
                                                state))
-                       (cons #\b (f-get-global 'distributed-books-dir
+                       (cons #\b (f-get-global 'system-books-dir
                                                state)))
                  (standard-co state)
                  state
@@ -1920,10 +1921,10 @@
   however, we require that ~c[standard-oi] is a relative pathname, not an
   absolute pathname.)  For example, one can write
   ~c[(ld \"arithmetic/top-with-meta.lisp\" :dir :system)] to ~c[ld] that
-  particular system library.  (Of course, you should almost always load books
-  like ~c[arithmetic/top-with-meta] using ~ilc[include-book] instead of
-  ~c[ld].)  If ~c[:dir] is not specified, then a relative pathname is resolved
-  using the connected book directory; ~pl[cbd].
+  particular community books library.  (Of course, you should almost always
+  load books like ~c[arithmetic/top-with-meta] using ~ilc[include-book] instead
+  of ~c[ld].)  If ~c[:dir] is not specified, then a relative pathname is
+  resolved using the connected book directory; ~pl[cbd].
 
   Several other alternatives are allowed for ~ilc[standard-oi].  If
   ~ilc[standard-oi] is a true list then it is taken as the list of forms to be
@@ -3138,10 +3139,10 @@
   expansion file is compiled if a compiled file was not loaded, after which the
   resulting compiled file is loaded.
 
-  One can thus, for example, compile the distributed books for several
-  different host Lisps ~-[] useful when installing ACL2 executables at the same
-  site that are built on different host Lisps.  A convenient way to do this in
-  an environment that provides Gnu ~c[make] is to certify books using the shell
+  One can thus, for example, compile books for several different host Lisps
+  ~-[] useful when installing ACL2 executables at the same site that are built
+  on different host Lisps.  A convenient way to do this in an environment that
+  provides Gnu ~c[make] is to certify the community books using the shell
   command ``~c[make regression]'' in the ~c[acl2-sources/] directory, after
   setting environment variable ~c[ACL2_SAVE_EXPANSION] to ~c[t], and then
   moving to the ~c[books] directory and executing the appropriate ~c[make]
@@ -3348,8 +3349,8 @@
   improvements and for the extensive collection of publicly distributed
   benchmark problems.  And we thank participants at the ACL2 seminar at the
   University of Texas for useful feedback.  More generally, we thank the ACL2
-  community for feedback, contributed ~il[books], and their interest in the
-  ACL2 project.
+  community for feedback, contributed ~il[books] (~pl[community-books]), and
+  their interest in the ACL2 project.
 
   ~em[Regarding the documentation:]
 
@@ -3453,10 +3454,10 @@
   arithmetic, created a library of theorems to reason about ordinal arithmetic,
   and written the rest of this documentation in order to explain this change.
   We thank them for their efforts.  Although they have provided the
-  implementation and even modified the distributed books and workshop books as
-  needed, we have looked over their work and are maintaining it (and this
-  documentation); if there are any bugs, they should be considered ours (Matt
-  Kaufmann and J Moore).
+  implementation and even modified the community books as needed, we have
+  looked over their work and are maintaining it (and this documentation); if
+  there are any bugs, they should be considered ours (Matt Kaufmann and J
+  Moore).
 
   A book is included for compatibility with the representation before
   Version_2.8.  For books that contain events relying on the previous ordinal
@@ -3473,11 +3474,11 @@
 
   While pre-Version_2.8 ACL2 versions provided built-in functions for checking
   if an object is an ordinal and for comparing two ordinals, they did not
-  provide support for reasoning about and constructing ordinals.  The books in
-  the directory ~c[books/ordinals] provide such support.  First, they provide
-  efficient algorithms for ordinal arithmetic (including addition, subtraction,
-  multiplication, and exponentiation).  The algorithms and their complexity are
-  described in the following paper.
+  provide support for reasoning about and constructing ordinals.  The community
+  books directory ~c[books/ordinals] provides such support.  First, it
+  provides efficient algorithms for ordinal arithmetic (including addition,
+  subtraction, multiplication, and exponentiation).  The algorithms and their
+  complexity are described in the following paper.
   ~bf[]
   Manolios, Panagiotis & Vroon, Daron. 
   Algorithms for ordinal arithmetic.
@@ -3540,30 +3541,31 @@
   exponentially more efficient than the old representation.
 
   The ordinal arithmetic functions: ~c[o+], ~c[o-], ~c[o*], and ~c[o^] are
-  defined in the ordinals library (in the subdirectory ~c[books/ordinals]). To
-  use them, include the book ~c[ordinals-without-arithmetic] or ~c[ordinals],
-  depending on whether you want the arithmetic books included or not
-  (~c[ordinals] includes ~c[books/arithmetic/top-with-meta]). To use the old
-  ordinals, include the book ~c[e0-ordinal] and run the command
+  defined in the ordinals library (in the community books directory
+  ~c[books/ordinals]). To use them, include the book
+  ~c[ordinals-without-arithmetic] or ~c[ordinals], depending on whether you
+  want the arithmetic books included or not (~c[ordinals] includes community
+  book ~c[books/arithmetic/top-with-meta]). To use the old ordinals, include
+  the book ~c[e0-ordinal] and run the command
   ~c[(set-well-founded-relation e0-ord-<)]
 
-  The file ~c[books/arithmetic/natp-posp] is a book for reasoning
-  about ~c[posp] and ~c[natp].  We recommend using this book if you
-  have to reason about ~c[posp] and ~c[natp].  It is included in
-  ~c[books/arithmetic/top], which is included in
-  ~c[books/arithmetic/top-with-meta], which is included in
+  The community book ~c[books/arithmetic/natp-posp] is a book for reasoning
+  about ~c[posp] and ~c[natp].  We recommend using this book if you have to
+  reason about ~c[posp] and ~c[natp].  It is included in community book
+  ~c[books/arithmetic/top], which is included in community book
+  ~c[books/arithmetic/top-with-meta], which is included in community book
   ~c[books/ordinals/ordinals].
 
   If you have a good reason to use the old definitions of the ordinals (e.g.,
   because of legacy code and theorems), then we provide a convenient way to do
-  this.  In the book ~c[ordinal-isomorphism] we prove that the new ordinals are
+  this.  The book ~c[ordinal-isomorphism] proves that the new ordinals are
   order-isomorphic to the old ordinals and thus theorems proved in one context
   can be directly transferred to the other.  For an example of how to do this,
-  look at the book ~c[defmul] in the directory
+  look at the book ~c[defmul] in the community books directory
   ~c[books/workshops/2000/ruiz/multiset].
 
   The ordinals books have been used to prove non-trivial theorems.  For a good
-  example, see the books in the directory
+  example, see the books in the community books directory
   ~c[books/workshops/2003/sustik/support], where Matyas Sustik proves Dickson's
   lemma.
 
@@ -3720,7 +3722,7 @@
   skip compilation.
 
   The ~c[:book] option.  ~c[Wet] actually works by temporarily including a
-  distributed book,
+  community book,
   ~bv[]
   (include-book \"misc/wet\" :dir :system)
   ~ev[]
@@ -3731,7 +3733,7 @@
   included using ~ilc[include-book]: ~c[(include-book \"bk\")].  Otherwise
   ~c[:book] should be a list of arguments, to be provided (unevaluated) to
   ~ilc[include-book], for example ~c[(\"my-wet\" :dir :my-utils)].  Thus you
-  can experiment by copying distributed book ~c[books/misc/wet.lisp] to your
+  can experiment by copying community book ~c[books/misc/wet.lisp] to your
   own directory and making modifications to the copy.  If you make changes, we
   invite you to share them with the ACL2 community (~pl[books]).  Note that you
   can also supply ~c[:book nil], in which case the definition of ~c[wet!] in
@@ -3764,7 +3766,8 @@
 (defmacro disassemble$ (fn &rest args
                            &key (recompile ':default)
 
-; And, in case books/misc/disassemble.lisp changes between releases:
+; And, in case community book books/misc/disassemble.lisp changes between
+; releases:
 
                            &allow-other-keys)
 
@@ -3775,7 +3778,7 @@
   The macro ~c[disassemble$] provides a convenient interface to the underlying
   ~c[disassemble] utility of the host Common Lisp implementation, which prints
   assembly code for a given function symbol at the terminal.  It works by
-  including the distributed book ~c[books/misc/disassemble.lisp], which defines
+  including the community book ~c[books/misc/disassemble.lisp], which defines
   the supporting function ~c[disassemble$-fn], and then by calling that
   function.  Note that the arguments to ~c[disassemble$] are evaluated.  Also
   note that ~c[disassemble$] is intended as a top-level utility for the ACL2
@@ -19496,12 +19499,11 @@
   ~il[documentation] has been updated to reflect all changes that are recorded
   here.
 
-  Below we roughly organize the changes since Version  5.0 into the following
+  Below we roughly organize the changes since Version 5.0 into the following
   categories of changes: existing features, new features, heuristic
-  improvements, bug fixes, changes at the system level and to distributed
-  books, Emacs support, and experimental versions.  Each change is described in
-  just one category, though of course many changes could be placed in more than
-  one category.
+  improvements, bug fixes, changes at the system level, Emacs support, and
+  experimental versions.  Each change is described in just one category, though
+  of course many changes could be placed in more than one category.
 
   ~st[CHANGES TO EXISTING FEATURES]
 
@@ -19579,11 +19581,11 @@
   Part II of
   ~url[http://www.cs.utexas.edu/users/moore/acl2/open-architecture/].  The
   current state of that enterprise may be viewed by evaluating the constant
-  ~c[*system-verify-guards-alist*], which associates a distributed book name
-  with a list of functions.  When ACL2 is built in the normal way, each of
-  those functions is marked as guard-verified when ACL2 is started up; but a
-  special developer build can be used to check that the indicated book,
-  together with its sub-books, proves that those functions are guard-verified.
+  ~c[*system-verify-guards-alist*], which associates a community book name with
+  a list of functions.  When ACL2 is built in the normal way, each of those
+  functions is marked as guard-verified when ACL2 is started up; but a special
+  developer build can be used to check that the indicated book, together with
+  its sub-books, proves that those functions are guard-verified.
 
   Metatheorems (~pl[meta]) may now have additional hypotheses, called
   ``meta-extract hypotheses'', that allow metafunctions to depend on the
@@ -19649,22 +19651,27 @@
   been ill-formed.  Thanks to Sol Swords for bringing this bug to our
   attention.
 
-  ~st[CHANGES AT THE SYSTEM LEVEL AND TO DISTRIBUTED BOOKS]
+  ~st[CHANGES AT THE SYSTEM LEVEL]
 
-  Fixed a bug in the implementation of ~ilc[wet] (which is actually in the book
-  ~c[books/misc/wet.lisp]).
+  The ~il[state] global variable ~c['distributed-books-dir] has been renamed
+  ~c['system-books-dir].  On a related note, the ~il[documentation] now refers
+  to ``community books'' rather than ``distributed books'', and there is a
+  corresponding new documentation topic; ~pl[community-books].
+
+  Fixed a bug in the implementation of ~ilc[wet] (which is actually in the
+  community book ~c[books/misc/wet.lisp]).
 
   A directory, ~c[interface/], is no longer part of the ACL2 distribution.
   Rather, it is a subdirectory of the ACL2 community books.  Thus, if you fetch
   those books in the usual way (see the installation instructions on the ACL2
   home page), you will find a directory ~c[books/interface/].  Subdirectory
-  ~c[emacs/] of the ~c[interface] directory provides Emacs support for
+  ~c[emacs/] of that ~c[interface] directory provides Emacs support for
   ~il[proof-tree]s as well an ~c[acl2-mode].  This change has been reflected in
   ACL2 file ~c[emacs/emacs-acl2.el], so users will probably not be impacted if
   they load that file into Emacs.
 
-  The distributed books file ~c[books/Makefile-generic] now causes, by default,
-  a backtrace to be printed when there is a raw Lisp error.
+  The community books file ~c[books/Makefile-generic] now causes, by default, a
+  backtrace to be printed when there is a raw Lisp error.
 
   ~st[EMACS SUPPORT]
 
@@ -19675,9 +19682,9 @@
 
   Macros ~ilc[with-fast-alist], ~ilc[with-stolen-alist], and
   ~ilc[fast-alist-free-on-exit] are now defined in ACL2(h), rather than being
-  defined in the book ~c[\"books/centaur/misc/hons-extra.lisp\"].  Thanks to
-  Jared Davis and Sol Swords for donating this code, and thanks to Jared for
-  helpful discussions leading to this change.
+  defined in the community book ~c[\"books/centaur/misc/hons-extra.lisp\"].
+  Thanks to Jared Davis and Sol Swords for donating this code, and thanks to
+  Jared for helpful discussions leading to this change.
   ~eq[]
 
   Among the enhancements for ACL2(p) (~pl[parallelism]) are the following.  We
@@ -21726,9 +21733,9 @@ Another extension of ACL2 is the Eclipse-based <A
 HREF=\"http://acl2s.ccs.neu.edu/acl2s/doc/\">ACL2 Sedan</A> (ACL2s).  Unlike
 the systems above, ACL2s is distributed and maintained by Pete Manolios and his
 research group.  ACL2s comes with a standard executable ACL2 image for Windows,
-but it also comes with pre-certified books and an extension of ACL2 with
-additional features, including extra automation for termination proofs as well
-as counterexample generation.
+but it also comes with pre-certified community books and an extension of ACL2
+with additional features, including extra automation for termination proofs as
+well as counterexample generation.
 
 <HR>
 
@@ -21812,7 +21819,7 @@ which you can find under your local <CODE>acl2-sources/</CODE> diretory at
 <li>Alternatively, for web browsing you can use <A
 HREF=\"http://fv.centtech.com/acl2/5.0/doc/\">documentation generated by Jared
 Davis's xdoc utility</A>.  If you use the experimental HONS version of ACL2
-and have certified the distributed books then you can build a complete local
+and have certified the community books then you can build a complete local
 copy in <CODE>books/xdoc-impl/manual/preview.html</A></CODE> by running:
 <pre>
   make regression-hons-fresh ACL2=&lt;path to your saved_acl2&gt;
@@ -21837,15 +21844,13 @@ directory):<br>
 <BR><HR><BR>
 <H2><A NAME=\"Tools\">Lemma Libraries and Utilities; and, How to Contribute</A></H2>
 
-A companion to ACL2 is the library of <em>distributed books</em>, which have
-been developed by many users over the years.  These books contain definitions
-and theorems that you might find useful in your models and proofs.  The <A
+A companion to ACL2 is the library of <em>community books</em>, which have been
+developed by many users over the years.  These books contain definitions and
+theorems that you might find useful in your models and proofs.  The <A
 HREF=\"installation/installation.html\">installation instructions</A> explain
 how to <A HREF=\"http://code.google.com/p/acl2-books/downloads/\">download</A>
-and install the distributed books.  These books include some tools built by
-users.  The above download link will also take you to additional books in
-support of the ACL2 Workshops (``<code>workshops</code>'') and non-standard
-analysis (``<code>nonstd</code>'').
+and install the community books.  These books include some tools built by
+users.
 
 <p>
 
@@ -21861,7 +21866,7 @@ section of <A HREF=
 \"http://www.cs.utexas.edu/users/moore/publications/acl2-papers.html\">
 Books and Papers about ACL2 and Its Applications</A>.  Some of the
 papers mentioned in that collection contain utilities, scripts, or
-ACL2 books the problem domains in question.
+ACL2 books for the problem domains in question.
 
 <BR><HR><BR>
 <H2><A NAME=\"Contribute\">How to contribute libraries and documentation</A></H2>
@@ -24981,8 +24986,8 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
 ; mfc-rw altogether (and then use the name mfc-rw for what we now call
 ; mfc-rw+), but we decided to leave mfc-rw unchanged for backward
 ; compatibility.  Worth mentioning: An attempt to replace mfc-rw by
-; corresponding calls of mfc-rw+ in books/arithmetic-3/ resulted in a failed
-; proof (of floor-floor-integer in
+; corresponding calls of mfc-rw+ in community book books/arithmetic-3/ resulted
+; in a failed proof (of floor-floor-integer in community book
 ; books/arithmetic-3/floor-mod/floor-mod.lisp).
 
   (declare (xargs :guard (and (member-eq forcep '(t nil :same))

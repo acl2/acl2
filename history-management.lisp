@@ -119,9 +119,8 @@
   External tools may present proof tree displays in a separate window.  In
   particular, a tool distributed with the ACL2 community books customizes the
   emacs environment to provide window-based proof tree displays together with
-  commands for traversing the proof transcript; see the discussion of
-  ``ACL2 proof-tree support'' in file ~c[emacs/emacs-acl2.el] distributed with
-  ACL2.
+  commands for traversing the proof transcript; see the discussion of ``ACL2
+  proof-tree support'' in file ~c[emacs/emacs-acl2.el] distributed with ACL2.
 
   The command ~c[:start-proof-tree] enables proof-tree output, while
   ~c[:stop-proof-tree] disables proof-tree output; ~pl[start-proof-tree] and
@@ -1862,8 +1861,8 @@
 (defrec command-tuple
 
 ; Warning: Keep this in sync with the definitions of
-; safe-access-command-tuple-number and pseudo-command-landmarkp in
-; books/system/pseudo-good-worldp.lisp, and function
+; safe-access-command-tuple-number and pseudo-command-landmarkp in community
+; book books/system/pseudo-good-worldp.lisp, and function
 ; safe-access-command-tuple-form in the ACL2 sources.
 
 ; See make-command-tuple for a discussion of defun-mode/form.
@@ -3478,7 +3477,7 @@
             state)))
 
 ; We admit the following sorting functions in :logic mode, verify their guards,
-; and prove properties of them in books/misc/sort-symbols.lisp.
+; and prove properties of them in community book books/misc/sort-symbols.lisp.
 
 (defun strict-merge-symbol-< (l1 l2 acc)
 
@@ -3489,7 +3488,7 @@
                               (symbol-listp l2)
                               (true-listp acc))
 
-; We admit this to the logic and prove termination in
+; We admit this to the logic and prove termination in community book
 ; books/misc/sort-symbols.lisp.
 
                   :mode :program))
@@ -3508,7 +3507,7 @@
 
   (declare (xargs :guard (symbol-listp l)
 
-; We admit this to the logic and prove termination in
+; We admit this to the logic and prove termination in community book
 ; books/misc/sort-symbols.lisp.
 
                   :mode :program))
@@ -3726,7 +3725,7 @@
                                     spent in the tau system was ~st seconds.  ~
                                     See :DOC time-tracker-tau.~|~%")
 
-; At one time we put (time-tracker :tau :end) here.  But in distributed book
+; At one time we put (time-tracker :tau :end) here.  But in community book
 ; books/hints/basic-tests.lisp, the recursive proof attempt failed just below
 ; (add-custom-keyword-hint :recurse ...), apparently because the time-tracker
 ; wasn't initialized for tag :tau when the proof resumed.  It's harmless anyhow
@@ -3869,7 +3868,7 @@
   call ~c[with-prover-step-limit] or ~ilc[set-prover-step-limit].
 
   For examples of how step-limits work besdies those presented below, see the
-  distributed book ~c[books/misc/misc2/step-limits.lisp].
+  community book ~c[books/misc/misc2/step-limits.lisp].
 
   Note that ~c[with-prover-step-limit] may not be called inside definitions,
   and that it is simply the identity macro in raw Lisp.  However,
@@ -4613,9 +4612,9 @@
 ; will have to revert back to the beginning of the most recent top-level
 ; command and install the world from there.  With a large number of such
 ; make-event forms, such quadratic behavior could be unfortunate.  And, the
-; file books/make-event/stobj-test.lisp illustrates that if after make-event
-; expansion we revert to the beginning of the book being certified, we could
-; lose the setting of a stobj in that expansion.
+; community book books/make-event/stobj-test.lisp illustrates that if after
+; make-event expansion we revert to the beginning of the book being certified,
+; we could lose the setting of a stobj in that expansion.
 
 ; But really, there seems no point in using command landmarks here (as we
 ; always did until adding this use of event landmarks in Version_3.1).  After
@@ -12729,12 +12728,12 @@
 
 ; We are careful to preserve the order, except that within a given declaration
 ; we consider :stobjs as going before :guard.  (An example is (defun load-qs
-; ...) in books/defexec/other-apps/qsort/programs.lisp.)  Before Version_3.5,
-; Jared Davis sent us the following example, for which guard verification
-; failed on the guard of the guard, because the :guard conjuncts were unioned
-; into the :type contribution to the guard, leaving a guard of (and (natp n) (=
-; (length x) n) (stringp x)).  It seems reasonable to accumulate the guard
-; conjuncts in the order presented by the user.
+; ...) in community book books/defexec/other-apps/qsort/programs.lisp.)  Before
+; Version_3.5, Jared Davis sent us the following example, for which guard
+; verification failed on the guard of the guard, because the :guard conjuncts
+; were unioned into the :type contribution to the guard, leaving a guard of
+; (and (natp n) (= (length x) n) (stringp x)).  It seems reasonable to
+; accumulate the guard conjuncts in the order presented by the user.
 
 ; (defun f (x n)
 ;   (declare (xargs :guard (and (stringp x)
@@ -17255,10 +17254,11 @@
 ; if there is an unbound var.
 
 ; Note that we do not evaluate in safe-mode.  Perhaps we should.  However, we
-; experimented by timing certification of books/hints/ without and with
-; safe-mode, and found times of 13.5 and 16.4 user seconds, respectively.
-; That's not a huge penalty for safe-mode but it's not small, either, so out of
-; concern for scalability we will avoid safe-mode for now.
+; experimented by timing certification for community books directory
+; books/hints/ without and with safe-mode, and found times of 13.5 and 16.4
+; user seconds, respectively.  That's not a huge penalty for safe-mode but it's
+; not small, either, so out of concern for scalability we will avoid safe-mode
+; for now.
 
   (er-let* ((term
              (if trans-flg
@@ -18878,12 +18878,12 @@
   ~ilc[remove-override-hints], and ~ilc[remove-override-hints!] are also
   available, in complete analogy to their default-hints versions.
 
-  (2) The distributed book ~c[hints/basic-tests.lisp] illustrates the use of
+  (2) The community book ~c[hints/basic-tests.lisp] illustrates the use of
   override-hints and illuminates a number of corner cases; search in that file
   for ``Test override-hints.''
 
-  (3) The distributed book ~c[hints/merge-hint.lisp] provides support for
-  merging hints that might be useful for writers of override-hint expressions
+  (3) The community book ~c[hints/merge-hint.lisp] provides support for merging
+  hints that might be useful for writers of override-hint expressions
   (see the examples at the end of that file).
 
   (4) Override-hints are used in the processing of ~c[:BACKTRACK] hints
@@ -19473,7 +19473,7 @@
   The remainder of this topic serves as a reference in case one needs a deeper
   understanding of the workings of ACL2's handling of hints.  Also, for
   examples of the sophisticated use of hints, primarily for experts, see
-  distributed book ~c[books/hints/basic-tests.lisp].
+  community book ~c[books/hints/basic-tests.lisp].
 
   First, we describe the ACL2 ``waterfall'', which handles each goal either by
   replacing it with a list (possibly empty) of child goals, or else by putting
@@ -19650,7 +19650,7 @@
   it was applied, the default (~c[:do-not]) hint is now the only pending hint.
   That hint is applied, resulting in the second ``Note'' above.
 
-  Again, more examples may be found in the distributed book
+  Again, more examples may be found in the community book
   ~c[books/hints/basic-tests.lisp].  A particularly tricky but informative
   example in that book is the one related to ~c[nonlinearp-default-hint].
 
@@ -19717,9 +19717,9 @@
   Only the first hint applicable to a goal, as specified in the user-supplied
   list of ~c[:hints] followed by the default hints (~pl[default-hints-table]),
   will be applied to that goal.  For an advanced exception,
-  ~pl[override-hints].  For a detailed discussion of how hints fit
-  into the ACL2 waterfall, ~pl[hints-and-the-waterfall].  For examples of the
-  sophisticated use of hints, primarily for experts, see distributed book
+  ~pl[override-hints].  For a detailed discussion of how hints fit into the
+  ACL2 waterfall, ~pl[hints-and-the-waterfall].  For examples of the
+  sophisticated use of hints, primarily for experts, see community book
   ~c[books/hints/basic-tests.lisp].~/
 
   Background: ~c[Hints] are allowed in all ~il[events] that use the theorem
@@ -19764,7 +19764,7 @@
   default, there is no reason to use the value ~c[nil].  Note that a
   ~c[:do-not-induct] hint is ignored for any goal on which an ~c[:induct] hint
   is supplied.  For an advanced example of the use of value ~c[:otf] with
-  ~il[override-hints], see distributed book books/hints/basic-tests.lisp.
+  ~il[override-hints], see community book ~c[books/hints/basic-tests.lisp].
 
   ~c[:DO-NOT]~nl[]
   ~c[Value] is a term having at most the single free variable ~ilc[world], which
@@ -19828,7 +19828,7 @@
   ~c[Value] is a true list of function symbols or lambda expressions,
   indicating that under the specified goal applications of these
   functions are not to be rewritten.  Note however that subterms will still be
-  rewritten; ~pl[hide] if that is not what is intended.  (The distributed book
+  rewritten; ~pl[hide] if that is not what is intended.  (The community book
   ~c[books/clause-processors/autohide.lisp] from Jared Davis may also be
   helpful in that case.) ~c[Value] may also be a single function symbol or
   lambda expression instead of a list.
@@ -21534,14 +21534,13 @@
   (thm (equal (run s 7) xxx))
   ~ev[]
 
-  Using techniques similar to those above we have implemented
-  ``priority phased simplification'' and provided it as a book.  See
-  ~c[books/misc/priorities.lisp].  This is an idea suggested by Pete
-  Manolios, by which priorities may be assigned to rules and then the
-  simplifier simplifies each subgoal maximally under the rules of a
-  given priority before enabling the rules of the next priority level.
-  The book above documents both how we implement it with computed
-  hints and how to use it.
+  Using techniques similar to those above we have implemented ``priority phased
+  simplification'' and provided it as a book.  See community book
+  ~c[books/misc/priorities.lisp].  This is an idea suggested by Pete Manolios,
+  by which priorities may be assigned to rules and then the simplifier
+  simplifies each subgoal maximally under the rules of a given priority before
+  enabling the rules of the next priority level.  The book above documents both
+  how we implement it with computed hints and how to use it.
 
   Here is another example of using the ~c[stable-under-simplificationp] flag to
   delay certain actions.  It defines a default hint, ~pl[DEFAULT-HINTS],
@@ -21724,8 +21723,8 @@
 (defmacro ttags-seen ()
 
 ; The following is a potentially useful utility, which we choose to include in
-; the ACL2 sources rather than in books/hacking/hacker.lisp.  Thanks to Peter
-; Dillinger for his contribution.
+; the ACL2 sources rather than in community book books/hacking/hacker.lisp.
+; Thanks to Peter Dillinger for his contribution.
 
   ":Doc-Section Miscellaneous
 

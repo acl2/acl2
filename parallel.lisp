@@ -330,12 +330,13 @@
 ; Parallelism wart: figure out if :bdd hints are supported.  Given the call of
 ; error-in-parallelism-mode@par in waterfall-step, it seems that they might not
 ; be; yet, regressions may have passed with them.  One possible outcome: If
-; books/bdd/ tests fail, you might just modify translate-bdd-hint to cause a
-; nice error if watefall parallelism is enabled, and also mention that (once
-; again) in :doc unsupported-waterfall-parallelism-features.  Note that
-; bdd-clause might be the function that actually performs the bdd hint, and
-; that bdd-clause doesn't return state.  So, aside from the place in
-; waterfall-step, bdd hints might be fine.
+; tests fail for contributed book directory books/bdd/, you might just modify
+; translate-bdd-hint to cause a nice error if watefall parallelism is enabled,
+; and also mention that (once again) in :doc
+; unsupported-waterfall-parallelism-features.  Note that bdd-clause might be
+; the function that actually performs the bdd hint, and that bdd-clause doesn't
+; return state.  So, aside from the place in waterfall-step, bdd hints might be
+; fine.
 
 (defdoc unsupported-waterfall-parallelism-features
 
@@ -2393,7 +2394,7 @@
   This documentation topic relates to an experimental extension of ACL2,
   ACL2(p), created initially by David L. Rager.  ~l[compiling-acl2p] for how to
   build an executable image that supports parallel execution.  Also see
-  distributed directory ~c[books/parallel/] for examples.~/
+  community books directory ~c[books/parallel/] for examples.~/
 
   One may wish to perform output while executing code in parallel.  If 
   threads are allowed to print concurrently, the output will be interleaved and
@@ -2525,7 +2526,7 @@
 
 ; Parallelism wart: it is still possible in ACL2(p) to receive an error at the
 ; Lisp-level when CCL cannot "create thread".  An example of a user (Kaufmann)
-; encountering this error is shown below, with book
+; encountering this error is shown below, with community book
 ; concurrent-programs/bakery/stutter2.  In March 2012, Kaufmann's laptop could
 ; sometimes exhibit this problem (a 2-core machine with 4 hardware threads).
 ; There are two possible ways to fix this problem.  The first is to set the

@@ -2395,8 +2395,8 @@
 
   Referring to the example above, ~c[expand-address-cat] would be such a
   function, which will be called on ~c[raw-term] values that are calls of
-  ~c[cat].  See the distributed book ~c[books/misc/rtl-untranslate.lisp] for
-  the definition of such a function.
+  ~c[cat].  See the community book ~c[books/misc/rtl-untranslate.lisp] for the
+  definition of such a function.
 
   ~l[table] for a general discussion of tables.~/~/"
 
@@ -6589,7 +6589,7 @@
           :hint
           '(equal a a))
   -- Invoke the indicated clause processor function with the indicated hint
-  argument (see the beginning of file
+  argument (see the beginning of community book
   ~c[books/clause-processors/basic-examples.lisp].~/
 
   General Form:

@@ -663,7 +663,7 @@
 
 (defun chk-macro-arglist-msg (args chk-state wrld)
 
-; This "-msg" function supports the book books/misc/defmac.lisp.
+; This "-msg" function supports the community book books/misc/defmac.lisp.
 
 ; Any modification to this function and its subordinates must cause
 ; one to reflect on the two function nests bind-macro-args...  and
@@ -1843,7 +1843,7 @@
 (defun chk-acceptable-defpkg (name form defpkg-book-path hidden-p ctx w state)
 
 ; Warning: Keep this in sync with the redefinition of this function in
-; books/misc/redef-pkg.lisp.
+; community book books/misc/redef-pkg.lisp.
 
 ; We return an error triple.  The non-error value is either 'redundant or a
 ; triple (tform value . package-entry), where tform and value are a translated
@@ -2006,7 +2006,7 @@
                             (package-entry-book-path package-entry)
                             defpkg-book-path
                             w
-                            (f-get-global 'distributed-books-dir state))))
+                            (f-get-global 'system-books-dir state))))
                       ((and package-entry
                             (or hidden-p
                                 (not (package-entry-hidden-p package-entry))))
@@ -4961,7 +4961,7 @@
                  "")))))
 
 ; We have had a great deal of trouble correctly detecting embedded defaxioms!
-; Tests for this have been incorporated into
+; Tests for this have been incorporated into community book
 ; books/make-event/embedded-defaxioms.lisp.
 
 (defun destructure-expansion (form)
@@ -5083,8 +5083,8 @@
          (progn! (set-raw-mode t)
                  (load \"some-file\")))
   ~ev[]
-  Also see ~c[with-raw-mode] defined in ~c[books/hacking/hacker.lisp],
-  ~pl[defttag], and ~pl[progn!].
+  Also see ~c[with-raw-mode] defined in community book
+  ~c[books/hacking/hacker.lisp], ~pl[defttag], and ~pl[progn!].
 
   Below are several disadvantages to raw mode.  These should discourage users
   from using it for general code development, as ~c[:]~ilc[program] mode is
@@ -6449,7 +6449,7 @@
   supplying keyword ~c[:succ-ld-skip-proofsp] with a valid value for
   ~c[ld-skip-proofsp]; ~pl[ld-skip-proofsp].  For example, you might want to
   execute ~c[(redo-flat :succ-ld-skip-proofsp nil)] if you use the
-  ~c[must-fail] utility from distributed book ~c[make-event/eval.lisp], since
+  ~c[must-fail] utility from community book ~c[make-event/eval.lisp], since
   for example ~c[(must-fail (thm (equal x y)))] normally succeeds but would
   cause an error if proofs are skipped.
 
@@ -9262,14 +9262,14 @@
               (do-proofs?
                (or check-expansion
 
-; For example, a must-fail form in books/make-event/defspec.lisp will fail
-; during the Pcertify process of provisional certification unless we turn
-; proofs on during expansion at that point.  It's reasonable to do proofs under
-; make-event expansion during the Pcertify process: after all, we need the
-; expansion done in order for other books to include the make-event's book with
-; the .pcert0 certificate, and also proofs might well be necessary in order to
-; come up with the correct expansion (else why do them?).  We could indeed
-; always do proofs, but it's pretty common to do proofs only during
+; For example, a must-fail form in community book books/make-event/defspec.lisp
+; will fail during the Pcertify process of provisional certification unless we
+; turn proofs on during expansion at that point.  It's reasonable to do proofs
+; under make-event expansion during the Pcertify process: after all, we need
+; the expansion done in order for other books to include the make-event's book
+; with the .pcert0 certificate, and also proofs might well be necessary in
+; order to come up with the correct expansion (else why do them?).  We could
+; indeed always do proofs, but it's pretty common to do proofs only during
 ; certification as a way of validating some code.  So our approach is only to
 ; move proofs from the Convert procedure to the Pcertify procedure.
 
@@ -9285,7 +9285,7 @@
 
 ; This wrapper of do-proofs? avoids errors in checking expansions when
 ; ld-skip-proofsp is 'include-book.  See the "Very Technical Remark" in
-; books/make-event/read-from-file.lisp.
+; community book  books/make-event/read-from-file.lisp.
 
                 check-expansion
                 (chk-embedded-event-form
@@ -9328,11 +9328,11 @@
 
 ; At this point we know that (car base) is from the list '(make-event progn
 ; progn! encapsulate); indeed, just after the release of v3-5, we ran a
-; regression in books/make-event with the code C below replaced by (assert$
-; (member-eq (car base) X) C), where X is the above quoted list.  However, we
-; do not add that assertion, so that for example the ccg book of ACL2s can
-; create make-event expansions out of events other than the four types above,
-; e.g., defun.
+; regression in community book books/make-event with the code C below replaced
+; by (assert$ (member-eq (car base) X) C), where X is the above quoted list.
+; However, we do not add that assertion, so that for example the ccg book of
+; ACL2s can create make-event expansions out of events other than the four
+; types above, e.g., defun.
 
                       (declare (ignore base))
                       (rebuild-expansion
@@ -9532,7 +9532,7 @@
 
   You can contribute books to the ACL2 community and obtain updates inbetween
   ACL2 releases by visiting the ~c[acl2-books] project web page,
-  ~url[http://acl2-books.googlecode.com/].~/
+  ~url[http://acl2-books.googlecode.com/].  Also ~pl[community-books].~/
 
   ~em[Introduction.]
 
@@ -9574,6 +9574,22 @@
   (~pl[book-example]~terminal[ and use :more to read through it]).~/
 
   :cite include-book")
+
+(deflabel community-books
+  :doc
+  ":Doc-Section  Books
+
+  ~il[books] contributed by the ACL2 community~/
+
+  For background on ACL2 books, which can contain useful definitions and
+  theorems, ~pl[books].
+
+  The ACL2 ``community books'' is a collection of books developed since the
+  early 1990s by members of the ACL2 community.  The installation instructions
+  suggest installing these books in the ~c[books/] subdirectory of your local
+  ACL2 installation.  You can contribute books to the ACL2 community and obtain
+  updates inbetween ACL2 releases by visiting the ~c[acl2-books] project web
+  page, ~url[http://acl2-books.googlecode.com/].~/~/")
 
 (defun chk-book-name (book-name full-book-name ctx state)
 
@@ -10311,11 +10327,11 @@
 ; See the comment in fix-portcullis-cmds for a discussion.  Starting after
 ; Version_3.6.1, we allow an include-book pathname for a portcullis command to
 ; remain a relative pathname if it is relative to the cbd of the book.  That
-; change avoids a failure to certify
-; /projects/acl2/devel/books/fix-cert/test-fix-cert1.lisp that initially
-; occurred when we started including portcullis commands in the check-sum (with
-; the introduction of function check-sum-cert, caused by the renaming of an
-; absolute pathname in an include-book portcullis command.
+; change avoids a failure to certify community book
+; books/fix-cert/test-fix-cert1.lisp that initially occurred when we started
+; including portcullis commands in the check-sum (with the introduction of
+; function check-sum-cert, caused by the renaming of an absolute pathname in an
+; include-book portcullis command.
 
 ; Form is a command from the current ACL2 world that is known to be an embedded
 ; event form with respect to names.  Keep this function in sync with
@@ -10592,7 +10608,7 @@
          (relativize-book-path-lst1 lst root))
         (t lst)))
 
-(defun defpkg-items-rec (new-kpa old-kpa distributed-books-dir
+(defun defpkg-items-rec (new-kpa old-kpa system-books-dir
                                  connected-book-directory ctx w state acc)
 
 ; For background on the discussion below, see the Essay on Hidden Packages.
@@ -10619,7 +10635,7 @@
              (n (package-entry-name e)))
         (cond
          ((find-package-entry n old-kpa)
-          (defpkg-items-rec (cdr new-kpa) old-kpa distributed-books-dir
+          (defpkg-items-rec (cdr new-kpa) old-kpa system-books-dir
             connected-book-directory ctx w state acc))
          (t
           (let* ((imports (package-entry-imports e))
@@ -10630,19 +10646,18 @@
                  (tterm (package-entry-tterm e))
                  (book-path
 
-; We use relative pathnames when possible, to support relocation of .cert
-; files of distributed books (as is done as of August 2010 by Debian ACL2
-; release and ACL2s).
+; We use relative pathnames when possible, to support relocation of .cert files
+; (as is done as of August 2010 by Debian ACL2 release and ACL2s).
 
                   (relativize-book-path-lst (package-entry-book-path e)
-                                            distributed-books-dir
+                                            system-books-dir
                                             connected-book-directory)))
             (mv-let (erp pair state)
               (simple-translate-and-eval body nil nil
                                          "The second argument to defpkg"
                                          ctx w state nil)
               (defpkg-items-rec
-                (cdr new-kpa) old-kpa distributed-books-dir
+                (cdr new-kpa) old-kpa system-books-dir
                 connected-book-directory ctx w state
                 (cons (list name
                             imports
@@ -10675,7 +10690,7 @@
    ((inhibit-output-lst (cons 'error
                               (f-get-global 'inhibit-output-lst state))))
    (defpkg-items-rec new-kpa (global-val 'known-package-alist w)
-     (f-get-global 'distributed-books-dir state)
+     (f-get-global 'system-books-dir state)
      (f-get-global 'connected-book-directory state)
      ctx w state nil)))
 
@@ -10808,7 +10823,7 @@
 
 )
 
-(defun hidden-defpkg-events1 (kpa distributed-books-dir
+(defun hidden-defpkg-events1 (kpa system-books-dir
                                   connected-book-directory w ctx state acc)
 
 ; Warning: Keep this in sync with hidden-depkg-events-simple.
@@ -10816,7 +10831,7 @@
   (cond
    ((endp kpa) (value (reverse acc)))
    ((not (package-entry-hidden-p (car kpa)))
-    (hidden-defpkg-events1 (cdr kpa) distributed-books-dir
+    (hidden-defpkg-events1 (cdr kpa) system-books-dir
                            connected-book-directory w ctx state acc))
    (t
     (let* ((e (car kpa))
@@ -10829,7 +10844,7 @@
            (tterm (package-entry-tterm e))
            (book-path (relativize-book-path-lst
                        (package-entry-book-path e)
-                       distributed-books-dir
+                       system-books-dir
                        connected-book-directory)))
       (mv-let
        (erp pair state)
@@ -10838,7 +10853,7 @@
                                   ctx w state nil)
        (hidden-defpkg-events1
         (cdr kpa)
-        distributed-books-dir connected-book-directory w ctx state
+        system-books-dir connected-book-directory w ctx state
         (cons `(defpkg ,name
                  ,(assert$
                    event
@@ -10868,7 +10883,7 @@
   (state-global-let*
    ((inhibit-output-lst *valid-output-names*))
    (hidden-defpkg-events1 kpa
-                          (f-get-global 'distributed-books-dir state)
+                          (f-get-global 'system-books-dir state)
                           (f-get-global 'connected-book-directory state)
                           w ctx state nil)))
 
@@ -11670,8 +11685,8 @@
 
 ; This function ignores the part of each version string after the first
 ; parenthesis (if any).  While it is no longer used in the sources (as of May
-; 1, 2010), it is used in books/hacking/ and is a handy utility, so we leave it
-; here.
+; 1, 2010), it is used in community book books/hacking/ and is a handy utility,
+; so we leave it here.
 
   (mv-let (major1 minor1 incrl1 rest1)
     (parse-version version1)
@@ -13274,7 +13289,7 @@
 
 (defun include-book-dir (dir state)
   (cond ((eq dir :system)
-         (f-get-global 'distributed-books-dir state))
+         (f-get-global 'system-books-dir state))
         (t (let* ((alist0 (f-get-global 'raw-include-book-dir-alist state))
                   (alist (cond
                           ((eq alist0 :ignore)
@@ -15211,7 +15226,8 @@
 ; certify-book?  The reason is that it's easier this way to provide makefile
 ; support: the same .acl2 file can be used for each of the two certifications
 ; if the makefile sends an extra set-write-acl2x form before the first
-; certification.  (And, that is what we do in books/Makefile-generic.)
+; certification.  (And, that is what is done in community books file
+; books/Makefile-generic.)
 
 ; Note that include-book is not affected by this proposal, because foo.acl2x is
 ; not consulted: its effect is already recorded in the .cert file produced by
@@ -15269,7 +15285,8 @@
 ; chk-raise-portcullis (called by chk-certificate-file1) checks the checksum of
 ; the certificate object against the final value in the .cert file.
 
-; We also provide Makefile support; see books/Makefile-generic.
+; Makefile support is available; see community books file
+; books/Makefile-generic.
 
 (defstub acl2x-expansion-alist (expansion-alist state)
 
@@ -16999,16 +17016,14 @@
   to the ~c[Makefile] residing in a directory, placed above the line that
   specifies the `~c[include]' of file ~c[Makefile-generic].
 
-  A successful `make' will result in creation of files of the form
-  ~c[book.cert], as one would expect, but by way of intermediate files
-  ~c[book.pcert0] and (temporarily) ~c[book.pcert1].  See distributed file
+  A successful `make' will result in creati  See community books file
   ~c[books/system/pcert/Makefile] for an example.
 
   Warning: If you put the line ``~c[ACL2_PCERT = t]'' below the include of
   ~c[Makefile-generic], it might have no effect.  For example, try editing
-  ~c[books/system/pcert/Makefile] by moving the line ``~c[ACL2_PCERT = t]'' to
-  the bottom of the file, and watch ``~c[make top.cert]'' fail to invoke
-  provisional certification.
+  community books file ~c[books/system/pcert/Makefile] by moving the line
+  ``~c[ACL2_PCERT = t]'' to the bottom of the file, and watch
+  ``~c[make top.cert]'' fail to invoke provisional certification.
 
   The description above may be sufficient for you to use provisional
   certification.  We provide additional documentation below for the reader who
@@ -17206,7 +17221,7 @@
   ~c[make-event] form has a non-~c[nil] ~c[:check-expansion] argument.  But
   during the Pcertify procedure (not the Pcertify+ procedure),
   ~ilc[ld-skip-proofsp] is always bound to ~c[nil] at the start of
-  ~c[make-event] expansion.  To see why, consider for example the distributed
+  ~c[make-event] expansion.  To see why, consider for example the community
   book ~c[books/make-event/proof-by-arith.lisp].  This book introduces a macro,
   ~c[proof-by-arith], that expands to a call of ~ilc[make-event].  This
   ~c[make-event] form expands by trying to prove a given theorem using a
@@ -17235,7 +17250,7 @@
 
   Again, as discussed above, a ~c[.pcert0] or ~c[.pcert1] file may serve as a
   valid certificate file when the ~c[.cert] file is missing.  But when that
-  happens, a warning may be printed that a \"provisionally certified\" book has
+  happens, a warning may be printed that a ``provisionally certified'' book has
   been included.  No such warning occurs if environment variable ~c[ACL2_PCERT]
   has a non-empty value, or if that warning is explicitly inhibited
   (~pl[set-inhibit-warnings] and ~pl[set-inhibit-output-lst]).")
@@ -18059,22 +18074,23 @@
   :Doc
   ":Doc-Section Books
 
-  makefile support provided with the ACL2 distribution~/
+  makefile support provided with the ACL2 community books~/
 
   This topic describes the ACL2 methodology for using makefiles to assist in
   the automation of the certification of collections of ACL2 ~il[books].  We
   assume here a familiarity with Unix/Linux ~c[make].  We also assume that you
-  are using GNU ~c[make] rather than some other flavor of ~c[make].
+  are using GNU ~c[make] rather than some other flavor of ~c[make].  And
+  finally, we generally assume that as is typically the case by following the
+  standard installation instructions, you install the ACL2 community books in
+  the ~c[books/] subdirectory of your ACL2 distribution.
 
   The basic idea is to stand in the ACL2 sources directory and submit the
-  following command, in order to certify all the distributed ~il[books] (and
-  also all books under ~c[books/workshops/], if these were downloaded).
+  following command, in order to certify all the ~il[books].
   ~bv[]
   make regression
   ~ev[]
-  For each book ~c[foo.lisp] in the distribution, a file ~c[foo.out] in the
-  same directory will contain the output from the corresponding certification
-  attempt.
+  For each book ~c[foo.lisp], a file ~c[foo.out] in the same directory will
+  contain the output from the corresponding certification attempt.
 
   By default, the ACL2 executable used is the file ~c[saved_acl2] in the ACL2
   sources directory.  But you can specify another instead; indeed, you must do
@@ -18107,22 +18123,22 @@
   We now discuss how to create suitable makefiles in individual directories
   containing certifiable ~il[books].~/
 
-  ACL2's regression suite is run using ~c[Makefile]s that include
-  ~c[books/Makefile-generic].  You can look at existing ~c[Makefile]s to
-  understand how to create your own ~c[Makefile]s.  Here are the six steps to
-  follow to create a ~c[Makefile] for a directory that contains books to be
-  certified, and certify them using that ~c[Makefile].  Below these steps we
-  conclude with discussion of other capabilties provided by
-  ~c[books/Makefile-generic].
+  ACL2's regression suite is typically run on the community books, using
+  ~c[Makefile]s that include community books file ~c[books/Makefile-generic].
+  You can look at existing ~c[Makefile]s to understand how to create your own
+  ~c[Makefile]s.  Here are the six steps to follow to create a ~c[Makefile] for
+  a directory that contains books to be certified, and certify them using that
+  ~c[Makefile].  Below these steps we conclude with discussion of other
+  capabilties provided by ~c[books/Makefile-generic].
 
   1. It is most common to use an ACL2 executable named ~c[saved_acl2] that
-  resides in the parent directory of the distributed ~c[books/] directory.  In
+  resides in the parent directory of the ~c[books/] directory.  In
   this case, unless you are using a very old version of GNU ~c[make] (version
   3.80, at least, works fine), you should be able to skip the following sentence,
   because the ~c[ACL2] `~c[make]' variable will be set automatically.
   Otherwise, define the ~c[ACL2] variable using ~c[?=] to point to your ACL2 executable
-  (though this may be omitted for directories directly under the distributed
-  books directory), for example:
+  (though this may be omitted for directories directly under the ~c[books/]
+  directory), for example:
   ~bv[]
   ACL2 ?= ../../../saved_acl2
   ~ev[]
@@ -18132,8 +18148,8 @@
   of ~c[ACL2], which in turn need to be able to override the environment value
   of ~c[ACL2] from ~c[books/Makefile-generic]).
 
-  Also include the file ~c[Makefile-generic] in the distributed books
-  directory.  For example, file ~c[books/arithmetic-3/pass1/Makefile] starts as
+  Also include the file ~c[Makefile-generic] in the ~c[books/] directory.  For
+  example, community books file ~c[books/arithmetic-3/pass1/Makefile] starts as
   follows.
   ~bv[]
   include ../../Makefile-generic
@@ -18154,7 +18170,7 @@
   3. Specify the books to be certified.  If every file with extension ~c[.lisp]
   is a book that you want to certify, you can skip this step.  Otherwise, put a
   line in your ~c[Makefile] after the ones above that specifies the books to be
-  certified.  The following example, from an old version of
+  certified.  The following example, from an old version of community books file
   ~c[books/finite-set-theory/osets/Makefile], should make this clear.
   ~bv[]
   BOOKS = computed-hints fast instance map membership outer primitives \\
@@ -18165,15 +18181,15 @@
 
   4. Create ~c[.acl2] files for books that are to be certified in other than
   the initial ACL2 world (~pl[portcullis]).  For example, if you look in
-  ~c[books/arithmetic/equalities.acl2] you will see ~ilc[defpkg] forms followed
-  by a ~ilc[certify-book] command, because it was determined that ~ilc[defpkg]
-  forms were necessary in the certification world in order to certify the
-  ~c[equalities] book.  In general, for each ~c[<book-name>.lisp] whose
-  certification requires a non-initial certification world, you will need a
-  corresponding ~c[<book-name>.acl2] file that ends with the appropriate
-  ~ilc[certify-book] command.  Of course, you can also use ~c[.acl2] files with
-  initial certification worlds, for example if you want to pass optional
-  arguments to ~ilc[certify-book].
+  community books file ~c[books/arithmetic/equalities.acl2] you will see
+  ~ilc[defpkg] forms followed by a ~ilc[certify-book] command, because it was
+  determined that ~ilc[defpkg] forms were necessary in the certification world
+  in order to certify the ~c[equalities] book.  In general, for each
+  ~c[<book-name>.lisp] whose certification requires a non-initial certification
+  world, you will need a corresponding ~c[<book-name>.acl2] file that ends with
+  the appropriate ~ilc[certify-book] command.  Of course, you can also use
+  ~c[.acl2] files with initial certification worlds, for example if you want to
+  pass optional arguments to ~ilc[certify-book].
 
   You also have the option of creating a file ~c[cert.acl2] that has a special
   role.  When file ~c[<book-name>.lisp] is certified, if there is no file
@@ -18216,24 +18232,25 @@
 
   This concludes the basic instructions for creating a ~c[Makefile] in a
   directory including books.  Here are some other capabilities offered by
-  ~c[books/Makefile-subdirs].  Not included below is a discussion of how to
-  increase parallelism by avoiding the need to certify included books before
-  certifying a given book; ~pl[provisional-certification].
+  community books file ~c[books/Makefile-subdirs].  Not included below is a
+  discussion of how to increase parallelism by avoiding the need to certify
+  included books before certifying a given book;
+  ~pl[provisional-certification].
 
   ~st[Subdirectory support.]  There is support for subdirectories.  For
-  example, file ~c[books/arithmetic-3/Makefile] formerly had the following
-  contents.
+  example, community books file ~c[books/arithmetic-3/Makefile] formerly had
+  the following contents.
   ~bv[]
   DIRS = pass1 bind-free floor-mod
   include ../Makefile-subdirs
   ~ev[]
   This indicated that we are to run ~c[make] in subdirectories ~c[pass1/],
-  ~c[bind-free/], and ~c[floor-mod] of the current directory
-  (namely, ~c[books/arithmetic-3/]).
+  ~c[bind-free/], and ~c[floor-mod] of the current directory (namely, community
+  books directory ~c[books/arithmetic-3/]).
 
   However, there is also subdirectory support when the current directory has
-  books as well.  File ~c[books/arithmetic-3/Makefile] contains the following
-  lines (current in ACL2 Version_3.6).
+  books as well.  Community books file ~c[books/arithmetic-3/Makefile] contains
+  the following lines (at least as of ACL2 Version_3.6).
   ~bv[]
   arith-top: top all
   all: top
@@ -18274,10 +18291,10 @@
   ~st[System books.] An environment variable ~c[ACL2_SYSTEM_BOOKS] is generally
   set automatically (at least in GNU make versions 3.80 and 3.81), so you can
   probably skip reading the following paragraph unless your attempt to certify
-  distributed books fails to locate those books properly.
+  books fails to locate those books properly.
 
   The environment variable ~c[ACL2_SYSTEM_BOOKS] can be set to the ~c[books/]
-  directory under which the books reside that are distributed with ACL2.  A
+  directory under which the books reside, typically the ACL2 community books.  A
   Unix-style pathname, typically ending in ~c[books/] or ~c[books], is
   permissible.  In most cases, your ACL2 executable is a small script in which
   you can set this environment variable just above the line on which the actual
@@ -18370,8 +18387,8 @@
 
 ; We originally needed the following true-listp conjunct in order to prove
 ; guard conjectures generated by mv-nth in defun-sk.  After v4-1, we tried
-; removing it, but regression failed at lemma Bezout1-property in
-; books/workshops/2006/cowles-gamboa-euclid/Euclid/ed3.lisp.  So we have
+; removing it, but regression failed at lemma Bezout1-property in community
+; book books/workshops/2006/cowles-gamboa-euclid/Euclid/ed3.lisp.  So we have
 ; avoided making a change here after v4-1, after all.
 
              (fcons-term*
@@ -19824,7 +19841,7 @@
   and for every natural number ~c[z] < ~c[y], ~c[z] does not.  What would
   happen if we remove the restriction of ~c[x], ~c[y], and ~c[z] being
   naturals?  Of course, we will not talk about ~c[<] any more, but suppose you
-  use the total order on all ACL2 objects (from
+  use the total order on all ACL2 objects (from community book
   ~c[\"books/misc/total-order\"]).  More concretely, consider the definition of
   ~c[some-M] above.  Let us now define two other functions:
   ~bv[]
@@ -22295,9 +22312,9 @@
   ~st[EXAMPLE]
 
   We present examples, with detailed comments intended to explain abstract
-  stobjs, in two distributed books: ~c[books/misc/defabsstobj-example-1.lisp]
-  and ~c[books/misc/defabsstobj-example-2.lisp].  In this section we outline
-  the first of these.  We suggest that after you finish this ~il[documentation]
+  stobjs, in two community books: ~c[books/misc/defabsstobj-example-1.lisp] and
+  ~c[books/misc/defabsstobj-example-2.lisp].  In this section we outline the
+  first of these.  We suggest that after you finish this ~il[documentation]
   topic, you read through those two books.
 
   Here is the first of two closely related ~c[defabsstobj] ~il[events] from the
@@ -23670,7 +23687,7 @@
   and its fields can be updated by destructive assignments.
 
   Note: Novices are advised to avoid using single-threaded objects, perhaps
-  instead using distributed book ~c[books/data-structures/structures.lisp].  At
+  instead using community book ~c[books/data-structures/structures.lisp].  At
   the least, consider using ~c[(]~ilc[set-verify-guards-eagerness]~c[ 0)] to
   avoid ~il[guard] verification.
 
@@ -26488,7 +26505,7 @@
   ~c[Trace$] installs alternate code for the indicated functions that prints
   information upon entry to, and exit from, calls of the functions.  For an
   alternate tracing utility used for educational purposes in ACL2s
-  (~url[http://acl2s.ccs.neu.edu/acl2s/doc/]), see distributed book
+  (~url[http://acl2s.ccs.neu.edu/acl2s/doc/]), see community book
   ~c[books/misc/trace-star.lisp].
 
   From a logical perspective all trace printing is a fiction.  (But ~pl[trace!]
@@ -26794,7 +26811,7 @@
   A second special value for ~c[:evisc-tuple], ~c[:no-print], avoids printing
   the values of the ~c[:entry] and ~c[:exit] forms (or their defaults, if not
   specified).  This option is of use for side effects; for an example see
-  ~c[books/misc/wet.lisp].
+  community book ~c[books/misc/wet.lisp].
 
   Note that if ~c[:evisc-tuple X] is supplied, then the form ~c[X] will be
   evaluated before the function body is entered.  You can thus pull some tricks
@@ -31429,7 +31446,7 @@
                              "Attachments must be guard-verified function ~
                               symbols~@0, but ~x1 has not had its guard ~
                               verified.  You may wish to use the macro ~x2 in ~
-                              distributed book books/misc/defattach-bang.~@3"
+                              community book books/misc/defattach-bang.~@3"
                              unless-ttag g 'defattach! see-doc))
                         ((not (and (equal (stobjs-in f wrld)
                                           (stobjs-in g wrld))
@@ -33363,7 +33380,7 @@
   deliberate design decision, in order to avoid slowing down event processing.)
   However, there is help available on how to do such a computation:
 
-  A distributed book, ~c[books/misc/dead-events.lisp], does such a transitive
+  A community book, ~c[books/misc/dead-events.lisp], does such a transitive
   closure, and moreover uses that information to find ``dead events'' relative
   to a list of ``desired'' events.  For example, suppose you use ~ilc[LD] to
   process the events, with proofs, in a book intended to prove theorems

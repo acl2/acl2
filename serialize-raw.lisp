@@ -115,8 +115,8 @@
 ;
 ;    V2. When we moved serialization into ACL2 proper, we noticed a few things
 ;        that we could improve, and tweaked the serialization scheme.  The new
-;        scheme, V2, wasn't compatible with books/serialize, but we already had
-;        many files written in the old V1 format.
+;        scheme, V2, wasn't compatible with community book books/serialize, but
+;        we already had many files written in the old V1 format.
 ;
 ;    V3. Later, we realized that it would be easy to restore fast alists within
 ;        serialized objects, and that this would allow the fast alists defined

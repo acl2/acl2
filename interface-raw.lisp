@@ -3003,11 +3003,11 @@
 ; mutual-recursion nest with 4,786 defuns at AMD prompted this change.)  As a
 ; result we saw a 1.8% slowdown in the regression suite, reduced to 0.9% with
 ; some optimizations.  Presumably the slowdown was due to the more frequest use
-; of the RECURSIVEP property.  So we ran experiments using
-; books/certify-numbers.lisp and books/rtl/rel2/support/cert.lsp, though we
-; aborted the latter partway through lop3.lisp (during the proof of BITN-LAM0,
-; which seemed to be bogging down).  The results using analyze-fgetprop-stats
-; were as follows.
+; of the RECURSIVEP property.  So we ran experiments using community books
+; files books/certify-numbers.lisp and books/rtl/rel2/support/cert.lsp, though
+; we aborted the latter partway through lop3.lisp (during the proof of
+; BITN-LAM0, which seemed to be bogging down).  The results using
+; analyze-fgetprop-stats were as follows.
 
 ; books/certify-numbers.lisp:
 ; 
@@ -4781,14 +4781,15 @@
 ; Name is already boundp, perhaps even by a defattach in the ACL2 source code.
 ; Handling of this case supports our fix for a bug described in note-4-2:
 ; "Fixed a bug in which the wrong attachment could be made...."  We hit that
-; bug when we tried to attach to acl2x-expansion-alist upon including the book
-; books/make-event/acl2x-help.lisp (see the defattach there for that function),
-; causing certification to fail for books/make-event/acl2x-help.lisp.  That
-; certification failed because the attachment was getting its value from
-; *hcomp-const-ht*, which had not seen that attachment because the load was
-; aborted due to a missing compiled file for a book included under
-; acl2x-help.lisp.  Perhaps we should never put a defparameter for a defattach
-; into *hcomp-const-ht*, but anyhow, the following setf handles the issue.
+; bug when we tried to attach to acl2x-expansion-alist upon including the
+; community book books/make-event/acl2x-help.lisp (see the defattach there for
+; that function), causing certification to fail for
+; books/make-event/acl2x-help.lisp.  That certification failed because the
+; attachment was getting its value from *hcomp-const-ht*, which had not seen
+; that attachment because the load was aborted due to a missing compiled file
+; for a book included under acl2x-help.lisp.  Perhaps we should never put a
+; defparameter for a defattach into *hcomp-const-ht*, but anyhow, the following
+; setf handles the issue.
 
              (setf (gethash name ht)
                    *hcomp-fake-value*))
@@ -6297,7 +6298,7 @@
 #+gcl
 (defvar user::*acl2-keep-tmp-files* nil)
 
-(defun-one-output enter-boot-strap-mode (distributed-books-dir operating-system)
+(defun-one-output enter-boot-strap-mode (system-books-dir operating-system)
 
 ; If we interrupted an earlier initialization, the following form will undo it.
 ; This will set the *acl2-unwind-protect-stack* to nil because *ld-level* is
@@ -6346,23 +6347,23 @@
          (primordial-world operating-system)
          *the-live-state*)
 
-; Set the distributed books directory now that the operating-system has been
-; defined (needed by pathname-os-to-unix).
+; Set the system books directory now that the operating-system has been defined
+; (needed by pathname-os-to-unix).
 
-  (let ((distributed-books-dir
-         (cond (distributed-books-dir
+  (let ((system-books-dir
+         (cond (system-books-dir
                 (let ((dir (unix-full-pathname
                             (cond
-                             ((symbolp distributed-books-dir)
-                              (symbol-name distributed-books-dir))
-                             ((stringp distributed-books-dir)
-                              distributed-books-dir)
+                             ((symbolp system-books-dir)
+                              (symbol-name system-books-dir))
+                             ((stringp system-books-dir)
+                              system-books-dir)
                              (t (er hard 'initialize-acl2
                                     "Unable to complete ~
-                                     initialization,because the supplied ~
-                                     distributed books directory, ~x0, is not ~
+                                     initialization, because the supplied ~
+                                     system books directory, ~x0, is not ~
                                      a string."
-                                    distributed-books-dir))))))
+                                    system-books-dir))))))
                   (maybe-add-separator dir)))
                (t (unix-full-pathname
                    (concatenate 'string
@@ -6371,8 +6372,8 @@
                                 "books/"
                                 #+:non-standard-analysis
                                 "books/nonstd/"))))))
-    (f-put-global 'distributed-books-dir
-                  (canonical-dirname! distributed-books-dir
+    (f-put-global 'system-books-dir
+                  (canonical-dirname! system-books-dir
                                       'enter-boot-strap-mode
                                       *the-live-state*)
                   *the-live-state*))
@@ -6573,7 +6574,8 @@
 (defconst *acl2-pass-2-files*
 
 ; Note that some books depend on "memoize", "hons", and "serialize", even in
-; #-hons.  For example, books/misc/hons-help.lisp uses hons primitives.
+; #-hons.  For example, community book books/misc/hons-help.lisp uses hons
+; primitives.
 
   '("axioms"
     "memoize"
@@ -7051,10 +7053,10 @@ Missing functions:
 
 (defun initialize-acl2 (&optional (pass-2-ld-skip-proofsp 'include-book)
                                   (acl2-pass-2-files *acl2-pass-2-files*)
-                                  distributed-books-dir
+                                  system-books-dir
                                   skip-comp-exec)
 
-; Note: if distributed-books-dir is supplied, it should be a Unix-style
+; Note: if system-books-dir is supplied, it should be a Unix-style
 ; pathname (either absolute or not [doesn't matter which]).
 
 ; This function first lds all of the *acl2-files* except boot-strap-pass-2.lisp
@@ -7077,10 +7079,10 @@ Missing functions:
 ; the defthms in axioms.lisp because the necessary theory functions were not
 ; yet defined and so trans-eval balked on them.
 
-  (when (null distributed-books-dir)
+  (when (null system-books-dir)
     (let ((dir (getenv$-raw "ACL2_SYSTEM_BOOKS")))
       (when (and dir (not (equal dir "")))
-        (setq distributed-books-dir dir))))
+        (setq system-books-dir dir))))
 
   (with-warnings-suppressed
 
@@ -7187,7 +7189,7 @@ Missing functions:
           (compiler:*suppress-compiler-notes* t)
           (state *the-live-state*)
           pass-2-alist)
-     (enter-boot-strap-mode distributed-books-dir (get-os))
+     (enter-boot-strap-mode system-books-dir (get-os))
 
 ; Rockwell Addition:  Here we initialize the nu-rewriter memo cache.
 
@@ -7634,7 +7636,7 @@ Missing functions:
 ; acl2-init.lisp, we cannot eliminate the following form for LispWorks.  (We
 ; tried with LispWorks 6.0 and Lispworks 6.0.1 with *stack-overflow-behaviour*
 ; = nil and without the following form, but we got segmentation faults when
-; certifying books/concurrent-programs/bakery/stutter2 and
+; certifying community books books/concurrent-programs/bakery/stutter2 and
 ; books/unicode/read-utf8.lisp.)
 
          #+lispworks (hcl:extend-current-stack 400)
@@ -7674,7 +7676,7 @@ Missing functions:
                                            (1- (length user-home-dir0)))
                                  user-home-dir0)))
            (when system-dir
-             (f-put-global 'distributed-books-dir
+             (f-put-global 'system-books-dir
                            (canonical-dirname!
                             (unix-full-pathname system-dir)
                             'lp
