@@ -47876,6 +47876,19 @@ Lisp definition."
 #-acl2-par
 (defmacro time-tracker (tag &optional (kwd 'nil kwdp)
                             &key times interval min-time msg)
+  `(time-tracker-fn ,tag ,kwd ,kwdp ,times ,interval ,min-time ,msg))
+
+#+acl2-par
+(defmacro time-tracker (&rest args)
+  (declare (ignore args))
+  nil)
+
+(defdoc time-tracker
+
+; This documentation is separated from the defmacro for time-tracker because
+; that defmacro has two definitions, one for #-acl2-par and one for
+; #+acl2-par.  We need this :doc topic present in both kinds of builds, because
+; of the :cite of it in :doc trace.
 
   ":Doc-Section programming
 
@@ -48109,9 +48122,7 @@ Lisp definition."
   ``seconds'').  It is convenient to supply ~c[:msg] as a call
   ~c[(msg str arg-0 arg-1 ... arg-k)], where ~c[str] is a string and each
   ~c[arg-i] is the value to be associated with ~c[#\\i] upon formatted
-  printing (as with ~ilc[fmt]) of the string ~c[str].~/~/"
-
-  `(time-tracker-fn ,tag ,kwd ,kwdp ,times ,interval ,min-time ,msg))
+  printing (as with ~ilc[fmt]) of the string ~c[str].~/~/")
 
 (defdoc time-tracker-tau
 
@@ -48178,8 +48189,3 @@ Lisp definition."
          (foo '(a b c)))
     :rule-classes :tau-system)
   ~ev[]~/~/")
-
-#+acl2-par
-(defmacro time-tracker (&rest args)
-  (declare (ignore args))
-  nil)
