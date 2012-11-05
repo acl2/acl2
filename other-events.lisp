@@ -33851,30 +33851,30 @@
 
 (defstruct time-tracker
 
-; When this structure is created for a given tag, :init is set to the current
-; run-time.  Tracking is on when latest is non-nil, in which case :latest marks
-; the the run-time at the most recent :start.  :Elapsed marks the total
-; elapsed run-time with tracking on, except that if tracking is currently on
-; (i.e., :latest is non-nil), then the elapsed run-time does not include the
-; run-time since :latest.  :Times is a stricly increasing true-list of
-; rationals, conceptually extended by repeatedly adding the value of :interval,
-; if non-nil.  For example, if :times is (1 2 3) and :interval is 10, then we
-; think of :times as (1 2 3 13 23 33 43 ...).
+; When this structure is created for a given tag, Init is set to the current
+; run-time.  Tracking is on when Latest is non-nil, in which case Latest marks
+; the run-time at the time time-tracker was turned on (for an implicitly
+; associated tag) with option :init.  Elapsed marks the total elapsed run-time
+; accumulated with tracking active, except that if tracking is currently
+; inactive (i.e., :latest is non-nil), then Elapsed does not include the
+; run-time since Latest.  Times and Interval come from the :init option of
+; time-tracker, though Times may have been cdr'ed; so these are a true-list of
+; rationals and either a rational or nil, respectively.
 
-; :Msg is marked as :read-only simply because we currently see no reason to
-; update the :msg field.
+; The Msg field is marked as :read-only simply because we currently see no
+; reason to update that field.
 
   (init ; reset by :init
    (get-internal-run-time) :type rational :read-only t)
   (latest   ; reset by :init, :stop, and :start
    nil :type (or null rational))
-  (elapsed  ; total time tracked, updated when updating latest
+  (elapsed  ; total time tracked, updated when updating Latest
    0 :type rational)
-  (msg      ; printed when updating :times
+  (msg
    nil :read-only t)
-  (times    ; updated by :print?
+  (times    ; can be updated by time-tracker with option :print?
    nil :type (satisfies rational-listp))
-  (interval ; if non-nil, used for updating a singleton value of :times
+  (interval ; if non-nil, used for updating an an empty Times
    nil :type (or null rational) :read-only t)
   )
 

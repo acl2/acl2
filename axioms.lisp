@@ -48058,10 +48058,10 @@ Lisp definition."
   being tracked.  If the tag is not being tracked, then ~c[:end] has no effect.
 
   ~c[:Start] specifies that the tag is to be active.  It is an error to specify
-  ~c[:start] if the tag is already active.
+  ~c[:start] if the tag is not being tracked or is already active.
 
   ~c[:Stop] specifies that the tag is to stop being active.  It is an error to
-  specify ~c[:stop] if the tag is not active.
+  specify ~c[:stop] if the tag is not being tracked or is not active.
 
   ~c[:Print?] specifies that if the tag is being tracked (not necessarily
   active), then a message should be printed if a suitable condition is met.
@@ -48165,11 +48165,11 @@ Lisp definition."
   In either case above, you may prefer to provide ~c[:]~ilc[in-theory] hints
   rather than ~c[:in-theory] ~il[events]; ~pl[hints].
 
-  A more sophisticated solution is to record the values of the
-  ~c[:]~ilc[logic]-mode function in question.  In that case the tau-system will
-  look up the necessary values rather than calling the function, even if the
-  executable-counterpart of that function remains enabled.  Here is an example
-  of such a lemma
+  A more sophisticated solution is to record values of the
+  ~c[:]~ilc[logic]-mode function in question, so that the tau-system will look
+  up the necessary values rather than calling the function, whether or not the
+  executable-counterpart of that function is enabled.  Here is an example of a
+  lemma that can provide such a solution.  ~l[tau-system].
   ~bv[]
   (defthm lemma
     (and (foo 0)
