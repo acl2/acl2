@@ -26,7 +26,7 @@
 
 Here we begin with a discussion of how to <A HREF="#Invoking">invoke ACL2</A>
 interactively.  We then discuss <A HREF="#Testing">testing</A> as well as the
-<A HREF="#Certifying">certification</A> of ACL2 <em>distributed
+<A HREF="#Certifying">certification</A> of ACL2 <em>community
 books</em>.  We conclude with a discussion of
 the <A HREF="#Documentation">documentation</A>.
 
@@ -127,7 +127,7 @@ text, generally a proof of some conjecture.  None should fail.
 
 <P>
 A more elaborate test is to <A NAME="#Certifying">certify
-    the <em><a href="obtaining-and-installing.html#Obtaining-books">distributed
+    the <em><a href="obtaining-and-installing.html#Obtaining-books">community
     books</a></em>, which is a good idea anyhow; this is our next
     topic.  On a Unix-like system, you can also certify just a
     small but useful subset of the books in a few minutes by
@@ -140,7 +140,7 @@ make certify-books-short
 <BR><HR><BR>
 <H3><A NAME="Certifying">Certifying ACL2 Books</A></H3>
 
-The <em>distributed books</em> have been contributed mainly by users and may
+The <em>community books</em> have been contributed mainly by users and may
 be obtained
 as <a href="obtaining-and-installing.html#Obtaining-books">explained
 elsewhere</a>, to create subdirectory <CODE>acl2-sources/books</CODE>.
@@ -156,7 +156,7 @@ your ACL2 image and because books generally need to be certified before they
 can be used.
 
 <P>
-It is easy to re-certify all the distributed books on a Unix-like system.
+It is easy to re-certify all the community books on a Unix-like system.
 We recommend you do this.  If you have entered ACL2, exit to the
 operating system, e.g., evaluting the form, <code>(quit)</code>, or by
 control-d in many systems.
@@ -178,7 +178,7 @@ make clean-books
 </PRE>
 
 <P>
-The <CODE>certify-books</CODE> target does not cause workshop books to
+The <CODE>certify-books</CODE> target does not cause <code>workshops/</code> books to
 be certified.  If you want to certify those books as well, you will
 first need to
 <a href="http://acl2-books.googlecode.com/files/workshops-5.0.tar.gz">download
@@ -186,7 +186,7 @@ the gzipped tar file of the workshops books</a>
 from the Google Code website to
 the <CODE>books/</CODE> directory, and then gunzip and extract it
 to create subdirectory <CODE>workshops</CODE>.
-You can certify all the books, including books for the workshops
+You can certify all the community books, including books for the workshops
 (including those from the 1999 workshop as described in the
 (hardbound)
 book <A HREF="http://www.cs.utexas.edu/users/moore/publications/acl2-books/acs/index.html"><EM>Computer-Aided
@@ -211,12 +211,12 @@ make regression ACL2=/u/smith/projects/acl2/saved_acl2
 <P>
 We apologize to users of other than Unix-like systems (i.e., other
 than Unix, GNU-Linux, and Mac OS X): we do not provide instructions
-for recertifying all the distributed books on such systems, though
+for recertifying all the community books on such systems, though
 there are such environments that can be installed on Windows (e.g.,
 Cygwin).  The certification methods provided by the authors of the
 books vary greatly and we codified them in the makefile, which is
 named <code>GNUmakefile</code>, used above.  Some subdirectories
-of <CODE>acl2-sources/books/</CODE> contain either a
+of the community book (typically installed in <CODE>acl2-sources/books/</CODE>) contain either a
 <CODE>README</CODE> file or a <CODE>certify.lsp</CODE> file.  Users
 who wish to certify one of these books and who cannot figure out (from
 these scant clues) what to type to ACL2 should not hesitate to contact
@@ -236,7 +236,7 @@ read with an interactive browser.  The documentation is available in
 several formats: HTML, Texinfo, Postscript and ACL2 documentation
 strings, and more recently,
 in <a href="http://fv.centtech.com/acl2/5.0/doc/">web-browsable form
-with some books' documentation</a>, courtesy of Jared Davis.  The ACL2
+with some community books' documentation</a>, courtesy of Jared Davis.  The ACL2
 documentation is copyrighted by the University of Texas at Austin
 under Version 2 of the GNU General Public License.
 

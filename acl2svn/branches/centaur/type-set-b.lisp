@@ -3325,7 +3325,7 @@
 ; definition body (a change in support of canonical-ancestors, for use of the
 ; Attachment Restriction Lemma in justifying attachment to metafunctions and
 ; clause-procrocessors, cf. chk-evaluator-use-in-rule), the event
-; (defsort :compare< << :prefix <<) failed from distributed book
+; (defsort :compare< << :prefix <<) failed from community book
 ; defsort/uniquep.lisp.
 
     the-error wormhole-eval force case-split double-rewrite))
@@ -5210,7 +5210,7 @@
 ; integers.  Version_3.2.1 and beyond contains code descended from a
 ; contribution from Robert (included below through type-set-finish) that
 ; rectifies this problem, which is illustrated by examples contributed by
-; Robert, in books/misc/integer-type-set-test.lisp.
+; Robert, in community book books/misc/integer-type-set-test.lisp.
 
 ; Here is an outline of the issue.  Suppose we have:
 
@@ -6076,8 +6076,8 @@
 ; statistics are gathered.  Here are results using code developed after
 ; Version_4.1, using Allegro CL.
 
-; In directory /projects/acl2/devel/books/workshops/2004/legato/support/
-; (see below for discussion of which forms were submitted for each experiment).
+; In (community) books directory workshops/2004/legato/support/
+; (see below for discussion of which forms were submitted for each experiment):
 ; 
 ; (set-inhibit-output-lst '(prove proof-tree))
 ; ;; (ld "/projects/acl2/devel-misc/patches/accumulated-persistence-hyps-rhs/patch.lisp")
@@ -9380,7 +9380,7 @@
 ; one of the difficulties encountered and its solution.
 
 ; In initial tests with the new assume-true-false-if, more than three-
-; fourths of the books distributed with ACL2 failed to certify.  Upon
+; fourths of the community books failed to certify.  Upon
 ; examination it turned out that ACL2 was throwing away many of the
 ; :use hints as well as some of the results from generalization
 ; rules.  Let us look at a particular example (from inequalities.lisp
@@ -11547,7 +11547,7 @@
 ; It is possible, even with hitp, for (equal type-alist type-alist0) to be
 ; true.  There is a comment to this effect, regarding type-alist invariants, in
 ; type-alist-equality-loop1.  We discovered this in Version_2.7 during
-; regression tests, specifically, with the last form in the book
+; regression tests, specifically, with the last form in the comunity book
 ; books/workshops/2000/manolios/pipeline/pipeline/deterministic-systems/128/top/ma128-isa128.
 ; This function was being called differently because of a change in in
 ; built-in-clausep to use forward-chaining.

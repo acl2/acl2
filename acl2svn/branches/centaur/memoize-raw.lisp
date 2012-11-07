@@ -5681,8 +5681,8 @@ the calls took.")
   (clear-memoize-call-array)
   nil)
 
-; Note: The hons reader was formerly defined here, but it's now in
-; books/serialize/compact-print-raw.lsp (loaded when the book
+; Note: The hons reader was formerly defined here, but it's now in community
+; book books/serialize/compact-print-raw.lsp (loaded when the community book
 ; serialize/compact-print is included).
 
 ; MEMOIZE INIT

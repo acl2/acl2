@@ -1316,27 +1316,6 @@
          (and (equal rhs (fargn term 1))
               (equal lhs (fargn term 2))))))
 
-(defun complementaryp (lit1 lit2)
-  (declare (xargs :guard (and (pseudo-termp lit1)
-                              (pseudo-termp lit2))))
-
-; Suppose lit1 and lit2 are terms and neither is of the form (NOT (NOT &)).
-; Then we determine whether one is the complement of the other, i.e., one
-; is (NOT lit) where lit is the other.  Note that we do not use any
-; commuativity knowledge.  Thus, 
-
-; WARNING:  (EQUAL A B) and (NOT (EQUAL B A)) are *not* complementaryp, by
-; this definition!
-
-  (or (and (nvariablep lit1)
-           (not (fquotep lit1))
-           (eq (ffn-symb lit1) 'not)
-           (equal (fargn lit1 1) lit2))
-      (and (nvariablep lit2)
-           (not (fquotep lit2))
-           (eq (ffn-symb lit2) 'not)
-           (equal (fargn lit2 1) lit1))))
-
 (defun member-term2 (fn lhs rhs cl)
 
 ; We determine whether either `(,fn ,lhs ,rhs) or `(,fn ,rhs ,lhs) is
@@ -3053,7 +3032,7 @@
               ((not (variablep (car entry)))
 
 ; This code is a bit contorted because we have found (specifically, in
-; (verify-guards exec-send ...) in
+; (verify-guards exec-send ...) in community book
 ; books/workshops/2000/lusk-mccune/lusk-mccune-final/stepproc1.lisp) that the
 ; ts= call below is noticeably more efficient than the (ts-disjointp ...).
 
@@ -3151,8 +3130,9 @@
 ; Is this case important?  It doesn't seem so, and we were tempted to delete it
 ; when we modified find-rewriting-equivalence after Version_3.0.1 to look for
 ; calls of (hide ('rewrite-equiv ..)).  But at one time, deletion caused
-; failure of lemma lop3-34 in books/rtl/rel5/support/lop3-proofs.lisp, so we
-; leave this case for backward compatibility.
+; failure of lemma lop3-34 in community book
+; books/rtl/rel5/support/lop3-proofs.lisp, so we leave this case for backward
+; compatibility.
 
     (mv term ttree))
    ((and (nvariablep term)
@@ -4262,7 +4242,7 @@
 ; ignored occurrences in test positions of calls of IF when counting argument
 ; occurrences in right-hand-sides of definition rules (see var-counts).
 
-; Lemma make-shared-variables-dag-as-term-l-lemma in
+; Lemma make-shared-variables-dag-as-term-l-lemma in community book
 ; books/defexec/dag-unification/terms-as-dag.lisp is a good test case: it
 ; proves using the old heuristic but seems difficult to prove using the new
 ; heuristic (too-many-ifs-pre-rewrite) alone.  It is also notable in that if
@@ -4376,8 +4356,8 @@
 )
 
 ; We originally defined nat-listp here and used it in the guards of
-; too-many-ifs0 and too-many-ifs-pre-rewrite, but several books had conflicts
-; with this definition of nat-listp, as follows:
+; too-many-ifs0 and too-many-ifs-pre-rewrite, but several community books had
+; conflicts with this definition of nat-listp, as follows:
 
 ; workshops/2004/ruiz-et-al/support/terms-as-dag.lisp
 ; workshops/2003/sumners/support/n2n.lisp
@@ -4388,7 +4368,7 @@
 
 ; So we have commented out this definition.  If we decide to use it after all,
 ; change integer-listp to nat-listp in the two guards mentioned above and also
-; in books/system/too-many-ifs.lisp, as indicated there.
+; in community book books/system/too-many-ifs.lisp, as indicated there.
 
 ; (defun nat-listp (x)
 ;   (declare (xargs :guard t))
@@ -4640,10 +4620,10 @@
 ; number.  Our first change was to ignore completely the sizes of explicit
 ; values, returning 0 in the fquotep case below.  Unfortunately, we then
 ; observed a failure in the event (verify-guards meta-integerp ...) in
-; books/arithmetic-3/bind-free/integerp-meta.lisp.  We have extracted the
-; following from that failure: This succeeded when using (cons-count (cadr
-; term)) in the case (fquotep term) below, but not when using 0 in that case
-; instead.
+; community book books/arithmetic-3/bind-free/integerp-meta.lisp.  We have
+; extracted the following from that failure: This succeeded when using
+; (cons-count (cadr term)) in the case (fquotep term) below, but not when using
+; 0 in that case instead.
 
 ;  (thm (IMPLIES
 ;        (AND (PSEUDO-TERM-LISTP (CDR TERM))
@@ -4899,22 +4879,6 @@
 
 )
 
-(defun pairlis-x1 (x1 lst)
-
-; Cons x1 onto the front of each element of lst.
-
-  (cond ((null lst) nil)
-        (t (cons (cons x1 (car lst))
-                 (pairlis-x1 x1 (cdr lst))))))
-
-(defun pairlis-x2 (lst x2)
-
-; Make an alist pairing each element of lst with x2.
-
-  (cond ((null lst) nil)
-        (t (cons (cons (car lst) x2)
-                 (pairlis-x2 (cdr lst) x2)))))
-
 (defrec linear-lemma ((nume . hyps) max-term concl
                       backchain-limit-lst rune
                       .
@@ -4936,6 +4900,14 @@
 ; change the definition in axioms.lisp of the function |Access REWRITE-CONSTANT
 ; record field CURRENT-CLAUSE|.  If you don't, however, the build will fail
 ; loudly (via a redefinition error).
+
+; WARNING: If you change the layout of the rewrite-constant in a way that
+; affects the position on :nonlinearp, you must change the guard on the
+; definitions of nonlinearp-default-hint in (at least) the following
+; community books:
+
+; books/arithmetic-5/lib/basic-ops/default-hint.lisp  -- one occurrence
+; books/hints/basic-tests.lisp -- two occurrences
 
 ; WARNING: The name "rewrite-constant" is a misnomer because it is not
 ; really constant during rewriting.  The active-theory is frequently
@@ -4983,8 +4955,9 @@
    (pt restrictions-alist . expand-lst)
    (force-info fns-to-be-ignored-by-rewrite . terms-to-be-ignored-by-rewrite)
    (top-clause . current-clause)
-   .
-   ((current-literal . oncep-override) . (nonlinearp . case-split-limitations)))
+   (current-literal . oncep-override)
+   (nonlinearp . cheap-linearp)
+   . case-split-limitations)
   t)
 
 ; Active-theory is either :standard or :arithmetic.  (It was added first to
@@ -5040,6 +5013,9 @@
 ; Nonlinearp -- A boolean indicating whether nonlinear arithmetic should be
 ; considered to be active.
 
+; Cheap-linearp -- A boolean indicating whether linear arithmetic should avoid
+; rewriting terms to turn into polys and avoid adding linear lemmas.
+
 ; We always obtain our rewrite-constant by loading relevant information into
 ; the following empty constant.  Warning: The constant below is dangerously
 ; useless less the current-enabled-structure is set to an enabled-structure.
@@ -5059,6 +5035,7 @@
         :fns-to-be-ignored-by-rewrite nil
         :force-info nil
         :nonlinearp nil
+        :cheap-linearp nil
         :oncep-override :clear
         :pt nil
         :restrictions-alist nil
@@ -8070,7 +8047,7 @@
   ~em[Interpreting the dmr buffer display.]
 
   We explain the dmr buffer display by way of the following example.  It is a
-  snapshot of a dmr buffer taken from one of the distributed workshop books,
+  snapshot of a dmr buffer taken from one of the community books,
   ~c[books/workshops/2004/legato/support/proof-by-generalization-mult.lisp].
   ~bv[]
    0. (DEFTHM . WP-ZCOEF-G-MULTIPLIES)
@@ -12647,7 +12624,7 @@
 
 ; We test the stored hypothesis against the corresponding current hypothesis
 ; because the same rune can correspond to several different rules.  Theorem
-; mod-completion in distributed book arithmetic-2/floor-mod/floor-mod.lisp
+; mod-completion in community book arithmetic-2/floor-mod/floor-mod.lisp
 ; fails if we cache a failure for one rule stored under (:rewrite
 ; mod-completionxxx) and then decide not to fire the other rule because we come
 ; across the same unify-subst.
@@ -12995,7 +12972,7 @@
 ; course of relieving the original hyps.  That seems sufficiently rare not to
 ; justify the cost of the lookup, since the penalty is just an occasional
 ; duplicate entry.  Indeed, using a preliminary version of our rw-cache
-; implementation, we found no such cases in
+; implementation, we found no such cases in community books
 ; books/workshops/2004/legato/support/proof-by-generalization-mult.lisp,
 ; books/workshops/2004/smith-et-al/support/bags/eric-meta.lisp, or an
 ; "insert-proof" example sent to us by Dave Greve.
@@ -15683,7 +15660,7 @@
 ; We cache the rewriting failure into the ttree.  It would be a mistake to
 ; extend the rw-cache if there is a backchain-limit, because a later lookup
 ; might be made with a different backchain-limit.  This may be why
-; Prime-property-lemma, in distributed book
+; Prime-property-lemma, in community book
 ; workshops/2006/cowles-gamboa-euclid/Euclid/ed3.lisp, fails with
 ; :rw-cache-state :atom.
 
@@ -16884,8 +16861,8 @@
 ; and is much more work to implement.  By just reverting to the
 ; un-rewritten concl we catch the ``obvious'' cases such as
 ; illustrated above.  Note that the un-rewritten concl may also
-; linearize to nil, but a regression test using the books distributed
-; with ACL2 actually shows a slight improvement in speed (about a
+; linearize to nil, but a regression test using the community books
+; actually shows a slight improvement in speed (about a
 ; minute and a half, out of 158 and a half minutes), so we conclude
 ; that this is not a problem in practice.
 
@@ -18653,7 +18630,8 @@
         (sl-let
          (contradictionp new-pot-lst)
          (if (and (nvariablep (car new-vars))
-                  (not (flambda-applicationp (car new-vars))))
+                  (not (flambda-applicationp (car new-vars)))
+                  (not (access rewrite-constant rcnst :cheap-linearp)))
              (rewrite-entry
               (add-linear-lemmas (car new-vars)
                                  (getprop (ffn-symb (car new-vars))
@@ -18849,8 +18827,9 @@
     (t (sl-let
         (contradictionp new-pot-lst)
         (cond
-         ((flambda-applicationp
-           (car new-vars))
+         ((or (flambda-applicationp
+               (car new-vars))
+              (access rewrite-constant rcnst :cheap-linearp))
           (mv step-limit nil simplify-clause-pot-lst))
          (t
           (rewrite-entry
@@ -19315,7 +19294,8 @@
      (declare (type (unsigned-byte 29) rdepth))
      (sl-let
       (term-lst ttree-lst)
-      (if (access rewrite-constant rcnst :nonlinearp)
+      (if (and (access rewrite-constant rcnst :nonlinearp)
+               (not (access rewrite-constant rcnst :cheap-linearp)))
 
 ; This call to rewrite-linear-term-lst is new to Version_2.7.
 ; We wish to be able to have a different normal form when doing

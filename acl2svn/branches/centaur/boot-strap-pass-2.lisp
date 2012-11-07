@@ -93,15 +93,15 @@
  (local (defun too-many-ifs-post-rewrite (args val)
           (list args val))))
 
-; The following events are derived from the original version of
+; The following events are derived from the original version of community book
 ; books/system/too-many-ifs.lisp.  But here we provide a proof that does not
 ; depend on books.  Our approach was to take the proof in the above book,
 ; eliminate the unnecessary use of an arithmetic book, expand away all uses of
 ; macros and make-events, avoid use of (theory 'minimal-theory) since that
 ; theory didn't yet exist (where these events were originally placed), and
 ; apply some additional hand-editing in order (for example) to remove hints
-; depending on the tools/flag book.  We have left original events from the book
-; as comments.
+; depending on the tools/flag community book.  We have left original events
+; from the book as comments.
 
 (encapsulate
  ()
@@ -756,7 +756,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; David Rager proved termination and guards for
-; string-for-tilde-@-clause-id-phrase, with a proof that included distributed
+; string-for-tilde-@-clause-id-phrase, with a proof that included community
 ; books unicode/explode-atom and unicode/explode-nonnegative-integer.  Here, we
 ; rework that proof a bit to avoid those dependencies.  Note that this proof
 ; depends on d-pos-listp, whose termination and guard verification are
@@ -1088,7 +1088,7 @@
                (equal ',fns
                       (new-verify-guards-fns state))
                :msg (msg "ERROR: The set of newly guard-verified functions ~
-                          from the ACL2 Library book ~x0 does not match the ~
+                          from the ACL2 community book ~x0 does not match the ~
                           expected set from the constant ~
                           *system-verify-guards-alist*.~|~%From the ~
                           book:~|~X13~|~%Expected from ~

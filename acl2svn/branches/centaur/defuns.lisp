@@ -1635,7 +1635,7 @@
 ; in which at most one argument contains calls of any name in names.  We found
 ; that we needed to avoid merge-p=t on the recursive call in the prog2$ case
 ; (where no recursive call is in the first argument) when we introduced
-; defun-nx after Version_3.6.1, since the resulting prog2$ broke
+; defun-nx after Version_3.6.1, since the resulting prog2$ broke community book
 ; books/tools/flag.lisp, specifically event (FLAG::make-flag flag-pseudo-termp
 ; ...), because the :normalize nil kept the prog2$ around and merge-p=t then
 ; changed the induction scheme.
@@ -1732,7 +1732,7 @@
 (defun simplify-tests-and-calls (tc)
 
 ; For an example of the utility of removing guard holders, note that lemma
-; STEP2-PRESERVES-DL->NOT2 in
+; STEP2-PRESERVES-DL->NOT2 in community book
 ; books/workshops/2011/verbeek-schmaltz/sources/correctness.lisp has failed
 ; when we did not do so.
 
@@ -2502,7 +2502,7 @@
 ; In nqthm, this function also replaced (not (zerop x)) by
 ; ((numberp x) (not (equal x '0))).
 
-; Lemma replace-consts-cp-correct1 in distributed book
+; Lemma replace-consts-cp-correct1 in community book
 ; books/clause-processors/replace-defined-consts.lisp failed after we added
 ; calls of mv-list to the macroexpansion of mv-let calls in Version_4.0, which
 ; allowed lemma replace-const-corr-replace-const-alists-list to be applied:

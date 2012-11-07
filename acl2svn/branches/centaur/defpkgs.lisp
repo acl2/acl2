@@ -161,7 +161,7 @@
 
 (defconst *acl2-exports*
 
-; See books/misc/check-acl2-exports.lisp for a list of symbols,
+; See community book books/misc/check-acl2-exports.lisp for a list of symbols,
 ; *acl2-exports-exclusions*, deliberately excluded from this list.
 
 ; Let's keep this list sorted (more efficient for defpkg when users choose to
@@ -266,6 +266,7 @@
         CODE-CHAR-TYPE COERCE COERCE-INVERSE-1
         COERCE-INVERSE-2 COERCE-OBJECT-TO-STATE
         COERCE-STATE-TO-OBJECT
+        COMMUNITY-BOOKS
         COMMUTATIVITY-OF-*
         COMMUTATIVITY-OF-+ COMP COMPLETION-OF-*
         COMPLETION-OF-+ COMPLETION-OF-<
@@ -653,7 +654,7 @@
         TAU-DATA TAU-DATA-BASE TAU-STATUS TAU-SYSTEM
         TENTH TERM-ORDER THE THE-ERROR THE-FIXNUM
         THE-FIXNUM! THEORY THEORY-INVARIANT
-        THIRD THM TIME$ TIMER-ALISTP
+        THIRD THM TIME$ TIME-TRACKER TIME-TRACKER-TAU TIMER-ALISTP
         TIMER-ALISTP-FORWARD-TO-TRUE-LIST-LISTP-AND-SYMBOL-ALISTP
         TOGGLE-PC-MACRO
         TOP-LEVEL TRACE! TRACE$ TRANS

@@ -556,8 +556,8 @@
 ; WARNING: Do not replace (cadr form) by fn below.  These can differ!  Fn is
 ; passed to output-type-for-declare-form in order to get its 'stobjs-out, but
 ; (cadr form) can be the *1* function for fn.  The mistaken placement of fn
-; below caused a factor of 4 slowdown in GCL in the first lemma5 in
-; books/unicode/utf8-decode.lisp, because the proclaim for function
+; below caused a factor of 4 slowdown in GCL in the first lemma5 in community
+; book books/unicode/utf8-decode.lisp, because the proclaim for function
 ; utf8-combine4-guard was overwritten by a subsequent weaker proclaimed type
 ; that was supposed to be generated for the *1* function, but instead was
 ; generated for utf8-combine4-guard.

@@ -500,7 +500,7 @@
 ; rationalp-flg is only used in non-linear arithmetic, this seems like a minor
 ; break from our traditional propagation of parent trees.  We considered making
 ; a similar change for all calls of base-poly in this function, but that led to
-; a proof failure in
+; a proof failure in community book
 ; books/workshops/2004/schmaltz-borrione/support/routing_defuns.lisp that
 ; looked like it would be painful to fix, and we took that as a sign that such
 ; loss of backward compatibility could be painful for other users, and

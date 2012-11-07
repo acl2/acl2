@@ -5174,7 +5174,7 @@
 
   Below we describe properties of ~c[meta-extract-contextual-fact] and
   ~c[meta-extract-global-fact], but after we illustrate their utility with an
-  example.  This example comes from the distributed book,
+  example.  This example comes from the community book,
   ~c[books/clause-processors/meta-extract-simple-test.lisp], which presents
   very basic (and contrived) examples that nevertheless illustrate meta-extract
   hypotheses.
@@ -5476,7 +5476,7 @@
 ; an observation from Sol Swords: there is a kind of mismatch between that
 ; special case for nil on the one hand, and the treating of nil as an ordinary
 ; variable by sublis-var.  Indeed, he went through some effort to deal with
-; this mismatch in his distributed book,
+; this mismatch in his community book,
 ; books/clause-processors/sublis-var-meaning.lisp, using a hypothesis (not
 ; (assoc nil alist)) in some lemmas in that book.
 
@@ -5489,9 +5489,9 @@
 ; the preceding clause by replacing the final 'nil by a (and then dropping the
 ; syntaxp hypothesis above, and even making this a definition rule with
 ; :controller-alist mapping the evaluator to (t nil)).  But that change would
-; make invalid the lemma ev-commutes-car in distributed book
+; make invalid the lemma ev-commutes-car in community book
 ; books/tools/defevaluator-fast.lisp.  It would also require changing some
-; hints, for example replacing the :hints in event lemma0, distributed book
+; hints, for example replacing the :hints in event lemma0, community book
 ; books/clause-processors/bv-add.lisp, by (("Goal" :expand ((evl x1 env)))).
 ; Who knows how many books might be affected, including some user books not in
 ; the regression suite?  So we have decided to leave well enough alone, at
@@ -7683,7 +7683,7 @@
 ; following code to be executed.  Otherwise, we see an unfortunate error.  (Or
 ; perhaps we really should see that error, since we will be unable to add the
 ; booleanp type prescription for the equivalence relation.  However, then we
-; will need to re-work
+; will need to re-work community book
 ; books/workshops/2000/manolios/pipeline/pipeline/deterministic-systems/128/top/ma128-isa128.lisp.)
 
 ;  (defun my-equal (x y)
@@ -9817,8 +9817,8 @@
 
   We begin this documentation with an introduction, focusing on an example, and
   then conclude with details.  You might find it most useful simply to look at
-  the examples in distributed directory ~c[books/clause-processors/]; see file
-  ~c[Readme.lsp] in that directory.
+  the examples in community books directory ~c[books/clause-processors/]; see
+  file ~c[Readme.lsp] in that directory.
 
   A ~c[:clause-processor] rule installs a simplifier at the level of goals,
   where a goal is represented as a ~em[clause]: a list of ~il[term]s that is
@@ -9982,7 +9982,7 @@
   returned by the clause-processor function ~c[CL-PROC], whose form depends on
   the ~il[signature] of that function, as follows.  Typically ~c[B] is ~c[A],
   but it can be any term (useful when generalization is occurring; see the
-  example ``Test generalizing alist'' in
+  example ``Test generalizing alist'' in community book
   ~c[books/clause-processors/basic-examples.lisp]).  For cases [1] and [2]
   above, ~c[<CL-LIST>] is of the form ~c[(CL-PROC CL)] or
   ~c[(CL-PROC CL HINT)], respectively, where in the latter case ~c[HINT] is a
@@ -10002,7 +10002,7 @@
   that the conjunction of all clauses produced by the clause processor
   evaluates to a non-~c[nil] value under some alist ~c[B].  In fact, we can
   choose ~c[B] so as to allow us to assume evaluations of the generated clauses
-  over many different alists.  This technique is discussed in the distributed
+  over many different alists.  This technique is discussed in the community
   book ~c[books/clause-processors/multi-env-trick.lisp], which introduces some
   macros that may be helpful in accomplishing proofs of this type.
 
@@ -10392,9 +10392,9 @@
 
   Here we describe a utility, ~c[define-trusted-clause-processor], that
   provides another way to inform ACL2 that a function is to be considered a
-  clause-processor that can be specified in a ~c[:clause-processor] hint.
-  You can find examples of correct and incorrect use of this utility in
-  distributed book ~c[books/clause-processors/basic-examples].
+  clause-processor that can be specified in a ~c[:clause-processor] hint.  You
+  can find examples of correct and incorrect use of this utility in community
+  book ~c[books/clause-processors/basic-examples].
 
   Consider the simple example already presented for ~c[:clause-processor] rules
   (again, ~pl[clause-processor]), for a simple clause-processor named

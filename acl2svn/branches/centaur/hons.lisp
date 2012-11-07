@@ -444,7 +444,7 @@ Some of these may be low-level and of interest mainly to system developers.
 But below we discuss what users can learn from a particular hons-note,
 ``ADDR-LIMIT reached''.  In short: If you are seeing a lot of such hons-notes,
 then you may be using a lot of memory.  (Maybe you can reduce that memory; for
-certain BDD operations, for example (as defined in distributed books
+certain BDD operations, for example (as defined in community books
 ~c[books/centaur/ubdds/]), variable ordering can make a big difference.)~/
 
 By way of background:
@@ -486,7 +486,7 @@ The Hons-Notes about ``ADDR-LIMIT reached'' are basically there to warn you
 that the ADDR-HT is being resized.  This can help you realize that your
 ~ilc[hons-resize] command had too small of an ADDR-HT size, or might suggest
 that your book should have a ~ilc[hons-resize] command.  There are also
-commands like ~c[(]~ilc[hons-summary]~c[)] and, defined in distributed book
+commands like ~c[(]~ilc[hons-summary]~c[)] and, defined in community book
 ~c[books/centaur/misc/memory-mgmt-logic.lisp], ~c[(hons-analyze-memory nil)].
 These can show you how many honses you currently have, how much space they are
 taking, and that sort of thing.  (A nice trick is to call ~ilc[hons-summary] at
@@ -968,13 +968,13 @@ input ~c[alist] is already fast, ~c[bad] will (perhaps unexpectedly) free it!
 On the other hand, ~c[good] is able to take advantage of an already-fast
 argument and will not cause it to be inadvertently freed.
 
-See also the macro ~c[with-fast-alists] defined in the book
+See also the macro ~c[with-fast-alists] defined in the community book
 ~c[\"books/centaur/misc/hons-extra.lisp\"], which allows you to call
 ~ilc[with-fast-alist] on several alists simultaneously.
 
-The book ~c[\"books/centaur/misc/hons-extra.lisp\"] extends the ~c[b*] macro
-(defined in the book ~c[\"books/tools/bstar.lisp\"]) with the ~c[with-fast]
-pattern binder.  That is, after executing
+The community book ~c[\"books/centaur/misc/hons-extra.lisp\"] extends the
+~c[b*] macro (defined in the community book ~c[\"books/tools/bstar.lisp\"])
+with the ~c[with-fast] pattern binder.  That is, after executing
 ~c[(include-book \"centaur/misc/hons-extra.lisp\" :dir :system)] you may write
 something like this:
 
@@ -1030,13 +1030,13 @@ In other words, ~c[name] is not freed immediately, but instead remains a fast
 alist until the form completes.  This may be useful when you are writing code
 that uses a fast alist but has many return points.
 
-See also the macro ~c[fast-alists-free-on-exit] defined in the book
+See also the macro ~c[fast-alists-free-on-exit] defined in the community book
 ~c[\"books/centaur/misc/hons-extra.lisp\"], which can be used to free several
 alists.
 
-The book ~c[\"books/centaur/misc/hons-extra.lisp\"] extends the ~c[b*] macro
-(defined in the book ~c[\"books/tools/bstar.lisp\"]) with the ~c[free-on-exit]
-pattern binder.  That is, after executing
+The community book ~c[\"books/centaur/misc/hons-extra.lisp\"] extends the ~c[b*] macro
+(defined in the community book ~c[\"books/tools/bstar.lisp\"]) with the
+~c[free-on-exit] pattern binder.  That is, after executing
 ~c[(include-book \"centaur/misc/hons-extra.lisp\" :dir :system)], the form
 
 ~bv[]
@@ -1172,5 +1172,5 @@ Deprecated.  Alias for ~ilc[fast-alist-free].~/~/"
             (:executable-counterpart flush-hons-get-hash-table-link)
             ))
 
-; For some additional helper functions and lemmas, see the files
+; For some additional helper functions and lemmas, see the community books
 ; books/misc/hons-help.lisp and books/misc/hons-help2.lisp.

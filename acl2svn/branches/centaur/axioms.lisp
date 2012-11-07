@@ -1651,7 +1651,7 @@
 
 ; It appears that GCL, at least non-ANSI GCL, requires a user::defpackage form
 ; near the top of a file in order to read the corresponding compiled file.  For
-; example, an error occurred upon attempting to load the file
+; example, an error occurred upon attempting to load the community books file
 ; books/data-structures/defalist.o after certifying the corresponding book
 ; using GCL, because the form (MAYBE-INTRODUCE-EMPTY-PKG-1 "U") near the top of
 ; the file was insufficient to allow reading a symbol in the "U" package
@@ -2497,11 +2497,11 @@
   recognizer for rational numbers (including real number in ACL2(r))~/
 
   For most ACL2 users, this is a macro abbreviating ~ilc[rationalp].  In
-  ACL2(r) (~pl[real]), this macro abbreviates the predicate ~c[realp],
-  which holds for real numbers as well (including rationals).  Most
-  ACL2 users can ignore this macro and use ~ilc[rationalp] instead,
-  but many books in the ACL2 distribution use ~c[real/rationalp] so that
-  these books will be suitable for ACL2(r) as well.~/~/"
+  ACL2(r) (~pl[real]), this macro abbreviates the predicate ~c[realp], which
+  holds for real numbers as well (including rationals).  Most ACL2 users can
+  ignore this macro and use ~ilc[rationalp] instead, but many community books
+  use ~c[real/rationalp] so that these books will be suitable for ACL2(r) as
+  well.~/~/"
 
   #+:non-standard-analysis
   `(realp ,x)
@@ -2515,13 +2515,12 @@
   recognizer for complex numbers~/
 
   For most ACL2 users, this is a macro abbreviating ~c[complex-rationalp];
-  ~pl[complex-rationalp].  In  ACL2(r) (~pl[real]), a complex number ~c[x]
-  may have irrational real and imaginary parts.  This macro
-  abbreviates the predicate ~c[complexp] in ACL2(r), which holds for such
-  ~c[x].  Most ACL2 users can ignore this macro and use ~ilc[complex-rationalp]
-  instead.  Some books in the ACL2 distribution use
-  ~c[complex/complex-rationalp] so that they are suitable for ACL2(r) as
-  well.~/~/"
+  ~pl[complex-rationalp].  In ACL2(r) (~pl[real]), a complex number ~c[x] may
+  have irrational real and imaginary parts.  This macro abbreviates the
+  predicate ~c[complexp] in ACL2(r), which holds for such ~c[x].  Most ACL2
+  users can ignore this macro and use ~ilc[complex-rationalp] instead.  Some
+  community books use ~c[complex/complex-rationalp] so that they are suitable
+  for ACL2(r) as well.~/~/"
 
   #+:non-standard-analysis
   `(complexp ,x)
@@ -3932,9 +3931,9 @@
   requires an active trust tag (~pl[defttag]), and is accomplished by extending
   a ~il[table] provided by ACL2, ~pl[return-last-table].  Rather than using
   ~ilc[table] ~il[events] directly for this purpose, it is probably more
-  convenient to use a macro, ~c[defmacro-last].  We describe the distributed
-  book ~c[books/misc/profiling.lisp] in order to illustrate how this works.
-  The events in that book include the following, which are described below.
+  convenient to use a macro, ~c[defmacro-last].  We describe the community book
+  ~c[books/misc/profiling.lisp] in order to illustrate how this works.  The
+  events in that book include the following, which are described below.
   ~bv[]
   (defttag :profiling)
 
@@ -4027,11 +4026,11 @@
   ? [RAW LISP] 
   ~ev[]
   To understand the macro ~c[with-profiling-raw] you could look at the
-  distributed file loaded above: ~c[books/misc/profiling-raw.lsp].  If you wish
-  to automate certification of such a book with makefiles (~pl[book-makefiles],
-  perhaps contributing such a book to the ACL2 books repository (see
+  community book loaded above: ~c[books/misc/profiling-raw.lsp].  If you wish
+  to automate certification of such a book with makefiles (~pl[book-makefiles]),
+  perhaps contributing such a book to the ACL2 community books repository (see
   ~url[http://acl2-books.googlecode.com/]), you may also wish to look at
-  distributed file ~c[books/misc/Makefile], where you'll notice the following
+  community books file ~c[books/misc/Makefile], where you'll notice the following
   extra `~c[make]' dependency:
   ~bv[]
   profiling.cert: profiling-raw.lsp
@@ -4359,7 +4358,7 @@
                   (* n (fact (1- n))))))
   ~ev[]
   Next, we prove the necessary correspondence lemmas.  Notice the inclusion of
-  a standard book to help with the arithmetic reasoning.
+  a community book to help with the arithmetic reasoning.
   ~bv[]
   (include-book \"books/arithmetic/top-with-meta\")
 
@@ -5529,7 +5528,8 @@
 
 ; The present rule allows the theorem above to go through.  This example
 ; theorem was distilled from the failure (without this rule) of event
-; compress11-assoc-property-1 in books/data-structures/array1.lisp.
+; compress11-assoc-property-1 in community book
+; books/data-structures/array1.lisp.
 
   (implies (syntaxp (not (variablep x)))
            (equal (zp x)
@@ -6974,8 +6974,8 @@
   ~ilc[syntaxp] hypotheses.
 
   We continue the examples of ~ilc[syntaxp] hypotheses with a rule from
-  ~c[books/finite-set-theory/set-theory.lisp].  We will not discuss
-  here the meaning of this rule, but it is necessary to point out that
+  community book ~c[books/finite-set-theory/set-theory.lisp].  We will not
+  discuss here the meaning of this rule, but it is necessary to point out that
   ~c[(ur-elementp nil)] is true in this book.
   ~bv[]
   (defthm scons-nil
@@ -7015,7 +7015,7 @@
 
   One can also use ~c[syntaxp] to restrict the application of a rule
   to a particular set of variable bindings as in the following taken from
-  ~c[books/ihs/quotient-remainder-lemmas.lisp].
+  community book ~c[books/ihs/quotient-remainder-lemmas.lisp].
   ~bv[]
   (encapsulate ()
 
@@ -7511,7 +7511,7 @@
 
   adding rules to the data base~/
   ~bv[]
-  Example Form (in a defthm from books/finite-set-theory/total-ordering.lisp):
+  Example Form (from community book finite-set-theory/total-ordering.lisp):
   (defthm <<-trichotomy
     (implies (and (ordinaryp x)
                   (ordinaryp y))
@@ -7818,14 +7818,20 @@
 
   Because ACL2 is an untyped language it is impossible to type check it.  All
   functions are total.  An ~i[n]-ary function may be applied to any combination
-  of ~i[n] ACL2 objects.  Nevertheless, the system provides a variety of
-  monadic Boolean function symbols, like ~ilc[natp], ~ilc[integerp],
-  ~ilc[alistp], etc., that recognize different ``types'' of objects at runtime.
-  Users typically define many more such recognizers for domain-specific
-  ``types.''  Because of the prevalence of such ``types,'' ACL2 must frequently
-  reason about the inclusion of one ``type'' in another.  It must also reason
-  about the consequences of functions being defined so as to produce objects of
-  certain ``types'' when given arguments of certain other ``types.''
+  of ~i[n] ACL2 objects.  The syntax of ACL2 stipulates that
+  ~c[(]~i[fn a1...an]~c[)] is a well-formed term if ~i[fn] is a function symbol
+  of ~i[n] arguments and the ~i[ai] are well-formed terms.  No mention is made
+  of the ``types'' of terms.  That is what is meant by saying ACL2 is an
+  untyped language.
+
+  Nevertheless, the system provides a variety of monadic Boolean function
+  symbols, like ~ilc[natp], ~ilc[integerp], ~ilc[alistp], etc., that recognize
+  different ``types'' of objects at runtime.  Users typically define many more
+  such recognizers for domain-specific ``types.''  Because of the prevalence of
+  such ``types,'' ACL2 must frequently reason about the inclusion of one
+  ``type'' in another.  It must also reason about the consequences of functions
+  being defined so as to produce objects of certain ``types'' when given
+  arguments of certain other ``types.''
 
   Because the word ``type'' in computer science tends to imply syntactic
   or semantic restrictions on functions, we avoid using that word henceforth.
@@ -7840,20 +7846,55 @@
   provided only tau predicates are involved.
 
   By ``tau predicates'' we mean the application of a monadic Boolean, the
-  equality of something to a quoted constant, or the negation of such a term.
-  Thus ~c[(natp i)], ~c[(not (consp x))], ~c[(equal tag 'ARRAY-HEADER)] and
-  ~c[(not (eq op 'SKIP))] are tau predicates.  The tau system recognizes several
-  variants of ~ilc[EQUAL].
+  equality of something to a quoted constant, an arithmetic comparison
+  between something and a rational constant, or the negation of such a term.
+  Here are some examples of tau predicates:
+  ~bv[]
+  (natp i)
+  (not (consp x))
+  (equal y 'MONDAY)
+  (not (eql 23 k))
+  (< 8 max)
+  (<= max 24)
+  ~ev[]
+  Synonyms for ~ilc[equal] include ~ilc[=], ~ilc[eq], and ~ilc[eql].
+  Comparisons against rational constants may be made with ~ilc[<], ~ilc[<=],
+  ~ilc[>=], and ~ilc[>].
+
+  A ``tau'' is a data object representing a set of signed tau predicates whose
+  meaning the the conjunction of the literals in the set.  (By signed we mean
+  both positive and negative occurrences of the predicates may appear.)  When
+  we say that a term ``has'' a given tau we mean the term satisfies all of the
+  recognizers in that tau.
 
   The tau algorithm is a decision procedure for the logical theory
-  described (only) by the rules in the data base.  The decision procedure can
-  be enabled or disabled.  It is enabled by default.  You can disable it
-  globally using either of the following equivalent forms (~pl[theories], in
-  particular the discussion of runic designators).
+  described (only) by the rules in the data base.  The algorithm takes a term
+  and a list of assumptions mapping subterms (typically variable symbols) to
+  tau, and returns the tau of the given term.
+
+  When the system is called upon to decide whether a term satisfies a given
+  monadic predicate, it computes the tau of the term and asks whether the
+  predicate is in that set.  More generally, to determine if a term satisfies a
+  tau, ~i[s], we compute a tau, ~i[r], for the term and ask whether ~i[s] is a
+  subset of ~i[r].  To determine whether a constant, ~i[c], satisfies tau ~i[s]
+  we evaluate the literals in ~i[s] on ~i[c].
+
+  The tau algorithm procedure can be enabled or disabled.  It is enabled by
+  default.  You can disable it globally using either of the following
+  equivalent forms (~pl[theories], in particular the discussion of runic
+  designators).
+
   ~bv[]
   (in-theory (disable (:executable-counterpart tau-system)))
   (in-theory (disable (tau-system)))
   ~ev[]
+  both of which disable the executable-counterpart of ~c[tau-system].  To
+  disable tau reasoning locally (i.e., for a subgoal and its descendents in a
+  proof attempt), disable the executable-counterpart of ~c[tau-system] in the
+  ~c[in-theory] hint passed to the subgoal (~pl[hints]).
+
+  It is not possible to disable individual rules within the data base.  Either
+  tau uses everything it knows or tau is not used.
 
   The data base contains rules derived from theorems stated by the user.
   Unlike a type system, the tau system cannot automatically infer relations
@@ -7949,6 +7990,9 @@
   ~i[Boolean]:
   (booleanp (fn v))
 
+  ~i[Eval]:
+  (p 'const)                               ; See Note below.
+
   ~i[Simple]:
   (implies (p v) (q v))
 
@@ -7966,7 +8010,7 @@
   ~i[Big Switch]:
   (equal (fn . formals) body),             ; See Note below.
 
-  ~i[MV-NTH Synonym]:                          ; Extend Signature Form 2 to
+  ~i[MV-NTH Synonym]:                      ; Extend Signature Form 2 to
   (equal (nth-alt x y) (mv-nth x y)) or    ; apply not only to mv-nth, but when
   (equal (mv-nth x y) (nth-alt x y))       ; mv-nth is replaced by nth-alt.
   ~ev[]
@@ -7979,12 +8023,51 @@
   automatic mode (~pl[set-tau-auto-mode]), the ~c[:type-prescription] rule will
   suffice for both purposes.
 
-  Note on the Signature Forms: Each of the hypotheses must be a tau-style
-  predicate (monadic Boolean or equality-with-constant), possibly negated,
-  about a single variable.  But there may be multiple hypotheses about a given
-  variable.  For example, one might include both that ~c[(NATP x1)] and
-  ~c[(NOT (EQUAL x1 23))].  Any hypothesis containing a variable other than the
-  ~c[x1], ..., ~c[xn] is ignored.
+  Note on the Eval Form:  Recall that the tau recognizers used above may appear
+  negated.  Thus, example terms of Eval form include
+  ~bv[]
+  (good-statep *initial-system-state*)
+
+  (not (good-statep *example-bad-state*)) ~ev[] Of course, the constant symbols
+  shown above might be replaced by explicit constants like ~c[123] or
+  ~c['(STATE 1 2 3)].  When a ~c[:tau-system] rule of this form is proved, the
+  system stores the value, ~t[T] or ~c[NIL], of the recognizer so that the tau
+  system no longer evaluates that recognizer on that constant but just looks up
+  the stored value.  This can be useful if a tau proof is slow because
+  expensive-to-compute recognizers are being applied.  Unfortunately, there are
+  no tools at the moment to help the user determine which tau recognizers are
+  being applied to which constants!  (However, in the ACL2 source file
+  ~c[tau.lisp], immediately after the definition of the system function
+  ~c[ev-fncall-w-tau-recog], there is a comment which contains some raw Lisp
+  code that can be used to investigate whether tau's use of evaluation on
+  constants is causing a problem.)  However, once a recognizer and the
+  constants on which it is being evaluated are identified, the tau system can
+  be sped up by proving Eval rules to pre-compute and store the values of the
+  recognizer on those constants.  Alternatively, at the possible loss of some
+  completeness in the tau system, the executable counterpart of the recognizer
+  can be disabled.
+
+  Note on the Signature Forms: Typically, each of the hypotheses must be a
+  tau-style predicate, possibly negated, about a single variable; multiple
+  hypotheses about a given variable are permitted.  For example, one might
+  include both that ~c[(NATP x1)] and ~c[(NOT (EQUAL x1 23))].  However,
+  hypotheses that are not tau predicates or their negations are allowed and are
+  relieved, if possible, only by trivial reasoning, i.e., by literally
+  occurring in the governing context.  For example, the formula
+  ~bv[]
+  (implies (and (natp n) (integer-listp x) (< n (len x))) 
+           (integerp (nth n x)))
+  ~ev[]
+  is a legal tau signature rule.  The first two hypotheses restrict the tau of
+  the two arguments to ~c[nth].  The conclusion asserts the tau of a general
+  application of ~c[nth].  However, the third hypothesis is not a tau
+  predicate: it involves two variables and the function symbol ~c[len].  This
+  tau signature could be used to determine that an occurrence of ~c[(NTH a b)]
+  is an integer only if ~c[(< a (LEN b))] governs the occurrence.  However, the
+  other two hypotheses are relieved by recursive use of the tau algorithm on the
+  expressions ~c[a] and ~c[b].  The ~c[nil] hypothesis -- silly under any 
+  circumstances -- is not allowed in tau signature rules; its presence indicates
+  a misunderstanding of tau.
 
   Note on the Big Switch Form: ~c[body], above, must be a ``big switch'' term,
   i.e., one that case splits on tau predicates about a single variable and
@@ -8080,6 +8163,17 @@
 (defconst *tau-system-xnume*
   (+ *force-xnume* 12))
 
+; These constants record the tau indices of the arithmetic predicates.
+(defconst *tau-acl2-numberp-pair* '(0 . ACL2-NUMBERP))
+(defconst *tau-integerp-pair* '(4 . INTEGERP))
+(defconst *tau-rationalp-pair* '(5 . RATIONALP))
+(defconst *tau-natp-pair* '(17 . NATP))
+(defconst *tau-posp-pair* '(18 . POSP))
+(defconst *tau-minusp-pair* '(26 . MINUSP))
+
+; Note: The constants declared above are checked for accuracy after bootstrap
+; by check-built-in-constants in interface-raw.lisp.
+
 ; The following axiom can be proved.  John Cowles has proved some of these and
 ; we have proved others in our efforts to verify the guards in our code.
 ; Eventually we will replace some of these axioms by theorems.  But not now
@@ -8159,10 +8253,17 @@
 ;    (other-kinds-of-objects))
 
 ; Here we prove some rules that the tau system uses to manage primitive type-sets.
+; The rules for natp, posp, and minusp are messy because those concepts are not
+; simply predicates on the signs but also (sometimes) on INTEGERP.
 
 (defthm basic-tau-rules
-  (and (implies (posp v) (not (minusp v)))
-       (implies (posp v) (integerp v))
+  (and (implies (natp v) (not (minusp v)))
+       (implies (natp v) (integerp v))
+
+       (implies (posp v) (natp v))
+
+       (implies (minusp v) (acl2-numberp v))
+
        (implies (integerp v) (rationalp v))
        (implies (rationalp v) (not (complex-rationalp v)))
        (implies (rationalp v) (not (characterp v)))
@@ -8466,9 +8567,9 @@
   recognizer for standard characters~/
 
   ~c[(Standard-char-p x)] is true if and only if ~c[x] is a ``standard''
-  character, i.e., a member of the list ~c[*standard-chars*].  This
-  list includes ~c[#\Newline] and ~c[#\Space] ~il[characters], as well as the usual
-  punctuation and alphanumeric ~il[characters].~/
+  character, i.e., a member of the list ~c[*standard-chars*].  This list
+  includes ~c[#\\Newline] and ~c[#\\Space] ~il[characters], as well as the
+  usual punctuation and alphanumeric ~il[characters].~/
 
   ~c[Standard-char-p] has a ~il[guard] requiring its argument to be a
   character.
@@ -8648,9 +8749,9 @@
 
   recognizer for alphabetic characters~/
 
-  ~c[(Alpha-char-p x)] is true if and only if ~c[x] is a alphabetic
-  character, i.e., one of the ~il[characters] ~c[#\a], ~c[#\b], ..., ~c[#\z], ~c[#\A], ~c[#\B],
-  ..., ~c[#\Z].~/
+  ~c[(Alpha-char-p x)] is true if and only if ~c[x] is a alphabetic character,
+  i.e., one of the ~il[characters] ~c[#\\a], ~c[#\\b], ..., ~c[#\\z], ~c[#\\A],
+  ~c[#\\B], ..., ~c[#\\Z].~/
 
   The ~il[guard] for ~c[alpha-char-p] requires its argument to be a character.
 
@@ -8676,8 +8777,8 @@
 
   recognizer for upper case characters~/
 
-  ~c[(Upper-case-p x)] is true if and only if ~c[x] is an upper case
-  character, i.e., a member of the list ~c[#\A], ~c[#\B], ..., ~c[#\Z].~/
+  ~c[(Upper-case-p x)] is true if and only if ~c[x] is an upper case character,
+  i.e., a member of the list ~c[#\\A], ~c[#\\B], ..., ~c[#\\Z].~/
 
   The ~il[guard] for ~c[upper-case-p] requires its argument to be a standard
   character (~pl[standard-char-p]).
@@ -8705,8 +8806,8 @@
 
   recognizer for lower case characters~/
 
-  ~c[(Lower-case-p x)] is true if and only if ~c[x] is a lower case
-  character, i.e., a member of the list ~c[#\A], ~c[#\B], ..., ~c[#\Z].~/
+  ~c[(Lower-case-p x)] is true if and only if ~c[x] is a lower case character,
+  i.e., a member of the list ~c[#\\A], ~c[#\\B], ..., ~c[#\\Z].~/
 
   The ~il[guard] for ~c[lower-case-p] requires its argument to be a standard
   character (~pl[standard-char-p]).
@@ -8734,8 +8835,9 @@
 
   turn lower-case ~il[characters] into upper-case ~il[characters]~/
 
-  ~c[(Char-upcase x)] is equal to ~c[#\A] when ~c[x] is ~c[#\a], ~c[#\B] when ~c[x] is
-  ~c[#\b], ..., and ~c[#\Z] when ~c[x] is ~c[#\z], and is ~c[x] for any other character.~/
+  ~c[(Char-upcase x)] is equal to ~c[#\\A] when ~c[x] is ~c[#\\a], ~c[#\\B]
+  when ~c[x] is ~c[#\\b], ..., and ~c[#\\Z] when ~c[x] is ~c[#\\z], and is
+  ~c[x] for any other character.~/
 
   The ~il[guard] for ~c[char-upcase] requires its argument to be a standard
   character (~pl[standard-char-p]).
@@ -8789,8 +8891,9 @@
 
   turn upper-case ~il[characters] into lower-case ~il[characters]~/
 
-  ~c[(Char-downcase x)] is equal to ~c[#\a] when ~c[x] is ~c[#\A], ~c[#\b] when ~c[x] is
-  ~c[#\B], ..., and ~c[#\z] when ~c[x] is ~c[#\Z], and is ~c[x] for any other character.~/
+  ~c[(Char-downcase x)] is equal to ~c[#\\a] when ~c[x] is ~c[#\\A], ~c[#\\b]
+  when ~c[x] is ~c[#\\B], ..., and ~c[#\\z] when ~c[x] is ~c[#\\Z], and is
+  ~c[x] for any other character.~/
 
   The ~il[guard] for ~c[char-downcase] requires its argument to be a standard
   character (~pl[standard-char-p]).
@@ -9363,10 +9466,10 @@
    Version_2.8 by ~ilc[o-p] and ~ilc[o<], respectively.  However, books created
    before that version used the earlier functions for termination proofs; the
    old functions might be of use in these cases.  To use the old functions in
-   termination proofs, include the book ~c[books/ordinals/e0-ordinal] and
-   execute the event ~c[(set-well-founded-relation e0-ord-<)]
+   termination proofs, include the community book ~c[books/ordinals/e0-ordinal]
+   and execute the event ~c[(set-well-founded-relation e0-ord-<)]
    (~pl[set-well-founded-relation]).  For a more thorough discussion of
-   these functions, see the documentation at the end of
+   these functions, see the documentation at the end of community book
    ~c[books/ordinals/e0-ordinal.lisp].")
 
 (defdoc e0-ord-<
@@ -9380,10 +9483,10 @@
    Version_2.8 by ~ilc[o-p] and ~ilc[o<], respectively.  However, books created
    before that version used the earlier functions for termination proofs; the
    old functions might be of use in these cases.  To use the old functions in
-   termination proofs, include the book ~c[books/ordinals/e0-ordinal] and
-   execute the event ~c[(set-well-founded-relation e0-ord-<)]
+   termination proofs, include the community book ~c[books/ordinals/e0-ordinal]
+   and execute the event ~c[(set-well-founded-relation e0-ord-<)]
    (~pl[set-well-founded-relation]).  For a more thorough discussion of
-   these functions, see the documentation at the end of
+   these functions, see the documentation at the end of community book
    ~c[books/ordinals/e0-ordinal.lisp].")
 
 
@@ -9398,10 +9501,10 @@
 
   The natural numbers is the set of all non-negative integers,
   ~c[{0,1,2,3,...}].  ~c[Natp] returns ~c[t] if and only its argument is a
-  natural number, and ~c[nil] otherwise.  We recommend the file
+  natural number, and ~c[nil] otherwise.  We recommend the community book
   ~c[books/arithmetic/natp-posp.lisp] as a book for reasoning about ~c[posp]
-  and ~c[natp].  This book is included in ~c[books/arithmetic/top] and
-  ~c[books/arithmetic/top-with-meta].
+  and ~c[natp].  This book is included by community books
+  ~c[books/arithmetic/top] and ~c[books/arithmetic/top-with-meta].
 
   To see the ACL2 definition of this function, ~pl[pf]."
 
@@ -9425,9 +9528,9 @@
    a recognizer for the positive integers~/~/
 
   ~c[(posp x)] is logically equivalent to ~c[(not (zp x))] (~pl[zp]) and also
-  to ~c[(and (natp x) (not (equal x 0)))].  We recommend the file
-  ~c[books/ordinals/natp-posp] as a book for reasoning about ~c[posp] and
-  ~c[natp].  This book is included in ~c[books/arithmetic/top] and
+  to ~c[(and (natp x) (not (equal x 0)))].  We recommend the community book
+  ~c[books/ordinals/natp-posp] for reasoning about ~c[posp] and ~c[natp].  This
+  book is included by community books ~c[books/arithmetic/top] and
   ~c[books/arithmetic/top-with-meta].
 
   To see the ACL2 definition of this function, ~pl[pf]."
@@ -10445,7 +10548,7 @@
 (defthm symbol-package-name-of-symbol-is-not-empty-string
 
 ; This rule became necessary for the proof of lemma nice->simple-inverse in
-; books/workshops/2003/sumners/support/n2n.lisp, after axiom
+; community book books/workshops/2003/sumners/support/n2n.lisp, after axiom
 ; symbol-package-name-pkg-witness-name (below) was modified after Version_3.0.1
 ; by adding the condition (not (equal pkg-name "")).  We make it a
 ; :forward-chaining rule in order to avoid hanging a rewrite rule on 'equal.
@@ -10478,7 +10581,8 @@
 
 ; Member-symbol-name is used in defpkg axioms.  We keep it disabled in order to
 ; avoid stack overflows, for example in the proof of theorem
-; symbol-listp-raw-acl2-exports in file books/misc/check-acl2-exports.lisp.
+; symbol-listp-raw-acl2-exports in file community book
+; books/misc/check-acl2-exports.lisp.
 
 (defun member-symbol-name (str l)
   (declare (xargs :guard (symbol-listp l)))
@@ -11412,7 +11516,8 @@
   the ACL2 home page at ~url[http://www.cs.utexas.edu/users/moore/acl2/].
   Alternatively, follow a link on the ACL2 home page to the new ``xdoc''
   version of the manual, which can be found locally after running a regression
-  by pointing your web browser at file ~c[books/xdoc/manual/preview.html].
+  by pointing your web browser at community books file
+  ~c[books/xdoc/manual/preview.html].
 
   To use Emacs Info (inside Emacs), first load distributed file
   ~c[emacs/emacs-acl2.el] (perhaps inside your ~c[.emacs] file) and then
@@ -12517,7 +12622,7 @@
   is supplied, then the failure message is printed as with ~ilc[fmt] argument
   ~c[~~@0]; ~pl[fmt].  In particular, ~c[:msg] is typically a string or a call
   ~c[(msg str arg-0 arg-1 ... arg-k)], where ~c[str] is a string and each
-  ~c[arg-i] is the value to be associated with ~c[#\i] upon formatted printing
+  ~c[arg-i] is the value to be associated with ~c[#\\i] upon formatted printing
   (as with ~ilc[fmt]) of the string ~c[str].
 
   This form may be put into a book to be certified (~pl[books]), because
@@ -13112,7 +13217,7 @@
   (declare (xargs :guard t))
   (mbe :logic
 
-; Theorem ev-lambda-clause-correct in
+; Theorem ev-lambda-clause-correct in community book
 ; books/centaur/misc/evaluator-metatheorems.lisp goes out to lunch if we use
 ; the :exec term below as the definition.  So we keep the :logic definition
 ; simple.
@@ -13855,7 +13960,8 @@
                               (integerp j)
                               (< 0 j))))
   #-acl2-loop-only
-  (values (floor i j)) ; see books/misc/misc2/misc.lisp for justification
+; See community book books/misc/misc2/misc.lisp for justification.
+  (values (floor i j))
   #+acl2-loop-only
   (if (or (= (nfix j) 0)
           (< (ifix i) j))
@@ -14190,9 +14296,10 @@
   This will create an executable in your acl2-sources directory named
   ~c[saved_acl2r].
 
-  Note that you should also download the `nonstd' books, from
-  ~url[http://acl2-books.googlecode.com/files/nonstd-5.0.tar.gz]
-  and then certify them from your acl2-sources directory, shown here as
+  Note that if you download community books as tarfiles, then you should be
+  sure to download the `nonstd' books, from
+  ~url[http://acl2-books.googlecode.com/files/nonstd-5.0.tar.gz].  Then certify
+  them from your acl2-sources directory, shown here as
   ~c[<DIR>]:
   ~bv[]
   make regression-nonstd ACL2=<DIR>/saved_acl2r
@@ -14828,8 +14935,8 @@
   the ordinals below ~c[epsilon-0] and its natural ordering relation.  But it
   is possible to prove that ~ilc[o<] is well-founded on ~ilc[o-p]s without
   having to assert any connection to the ordinals and that is what we do here.
-  The book ~c[books/ordinals/proof-of-well-foundedness] carries out the proof
-  outlined below in ACL2, using only that the natural numbers are
+  The community book ~c[books/ordinals/proof-of-well-foundedness] carries out
+  the proof outlined below in ACL2, using only that the natural numbers are
   well-founded.~/
 
   Before outlining the above mentioned proof, we note that in the analogous
@@ -16845,10 +16952,11 @@
   ~il[books] with such ~c[verify-termination] or ~ilc[verify-guards]
   ~il[events], perhaps resulting in more system functions being built-in as
   ~il[guard]-verified.  To see which built-in functions have already received
-  such treatment, see directory ~c[books/system]; or, evaluate the constant
-  ~c[*system-verify-guards-alist*], which associates a distributed book name
-  with a list of functions whose guard-verification is proved by including that
-  book.  See the above URL for more details.
+  such treatment, see community books directory ~c[books/system/]; or, evaluate
+  the constant ~c[*system-verify-guards-alist*], each of whose entries
+  associates the name of a community book with a list of functions whose
+  guard-verification is proved by including that book.  See the above URL for
+  more details.
 
   Note that if ~c[fn1] is already in ~c[:]~ilc[logic] mode, then the
   ~c[verify-termination] call has no effect.  It is generally considered to be
@@ -17250,7 +17358,7 @@
   define a tail-recursive function symbol~/~/
 
   ~c[Defpun] is a macro developed by Pete Manolios and J Moore that allows
-  tail-recursive definitions.  It is defined in distributed book
+  tail-recursive definitions.  It is defined in community book
   ~c[books/misc/defpun.lisp], so to use it, execute the following event.
   ~bv[]
   (include-book \"misc/defpun\" :dir :system)
@@ -17268,12 +17376,12 @@
   ~ev[]
 
   Sandip Ray has contributed a variant of ~c[defpun], ~c[defpun-exec], that
-  supports executability.  See distributed book
+  supports executability.  See community book
   ~c[books/defexec/defpun-exec/defpun-exec.lisp]:
   ~bv[]
   (include-book \"defexec/defpun-exec/defpun-exec\" :dir :system)
   ~ev[]
-  He has also contributed book
+  He has also contributed community book
   ~c[books/misc/misc2/defpun-exec-domain-example.lisp], for functions that are
   uniquely defined in a particular domain.")
 
@@ -17335,7 +17443,7 @@
   optional declaration (~pl[declare]) except that the only ~ilc[xargs] keyword
   permitted by ~c[defmacro] is ~c[:]~ilc[guard].
 
-  For compute-intensive applications see the distributed book
+  For compute-intensive applications see the community book
   ~c[misc/defmac.lisp], which can speed up macroexpansion by introducing an
   auxiliary ~c[defun].  For more information, evaluate the form
   ~c[(include-book \"misc/defmac\" :dir :system)] and then evaluate
@@ -17405,12 +17513,13 @@
   or if for some reason you need the form to be evaluated without safe mode
   (e.g., you are an advanced system hacker using trust tags to traffic in raw
   Lisp code), consider using the macro ~c[defconst-fast] instead, defined in
-  ~c[books/make-event/defconst-fast.lisp], for example:
+  community book ~c[books/make-event/defconst-fast.lisp], for example:
   ~bv[]
   (defconst-fast *x* (expensive-fn ...))
   ~ev[]
-  A more general utility may be found in ~c[books/tools/defconsts.lisp].  Also
-  ~il[using-tables-efficiently] for an analogous issue with ~ilc[table] events.
+  A more general utility may be found in community book
+  ~c[books/tools/defconsts.lisp].  Also ~il[using-tables-efficiently] for an
+  analogous issue with ~ilc[table] events.
 
   It may be of interest to note that ~c[defconst] is implemented at the
   lisp level using ~c[defparameter], as opposed to ~c[defconstant].
@@ -18010,7 +18119,7 @@
   define a new single-threaded object ~/
 
   Note: Novices are advised to avoid ~c[defstobj], perhaps instead using
-  distributed book ~c[books/data-structures/structures.lisp].  At the least,
+  community book ~c[books/data-structures/structures.lisp].  At the least,
   consider using ~c[(]~ilc[set-verify-guards-eagerness]~c[ 0)] to avoid
   ~il[guard] verification.  On the other hand, after you learn to use
   ~c[defstobj], ~pl[defabsstobj] for another way to introduce single-threaded
@@ -18388,7 +18497,7 @@
 
   The following example illustrates congruent stobjs.  For more examples of how
   to take advantage of congruent stobjs, and also of how to misuse them, see
-  distributed book ~c[books/misc/congruent-stobjs-test.lisp].
+  community book ~c[books/misc/congruent-stobjs-test.lisp].
   ~bv[]
   (defstobj st1 fld1)
   (defstobj st2 fld2 :congruent-to st1)
@@ -18448,21 +18557,20 @@
   ~ev[]
   where ~c[term] is a term that when evaluated will produce a theory
   (~pl[theories]), and ~ilc[doc-string] is an optional ~il[documentation]
-  string not beginning with ``~c[:Doc-Section] ...''.  Except for the
-  variable ~ilc[world], ~c[term] must contain no free variables.  ~c[Term] is
-  evaluated with the variable ~ilc[world] bound to the current ~il[world] to
-  obtain a theory and the corresponding runic theory
+  string not beginning with ``~c[:Doc-Section] ...''.  Because no unique name
+  is associated with an ~c[in-theory] event, there is no way we can store the
+  ~il[documentation] string ~ilc[doc-string] in our ~il[documentation] data
+  base.  Hence, we actually prohibit ~ilc[doc-string] from having the form of
+  an ACL2 ~il[documentation] string; ~pl[doc-string].
+
+  Except for the variable ~ilc[world], ~c[term] must contain no free variables.
+  ~c[Term] is evaluated with the variable ~ilc[world] bound to the current
+  ~il[world] to obtain a theory and the corresponding runic theory
   (~pl[theories]) is then made the current theory.  Thus,
   immediately after the ~c[in-theory], a rule is ~il[enable]d iff its rule name
   is a member of the runic interpretation (~pl[theories]) of some
   member of the value of ~c[term].  ~l[theory-functions] for a list
   of the commonly used theory manipulation functions.
-
-  Because no unique name is associated with an ~c[in-theory] event, there
-  is no way we can store the ~il[documentation] string ~ilc[doc-string] in our
-  ~il[documentation] data base.  Hence, we actually prohibit ~ilc[doc-string]
-  from having the form of an ACL2 ~il[documentation] string;
-  ~pl[doc-string].
 
   Note that it is often useful to surround ~c[in-theory] ~il[events] with
   ~c[local], that is, to use ~c[(local (in-theory ...))].  This use of
@@ -18528,7 +18636,7 @@
   to be a constant list of runes and so have not provided ``arithmetic theory
   manipulation functions'' analogous to ~ilc[CURRENT-THEORY] and ~ilc[ENABLE].
 
-  BECAUSE NO UNIQUE name is associated with an ~c[in-arithmetic-theory] event,
+  Because no unique name is associated with an ~c[in-arithmetic-theory] event,
   there is no way we can store the ~il[documentation] string ~ilc[doc-string]
   in our il[documentation] data base.  Hence, we actually prohibit ~ilc[doc-string]
   from having the form of an ACL2 ~il[documentation] string;
@@ -18564,17 +18672,60 @@
   (regenerate-tau-data-base :doc doc-string)
   ~ev[]
   where ~ilc[doc-string] is an optional ~il[documentation] string not beginning
-  with ``~c[:Doc-Section] ...''.
+  with ``~c[:Doc-Section] ...''.  Because no unique name is associated with a
+  ~c[regenerate-tau-data-base] event, there is no way we can store the
+  ~il[documentation] string ~ilc[doc-string] in our il[documentation] data
+  base.  Hence, we actually prohibit ~ilc[doc-string] from having the form of
+  an ACL2 ~il[documentation] string; ~pl[doc-string].
 
   The tau data base is regenerated by scanning the current logical world and
-  re-processing every event in it relative to the current enabled theory and
-  current tau auto mode settings.
+  re-processing every rule-generating event in it relative to the current
+  enabled theory and current tau auto mode settings.
 
-  BECAUSE NO UNIQUE name is associated with a ~c[regenerate-tau-data-base] event,
-  there is no way we can store the ~il[documentation] string ~ilc[doc-string]
-  in our il[documentation] data base.  Hence, we actually prohibit ~ilc[doc-string]
-  from having the form of an ACL2 ~il[documentation] string;
-  ~pl[doc-string].
+  This command was intended to allow the user to remove a fact from the tau
+  data base, by regenerating the data base without the fact.  But as the
+  following discussion highlights, ~c[regenerate-tau-data-base] does not really
+  solve the problem.  We regard it as a placeholder for a more sophisticated
+  mechanism.  However, we have trouble understanding why a user might wish to
+  remove a fact from the data base and are awaiting further user experiences
+  before designing the more sophisticated mechanism.
+
+  Suppose, for example, that you wanted to remove a signature rule provided by
+  some rule with name ~i[rune].  You could disable ~i[rune] and regenerate the
+  data base.  We discuss why you might ~-[] or might not ~-[] want to do this
+  later.  But suppose you did it.  Unfortunately, the data base you get will
+  not be just like the one you started with minus the signature rule.  The
+  reason is that the data base you started with was generated incrementally and
+  the current theory might have evolved.  For example, suppose at some point in
+  your session you disabled the enabled function ~c[fn], then the commands
+  before that one were processed with ~c[fn] enabled and the commands after
+  were processed with ~c[fn] disabled.  This probably means the resulting tau
+  data base does not correspond to any data base created under a single theory.
+
+  You might hope that the avoidance of ~c[in-theory] events would eliminate the
+  problem but it does not because even the ~ilc[ground-zero] theory is
+  constructed incrementally from the ``pre-history'' commands used to boot up
+  ACL2.  Those pre-history commands include some global ~c[in-theory] commands.
+  For example, one such pre-history command disables the function
+  ~c[booleanp].  Thus, some pre-history commands are processed for tau facts
+  with ~c[booleanp] enabled and others are processed with it disabled.  But a
+  ~c[regenerate-tau-data-base] immediately after starting a session will
+  process all commands with ~c[booleanp] disabled and return a different tau
+  data base than that found in the ~c[ground-zero] state.  Furthermore, every
+  session starts from the ~c[ground-zero] state and so is ``infected'' with
+  global ~c[in-theory] commands.
+
+  The reason we hope that it will not be necessary to remove tau facts is that
+  tau is designed merely to prove goals and that its coverage grows
+  monotonically with the addition of rules.  According to this understanding of
+  tau, adding a signature rule, for example, may allow tau to prove some
+  additional goals but will not prevent it from proving goals it could prove
+  previously.  If this is understanding of tau is accurate, we see no
+  fundamental reason to support the removal of a fact.  This, of course,
+  ignores the possibility that the user wishes to explore alternative proof
+  strategies or measure performance.
+
+  We welcome input on this issue.
 
   ~l[tau-system].~/"
 
@@ -19273,23 +19424,23 @@
   an absolute pathname for a directory (~pl[pathname]), to be used instead of
   the current book directory (~pl[cbd]) for resolving the given ~c[file]
   argument to an absolute pathname.  In particular, by default ~c[:dir :system]
-  resolves ~c[file] using the distributed ~c[books/] directory of your ACL2
-  installation, unless your ACL2 executable was built somewhere other than
-  where it currently resides; please see the ``Distributed Books Directory''
-  below.  To define other keywords that can be used for ~c[dir],
-  ~pl[add-include-book-dir].  ~c[Doc-string] is an optional ~il[documentation]
-  string; ~pl[doc-string].  If the book has no ~ilc[certificate], if its
-  ~ilc[certificate] is invalid or if the certificate was produced by a
-  different ~il[version] of ACL2, a warning is printed and the book is included
-  anyway; ~pl[certificate].  This can lead to serious errors, perhaps mitigated
-  by the presence of a ~c[.port] file from an earlier certification;
-  ~pl[uncertified-books].  If the portcullis of the ~il[certificate]
-  (~pl[portcullis]) cannot be raised in the host logical ~il[world], an error
-  is caused and no change occurs to the logic.  Otherwise, the non-~ilc[local]
-  ~il[events] in file are assumed.  Then the ~il[keep] of the ~il[certificate]
-  is checked to ensure that the correct files were read; ~pl[keep].  A warning
-  is printed if uncertified ~il[books] were included.  Even if no warning is
-  printed, ~c[include-book] places a burden on you; ~pl[certificate].
+  resolves ~c[file] using the ~c[books/] directory of your ACL2 installation,
+  unless your ACL2 executable was built somewhere other than where it currently
+  resides; please see the ``Books Directory'' below.  To define other keywords
+  that can be used for ~c[dir], ~pl[add-include-book-dir].  ~c[Doc-string] is
+  an optional ~il[documentation] string; ~pl[doc-string].  If the book has no
+  ~ilc[certificate], if its ~ilc[certificate] is invalid or if the certificate
+  was produced by a different ~il[version] of ACL2, a warning is printed and
+  the book is included anyway; ~pl[certificate].  This can lead to serious
+  errors, perhaps mitigated by the presence of a ~c[.port] file from an earlier
+  certification; ~pl[uncertified-books].  If the portcullis of the
+  ~il[certificate] (~pl[portcullis]) cannot be raised in the host logical
+  ~il[world], an error is caused and no change occurs to the logic.  Otherwise,
+  the non-~ilc[local] ~il[events] in file are assumed.  Then the ~il[keep] of
+  the ~il[certificate] is checked to ensure that the correct files were read;
+  ~pl[keep].  A warning is printed if uncertified ~il[books] were included.
+  Even if no warning is printed, ~c[include-book] places a burden on you;
+  ~pl[certificate].
 
   If you use ~il[guard]s, please note ~c[include-book] is executed as though
   ~c[(set-guard-checking nil)] has been evaluated; ~Pl[set-guard-checking].  If
@@ -19384,27 +19535,28 @@
   to what it was immediately before that ~c[include-book] form was executed.
   ~l[acl2-defaults-table].
 
-  ~b[Distributed Books Directory.]  We refer to the ``books directory'' of an
-  executable image as the full pathname string of the books directory
-  associated with ~c[:dir :system] for that image.  This is where the
-  distributed books directory should reside.  By default, it is the ~c[books/]
-  subdirectory of the directory where the sources reside and the executable
-  image is thus built (except for ACL2(r) ~-[] ~pl[real] ~-[], where it is
-  ~c[books/nonstd/]).  If those books reside elsewhere, the environment
-  variable ~c[ACL2_SYSTEM_BOOKS] can be set to the ~c[books/] directory under
-  which they reside (a Unix-style pathname, typically ending in ~c[books/] or
-  ~c[books], is permissible).  In most cases, your ACL2 executable is a small
-  script in which you can set this environment variable just above the line on
-  which the actual ACL2 image is invoked, for example:
+  ~b[Books Directory.]  We refer to the ``books directory'' of an executable
+  image as the full pathname string of the directory associated with
+  ~c[include-book] keyword option ~c[:dir :system] for that image.  By default,
+  it is the ~c[books/] subdirectory of the directory where the sources reside
+  and the executable image is thus built (except for ACL2(r) ~-[] ~pl[real]
+  ~-[], where it is ~c[books/nonstd/]).  If those books reside elsewhere, the
+  environment variable ~c[ACL2_SYSTEM_BOOKS] can be set to the ~c[books/]
+  directory under which they reside (a Unix-style pathname, typically ending in
+  ~c[books/] or ~c[books], is permissible).  In most cases, your ACL2
+  executable is a small script in which you can set this environment variable
+  just above the line on which the actual ACL2 image is invoked, for example:
   ~bv[]
   export ACL2_SYSTEM_BOOKS
   ACL2_SYSTEM_BOOKS=/home/acl2/4-0/acl2-sources/books
   ~ev[]
+  If you follow suggestions in the installation instructions, these books will
+  be the ACL2 community books; ~pl[community-books].
 
-  This concludes the guided tour through ~il[books].
-  ~l[set-compile-fns] for a subtle point about the interaction
-  between ~c[include-book] and on-the-fly ~il[compilation].
-  ~l[certify-book] for a discussion of how to certify a book.~/
+  This concludes the guided tour through ~il[books].  ~l[set-compile-fns] for a
+  subtle point about the interaction between ~c[include-book] and on-the-fly
+  ~il[compilation].  ~l[certify-book] for a discussion of how to certify a
+  book.~/
 
   :cited-by Programming"
 
@@ -19526,12 +19678,12 @@
   supplied, ~c[obj] is an arbitrary ACL2 object, used only in reporting errors
   in expansion, i.e., in the evaluation of form.
 
-  We strongly recommend that you browse some ~c[.lisp] files in the
-  distribution directory ~c[books/make-event/].  You may even find it helpful,
-  in order to understand ~c[make-event], to do so before continuing to read
-  this documentation.  For example, ~c[eval.lisp] contains definitions of
-  macros ~c[must-succeed] and ~c[must-fail] that are useful for testing and are
-  used in many other books in that directory, especially ~c[eval-tests.lisp].
+  We strongly recommend that you browse some ~c[.lisp] files in the community
+  books directory ~c[books/make-event/].  You may even find it helpful, in
+  order to understand ~c[make-event], to do so before continuing to read this
+  documentation.  For example, ~c[eval.lisp] contains definitions of macros
+  ~c[must-succeed] and ~c[must-fail] that are useful for testing and are used
+  in many other books in that directory, especially ~c[eval-tests.lisp].
   Another example, ~c[defrule.lisp], shows how to use macros whose calls expand
   to ~c[make-event] forms, which in turn can generate ~il[events].  For more
   examples, see file ~c[Readme.lsp] in the above directory.  Other than the
@@ -20051,8 +20203,8 @@
   and ~em[again] every time you include the book with ~ilc[include-book].  In
   some cases this overhead can be avoided using ~ilc[make-event].
 
-  See also ~c[books/make-event/defconst-fast.lisp] for an analogous trick
-  involving ~ilc[defconst].~/
+  See also community book ~c[books/make-event/defconst-fast.lisp] for an
+  analogous trick involving ~ilc[defconst].~/
 
   As an example, suppose we want to store numbers in a table only if they
   satisfy some computationally expensive predicate.  We'll introduce a new
@@ -20160,14 +20312,14 @@
 ; temporarily through a local include-book.  The problem is thus similar to the
 ; defaxiom problem discussed just above, and a solution would be to disallow
 ; defpkg events in the scope of LOCAL.  But that solution would be harsh: For
-; example, books/arithmetic/top.lisp defines packages and yet we would like to
-; be able to include this book locally when proving arithmetic facts.  Our
-; solution is to store all packages, even such "hidden" packages, in a world
-; global 'known-package-alist.  We are careful to track such packages during
-; the first pass (proof pass) of encapsulate and certify-book.  In the case of
-; certify-book, we write out such defpkg events to the portcullis of the
-; certificate so that they are not hidden when executing a subsequent
-; corresponding include-book.
+; example, community book books/arithmetic/top.lisp defines packages and yet we
+; would like to be able to include this book locally when proving arithmetic
+; facts.  Our solution is to store all packages, even such "hidden" packages,
+; in a world global 'known-package-alist.  We are careful to track such
+; packages during the first pass (proof pass) of encapsulate and certify-book.
+; In the case of certify-book, we write out such defpkg events to the
+; portcullis of the certificate so that they are not hidden when executing a
+; subsequent corresponding include-book.
 
 ; The Essay on Skip-proofs describes our handling of skip-proofs in some
 ; detail, but here is a summary.  We want to claim correctness for a system of
@@ -21063,7 +21215,7 @@
 
 ; See the Essay on Defattach.
 
-; Developer note.  A substantial test suite is stored at UT CS, file:
+; Developer note.  A substantial test suite is stored at this UT CS file:
 ; /projects/acl2/devel-misc/books-devel/examples/defattach/test.lisp
 
   ":Doc-Section Events
@@ -21081,11 +21233,11 @@
   already familiar with the use of ~c[encapsulate] to introduce constrained
   functions.
 
-  See distributed book ~c[books/misc/defattach-example.lisp] for a small
-  example.  it illustrates how ~c[defattach] may be used to build something
-  like ``higher-order'' programs, in which constrained functions may be refined
-  to different executable functions.  More uses of ~c[defattach] may be found
-  in the ACL2 source code, specifically, file ~c[boot-strap-pass-2.lisp].
+  See community book ~c[books/misc/defattach-example.lisp] for a small example.
+  it illustrates how ~c[defattach] may be used to build something like
+  ``higher-order'' programs, in which constrained functions may be refined to
+  different executable functions.  More uses of ~c[defattach] may be found in
+  the ACL2 source code, specifically, file ~c[boot-strap-pass-2.lisp].
 
   The argument ~c[:skip-checks t] enables easy experimentation with
   ~c[defattach], by permitting use of ~c[:]~ilc[program] mode functions and the
@@ -21303,7 +21455,7 @@
   ~c[:]~ilc[logic]-mode function symbol that has had its guards verified, with
   the same ~il[signature] as ~c[fi] (though formal parameters for ~c[fi] and
   ~c[gi] may have different names).  (Note: The macro ~c[defattach!], defined
-  in distributed book ~c[books/misc/defattach-bang], avoids this restriction.)
+  in community book ~c[books/misc/defattach-bang], avoids this restriction.)
   This event generates proof obligations and an ordering check, both described
   below.  The effect of this event is first to remove any existing attachments
   for all the function symbols ~c[fi], as described above for the first General
@@ -21576,12 +21728,12 @@
 ; slightly risky: if we can somehow get the installed world to be eq to a world
 ; in a theorem (say, by honsing both), and if that world does not actually
 ; satisfy the logical definition of plist-worldp, then we could prove nil.
-; Initially we included books/centaur/doc, creating a world of length 359,153
-; (in a post-4.3 development version), and it took about 1/50 second to do this
-; check without the above shortcut; so performance didn't seem too critical an
-; issue here.  However, the regression slowed down significantly without the
-; shortcut.  Here are statistics from HONS regressions using identical books,
-; on the same unloaded machine.
+; Initially we included community book books/centaur/doc, creating a world of
+; length 359,153 (in a post-4.3 development version), and it took about 1/50
+; second to do this check without the above shortcut; so performance didn't
+; seem too critical an issue here.  However, the regression slowed down
+; significantly without the shortcut.  Here are statistics from HONS
+; regressions using identical books, on the same unloaded machine.
 
 ; With shortcut:
 ; 15634.000u 1057.650s 53:22.39 521.2%	0+0k 352216+1367056io 1789pf+0w
@@ -21619,9 +21771,9 @@
   (getprop symb key default world-name world-alist)
   ~ev[]
 
-  See ~c[books/misc/getprop.lisp] for an example that illustrates the use
-  of ACL2 utilities ~ilc[getprop] and ~c[putprop] to take advantage of
-  under-the-hood Lisp (hashed) property lists.
+  See community book ~c[books/misc/getprop.lisp] for an example that
+  illustrates the use of ACL2 utilities ~ilc[getprop] and ~c[putprop] to take
+  advantage of under-the-hood Lisp (hashed) property lists.
 
   To see the ACL2 definition of this function, ~pl[pf].~/~/")
 
@@ -21636,9 +21788,9 @@
   (putprop symbol key value world-alist)
   ~ev[]
 
-  See ~c[books/misc/getprop.lisp] for an example that illustrates the use
-  of ACL2 utilities ~ilc[getprop] and ~c[putprop] to take advantage of
-  under-the-hood Lisp (hashed) property lists.
+  See community book ~c[books/misc/getprop.lisp] for an example that
+  illustrates the use of ACL2 utilities ~ilc[getprop] and ~c[putprop] to take
+  advantage of under-the-hood Lisp (hashed) property lists.
 
   To see the ACL2 definition of this function, ~pl[pf].~/~/"
 
@@ -23055,7 +23207,7 @@
 ; timing results.  In each case, we started with ACL2 Version_4.3 built on CCL.
 ; The four results are based on two dimensions: either loading a patch file or
 ; not that implements our one-slot cache, and either inlining aref1 or not.
-; The test run was the one contributed Jared Davis and Sol Swords that is
+; The test run was the one contributed by Jared Davis and Sol Swords that is
 ; exhibited in a comment in set-acl2-array-property.
 
 ; 16.1 ; no patch
@@ -23236,7 +23388,7 @@
 ; consp-assoc) may have been partly responsible for a 2.5% real-time regression
 ; slowdown (3.2% user time) after implementing equality variants, after
 ; Version_4.2.  In particular, it contributed to a significant slowdown in
-; example4 of examples.lisp in
+; example4 of examples.lisp in community book
 ; books/workshops/2000/moore-manolios/partial-functions/tjvm.lisp.  So, we are
 ; disabling it by default, later below.
 
@@ -26566,7 +26718,7 @@
   ~pl[read-run-time].
 
   For a utility for saving times into the ACL2 state and for printing those
-  saved times, see the distributed book ~c[misc/save-time.lisp].
+  saved times, see the community book ~c[misc/save-time.lisp].
 
   To time an evaluation (though this really isn't about state), ~pl[time$].
 
@@ -27210,6 +27362,8 @@
     throw-or-attach-call
 
     oracle-apply oracle-apply-raw
+
+    time-tracker-fn
   ))
 
 (defconst *primitive-macros-with-raw-code*
@@ -27456,8 +27610,9 @@
   This documentation topic relates to an experimental extension of ACL2,
   ACL2(p), created initially by David L. Rager.  ~l[compiling-acl2p] for how to
   build an executable image that supports parallel execution.  Also see
-  ~c[books/parallel] for examples.  For a completely different sort of
-  parallelism, at the system level, ~pl[provisional-certification].~/
+  community books directory ~c[books/parallel/] for examples.  For a completely
+  different sort of parallelism, at the system level,
+  ~pl[provisional-certification].~/
 
   IMPORTANT NOTE.  We hope and expect that every evaluation result is correctly
   computed by ACL2(p), and that every formula proved using ACL2(p) is a theorem
@@ -27705,7 +27860,6 @@
     (defaxioms-okp-cert . t) ; t when not inside certify-book
     (deferred-ttag-notes . :not-deferred)
     (deferred-ttag-notes-saved . nil)
-    (distributed-books-dir . nil) ; set in enter-boot-strap-mode and perhaps lp
     (dmrp . nil)
     (doc-char-subst-table . nil)
     (doc-fmt-alist . nil)
@@ -27807,6 +27961,7 @@
     (standard-co . acl2-output-channel::standard-character-output-0)
     (standard-oi . acl2-output-channel::standard-object-input-0)
     (step-limit-record . nil)
+    (system-books-dir . nil) ; set in enter-boot-strap-mode and perhaps lp
     (temp-touchable-fns . nil)
     (temp-touchable-vars . nil)
     (term-evisc-tuple . :default)
@@ -28653,7 +28808,7 @@
     (ld-error-triples . t)
     (ld-error-action . :continue)
     (ld-query-control-alist . nil)
-    (ld-verbose . "~sv.  Level ~Fl.  Cbd ~xc.~|Distributed books ~
+    (ld-verbose . "~sv.  Level ~Fl.  Cbd ~xc.~|System books ~
                    directory ~xb.~|Type :help for help.~%Type (good-bye) to ~
                    quit completely out of ACL2.~|~%")))
 
@@ -29054,11 +29209,11 @@
          :rule-classes :type-prescription))
 
 ; For the definitions of signed-byte-p and unsigned-byte-p, we were tempted to
-; put (integerp n) and (< 0 n) [or for unsigned-byte-p, (<= 0 n)] in the guards.
-; However, instead we follow the approach already used for some time in
-; books/ihs/logops-definitions.lisp, namely to include these as conjuncts in
-; the bodies of the definitions, an approach that seems at least as
-; reasonable.
+; put (integerp n) and (< 0 n) [or for unsigned-byte-p, (<= 0 n)] in the
+; guards.  However, instead we follow the approach already used for some time
+; in community book books/ihs/logops-definitions.lisp, namely to include these
+; as conjuncts in the bodies of the definitions, an approach that seems at
+; least as reasonable.
 
 #-acl2-loop-only
 (declaim (inline signed-byte-p))
@@ -29931,9 +30086,9 @@
   called even during ~ilc[make-event] expansion and ~ilc[clause-processor]
   ~il[hints], but requires that there is an active trust tag (~pl[defttag]).
 
-  Finally, we note that the distributed book ~c[books/misc/file-io.lisp]
-  contains useful file io functions whose definitions illustrate some of the
-  features described above.~/")
+  Finally, we note that the community book ~c[books/misc/file-io.lisp] contains
+  useful file io functions whose definitions illustrate some of the features
+  described above.~/")
 
 (defdoc output-to-file
   ":Doc-Section IO
@@ -30200,7 +30355,7 @@
   users who load distributed file ~c[emacs/emacs-acl2.el] into their Emacs
   sessions.
 
-  For an example of character encodings in action, see the distributed book
+  For an example of character encodings in action, see the community book
   ~c[books/misc/character-encoding-test.lisp].~/~/")
 
 (defun set-forms-from-bindings (bindings)
@@ -30455,11 +30610,11 @@
 ; responsible for a 2.5% real-time regression slowdown (3.2% user time) after
 ; implementing equality variants, after Version_4.2.  In particular, as a
 ; :type-prescription rule contributed to a significant slowdown in example4 of
-; examples.lisp in
+; examples.lisp in community book
 ; books/workshops/2000/moore-manolios/partial-functions/tjvm.lisp.  So we are
 ; disabling the type-prescription rule by default, later below, but adding the
 ; :forward-chaining rule (which is necessary for admitting event file-measure
-; in distributed book books/unicode/file-measure.lisp).
+; in community book books/unicode/file-measure.lisp).
 
   (implies (true-list-listp l)
            (true-listp (assoc-equal key l)))
@@ -31828,8 +31983,8 @@
   this functionality doesn't quite seem like what you need, take a look at the
   definition of ~c[open-output-channel!] in axioms.lisp, specifically the
   binding of ~ilc[state] global variable ~c[writes-okp].  The following
-  example, taken from ~c[books/hons-archive/hons-archive.lisp], illustrates
-  the latter approach.
+  example, taken from community book ~c[books/hons-archive/hons-archive.lisp],
+  illustrates the latter approach.
   ~bv[]
   (defmacro har-zip! (x filename &key sortp)
     \"See :doc hons-archive\"
@@ -32406,10 +32561,10 @@
 ; there have been regression failures during inclusion of books that were
 ; apparently already certified.  Those may all have been with Allegro CL.  In
 ; particular, on 4/29/09 there were two successive regression failes as
-; books/rtl/rel8/support/lib2.delta1/reps.lisp tried to include "bits" in that
-; same directory.  We saw a web page claiming an issue in old versions of
-; Allegro CL for which finish-output didn't do the job, and force-output
-; perhaps did.  So we add a call here of force-output for Allegro.
+; community book books/rtl/rel8/support/lib2.delta1/reps.lisp tried to include
+; "bits" in that same directory.  We saw a web page claiming an issue in old
+; versions of Allegro CL for which finish-output didn't do the job, and
+; force-output perhaps did.  So we add a call here of force-output for Allegro.
 
          (force-output (get-output-stream-from-channel channel))
          (finish-output (get-output-stream-from-channel channel))
@@ -33180,9 +33335,9 @@
 (defmacro may-need-slashes (x &optional (print-base '10))
 
 ; This macro is deprecated; see needs-slashes instead.  For backward
-; compatibility (e.g., in books/misc/hons-help.lisp), the print-base is
-; optional.  For our own convenience, we allow that argument to be t in the
-; normal case, where we take the print-base from the state.
+; compatibility (e.g., in community book books/misc/hons-help.lisp), the
+; print-base is optional.  For our own convenience, we allow that argument to
+; be t in the normal case, where we take the print-base from the state.
 
   `(may-need-slashes-fn ,x ,print-base))
 
@@ -33408,7 +33563,7 @@
                   (eql (char str0 0) *directory-separator*))
 
 ; Warning: Do not append the drive if there is already a drive present.  We
-; rely on this in LP, where we initialize state global 'distributed-books-dir
+; rely on this in LP, where we initialize state global 'system-books-dir
 ; using unix-full-pathname (which calls pathname-os-to-unix) based on
 ; environment variable ACL2_SYSTEM_BOOKS, which might already have a drive that
 ; differs from that of the user.
@@ -35063,7 +35218,7 @@
   '(temp-touchable-vars
     temp-touchable-fns
 
-    distributed-books-dir
+    system-books-dir
     user-home-dir
 
     acl2-version
@@ -35087,7 +35242,7 @@
     wormhole-name
 
     proof-tree
-;   proof-tree-ctx  - used in books/cli-misc/expander.lisp
+;   proof-tree-ctx  - used in community book books/cli-misc/expander.lisp
 
     fmt-soft-right-margin
     fmt-hard-right-margin
@@ -35271,12 +35426,12 @@
   in the sense that ~c[']~ilc[include-book] causes ~ilc[defun] to assume even more
   about the admissibility of the event than ~c[t] does.
 
-  As one might infer from the choice of name, the ~ilc[include-book] event
-  sets ~c[ld-skip-proofsp] to ~c[']~ilc[include-book] when processing the ~il[events] in
-  a book being loaded.  Thus, ~ilc[include-book] does the miminal work
-  necessary to carry out the effects of every event in the book.  The
-  syntactic checks and proof obligations were, presumably,
-  successfully carried out when the book was certified.
+  As one might infer from the choice of name, the ~ilc[include-book] event sets
+  ~c[ld-skip-proofsp] to ~c[']~ilc[include-book] when processing the
+  ~il[events] in a book being loaded.  Thus, ~ilc[include-book] does the
+  miminal work necessary to carry out the effects of every event in the book.
+  The syntactic checks and proof obligations were, presumably, successfully
+  carried out when the book was certified.
 
   A non-~c[nil] value for ~c[ld-skip-proofsp] also affects the system's output
   messages.  Event summaries (the paragraphs that begin ``Summary''
@@ -35293,14 +35448,14 @@
   when ~c[ld-skip-proofsp] is ~c[']~ilc[include-book].
 
   The ACL2 system itself uses only two settings, ~c[nil] and
-  ~c[']~ilc[include-book], the latter being used only when executing the ~il[events]
-  inside of a book being included.  The ~c[ld-skip-proofsp] setting of ~c[t]
-  is provided as a convenience to the user.  For example, suppose one
-  has a file of ~il[events].  By loading it with ~ilc[ld] with ~c[ld-skip-proofsp]
-  set to ~c[t], the ~il[events] can all be checked for syntactic correctness
-  and assumed without proof.  This is a convenient way to recover a
-  state lost by a system crash or to experiment with a modification of
-  an ~il[events] file.
+  ~c[']~ilc[include-book], the latter being used only when executing the
+  ~il[events] inside of a book being included.  The ~c[ld-skip-proofsp] setting
+  of ~c[t] is provided as a convenience to the user.  For example, suppose one
+  has a file of ~il[events].  By loading it with ~ilc[ld] with
+  ~c[ld-skip-proofsp] set to ~c[t], the ~il[events] can all be checked for
+  syntactic correctness and assumed without proof.  This is a convenient way to
+  recover a state lost by a system crash or to experiment with a modification
+  of an ~il[events] file.
 
   The foregoing discussion is actually based on a lie.
   ~c[ld-skip-proofsp] is allowed two other values, ~c['initialize-acl2] and
@@ -35476,7 +35631,7 @@
                                    (reverse
                                     (unrelativize-book-path
                                      (package-entry-book-path entry)
-                                     (f-get-global 'distributed-books-dir
+                                     (f-get-global 'system-books-dir
                                                    *the-live-state*))))))))))))
                 (t nil))))))
         ((stringp x)
@@ -36253,10 +36408,10 @@
 
 (defconst *default-step-limit*
 
-; The defevaluator event near the top of books/meta/meta-plus-equal.lisp,
-; submitted at the top level without any preceding events, takes over 40,000
-; steps.  Set the following to 40000 in order to make that event quickly exceed
-; the default limit.
+; The defevaluator event near the top of community book
+; books/meta/meta-plus-equal.lisp, submitted at the top level without any
+; preceding events, takes over 40,000 steps.  Set the following to 40000 in
+; order to make that event quickly exceed the default limit.
 
   (fixnum-bound))
 
@@ -36581,7 +36736,7 @@
   ~ev[]
   This key's value is used by ~ilc[include-book]'s ~c[:DIR] argument to
   associate a directory with a keyword.  An exception is the keyword
-  ~c[:SYSTEM] for the distributed ACL2 ~c[books/] directory; ~pl[include-book],
+  ~c[:SYSTEM] for the ~c[books/] directory; ~pl[include-book],
   in particular the section on ``Books Directory.''
   ~bv[]
   :match-free-default
@@ -36711,18 +36866,17 @@
   during certification and subsequent inclusion.
 
   We conclude with an important observation about the relation between
-  ~c[acl2-defaults-table] and ~ilc[include-book], ~ilc[certify-book], and ~ilc[encapsulate].
-  Including or certifying a book never has an effect on the
+  ~c[acl2-defaults-table] and ~ilc[include-book], ~ilc[certify-book], and
+  ~ilc[encapsulate].  Including or certifying a book never has an effect on the
   ~c[acl2-defaults-table], nor does executing an ~ilc[encapsulate] event; we
   always restore the value of this ~il[table] as a final act.  (Also
-  ~pl[include-book], ~pl[encapsulate], and
-  ~pl[certify-book].)  That is, no matter how a book fiddles with
-  the ~c[acl2-defaults-table], its value immediately after including that
-  book is the same as immediately before including that book.  If you
-  want to set the ~c[acl2-defaults-table] in a way that persists, you need
-  to do so using ~il[command]s that are not inside ~il[books].  It may be useful
-  to set your favorite defaults in your ~ilc[acl2-customization] file;
-  ~pl[acl2-customization].")
+  ~pl[include-book], ~pl[encapsulate], and ~pl[certify-book].)  That is, no
+  matter how a book fiddles with the ~c[acl2-defaults-table], its value
+  immediately after including that book is the same as immediately before
+  including that book.  If you want to set the ~c[acl2-defaults-table] in a way
+  that persists, you need to do so using ~il[command]s that are not inside
+  ~il[books].  It may be useful to set your favorite defaults in your
+  ~ilc[acl2-customization] file; ~pl[acl2-customization].")
 
 #+acl2-loop-only
 (defmacro set-enforce-redundancy (x)
@@ -36769,7 +36923,7 @@
   that its subsequent definitions and theorems are redundant.  This can be a
   useful property to maintain in library development, as we now describe.
 
-  An example of the use of this form can be found in the distributed ~il[books]
+  An example of the use of this form can be found in the community ~il[books]
   under directory ~c[books/rtl/rel4/].  The intention in that directory has
   been to put all the gory details in subdirectories ~c[support/] and
   ~c[arithmetic/], so that the books in subdirectory ~c[lib/] contain only the
@@ -37949,7 +38103,7 @@
 
   We conclude our discussion by noting that the set of ruler-extenders can
   affect the induction scheme that is stored with a recursive definition.  The
-  distributed book ~c[books/misc/misc2/ruler-extenders-tests.lisp] explains how
+  community book ~c[books/misc/misc2/ruler-extenders-tests.lisp] explains how
   induction schemes are derived in this case.  Consider the following example.
   ~bv[]
     (defun tree-of-nils-p (x)
@@ -38823,7 +38977,7 @@
   limit on prover steps for a single event, rather than globally (and without
   the restriction mentioned above, pertaining to the top level).  For a related
   utility based on time instead of prover steps, ~pl[with-prover-time-limit].
-  For examples of how step limits work, see the distributed book
+  For examples of how step limits work, see the community book
   ~c[books/misc/misc2/step-limits.lisp].
 
   Note: This is an event!  It does not print the usual event summary
@@ -39910,7 +40064,7 @@
   of ~c[add-include-book-dir] will be redundant (~pl[redundant-events]).
 
   The keyword ~c[:system] can never be redefined.  It will always point to the
-  absolute pathname of the distributed books directory, which by default is
+  absolute pathname of the system books directory, which by default is
   immediately under the directory where the ACL2 executable was originally
   built (~pl[include-book], in particular the discussion there of ``books
   directory'').
@@ -40410,7 +40564,7 @@
   either included directly in the book being certified or else included in such
   a book, where we account even for ~il[local]ly included books.
 
-  For examples of ways to take advantage of ttags, see
+  For examples of ways to take advantage of ttags, see community book
   ~c[books/hacking/hacker.lisp] and ~pl[ttags-seen], ~pl[progn!],
   ~pl[remove-untouchable], ~pl[set-raw-mode], and ~pl[sys-call]."
 
@@ -42849,11 +43003,10 @@
       nil))
   ~ev[]
 
-  Also see distributed book ~c[books/misc/fast-coerce.lisp], contributed by
-  Jared Davis, for a version of ~c[coerce] that may be faster for Common Lisp
+  Also see community book ~c[books/misc/fast-coerce.lisp], contributed by Jared
+  Davis, for a version of ~c[coerce] that may be faster for Common Lisp
   implementations other than CCL 1.3 or later, if the second argument is
-  ~c['list] (for coercing a string to a list).
-  ~/")
+  ~c['list] (for coercing a string to a list).  ~/")
 
 (defdoc denominator
   ":Doc-Section ACL2::ACL2-built-ins
@@ -43539,9 +43692,9 @@
 ; quick-and-dirty-subsumption-replacement-step, subsumption-replacement-loop,
 ; rewrite, subsumes, and expand-abbreviations.  Here are some results for run
 ; times in Allegro CL with output inhibited.  For (verify-guards read-utf8-fast
-; ...) in books/unicode/read-utf8.lisp, total cpu time went from 353.70 to
-; 436.89 seconds when wrapped as (with-prover-time-limit 5000 (verify-guards
-; read-utf8-fast ...)).  That's about 24%.  On the other hand,
+; ...) in community book books/unicode/read-utf8.lisp, total cpu time went from
+; 353.70 to 436.89 seconds when wrapped as (with-prover-time-limit 5000
+; (verify-guards read-utf8-fast ...)).  That's about 24%.  On the other hand,
 ; (with-prover-time-limit 5000 (mini-proveall)) had total cpu times of 720,
 ; 750, and 680 while (mini-proveall) had times of 710, 660, and 600, which is
 ; (very roughly) a 9% drop.
@@ -44864,8 +45017,8 @@ Lisp definition."
                          default-value))
     nil))
 
-; Define e/d, adapted with only minor changes from Bishop Brock's book
-; books/ihs/ihs-init.lisp.
+; Define e/d, adapted with only minor changes from Bishop Brock's community
+; book books/ihs/ihs-init.lisp.
 
 (deflabel theory-functions
   :doc
@@ -45009,7 +45162,7 @@ Lisp definition."
   In some implementations (GCL Version 2.7.0 as of this writing), this function
   is highly optimized when ~c[r] and ~c[i] are natural numbers, not both zero,
   and ~c[m] is a positive integer.  For other Lisp implementations, consider
-  using function ~c[mod-expt-fast], defined in the book
+  using function ~c[mod-expt-fast], defined in the community book
   ~c[arithmetic-3/floor-mod/mod-expt-fast.lisp], which should still provide
   significantly improved performance over this function.
 
@@ -45641,13 +45794,13 @@ Lisp definition."
   (val world ctx state).
   ~ev[]
 
-  For examples, see the books distributed with ACL2 in directory
-  ~c[books/hints/], in particular ~c[basic-tests.lisp].
+  For examples, see the community books directory ~c[books/hints/], in
+  particular ~c[basic-tests.lisp].
 
   To delete a previously added custom keyword hint,
   ~pl[remove-custom-keyword-hint].
 
-  The distributed book ~c[hints/merge-hint.lisp] can be useful in writing
+  The community book ~c[hints/merge-hint.lisp] can be useful in writing
   custom keyword hints.  See the examples near the of the file.
 
   Note: This is an event!  It does not print the usual event summary but
@@ -45740,8 +45893,8 @@ Lisp definition."
   user-defined hints~/
 
   ~l[add-custom-keyword-hint] for a discussion of how advanced users can define
-  their own hint keywords.  For examples, see the books distributed with ACL2
-  in directory ~c[books/hints/], in particular ~c[basic-tests.lisp].~/~/")
+  their own hint keywords.  For examples, see the community books directory
+  ~c[books/hints/], in particular ~c[basic-tests.lisp].~/~/")
 
 ; Start implemenation of search.
 
@@ -47777,3 +47930,387 @@ Lisp definition."
   #+acl2-loop-only
   (ec-call (oracle-apply fn args state)))
 
+(defun time-tracker-fn (tag kwd kwdp times interval min-time msg)
+
+; Do not conditionalize this function on #-acl2-par, even though its only
+; intended use is on behalf of the #-acl2-par definition of time-tracker,
+; because otherwise theories computed for ACL2 and ACL2(p) may differ, for
+; example when including community books under arithmetic-5/.
+
+  (declare (xargs :guard t))
+  (cond
+   ((and (booleanp tag) kwdp)
+    (er hard? 'time-tracker
+        "It is illegal to call ~x0 with a Boolean tag and more than one ~
+         argument.  See :DOC time-tracker."
+        'time-tracker))
+   ((booleanp tag)
+    #-acl2-loop-only
+    (setf (symbol-value '*time-tracker-disabled-p*) ; setq gives compiler warning
+          (not tag))
+    nil)
+   #-acl2-loop-only
+   ((symbol-value '*time-tracker-disabled-p*)
+    nil)
+   ((not (symbolp tag))
+    (er hard? 'time-tracker
+        "Illegal first argument for ~x0 (should be a symbol): ~x1.  See :DOC ~
+         time-tracker."
+        'time-tracker))
+   ((and (not (booleanp tag))
+         (not (member-eq kwd
+                         '(:init :end :print? :stop :start))))
+    (er hard? 'time-tracker
+        "Illegal second argument for ~x0: ~x1.  See :DOC time-tracker."
+        'time-tracker
+        kwd))
+   ((or (and times
+             (not (eq kwd :init)))
+        (and interval
+             (not (eq kwd :init)))
+        (and min-time
+             (not (eq kwd :print?)))
+        (and msg
+             (not (or (eq kwd :init)
+                      (eq kwd :print?)))))
+    (er hard? 'time-tracker
+        "Illegal call of ~x0: a non-nil keyword argument of ~x1 is illegal ~
+         for a second argument of ~x2.  See :DOC time-tracker."
+        'time-tracker
+        (cond ((and times
+                    (not (eq kwd :init)))
+               :times)
+              ((and interval
+                    (not (eq kwd :init)))
+               :interval)
+              ((and min-time
+                    (not (eq kwd :print?)))
+               :min-time)
+              (t
+               :msg))
+        kwd))
+   (t #-acl2-loop-only
+      (case kwd
+        (:init   (tt-init tag times interval msg))
+        (:end    (tt-end tag))
+        (:print? (tt-print? tag min-time msg))
+        (:stop   (tt-stop tag))
+        (:start  (tt-start tag)))
+      nil)))
+
+#-acl2-par
+(defmacro time-tracker (tag &optional (kwd 'nil kwdp)
+                            &key times interval min-time msg)
+  `(time-tracker-fn ,tag ,kwd ,kwdp ,times ,interval ,min-time ,msg))
+
+#+acl2-par
+(defmacro time-tracker (&rest args)
+  (declare (ignore args))
+  nil)
+
+(defdoc time-tracker
+
+; This documentation is separated from the defmacro for time-tracker because
+; that defmacro has two definitions, one for #-acl2-par and one for
+; #+acl2-par.  We need this :doc topic present in both kinds of builds, because
+; of the :cite of it in :doc trace.
+
+  ":Doc-Section programming
+
+  display time spent during specified evaluation~/
+
+  The ~c[time-tracker] macro is a utility for displaying runtime (cpu time)
+  spent during specified evaluation.  In general, the user provides this
+  specification.  However, ACL2 itself uses this utility for tracking uses of
+  its ~il[tau-system] reasoning utility (~pl[time-tracker-tau]).  We discuss
+  that use as an example before discussing the general form for calls of
+  ~c[time-tracker].
+
+  Remark for ACL2(p) users (~pl[parallelism]): ~c[time-tracker] is merely a
+  no-op in ACL2(p).
+
+  During the development of the ~il[tau-system], we were concerned about the
+  possibility that it would slow down proofs without any indication of how one
+  might avoid the problem.  We wanted a utility that would alert the user in
+  such situations.  However, the tau-system code does not return ~il[state], so
+  we could not track time spent in the state.  We developed the
+  ~c[time-tracker] utility to track time and print messages, and we did it in a
+  general way so that others can use it in their own code.  Here is an example
+  of such a message that could be printed during a proof.
+  ~bv[]
+  TIME-TRACKER-NOTE [:TAU]: Elapsed runtime in tau is 2.58 secs; see
+  :DOC time-tracker-tau.
+  ~ev[]
+  And here is an example of such a message that could be printed at the end of
+  the proof.
+  ~bv[]
+  TIME-TRACKER-NOTE [:TAU]: For the proof above, the total time spent
+  in the tau system was 20.29 seconds.  See :DOC time-tracker-tau.
+  ~ev[]
+
+  The ~c[time-tracker] utility tracks computation time spent on behalf of a
+  user-specified ``tag''.  In the case of the tau-system, we chose the tag,
+  ~c[:tau].  The first argument of ~c[time-tracker] is the tag, which in our
+  running example is always ~c[:tau].  Note that although all arguments of
+  ~c[time-tracker] are evaluated, the first argument is typically a keyword and
+  the second is always a keyword, and such arguments evaluate to themselves.
+
+  An ACL2 function invoked at the start of a proof includes the following code.
+  ~bv[]
+  (progn$
+   (time-tracker :tau :end)
+   (time-tracker :tau :init
+                 :times '(1 2 3 4 5)
+                 :interval 5
+                 :msg \"Elapsed runtime in tau is ~~st secs; see :DOC ~~
+                       time-tracker-tau.~~|~~%\")
+   ...)
+  ~ev[]
+
+  The first ~c[time-tracker] call (above) ends any existing time-tracking for
+  tag ~c[:tau].  One might have expected it be put into code managing the proof
+  summary, but we decided not to rely on that code being executed, say, in case
+  of an interrupt.  When a given tag is not already being time-tracked, then
+  ~c[:end] is a no-op (rather than an error).
+
+  The second ~c[time-tracker] call (above) initiates time-tracking for the tag,
+  ~c[:tau].  Moreover, it specifies the effect of the ~c[:print?] keyword.
+  Consider the following abbreviated definition from the ACL2 source code.
+  ~bv[]
+  (defun tau-clausep-lst-rec (clauses ens wrld ans ttree state calist)
+    (cond
+     ((endp clauses)
+      (mv (revappend ans nil) ttree calist))
+     (t (mv-let
+         (flg1 ttree1 calist)
+         (tau-clausep (car clauses) ens wrld state calist)
+         (prog2$ (time-tracker :tau :print?)
+                 (tau-clausep-lst-rec (cdr clauses) ...))))))
+  ~ev[]
+  Notice that ~c[(time-tracker :tau :print?)] is executed immediately after
+  ~c[tau-clausep] is called.  The idea is to check whether the total time
+  elapsed inside the tau-system justifies printing a message to the user.  The
+  specification of ~c[:times '(1 2 3 4 5)] in the ~c[:init] form above says
+  that a message should be printed after 1 second, after 2 seconds, ..., and
+  after 5 seconds.  Thereafter, the specification of ~c[:interval 5] in the
+  ~c[:init] form above says that each time we print, at least 5 additional
+  seconds should have been tracked before ~c[(time-tracker :tau :print?)]
+  prints again.  Finally, the ~c[:msg] keyword above specifies just what should
+  be printed.  If it is omitted, then a reasonable default message is
+  printed (as discussed below), but in this case we wanted to print a custom
+  message.  The ~c[:msg] string above is what is printed using formatted
+  printing (~pl[fmt]), where the character ~c[#\\t] is bound to a string giving
+  a decimal representation with two decimal points of the time tracked so far
+  for tag ~c[:tau].  (As our general description below points out, ~c[:msg] can
+  also be a ``message'' list rather than a string.)
+
+  But when is time actually tracked for ~c[:tau]?  Consider the following
+  definition from the ACL2 source code.
+  ~bv[]
+  (defun tau-clausep-lst (clauses ens wrld ans ttree state calist)
+    (prog2$ (time-tracker :tau :start)
+            (mv-let
+             (clauses ttree calist)
+             (tau-clausep-lst-rec clauses ens wrld ans ttree state calist)
+             (prog2$ (time-tracker :tau :stop)
+                     (mv clauses ttree calist)))))
+  ~ev[]
+  The two calls of ~c[time-tracker] above first start, and then stop,
+  time-tracking for the tag, ~c[:tau].  Thus, time is tracked during evaluation
+  of the call of ~c[tau-clausep-lst-rec], which is the function (discussed above)
+  that does the ~il[tau-system]'s work.
+
+  Finally, as noted earlier above, ACL2 may print a time-tracking message for
+  tag ~c[:tau] at the end of a proof.  The ACL2 function ~c[print-summary]
+  contains essentially the following code.
+  ~bv[]
+  (time-tracker :tau :print?
+                :min-time 1
+                :msg \"For the proof above, the total runtime ~~
+                      spent in the tau system was ~~st seconds.  ~~
+                      See :DOC time-tracker-tau.~~|~~%\")
+  ~ev[]
+  The use of ~c[:min-time] says that we are to ignore the ~c[:times] and
+  ~c[:interval] established by the ~c[:init] call described above, and instead,
+  print a message if and only if at least 1 second (since 1 is the value of
+  keyword ~c[:min-time]) has been tracked for tag ~c[:tau].  Formatted printing
+  (~pl[fmt]) is used for the value of ~c[:msg], where the character ~c[#\\t] is
+  bound to a decimal string representation of the time in seconds, as described
+  above.
+
+  The example above covers all legal values for the second argument of
+  ~c[time-tracker] and discusses all the additional legal keyword arguments.
+  We conclude with a precise discussion of all arguments.  Note that all
+  arguments are evaluated; thus when we refer to an argument, we are discussing
+  the value of that argument.  All times discussed are runtimes, i.e., cpu
+  times.
+
+  ~bv[]
+  General forms:
+
+  (time-tracker t)        ; enable time-tracking (default)
+
+  (time-tracker nil)      ; disable time-tracking
+
+  (time-tracker tag       ; a symbol other than t or nil
+                option    ; :init, :end, :start, :stop, or :print?
+                ;; keyword arguments:
+                :times    ; non-nil if and only if option is :init
+                :interval ; may only be non-nil with :init option
+                :min-time ; may only be non-nil with :print? option
+                :msg      ; may only be non-nil with :init and :print? options
+  ~ev[]
+
+  Time-tracking is enabled by default.  If the first argument is ~c[t] or
+  ~c[nil], then no other arguments are permitted and time-tracking is enabled
+  or disabled, respectively.  When time-tracking is disabled, nothing below
+  takes place.  Thus we assume time-tracking is enabled for the remainder of
+  this discussion.  We also assume below that the first argument is neither
+  ~c[t] nor ~c[nil].
+
+  We introduce some basic notions about time-tracking.  A given tag, such as
+  ~c[:tau] in the example above, might or might not currently be ``tracked'':
+  ~c[:init] causes the specified tag to be tracked, while ~c[:end] causes the
+  specified tag not to be tracked.  If the tag is being tracked, the tag might
+  or might not be ``active'': ~c[:start] causes the tag to be in an active
+  state, whie ~c[:stop] causes the tag not to be active.  Note that only
+  tracked tags can be in an active or inactive state.  For a tag that is being
+  tracked, the ``accumulated time'' is the total time spent in an active state
+  since the time that the tag most recently started being tracked, and the
+  ``checkpoint list'' is a non-empty list of rational numbers specifying when
+  printing may take place, as described below.
+
+  We now consider each legal value for the second argument, or ``option'', for
+  a call of ~c[time-tracker] on a given tag.
+
+  ~c[:Init] specifies that the tag is to be tracked.  It also establishes
+  defaults for the operation of ~c[:print?], as described below, using the
+  ~c[:times], ~c[:interval], and ~c[:msg] keywords.  Of these three, only
+  ~c[:times] is required, and its value must be a non-empty list of rational
+  numbers specifying the initial checkpoint list for the tag.  It is an error
+  to specify ~c[:init] if the tag is already being tracked.  (So if you don't
+  care whether or not the tag is already being tracked and you want to initiate
+  tracking for that tag, use ~c[:end] first.)
+
+  ~c[:End] specifies that if the tag is being tracked, then it should nstop
+  being tracked.  If the tag is not being tracked, then ~c[:end] has no effect.
+
+  ~c[:Start] specifies that the tag is to be active.  It is an error to specify
+  ~c[:start] if the tag is not being tracked or is already active.
+
+  ~c[:Stop] specifies that the tag is to stop being active.  It is an error to
+  specify ~c[:stop] if the tag is not being tracked or is not active.
+
+  ~c[:Print?] specifies that if the tag is being tracked (not necessarily
+  active), then a message should be printed if a suitable condition is met.
+  The nature of that message and that condition depend on the keyword options
+  supplied with ~c[:print?] as well as those supplied with the ~c[:init] option
+  that most recently initiated tracking.  ~c[:Print?] has no effect if the tag
+  is not being tracked, except that if certain keyword values are checked if
+  supplied with ~c[:print?]: ~c[:min-time] must be a rational number or
+  ~c[nil], and ~c[:msg] must be either a string, a true-list whose ~c[car] is a
+  string, or ~c[nil].  The remainder of this documentation describes the
+  ~c[:print?] option in detail under the assumption that the tag is being
+  tracked: first, giving the conditions under which it causes a message to be
+  printed, and second, explaining what is printed.
+
+  When ~c[:print?] is supplied a non-~c[nil] value of ~c[:min-time], that value
+  must be a rational number, in which case a message is printed if the
+  accumulated time for the tag is at least that value.  Otherwise a message is
+  printed if the accumulated time is greater than or equal to the ~c[car] of
+  the checkpoint list for the tag.  In that case, the tracking state for the
+  tag is updated in the following two ways.  First, the checkpoint list is
+  scanned from the front and as long as the accumulated time is greater than or
+  equal to the ~c[car] of the remaining checkpoint list, that ~c[car] is popped
+  off the checkpoint list.  Second, if the checkpoint list has been completely
+  emptied and a non-~c[nil] ~c[:interval] was supplied when tracking was most
+  recently initiated with the ~c[:init] option, then the checkpoint list is set
+  to contain a single element, namely the sum of the accumulated time with that
+  value of ~c[:interval].
+
+  Finally, suppose the above criteria are met, so that ~c[:print?] results in
+  printing of a message.  We describe below the message, ~c[msg], that is
+  printed.  Here is how it is printed (~pl[fmt]), where
+  ~c[seconds-as-decimal-string] is a string denoting the number of seconds of
+  accumulated time for the tag, with two digits after the decimal point.
+  ~bv[]
+  (fms \"TIME-TRACKER-NOTE [~~x0]: ~~@1~~|\"
+       (list (cons #\0 tag)
+             (cons #\1 msg)
+             (cons #\t seconds-as-decimal-string))
+       (proofs-co state) state nil)
+  ~ev[]
+  The value of ~c[msg] is the value of the ~c[:msg] keyword supplied with
+  ~c[:print?], if non-~c[nil]; else, the value of ~c[:msg] supplied when most
+  recently initialization with the ~c[:init] option, if non-~c[nil]; and
+  otherwise, the string ~c[\"~~st s\"] (the final ``s'' abbreviating the word
+  ``seconds'').  It is convenient to supply ~c[:msg] as a call
+  ~c[(msg str arg-0 arg-1 ... arg-k)], where ~c[str] is a string and each
+  ~c[arg-i] is the value to be associated with ~c[#\\i] upon formatted
+  printing (as with ~ilc[fmt]) of the string ~c[str].~/~/")
+
+(defdoc time-tracker-tau
+
+  ":Doc-Section miscellaneous
+
+  messages about expensive use of the ~il[tau-system]~/
+
+  This ~il[documentation] topic explains messages printing by the theorem
+  prover about the ~il[tau-system], as follows.
+
+  During a proof you may see a message such as the following.
+  ~bv[]
+  TIME-TRACKER-NOTE [:TAU]: Elapsed runtime in tau is 4.95 secs; see
+  :DOC time-tracker-tau.
+  ~ev[]
+
+  Just below a proof summary you may see a message such as the following.
+
+  ~bv[]
+  TIME-TRACKER-NOTE [:TAU]: For the proof above, the total runtime spent
+  in the tau system was 30.01 seconds.  See :DOC time-tracker-tau.
+  ~ev[]
+
+  Both of these messages are intended to let you know that certain prover
+  heuristics (~pl[tau-system]) may be slowing proofs down more than they are
+  helping.  If you are satisfied with the prover's performance, you may ignore
+  these messages or even turn them off by disabling time-tracking
+  entirely (~pl[time-tracker]).  Otherwise, here are some actions that you can
+  take to solve such a performance problem.
+
+  The simplest solution is to disable the tau-system, in either of the
+  following equivalent ways.
+  ~bv[]
+  (in-theory (disable (:executable-counterpart tau-system)))
+  (in-theory (disable (tau-system)))
+  ~ev[]
+
+  But if you want to leave the tau-system enabled, you could investigate the
+  possibility is that the tau-system is causing an expensive
+  ~c[:]~ilc[logic]-mode function to be executed.  You can diagnose that problem
+  by observing the rewriter ~-[] ~pl[dmr] ~-[] or by interrupting the system
+  and getting a backtrace (~pl[set-debugger-enable]).  A solution in that case
+  is to disable the executable-counterpart of that function, for example in
+  either of these equivalent ways.
+  ~bv[]
+  (in-theory (disable (:executable-counterpart foo)))
+  (in-theory (disable (foo)))
+  ~ev[]
+  As a result, the tau-system will be weakened, but perhaps only negligibly.
+
+  In either case above, you may prefer to provide ~c[:]~ilc[in-theory] hints
+  rather than ~c[:in-theory] ~il[events]; ~pl[hints].
+
+  A more sophisticated solution is to record values of the
+  ~c[:]~ilc[logic]-mode function in question, so that the tau-system will look
+  up the necessary values rather than calling the function, whether or not the
+  executable-counterpart of that function is enabled.  Here is an example of a
+  lemma that can provide such a solution.  ~l[tau-system].
+  ~bv[]
+  (defthm lemma
+    (and (foo 0)
+         (foo 17)
+         (foo t)
+         (foo '(a b c)))
+    :rule-classes :tau-system)
+  ~ev[]~/~/")
