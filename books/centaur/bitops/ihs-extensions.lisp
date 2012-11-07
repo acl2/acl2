@@ -36,6 +36,7 @@
 
 ; (local (in-theory (disable expt-between-one-and-two)))
 
+
 (local (in-theory (enable* arith-equiv-forwarding)))
 
 
@@ -795,3 +796,39 @@
     mod-positive-bound
     expt-2-monotonic
     |(logbitp n (+ (expt 2 n) a))|))
+
+
+(encapsulate 
+ ()
+ (local (include-book "arithmetic/top-with-meta" :dir :system))            
+
+ (defthm lognot-lognot
+   (equal (lognot (lognot x))
+          (ifix x))
+   :hints (("Goal" :in-theory (enable lognot)))
+   )
+
+ (defthm loghead-of-negative
+   (implies
+    (unsigned-byte-p n x)
+    (equal (loghead n (- (loghead n (- x))))
+           x))
+   :hints (("Goal" 
+            :induct t
+            :in-theory (e/d* (minus-to-lognot
+                              ihsext-recursive-redefs
+                              ihsext-inductions))
+            :expand ((:free (x) (loghead n x))))))
+
+ 
+ (defthm loghead-of-negative-rw
+   (implies
+    (and
+     (unsigned-byte-p n (- x))
+     (integerp x))
+    (equal (loghead n (- (loghead n x)))
+           (- x)))
+  :hints (("Goal"
+           :use ((:instance loghead-of-negative (x (- x))))
+           :in-theory (disable loghead-of-negative unsigned-byte-p))))
+)
