@@ -110,7 +110,7 @@
        ()
        (set-verify-guards-eagerness 2)
        (set-inhibit-warnings "non-rec" "subsume")
-
+       (set-tau-auto-mode nil)
        ;; The user needs to be able to prove these in his current theory.
 
        (defthmd ,booleanp-of-elem-p
