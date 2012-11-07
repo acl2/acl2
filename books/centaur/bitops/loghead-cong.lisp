@@ -17,59 +17,22 @@
 ; License along with this program; if not, write to the Free Software
 ; Foundation, Inc., 51 Franklin Street, Suite 500, Boston, MA 02110-1335, USA.
 
-; "nary" congruences for loghead
+; contextual rewriting for loghead
 
 (in-package "ACL2")
 (include-book "tools/rulesets" :dir :system)
-(include-book "coi/nary/nary" :dir :system)
+(include-book "centaur/misc/context-rw" :dir :system)
 (include-book "ihs/basic-definitions" :dir :system)
 (local (include-book "ihs-extensions"))
 (local (include-book "arithmetic/top-with-meta" :dir :system))
 
-;; allow LOGHEAD to be used as an Nary defcong+ context
-(acl2::defcontext (loghead n x) 2)
-
-;; This is the same as nary's defcong+, except that it doesn't wrap a
-;; skip-rewrite around the conclusion.  Subjectively I think this seems to work
-;; better, but perhaps there are pitfalls.
-(defmacro defcong+-
-  (name term &key (hyps 'nil) (cong 'nil) (check 'nil) (hints 'nil) (equiv 'equal))
-  (declare (type (satisfies wf-cong-list) cong))
-
-  `(defthm ,name
-     (implies
-      (and
-
-       ;; This is supposed to help stop us from calling ourselves
-       ;; recursively on the rewritten RHS of this theorem.  When it works, it
-       ;; reduces the cost of this rule from quardratic to linear.
-       ;; Unfortunately, it only works when :Brr is enabled.  Help!
-
-       ;; (bind-free (non-recursive ',name mfc state) (ok))
-
-       ;; Check the hyps
-
-       ,@(if hyps `(,hyps) nil)
-
-       ;; Simplify selected arguments in their new context
-
-       ,@(generate-cong-hyps nil cong)
-
-       ;; See if anything has changed ..
-
-       ,(generate-cong-syntax-hyps cong)
-
-       ;; Check the types of our results
-
-       ,@(if check `(,check) nil))
-      (,equiv ,term
-              ,(replace-cong-terms cong term)))
-     ,@(if hints `(:hints ,hints) nil)
-     ;;`(:hints (("Goal" :in-theory (enable ,@(cong-equivs cong)))))))
-     ))
-
-
-
+(defmacro def-context-rule (name body &rest args)
+  (let* ((fnname-look (ec-call (assoc-keyword :fnname args)))
+         (fnname (cadr fnname-look))
+         (rest-args (append (take (- (len args) (len fnname-look)) args)
+                            (cddr fnname-look))))
+    `(progn (defthmd ,name ,body . ,rest-args)
+            (add-context-rule ,fnname (:rewrite ,name)))))
 
 (local
  (encapsulate
@@ -129,81 +92,56 @@
                   (loghead n (+ a b))))
   :hints (("goal" :use ((:instance loghead-of-sum-lemma (c 0))))))
 
-(defcong+-
-  loghead-of-plus-cong
-  (loghead n (+ a b))
-  :hyps (and (integerp a)
-             (integerp b))
-  :cong ((a (equal x (loghead n a)))
-         (b (equal y (loghead n b))))
-  :check (and (integerp x) (integerp y))
-  :hints(("Goal" :use ((:instance LOGHEAD-OF-PLUS-LOGHEAD-FIRST
-                        (m n) (n n) (a a) (b b))
-                       (:instance LOGHEAD-OF-PLUS-LOGHEAD-FIRST
-                        (m n) (n n) (a a) (b y))
-                       (:instance LOGHEAD-OF-PLUS-LOGHEAD-FIRST
-                        (m n) (n n) (a y) (b x))
-                       (:instance LOGHEAD-OF-PLUS-LOGHEAD-FIRST
-                        (m n) (n n) (a y) (b a))))))
+(def-context-rule loghead-of-minus-context
+  (implies (integerp b)
+           (equal (loghead n (- (loghead n b)))
+                  (loghead n (- b))))
+  :hints(("Goal" :in-theory (enable loghead-of-minus-of-loghead)))
+  :fnname loghead)
 
+(def-context-rule loghead-of-plus-context-1
+  (implies (and (integerp a) (integerp b))
+           (equal (loghead n (+ (loghead n a) b))
+                  (loghead n (+ a b))))
+  :hints(("Goal" :in-theory (enable loghead-of-plus-loghead-second)))
+  :fnname loghead)
 
-(defcong+-
-  loghead-of-logtail-cong
-  (loghead n (logtail m a))
-  :hyps (equal nn (+ (nfix n) (nfix m)))
-  :cong ((a (equal x (loghead nn a))))
-  :hints (("goal" :use ((:instance logtail-of-loghead
-                         (n m) (m (+ (nfix m) (nfix n)))
-                         (x a))
-                        (:instance logtail-of-loghead
-                         (n m) (m (+ (nfix m) (nfix n)))
-                         (x x)))
-           :in-theory (disable logtail-of-loghead))))
+(def-context-rule loghead-of-plus-context-2
+  (implies (and (integerp a) (integerp b))
+           (equal (loghead n (+ a (loghead n b)))
+                  (loghead n (+ a b))))
+  :hints(("Goal" :in-theory (enable loghead-of-plus-loghead-second)))
+  :fnname loghead)
 
+(def-context-rule loghead-of-logtail-context
+  (equal (loghead n (logtail m (loghead (+ (nfix n) (nfix m)) a)))
+         (loghead n (logtail m a)))
+  :fnname loghead)
 
-(defcong+-
-  loghead-of-ash-cong
-  (loghead n (ash a m))
-  :hyps (equal nn (- (nfix n) (ifix m)))
-  :cong ((a (equal x (loghead nn a))))
-  :hints(("Goal" :in-theory (enable loghead-of-ash nfix ifix ash-0
-                                    loghead**))))
+(def-context-rule loghead-of-ash-context
+  (equal (loghead n (ash (loghead (- (nfix n) (ifix m)) a) m))
+         (loghead n (ash a m)))
+  :hints(("Goal" :in-theory (enable loghead-of-ash nfix ifix)))
+  :fnname loghead)
 
-(defcong+-
-  loghead-of-minus-cong
-  (loghead n (- a))
-  :hyps (integerp a)
-  :cong ((a (equal x (loghead n a))))
-  :check (integerp x)
-  :hints(("Goal" :use ((:instance loghead-of-minus-of-loghead
-                        (m n) (n n) (b x))
-                       (:instance loghead-of-minus-of-loghead
-                        (m n) (n n) (b a))))))
+(def-context-rule loghead-of-logior-context-1
+  (equal (loghead n (logior (loghead n a) b))
+         (loghead n (logior a b)))
+  :fnname loghead)
 
-(defcong+-
-  loghead-of-logior-cong
-  (loghead n (logior a b))
-  :cong ((a (equal x (loghead n a)))
-         (b (equal y (loghead n b)))))
+(def-context-rule loghead-of-logior-context-2
+  (equal (loghead n (logior a (loghead n b)))
+         (loghead n (logior a b)))
+  :fnname loghead)
 
-(defcong+-
-  logbitp-to-loghead-cong
-  (logbitp n x)
-  :hyps (equal nn (+ 1 (nfix n)))
-  :cong ((x (equal a (loghead nn x))))
-  :hints (("goal" :use ((:instance logbitp-of-loghead-split
-                         (i x) (pos n) (size (+ 1 (nfix n))))
-                        (:instance logbitp-of-loghead-split
-                         (i a) (pos n) (size (+ 1 (nfix n)))))
-           :in-theory (disable logbitp-of-loghead-split
-                               logbitp-of-loghead-in-bounds
-                               (force)))))
+(def-context-rule logbitp-to-loghead-context
+  (equal (logbitp n (loghead (+ 1 (nfix n)) x))
+         (logbitp n x))
+  :hints(("Goal" :in-theory (enable logbitp-of-loghead-split)))
+  :fnname logbitp)
 
 (def-ruleset! loghead-cong-rules
-  '(loghead-of-logior-cong
-    loghead-of-minus-cong
-    loghead-of-ash-cong
-    logbitp-to-loghead-cong
-    loghead-of-plus-cong))
+  '(apply-context-for-loghead
+    common-lisp::apply-context-for-logbitp))
 
 (in-theory (disable* loghead-cong-rules))

@@ -440,6 +440,19 @@ when it becomes available.
 
 
 
+(mutual-recursion
+ (defun subtermp (sub x)
+   (declare (xargs :guard (pseudo-termp x)))
+   (cond ((equal x sub) t)
+         ((or (variablep x) (fquotep x)) nil)
+         (t (subtermp-in-list sub (cdr x)))))
+ (defun subtermp-in-list (sub x)
+   (declare (xargs :guard (pseudo-term-listp x)))
+   (if (endp x)
+       nil
+     (or (subtermp sub (car x))
+         (subtermp-in-list sub (cdr x))))))
+
 ;; This is the core of the contextual rewriting system.
 
 ;; returns (mv success new-term)
@@ -490,6 +503,13 @@ when it becomes available.
        ((when no-change)
         ;; the rewriter didn't simplify anything
         (mv nil term))
+       ;; Additionally, we want to make sure that the added context actually
+       ;; causes some simplification of the subterm that we applied it to.
+       ;; In particular, we'll require that the subterm bound to the variable
+       ;; doesn't appear (identically) inside the ctx-rw result.
+       ((when (subtermp (cdr (assoc var term-subst)) ctx-rw))
+        (mv nil term))
+
        ;; at this point we have:
        ;; term = (bar w (baz z))
        ;; lhs = (bar y (foo y x))
