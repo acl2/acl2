@@ -38,7 +38,11 @@ ${ACL2} < doc/workxxx.tex
 
 cd doc/TEX
 
-cp ../texinfo.tex .
+# Note: At UT CS we typically use an old version of texinfo.tex stored at
+# /projects/acl2/devel-misc/doc/texinfo.tex
+# in order to build the documentation.  But anyone can build it using the
+# default texinfo.tex.
+
 texi2dvi acl2-book.tex
 
 # We do it again because otherwise some index entries are wrong.

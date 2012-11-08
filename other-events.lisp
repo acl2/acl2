@@ -22555,7 +22555,7 @@
   with a default value for each valid keyword as indicated below.  With that
   interpretation, the ``exported function'' of a function spec is its ~c[car],
   and that function symbol and each keyword value must be a guard-verified
-  function symbols; and moreover, the ~c[:EXEC] function must not include the
+  function symbol; and moreover, the ~c[:EXEC] function must not include the
   new abstract stobj name, ~c[st], among its formals.
 
   We are ready to describe the arguments of ~c[defabsstobj].

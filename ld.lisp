@@ -19568,8 +19568,8 @@
 
   The ~ilc[defthm] ~il[events] printed by ~ilc[defabsstobj], namely those that
   remain to be proved, are now given with ~c[:rule-classes nil] since there is
-  probably no intention to use them as rules.  Thanks to Shilpi Goel for
-  suggesting this change.
+  probably no intention to use them as rules.  Thanks to Robert Krug for
+  suggesting that we consider this change.
 
   ~st[NEW FEATURES]
 
