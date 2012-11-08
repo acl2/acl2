@@ -42,6 +42,9 @@ cd doc/TEX
 # /projects/acl2/devel-misc/doc/texinfo.tex
 # in order to build the documentation.  But anyone can build it using the
 # default texinfo.tex.
+if [ -e ../texinfo.tex ] ; then \
+    cp ../texinfo.tex . ;\
+fi
 
 texi2dvi acl2-book.tex
 
