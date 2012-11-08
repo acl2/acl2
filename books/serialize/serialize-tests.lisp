@@ -1,5 +1,5 @@
 ; Serializing ACL2 Objects
-; Copyright (C) 2009-2010 Centaur Technology
+; Copyright (C) 2009-2012 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -19,7 +19,6 @@
 ; Original author: Jared Davis <jared@centtech.com>
 
 (in-package "ACL2")
-(include-book "serialize" :ttags :all)
 (include-book "unsound-read" :ttags :all)
 (include-book "tools/bstar" :dir :system)
 (set-compile-fns t)
@@ -31,35 +30,20 @@
          ((when hons-disabledp)
           (value `(value-triple :does-not-work-without-hons)))
 
-         (- (cw ">>> Writing V1 file with serialize::write~%"))
-         (state (serialize::write "test.sao" ,x :verbosep t ,@write-args))
-
-         (- (cw ">>> Reading with serialize::read~%"))
-         ((mv obj1 state) (serialize::read "test.sao" :verbosep t))
-         (- (or (equal ,x obj1) (cw "serialize::read returned bad result: ~x0~%" obj1)))
-
-         (- (cw ">>> Reading with serialize::unsound-read~%"))
-         (obj2 (serialize::unsound-read "test.sao" :verbosep t))
-         (- (or (equal ,x obj2) (cw "serialize::unsound-read returned bad result: ~x0~%" obj2)))
-
-         (- (cw ">>> Reading with acl2::serialize-read~%"))
-         ((mv obj3 state) (serialize-read "test.sao" :verbosep t))
-         (- (or (equal ,x obj2) (cw "acl2::serialize-read returned bad result: ~x0~%" obj3)))
-
-         (- (cw ">>> Writing V2 file with acl2::serialize-write~%"))
+         (- (cw ">>> Writing file with serialize-write~%"))
          (state (serialize-write "test.sao" ,x :verbosep t))
 
-         (- (cw ">>> Reading with acl2::serialize-read~%"))
-         ((mv obj4 state) (serialize-read "test.sao" :verbosep t))
-         (- (or (equal ,x obj4) (cw "acl2::serialize-read returned bad result: ~x0~%" obj4)))
+         (- (cw ">>> Reading with serialize-read~%"))
+         ((mv obj1 state) (serialize-read "test.sao" :verbosep t))
+         (- (or (equal ,x obj1) (cw "serialize-read returned bad result: ~x0~%" obj1)))
+
+         (- (cw ">>> Reading with unsound-read~%"))
+         (obj2 (unsound-read "test.sao" :verbosep t))
+         (- (or (equal ,x obj2) (cw "unsound-read returned bad result: ~x0~%" obj2)))
 
          ((unless (and (equal ,x obj1)
-                       (equal ,x obj2)
-                       (equal ,x obj3)
-                       (equal ,x obj4)
-                       ))
-          (er soft 'test-serialize
-              "Test failed for ~x0.~%" ,x)))
+                       (equal ,x obj2)))
+          (er soft 'test-serialize "Test failed for ~x0.~%" ,x)))
 
       (value `(value-triple :test-passed)))))
 
@@ -167,7 +151,7 @@
                                (make-strs "bar" 100 nil)
                                (make-strs "baz" 100 nil)))
          (syms         (append (map-intern 'acl2::foo strs)
-                               (map-intern 'serialize::foo strs)
+                               (map-intern 'acl2-output-channel::foo strs)
                                (map-intern 'common-lisp::foo strs)))
          (stuff
           (list nats negatives chars rats complexes strs syms))
@@ -187,22 +171,22 @@
       ()
       ;; Write NIL to test.sao
       (make-event
-       (let ((state (serialize::write "test.sao" nil)))
+       (let ((state (serialize-write "test.sao" nil)))
          (value '(value-triple :invisible))))
 
       ;; Prove that test.sao contains NIL.
       (defthm lemma-1
-        (equal (serialize::unsound-read "test.sao") nil)
+        (equal (unsound-read "test.sao") nil)
         :rule-classes nil)
 
       ;; Write T to test.sao
       (make-event
-       (let ((state (serialize::write "test.sao" t)))
+       (let ((state (serialize-write "test.sao" t)))
          (value '(value-triple :invisible))))
 
       ;; Prove that test.sao contains T.
       (defthm lemma-2
-        (equal (serialize::unsound-read "test.sao") t)
+        (equal (unsound-read "test.sao") t)
         :rule-classes nil)
 
       ;; Arrive at our contradiction.
@@ -212,7 +196,7 @@
         :hints(("Goal"
                 :use ((:instance lemma-1)
                       (:instance lemma-2))
-                :in-theory (disable (serialize::unsound-read-fn)))))))))
+                :in-theory (disable (unsound-read-fn)))))))))
 
 
 (make-event

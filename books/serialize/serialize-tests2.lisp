@@ -1,5 +1,5 @@
 ; Serializing ACL2 Objects
-; Copyright (C) 2009-2010 Centaur Technology
+; Copyright (C) 2009-2012 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group

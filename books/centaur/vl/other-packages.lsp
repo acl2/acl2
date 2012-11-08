@@ -24,7 +24,6 @@
 ;(ld "../aig/aigpu/package.lsp")
 (ld "data-structures/define-u-package.lsp" :dir :system)
 (ld "tools/flag-package.lsp" :dir :system)
-(ld "serialize/package.lsp" :dir :system)
 (ld "str/package.lsp" :dir :system)
 (ld "xdoc/package.lsp" :dir :system)
 (ld "cowles/packages.lsp" :dir :system)

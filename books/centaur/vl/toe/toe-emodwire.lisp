@@ -167,9 +167,9 @@ there are no brackets in the basename of a @(see vl-emodwire-p).  We originally
 used the following, trivial encoding scheme:</p>
 
 <ul>
-<li>[ ---> {1</li>
-<li>] ---> {2</li>
-<li>{ ---> {3</li>
+<li>@('[ ---> {1')</li>
+<li>@('] ---> {2')</li>
+<li>@('{ ---> {3')</li>
 </ul>
 
 <p>But later we decided to slightly extend this scheme, to ensure that the

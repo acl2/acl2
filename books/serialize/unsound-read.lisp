@@ -1,5 +1,5 @@
 ; Serializing ACL2 Objects
-; Copyright (C) 2009-2010 Centaur Technology
+; Copyright (C) 2009-2012 Centaur Technology
 ;
 ; Contact:
 ;   Centaur Technology Formal Verification Group
@@ -18,45 +18,39 @@
 ;
 ; Original author: Jared Davis <jared@centtech.com>
 
-(in-package "SERIALIZE")
-(include-book "tools/include-raw" :dir :system)
+(in-package "ACL2")
 
 (defdoc unsound-read
   ":Doc-Section Serialize
 
-Unsound alternative to ~ilc[ACL2::serialize-read]~/
+Unsound alternative to ~ilc[serialize-read]~/
 
-For better performance, it may be useful to avoid the use of ~ilc[make-event]
-when reading files, because ~c[make-event] incurs certain kinds of overhead;
-see ~ilc[serialize-in-books] for details.
+The ~c[unsound-read] command is like ~ilc[serialize-read] except that it does
+not take ~ilc[state].  This means it works even in ordinary ~il[defconst]
+events, which avoids the performance penalty of using ~ilc[make-event] to read
+files; see ~ilc[serialize-in-books].
 
-As its name suggests, ~c[unsound-read] is known to be unsound and you may
-easily use it to prove ~c[nil].  See below for details.  Because of this, it is
-not included in ACL2 by default and is instead only available by additionally
-including the ~c[serialize/unsound-read] book, e.g.,
+As its name suggests, ~c[unsound-read] is not sound and it can easily be used
+to prove ~c[nil]; see below.  Because of this, we don't build it into ACL2; to
+use it you must first include the ~c[serialize/unsound-read] book, e.g.,
 
 ~bv[]
   (include-book \"serialize/unsound-read\" :dir :system :ttags (:unsound-read))
 ~ev[]
 
-and accepting the ~c[:unsound-read] trust tag.
-
-The ~c[unsound-read] command is essentially like ~ilc[ACL2::serialize-read], except
-that it does not take ~c[state].
+and accept the ~c[:unsound-read] trust tag.
 
 General form:
 ~bv[]
-  (SERIALIZE::unsound-read filename
-                           [:hons-mode {:always, :never, :smart}]
-                           [:verbose   {t, nil}])
+  (unsound-read filename
+                [:hons-mode {:always, :never, :smart}]
+                [:verbose   {t, nil}])
     -->
   obj
-~ev[] ~/
+~ev[]
 
-Because it does not take state, ~c[unsound-read] may be used in ordinary
-~il[defconst] commands, whereas ordinary ~c[serialize-read] may only be used in
-~il[make-event]s or other contexts where the ~c[state] is available.
-
+The arguments are as in ~ilc[serialize-read].
+~/
 
 EXPLANATION OF UNSOUNDNESS.
 
@@ -64,13 +58,12 @@ The logical problem with ~c[unsound-read] is that, since it is a function, it
 is expected to satisfy the functional equality axiom schema, namely,
 
 ~bv[]
-  (equal (SERIALIZE::unsound-read-fn filename hons-mode verbosep)
-         (SERIALIZE::unsound-read-fn filename hons-mode verbosep))
+  (equal (unsound-read-fn filename hons-mode verbosep)
+         (unsound-read-fn filename hons-mode verbosep))
 ~ev[]
 
 But we can violate this property by modifying the file system between calls of
-~c[unsound-read], and the dependence of ~c[unsound-read] upon the state is
-nowhere evident.  For instance, here is a proof of nil that is carried out in
+~c[unsound-read].  For instance, here is a proof of nil that is carried out in
 ~c[serialize/serialize-tests.lisp] by exploiting this fact.
 
 ~bv[]
@@ -79,22 +72,22 @@ nowhere evident.  For instance, here is a proof of nil that is carried out in
     ()
     ;; Write NIL to test.sao
     (make-event
-     (let ((state (serialize::write \"test.sao\" nil)))
+     (let ((state (serialize-write \"test.sao\" nil)))
        (value '(value-triple :invisible))))
 
     ;; Prove that test.sao contains NIL.
     (defthm lemma-1
-      (equal (serialize::unsound-read \"test.sao\") nil)
+      (equal (unsound-read \"test.sao\") nil)
       :rule-classes nil)
 
     ;; Write T to test.sao
     (make-event
-     (let ((state (serialize::write \"test.sao\" t)))
+     (let ((state (serialize-write \"test.sao\" t)))
        (value '(value-triple :invisible))))
 
     ;; Prove that test.sao contains T.
     (defthm lemma-2
-      (equal (serialize::unsound-read \"test.sao\") t)
+      (equal (unsound-read \"test.sao\") t)
       :rule-classes nil)
 
     ;; Arrive at our contradiction.
@@ -104,12 +97,11 @@ nowhere evident.  For instance, here is a proof of nil that is carried out in
       :hints((\"Goal\"
               :use ((:instance lemma-1)
                     (:instance lemma-2))
-              :in-theory (disable (serialize::unsound-read-fn)))))))
+              :in-theory (disable (unsound-read-fn)))))))
 ~ev[]
 
-In short, anyone who wishes to use ~c[unsound-read] does so at their peril, and
-must be able to justify to themselves that nobody has changed the files out
-from under them.")
+In short, if you want to use ~c[unsound-read] soundly, then you need to make
+sure the files you are reading aren't changing out from under you.")
 
 (defttag :unsound-read)
 
@@ -132,5 +124,10 @@ from under them.")
                                  verbosep)
   `(unsound-read-fn ,filename ,hons-mode ,verbosep))
 
-; (depends-on "unsound-read-raw.lsp")
-(acl2::include-raw "unsound-read-raw.lsp")
+(progn!
+ (set-raw-mode t)
+ (defun unsound-read-fn (filename hons-mode verbosep)
+   (let ((*ser-verbose* verbosep))
+     (with-open-file (stream filename :direction :input)
+       (ser-decode-from-stream t hons-mode stream)))))
+
