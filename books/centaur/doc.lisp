@@ -95,7 +95,7 @@
 ;; This really doesn't belong here, but I want it out of cutil/top to improve
 ;; the critical path.  This just tricks the dependency scanner into building these
 ;; books.
-(include-book "bitops/loghead-cong")
+(include-book "bitops/congruences")
 (include-book "defrstobj/basic-tests")
 (include-book "cutil/deflist-tests" :dir :system)
 (include-book "cutil/defalist-tests" :dir :system)
