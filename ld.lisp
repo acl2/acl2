@@ -19490,6 +19490,10 @@
 ; We eliminated the nonlinearp condition in add-polys1.  For details, see the
 ; comment there about this change.
 
+; The file doc/texinfo.tex has been removed, the result being that if one
+; builds one's own Postscript version of the documentation, then the look will
+; quite possibly be somewhat different than it was previously.
+
   :doc
   ":Doc-Section release-notes
 
@@ -19655,6 +19659,9 @@
   Some possible error messages for ~ilc[defabsstobj] have been fixed that had
   been ill-formed.  Thanks to Sol Swords for bringing this bug to our
   attention.
+
+  Fixed a bug that sometimes caused the times displayed in the summary for
+  ~ilc[certify-book] to be smaller than the actual times.
 
   ~st[CHANGES AT THE SYSTEM LEVEL]
 
