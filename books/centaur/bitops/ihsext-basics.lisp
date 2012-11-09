@@ -670,8 +670,8 @@
                            (size (nfix size))
                            (i (ifix i))))))
     :rule-classes ((:definition
-                    :clique (loghead)
-                    :controller-alist ((loghead t nil)))))
+                    :clique (loghead$inline)
+                    :controller-alist ((loghead$inline t nil)))))
 
   (add-to-ruleset ihsext-recursive-redefs '(loghead**))
   (add-to-ruleset ihsext-redefs '(loghead**))
@@ -833,8 +833,8 @@
                            (pos (nfix pos))
                            (i (ifix i))))))
     :rule-classes ((:definition
-                    :clique (logtail)
-                    :controller-alist ((logtail t nil)))))
+                    :clique (logtail$inline)
+                    :controller-alist ((logtail$inline t nil)))))
 
   (add-to-ruleset ihsext-recursive-redefs '(logtail**))
   (add-to-ruleset ihsext-redefs '(logtail**))
@@ -2315,7 +2315,24 @@
                       (natp n)))
       :hints(("Goal"
               :in-theory (disable unsigned-byte-p)
-              :cases ((natp n)))))))
+              :cases ((natp n))))))
+
+  (encapsulate
+    ()
+    (local (defun my-induct (n x y)
+             (if (zp n)
+                 (list n x y)
+               (my-induct (- n 1) (logcdr x) (logcdr y)))))
+
+    (defthm unsigned-byte-p-of-logxor
+      (implies (and (unsigned-byte-p n x)
+                    (unsigned-byte-p n y))
+               (unsigned-byte-p n (logxor x y)))
+      :hints(("Goal"
+              :induct (my-induct n x y)
+              :in-theory (enable acl2::logxor**
+                                 acl2::unsigned-byte-p**))))))
+
 
 
 

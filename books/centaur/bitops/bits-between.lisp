@@ -317,7 +317,7 @@ bitset-members).</p>"
            default-car default-cdr
            normalize-logbitp-when-mods-equal
            (:type-prescription logcar-type)
-           (:type-prescription logcar)
+           (:type-prescription logcar$inline)
            (:type-prescription logbitp)
            (:type-prescription binary-append))))
 

@@ -1791,8 +1791,8 @@ and appear above.~/")
 	    (logcons (logcar i) (loghead (1- size) (logcdr i))))))
   :rule-classes
   ((:definition
-    :clique (loghead)
-    :controller-alist ((loghead t t))))
+    :clique (loghead$inline)
+    :controller-alist ((loghead$inline t t))))
   :hints
   (("Goal"
     :expand (expt 2 size)
@@ -1811,8 +1811,8 @@ and appear above.~/")
 	   (t (logtail (1- pos) (logcdr i))))))
   :rule-classes
   ((:definition
-    :clique (logtail)
-    :controller-alist ((logtail t t))))
+    :clique (logtail$inline)
+    :controller-alist ((logtail$inline t t))))
   :hints (("Goal" :in-theory (union-theories (disable exponents-add)
 					     '(ifix expt logtail logcdr))))
   :doc ":doc-section logops-recursive-definitions-theory

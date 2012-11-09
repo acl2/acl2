@@ -142,7 +142,7 @@
 (def-context-rule logtail-induces-logsquash-context
   (equal (logtail n (logsquash n i))
          (logtail n i))
-  :fnname logtail)
+  :fnname logtail$inline)
 
 ;; It also passes a (modified) loghead context.
 ;; We already have logtail-of-loghead to remove this context.
@@ -150,7 +150,7 @@
   (equal (loghead n (logtail m (loghead (+ (nfix n) (nfix m)) i)))
          (loghead n (logtail m i)))
   :hints(("Goal" :in-theory (disable logsquash)))
-  :fnname loghead)
+  :fnname loghead$inline)
 
 
 ;; Logic ops are transparent to both types of context.
@@ -169,12 +169,12 @@
 (def-context-rule logior-pass-loghead-context-1
   (equal (loghead n (logior (loghead n a) b))
          (loghead n (logior a b)))
-  :fnname loghead)
+  :fnname loghead$inline)
 
 (def-context-rule logior-pass-loghead-context-2
   (equal (loghead n (logior a (loghead n b)))
          (loghead n (logior a b)))
-  :fnname loghead)
+  :fnname loghead$inline)
 
 (defthm logior-remove-logsquash-1
   (implies (<= (nfix m) (nfix n))
@@ -210,12 +210,12 @@
 (def-context-rule logand-pass-loghead-context-1
   (equal (loghead n (logand (loghead n a) b))
          (loghead n (logand a b)))
-  :fnname loghead)
+  :fnname loghead$inline)
 
 (def-context-rule logand-pass-loghead-context-2
   (equal (loghead n (logand a (loghead n b)))
          (loghead n (logand a b)))
-  :fnname loghead)
+  :fnname loghead$inline)
 
 (defthm logand-remove-logsquash-1
   (implies (<= (nfix m) (nfix n))
@@ -251,12 +251,12 @@
 (def-context-rule logxor-pass-loghead-context-1
   (equal (loghead n (logxor (loghead n a) b))
          (loghead n (logxor a b)))
-  :fnname loghead)
+  :fnname loghead$inline)
 
 (def-context-rule logxor-pass-loghead-context-2
   (equal (loghead n (logxor a (loghead n b)))
          (loghead n (logxor a b)))
-  :fnname loghead)
+  :fnname loghead$inline)
 
 (defthm logxor-remove-logsquash-1
   (implies (<= (nfix m) (nfix n))
@@ -287,7 +287,7 @@
 (def-context-rule lognot-pass-loghead-context
   (equal (loghead n (lognot (loghead n a)))
          (loghead n (lognot a)))
-  :fnname loghead)
+  :fnname loghead$inline)
 
 (defthm lognot-remove-logsquash
   (implies (<= (nfix m) (nfix n))
@@ -320,7 +320,7 @@
                                   ifix nfix loghead-of-loghead-split
                                   loghead**)
                                  (loghead-identity))))
-  :fnname loghead)
+  :fnname loghead$inline)
 
 (defthmd ash-of-logsquash
   (equal (ash (logsquash m i) n)
@@ -410,29 +410,29 @@
            (equal (loghead n (- (loghead n b)))
                   (loghead n (- b))))
   :hints(("Goal" :in-theory (enable loghead-of-minus-of-loghead)))
-  :fnname loghead)
+  :fnname loghead$inline)
 
 (def-context-rule loghead-of-plus-context-1
   (implies (and (integerp a) (integerp b))
            (equal (loghead n (+ (loghead n a) b))
                   (loghead n (+ a b))))
   :hints(("Goal" :in-theory (enable loghead-of-plus-loghead-second)))
-  :fnname loghead)
+  :fnname loghead$inline)
 
 (def-context-rule loghead-of-plus-context-2
   (implies (and (integerp a) (integerp b))
            (equal (loghead n (+ a (loghead n b)))
                   (loghead n (+ a b))))
   :hints(("Goal" :in-theory (enable loghead-of-plus-loghead-second)))
-  :fnname loghead)
+  :fnname loghead$inline)
 
 
 (def-ruleset! bitops-congruences
-  '(apply-context-for-loghead
+  '(apply-context-for-loghead$inline
     apply-context-for-logsquash
     common-lisp::apply-context-for-logbitp
     common-lisp::apply-context-for-ash
-    apply-context-for-logtail
+    apply-context-for-logtail$inline
     loghead-of-logsquash-commute
     logsquash-of-loghead-zero
     logsquash-idempotent
@@ -483,8 +483,8 @@
     loghead-of-logxor
     loghead-of-logand))
 
-(in-theory (disable* apply-context-for-loghead
+(in-theory (disable* apply-context-for-loghead$inline
                      apply-context-for-logsquash
                      common-lisp::apply-context-for-logbitp
                      common-lisp::apply-context-for-ash
-                     apply-context-for-logtail))
+                     apply-context-for-logtail$inline))

@@ -1015,12 +1015,32 @@ function.
     binary-LOGXOR binary-LOGAND binary-LOGEQV LOGNAND LOGNOR LOGANDC1
     LOGANDC2 LOGORC1 LOGORC2 LOGNOT LOGTEST LOGBITP ASH
     LOGCOUNT INTEGER-LENGTH
-    BITP SIGNED-BYTE-P UNSIGNED-BYTE-P
-    LOGCAR LOGCDR LOGCONS LOGBIT LOGMASK LOGMASKP LOGHEAD LOGTAIL
+    BITP$inline
+    SIGNED-BYTE-P
+    UNSIGNED-BYTE-P
+    LOGCAR$inline
+    LOGCDR$inline
+    LOGCONS$inline
+    LOGBIT$inline
+    LOGMASK$inline
+    LOGMASKP
+    LOGHEAD$inline
+    LOGTAIL$inline
     LOGAPP LOGRPL LOGEXT LOGREV1 LOGREV LOGSAT
     LOGNOTU LOGEXTU ASHU LSHU
     BSPP BSP-SIZE BSP-POSITION RDB WRB RDB-TEST RDB-FIELD WRB-FIELD
-    B-NOT B-AND B-IOR B-XOR B-EQV B-NAND B-NOR B-ANDC1 B-ANDC2 B-ORC1 B-ORC2)
+    B-NOT$inline
+    B-AND$inline
+    B-IOR$inline
+    B-XOR$inline
+    B-EQV$inline
+    B-NAND$inline
+    B-NOR$inline
+    B-ANDC1$inline
+    B-ANDC2$inline
+    B-ORC1$inline
+    B-ORC2$inline
+    )
   ":doc-section logops-definitions
   A list of all functions considered to be part of the theory of logical
   operations on numbers.

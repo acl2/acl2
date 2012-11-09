@@ -145,7 +145,7 @@
 ;;;
 ;;;****************************************************************************
 
-(defun bitp (b)
+(defun-inline bitp (b)
   ":doc-section logops-definitions
   A predicate form of the type declaration (TYPE BIT b).
   ~/~/~/"
@@ -153,7 +153,7 @@
   (or (eql b 0)
       (eql b 1)))
 
-(defun bfix (b)
+(defun-inline bfix (b)
   ":doc-section logops-definitions
   (BFIX b) coerces any object to a bit (0 or 1) by coercing non-1 objects to 0.
   ~/~/~/"
@@ -167,7 +167,7 @@
    ~/~/~/"
   `(mbe :logic (bfix ,x) :exec ,x))
 
-(defun zbp (x)
+(defun-inline zbp (x)
   ":doc-section logops-definitions
   (ZBP x) tests for `zero bits'.  Any object other than 1 is considered a
   zero bit.
@@ -230,7 +230,7 @@
 ;;;
 ;;;****************************************************************************
 
-(defun ifloor (i j)
+(defun-inline ifloor (i j)
   ":doc-section logops-definitions
   (IFLOOR i j) is the same as floor, except that it coerces its
   arguments to integers.
@@ -241,7 +241,7 @@
   (mbe :logic (floor (ifix i) (ifix j))
        :exec (floor i j)))
 
-(defun imod (i j)
+(defun-inline imod (i j)
   ":doc-section logops-definitions
   (IMOD i j) is the same as mod, except that it coerces its
   arguments to integers.
@@ -252,7 +252,7 @@
   (mbe :logic (mod (ifix i) (ifix j))
        :exec (mod i j)))
 
-(defun expt2 (n)
+(defun-inline expt2 (n)
   ":doc-section logops-definitions
   (EXPT2 n) is the same as 2^n, except that it coerces its
   argument to a natural.
@@ -262,7 +262,7 @@
   (mbe :logic (expt 2 (nfix n))
        :exec (ash 1 n)))
 
-(defun logcar (i)
+(defun-inline logcar (i)
   ":doc-section logops-definitions
   (LOGCAR i) is the CAR of an integer conceptualized as a bit-vector.
   ~/~/~/"
@@ -270,7 +270,7 @@
   (mbe :logic (imod i 2)
        :exec (the (unsigned-byte 1) (logand i 1))))
 
-(defun logcdr (i)
+(defun-inline logcdr (i)
   ":doc-section logops-definitions
   (LOGCDR i) is the CDR of an integer conceptualized as a bit-vector.
   ~/~/~/"
@@ -278,7 +278,7 @@
   (mbe :logic (ifloor i 2)
        :exec (ash i -1)))
 
-(defun logcons (b i)
+(defun-inline logcons (b i)
   ":doc-section logops-definitions
   (LOGCONS b i) is the CONS operation for integers conceptualized as
   bit-vectors.
@@ -291,7 +291,7 @@
                 (+ b (* 2 i)))
        :exec (+ b (ash i 1))))
 
-(defun logbit (pos i)
+(defun-inline logbit (pos i)
   ":doc-section logops-definitions
   (LOGBIT pos i) returns the bit of i at bit-position pos.
   ~/
@@ -301,7 +301,7 @@
                               (integerp i))))
   (if (logbitp pos i) 1 0))
 
-(defun logmask (size)
+(defun-inline logmask (size)
   ":doc-section logops-definitions
   (LOGMASK size) creates a low-order, size-bit mask.
   ~/~/~/"
@@ -321,7 +321,7 @@
        :exec (and (integerp i)
                   (= i (- (ash 1 (integer-length i)) 1)))))
 
-(defun loghead (size i)
+(defun-inline loghead (size i)
   ":doc-section logops-definitions
   (LOGHEAD size i) returns the size low-order bits of i.
   ~/~/
@@ -335,7 +335,7 @@
        ;; size))), but that'll require some additional lemmas...
        :exec (mod i (ash 1 size))))
 
-(defun logtail (pos i)
+(defun-inline logtail (pos i)
   ":doc-section logops-definitions
   (LOGTAIL pos i) returns the high-order part of i starting at bit position
   pos.
@@ -698,7 +698,7 @@
  define each function explicitly in terms of 0 and 1 to simplify
  reasoning.~/")
 
-(defun b-not (i)
+(defun-inline b-not (i)
   ":doc-section logops-bit-functions
   B-NOT ~/~/~/"
   (declare (xargs :guard (bitp i)))
@@ -706,7 +706,7 @@
        :exec (the (unsigned-byte 1)
                (- 1 (the (unsigned-byte 1) i)))))
 
-(defun b-and (i j)
+(defun-inline b-and (i j)
   ":doc-section logops-bit-functions
   B-AND ~/~/~/"
   (declare (xargs :guard (and (bitp i) (bitp j))))
@@ -715,7 +715,7 @@
                (logand (the (unsigned-byte 1) i)
                        (the (unsigned-byte 1) j)))))
 
-(defun b-ior (i j)
+(defun-inline b-ior (i j)
   ":doc-section logops-bit-functions
   B-IOR ~/~/~/"
   (declare (xargs :guard (and (bitp i) (bitp j))))
@@ -724,7 +724,7 @@
                (logior (the (unsigned-byte 1) i)
                        (the (unsigned-byte 1) j)))))
 
-(defun b-xor (i j)
+(defun-inline b-xor (i j)
   ":doc-section logops-bit-functions
   B-XOR ~/~/~/"
   (declare (xargs :guard (and (bitp i) (bitp j))))
@@ -733,7 +733,7 @@
                (logxor (the (unsigned-byte 1) i)
                        (the (unsigned-byte 1) j)))))
 
-(defun b-eqv (i j)
+(defun-inline b-eqv (i j)
   ":doc-section logops-bit-functions
   B-EQV ~/~/~/"
   (declare (xargs :guard (and (bitp i) (bitp j))))
@@ -747,7 +747,7 @@
                                  (the (unsigned-byte 1) j)))
                        1))))
 
-(defun b-nand (i j)
+(defun-inline b-nand (i j)
   ":doc-section logops-bit-functions
   B-NAND ~/~/~/"
   (declare (xargs :guard (and (bitp i) (bitp j))))
@@ -759,7 +759,7 @@
                                  (the (unsigned-byte 1) j)))
                        1))))
 
-(defun b-nor (i j)
+(defun-inline b-nor (i j)
   ":doc-section logops-bit-functions
   B-NOR ~/~/~/"
   (declare (xargs :guard (and (bitp i) (bitp j))))
@@ -770,7 +770,7 @@
                                  (the (unsigned-byte 1) j)))
                        1))))
 
-(defun b-andc1 (i j)
+(defun-inline b-andc1 (i j)
   ":doc-section logops-bit-functions
   B-ANDC1 ~/~/~/"
   (declare (xargs :guard (and (bitp i) (bitp j))))
@@ -779,7 +779,7 @@
                (logandc1 (the (unsigned-byte 1) i)
                          (the (unsigned-byte 1) j)))))
 
-(defun b-andc2 (i j)
+(defun-inline b-andc2 (i j)
   ":doc-section logops-bit-functions
   B-ANDC2 ~/~/~/"
   (declare (xargs :guard (and (bitp i) (bitp j))))
@@ -788,7 +788,7 @@
                (logandc2 (the (unsigned-byte 1) i)
                          (the (unsigned-byte 1) j)))))
 
-(defun b-orc1 (i j)
+(defun-inline b-orc1 (i j)
   ":doc-section logops-bit-functions
   B-ORC1 ~/~/~/"
   (declare (xargs :guard (and (bitp i) (bitp j))))
@@ -798,7 +798,7 @@
                          (logxor 1 (the (unsigned-byte 1) i)))
                        (the (unsigned-byte 1) j)))))
 
-(defun b-orc2 (i j)
+(defun-inline b-orc2 (i j)
   ":doc-section logops-bit-functions
   B-ORC2 ~/~/~/"
   (declare (xargs :guard (and (bitp i) (bitp j))))
