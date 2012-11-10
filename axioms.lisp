@@ -17369,21 +17369,20 @@
   in CLTL pp. 60 and 145, the ~il[guard] is checked, and then the ~c[body] is
   evaluated.  The result is used in place of the original form.
 
-  In ACL2, macros do not have access to ~ilc[state].  That is, ~ilc[state]
-  is not allowed among the formal parameters.  This is in part a
-  reflection of CLTL, p. 143, ``More generally, an implementation of
-  Common Lisp has great latitude in deciding exactly when to expand
-  macro calls with a program. ...  Macros should be written in such a
-  way as to depend as little as possible on the execution environment
-  to produce a correct expansion.'' In ACL2, the product of
-  macroexpansion is independent of the current environment and is
-  determined entirely by the macro body and the functions and
-  constants it references.  It is possible, however, to define macros
-  that produce expansions that refer to ~ilc[state] or other single-threaded
-  objects (~pl[stobj]) or variables not among the macro's arguments.
-  See the ~c[git] example above.  For a related utility that avoids this
-  ~ilc[state] restriction, for example allowing expansion of macros when
-  generating the body of an event, ~pl[make-event].~/"
+  In ACL2, macros do not have access to ~ilc[state].  (Indeed, they are applied
+  to syntax that cannot include a state object.)  This is in part a reflection
+  of CLTL, p. 143, ``More generally, an implementation of Common Lisp has great
+  latitude in deciding exactly when to expand macro calls with a program. ...
+  Macros should be written in such a way as to depend as little as possible on
+  the execution environment to produce a correct expansion.''  In ACL2, the
+  product of macroexpansion is independent of the current environment and is
+  determined entirely by the macro body and the functions and constants it
+  references.  It is possible, however, to define macros that produce
+  expansions that refer to ~ilc[state] or other single-threaded
+  objects (~pl[stobj]) or variables not among the macro's arguments.  See the
+  ~c[git] example above.  For a related utility that avoids this ~ilc[state]
+  restriction, for example allowing expansion of macros when generating the
+  body of an event, ~pl[make-event].~/"
 
 ; Warning: See the Important Boot-Strapping Invariants before modifying!
 
@@ -17712,103 +17711,111 @@
   :doc
   ":Doc-Section Theories
 
-  sets of ~il[rune]s to enable/disable in concert~/
+  sets of ~il[rune]s to ~il[enable]/~il[disable] in concert~/
   ~bv[]
-  Example: '((:definition app)
+  Example: '((:definition app) ; or (:d app)
              (:executable-counterpart app)
+             (:i app)
              rv
              (rv)
              assoc-of-app)
   ~ev[]
   See:~/
 
-  A theory is a list of ``runic designators'' as described below.
-  Each runic designator denotes a set of ``runes'' (~pl[rune]) and
-  by unioning together the runes denoted by each member of a theory we
-  define the set of runes corresponding to a theory.  Theories are
-  used to control which rules are ``~il[enable]d,'' i.e., available for
-  automatic application by the theorem prover.  There is always a
-  ``current'' theory.  A rule is ~il[enable]d precisely if its ~il[rune] is an
-  element of the set of ~il[rune]s corresponding to the current theory.  At
-  the top-level, the current theory is the theory selected by the most
-  recent ~ilc[in-theory] event, extended with the rule names introduced
-  since then.  Inside the theorem prover, the ~c[:]~ilc[in-theory] hint
-  (~pl[hints]) can be used to select a particular theory as
-  current during the proof attempt for a particular goal.
+  A theory is a list of ``runic designators'' as described below.  Each runic
+  designator denotes a set of ``runes'' (~pl[rune]) and by unioning together
+  the runes denoted by each member of a theory we define the set of runes
+  corresponding to a theory.  Theories are used to control which rules are
+  ``~il[enable]d,'' i.e., available for automatic application by the theorem
+  prover.  There is always a ``current'' theory.  A rule is ~il[enable]d
+  precisely if its ~il[rune] is an element of the set of ~il[rune]s
+  corresponding to the current theory.  At the top-level, the current theory is
+  the theory selected by the most recent ~ilc[in-theory] event, extended with
+  the rule names introduced since then.  Inside the theorem prover, the
+  ~c[:]~ilc[in-theory] hint (~pl[hints]) can be used to select a particular
+  theory as current during the proof attempt for a particular goal.
 
-  Theories are generally constructed by ``theory expressions.''
-  Formally, a theory expression is any term, containing at most the
-  single free variable ~ilc[world], that when evaluated with ~ilc[world] bound to
-  the current ACL2 world (~pl[world]) produces a theory.  ACL2
-  provides various functions for the convenient construction and
-  manipulation of theories.  These are called ``theory functions''
-  (~pl[theory-functions]).  For example, the theory function
-  ~ilc[union-theories] takes two theories and produces their union.  The
-  theory function ~ilc[universal-theory] returns the theory containing all
-  known rule names as of the introduction of a given logical name.
-  But a theory expression can contain constants, e.g.,
+  Theories are generally constructed by ``theory expressions.''  Formally, a
+  theory expression is any term, containing at most the single free variable
+  ~ilc[world], that when evaluated with ~ilc[world] bound to the current ACL2
+  world (~pl[world]) produces a theory.  ACL2 provides various functions for
+  the convenient construction and manipulation of theories.  These are called
+  ``theory functions''(~pl[theory-functions]).  For example, the theory
+  function ~ilc[union-theories] takes two theories and produces their union.
+  The theory function ~ilc[universal-theory] returns the theory containing all
+  known rule names as of the introduction of a given logical name.  But a
+  theory expression can contain constants, e.g.,
   ~bv[]
-  '(assoc (assoc) (:rewrite car-cons) car-cdr-elim)
+  '(len (len) (:rewrite car-cons) car-cdr-elim)
   ~ev[]
-  and user-defined functions.  The only important criterion is that a
-  theory expression mention no variable freely except ~ilc[world] and
-  evaluate to a theory.
+  and user-defined functions.  The only important criterion is that a theory
+  expression mention no variable freely except ~ilc[world] and evaluate to a
+  theory.
 
-  More often than not, theory expressions typed by the user do not
-  mention the variable ~ilc[world].  This is because user-typed theory
-  expressions are generally composed of applications of ACL2's theory
-  functions.  These ``functions'' are actually macros that expand into
-  terms in which ~ilc[world] is used freely and appropriately.  Thus, the
-  technical definition of ``theory expression'' should not mislead you
-  into thinking that interestng theory expressions must mention ~ilc[world];
-  they probably do and you just didn't know it!
+  More often than not, theory expressions typed by the user do not mention the
+  variable ~ilc[world].  This is because user-typed theory expressions are
+  generally composed of applications of ACL2's theory functions.  These
+  ``functions'' are actually macros that expand into terms in which ~ilc[world]
+  is used freely and appropriately.  Thus, the technical definition of ``theory
+  expression'' should not mislead you into thinking that interestng theory
+  expressions must mention ~ilc[world]; they probably do and you just didn't
+  know it!
 
-  One aspect of this arrangement is that theory expressions cannot
-  generally be evaluated at the top-level of ACL2, because ~ilc[world] is
-  not bound.  To see the value of a theory expression, ~c[expr], at the
-  top-level, type
+  One aspect of this arrangement is that theory expressions cannot generally be
+  evaluated at the top-level of ACL2, because ~ilc[world] is not bound.  To see
+  the value of a theory expression, ~c[expr], at the top-level, type
   ~bv[]
   ACL2 !>(LET ((WORLD (W STATE))) expr).
   ~ev[]
-  However, because the built-in theories are quite long, you may be
-  sorry you printed the value of a theory expression!
+  However, because the built-in theories are quite long, you may be sorry you
+  printed the value of a theory expression!
 
-  A theory is a true list of runic designators and to each theory
-  there corresponds a set of ~il[rune]s, obtained by unioning together the
-  sets of ~il[rune]s denoted by each runic designator.  For example, the
-  theory constant
+  A theory is a true list of runic designators and to each theory there
+  corresponds a set of ~il[rune]s, obtained by unioning together the sets of
+  ~il[rune]s denoted by each runic designator.  For example, the theory
+  constant
   ~bv[]
-     '(assoc (assoc) (:rewrite car-cons) car-cdr-elim)
+     '(len (len) (:e nth) (:rewrite car-cons) car-cdr-elim)
   ~ev[]
   corresponds to the set of ~il[rune]s
   ~bv[]
-     {(:definition assoc)
-      (:induction assoc)
-      (:executable-counterpart assoc)
+     {(:definition len)
+      (:induction len)
+      (:executable-counterpart len)
+      (:executable-counterpart nth)
       (:elim car-cdr-elim)
       (:rewrite car-cons)} .
   ~ev[]
-  Observe that the theory contains four elements but its runic
-  correspondent contains five.  That is because some designators
-  denote sets of several ~il[rune]s.  If the above theory were selected as
-  current then the five rules named in its runic counterpart would be
-  ~il[enable]d and all other rules would be ~il[disable]d.
+  Observe that the theory contains five elements but its runic correspondent
+  contains six.  That is because runic designators can denote sets of several
+  ~il[rune]s, as is the case for the first designator, ~c[len].  If the above
+  theory were selected as current then the six rules named in its runic
+  counterpart would be ~il[enable]d and all other rules would be ~il[disable]d.
 
   We now precisely define the runic designators and the set of ~il[rune]s
-  denoted by each.~bq[]
+  denoted by each.  When we refer below to the ``macro-aliases dereference of''
+  a symbol, ~c[symb], we mean the (function) symbol corresponding ~c[symb] in
+  the macro-aliases-table if there is such a symbol, else ~c[symb] itself;
+  ~pl[macro-aliases-table].  For example, the macro-aliases dereference of
+  ~ilc[append] is ~ilc[binary-append], and the macro-aliases dereference of
+  ~ilc[nth] is ~c[nth].~bq[]
 
-  o A rune is a runic designator and denotes the singleton set
+  o A ~il[rune] is a runic designator and denotes the singleton set
   containing that rune.
 
-  o If ~c[symb] is a function symbol introduced with a ~ilc[defun] (or ~ilc[defuns])
-  event, then ~c[symb] is a runic designator and denotes the set containing
-  the runes ~c[(:definition symb)] and ~c[(:induction symb)], omitting the
-  latter if no such ~il[induction] rule exists (presumably because the function's
-  definition is not singly recursive).
+  o Suppose that ~c[symb] is a symbol and ~c[symb'] is the macro-aliases
+  dereference of ~c[symb], where ~c[symb'] is a function symbol introduced with
+  a ~ilc[defun] (or ~ilc[defuns]) event.  Then ~c[symb] is a runic designator
+  and denotes the set containing the runes ~c[(:definition symb')] and
+  ~c[(:induction symb')], omitting the latter if no such ~il[induction] rune
+  exists (presumably because the definition of ~c[symb'] is not singly
+  recursive).
 
-  o If ~c[symb] is a function symbol introduced with a ~ilc[defun] (or ~ilc[defuns])
-  event, then ~c[(symb)] is a runic designator and denotes the singleton
-  set containing the rune ~c[(:executable-counterpart symb)].
+  o Suppose that ~c[symb] is a symbol and ~c[symb'] is the macro-aliases
+  dereference of ~c[symb], where ~c[symb'] is a function symbol introduced with
+  a ~ilc[defun] (or ~ilc[defuns]) event.  Then ~c[(symb)] is a runic designator
+  and denotes the singleton set containing the rune
+  ~c[(:executable-counterpart symb')].
 
   o If ~c[symb] is the name of a ~ilc[defthm] (or ~ilc[defaxiom]) event that
   introduced at least one rule, then ~c[symb] is a runic designator and
@@ -17824,31 +17831,35 @@
   o If ~c[symb] is the name of a ~ilc[deftheory] event, then ~c[symb] is a runic
   designator and denotes the runic theory corresponding to ~c[symb].
 
-  ~eq[]These conventions attempt to implement the Nqthm-1992 treatment of
-  theories.  For example, including a function name, e.g., ~ilc[assoc], in
-  the current theory ~il[enable]s that function but does not ~il[enable] the
-  executable counterpart.  Similarly, including ~c[(assoc)] ~il[enable]s the
-  executable counterpart (Nqthm's ~c[*1*assoc]) but not the symbolic
-  definition.  And including the name of a proved lemma ~il[enable]s all of
-  the rules added by the event.  These conventions are entirely
-  consistent with Nqthm usage.  Of course, in ACL2 one can include
-  explicitly the ~il[rune]s naming the rules in question and so can avoid
-  entirely the use of non-runic elements in theories.
+  o Finally, suppose that ~c[symb] is a symbol and ~c[symb'] is the
+  macro-aliases dereference of ~c[symb].  Then ~c[(:KWD symb . rest)] is a
+  runic designator if ~c[(:KWD' symb' . rest)] is a ~il[rune], where ~c[:KWD]
+  is one of ~c[:d], ~c[:e], ~c[:i], or ~c[:t], and correspondingly ~c[:KWD'] is
+  ~c[:definition], ~c[:executable-counterpart], ~c[:induction], or
+  ~c[:type-prescription], respectively.  In this case, ~c[(:KWD symb . rest)]
+  denotes the runic theory corresponding to the rune ~c[(:KWD' symb' . rest)].
 
-  Because a ~il[rune] is a runic designator denoting the set containing
-  that ~il[rune], a list of ~il[rune]s is a theory and denotes itself.  We call
-  such theories ``runic theories.''  To every theory there corresponds
-  a runic theory obtained by unioning together the sets denoted by
-  each designator in the theory.  When a theory is selected as
-  ``current'' it is actually its runic correspondent that is
-  effectively used.  That is, a ~il[rune] is ~il[enable]d iff it is a member of
-  the runic correspondent of the current theory.  The value of a
-  theory defined with ~ilc[deftheory] is the runic correspondent of the
-  theory computed by the defining theory expression.  The theory
-  manipulation functions, e.g., ~ilc[union-theories], actually convert their
-  theory arguments to their runic correspondents before performing the
-  required set operation.  The manipulation functions always return
-  runic theories.  Thus, it is sometimes convenient to think of
+  ~eq[]Note that including a function name, e.g., ~ilc[len], in the current
+  theory ~il[enable]s that function but does not ~il[enable] the executable
+  counterpart.  Similarly, including ~c[(len)] or ~c[(:e len)] ~il[enable]s the
+  executable counterpart but not the symbolic definition.  And including the
+  name of a proved lemma ~il[enable]s all of the rules added by the event.  Of
+  course, one can include explicitly the ~il[rune]s naming the rules in
+  question and so can avoid entirely the use of non-runic elements in theories.
+
+  Because a ~il[rune] is a runic designator denoting the set containing that
+  ~il[rune], a list of ~il[rune]s is a theory and denotes itself.  We call such
+  theories ``runic theories.''  To every theory there corresponds a runic
+  theory obtained by unioning together the sets denoted by each designator in
+  the theory.  When a theory is selected as ``current'' it is actually its
+  runic correspondent that is effectively used.  That is, a ~il[rune] is
+  ~il[enable]d iff it is a member of the runic correspondent of the current
+  theory.  The value of a theory defined with ~ilc[deftheory] is the runic
+  correspondent of the theory computed by the defining theory expression.  The
+  theory manipulation functions, e.g., ~ilc[union-theories], actually convert
+  their theory arguments to their runic correspondents before performing the
+  required set operation.  The manipulation functions always return runic
+  theories.  Thus, it is sometimes convenient to think of
   (non-runic) theories as merely abbreviations for their runic
   correspondents, abbreviations which are ``expanded'' at the first
   opportunity by theory manipulation functions and the ``theory
@@ -37331,8 +37342,9 @@
   ~ev[]
   Among other things, the setting above has the effect of making ~ilc[unary--]
   ``invisible'' for the purposes of applying permutative ~c[:]~ilc[rewrite]
-  rules to ~ilc[binary-+] trees.  Also ~pl[add-invisible-fns],
-  ~pl[remove-invisible-fns], and ~pl[set-invisible-fns-table].
+  rules to ~ilc[binary-+] trees.  Also ~pl[add-invisible-fns] and
+  ~pl[remove-invisible-fns], which manage macro aliases
+  (~pl[macro-aliases-table]), as well as ~pl[set-invisible-fns-table].
 
   ~l[table] for a general discussion of tables.~/
 
@@ -37384,7 +37396,8 @@
   of the invisible functions table.
 
   Also ~pl[add-invisible-fns] and ~pl[remove-invisible-fns] for events that add
-  to and remove from the invisible functions table.~/
+  to and remove from the invisible functions table, while accounting for macro
+  aliases (~pl[macro-aliases-table]).~/
   ~bv[]
   General Form:
   (set-invisible-fns-table alist)
@@ -37473,8 +37486,9 @@
   ~bv[]
   Examples:
   (add-invisible-fns binary-+ unary-- foo)
+  (add-invisible-fns + unary-- foo)
   ~ev[]
-  The setting above has makes unary functions ~ilc[unary--] and ~c[foo]
+  Each of the ~il[events] above makes unary functions ~ilc[unary--] and ~c[foo]
   ``invisible'' for the purposes of applying permutative ~c[:]~ilc[rewrite]
   rules to ~ilc[binary-+] trees.  Thus, ~c[arg] and ~c[(unary-- arg)] will be
   given the same weight and will be permuted so as to be adjacent.~/
@@ -37483,7 +37497,8 @@
   (add-invisible-fns top-fn unary-fn1 ... unary-fnk)
   ~ev[]
   where ~c[top-fn] is a function symbol and the ~c[unary-fni] are unary
-  function symbols.
+  function symbols, or more generally, these are all macro aliases for function
+  symbols (~pl[macro-aliases-table]).
 
   For more information ~pl[invisible-fns-table].  Also
   ~pl[set-invisible-fns-table], which explains how to set the entire table in a
@@ -37491,10 +37506,12 @@
 
   `(table invisible-fns-table nil
           (let* ((tbl (table-alist 'invisible-fns-table world))
-                 (old-entry (assoc-eq ',top-fn tbl))
-                 (unary-fns ',unary-fns))
+                 (macro-aliases (macro-aliases world))
+                 (top-fn (deref-macro-name ',top-fn macro-aliases))
+                 (old-entry (assoc-eq top-fn tbl))
+                 (unary-fns (deref-macro-name-lst ',unary-fns macro-aliases)))
             (if (not (subsetp-eq unary-fns (cdr old-entry)))
-                (put-assoc-eq ',top-fn
+                (put-assoc-eq top-fn
                               (union-eq unary-fns (cdr old-entry))
                               tbl)
               (prog2$ (cw "~%NOTE:  Add-invisible-fns did not change the ~
@@ -37511,6 +37528,7 @@
   ~bv[]
   Examples:
   (remove-invisible-fns (binary-+ unary-- foo)
+  (remove-invisible-fns (+ unary-- foo)
   ~ev[]
   The setting above has makes unary functions ~ilc[unary--] and ~c[foo] no
   longer ``invisible'' for the purposes of applying permutative ~c[:]~ilc[rewrite]
@@ -37520,20 +37538,23 @@
   (remove-invisible-fns top-fn unary-fn1 ... unary-fnk)
   ~ev[]
   where ~c[top-fn] is a function symbol and the ~c[unary-fni] are unary
-  function symbols.
+  function symbols, or more generally, these are all macro aliases for function
+  symbols (~pl[macro-aliases-table]).
 
   ~l[add-invisible-fns] and also ~pl[invisible-fns-table] and
   ~pl[set-invisible-fns-table].~/"
 
   `(table invisible-fns-table nil
           (let* ((tbl (table-alist 'invisible-fns-table world))
-                 (old-entry (assoc-eq ',top-fn tbl))
-                 (unary-fns ',unary-fns))
+                 (macro-aliases (macro-aliases world))
+                 (top-fn (deref-macro-name ',top-fn macro-aliases))
+                 (old-entry (assoc-eq top-fn tbl))
+                 (unary-fns (deref-macro-name-lst ',unary-fns macro-aliases)))
             (if (intersectp-eq unary-fns (cdr old-entry))
                 (let ((diff (set-difference-eq (cdr old-entry) unary-fns)))
                   (if diff
-                      (put-assoc-eq ',top-fn diff tbl)
-                    (delete-assoc-eq ',top-fn tbl)))
+                      (put-assoc-eq top-fn diff tbl)
+                    (delete-assoc-eq top-fn tbl)))
               (prog2$ (cw "~%NOTE:  Remove-invisible-fns did not change the ~
                            invisible-fns-table.  Consider using :u or :ubt to ~
                            undo this event.~%")
@@ -40815,8 +40836,8 @@
   ~ev[]
   This example associates the function symbol ~ilc[binary-append] with the
   macro name ~ilc[append].  As a result, the name ~ilc[append] may be used as a
-  runic designator (~pl[theories]) by the various theory
-  functions.  Thus, for example, it will be legal to write
+  runic designator (~pl[theories]) by the various theory functions.  Thus, for
+  example, it will be legal to write
   ~bv[]
   (in-theory (disable append))
   ~ev[]
@@ -40855,21 +40876,21 @@
   to macro writers; see for example the definition of ACL2 system macro
   ~ilc[defun-inline].
 
-  The ~ilc[table] ~ilc[macro-aliases-table] is an alist that associates
-  macro symbols with function symbols, so that macro names may be used
-  as runic designators (~pl[theories]).  For a convenient way to
-  add entries to this ~il[table], ~pl[add-macro-alias].  To remove
-  entries from the ~il[table] with ease, ~pl[remove-macro-alias].
+  The ~ilc[table] ~ilc[macro-aliases-table] is an alist that associates macro
+  symbols with function symbols, so that macro names may be used as runic
+  designators (~pl[theories]).  For a convenient way to add entries to this
+  ~il[table], ~pl[add-macro-alias].  To remove entries from the ~il[table] with
+  ease, ~pl[remove-macro-alias].
 
-  This ~il[table] is used by the theory functions.  For example, in order
-  that ~c[(disable append)] be interpreted as ~c[(disable binary-append)],
-  it is necessary that the example form above has been executed.  In
-  fact, this ~il[table] does indeed associate many of the macros provided
-  by the ACL2 system, including ~ilc[append], with function symbols.
-  Loosely speaking, it only does so when the macro is ``essentially
-  the same thing as'' a corresponding function; for example,
-  ~c[(append x y)] and ~c[(binary-append x y)] represent the same term,
-  for any expressions ~c[x] and ~c[y].~/")
+  This ~il[table] is used by the theory functions; ~pl[theories].  For example,
+  in order that ~c[(disable append)] be interpreted as
+  ~c[(disable binary-append)], it is necessary that the example form above has
+  been executed.  In fact, this ~il[table] does indeed associate many of the
+  macros provided by the ACL2 system, including ~ilc[append], with function
+  symbols.  Loosely speaking, it only does so when the macro is ``essentially
+  the same thing as'' a corresponding function; for example, ~c[(append x y)]
+  and ~c[(binary-append x y)] represent the same term, for any expressions
+  ~c[x] and ~c[y].~/")
 
 (table macro-aliases-table nil nil
        :guard

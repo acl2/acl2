@@ -7049,8 +7049,12 @@ at this point because they use some functions not yet defines.
 ; initializing its pos- and neg-implicants.  We also add rune to tau-runes.
 
   (declare (ignore hyps))
-  (initialize-tau-pred (ffn-symb (fargn concl 1))
-                       (set-tau-runes nil rune wrld)))
+  (let ((fn (ffn-symb (fargn concl 1))))
+    (cond
+     ((getprop fn 'tau-pair nil 'current-acl2-world wrld)
+      (set-tau-runes nil rune wrld))
+     (t (initialize-tau-pred fn
+                             (set-tau-runes nil rune wrld))))))
 
 
 

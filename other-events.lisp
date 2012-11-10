@@ -835,7 +835,7 @@
               (er-let*
                ((tguard (translate
                          (conjoin-untranslated-terms (get-guards1 edcls wrld1))
-                         '(nil) nil t ctx wrld1 state))
+                         '(nil) nil nil ctx wrld1 state))
 
 ; known-stobjs = t, above and below.  But it doesn't matter because we
 ; know, from chk-macro-arglist above, that no stobjs occur in the
@@ -843,7 +843,7 @@
 ; chk-free-and-ignored-vars, that tguard and tbody use only those
 ; vars.
 
-                (tbody (translate body '(nil) nil t ctx wrld1 state)))
+                (tbody (translate body '(nil) nil nil ctx wrld1 state)))
                (cond
                 ((redundant-defmacrop name args tguard tbody wrld1)
                  (cond ((and (not (f-get-global 'in-local-flg state))
@@ -33662,8 +33662,7 @@
          (strings (get-string dcls-and-strings))
          (dcls (remove-strings dcls-and-strings))
          (body (car (last lst)))
-         (macro-formals ; try to avoid using stobj names
-          (make-var-lst1 *non-stobj-var-root* name (length formals) nil)))
+         (macro-formals formals))
     `(progn (defmacro ,name ,macro-formals
               ,@strings
               (list ',name$inline ,@macro-formals))
