@@ -137,8 +137,11 @@
                     (logcons (logcar i)
                              (loghead (1- size) (logcdr i))))))
   :rule-classes
-  ((:definition :clique (loghead)
-                :controller-alist ((loghead t t))))
+; Matt K.: Changed loghead to loghead$inline 11/10/2012 to accommodate change
+; by Jared Davis to define loghead using defun-inline in
+; ihs/basic-definitions.lisp.
+  ((:definition :clique (loghead$inline)
+                :controller-alist ((loghead$inline t t))))
   :hints (("Goal" :use (:instance loghead*) :in-theory (disable loghead*))))
 
 ;(in-theory (disable LOGHEAD*)) ;already disabled?

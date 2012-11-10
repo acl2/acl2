@@ -132,8 +132,11 @@
                ((equal (ifix pos) 0) (ifix i))
                (t (logtail (1- pos) (logcdr i)))))
   :rule-classes
-  ((:definition :clique (logtail)
-                :controller-alist ((logtail t t))))
+; Matt K.: Changed logtail to logtail$inline 11/10/2012 to accommodate change
+; by Jared Davis to define logtail using defun-inline in
+; ihs/basic-definitions.lisp.
+  ((:definition :clique (logtail$inline)
+                :controller-alist ((logtail$inline t t))))
   :hints (("Goal" :use (:instance logtail*))))
 
 (in-theory (disable logtail*))

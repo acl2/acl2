@@ -28,7 +28,10 @@
   (declare (xargs :guard (and (pseudo-termp term)
                               (pseudo-termp n))))
   (and (consp term)
-       (equal 'loghead (car term))
+; Matt K.: Changed loghead to loghead$inline 11/10/2012 to accommodate change by
+; Jared Davis to define loghead using defun-inline in
+; ihs/basic-definitions.lisp.
+       (equal 'loghead$inline (car term))
        (let ((size-param (cadr term)))
          (or (equal n size-param)
              (and (quotep n)
@@ -65,8 +68,11 @@
   (declare (xargs :guard (and (pseudo-termp term))))
 
   (if (and (consp term)
-           (equal (car term) 'loghead))
-      `(loghead ,(cadr term) ,(strip-logheads-from-sum (cadr term) (caddr term)))
+; Matt K.: Changed loghead to loghead$inline 11/10/2012 to accommodate change by
+; Jared Davis to define loghead using defun-inline in
+; ihs/basic-definitions.lisp.
+           (equal (car term) 'loghead$inline))
+      `(loghead$inline ,(cadr term) ,(strip-logheads-from-sum (cadr term) (caddr term)))
     term))
 
 ;(strip-logheads-from-sum-aux '(loghead '16 (binary-+ (loghead '16 x) (loghead '16 y))))
@@ -96,7 +102,10 @@
 (defun hyp-for-strip-logheads-from-sum-aux (term)
   (declare (xargs :guard (and (pseudo-termp term))))
   (if (and (consp term)
-           (equal (car term) 'loghead))
+; Matt K.: Changed loghead to loghead$inline 11/10/2012 to accommodate change by
+; Jared Davis to define loghead using defun-inline in
+; ihs/basic-definitions.lisp.
+           (equal (car term) 'loghead$inline))
       (hyp-for-addends (cadr term) (caddr term))
     nil ;what should this be?
     ))
@@ -106,7 +115,10 @@
 (defevaluator loghead-sum-eval loghead-sum-eval-lst
   ((binary-+ x y)
    (unary-- x)
-   (loghead n x)
+; Matt K.: Changed loghead to loghead$inline 11/10/2012 to accommodate change by
+; Jared Davis to define loghead using defun-inline in
+; ihs/basic-definitions.lisp.
+   (loghead$inline n x)
    (if test x y)
    (integerp x)
    ))

@@ -583,11 +583,12 @@
   :hints (("Goal" :in-theory (enable MEM::DOMAIN-AUX)
            :do-not '(generalize eliminate-destructors))))
 
-;bzo dup?
-(DEFUN BITP (B)
-  "Documentation available via :doc"
-  (DECLARE (XARGS :GUARD T))
-  (OR (eql B 0) (eql B 1)))
+; The definition of bitp here was changed 11/10/2012 by Matt K. to match the
+; definition of bitp in books/ihs/basic-definitions.lisp (which has changed).
+(defun-inline bitp (b)
+  (declare (xargs :guard t))
+  (or (eql b 0)
+      (eql b 1)))
 
 (defun bit-listp (lst)
   (declare (xargs :guard t))
