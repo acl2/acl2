@@ -7755,194 +7755,35 @@
 
   make a rule for the ACL2 ``type checker''~/
 
-  This documentation describes ACL2's tau system, a kind of ``type checker,''
-  and the ~c[:tau-system] rule class.  This doc topic is the main source of
-  information about the tau system and discusses both the general idea and the
-  specifics of ~c[:tau-system] rules.  There happens to be a ~i[function] named
-  ~c[tau-system], defined as the identity function.  Its only role is to
-  provide the rune ~c[(:EXECUTABLE-COUNTERPART TAU-SYSTEM)], which is used
-  to enable and disable the tau system.  Otherwise the function ~c[tau-system]
-  has no purpose and we recommend that you avoid using it so you are free to
-  enable and disable the tau system.
+  This documentation topic describes the syntactic form of ``tau-system''
+  rules; these rules extend ACL2's ``type checker.''  For an introduction to
+  the tau system, ~pl[introduction-to-the-tau-system].
 
-  ~i[Background on the Tau System]
+  There happens to be a ~i[function] named ~c[tau-system], defined as the
+  identity function.  Its only role is to provide the rune
+  ~c[(:EXECUTABLE-COUNTERPART TAU-SYSTEM)], which is used to enable and disable
+  the tau system.  Otherwise the function ~c[tau-system] has no purpose and we
+  recommend that you avoid using it so you are free to enable and disable the
+  tau system.
 
-  Because ACL2 is an untyped language it is impossible to type check it.  All
-  functions are total.  An ~i[n]-ary function may be applied to any combination
-  of ~i[n] ACL2 objects.  The syntax of ACL2 stipulates that
-  ~c[(]~i[fn a1...an]~c[)] is a well-formed term if ~i[fn] is a function symbol
-  of ~i[n] arguments and the ~i[ai] are well-formed terms.  No mention is made
-  of the ``types'' of terms.  That is what is meant by saying ACL2 is an
-  untyped language.
-
-  Nevertheless, the system provides a variety of monadic Boolean function
-  symbols, like ~ilc[natp], ~ilc[integerp], ~ilc[alistp], etc., that recognize
-  different ``types'' of objects at runtime.  Users typically define many more
-  such recognizers for domain-specific ``types.''  Because of the prevalence of
-  such ``types,'' ACL2 must frequently reason about the inclusion of one
-  ``type'' in another.  It must also reason about the consequences of functions
-  being defined so as to produce objects of certain ``types'' when given
-  arguments of certain other ``types.''
-
-  Because the word ``type'' in computer science tends to imply syntactic
-  or semantic restrictions on functions, we avoid using that word henceforth.
-  Instead, we just reason about monadic Boolean predicates.  
-
-  The tau system consists of both a data base and an algorithm for using the
-  data base.  The data base contains theorems that match certain schemas allowing
-  them to be stored in the tau data base.  Roughly speaking the schemas encode
-  ``inclusion'' and ``exclusion'' relations, e.g., that ~c[natp] implies ~c[integerp]
-  and that ~c[integerp] implies not ~c[consp], and they encode ``signatures'' of
-  functions, e.g., theorems that relate the output of a function to the input,
-  provided only tau predicates are involved.
-
-  By ``tau predicates'' we mean the application of a monadic Boolean, the
-  equality of something to a quoted constant, an arithmetic comparison
-  between something and a rational constant, or the negation of such a term.
-  Here are some examples of tau predicates:
-  ~bv[]
-  (natp i)
-  (not (consp x))
-  (equal y 'MONDAY)
-  (not (eql 23 k))
-  (< 8 max)
-  (<= max 24)
-  ~ev[]
-  Synonyms for ~ilc[equal] include ~ilc[=], ~ilc[eq], and ~ilc[eql].
-  Comparisons against rational constants may be made with ~ilc[<], ~ilc[<=],
-  ~ilc[>=], and ~ilc[>].
-
-  A ``tau'' is a data object representing a set of signed tau predicates whose
-  meaning the the conjunction of the literals in the set.  (By signed we mean
-  both positive and negative occurrences of the predicates may appear.)  When
-  we say that a term ``has'' a given tau we mean the term satisfies all of the
-  recognizers in that tau.
-
-  The tau algorithm is a decision procedure for the logical theory
-  described (only) by the rules in the data base.  The algorithm takes a term
-  and a list of assumptions mapping subterms (typically variable symbols) to
-  tau, and returns the tau of the given term.
-
-  When the system is called upon to decide whether a term satisfies a given
-  monadic predicate, it computes the tau of the term and asks whether the
-  predicate is in that set.  More generally, to determine if a term satisfies a
-  tau, ~i[s], we compute a tau, ~i[r], for the term and ask whether ~i[s] is a
-  subset of ~i[r].  To determine whether a constant, ~i[c], satisfies tau ~i[s]
-  we evaluate the literals in ~i[s] on ~i[c].
-
-  The tau algorithm procedure can be enabled or disabled.  It is enabled by
-  default.  You can disable it globally using either of the following
-  equivalent forms (~pl[theories], in particular the discussion of runic
-  designators).
-
-  ~bv[]
-  (in-theory (disable (:executable-counterpart tau-system)))
-  (in-theory (disable (tau-system)))
-  ~ev[]
-  both of which disable the executable-counterpart of ~c[tau-system].  To
-  disable tau reasoning locally (i.e., for a subgoal and its descendents in a
-  proof attempt), disable the executable-counterpart of ~c[tau-system] in the
-  ~c[in-theory] hint passed to the subgoal (~pl[hints]).
-
-  It is not possible to disable individual rules within the data base.  Either
-  tau uses everything it knows or tau is not used.
-
-  The data base contains rules derived from theorems stated by the user.
-  Unlike a type system, the tau system cannot automatically infer relations
-  between types or the signatures of functions.  Such rules must be stated by
-  the user.  Furthermore, only theorems matching certain schemas can be stored
-  in the tau data base.
-
-  The data base can be populated with new tau facts via either of two
-  mechanisms depending on a mode controlled by ~ilc[tau-status] or,
-  alternatively, ~ilc[set-tau-auto-mode].  When in ``manual'' mode, the data
-  base is extended only when (suitably shaped) theorems tagged with the rule
-  class ~c[:tau-system] are proved.  When in ``automatic'' mode, the data base
-  is extended whenever any (suitably shaped) theorem of any rule class is
-  proved.  The system is in automatic mode by default  -- the tau data base is
-  implicitly extended every time a suitable theorem is proved and stored as
-  any kind of rule.
-
-  Unlike other high-level deduction algorithms in ACL2, the tau system does not
-  keep track of the names (runes) of the rules it is using.  To prevent the tau
-  system from using a rule, you must regenerate the tau data base with that
-  rule disabled.
-
-  We now give a more technical description of the tau system.
-
-  ~i[Technical Details]
-
-  There are two ``modes'' controlling the tau system: one controls whether or
-  not the algorithm is employed in theorem proving, the other controls whether
-  the data base is built only from ~c[:tau-system] rules (``manual'' mode) or
-  from any rule of suitable form (``automatic'' mode).  Both modes may be set
-  by ~c[tau-status]; ~pl[tau-status].
-
-  However, to be effective, the tau system must be ``programmed'' with rules.
-  These rules are generally either statements of establishing that one monadic
-  Boolean implies another or statements (e.g., ``type inclusion or exclusion'')
-  or statements about the signatures of functions expressed in terms of monadic
-  Boolean predicates about the inputs and output of functions (e.g.,
-  ``signatures'').
-
-  If you have not provided such rules, you are likely to notice little
-  difference between having the tau system enbled or disabled -- in fact, if
-  anything, having it enabled without a coherent set of rules is liable to
-  cause more trouble than it is worth because an incoherent set of rules will
-  make the system seem to act in an arbitrary way.
-
-  ~l[rule-classes] for a general discussion of rule classes and how they are
-  used to build rules from formulas.
-
-  ~b[Important Note]: ACL2 does not track or report the use of tau rules.  You
-  cannot disable them individually!  The tau system will evaluate monadic
-  Boolean functions on constants, even when the executable counterparts of
-  those functions are disabled!  You can shut off the whole tau system by
-  disabling the rune ~c[(:EXECUTABLE-COUNTERPART TAU-SYSTEM)], locally for a
-  subgoal (using an ~c[:in-theory] hint (~pl[hints]) or globally (using the
-  ~ilc[in-theory] event or the ~ilc[tau-status] macro).~/
-  
-  Many different formula shapes are recognized as ~c[:tau-system] rules.  In
-  addition, there is a mode in which ACL2 will automatically make a
-  ~c[:tau-system] rule out of any suitable ~c[defun] or ~c[defthm] event.
-  ~l[set-tau-auto-mode].
-
-  The shapes of the ~c[:]~ilc[corollary] formulas from which ~c[:tau-system]
-  rules are built are listed below.  Where distinct variable symbols appear in
-  the schemas below you must write distinct variable symbols.  Where predicate
-  letters appear, e.g., ~c[p], ~c[p2], and ~c[q], you must write monadic
-  Boolean function symbols or equalities in which one argument is an explicit
-  constant.  Furthermore, you may optionally negate the predicates.  By
-  ``Boolean'' we mean not only that the function return ~c[T] or ~c[NIL] but
-  that it not be constantly ~c[T] or constantly ~c[NIL], and that its Boolean
-  nature was identified by ACL2 when the function was defined or that a
-  suitable ~c[:]~ilc[tau-system] or (when the tau system is in automatic mode,
-  ~c[:]~ilc[type-prescription]) lemma has been proved about it.  By
-  ``equalities'' we mean calls of ~ilc[EQUAL], ~ilc[EQ], ~ilc[EQL], and
-  ~ilc[=].  We include in ~i[italics] below our internal name for each schema
-  so that we can document their use.
-
-  For example the schema called a ``Simple'' tau rule below matches both
-   ~bv[]
-  (implies (natp i) (integerp i))
-
-  (implies (natp j) (not (consp j)))
-  ~ev[]
-  and the second schema, called a ``Conjunctive'' tau rule, matches
-  ~bv[]
-  (implies (and (not (equal z nil)) (true-listp z)) (consp z))
-  ~ev[]
-  Note that the Simple rules capture ``type inclusion'' and ``type exclusion.''
-  Conjunctive rules allow us to infer ``types'' from (conjunctive) combinations of
-  ``types.''  Signature rules, shown below, are used in the obvious way.
+  When in the default (``greedy'') mode (see ~ilc[set-tau-auto-mode]), every
+  ~ilc[defun] and every ~c[:corollary] (see ~c[:]~ilc[rule-classes]) of every
+  ~ilc[defthm] stored as a rule ~i[of any] ~c[:rule-class] is inspected to
+  determine if it is of one of the forms below.  Rules of these forms are added
+  to the tau data base, even if they are not labeled as ~c[:tau-system] rules,
+  e.g., a ~c[:]~ilc[rewrite] rule might contribute to the tau data base!  To
+  add a rule to the tau data base without adding any other kind of rule, tag it
+  with ~c[:]~ilc[rule-classes] ~c[:tau-system].  If a theorem has
+  ~c[:]~ilc[rule-classes] ~c[nil], it is not considered for the tau data base.
 
   ~bv[]
   General Forms:
   ~i[Boolean]:
-  (booleanp (fn v))
+  (booleanp (p v))
 
   ~i[Eval]:
-  (p 'const)                               ; See Note below.
+  (p 'const) or
+  (p *const*)
 
   ~i[Simple]:
   (implies (p v) (q v))
@@ -7951,91 +7792,296 @@
   (implies (and (p1 v) ... (pk v)) (q v)), ; Here k must exceed 1.
 
   ~i[Signature Form 1]:
-  (implies (and (p1 x1) (p2 x2) ...)       ; See Note below.
+  (implies (and (p1 x1) (p2 x2) ...)
            (q (fn x1 x2 ...)))
 
   ~i[Signature Form 2]:
-  (implies (and (p1 x1) (p2 x2) ...)       ; See Note below.
+  (implies (and (p1 x1) (p2 x2) ...)
            (q (mv-nth 'n (fn x1 x2 ...))))
 
   ~i[Big Switch]:
-  (equal (fn . formals) body),             ; See Note below.
+  (equal (fn . formals) body)
 
-  ~i[MV-NTH Synonym]:                      ; Extend Signature Form 2 to
-  (equal (nth-alt x y) (mv-nth x y)) or    ; apply not only to mv-nth, but when
-  (equal (mv-nth x y) (nth-alt x y))       ; mv-nth is replaced by nth-alt.
+  ~i[MV-NTH Synonym]:
+  (equal (nth-alt x y) (mv-nth x y)) or
+  (equal (mv-nth x y) (nth-alt x y))
+  ~ev[]
+  
+  The symbols ~c[p], ~c[q], ~c[p1], etc., denote monadic (one-argument)
+  Boolean-valued function symbols, or equalities in which one argument is
+  constant, arithmetic comparisons in which one argument is a rational or
+  integer constant, or the logical negations of such terms.  By ``equalities''
+  we allow ~ilc[EQUAL], ~ilc[EQ], ~ilc[EQL], and ~ilc[=].  By ``arithmetic
+  comparison'' we mean ~ilc[<], ~ilc[<=], ~ilc[>=], or ~ilc[>].  Any of
+  these tau predicates may appear negated. 
+
+  The notation ~c[(p v)] above might stand for any one of:
+  ~bv[]
+  (INTEGERP X)
+  (EQUAL V 'MONDAY)
+  (<= I 16)
+  (NOT (EQUAL X 'SUNDAY))
   ~ev[]
 
-  Note on the Boolean Form: When a ~c[:tau-system] rule of this form is proved,
-  it makes ~c[fn] one of the monadic Boolean predicate symbols that the tau
-  system tracks.  This does not inform ~ilc[type-set] that ~c[fn] is a Boolean
-  function!  To do that, you should make the formula a
-  ~c[:]~ilc[type-prescription] rule also.  If you have the tau system in
-  automatic mode (~pl[set-tau-auto-mode]), the ~c[:type-prescription] rule will
-  suffice for both purposes.
+  The different rule forms above affect different aspects of the tau system.
+  We discuss each form in more detail below.~/
 
-  Note on the Eval Form:  Recall that the tau recognizers used above may appear
-  negated.  Thus, example terms of Eval form include
+  The documentation below is written as though the tau system is in auto mode!
+  To insure that the only rules added to the tau system are those explicitly
+  assigned to ~c[:rule-class] ~c[:tau-system], you should use
+  ~ilc[set-tau-auto-mode] to select manual mode.
+
   ~bv[]
-  (good-statep *initial-system-state*)
-
-  (not (good-statep *example-bad-state*)) ~ev[] Of course, the constant symbols
-  shown above might be replaced by explicit constants like ~c[123] or
-  ~c['(STATE 1 2 3)].  When a ~c[:tau-system] rule of this form is proved, the
-  system stores the value, ~t[T] or ~c[NIL], of the recognizer so that the tau
-  system no longer evaluates that recognizer on that constant but just looks up
-  the stored value.  This can be useful if a tau proof is slow because
-  expensive-to-compute recognizers are being applied.  Unfortunately, there are
-  no tools at the moment to help the user determine which tau recognizers are
-  being applied to which constants!  (However, in the ACL2 source file
-  ~c[tau.lisp], immediately after the definition of the system function
-  ~c[ev-fncall-w-tau-recog], there is a comment which contains some raw Lisp
-  code that can be used to investigate whether tau's use of evaluation on
-  constants is causing a problem.)  However, once a recognizer and the
-  constants on which it is being evaluated are identified, the tau system can
-  be sped up by proving Eval rules to pre-compute and store the values of the
-  recognizer on those constants.  Alternatively, at the possible loss of some
-  completeness in the tau system, the executable counterpart of the recognizer
-  can be disabled.
-
-  Note on the Signature Forms: Typically, each of the hypotheses must be a
-  tau-style predicate, possibly negated, about a single variable; multiple
-  hypotheses about a given variable are permitted.  For example, one might
-  include both that ~c[(NATP x1)] and ~c[(NOT (EQUAL x1 23))].  However,
-  hypotheses that are not tau predicates or their negations are allowed and are
-  relieved, if possible, only by trivial reasoning, i.e., by literally
-  occurring in the governing context.  For example, the formula
-  ~bv[]
-  (implies (and (natp n) (integer-listp x) (< n (len x))) 
-           (integerp (nth n x)))
+  General Form: ~i[Boolean]:
+  (booleanp (p v))
   ~ev[]
-  is a legal tau signature rule.  The first two hypotheses restrict the tau of
-  the two arguments to ~c[nth].  The conclusion asserts the tau of a general
-  application of ~c[nth].  However, the third hypothesis is not a tau
-  predicate: it involves two variables and the function symbol ~c[len].  This
-  tau signature could be used to determine that an occurrence of ~c[(NTH a b)]
-  is an integer only if ~c[(< a (LEN b))] governs the occurrence.  However, the
-  other two hypotheses are relieved by recursive use of the tau algorithm on the
-  expressions ~c[a] and ~c[b].  The ~c[nil] hypothesis -- silly under any 
-  circumstances -- is not allowed in tau signature rules; its presence indicates
-  a misunderstanding of tau.
+  Here ~c[p] must be a function symbol and ~c[v] must be a variable.  Such a
+  ~c[:tau-system] rule adds ~c[p] to the list of tau predicates.  If ~c[p] was
+  recognized as Boolean when it was defined, there is no need to state this
+  rule.  This form is needed if you define a monadic Boolean function in such a
+  way that the system does not recognize that it is Boolean.
 
-  Note on the Big Switch Form: ~c[body], above, must be a ``big switch'' term,
-  i.e., one that case splits on tau predicates about a single variable and
-  produces a term not involving that variable.  Since ~c[(EQUAL X 'LOAD)] is
-  considered tau predicate, a simple example of a big switch is a ~ilc[CASE]
-  expression in which a variable is compared successively to a sequence of
-  symbols.  Only the ~i[first] big switch equation for a given function symbol
-  ~c[fn] is stored!
+  ~bv[]
+  General Form: ~i[Eval]:
+  (p 'const) or
+  (p *const*)
+  ~ev[]
 
-  To see what the tau system ``knows'' about a given function symbol
-  ~pl[tau-data].  To see the entire tau data base, ~pl[tau-data-base].
-  To regenerate the tau data base using only the runes listed in the current
-  enabled theory, ~pl[regenerate-tau-data-base].
+  Here ~c[p] must be a function symbol.  In addition, recall that these general
+  tau predicate forms may appear negated.  So the form above includes such
+  theorems as ~c[(NOT (GOOD-STATEP *INITIAL-STATE*))].  A theorem of this form thus
+  records whether a named predicate is true or false on the given constant.
 
-  Think of the tau system as being a fast, complete theorem prover that only
-  deals with axioms of the above form.  We do not provide any other
-  documentation of the tau system at this time!~/"
+  Generally, when the tau system must determine whether an enabled tau
+  predicate is true or false on a constant, it simply evaluates the predicate
+  on the constant.  This can be impossible or very inefficient if ~c[p] is not
+  defined but constrained, or if ~c[p] is defined in a hard-to-compute
+  way (e.g., ~c[(defun p (x) (evenp (ack x x)))] where ~c[ack] is the Ackermann
+  function), or perhaps if the constant is very large.  By proving a
+  ~c[:tau-system] rule of Eval form, you cause the tau system to note the value
+  of the predicate on the constant and henceforth to look it up instead of
+  evaluating the definition.
+
+  A difficulty, however, is determining that a slow down is due to the
+  evaluation of tau predicates and not some other reason.  The first step is
+  determining that tau is slowing the proof down.  See ~ilc[time-tracker-tau]
+  for an explanation of ~c[TIME-TRACKER-NOTE]s output during some proofs
+  involving tau reasoning.  These notes can alert you to the fact that
+  significant amounts of time are being spent in the tau system.
+  ~ilc[Time-tracker-tau] gives some ways of determining whether tau predicate
+  evaluation is involved.  (If worse comes to worst, consider the following
+  hack: In the ACL2 source file ~c[tau.lisp], immediately after the definition
+  of the system function ~c[ev-fncall-w-tau-recog], there is a comment which
+  contains some raw Lisp code that can be used to investigate whether tau's use
+  of evaluation on constants is causing a problem.)  However, once a recognizer
+  and the constants on which it is being evaluated are identified, the tau
+  system can be sped up by proving Eval rules to pre-compute and store the
+  values of the recognizer on those constants.  Alternatively, at the possible
+  loss of some completeness in the tau system, the executable counterpart of
+  the recognizer can be disabled.
+
+  ~bv[]
+  General Form: ~i[Simple]:
+  (implies (p v) (q v))
+  ~ev[]
+  Here ~c[v] must be a variable symbol.  This rule builds-in the information
+  that anything satisfying ~c[p] must also satisfy ~c[q], i.e., the ``type''
+  ~c[q] includes the ``type'' ~c[p].  Recall that the forms may be negated.
+  Most of the time, ~c[p] and ~c[q] will be predicate symbols but it is
+  possible they will be equalities- or inequalities-with-constants.  Examples
+  of Simple rules include the following, which are in fact built-in:
+
+  ~bv[]
+  (implies (natp x) (integerp x))
+  (implies (integerp x) (rationalp x))
+  (implies (integerp x) (not (true-listp x)))
+  (implies (natp x) (not (< x 0)))
+  (implies (symbol-alistp x) (alistp x))
+  ~ev[]
+  Because the tau system records the transitive closure of the Simple rules,
+  any time a term is known to satisfy ~c[natp] it is also known to satisfy
+  ~c[integerp] and ~c[rationalp], and known not to satisfy ~c[true-listp],
+  and known to be non-negative.
+
+  ~bv[]
+  General Form: ~i[Conjunctive]:
+  (implies (and (p1 v) ... (pk v)) (q v)), ; Here k must exceed 1.
+  ~ev[]
+  The ~c[pi] and ~c[q] may be any tau predicates or their negations, ~c[v] must
+  be a variable symbol, and ~c[i] must exceed 1 or else this is a Simple rule.
+  An obvious operational interpretation of this rule is that if an object is
+  known to satisfy all of the ~c[pi], then it is known to satisfy ~c[q].
+  However, the actual interpretation is more general.  For example, if an
+  object is known to satisfy all but one of the ~c[pi] and is known not to
+  satisfy ~c[q], then the object is known not to satisfy the ``missing''
+  ~c[pi].
+
+  For example, the following Conjunctive rule allows tau to conclude that if
+  weekday ~c[D] is not ~c[MON], ~c[TUE], ~c[THU] or ~c[FRI], then it is ~c[WED]:
+  ~bv[]
+  (implies (and (weekdayp d)
+                (not (eq d 'MON))
+                (not (eq d 'TUE))
+                (not (eq d 'WED))
+                (not (eq d 'THU)))
+           (eq d 'FRI))
+  ~ev[]
+  The tau database is not closed under conjunctive rules; they are applied dynamically.
+
+  ~bv[]
+  General Form: ~i[Signature Form 1]:
+  (implies (and (p1 x1) (p2 x2) ... (pn xn) dep-hyp)
+           (q (fn x1 x2 ... xn)))
+  ~ev[]
+  The ~c[pi] and ~c[q] may be any tau predicates or their negations, ~c[fn]
+  must be a function symbol of arity ~c[n], the ~c[xi] must be distinct
+  variable symbols and ~c[dep-hyp] may be any term, provided it is not of the
+  ~c[(pi xi)] shape and the only the variables in it are the ~c[xi].
+
+  The Signature form actually allows multiple tau predicates to be applied to
+  each variable, e.g., x1 might be required to be both an ~c[INTEGERP] and
+  ~c[EVENP].  The Signature form allows there to be multiple hypotheses
+  classified as ~c[dep-hyp]s, i.e., not fitting any of the previous shapes, and
+  they are implicitly just conjoined.  The name ``dep-hyp'' is an abbreviation
+  of ``dependent hypothesis'' and stems from the fact they often express
+  relations between several of the function's inputs rather than type-like
+  constraints on individual inputs.
+
+  A Signature rule informs tau that the function ~c[fn] returns an object
+  satisfying ~c[q] provided that the arguments satisfy the respective ~c[pi]
+  and provided that ~c[dep-hyp] occurs in the current context.  Note: to be
+  precise, dependent hypotheses are relieved only by applying ACL2's most
+  primitive form of reasoning, ~il[type-set].  In particular, tau reasoning is
+  not used to establish dependent hypotheses.  The presence of a ~c[dep-hyp] in
+  a signature rule may severely restrict its applicability.  We discuss this
+  after showing a few mundane examples.
+
+  An example Signature rule is
+  ~bv[]
+  (implies (and (integer-listp x)
+                (integer-listp y))
+           (integer-listp (append x y)))
+  ~ev[]
+  Of course, a function may have multiple signatures:
+  ~bv[]
+  (implies (and (symbol-listp x)
+                (symbol-listp y))
+           (symbol-listp (append x y)))
+  ~ev[]
+  Here is a Signature rule for the function ~c[pairlis$]:
+  ~bv[]
+  (implies (and (symbol-listp x)
+                (integer-listp y))
+           (symbol-alistp (pairlis$ x y)))
+  ~ev[]
+  The tau system can consequently check this theorem by composing the last two
+  rules shown and exploiting Simple rule stating that symbol-alists are also
+  alists:
+  ~bv[]
+  (thm (implies (and (symbol-listp a)
+                     (symbol-listp b)
+                     (integer-listp y))
+                (alistp (pairlis$ (append a b) y))))
+  ~ev[]
+  Since ~c[a] and ~c[b] are known to be lists of symbols and a signature for
+  ~c[append] is that it preserves that predicate, the first argument to the
+  ~c[pairlis$] expression is known to be a list of symbols.  This means the
+  Signature rule for ~c[pairlis$] tells us the result is a ~c[symbol-alistp], but
+  the previously mentioned Simple rule, ~c[(implies (symbol-alistp x) (alistp x))],
+  tells us the result is also an ~c[alistp].
+
+  When a Signature rule has an ~c[dep-hyp], that hypothesis is not an expression
+  in the tau system.  Tau is not used to check that hypothesis.  Instead, tau uses the
+  more primitive ~il[type-set] mechanism of ACL2.  Here is an example of a Signature
+  rule with a ~c[dep-hyp]:
+  ~bv[]
+  (implies (and (natp n)
+                (integer-listp a)
+                (< n (len a)))
+           (integerp (nth n a)))
+  ~ev[]
+
+  Note that the last hypothesis is a dependent hypothesis: it is not a tau
+  predicate but a relationship between ~c[n] and ~c[a].  It is relieved by
+  ~il[type-set].  If one is trying to compute the signature of an ~c[(nth n a)]
+  expression in a context in which ~c[(< n (len a))] is explicitly assumed,
+  then this mechanism would establish the dependent hypothesis.  But one can
+  easily imagine an almost identical context where, say ~c[(< n (len (rev a)))]
+  is explicitly assumed.  In that context, the Signature rule would not be
+  fired because ~ilc[type-set] cannot establish ~c[(< n (len a))] from
+  ~c[(< n (len (rev a)))], even though it would be easily proved by rewriting
+  using the theorem ~c[(equal (len (rev a)) (len a))].
+
+  Note also that if this signature could be phrased in a way that eliminates
+  the dependency between ~c[n] and ~c[a] it would be more effective.  For example,
+  here is a related Signature rule without a dependent hypothesis:
+
+  ~bv[]
+  (implies (and (natp n)
+                (register-filep a)
+                (< n 16))
+           (integerp (nth n a)))
+  ~ev[]
+  In this theorem we require only that ~c[n] be less than 16, which is a tau
+  predicate and hence just an additional tau constraint on ~c[n].
+
+  ~bv[]
+  General Form: ~i[Signature Form 2]:
+  (implies (and (p1 x1) (p2 x2) ... (pn xn) dep-hyp)
+
+           (q (mv-nth 'n (fn x1 x2 ... xn))))
+  ~ev[]
+  This form of signature rule is just like form 1 except that it is useful for functions
+  that return multiple-values and allows us to ``type-check'' their individual outputs.
+
+  ~bv[]
+  General Form: ~i[Big Switch]:
+  (equal (fn . formals) body)
+  ~ev[]
+  In the Big Switch form, ~c[fn] must be a function symbol, ~c[formals] must be
+  a list of distinct variable symbols, and ~c[body] must be a ``big switch''
+  term, i.e., one that case splits on tau predicates about a single variable
+  and produces a term not involving that variable.  An example of a Big Switch
+  rule is
+  ~bv[]
+  (equal (conditional-type x y)
+         (if (consp x)
+             (consp y)
+             (integerp y)))
+  ~ev[]
+  The idea is that the tau system can treat calls of ~c[conditional-type] as
+  a tau-predicate after determining the tau of an argument.
+
+  Since equality-to-constants are tau predicates, a more common example of a
+  Big Switch rule is
+  ~bv[]
+  (equal (dtypep x expr)
+         (case x
+               (STMT (stmt-typep expr))
+               (EXPR (expr-typep expr))
+               (MODULE (module-typep expr))
+               (otherwise nil)))
+  ~ev[]
+  This is because ~c[(case x (STMT ...) ...)] macroexpands in ACL2 to
+  ~c[(if (eql x 'STMT) ... ...)] and ~c[(eql x 'STMT)] is a tau predicate
+  about ~c[x].
+
+  Big Switch rules are recognized when a function is defined (if tau is in
+  automatic mode).  They generally do not have to be proved explicitly, though
+  they might be when mutual recursion is involved.  Only the first detected Big
+  Switch rule about a function ~c[fn] is recognized.
+
+  ~bv[]
+  General Form: ~i[MV-NTH Synonym]:
+  (equal (nth-alt x y) (mv-nth x y)) or
+  (equal (mv-nth x y) (nth-alt x y))
+  ~ev[]
+  Rules of this form just tell the tau system that the user-defined function
+  ~c[nth-alt] is synonymous with the ACL2 primitive function ~c[mv-nth].
+  Because ACL2's rewriter gives special handling to ~c[mv-nth], users sometimes
+  define their own versions of that function so they can disable them and control
+  rewriting better.  By revealing to the tau system that such a synonym has been
+  introduced you allow Signature rules of Form 2 to be used.~/"
 
   (declare (xargs :mode :logic :guard t))
   x)
@@ -8098,7 +8144,7 @@
 ; not exist.
 
 (defconst *tau-status-boot-strap-settings*
-   '((t . t) . (t . t)))
+   '((t . t) . (t . t)))                         ; See Warning below!
 ;  '((t . t) . (nil . t)))                       ; ((1.a . 1.b) . (2.a . 2.b))
 
 ; Thus,
@@ -8106,6 +8152,11 @@
 ; (1.b) = (cdar *tau-status-boot-strap-settings*) ; tau auto mode during boot
 ; (2.a) = (cadr *tau-status-boot-strap-settings*) ; tau system on/off after boot
 ; (2.b) = (cddr *tau-status-boot-strap-settings*) ; tau auto mode after boot
+
+; Warning: If you change these defaults, be sure to change the documentation
+; topics tau-system and introduction-to-the-tau-system and set-tau-auto-mode
+; and probably tau-status, where we are likely to say that the default setting
+; the user sees is tau-system on, auto mode on. 
 
 (in-theory (if (caar *tau-status-boot-strap-settings*)
                (enable (:executable-counterpart tau-system))
@@ -18605,6 +18656,7 @@
   The tau data base is regenerated by scanning the current logical world and
   re-processing every rule-generating event in it relative to the current
   enabled theory and current tau auto mode settings.
+  ~l[introduction-to-the-tau-system] for background details.
 
   This command was intended to allow the user to remove a fact from the tau
   data base, by regenerating the data base without the fact.  But as the
@@ -18620,38 +18672,32 @@
   later.  But suppose you did it.  Unfortunately, the data base you get will
   not be just like the one you started with minus the signature rule.  The
   reason is that the data base you started with was generated incrementally and
-  the current theory might have evolved.  For example, suppose at some point in
-  your session you disabled the enabled function ~c[fn], then the commands
-  before that one were processed with ~c[fn] enabled and the commands after
-  were processed with ~c[fn] disabled.  This probably means the resulting tau
-  data base does not correspond to any data base created under a single theory.
+  the current theory might have evolved.  To take a simple example, your
+  starting data base might have included a rule that has been disabled since it
+  was first added.  Thus, the part of your starting data base built before the
+  disabling was constructed with the rule enabled and the part built afterwards
+  has the rule disabled.  You are unlikely to get the same data base whether
+  you enable or disable that rule now.
 
   You might hope that the avoidance of ~c[in-theory] events would eliminate the
   problem but it does not because even the ~ilc[ground-zero] theory is
   constructed incrementally from the ``pre-history'' commands used to boot up
   ACL2.  Those pre-history commands include some global ~c[in-theory] commands.
-  For example, one such pre-history command disables the function
-  ~c[booleanp].  Thus, some pre-history commands are processed for tau facts
-  with ~c[booleanp] enabled and others are processed with it disabled.  But a
-  ~c[regenerate-tau-data-base] immediately after starting a session will
-  process all commands with ~c[booleanp] disabled and return a different tau
-  data base than that found in the ~c[ground-zero] state.  Furthermore, every
-  session starts from the ~c[ground-zero] state and so is ``infected'' with
-  global ~c[in-theory] commands.
+  Since every session starts from the ~c[ground-zero] state, the starting data
+  base is already ``infected'' with global ~c[in-theory] commands.
 
   The reason we hope that it will not be necessary to remove tau facts is that
-  tau is designed merely to prove goals and that its coverage grows
-  monotonically with the addition of rules.  According to this understanding of
-  tau, adding a signature rule, for example, may allow tau to prove some
-  additional goals but will not prevent it from proving goals it could prove
-  previously.  If this is understanding of tau is accurate, we see no
-  fundamental reason to support the removal of a fact.  This, of course,
+  the tau system is designed merely to be fast and benign (see
+  ~i[Design Philosophy] in ~il[introduction-to-the-tau-system]).  The tau system's
+  coverage should grows monotonically with the addition of rules.  According to
+  this understanding of tau, adding a signature rule, for example, may allow
+  tau to prove some additional goals but will not prevent it from proving goals
+  it could prove previously.  If this is understanding of tau is accurate, we
+  see no fundamental reason to support the removal of a fact.  This, of course,
   ignores the possibility that the user wishes to explore alternative proof
   strategies or measure performance.
 
-  We welcome input on this issue.
-
-  ~l[tau-system].~/"
+  We welcome user observations and experience on this issue.~/"
 
 ; Warning: See the Important Boot-Strapping Invariants before modifying!
 
@@ -38633,7 +38679,7 @@
   refuses to relieve that hypothesis.  Otherwise, it increments the current
   backchain depth and calculates a new current backchain-limit by taking the
   minimum of two values: the existing current backchain-limit, and the sum of
-  the current backchain depth and the the backchain-limit associated with the
+  the current backchain depth and the backchain-limit associated with the
   hypothesis.  Thus, ACL2 only modifies the current backchain-limit if it is
   necessary to decrease that limit in order to respect the backchain limit
   associated with the hypothesis.
@@ -40130,56 +40176,71 @@
 
   ":Doc-Section switches-parameters-and-modes
 
-  to turn on or off automatic generation of ~c[:tau-system] rules~/
+  turn on or off automatic (``greedy'') generation of ~c[:tau-system] rules~/
   ~bv[]
   Examples:
-  (set-tau-auto-mode t)
-  (set-tau-auto-mode nil)
+  (set-tau-auto-mode t)      ; select automatic (``greedy'') mode
+  (set-tau-auto-mode nil)    ; select manual mode
   ~ev[]~/
 
   This event is equivalent to
-  ~c[(table acl2-defaults-table :tau-auto-modep <t-or-nil>)],
-  and hence is ~ilc[local] to any ~il[books] and ~ilc[encapsulate] ~il[events]
-  in which it occurs; ~pl[acl2-defaults-table].
+  ~c[(table acl2-defaults-table :tau-auto-modep <t-or-nil>)], and hence is
+  ~ilc[local] to any ~il[books] and
+  ~ilc[encapsulate] ~il[events] in which it occurs; ~pl[acl2-defaults-table].
+  ~l[introduction-to-the-tau-system] for background details.
 
-  The initial value is ~c[nil] and we say that the ~ilc[tau-system] is in
-  ~i[manual] mode.  In manual mode, the only events that may create
-  ~c[:tau-system] rules are ~c[defthm] events explicitly specifying the
-  ~c[:]~ilc[tau-system] rule class in the ~c[:]~ilc[rule-classes] argument.  Of
-  course, for a ~c[:tau-system] rule to be created from a proved formula (or
-  its specified ~c[:corollary]), the formula must be of the appropriate
-  shape (syntactic form). ~l[tau-system].  If the ~c[:tau-system] rule class is
-  specified but the formula is not of an appropriate shape, an error is
-  signalled.
+  The tau system gathers rules for its data base in one of two ways: greedily
+  or only at the explicit command of the user.  ``Greedy'' mode is officially
+  called ``automatic mode'' and is the default.  The other mode is called
+  ``manual mode.''
 
-  The tau system is initially in manual mode.
+  In automatic mode, all rules processed by ACL2 are also considered for
+  inclusion in the tau data base: if the ~c[:corollary] of some proved theorem
+  happens to fit into one of the forms described in ~c[:]~ilc[tau-system], that
+  rule is quietly added to the tau data base ~i[regardless of what]
+  ~c[:]~ilc[rule-classes] the user named for the ~c[:corollary].  Of course,
+  such rules are also stored in the ways named by the user.  See the
+  ~i[Design Philosophy] section of ~il[introduction-to-the-tau-system] for a 
+  discussion of why the tau system is greedy by default.  More details
+  are given on automatic mode after we explain manual mode.
 
-  When the value of ~c[:tau-auto-modep] is ~c[t] we say the tau system is in
-  ~i[automatic] mode.  In automatic mode, a ~c[:tau-system] rule may be created
-  even by events not explicitly specifying the ~c[:tau-system] rule class.
+  To more tightly control the rules available to the tau system, the user may
+  select manual mode by executing ~c[(set-tau-auto-mode nil)].  In manual mode,
+  the only events that create ~c[:tau-system] rules are ~c[defthm] events
+  explicitly specifying the ~c[:]~ilc[tau-system] rule class in the
+  ~c[:]~ilc[rule-classes] argument.  Of course, for a ~c[:tau-system] rule to
+  be created from a proved formula (or its specified ~c[:corollary]), the
+  formula must be of the appropriate shape (syntactic form). ~l[tau-system].
+  In manual mode, if the ~c[:tau-system] rule class is specified but the
+  formula is not of an appropriate form an error is signalled.  (Note: even in
+  manual mode, monadic functions that are recognized as Boolean are classified
+  as tau predicates; but no rules are created for them.)
 
-  In particular, in automatic mode, a ~c[:tau-system] rule may be created by
-  any of the events below, provided the definition or formula proved is of an
-  appropriate shape:
+  Returning to our discussion of automatic mode, a ~c[:]~ilc[tau-system] rule
+  may be created by any of the events below, provided the definition or formula
+  proved is of an appropriate shape:
 
-  * ~c[defun] events introducing ``big switch'' or ``~c[mv-nth] synonyms,''
+  (1) ~c[defun] events introducing ``big switch'' or ``~c[mv-nth] synonyms,''
 
-  * ~c[defun] events creating type-prescription rules that may be also
+  (2) ~c[defun] events creating type-prescription rules that may be also
   represented as ``signature rules'' of form 1, and
 
-  * any ~c[defthm] event with a non-~c[nil] ~c[:rule-classes] argument if no
+  (3) any ~c[defthm] event with a non-~c[nil] ~c[:rule-classes] argument if no
     ~c[:tau-system] rule is among the rule classes and the formula proved is in
     the shape of any ~c[tau-system] rule.
 
-  ~l[tau-system] for a description of the various shapes named above.
+  Of course, events such as ~ilc[defstobj] and ~ilc[defevaluator] may also add
+  rules to the tau data base when they execute the ~ilc[defun] and ~ilc[defthm]
+  events implicit in their descriptions.  ~l[tau-system] for a description of
+  the various shapes mentioned above.
 
   Note that any rule (of any rule class) created when the tau system is in
   manual mode is also created in automatic mode.  For example, if an event
   would create a ~c[:DEFINITION], ~c[:TYPE-PRESCRIPTION], ~c[FORWARD-CHAINING],
   or ~c[:REWRITE] rule when the tau system is in manual mode, then the event
   will create that same rule when the tau system is in automatic mode.
-  Automatic mode just means that some ~c[:tau-system] rules may be created
-  also.
+  Automatic mode just means that some additional ~c[:tau-system] rules may be
+  created.
 
   Of course, if a ~c[defthm] event explicitly specifies a ~c[:tau-system] rule
   class, then even if the tau system is in automatic mode, that tau rule is
@@ -40193,9 +40254,25 @@
   a proved formula of some non-~c[:tau-system] rule class fails to be of an
   appropriate shape for the tau system.
 
+  In automatic mode, if the ~c[:rule-classes] specified for ~c[defthm] included
+  several corollaries and any one of them is of class ~c[:tau-system] then the
+  only tau system rules created are those explicitly classed as ~c[:tau-system]
+  rules.  For example, suppose a ~c[defthm] has one ~c[:corollary] stored as a
+  ~c[:rewrite] rule and another ~c[:corollary] stored as a ~c[:tau-system]
+  rule.  But suppose the ~c[:rewrite] rule happens to also to fit the form of a
+  ~c[:tau-system] rule.  Is it added to the tau data base or not?  The answer
+  is no.  If you have taken the trouble to specify ~c[:tau-system] corollaries
+  for an event, then those corollaries are the only ones stored as tau sytem
+  rules from that event.  Note that had both corollaries been classed as
+  ~c[:rewrite] rules (and been of acceptable ~c[:tau-system] form) both would
+  have also been made ~c[:tau-system] rules.  This also allows you be in automatic
+  mode and state a ~c[:rewrite] or other non-~c[:tau-system] rule and prevent it
+  from being also made a tau system rule:  just add a frivolous ~c[:tau-system]
+  ~c[:corollary] like ~c[(booleanp (integerp x))].
+
   Recall that the use of tau rules is controlled by the rune
   ~c[(:EXECUTABLE-COUNTERPART TAU-SYSTEM)].  When that rune is disabled, no tau rules
-  are used in proofs.  However, the tau system continues to collect tau rules
+  are ~i[used] in proofs.  However, the tau system continues to collect tau rules
   if the system is in automatic mode.  Thus, if and when the tau system is
   re-enabled, rules automatically generated while the tau system was disabled
   will be used as usual by the tau system.
@@ -40205,9 +40282,9 @@
   shape, regardless of whether the tau system is in automatic or manual mode.
 
   The macro ~ilc[tau-status] provides a convenient way to enable/disable the
-  executable counterpart of ~c[tau-system] and/or to switch between manual and
-  automatic modes.  It may also be used to determine the current settings of
-  those two flags."
+  ~c[:]~ilc[executable-counterpart] of ~c[tau-system] and/or to switch between
+  manual and automatic modes.  It may also be used to determine the current
+  settings of those two flags."
 
   `(state-global-let*
     ((inhibit-output-lst (cons 'summary (@ inhibit-output-lst))))
@@ -41593,7 +41670,7 @@
 ; We store relieve-hyps failures in tag-trees.  As we discuss below, there are
 ; two tags associated with this failure information: 'rw-cache-any-tag and
 ; 'rw-cache-nil-tag.  Each tag is associated with what we also call an
-; "rw-cache".  Sometimes we refer abstractly the the values of both tags as the
+; "rw-cache".  Sometimes we refer abstractly the values of both tags as the
 ; "rw-cache"; we expect that the context will resolve any possible confusion
 ; between the value of a tag and the entire cache (from both tags).  Each tag's
 ; value is what we call a "psorted symbol-alist": a true list that may have at
@@ -44799,7 +44876,7 @@ Lisp definition."
            x))
   ~ev[]
   Finally, we imagine needing to simplify calls of ~ilc[NTHCDR], where the
-  the first argument is a number (initially, the length of
+  first argument is a number (initially, the length of
   ~c[(LIST X0 X1 X2 X3)], which is 4).  The second lemma below is the
   traditional way to accomplish that goal (when not using BDDs), by
   proving a conditional rewrite rule.  (The first lemma is only proved
@@ -48218,6 +48295,6 @@ Lisp definition."
     (and (foo 0)
          (foo 17)
          (foo t)
-         (foo '(a b c)))
+         (not (foo '(a b c))))
     :rule-classes :tau-system)
   ~ev[]~/~/")

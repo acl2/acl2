@@ -1003,6 +1003,475 @@
 )
 
 
+(defdoc introduction-to-the-tau-system
+
+  ":Doc-Section introduction-to-the-tau-system
+
+  a decision procedure for runtime types~/
+
+  This doc topic is the main source of information about the tau system and
+  discusses the general idea behind the procedure and how to exploit it.
+
+  ~i[A ``Type-Checker'' for an Untyped Language]
+
+  Because ACL2 is an untyped language it is impossible to type check it.  All
+  functions are total.  An ~i[n]-ary function may be applied to any combination
+  of ~i[n] ACL2 objects.  The syntax of ACL2 stipulates that
+  ~c[(]~i[fn a1...an]~c[)] is a well-formed term if ~i[fn] is a function symbol
+  of ~i[n] arguments and the ~i[ai] are well-formed terms.  No mention is made
+  of the ``types'' of terms.  That is what is meant by saying ACL2 is an
+  untyped language.
+
+  Nevertheless, the system provides a variety of monadic Boolean function
+  symbols, like ~ilc[natp], ~ilc[integerp], ~ilc[alistp], etc., that recognize
+  different ``types'' of objects at runtime.  Users typically define many more
+  such recognizers for domain-specific ``types.''  Because of the prevalence of
+  such ``types,'' ACL2 must frequently reason about the inclusion of one
+  ``type'' in another.  It must also reason about the consequences of functions
+  being defined so as to produce objects of certain ``types'' when given
+  arguments of certain other ``types.''
+
+  Because the word ``type'' in computer science tends to imply syntactic or
+  semantic restrictions on functions, we avoid using that word henceforth.
+  Instead, we just reason about monadic Boolean predicates.  You may wish to
+  think of ``tau'' as synonymous with ``type'' but without any suggestion of
+  syntactic or semantic restrictions.~/
+
+  ~i[Design Philosophy]
+
+  The following basic principles were kept in mind when developing tau checker
+  and may help you exploit it.
+
+  (1) The tau system is supposed to be a lightweight, fast, and helpful
+  decision procedure for an elementary subset of the logic focused on monadic
+  predicates and function signatures.
+
+  (2) Most subgoals produced by the theorem prover are not in any decidable
+  subset of the logic!  Thus, decision procedures fail to prove the vast
+  majority of the formulas they see and will be net time-sinks if tried too
+  often no matter how fast they are.
+
+  Tau reasoning is used by the prover as part of ~c[preprocess-clause], one of
+  the first proof techniques the system tries.  The tau system filters out
+  ``obvious'' subgoals.  The tau system is only tried when subgoals first enter
+  the waterfall and when they are stable under simplification.
+
+  (3) The tau system is ``benign'' in the sense that the only way it
+  contributes to a proof is to eliminate (prove!) subgoals.  It does not
+  rewrite, simplify, or change formulas.  Tau reasoning is not used by the
+  rewriter.  The tau system either eliminates a subgoal by proving it or leaves
+  it unchanged.
+
+  (4) It is impossible to infer automatically the relations between arbitrary
+  recursively defined predicates and functions.  Thus, the tau system's
+  knowledge of tau relationships and function signatures is gleaned from
+  theorems stated by the user and proved by the system.
+
+  (5) Users wishing to build effective ``type-checkers'' for their models must
+  learn how rules affect the tau system's behavior.  There are two main forms
+  of tau rules: those that reveal inclusion/exclusion relations between named
+  tau predicates, e.g., that 16-bit naturals are also 32-bit naturals,
+  ~bv[]
+  (implies (n16p x) (n32p x)),
+  ~ev[]
+  and signatures for all relevant functions, e.g., writing a 32-bit natural to
+  a legal slot in a register file produces a register file:
+  ~bv[]  
+  (implies (and (natp n)
+                (< n 16)
+                (n32p val)
+                (register-filep regs))
+           (register-filep (update-nth n val regs))).
+  ~ev[]                 
+  For a complete description of acceptable forms see ~c[:]~ilc[tau-system].
+
+  (6) The tau system is ``greedy'' in its efforts to augment its data base.
+  Its data base is potentially augmented when rules of ~i[any]
+  ~c[:rule-class] (see ~c[:]~ilc[rule-classes]) are proved.  For example, if
+  you make a ~c[:]~ilc[rewrite] or ~c[:]~ilc[type-prescription] rule which
+  expresses relationship between tau, ACL2 will build it into the tau data
+  base.  The rule-class ~c[:]~ilc[tau-system] can be used to add a rule to the
+  tau data base without adding any other kind of rule.
+
+  (7) Greediness is forced into the design by benignity: the tau system may
+  ``know'' some fact that the rewriter does not, and because tau reasoning is
+  not used in rewriting, that missing fact must be conveyed to the rewriter
+  through some other class of rule, e.g., a ~c[:]~ilc[rewrite] or
+  ~c[:]~ilc[type-prescription] or ~c[:]~ilc[forward-chaining] rule.  By making
+  the tau system greedy, we allow the user to program the rewriter and the tau
+  system simultaneously while keeping them separate.  However, this means you must
+  keep in mind the effects of a rule on ~i[both] the rewriter and the tau
+  system and use ~c[:]~ilc[tau-system] rules explicitly when you want to ``talk''
+  just to the tau system.
+
+  (8) Tau rules are built into the data base with as much preprocessing as
+  possible (e.g., the system transitively closes inclusion/exclusion
+  relationships at rule-storage time) so the checker can be fast.
+
+  (9) For speed, tau does not track dependencies and is not sensitive to the
+  enabled/disabled status (see ~ilc[enable] and ~ilc[disable]) of rules.  Once
+  a fact has been built into the tau data base, the only way to prevent that
+  fact from being used is by disabling the entire tau system, by disabling
+  ~c[(:]~ilc[executable-counterpart]~c[ tau-system)].  If any tau reasoning is
+  used in a proof, the rune ~c[(:]~ilc[executable-counterpart]~c[ tau-system)]
+  is reported in the summary.  For a complete list of all the runes in the tau
+  data base, evaluate ~c[(global-val 'tau-runes (w state))].  Any of these
+  associated theorems could have been used.
+
+  These design criteria are not always achieved!  For example, the tau system's
+  ``greediness'' can be turned off (see ~ilc[set-tau-auto-mode]), the tau data
+  base can be regenerated from scratch to ingore disabled rules (see
+  ~ilc[regenerate-tau-data-base]), and disabling the
+  ~ilc[executable-counterpart] of a tau predicate symbol will prevent the tau
+  system from trying to run the predicate on constants.  The tau system's
+  benignity can be frustrating since it might ``know'' something the rewriter
+  does not.  More problematically, the tau system is not always ``fast'' and
+  not always ``benign!''  The typical way tau reasoning can slow a proof down
+  is by evaulating expensive tau predicates on constants.  The typical way tau
+  reasoning can hurt a previously successful proof is by proving some
+  subgoals (!) and thus causing the remaining subgoals to have different
+  ~il[clause-identifier]s, thus making explicit hints no longer applicable.  We
+  deal with such problems in ~ilc[dealing-with-tau-problems].
+
+  ~i[Technical Details]
+
+  The tau system consists of both a data base and an algorithm for using the
+  data base.  The data base contains theorems that match certain schemas allowing
+  them to be stored in the tau data base.  Roughly speaking the schemas encode
+  ``inclusion'' and ``exclusion'' relations, e.g., that ~c[natp] implies ~c[integerp]
+  and that ~c[integerp] implies not ~c[consp], and they encode ``signatures'' of
+  functions, e.g., theorems that relate the output of a function to the input,
+  provided only tau predicates are involved.
+
+  By ``tau predicates'' we mean the application of a monadic Boolean-valued
+  function symbol, the equality of something to a quoted constant, an
+  arithmetic ordering relation between something and a rational constant, or
+  the logical negation of such a term.  Here are some examples of tau
+  predicates:
+  ~bv[]
+  (natp i)
+  (not (consp x))
+  (equal y 'MONDAY)
+  (not (eql 23 k))
+  (< 8 max)
+  (<= max 24)
+  ~ev[]
+  Synonyms for ~ilc[equal] include ~ilc[=], ~ilc[eq], and ~ilc[eql].  Note that
+  negated equalites are also allowed.  The arithmetic ordering relations that
+  may be used are ~ilc[<], ~ilc[<=], ~ilc[>=], and ~ilc[>].  One of the
+  arguments to every arithmetic ordering relation must be an integer or
+  rational constant for the term to be treated as a tau predicate.
+
+  A ``tau'' is a data object representing a set of signed (positive or
+  negative) tau predicates whose meaning is the conjunction of the literals in
+  the set.
+
+  When we say that a term ``has'' a given tau we mean the term satisfies all of
+  the recognizers in that tau.
+
+  The tau algorithm is a decision procedure for the logical theory
+  described (only) by the rules in the data base.  The algorithm takes a term
+  and a list of assumptions mapping subterms (typically variable symbols) to
+  tau, and returns the tau of the given term.
+
+  When the system is called upon to decide whether a term satisfies a given
+  monadic predicate, it computes the tau of the term and asks whether the
+  predicate is in that set.  More generally, to determine if a term satisfies a
+  tau, ~i[s], we compute a tau, ~i[r], for the term and ask whether ~i[s] is a
+  subset of ~i[r].  To determine whether a constant, ~i[c], satisfies tau ~i[s]
+  we apply each of the literals in ~i[s] to ~i[c].  Evaluation might, of course,
+  be time-consuming for complex user-defined predicates.
+
+  The tau data base contains rules derived from definitions and theorems stated
+  by the user.  See ~c[:]~ilc[tau-system] for a description of the acceptable
+  forms of tau rules.
+
+  To shut off the greedy augmentation of the tau data base,
+  ~pl[set-tau-auto-mode].  This may be of use to users who wish to tightly
+  control the rules in the tau data base.  To add a rule to the tau data base
+  without adding any other kind of rule, use the rule class
+  ~c[:]~ilc[tau-system].
+
+  There are some slight complexities in the design related to how we handle
+  events with both ~c[:tau-system] corollaries and corollaries of other
+  ~c[:rule-classes], see ~ilc[set-tau-auto-mode].
+
+  To prevent tau reasoning from being used, disable the
+  ~c[:]~ilc[executable-counterpart] of ~c[tau-system], i.e., execute
+  ~bv[]
+  (in-theory (disable (:executable-counterpart tau-system)))
+  ~ev[]
+  or, equivalently,
+  ~bv[]
+  (in-theory (disable (tau-system)))
+  ~ev[]
+  To prevent tau from being used in the proof of a particular subgoal, locally
+  disable the ~c[:]~ilc[executable-counterpart] of ~c[tau-system] with a local
+  ~c[:in-theory] hint (~pl[hints]).
+
+  The event command ~ilc[tau-status] is a macro that can be used to toggle both
+  whether tau reasoning is globally enabled and whether the tau data base is
+  augmented greedily.  For example, the event
+  ~bv[]
+  (tau-status :system nil :auto-mode nil)
+  ~ev[]
+  prevents the tau system from being used in proofs and prevents the
+  augmentation of the tau data base by rules other than those explicitly
+  labeled ~c[:]~ilc[tau-system]. 
+
+  To see what the tau system ``knows'' about a given function symbol
+  ~pl[tau-data].  To see the entire tau data base, ~pl[tau-data-base].
+  To regenerate the tau data base using only the runes listed in the current
+  enabled theory, ~pl[regenerate-tau-data-base].~/
+  :cite tau-system
+  :cite set-tau-auto-mode
+  :cite regenerate-tau-data-base")
+
+
+
+(defdoc dealing-with-tau-problems
+  ":Doc-Section introduction-to-the-tau-system
+
+  some advice on dealing with problems caused by the tau system~/
+
+  For background on the tau system, ~pl[introduction-to-the-tau-system].  The
+  two most common problems caused by the tau system have to do with the
+  system's interaction with ``legacy'' proof scripts.  Such scripts may suffer
+  because they were not designed to exploit tau reasoning and which may
+  configure the tau data base in quite incomplete and arbitrary ways.  The two
+  most common problems we have seen are (a) significant slow downs in a few
+  proofs and (b) failed proof attempts due to hints being misapplied because
+  the tau system caused subgoals to be renumbered.
+
+  We discuss the rather limited means of dealing with these problems here.  In
+  ~il[future-work-related-to-the-tau-system] we list some major inadequacies of
+  the tau system.
+
+  If the tau system contributes to a proof, the ~il[rune]
+  ~c[(:]~ilc[executable-counterpart]~c[ tau-system)] will be listed among the
+  Rules in the Summary.  However, merely by being attempted the tau system can
+  slow down proofs in which it makes no contribution.
+
+  The most brutal and fool-proof way to isolate a proof from the tau system is
+  to disable the entire system.  This can be done globally by
+  ~bv[]
+  (in-theory (disable (tau-system)))  ; (:executable-counterpart tau-system)
+  ~ev[]
+  or locally with a subgoal specific hint:
+  ~bv[]
+  ...
+  :hints ((\"...subgoal id...\" :in-theory (disable (tau-system))))
+  ~ev[]
+  Conducting a proof with and without the participation of the tau system
+  can help you determine whether tau reasoning is helping or hurting.~/
+
+  ~i[Dealing with Slowdowns]
+
+  The ~ilc[time-tracker] utility was added to allow users to investigate
+  whether excessive amounts of time are being spent in a given function.  It
+  was then used to annotate the code for the tau system as described in
+  ~il[time-tracker-tau].  The result is that if ``excessive'' time is spent in
+  tau reasoning, messages to that effect will be printed to the proof log.  The
+  question is: aside from disabling the tau system how can the proof be sped
+  up?
+
+  There are two common causes of slowdown in the tau system.  The first stems
+  from the system's use of ~c[:]~ilc[executable-counterpart]s to determine
+  whether a constant has a given tau.  Recall that a tau is a conjunction of
+  monadic predicates.  To determine whether some constant satisfies the tau,
+  the predicates are executed.  If you have a hard-to-compute predicate this
+  can be very slow.  The most typical such predicates in ACL2 applications are
+  those that check invariants, e.g., that recognize ``good states'' or
+  ``well-formed data.''  These are often written inefficiently because they are
+  intended only for used in theorems and, before the tau system was added, they
+  may have never been applied to constants.  The most common constants tau
+  predicates are applied to are ~c[0], ~c[T], and ~c[NIL], although different
+  models may stress other constants.  To understand why ~c[NIL] for example is
+  frequently tested, if the test of an ~c[IF]-expression is computed to have
+  tau ~i[s] then the next question we ask is ``does ~c[nil] satisfy ~i[s]?''
+
+  You may determine whether the tau system is spending time executing tau predicates
+  by observing the rewriter ~-[] ~pl[dmr] ~-[] or by interrupting the system
+  and getting a backtrace (~pl[set-debugger-enable]).
+
+  If excessive time is being spent in a tau predicate, a draconian solution is
+  to disable the ~c[:]~ilc[executable-counterpart] of that predicate, for
+  example in either of these equivalent ways.  The tau system does not execute
+  disabled ~c[:]~ilc[executable-counterpart]s.
+  ~bv[]
+  (in-theory (disable (:executable-counterpart foo)))
+  (in-theory (disable (foo)))
+  ~ev[]
+  In either case above, you may prefer to provide local ~c[:]~ilc[in-theory]
+  ~c[:]~ilc[hints] rather than ~c[:in-theory] ~il[events].
+
+  Disabling the executable counterpart of expensive tau predicates will weaken
+  the tau system, probably only negligibly, because it can no longer run the
+  predicates to determine whether they admits given constants.
+
+  A more sophisticated solution is to make the tau system record values of the
+  ~c[:]~ilc[logic]-mode function in question, so that the system will look up
+  the necessary values rather than running the function every time the question
+  arises.  It will look up recorded values whether the executable counterpart
+  of the tau predicate is enabled or disabled.  Here is an example of a lemma
+  that can provide such a solution.  See the discussion of the ~i[Eval] form
+  of ~c[:]~ilc[tau-system] rules.
+
+  ~bv[]
+  (defthm lemma
+    (and (foo 0)
+         (foo 17)
+         (foo t)
+         (not (foo '(a b c))))
+    :rule-classes :tau-system)
+  ~ev[]
+
+  It might be difficult to determine ~i[which] constants are being repeatedly
+  tested, although tracing (~ilc[trace$]) suspected tau predicates will show
+  what they are being called on.
+
+  At the moment there are no better user-level tools to discover this.
+  However, some users may wish to consider the following hack: In the ACL2
+  source file ~c[tau.lisp], immediately after the definition of the system
+  function ~c[ev-fncall-w-tau-recog], there is a comment which contains some
+  raw Lisp code that can be used to investigate whether tau's use of evaluation
+  on constants is causing a problem and to determine which constants are
+  involved.
+
+  The second main cause of slowdowns by the tau system is that the system contains
+  ``too many'' conjunctive rules (see the ~i[Conjunctive] form in ~ilc[tau-system]).
+  Unfortunately, we have no tools for either identifying the problem or addressing it!
+  That said, let us tell you what we do know!
+
+  Conjunctive rules are used to ``complete'' each tau as it is built.
+  Referring to the ~c[weekdayp] example in ~ilc[tau-system], if a tau is
+  constructed that recognizes weekdays but not ~c[MON], ~c[TUE], ~c[THU], or
+  ~c[FRI], it is completed by adding that the tau recognizes (only) ~c[WED].
+  This means that when we construct a tau we scan all known conjunctive rules
+  and see whether all but one of the literals of any conjunctive rule are
+  present.  This can be expensive.  To mitigate this expense, the tau system
+  caches the computation on a per proof basis (the cache is cleared after every
+  proof).
+  
+  To learn what conjunctive rules there are in your system, evaluate
+  ~bv[]
+  (assoc 'tau-conjunctive-rules (tau-data-base (w state)))
+  ~ev[]
+  Perhaps by sending the implementors that list, we can think of ways to index the
+  conjunctive rules to save time.
+
+  ~i[Dealing with Misapplied Hints]
+
+  The second common problem caused by the tau system in legacy proof scripts is
+  that it can cause subgoals to be renumbered and thus cause hints to be
+  missed.  The only ways to address this problem is either to disable
+  the tau system (locally or globally by disabling 
+  ~c[(:executable-counterpart tau-system)]) or change the legacy hints
+  to use the new subgoal names.~/")
+
+(defdoc future-work-related-to-the-tau-system
+
+  ":Doc-Section introduction-to-the-tau-system
+
+  some tau system problems that we hope someone will address~/
+
+  The tau system is inexpressive compared to modern polymorphic type systems ~-[]
+  something that may be unavoidable in an untyped first-order language.
+  However, we believe its effectiveness could be greatly increased by the
+  development of some additional tools.  We also believe that most of these
+  tools could be provided by ACL2 users creating certified community books that
+  exploit the basic tools already provided.  It is likely the initial attempts
+  to create such books will show the inadequacy of some of the current
+  algorithms and data structures in the tau system and might point the way to
+  improvements.
+
+  As implementors of ACL2 our preference is to support the improvement of the
+  core algorithms and data structures and provide customizable hooks allowing
+  users to exploit them by developing effective and convenient interfaces.
+  However, we want the further elaboration and optimization of the tau system
+  to be based on user experience not just speculation.
+
+  Some tools we ~i[think] might help are listed below.  We invite
+  volunteers and further suggestions.~/
+
+  ~i[A tau-centric signature notation] for use in function definitions,
+  exploited by a macro replacing ~c[defun] so that input-output relationships
+  phrased in tau terms are proved as ~c[:tau-system] rules immediately after
+  functions are introduced:
+
+  We have, for example, experimented with a book defining a macro that allows
+  the definition of the function ~c[ap] (append) accompanied by a signature
+  rule.  Subsequent ~c[defsig] events can add other signatures in the same
+  notation.
+  ~bv[]
+  (defsig ap (true-listp * true-listp ==> true-listp) (x y)
+     (if (consp x)
+         (cons (car x) (ap (cdr x) y))
+         y))
+
+  (defsig ap (integer-listp * integer-listp ==> integer-listp))
+  ~ev[]
+  This experimental book provides succinct syntax for all tau signatures.  For
+  example, that book parses the signature
+  ~bv[]
+  (NATP (/= 3 5 7) (< 16) * TRUE-LISTP ==> BOOLEANP * INTEGER-LISTP * NATP)
+  ~ev[] to be the signature of a function with two inputs and three outputs.
+  The first input must be a natural number, different from 3, 5, and 7, and
+  less than 16.  The second input must be a true list.  The first output is a
+  boolean, the second a list of integers, and the third a natural.  
+
+  To express this signature for function ~c[fn] as a formula requires
+  significantly more typing by the user:
+  ~bv[]
+  (IMPLIES (AND (NATP X)
+                (NOT (EQUAL X 3))
+                (NOT (EQUAL X 5))
+                (NOT (EQUAL X 7))
+                (< X 16)
+                (TRUE-LISTP Y))
+           (AND (BOOLEANP (MV-NTH 0 (FN X Y)))
+                (INTEGER-LISP (MV-NTH 1 (FN X Y)))
+                (NATP (MV-NTH 2 (FN X Y)))))
+  ~ev[]
+
+  We suspect that the provision of some succinct tau-centric notation (not
+  necessarily the one above) for signatures at definition-time will mean users
+  get more benefit from the tau system.
+
+  ~i[Some tau inference mechanisms]: This phrase suggests two different
+  improvements.  One is to implement a mechanism that adds or completes
+  signatures for function definitions by exploiting knowledge of commonly used
+  recursive schemas and the signatures of the subroutines in the body.  For example,
+  the definition of ~c[ap] above rather obviously has the signature
+  ~bv[]
+  (integer-listp * integer-listp ==> integer-listp)
+  ~ev[]
+  and many others just based on the two recursive schemas that (a) collect
+  certain elements from lists and (b) check that all elements have a certain
+  property.
+                                                                        
+  The other ``tau inference'' improvement is to implement a mechanism for
+  inferring relations between user-defined Booleans, perhaps by exploiting
+  example generation, testing, and knowledge of recursive schemas.  For
+  example, it is fairly obvious that ~ilc[symbol-alistp] implies ~ilc[alistp].
+  Making the user state these relations invites omissions that render the tau
+  system very unpredictable.
+
+  ~i[A tau assistant]: It would be useful to have a way to find out what tau
+  rules are missing.  Given a term that the user believes should ``obviously''
+  have some tau (``type'') what rules might be added to make the tau algorithm
+  compute that expected tau?  For example, if ~c[(g x)] is known to satisfy ~c[P]
+  and ~c[(f x)] is known to satisfy ~c[R] when its argument satisfies ~c[S]:
+  ~bv[]
+  g : T ==> P
+  f : S ==> R
+  ~ev[]
+  then if the user asserts that ~c[(f (g x))] ``ought'' to have tau ~c[R], one
+  plausible suggestion is the simple tau rule that ~c[(P x)] implies ~c[(S x)].
+  Such assistance ~-[] while still confronting an undecidable problem ~-[] might be
+  easier to implement within the tau framework than more generally in ACL2.
+  (Many users have wanted such an assistant to suggest lemmas for the rewriter.)~/")
+  
 
 ; Essay on the Tau System
 
@@ -1015,7 +1484,7 @@
 ; On the Name ``tau''
 ; On Some Basic Ideas
 ; On Tau Recognizers -- Part 1
-; On the Tau Data Base and General Design
+; On the Tau Database and General Design
 ; On Tau Recognizers -- Part 2
 ; On Tau Intervals and < versus <=
 ; On the Tau Data Structure
@@ -1027,8 +1496,8 @@
 ; On Comparing Bounds
 ; On the Proof of Correctness of upper-bound-<
 ; On the Near-Subset Relation for Intervals
-; On the Tau Data Base
-; On Closing the Data Base under Conjunctive Rules
+; On the Tau Database
+; On Closing the Database under Conjunctive Rules
 ; On Converting Theorems in the World to Tau Rules
 ; On Tau-Like Terms
 ; On Loops in Relieving Dependent Hyps in Tau Signature Rules
@@ -1101,13 +1570,13 @@
 ; independently of whatever thing we might be talking about.
 
 ; This leads to another basic idea in the tau system: these precomputed
-; relationships between tau properties are stored in a data base, so that upon
+; relationships between tau properties are stored in a database, so that upon
 ; learning that an object has one of the properties we can rapidly determine
 ; all of the tau recognizers it satisfies.
 
-; A third basic idea is that the tau data base will not be deduced
+; A third basic idea is that the tau database will not be deduced
 ; automatically but will be derived from rules proved by the user.  The tau
-; system mines rules as they are proved and builds its data base.  Several
+; system mines rules as they are proved and builds its database.  Several
 ; forms of theorems are of interest.
 
 ; Boolean:
@@ -1199,38 +1668,38 @@
 ; We discuss how tau recognizers are represented in our code in ``On Tau
 ; Recognizers -- Part 2'' below.
 
-; On the Tau Data Base and General Design
+; On the Tau Database and General Design
 
 ; It is possible to turn the tau reasoning engine on or off, by toggling the
 ; enabled status of the rune for TAU-SYSTEM.
 
-; Our design allows for theorems to enter the tau data base in either of two
+; Our design allows for theorems to enter the tau database in either of two
 ; ways, explicitly (because they have rule-classe :tau-system) or implicitly
 ; (because they are of the right syntactic shape).  Non-:tau-system theorems
-; are swept up into the data base implicitly only when the tau system is in
+; are swept up into the database implicitly only when the tau system is in
 ; ``automatic mode.''
 
 ; The two modes just mentioned -- whether tau reasoning is used in proofs
-; and whether the tau data base is extended implicitly -- are independent.
+; and whether the tau database is extended implicitly -- are independent.
 
 ; The tau system does not track the rules it uses.  This design decision was
-; motivated by the desire to make tau reasoning fast.  The tau data base does
+; motivated by the desire to make tau reasoning fast.  The tau database does
 ; not record which tau facts come from which theorems or runes.  It is
-; impossible to prevent tau from using a fact in the data base unless you
+; impossible to prevent tau from using a fact in the database unless you
 ; disable TAU-SYSTEM altogether.  However, there is a facility for regenerating
-; the tau data base with respect to a given enabled structure.
+; the tau database with respect to a given enabled structure.
 
-; Thus, the tau data base may be built incrementally as each event is processed
+; Thus, the tau database may be built incrementally as each event is processed
 ; or may be built in one fell swoop.  In the early implementations of the tau
 ; system the various modes and features were scattered all over our source
-; code.  For example, we found ourselves possibly extending the tau data base:
+; code.  For example, we found ourselves possibly extending the tau database:
 ; (a) when :tau-system rules are added by add-x-rule
 ; (b) when any non-:tau-system rule is added (e.g., by add-rewrite-rule)
 ; (c) when a defun or constraint added a Boolean type-prescription rule to
 ;     a monadic function
 ; (d) when an explicit regenerate event is triggered.
 
-; This became too complicated.  We have therefore moved all the tau data base
+; This became too complicated.  We have therefore moved all the tau database
 ; extension code into this file and invoke it only two places: in install-event
 ; and in the regeneration event (which mimics the sequential invocation on
 ; successive events in the world).
@@ -1240,7 +1709,7 @@
 ; Instead, it is just a quiet no-op on :tau-system rules and those rules are
 ; handled by the centralized tau facility developed here.  To do otherwise
 ; would mean that :tau-system rules must be added both by add-x-rule and by
-; regeneration of the tau data base.
+; regeneration of the tau database.
 
 ; Another oddity is that it is difficult to check that certain ``syntactic''
 ; criteria are met because the criteria are really dependent on previously
@@ -1259,13 +1728,13 @@
 ; add-type-prescription-rule.  But there is a similar but more common and
 ; insidious problem arising from regeneration.  Forget about encapsulation;
 ; let p, q, and p-implies-q just be top-level events.  But imagine we're
-; regenerating the tau data base under an ens in which the Boolean nature of p
+; regenerating the tau database under an ens in which the Boolean nature of p
 ; is disabled.  Then p-implies-q is no longer a legal :tau-system rule even
 ; though it was legal when checked.  Had p-implies-q just been a :rewrite rule,
-; say, and swept into the tau data base by auto mode, it would make sense to
+; say, and swept into the tau database by auto mode, it would make sense to
 ; quietly ignore this situation (and not add a tau rule).  But if p-implies-q
 ; is an explicit :tau-system rule it seems glib to ignore it in the
-; reconstruction of the data base but harsh to cause a hard error because of
+; reconstruction of the database but harsh to cause a hard error because of
 ; the disabled status of a :type-prescription rule.  So instead, we collect a
 ; list of all the explicit :tau-system rules excluded by the user's chosen ens
 ; and report it at the end of the regeneration process.  We call these ``lost
@@ -1375,7 +1844,7 @@
 
 ; * domain is INTEGERP, RATIONALP, ACL2-NUMBERP, or NIL and indicates the domain of
 ;   the interval.  That is, it is either the integer line, the rational line, the
-;   the acl2-numberp line, or the entire ACL2 universe ``line''.  The ACL2 universe
+;   acl2-numberp line, or the entire ACL2 universe ``line''.  The ACL2 universe
 ;   ``line'' is not quite a line:  the acl2-numbers are laid out linearly as one would
 ;   expect, and all the non-acl2-numbers are in an equivalence class with 0.
 
@@ -2060,12 +2529,12 @@
 ; We do not ever put *tau-contradiction* into objects containing tau data
 ; structures.
 
-; We will be more precise about the data base later, but Simple rules are used
-; to populate the data base, storing all the implications of a given
+; We will be more precise about the database later, but Simple rules are used
+; to populate the database, storing all the implications of a given
 ; recognizer's truth or falsity.  These implications are just tau representing
 ; the set of all truths that follow.  For example, under NATP we will store the
 ; tau of all known recognizers implied by t/NATP, as well as all known
-; recognizers implied by nil/NATP.  The data base is used to collect known
+; recognizers implied by nil/NATP.  The database is used to collect known
 ; truths about a term, by unioning together the sets implied by everything we
 ; know about the term and then augmenting that set with Conjunctive rules that
 ; may tell us other things given the particular combination of things we know.
@@ -2208,14 +2677,14 @@
 ; (foop 23) is false.  Then there is no point in including the ``(not (equal v
 ; 23))'' since is implied by the (foop v).  Indeed, we'd represent this tau as
 ; the set {foop}.  Suppose that tau were stored as the positive implicants of
-; some recognizer in the data base.  Now imagine the user disables the
+; some recognizer in the database.  Now imagine the user disables the
 ; executable-counterpart of foop.  Are we to recompute the normal form of all
 ; the stored taus?  We just can't bear the thought!
 
 ; So we have adopted a slightly inelegant approach: Tau is sensitive to the
 ; enabled status of the executable counterparts of the tau recognizers it needs
 ; to evaluate but suffers unnecessary incompleteness as a result.  For example,
-; one might build a tau in the data base that contains foop and that (at the
+; one might build a tau in the database that contains foop and that (at the
 ; time it was built) also records that 23 is not in the tau.  But then one
 ; disables foop and thereafter it is unknown whether 23 is in the tau or not.
 
@@ -4645,7 +5114,7 @@ at this point because they use some functions not yet defines.
 ; Note that we do not have to check the :interval of tau to see whether it
 ; approves the addition of sign/recog since the only part of the interval that
 ; matters directly is the domain and that is reflected in the :pos-pairs of
-; tau.  Of course, it may be that sign/recog implies, via the data base, a
+; tau.  Of course, it may be that sign/recog implies, via the database, a
 ; contradictory relationship with tau's :interval, but we must start to add it
 ; to find out.
 
@@ -5868,9 +6337,9 @@ at this point because they use some functions not yet defines.
 ;   (ens state) (w state))
 
 ; -----------------------------------------------------------------
-; On the Tau Data Base
+; On the Tau Database
 
-; We build a data base from certain kinds of theorems, as shown below.  In the
+; We build a database from certain kinds of theorems, as shown below.  In the
 ; forms shown, p, q, p1, p2, ..., are all understood to be tau recognizers (and
 ; thus may be (fn x), (EQUAL x 'evg), (< x 'rational), or (< 'rational x),
 ; and/or their negations.
@@ -5895,12 +6364,12 @@ at this point because they use some functions not yet defines.
 ; MV-NTH Synonym:
 ; (equal (fn x y) (mv-nth x y))
 
-; The data base will maintain the following properties on certain
+; The database will maintain the following properties on certain
 ; function symbols fn.
 
 ; property                   value
 
-; tau-pair                   (i . fn), means fn is known to tau data base
+; tau-pair                   (i . fn), means fn is known to tau database
 
 ; tau-pair-saved             (i . fn), means fn has in the past been known
 ;                                      and will have this index whenever known
@@ -5963,7 +6432,7 @@ at this point because they use some functions not yet defines.
 ; q.
 
 ; This note concerns how tau-put handles p-->q, for arbitrary signed tau
-; recognizers.  It may update the tau data base or not, depending on the
+; recognizers.  It may update the tau database or not, depending on the
 ; formula.  It may also signal that a contradiction has been detected.  But
 ; things may get complicated when p and/or q is either an
 ; equality-with-constant or one of the two inequalities-with-constants,
@@ -5996,7 +6465,7 @@ at this point because they use some functions not yet defines.
 
 ; We consider all the formulas of the form p-->q, where p and q are any of the
 ; signed tau recognizers.  For each choice of p and q, we determine what we can
-; learn (i.e., store in the data base) from the discovery that p-->q is a
+; learn (i.e., store in the database) from the discovery that p-->q is a
 ; theorem.  To make it easier to think about, we let p take on the following
 ; four forms (handling both signs explicitly later below).
 ; 
@@ -6060,7 +6529,7 @@ at this point because they use some functions not yet defines.
 
 ; code    action                                                        update?
 
-; S       store the obvious add-to-tau1 into the data base              yes
+; S       store the obvious add-to-tau1 into the database              yes
 ; U       may tell us some fn is unevalable but known                   maybe
 ; V       violates Non-Constant Non-Equality                            no
 ; N       no action     (mv Nil nil wrld)                               no
@@ -6636,7 +7105,7 @@ at this point because they use some functions not yet defines.
 
 ; q is a function call and we added q to the implicants of p.  So we have to
 ; add all the implicants of q to the implicants of p.  However, if adding q to
-; the implicants of p didn't really change p (and provided the data base was
+; the implicants of p didn't really change p (and provided the database was
 ; already closed), then we don't have to do anything.  Also, if q-recog is not
 ; a tau-pair but is a singleton evg list, we don't chase it's implicants.
 
@@ -6796,14 +7265,14 @@ at this point because they use some functions not yet defines.
 
 )
 
-; On Closing the Data Base under Conjunctive Rules
+; On Closing the Database under Conjunctive Rules
 
-; At one point we considered closing the data base under the conjunctive rules,
+; At one point we considered closing the database under the conjunctive rules,
 ; in so far as we could.  We knew that we had to keep conjunctive rules around
 ; anyway and use them at query time because at query time we are given a list
 ; of knowns and must consider what the conjunctive rules tell us about that
 ; particular combination of recognizers.  But it seemed like possibly a good
-; idea to also use the rules on the data base itself.  But that is very
+; idea to also use the rules on the database itself.  But that is very
 ; complicated.  Suppose we have a db closed under everything (including
 ; conjunctive rules).  Then we add p-->q.  This will touch the implicants of p
 ; (to add q and all the things q implies), -q (to add -p and all the things -p
@@ -6825,27 +7294,27 @@ at this point because they use some functions not yet defines.
 ; :forward-chaining rules were interpreted as :tau-system rules) we mapped over
 ; all the tau recognizers and asked how often does a conjunctive rule fire on
 ; the implicants (positive and negative).  The answer was that of 11,940
-; implicants stored in the data base, 4,640 of them could be extended with
+; implicants stored in the database, 4,640 of them could be extended with
 ; conjunctive rules.
 
 ; -----------------------------------------------------------------
 ; On Converting Theorems in the World to Tau Rules
 
-; We populate the data base by processing certain theorems.  However, we do
+; We populate the database by processing certain theorems.  However, we do
 ; this both when an event is first processed (in install-event) and also when
-; the tau data base is regenerated (regenerate-tau-data-base).  We call this
+; the tau database is regenerated (regenerate-tau-data-base).  We call this
 ; ``visiting'' the event; obviously, there is a first visit.  That is,
 ; sometimes when we visit an event we've already processed it once.
 
-; Recall also that theorems are added to the tau data base either because they
+; Recall also that theorems are added to the tau database either because they
 ; are explicitly labeled :tau-system rules or because we are in automatic mode
 ; and the theorems are of the appropriate form.  This is also done when we
 ; visit an event, rather than in the core code for each event.  This is a
-; deliberate design decision to bring all the tau data base updates into one
+; deliberate design decision to bring all the tau database updates into one
 ; place so we can implement regenerate-tau-data-base more robustly.
 
 ; The following code deals with recognizing the shapes of theorems that can be
-; represented as tau rules and adding those rules to the data base.  We
+; represented as tau rules and adding those rules to the database.  We
 ; ultimately define the function for visiting an event (tuple) and adding its
 ; rules.
 
@@ -6906,7 +7375,7 @@ at this point because they use some functions not yet defines.
 ; property (if any), which is the tau-pair fn will be assigned if it is ever
 ; again classified as a tau recognizer.
 
-; This function is called when we are regenerating the tau data base by
+; This function is called when we are regenerating the tau database by
 ; scanning the world and we encounter a function introduction, i.e., a FORMALs
 ; property.  But the monadic primitives, like CONSP and SYMBOLP, are known to
 ; be Boolean and are so initialized when we begin regenerating the world, in an
@@ -6945,7 +7414,7 @@ at this point because they use some functions not yet defines.
 
 ; However, if fn has ever had a tau-pair, we re-assign the same pair to it.
 ; This is an attempt to minimize the differences between regenerations of tau
-; data bases under different enabled structures.
+; databases under different enabled structures.
 
   (let ((old-pair (getprop fn 'tau-pair-saved nil 'current-acl2-world wrld)))
     (if old-pair
@@ -7042,21 +7511,30 @@ at this point because they use some functions not yet defines.
                       (t (add-to-set-equal val runes0)))
                 wrld)))
 
+
 (defun add-tau-boolean-rule (rune hyps concl wrld)
 
-; To add a tau Boolean rule, in which hyps is nil and concl is (BOOLEANP (f
-; v)), we make f a tau recognizer by giving it a (possibly new) tau pair and
-; initializing its pos- and neg-implicants.  We also add rune to tau-runes.
+; To add a new tau Boolean rule, in which hyps is nil and concl is (BOOLEANP
+; (fn v)), we make f a tau recognizer by giving it a (possibly new) tau pair
+; and initializing its pos- and neg-implicants.  We also add rune to tau-runes.
+; However, we must first check that fn is not already known to be a tau
+; predicate so that we don't re-initialize its tau properties and wipe out
+; existing ones.  Sol Swords constructed a script in which proving that NATP
+; was BOOLEANP inadventently wiped out the bootstrap properties of NATP because
+; we failed to detect that we already knew NATP was BOOLEANP.
 
   (declare (ignore hyps))
   (let ((fn (ffn-symb (fargn concl 1))))
     (cond
      ((getprop fn 'tau-pair nil 'current-acl2-world wrld)
+
+; We still add rune to the global-value of tau-runes even though the rune
+; doesn't otherwise change our world.  The reason is simply that we think the
+; user may expect to see it there if he or she proves a tau rule.
+
       (set-tau-runes nil rune wrld))
      (t (initialize-tau-pred fn
                              (set-tau-runes nil rune wrld))))))
-
-
 
 (defun add-tau-eval-rule (rune hyps concl wrld)
   (declare (ignore hyps))
@@ -7280,7 +7758,7 @@ at this point because they use some functions not yet defines.
 
 (defun add-tau-simple-rule (rune hyps concl ens wrld)
 
-; To add a simple subtype rule we extend the implicants in the data base,
+; To add a simple subtype rule we extend the implicants in the database,
 ; maintaining closure.  We know that hyps and concl satisfy tau-simple-formp,
 ; so we can ignore the subject of the recogs.  (We know the subject of the hyp
 ; and the concl is some common variable.)  We use the criterion :VARIOUS-ANY in
@@ -7560,7 +8038,7 @@ at this point because they use some functions not yet defines.
 (defun add-tau-signature-rule (rune form hyps concl ens wrld)
 
 ; Form is either 1 or 2 and indicates which form of signature rule we can
-; construct from (implies (and . hyp) concl).  We update the data base
+; construct from (implies (and . hyp) concl).  We update the database
 ; appropriately.  Look at the comment in tau-signature-formp for a description
 ; of the two forms.
 
@@ -7897,7 +8375,7 @@ at this point because they use some functions not yet defines.
 ; return a list of lists of terms.  If cnfp is t, the answer should be
 ; interpreted as a conjunction of disjunctions.  If cnfp is nil, the answer
 ; should be interpreted as a disjunction of conjunctions.  This function is not
-; particularly efficient; it's only intended use at the the time of its
+; particularly efficient; it's only intended use at the time of its
 ; creation is to preprocess the hypotheses of rules so that from
 ; (AND p (OR q r) s) we could get (OR (AND p q r) (AND p r s)), as in
 ; the following use:
@@ -8159,7 +8637,7 @@ at this point because they use some functions not yet defines.
 ; We now turn to the topic of ``visiting'' events and building up the tau data
 ; base.  Recall that we may be visiting an event for the first time (e.g., in
 ; the install-event just after it has been executed) or as part of a
-; chronological sweep of the world to regenerate the tau data base under a
+; chronological sweep of the world to regenerate the tau database under a
 ; different enabled structure.  But from tau's perspective, every visit to an
 ; event is (almost) like the first time.  This means that it must essentially
 ; erase any tau properties before starting to add the ``new'' ones.
@@ -8182,7 +8660,21 @@ at this point because they use some functions not yet defines.
 (defun discover-tau-pred (fn ens wrld)
 
 ; If fn is a monadic Boolean under ens, we initialize the tau properties for a
-; tau recognizer; else not.  We return the modified wrld.
+; tau recognizer; else not.  We return the modified wrld.  
+
+; Note: This function (re-)initializes the tau properties of fn!  Normally,
+; this is a straightforward initialization because discover-tau-pred (actually
+; the -preds version below) is only called by tau-visit-defuns, which will have
+; just introduced the new name fn.  However, it is possible that fn is being
+; redefined.  In that case, either we Erased old properties or else we are
+; Overwriting.  In the former case, the re-initialization here is still
+; correct.  In the latter case, one might argue that we should not
+; re-initialize because we're supposed to just add to existing properties.  But
+; the tau implicants already stored under fn and derived from its now-obsolete
+; definition may be quite extensive.  We think it is quite likely that adding
+; new deductions to those implicants from this new definition will produce
+; inconsistency.  Therefore, we make the arbitrary decision to Erase the tau
+; properties even upon Overwriting redefinitions.
 
   (mv-let
    (monadic-booleanp ttree)
@@ -8946,7 +9438,7 @@ at this point because they use some functions not yet defines.
 
 (defun tau-visit-defuns (fns auto-modep ens wrld0)
 
-; This is the function the tau system uses to update the tau data base in
+; This is the function the tau system uses to update the tau database in
 ; response to a mutual-recursion event.  Every element of fns is a defined
 ; function in wrld0.  That means that each has all the properties one would
 ; expect of a defined function except the tau properties, which are determined
@@ -8975,7 +9467,7 @@ at this point because they use some functions not yet defines.
 
 (defun tau-visit-defun (fn auto-modep ens wrld0)
 
-; This function updates the tau data base in response to a single defun.
+; This function updates the tau database in response to a single defun.
 ; It is just a special case of mutual-recursion.  We obey the Tau
 ; Msgp Protocol and return (mv msgp wrld'); No Change Loser on wrld0.
 
@@ -9086,7 +9578,7 @@ at this point because they use some functions not yet defines.
                   
 (defun tau-visit-defthm (first-visitp name auto-modep ens wrld0)
 
-; This is the function the tau system uses to update the tau data base in
+; This is the function the tau system uses to update the tau database in
 ; response to a defthm event named name, which has been introduced into wrld0.
 ; We follow the Tau Msgp Protocol and return (mv msgp wrld').  No Change Loser
 ; on wrld0.
@@ -9112,7 +9604,7 @@ at this point because they use some functions not yet defines.
 ; here.
 
 ; First-timep is t if this function is being called from install-event and is
-; nil if it is being called while regenerating the tau data base.  The flag
+; nil if it is being called while regenerating the tau database.  The flag
 ; affects whether we signal an error or quietly accumulate lost :tau-system
 ; runes.  Ev-type is the name of the primitive event macro that created the
 ; event.  The only values of interest to tau are DEFUN, DEFUNS, ENCAPSULATE,
@@ -10608,7 +11100,7 @@ at this point because they use some functions not yet defines.
 ; they are mutually recursive with other functions.  But sometimes these other
 ; functions are full fledged tau recognizers (now effectively disabled) and the
 ; ``recursive'' definition in question is just an abbreviation for some nest of
-; those.  To handle this the tau data base would need to have a set of
+; those.  To handle this the tau database would need to have a set of
 ; unconditional rewrite rules for which rewrite termination was guaranteed.
 ; Such a set might be formed by looking at all alternative definitions and
 ; layering them.  Let's say a function is ``tau primitive'' if it is an ACL2
@@ -10620,7 +11112,7 @@ at this point because they use some functions not yet defines.
 ; 1 functions.  Etc.  Any function not so classified is a member of a mutually
 ; recursive clique and its definition involves another such function.
 ; Equations for such functions would be ignored, i.e., when setting up the tau
-; data base we create a set of unconditional rewrite rules only for those
+; database we create a set of unconditional rewrite rules only for those
 ; functions assigned some layer.  But until we see the need for this we will
 ; not add other forms of rewrite rules.
 
@@ -11286,23 +11778,24 @@ at this point because they use some functions not yet defines.
   General Form:
   (tau-status :system a :auto-mode b)
   ~ev[]
+
   where ~c[a] and ~c[b] are Booleans.  Both keyword arguments are optional and
   they may be presented in either order.  Value ~c[a] controls whether the
   ~ilc[tau-system] is used during subsequent proofs.  Value ~c[b] controls
-  whether the tau rules are automatically created as rules of other
-  ~ilc[rule-classes] are added.~/
+  whether tau system rules are added automatically (``greedily'') when rules of
+  other ~ilc[rule-classes] are added.  If no arguments are supplied, this is
+  not an event and just returns an error-triple (~pl[error-triples]) indicating
+  the current settings.  ~l[introduction-to-the-tau-system] for background
+  details.~/
 
-  There are two important flags associated with the ~ilc[tau-system]: (a)
-  whether the tau system is used in proof attempts, and (b) whether the tau
-  system is automatically extending its data base when other classes of rules
-  are added.  These two flags are independent.  For example, the tau system may
-  be disabled in proof attempts even though it is actively (and silently)
-  extending its data base as rules of other classes are added.
+  The two flags are independent.  For example, the tau system may be disabled
+  in proof attempts even though it is automatically (and silently) extending
+  its database as rules of other classes are added.
 
-  This macro allows you to inspect or set the two flags.  Flag (a) is actually
-  toggled by enabling or disabling the executable-counterpart of
-  ~ilc[tau-system].  Flag (b) is toggled with the function
-  ~ilc[set-tau-auto-mode], which manipulates the ~ilc[acl2-defaults-table].
+  Flag (a) is actually toggled by enabling or disabling the
+  ~c[:]~ilc[executable-counterpart] of ~ilc[tau-system].  Flag (b) is toggled with the
+  function ~ilc[set-tau-auto-mode], which manipulates the
+  ~ilc[acl2-defaults-table].
 
   This macro expands into zero, one, or two ~il[events], as required by the
   supplied values of flags ~c[a] and ~c[b].
@@ -11316,7 +11809,8 @@ at this point because they use some functions not yet defines.
    ((:SYSTEM NIL) (:AUTO-MODE T))
   ~ev[]
 
-  intended to be self-explanatory.~/"
+  intended to be self-explanatory.~/
+  :cited-by introduction-to-the-tau-system"
 
   (cond
    (system-p
@@ -11392,14 +11886,15 @@ at this point because they use some functions not yet defines.
   ~ev[]
 
   This macro returns a list structure that indicates what facts about the
-  function symbol ~c[fn] are known to the tau system.~/
+  function symbol ~c[fn] are known to the tau system.
+  ~l[introduction-to-the-tau-system] for background details.~/
 
   The list structure should be self-explanatory given the following brief
   comments.  The ``index'' of a function, when non-~c[nil], means the function
-  is a monadic Boolean function treated by the tau system as a ``type.''
+  is a monadic Boolean function treated by the tau system as a tau predicate.
 
   The ``positive'' and ``negative implicants'' are conjunctions that indicate
-  the ``types'' implied by the given one or its negation.
+  the tau implied by the given one or its negation.
 
   The ``signatures'' entry is a formula indicating all the known signatures.
   If the signatures formula is ~c[T] it means there are no known signatures.
@@ -11408,7 +11903,8 @@ at this point because they use some functions not yet defines.
   
   If you wish to see a long list of all the runes from which some tau 
   information has been gleaned, evaluate
-  ~c[(global-val 'tau-runes (w state))]."
+  ~c[(global-val 'tau-runes (w state))].~/
+  :cited-by introduction-to-the-tau-system"
 
   `(tau-data-fn ',fn (w state)))
 
@@ -11453,7 +11949,7 @@ at this point because they use some functions not yet defines.
   
   ":Doc-Section History
 
-  to see the tau data base as a (very large) object~/
+  to see the tau database as a (very large) object~/
 
   ~bv[]
   Example:
@@ -11461,11 +11957,13 @@ at this point because they use some functions not yet defines.
   ~ev[]
 
   This function returns a large list object that shows in a human-readable way
-  what the tau system knows about every function symbol.  It is supposed to
-  be self-explanatory.~/
+  what the tau system knows about every function symbol.  It is supposed to be
+  self-explanatory.  ~l[introduction-to-the-tau-system] for background
+  details.~/
 
-  If it is not, please contact the implementors and we will improve the output
-  or the documentation."
+  If the output is not self-explanatory, please contact the implementors and we
+  will improve the output or the documentation.~/
+  :cited-by introduction-to-the-tau-system"
   
   (tau-data-fns
    (merge-sort-lexorder (all-fnnames-world :logic wrld))
@@ -11482,7 +11980,7 @@ at this point because they use some functions not yet defines.
                        (global-val 'tau-lost-runes wrld))))))
 
 ; -----------------------------------------------------------------
-; Regenerating the Tau Data Base
+; Regenerating the Tau Database
 
 ; Because tau does not track which runes it is using, disabling a rune has no
 ; effect on the inferences tau makes.  However, we do provide the ability to

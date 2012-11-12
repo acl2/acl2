@@ -33836,6 +33836,163 @@
 
   (defun-inline-form name formals lst 'defund *notinline-suffix*))
 
+(defun regenerate-tau-data-base-fn0 (user-auto-modep auto-modep ens trips
+                                                     ctx wrld state)
+; Tau will visit each triple in trips and extend the tau data base using the
+; given auto-modep and ens.  Trips is a list of the tau-relevant triples in the
+; current world, in chronological order from the earliest relevant boot-strap
+; triple.  Auto-modep is the setting of the tau auto modep flag to use during
+; the visit of each triple.  It is presumably T, since that is how the system
+; boots.  However, when we pass the EXIT-BOOT-STRAP-MODE triple, we switch the
+; auto-modep to user-auto-modep.
+  
+  (cond ((endp trips) (value wrld))
+        ((eq (cadr (car trips)) 'formals)
+         (regenerate-tau-data-base-fn0
+          user-auto-modep auto-modep ens
+          (cdr trips)
+          ctx
+          (tau-visit-function-introduction (car (car trips)) wrld)
+          state))
+        ((and (eq (car (car trips)) 'event-landmark)
+              (eq (cadr (car trips)) 'global-value))
+         (cond ((eq (access-event-tuple-type (cddr (car trips)))
+                    'EXIT-BOOT-STRAP-MODE)
+                (regenerate-tau-data-base-fn0
+                 user-auto-modep user-auto-modep ens
+                 (cdr trips)
+                 ctx wrld state))
+               (t
+                (er-let*
+                  ((wrld1
+                    (tau-visit-event nil
+                                     (access-event-tuple-type (cddr (car trips)))
+                                     (access-event-tuple-namex (cddr (car trips)))
+                                     auto-modep ens ctx wrld state)))
+                  (regenerate-tau-data-base-fn0
+                   user-auto-modep auto-modep ens
+                   (cdr trips)
+                   ctx wrld1 state)))))
+        (t (value
+            (er hard 'regenerate-tau-data-base-fn0
+                "Collect-tau-relevant-triples collected an unrecognized ~
+                 property!  We expected to see fn FORMALS and EVENT-LANDMARK ~
+                 GLOBAL-VALUE triples, but we see the triple ~x0."
+                (car trips))))))
+
+(defun regenerate-tau-data-base-fn1
+  (boot-strap-auto-modep user-auto-modep ens ctx wrld state)
+
+; Collect all the tau-relevant triples in the world, in chronological order,
+; then re-initialize the tau globals, and then visit each triple in turn and
+; regenerate the tau data base.  We start with the tau auto mode set to
+; boot-strap-auto-mode (presumably t), and switch to the user-auto-mode setting
+; when we get out of the boot strap region.
+
+; Tau Todo: It might be worthwhile trying to compress the world we get from
+; this event.  See how big it is and think about it.
+
+  (regenerate-tau-data-base-fn0
+   user-auto-modep
+   boot-strap-auto-modep
+   ens
+   (collect-tau-relevant-triples wrld nil)
+   ctx
+   (initialize-tau-preds 
+    *primitive-monadic-booleans*
+    (initialize-tau-globals wrld))
+   state))
+
+; Essay on Regenerate-tau-data-base
+
+; Regenerate-tau-data-base is motivated by the desire to provide the user with
+; some facility for adjusting the tau data base to reflect a theory, since
+; otherwise there would be no way to achieve that end short of removing certain
+; theorems from the script!  We think this will be a rarely-used event simply
+; because tau is designed to prove goals, not to simplify or rewrite them.  How
+; often will the user wish a goal NOT to be proved?  This is an admittedly
+; naive view of the situation, since as of this writing no one has ever used
+; the tau system!  It is still being developed.
+
+; Regenerate-tau-data-base recomputes the data base but only considers those
+; runes enabled by the current global theory.  But this represents a design
+; choice: why not allow the user to specify the theory governing the
+; regeneration process?  For example, why not provide:
+
+; (regenerate-tau-data-base (disable lemma55))
+
+; We call this the ``tau theory alternative'' and rejected it because we think
+; it will confuse the user moving forward.  That is, while a particular tau
+; theory might be used to regenerate the data base when the regeneration event is
+; processed, the subsequent incremental extension of the data base with :tau-system
+; or implicit (auto mode) rules is done under the global theory.  This could be
+; confusing if the user thinks that the tau theory governs what is in the tau data
+; base (instead of what was put in it ``initially'' by the regeneration event).
+
+; One solution would be to provide a completely separate theory to be used by
+; tau.  Setting the tau theory to some new theory would actually recompute the
+; tau data base.  As new events are added, both the current theory and the tau
+; theory are explicitly extended.  All queries to enabled status by the tau
+; system, including its use of type-set, would refer to the tau theory.  In a
+; situation similar to in-arithmetic-theory we would either have to provide
+; versions of enable and disable that are relative to current-tau-theory or
+; else warn the user not to use those macros.  All things considered this seems
+; like a lot of infrastructure for a rarely used event.
+
+; The design we actually implement doesn't allow for a distinct tau theory.
+; The global theory is always used.  If the user wants to regenerate the data
+; base he or she must reset the global theory appropriately and set it back
+; afterwards.  This has the advantage of forcing the user to acknowledge which
+; theory is being used.
+
+; In a similar vein, we use the global (acl2-defaults-table) setting of
+; tau-auto-modep during the regeneration.
+
+; Tau Todo:  see the install-event comment below!
+
+(defun regenerate-tau-data-base-fn (state doc event-form)
+
+; Warning: If this event ever generates proof obligations, remove it from the
+; list of exceptions in install-event just below its "Comment on irrelevance of
+; skip-proofs".
+
+  (when-logic
+   "REGENERATE-TAU-DATA-BASE"
+   (with-ctx-summarized
+    (if (output-in-infixp state)
+        event-form
+        (if doc
+            "( REGENERATE-TAU-DATA-BASE ...)"
+            "( REGENERATE-TAU-DATA-BASE)"))
+    (let* ((wrld (w state))
+           (event-form (or event-form
+                           `(REGENERATE-TAU-DATA-BASE
+                             ,@(if doc
+                                   (list :doc doc)
+                                   nil))))
+           (boot-strap-auto-modep (cdar *tau-status-boot-strap-settings*))
+           (user-auto-modep (tau-auto-modep wrld))
+           (ens (ens state)))
+
+; Note: We do not permit REGENERATE-TAU-DATA-BASE events to be redundant.  If
+; this is changed, change the text of the :doc for redundant-events.
+
+      (er-let*
+        ((doc-pair (translate-doc nil doc ctx state))
+         (wrld1 (regenerate-tau-data-base-fn1 boot-strap-auto-modep
+                                              user-auto-modep
+                                              ens ctx wrld state))
+         (val (install-event t
+                             event-form
+                             'regenerate-tau-data-base
+                             0
+                             nil
+                             nil
+                             :protect
+                             nil
+                             wrld1 state)))
+        (value t))))))
+
 ; Next comes support for time-tracker (but see axioms.lisp for
 ; time-tracker-fn).
 
