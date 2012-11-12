@@ -3942,6 +3942,11 @@
                               This suggests a mistake has been made."
                              (duplicates (evens (cdr entry)))
                              entry))
+                    ((and (eq binder 'defmacro)
+                          (assoc-keyword :stobjs (cdr entry)))
+                     (er-cmp ctx
+                             "The use of the :stobjs keyword is prohibited ~
+                              for an xargs declaration in a call of defmacro."))
                     (t (value-cmp nil))))
                   (otherwise
                    (mv t

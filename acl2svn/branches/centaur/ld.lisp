@@ -19490,6 +19490,10 @@
 ; We eliminated the nonlinearp condition in add-polys1.  For details, see the
 ; comment there about this change.
 
+; The file doc/texinfo.tex has been removed, the result being that if one
+; builds one's own Postscript version of the documentation, then the look will
+; quite possibly be somewhat different than it was previously.
+
   :doc
   ":Doc-Section release-notes
 
@@ -19568,8 +19572,32 @@
 
   The ~ilc[defthm] ~il[events] printed by ~ilc[defabsstobj], namely those that
   remain to be proved, are now given with ~c[:rule-classes nil] since there is
-  probably no intention to use them as rules.  Thanks to Shilpi Goel for
-  suggesting this change.
+  probably no intention to use them as rules.  Thanks to Robert Krug for
+  suggesting that we consider this change.
+
+  Macro definitions (~pl[defmacro]) may now include formal parameters that have
+  been declared as single-threaded objects (~pl[stobj]).  (However, macro
+  formals may not be declared as stobjs; ~pl[xargs].)  Thanks to Jose Luis
+  Ruiz-Reina for raising this issue and to Rob Sumners for helpful
+  conversations ~-[] both of these nearly 10 years ago!
+
+  The utilities ~ilc[defun-inline], ~ilc[defun-notinline], ~ilc[defund-inline],
+  and ~ilc[defund-notinline] have been simplified, by taking advantage of the
+  lifting of restrictions on formal parameters of macro definitions mentioned
+  above (involving symbols that happen to be ~il[stobj] names).  Now, when any
+  of the above four utilities is called with a given set of formal parameters,
+  those formals will be used not only for the generated ~ilc[defun] event but
+  also for the generated ~ilc[defmacro] event.  (Previously, they had been
+  renamed for the ~ilc[defmacro] event in order to respect the stobj name
+  restriction that no longer exists.)  Thanks to Jared Davis for pointing out
+  the value of makig this change.
+
+  The ~il[events] ~ilc[add-invisible-fns] and ~ilc[remove-invisible-fns] now
+  convert arguments as appropriate using the ~ilc[macro-aliases-table].  For
+  example, the event ~c[(add-invisible-fns append car)] is now legal (though
+  probably not a good idea), because ~c[add-invisible-fns] is now sensitive
+  to the fact that ~ilc[append] maps to ~ilc[binary-append] in the
+  ~ilc[macro-aliases-table].
 
   ~st[NEW FEATURES]
 
@@ -19607,6 +19635,12 @@
   A new utility makes it convenient to track time spent inside specified
   function calls or, more generally, during specified evaluation.
   ~l[time-tracker].
+
+  New runic designators make it easy to refer to macro names when building
+  theories.  Thus, for example, the object ~c[(:i append)] may be used in
+  theory expressions to designate the ~il[rune] ~c[(:induction binary-append)].
+  ~l[theories].  Thanks to Jared Davis for a useful discussion leading to this
+  enhancement.
 
   ~st[HEURISTIC IMPROVEMENTS]
 
@@ -19655,6 +19689,9 @@
   Some possible error messages for ~ilc[defabsstobj] have been fixed that had
   been ill-formed.  Thanks to Sol Swords for bringing this bug to our
   attention.
+
+  Fixed a bug that sometimes caused the times displayed in the summary for
+  ~ilc[certify-book] to be smaller than the actual times.
 
   ~st[CHANGES AT THE SYSTEM LEVEL]
 

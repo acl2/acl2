@@ -667,6 +667,27 @@
         (cdr entry)
       macro-name)))
 
+(defun deref-macro-name-lst (macro-name-lst macro-aliases)
+  (cond ((atom macro-name-lst) nil)
+        (t (cons (deref-macro-name (car macro-name-lst) macro-aliases)
+                 (deref-macro-name-lst (cdr macro-name-lst) macro-aliases)))))
+
+(defconst *abbrev-rune-alist*
+  '((:d . :definition)
+    (:e . :executable-counterpart)
+    (:i . :induction)
+    (:t . :type-prescription)))
+
+(defun translate-abbrev-rune (x macro-aliases)
+  (let ((kwd (and (consp x)
+                  (consp (cdr x))
+                  (symbolp (cadr x))
+                  (cdr (assoc-eq (car x) *abbrev-rune-alist*)))))
+    (cond (kwd (list* kwd
+                      (deref-macro-name (cadr x) macro-aliases)
+                      (cddr x)))
+          (t x))))
+
 (defun rule-name-designatorp (x macro-aliases wrld)
 
 ; A rule name designator is an object which denotes a set of runes.
@@ -709,7 +730,8 @@
          (let ((fn (deref-macro-name (car x) macro-aliases)))
            (and (function-symbolp fn wrld)
                 (runep (list :executable-counterpart fn) wrld))))
-        (t (runep x wrld))))
+        (t (let ((x (translate-abbrev-rune x macro-aliases)))
+             (runep x wrld)))))
 
 (defun theoryp1 (lst macro-aliases wrld)
   (cond ((atom lst) (null lst))
@@ -983,7 +1005,9 @@
            ans)))
    (t (convert-theory-to-unordered-mapping-pairs1
        (cdr lst) macro-aliases wrld
-       (cons (frunic-mapping-pair (car lst) wrld)
+       (cons (frunic-mapping-pair (translate-abbrev-rune (car lst)
+                                                         macro-aliases)
+                                  wrld)
              ans)))))
 
 (defun convert-theory-to-unordered-mapping-pairs (lst wrld)

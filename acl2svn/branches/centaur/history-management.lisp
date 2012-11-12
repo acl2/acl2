@@ -2879,17 +2879,17 @@
 ; least in the most convenient way) the user could detect the number
 ; of digits in it.  So we are doing it this way.
 
-  (let ((skip-proof-tree-time
+  (pprogn
+   (let ((skip-proof-tree-time
 
 ; Note that get-timer is untouchable, and :pso calls trans-eval, hence
 ; translate1; so we must bind skip-proof-tree-time up here, not under the io?
 ; call below.
 
-         (and (member-eq 'proof-tree (f-get-global 'inhibit-output-lst state))
-              (= (car (get-timer 'proof-tree-time state)) 0))))
-    (io? summary nil state
-         (skip-proof-tree-time)
-         (pprogn
+          (and (member-eq 'proof-tree (f-get-global 'inhibit-output-lst state))
+               (= (car (get-timer 'proof-tree-time state)) 0))))
+     (io? summary nil state
+          (skip-proof-tree-time)
           (cond
            ((member-eq 'time
                        (f-get-global 'inhibited-summary-types
@@ -2917,11 +2917,16 @@
                (princ$ ", other: " channel state)
                (print-timer 'other-time channel state)
                (princ$ ")" channel state)
-               (newline channel state)))))
-          (pop-timer 'prove-time t state)
-          (pop-timer 'print-time t state)
-          (pop-timer 'proof-tree-time t state)
-          (pop-timer 'other-time t state)))))
+               (newline channel state)))))))
+
+; The function initialize-summary-accumulators makes corresponding calls of
+; push-timer, not under an io? call.  So the balancing calls of pop-timer below
+; also are not under an io? call.
+
+   (pop-timer 'prove-time t state)
+   (pop-timer 'print-time t state)
+   (pop-timer 'proof-tree-time t state)
+   (pop-timer 'other-time t state)))
 
 (defun print-steps-summary (state)
   (io? summary nil state
