@@ -136,7 +136,9 @@ bounds."
 
 (defaggregate vl-echar
   (char loc)
-  :tag :vl-echar
+  ;; There are so many echars created during parsing that we'd rather not
+  ;; pay the price of tagging them all.
+  :tag nil
   :legiblep nil
   :require ((characterp-of-vl-echar->char      (characterp char))
             (vl-location-p-of-vl-echar->loc    (vl-location-p loc)))

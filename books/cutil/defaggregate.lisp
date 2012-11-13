@@ -106,17 +106,27 @@ for a new record-like structure.  It is similar to @('struct') in C or
 
 <h4>Tags (@(':tag') parameter)</h4>
 
-<p>The @(':tag') of every aggregate must be a keyword symbol, and typically
-shares its name with the name of the aggregate.  For instance, in the
-\"employee\" aggregate the tag is @(':employee').</p>
+<p>The @(':tag') of every aggregate must either be:</p>
 
-<p>How is the tag used?  Each instance of the aggregate will be a cons tree
+<ul>
+
+<li>A keyword symbol that typically shares its name with the name of the
+aggregate, e.g., in the \"employee\" aggregate the tag is @(':employee');
+or</li>
+
+<li><tt>nil</tt>, to indicate that you want a <b>tagless</b> aggregate.</li>
+
+</ul>
+
+<p>How are tags used?  Each instance of a tagged aggregate will be a cons tree
 whose car is the tag.  This requires some overhead---one cons for every
 instance of the aggregate---but allows us to compare tags to differentiate
-between different kinds of aggregates.</p>
+between different kinds of aggregates.  A tagless aggregate avoids this
+overhead, but you give up the ability to easily distinguish different kinds of
+tagless aggregates from one another.</p>
 
 <p>To avoid introducing many theorems about @('car'), we use an alias named
-@(see tag).  Each use of @('defaggregate') results in three tag-related
+@(see tag).  Each tagged @('defaggregate') results in three tag-related
 theorems:</p>
 
 <ol>
@@ -559,6 +569,19 @@ reasoning about @('car') in general.</p>"
 ;; structures are more efficient, but are not very convenient when you are
 ;; trying to debug your code.  By default, we lay out the structure legibly.
 
+
+; FIELDS MAP.  A "fields map" is an alist that binds each field name to an
+; s-expressions that describes how to access it.  For instance, suppose the
+; fields are (A B C).  For a legible structure, the fields map will be:
+;
+;   ((A . (cdr (assoc 'a <body>)))
+;    (B . (cdr (assoc 'b <body>)))
+;    (C . (cdr (assoc 'c <body>))))
+;
+; Where <body> is either X or (cdr X), depending on whether the structure is
+; tagless or not.  For an illegible structure, the (cdr (assoc ...)) terms just
+; get replaced with something horrible like (CAR (CDR (CAR <body>))).
+
 (defun da-illegible-split-fields (fields)
   ;; Convert a linear list of fields into a balanced tree with the same fields
   (let ((length (len fields)))
@@ -584,10 +607,15 @@ reasoning about @('car') in general.</p>"
 (defun da-x (name)
   (intern-in-package-of-symbol "X" name))
 
-(defun da-illegible-fields-map (name fields)
+(defun da-body (name tag)
+  (if tag
+      `(cdr ,(da-x name))
+    (da-x name)))
+
+(defun da-illegible-fields-map (name tag fields)
   ;; Convert a linear list of fields into a map from field names to paths.
   (da-illegible-fields-map-aux (da-illegible-split-fields fields)
-                               `(cdr ,(da-x name))))
+                               (da-body name tag)))
 
 (defun da-illegible-structure-checks-aux (split-fields path)
   ;; Convert the balanced tree into a list of the consp checks we'll need.
@@ -597,10 +625,10 @@ reasoning about @('car') in general.</p>"
                     (da-illegible-structure-checks-aux (cdr split-fields) `(cdr ,path))))
     nil))
 
-(defun da-illegible-structure-checks (name fields)
+(defun da-illegible-structure-checks (name tag fields)
   ;; Convert a linear list of fields into the consp checks we'll need.
   (da-illegible-structure-checks-aux (da-illegible-split-fields fields)
-                                     `(cdr ,(da-x name))))
+                                     (da-body name tag)))
 
 (defun da-illegible-pack-aux (honsp split-fields)
   ;; Convert the tree of split fields into a cons tree for building the struct.
@@ -612,9 +640,10 @@ reasoning about @('car') in general.</p>"
 
 (defun da-illegible-pack-fields (honsp tag fields)
   ;; Convert a linear list of fields into consing code
-  `(,(if honsp 'hons 'cons)
-    ,tag
-    ,(da-illegible-pack-aux honsp (da-illegible-split-fields fields))))
+  (let ((body (da-illegible-pack-aux honsp (da-illegible-split-fields fields))))
+    (if tag
+        `(,(if honsp 'hons 'cons) ,tag ,body)
+      body)))
 
 ;; (da-illegible-pack-fields nil :taco '(shell meat cheese lettuce sauce))
 ;;   ==>
@@ -623,11 +652,11 @@ reasoning about @('car') in general.</p>"
 
 
 
-(defun da-legible-fields-map (name fields)
+(defun da-legible-fields-map (name tag fields)
   ;; Convert a linear list of fields into a map from field names to paths.
   (if (consp fields)
-      (cons (cons (car fields) `(cdr (assoc ',(car fields) (cdr ,(da-x name)))))
-            (da-legible-fields-map name (cdr fields)))
+      (cons (cons (car fields) `(cdr (assoc ',(car fields) ,(da-body name tag))))
+            (da-legible-fields-map name tag (cdr fields)))
     nil))
 
 (defun da-legible-pack-fields-aux (honsp fields)
@@ -640,9 +669,10 @@ reasoning about @('car') in general.</p>"
 
 (defun da-legible-pack-fields (honsp tag fields)
   ;; Convert a linear list of fields into consing code for a legible map
-  `(,(if honsp 'hons 'cons)
-    ,tag
-    ,(da-legible-pack-fields-aux honsp fields)))
+  (let ((body (da-legible-pack-fields-aux honsp fields)))
+    (if tag
+        `(,(if honsp 'hons 'cons) ,tag ,body)
+      body)))
 
 ;; (da-legible-pack-fields nil :taco '(shell meat cheese lettuce sauce))
 ;;   ==>
@@ -654,11 +684,11 @@ reasoning about @('car') in general.</p>"
 
 
 
-(defun da-fields-map (name legiblep fields)
+(defun da-fields-map (name tag legiblep fields)
   ;; Create a fields map of the appropriate type
   (if legiblep
-      (da-legible-fields-map name fields)
-    (da-illegible-fields-map name fields)))
+      (da-legible-fields-map name tag fields)
+    (da-illegible-fields-map name tag fields)))
 
 (defun da-pack-fields (honsp legiblep tag fields)
   ;; Create a fields map of the appropriate type
@@ -666,12 +696,12 @@ reasoning about @('car') in general.</p>"
       (da-legible-pack-fields honsp tag fields)
     (da-illegible-pack-fields honsp tag fields)))
 
-(defun da-structure-checks (name legiblep fields)
+(defun da-structure-checks (name tag legiblep fields)
   ;; Check that the object's cdr has the appropriate cons structure
   (if legiblep
-      `((alistp (cdr ,(da-x name)))
-        (consp (cdr ,(da-x name))))
-    (da-illegible-structure-checks name fields)))
+      `((alistp ,(da-body name tag))
+        (consp ,(da-body name tag)))
+    (da-illegible-structure-checks name tag fields)))
 
 
 
@@ -725,10 +755,12 @@ reasoning about @('car') in general.</p>"
   ;; only inline accessors.
   `(defund ,(da-recognizer-name name) (,(da-x name))
      (declare (xargs :guard t))
-     (and (consp ,(da-x name))
-          (eq (car ,(da-x name)) ,tag)
-          ,@(da-structure-checks name legiblep fields)
-          (let ,(da-fields-map-let-bindings (da-fields-map name legiblep fields))
+     (and ,@(if tag
+                `((consp ,(da-x name))
+                  (eq (car ,(da-x name)) ,tag))
+              nil)
+          ,@(da-structure-checks name tag legiblep fields)
+          (let ,(da-fields-map-let-bindings (da-fields-map name tag legiblep fields))
             (declare (ACL2::ignorable ,@fields))
             (and ,@(strip-cadrs require))))))
 
@@ -772,8 +804,8 @@ reasoning about @('car') in general.</p>"
             (da-make-accessors-aux name (cdr fields) map))
     nil))
 
-(defun da-make-accessors (name fields legiblep)
-  (da-make-accessors-aux name fields (da-fields-map name legiblep fields)))
+(defun da-make-accessors (name tag fields legiblep)
+  (da-make-accessors-aux name fields (da-fields-map name tag legiblep fields)))
 
 (defun da-make-accessor-of-constructor (name field all-fields)
   `(defthm ,(intern-in-package-of-symbol (concatenate 'string
@@ -1113,9 +1145,10 @@ term.  The attempted binding of~|~% ~p1~%~%is not of this form."
            (er hard 'defaggregate "Name must be a symbol."))
        (or (symbol-listp fields)
            (er hard 'defaggregate "Fields must be a list of symbols."))
-       (or (and (symbolp tag)
+       (or (not tag)
+           (and (symbolp tag)
                 (equal (symbol-package-name tag) "KEYWORD"))
-           (er hard 'defaggregate "Tag must be a keyword symbol."))
+           (er hard 'defaggregate "Tag must be a keyword symbol or NIL."))
        (or (no-duplicatesp fields)
            (er hard 'defaggregate "Fields must be unique."))
        (or (consp fields)
@@ -1160,7 +1193,7 @@ term.  The attempted binding of~|~% ~p1~%~%is not of this form."
             ,(da-make-recognizer name tag fields require legiblep)
             ,(da-make-constructor name tag fields require honsp legiblep)
             ,(da-make-honsed-constructor name tag fields require legiblep)
-            ,@(da-make-accessors name fields legiblep)
+            ,@(da-make-accessors name tag fields legiblep)
 
             ,@(and patbindp
                    `((defmacro ,(intern-in-package-of-symbol
@@ -1171,21 +1204,19 @@ term.  The attempted binding of~|~% ~p1~%~%is not of this form."
 
             ,@(and
                (eq mode :logic)
-               `((defthm ,(intern-in-package-of-symbol (concatenate 'string
-                                                                    (symbol-name make-foo)
-                                                                    "-UNDER-IFF")
-                                                       name)
+               `((defthm ,(intern-in-package-of-symbol
+                           (concatenate 'string (symbol-name make-foo) "-UNDER-IFF")
+                           name)
                    (iff (,make-foo ,@fields)
                         t)
                    :hints(("Goal" :in-theory (enable ,make-foo))))
 
-                 (defthm ,(intern-in-package-of-symbol (concatenate 'string
-                                                                    "BOOLEANP-OF-"
-                                                                    (symbol-name foop))
-                                                       name)
+                 (defthm ,(intern-in-package-of-symbol
+                           (concatenate 'string "BOOLEANP-OF-" (symbol-name foop))
+                           name)
                    (equal (booleanp (,foop ,x))
                           t)
-                   ;; BOZO why not a  type-prescription?
+                   :rule-classes :type-prescription
                    :hints(("Goal" :in-theory (enable ,foop))))
 
                  ,(if (consp require)
@@ -1199,39 +1230,43 @@ term.  The attempted binding of~|~% ~p1~%~%is not of this form."
                               t)
                        :hints(("Goal" :in-theory (enable ,foop ,make-foo)))))
 
-                 (defthm ,(intern-in-package-of-symbol (str::cat "TAG-OF-" (symbol-name make-foo))
-                                                       name)
-                   (equal (tag (,make-foo ,@fields))
-                          ,tag)
-                   :hints(("Goal" :in-theory (enable tag ,make-foo))))
+                 ,@(and tag
+                        `((defthm ,(intern-in-package-of-symbol
+                                    (str::cat "TAG-OF-" (symbol-name make-foo))
+                                    name)
+                            (equal (tag (,make-foo ,@fields))
+                                   ,tag)
+                            :hints(("Goal" :in-theory (enable tag ,make-foo))))
 
-                 (defthm ,(intern-in-package-of-symbol (str::cat "TAG-WHEN-" (symbol-name foop))
-                                                       name)
-                   (implies (,foop ,x)
-                            (equal (tag ,x)
-                                   ,tag))
-                   :rule-classes ((:rewrite :backchain-limit-lst 0)
-                                  (:forward-chaining)
-                                  )
-                   :hints(("Goal" :in-theory (enable tag ,foop))))
+                          (defthm ,(intern-in-package-of-symbol
+                                    (str::cat "TAG-WHEN-" (symbol-name foop))
+                                    name)
+                            (implies (,foop ,x)
+                                     (equal (tag ,x)
+                                            ,tag))
+                            :rule-classes ((:rewrite :backchain-limit-lst 0)
+                                           (:forward-chaining))
+                            :hints(("Goal" :in-theory (enable tag ,foop))))
 
-                 (defthm ,(intern-in-package-of-symbol (str::cat (symbol-name foop) "-WHEN-WRONG-TAG")
-                                                       name)
-                   (implies (not (equal (tag ,x) ,tag))
-                            (equal (,foop ,x)
-                                   nil))
-                   :rule-classes ((:rewrite :backchain-limit-lst 1)))
+                          (defthm ,(intern-in-package-of-symbol
+                                    (str::cat (symbol-name foop) "-WHEN-WRONG-TAG")
+                                    name)
+                            (implies (not (equal (tag ,x) ,tag))
+                                     (equal (,foop ,x)
+                                            nil))
+                            :rule-classes ((:rewrite :backchain-limit-lst 1)))
 
-                 (add-to-ruleset tag-reasoning
-                                 '(,(intern-in-package-of-symbol
-                                     (str::cat "TAG-WHEN-" (symbol-name foop))
-                                     name)
-                                   ,(intern-in-package-of-symbol
-                                     (str::cat (symbol-name foop) "-WHEN-WRONG-TAG")
-                                     name)))
+                          (add-to-ruleset tag-reasoning
+                                          '(,(intern-in-package-of-symbol
+                                              (str::cat "TAG-WHEN-" (symbol-name foop))
+                                              name)
+                                            ,(intern-in-package-of-symbol
+                                              (str::cat (symbol-name foop) "-WHEN-WRONG-TAG")
+                                              name)))))
 
-                 (defthm ,(intern-in-package-of-symbol (concatenate 'string "CONSP-WHEN-" (symbol-name foop))
-                                                       name)
+                 (defthm ,(intern-in-package-of-symbol
+                           (concatenate 'string "CONSP-WHEN-" (symbol-name foop))
+                           name)
                    (implies (,foop ,x)
                             (consp ,x))
                    :rule-classes :compound-recognizer
@@ -1278,7 +1313,7 @@ term.  The attempted binding of~|~% ~p1~%~%is not of this form."
     :require ((integerp-of-taco->shell (integerp shell)
                                        :rule-classes ((:rewrite) (:type-prescription))))
     :long "<p>Additional documentation</p>"
-    :patbindp nil
+    :patbindp t
     )
 
 (defaggregate htaco
@@ -1286,6 +1321,15 @@ term.  The attempted binding of~|~% ~p1~%~%is not of this form."
     :tag :taco
     :hons t
     :require ((integerp-of-htaco->shell (integerp shell)))
+    :long "<p>Additional documentation</p>"
+    :patbindp nil
+    )
+
+(defaggregate untagged-taco
+    (shell meat cheese lettuce sauce)
+    :tag nil
+    :hons t
+    :require ((integerp-of-untagged-taco->shell (integerp shell)))
     :long "<p>Additional documentation</p>"
     :patbindp nil
     )
