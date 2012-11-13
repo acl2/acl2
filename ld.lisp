@@ -19575,11 +19575,11 @@
   probably no intention to use them as rules.  Thanks to Robert Krug for
   suggesting that we consider this change.
 
-  Macro definitions (~pl[defmacro]) may now include formal parameters that have
-  been declared as single-threaded objects (~pl[stobj]).  (However, macro
-  formals may not be declared as stobjs; ~pl[xargs].)  Thanks to Jose Luis
-  Ruiz-Reina for raising this issue and to Rob Sumners for helpful
-  conversations ~-[] both of these nearly 10 years ago!
+  The formal parameters for a macro definitions (~pl[defmacro]) may now include
+  ~ilc[state] and user-defined ~ilc[stobj]s.  (However, macro formals may not
+  be declared as stobjs; ~pl[xargs].)  Thanks to Jose Luis Ruiz-Reina for
+  raising this issue and to Rob Sumners for helpful conversations ~-[] both of
+  these nearly 10 years ago!
 
   The utilities ~ilc[defun-inline], ~ilc[defun-notinline], ~ilc[defund-inline],
   and ~ilc[defund-notinline] have been simplified, by taking advantage of the

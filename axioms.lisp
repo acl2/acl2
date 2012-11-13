@@ -17420,20 +17420,20 @@
   in CLTL pp. 60 and 145, the ~il[guard] is checked, and then the ~c[body] is
   evaluated.  The result is used in place of the original form.
 
-  In ACL2, macros do not have access to ~ilc[state].  (Indeed, they are applied
-  to syntax that cannot include a state object.)  This is in part a reflection
-  of CLTL, p. 143, ``More generally, an implementation of Common Lisp has great
-  latitude in deciding exactly when to expand macro calls with a program. ...
-  Macros should be written in such a way as to depend as little as possible on
-  the execution environment to produce a correct expansion.''  In ACL2, the
-  product of macroexpansion is independent of the current environment and is
-  determined entirely by the macro body and the functions and constants it
-  references.  It is possible, however, to define macros that produce
-  expansions that refer to ~ilc[state] or other single-threaded
-  objects (~pl[stobj]) or variables not among the macro's arguments.  See the
-  ~c[git] example above.  For a related utility that avoids this ~ilc[state]
-  restriction, for example allowing expansion of macros when generating the
-  body of an event, ~pl[make-event].~/"
+  In ACL2, macros do not have access to the ACL2 state ~ilc[state].  (If
+  ~ilc[state] or any user-defined stobj (~pl[stobj]) is a macro argument, it is
+  treated as an ordinary variable, bound at macro-expansion time to a piece of
+  syntax.)  This is in part a reflection of CLTL, p. 143, ``More generally, an
+  implementation of Common Lisp has great latitude in deciding exactly when to
+  expand macro calls with a program. ...  Macros should be written in such a
+  way as to depend as little as possible on the execution environment to
+  produce a correct expansion.''  In ACL2, the product of macroexpansion is
+  independent of the current environment and is determined entirely by the
+  macro body and the functions and constants it references.  It is possible,
+  however, to define macros that produce expansions that refer to ~ilc[state]
+  or other single-threaded objects (~pl[stobj]) or variables not among the
+  macro's arguments.  See the ~c[git] example above.  For a related utility
+  that does have access to the ACL2 ~il[state], ~pl[make-event].~/"
 
 ; Warning: See the Important Boot-Strapping Invariants before modifying!
 

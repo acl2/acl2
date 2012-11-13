@@ -3137,7 +3137,7 @@
 
   (cond ((endp pairs) (cons pair pairs))
         ((>= (car (car pairs)) (car pair))
-         (if (equal (car (car pairs)) (car pair))
+         (if (eql (car (car pairs)) (car pair))
              t
              (let ((rest (insert-tau-pair pair (cdr pairs))))
                (if (eq rest t)

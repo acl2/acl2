@@ -580,8 +580,9 @@
                  (or
                   (cond ((member new keys-passed)
                          (msg "The symbol-name of each keyword parameter ~
-                            specifier must be distinct.  But you have used ~
-                            the symbol-name ~s0 twice.  See :DOC macro-args."
+                               specifier must be distinct.  But you have used ~
+                               the symbol-name ~s0 twice.  See :DOC ~
+                               macro-args."
                               (symbol-name new)))
                         (t nil))
                   (cond ((> (length (car args)) 1)
@@ -591,9 +592,9 @@
                          (cond ((symbolp (caddr (car args)))
                                 nil)
                                (t (msg "~x0 is an illegal keyword parameter ~
-                                     specifier because the ``svar'' ~
-                                     specified, ~x1, is not a symbol.  See ~
-                                     :DOC macro-args."
+                                        specifier because the ``svar'' ~
+                                        specified, ~x1, is not a symbol.  See ~
+                                        :DOC macro-args."
                                        (car args)
                                        (caddr (car args))))))
                         (t nil))
@@ -820,70 +821,88 @@
           (er-progn
            (chk-all-but-new-name name ctx 'macro wrld1 state)
 
-; Important Note:  In chk-macro-arglist there is a comment warning us about
-; the idea of "translating" the args to a macro to obtain the "internal"
-; form of acceptable args.  See that comment before implementing any such
-; change.
+; Important Note: In chk-macro-arglist-msg there is a comment warning us about
+; the idea of "translating" the args to a macro to obtain the "internal" form
+; of acceptable args.  See that comment before implementing any such change.
 
-           (chk-macro-arglist args t ctx state)
+           (chk-macro-arglist args nil ctx state)
            (er-let*
-            ((edcls (collect-declarations
-                     dcls (macro-vars args)
-                     'defmacro state ctx)))
-            (let ((doc (if (stringp (car edcls)) (car edcls) nil))
-                  (edcls (if (stringp (car edcls)) (cdr edcls) edcls)))
-              (er-let*
-               ((tguard (translate
-                         (conjoin-untranslated-terms (get-guards1 edcls wrld1))
-                         '(nil) nil nil ctx wrld1 state))
+               ((edcls (collect-declarations
+                        dcls (macro-vars args)
+                        'defmacro state ctx)))
+             (let ((doc (if (stringp (car edcls)) (car edcls) nil))
+                   (edcls (if (stringp (car edcls)) (cdr edcls) edcls)))
+               (er-let*
+                   ((tguard (translate
+                             (conjoin-untranslated-terms (get-guards1 edcls wrld1))
+                             '(nil) nil nil ctx wrld1 state)))
+                 (mv-let
+                  (ctx1 tbody)
+                  (translate-cmp body '(nil) nil nil ctx wrld1
+                                 (default-state-vars t))
+                  (cond
+                   (ctx1 (cond ((null tbody)
 
-; known-stobjs = t, above and below.  But it doesn't matter because we
-; know, from chk-macro-arglist above, that no stobjs occur in the
-; formals of the macro and we check below, in
-; chk-free-and-ignored-vars, that tguard and tbody use only those
-; vars.
+; This case would seem to be impossible, since if translate (or translate-cmp)
+; causes an error, there is presumably an associated error message.
 
-                (tbody (translate body '(nil) nil nil ctx wrld1 state)))
-               (cond
-                ((redundant-defmacrop name args tguard tbody wrld1)
-                 (cond ((and (not (f-get-global 'in-local-flg state))
-                             (not (global-val 'boot-strap-flg (w state)))
-                             (not (f-get-global 'redundant-with-raw-code-okp
-                                                state))
-                             (member-eq name
-                                        (f-get-global 'macros-with-raw-code
-                                                      state)))
+                                (er soft ctx
+                                    "An error occurred in attempting to ~
+                                     translate the body of the macro.  It is ~
+                                     very unusual however to see this ~
+                                     message; feel free to contact the ACL2 ~
+                                     implementors if you are willing to help ~
+                                     them debug how this message occurred."))
+                               ((member-eq 'state args)
+                                (er soft ctx
+                                    "~@0~|~%You might find it useful to ~
+                                     understand that although you used STATE ~
+                                     as a formal parameter, it does not refer ~
+                                     to the ACL2 state.  It is just a ~
+                                     parameter bound to some piece of syntax ~
+                                     during macroexpansion.  See :DOC ~
+                                     defmacro."
+                                    tbody))
+                               (t (er soft ctx "~@0" tbody))))
+                   ((redundant-defmacrop name args tguard tbody wrld1)
+                    (cond ((and (not (f-get-global 'in-local-flg state))
+                                (not (global-val 'boot-strap-flg (w state)))
+                                (not (f-get-global 'redundant-with-raw-code-okp
+                                                   state))
+                                (member-eq name
+                                           (f-get-global 'macros-with-raw-code
+                                                         state)))
 
 ; See the comment in chk-acceptable-defuns-redundancy related to this error in
 ; the defuns case.
 
-                        (er soft ctx
-                            "~@0"
-                            (redundant-predefined-error-msg name)))
-                       (t (stop-redundant-event ctx state))))
-                (t
-                 (enforce-redundancy
-                  event-form ctx wrld1
-                  (er-let*
-                   ((wrld2 (chk-just-new-name name 'macro nil ctx wrld1 state))
-                    (ignored (value (ignore-vars edcls)))
-                    (ignorables (value (ignorable-vars edcls)))
-                    (doc-pair (translate-doc name doc ctx state)))
-                   (er-progn
-                    (chk-xargs-keywords1 edcls '(:guard) ctx state)
-                    (chk-free-and-ignored-vars name (macro-vars args) tguard
-                                               *no-measure* ignored ignorables
-                                               tbody ctx state)
-                    (er-let*
-                     ((wrld3 (defmacro-fn1 name args doc doc-pair
-                               tguard tbody wrld2 state)))
-                     (install-event name
-                                    event-form
-                                    'defmacro
-                                    name
-                                    nil
-                                    (cons 'defmacro mdef)
-                                    nil nil wrld3 state))))))))))))))))))
+                           (er soft ctx
+                               "~@0"
+                               (redundant-predefined-error-msg name)))
+                          (t (stop-redundant-event ctx state))))
+                   (t
+                    (enforce-redundancy
+                     event-form ctx wrld1
+                     (er-let*
+                         ((wrld2 (chk-just-new-name name 'macro nil ctx wrld1 state))
+                          (ignored (value (ignore-vars edcls)))
+                          (ignorables (value (ignorable-vars edcls)))
+                          (doc-pair (translate-doc name doc ctx state)))
+                       (er-progn
+                        (chk-xargs-keywords1 edcls '(:guard) ctx state)
+                        (chk-free-and-ignored-vars name (macro-vars args) tguard
+                                                   *no-measure* ignored ignorables
+                                                   tbody ctx state)
+                        (er-let*
+                            ((wrld3 (defmacro-fn1 name args doc doc-pair
+                                      tguard tbody wrld2 state)))
+                          (install-event name
+                                         event-form
+                                         'defmacro
+                                         name
+                                         nil
+                                         (cons 'defmacro mdef)
+                                         nil nil wrld3 state)))))))))))))))))))
 
 ; The following functions support boot-strapping.  Consider what
 ; happens when we begin to boot-strap.  The first form is read.
