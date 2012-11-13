@@ -571,7 +571,7 @@ reasoning about @('car') in general.</p>"
 
 
 ; FIELDS MAP.  A "fields map" is an alist that binds each field name to an
-; s-expressions that describes how to access it.  For instance, suppose the
+; s-expression that describes how to access it.  For instance, suppose the
 ; fields are (A B C).  For a legible structure, the fields map will be:
 ;
 ;   ((A . (cdr (assoc 'a <body>)))
