@@ -7803,6 +7803,9 @@
                           wrld31))
               (er-let* ((guards (translate-term-lst (get-guards fives wrld2)
 
+; Warning: Keep this call of translate-term-lst in sync with translation of a
+; guard in chk-defabsstobj-guard.
+
 ; Stobjs-out:
 ; Each guard returns one, non-stobj result.  This arg is used for each guard.
 ; By using stobjs-out '(nil) we enable the thorough checking of the use of

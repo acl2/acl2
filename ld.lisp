@@ -19494,6 +19494,80 @@
 ; builds one's own Postscript version of the documentation, then the look will
 ; quite possibly be somewhat different than it was previously.
 
+; Here is an example from Sol Swords, as promised in the item below about a
+; soundness bug in defabsstobj based on guards.
+
+;   (defstobj my-stobj-impl (my-fld :type (integer 0 *) :initially 0))
+;   
+;   (trace$ len)
+;   
+;   (defun bad-accessor-logic (my-stobj-logic)
+;      (declare (xargs :guard (equal (len my-stobj-logic) 0)))
+;      (mbe :logic 0
+;           :exec (len my-stobj-logic)))
+;   
+;   (defun bad-accessor-exec (my-stobj-impl)
+;      (declare (xargs :stobjs my-stobj-impl)
+;               (ignorable my-stobj-impl))
+;      1)
+;   
+;   (defun create-my-stobj-logic ()
+;      (declare (xargs :guard t))
+;      (list 0))
+;   
+;   (defun my-stobj-logicp (x)
+;      (declare (xargs :guard t))
+;      (AND (TRUE-LISTP X)
+;           (= (LENGTH X) 1)
+;           (MY-FLDP (NTH 0 X))))
+;   
+;   (defun-nx my-stobj-corr (my-stobj-i my-stobj-l)
+;      (and (my-stobj-implp my-stobj-i)
+;           (equal my-stobj-i my-stobj-l)))
+;   
+;   (DEFTHM CREATE-MY-STOBJ-ABS{CORRESPONDENCE}
+;            (MY-STOBJ-CORR (CREATE-MY-STOBJ-IMPL)
+;                           (CREATE-MY-STOBJ-LOGIC))
+;            ;; added by Matt K.:
+;            :hints (("Goal" :in-theory (disable (my-stobj-corr)))))
+;   
+;   (DEFTHM CREATE-MY-STOBJ-ABS{PRESERVED}
+;            (MY-STOBJ-LOGICP (CREATE-MY-STOBJ-LOGIC)))
+;   
+;   (DEFTHM BAD-ACCESSOR{CORRESPONDENCE}
+;            (IMPLIES (AND (MY-STOBJ-CORR MY-STOBJ-IMPL MY-STOBJ-ABS)
+;                          (EQUAL (LEN MY-STOBJ-ABS) 0))
+;                     (EQUAL (BAD-ACCESSOR-EXEC MY-STOBJ-IMPL)
+;                            (BAD-ACCESSOR-LOGIC MY-STOBJ-ABS))))
+;   
+;   (defabsstobj my-stobj-abs
+;      :concrete my-stobj-impl
+;      :recognizer (my-stobj-absp :logic my-stobj-logicp :exec my-stobj-implp)
+;      :creator (create-my-stobj-abs :logic create-my-stobj-logic :exec
+;                                    create-my-stobj-impl)
+;      :corr-fn my-stobj-corr
+;      :exports ((bad-accessor :logic bad-accessor-logic :exec bad-accessor-exec)))
+;   
+;   ; Test added by Matt K.:
+;   (bad-accessor my-stobj-abs) ; note trace of len here: (LEN |<my-stobj-abs>|)
+;   
+;   (defun length-of-my-stobj-abs ()
+;      (declare (xargs :guard t))
+;      (with-local-stobj my-stobj-abs
+;        (mv-let (len my-stobj-abs)
+;          (let ((len (ec-call (bad-accessor my-stobj-abs))))
+;            (mv len my-stobj-abs))
+;          len)
+;        create-my-stobj-abs))
+;   
+;   (defthm length-of-my-stobj-abs-by-def
+;      (equal (length-of-my-stobj-abs) 0)
+;      :hints(("Goal" :in-theory (disable (length-of-my-stobj-abs))))
+;      :rule-classes nil)
+;   
+;   (defthm length-of-my-stobj-abs-by-exec
+;      (equal (length-of-my-stobj-abs) 1))
+
   :doc
   ":Doc-Section release-notes
 
@@ -19575,7 +19649,7 @@
   probably no intention to use them as rules.  Thanks to Robert Krug for
   suggesting that we consider this change.
 
-  The formal parameters for a macro definitions (~pl[defmacro]) may now include
+  The formal parameters for a macro definition (~pl[defmacro]) may now include
   ~ilc[state] and user-defined ~ilc[stobj]s.  (However, macro formals may not
   be declared as stobjs; ~pl[xargs].)  Thanks to Jose Luis Ruiz-Reina for
   raising this issue and to Rob Sumners for helpful conversations ~-[] both of
@@ -19653,6 +19727,14 @@
   to boost performance.
 
   ~st[BUG FIXES]
+
+  Fixed a soundness bug in ~ilc[defabsstobj] based on ~ilc[guard]s that
+  violated single-threadedness restrictions.  Thanks to Sol Swords for bringing
+  this bug to our attention and supplying a proof of ~c[nil], which we include
+  as a comment in source file ~c[ld.lisp], in ~c[(deflabel note-5-1 ...)].  We
+  also thank Sol for helpful discussions about ~il[guard]s of functions
+  introduced by ~c[defabsstobj], which has led us to enhance the
+  ~il[documentation]; ~pl[defabsstobj].
 
   Fixed a raw Lisp error that occurred when tracing a ~i[stobj] resize
   function, thanks to an error report from Warren Hunt, Marijn Heule, and

@@ -21830,11 +21830,11 @@
 
 ; Essay on the Correctness of Abstract Stobjs
 
-; In this Essay we explain provide a semantic foundation for abstract stobjs
-; that shows the critical role of :CORRESPONDENCE, :PRESERVED, and :GUARD-THM
-; lemmas.  Our motivation is to understand why the standard logical definition
-; of evaluation is correctly implemented by how evaluation really works in
-; Lisp, using live stobjs.
+; In this Essay we provide a semantic foundation for abstract stobjs that shows
+; the critical role of :CORRESPONDENCE, :PRESERVED, and :GUARD-THM lemmas.  Our
+; motivation is to understand why the standard logical definition of evaluation
+; is correctly implemented by how evaluation really works in Lisp, using live
+; stobjs.
 
 ; Below, we use the term ``stobj primitive (for s)'' to indicate a function
 ; introduced by a defstobj or (more often) defabsstobj event (for stobj s).  In
@@ -21932,22 +21932,23 @@
 ;   Let L$c and L$a be the respective restrictions of S$c and S$a to a common
 ;   set of stobj names, and assume that A is a subset of the common domain of
 ;   L$c and L$a.  Assume either of the following, where EV_A is the variant of
-;   EV that evaluates using :EXEC functions for stobj primitives.
+;   EV that evaluates using :EXEC functions in the case of stobj primitives for
+;   members of A.
 
-;   (a) (ev_A u S$c latches$c) = (mv erp r$c L$c')
+;   (a) (ev_A u S$c L$c) = (mv erp r$c L$c')
 ;       AND
-;       (ev   u S$a latches$a) = (mv nil r$a L$a')
+;       (ev   u S$a L$a) = (mv nil r$a L$a')
 ;   OR
-;   (b) (ev5 u S$c S$a latches$c latches$a A) = (mv erp r$c r$a L$c' L$a').
+;   (b) (ev5 u S$c S$a L$c L$a A) = (mv erp r$c r$a L$c' L$a').
 
 ;   Then the following properties hold.
 
 ;   (1) In case (b) with erp nil, and in case (a) (for any erp):
 ;       (i)  r$c A-corresponds to r$a; and
 ;       (ii) L$c' and L$a' are the respective updates of L$c and L$a
-;            according to the stobjs-out of u, r$c, and r$a, in the obvious
+;            according to r$c, r$a, and the stobjs-out of u, in the obvious
 ;            sense.
-;   (2) L$c' and L$a' have the same domains as L$c and L$a, respectively.
+;   (2) L$c', L$a', L$c, and (thus) L$a all have the same domain.
 ;   (3) L$c' A-corresponds to L$a'.
 ;   (4) L$c' is A-valid and L$a' is pure-valid.
 ;   (5) In case (a), erp is nil.
@@ -21961,13 +21962,13 @@
 ; Proof.  We give only an outline of the proof, first dealing with (a) by
 ; itself, then using (a) in the proof sketch for (b).
 
-; The proof of (a) is by induction on A.  For the base case, where A is empty,
-; clearly (1)(i), (3), and (6) hold vacuously.  We leave the proof of the base
-; case, which is by a standard computational induction, to the reader.  Part
-; (1)(ii) is just a fact about EV, and the interesting case is to show that
-; L$a' is pure-valid, which is a consequence of the :PRESERVED theorems and the
-; fact that EV returns an error (mv non-nil ...) when the guard doesn't hold
-; for a call of a stobj primitive.
+; The proof of (a) is by induction on A.  First consider the base case, where A
+; is empty.  Clearly (1)(i), (3), and (5) hold vacuously.  Parts (1)(ii) and
+; (2) are just facts about EV.  Finally, (4) reduces to showing that L$a' is
+; pure-valid.  This follows from the :PRESERVED theorems, each of which has a
+; stobj primitive guard as a hypothesis, and the fact that EV returns an error
+; (mv non-nil ...) when the guard doesn't hold for a call of a stobj primitive.
+; We omit details.
 
 ; So assume that A is non-empty.  Let s0 be the abstract stobj in A that was
 ; last introduced in the world.  Hence we may write A = A' U {s0} where by the
@@ -21976,7 +21977,8 @@
 ; We now proceed by computational induction.  We consider only the interesting
 ; case, leaving the rest to the reader: u is (f ... s0 ...), where f is a stobj
 ; primitive for s0 (whose arguments may include members of A'), and where the
-; arguments evaluate without error.  Let f$a and f$c be the :LOGIC and :EXEC
+; arguments evaluate without error.  Thus, we may assume (a), since (b) clearly
+; implies (a) in the non-error case.  Let f$a and f$c be the :LOGIC and :EXEC
 ; functions for f (respectively).  For notational simplicity we consider only
 ; the case that f returns a single value; the general case is really the same,
 ; except for focusing on a particular position's result.  Let r' be the result
@@ -21985,13 +21987,13 @@
 
 ; (*)   r' {s0}-corresponds to r$a.
 
-; This holds by the :CORRESPONDENCE theorem for s0, applied to (f$a ... s0 ...)
-; and (f$c ... s0 ...).  Note that these are respectively equal to r' and r$a
-; because pure-evaluation (i.e., EV) returns a result provably equal to its
-; input.  Also note that since by hypothesis the evaluation (ev u S$a
-; latches$a) does not result in an error, i.e., returns (mv nil ...), we know
-; that the guard is met for the above call of f$a, as is necessary in order to
-; apply the :CORRESPONDENCE theorem.
+; To see this, first note that since we are assuming that the evaluation (ev u
+; S$a L$a) does not result in an error, i.e., returns (mv nil ...), we know
+; that the guard of f is met for the call of f in the term u.  We may therefore
+; apply the :CORRESPONDENCE theorem for f, to show that (f$c ... s0 ...) and
+; (f$a ... s0 ...) {s0}-correspond.  But these are respectively equal to r' and
+; r$a because pure-evaluation (i.e., EV) returns a result provably equal to its
+; input.
 
 ; (**)  r$c A'-corresponds to r'.
 
@@ -22002,16 +22004,17 @@
 
 ; From (*) and (**), a case analysis (on the type of result returned by f)
 ; yields that r$c A-corresponds to r$a.  Conclusion (1)(i) follows, and
-; (1)(ii), (2), and (3) are then routine.  For (5), we observe that since the
-; guard holds for the call of f$a (as argued for (*) above)), then by the
-; :GUARD-THM theorems, the guard holds for the corresponding call of f$c; hence
-; since f$c is guard-verified, its call's A-evaluation concludes without error.
-; For (4): the preservation of stobj recognizers for other than abstract
-; stobjs, and thus for :EXEC recognizers for abstract stobjs in A, is a
-; well-known property of well-guarded stobj computations (and the f$c is indeed
-; well-guarded, as argued for (5) above); and for :LOGIC recognizers of stobjs
-; in A it follows from the :PRESERVED theorems.  Note that the :PRESERVED
-; theorems again require that the guard is met, which was argued above.
+; (1)(ii), (2), and (3) then follow by usual arguments for EV.  For (5), we
+; observe that since the guard holds for the call of f (as argued for (*)
+; above)), then by the :GUARD-THM theorems, the guard holds for the
+; corresponding call of f$c; hence since f$c is guard-verified, its call's
+; A-evaluation concludes without error.  For (4): the preservation of stobj
+; recognizers for other than abstract stobjs, and thus for :EXEC recognizers
+; for abstract stobjs in A, is a well-known property of well-guarded stobj
+; computations (and the f$c is indeed well-guarded, as argued for (5) above);
+; and for :LOGIC recognizers of stobjs in A it follows from the :PRESERVED
+; theorems.  Note that the :PRESERVED theorems again require that the guard is
+; met, which was argued above.
 
 ; That concludes the proof of case (a), so we now consider case (b).  The proof
 ; is by computational induction.  The interesting case is the same one we dealt
@@ -22022,6 +22025,17 @@
 ; is guard-verified, we know that there will be no guard violation, and
 ; pure-evaluation (EV) will return with erp = nil.  So we can apply case (a),
 ; completing the proof.
+
+; Note: the argument above probably works if we allow an arbitrary guard for a
+; function exported by defabsstobj instead of using the guard of its :logic
+; function.  If the need for such flexibility arises (presumably in the form of
+; a new :guard keyword for defabsstobj :exports), we should revisit this Essay
+; in order to be sure that the argument holds together.  But careful: allowing
+; an arbitrary guard might not be feasible!  A comment in update-guard-post
+; explains that substituting exported functions for their :logic versions has
+; the property that guard proof obligations are essentially preserved.  But the
+; use of user-supplied guards destroys that argument, and as a result, we no
+; longer can trust evaluation of the guard in raw Lisp.
 
 (defun absstobj-name (name type)
 
@@ -22168,10 +22182,11 @@
   of lists; a creator, which produces an initial suitable list structure; and
   field accessors and updators, defined in terms of ~ilc[nth] and
   ~ilc[update-nth].  ~c[Defabsstobj] provides a way to define alternate
-  definitions for a recognizer, creator, and primitive read/write functions.
-  In essence, ~c[defabsstobj] establishes interface functions, or ``exports'',
-  on a new stobj that is a copy of an indicated ``concrete'' stobj that already
-  exists.
+  definitions for ``stobj primitives'' for a corresponding single-threaded
+  object.  These stobj primitives include a recognizer, a creator, and other
+  ``exported'' functions.  In essence, ~c[defabsstobj] establishes interface
+  functions, or ``exports'', on a new stobj that is a copy of an indicated
+  ``concrete'' stobj that already exists.
 
   We begin below with an introduction to abstract ~il[stobj]s.  We then explain
   the ~ilc[defabsstobj] event by way of an example.  We conclude by giving
@@ -22284,11 +22299,12 @@
   associated with a corresponding ``concrete stobj'' introduced by an earlier
   ~ilc[defstobj] event.  The ~c[defabsstobj] event specifies a logical
   (~c[:LOGIC]) and an executable (~c[:EXEC]) definition for each primitive
-  operation involving that stobj.  As is the case for ~ilc[defstobj], the
-  logical definition is what ACL2 reasons about, and is appropriate to apply to
-  an ACL2 object satisfying the logical definition of the recognizer function
-  for the stobj.  The executable definition is applied in raw Lisp to a live
-  stobj, which is an array object associated with the given stobj name.
+  operation, or ``stobj primitive'', involving that stobj.  As is the case for
+  ~ilc[defstobj], the logical definition is what ACL2 reasons about, and is
+  appropriate to apply to an ACL2 object satisfying the logical definition of
+  the recognizer function for the stobj.  The executable definition is applied
+  in raw Lisp to a live stobj, which is an array object associated with the
+  given stobj name.
 
   We can picture a sequence of updates to corresponding abstract and concrete
   stobjs as follows.  Initially in this picture, ~c[st$a0] and ~c[st$c0] are a
@@ -22318,14 +22334,14 @@
   distinct arrays.  Indeed, the raw Lisp creator function for ~c[st$c] is
   called to create a new initial live stobj for ~c[st].  As we will see below,
   reads and writes in raw Lisp to the live stobj for ~c[st] are ultimately
-  performed using the primitive acccessors and updaters defined for ~c[st$c].
+  performed using the primitive accessors and updaters defined for ~c[st$c].
   One might think of the live stobjs for ~c[st] and ~c[st$c] as being congruent
   stobjs (~pl[defstobj]), except that the stobjs themselves are not congruent:
-  only exported functions (not arbitrary field updaters of ~c[st$c], for
-  example) may be applied to ~c[st].  As one might expect, the ~c[:EXEC]
-  function for an exported function is applied to the live stobj for ~c[st] in
-  raw Lisp.  As of this writing, congruent stobjs are not supported for
-  abstract stobjs.  Users who see a need for this feature are welcome to
+  the stobj primitives introduced for ~c[st] may be applied to ~c[st] but not
+  arbitrary field updaters of ~c[st$c], for example.  As one might expect, the
+  ~c[:EXEC] function for an exported function is applied to the live stobj for
+  ~c[st] in raw Lisp.  As of this writing, congruent stobjs are not supported
+  for abstract stobjs.  Users who see a need for this feature are welcome to
   explain that need to the ACL2 implementors.
 
   ~st[EXAMPLE]
@@ -22400,22 +22416,57 @@
     :doc nil)
   ~ev[]
 
-  Note that the recognizer, creator, and all exported functions are defined in
-  the logic in terms of their ~c[:LOGIC] functions and in raw Lisp in terms of
-  their ~c[:EXEC] functions.  In the former case, a ~ilc[defun] form defines a
-  function, while in the latter case, a ~ilc[defmacro] form defines a macro
-  (for efficiency).  Here is how that works, for example, for the recognizer.
-  (You can see all the logical and executable definitions by evaluating the
-  form ~c[(trace$ defabsstobj-axiomatic-defs defabsstobj-raw-defs)] before
+  Note that all stobj primitives (recognizer, creator, and exported functions)
+  are defined in the ACL2 loop in terms of their ~c[:LOGIC] functions and in
+  raw Lisp in terms of their ~c[:EXEC] functions.  In the ACL2 loop, a
+  ~ilc[defun] form defines a function, while in raw Lisp, a ~ilc[defmacro] form
+  defines a macro (for efficiency).  We first illustrate how that works for the
+  recognizer.  (You can see all the logical and executable definitions by
+  evaluating the form
+  ~c[(trace$ defabsstobj-axiomatic-defs defabsstobj-raw-defs)] before
   evaluating the ~ilc[defstobj] form.)
   ~bv[]
-  ; In the logic:
+  ; In the ACL2 loop:
   (defun stp (st)
     (declare (xargs :guard 't))
     (st$ap st))
 
   ; In raw Lisp:
   (defmacro stp (&rest args) (cons 'st$cp args))
+  ~ev[]
+
+  The definitions are made similarly for exported functions, with ~il[guard]s
+  derived from their ~c[:LOGIC] functions as follows.  Consider the exported
+  function ~c[update] in our example.  Its ~c[:LOGIC] function, ~c[update$a],
+  has formals ~c[(k val st$a)] and the following guard.
+  ~bv[]
+  (and (and (integerp k) (<= 0 k) (<= k 49))
+       (and (integerp val) (<= 0 val))
+       (st$ap st$a)
+       (mem$c-entryp val))
+  ~ev[]
+  The formals of ~c[update] are obtained by starting with the formals of its
+  ~c[:EXEC] function, ~c[update-mem$ci] ~-[] which are ~c[(i v st$c)] ~-[] and
+  replacing the concrete stobj name ~c[st$c] by the new stobj name ~c[st].  The
+  formals of ~c[update] are thus ~c[(i v st)].  The guard for ~c[update] is
+  obtained in two steps.  The first step is to substitute the formals of
+  ~c[update] for the formals of ~c[update$a] in the guard for ~c[update$a], to
+  obtain the following.
+  ~bv[]
+  (and (and (integerp i) (<= 0 i) (<= i 49))
+       (and (integerp v) (<= 0 v))
+       (st$ap st)
+       (mem$c-entryp v))
+  ~ev[]
+  The second step is to replace, for each new stobj primitive ~c[p], the
+  ~c[:LOGIC] function for ~c[p] by ~c[p] itself.  The only ~c[:LOGIC] function
+  occurring in the formula just above is ~c[st$ap], which is the ~c[:LOGIC]
+  funcction for ~c[stp].  The guard for ~c[update] is thus as follows.
+  ~bv[]
+  (and (and (integerp i) (<= 0 i) (<= i 49))
+       (and (integerp v) (<= 0 v))
+       (stp st)
+       (mem$c-entryp v))
   ~ev[]
 
   We turn now to the proof obligations, as promised above.  There are three
@@ -22505,8 +22556,8 @@
   ~ev[]
 
   Finally, we consider the ~c[:GUARD-THM] lemmas.  These serve to guarantee
-  that the ~il[guard] holds for each ~c[:EXEC] function.  During guard
-  verification, logical definitions are used; in particular, since each
+  that the ~il[guard] holds for each call of an ~c[:EXEC] function.  During
+  guard verification, logical definitions are used; in particular, since each
   exported function is defined in the logic as the corresponding call of its
   ~c[:LOGIC] function, guard verification shows that each call of the
   ~c[:LOGIC] function for an exported function satisfies that function's guard.
@@ -22617,17 +22668,45 @@
   Note that a ~c[defabsstobj] event will fail if the required lemmas ~-[] that
   is, those for valid keywords ~c[:CORRESPONDENCE], ~c[:GUARD-THM], and
   ~c[:PRESERVED] ~-[] have not been proved, unless proofs are being skipped.
-  Note that the exemption when skipping proofs allows the supporting lemmas to
-  be ~ilc[local] to ~il[books] and ~ilc[encapsulate] ~il[events].  If the
-  ~ilc[ld] special ~ilc[ld-skip-proofsp] is ~c[t], then the missing ~il[events]
-  are printed with a warning before the ~c[defabsstobj] event is admitted; but
-  if ~c[ld-skip-proofsp] is the symbol ~c[INCLUDE-BOOK], then that warning is
+  The exemption when skipping proofs allows the supporting lemmas to be
+  ~ilc[local] to ~il[books] and ~ilc[encapsulate] ~il[events].  If the ~ilc[ld]
+  special ~ilc[ld-skip-proofsp] is ~c[t], then the missing ~il[events] are
+  printed with a warning before the ~c[defabsstobj] event is admitted; but if
+  ~c[ld-skip-proofsp] is the symbol ~c[INCLUDE-BOOK], then that warning is
   omitted.  (Also ~pl[skip-proofs] and ~pl[ld-skip-proofsp].)  If however
   proofs are not being skipped, then the ~c[defabsstobj] event will fail after
   printing the missing events.  Advanced users may wish to
   ~pl[defabsstobj-missing-events] for a utility that returns a data structure
-  containing the missing lemmas.  There are a few additional restrictions, as
-  follows.
+  containing the missing lemmas.
+
+  Let ~c[st] be an abstract stobj with corresponding concrete stobj ~c[st$c].
+  let ~c[f] be an exported function for ~c[st] and let ~c[f$a] and ~c[f$c] be
+  the corresponding ~c[:LOGIC] and ~c[:EXEC] functions, respectively.  The
+  formals of ~c[f] are obtained by taking the formals of ~c[f$c] and replacing
+  ~c[st$c] by ~c[st].  The ~il[guard] for ~c[f] is derived as follows from the
+  guard of ~c[f$a].  First, the formals of ~c[f$a] are replaced by the formals
+  of ~c[f] in the guard of ~c[f$a], to obtain a term we denote here as
+  ~c[guard-pre].  Now for each exported function symbol ~c[g] of ~c[st] with
+  corresponding ~c[:LOGIC] function ~c[g$a], form a functional substitution by
+  consing ~c[g$a] with ~c[g].  Finally, apply that functional substitution to
+  ~c[guard-pre]; the result is the guard of ~c[f].  That guard must satisfy the
+  usual conditions of a guard: thus, it must return a single non-~il[stobj]
+  value and satisfy normal syntactic restrictions, including
+  single-threadedness in its handling of stobjs.
+
+  ~c[Remark].  Because of how guards are created for exported functions, and in
+  particular because ~c[:LOGIC] functions are replaced as discussed above, a
+  good discipline is to define ~c[:LOGIC] functions that are not intended for
+  general use, but are intended only for use as ~c[:LOGIC] functions of
+  corresponding stobj primitives.  For example, suppose that you use ~c[length]
+  as the ~c[:LOGIC] function for some stobj primitive, ~c[f] (as opposed to
+  using your own function, say, ~c[foo-length] or ~c[foo$a]).  Then every call
+  of ~c[length] will be replaced by ~c[f] when creating the guard of a stobj
+  primitive from the guard of its ~c[:LOGIC] function.  This might not be what
+  you intended if you were using ~c[length] in that guard simply to compute the
+  length of an ordinary list.
+
+  There are a few additional restrictions, as follows.
 
   ~bq[]
   All exported function names must be new (unless redefinition is on;
@@ -22847,8 +22926,7 @@
   t ; see warning above before changing to nil
   )
 
-(defun translate-absstobj-field (st st$c stp st$ap field type see-doc
-                                    ctx wrld)
+(defun translate-absstobj-field (st st$c field type see-doc ctx wrld)
 
 ; Field is a member of the :exports field of a defabsstobj event if type is
 ; nil; otherwise type is :recognizer or :creator and field is the recognizer or
@@ -23145,9 +23223,7 @@
                           :NAME name
                           :FORMALS formals
                           :GUARD-PRE guard-pre
-                          :GUARD-POST (sublis-fn-simple
-                                       (list (cons st$ap stp))
-                                       guard-pre)
+                          :GUARD-POST nil ; to be filled in later
                           :GUARD-THM guard-thm
                           :GUARD-THM-P (if type :SKIP guard-thm-p)
                           :STOBJS-IN-POSN posn-exec
@@ -23169,7 +23245,6 @@
         (t (er-let*-cmp
             ((method (translate-absstobj-field
                       st st$c
-                      nil nil ; we don't use stp or st$ap
                       (car fields) nil ""
                       'defabsstobj nil))
              (rest (simple-translate-absstobj-fields st st$c (cdr fields))))
@@ -23290,7 +23365,7 @@
                                       (t missing))))
                   (value (cons missing wrld))))))))))))))
 
-(defun chk-acceptable-defabsstobj1 (st st$c stp st$ap corr-fn fields
+(defun chk-acceptable-defabsstobj1 (st st$c st$ap corr-fn fields
                                        types see-doc ctx wrld state methods
                                        missing)
 
@@ -23306,7 +23381,7 @@
    (t
     (mv-let
      (erp method)
-     (translate-absstobj-field st st$c stp st$ap
+     (translate-absstobj-field st st$c
                                (car fields)
                                (car types)
                                see-doc ctx wrld)
@@ -23327,7 +23402,7 @@
                       (access absstobj-method method :name)
                       see-doc))
                  (t (chk-acceptable-defabsstobj1
-                     st st$c stp st$ap corr-fn
+                     st st$c st$ap corr-fn
                      (cdr fields)
                      (cdr types)
                      see-doc ctx wrld state
@@ -23383,11 +23458,7 @@
      (er-let* ((wrld1 (chk-just-new-name name 'stobj nil ctx wrld state))
                (wrld2 (chk-just-new-name (the-live-var name) 'stobj-live-var
                                          nil ctx wrld1 state)))
-       (chk-acceptable-defabsstobj1 name st$c
-                                    (if (consp recognizer)
-                                        (car recognizer)
-                                      recognizer)
-                                    st$ap corr-fn
+       (chk-acceptable-defabsstobj1 name st$c st$ap corr-fn
 
 ; Keep the recognizer and creator first and second in our call to
 ; chk-acceptable-defabsstobj1.  See the comment about
@@ -23526,6 +23597,83 @@
                    msg
                    (defabsstobj-missing-msg (cdr missing) wrld)))))))
 
+(defun update-guard-post (logic-subst methods)
+
+; Note that the original :guard-pre term is the guard of a guard-verified
+; function; hence its guard proof obligations are provable.   The guard proof
+; obligations for the new :guard-post (created below using sublis-fn-simple) by
+; replacing some functions with equal functions, and hence are also provable.
+; Thus, the guard of the guard of an exported function, which comes from the
+; :guard-post field of the corresponding method, has provable guard proof
+; obligations, as we would expect for guard-of-the-guard, which is important
+; for avoiding guard violations while checking the guard for a function call.
+
+  (cond ((endp methods) nil)
+        (t (cons (change absstobj-method (car methods)
+                         :guard-post
+                         (sublis-fn-simple logic-subst
+                                           (access absstobj-method
+                                                   (car methods)
+                                                   :guard-pre)))
+                 (update-guard-post logic-subst (cdr methods))))))
+
+(defun defabsstobj-logic-subst (methods)
+  (cond ((endp methods) nil)
+        (t (acons (access absstobj-method (car methods) :logic)
+                  (access absstobj-method (car methods) :name)
+                  (defabsstobj-logic-subst (cdr methods))))))
+
+(defun chk-defabsstobj-guard (method ctx wrld state-vars)
+
+; Warning: Keep this call of translate in sync with the call of
+; translate-term-lst in chk-acceptable-defuns1.
+
+  (mv-let (ctx msg)
+          (translate-cmp (access absstobj-method method
+                                 :guard-post)
+                         '(nil) ; stobjs-out
+                         t ; logic-modep = t because we expect :logic mode here
+                         (stobjs-in (access absstobj-method method :name)
+                                    wrld)
+                         ctx wrld state-vars)
+          (cond (ctx (er-cmp ctx
+                             "The guard for exported function ~x0 fails to ~
+                              pass a test for being suitably single-threaded. ~
+                              ~ Here is that guard (derived from the guard ~
+                              for function ~x1).~|  ~x2~|And here is the ~
+                              error message for the failed test.~|  ~@3"
+                             (access absstobj-method method :name)
+                             (access absstobj-method method :logic)
+                             (access absstobj-method method :guard-post)
+                             msg))
+                (t (value-cmp nil)))))
+
+(defun chk-defabsstobj-guards1 (methods msg ctx wrld state-vars)
+  (cond ((endp methods)
+         msg)
+        (t (mv-let
+            (ctx0 msg0)
+            (chk-defabsstobj-guard (car methods) ctx wrld state-vars)
+            (chk-defabsstobj-guards1 (cdr methods)
+                                     (cond (ctx0
+                                            (assert$
+                                             msg0
+                                             (cond (msg
+                                                    (msg "~@0~|~%~@1" msg msg0))
+                                                   (t msg0))))
+                                           (t msg))
+                                     ctx wrld state-vars)))))
+
+(defun chk-defabsstobj-guards (methods ctx wrld state)
+  (let ((msg (chk-defabsstobj-guards1 methods nil ctx wrld
+                                      (default-state-vars t))))
+    (cond (msg (er soft ctx
+                   "One or more guards of exported functions fail to obey ~
+                    single-threadedness restrictions.  See :DOC defabsstobj.  ~
+                    See below for details.~|~%~@0~|~%"
+                   msg))
+          (t (value nil)))))
+
 (defun defabsstobj-fn1 (st-name st$c recognizer creator corr-fn exports
                                 missing-only doc ctx state event-form)
   (let* ((wrld0 (w state))
@@ -23575,7 +23723,9 @@
                    (defabsstobj-missing-msg missing wrld0)))))
          (enforce-redundancy
           event-form ctx wrld0
-          (let* ((methods (cadr missing/methods/wrld1))
+          (let* ((methods0 (cadr missing/methods/wrld1))
+                 (methods (update-guard-post (defabsstobj-logic-subst methods0)
+                                             methods0))
                  (wrld1 (cddr missing/methods/wrld1))
                  (ax-def-lst (defabsstobj-axiomatic-defs st$c methods))
                  (raw-def-lst
@@ -23654,26 +23804,30 @@
                                   the-live-var 'symbol-class
                                   :common-lisp-compliant
                                   wrld2))))))))))
+                    (pprogn
+                     (set-w 'extension wrld3 state)
+                     (er-progn
+                      (chk-defabsstobj-guards methods ctx wrld3 state)
 
 ; The call of install-event below follows closely the corresponding call in
 ; defstobj-fn.  In particular, see the comment in defstobj-fn about a "cheat".
 
-                    (install-event st-name
-                                   event-form
-                                   'defstobj
-                                   (list* st-name the-live-var names) ; namex
-                                   nil
-                                   `(defabsstobj ,st-name
-                                      ,the-live-var
-                                      ,(defabsstobj-raw-init creator-name
-                                         methods)
-                                      ,raw-def-lst
-                                      ,event-form
-                                      ,ax-def-lst)
-                                   t
-                                   ctx
-                                   wrld3
-                                   state)))))))))))))))
+                      (install-event st-name
+                                     event-form
+                                     'defstobj
+                                     (list* st-name the-live-var names) ; namex
+                                     nil
+                                     `(defabsstobj ,st-name
+                                        ,the-live-var
+                                        ,(defabsstobj-raw-init creator-name
+                                           methods)
+                                        ,raw-def-lst
+                                        ,event-form
+                                        ,ax-def-lst)
+                                     t
+                                     ctx
+                                     wrld3
+                                     state)))))))))))))))))
 
 (defun defabsstobj-fn (st-name st$c recognizer creator corr-fn exports
                                missing-only doc state event-form)
