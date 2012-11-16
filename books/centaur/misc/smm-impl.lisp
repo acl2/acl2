@@ -1305,7 +1305,7 @@
     :recognizer (smmp :logic smmlp :exec smmep)
     :creator (smm-create :logic smml-create :exec create-smme)
     :corr-fn smme-corr
-    :exports ((smm-nblocks :logic len :exec smme-nblocks)
+    :exports ((smm-nblocks :logic smml-nblocks :exec smme-nblocks)
               (smm-block-size :logic smml-block-size :exec smme-block-size$inline)
               (smm-read :logic smml-read :exec smme-read$inline)
               (smm-write :logic smml-write :exec smme-write$inline)
@@ -1323,7 +1323,7 @@
     :recognizer (smm2p :logic smmlp :exec smmep)
     :creator (smm2-create :logic smml-create :exec create-smme)
     :corr-fn smme-corr
-    :exports ((smm2-nblocks :logic len :exec smme-nblocks)
+    :exports ((smm2-nblocks :logic smml-nblocks :exec smme-nblocks)
               (smm2-block-size :logic smml-block-size :exec smme-block-size$inline)
               (smm2-read :logic smml-read :exec smme-read$inline)
               (smm2-write :logic smml-write :exec smme-write$inline)
@@ -1339,7 +1339,7 @@
     :recognizer (smm3p :logic smmlp :exec smmep)
     :creator (smm3-create :logic smml-create :exec create-smme)
     :corr-fn smme-corr
-    :exports ((smm3-nblocks :logic len :exec smme-nblocks)
+    :exports ((smm3-nblocks :logic smml-nblocks :exec smme-nblocks)
               (smm3-block-size :logic smml-block-size :exec smme-block-size$inline)
               (smm3-read :logic smml-read :exec smme-read$inline)
               (smm3-write :logic smml-write :exec smme-write$inline)

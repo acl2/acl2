@@ -94,20 +94,20 @@
 ; We will export read and write functions for our abstract stobj, defined using
 ; alist-based functions lookup$a and update$a, respectively.
 
-(defun lookup$a (i st$a)
-  (declare (type (integer 0 49) i)
+(defun lookup$a (k st$a)
+  (declare (type (integer 0 49) k)
            (xargs :guard (st$ap st$a)))
   (let* ((map (nth 1 st$a))
-         (pair (assoc i map)))
+         (pair (assoc k map)))
     (if pair (cdr pair) 0)))
 
-(defun update$a (i v st$a)
-  (declare (type (integer 0 49) i)
-           (type (integer 0 *) v)
+(defun update$a (k val st$a)
+  (declare (type (integer 0 49) k)
+           (type (integer 0 *) val)
            (xargs :guard (and (st$ap st$a)
-                              (mem$c-entryp v))))
+                              (mem$c-entryp val))))
   (update-nth 1
-              (put-assoc i v (nth 1 st$a))
+              (put-assoc k val (nth 1 st$a))
               st$a))
 
 ; Our next task is to define a required function, which we call st$corr.  We
