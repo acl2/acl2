@@ -1696,7 +1696,7 @@
 ;           in-theory                0 (no name introduced)
 ;           in-arithmetic-theory     0 (no name introduced)
 ;           push-untouchable         0
-;           regenerate-tau-data-base 0 (no name introduced)
+;           regenerate-tau-database  0 (no name introduced)
 ;           remove-untouchable       0
 ;           reset-prehistory         0
 ;           set-body                 0 (no name introduced)
@@ -1772,7 +1772,7 @@
                               (mutual-recursion (strip-cadrs (cdr form)))
                               ((verify-guards in-theory
                                               in-arithmetic-theory
-                                              regenerate-tau-data-base
+                                              regenerate-tau-database
                                               push-untouchable
                                               remove-untouchable
                                               reset-prehistory
@@ -1821,7 +1821,7 @@
           (mutual-recursion (strip-cadrs (cddr x)))
           ((verify-guards in-theory
                           in-arithmetic-theory
-                          regenerate-tau-data-base
+                          regenerate-tau-database
                           push-untouchable remove-untouchable reset-prehistory
                           set-body table)
            0)
@@ -5234,7 +5234,7 @@
                                             in-arithmetic-theory
                                             in-theory
                                             push-untouchable
-                                            regenerate-tau-data-base
+                                            regenerate-tau-database
                                             remove-untouchable
                                             reset-prehistory
                                             set-body
@@ -5396,7 +5396,7 @@
   definitions.  If you try to define the same theory name twice, you
   will get a ``name in use'' error.
 
-  An ~ilc[in-theory], ~ilc[defattach] or ~ilc[regenerate-tau-data-base] event
+  An ~ilc[in-theory], ~ilc[defattach] or ~ilc[regenerate-tau-database] event
   is never redundant because it doesn't define any name.
 
   A ~ilc[push-untouchable] event is redundant if every name supplied is
@@ -6350,10 +6350,10 @@
         (t (cons (list (car (car lst)) *evisceration-ellipsis-mark*)
                  (print-ldd-full-or-sketch/encapsulate (cdr lst))))))
 
-; If a form has a documentation string in the data base, we avoid printing
+; If a form has a documentation string in the database, we avoid printing
 ; the string.  We'll develop the general handling of doc strings soon.  But
 ; for now we have to define the function that recognizes when the user 
-; intends his string to be inserted into the data base.
+; intends his string to be inserted into the database.
 
 (defun normalize-char (c hyphen-is-spacep)
   (if (or (eql c #\Newline)
@@ -6523,7 +6523,7 @@
     ((defconst defpkg)
      (zap-doc-string-from-event-form/third-arg form))
     ((verify-guards in-theory
-                    in-arithmetic-theory regenerate-tau-data-base
+                    in-arithmetic-theory regenerate-tau-database
                     push-untouchable remove-untouchable reset-prehistory
                     table encapsulate defstobj) form)
     (otherwise form)))
@@ -8832,12 +8832,12 @@
                        alist))))
            alist)))))
 
-(defun update-doc-data-base (name doc pair wrld)
+(defun update-doc-database (name doc pair wrld)
 
 ; Name is a documented name, i.e., a symbol or a string (package name).
 ; Pair is the (section-symbol . citations) pair parsed from the doc
 ; string, or nil if doc is unformatted.  If pair is non-nil we add a
-; new entry to the documentation data base.  Each entry has the form
+; new entry to the documentation database.  Each entry has the form
 ; (name section-symbol cites doc), where cites is the list of all x
 ; such that (:cite x) occurs citations.  Entries are ordered
 ; alphabetically by name.  In addition, add name to the cites list of
@@ -8857,13 +8857,13 @@
                      wrld))
         (t wrld)))
 
-(defun update-doc-data-base-lst (names docs pairs wrld)
+(defun update-doc-database-lst (names docs pairs wrld)
   (cond ((null names) wrld)
-        (t (update-doc-data-base-lst
+        (t (update-doc-database-lst
             (cdr names)
             (cdr docs)
             (cdr pairs)
-            (update-doc-data-base (car names) (car docs) (car pairs) wrld)))))
+            (update-doc-database (car names) (car docs) (car pairs) wrld)))))
 
 (defun putprop-unless (sym key val exception wrld)
 
@@ -8932,7 +8932,7 @@
         (er-let*
          ((wrld2 (chk-just-new-name name 'label nil ctx wrld1 state))
           (doc-pair (translate-doc name doc ctx state)))
-         (let ((wrld3 (update-doc-data-base
+         (let ((wrld3 (update-doc-database
                        name doc doc-pair
                        (putprop name 'label t wrld2))))
 
@@ -8955,7 +8955,7 @@
 
 ; That completes the development of deflabel.  But now there is the
 ; considerable task of printing out documentation strings and help
-; info based on the documentation data base.  First, let us get
+; info based on the documentation database.  First, let us get
 ; defdoc out of the way.
 
 (defun defdoc-fn (name state doc event-form)
@@ -8990,7 +8990,7 @@
          ((doc-pair (translate-doc name doc ctx state)))
          (cond
           (doc-pair
-           (let ((wrld2 (update-doc-data-base
+           (let ((wrld2 (update-doc-database
                          name doc doc-pair wrld1)))
              (install-event name
                             event-form
@@ -9030,7 +9030,7 @@
   where ~c[name] is a symbol or string to be documented and
   ~ilc[doc-string] is a ~il[documentation] string (~pl[doc-string]).  This
   event adds the ~il[documentation] string for symbol ~c[name] to the
-  ~c[:]~ilc[doc] data base.  It may also be used to change the ~il[documentation]
+  ~c[:]~ilc[doc] database.  It may also be used to change the ~il[documentation]
   for ~c[name] if ~c[name] already has ~il[documentation].  The difference
   between this event and ~ilc[deflabel] is that, unlike ~ilc[deflabel] (but
   like ~ilc[table]), it does not mark the current ~il[history] with the
@@ -9080,11 +9080,11 @@
         (list 'quote doc)
         (list 'quote event-form)))
 
-(defun access-doc-string-data-base (name state) 
+(defun access-doc-string-database (name state) 
 
 ; Name is a symbol or a string.  This function would be just
 ; (assoc-equal name documentation-alist) but for one twist: if name is
-; a symbol and not in the data base, we try acl2::name instead.  We
+; a symbol and not in the database, we try acl2::name instead.  We
 ; return (name section-symbol cites doc), or nil if there is no entry
 ; for either name.  The reason we go to ACL2::name after name fails is
 ; that:
@@ -9118,7 +9118,7 @@
 ; This function is provided simply to let the user see what
 ; doc strings really look like.
 
-  (cadddr (access-doc-string-data-base name state)))
+  (cadddr (access-doc-string-database name state)))
 
 (defun get-doc-string-de-indent1 (str i)
   (cond ((eql (char str i) #\Newline) 0)
@@ -10454,7 +10454,7 @@
                          (assoc-eq name
                                    (f-get-global 'ld-keyword-aliases state))
                        nil))
-               (doc-tuple (access-doc-string-data-base name state)))
+               (doc-tuple (access-doc-string-database name state)))
            (cond
             ((or temp
                  (null doc-tuple))
@@ -10481,7 +10481,7 @@
                         0 channel state nil)
                   (declare (ignore col))
                   (cond ((and (symbolp (caddr temp))
-                              (access-doc-string-data-base (caddr temp) state))
+                              (access-doc-string-database (caddr temp) state))
                          (doc-fn (caddr temp) state))
                         (t (value :invisible))))))))
             (t (pprogn (print-doc doc-tuple 0 (doc-prefix state)
@@ -10530,7 +10530,7 @@
     (io? temporary nil (mv erp val state)
          (name)
          (let ((channel (standard-co state))
-               (doc-tuple (access-doc-string-data-base name state)))
+               (doc-tuple (access-doc-string-database name state)))
            (cond ((null doc-tuple)
                   (print-doc-dwim name :doc state))
                  (t (pprogn (print-doc doc-tuple 0 (doc-prefix state)
@@ -10992,19 +10992,18 @@
   as though it read ``formatted ~il[documentation] string.''
 
   ~il[Documentation] strings are always processed in the context of some
-  symbol, ~c[name], being defined.  (Indeed, if an event defines no
-  symbol, e.g., ~ilc[verify-guards] or ~ilc[in-theory], then it is not permitted
-  to have a formatted ~il[documentation] string.)  The string will be
-  associated with name in the ``~il[documentation] data base.'' The data
-  base is divided into ``sections'' and each section is named by a
-  symbol.  Among the sections are ~ilc[events], ~ilc[documentation], ~ilc[history],
-  ~ilc[other], and ~ilc[miscellaneous].  A complete list of the sections may be
-  obtained by typing ~c[:docs *] at the terminal.  You can create new
-  sections.  The main purpose of sections is simply to partition the
-  large set of names into smaller subsets whose contents can be
-  enumerated separately.  The idea is that the user may remember (or
-  recognize) the relevant section name and then read its contents to
-  find interesting items.
+  symbol, ~c[name], being defined.  (Indeed, if an event defines no symbol,
+  e.g., ~ilc[verify-guards] or ~ilc[in-theory], then it is not permitted to
+  have a formatted ~il[documentation] string.)  The string will be associated
+  with name in the ``~il[documentation] database.'' The database is divided
+  into ``sections'' and each section is named by a symbol.  Among the sections
+  are ~ilc[events], ~ilc[documentation], ~ilc[history], ~ilc[other], and
+  ~ilc[miscellaneous].  A complete list of the sections may be obtained by
+  typing ~c[:docs *] at the terminal.  You can create new sections.  The main
+  purpose of sections is simply to partition the large set of names into
+  smaller subsets whose contents can be enumerated separately.  The idea is
+  that the user may remember (or recognize) the relevant section name and then
+  read its contents to find interesting items.
 
   Within a section are ``~il[documentation] tuples'' which associate with
   each documented name its ~il[documentation] string and a list of related
@@ -11036,7 +11035,7 @@
   ~ev[]
   Before we explain this, let it be noted that
   ~c[(get-doc-string name state)] will return the ~il[documentation] string
-  associated with ~c[name] in the ~il[documentation] data base.  You may
+  associated with ~c[name] in the ~il[documentation] database.  You may
   want to call ~c[get-doc-string] on ~c[']~ilc[pe] and ~c[']~ilc[union-theories] just
   to see some concrete ~il[documentation] strings.  This ~il[documentation]
   string, which is rather long, is under ~c['doc-string].
@@ -11056,7 +11055,7 @@
 
   ~c[Section-name] must either be a previously documented symbol or else
   be ~c[name], the symbol being documented.  To open a new section of the
-  data base, named ~c[section-name], you should define the logical name
+  database, named ~c[section-name], you should define the logical name
   section-name (as by ~ilc[deflabel] or any other event; also
   ~pl[defdoc]) and attach to it a ~il[documentation] string for section
   section-name.  You might wish to print out the ~il[documentation] string
@@ -11102,8 +11101,8 @@
   margin.  But the pad is just the value of the global variable
   ~c[doc-prefix] and you may ~ilc[assign] it any string you wish.
 
-  To add such a string to the data base under the symbol ~c[name] we make
-  a new entry in the section-name section of the data base.  The entry
+  To add such a string to the database under the symbol ~c[name] we make
+  a new entry in the section-name section of the database.  The entry
   associates ~c[name] with the string and uses the string's cites list as
   the initial value of the related names field.  In addition, we add
   ~c[name] to the related names field of each of the names listed in the
@@ -11178,12 +11177,12 @@
   with the full ACL2 reader, not the hack just described.  That name
   is read into the current package.  Thus, if you are operating
   ~ilc[in-package] ~c[\"MY-PKG\"] and type ~c[:doc events], what is read is
-  ~c[my-pkg::events].  The data base may not contain an entry for this
+  ~c[my-pkg::events].  The database may not contain an entry for this
   symbol.  Before reporting that no ~il[documentation] exists, we try
   ~c[acl2::events].
 
   One last note: ~ilc[defpkg] permits a formatted ~il[documentation] string,
-  which is associated in the data base with the name of the package.
+  which is associated in the database with the name of the package.
   But the name of the package is a string, not a symbol.  It is
   permitted to access the ~il[documentation] of a string (i.e., package
   name).  But there are no facilities for getting such a ~ilc[stringp] name
@@ -11304,7 +11303,7 @@
     (io? temporary nil (mv erp val state)
          (name)
          (let ((channel (standard-co state))
-               (doc-tuple (access-doc-string-data-base name state)))
+               (doc-tuple (access-doc-string-database name state)))
            (cond ((null doc-tuple)
                   (print-doc-dwim name :more-doc state))
                  (t (pprogn (print-doc doc-tuple 2 (doc-prefix state)
@@ -11434,16 +11433,16 @@
   ACL2 !>:docs \"compil\"    ; lists topics ``apropos''
   ~ev[]~/
 
-  The data base of formatted ~il[documentation] strings is structured into
+  The database of formatted ~il[documentation] strings is structured into
   sections.  Within a section are topics.  Each topic has a one-liner,
   some notes, and some detailed discussions.  The ~c[:docs] command
-  provides a view of the entire data base.
+  provides a view of the entire database.
 
   ~c[:docs] takes one argument, as described below:
   ~bv[]
   arg               effect
 
-  *                 list all section headings in the data base
+  *                 list all section headings in the database
   **                list all section headings and all topics within
                     each section
   name              list all topics in the section named name (where

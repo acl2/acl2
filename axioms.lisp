@@ -1991,7 +1991,7 @@
   (declare (ignore args))
   nil)
 
-(defmacro regenerate-tau-data-base (&rest args)
+(defmacro regenerate-tau-database (&rest args)
   (declare (ignore args))
   nil)
 
@@ -7450,7 +7450,7 @@
 
 ; We deflabel Rule-Classes here, so we can refer to it in the doc string for
 ; tau-system.  We define tau-system (the noop fn whose rune controls the
-; whether the tau data base is used during proofs) in axioms.lisp because we
+; whether the tau database is used during proofs) in axioms.lisp because we
 ; build in the nume of its executable counterpart as a constant (e.g., as we do
 ; with FORCE) and do not want constants additions to the sources to require
 ; changing that nume (as would happen if tau-system were defined in
@@ -7460,7 +7460,7 @@
   :doc
   ":Doc-Section Rule-Classes
 
-  adding rules to the data base~/
+  adding rules to the database~/
   ~bv[]
   Example Form (from community book finite-set-theory/total-ordering.lisp):
   (defthm <<-trichotomy
@@ -7535,7 +7535,7 @@
   optional and their values are computed in a context sensitive way.  When a
   ~c[:class] keyword is used as a rule class object, all relevant fields are
   determined contextually.  Each rule class object in ~c[:rule-classes] causes
-  one or more rules to be added to the data base.  The ~c[:class] keywords are
+  one or more rules to be added to the database.  The ~c[:class] keywords are
   documented individually under the following names.  Note that when one of
   these names is used as a ~c[:class], it is expected to be in the keyword
   package (i.e., the names below should be preceded by a colon but the ACL2
@@ -7770,11 +7770,11 @@
   ~ilc[defun] and every ~c[:corollary] (see ~c[:]~ilc[rule-classes]) of every
   ~ilc[defthm] stored as a rule ~i[of any] ~c[:rule-class] is inspected to
   determine if it is of one of the forms below.  Rules of these forms are added
-  to the tau data base, even if they are not labeled as ~c[:tau-system] rules,
-  e.g., a ~c[:]~ilc[rewrite] rule might contribute to the tau data base!  To
-  add a rule to the tau data base without adding any other kind of rule, tag it
+  to the tau database, even if they are not labeled as ~c[:tau-system] rules,
+  e.g., a ~c[:]~ilc[rewrite] rule might contribute to the tau database!  To
+  add a rule to the tau database without adding any other kind of rule, tag it
   with ~c[:]~ilc[rule-classes] ~c[:tau-system].  If a theorem has
-  ~c[:]~ilc[rule-classes] ~c[nil], it is not considered for the tau data base.
+  ~c[:]~ilc[rule-classes] ~c[nil], it is not considered for the tau database.
 
   ~bv[]
   General Forms:
@@ -11442,7 +11442,7 @@
 
   Any extension of the syntax of ACL2 (i.e., the definition of a new
   constant or macro), the axioms (i.e., the definition of a function),
-  or the rule data base (i.e., the proof of a theorem), constitutes a
+  or the rule database (i.e., the proof of a theorem), constitutes a
   logical ``event.''  Events change the ACL2 logical world
   (~pl[world]).  Indeed, the only way to change the ACL2
   ~il[world] is via the successful evaluation of an event function.
@@ -11570,9 +11570,9 @@
   ~pl[defdoc].
 
   How do you know what names are documented?  There is a documentation
-  data base which is querried with the ~c[:]~ilc[docs] command.
+  database which is querried with the ~c[:]~ilc[docs] command.
 
-  The documentation data base is divided into sections.  The sections
+  The documentation database is divided into sections.  The sections
   are listed by
   ~bv[]
   ACL2 !>:docs *
@@ -11598,7 +11598,7 @@
 
   If you want documentation on some topic, but none of our names or
   brief descriptions seem to deal with that topic, you can invoke a
-  command to search the text in the data base for a given string.
+  command to search the text in the database for a given string.
   This is like the GNU Emacs ``~ilc[apropos]'' command.
   ~bv[]
   ACL2 !>:docs \"functional inst\"
@@ -11608,14 +11608,14 @@
   number of spaces are irrelevant.
 
   If you want documentation on an ACL2 function or macro and the
-  documentation data base does not contain any entries for it, there
+  documentation database does not contain any entries for it, there
   are still several alternatives.
   ~bv[]
   ACL2 !>:args fn
   ~ev[]
   will print the arguments and some other relevant information about
   the named function or macro.  This information is all gleaned from
-  the definition (not from the documentation data base) and hence this
+  the definition (not from the documentation database) and hence this
   is a definitive way to determine if ~c[fn] is defined as a function or
   macro.
 
@@ -11627,9 +11627,9 @@
   ~pl[command-descriptor] for details on the kinds of input you
   can give the ~c[:]~ilc[pc] command.
 
-  The entire ACL2 documentation data base is user extensible.  That
+  The entire ACL2 documentation database is user extensible.  That
   is, if you document your function definitions or theorems, then that
-  documentation is made available via the data base and its query
+  documentation is made available via the database and its query
   commands.
 
   The implementation of our online documentation system makes use of
@@ -11638,12 +11638,12 @@
   Lisp assigns no interpretation to these strings.  ACL2 attaches
   special significance to documentation strings that begin with the
   characters ``~c[:Doc-Section]''.  When such a documentation string is
-  seen, it is stored in the data base and may be displayed via ~c[:]~ilc[doc],
+  seen, it is stored in the database and may be displayed via ~c[:]~ilc[doc],
   ~c[:]~ilc[more], ~c[:]~ilc[docs], etc.  Such documentation strings must follow rigid
   syntactic rules to permit their processing by our commands.  These
   are spelled out elsewhere; ~pl[doc-string].
 
-  A description of the structure of the documentation data base may
+  A description of the structure of the documentation database may
   also be found; ~pl[doc-string].
 
   Finally: To build the HTML documentation, proceed with the following sequence
@@ -11670,7 +11670,7 @@
   functions that display or change history~/~/
 
   ACL2 keeps track of the ~il[command]s that you have executed that have
-  extended the logic or the rule data base, as by the definition of
+  extended the logic or the rule database, as by the definition of
   macros, functions, etc.  Using the facilities in this section you
   can review the sequence of ~il[command]s executed so far.  For example,
   you can ask to see the most recently executed ~il[command], or the
@@ -17235,7 +17235,7 @@
   Because ~c[name] is not uniquely associated with the ~c[verify-guards] event
   (it necessarily names a previously defined function) the
   ~il[documentation] string, ~ilc[doc-string], is not stored in the
-  ~il[documentation] data base.  Thus, we actually prohibit ~ilc[doc-string]
+  ~il[documentation] database.  Thus, we actually prohibit ~ilc[doc-string]
   from having the form of an ACL2 ~il[documentation] string;
   ~pl[doc-string].
 
@@ -17736,16 +17736,15 @@
   General Form:
   (deflabel name :doc doc-string)
   ~ev[]
-  where ~c[name] is a new symbolic name (~pl[name]) and ~ilc[doc-string]
-  is an optional ~il[documentation] string (~pl[doc-string]).  This
-  event adds the ~il[documentation] string for symbol ~c[name] to the ~c[:]~ilc[doc] data
-  base.  By virtue of the fact that ~c[deflabel] is an event, it also
-  marks the current ~il[history] with the ~c[name].  Thus, even undocumented
-  labels are convenient as landmarks in a proof development.  For
-  example, you may wish to undo back through some label or compute a
-  theory expression (~pl[theories]) in terms of some labels.
-  ~c[Deflabel] ~il[events] are never considered redundant.
-  ~l[redundant-events].
+  where ~c[name] is a new symbolic name (~pl[name]) and ~ilc[doc-string] is an
+  optional ~il[documentation] string (~pl[doc-string]).  This event adds the
+  ~il[documentation] string for symbol ~c[name] to the ~c[:]~ilc[doc] database.
+  By virtue of the fact that ~c[deflabel] is an event, it also marks the
+  current ~il[history] with the ~c[name].  Thus, even undocumented labels are
+  convenient as landmarks in a proof development.  For example, you may wish to
+  undo back through some label or compute a theory expression (~pl[theories])
+  in terms of some labels.  ~c[Deflabel] ~il[events] are never considered
+  redundant.  ~l[redundant-events].
 
   ~l[defdoc] for a means of attaching a ~il[documentation] string to a
   name without marking the current ~il[history] with that name.~/"
@@ -18534,9 +18533,9 @@
   (~pl[theories]), and ~ilc[doc-string] is an optional ~il[documentation]
   string not beginning with ``~c[:Doc-Section] ...''.  Because no unique name
   is associated with an ~c[in-theory] event, there is no way we can store the
-  ~il[documentation] string ~ilc[doc-string] in our ~il[documentation] data
-  base.  Hence, we actually prohibit ~ilc[doc-string] from having the form of
-  an ACL2 ~il[documentation] string; ~pl[doc-string].
+  ~il[documentation] string ~ilc[doc-string] in our ~il[documentation]
+  database.  Hence, we actually prohibit ~ilc[doc-string] from having the form
+  of an ACL2 ~il[documentation] string; ~pl[doc-string].
 
   Except for the variable ~ilc[world], ~c[term] must contain no free variables.
   ~c[Term] is evaluated with the variable ~ilc[world] bound to the current
@@ -18613,7 +18612,7 @@
 
   Because no unique name is associated with an ~c[in-arithmetic-theory] event,
   there is no way we can store the ~il[documentation] string ~ilc[doc-string]
-  in our il[documentation] data base.  Hence, we actually prohibit ~ilc[doc-string]
+  in our il[documentation] database.  Hence, we actually prohibit ~ilc[doc-string]
   from having the form of an ACL2 ~il[documentation] string;
   ~pl[doc-string].
 
@@ -18628,7 +18627,7 @@
         (list 'quote event-form)))
 
 #+acl2-loop-only
-(defmacro regenerate-tau-data-base (&whole event-form &key doc)
+(defmacro regenerate-tau-database (&whole event-form &key doc)
 
 ; Warning: See the Important Boot-Strapping Invariants before modifying!
 
@@ -18638,53 +18637,53 @@
 
   ":Doc-Section Events
 
-  regenerate the tau data base relative to the current enabled theory~/
+  regenerate the tau database relative to the current enabled theory~/
   ~bv[]
   Example:
-  (regenerate-tau-data-base)~/
+  (regenerate-tau-database)~/
 
   General Form:
-  (regenerate-tau-data-base :doc doc-string)
+  (regenerate-tau-database :doc doc-string)
   ~ev[]
   where ~ilc[doc-string] is an optional ~il[documentation] string not beginning
   with ``~c[:Doc-Section] ...''.  Because no unique name is associated with a
-  ~c[regenerate-tau-data-base] event, there is no way we can store the
-  ~il[documentation] string ~ilc[doc-string] in our il[documentation] data
-  base.  Hence, we actually prohibit ~ilc[doc-string] from having the form of
-  an ACL2 ~il[documentation] string; ~pl[doc-string].
+  ~c[regenerate-tau-database] event, there is no way we can store the
+  ~il[documentation] string ~ilc[doc-string] in our il[documentation] database.
+  Hence, we actually prohibit ~ilc[doc-string] from having the form of an ACL2
+  ~il[documentation] string; ~pl[doc-string].
 
-  The tau data base is regenerated by scanning the current logical world and
+  The tau database is regenerated by scanning the current logical world and
   re-processing every rule-generating event in it relative to the current
   enabled theory and current tau auto mode settings.
   ~l[introduction-to-the-tau-system] for background details.
 
   This command was intended to allow the user to remove a fact from the tau
-  data base, by regenerating the data base without the fact.  But as the
-  following discussion highlights, ~c[regenerate-tau-data-base] does not really
+  database, by regenerating the database without the fact.  But as the
+  following discussion highlights, ~c[regenerate-tau-database] does not really
   solve the problem.  We regard it as a placeholder for a more sophisticated
   mechanism.  However, we have trouble understanding why a user might wish to
-  remove a fact from the data base and are awaiting further user experiences
+  remove a fact from the database and are awaiting further user experiences
   before designing the more sophisticated mechanism.
 
   Suppose, for example, that you wanted to remove a signature rule provided by
   some rule with name ~i[rune].  You could disable ~i[rune] and regenerate the
-  data base.  We discuss why you might ~-[] or might not ~-[] want to do this
-  later.  But suppose you did it.  Unfortunately, the data base you get will
+  database.  We discuss why you might ~-[] or might not ~-[] want to do this
+  later.  But suppose you did it.  Unfortunately, the database you get will
   not be just like the one you started with minus the signature rule.  The
-  reason is that the data base you started with was generated incrementally and
+  reason is that the database you started with was generated incrementally and
   the current theory might have evolved.  To take a simple example, your
-  starting data base might have included a rule that has been disabled since it
-  was first added.  Thus, the part of your starting data base built before the
+  starting database might have included a rule that has been disabled since it
+  was first added.  Thus, the part of your starting database built before the
   disabling was constructed with the rule enabled and the part built afterwards
-  has the rule disabled.  You are unlikely to get the same data base whether
+  has the rule disabled.  You are unlikely to get the same database whether
   you enable or disable that rule now.
 
   You might hope that the avoidance of ~c[in-theory] events would eliminate the
   problem but it does not because even the ~ilc[ground-zero] theory is
   constructed incrementally from the ``pre-history'' commands used to boot up
   ACL2.  Those pre-history commands include some global ~c[in-theory] commands.
-  Since every session starts from the ~c[ground-zero] state, the starting data
-  base is already ``infected'' with global ~c[in-theory] commands.
+  Since every session starts from the ~c[ground-zero] state, the starting
+  database is already ``infected'' with global ~c[in-theory] commands.
 
   The reason we hope that it will not be necessary to remove tau facts is that
   the tau system is designed merely to be fast and benign (see
@@ -18701,7 +18700,7 @@
 
 ; Warning: See the Important Boot-Strapping Invariants before modifying!
 
-  (list 'regenerate-tau-data-base-fn
+  (list 'regenerate-tau-database-fn
         'state
         (list 'quote doc)
         (list 'quote event-form)))
@@ -27369,7 +27368,7 @@
     mutual-recursion set-rewrite-stack-limit set-prover-step-limit
     add-match-free-override
     set-match-free-default
-    the-mv table in-arithmetic-theory regenerate-tau-data-base
+    the-mv table in-arithmetic-theory regenerate-tau-database
     set-case-split-limitations
     set-irrelevant-formals-ok remove-untouchable
     in-theory with-output-forced dmr-start
@@ -37342,7 +37341,7 @@
   deftheory
   in-theory
   in-arithmetic-theory
-  regenerate-tau-data-base
+  regenerate-tau-database
   theory-invariant
   defchoose
   ~ev[]
@@ -40189,15 +40188,15 @@
   ~ilc[encapsulate] ~il[events] in which it occurs; ~pl[acl2-defaults-table].
   ~l[introduction-to-the-tau-system] for background details.
 
-  The tau system gathers rules for its data base in one of two ways: greedily
+  The tau system gathers rules for its database in one of two ways: greedily
   or only at the explicit command of the user.  ``Greedy'' mode is officially
   called ``automatic mode'' and is the default.  The other mode is called
   ``manual mode.''
 
   In automatic mode, all rules processed by ACL2 are also considered for
-  inclusion in the tau data base: if the ~c[:corollary] of some proved theorem
+  inclusion in the tau database: if the ~c[:corollary] of some proved theorem
   happens to fit into one of the forms described in ~c[:]~ilc[tau-system], that
-  rule is quietly added to the tau data base ~i[regardless of what]
+  rule is quietly added to the tau database ~i[regardless of what]
   ~c[:]~ilc[rule-classes] the user named for the ~c[:corollary].  Of course,
   such rules are also stored in the ways named by the user.  See the
   ~i[Design Philosophy] section of ~il[introduction-to-the-tau-system] for a 
@@ -40230,7 +40229,7 @@
     the shape of any ~c[tau-system] rule.
 
   Of course, events such as ~ilc[defstobj] and ~ilc[defevaluator] may also add
-  rules to the tau data base when they execute the ~ilc[defun] and ~ilc[defthm]
+  rules to the tau database when they execute the ~ilc[defun] and ~ilc[defthm]
   events implicit in their descriptions.  ~l[tau-system] for a description of
   the various shapes mentioned above.
 
@@ -40260,7 +40259,7 @@
   rules.  For example, suppose a ~c[defthm] has one ~c[:corollary] stored as a
   ~c[:rewrite] rule and another ~c[:corollary] stored as a ~c[:tau-system]
   rule.  But suppose the ~c[:rewrite] rule happens to also to fit the form of a
-  ~c[:tau-system] rule.  Is it added to the tau data base or not?  The answer
+  ~c[:tau-system] rule.  Is it added to the tau database or not?  The answer
   is no.  If you have taken the trouble to specify ~c[:tau-system] corollaries
   for an event, then those corollaries are the only ones stored as tau sytem
   rules from that event.  Note that had both corollaries been classed as

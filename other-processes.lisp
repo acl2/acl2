@@ -636,12 +636,11 @@
                  alist
                  (access elim-rule rule :destructor-terms))))))))
 
-; We now take a break from elim and develop the code for the
-; generalization that elim uses.  We want to be able to replace terms
-; by variables (sublis-expr, above), we want to be able to restrict
-; the new variables by noting type-sets of the terms replaced, and we
-; want to be able to use generalization rules provided in the data
-; base.
+; We now take a break from elim and develop the code for the generalization
+; that elim uses.  We want to be able to replace terms by variables
+; (sublis-expr, above), we want to be able to restrict the new variables by
+; noting type-sets of the terms replaced, and we want to be able to use
+; generalization rules provided in the database.
 
 (defun type-restriction-segment (cl terms vars type-alist ens wrld)
 

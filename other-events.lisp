@@ -277,7 +277,7 @@
                name))))
 
 (defun defconst-fn1 (name val doc doc-pair w state)
-  (let ((w (update-doc-data-base
+  (let ((w (update-doc-database
             name doc doc-pair
             (putprop name 'const (kwote val) w))))
     (value w)))
@@ -748,7 +748,7 @@
           (t (value nil)))))
 
 (defun defmacro-fn1 (name args doc doc-pair guard body w state)
-  (let ((w (update-doc-data-base
+  (let ((w (update-doc-database
             name doc doc-pair
             (putprop
              name 'macro-args args
@@ -1049,8 +1049,8 @@
             'state
             (list 'quote doc)
             (list 'quote event-form)))
-    (defmacro regenerate-tau-data-base (&whole event-form &key doc)
-      (list 'regenerate-tau-data-base-fn
+    (defmacro regenerate-tau-database (&whole event-form &key doc)
+      (list 'regenerate-tau-database-fn
             'state
             (list 'quote doc)
             (list 'quote event-form)))
@@ -1495,7 +1495,7 @@
                          defpkg defun defuns mutual-recursion defmacro defconst
                          defstobj defthm defaxiom progn encapsulate include-book 
                          deflabel defdoc deftheory
-                         in-theory in-arithmetic-theory regenerate-tau-data-base
+                         in-theory in-arithmetic-theory regenerate-tau-database
                          push-untouchable remove-untouchable set-body table
                          reset-prehistory verify-guards verify-termination-boot-strap
                          local defchoose ld-skip-proofsp
@@ -1505,7 +1505,7 @@
                          defthm-fn defaxiom-fn progn-fn encapsulate-fn
                          include-book-fn deflabel-fn defdoc-fn
                          deftheory-fn in-theory-fn in-arithmetic-theory-fn
-                         regenerate-tau-data-base-fn
+                         regenerate-tau-database-fn
                          push-untouchable-fn remove-untouchable-fn
                          reset-prehistory-fn set-body-fn
                          table-fn verify-guards-fn verify-termination-boot-strap-fn
@@ -2123,7 +2123,7 @@
                                ax ax (ens state) w1 state)))))
                        (w3 (cond
                             (hidden-p w2) ; may as well skip :doc on hidden pkg
-                            (t (update-doc-data-base name doc doc-pair w2)))))
+                            (t (update-doc-database name doc doc-pair w2)))))
                   (install-event name
                                  event-form
                                  'defpkg
@@ -3254,7 +3254,7 @@
                  :none
                  wrld)
                 (declare (ignore theory-augmented-ignore))
-                (let ((wrld2 (update-doc-data-base
+                (let ((wrld2 (update-doc-database
                               name doc doc-pair
                               (putprop name 'theory theory wrld1))))
 
@@ -4299,7 +4299,7 @@
      progn!
      program
      push-untouchable
-     regenerate-tau-data-base
+     regenerate-tau-database
      remove-default-hints!
      remove-untouchable
      reset-prehistory
@@ -4577,7 +4577,7 @@
 ; defmacro-fn                (name MACRO-BODY . &)
 ; in-theory-fn               ---
 ; in-arithmetic-theory-fn    ---
-; regenerate-tau-data-base   ---
+; regenerate-tau-database   ---
 ; push-untouchable-fn        ---
 ; remove-untouchable-fn      ---
 ; reset-prehistory           ---
@@ -14389,7 +14389,7 @@
                                           (global-set
                                            'include-book-path
                                            old-include-book-path
-                                           (update-doc-data-base
+                                           (update-doc-database
                                             full-book-name doc doc-pair
                                             (global-set
                                              'certification-tuple
@@ -18669,7 +18669,7 @@
                                     fn 'stobjs-in stobjs-in nil
                                     (putprop
                                      fn 'formals formals
-                                     (update-doc-data-base
+                                     (update-doc-database
                                       fn doc doc-pair wrld)))))))))
                          (er-let*
                           ((constraint
@@ -21713,7 +21713,7 @@
                  ((doc-pair (translate-doc name doc ctx state)))
                  (let* ((wrld2 (w state))
                         (wrld3
-                         (update-doc-data-base
+                         (update-doc-database
                           name doc doc-pair
                           (putprop
                            name 'congruent-stobj-rep
@@ -23876,7 +23876,7 @@
                     (er-let* ((doc-pair (translate-doc st-name doc ctx state)))
                       (let* ((wrld2 (w state))
                              (wrld3
-                              (update-doc-data-base
+                              (update-doc-database
                                st-name doc doc-pair
                                (putprop
                                 st-name 'congruent-stobj-rep
@@ -34116,9 +34116,9 @@
 
   (defun-inline-form name formals lst 'defund *notinline-suffix*))
 
-(defun regenerate-tau-data-base-fn0 (user-auto-modep auto-modep ens trips
+(defun regenerate-tau-database-fn0 (user-auto-modep auto-modep ens trips
                                                      ctx wrld state)
-; Tau will visit each triple in trips and extend the tau data base using the
+; Tau will visit each triple in trips and extend the tau database using the
 ; given auto-modep and ens.  Trips is a list of the tau-relevant triples in the
 ; current world, in chronological order from the earliest relevant boot-strap
 ; triple.  Auto-modep is the setting of the tau auto modep flag to use during
@@ -34128,7 +34128,7 @@
   
   (cond ((endp trips) (value wrld))
         ((eq (cadr (car trips)) 'formals)
-         (regenerate-tau-data-base-fn0
+         (regenerate-tau-database-fn0
           user-auto-modep auto-modep ens
           (cdr trips)
           ctx
@@ -34138,7 +34138,7 @@
               (eq (cadr (car trips)) 'global-value))
          (cond ((eq (access-event-tuple-type (cddr (car trips)))
                     'EXIT-BOOT-STRAP-MODE)
-                (regenerate-tau-data-base-fn0
+                (regenerate-tau-database-fn0
                  user-auto-modep user-auto-modep ens
                  (cdr trips)
                  ctx wrld state))
@@ -34149,30 +34149,30 @@
                                      (access-event-tuple-type (cddr (car trips)))
                                      (access-event-tuple-namex (cddr (car trips)))
                                      auto-modep ens ctx wrld state)))
-                  (regenerate-tau-data-base-fn0
+                  (regenerate-tau-database-fn0
                    user-auto-modep auto-modep ens
                    (cdr trips)
                    ctx wrld1 state)))))
         (t (value
-            (er hard 'regenerate-tau-data-base-fn0
+            (er hard 'regenerate-tau-database-fn0
                 "Collect-tau-relevant-triples collected an unrecognized ~
                  property!  We expected to see fn FORMALS and EVENT-LANDMARK ~
                  GLOBAL-VALUE triples, but we see the triple ~x0."
                 (car trips))))))
 
-(defun regenerate-tau-data-base-fn1
+(defun regenerate-tau-database-fn1
   (boot-strap-auto-modep user-auto-modep ens ctx wrld state)
 
 ; Collect all the tau-relevant triples in the world, in chronological order,
 ; then re-initialize the tau globals, and then visit each triple in turn and
-; regenerate the tau data base.  We start with the tau auto mode set to
+; regenerate the tau database.  We start with the tau auto mode set to
 ; boot-strap-auto-mode (presumably t), and switch to the user-auto-mode setting
 ; when we get out of the boot strap region.
 
 ; Tau Todo: It might be worthwhile trying to compress the world we get from
 ; this event.  See how big it is and think about it.
 
-  (regenerate-tau-data-base-fn0
+  (regenerate-tau-database-fn0
    user-auto-modep
    boot-strap-auto-modep
    ens
@@ -34183,10 +34183,10 @@
     (initialize-tau-globals wrld))
    state))
 
-; Essay on Regenerate-tau-data-base
+; Essay on Regenerate-tau-database
 
-; Regenerate-tau-data-base is motivated by the desire to provide the user with
-; some facility for adjusting the tau data base to reflect a theory, since
+; Regenerate-tau-database is motivated by the desire to provide the user with
+; some facility for adjusting the tau database to reflect a theory, since
 ; otherwise there would be no way to achieve that end short of removing certain
 ; theorems from the script!  We think this will be a rarely-used event simply
 ; because tau is designed to prove goals, not to simplify or rewrite them.  How
@@ -34194,24 +34194,25 @@
 ; naive view of the situation, since as of this writing no one has ever used
 ; the tau system!  It is still being developed.
 
-; Regenerate-tau-data-base recomputes the data base but only considers those
+; Regenerate-tau-database recomputes the database but only considers those
 ; runes enabled by the current global theory.  But this represents a design
 ; choice: why not allow the user to specify the theory governing the
 ; regeneration process?  For example, why not provide:
 
-; (regenerate-tau-data-base (disable lemma55))
+; (regenerate-tau-database (disable lemma55))
 
 ; We call this the ``tau theory alternative'' and rejected it because we think
 ; it will confuse the user moving forward.  That is, while a particular tau
-; theory might be used to regenerate the data base when the regeneration event is
-; processed, the subsequent incremental extension of the data base with :tau-system
-; or implicit (auto mode) rules is done under the global theory.  This could be
-; confusing if the user thinks that the tau theory governs what is in the tau data
-; base (instead of what was put in it ``initially'' by the regeneration event).
+; theory might be used to regenerate the database when the regeneration event
+; is processed, the subsequent incremental extension of the database with
+; :tau-system or implicit (auto mode) rules is done under the global theory.
+; This could be confusing if the user thinks that the tau theory governs what
+; is in the tau database (instead of what was put in it ``initially'' by the
+; regeneration event).
 
 ; One solution would be to provide a completely separate theory to be used by
 ; tau.  Setting the tau theory to some new theory would actually recompute the
-; tau data base.  As new events are added, both the current theory and the tau
+; tau database.  As new events are added, both the current theory and the tau
 ; theory are explicitly extended.  All queries to enabled status by the tau
 ; system, including its use of type-set, would refer to the tau theory.  In a
 ; situation similar to in-arithmetic-theory we would either have to provide
@@ -34220,8 +34221,8 @@
 ; like a lot of infrastructure for a rarely used event.
 
 ; The design we actually implement doesn't allow for a distinct tau theory.
-; The global theory is always used.  If the user wants to regenerate the data
-; base he or she must reset the global theory appropriately and set it back
+; The global theory is always used.  If the user wants to regenerate the
+; database he or she must reset the global theory appropriately and set it back
 ; afterwards.  This has the advantage of forcing the user to acknowledge which
 ; theory is being used.
 
@@ -34230,23 +34231,23 @@
 
 ; Tau Todo:  see the install-event comment below!
 
-(defun regenerate-tau-data-base-fn (state doc event-form)
+(defun regenerate-tau-database-fn (state doc event-form)
 
 ; Warning: If this event ever generates proof obligations, remove it from the
 ; list of exceptions in install-event just below its "Comment on irrelevance of
 ; skip-proofs".
 
   (when-logic
-   "REGENERATE-TAU-DATA-BASE"
+   "REGENERATE-TAU-DATABASE"
    (with-ctx-summarized
     (if (output-in-infixp state)
         event-form
         (if doc
-            "( REGENERATE-TAU-DATA-BASE ...)"
-            "( REGENERATE-TAU-DATA-BASE)"))
+            "( REGENERATE-TAU-DATABASE ...)"
+            "( REGENERATE-TAU-DATABASE)"))
     (let* ((wrld (w state))
            (event-form (or event-form
-                           `(REGENERATE-TAU-DATA-BASE
+                           `(REGENERATE-TAU-DATABASE
                              ,@(if doc
                                    (list :doc doc)
                                    nil))))
@@ -34254,17 +34255,17 @@
            (user-auto-modep (tau-auto-modep wrld))
            (ens (ens state)))
 
-; Note: We do not permit REGENERATE-TAU-DATA-BASE events to be redundant.  If
+; Note: We do not permit REGENERATE-TAU-DATABASE events to be redundant.  If
 ; this is changed, change the text of the :doc for redundant-events.
 
       (er-let*
         ((doc-pair (translate-doc nil doc ctx state))
-         (wrld1 (regenerate-tau-data-base-fn1 boot-strap-auto-modep
+         (wrld1 (regenerate-tau-database-fn1 boot-strap-auto-modep
                                               user-auto-modep
                                               ens ctx wrld state))
          (val (install-event t
                              event-form
-                             'regenerate-tau-data-base
+                             'regenerate-tau-database
                              0
                              nil
                              nil

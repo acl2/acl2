@@ -67,7 +67,7 @@
 ; The rule class :EQUIVALENCE just alerts the system that this
 ; formula states that something is an equivalence relation.  If
 ; the formula is proved, the system identifies set-equal as the
-; relation and adds to the data base certain information that
+; relation and adds to the database certain information that
 ; enables the processing described here.)
 
 ; The Boolean requirement is imposed for coding convenience.  In
@@ -488,7 +488,7 @@
         (t
 
 ; Otherwise, look for equiv2 among the known coarsenings of equiv1.
-; The data base must be kept so that the transitive property of
+; The database must be kept so that the transitive property of
 ; refinement is manifested explicitly.  This function is called very
 ; often and we do not want to go searching through the transitive
 ; closure of refinementhood or coarseninghood.  So if e1 is a known
@@ -548,7 +548,7 @@
 ; of ignoring those :CONGRUENCE rules.  This proved cumbersome and we
 ; adopted the idea of passing around geneqvs that are fully enabled.
 ; It means, of course, filtering out the disabled components when we
-; form new geneqvs from those in the data base.  In any case, this
+; form new geneqvs from those in the database.  In any case, this
 ; function does not get the enabled structure and takes no note of the
 ; status of any rule.
 
@@ -764,7 +764,7 @@
 ; determines what generated equivalence relations must be maintained
 ; across the the arguments of fn in order to maintain a given
 ; generated equivlence relation for the fn-expression itself.  Because
-; we form new geneqvs from stored ones in the data base, we have to
+; we form new geneqvs from stored ones in the database, we have to
 ; have the enabled structure so we filter out disabled congruence
 ; rules.
 
@@ -18531,7 +18531,7 @@
   to create a new ``smaller'' polynomial; so ACL2 multiplies polynomials
   together when the product of their largest unknowns is itself the largest
   unknown of another polynomial.  As the use of ~c[:]~ilc[linear] lemmas to
-  further seed the arithmetic data base may allow cancellation to proceed, so
+  further seed the arithmetic database may allow cancellation to proceed, so
   may the use of non-linear arithmetic.
 
   This multiplication of polynomials is the motivation for an arithmetic-theory
@@ -19072,32 +19072,28 @@
                                                  simplify-clause-pot-lst
                                                  rcnst gstack ttree)
 
-; Each element of split-lst is a doublet, (lst1 lst2).  Logically, we
-; wish to conjoin to the simplify-clause-pot-lst the conjunction
-; across split-lst of the disjunctions of each lst1 and lst2.  I.e.,
-; we wish to assume (and ... (or lst1 lst2) ...) and we wish to
-; express this assumption as a pot-lst.  No way Jose.  Pot-lsts
-; represent conjunctions of assumptions.  So instead we'll conjoin
-; lst1 into the pot list and lst2 into the pot list and hope one or
-; the other gives a contradiction.  If not, we'll just discard that
-; doublet and try the others.  But if one gives a contradiction, then
-; we can go with the assumption of the other as the assumption of
-; their disjunction.  There is a subtlety here however: the assumption
-; of lst2 in place of (or lst1 lst2) depends upon the refutation of
-; lst1 and hence we must infect the polys from lst2 with the ttree
-; arising from the refutation of lst1.  And vice versa.  See
-; add-disjunct-polys-and-lemma.
+; Each element of split-lst is a doublet, (lst1 lst2).  Logically, we wish to
+; conjoin to the simplify-clause-pot-lst the conjunction across split-lst of
+; the disjunctions of each lst1 and lst2.  I.e., we wish to assume (and ... (or
+; lst1 lst2) ...) and we wish to express this assumption as a pot-lst.  No way
+; Jose.  Pot-lsts represent conjunctions of assumptions.  So instead we'll
+; conjoin lst1 into the pot list and lst2 into the pot list and hope one or the
+; other gives a contradiction.  If not, we'll just discard that doublet and try
+; the others.  But if one gives a contradiction, then we can go with the
+; assumption of the other as the assumption of their disjunction.  There is a
+; subtlety here however: the assumption of lst2 in place of (or lst1 lst2)
+; depends upon the refutation of lst1 and hence we must infect the polys from
+; lst2 with the ttree arising from the refutation of lst1.  And vice versa.
+; See add-disjunct-polys-and-lemma.
 
-; We return two values, the standard contradictionp, and a new
-; pot-lst.
+; We return two values, the standard contradictionp, and a new pot-lst.
 
-; The to-do-later list was first present in Version 1.6, and
-; represents an attempt to make the order of the split-lst irrelevant.
-; The idea is that if a doublet in the split-lst must be "discarded"
-; as noted above, then we actually save that doublet on to-do-later
-; and try it again after processing the others.  Here is a long
-; message that explains the problem; the message was sent to Bishop
-; Brock, who first reported the problem, on March 31, 1994,
+; The to-do-later list was first present in Version 1.6, and represents an
+; attempt to make the order of the split-lst irrelevant.  The idea is that if a
+; doublet in the split-lst must be "discarded" as noted above, then we actually
+; save that doublet on to-do-later and try it again after processing the
+; others.  Here is a long message that explains the problem; the message was
+; sent to Bishop Brock, who first reported the problem, on March 31, 1994,
 
 ; I have fixed the "bug" that prevented us from proving
 
@@ -19122,84 +19118,77 @@
 ;              (NOT (EQUAL N 3)))
 ;         (EQUAL N 4))
 
-; The arithmetic hyps are stored in the linear inequalities data base
-; by the linear arithmetic package.  That database represents a
-; conjunction of inequalities.  The first two inequalities give us
+; The arithmetic hyps are stored in the linear inequalities database by the
+; linear arithmetic package.  That database represents a conjunction of
+; inequalities.  The first two inequalities give us
 
 ;  0 <= N <= 4
 
-; Now we come to the hard part.  In general, we cannot represent (NOT
-; (EQUAL x y)) as a conjunction of inequalities.  It turns into a
-; DISjunction, namely, either x < y or y < x.  Thus, if we are asked
-; to add (NOT (EQUAL x y)) to the linear data base we try adding x <
-; y.  If that gives us a contradiction, then we know y < x and we add
-; that.  Alternatively, if x < y doesn't give us a contradiction, but
-; y < x does, we can assume x < y.  If neither gives us a
-; contradiction, we simply can't represent (NOT (EQUAL x y)) in the
-; linear data base.  Note that to get any linear information out of
-; (NOT (EQUAL x y)) we must get a contradiction from one of the two
-; disjuncts.
+; Now we come to the hard part.  In general, we cannot represent (NOT (EQUAL x
+; y)) as a conjunction of inequalities.  It turns into a DISjunction, namely,
+; either x < y or y < x.  Thus, if we are asked to add (NOT (EQUAL x y)) to the
+; linear database we try adding x < y.  If that gives us a contradiction, then
+; we know y < x and we add that.  Alternatively, if x < y doesn't give us a
+; contradiction, but y < x does, we can assume x < y.  If neither gives us a
+; contradiction, we simply can't represent (NOT (EQUAL x y)) in the linear
+; database.  Note that to get any linear information out of (NOT (EQUAL x y))
+; we must get a contradiction from one of the two disjuncts.
 
-; When you process the hypotheses in the "wrong" order, you don't
-; always get a contradiction and so we effectively drop one or more of
-; the inequalities and lose.
+; When you process the hypotheses in the "wrong" order, you don't always get a
+; contradiction and so we effectively drop one or more of the inequalities and
+; lose.
 
-; Consider one of the many "right" orders first, in particular the
-; proof that works above.  The first NOT EQUAL we process is (NOT
-; (EQUAL N 0)).  Because N is an integer, this is equivalent to either
-; N <= -1 or 1 <= N.  The linear data base we have initially is
+; Consider one of the many "right" orders first, in particular the proof that
+; works above.  The first NOT EQUAL we process is (NOT (EQUAL N 0)).  Because N
+; is an integer, this is equivalent to either N <= -1 or 1 <= N.  The linear
+; database we have initially is
 
 ;  0 <= N <= 4.
 
-; When we add N <= -1 we get a contradiction, by clashing 0 <= N with
-; N <= -1 and deriving 0 <= -1.  Since we got a contradiction on one
-; disjunct we can assume the other.  Adding 1 <= N to the above data
-; base gives us
+; When we add N <= -1 we get a contradiction, by clashing 0 <= N with N <= -1
+; and deriving 0 <= -1.  Since we got a contradiction on one disjunct we can
+; assume the other.  Adding 1 <= N to the above database gives us
 
 ;  1 <= N <= 4.
 
-; Note that we are now in a position to successfully process (NOT
-; (EQUAL N 1)), because it becomes either N <= 0 (contradiction) or 2
-; <= N, and thus we get
+; Note that we are now in a position to successfully process (NOT (EQUAL N 1)),
+; because it becomes either N <= 0 (contradiction) or 2 <= N, and thus we get
 
 ;  2 <= N <= 4.
 
-; As you can see, we can keep narrowing the known interval as long as
-; the hyp we process is beyond the current known endpoints.  We can
-; work at either endpoint and so there are many "right" orders.  (In
-; the case of the 5-way case split on N=0,1,2,3,4, there are 90 right
-; orders and 30 wrong ones out of the 120 permutations.)
+; As you can see, we can keep narrowing the known interval as long as the hyp
+; we process is beyond the current known endpoints.  We can work at either
+; endpoint and so there are many "right" orders.  (In the case of the 5-way
+; case split on N=0,1,2,3,4, there are 90 right orders and 30 wrong ones out of
+; the 120 permutations.)
 
 ; Now consider one of the "wrong" orders.  If we know
 
 ;  0 <= N <= 4
 
-; and we first process (NOT (EQUAL N 1)) then we must get a
-; contradiction from either N <= 0 or from 2 <f= N.  But neither of
-; these is contradictory yet.  So in Version 1.5 (and Nqthm!) we just
-; ignore that NOT EQUAL hyp (as far as linear arithmetic is
-; concerned).  Once we've ignored any one hyp, the game is lost.
+; and we first process (NOT (EQUAL N 1)) then we must get a contradiction from
+; either N <= 0 or from 2 <f= N.  But neither of these is contradictory yet.
+; So in Version 1.5 (and Nqthm!) we just ignore that NOT EQUAL hyp (as far as
+; linear arithmetic is concerned).  Once we've ignored any one hyp, the game is
+; lost.
 
-; In Version 1.6 the success of linear is independent of the order in
-; which the inequalities are presented.  I do this by keeping a list
-; of the ones I had tried to add but couldn't, i.e., the ones that
-; Version 1.5 decided to ignore.  Call that list the "to-do-later
-; list".  I process all the hyps and get a data base and a to-do-later
-; list.  Then I reprocess the to-do-later list and see if any can be
-; added now.  I iterate until either I've added them all or no changes
-; happen.
+; In Version 1.6 the success of linear is independent of the order in which the
+; inequalities are presented.  I do this by keeping a list of the ones I had
+; tried to add but couldn't, i.e., the ones that Version 1.5 decided to ignore.
+; Call that list the "to-do-later list".  I process all the hyps and get a
+; database and a to-do-later list.  Then I reprocess the to-do-later list and
+; see if any can be added now.  I iterate until either I've added them all or
+; no changes happen.
 
-; In the case of inequalities about variable symbols this is very very
-; fast.  In the case of inequalities about arbitrary terms, e.g., (NOT
-; (EQUAL (FOO (BAR X Y)) 2)), it can be slow because every time we add
-; an inequality we go look in the :LINEAR lemmas data base for more
-; facts about that term.  But I think this problem doesn't arise too
-; often and I think we'll find Version 1.6 better than Version 1.5 and
-; seldom any slower.
+; In the case of inequalities about variable symbols this is very very fast.
+; In the case of inequalities about arbitrary terms, e.g., (NOT (EQUAL (FOO
+; (BAR X Y)) 2)), it can be slow because every time we add an inequality we go
+; look in the :LINEAR lemmas database for more facts about that term.  But I
+; think this problem doesn't arise too often and I think we'll find Version 1.6
+; better than Version 1.5 and seldom any slower.
 
-; Thank you very much Bishop for noticing this problem.  It is amazing
-; to me that it survived all those years in Nqthm without coming to
-; our attention.
+; Thank you very much Bishop for noticing this problem.  It is amazing to me
+; that it survived all those years in Nqthm without coming to our attention.
 
   (declare (ignore obj geneqv ttree)
            (type (unsigned-byte 29) rdepth)

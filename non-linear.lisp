@@ -159,7 +159,7 @@
                        (integerp (unquote (fargn exponent 1)))
                        (< (unquote (fargn exponent 1)) 0))
                   (fcons-term* 'EXPT 
-                               base 
+                               base
                                (cons-term
                                 'BINARY-*
                                 (list

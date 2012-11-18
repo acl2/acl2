@@ -1424,7 +1424,7 @@
                             defmacro-fn
                             in-theory-fn
                             in-arithmetic-theory-fn
-                            regenerate-tau-data-base-fn
+                            regenerate-tau-database-fn
                             push-untouchable-fn
                             remove-untouchable-fn
                             reset-prehistory-fn

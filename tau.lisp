@@ -1085,13 +1085,13 @@
   ~ev[]                 
   For a complete description of acceptable forms see ~c[:]~ilc[tau-system].
 
-  (6) The tau system is ``greedy'' in its efforts to augment its data base.
-  Its data base is potentially augmented when rules of ~i[any]
+  (6) The tau system is ``greedy'' in its efforts to augment its database.
+  Its database is potentially augmented when rules of ~i[any]
   ~c[:rule-class] (see ~c[:]~ilc[rule-classes]) are proved.  For example, if
   you make a ~c[:]~ilc[rewrite] or ~c[:]~ilc[type-prescription] rule which
-  expresses relationship between tau, ACL2 will build it into the tau data
-  base.  The rule-class ~c[:]~ilc[tau-system] can be used to add a rule to the
-  tau data base without adding any other kind of rule.
+  expresses relationship between tau, ACL2 will build it into the tau database.
+  The rule-class ~c[:]~ilc[tau-system] can be used to add a rule to the tau
+  database without adding any other kind of rule.
 
   (7) Greediness is forced into the design by benignity: the tau system may
   ``know'' some fact that the rewriter does not, and because tau reasoning is
@@ -1104,24 +1104,24 @@
   system and use ~c[:]~ilc[tau-system] rules explicitly when you want to ``talk''
   just to the tau system.
 
-  (8) Tau rules are built into the data base with as much preprocessing as
+  (8) Tau rules are built into the database with as much preprocessing as
   possible (e.g., the system transitively closes inclusion/exclusion
   relationships at rule-storage time) so the checker can be fast.
 
   (9) For speed, tau does not track dependencies and is not sensitive to the
   enabled/disabled status (see ~ilc[enable] and ~ilc[disable]) of rules.  Once
-  a fact has been built into the tau data base, the only way to prevent that
+  a fact has been built into the tau database, the only way to prevent that
   fact from being used is by disabling the entire tau system, by disabling
   ~c[(:]~ilc[executable-counterpart]~c[ tau-system)].  If any tau reasoning is
   used in a proof, the rune ~c[(:]~ilc[executable-counterpart]~c[ tau-system)]
   is reported in the summary.  For a complete list of all the runes in the tau
-  data base, evaluate ~c[(global-val 'tau-runes (w state))].  Any of these
+  database, evaluate ~c[(global-val 'tau-runes (w state))].  Any of these
   associated theorems could have been used.
 
   These design criteria are not always achieved!  For example, the tau system's
-  ``greediness'' can be turned off (see ~ilc[set-tau-auto-mode]), the tau data
-  base can be regenerated from scratch to ingore disabled rules (see
-  ~ilc[regenerate-tau-data-base]), and disabling the
+  ``greediness'' can be turned off (see ~ilc[set-tau-auto-mode]), the tau
+  database can be regenerated from scratch to ingore disabled rules (see
+  ~ilc[regenerate-tau-database]), and disabling the
   ~ilc[executable-counterpart] of a tau predicate symbol will prevent the tau
   system from trying to run the predicate on constants.  The tau system's
   benignity can be frustrating since it might ``know'' something the rewriter
@@ -1135,9 +1135,9 @@
 
   ~i[Technical Details]
 
-  The tau system consists of both a data base and an algorithm for using the
-  data base.  The data base contains theorems that match certain schemas allowing
-  them to be stored in the tau data base.  Roughly speaking the schemas encode
+  The tau system consists of both a database and an algorithm for using the
+  database.  The database contains theorems that match certain schemas allowing
+  them to be stored in the tau database.  Roughly speaking the schemas encode
   ``inclusion'' and ``exclusion'' relations, e.g., that ~c[natp] implies ~c[integerp]
   and that ~c[integerp] implies not ~c[consp], and they encode ``signatures'' of
   functions, e.g., theorems that relate the output of a function to the input,
@@ -1170,7 +1170,7 @@
   the recognizers in that tau.
 
   The tau algorithm is a decision procedure for the logical theory
-  described (only) by the rules in the data base.  The algorithm takes a term
+  described (only) by the rules in the database.  The algorithm takes a term
   and a list of assumptions mapping subterms (typically variable symbols) to
   tau, and returns the tau of the given term.
 
@@ -1182,13 +1182,13 @@
   we apply each of the literals in ~i[s] to ~i[c].  Evaluation might, of course,
   be time-consuming for complex user-defined predicates.
 
-  The tau data base contains rules derived from definitions and theorems stated
+  The tau database contains rules derived from definitions and theorems stated
   by the user.  See ~c[:]~ilc[tau-system] for a description of the acceptable
   forms of tau rules.
 
-  To shut off the greedy augmentation of the tau data base,
+  To shut off the greedy augmentation of the tau database,
   ~pl[set-tau-auto-mode].  This may be of use to users who wish to tightly
-  control the rules in the tau data base.  To add a rule to the tau data base
+  control the rules in the tau database.  To add a rule to the tau database
   without adding any other kind of rule, use the rule class
   ~c[:]~ilc[tau-system].
 
@@ -1210,22 +1210,22 @@
   ~c[:in-theory] hint (~pl[hints]).
 
   The event command ~ilc[tau-status] is a macro that can be used to toggle both
-  whether tau reasoning is globally enabled and whether the tau data base is
+  whether tau reasoning is globally enabled and whether the tau database is
   augmented greedily.  For example, the event
   ~bv[]
   (tau-status :system nil :auto-mode nil)
   ~ev[]
   prevents the tau system from being used in proofs and prevents the
-  augmentation of the tau data base by rules other than those explicitly
+  augmentation of the tau database by rules other than those explicitly
   labeled ~c[:]~ilc[tau-system]. 
 
   To see what the tau system ``knows'' about a given function symbol
-  ~pl[tau-data].  To see the entire tau data base, ~pl[tau-data-base].
-  To regenerate the tau data base using only the runes listed in the current
-  enabled theory, ~pl[regenerate-tau-data-base].~/
+  ~pl[tau-data].  To see the entire tau database, ~pl[tau-database].
+  To regenerate the tau database using only the runes listed in the current
+  enabled theory, ~pl[regenerate-tau-database].~/
   :cite tau-system
   :cite set-tau-auto-mode
-  :cite regenerate-tau-data-base")
+  :cite regenerate-tau-database")
 
 
 
@@ -1238,7 +1238,7 @@
   two most common problems caused by the tau system have to do with the
   system's interaction with ``legacy'' proof scripts.  Such scripts may suffer
   because they were not designed to exploit tau reasoning and which may
-  configure the tau data base in quite incomplete and arbitrary ways.  The two
+  configure the tau database in quite incomplete and arbitrary ways.  The two
   most common problems we have seen are (a) significant slow downs in a few
   proofs and (b) failed proof attempts due to hints being misapplied because
   the tau system caused subgoals to be renumbered.
@@ -1355,7 +1355,7 @@
   
   To learn what conjunctive rules there are in your system, evaluate
   ~bv[]
-  (assoc 'tau-conjunctive-rules (tau-data-base (w state)))
+  (assoc 'tau-conjunctive-rules (tau-database (w state)))
   ~ev[]
   Perhaps by sending the implementors that list, we can think of ways to index the
   conjunctive rules to save time.
@@ -7302,7 +7302,7 @@ at this point because they use some functions not yet defines.
 
 ; We populate the database by processing certain theorems.  However, we do
 ; this both when an event is first processed (in install-event) and also when
-; the tau database is regenerated (regenerate-tau-data-base).  We call this
+; the tau database is regenerated (regenerate-tau-database).  We call this
 ; ``visiting'' the event; obviously, there is a first visit.  That is,
 ; sometimes when we visit an event we've already processed it once.
 
@@ -7311,7 +7311,7 @@ at this point because they use some functions not yet defines.
 ; and the theorems are of the appropriate form.  This is also done when we
 ; visit an event, rather than in the core code for each event.  This is a
 ; deliberate design decision to bring all the tau database updates into one
-; place so we can implement regenerate-tau-data-base more robustly.
+; place so we can implement regenerate-tau-database more robustly.
 
 ; The following code deals with recognizing the shapes of theorems that can be
 ; represented as tau rules and adding those rules to the database.  We
@@ -7899,12 +7899,12 @@ at this point because they use some functions not yet defines.
 
 ; We partition hyps into two lists: the tau-like terms about variables and the
 ; others.  To represent the first partition, we build an alist pairing each
-; variable with its associated tau (except the tau is not closed under the data
-; base, it just contains the recognizers explicitly listed for that variable).
-; The other hyps are merely assembled into a list in the same order as they
-; appear in hyps.  Hyps0 and concl0 are the components of the unprettyified
-; theorem from which this rule is being constructed and are used only for error
-; reporting.
+; variable with its associated tau (except the tau is not closed under the
+; database, it just contains the recognizers explicitly listed for that
+; variable).  The other hyps are merely assembled into a list in the same order
+; as they appear in hyps.  Hyps0 and concl0 are the components of the
+; unprettyified theorem from which this rule is being constructed and are used
+; only for error reporting.
 
   (cond
    ((endp hyps) (mv alist others))
@@ -8281,7 +8281,7 @@ at this point because they use some functions not yet defines.
 
 ; Note that add-tau-rule and tau-rules-from-type-prescriptions are essentially
 ; only called from TAU-VISIT-EVENT, which is called by install-event (and
-; during regenerate-tau-data-base, which is so rare we will ignore it).  Recall
+; during regenerate-tau-database, which is so rare we will ignore it).  Recall
 ; that while one might expect add-tau-rule to be called by add-x-rule it is
 ; not: tau rules are added by the install-event.
 
@@ -8634,9 +8634,9 @@ at this point because they use some functions not yet defines.
                                   
     (add-tau-rule1 lost-rune-action rune pairs ens wrld0 wrld0)))
 
-; We now turn to the topic of ``visiting'' events and building up the tau data
-; base.  Recall that we may be visiting an event for the first time (e.g., in
-; the install-event just after it has been executed) or as part of a
+; We now turn to the topic of ``visiting'' events and building up the tau
+; database.  Recall that we may be visiting an event for the first time (e.g.,
+; in the install-event just after it has been executed) or as part of a
 ; chronological sweep of the world to regenerate the tau database under a
 ; different enabled structure.  But from tau's perspective, every visit to an
 ; event is (almost) like the first time.  This means that it must essentially
@@ -11945,7 +11945,7 @@ at this point because they use some functions not yet defines.
                                (cons temp ans)
                                ans))))))
 
-(defun tau-data-base (wrld)
+(defun tau-database (wrld)
   
   ":Doc-Section History
 
@@ -11953,7 +11953,7 @@ at this point because they use some functions not yet defines.
 
   ~bv[]
   Example:
-  (tau-data-base (w state))
+  (tau-database (w state))
   ~ev[]
 
   This function returns a large list object that shows in a human-readable way
@@ -11984,9 +11984,9 @@ at this point because they use some functions not yet defines.
 
 ; Because tau does not track which runes it is using, disabling a rune has no
 ; effect on the inferences tau makes.  However, we do provide the ability to
-; recompute the tau data base with respect to a given enabled structure.  This
+; recompute the tau database with respect to a given enabled structure.  This
 ; is an event command and we cannot actually define the entire event command
-; until we have more infrastructure in place.  (The regenerate-tau-data-base
+; until we have more infrastructure in place.  (The regenerate-tau-database
 ; event is defined in other-events.lisp.)  But we can do the hard work, which
 ; is mapping over the world and re-visiting every event for its tau rules.
 

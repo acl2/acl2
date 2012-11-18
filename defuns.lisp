@@ -5438,7 +5438,7 @@
 ; any of the recursion/induction properties normally associated with defuns and
 ; the prover will not execute them on explicit constants.
 
-; We do take care of the documentation data base.
+; We do take care of the documentation database.
 
 ; Like defuns-fn0, this function returns a pair consisting of the new world and
 ; a tag-tree recording the proofs that were done.
@@ -5451,7 +5451,7 @@
          (wrld1 (if boot-strap-flg
                     wrld0
                   (putprop-x-lst2 names 'unnormalized-body bodies wrld0)))
-         (wrld2 (update-doc-data-base-lst
+         (wrld2 (update-doc-database-lst
                  names docs pairs
                  (putprop-x-lst2-unless
                   names 'guard guards *t*
@@ -8608,7 +8608,7 @@
                              (putprop-hereditarily-constrained-fnnames-lst
                               names bodies wrld9)))
            (wrld10 (update-w big-mutrec
-                             (update-doc-data-base-lst names docs pairs
+                             (update-doc-database-lst names docs pairs
                                                        wrld9a)))
            (wrld11 (update-w big-mutrec
                              (putprop-x-lst1 names 'congruences nil wrld10)))
@@ -9200,7 +9200,7 @@
            (let* ((formals (formals name wrld))
                   (stobjs-in (stobjs-in name wrld))
                   (stobjs-out (stobjs-out name wrld))
-                  (docp (access-doc-string-data-base name state))
+                  (docp (access-doc-string-database name state))
                   (guard (untranslate (guard name nil wrld) t wrld))
                   (tp (find-runed-type-prescription
                        (list :type-prescription name)
@@ -9249,7 +9249,7 @@
           ((and (symbolp name)
                 (getprop name 'macro-body nil 'current-acl2-world wrld))
            (let ((args (macro-args name wrld))
-                 (docp (access-doc-string-data-base name state))
+                 (docp (access-doc-string-database name state))
                  (guard (untranslate (guard name nil wrld) t wrld)))
              (pprogn
               (fms "Macro ~x0~|~
