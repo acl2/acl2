@@ -19716,6 +19716,10 @@
   ~l[theories].  Thanks to Jared Davis for a useful discussion leading to this
   enhancement.
 
+  ~ilc[Defabsstobj] ~il[events] now take an optional ~c[:congruent-to] keyword
+  argument, much like ~ilc[defstobj].  Thanks to Sol Swords for requesting this
+  feature.
+
   ~st[HEURISTIC IMPROVEMENTS]
 
   We obtained a substantial speedup ~-[] 13% observed for the regression suite,

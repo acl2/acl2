@@ -22338,6 +22338,10 @@
                             (cdddr cltl-command-value))))))
         (t (cltl-def-from-name2 fn stobj-function axiomatic-p (cdr wrld)))))
 
+(defrec absstobj-info
+  (st$c . logic-exec-pairs)
+  t)
+
 (defun cltl-def-from-name1 (fn stobj-function axiomatic-p wrld)
 
 ; See cltl-def-from-name, which is a wrapper for this function in which
@@ -22359,7 +22363,7 @@
               (or (null stobj-function)
                   (and (not (member-equal *stobj-inline-declare* def))
                        (or axiomatic-p
-                           (not (getprop stobj-function 'concrete-stobj nil
+                           (not (getprop stobj-function 'absstobj-info nil
                                          'current-acl2-world wrld)))))
               (cons 'defun def)))))
 

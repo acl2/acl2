@@ -3852,23 +3852,40 @@ the calls took.")
          (sts
 
 ; Here we support memoize-flush, which keeps memoize tables coherent in the
-; presence of user-defined stobjs.  For each (user-level) stobj input name, x,
-; we collect up the variable (st-lst x), whose value is the list of names of
+; presence of user-defined stobjs.  For each (user-level) stobj input name, st,
+; we collect up the variable (st-lst st), whose value is the list of names of
 ; memoize tables that need to be cleared whenever that stobj changes.  Below,
 ; we will push the present function's table name onto each of these lists.
 
+; Ultimately, stobj updates are made by stobj primitives.  After the stobj
+; primitive for stobj st makes an update, the memo table for a function f
+; taking st as its nth argument (say) is no longer valid for saved calls of f
+; for which the nth argument is st.  Because of congruent stobjs and abstract
+; stobjs, that nth argument need not be st, and we believe that in principle,
+; we could restrict flushing of memo table entries of f to those whose nth
+; argument is eq to the stobj being updated (whether st, congruent to st, or an
+; abstract stobj whose concrete stobj is congruent to st).  But for now we take
+; the coarser approach, which has the advantage that we simply throw away the
+; memo-table for f when flushing, leaving it to be garbage collected; see
+; memoize-flush1.
+
           (and condition ; else no memo table usage, so skip flushing
                (remove-duplicates-eq
-                (loop for x in (union stobjs-in stobjs-out)
-                      when x
+                (loop for st in (union stobjs-in stobjs-out)
+                      when st
                       collect
                       (assert$
                        (not (and condition
-                                 (eq x 'state))) ; see memoize-table-chk
+                                 (eq st 'state))) ; see memoize-table-chk
                        (st-lst (congruent-stobj-rep
-                                (or (getprop x 'concrete-stobj nil
-                                             'current-acl2-world wrld)
-                                    x)
+
+; In the case that st is an abstract stobj, we replace it with the
+; corresponding concrete stobj before getting a canonical (congruent)
+; representative; see the rather long comment just above that mentions
+; "abstract" stobjs.
+
+                                (or (concrete-stobj st wrld)
+                                    st)
                                 wrld)))))))
 
          ;; Number of arguments.  Specials only matter for common lisp functions, see the notes above in memoize-fn.
