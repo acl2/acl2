@@ -1332,7 +1332,8 @@
               (smm2-block-start :logic smml-block-start :exec smme-block-start$inline)
               (smm2-max-index :logic smml-max-index :exec smme-nextfree)
               (smm2-fast-read :logic smml-fast-read :exec smme-memi)
-              (smm2-fast-write :logic smml-fast-write :exec update-smme-memi)))
+              (smm2-fast-write :logic smml-fast-write :exec update-smme-memi))
+    :congruent-to smm)
 
   (defabsstobj-events smm3
     :concrete smme
@@ -1348,7 +1349,8 @@
               (smm3-block-start :logic smml-block-start :exec smme-block-start$inline)
               (smm3-max-index :logic smml-max-index :exec smme-nextfree)
               (smm3-fast-read :logic smml-fast-read :exec smme-memi)
-              (smm3-fast-write :logic smml-fast-write :exec update-smme-memi))))
+              (smm3-fast-write :logic smml-fast-write :exec update-smme-memi))
+    :congruent-to smm))
        
   
   
