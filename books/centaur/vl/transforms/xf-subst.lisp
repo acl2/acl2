@@ -574,6 +574,34 @@ attributes is left up to the implementation.</p>"
   :type vl-initiallist-p
   :element vl-initial-subst)
 
+(def-vl-subst vl-taskport-subst
+  :type vl-taskport-p
+  :body
+  (b* (((vl-taskport x) x))
+    (change-vl-taskport x
+                        :range (vl-maybe-range-subst x.range sigma))))
+
+(def-vl-subst-list vl-taskportlist-subst
+  :type vl-taskportlist-p
+  :element vl-taskport-subst)
+
+(def-vl-subst vl-fundecl-subst
+  :type vl-fundecl-p
+  :body
+  (b* (((vl-fundecl x) x))
+    (change-vl-fundecl x
+                       :rrange (vl-maybe-range-subst x.rrange sigma)
+                       :decls (vl-blockitemlist-subst x.decls sigma)
+                       :inputs (vl-taskportlist-subst x.inputs sigma)
+                       :body (vl-stmt-subst x.body sigma))))
+
+(def-vl-subst-list vl-fundecllist-subst
+  :type vl-fundecllist-p
+  :element vl-fundecl-subst)
+
+                       
+                       
+
 (def-vl-subst vl-module-subst
   :type vl-module-p
   :body (b* (((vl-module x) x))
@@ -586,13 +614,14 @@ attributes is left up to the implementation.</p>"
                             :netdecls   (vl-netdecllist-subst   x.netdecls   sigma)
                             :vardecls   (vl-vardecllist-subst   x.vardecls   sigma)
                             :regdecls   (vl-regdecllist-subst   x.regdecls   sigma)
+                            :fundecls   (vl-fundecllist-subst   x.fundecls   sigma)
                             :eventdecls (vl-eventdecllist-subst x.eventdecls sigma)
                             :paramdecls (vl-paramdecllist-subst x.paramdecls sigma)
                             :modinsts   (vl-modinstlist-subst   x.modinsts   sigma)
                             :gateinsts  (vl-gateinstlist-subst  x.gateinsts  sigma)
                             :alwayses   (vl-alwayslist-subst    x.alwayses   sigma)
                             :initials   (vl-initiallist-subst   x.initials   sigma)
-                            ;; atts are unchanged
+                            ;; atts are unchanged 
                             )))
 
 (defthm vl-module->name-of-vl-module-subst

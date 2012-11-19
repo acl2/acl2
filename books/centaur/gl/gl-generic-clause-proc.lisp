@@ -1741,7 +1741,7 @@
   (not (mv-nth 0 (glcp-gen-assignments n hyp-bdd bdd bound state)))) 
 
 
-(defun glcp-pretty-print-assignments (n ctrexes concl state)
+(defun glcp-pretty-print-assignments (n ctrexes concl execp state)
   (declare (xargs :mode :program))
   (if (atom ctrexes)
       (value nil)
@@ -1751,6 +1751,8 @@
                 (cw "Example ~x2, ~@0~%Assignment:~%~x1~%~%" string bindings n)
               (cw "Example ~x3, ~@0~%Template:~%~x1~%Assignment:~%~x2~%~%" string assign-spec-alist
                   bindings n)))
+         ((unless execp)
+          (glcp-pretty-print-assignments (1+ n) (cdr ctrexes) concl execp state))
          (- (cw "Running conclusion:~%"))
          ((er (cons & val))
           (acl2::simple-translate-and-eval
@@ -1760,9 +1762,9 @@
            nil nil "glcp: running conclusion failed"
            'glcp-pretty-print-assignments (w state) state t))
          (- (cw "Result: ~x0~%~%" val)))
-      (glcp-pretty-print-assignments (1+ n) (cdr ctrexes) concl state))))
+      (glcp-pretty-print-assignments (1+ n) (cdr ctrexes) concl execp state))))
 
-(defun glcp-print-ctrexamples (evfn ctrexes warn-err type concl state)
+(defun glcp-print-ctrexamples (evfn ctrexes warn-err type concl execp state)
   (declare (xargs :stobjs state
                   :mode :program)
            (ignorable evfn))
@@ -1777,17 +1779,17 @@ Showing ~x0 examples. Each example consists of a template and a
 concrete assignment.  The template shows a class of examples, and the
 concrete assignment represents a specific example from that
 class:~%~%" (len ctrexes)))))
-       ((er &) (glcp-pretty-print-assignments 1 ctrexes concl state)))
+       ((er &) (glcp-pretty-print-assignments 1 ctrexes concl execp state)))
     (value nil)))
 
-(defun glcp-counterexample-wormhole (ctrexes warn-err type evfn concl)
+(defun glcp-counterexample-wormhole (ctrexes warn-err type evfn concl execp)
   (wormhole
    'glcp-counterexample-wormhole
    '(lambda (whs) whs)
    nil
    `(b* (((er &)
           (glcp-print-ctrexamples
-           ',evfn ',ctrexes ',warn-err ',type ',concl state)))
+           ',evfn ',ctrexes ',warn-err ',type ',concl ',execp state)))
       (value :q))
    :ld-prompt nil
    :ld-pre-eval-print nil
@@ -1825,8 +1827,9 @@ class:~%~%" (len ctrexes)))))
 (in-theory (disable glcp-gen-ctrexes))
   
 
-(defun glcp-analyze-interp-result (val al hyp-bdd abort-unknown abort-ctrex n
-                                       geval-name clause-proc id concl state)
+(defun glcp-analyze-interp-result (val al hyp-bdd abort-unknown abort-ctrex
+                                       exec-ctrex n geval-name clause-proc id
+                                       concl state)
   (b* ((test (gtests val t))
        (hyp-param (bfr-to-param-space hyp-bdd hyp-bdd))
        (unk (bfr-and hyp-param (gtests-unknown test)))
@@ -1844,7 +1847,7 @@ class:~%~%" (len ctrexes)))))
                                         ctrexes state)))
           (prog2$ (glcp-counterexample-wormhole
                    ctrexes "ERROR" "Counterexamples" geval-name
-                   concl)
+                   concl exec-ctrex)
                   (if abort-ctrex
                       (glcp-error
                        (acl2::msg "~
@@ -1859,7 +1862,7 @@ class:~%~%" (len ctrexes)))))
                                         ctrexes state)))
           (prog2$ (glcp-counterexample-wormhole
                    ctrexes (if abort-unknown "ERROR" "WARNING")
-                   "Indeterminate results" geval-name concl)
+                   "Indeterminate results" geval-name concl exec-ctrex)
                   (if abort-unknown
                       (glcp-error
                        (acl2::msg "~
@@ -1905,21 +1908,23 @@ class:~%~%" (len ctrexes)))))
                                     (equal concl ''nil)
                                     (equal st ''nil))))
                  (equal (mv-nth 0 (glcp-analyze-interp-result
-                                   val al hyp-bdd abort-unknown abort-ctrex n
+                                   val al hyp-bdd abort-unknown abort-ctrex
+                                   exec-ctrex n
                                    geval-name clause-proc id concl st))
                         (mv-nth 0 (glcp-analyze-interp-result
-                                   val nil hyp-bdd abort-unknown abort-ctrex nil
-                                   nil clause-proc id nil nil))))
+                                   val nil hyp-bdd abort-unknown abort-ctrex
+                                   nil nil nil clause-proc id nil nil))))
         (implies (syntaxp (not (and (equal al ''nil)
                                     (equal n ''nil)
                                     (equal concl ''nil)
                                     (equal st ''nil) 
                                     (equal clause-proc ''nil))))
                  (equal (mv-nth 1 (glcp-analyze-interp-result
-                                   val al hyp-bdd  abort-unknown abort-ctrex n
+                                   val al hyp-bdd  abort-unknown abort-ctrex
+                                   exec-ctrex n
                                    geval-name clause-proc id concl st))
                         (mv-nth 1 (glcp-analyze-interp-result
-                                   val nil hyp-bdd abort-unknown abort-ctrex nil
+                                   val nil hyp-bdd abort-unknown abort-ctrex nil nil
                                    geval-name nil nil nil nil)))))
    :hints(("Goal" :in-theory '(glcp-analyze-interp-result
                                glcp-gen-ctrexes-does-not-fail
@@ -1938,8 +1943,9 @@ class:~%~%" (len ctrexes)))))
             (not (glcp-generic-ev
                   (disjoin
                    (mv-nth 1 (glcp-analyze-interp-result
-                              val al hyp-bdd abort-unknown abort-ctrex n 
-                              (glcp-generic-geval-name) clause-proc id concl state)))
+                              val al hyp-bdd abort-unknown abort-ctrex
+                              exec-ctrex n (glcp-generic-geval-name)
+                              clause-proc id concl state)))
                   alist)))
    :hints (("goal" :use
             ((:instance glcp-generic-geval-gtests-nonnil-correct
@@ -1970,7 +1976,7 @@ class:~%~%" (len ctrexes)))))
                  (not (equal geval-name 'quote)))
             (pseudo-term-listp
              (mv-nth 1 (glcp-analyze-interp-result
-                        val al hyp-bdd abort-unknown abort-ctrex n geval-name
+                        val al hyp-bdd abort-unknown abort-ctrex exec-ctrex n geval-name
                         clause-proc id concl state))))))
 
 (in-theory (disable glcp-analyze-interp-result))  
@@ -2213,7 +2219,7 @@ The definition body, ~x1, is not a pseudo-term."
        (b* (((mv erp (cons clauses out-obligs) &)
              (glcp-generic-run-parametrized
               hyp concl untrans-concl vars bindings id abort-unknown
-              abort-ctrex abort-vacuous nexamples hyp-clk concl-clk obligs
+              abort-ctrex exec-ctrex abort-vacuous nexamples hyp-clk concl-clk obligs
               overrides world state)))
          (implies (and (not (glcp-generic-ev concl alist))
                        (glcp-generic-ev-theoremp
@@ -2246,7 +2252,7 @@ The definition body, ~x1, is not a pseudo-term."
                     (acl2::bind-as-in-definition
                      (glcp-generic-run-parametrized
                       hyp concl untrans-concl (collect-vars concl) bindings id
-                      abort-unknown abort-ctrex abort-vacuous nexamples hyp-clk
+                      abort-unknown abort-ctrex exec-ctrex abort-vacuous nexamples hyp-clk
                       concl-clk obligs overrides world state)
                      (cov-clause val-clause hyp-bdd hyp-val)
                      (b* ((binding-env '(shape-spec-to-env
@@ -2272,7 +2278,7 @@ The definition body, ~x1, is not a pseudo-term."
    (defthm glcp-generic-run-parametrized-bad-obligs
      (b* (((mv erp (cons & out-obligs) &)
            (glcp-generic-run-parametrized
-            hyp concl untrans-concl vars bindings id abort-unknown abort-ctrex abort-vacuous
+            hyp concl untrans-concl vars bindings id abort-unknown abort-ctrex exec-ctrex abort-vacuous
             nexamples hyp-clk concl-clk obligs overrides world state)))
        (implies (and (not erp)
                      (not (glcp-generic-ev-theoremp
@@ -2285,7 +2291,7 @@ The definition body, ~x1, is not a pseudo-term."
    (defthm glcp-generic-run-parametrized-ok-obligs
      (b* (((mv erp (cons & out-obligs) &)
            (glcp-generic-run-parametrized
-            hyp concl untrans-concl vars bindings id abort-unknown abort-ctrex abort-vacuous
+            hyp concl untrans-concl vars bindings id abort-unknown abort-ctrex exec-ctrex abort-vacuous
             nexamples hyp-clk concl-clk obligs overrides world state)))
        (implies (and (not erp)
                      (glcp-generic-ev-theoremp
@@ -2298,7 +2304,7 @@ The definition body, ~x1, is not a pseudo-term."
    (defthm glcp-generic-run-parametrized-defs-alistp
      (b* (((mv erp (cons & out-obligs) &)
            (glcp-generic-run-parametrized
-            hyp concl untrans-concl vars bindings id abort-unknown abort-ctrex abort-vacuous
+            hyp concl untrans-concl vars bindings id abort-unknown abort-ctrex exec-ctrex abort-vacuous
             nexamples hyp-clk concl-clk obligs overrides world state)))
        (implies (and (acl2::interp-defs-alistp obligs)
                      (acl2::interp-defs-alistp overrides)
@@ -2334,7 +2340,7 @@ The definition body, ~x1, is not a pseudo-term."
    (defthm glcp-generic-run-cases-interp-defs-alistp
      (b* (((mv erp (cons & out-obligs) &)
            (glcp-generic-run-cases
-            param-alist concl untrans-concl vars abort-unknown abort-ctrex abort-vacuous
+            param-alist concl untrans-concl vars abort-unknown abort-ctrex exec-ctrex abort-vacuous
             nexamples hyp-clk concl-clk run-before run-after obligs overrides
             world state)))
        (implies (and (acl2::interp-defs-alistp obligs)
@@ -2347,7 +2353,7 @@ The definition body, ~x1, is not a pseudo-term."
    (defthm glcp-generic-run-cases-correct
      (b* (((mv erp (cons clauses out-obligs) &)
            (glcp-generic-run-cases
-            param-alist concl untrans-concl vars abort-unknown abort-ctrex abort-vacuous
+            param-alist concl untrans-concl vars abort-unknown abort-ctrex exec-ctrex abort-vacuous
             nexamples hyp-clk concl-clk run-before run-after obligs overrides
             world state)))
        (implies (and (glcp-generic-ev-theoremp
@@ -2368,7 +2374,7 @@ The definition body, ~x1, is not a pseudo-term."
    (defthm glcp-generic-run-cases-bad-obligs
      (b* (((mv erp (cons & out-obligs) &)
            (glcp-generic-run-cases
-            param-alist concl untrans-concl vars abort-unknown abort-ctrex abort-vacuous
+            param-alist concl untrans-concl vars abort-unknown abort-ctrex exec-ctrex abort-vacuous
             nexamples hyp-clk concl-clk run-before run-after obligs overrides
             world state)))
        (implies (and (not erp)
@@ -2382,7 +2388,7 @@ The definition body, ~x1, is not a pseudo-term."
    (defthm glcp-generic-run-cases-ok-obligs
      (b* (((mv erp (cons & out-obligs) &)
            (glcp-generic-run-cases
-            param-alist concl untrans-concl vars abort-unknown abort-ctrex abort-vacuous
+            param-alist concl untrans-concl vars abort-unknown abort-ctrex exec-ctrex abort-vacuous
             nexamples hyp-clk concl-clk run-before run-after obligs overrides
             world state)))
        (implies (and (not erp)
@@ -2477,7 +2483,7 @@ The definition body, ~x1, is not a pseudo-term."
    (defthmd glcp-generic-run-parametrized-correct-rw
      (b* (((mv erp (cons clauses out-obligs) &)
            (glcp-generic-run-parametrized
-            hyp concl untrans-concl vars bindings id abort-unknown abort-ctrex abort-vacuous
+            hyp concl untrans-concl vars bindings id abort-unknown abort-ctrex exec-ctrex abort-vacuous
             nexamples hyp-clk concl-clk obligs overrides world st)))
        (implies (and (bind-free (check-top-level-bind-free
                                  '((alist . alist)) acl2::mfc state)
@@ -2505,7 +2511,7 @@ The definition body, ~x1, is not a pseudo-term."
    (defthmd glcp-generic-run-cases-correct-rw
      (b* (((mv erp (cons clauses out-obligs) &)
            (glcp-generic-run-cases
-            param-alist concl untrans-concl vars abort-unknown abort-ctrex abort-vacuous
+            param-alist concl untrans-concl vars abort-unknown abort-ctrex exec-ctrex abort-vacuous
             nexamples hyp-clk concl-clk run-before run-after obligs overrides
             world st)))
        (implies (and (bind-free (check-top-level-bind-free
@@ -2600,9 +2606,9 @@ The definition body, ~x1, is not a pseudo-term."
   (mv nil obligs t state))
 
 (defun glcp-fake-analyze-interp-result
-  (val param-al hyp-bdd abort-unknown abort-ctrex nexamples geval-name clause-proc-name id
+  (val param-al hyp-bdd abort-unknown abort-ctrex exec-ctrex nexamples geval-name clause-proc-name id
        concl state)
-  (declare (ignore val param-al hyp-bdd abort-unknown abort-ctrex nexamples geval-name
+  (declare (ignore val param-al hyp-bdd abort-unknown abort-ctrex exec-ctrex nexamples geval-name
                    clause-proc-name id concl)
            (xargs :stobjs state))
   (mv nil '('t) state))

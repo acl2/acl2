@@ -341,3 +341,51 @@
 (defthm true-listp-of-vl-module->modnamespace
   (true-listp (vl-module->modnamespace x))
   :rule-classes :type-prescription)
+
+
+;; These aren't part of the module's namespace, but are just utilities for
+;; collecting up various names.
+
+(defund vl-blockitem->name (x)
+  (declare (xargs :guard (vl-blockitem-p x)
+                  :guard-hints (("goal" :in-theory (enable vl-blockitem-p)))))
+  (mbe :logic (cond ((vl-regdecl-p x) (vl-regdecl->name x))
+                    ((vl-vardecl-p x) (vl-vardecl->name x))
+                    ((vl-eventdecl-p x) (vl-eventdecl->name x))
+                    (t                  (vl-paramdecl->name x)))
+       :exec (case (tag x)
+               (:vl-regdecl (vl-regdecl->name x))
+               (:vl-vardecl (vl-vardecl->name x))
+               (:vl-eventdecl (vl-eventdecl->name x))
+               (otherwise (vl-paramdecl->name x)))))
+
+(defthm stringp-of-vl-blockitem->name
+  (implies (vl-blockitem-p x)
+           (stringp (vl-blockitem->name x)))
+  :hints(("Goal" :in-theory (enable vl-blockitem-p vl-blockitem->name))))
+
+(defprojection vl-blockitemlist->names (x)
+  (vl-blockitem->name x)
+  :guard (vl-blockitemlist-p x)
+  :result-type string-listp)
+
+;; namespace of a fundecl
+(defund vl-fundecl->namespace (x)
+  (declare (xargs :guard (vl-fundecl-p x)))
+  (b* (((vl-fundecl x) x))
+    (append (vl-taskportlist->names x.inputs)
+            (vl-blockitemlist->names x.decls))))
+
+(defthm string-listp-of-vl-fundecl->namespace
+  (implies (vl-fundecl-p x)
+           (string-listp (vl-fundecl->namespace x)))
+  :hints(("Goal" :in-theory (enable vl-fundecl->namespace))))
+
+(defmapappend vl-fundecllist->namespaces (x)
+  (vl-fundecl->namespace x)
+  :guard (vl-fundecllist-p x))
+
+(defthm string-listp-of-vl-fundecllist->namespaces
+  (implies (vl-fundecllist-p x)
+           (string-listp (vl-fundecllist->namespaces x)))
+  :hints(("Goal" :in-theory (enable vl-fundecllist->namespaces))))

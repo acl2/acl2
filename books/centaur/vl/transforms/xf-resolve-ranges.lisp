@@ -124,7 +124,8 @@ concatenations.</p>")
                 (lnfix (vl-constint->value guts)))))
 
         (t
-         ;; The only operations we permit here are plus, minus, and times.
+         ;; The only operations we permit here are plus, minus, times, and left
+         ;; shift.
          ;; What's more, we also require that the result of every computation
          ;; during the range resolution is within the signed, 32-bit range.
          ;;
@@ -163,6 +164,14 @@ concatenations.</p>")
                    arg2
                    (< (* arg1 arg2) (expt 2 31))
                    (* arg1 arg2))))
+           (:vl-binary-shl
+            (let ((arg1 (vl-rangeexpr-reduce (first (vl-nonatom->args x))))
+                  (arg2 (vl-rangeexpr-reduce (second (vl-nonatom->args x)))))
+              (and arg1
+                   arg2
+                   (<= 0 (ash arg1 arg2))
+                   (< (ash arg1 arg2) (expt 2 31))
+                   (ash arg1 arg2))))
            (t
             ;; Some unsupported operation -- fail.
             nil)))))
@@ -404,6 +413,47 @@ concatenations.</p>")
   :type vl-eventdecllist-p
   :element vl-eventdecl-rangeresolve)
 
+(def-vl-rangeresolve vl-taskport-rangeresolve
+  :type vl-taskport-p
+  :body
+  (b* (((vl-taskport x) x)
+       ((mv warnings range) (vl-maybe-rangeresolve x.range warnings)))
+    (mv warnings (change-vl-taskport x :range range))))
+
+(def-vl-rangeresolve-list vl-taskportlist-rangeresolve
+  :type vl-taskportlist-p
+  :element vl-taskport-rangeresolve)
+
+(def-vl-rangeresolve vl-blockitem-rangeresolve
+  :type vl-blockitem-p
+  :body (case (tag x)
+          (:vl-regdecl (vl-regdecl-rangeresolve x warnings))
+          (:vl-vardecl (vl-vardecl-rangeresolve x warnings))
+          (:vl-eventdecl (vl-eventdecl-rangeresolve x warnings))
+          (:vl-paramdecl (vl-paramdecl-rangeresolve x warnings))
+          (otherwise (mv nil warnings))))
+
+(def-vl-rangeresolve-list vl-blockitemlist-rangeresolve
+  :type vl-blockitemlist-p
+  :element vl-blockitem-rangeresolve)
+
+(def-vl-rangeresolve vl-fundecl-rangeresolve
+  :type vl-fundecl-p
+  :body
+  (b* (((vl-fundecl x) x)
+       ((mv warnings rrange) (vl-maybe-rangeresolve x.rrange warnings))
+       ((mv warnings decls) (vl-blockitemlist-rangeresolve x.decls warnings))
+       ((mv warnings inputs) (vl-taskportlist-rangeresolve x.inputs warnings)))
+    (mv warnings
+        (change-vl-fundecl x
+                           :rrange rrange
+                           :decls decls
+                           :inputs inputs))))
+
+(def-vl-rangeresolve-list vl-fundecllist-rangeresolve
+  :type vl-fundecllist-p
+  :element vl-fundecl-rangeresolve)
+
 
 
 (defund vl-module-rangeresolve (x)
@@ -418,6 +468,7 @@ concatenations.</p>")
        ((mv warnings eventdecls) (vl-eventdecllist-rangeresolve (vl-module->eventdecls x) warnings))
        ((mv warnings modinsts)   (vl-modinstlist-rangeresolve (vl-module->modinsts x) warnings))
        ((mv warnings gateinsts)  (vl-gateinstlist-rangeresolve (vl-module->gateinsts x) warnings))
+       ((mv warnings fundecls)   (vl-fundecllist-rangeresolve (vl-module->fundecls x) warnings))
        ;; BOZO may eventually want to resolve ranges in block items within statements.
        )
       (change-vl-module x
@@ -428,7 +479,8 @@ concatenations.</p>")
                         :regdecls regdecls
                         :eventdecls eventdecls
                         :modinsts modinsts
-                        :gateinsts gateinsts)))
+                        :gateinsts gateinsts
+                        :fundecls fundecls)))
 
 (defthm vl-module-p-of-vl-module-rangeresolve
   (implies (force (vl-module-p x))
@@ -1055,6 +1107,18 @@ may have arisen during the course of unparameterization.</p>"
   :type vl-initiallist-p
   :element vl-initial-selresolve)
 
+(def-vl-selresolve vl-fundecl-selresolve
+  :type vl-fundecl-p
+  :body
+  (b* (((vl-fundecl x) x)
+       ((mv warnings body) (vl-stmt-selresolve x.body warnings)))
+    (mv warnings
+        (change-vl-fundecl x :body body))))
+
+(def-vl-selresolve-list vl-fundecllist-selresolve
+  :type vl-fundecllist-p
+  :element vl-fundecl-selresolve)
+
 
 (defsection vl-module-selresolve
 
@@ -1069,7 +1133,8 @@ may have arisen during the course of unparameterization.</p>"
          ((mv warnings modinsts)  (vl-modinstlist-selresolve x.modinsts warnings))
          ((mv warnings gateinsts) (vl-gateinstlist-selresolve x.gateinsts warnings))
          ((mv warnings alwayses)  (vl-alwayslist-selresolve x.alwayses warnings))
-         ((mv warnings initials)  (vl-initiallist-selresolve x.initials warnings)))
+         ((mv warnings initials)  (vl-initiallist-selresolve x.initials warnings))
+         ((mv warnings fundecls)  (vl-fundecllist-selresolve x.fundecls warnings)))
       (change-vl-module x
                         :ports ports
                         :warnings warnings
@@ -1077,7 +1142,8 @@ may have arisen during the course of unparameterization.</p>"
                         :modinsts modinsts
                         :gateinsts gateinsts
                         :alwayses alwayses
-                        :initials initials)))
+                        :initials initials
+                        :fundecls fundecls)))
 
   (local (in-theory (enable vl-module-selresolve)))
 

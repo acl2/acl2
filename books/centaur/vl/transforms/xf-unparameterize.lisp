@@ -935,6 +935,13 @@ onehot) detection, so that when find instances of @('VL_N_BIT_ONEHOT') we may
 need to generate several modules.  See @(see vl-make-n-bit-onehot) for
 additional details.</p>"
 
+  (defund hfind-bound-key (keys alist)
+    (declare (xargs :guard t))
+    (if (atom keys)
+        nil
+      (or (hons-get (car keys) alist)
+          (hfind-bound-key (cdr keys) alist))))
+
   (defund vl-maybe-unparam-inst (inst unsafe mods modalist warnings)
     "Returns (MV SUCCESSP WARNINGS' INSTS' NEW-MODS)"
 ; BOZO Performance.  Consider building the substitutions (above) with hons, and
@@ -974,6 +981,21 @@ additional details.</p>"
              ((with-fast sigma))
              ((unless successp)
               (mv nil warnings inst nil))
+
+             ;; Check function decls for shadowing names...
+             (fundecl-clash (hfind-bound-key
+                             (vl-fundecllist->namespaces
+                              (vl-module->fundecls mod))
+                             sigma))
+             ((when fundecl-clash)
+              (b* ((warning (make-vl-warning
+                             :type :vl-name-clash
+                             :msg "A function declares a name that is already
+used as a parameter in its parent module: ~x0"
+                             :args (list (car fundecl-clash))
+                             :fatalp nil
+                             :fn 'vl-maybe-unparam-inst)))
+                (mv nil (cons warning warnings) inst nil)))
 
              ((when (equal modname "VL_N_BIT_ONEHOT"))
               ;; Special case for one-hot detection.

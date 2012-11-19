@@ -802,21 +802,22 @@ See :DOC GL::COVERAGE-PROOFS.
                                concl hyp-clk concl-clk param-clk
                                cov-hints cov-hints-position cov-theory-add
                                do-not-expand hyp-hints result-hints
-                               n-counterexamples abort-indeterminate abort-ctrex abort-vacuous
+                               n-counterexamples abort-indeterminate
+                               abort-ctrex exec-ctrex abort-vacuous
                                run-before-cases run-after-cases
                                case-split-override case-split-hints test-side-goals)
   (declare (xargs :mode :program))
   `(b* (((mv clause-proc bindings param-bindings hyp param-hyp concl
              hyp-clk concl-clk param-clk cov-hints cov-hints-position
              cov-theory-add do-not-expand hyp-hints result-hints
-             n-counterexamples abort-indeterminate abort-ctrex abort-vacuous
+             n-counterexamples abort-indeterminate abort-ctrex exec-ctrex abort-vacuous
              run-before-cases run-after-cases case-split-override
              case-split-hints test-side-goals)
          (mv ',clause-proc ,bindings ,param-bindings ,hyp ,param-hyp
              ,concl ,hyp-clk ,concl-clk ,param-clk ',cov-hints
              ',cov-hints-position ',cov-theory-add ',do-not-expand
              ',hyp-hints ',result-hints ,n-counterexamples
-             ,abort-indeterminate ,abort-ctrex ,abort-vacuous ',run-before-cases ',run-after-cases
+             ,abort-indeterminate ,abort-ctrex ,exec-ctrex ,abort-vacuous ',run-before-cases ',run-after-cases
              ,case-split-override ',case-split-hints ,test-side-goals))
         (cov-hints (glcp-coverage-hints
                     do-not-expand cov-theory-add cov-hints cov-hints-position)) 
@@ -846,7 +847,7 @@ bindings:
                 clause (list ',bindings ',param-bindings ',trhyp
                              ',trparam ',trconcl ',concl ,hyp-clk ,concl-clk
                              ,param-clk ,n-counterexamples
-                             ,abort-indeterminate ,abort-ctrex ,abort-vacuous
+                             ,abort-indeterminate ,abort-ctrex ,exec-ctrex ,abort-vacuous
                              ',(and (not test-side-goals) run-before-cases)
                              ',(and (not test-side-goals) run-after-cases)
                              ,case-split-override)
@@ -866,6 +867,7 @@ bindings:
                                (n-counterexamples '3)
                                (abort-indeterminate 't)
                                (abort-ctrex 't)
+                               (exec-ctrex 't)
                                (abort-vacuous 't)
                                (case-split-override 'nil)
                                case-split-hints
@@ -923,6 +925,9 @@ descriptions of each keyword argument:
           ;; abort as soon as a counterexample is discovered.
           :abort-ctrex             t
 
+          ;; execute the conclusion on each counterexample (turn off if non-executable)
+          :exec-ctrex              t
+
           ;; abort if a hypothesis is discovered to be unsatisfiable.
           :abort-vacuous           t
 
@@ -944,7 +949,7 @@ documented there.
   (gl-hint-fn clause-proc bindings param-bindings hyp param-hyp concl
               hyp-clk concl-clk param-clk cov-hints cov-hints-position
               cov-theory-add do-not-expand hyp-hints result-hints
-              n-counterexamples abort-indeterminate abort-ctrex abort-vacuous
+              n-counterexamples abort-indeterminate abort-ctrex exec-ctrex abort-vacuous
               run-before-cases run-after-cases
               case-split-override case-split-hints test-side-goals))
 
@@ -954,7 +959,7 @@ documented there.
   (declare (xargs :mode :program))
   (b* (((list hyp hyp-p concl concl-p g-bindings g-bindings-p cov-hints
               cov-hints-position cov-theory-add do-not-expand hyp-clk concl-clk
-              n-counterexamples abort-indeterminate abort-ctrex abort-vacuous test-side-goals
+              n-counterexamples abort-indeterminate abort-ctrex exec-ctrex abort-vacuous test-side-goals
               rule-classes) rest)
        ((unless (and hyp-p concl-p g-bindings-p))
         (er hard 'def-gl-thm
@@ -976,6 +981,7 @@ in DEF-GL-THM.~%"))
                          :n-counterexamples ,n-counterexamples
                          :abort-indeterminate ,abort-indeterminate
                          :abort-ctrex ,abort-ctrex
+                         :exec-ctrex ,exec-ctrex
                          :abort-vacuous ,abort-vacuous
                          :test-side-goals ,test-side-goals))
                 . ,(if test-side-goals
@@ -1042,7 +1048,7 @@ in DEF-GL-THM.~%"))
         (hyp-clk '1000000)
         (concl-clk '1000000)
         (n-counterexamples '3)
-        (abort-indeterminate 't) (abort-ctrex 't) (abort-vacuous 't)
+        (abort-indeterminate 't) (abort-ctrex 't) (exec-ctrex 't) (abort-vacuous 't)
         local
         test-side-goals
         (rule-classes ':rewrite))
@@ -1147,7 +1153,14 @@ coverage proof.
 
 When proof by symbolic simulation fails, the clause processor will print
 randomized counterexamples.  The keyword argument ~c[:n-counterexamples]
-determines how many it prints.  The default is 3.
+determines how many it prints.  The default is 3.  (For SAT-based proofs,
+likely only one counterexample is available, so it may print the same
+counterexample each time.)
+
+By default, the clause processor will execute conclusion on the counterexamples
+that it finds; this is useful for printing debugging information.  However,
+sometimes the conclusion is not executable; in that case, you may turn off
+execution of counterexamples using ~c[:exec-ctrex nil].
 
 A symbolic simulation may result in a symbolic object that can't be
 syntactically determined to be non-nil; for example, the result may contain a
@@ -1176,7 +1189,7 @@ for the theorem produced, as in ~c[defthm]; the default is ~c[:rewrite].
   (def-gl-thm-find-cp name clause-proc clause-procp
     (list hyp hyp-p concl concl-p g-bindings g-bindings-p cov-hints
           cov-hints-position cov-theory-add do-not-expand hyp-clk concl-clk
-          n-counterexamples abort-indeterminate abort-ctrex abort-vacuous test-side-goals
+          n-counterexamples abort-indeterminate abort-ctrex exec-ctrex abort-vacuous test-side-goals
           rule-classes)))
 
 
@@ -1189,7 +1202,7 @@ for the theorem produced, as in ~c[defthm]; the default is ~c[:rewrite].
               cov-bindings-p param-bindings param-bindings-p
               cov-hints cov-hints-position cov-theory-add do-not-expand
               hyp-clk concl-clk param-clk n-counterexamples
-              abort-indeterminate abort-ctrex abort-vacuous run-before-cases run-after-cases
+              abort-indeterminate abort-ctrex exec-ctrex abort-vacuous run-before-cases run-after-cases
               case-split-override case-split-hints test-side-goals rule-classes)
         rest)
        ((unless (and hyp-p param-hyp-p concl-p cov-bindings-p
@@ -1216,6 +1229,7 @@ PARAM-BINDINGS must be provided in DEF-GL-PARAM-THM.~%"))
                          :n-counterexamples ,n-counterexamples
                          :abort-indeterminate ,abort-indeterminate
                          :abort-ctrex ,abort-ctrex
+                         :exec-ctrex ,exec-ctrex
                          :abort-vacuous ,abort-vacuous
                          :run-before-cases ,run-before-cases
                          :run-after-cases ,run-after-cases
@@ -1267,7 +1281,7 @@ PARAM-BINDINGS must be provided in DEF-GL-PARAM-THM.~%"))
         (concl-clk '1000000)
         (param-clk '1000000)
         (n-counterexamples '3)
-        (abort-indeterminate 't) (abort-ctrex 't) (abort-vacuous 't)
+        (abort-indeterminate 't) (abort-ctrex 't) (exec-ctrex 't) (abort-vacuous 't)
         run-before-cases run-after-cases
         case-split-override
         case-split-hints local test-side-goals
@@ -1409,7 +1423,7 @@ Setting ~c[:ABORT-VACUOUS] to ~c[NIL] causes it to go on.
     (list hyp hyp-p param-hyp param-hyp-p concl concl-p cov-bindings
           cov-bindings-p param-bindings param-bindings-p cov-hints
           cov-hints-position cov-theory-add do-not-expand hyp-clk concl-clk
-          param-clk n-counterexamples abort-indeterminate abort-ctrex
+          param-clk n-counterexamples abort-indeterminate abort-ctrex exec-ctrex
           abort-vacuous run-before-cases run-after-cases case-split-override
           case-split-hints test-side-goals rule-classes)))
 
