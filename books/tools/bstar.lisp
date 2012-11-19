@@ -1287,4 +1287,29 @@ Testing of the patbind macro failed on expression ~x0~%~%" (car tests))
            '(value-triple :passed)
          (er hard 'test-local-stobj
              "test failed")))))))
-           
+
+(def-b*-binder fun
+  "B* binder to produce FLET~/
+Usage:
+~bv[]
+ (b* (((fun (foo a b c)) (body-form))) (result-form))
+~ev[]
+is equivalent to
+~bv[]
+ (flet ((foo (a b c) (body-form))) (result-form)).
+~ev[]
+
+~l[B*] for background.~/~/"
+  (declare (xargs :guard
+                  (and
+                   ;; only arg is a symbol-list (foo a b c)
+                   (consp args)
+                   (symbol-listp (car args))
+                   (consp (car args))
+                   (eq (cdr args) nil)
+                   ;; body is implicit progn$?
+                   (true-listp forms)
+                   )))
+  `(flet ((,(caar args) ,(cdar args) (progn$ . ,forms)))
+    ,rest-expr))
+
