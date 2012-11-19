@@ -10595,7 +10595,7 @@
 
   o ~l[OTF-FLG] for a way to push more than one initial subgoal for induction. 
 
-  o ~l[RULE-CLASSES] to add various kinds of rules to the data base, including
+  o ~l[RULE-CLASSES] to add various kinds of rules to the database, including
   more unusual sorts such as ~c[:]~ilc[built-in-clause] rules and
   ~c[:]~ilc[induction] rules.
 

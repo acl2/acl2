@@ -3225,7 +3225,7 @@
   the type implied by ~c[(not (fn x))], you must prove a compound recognizer
   rule of the third, fourth, fifth, or sixth forms.  Proving a rule of the
   first form followed by one of the second only leaves the second fact in the
-  data base.
+  database.
 
   Compound recognizer rules can be disabled with the effect that older rules
   about ~c[fn], if any, are exposed.
@@ -3713,7 +3713,7 @@
   However, forward-chaining does support the linear arithmetic reasoning
   package.  For example, suppose that forward-chaining puts ~c[(< (f x) (g x))]
   into the context.  Then this inequality also goes into the linear arithmetic
-  data base, together with suitable instances of linear lemmas whose trigger
+  database, together with suitable instances of linear lemmas whose trigger
   term is a call of ~c[g].  ~l[linear].
 
   Debugging ~c[:forward-chaining] rules can be difficult since their effects
@@ -8639,7 +8639,7 @@
                 (& (er soft ctx str name)))))
 
 ; As noted in the essay on equivalence, refinements, and
-; congruence-based rewriting, we maintain our refinements data base
+; congruence-based rewriting, we maintain our refinements database
 ; via the 'coarsenings property, for efficiency reasons explained in
 ; the essay.  Thus, if equiv1 is a refinement of equiv2 then equiv2 is
 ; a coarsening of equiv1.  We therefore wish to add equiv2 to the
@@ -12149,7 +12149,7 @@
 
 ; One might think that :tau-system rules are added here, since every other rule
 ; class is handled here.  But one would be wrong!  Because of the automatic mode in 
-; the tau system and because of the facility for regenerating the tau data base,
+; the tau system and because of the facility for regenerating the tau database,
 ; :tau-system rules are added by the tau-visit code invoked most often from
 ; install-event. 
            
@@ -14257,7 +14257,7 @@
                      (prove-corollaries name tterm classes ens wrld1 ctx
                                         state)))))
             (let* ((wrld2
-                    (update-doc-data-base
+                    (update-doc-database
                      name doc doc-pair
                      (add-rules name classes tterm term ens wrld1 state)))
                    (wrld3 (global-set
@@ -14535,7 +14535,7 @@
                              (t (prove-corollaries name tterm0 classes ens wrld1
                                                    ctx state)))))
               (let ((wrld2
-                     (update-doc-data-base
+                     (update-doc-database
                       name doc doc-pair
                       (add-rules name classes tterm0 term ens wrld1 state)))
                     (ttree4 (cons-tag-trees ttree1

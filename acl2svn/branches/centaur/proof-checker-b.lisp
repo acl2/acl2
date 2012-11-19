@@ -5216,7 +5216,7 @@
               (value :invisible)))
      (t
       (let ((channel (proofs-co state))
-            (doc-tuple (access-doc-string-data-base name state)))
+            (doc-tuple (access-doc-string-database name state)))
         (cond ((null doc-tuple)
                (pprogn
                 (io? proof-checker nil state
@@ -5331,7 +5331,7 @@
             (value :invisible)))
    (t
     (let ((channel (proofs-co state))
-          (doc-tuple (access-doc-string-data-base name state)))
+          (doc-tuple (access-doc-string-database name state)))
       (cond ((null doc-tuple)
              (pprogn
               (io? proof-checker nil state
@@ -6787,7 +6787,7 @@
                                commands *****~%"))
                    (print-help-separator state)
                    (print-pc-help-rec
-                    (merge-sort-alpha-< (caddr (access-doc-string-data-base
+                    (merge-sort-alpha-< (caddr (access-doc-string-database
                                                 'pc-acl2 state)))
                     state)))))
 

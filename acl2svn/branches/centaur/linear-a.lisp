@@ -1558,7 +1558,7 @@
   inequalities allowing further cancellations.  That is where
   ~c[:linear] lemmas come in.  When the set of inequalities has stabilized
   under cross-multiplication and addition and no contradiction is
-  produced, we search the data base of ~c[:]~ilc[linear] rules for rules about
+  produced, we search the database of ~c[:]~ilc[linear] rules for rules about
   the unknowns that are candidates for cancellation (i.e., are the
   largest unknowns in their respective inequalities).  ~l[linear]
   for a description of how ~c[:]~ilc[linear] rules are used.

@@ -330,14 +330,14 @@
   :doc
   ":Doc-Section Miscellaneous
 
-  ACL2 property lists and the ACL2 logical data base~/
+  ACL2 property lists and the ACL2 logical database~/
 
   A ``world'' is a list of triples, each of the form ~c[(sym prop . val)],
   implementing the ACL2 notion of property lists.  ACL2 permits the
   simultaneous existence of many property list worlds.  ``The world''
   is often used as a shorthand for ``the ACL2 logical world'' which is
   the particular property list world used within the ACL2 system to
-  maintain the data base of rules.~/
+  maintain the database of rules.~/
 
   Common Lisp provides the notion of ``property lists'' by which one
   can attach ``properties'' and their corresponding ``values'' to
@@ -444,14 +444,14 @@
   (:executable-counterpart length)
   ~ev[]~/
 
-  Background: The theorem prover is driven from a data base of rules.  The most
+  Background: The theorem prover is driven from a database of rules.  The most
   common rules are ~c[:]~ilc[rewrite] rules, which cause the simplifier to
-  replace one term with another.  ~il[Events] introduce rules into the data
-  base.  For example, a ~ilc[defun] event may introduce runes for symbolically
-  replacing a function call by its instantiated body, for evaluating the
-  function on constants, for determining the type of a call of the function,
-  and for the induction scheme introduced upon defining the function.
-  ~ilc[Defthm] may introduce several rules, one for each of the
+  replace one term with another.  ~il[Events] introduce rules into the
+  database.  For example, a ~ilc[defun] event may introduce runes for
+  symbolically replacing a function call by its instantiated body, for
+  evaluating the function on constants, for determining the type of a call of
+  the function, and for the induction scheme introduced upon defining the
+  function.  ~ilc[Defthm] may introduce several rules, one for each of the
   ~c[:]~ilc[rule-classes] specified (where one rule class is specified if
   ~c[:]~ilc[rule-classes] is omitted, namely, ~c[:rewrite]).
 

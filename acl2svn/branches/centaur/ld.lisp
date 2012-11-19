@@ -549,7 +549,7 @@
       ((or (null (f-boundp-global 'current-acl2-world state))
            (null (w state)))
        (er soft ctx
-           "The theorem prover's data base has not yet been initialized.  To ~
+           "The theorem prover's database has not yet been initialized.  To ~
             initialize ACL2 to its full theory, which currently takes about 3 ~
             minutes on a Sparc 2 (Dec. 1992), invoke (initialize-acl2) from ~
             Common Lisp."))
@@ -6988,7 +6988,7 @@
   (~pl[linear-arithmetic]).  Two of these changes could affect existing
   proofs.~bq[]
 
-  First, when we are setting up the initial arithmetic data-base (which we call
+  First, when we are setting up the initial arithmetic database (which we call
   the ``pot-lst''), we have always scanned it to see if there were any pairs of
   inequalities from which we could derive a previously unknown equality.  In
   some cases we added this equality to the clause and in others we used it to
@@ -19494,6 +19494,82 @@
 ; builds one's own Postscript version of the documentation, then the look will
 ; quite possibly be somewhat different than it was previously.
 
+; Here is an example from Sol Swords, as promised in the item below about a
+; soundness bug in defabsstobj based on guards.
+
+;   (defstobj my-stobj-impl (my-fld :type (integer 0 *) :initially 0))
+;   
+;   (trace$ len)
+;   
+;   (defun bad-accessor-logic (my-stobj-logic)
+;      (declare (xargs :guard (equal (len my-stobj-logic) 0)))
+;      (mbe :logic 0
+;           :exec (len my-stobj-logic)))
+;   
+;   (defun bad-accessor-exec (my-stobj-impl)
+;      (declare (xargs :stobjs my-stobj-impl)
+;               (ignorable my-stobj-impl))
+;      1)
+;   
+;   (defun create-my-stobj-logic ()
+;      (declare (xargs :guard t))
+;      (list 0))
+;   
+;   (defun my-stobj-logicp (x)
+;      (declare (xargs :guard t))
+;      (AND (TRUE-LISTP X)
+;           (= (LENGTH X) 1)
+;           (MY-FLDP (NTH 0 X))))
+;   
+;   (defun-nx my-stobj-corr (my-stobj-i my-stobj-l)
+;      (and (my-stobj-implp my-stobj-i)
+;           (equal my-stobj-i my-stobj-l)))
+;   
+;   (DEFTHM CREATE-MY-STOBJ-ABS{CORRESPONDENCE}
+;            (MY-STOBJ-CORR (CREATE-MY-STOBJ-IMPL)
+;                           (CREATE-MY-STOBJ-LOGIC))
+;            ;; added by Matt K.:
+;            :hints (("Goal" :in-theory (disable (my-stobj-corr)))))
+;   
+;   (DEFTHM CREATE-MY-STOBJ-ABS{PRESERVED}
+;            (MY-STOBJ-LOGICP (CREATE-MY-STOBJ-LOGIC)))
+;   
+;   (DEFTHM BAD-ACCESSOR{CORRESPONDENCE}
+;            (IMPLIES (AND (MY-STOBJ-CORR MY-STOBJ-IMPL MY-STOBJ-ABS)
+;                          (EQUAL (LEN MY-STOBJ-ABS) 0))
+;                     (EQUAL (BAD-ACCESSOR-EXEC MY-STOBJ-IMPL)
+;                            (BAD-ACCESSOR-LOGIC MY-STOBJ-ABS))))
+;   
+;   (defabsstobj my-stobj-abs
+;      :concrete my-stobj-impl
+;      :recognizer (my-stobj-absp :logic my-stobj-logicp :exec my-stobj-implp)
+;      :creator (create-my-stobj-abs :logic create-my-stobj-logic :exec
+;                                    create-my-stobj-impl)
+;      :corr-fn my-stobj-corr
+;      :exports ((bad-accessor :logic bad-accessor-logic :exec bad-accessor-exec)))
+;   
+;   ; Test added by Matt K.:
+;   (bad-accessor my-stobj-abs) ; note trace of len here: (LEN |<my-stobj-abs>|)
+;   
+;   (defun length-of-my-stobj-abs ()
+;      (declare (xargs :guard t))
+;      (with-local-stobj my-stobj-abs
+;        (mv-let (len my-stobj-abs)
+;          (let ((len (ec-call (bad-accessor my-stobj-abs))))
+;            (mv len my-stobj-abs))
+;          len)
+;        create-my-stobj-abs))
+;   
+;   (defthm length-of-my-stobj-abs-by-def
+;      (equal (length-of-my-stobj-abs) 0)
+;      :hints(("Goal" :in-theory (disable (length-of-my-stobj-abs))))
+;      :rule-classes nil)
+;   
+;   (defthm length-of-my-stobj-abs-by-exec
+;      (equal (length-of-my-stobj-abs) 1))
+
+; Replaced "data base" and "data-base" by "database".
+
   :doc
   ":Doc-Section release-notes
 
@@ -19575,11 +19651,11 @@
   probably no intention to use them as rules.  Thanks to Robert Krug for
   suggesting that we consider this change.
 
-  Macro definitions (~pl[defmacro]) may now include formal parameters that have
-  been declared as single-threaded objects (~pl[stobj]).  (However, macro
-  formals may not be declared as stobjs; ~pl[xargs].)  Thanks to Jose Luis
-  Ruiz-Reina for raising this issue and to Rob Sumners for helpful
-  conversations ~-[] both of these nearly 10 years ago!
+  The formal parameters for a macro definition (~pl[defmacro]) may now include
+  ~ilc[state] and user-defined ~ilc[stobj]s.  (However, macro formals may not
+  be declared as stobjs; ~pl[xargs].)  Thanks to Jose Luis Ruiz-Reina for
+  raising this issue and to Rob Sumners for helpful conversations ~-[] both of
+  these nearly 10 years ago!
 
   The utilities ~ilc[defun-inline], ~ilc[defun-notinline], ~ilc[defund-inline],
   and ~ilc[defund-notinline] have been simplified, by taking advantage of the
@@ -19642,6 +19718,10 @@
   ~l[theories].  Thanks to Jared Davis for a useful discussion leading to this
   enhancement.
 
+  ~ilc[Defabsstobj] ~il[events] now take an optional ~c[:congruent-to] keyword
+  argument, much like ~ilc[defstobj].  Thanks to Sol Swords for requesting this
+  feature.
+
   ~st[HEURISTIC IMPROVEMENTS]
 
   We obtained a substantial speedup ~-[] 13% observed for the regression suite,
@@ -19653,6 +19733,14 @@
   to boost performance.
 
   ~st[BUG FIXES]
+
+  Fixed a soundness bug in ~ilc[defabsstobj] based on ~ilc[guard]s that
+  violated single-threadedness restrictions.  Thanks to Sol Swords for bringing
+  this bug to our attention and supplying a proof of ~c[nil], which we include
+  as a comment in source file ~c[ld.lisp], in ~c[(deflabel note-5-1 ...)].  We
+  also thank Sol for helpful discussions about ~il[guard]s of functions
+  introduced by ~c[defabsstobj], which has led us to enhance the
+  ~il[documentation]; ~pl[defabsstobj].
 
   Fixed a raw Lisp error that occurred when tracing a ~i[stobj] resize
   function, thanks to an error report from Warren Hunt, Marijn Heule, and
@@ -23252,7 +23340,7 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
   The formula above says ~c[app] is associative.  The ~ilc[defthm] ~warn[]
   command instructs ACL2 to prove the formula and to name it
   ~c[associativity-of-app].  Actually, the ~c[defthm] command also builds the
-  formula into the data base as a ~ilc[rewrite] ~warn[] rule, but we won't go
+  formula into the database as a ~ilc[rewrite] ~warn[] rule, but we won't go
   into that just yet.
 
   What we will consider is how the ACL2 theorem prover proves this formula.
@@ -24580,7 +24668,7 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
 
   The ~c[defun] command is an example of a special kind of command called an
   ``event.''  ~il[Events] ~warn[] are those commands that change the ``logical
-  world'' by adding such things as axioms or theorems to ACL2's data base.
+  world'' by adding such things as axioms or theorems to ACL2's database.
   ~l[world] ~warn[].  But not every command is an event command.
 
   A command like ~b[(app '(1 2 3) '(4 5 6 7))] is an example of a non-event.
@@ -24620,7 +24708,7 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
 
   The ``rules'' listed are those used in function admission or proof
   summarized.  What is actually listed are ``runes'' (~pl[rune]) ~warn[]) which
-  are list-structured names for rules in the ACL2 data base or ``~il[world]''
+  are list-structured names for rules in the ACL2 database or ``~il[world]''
   ~warn[].  Using ~il[theories] ~warn[] you can ``enable'' and ``disable''
   rules so as to make them available (or not) to the ACL2 theorem prover.
 
@@ -24631,7 +24719,7 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
 
   The ``time'' indicates how much processing time was used and is divided into
   three parts: the time devoted to proof, to printing, and to syntactic checks,
-  pre-processing and data base updates.  Despite the fact that ACL2 is an
+  pre-processing and database updates.  Despite the fact that ACL2 is an
   applicative language it is possible to measure time with ACL2 programs.  The
   ~ilc[state] ~warn[] contains a clock.  The times are printed in decimal
   notation but are actually counted in integral units.  Note that each time is
@@ -24910,7 +24998,7 @@ href=\"mailto:acl2-bugs@utlists.utexas.edu\">acl2-bugs@utlists.utexas.edu</a></c
   which says that ~c[app] returns either a cons or its second argument.  This
   formula is added to ACL2's rule base as a ~ilc[type-prescription] ~warn[]
   rule.  Later we will discuss how rules are used by the ACL2 theorem prover.
-  The point here is just that when you add a definition, the data base of rules
+  The point here is just that when you add a definition, the database of rules
   is updated, not just by the addition of the definitional axiom, but by
   several new rules.
 

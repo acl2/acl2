@@ -6679,7 +6679,7 @@
      defmacro
      in-theory
      in-arithmetic-theory
-     regenerate-tau-data-base
+     regenerate-tau-database
      push-untouchable
      remove-untouchable
      reset-prehistory
@@ -10211,7 +10211,7 @@
   the task of building your system but functions whose logical
   properties are of no immediate concern.  Such functions might be
   used to generate test data or help interpret the results of tests.
-  They might create files or explore the ACL2 data base.  The
+  They might create files or explore the ACL2 database.  The
   termination arguments for such functions are an unnecessary burden
   provided no axioms about the functions are ever used in deductions.
 
@@ -12969,16 +12969,16 @@
   function, say ~c[g].  Suppose ~c[fn] is redefined so that its arity changes.
   Then the definition of ~c[g] is rendered syntactically ill-formed by the
   redefinition.  This can be devastating since the entire ACL2 system assumes
-  that terms in its data base are well-formed.  For example, if ACL2 executes
+  that terms in its database are well-formed.  For example, if ACL2 executes
   ~c[g] by running the corresponding function in raw Common Lisp the
   redefinition of ~c[fn] may cause raw lisp to break in irreparable ways.  As
   Lisp programmers we live with this all the time by following the simple rule:
   after changing the syntax of a function don't run any function that calls it
   via its old syntax.  This rule also works in the context of the evaluation of
   ACL2 functions, but it is harder to follow in the context of ACL2 deductions,
-  since it is hard to know whether the data base contains a path leading the
+  since it is hard to know whether the database contains a path leading the
   theorem prover from facts about one function to facts about another.
-  Finally, of course, even if the data base is still syntactically well-formed
+  Finally, of course, even if the database is still syntactically well-formed
   there is no assurance that all the rules stored in it are valid.  For
   example, theorems proved about ~c[g] survive the redefinition of ~c[fn] but
   may have crucially depended on the properties of the old ~c[fn].  In summary,
@@ -13095,7 +13095,7 @@
   Finally, it should be stressed again that redefinition is dangerous because
   not all of the rules about a name are stored on the property list of the
   name.  Thus, redefinition can render ill-formed terms stored elsewhere in the
-  data base or can preserve now-invalid rules.  ~l[redundant-events], in
+  database or can preserve now-invalid rules.  ~l[redundant-events], in
   particular the section ``Note About Unfortunate Redundancies,'' for more
   discussion of potential pitfalls of redefinition."
 
@@ -14326,7 +14326,7 @@
     (COMMENT DEFLABEL)
     (COMPILE-UNCOMPILED-DEFNS COMP)
     (CONSTRAIN .    "See :DOC encapsulate and :DOC local.")
-    (DATA-BASE .    "Perhaps the closest ACL2 analogue of DATA-BASE
+    (DATA-BASE .     "Perhaps the closest ACL2 analogue of DATA-BASE
                      is PROPS.  But see :DOC history for a collection
                      of commands for querying the ACL2 database
                      (``world'').  Note that the notions of

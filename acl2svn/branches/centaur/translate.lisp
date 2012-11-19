@@ -6177,7 +6177,7 @@
                       mutual-recursion
                       progn!
                       push-untouchable
-                      regenerate-tau-data-base
+                      regenerate-tau-database
                       remove-untouchable
                       reset-prehistory
                       set-body

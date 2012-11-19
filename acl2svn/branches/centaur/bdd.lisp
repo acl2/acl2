@@ -3979,7 +3979,7 @@
 ; 
 ; When you find one of these, search upward for `local entry' to see which
 ; function or macro you are in.  Don't worry, for example, about commutative-p,
-; which is a data-base kind of function rather than a workhorse function.
+; which is a database kind of function rather than a workhorse function.
 ; 
 ; You'll see things like the following (from local entry to BDD).  The idea here
 ; is that we are boxing a fixnum and pushing it on a stack, but why?  LnkLI253
