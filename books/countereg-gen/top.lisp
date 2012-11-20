@@ -1,7 +1,7 @@
 #|$ACL2s-Preamble$;
 ;;Author - Harsh Raju Chamarthi (harshrc)
 (ld ;; Newline to fool ACL2/cert.pl dependency scanner
- "cert.acl2")
+ "portcullis.lsp")
 (begin-book t :ttags :all);$ACL2s-Preamble$|#
 
 ;; Note: I apologize for the use of ttags, but they are used for
@@ -33,7 +33,7 @@
 ; you can see examples below, where most useful parameters are set
 ; with their default values. Copy and change what you want, these are
 ; embedded events, so you can put them in books. To know more about
-; these parameters, simply do :xdoc <param> at the ACL2 prompt.
+; these parameters, simply do :doc <param> at the ACL2 prompt.
 
 ;; (acl2s-defaults :set testing-enabled :naive) ;other values are T,NIL
 ;; (acl2s-defaults :set verbosity-level 1) 

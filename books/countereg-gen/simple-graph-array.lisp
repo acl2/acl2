@@ -1,12 +1,11 @@
 #|$ACL2s-Preamble$;
 (ld ;; Newline to fool ACL2/cert.pl dependency scanner
- "cert.acl2")
-(acl2::begin-book);$ACL2s-Preamble$|#
+ "portcullis.lsp")
+(acl2::begin-book t :ttags :all);$ACL2s-Preamble$|#
 
 ;Author: Harsh Raju Chamarthi (harshrc)
 
 (in-package "DEFDATA")
-(include-book "tools/bstar" :dir :system)
 (include-book "utilities" :load-compiled-file :comp)
 (include-book "ordinals/lexicographic-ordering-without-arithmetic" :dir :system)
 
@@ -52,8 +51,13 @@
         :cc - (nat) indicating the connected component this vertex belongs to"
   :inline t)
 
+(defrec vinfo%
+  (name adj seen cc)
+  NIL)
+
+
 (defmacro make-g$-array-value (name &key adj seen cc)
- `(c nil 
+ `(acl2::make vinfo%
      :name ,name
      :adj ,adj
      :seen ,seen
@@ -132,7 +136,6 @@ from alst. Assumption: (len alst) = number of vertices in graph and
 
 ;Dasgupta Algo
 ;Vertices are natural numbers.
-
 (defun dfs-visit1 (g$ v n fin flag)
 "explore the graph g$ (adj-list array) starting at v.
 n is the number of vertices of g$ not seen,
@@ -152,8 +155,8 @@ the vertice with the maximum post time."
     (if (equal 'dfs-visit flag)
 ;DFS-VISIT
         (b* ((v-entry (ai v g$))
-             (adj-vs (g :adj v-entry))
-             (g$ (ui v (s :seen t v-entry) g$));update/change seen
+             (adj-vs (acl2::access vinfo% v-entry :adj))
+             (g$ (ui v (acl2::change vinfo% v-entry :seen t) g$));update/change seen
              ((mv g$ fin!)
               (dfs-visit1 g$ adj-vs (1- n) fin 'dfs-visit-lst)))
           ;;update finished vertices
@@ -164,7 +167,7 @@ the vertice with the maximum post time."
         (b* ((v-entry (ai (car v) g$))
              ;(- (cw "dfs-visit-lst: v-entry for ~x0 is ~x1~%" (car v) v-entry))
              )
-          (if (g :seen v-entry);already seen
+          (if (acl2::access vinfo% v-entry :seen);already seen
               (dfs-visit1 g$ (cdr v) n fin 'dfs-visit-lst)
             (b* (((mv g$ fin!)
                   (dfs-visit1 g$ (car v) n fin 'dfs-visit)))
@@ -184,10 +187,10 @@ the vertice with the maximum post time."
       (mv g$ fin)
       (b* ((v-entry (ai (car vs) g$)))
            ;(- (cw "dfs-all: v-entry for ~x0 is ~x1~%" (car vs) v-entry)))
-        (if (g :seen v-entry);already seen
-        (dfs-all-vertices g$ (cdr vs) n fin cnum)
+        (if (acl2::access vinfo% v-entry :seen);already seen
+            (dfs-all-vertices g$ (cdr vs) n fin cnum)
         (b* ((g$ (ui (car vs) 
-                     (s :cc cnum v-entry)
+                     (acl2::change vinfo% v-entry :cc cnum)
                      g$))
              ((mv g$ fin!) 
               (dfs-visit1 g$
@@ -321,8 +324,8 @@ number (ccnum). This is used in simple-var-hyp? for finding cycles."
       ans
     (let ((v-entry (ai i g$)))
       (g$->var-quotient-alst1 g$ (1+ i) size
-                             (acons (g :name v-entry) 
-                                    (g :cc v-entry)
+                             (acons (acl2::access vinfo% v-entry :name) 
+                                    (acl2::access vinfo% v-entry :cc)
                                     ans)))))
 
 (defun g$->var-quotient-alst (g$)
@@ -334,7 +337,7 @@ number (ccnum). This is used in simple-var-hyp? for finding cycles."
                   :guard (nat-listp is)))
   (if (endp is)
       nil
-    (cons (g :name (ai (car is) g$))
+    (cons (acl2::access vinfo% (ai (car is) g$) :name)
           (vertex-names (cdr is) g$))))
 
 (defun g$->alst1 (g$ i size ans)
@@ -346,8 +349,8 @@ number (ccnum). This is used in simple-var-hyp? for finding cycles."
       ans
     (let ((v-entry (ai i g$)))
       (g$->alst1 g$ (1+ i) size
-                    (acons (g :name v-entry) 
-                           (vertex-names (g :adj v-entry) g$)
+                    (acons (acl2::access vinfo% v-entry :name) 
+                           (vertex-names (acl2::access vinfo% v-entry :adj) g$)
                            ans)))))
 
 (defun g$->symbol-alist (g$)

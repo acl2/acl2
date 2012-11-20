@@ -1,6 +1,6 @@
 #|$ACL2s-Preamble$;
 (ld ;; Newline to fool ACL2/cert.pl dependency scanner
- "cert.acl2")
+ "portcullis.lsp")
 
 ;;Bunch of utility functions for use by datadef and test?
 ;;mostly copied from data.lisp and acl2-check.lisp
@@ -11,7 +11,35 @@
 (in-package "DEFDATA")
 
 (set-verify-guards-eagerness 2)
-(include-book "basis")
+(include-book "tools/bstar" :dir :system)
+;(include-book "basis")
+
+;;-- create a new symbol with prefix or suffix appended
+;;-- if its a common-lisp symbol then attach acl2 package name to it
+;;-- example:
+;;-- (modify-symbol "NTH-" 'bool "") ==> NTH-BOOL
+;;-- (modify-symbol "NTH-" 'boolean "") ==> ACL2::NTH-BOOLEAN
+(defun modify-symbol (prefix sym postfix)
+  (declare (xargs :guard (and (symbolp sym)
+                              (stringp postfix)
+                              (stringp prefix))))
+  (let* ((name (symbol-name sym))
+         (name (string-append prefix name))
+         (name (string-append name postfix)))
+    (if (member-eq sym *common-lisp-symbols-from-main-lisp-package*)
+      (intern-in-package-of-symbol name 'acl2::acl2-pkg-witness)
+      (intern-in-package-of-symbol name sym))))
+
+(defun modify-symbol-lst (prefix syms postfix)
+  (declare (xargs :guard (and (symbol-listp syms)
+                              (stringp prefix)
+                             (stringp postfix))))
+  (if (endp syms)
+    nil
+    (cons (modify-symbol prefix (car syms) postfix)
+          (modify-symbol-lst prefix (cdr syms) postfix))))
+
+
 
 ; utility fn to print if verbose flag is true 
 (defmacro cw? (verbose-flag &rest rst)
@@ -26,24 +54,6 @@
            (ignore x))
   t)
 
-(include-book "defexec/other-apps/records/records" :dir :system)
-
-(defmacro g (a r)
-  `(acl2::mget ,a ,r))
-
-(defmacro s (a v r)
-  `(acl2::mset ,a ,v ,r))
-
-(defun up-macro (pairs ans)
-  (declare (xargs :guard (true-listp pairs)))
-  (if (endp pairs)
-      ans
-    (up-macro (cddr pairs) `(s ,(car pairs)
-                               ,(cadr pairs)
-                               ,ans))))
-(defmacro c (st &rest pairs)
-  "do the update/change in the sequence of pairs"
-  (up-macro pairs st))
 
 (defmacro   debug-flag  (vl)
   `(> ,vl 2))
@@ -427,6 +437,7 @@
      (and (defbodyp (car xs))
           (defbody-listp (cdr xs))))))
 
+(include-book "misc/total-order" :dir :system)
 
 (defun order-two-terms (t1 t2)
   (declare (xargs :guard t))

@@ -59,7 +59,7 @@
 ;;;;debug/print,trace,stats/log
 
 (ld ;; Newline to fool ACL2/cert.pl dependency scanner
- "cert.acl2")
+ "portcullis.lsp")
 (acl2::begin-book t);$ACL2s-Preamble$|#
 
 (in-package "DEFDATA")

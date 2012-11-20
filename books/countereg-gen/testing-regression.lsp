@@ -1,7 +1,7 @@
 ;; this regression file aims at testing the various features of 
 ;; counterexample generation in ACL2 Sedan
 
-(include-book "countereg-gen/top" :dir :system)
+(include-book "top")
 
 ;++++++++++++++++testcase 1 [classic reverse example]++++++++++++++++++++++++++
 ;Define Reverse function
@@ -469,6 +469,20 @@ of which have not yet been verified.  See :DOC verify-guards.
                (< n 15))
           (not (factor? (fermat-factor k n) (f n)))))
 
+;09/28/12
+;wow i found for the above a brand new counterexample:
+;; We tested 71059 examples across 1 subgoals, of which 37635 (37635 unique)
+;; satisfied the hypotheses, and found 3 counterexamples and 37632 witnesses.
+;; The total time taken (incl. prover time) is 0.57 seconds
+;; The time taken by testing is 0.57 seconds
+
+;; We falsified the conjecture. Here are counterexamples:
+;;  [found in : "top"]
+;;  -- (K 238) and (N 11)
+;;  -- (K 14) and (N 12)
+;;  -- (K 10) and (N 5)
+
+
 ;The third case
 (acl2s-defaults :set num-trials 1000)
 ;; Fermats last theorem
@@ -506,6 +520,7 @@ of which have not yet been verified.  See :DOC verify-guards.
                 (/= (g x y z) 'error)))
 
 (acl2s-defaults :set testing-enabled :naive) ;for incremental, naive works too
+; Actually :simple works too with naive.
 (test? (implies (and (integerp x)
                      (integerp y)
                      (integerp z)

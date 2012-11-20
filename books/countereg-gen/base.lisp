@@ -1,7 +1,7 @@
 #|$ACL2s-Preamble$;
 (ld ;; Newline to fool ACL2/cert.pl dependency scanner
- "cert.acl2")
-(acl2::begin-book t);$ACL2s-Preamble$|#
+ "portcullis.lsp")
+(acl2::begin-book t :ttags :all);$ACL2s-Preamble$|#
 
 
 (in-package "ACL2")
@@ -12,7 +12,7 @@
 (include-book "splitnat" :load-compiled-file :comp)
 (include-book "switchnat" :load-compiled-file :comp)
 (include-book "graph" :load-compiled-file :comp)
-(include-book "library-support")
+(include-book "library-support" :load-compiled-file :comp)
 
 ;TODO.NOTE: constructors are now stored in globals and it 
 ;seems that include-book does not carry globals?? is it true?
@@ -564,6 +564,11 @@
            (< (acl2-count (nth i x1)) (acl2-count x2)))
   :hints (("Goal" :in-theory (disable nth))))
 
+
+; harshrc Sep 3rd 2012
+; declare-guards T means that enumerators will be generated with
+; :guard (natp x). Note that now on, all predicates generated have
+; :guard T 
 (defdata nat-list (listof nat) :declare-guards t) 
 (verify-termination pos-listp) ; pos-listp is in program mode, so we need this.
 (verify-guards pos-listp)
@@ -579,7 +584,7 @@
 (verify-termination atom-listp)
 (defdata atom-list (listof atom) :declare-guards t)
 
-
+(defdata-subtype pos-list nat-list)
 (defdata-subtype nat-list integer-list)
 (defdata-subtype integer-list rational-list)
 (defdata-subtype complex-rational-list acl2-number-list)

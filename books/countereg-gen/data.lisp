@@ -1,6 +1,6 @@
 #|$ACL2s-Preamble$;
 (ld ;; Newline to fool ACL2/cert.pl dependency scanner
- "cert.acl2")
+ "portcullis.lsp")
 
 ;;;;Main Author: Peter Dillinger
 ;;;;Extended by Harsh Raju C
@@ -8,12 +8,13 @@
 ;;;;It can be used independently, but is primarily intended
 ;;;;to support the TESTING framework!!
 
-(acl2::begin-book t);$ACL2s-Preamble$|#
+(acl2::begin-book t :ttags :all);$ACL2s-Preamble$|#
 
 
 (in-package "DEFDATA")
 
 (include-book "utilities" :load-compiled-file :comp)
+(include-book "basis")
 (include-book "acl2s-parameter")
 (include-book "splitnat")
 (include-book "switchnat")
@@ -171,7 +172,7 @@
    "
  `(get-acl2s-defdata-verbose-fn state))
 
-(defconst *default-defdata-use-guards* t)
+(defconst *default-defdata-use-guards* nil);Sep 3rd 2012
 
 (defun get-acl2s-defdata-use-guards-fn (state)
   (declare (xargs :stobjs (state)))
@@ -406,6 +407,7 @@
     nil
     (cons (fix-structor-and-pred (car lst) ctx)
           (fix-structor-and-pred-lst (cdr lst) ctx))))
+
 ;;--return a list of single argument(x) calls
 ;;--(apply-to-x-lst '(ap bp cp))
 ;;-- ==> ((AP X) (BP X) (CP X))
@@ -454,7 +456,9 @@
 ;;-- ((INTEGERP (NUMERATOR (RATIONAL NUMERATOR DENOMINATOR)))
 ;;-- (POSP (DENOMINATOR (RATIONAL NUMERATOR DENOMINATOR))))
 (defun get-improper-dex-theorems1 (conx-name dex-names
-                                             rem-dex-names rem-dex-prexs recordp)
+                                             rem-dex-names 
+                                             rem-dex-prexs
+                                             recordp)
   (declare (xargs :guard (and (symbol-listp dex-names)
                               (symbol-listp rem-dex-names)
                               (booleanp recordp);records
@@ -558,9 +562,7 @@
          (dex-pairs (if generated ;if yes its already in good form
                       destructor-lst
                       (fix-structor-and-pred-lst destructor-lst
-                                                 'register-data-constructor)
-                      )
-                    )
+                                                 'register-data-constructor)))
          (conx-name (car conx-pair))
          (conx-prex (cdr conx-pair))
          (dex-names (strip-cars dex-pairs))
@@ -582,8 +584,7 @@
        (defthm ,(modify-symbol "" conx-name "-CONSTRUCTOR-VALID")
          (implies (and . ,;(if generated ;removed by harshrc on July 8 2010
                             ;dex-prexs
-                            (build-one-param-calls dex-prexs dex-names)
-                       )
+                            (build-one-param-calls dex-prexs dex-names))
                   (and (,conx-prex (,conx-name . ,dex-names))
                        
                        . ,(if proper
@@ -608,12 +609,9 @@
        ',(list* (if generated '(:generated :proper) (if proper '(:proper) '()))
                 conx-prex dex-pairs 
                 (if msr-fn msr-fn 'none))
-       :put
-       )
+       :put)
       
-      (value-triple (list ',constructor ',destructor-lst))
-      )
-      ))
+      (value-triple (list ',constructor ',destructor-lst)))))
   
 
 
@@ -722,7 +720,8 @@
 ;-- got it back in view of its usability --modified by --harshrc
 (deflabel listof)
 (deflabel record)
-(deflabel map) (deflabel set);ADDED 3rd May 2011
+;(deflabel map);ADDED 3rd May 2011
+(deflabel set)
 (deflabel enum)
 
 
@@ -746,36 +745,32 @@
 
 ;; syntax-directed translation of data definition
 ;; to obtain predicate expression list
-;;MODIFIED May 3rd 2011, to introduce map type, I had to take care of mset
-;;in a special way, I will alias it to acons
 (mutual-recursion
-(defun er-trans-datadef-as-predicate-lst (defbody-lst new-preds expr-lst
-                                         new-constructors ctx wrld state)
-  (declare (xargs :mode :program
-                  :guard (and (symbol-listp new-preds)
-                              (true-listp expr-lst)
-                              (= (len expr-lst) (len defbody-lst))
-                              (symbol-alistp new-constructors)
-                              (symbolp ctx)
-                              (plist-worldp wrld))))
-  (if (atom defbody-lst)
-    (if (null defbody-lst)
-      (value nil)
-      (er soft ctx "Expecting a true list but last cdr is ~x0" defbody-lst))
-    (er-let* ((car-pred
-               (er-trans-datadef-as-predicate (car defbody-lst)
-                                              new-preds (car expr-lst)
-                                              new-constructors
-                                              ctx wrld state))
-              (cdr-pred-lst
-               (er-trans-datadef-as-predicate-lst (cdr defbody-lst)
-                                                  new-preds (cdr expr-lst)
-                                                  new-constructors
-                                                  ctx wrld state)))
-      (let ((car-pred (if (and (consp (car defbody-lst)) (eq 'mset (caar defbody-lst)))
-                          `(and (acl2::good-map ,(car expr-lst)) ,car-pred)
-                        car-pred)))
-        (value (cons car-pred cdr-pred-lst))))))
+ (defun er-trans-datadef-as-predicate-lst (defbody-lst new-preds expr-lst
+                                            new-constructors ctx wrld state)
+   (declare (xargs :mode :program
+                   :guard (and (symbol-listp new-preds)
+                               (true-listp expr-lst)
+                               (= (len expr-lst) (len defbody-lst))
+                               (symbol-alistp new-constructors)
+                               (symbolp ctx)
+                               (plist-worldp wrld))))
+   (if (atom defbody-lst)
+       (if (null defbody-lst)
+           (value nil)
+         (er soft ctx "Expecting a true list but last cdr is ~x0" defbody-lst))
+     (er-let* ((car-pred
+                (er-trans-datadef-as-predicate (car defbody-lst)
+                                               new-preds (car expr-lst)
+                                               new-constructors
+                                               ctx wrld state))
+               (cdr-pred-lst
+                (er-trans-datadef-as-predicate-lst (cdr defbody-lst)
+                                                   new-preds (cdr expr-lst)
+                                                   new-constructors
+                                                   ctx wrld state)))
+      
+      (value (cons car-pred cdr-pred-lst)))))
 
 ;;-- translate type-expression(defbody) to obtain a predicate expression body
 ;;-- for a predicate function with argument 'expr', lets say the [[expr]] = v
@@ -789,28 +784,30 @@
 ;;--       5. new constructor: (node t1 t2 t2), then return (nodep v)
 ;;--       6. macro calls are expanded, then recurse on result
   
-(defun er-trans-datadef-as-predicate (defbody new-preds expr 
-                                       new-constructors
-                                       ctx wrld state)
-  (declare (xargs :guard (and (symbol-listp new-preds)
-                              (symbol-alistp new-constructors)
-                              (symbolp ctx)
-                              (plist-worldp wrld))))
-  (cond ((possible-constant-valuep defbody)
-         (er-let* ((val (er-get-constant-value defbody ctx wrld state)))
+ (defun er-trans-datadef-as-predicate (defbody new-preds expr 
+                                        new-constructors
+                                        ctx wrld state)
+   (declare (xargs :guard (and (symbol-listp new-preds)
+                               (symbol-alistp new-constructors)
+                               (symbolp ctx)
+                               (plist-worldp wrld))))
+   (cond ((possible-constant-valuep defbody)
+          (er-let* ((val (er-get-constant-value defbody ctx wrld state)))
            (let ((comparison (cond ((symbolp val) 'eq)
                                    ((eqlablep val) 'eql)
                                    (t 'equal))))
-             (value `(,comparison ,expr ',val)))))
-        ((symbolp defbody)
-         (if (member-eq (get-predicate-symbol defbody) new-preds)
-           (let* ((pred (get-predicate-symbol defbody)))
-             (value `(,pred ,expr)))
-           (er-let* ((pred (er-get-predicate defbody ctx wrld state)))
+            (value `(,comparison ,expr ',val)))))
+         
+         ((symbolp defbody)
+          (if (member-eq (get-predicate-symbol defbody) new-preds)
+              (let* ((pred (get-predicate-symbol defbody)))
+                (value `(,pred ,expr)))
+            (er-let* ((pred (er-get-predicate defbody ctx wrld state)))
              (value `(,pred ,expr)))))
-        ; should be a cons if we get here
-        (t
-         (let ((comb (car defbody)))
+         
+; should be a cons if we get here
+         (t
+          (let ((comb (car defbody)))
            (cond 
             ((or (eq comb 'oneof)
                  (eq comb 'anyof))
@@ -820,10 +817,9 @@
                                         :initial-element expr)
                              new-constructors
                              ctx wrld state)))
-               (value `(or . ,rst))))
-            ((eq comb 'mset) ;May 3rd 2011 - take care of good maps
-             (er-trans-datadef-as-predicate (cons 'acons (cdr defbody)) 
-                                            new-preds expr new-constructors ctx wrld state))
+              (value `(or . ,rst))))
+
+            
             (t ; look up as constructor, then as macro
              (let* ((registered-conx-info 
                      (or (assoc-eq comb (table-alist 'data-constructors wrld))
@@ -831,25 +827,32 @@
                     (to-be-created-conx-info (assoc-eq comb new-constructors))
                     (conx-info (or registered-conx-info to-be-created-conx-info)))
                (if conx-info
-                 (let ((conx-pred (predicate-name-entry conx-info))
-                       (dex-info (dex-pairs-entry conx-info)))
-                   (if registered-conx-info
-                     (er-let* ((rst (er-trans-datadef-as-predicate-lst
-                                     (cdr defbody) new-preds
-                                     (build-dex-exprs dex-info expr)
-                                     new-constructors
-                                     ctx wrld state)))
-                       (value `(and (,conx-pred ,expr)
-                                     . ,rst)))
-                     (value (list conx-pred expr))))
+                   (let ((conx-pred (predicate-name-entry conx-info))
+                         (dex-info (dex-pairs-entry conx-info)))
+                    (if registered-conx-info
+                        (er-let* ((rst (er-trans-datadef-as-predicate-lst
+                                        (cdr defbody) new-preds
+                                        (build-dex-exprs dex-info expr)
+                                        new-constructors
+                                        ctx wrld state)))
+                         (value `(and (,conx-pred ,expr)
+                                      . ,rst)))
+;harshrc: The reason why the following is different from the
+;registered-conx-info, is that one can have a (cons string int), where
+;the string and int are stronger requirements than allp of cons
+;requires. But when we are constructing a new record on the fly, say
+;(oneof 'Leaf (node (key . int) (left . tree) (right . tree))), the
+;requirements are tight and hence there is no reason to recur on the
+;components, since their type constraints are reflected in nodep itself.
+                      (value (list conx-pred expr))))
                  (if (true-listp (acl2-getprop comb 'macro-args wrld
-                                                :default :undefined))
-                                           
-                   ;; attempt macro expansion
-                   (er-let* ((newdefbody (macroexpand1 defbody ctx state)))
-                     (er-trans-datadef-as-predicate newdefbody new-preds expr
-                                                    new-constructors
-                                                    ctx wrld state))
+                                               :default :undefined))
+                     
+                     ;; attempt macro expansion
+                     (er-let* ((newdefbody (macroexpand1 defbody ctx state)))
+                      (er-trans-datadef-as-predicate newdefbody new-preds expr
+                                                     new-constructors
+                                                     ctx wrld state))
                    ;; otherwise, illegal
                    (er soft ctx "~x0 is not a recognized constructor or ~
                                  type combinator." comb))))))))))
@@ -900,19 +903,21 @@
 ;static analysis of data-definitions to get finite data defs:
 ;fixed point iteration over data def structure.
 (mutual-recursion
- (defun er-get-finite-data-def-lst (defbody-lst finite-defs new-constructors ctx wrld state)
-  (declare (xargs :mode :program
-                  :guard (and (true-listp defbody-lst)
-                              (symbol-alistp finite-defs)
-                              (symbol-alistp new-constructors)
-                              (symbolp ctx)
-                              (plist-worldp wrld))))
-  (if (endp defbody-lst)
-    (value nil)
-    (er-let* ((fst (er-get-finite-data-def (car defbody-lst) finite-defs
-                                           new-constructors ctx wrld state))
-              (rst (er-get-finite-data-def-lst (cdr defbody-lst) finite-defs
-                                               new-constructors ctx wrld state)))
+ (defun er-get-finite-data-def-lst (defbody-lst finite-defs 
+                                     new-constructors
+                                     ctx wrld state)
+   (declare (xargs :mode :program
+                   :guard (and (true-listp defbody-lst)
+                               (symbol-alistp finite-defs)
+                               (symbol-alistp new-constructors)
+                               (symbolp ctx)
+                               (plist-worldp wrld))))
+   (if (endp defbody-lst)
+       (value nil)
+     (er-let* ((fst (er-get-finite-data-def (car defbody-lst) finite-defs
+                                            new-constructors ctx wrld state))
+               (rst (er-get-finite-data-def-lst (cdr defbody-lst) finite-defs
+                                                new-constructors ctx wrld state)))
       (value (cons fst rst)))))  
 
  ;; (value nil) if infinite or (value <list of values>) if finite 
@@ -923,97 +928,106 @@
                                (plist-worldp wrld))))
    (cond ((possible-constant-valuep defbody);is a constant(singleton type)
           (er-let* ((val (er-get-constant-value defbody ctx wrld state)))
-            (value (list val))))
+           (value (list val))))
          ((symbolp defbody) ;is a symbol (typename)
           (if (assoc-eq defbody finite-defs)
-            (value (cdr (assoc-eq defbody finite-defs)))
+              (value (cdr (assoc-eq defbody finite-defs)))
             (let* ((vsym (get-values-symbol defbody))
                    (quoted-values (acl2-getprop vsym 'const wrld)))
               ;; assume infinite if values not available
               (if quoted-values
-                (value (cadr quoted-values)) ; unquote
+                  (value (cadr quoted-values)) ; unquote
                 (value nil)))))
          ;; should be a cons if we get here
          (t ;(either a product or union type expression or a macro call
           (let ((comb (car defbody)))
-            (cond 
-             ((or (eq comb 'oneof)
-                  (eq comb 'anyof)) ;UNION
-              (er-let* ((rst (er-get-finite-data-def-lst
-                              (cdr defbody) finite-defs
-                              new-constructors
-                              ctx wrld state)))
-                (if (member-eq nil rst) ; at least one infinite branch
+           (cond 
+            ((or (eq comb 'oneof)
+                 (eq comb 'anyof)) ;UNION
+             (er-let* ((rst (er-get-finite-data-def-lst
+                             (cdr defbody) finite-defs
+                             new-constructors
+                             ctx wrld state)))
+              (if (member-eq nil rst) ; at least one infinite branch
                   (value nil)
-                  (value (union-lsts rst)))))
-             (t ; look up as constructor(registered or new), then as macro
-              (let* ((reg-conx-info (or (assoc-eq comb (table-alist 'data-constructors wrld))
-                                        (assoc-eq comb (table-alist 'generated-constructors wrld))))
-                     (to-be-created-conx-info (assoc-eq comb new-constructors))
-                     (conx-info (or reg-conx-info to-be-created-conx-info (eq 'mset comb))));Modified May 3rd 2011
-                ;;--conx-info e.g: (cons (:proper)
-                ;;--                 consp (car . allp) (cdr . allp))
-                ;;-- what if its a macro? say list, will it already be
-                ;;-- expanded when it reaches here? No, it gets expanded here only.
-                (if conx-info ;PRODUCT TYPE EXPRESSION
-                  (er-let* ((rst (er-get-finite-data-def-lst
-                                  (cdr defbody) finite-defs
-                                  new-constructors
-                                  ctx wrld state)))
+                (value (union-lsts rst)))))
+            (t ; look up as constructor(registered or new), then as macro
+             (let* ((reg-conx-info 
+                     (or (assoc-eq comb (table-alist 'data-constructors wrld))
+                         (assoc-eq comb (table-alist 'generated-constructors wrld))))
+                    (to-be-created-conx-info (assoc-eq comb new-constructors))
+                    (conx-info (or reg-conx-info 
+                                   to-be-created-conx-info)))
+                    
+                    ;;--conx-info e.g: (cons (:proper)
+                    ;;--                 consp (car . allp) (cdr . allp))
+                    ;;-- what if its a macro? say list, will it already be
+                    ;;-- expanded when it reaches here? No, it gets expanded here only.
+               (if conx-info ;PRODUCT TYPE EXPRESSION
+                   (er-let* ((rst (er-get-finite-data-def-lst
+                                   (cdr defbody) finite-defs
+                                   new-constructors
+                                   ctx wrld state)))
                     (if (member-eq nil rst) ; at least one infinite branch
-                      (value nil)
-                      (eval-fn-combine-arg-lsts (if reg-conx-info comb 'list*) rst ctx state)))
-                  (if (true-listp (acl2-getprop comb 'macro-args wrld 
-                                           :default :undefined))
+                        (value nil)
+                      (eval-fn-combine-arg-lsts 
+;harshrc 28th Aug '12: TODO - check if list* is a mistake or not.
+                       (if reg-conx-info comb 'list*) 
+                       rst ctx state)))
+                 (if (true-listp (acl2-getprop comb 'macro-args wrld 
+                                               :default :undefined))
 ;MACRO CALL
-                    ;; attempt macro expansion
-                    (er-let* ((newdefbody (macroexpand1 defbody ctx state)))
+                     ;; attempt macro expansion
+                     (er-let* ((newdefbody (macroexpand1 defbody ctx state)))
                       (er-get-finite-data-def newdefbody finite-defs
                                               new-constructors
                                               ctx wrld state))
-                    ;; otherwise, illegal
-                    (er soft ctx "~x0 is not a recognized constructor or ~
-                                  type combinator." comb)))))))))))
+                   ;; otherwise, illegal
+                   (er soft ctx "~x0 is not a recognized constructor or ~
+                                  type combinator." comb))))))))))
+)
 
 ; step in iteration
-(defun er-get-finite-data-defs1 (defs finite-defs new-constructors ctx wrld state)
-  (declare (xargs :mode :program
-                  :guard (and (symbol-alistp defs)
-                              (symbol-alistp finite-defs)
-                              (symbol-alistp new-constructors)
-                              (symbolp ctx)
-                              (plist-worldp wrld))))
-  (cond ((endp defs)
-         (value finite-defs))
-        ((assoc-eq (caar defs) finite-defs)
-         (er-get-finite-data-defs1 (cdr defs) finite-defs new-constructors ctx wrld state))
-        (t
-         (er-let* ((new-def (er-get-finite-data-def (cadar defs) finite-defs
-                                                    new-constructors
-                                                    ctx wrld state)))
+ (defun er-get-finite-data-defs1 (defs finite-defs new-constructors ctx wrld state)
+   (declare (xargs :mode :program
+                   :guard (and (symbol-alistp defs)
+                               (symbol-alistp finite-defs)
+                               (symbol-alistp new-constructors)
+                               (symbolp ctx)
+                               (plist-worldp wrld))))
+   (cond ((endp defs)
+          (value finite-defs))
+         ((assoc-eq (caar defs) finite-defs)
+          (er-get-finite-data-defs1 (cdr defs) finite-defs new-constructors ctx wrld state))
+         (t
+          (er-let* ((new-def (er-get-finite-data-def (cadar defs) finite-defs
+                                                     new-constructors
+                                                     ctx wrld state)))
            (er-get-finite-data-defs1 (cdr defs)
                                      (if new-def ; finite (nil -> infinite)
-                                       (cons (cons (caar defs)
-                                                   new-def)
-                                             finite-defs)
+                                         (cons (cons (caar defs)
+                                                     new-def)
+                                               finite-defs)
                                        finite-defs)
                                      new-constructors 
                                      ctx wrld state)))))
+
+
              
 
 ; iterate until fixed point
-(defun er-get-finite-data-defs0 (defs finite-defs new-constructors ctx wrld state)
-  (declare (xargs :mode :program
-                  :guard (and (symbol-alistp defs)
-                              (symbol-alistp finite-defs)
-                              (symbol-alistp new-constructors)
-                              (symbolp ctx)
-                              (plist-worldp wrld))))
-  (er-let* ((new-finite-defs (er-get-finite-data-defs1 defs finite-defs
-                                                       new-constructors
-                                                       ctx wrld state)))
+ (defun er-get-finite-data-defs0 (defs finite-defs new-constructors ctx wrld state)
+   (declare (xargs :mode :program
+                   :guard (and (symbol-alistp defs)
+                               (symbol-alistp finite-defs)
+                               (symbol-alistp new-constructors)
+                               (symbolp ctx)
+                               (plist-worldp wrld))))
+   (er-let* ((new-finite-defs (er-get-finite-data-defs1 defs finite-defs
+                                                        new-constructors
+                                                        ctx wrld state)))
     (if (equal finite-defs new-finite-defs)
-      (value new-finite-defs)
+        (value new-finite-defs)
       (er-get-finite-data-defs0 defs new-finite-defs new-constructors ctx wrld state))))
     
 ; Start fix-point iteration
@@ -1026,13 +1040,6 @@
   (er-get-finite-data-defs0 defs nil new-constructors ctx wrld state))
 
 
-;new functions added 5th June 2010 --harshrc
-(defun get-enum-tree-from-enum-symbol (sym)
-  (declare (xargs :guard (symbolp sym)))
-  (modify-symbol "" sym "-ARG-TREE"))
-(defun get-enum-nat-from-enum-symbol (sym)
-  (declare (xargs :guard (symbolp sym)))
-  (modify-symbol "" sym "-ARG-NAT"))
 
 #| ;test code
 
@@ -1079,8 +1086,7 @@
                      (if (= len-v 1)  
                        `',(car values) 
                        `(nth ,expr ,vsym)))))
-      (let* ((esym (get-enumerator-symbol type-name))
-             )
+      (let* ((esym (get-enumerator-symbol type-name)))
              
         ;;-check if arity matches(implicit check if enum is defined in wrld)
         (cond ((allows-arity esym 1 wrld) 
@@ -1116,6 +1122,7 @@
                (get-inf-enum-infos (cdr l))))
         (t
          (get-inf-enum-infos (cdr l)))))
+
 ; finite size = 1 i.e.  singleton values)
 (defun get-singleton-enum-infos (l)
   (declare (xargs :guard (true-listp l)))
@@ -1325,14 +1332,15 @@
 (defun found-recursive-enum-call (inf-enum-call inf-enum-syms)
   (declare (xargs :guard (true-listp inf-enum-syms)))
   (if (endp inf-enum-syms)
-    nil
-    (if (mem1 (car inf-enum-syms) (flatten inf-enum-call nil)) ;if found a inf-enum in the call its recursive
-      't ;return immediately
+      nil
+    (if (mem1 (car inf-enum-syms) (flatten inf-enum-call nil)) 
+;if found a inf-enum in the call its recursive return immediately
+        t 
       (found-recursive-enum-call inf-enum-call (cdr inf-enum-syms)))))
     
 (local (defthm append-of-2-lists-is-true-list
          (implies (and (true-listp x1)
-                   (true-listp x2))
+                       (true-listp x2))
               (true-listp (append x1 x2)))
          :rule-classes :type-prescription))
      
@@ -1385,91 +1393,106 @@
 ;;; switch-nat: takes a number of possibilities and another natural number
 ;;; and returns a value from 0 to possibilities-1 and a natural number.
 (mutual-recursion
-(defun er-trans-datadef-as-enumerator-lst (defbody-lst finite-defs inf-enum-syms
-                                           new-constructors ctx wrld state)
-  (declare (xargs :mode :program 
-                  :guard (and (symbol-alistp finite-defs)
-                              (symbol-listp inf-enum-syms)
-                              (symbol-alistp new-constructors)
-                              (symbolp ctx)
-                              (plist-worldp wrld))))
-  (if (atom defbody-lst)
-    (if (null defbody-lst)
-      (value nil)
-      (er soft ctx "Expecting a true list but last cdr is ~x0" defbody-lst))
-    (er-let* ((car-stuff
-               (er-trans-datadef-as-enumerator (car defbody-lst)
-                                               finite-defs inf-enum-syms
-                                               new-constructors
-                                               ctx wrld state))
-              (cdr-stuff-lst
-               (er-trans-datadef-as-enumerator-lst (cdr defbody-lst)
-                                                   finite-defs inf-enum-syms
-                                                   new-constructors
-                                                   ctx wrld state)))
+ (defun er-trans-datadef-as-enumerator-lst (defbody-lst finite-defs inf-enum-syms
+                                             new-constructors ctx wrld state)
+   (declare (xargs :mode :program 
+                   :guard (and (symbol-alistp finite-defs)
+                               (symbol-listp inf-enum-syms)
+                               (symbol-alistp new-constructors)
+                               (symbolp ctx)
+                               (plist-worldp wrld))))
+   (if (atom defbody-lst)
+       (if (null defbody-lst)
+           (value nil)
+         (er soft ctx "Expecting a true list but last cdr is ~x0" defbody-lst))
+     (er-let* ((car-stuff
+                (er-trans-datadef-as-enumerator (car defbody-lst)
+                                                finite-defs inf-enum-syms
+                                                new-constructors
+                                                ctx wrld state))
+               (cdr-stuff-lst
+                (er-trans-datadef-as-enumerator-lst (cdr defbody-lst)
+                                                    finite-defs inf-enum-syms
+                                                    new-constructors
+                                                    ctx wrld state)))
       (value (cons car-stuff cdr-stuff-lst)))))
 
-(defun er-trans-datadef-as-enumerator (defbody finite-defs inf-enum-syms
-                                       new-constructors ctx wrld state)
-  (declare (xargs :guard (and (symbol-alistp finite-defs)
-                              (symbol-listp inf-enum-syms)
-                              (symbol-alistp new-constructors)
-                              (symbolp ctx)
-                              (plist-worldp wrld))))
-  (cond ((possible-constant-valuep defbody)
-         (er-let* ((val (er-get-constant-value defbody ctx wrld state)))
+ (defun er-trans-datadef-as-enumerator (defbody finite-defs inf-enum-syms
+                                         new-constructors ctx wrld state)
+   (declare (xargs :guard (and (symbol-alistp finite-defs)
+                               (symbol-listp inf-enum-syms)
+                               (symbol-alistp new-constructors)
+                               (symbolp ctx)
+                               (plist-worldp wrld))))
+   (cond ((possible-constant-valuep defbody)
+          (er-let* ((val (er-get-constant-value defbody ctx wrld state)))
            (value (cons 1 (list 'quote val)))))
-        ((symbolp defbody)
-         (er-get-enumeration-info defbody 'x
-                                  finite-defs inf-enum-syms
-                                  ctx wrld state))
-        ; should be a cons if we get here
-        (t
-         (let ((comb (car defbody)))
+         ((symbolp defbody)
+          (er-get-enumeration-info defbody 'x
+                                   finite-defs inf-enum-syms
+                                   ctx wrld state))
+; should be a cons if we get here
+         (t
+          (let ((comb (car defbody)))
            (cond 
             ((or (eq comb 'oneof)
                  (eq comb 'anyof))
              (if (atom (cdr defbody))
-               (er soft ctx "~x0 must be given at least one argument." comb)
+                 (er soft ctx "~x0 must be given at least one argument." comb)
                (er-let* ((rst (er-trans-datadef-as-enumerator-lst
                                (cdr defbody) finite-defs inf-enum-syms
                                new-constructors
                                ctx wrld state)))
-                 (let* ((singleton-rst (get-singleton-enum-infos rst))
-                        (fin-rst (get-fin-enum-infos rst))
-                        (inf-rst (get-inf-enum-infos rst))
-                        (sorted-inf-rst (sort-inf-enum-infos inf-rst inf-enum-syms nil nil))
-                        ;finite values enumerated first and in inf case, base case come first
-                        ;by base case i mean non-recursive enums --harshrc (this fixes a bug)
-                        (new-rst (append singleton-rst fin-rst sorted-inf-rst)) 
-                        (enumerator (build-choice-enum new-rst));build union enum expression
-                        (magnitude (or (consp inf-rst) (+ (len singleton-rst)
-                                                          (+-cars fin-rst)))));add finite sizes if no inf exists
-                   (value (cons magnitude enumerator))))))
-            (t ; look up as constructor(registered or new), then as macro
+                (let* ((singleton-rst (get-singleton-enum-infos rst))
+                       (fin-rst (get-fin-enum-infos rst))
+                       (inf-rst (get-inf-enum-infos rst))
+                       (sorted-inf-rst (sort-inf-enum-infos inf-rst 
+                                                            inf-enum-syms nil nil))
+;finite values enumerated first and in inf case, base case come first
+;by base case i mean non-recursive enums --harshrc (this fixes a bug)
+                       (new-rst (append singleton-rst 
+                                        fin-rst
+                                        sorted-inf-rst)) 
+;build union enum expression
+                       (enumerator (build-choice-enum new-rst))
+                       (magnitude (or (consp inf-rst) 
+;add finite sizes if no inf exists
+                                      (+ (len singleton-rst)
+                                         (+-cars fin-rst)))))
+                  (value (cons magnitude enumerator))))))
+
+            (t 
+; look up as constructor(registered or new), then as macro
              (let* ((registered-conx-info (or (assoc-eq comb (table-alist 'data-constructors wrld))
                                               (assoc-eq comb (table-alist 'generated-constructors wrld))))
                     (to-be-created-conx-info (assoc-eq comb new-constructors))
-                    ;;MODIFIED May 3rd 2011 to take care of map types (treat mset specially)
-                    (conx-info (or registered-conx-info to-be-created-conx-info (eq comb 'mset))))
+                    (conx-info (or registered-conx-info 
+                                   to-be-created-conx-info)))
+                    
                (if conx-info 
-                 (er-let* ((rst (er-trans-datadef-as-enumerator-lst
-                                 (cdr defbody) finite-defs inf-enum-syms
-                                 new-constructors
-                                 ctx wrld state)))
-                   (let* (;(singleton-rst (get-singleton-enum-infos rst)) ;No need to multiple below by 1
-                          (fin-rst (get-fin-enum-infos rst))
-                          (inf-rst (get-inf-enum-infos rst)) ;build product enum expression
-                          (enumerator (build-product-comb-enum rst comb)) ; order matters
-                          (magnitude (or (consp inf-rst) (*-cars fin-rst))));multiply finite sizes if no inf exists
-                     (value (cons magnitude enumerator))))
+                   (er-let* ((rst (er-trans-datadef-as-enumerator-lst
+                                   (cdr defbody) finite-defs inf-enum-syms
+                                   new-constructors
+                                   ctx wrld state)))
+                    (let* (;(singleton-rst (get-singleton-enum-infos rst)) ;No need to multiple below by 1
+                           (fin-rst (get-fin-enum-infos rst))
+;build product enum expression
+                           (inf-rst (get-inf-enum-infos rst)) 
+                           (enumerator (build-product-comb-enum rst comb)) ; order matters
+                           (magnitude (or (consp inf-rst) 
+;multiply finite sizes if no inf exists
+                                          (*-cars fin-rst))))
+                      (value (cons magnitude enumerator))))
                  (if (true-listp (acl2-getprop comb 'macro-args wrld
-                                                :default :undefined))
-                                          
-                   ;; attempt macro expansion
-                   (er-let* ((newdefbody (macroexpand1 defbody ctx state)))
-                     (er-trans-datadef-as-enumerator newdefbody finite-defs inf-enum-syms
-                                                     new-constructors ctx wrld state))
+                                               :default :undefined))
+                     
+                     ;; attempt macro expansion
+                     (er-let* ((newdefbody (macroexpand1 defbody ctx state)))
+                      (er-trans-datadef-as-enumerator newdefbody
+                                                      finite-defs 
+                                                      inf-enum-syms
+                                                      new-constructors 
+                                                      ctx wrld state))
                    ;; otherwise, illegal
                    (er soft ctx "~x0 is not a recognized constructor or ~
                                  type combinator." comb))))))))))
@@ -1540,8 +1563,7 @@
 (defun cons-up-non-recursive-pred-definition-defthms (tnames pnames bodies)
    (declare (xargs :guard (and (true-listp tnames)
                                (true-listp bodies)
-                               (true-listp pnames)
-                               )))
+                               (true-listp pnames))))
                                
   (if (endp tnames)
     nil
@@ -1551,8 +1573,7 @@
              :hints (("Goal" :in-theory (enable ,(car pnames)))))
           (cons-up-non-recursive-pred-definition-defthms (cdr tnames)
                                                          (cdr pnames)
-                                                         (cdr bodies)
-                                                         ))))
+                                                         (cdr bodies)))))
 
 (defun collect-with-plausible-pred-fns (lst wrld)
   (declare (xargs :guard (and (symbol-listp lst)
@@ -1843,36 +1864,38 @@ X:rgbcolors = blue
 
 (defun process-enum-form (defs ctx wrld)
   (declare (xargs :mode :program))
-  (if (> (len defs) 1) ;;mutually recursive
-    (let ((defbodies (strip-cadrs defs)))
-      (if (and (true-list-listp defbodies)
-               (mem1 'enum (strip-cars defbodies)))
-      (er hard? ctx "Syntax error in use of enum: Enumerated type cannot appear ~
+; 08/28/12 refactoring using b*
+  (b* (((when (> (len defs) 1)) ;;mutually recursive
+        (let ((defbodies (strip-cadrs defs)))
+         (if (and (true-list-listp defbodies)
+                  (member-eq 'enum (strip-cars defbodies)))
+             (er hard? ctx 
+"Syntax error in use of enum: Enumerated type cannot appear ~
                      in mutually recursive definitions.~%")
-      nil))
-      (let* ((def (car defs)) ;;single def
-             (name (car def))
-             (enumbody (cadr def))
-             (enumlen (len enumbody)))
-        (if (consp enumbody)
-          (if (eq 'enum (car enumbody))
-            (if (= enumlen 2)
-              (let ((values (cadr enumbody)))
-                (if (true-listp values) 
-                  (append
-                   (compute-define-enumeration-type-events name
-                                                           (get-predicate-symbol name)
-                                                           (get-values-symbol name)
-                                                           (get-predicate-testthm-symbol name)
-                                                           values
-                                                           wrld)
-                   `((value-triple ',name)))
-                  (er hard? ctx "Syntax error in enum: ~x0 must evaluate to a list of values.~%" values)))
-              (er hard? ctx "Syntax error in enum: Enum ~x0 should be of following form: ~
-                             (defdata <id> (enum <list-of-values>)) or ~
-                             (defdata <id> (enum <val1> ...)) .~%" enumbody))
-            nil)
-          nil))))
+           nil)))
+       (def (car defs)) ;;single def
+       (name (car def))
+       (enumbody (cadr def))
+       (enumlen (len enumbody))
+       ((unless (consp enumbody)) nil)
+       ((unless (eq 'enum (car enumbody))) nil)
+       ((unless (= enumlen 2))
+        (er hard? ctx 
+"Syntax error in enum: Enum ~x0 should be of following form: ~
+     (defdata <id> (enum <list-of-values>)) or ~
+     (defdata <id> (enum <val1> ...)) .~%" enumbody))
+       (values (cadr enumbody))
+       ((unless (true-listp values))
+        (er hard? ctx 
+"Syntax error in enum: ~x0 must evaluate to a list of values.~%" values)))
+   (append
+    (compute-define-enumeration-type-events name
+                                            (get-predicate-symbol name)
+                                            (get-values-symbol name)
+                                            (get-predicate-testthm-symbol name)
+                                            values wrld)
+    `((value-triple ',name)))))
+       
 
 ;;check for empty defs
 (defun found-empty-defp (defs)
@@ -1889,7 +1912,7 @@ X:rgbcolors = blue
                           (eq (caadr def) 'anyof)
                           (eq (caadr def) 'listof)
                           (eq (caadr def) 'record)
-                          (eq (caadr def) 'map)
+;                          (eq (caadr def) 'map)
                           (eq (caadr def) 'set)
                           (eq (caadr def) 'enum))))
           t
@@ -1897,8 +1920,12 @@ X:rgbcolors = blue
 
 (defun type-class-p (x)
   (mem-eq x '(:undefined 
-              acl2::union acl2::product acl2::singleton acl2::alias acl2::custom
-              acl2::mutually-recursive enum record map set listof)))
+              acl2::union acl2::product 
+              acl2::singleton acl2::alias acl2::custom
+              acl2::mutually-recursive 
+              enum record 
+;              map 
+              set listof)))
 
       
       
@@ -1908,6 +1935,28 @@ X:rgbcolors = blue
            (quotep (acl2-getprop values-enum 'const wrld)))
       (len (cadr (acl2-getprop values-enum 'const wrld)))
     nil))
+
+
+(defrec types-info%
+  (size enumerator predicate test-enumerator 
+        recursivep derivedp
+        type-class defs) NIL)
+
+(defun types-info%-p (v)
+  (declare (xargs :guard T))
+  (case-match v
+    (
+     ('types-info% size enumerator predicate test-enumerator 
+            recursivep derivedp
+            typeclass defs)
+     (declare (ignorable enumerator test-enumerator defs))
+     (and (or (natp size)
+              (eq 't size))
+          (symbolp predicate)
+          (booleanp recursivep)
+          (booleanp derivedp)
+          (type-class-p typeclass)))))
+  
 ;;-- stores information about types introduced using defdata
 ;;-- (key val)
 ;;;--Modified Oct2-2009 added test enumerator
@@ -1920,35 +1969,33 @@ X:rgbcolors = blue
 ;;Modified Jun 26 2011 harshrc
 ;;Use a records data structure for values in the table for easy
 ;;extensibility
+;; Modified Aug 28 '12 to cutil record utility
 (table types-info-table nil nil :guard
        (and 
-        (acl2::good-map val)
-        (let ((type-size (g :size val))
-              (type-enum (g :enumerator val))
-              (predicate (g :predicate val))
-              (test-enum (g :test-enumerator val))
-              (is-recursive (g :recursive val))
-              (is-derived (g :derived val))
-              (type-class (g :type-class val)))
-                             
-              (and
-               (symbolp predicate)
-               (booleanp is-derived)
-               (booleanp is-recursive)
-               (type-class-p type-class)
-               (plausible-predicate-functionp predicate world)
-               (if (is-a-variablep test-enum) 
-                 (or (allows-arity test-enum 1 world)
-                     (quotep (acl2-getprop test-enum 'const world)))
-                 t)
-               (if (eq type-size 't)
-                 (and (eq type-enum (get-enumerator-symbol key))
-                      (allows-arity type-enum 1 world))
-                 (or (and (eql 1 type-size)
-                          (possible-constant-valuep type-enum));singleton
-                     (and (natp type-size) ;added a empty type (although it shudnt be allowed in normal defdata)
-                          (and (eq type-enum (get-values-symbol key))
-                               (eql type-size (len-values-enum type-enum world))))))))))
+        (types-info%-p val)
+        (b* ((TI.predicate (acl2::access types-info%  val :predicate))
+             (TI.size (acl2::access types-info%  val :size))
+             (TI.enumerator (acl2::access types-info%  val
+                                          :enumerator))
+             (TI.test-enumerator (acl2::access types-info%  val
+                                          :test-enumerator)))
+             
+         (and 
+          (plausible-predicate-functionp TI.predicate world)
+          (if (is-a-variablep TI.test-enumerator) 
+              (or (allows-arity TI.test-enumerator 1 world)
+                  (quotep (acl2-getprop TI.test-enumerator 'const world)))
+            t)
+          (if (eq TI.size 't)
+              (and (eq TI.enumerator (get-enumerator-symbol key))
+                   (allows-arity TI.enumerator 1 world))
+            (or (and (eql 1 TI.size)
+                     (possible-constant-valuep TI.enumerator));singleton
+                (and (natp TI.size) ;added a empty type (although it shudnt be allowed in normal defdata)
+                     (eq TI.enumerator (get-values-symbol key))
+                     (eql TI.size (len-values-enum TI.enumerator world)))))))))
+
+
 ;User-controlled testing
 ;;;Per type syntax:
 ;;;(defdata-testing <type-name>
@@ -1989,10 +2036,9 @@ X:rgbcolors = blue
                (value `(progn
                         (table defdata::types-info-table 
                                ',',typename 
-                               (s :test-enumerator
-                                  ',',test-enumerator
-                                  ',type-info)
-                               )
+                               (acl2::change types-info% ',type-info
+                                                  :test-enumerator
+                                                  ',',test-enumerator))
                         (value-triple (list ',',typename ',',test-enumerator))))
                (er soft 'defdata-testing "~x0 is not a registered type. Use register-custom-type to register it.~%" ',typename))))))
       
@@ -2009,15 +2055,15 @@ X:rgbcolors = blue
     (make-event
      '(progn
         (table defdata::types-info-table ',typename 
-               ',(c nil
-                    :size typesize 
-                    :enumerator enum
-                    :predicate pred
-                    :test-enumerator test-enum
-                    :defs nil
-                    :derived nil
-                    :type-class type-class
-                    ))
+               ',(acl2::make types-info%
+                  :size typesize 
+                  :enumerator enum
+                  :predicate pred
+                  :test-enumerator test-enum
+                  :defs nil
+                  :derivedp nil
+                  :recursivep nil
+                  :type-class type-class))
         (add-datatype-node-batch ,typename)
         (sync-globals-for-dtg) ;sync globals with SCC and TC 
         (value-triple (list ',typename 
@@ -2066,19 +2112,46 @@ X:rgbcolors = blue
     nil))
 
 
+(defrec supp-lemmas%
+  (set listof record oneof map)
+  NIL)
+
+(defun supp-lemmas%-p (v)
+  (declare (xargs :guard T))
+  (case-match v
+    (
+     ('supp-lemmas% set listof record oneof map)
+     (and (true-listp set)
+          (true-listp listof)
+          (true-listp record)
+          (true-listp oneof)
+          (true-listp map)))))
+
+
+(defconst *initial-supp-lemmas*
+  (acl2::make supp-lemmas%
+   :set '() 
+   :listof '() 
+   :record '()
+   :map '()
+   :oneof '()))
+
+
+
 ;defdata temp storage
 (defstobj ds$
   (defdata-world :type T :initially nil)
   (newconstructors :type T :initially nil);list
-  (support-lemmas :type T :initially nil)
-;(record (set . list) (listof . list) (record . list) (oneof . list))
+  (support-lemmas :type T;(satisfies supp-lemmas%-p)
+                  :initially nil);*initial-supp-lemmas*)
+;(struct (set . list) (listof . list) (record . list) (oneof . list))
   (custom-types :type T :initially nil)
-  (defdata-debug :type T :initially nil)
+  (defdata-debug :type (satisfies booleanp) :initially nil)
   (type-class :type (satisfies type-class-p) :initially :undefined)
   (record-constituents :type T :initially nil)
   (product-constituents :type T :initially nil)
   (union-constituents :type T :initially nil)
-  (is-recursive :type T :initially nil)
+  (is-recursive :type (satisfies booleanp) :initially nil)
   )
   
 ;Ideally write a macro to generate these forms
@@ -2094,17 +2167,19 @@ X:rgbcolors = blue
 (defmacro add-custom-types-to-ds$ (type)
 `(update-custom-types (cons ,type (custom-types ds$)) ds$))
 
-;add generated constructor information in a record to a temporary global variable
-;changed pred-body-lst to pred-lst since only typenames are allowed not type expressions.
+;add generated constructor information in a record to a temporary
+;global variable changed pred-body-lst to pred-lst since only
+;typenames are allowed not type expressions.
 ;July 8 2010, this was checked with the datadef syntax document
 ;June 26 2011, changed to ds$ transient/temp storage stobj for defdata
 (defun add-newconstructor-to-ds$ (newconsid dex pred-lst ds$)
   (declare (xargs :mode :program 
                   :stobjs (ds$)))
-  (let ((new-constructor-info (cons newconsid (list* (list ':generated ':proper)
-                                                     (get-predicate-symbol newconsid)
-                                                     (cons-up-lists dex pred-lst)
-                                                     'none)))
+  (let ((new-constructor-info 
+         (cons newconsid (list* (list ':generated ':proper)
+                                (get-predicate-symbol newconsid)
+                                (cons-up-lists dex pred-lst)
+                                'none)))
         (newconstructors-alreadyseen-lst (newconstructors ds$)))
     (update-newconstructors (cons new-constructor-info
                                   newconstructors-alreadyseen-lst) ds$)))
@@ -2460,7 +2535,7 @@ list-expr is a constant value expression evaluating to a list of objects.~%"))
 (defun add-record-type-support-lemmas-to-ds$ (typid dnames dprex ds$)
   (declare (xargs :stobjs (ds$)))
   (b* ((tpred (get-predicate-symbol typid))
-       (support-lemmas (support-lemmas ds$))
+       (s-lemm (support-lemmas ds$))
        (fnames (map-get-field-name dnames))
        (snms (modify-symbol-lst (string-append (symbol-name tpred) "-")
                                      dnames "-SELECTOR-LEMMA"))
@@ -2480,10 +2555,10 @@ list-expr is a constant value expression evaluating to a list of objects.~%"))
                               (cons constructor-lemma
                                     (append selector-lemmas modifier-lemmas)))))
     (update-support-lemmas
-     (s :record
-        (append record-lemmas
-                (g :record support-lemmas))
-        support-lemmas)
+     (acl2::change supp-lemmas%
+      s-lemm
+      :record
+      (append record-lemmas (acl2::access supp-lemmas% s-lemm :record)))
      ds$)))
       
 (defun is-record-type (texp typId ctx ds$)
@@ -2516,14 +2591,13 @@ list-expr is a constant value expression evaluating to a list of objects.~%"))
 ;just use the product-datadef function, so record is just syntactic sugar
        (mv (cons typId dest-decl-lst1) ds$)))
         
-
-
+#||
 (defun add-map-type-support-lemmas-to-ds$ (typid t1 t2 ds$)
   (declare (xargs :stobjs (ds$)))
   (b* ((tpred (get-predicate-symbol typid))
        (t1p (get-predicate-symbol t1))
        (t2p (get-predicate-symbol t2))
-       (support-lemmas (support-lemmas ds$))
+       (s-lemm (support-lemmas ds$))
        (s-nm (modify-symbol "" tpred "-SELECTOR-LEMMA"))
        (m-nm (modify-symbol "" tpred "-MODIFIER-LEMMA"))
        (d-nm1 (modify-symbol "DISJOINT-" tpred 
@@ -2568,11 +2642,12 @@ list-expr is a constant value expression evaluating to a list of objects.~%"))
                          modifier-lemma)))
                           
     (update-support-lemmas
-     (s :map
-        (append map-lemmas
-                (g :map support-lemmas))
-        support-lemmas)
+     (acl2::change supp-lemmas%
+      s-lemm
+      :map
+      (append map-lemmas (acl2::access supp-lemmas% s-lemm :map)))
      ds$)))
+
 
 (defun is-map-type (texp typId ctx ds$)
 ;returns (mv trans-map ds$) trans-map is nil if not a map
@@ -2598,23 +2673,25 @@ list-expr is a constant value expression evaluating to a list of objects.~%"))
        (ds$ (add-map-type-support-lemmas-to-ds$ typId keyT valT ds$)))
 ;map is just syntactic sugar
     (mv `(oneof nil (mset ,keyT ,valT ,typId)) ds$)))
+||#
 
 ;add generated set type lemmas to a temporary global variable
 ;For each type only one set type is added
 (defun add-set-type-support-lemmas-to-ds$ (typid ds$)
   (declare (xargs :stobjs (ds$)))
   (let ((tpred (get-predicate-symbol typid))
-        (support-lemmas (support-lemmas ds$)))
+        (s-lemm (support-lemmas ds$)))
   (update-support-lemmas
-   (s :set
-      (cons `(defthm ,(modify-symbol "" tpred "-SETP")
-               (implies (,tpred x)
-                        (SETS::setp x))
-               :rule-classes ((:forward-chaining)
-                              (:rewrite :backchain-limit-lst 1)
-                              ))
-            (g :set support-lemmas))
-      support-lemmas)
+   (acl2::change supp-lemmas%
+    s-lemm
+    :set
+    (cons `(defthm ,(modify-symbol "" tpred "-SETP")
+             (implies (,tpred x)
+                      (SETS::setp x))
+             :rule-classes ((:forward-chaining)
+                            (:rewrite :backchain-limit-lst 1)
+                            ))
+          (acl2::access supp-lemmas%  s-lemm :set)))
    ds$)))
 
 
@@ -2622,18 +2699,21 @@ list-expr is a constant value expression evaluating to a list of objects.~%"))
 ;For each type only one list type is added
 (defun add-list-type-support-lemmas-to-ds$ (typid ds$)
   (declare (xargs :stobjs (ds$)))
-  (let ((tpred (get-predicate-symbol typid))
-         (support-lemmas (support-lemmas ds$)))
+  (b* ((tpred (get-predicate-symbol typid))
+       (s-lemm (support-lemmas ds$)))
+
+   
   (update-support-lemmas
-   (s :listof
-      (cons `(defthm ,(modify-symbol "" tpred "-TLP")
+   (acl2::change supp-lemmas%
+    s-lemm
+    :listof
+    (cons `(defthm ,(modify-symbol "" tpred "-TLP")
                (implies (,tpred x)
                         (true-listp x))
                :rule-classes ((:forward-chaining)(:compound-recognizer)
                               (:rewrite :backchain-limit-lst 1)
                               ))
-            (g :listof support-lemmas))
-      support-lemmas)
+          (acl2::access supp-lemmas% s-lemm :listof)))
    ds$)))
 
 ;;PETE: Should we get rid of the compound recognizer rule above?
@@ -2678,7 +2758,7 @@ but ~x0 if not.~%" texp)
       ((mv & ctype1 ds$)
        (trans-constituent-type (cadr texp) tnames ctx ds$))
       ;;skipped error check.
-      (ds$ (add-list-type-support-lemmas-to-ds$ typid ds$)))
+      (ds$ (add-set-type-support-lemmas-to-ds$ typid ds$)))
    (mv `(oneof nil (SETS::insert ,ctype1 ,typid)) ds$)))
  
 ;gives back pre-processed data-type-exp or error
@@ -2705,14 +2785,13 @@ nor a predefined typename~%" dtexp)
        ((when is-enum) 
          (let ((ds$ (update-type-class 'enum ds$)))
            (mv nil is-enum ds$)))
-       ((mv is-map ds$) (is-map-type dtexp typId ctx ds$))
-       ((when is-map)     
-        (let ((ds$ (update-type-class 'map ds$)))
-          (mv nil is-map ds$))) ;ADDED 3rd May 2011
+       ;; ((mv is-map ds$) (is-map-type dtexp typId ctx ds$))
+       ;; ((when is-map)     
+       ;;  (let ((ds$ (update-type-class 'map ds$)))
+       ;;    (mv nil is-map ds$))) ;ADDED 3rd May 2011 REMOVED 28th Aug '12
        ((mv is-record ds$) (is-record-type dtexp typId ctx ds$))
 ;type class of record also gets update on successful entry and not here
        ((when is-record) 
-
            (prog2$
             (cw? (defdata-debug ds$)
                           "record support lemmas: ~x0~%" (support-lemmas ds$))
@@ -2742,7 +2821,7 @@ nor a predefined typename~%" dtexp)
     (prog2$
      (er hard ctx 
          "Illegal DataType Expression ~x0.~
-               Should be either: typename, singletonType, enum, map, set~
+               Should be either: typename, singletonType, enum, set~
                record, listof, oneof (union), product type. ~%" dtexp )
      (mv t nil ds$))))
 
@@ -2857,29 +2936,37 @@ nor a predefined typename~%" dtexp)
 (defun cons-up-add-type-info-calls 
   (tsizes tnames tpreds tenums ttestenums defs 
           recursive-tnames type-class)
-  (declare (xargs :guard (and (symbol-listp tnames)
+  (declare (xargs :verify-guards nil
+                  :guard (and (symbol-listp tnames)
+                              (true-listp tsizes)
+                              (implies (consp tsizes)
+                                       (or (equal (car tsizes) t)
+                                           (natp (car tsizes))))
                               (symbol-listp recursive-tnames)
                               (symbol-listp tpreds)
                               (symbol-listp tenums)
                               (symbol-listp ttestenums)
-                              (alistp defs)
-                              (type-classp type-class)
-                              (true-listp tsizes))))
+;(alistp defs)
+                              (type-class-p type-class))))
+
+                              
   (if (endp tnames)
     nil
     (cons `(table
             defdata::types-info-table
              ',(car tnames)
-             ',(c nil 
+             ',(acl2::make types-info%
                   :size (car tsizes) 
                   :enumerator (car tenums)
                   :predicate (car tpreds)
                   :test-enumerator (car ttestenums)
                   :defs defs
-                  :derived t
-                  :recursive (mem1 (car tnames) recursive-tnames)
-                  :type-class type-class
-                  );defdata == derived data-type
+                  :derivedp t;defdata == derived data-type
+                  :recursivep (if (member-equal (car tnames)
+                                                recursive-tnames)
+                                  t
+                                nil)
+                  :type-class type-class)
              :put)
           (cons-up-add-type-info-calls (cdr tsizes)
                                        (cdr tnames)
@@ -2913,7 +3000,8 @@ nor a predefined typename~%" dtexp)
         (cons texp (filter-typeName (cdr texp-lst) tnames state))
         (filter-typeName (cdr texp-lst) tnames state)))))
 
-;list together calls that add a edge in the subtype graph for each constituent-type -> union-type
+;list together calls that add a edge in the subtype graph for each
+;constituent-type -> union-type
 (defun list-calls-union-constituent-is-subtype-aux (c-types un-type)
   (declare (xargs :guard (and (symbol-listp c-types)
                               (symbolp un-type))))
@@ -2922,7 +3010,8 @@ nor a predefined typename~%" dtexp)
     (cons `(add-edge-to-subtype-graph-batch ,(car c-types) ,un-type)
           (list-calls-union-constituent-is-subtype-aux (cdr c-types) un-type))))
 
-;generate subtype edge calls for each tname in tnames (not recursive types are also dealt uniformly)
+;generate subtype edge calls for each tname in tnames (not recursive
+;types are also dealt uniformly)
 (defun cons-up-add-edge-union-constituent-is-subtype (defs tnames state)
   (declare (xargs :stobjs (state)
                   :mode :program
@@ -3096,14 +3185,12 @@ nor a predefined typename~%" dtexp)
           
 
 ;;--changed name of the main function
-;;-----CHANGED the signature, removed wrld. WHY???
 (defun compute-typecombs (defs kwd-options-lst ctx 
                            new-constructors support-lemmas type-class
-                           state)
+                           wrld state)
   (declare (xargs :mode :program
                   :stobjs (state)))
-  (let* ((wrld (w state))
-         (names (strip-cars defs))
+  (b* ((names (strip-cars defs))
         ;(defbodies (strip-cadrs defs))
          (pred-syms (get-predicate-symbol-lst names))
          
@@ -3147,19 +3234,23 @@ nor a predefined typename~%" dtexp)
          ;(dex-events (append-up-dex-ev conx-names dex-pairs-lst))
          (conx-events (cons-up-conx-ev conx-names dex-pairs-lst))
          (register-conx-dex-events (cons-up-reg-conx-dex-ev conx-names dex-pairs-lst))
+         
+         ;; generating supporting lemmas
          (gen-lemmasp (if (mem1 :type-lemmas kwd-options-lst)
                              (get-value-from-keyword-value-list :type-lemmas kwd-options-lst)
                              nil))
          (rec-record-support-lemmas (cons-up-rec-record-conx-pred-defthm-ev conx-names dex-pairs-lst))
 ;lemmas for syntactic sugar
-         (list-type-support-lemmas (g :listof support-lemmas))
-         (set-type-support-lemmas (g :set support-lemmas))
+         (list-type-support-lemmas (acl2::access supp-lemmas%
+                                                 support-lemmas :listof))
+         (set-type-support-lemmas (acl2::access supp-lemmas%
+                                                 support-lemmas :set))
          (record-type-support-lemmas (and gen-lemmasp
-                                          (g :record support-lemmas)))
-         (map-type-support-lemmas (and gen-lemmasp
-                                       (g :map support-lemmas)))
-;lemmas for base union-product type lemmas
-         (base-type-support-lemmas (g :base support-lemmas))
+                                          (acl2::access supp-lemmas%
+                                                 support-lemmas :record)))
+;         (map-type-support-lemmas (and gen-lemmasp s-lemm.map))
+; lemmas for base union-product type lemmas
+         ;(base-type-support-lemmas (g :base support-lemmas))
          ;(verbose (get-acl2s-defdata-verbose))
          )
     (if (not (no-duplicatesp names))
@@ -3244,7 +3335,11 @@ nor a predefined typename~%" dtexp)
                                     conx-pred-rec-bodies
                                     (cons-up-names-decls-lls-bodies
                                      pred-syms-need-preds
-                                     (if declare-guardsp
+                                     (if T;declare-guardsp  
+;harshrc Sep 3rd 2012 -- OK, predicates need their guards to be
+;verified. I hope this wont break anything, since this change though
+;it reduces flexibility it does not change the behavior of
+;declare-guardsp for now, since the default value for it was T anyway.
                                          (make-list (len pred-syms-need-preds) 
                                                     :initial-element 
                                                     '(declare (xargs :guard t
@@ -3296,12 +3391,12 @@ nor a predefined typename~%" dtexp)
                                            "Submitting record type lemmas... ~%"))))
                   ,@ record-type-support-lemmas
                   
-                  ,@ (and map-type-support-lemmas
-                          `((value-triple
-                             (cw? t
-                                           "Submitting map type lemmas... ~%"))))
-                  ,@ map-type-support-lemmas
-                  ,@ base-type-support-lemmas
+                  ;; ,@ (and map-type-support-lemmas
+                  ;;         `((value-triple
+                  ;;            (cw? t
+                  ;;                          "Submitting map type lemmas... ~%"))))
+                  ;; ,@ map-type-support-lemmas
+                  ;; ;,@ base-type-support-lemmas
                   
                   ,@ (and inf-enums
                   `((value-triple
@@ -3314,19 +3409,21 @@ nor a predefined typename~%" dtexp)
                                     inf-enum-syms
                                     (if declare-guardsp
                                         (make-list (len inf-enums)
-                                                   :initial-element (if (assoc :termination-method 
-                                                                               (table-alist 'acl2::acl2-defaults-table wrld))
-                                                                        '(declare (xargs :consider-only-ccms ((nfix x))
-                                                                                         :guard (natp x)))
-                                                                      '(declare (xargs :measure (nfix x)
-                                                                                       :guard (natp x) ))
-                                                                      
-                                                                      ))
+                                                   :initial-element 
+                                                   (if (assoc :termination-method 
+                                                              (table-alist 'acl2::acl2-defaults-table wrld))
+                                                       '(declare (xargs :consider-only-ccms ((nfix x))
+                                                                        :guard (natp x)))
+                                                     '(declare (xargs :measure (nfix x)
+                                                                      :guard (natp x) ))
+                                                     
+                                                     ))
                                       (make-list (len inf-enums)
-                                                 :initial-element (if (assoc :termination-method 
-                                                                             (table-alist 'acl2::acl2-defaults-table wrld))
-                                                                      '(declare (xargs :consider-only-ccms ((nfix x))))
-                                                                    '(declare (xargs :measure (nfix x))))
+                                                 :initial-element 
+                                                 (if (assoc :termination-method 
+                                                            (table-alist 'acl2::acl2-defaults-table wrld))
+                                                     '(declare (xargs :consider-only-ccms ((nfix x))))
+                                                   '(declare (xargs :measure (nfix x))))
                                                  )
                                       );end of if , this gives the declare form for the enum
                                     (make-list (len inf-enums)
@@ -3377,11 +3474,14 @@ nor a predefined typename~%" dtexp)
                                  (append defs-ans (list (car args)))))))
 
 (defun initialize-ds$ (debug wrld ds$)
-  (declare (xargs :stobjs (ds$)))
+  (declare (xargs :stobjs (ds$)
+                  :guard (and (booleanp debug)
+                              (ds$p ds$))))
+                 
   (b* ((ds$ (update-defdata-world wrld ds$))
        (ds$ (update-newconstructors nil ds$))
-       (ds$ (update-support-lemmas nil ds$))
        (ds$ (update-custom-types nil ds$))
+       (ds$ (update-support-lemmas *initial-supp-lemmas* ds$))
        (ds$ (update-defdata-debug debug ds$)))
       ds$))
   
@@ -3427,7 +3527,7 @@ nor a predefined typename~%" dtexp)
                                           ',(newconstructors ds$)
                                           ',(support-lemmas ds$)
                                           ',(type-class ds$)
-                                          state))))))
+                                          (w state) state))))))
             (mv nil mk-ev-form state ds$))))
       (mv erp result state)))))
 

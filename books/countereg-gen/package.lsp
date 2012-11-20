@@ -1,3 +1,4 @@
+
 (defpkg "DEFDATA"
   (append 
    '(getprop key val formals macro-args const
@@ -55,7 +56,10 @@
      backtrack-limit  subgoal-timeout search-strategy
      stopping-condition testing-enabled
 
-     
+     ;verbosity control 
+     system-debug-flag inhibit-output-flag normal-output-flag
+     verbose-flag debug-flag
+
      )
    
    (union-eq *acl2-exports*

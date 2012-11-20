@@ -1,6 +1,6 @@
 #|$ACL2s-Preamble$;
 (ld ;; Newline to fool ACL2/cert.pl dependency scanner
- "cert.acl2")
+ "portcullis.lsp")
 (acl2::begin-book t);$ACL2s-Preamble$|#
 
 (in-package "ACL2")
@@ -134,19 +134,21 @@
        ((unless (and (defdata::is-a-typeName typ1 wrld)
                      (defdata::is-a-typeName typ2 wrld)))
         (er hard 'meet "~x0 or ~x1 is not a defdata type.~|" typ1 typ2))
-      ((when (defdata::is-subtype typ1 typ2 wrld))   typ1)
-      ((when (defdata::is-subtype typ2 typ1 wrld))   typ2)
-      ((when (defdata::is-disjoint typ2 typ1 wrld))  'acl2::empty) ;Should we instead define the NULL type??? Modified: so Ans is YES instead of Ans: NO, the way its used now, this is right!
-            ;give preference to custom type
-      ((when (defdata::is-a-custom-type typ1 wrld)) typ1)
-      ((when (defdata::is-a-custom-type typ2 wrld)) typ2)
+       ((when (eq 'acl2::all typ1)) typ2)
+       ((when (eq 'acl2::all typ2)) typ1)
+       ((when (defdata::is-subtype typ1 typ2 wrld))   typ1)
+       ((when (defdata::is-subtype typ2 typ1 wrld))   typ2)
+       ((when (defdata::is-disjoint typ2 typ1 wrld))  'acl2::empty) ;Should we instead define the NULL type??? Modified: so Ans is YES instead of Ans: NO, the way its used now, this is right!
+;give preference to custom type
+       ((when (defdata::is-a-custom-type typ1 wrld)) typ1)
+       ((when (defdata::is-a-custom-type typ2 wrld)) typ2)
 
 ; choose the one that was defined later (earlier in 
 ; reverse chronological order)
-      (types-in-wrld (strip-cars (table-alist 
-                                  'defdata::types-info-table wrld)))
-      (pos1 (position typ1 types-in-wrld))
-      (pos2 (position typ2 types-in-wrld)))
+       (types-in-wrld (strip-cars (table-alist 
+                                   'defdata::types-info-table wrld)))
+       (pos1 (position typ1 types-in-wrld))
+       (pos2 (position typ2 types-in-wrld)))
    (if (< (nfix pos1) (nfix pos2)) 
        typ1 
      typ2)));type table is already in reverse chrono order
