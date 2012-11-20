@@ -19,62 +19,120 @@
 ; Original authors: Jared Davis and Sol Swords <{jared,sswords}@centtech.com>
 
 (in-package "ACL2")
+(include-book "xdoc/top" :dir :system)
+
+(defxdoc include-raw
+  :parents (set-raw-mode progn! defttag)
+  :short "A better way to load raw Lisp code than directly using @(see progn!)
+or @(see set-raw-mode)."
+
+  :long "<p>Sometimes you want to include raw Lisp code in an ACL2 book to
+achieve better performance or do fancy things like connect to external
+programs.  With @(see trust-tags), you can do this.  Unfortunately, the
+built-in mechanisms (@(see progn!) and @(see set-raw-mode)) have some
+portability problems related to compilation, file paths, read tables, non-ACL2
+objects, and so on; see below for some examples.</p>
+
+<h3>Using Include-Raw</h3>
+
+<p>Using @('include-raw') solves some of these problems.  Here are some
+examples of how to use it:</p>
+
+@({
+ (include-book \"tools/include-raw\" :dir :system)
+
+ (defttag :my-ttag) ; required before calling include-raw
+
+ (include-raw \"my-raw-lisp-file.lsp\")
+
+ (include-raw \"another-raw-lisp-file.lsp\"
+              :do-not-compile t)
+})
+
+<p>When you use @('include-raw'), your raw Lisp code goes into a separate file.
+If your book is named @('foo.lisp'), then this file should typically be named
+@('foo-raw.lsp').  Why?</p>
+
+<ul>
+
+<li>The @('.lsp') extension helps build systems realize that the raw file is
+not a proper ACL2 book and should not be certified.</li>
+
+<li>The @('-raw') part helps to avoid running into a problem: on most Lisps,
+compiling @('foo.lisp') or @('foo.lsp') results in the same compiled file,
+e.g., @('foo.fasl') or similar.  So it is a mistake to use the same base name
+for a raw Lisp file with a @('.lsp') extension and an ACL2 book with @('.lisp')
+extension.</li>
+
+</ul>
+
+<p>The path of the raw Lisp file must be given relative to the book containing
+the @('include-raw') form.  Typically we put the raw Lisp file in the same
+directory as its book.</p>
+
+<p>By default, the raw Lisp file will be compiled and loaded when the
+containing book is certified.  When including the book, the compiled file will
+be loaded if possible, otherwise the original file will be loaded instead.  By
+default, if either compilation or loading fails, an error will occur.</p>
+
+
+<h3>Benefits</h3>
+
+<p>Keeping raw Lisp code in a separate file means you can use various kinds of
+Lisp syntax that are not allowed in ACL2.  Otherwise you have to jump through
+awful hoops like having to @(see intern)ing the names of functions like
+@('ccl::static-cons') that you want to call.  It's also nice to be able to use
+floats, etc.</p>
+
+<p>Using @('include-raw') instead of something like @('load') after a
+@('set-raw-mode') means you get predictable path behavior.  Otherwise, unless
+you go out of your way to save the @(see cbd) with a @(see make-event), you can
+end up with @(see include-book) failing when you try to load your book from
+other directories.</p>
+
+<p>Using @('include-raw') means that by default your definitions get compiled,
+which can help to avoid stack overflows on some Lisps that don't compile
+definitions automatically.  This isn't the case for definitions submitted
+inside a @(see progn!).  It also helps defend against the @(see comp) command
+undoing your raw Lisp definitions.</p>
+
+
+<h3>Optional Arguments</h3>
+
+<p>The optional keywords @(':on-compile-fail') and/or @(':on-load-fail') may be
+used to suppress the error for failed compilation or loading, respectively;
+their argument is a term which will be evaluated in lieu of producing an error.
+When evaluating this term, the variable @('condition') is bound to a value
+describing the failure; see Common Lisp documentation on @('handler-case').
+Note: for non-ansi-compliant Common Lisp implementations, such as GCL 2.6.*, no
+such error handling is provided.  Here is an example:</p>
+
+@({
+ (include-raw \"a-raw-lisp-file.lsp\"
+              :on-compile-fail
+              (format t \"Compilation failed with message ~a~%\"
+                      condition)
+              :on-load-fail
+              (cw \"Oh well, the load failed~%\")
+              :host-readtable t)
+})
+
+
+<p>The optional keyword @(':do-not-compile') may be used to suppress
+compilation.  In this case, during book certification the file will just be
+loaded using @('load').  Similarly, during @('include-book') we will only load
+the lisp file, and not try to load a compiled file.</p>
+
+<p>The optional keyword @(':host-readtable') may be used to make sure that the
+original @('*readtable*') for this Lisp is being used, instead of the ACL2
+readtable, while reading the file.  This may sometimes be necessary to avoid
+differences between ACL2's reader and what raw Lisp code is expecting.</p>")
 
 (defmacro include-raw (fname &key
                              (do-not-compile 'nil)
                              (on-compile-fail 'nil on-compile-fail-p)
                              (on-load-fail 'nil on-load-fail-p)
                              (host-readtable 'nil))
-  ":doc-section miscellaneous
-Include a raw Lisp file in an ACL2 book, with compilation~/
-
-Note:  You must have a TTAG defined in order to use this macro.
-
-Usage:
-~bv[]
- (include-raw \"my-raw-lisp-file.lsp\")
- (include-raw \"a-raw-lisp-file.lsp\"
-              :on-compile-fail
-              (format t \"Compilation failed with message ~~a~~%\"
-                      condition)
-              :on-load-fail
-              (cw \"Oh well, the load failed~~%\")
-              :host-readtable t)
- (include-raw \"another-raw-lisp-file.lsp\"
-              :do-not-compile t)
-~ev[]
-
-The path of the raw Lisp file must be given relative to the book containing the
-include-raw form.
-
-By default, the raw Lisp file will be compiled and loaded when the containing
-book is certified.  When including the book, the compiled file will be loaded
-if possible, otherwise the original file will be loaded instead.  By default,
-if either compilation or loading fails, an error will occur.
-
-The optional keywords ~c[:on-compile-fail] and/or ~c[:on-load-fail] may be used
-to suppress the error for failed compilation or loading, respectively; their
-argument is a term which will be evaluated in lieu of producing an error.  When
-evaluating this term, the variable ~c[CONDITION] is bound to a value describing
-the failure; see Common Lisp documentation on ~c[HANDLER-CASE].  (Note: for
-non-ansi-compliant Common Lisp implementations, such as GCL 2.6.*, no such
-error handling is provided.)
-
-The optional keyword ~c[:do-not-compile] may be used to suppress compilation.
-In this case, during book certification the file will just be loaded using
-~c[load].  Similarly, during include-book we will only load the lisp file, and
-not try to load a compiled file.
-
-The optional keyword ~c[:host-readtable] may be used to make sure that the
-original *readtable* for this Lisp is being used, instead of the ACL2
-readtable, while reading the file.  This may sometimes be necessary to avoid
-differences between ACL2's reader and what raw Lisp code is expecting.
-
-One further note:  In most or all Lisps, compiling foo.lisp and foo.lsp results
-in the same compiled file (named foo.fasl, or something similar depending on
-the Lisp.)  Therefore, it is a mistake to use the same base name for a raw Lisp
-file with .lsp extension and an ACL2 book with .lisp extension, at least when
-using this tool and depending on compilation.~/~/"
   `(progn
 
      (progn!
