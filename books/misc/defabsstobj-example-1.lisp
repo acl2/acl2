@@ -440,3 +440,98 @@
          (if (equal i j)
              v
            (lookup i st))))
+
+; We conclude with some examples of congruent abstract stobjs.  The first two
+; below, st3 and st4, are designated as congruent to st; the fifth one is
+; designated as congruent to st3.  Thus all four of those should be usable
+; interchangeably; we test that below.
+
+(defabsstobj st3
+  :concrete st$c
+  :recognizer (st3p :logic st$ap :exec st$cp)
+  :creator (create-st3 :logic create-st$a :exec create-st$c
+                       :correspondence create-st{correspondence}
+                       :preserved create-st{preserved})
+  :corr-fn st$corr
+  :exports ((lookup3 :logic lookup$a
+                     :exec mem$ci)
+            (update3 :logic update$a
+                     :exec update-mem$ci)
+            (misc3 :logic misc$a
+                   :exec misc$c)
+            (update-misc3 :logic update-misc$a
+                          :exec update-misc$c))
+  :congruent-to st)
+
+(defabsstobj st4
+  :concrete st$c
+  :recognizer (st4p :logic st$ap :exec st$cp)
+  :creator (create-st4 :logic create-st$a :exec create-st$c
+                       :correspondence create-st{correspondence}
+                       :preserved create-st{preserved})
+  :corr-fn st$corr
+  :exports ((lookup4 :logic lookup$a
+                     :exec mem$ci)
+            (update4 :logic update$a
+                     :exec update-mem$ci)
+            (misc4 :logic misc$a
+                   :exec misc$c)
+            (update-misc4 :logic update-misc$a
+                          :exec update-misc$c))
+  :congruent-to st)
+
+(defabsstobj st5
+  :concrete st$c
+  :recognizer (st5p :logic st$ap :exec st$cp)
+  :creator (create-st5 :logic create-st$a :exec create-st$c
+                       :correspondence create-st{correspondence}
+                       :preserved create-st{preserved})
+  :corr-fn st$corr
+  :exports ((lookup5 :logic lookup$a
+                     :exec mem$ci)
+            (update5 :logic update$a
+                     :exec update-mem$ci)
+            (misc5 :logic misc$a
+                   :exec misc$c)
+            (update-misc5 :logic update-misc$a
+                          :exec update-misc$c))
+  :congruent-to st3)
+
+; Now let's see if they really are interchangable.
+
+(defun foo (st st3 st4 st5)
+  (declare (xargs :stobjs (st st3 st4 st5)))
+  (list (lookup 7 st)
+        (lookup 7 st3)
+        (lookup 7 st4)
+        (lookup 7 st5)
+        (lookup3 7 st)
+        (lookup3 7 st3)
+        (lookup3 7 st4)
+        (lookup3 7 st5)
+        (lookup4 7 st)
+        (lookup4 7 st3)
+        (lookup4 7 st4)
+        (lookup4 7 st5)
+        (lookup5 7 st)
+        (lookup5 7 st3)
+        (lookup5 7 st4)
+        (lookup5 7 st5)))
+
+(local (make-event
+        (let* ((st (update 7 10 st))
+               (st3 (update 7 30 st3))
+               (st4 (update 7 40 st4))
+               (st5 (update 7 50 st5)))
+          (mv nil '(value-triple nil) state st st3 st4 st5))))
+
+(local
+ (assert-event
+  (equal (foo st st3 st4 st5)
+         '(10 30 40 50 10 30 40 50
+              10 30 40 50 10 30 40 50))))
+
+(local
+ (assert-event
+  (equal (foo st5 st4 st3 st)
+         '(50 40 30 10 50 40 30 10 50 40 30 10 50 40 30 10))))
