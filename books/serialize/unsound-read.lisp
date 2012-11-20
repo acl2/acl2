@@ -20,6 +20,10 @@
 
 (in-package "ACL2")
 
+(include-book "tools/include-raw" :dir :system)
+
+; (depends-on "unsound-read-raw.lsp")
+
 (defdoc unsound-read
   ":Doc-Section Serialize
 
@@ -124,10 +128,4 @@ sure the files you are reading aren't changing out from under you.")
                                  verbosep)
   `(unsound-read-fn ,filename ,hons-mode ,verbosep))
 
-(progn!
- (set-raw-mode t)
- (defun unsound-read-fn (filename hons-mode verbosep)
-   (let ((*ser-verbose* verbosep))
-     (with-open-file (stream filename :direction :input)
-       (ser-decode-from-stream t hons-mode stream)))))
-
+(include-raw "unsound-read-raw.lsp")
