@@ -146,7 +146,7 @@ hacking: misc
 parallel: make-event tools
 security: misc arithmetic-3
 sorting: arithmetic-3/extra
-tools: arithmetic-5 misc
+tools: arithmetic-5 misc xdoc
 regex: tools cutil str misc
 defsort: misc unicode tools
 hons-archive: defsort unicode tools arithmetic-3

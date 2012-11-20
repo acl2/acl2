@@ -20,7 +20,7 @@
 
 (in-package "ACL2")
 
-(include-book "misc/untranslate-patterns" :dir :system)
+;; (include-book "misc/untranslate-patterns" :dir :system)
 (include-book "join-thms")
 ;; This is a sadly incomplete book for reasoning about evaluators and
 ;; "falsifier" functions.  An evaluator ev gives a value to a term X
@@ -42,7 +42,7 @@
 ;; (and (ev A (evf A))
 ;;      (ev B (evf B))).
 
-(defmacro def-ev-theoremp (ev &key untranslate)
+(defmacro def-ev-theoremp (ev)
   (let* ((falsify (intern-in-package-of-symbol
                    (concatenate 'string (symbol-name ev)
                                 "-FALSIFY")
@@ -132,12 +132,7 @@
                           (theoremp (conjoin-clauses cls2))))
                 :hints (("goal" :in-theory (enable append endp car-cdr-elim)
                          :induct (append cls1 cls2))))))))
-    (if untranslate
-        `(progn ,event
-                ,(sublis subst '(add-untranslate-pattern
-                                 (ev ?x (falsify ?x))
-                                 (theoremp ?x))))
-      event)))
+    event))
                 
 
 (local
@@ -158,10 +153,6 @@
 
 (defmacro evthmp-ev-theoremp (x)
   `(evthmp-ev ,x (evthmp-ev-falsify ,x)))
-
-(add-untranslate-pattern
- (evthmp-ev ?x (evthmp-ev-falsify ?x))
- (evthmp-ev-theoremp ?x))
 
 (defthm evthmp-ev-theoremp-conjoin-cons
   (iff (evthmp-ev-theoremp (conjoin (cons a b)))

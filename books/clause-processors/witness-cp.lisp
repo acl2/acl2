@@ -76,7 +76,7 @@
 
 (in-theory (disable dumb-negate-lit))
 
-(def-ev-theoremp witness-ev :untranslate t)
+(def-ev-theoremp witness-ev)
 
 (defun witness-ev-alist (x al)
   (if (atom x)
