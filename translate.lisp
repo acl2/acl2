@@ -5127,6 +5127,54 @@
        (eq (ffn-symb body) 'return-last)
        (throw-nonexec-error-p1 (fargn body 1) (fargn body 2) name formals)))
 
+(defun chk-flet-declarations (names decls declare-form ctx)
+  (cond ((null decls)
+         (value-cmp nil))
+        ((atom decls)
+         (er-cmp ctx
+                 "The DECLARE form for an FLET expression must be a ~
+                  true-list.  The form ~x0 is thus illegal.  See :DOC flet."
+                 declare-form))
+        (t (let ((decl (car decls)))
+             (cond ((and (consp decl)
+                         (member-eq (car decl)
+                                    '(inline notinline))
+                         (true-listp (cdr decl))
+                         (subsetp-eq (cdr decl) names))
+                    (chk-flet-declarations names (cdr decls) declare-form ctx))
+                   (t (er-cmp ctx
+                              "Each declaration in a DECLARE form of an flet ~
+                               expression must be of the form (INLINE . fns) ~
+                               or (NOTINLINE . fns), where fns is a true-list ~
+                               of names that are all defined by the FLET ~
+                               expression.  The declare form ~x0 is thus ~
+                               illegal because of its declaration, ~x1.  See ~
+                               :DOC flet."
+                              declare-form
+                              decl)))))))
+
+(defun chk-flet-declare-form (names declare-form ctx)
+  (cond
+   ((null declare-form)
+    (value-cmp nil))
+   (t (case-match declare-form
+        (('declare . decls)
+         (chk-flet-declarations names decls declare-form ctx))
+        (&
+         (er-cmp ctx
+                 "The optional DECLARE forms for an flet expression must each ~
+                  be of the form (DECLARE DCL1 DCL2 ... DCLk), where each ~
+                  DCLi is an INLINE or NOTINLINE declaration.  The form ~x0 ~
+                  is thus not a legal DECLARE form.  See :DOC flet."
+                 declare-form))))))
+
+(defun chk-flet-declare-form-list (names declare-form-list ctx)
+  (cond ((endp declare-form-list)
+         (value-cmp nil))
+        (t (er-progn-cmp
+            (chk-flet-declare-form names (car declare-form-list) ctx)
+            (chk-flet-declare-form-list names (cdr declare-form-list) ctx)))))
+
 (mutual-recursion
 
 (defun translate11-flet-alist (form fives stobjs-out bindings known-stobjs
@@ -5348,38 +5396,43 @@
 (defun translate11-flet (x stobjs-out bindings known-stobjs flet-alist
                            ctx wrld state-vars)
   (cond
-   ((not (eql (length x) 3))
+   ((< (length x) 3)
     (trans-er ctx
-              "An FLET form must have the form (flet bindings body), where ~
-               bindings is a list of local function definitions, but ~x0 does ~
+              "An FLET form must have the form (flet bindings body) or (flet ~
+               bindings declare-form1 ... declare-formk body), but ~x0 does ~
                not have this form.  See :DOC flet."
               x))
    (t
-    (mv-let
-     (erp fives)
-     (chk-defuns-tuples-cmp (cadr x) t ctx wrld state-vars)
-     (let ((names (and (not erp)
-                       (strip-cars fives))))
-       (mv-let
-        (erp msg)
-        (if erp ; erp is a ctx and fives is a msg
-            (mv erp fives)
+    (let ((defs (cadr x))
+          (declare-form-list (butlast (cddr x) 1))
+          (body (car (last x))))
+      (mv-let
+       (erp fives)
+       (chk-defuns-tuples-cmp defs t ctx wrld state-vars)
+       (let ((names (and (not erp)
+                         (strip-cars fives))))
+         (mv-let
+          (erp msg)
+          (if erp ; erp is a ctx and fives is a msg
+              (mv erp fives)
 
 ; Note that we do not need to call chk-xargs-keywords, since
 ; acceptable-dcls-alist guarantees that xargs is illegal.
 
-          (chk-no-duplicate-defuns-cmp names ctx))
-        (cond
-         (erp
+            (er-progn-cmp
+             (chk-no-duplicate-defuns-cmp names ctx)
+             (chk-flet-declare-form-list names declare-form-list ctx)))
+          (cond
+           (erp
 
 ; Erp is a context that we are ignoring in the message below.  Probably it is
 ; ctx anyhow, but if not, there isn't an obvious problem with ignoring it.
 
-          (trans-er ctx
-                    "~@0~|~%The above error indicates a problem with the form ~
-                     ~p1."
-                    msg x))
-         ((first-assoc-eq names (table-alist 'return-last-table wrld))
+            (trans-er ctx
+                      "~@0~|~%The above error indicates a problem with the ~
+                       form ~p1."
+                      msg x))
+           ((first-assoc-eq names (table-alist 'return-last-table wrld))
 
 ; What horrors may lie ahead, for example, with
 ; (flet ((ec-call1-raw ....)) (ec-call ...))?  The problem is that ec-call
@@ -5390,22 +5443,23 @@
 ; might want to flet ec-call1-raw; in that case, with a trust tag that person
 ; can also edit the code here!
 
-          (trans-er ctx
-                    "It is illegal for FLET to bind a symbol that is given ~
-                     special handling by ~x0.  The FLET-binding~#1~[ is~/s ~
-                     are~] thus illegal for ~&1.  See :DOC return-last-table."
-                    'return-last
-                    (intersection-eq
-                     names
-                     (strip-cars (table-alist 'return-last-table wrld)))))
-         (t
-          (trans-er-let*
-           ((flet-alist (translate11-flet-alist x fives stobjs-out bindings
-                                                known-stobjs flet-alist ctx wrld
-                                                state-vars)))
-           (translate11 (car (last x)) ; (nth 2 x) as of this writing
-                        stobjs-out bindings known-stobjs flet-alist x
-                        ctx wrld state-vars))))))))))
+            (trans-er ctx
+                      "It is illegal for FLET to bind a symbol that is given ~
+                       special handling by ~x0.  The FLET-binding~#1~[ is~/s ~
+                       are~] thus illegal for ~&1.  See :DOC ~
+                       return-last-table."
+                      'return-last
+                      (intersection-eq
+                       names
+                       (strip-cars (table-alist 'return-last-table wrld)))))
+           (t
+            (trans-er-let*
+             ((flet-alist (translate11-flet-alist x fives stobjs-out bindings
+                                                  known-stobjs flet-alist ctx wrld
+                                                  state-vars)))
+             (translate11 body
+                          stobjs-out bindings known-stobjs flet-alist x
+                          ctx wrld state-vars)))))))))))
 
 (defun translate11-mv-let (x stobjs-out bindings known-stobjs
                              local-stobj local-stobj-creator flet-alist

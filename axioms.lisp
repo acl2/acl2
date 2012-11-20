@@ -40737,16 +40737,28 @@
             (* x 2)))
     (mv (f 4) (g 5)))~/
 
-  General Form:
+  General Forms:
   (flet (def1 ... defk) body)
+  (flet (def1 ... defk) declare-form1 .. declare-formk body)
   ~ev[]
   where ~c[body] is a term, and each ~c[defi] is a definition as in ~ilc[defun]
-  but with the leading ~c[defun] symbol omitted.  ~l[defun].
+  but with the leading ~c[defun] symbol omitted.  ~l[defun].  If any
+  ~c[declare-formi] are supplied, then each must be of the form
+  ~c[(declare decl1 ... decln)], where each ~c[decli] is of the form
+  ~c[(inline g1 ... gm)] or ~c[(notinline g1 ... gm)], and each ~c[gi] is
+  defined by some ~c[defi].
+
+  The only effect of the declarations is to provide advice to the host Lisp
+  compiler.  The declarations are otherwise ignored by ACL2, so we mainly
+  ignore them in the discussion below.
+
   The innermost ~c[flet]-binding of a function symbol, ~c[f], above a call of
   ~c[f], is the one that provides the definition of ~c[f] for that call.  Note
   that ~c[flet] does not provide recursion.  Consider the following example.
   ~bv[]
+  ; Give a global definition of f:
   (defun f (x) (+ x 3))
+  ; Evaluate an expression using a local binding of f:
   (flet ((f (x) (cons x (f (1+ x)))))
     (f 4))
   ~ev[]
@@ -40800,10 +40812,12 @@
   ~ev[]
 
   Under the hood, ACL2 translates ~c[flet] bindings to ~ilc[lambda] expressions
-  (~pl[term]).  The following example illustrates this point.
+  (~pl[term]), throwing away the ~c[inline] and ~c[notinline] declarations (if
+  any).  The following example illustrates this point.
   ~bv[]
   ACL2 !>:trans (flet ((f (x) (cons x x))
                        (g (x y) (+ x y)))
+                  (declare (inline f))
                   (f (g 3 4)))
 
   ((LAMBDA (X) (CONS X X))

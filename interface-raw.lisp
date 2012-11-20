@@ -1168,10 +1168,10 @@
 ;    just macroexpand the just like we would any other macro.  We are not
 ;    sure why we ever thought we could handle it any other way.
 
-   ((eq (car x) 'flet) ; (flet ((fn1 ...) (fn2 ...) ...) body)
+   ((eq (car x) 'flet) ; (flet ((fn1 ...) (fn2 ...) ...) declare-form* body)
     (list 'flet
           (oneify-flet-bindings (cadr x) fns w)
-          (oneify (caddr x) (union-eq (strip-cars (cadr x)) fns) w)))
+          (oneify (car (last x)) (union-eq (strip-cars (cadr x)) fns) w)))
    ((eq (car x) 'translate-and-test)
     (oneify (caddr x) fns w))
    ((eq (car x) 'with-local-stobj)

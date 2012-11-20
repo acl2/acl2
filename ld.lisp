@@ -19722,6 +19722,9 @@
   argument, much like ~ilc[defstobj].  Thanks to Sol Swords for requesting this
   feature.
 
+  ~ilc[Flet] may now include ~c[inline] and ~c[notinline] declarations.  Thanks
+  to Jared Davis for requesting this feature.
+
   ~st[HEURISTIC IMPROVEMENTS]
 
   We obtained a substantial speedup ~-[] 13% observed for the regression suite,
