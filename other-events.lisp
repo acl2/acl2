@@ -34052,7 +34052,8 @@
   ~c[\"$NOTINLINE\"] and notinline.
 
   (3) No special treatment for inlining (or notinlining) is given for function
-  symbols locally defined by ~ilc[flet], except in the case of symbols
+  symbols locally defined by ~ilc[flet], with two exceptions: when explicitly
+  declared ~c[inline] or ~c[notinline] by the ~c[flet] form, and for symbols
   discussed in (1) and (2) above that, at some point in the current ACL2
   session, were defined as function symbols in ACL2 (even if not currently
   defined because of undoing or being ~il[local]).
