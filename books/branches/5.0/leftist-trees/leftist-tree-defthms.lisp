@@ -110,16 +110,16 @@ Theorems proving that the basic operations respect PROPER-LT~/~/~/")
 
 (local
  (defthmd proper-merge-lt-L3
-   (implies (and (consp (right-lt tree1))
+   (implies (and (consp (cadddr tree1))
                  (consp tree2)
-                 (proper-lt (right-lt tree1))
+                 (proper-lt (cadddr tree1))
                  (proper-lt tree2)
-                 (lexorder (root-lt tree1)
-                           (root-lt (right-lt tree1)))
-                 (lexorder (root-lt tree1)
-                           (root-lt tree2)))
-            (lexorder (root-lt tree1)
-                      (root-lt (merge-lt (right-lt tree1) tree2))))
+                 (lexorder (cadr tree1)
+                           (cadadr (cddr tree1)))
+                 (lexorder (cadr tree1)
+                           (cadr tree2)))
+            (lexorder (cadr tree1)
+                      (cadr (merge-lt (cadddr tree1) tree2))))
    :hints (("Goal"
             :use ((:instance proper-merge-lt-L1
                              (right_tree1 (cadddr tree1))
@@ -129,14 +129,14 @@ Theorems proving that the basic operations respect PROPER-LT~/~/~/")
 (local
  (defthmd proper-merge-lt-L4
    (implies (and (consp tree1)
-                 (consp (right-lt tree2))
+                 (consp (cadddr tree2))
                  (proper-lt tree1)
-                 (proper-lt (right-lt tree2))
-                 (not (lexorder (root-lt tree1)
-                                (root-lt tree2)))
-                 (lexorder (root-lt tree2) (root-lt (right-lt tree2))))
-            (lexorder (root-lt tree2)
-                      (root-lt (merge-lt tree1 (right-lt tree2)))))
+                 (proper-lt (cadddr tree2))
+                 (not (lexorder (cadr tree1)
+                                (cadr tree2)))
+                 (lexorder (cadr tree2) (cadadr (cddr tree2))))
+            (lexorder (cadr tree2)
+                      (cadr (merge-lt tree1 (cadddr tree2)))))
    :hints (("Goal"
             :use ((:instance proper-merge-lt-L2
                              (tree1 tree1)
