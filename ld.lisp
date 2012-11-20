@@ -19720,7 +19720,8 @@
 
   ~ilc[Defabsstobj] ~il[events] now take an optional ~c[:congruent-to] keyword
   argument, much like ~ilc[defstobj].  Thanks to Sol Swords for requesting this
-  feature.
+  feature and for suggesting a very nice optimization that avoids the need to
+  prove additional lemmas.
 
   ~ilc[Flet] may now include ~c[inline] and ~c[notinline] declarations.  Thanks
   to Jared Davis for requesting this feature.

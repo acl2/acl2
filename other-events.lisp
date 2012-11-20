@@ -22663,8 +22663,15 @@
   stobj (not merely congruent concrete stobjs), and their ~c[:EXPORTS] fields
   should have the same length and also correspond, as follows: the ith export
   of each should have the same ~c[:LOGIC] and ~c[:EXEC] symbols.  ~l[defstobj]
-  for more about congruent stobjs.  Note the if two names are congruent, then
+  for more about congruent stobjs.  Note that if two names are congruent, then
   they are either both ordinary stobjs or both abstract stobjs.
+
+  An important aspect of the ~c[congruent-to] parameter is that if it is not
+  ~c[nil], then the checks for lemmas ~-[] ~c[{CORRESPONDENCE}],
+  ~c[{GUARD-THM}], and ~c[{PRESERVED}] ~-[] are omitted.  Thus, the values of
+  keyword ~c[:CORR-FN], and the values of keywords ~c[:CORRESPONDENCE],
+  ~c[:GUARD-THM], and ~c[:PRESERVED] in each export (as we discuss next), are
+  irrelevant; they are not inferred and they need not be supplied.
 
   The value of ~c[:EXPORTS] is a non-empty true list.  Each ~c[ei] is a
   function spec (for an exported function).  The valid keywords are ~c[:LOGIC],
@@ -23285,8 +23292,94 @@
               (declare (ignore unify-subst))
               ans)))
 
-(defun chk-defabsstobj-method (method st st$c st$ap corr-fn missing ctx wrld
-                                      state)
+(defun chk-defabsstobj-method-lemmas (method st st$c st$ap corr-fn
+                                             missing wrld state)
+  (let ((correspondence (access absstobj-method method :CORRESPONDENCE))
+        (preserved (access absstobj-method method :PRESERVED)))
+    (cond
+     ((null correspondence) ; recognizer method
+      (assert$ (null preserved)
+               (value (cons missing wrld))))
+     (t
+      (let* ((formals (access absstobj-method method :FORMALS))
+             (guard-pre (access absstobj-method method :GUARD-PRE))
+             (logic (access absstobj-method method :LOGIC))
+             (exec (access absstobj-method method :EXEC))
+             (expected-corr-formula
+              (absstobj-correspondence-formula
+               logic exec corr-fn formals guard-pre st st$c wrld))
+             (old-corr-formula (formula correspondence nil wrld))
+             (tuple (cond
+                     ((null old-corr-formula)
+                      `(,correspondence
+                        ,expected-corr-formula))
+                     ((one-way-unify-p old-corr-formula
+                                       expected-corr-formula)
+                      nil)
+                     (t `(,correspondence
+                          ,expected-corr-formula
+                          ,@old-corr-formula))))
+             (missing (cond (tuple (cons tuple missing))
+                            (t missing)))
+             (guard-thm-p (access absstobj-method method :GUARD-THM-P))
+             (tuple
+              (cond
+               ((eq guard-thm-p :SKIP) nil)
+               (t
+                (let* ((expected-guard-thm-formula
+                        (make-implication
+                         (cons (fcons-term* corr-fn st$c st)
+                               (flatten-ands-in-lit guard-pre))
+                         (conjoin (flatten-ands-in-lit
+                                   (guard exec t wrld)))))
+                       (taut-p
+                        (and (null guard-thm-p)
+                             (tautologyp expected-guard-thm-formula
+                                         wrld)))
+                       (guard-thm (access absstobj-method method
+                                          :GUARD-THM))
+                       (old-guard-thm-formula
+                        (and (not taut-p) ; optimization
+                             (formula guard-thm nil wrld))))
+                  (cond
+                   (taut-p nil)
+                   ((null old-guard-thm-formula)
+                    `(,guard-thm ,expected-guard-thm-formula))
+                   ((one-way-unify-p old-guard-thm-formula
+                                     expected-guard-thm-formula)
+                    nil)
+                   (t `(,guard-thm
+                        ,expected-guard-thm-formula
+                        ,@old-guard-thm-formula)))))))
+             (missing (cond (tuple (cons tuple missing))
+                            (t missing))))
+        (cond
+         ((null preserved)
+          (value (cons missing wrld)))
+         (t
+          (let* ((expected-preserved-formula
+                  (absstobj-preserved-formula
+                   logic exec formals guard-pre st st$c st$ap
+                   wrld))
+                 (old-preserved-formula
+                  (formula preserved nil wrld))
+                 (tuple
+                  (cond
+                   ((null old-preserved-formula)
+                    `(,preserved ,expected-preserved-formula))
+                   ((one-way-unify-p old-preserved-formula
+                                     expected-preserved-formula)
+                    nil)
+                   (t
+                    `(,preserved
+                      ,expected-preserved-formula
+                      ,@old-preserved-formula))))
+                 (missing (cond (tuple (cons tuple missing))
+                                (t missing))))
+            (value (cons missing wrld))))))))))
+
+(defun chk-defabsstobj-method (method st st$c st$ap corr-fn congruent-to
+                                      missing ctx wrld state)
 
 ; The input, missing, is a list of tuples (name expected-event . old-event),
 ; where old-event may be nil; see chk-acceptable-defabsstobj.  We return a pair
@@ -23298,101 +23391,20 @@
                      (chk-all-but-new-name name ctx 'function wrld state)
                      (chk-just-new-name name 'function nil ctx wrld state))))
       (cond
-       ((member-eq (ld-skip-proofsp state)
-                   '(include-book include-book-with-locals))
+       ((or congruent-to
+            (member-eq (ld-skip-proofsp state)
+                       '(include-book include-book-with-locals)))
 
 ; We allow the :correspondence, :preserved, and :guard-thm theorems to be
 ; local.
 
         (value (cons missing wrld)))
-       (t
-        (let ((correspondence (access absstobj-method method :CORRESPONDENCE))
-              (preserved (access absstobj-method method :PRESERVED)))
-          (cond
-           ((null correspondence) ; recognizer method
-            (assert$ (null preserved)
-                     (value (cons missing wrld))))
-           (t
-            (let* ((formals (access absstobj-method method :FORMALS))
-                   (guard-pre (access absstobj-method method :GUARD-PRE))
-                   (logic (access absstobj-method method :LOGIC))
-                   (exec (access absstobj-method method :EXEC))
-                   (expected-corr-formula
-                    (absstobj-correspondence-formula
-                     logic exec corr-fn formals guard-pre st st$c wrld))
-                   (old-corr-formula (formula correspondence nil wrld))
-                   (tuple (cond
-                           ((null old-corr-formula)
-                            `(,correspondence
-                              ,expected-corr-formula))
-                           ((one-way-unify-p old-corr-formula
-                                             expected-corr-formula)
-                            nil)
-                           (t `(,correspondence
-                                ,expected-corr-formula
-                                ,@old-corr-formula))))
-                   (missing (cond (tuple (cons tuple missing))
-                                  (t missing)))
-                   (guard-thm-p (access absstobj-method method :GUARD-THM-P))
-                   (tuple
-                    (cond
-                     ((eq guard-thm-p :SKIP) nil)
-                     (t
-                      (let* ((expected-guard-thm-formula
-                              (make-implication
-                               (cons (fcons-term* corr-fn st$c st)
-                                     (flatten-ands-in-lit guard-pre))
-                               (conjoin (flatten-ands-in-lit
-                                         (guard exec t wrld)))))
-                             (taut-p
-                              (and (null guard-thm-p)
-                                   (tautologyp expected-guard-thm-formula
-                                               wrld)))
-                             (guard-thm (access absstobj-method method
-                                                :GUARD-THM))
-                             (old-guard-thm-formula
-                              (and (not taut-p) ; optimization
-                                   (formula guard-thm nil wrld))))
-                        (cond
-                         (taut-p nil)
-                         ((null old-guard-thm-formula)
-                          `(,guard-thm ,expected-guard-thm-formula))
-                         ((one-way-unify-p old-guard-thm-formula
-                                           expected-guard-thm-formula)
-                          nil)
-                         (t `(,guard-thm
-                              ,expected-guard-thm-formula
-                              ,@old-guard-thm-formula)))))))
-                   (missing (cond (tuple (cons tuple missing))
-                                  (t missing))))
-              (cond
-               ((null preserved)
-                (value (cons missing wrld)))
-               (t
-                (let* ((expected-preserved-formula
-                        (absstobj-preserved-formula
-                         logic exec formals guard-pre st st$c st$ap
-                         wrld))
-                       (old-preserved-formula
-                        (formula preserved nil wrld))
-                       (tuple
-                        (cond
-                         ((null old-preserved-formula)
-                          `(,preserved ,expected-preserved-formula))
-                         ((one-way-unify-p old-preserved-formula
-                                           expected-preserved-formula)
-                          nil)
-                         (t
-                          `(,preserved
-                            ,expected-preserved-formula
-                            ,@old-preserved-formula))))
-                       (missing (cond (tuple (cons tuple missing))
-                                      (t missing))))
-                  (value (cons missing wrld))))))))))))))
+       (t (chk-defabsstobj-method-lemmas method st st$c st$ap corr-fn
+                                         missing wrld state))))))
 
 (defun chk-acceptable-defabsstobj1 (st st$c st$ap corr-fn fields
-                                       types see-doc ctx wrld state methods
-                                       missing)
+                                       types congruent-to see-doc ctx wrld
+                                       state methods missing)
 
 ; See chk-acceptable-defabsstobj (whose return value is computed by the present
 ; function) for the form of the result.  Note that fields begins with the
@@ -23415,8 +23427,8 @@
        (er soft erp "~@0" method))
       (t
        (er-let* ((missing/wrld
-                  (chk-defabsstobj-method method st st$c st$ap corr-fn missing
-                                          ctx wrld state)))
+                  (chk-defabsstobj-method method st st$c st$ap corr-fn
+                                          congruent-to missing ctx wrld state)))
          (let ((missing (car missing/wrld))
                (wrld (cdr missing/wrld)))
            (cond ((assoc-eq (access absstobj-method method :name)
@@ -23430,7 +23442,7 @@
                      st st$c st$ap corr-fn
                      (cdr fields)
                      (cdr types)
-                     see-doc ctx wrld state
+                     congruent-to see-doc ctx wrld state
                      (cons method methods)
                      missing)))))))))))
 
@@ -23509,7 +23521,8 @@
 
                                     (list* recognizer creator exports)
                                     (list* :RECOGNIZER :CREATOR nil)
-                                    see-doc ctx wrld2 state nil nil))))))
+                                    congruent-to see-doc ctx wrld2 state nil
+                                    nil))))))
 
 (defun defabsstobj-axiomatic-defs (st$c methods)
   (cond
@@ -23705,15 +23718,17 @@
                                            (t msg))
                                      ctx wrld state-vars)))))
 
-(defun chk-defabsstobj-guards (methods ctx wrld state)
-  (let ((msg (chk-defabsstobj-guards1 methods nil ctx wrld
-                                      (default-state-vars t))))
-    (cond (msg (er soft ctx
-                   "One or more guards of exported functions fail to obey ~
-                    single-threadedness restrictions.  See :DOC defabsstobj.  ~
-                    See below for details.~|~%~@0~|~%"
-                   msg))
-          (t (value nil)))))
+(defun chk-defabsstobj-guards (methods congruent-to ctx wrld state)
+  (cond
+   (congruent-to (value nil)) ; no need to check!
+   (t (let ((msg (chk-defabsstobj-guards1 methods nil ctx wrld
+                                          (default-state-vars t))))
+        (cond (msg (er soft ctx
+                       "At least one guard of an exported function fails to ~
+                        obey single-threadedness restrictions.  See :DOC ~
+                        defabsstobj.  See below for details.~|~%~@0~|~%"
+                       msg))
+              (t (value nil)))))))
 
 (defun make-absstobj-logic-exec-pairs (methods)
   (cond ((endp methods) nil)
@@ -23912,7 +23927,8 @@
                         (pprogn
                          (set-w 'extension wrld3 state)
                          (er-progn
-                          (chk-defabsstobj-guards methods ctx wrld3 state)
+                          (chk-defabsstobj-guards methods congruent-to ctx
+                                                  wrld3 state)
 
 ; The call of install-event below follows closely the corresponding call in
 ; defstobj-fn.  In particular, see the comment in defstobj-fn about a "cheat".
