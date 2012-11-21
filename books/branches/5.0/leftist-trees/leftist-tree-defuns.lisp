@@ -17,7 +17,6 @@
 |#
 
 (in-package "ACL2")
-(deflabel leftist-tree-defuns.lisp)
 
 (deflabel leftist-trees :doc ":DOC-SECTION leftist-trees
 
