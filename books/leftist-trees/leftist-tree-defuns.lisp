@@ -17,7 +17,6 @@
 |#
 
 (in-package "ACL2")
-(deflabel leftist-tree-defuns.lisp)
 
 (deflabel leftist-trees :doc ":DOC-SECTION leftist-trees
 
@@ -240,7 +239,7 @@ get the minimum element of a leftist tree~/~/
 Get the minimum element of a nonempty tree. Assuming the tree in
 question is PROPER-LT, this is just the root of the tree.~/"
   (cond ((is-empty-lt tree) nil)
-	(t (root-lt tree))))
+        (t (root-lt tree))))
 
 (defun delete-min-lt (tree)
   ":doc-section leftist-tree-ops
@@ -248,7 +247,7 @@ delete the minimum element of a leftist tree~/~/
 Delete the minimum element of a nonempty tree. This is accomplisghed
 by simply merging the two subtrees.~/"
   (cond ((is-empty-lt tree) nil)
-	(t (merge-lt (left-lt tree) (right-lt tree)))))
+        (t (merge-lt (left-lt tree) (right-lt tree)))))
 
 (defun build-lt (l)
 ":doc-section leftist-tree-ops
