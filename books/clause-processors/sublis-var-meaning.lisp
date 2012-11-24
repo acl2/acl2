@@ -19,6 +19,7 @@
 
 (in-package "ACL2")
 
+(include-book "system/sublis-var" :dir :system)
 (include-book "tools/flag" :dir :system)
 (include-book "tools/mv-nth" :dir :system)
 (include-book "tools/defevaluator-fast" :dir :system)
