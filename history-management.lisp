@@ -7246,25 +7246,58 @@
        (logical-name)
        (let ((wrld (w state))
              (channel (standard-co state)))
-         (er-let* ((ev-wrld (er-decode-logical-name logical-name wrld :pe
-                                                    state))
-                   (cmd-wrld (superior-command-world ev-wrld wrld :pe state)))
+         (cond
+          ((and (symbolp logical-name)
+                (not (eq logical-name :here))
+                (eql (getprop logical-name 'absolute-event-number nil
+                              'current-acl2-world wrld)
+                     0))
+
+; This special case avoids printing something like the following, which isn't
+; very useful.
+
+;       -7479  (ENTER-BOOT-STRAP-MODE :UNIX)
+
+; We make the change here rather than in pe-fn1 because don't want to mess
+; around at the level of ldd structures.  It's a close call.
+
+; We don't make the corresponding change to pc-fn.  With pe, one is asking for
+; an event, which in the case of a function is probably a request for a
+; definition.  We want to serve the intention of that request.  With pc, one is
+; asking for the full command, so we give it to them.
+
+           (pprogn
+            (fms "~x0 is built into ACL2, without a defining event.~#1~[  See ~
+                  :DOC ~x0.~/~]~|"
+                 (list (cons #\0 logical-name)
+                       (cons #\1 (if (assoc-eq logical-name
+                                               (global-val 'documentation-alist
+                                                           wrld))
+                                     0
+                                   1)))
+                 channel state nil)
+            (value :invisible)))
+          (t
+           (er-let* ((ev-wrld (er-decode-logical-name logical-name wrld :pe
+                                                      state))
+                     (cmd-wrld (superior-command-world ev-wrld wrld :pe
+                                                       state)))
+             (pprogn
+              (pe-fn1 wrld channel ev-wrld cmd-wrld state)
+              (let ((new-ev-wrld (and (not (eq logical-name :here))
+                                      (decode-logical-name
+                                       logical-name
+                                       (scan-to-event (cdr ev-wrld))))))
+                (if (null new-ev-wrld)
+                    (value :invisible)
                   (pprogn
-                   (pe-fn1 wrld channel ev-wrld cmd-wrld state)
-                   (let ((new-ev-wrld (and (not (eq logical-name :here))
-                                           (decode-logical-name
-                                            logical-name
-                                            (scan-to-event (cdr ev-wrld))))))
-                     (if (null new-ev-wrld)
-                         (value :invisible)
-                       (pprogn
-                        (fms "Additional events for the logical name ~x0:~%"
-                             (list (cons #\0 logical-name))
-                             channel
-                             state
-                             nil)
-                        (pe-fn2 logical-name wrld channel new-ev-wrld
-                                state)))))))))
+                   (fms "Additional events for the logical name ~x0:~%"
+                        (list (cons #\0 logical-name))
+                        channel
+                        state
+                        nil)
+                   (pe-fn2 logical-name wrld channel new-ev-wrld
+                           state)))))))))))
 
 (defmacro pe (logical-name)
 
@@ -9097,8 +9130,8 @@
   (cond
    ((symbolp name)
     (let ((doc-tuple
-           (assoc-equal name
-                        (global-val 'documentation-alist (w state)))))
+           (assoc-eq name
+                     (global-val 'documentation-alist (w state)))))
       (cond (doc-tuple doc-tuple)
             ((not (equal (symbol-package-name name)
                          "ACL2"))
@@ -13899,8 +13932,8 @@
                   (er@par soft ctx
                     "It is illegal to substitute for the non-variable ~x0.  ~
                      It fails to be a variable because ~@1.  See :DOC name ~
-                     and the discussion of :instance in :MORE-DOC ~
-                     lemma-instance."
+                     and see :DOC lemma-instance, in particular the ~
+                     discussion of :instance."
                     var
                     (or str "LEGAL-VARIABLEP says so, but FIND-FIRST-BAD-ARG ~
                              can't see why"))))

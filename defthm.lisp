@@ -11469,18 +11469,35 @@
                       (hyps equiv fn args body ttree)
                       (destructure-definition corollary nil nil wrld nil)
                       (declare (ignore hyps equiv args ttree))
-                      (let ((clique (cond ((null (cadr alist)) nil)
-                                          ((atom (cadr alist)) (list (cadr alist)))
-                                          (t (cadr alist)))))
+                      (let ((clique
+                             (cond ((null (cadr alist)) nil)
+                                   ((atom (cadr alist)) (list (cadr alist)))
+                                   (t (cadr alist)))))
                         (cond ((not (and (all-function-symbolps clique wrld)
                                          (no-duplicatesp-equal clique)))
-                               (er soft ctx
-                                   "The :CLIQUE of a :DEFINITION must be a ~
-                                    truelist of function symbols (containing ~
-                                    no duplications) or else a single ~
-                                    function symbol.  ~x0 is neither.  See ~
-                                    :DOC definition."
-                                   (cadr alist)))
+                               (mv-let
+                                (flg lst)
+                                (eliminate-macro-aliases (cadr alist)
+                                                         (macro-aliases wrld)
+                                                         wrld)
+                                (er soft ctx
+                                    "The :CLIQUE of a :DEFINITION must be a ~
+                                     truelist of function symbols (containing ~
+                                     no duplications) or else a single ~
+                                     function symbol.  ~x0 is neither.~@1  ~
+                                     See :DOC definition."
+                                    (cadr alist)
+                                    (cond ((eq flg :error) "")
+                                          (t (msg "  Note that it is illegal ~
+                                                   to use ~v0 here, because ~
+                                                   we require function ~
+                                                   symbols, not merely macros ~
+                                                   that are aliases for ~
+                                                   function symbols (see :DOC ~
+                                                   macro-aliases-table)."
+                                                  (set-difference-equal
+                                                   (cadr alist)
+                                                   lst)))))))
                               ((and (ffnnamep fn body)
                                     (not (member-eq fn clique)))
                                (er soft ctx

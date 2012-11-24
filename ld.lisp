@@ -19675,6 +19675,12 @@
   to the fact that ~ilc[append] maps to ~ilc[binary-append] in the
   ~ilc[macro-aliases-table].
 
+  When ~c[:]~c[pe] is applied to a built-in function that does not have a
+  defining event, such as ~ilc[symbolp], ~c[:pe] now gives more useful output
+  that points to the documentation instead of printing a call of
+  ~c[ENTER-BOOT-STRAP-MODE].  Thanks to Anthony Knape for bringing this issue
+  to our attention.
+
   ~st[NEW FEATURES]
 
   Among the new features for system hackers are analogues of system function
@@ -19784,6 +19790,10 @@
 
   Fixed a bug that sometimes caused the times displayed in the summary for
   ~ilc[certify-book] to be smaller than the actual times.
+
+  Fixed a bug in the ~il[guard]s to system functions ~c[fmt-char] and
+  ~c[fmt-var], which are no longer ~c[:]~ilc[logic]-mode, guard-verified
+  functions.
 
   ~st[CHANGES AT THE SYSTEM LEVEL]
 

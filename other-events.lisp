@@ -12113,10 +12113,10 @@
             (include-book-er
              file1 file2
              (cons "~x0 was apparently certified with ~sa.  The inclusion of ~
-                    this book in the current ACL2 may render this ACL2 sesion ~
-                    unsound!  We recommend you recertify the book with the ~
-                    current version, ~sb.  See :DOC version.  No compiled ~
-                    file will be loaded with this book."
+                    this book in the current ACL2 may render this ACL2 ~
+                    session unsound!  We recommend you recertify the book ~
+                    with the current version, ~sb.  See :DOC version.  No ~
+                    compiled file will be loaded with this book."
                    (list (cons #\a version)
                          (cons #\b (f-get-global 'acl2-version state))))
              :uncertified-okp
