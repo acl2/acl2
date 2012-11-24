@@ -27323,16 +27323,13 @@
     CLEAR-MEMOIZE-TABLE FAST-ALIST-FREE HONS-EQUAL HONS-RESIZE-FN HONS-GET HONS
     HONS-SHRINK-ALIST! MEMOIZE-SUMMARY CLEAR-MEMOIZE-STATISTICS
     make-fast-alist
-
     serialize-read-fn serialize-write-fn
     read-object-suppress
-
     assign-lock
     throw-or-attach-call
-
     oracle-apply oracle-apply-raw
-
     time-tracker-fn
+    gc-verbose-fn
   ))
 
 (defconst *primitive-macros-with-raw-code*
@@ -46888,9 +46885,51 @@ Lisp definition."
   is up to the user to pass in the right arguments, although we may do some
   rudimentary checks.
 
-  This function always returns ~c[nil].~/~/"
+  Also ~pl[gc-verbose].
+
+  Evaluation of a call of this macro always returns ~c[nil].~/~/"
 
   `(gc$-fn ',args))
+
+#-acl2-loop-only
+(defun-one-output gc-verbose-fn (arg)
+
+; For a related function, see gc$-fn.
+
+  (let ((arg (and arg t))) ; coerce to Boolean
+    #+ccl (ccl::gc-verbose arg arg)
+    #+cmu (setq ext:*gc-verbose* arg)
+    #+gcl (si:*notify-gbc* arg)
+    #-(or ccl cmu gcl)
+    (format t "GC-VERBOSE is not supported in this Common Lisp.~%Contact the ~
+               ACL2 developers if you would like to help add such support.")
+    nil))
+
+#+acl2-loop-only
+(defun gc-verbose-fn (arg)
+  (declare (ignore arg)
+           (xargs :guard t))
+  nil)
+
+(defmacro gc-verbose (arg)
+  ":Doc-Section Miscellaneous
+
+  control printing from the garbage collector~/
+
+  Garbage collection (gc) is performed by every Lisp implementation; ~pl[gc$].
+  However, different ACL2 builds might see more or fewer messages.  This macro
+  is intended to provide an interface for controlling the verbosity, which is
+  off if the argument evaluates to ~c[nil] and otherwise is on.
+
+  The above functionality is only supported for the following host Common Lisp
+  implementations: CCL, CMUCL, and GCL.  Otherwise, the only effect of this
+  macro is to print a notice that it is not supported.  You are welcome to
+  contact the ACL2 developers if you would like to help in adding such support
+  for another host Common Lisp.
+
+  Evaluation of a call of this macro always returns ~c[nil].~/~/"
+
+  `(gc-verbose-fn ,arg))
 
 (defun get-wormhole-status (name state)
 

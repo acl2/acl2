@@ -19732,6 +19732,10 @@
   ~ilc[Flet] may now include ~c[inline] and ~c[notinline] declarations.  Thanks
   to Jared Davis for requesting this feature.
 
+  The utility ~c[gc-verbose] controls printing of messages by the garbage
+  collector, for certain host Lisps.  ~l[gc-verbose].  Thanks to Shilpi Goel
+  for requesting this utility.
+
   ~st[HEURISTIC IMPROVEMENTS]
 
   We obtained a substantial speedup ~-[] 13% observed for the regression suite,
