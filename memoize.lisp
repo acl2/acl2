@@ -1132,3 +1132,11 @@
 ; ? (honsp (hons-shrink-alist '((a . b) (a . b2)) nil))
 ; NIL
 ; ? 
+
+; Some centaur/ books put entries in *never-profile-ht*.  In order to allow
+; those books to certify in vanilla ACL2, we define a default value for that
+; variable here.
+
+#+(and (not hons) (not acl2-loop-only))
+(defparameter *never-profile-ht*
+  (make-hash-table :test 'eq))

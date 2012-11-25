@@ -29911,7 +29911,14 @@
                       different guards."
                      str condition key))
                 (t t)))))))
-      (prog2$
+      (progn$
+       (or (global-val 'hons-enabled wrld)
+           (warning$-cw (if val 'memoize 'unmemoize)
+                        "The ~#0~[un~/~]memoization request for ~x1 is being ~
+                         ignored because this ACL2 executable is not ~
+                         hons-enabled."
+                        (if val 1 0)
+                        key))
        (and val
             (let ((stobjs-in (stobjs-in key wrld)))
               (cond
@@ -29934,11 +29941,7 @@
 
 (table memoize-table nil nil
        :guard
-       #+hons (memoize-table-chk key val world)
-       #-hons (er hard 'memoize-table
-                  "It is illegal to modify memoize-table except in a ~
-                   hons-enabled ACL2 executable.  See :DOC ~
-                   hons-and-memoization."))
+       (memoize-table-chk key val world))
 
 ; The following code supports print-gv.
 

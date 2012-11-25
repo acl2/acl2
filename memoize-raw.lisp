@@ -3620,6 +3620,15 @@ the calls took.")
 
 ; WATCH-IFS forces INLINE.
 
+  #-hons
+  (return-from memoize-fn
+               (progn (when (not (zerop *ld-level*))
+                        (warning$ 'memoize nil
+                                  "No change for function ~x0: Memoization ~
+                                   requests are ignored in this ACL2 ~
+                                   executable because it is not hons-enabled."
+                                  fn))
+                      fn))
   (when watch-ifs (setq inline t))
 
   (when (equal condition *nil*)
@@ -4242,6 +4251,15 @@ the calls took.")
   fn)
 
 (defn1 unmemoize-fn (fn)
+  #-hons
+  (return-from unmemoize-fn
+               (progn (when (not (zerop *ld-level*))
+                        (warning$ 'unmemoize nil
+                                  "No change for function ~x0: Unmemoization ~
+                                   requests are ignored in this ACL2 ~
+                                   executable because it is not hons-enabled."
+                                  fn))
+                      fn))
   (unwind-mch-lock
    (maybe-untrace! fn) ; See the comment about Memoization in trace$-def.
    (let* ((ma *memoize-call-array*)

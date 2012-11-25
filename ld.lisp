@@ -19570,6 +19570,12 @@
 
 ; Replaced "data base" and "data-base" by "database".
 
+; The following change supports certification of books/centaur/ books in ACL2,
+; not just ACL2(h).  In order to eliminate errors upon reference to
+; *never-profile-ht* in raw Lisp code such as is found in
+; books/centaur/vl/util/print-htmlencode.lisp, *never-profile-ht* is now
+; defined in ACL2.
+
   :doc
   ":Doc-Section release-notes
 
@@ -19680,6 +19686,9 @@
   that points to the documentation instead of printing a call of
   ~c[ENTER-BOOT-STRAP-MODE].  Thanks to Anthony Knape for bringing this issue
   to our attention.
+
+  The macros ~ilc[memoize] and ~ilc[unmemoize] now cause a warning rather than
+  an error in ACL2 (and work as before in ACL2(h)).
 
   ~st[NEW FEATURES]
 
