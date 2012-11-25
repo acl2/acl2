@@ -149,6 +149,7 @@
            acc)))
 
 (defttag count-branches-to)
+#+hons
 (progn!
  (set-raw-mode t)
  (defparameter *count-branches-to-memo-table*

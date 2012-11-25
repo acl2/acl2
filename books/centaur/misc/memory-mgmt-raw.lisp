@@ -26,6 +26,7 @@
 
 (defttag memory-mgmt)
 
+#+hons
 (include-raw "hons-analyze-memory-raw.lsp")
 
 

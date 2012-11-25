@@ -49,6 +49,7 @@
         (er hard? '*alu16* "Failed to produce a good esim module")))
     esim))
 
+#+hons ; too slow without hons
 (defstv alu16-test-vector
   :mod *alu16*
   :inputs '(("opcode" op)
@@ -79,11 +80,14 @@
      res))
 
 (defmacro alu16-thm (name &key opcode spec (g-bindings '(alu16-default-bindings)))
+  #+hons ; too slow without hons
   `(def-gl-thm ,name
      :hyp (and (alu16-test-vector-autohyps)
                (equal op ,opcode))
      :concl (equal (alu16-basic-result) ,spec)
-     :g-bindings ,g-bindings))
+     :g-bindings ,g-bindings)
+  #-hons (declare (ignore name opcode spec g-bindings))
+  #-hons '(value-triple :skipping-alu16-thm))
 
 (alu16-thm alu16-plus-correct
            :opcode *op-plus*
@@ -132,6 +136,7 @@
            :opcode *op-count*
            :spec (buggy-logcount a))
 
+#+hons ; needs missing events above (too slow without hons)
 (def-gl-thm alu16-mult-partially-correct
   :hyp (and (alu16-test-vector-autohyps)
             (equal op *op-mult*)

@@ -59,7 +59,7 @@
   (vl::vl-module->esim *counter-vl*))
 
 
-
+#+hons ; too slow without hons
 (defstv counter-run         ;; name for this test vector
   :mod *counter*            ;; the module this vector pertains to
 
@@ -156,6 +156,7 @@ centaur/README.html if you don't know where to look.</p>")
 ; Lets do some proofs.  I think of this as, "output 4 is correct, assuming
 ; there are no resets."
 
+#+hons ; needs defstv above (which is too slow without hons)
 (def-gl-thm counter-output4-correct-unless-reset
   :hyp (and (counter-run-autohyps)
             (< init 10) ;; note that this hyp is necessary!
