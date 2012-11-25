@@ -22646,13 +22646,16 @@
   keywords are ~c[:LOGIC] and ~c[:EXEC].  The default for ~c[recognizer] is
   obtained by adding the suffix ~c[\"P\"] to ~c[name].  The default value for
   ~c[:LOGIC] is formed by adding the suffix ~c[\"$AP\"] to ~c[recognizer]; for
-  ~c[:EXEC], by adding the suffix ~c[\"$CP\"].
+  ~c[:EXEC], by adding the suffix ~c[\"$CP\"].  The ~c[:EXEC] function must be
+  the recognizer for the specified ~c[:CONCRETE] stobj.
 
   ~c[Creator] is a function spec (for the creator function).  The valid
   keywords are ~c[:LOGIC] and ~c[:EXEC].  The default for ~c[creator] is
   obtained by adding the prefix ~c[\"CREATE-\"] to ~c[name].  The default value
   for ~c[:LOGIC] is formed by adding the suffix ~c[\"$A\"] to ~c[creator]; for
-  ~c[:EXEC], by adding the suffix ~c[\"$C\"].
+  ~c[:EXEC], by adding the suffix ~c[\"$C\"].  The ~c[:CREATOR] function must
+  be the creator for the specified ~c[:CONCRETE] stobj, as ACL2 checks that the
+  ~c[:CREATOR] function takes no arguments and returns the ~c[:CONCRETE] stobj.
 
   ~c[Corr-fn] is a known function symbol that takes two arguments (for the
   correspondence theorems).

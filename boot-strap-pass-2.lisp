@@ -963,141 +963,6 @@
   :cited-by theory-functions")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; Define checker for system-verify-guards
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(verify-termination-boot-strap safe-access-command-tuple-form) ; and guards
-
-(defun pair-fns-with-measured-subsets (fns wrld acc)
-  (declare (xargs :guard (and (symbol-listp fns)
-                              (plist-worldp wrld)
-                              (true-listp acc))))
-  (cond ((endp fns) (reverse acc))
-        (t (pair-fns-with-measured-subsets
-            (cdr fns)
-            wrld
-            (cons (let* ((fn (car fns))
-                         (justification (getprop fn 'justification nil
-                                                 'current-acl2-world wrld))
-                         (ms (and (consp justification) ; for guard
-                                  (consp (cdr justification)) ; for guard
-                                  (access justification justification :subset))))
-                    (cons fn ms))
-                  acc)))))
-
-(defun new-verify-guards-fns1 (wrld installed-wrld acc)
-  (declare (xargs :guard (and (plist-worldp wrld)
-                              (plist-worldp installed-wrld)
-                              (symbol-listp acc))))
-  (cond ((or (endp wrld)
-             (and (eq (caar wrld) 'command-landmark)
-                  (eq (cadar wrld) 'global-value)
-                  (equal (safe-access-command-tuple-form (cddar wrld))
-                         '(exit-boot-strap-mode))))
-         (pair-fns-with-measured-subsets
-          (strict-merge-sort-symbol-< acc)
-          installed-wrld
-          nil))
-        ((and (eq (cadar wrld) 'symbol-class)
-              (eq (cddar wrld) :COMMON-LISP-COMPLIANT)
-              (getprop (caar wrld) 'predefined nil 'current-acl2-world
-                       installed-wrld))
-         (new-verify-guards-fns1 (cdr wrld)
-                                 installed-wrld
-                                 (cons (caar wrld) acc)))
-        (t (new-verify-guards-fns1 (cdr wrld) installed-wrld acc))))
-
-(defun new-verify-guards-fns (state)
-
-; It is important for performance that this function be guard-verified, because
-; it is called inside an assert-event form in chk-new-verified-guards, which
-; causes evaluation to be in safe-mode and would cause evaluation of
-; plist-worldp on behalf of guard-checking for new-verify-guards-fns1.
-
-  (declare (xargs :stobjs state))
-  (let ((wrld (w state)))
-    (new-verify-guards-fns1 wrld wrld nil)))
-
-(defconst *system-verify-guards-alist*
-
-; Each cdr was produced by evaluating
-; (new-verify-guards-fns (w state) (w state) nil)
-; after including the book indicated in the car, e.g.,
-; (include-book "system/top" :dir :system).
-; Each entry is of the form (fn . measured-subset).
-
-  '(("system/top"
-     (CONS-TERM)
-     (CONS-TERM1)
-     (CONS-TERM1-MV2)
-     (DUMB-NEGATE-LIT)
-     (FETCH-DCL-FIELD)
-     (FETCH-DCL-FIELDS LST)
-     (FETCH-DCL-FIELDS1 LST)
-     (FETCH-DCL-FIELDS2 KWD-LIST)
-     (META-EXTRACT-CONTEXTUAL-FACT)
-     (META-EXTRACT-GLOBAL-FACT)
-     (META-EXTRACT-RW+-TERM)
-     (MISSING-FMT-ALIST-CHARS)
-     (MISSING-FMT-ALIST-CHARS1 CHAR-TO-TILDE-S-STRING-ALIST)
-     (PLAUSIBLE-DCLSP LST)
-     (PLAUSIBLE-DCLSP1 LST)
-     (QUOTE-LISTP L)
-     (STRIP-DCLS LST)
-     (STRIP-DCLS1 LST)
-     (STRIP-KEYWORD-LIST LST)
-     (SUBCOR-VAR FORM)
-     (SUBCOR-VAR-LST FORMS)
-     (SUBCOR-VAR1 VARS)
-     (SUBLIS-VAR)
-     (SUBLIS-VAR-LST)
-     (SUBLIS-VAR1 FORM)
-     (SUBLIS-VAR1-LST L)
-     (SUBST-EXPR)
-     (SUBST-EXPR-ERROR)
-     (SUBST-EXPR1 TERM)
-     (SUBST-EXPR1-LST ARGS)
-     (SUBST-VAR FORM)
-     (SUBST-VAR-LST L))))
-
-(defconst *len-system-verify-guards-alist*
-  (length *system-verify-guards-alist*))
-
-(defmacro chk-new-verified-guards (n)
-  (cond
-   ((or (not (natp n))
-        (> n *len-system-verify-guards-alist*))
-    `(er soft 'chk-new-verified-guards
-         "The index ~x0 is not a valid index for *system-verify-guards-alist*."
-         ',n))
-   ((eql n *len-system-verify-guards-alist*)
-    '(value-triple :CHK-NEW-VERIFIED-GUARDS-COMPLETE))
-   (t
-    (let* ((pair (nth n *system-verify-guards-alist*)) 
-           (user-book-name (car pair))
-           (fns (cdr pair)))
-      `(progn (include-book ,user-book-name
-                            :DIR :SYSTEM
-                            :UNCERTIFIED-OKP nil
-                            :DEFAXIOMS-OKP nil
-                            :SKIP-PROOFS-OKP nil
-                            :TTAGS nil)
-              (assert-event
-               (equal ',fns
-                      (new-verify-guards-fns state))
-               :msg (msg "ERROR: The set of newly guard-verified functions ~
-                          from the ACL2 community book ~x0 does not match the ~
-                          expected set from the constant ~
-                          *system-verify-guards-alist*.~|~%From the ~
-                          book:~|~X13~|~%Expected from ~
-                          *system-verify-guards-alist*:~|~X23~|"
-                         ',user-book-name
-                         (new-verify-guards-fns state)
-                         ',fns
-                         nil))
-              (value-triple :CHK-NEW-VERIFIED-GUARDS-SUCCESS))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; meta-extract support
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1256,8 +1121,153 @@
      (& *t*))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; Define and possibly call system-verify-guards
+;;; Support for system-verify-guards
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; This section supports a mechanism for users to extend the set of
+; guard-verified functions.  They do so in community books under books/system/,
+; which are checked when building with feature :acl2-devel.  But normal builds
+; will not set that feature, and will simply trust that functions marked in
+; *system-verify-guards-alist* can be guard-verified.
+
+; A flaw in our approach is that user-supplied guard verifications may depend
+; on package axioms.  Thus, we view such verifications as strong hints, rather
+; than as ironclad guarantees that the functions can be guard-verified in
+; definitional (or even conservative) extensions of the ground-zero theory.  We
+; consider this sufficient, as the event that some package axiom will cause
+; such bogus marking as guard-verified to be much less likely than the event
+; that our system has other serious bugs!
+
+(verify-termination-boot-strap safe-access-command-tuple-form) ; and guards
+
+(defun pair-fns-with-measured-subsets (fns wrld acc)
+  (declare (xargs :guard (and (symbol-listp fns)
+                              (plist-worldp wrld)
+                              (true-listp acc))))
+  (cond ((endp fns) (reverse acc))
+        (t (pair-fns-with-measured-subsets
+            (cdr fns)
+            wrld
+            (cons (let* ((fn (car fns))
+                         (justification (getprop fn 'justification nil
+                                                 'current-acl2-world wrld))
+                         (ms (and (consp justification) ; for guard
+                                  (consp (cdr justification)) ; for guard
+                                  (access justification justification :subset))))
+                    (cons fn ms))
+                  acc)))))
+
+(defun new-verify-guards-fns1 (wrld installed-wrld acc)
+  (declare (xargs :guard (and (plist-worldp wrld)
+                              (plist-worldp installed-wrld)
+                              (symbol-listp acc))))
+  (cond ((or (endp wrld)
+             (and (eq (caar wrld) 'command-landmark)
+                  (eq (cadar wrld) 'global-value)
+                  (equal (safe-access-command-tuple-form (cddar wrld))
+                         '(exit-boot-strap-mode))))
+         (pair-fns-with-measured-subsets
+          (strict-merge-sort-symbol-< acc)
+          installed-wrld
+          nil))
+        ((and (eq (cadar wrld) 'symbol-class)
+              (eq (cddar wrld) :COMMON-LISP-COMPLIANT)
+              (getprop (caar wrld) 'predefined nil 'current-acl2-world
+                       installed-wrld))
+         (new-verify-guards-fns1 (cdr wrld)
+                                 installed-wrld
+                                 (cons (caar wrld) acc)))
+        (t (new-verify-guards-fns1 (cdr wrld) installed-wrld acc))))
+
+(defun new-verify-guards-fns (state)
+
+; It is important for performance that this function be guard-verified, because
+; it is called inside an assert-event form in chk-new-verified-guards, which
+; causes evaluation to be in safe-mode and would cause evaluation of
+; plist-worldp on behalf of guard-checking for new-verify-guards-fns1.
+
+  (declare (xargs :stobjs state))
+  (let ((wrld (w state)))
+    (new-verify-guards-fns1 wrld wrld nil)))
+
+(defconst *system-verify-guards-alist*
+
+; Each cdr was produced by evaluating
+; (new-verify-guards-fns (w state) (w state) nil)
+; after including the book indicated in the car, e.g.,
+; (include-book "system/top" :dir :system).
+; Each entry is of the form (fn . measured-subset).
+
+  '(("system/top"
+     (CONS-TERM)
+     (CONS-TERM1)
+     (CONS-TERM1-MV2)
+     (DUMB-NEGATE-LIT)
+     (FETCH-DCL-FIELD)
+     (FETCH-DCL-FIELDS LST)
+     (FETCH-DCL-FIELDS1 LST)
+     (FETCH-DCL-FIELDS2 KWD-LIST)
+     (META-EXTRACT-CONTEXTUAL-FACT)
+     (META-EXTRACT-GLOBAL-FACT)
+     (META-EXTRACT-RW+-TERM)
+     (MISSING-FMT-ALIST-CHARS)
+     (MISSING-FMT-ALIST-CHARS1 CHAR-TO-TILDE-S-STRING-ALIST)
+     (PLAUSIBLE-DCLSP LST)
+     (PLAUSIBLE-DCLSP1 LST)
+     (QUOTE-LISTP L)
+     (STRIP-DCLS LST)
+     (STRIP-DCLS1 LST)
+     (STRIP-KEYWORD-LIST LST)
+     (SUBCOR-VAR FORM)
+     (SUBCOR-VAR-LST FORMS)
+     (SUBCOR-VAR1 VARS)
+     (SUBLIS-VAR)
+     (SUBLIS-VAR-LST)
+     (SUBLIS-VAR1 FORM)
+     (SUBLIS-VAR1-LST L)
+     (SUBST-EXPR)
+     (SUBST-EXPR-ERROR)
+     (SUBST-EXPR1 TERM)
+     (SUBST-EXPR1-LST ARGS)
+     (SUBST-VAR FORM)
+     (SUBST-VAR-LST L))))
+
+(defconst *len-system-verify-guards-alist*
+  (length *system-verify-guards-alist*))
+
+(defmacro chk-new-verified-guards (n)
+  (cond
+   ((or (not (natp n))
+        (> n *len-system-verify-guards-alist*))
+    `(er soft 'chk-new-verified-guards
+         "The index ~x0 is not a valid index for *system-verify-guards-alist*."
+         ',n))
+   ((eql n *len-system-verify-guards-alist*)
+    '(value-triple :CHK-NEW-VERIFIED-GUARDS-COMPLETE))
+   (t
+    (let* ((pair (nth n *system-verify-guards-alist*)) 
+           (user-book-name (car pair))
+           (fns (cdr pair)))
+      `(progn (include-book ,user-book-name
+                            :DIR :SYSTEM
+                            :UNCERTIFIED-OKP nil
+                            :DEFAXIOMS-OKP nil
+                            :SKIP-PROOFS-OKP nil
+                            :TTAGS nil)
+              (assert-event
+               (equal ',fns
+                      (new-verify-guards-fns state))
+               :msg (msg "ERROR: The set of newly guard-verified functions ~
+                          from the ACL2 community book ~x0 does not match the ~
+                          expected set from the constant ~
+                          *system-verify-guards-alist*.~|~%From the ~
+                          book:~|~X13~|~%Expected from ~
+                          *system-verify-guards-alist*:~|~X23~|"
+                         ',user-book-name
+                         (new-verify-guards-fns state)
+                         ',fns
+                         nil))
+              (value-triple :CHK-NEW-VERIFIED-GUARDS-SUCCESS))))))
 
 (defun system-verify-guards-fn-1 (fns-alist acc)
   (declare (xargs :guard (symbol-alistp fns-alist)))

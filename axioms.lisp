@@ -46897,6 +46897,7 @@ Lisp definition."
 ; For a related function, see gc$-fn.
 
   (let ((arg (and arg t))) ; coerce to Boolean
+    (declare (ignorable arg))
     #+ccl (ccl::gc-verbose arg arg)
     #+cmu (setq ext:*gc-verbose* arg)
     #+gcl (si:*notify-gbc* arg)
