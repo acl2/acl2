@@ -1,8 +1,10 @@
 # Avoid provisional certification with `make' until we start using Makefile-deps.
 override ACL2_PCERT =
 
-top:
-	acl2_system_books_temp=`cd .. ; pwd` ; make -f Makefile-actual ACL2_SYSTEM_BOOKS=$$acl2_system_books_temp
+export ACL2_SYSTEM_BOOKS ?= $(shell (cd .. ; pwd))
 
-clean:
-	acl2_system_books_temp=`cd .. ; pwd` ; make -f Makefile-actual clean ACL2_SYSTEM_BOOKS=$$acl2_system_books_temp
+DIRS = code database single-input sets-input \
+	tree-distance tree-score tree-generation \
+	proofs 
+#read-write : nothing to be certified (raw-mode support)
+include $(ACL2_SYSTEM_BOOKS)/Makefile-subdirs
