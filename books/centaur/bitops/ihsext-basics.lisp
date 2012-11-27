@@ -2780,7 +2780,7 @@
                   (if (= (logcar i) 1) -1 0))
                  (t (logcons (logcar i)
                              (logext (1- size) (logcdr i))))))
-    ::hints(("Goal" :in-theory (disable logext)
+    :hints(("Goal" :in-theory (disable logext)
              :use ((:instance logext*
                     (size (if (posp size) size 1))
                     (i (ifix i))))))
