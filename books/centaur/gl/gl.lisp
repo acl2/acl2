@@ -194,7 +194,7 @@
  (defthm hons-g-concrete-is-g-concrete
    (equal (hons-g-concrete x)
           (g-concrete x))
-   ::hints(("Goal" :in-theory (enable g-concrete)))))
+   :hints(("Goal" :in-theory (enable g-concrete)))))
 
 (in-theory (disable hons-g-concrete))
 

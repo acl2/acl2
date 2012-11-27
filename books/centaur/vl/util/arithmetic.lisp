@@ -328,7 +328,7 @@
   (defthm app-removal
     (equal (acl2::app x y)
            (append x (list-fix y)))
-    :hints(("Goal" ::in-theory (enable acl2::binary-app)))))
+    :hints(("Goal" :in-theory (enable acl2::binary-app)))))
 
 
 
