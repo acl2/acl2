@@ -36,9 +36,20 @@
 (include-book "intro")
 (value-triple (set-max-mem (* 3 (expt 2 30))))
 
+; Certification in vanilla ACL2 (as opposed to ACL2(h)) using CMUCL can cause
+; an error if any defconst form follows the defmodules form below.  So we add
+; some #+hons readtime conditionals.
+
+;  ;   (C::SOURCE-LOCATION)
+;  ; Error: (during macroexpansion)
+;  ; Type-error in KERNEL::OBJECT-NOT-TYPE-ERROR-HANDLER:
+;  ;    17524 is not of type (UNSIGNED-BYTE 14)
+
+#+hons ; see comment above about an error
 (defmodules *alu16-translation*
   :start-files (list "alu16.v"))
 
+#+hons ; see comment above about an error
 (defconst *alu16*
   (b* ((mods  (vl::vl-translation->mods *alu16-translation*))
        (alu16 (vl::vl-find-module "alu16" mods))
