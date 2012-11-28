@@ -35,9 +35,13 @@ tries to prove a set of preservation theorems as stored in the table
    :hints `(,@expand/induct-hints
             (and stable-under-simplificationp
                  '(:in-theory (enable my-index))))
+   :enable '(my-rule my-ruleset)
+   :disable '(bad-rule other-rules)
+   :rule-classes `(:rewrite (:linear :trigger-terms (,new-stobj)))
    :templates my-stobj-pres-templates
    :history my-stobj-pres-history)})
-Certain placeholder variables can be used in the body and hints:
+Certain placeholder variables can be used in the body, hints, enable, disable,
+and rule-classes fields:
 <ul>
 <li><tt>orig-stobj</tt> is the variable denoting the original stobj before modification</li>
 <li><tt>new-stobj</tt> is the term giving the modified stobj after the function
@@ -121,15 +125,16 @@ that behave the same as the ones above, execpt that they don't take the
                   (cdr (assoc ',pair
                               (table-alist ',histtable world)))))))
 
-(defun check-deps-satisfied (deps fn stobjname state)
+(defun check-deps-satisfied (deps fn stobjname histtable state)
   (declare (xargs :mode :program :stobjs state))
   (subsetp-eq deps
               (cdr (assoc-equal (cons fn stobjname)
-                                (table-alist 'stobj-preservation-thm-records (w state))))))
+                                (table-alist histtable (w state))))))
 
 (defun mk-stobj-preservation-thm (fn stobjname template histtable state)
   (declare (xargs :mode :program :stobjs state))
-  (b* (((acl2::nths name vars body hints ruleset deps) template)
+  (b* (((acl2::nths name vars body hints ruleset deps enable disable
+                    rule-classes) template)
        (world (w state))
        (fn$ (acl2::deref-macro-name fn (acl2::macro-aliases world)))
        (formals (fix-formals-for-vars vars (acl2::formals fn$ world)))
@@ -143,15 +148,15 @@ that behave the same as the ones above, execpt that they don't take the
                     call))
        (recp (acl2::recursivep fn$ world))
        (expand/induct-hints
-        `(("Goal" . ,(append '(:do-not-induct t)
-                             `(:in-theory (disable (:definition ,fn$)))
-                             (if (and recp (not (cdr recp)))
-                                 nil
-                               `(:expand (,call)))))
-          ,@(and recp (not (cdr recp))
-                 `((just-induct-and-expand ,call))))))
+        (if (and recp (not (cdr recp)))
+            `((just-induct-and-expand ,call))
+          `(("Goal" . ,(append '(:do-not-induct t)
+                               `(:in-theory (disable (:definition ,fn$)))
+                               (if (and recp (not (cdr recp)))
+                                   nil
+                                 `(:expand (,call)))))))))
     `(make-event
-      (b* (((unless (check-deps-satisfied ',deps ',fn ',stobjname state))
+      (b* (((unless (check-deps-satisfied ',deps ',fn ',stobjname ',histtable state))
             '(value-triple :skipped))
            (,(intern-in-package-of-symbol
               (symbol-name '?expand/induct-hints)
@@ -178,12 +183,15 @@ that behave the same as the ones above, execpt that they don't take the
            (,(intern-in-package-of-symbol
               (symbol-name '?stobjs-out)
               histtable) ',stobjs-out))
-        `(progn (defthm ,',thmname
+        `(encapsulate nil
+           (local (in-theory (e/d* ,,enable ,,disable)))
+           (defthm ,',thmname
                   ,,body
-                  :hints ,,hints)
-                ,@',(and ruleset
-                         `((add-to-ruleset ,ruleset ,thmname)))
-                (add-stobj-preservation-record ,',fn ,',stobjname ,',name ,',histtable))))))
+                  :hints ,,hints
+                  :rule-classes ,,rule-classes)
+           ,@',(and ruleset
+                    `((add-to-ruleset ,ruleset ,thmname)))
+           (add-stobj-preservation-record ,',fn ,',stobjname ,',name ,',histtable))))))
 
 (defun mk-stobj-preservation-thms (fn stobjname omit templates histtable state)
   (declare (xargs :mode :program :stobjs state))
@@ -244,18 +252,20 @@ that behave the same as the ones above, execpt that they don't take the
                 state)))
 
 (defun add-stobj-preservation-thm-fn (name vars body hints ruleset templates
-                                           history deps)
+                                           history deps enable disable rule-classes)
   (declare (ignorable history))
   `(progn (table ,templates
                  ',name
-                 ',(list vars body hints ruleset deps))
+                 ',(list vars body hints ruleset deps enable disable rule-classes))
           . ,(and ruleset
                   `((def-ruleset! ,ruleset nil)))))
 
 (defmacro add-stobj-preservation-thm (name &key vars body hints
-                                           ruleset templates history deps)
+                                           ruleset templates history
+                                           deps enable disable
+                                           (rule-classes ':rewrite))
   (add-stobj-preservation-thm-fn name vars body hints ruleset 
-                                 templates history deps))
+                                 templates history deps enable disable rule-classes))
 
 (defxdoc add-stobj-preservation-thm
   :parents (preservation-thms)
@@ -322,10 +332,12 @@ and (nonlocally) prove it about existing functions"
          :parents (preservation-thms)
          :short "Generated by def-stobj-preservation-macros."
          :long "See @(see preservation-thms) for complete documentation.")
-       (defmacro ,add-name (name &key vars body hints ruleset deps)
+       (defmacro ,add-name (name &key vars body hints ruleset deps enable
+                                 disable (rule-classes ':rewrite))
          `(add-stobj-preservation-thm
            ,name :vars ,vars :body ,body :hints ,hints :deps ,deps
-           :ruleset ,ruleset :templates ,',templates :history ,',history))
+           :ruleset ,ruleset :templates ,',templates :history ,',history
+           :enable ,enable :disable ,disable :rule-classes ,rule-classes))
        (defxdoc ,add-name
          :parents (preservation-thms)
          :short "Generated by def-stobj-preservation-macros."
