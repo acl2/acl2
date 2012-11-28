@@ -78,7 +78,7 @@
   (equal (hons-remove-assoc j (hons-remove-assoc k al))
          (hons-remove-assoc k (hons-remove-assoc j al))))
 
-(local (include-book "arithmetic-3/top" :dir :system))
+(local (include-book "arithmetic/top-with-meta" :dir :system))
 
 (defthm count-keys-hons-remove-assoc
   (equal (count-keys (hons-remove-assoc k al))

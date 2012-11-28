@@ -24,7 +24,8 @@
 (include-book "misc/definline" :dir :system)
 (include-book "../misc/witness-cp")
 (local (include-book "ihs-extensions"))
-(local (include-book "arithmetic-3/top" :dir :system))
+(local (include-book "ihs/quotient-remainder-lemmas" :dir :system))
+(local (include-book "arithmetic-3/bind-free/top" :dir :system))
 
 
 (defxdoc bitsets
@@ -511,13 +512,13 @@ bignum in a particularly efficient way on 64-bit CCL.</li>
            (implies (natp x)
                     (equal (ash x 5)
                            (* x 32)))
-           :hints(("Goal" :in-theory (enable ash)))))
+           :hints(("Goal" :in-theory (enable ash floor)))))
 
   (local (defthm ash-minus-5-to-floor
            (implies (natp x)
                     (equal (ash x -5)
                            (floor x 32)))
-           :hints(("Goal" :in-theory (enable ash)))))
+           :hints(("Goal" :in-theory (enable ash floor)))))
 
   (defund ttag-bitset-members-aux (slice x acc)
     ;; Main loop.  We collect the set corresponding to x[0:32*(slice+1)], by
@@ -548,9 +549,10 @@ bignum in a particularly efficient way on 64-bit CCL.</li>
     :hints(("Goal" :in-theory (e/d (ttag-bitset-members-aux bignum-extract)
                                    (right-shift-to-logtail)))))
 
+
   (defund ttag-bitset-members (x)
     (declare (xargs :guard (natp x)
-                    :guard-hints (("Goal" :in-theory (enable bitset-members)))))
+                    :guard-hints (("Goal" :in-theory (e/d (bitset-members))))))
     (mbe :logic (bitset-members x)
          :exec (ttag-bitset-members-aux (ash (integer-length x) -5)
                                         x
