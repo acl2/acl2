@@ -27,8 +27,8 @@
 (local (include-book "unicode/revappend" :dir :system))
 (local (include-book "unicode/rev" :dir :system))
 (local (include-book "unicode/append" :dir :system))
-(local (include-book "arithmetic-3/extra/top-ext" :dir :system))
-
+(local (include-book "arithmetic-3/bind-free/top" :dir :system))
+(local (include-book "ihs/quotient-remainder-lemmas" :dir :system))
 (local (in-theory (disable cancel-mod-+)))
 
 
@@ -144,10 +144,41 @@ optimized version of @(see sbitset-pair-members).</p>"
 
   (defconst *sbitset-block-size* 60))
 
+(defthm floor-is-nonnegative-integer-quotient
+  (implies (and (natp a) (posp b))
+           (equal (floor a b)
+                  (nonnegative-integer-quotient a b))))
+
+(local (in-theory (disable truncate)))
+
+(defthm truncate-is-nonnegative-integer-quotient
+  (implies (and (natp a) (posp b))
+           (equal (truncate a b)
+                  (nonnegative-integer-quotient a b))))
+
 
 (local
  (encapsulate
    ()
+   (local (defun niq-ind (a b c)
+            (declare (xargs :measure (nonnegative-integer-quotient c a)))
+            (if (or (= (nfix a) 0) (< (ifix c) a))
+                b
+              (niq-ind a (- b 1) (- c a)))))
+
+   (defthm niq-lemma
+     (implies (and (posp a)
+                   (natp b)
+                   (natp c))
+              (equal (equal (nonnegative-integer-quotient c a)
+                            b)
+                     (and (<= (* a b) c)
+                          (< c (+ a (* a b))))))
+     :hints (("goal" :induct (niq-ind a b c))
+             (and stable-under-simplificationp
+                  '(:nonlinearp t))))
+                          
+
    (local (defthm l0
             (implies (and (integerp a)
                           (natp size)
@@ -155,7 +186,9 @@ optimized version of @(see sbitset-pair-members).</p>"
                           (< a (+ size (* size offset)))
                           (natp offset))
                      (equal (+ a (* (- size) offset))
-                            (mod a size)))))
+                            (mod a size)))
+            :hints(("Goal" :in-theory (enable mod)
+                    :do-not-induct t))))
 
    (make-event
     `(defthm mod-blocksize-nonsense
@@ -169,7 +202,7 @@ optimized version of @(see sbitset-pair-members).</p>"
 
 
 (local (in-theory (disable logbitp-when-too-small
-                           expt-between-one-and-two
+                           ;expt-between-one-and-two
                            expt-is-increasing-for-base->-1
                            expt-2-monotonic)))
 
@@ -994,7 +1027,8 @@ is not performed for other block sizes.</p>"
                     (sbitset-find (floor a *sbitset-block-size*) x))
            :hints(("Goal"
                    :in-theory (disable mod-blocksize-nonsense)
-                   :induct (len x)))))
+                   :induct (len x)
+                   :expand ((sbitset-members x))))))
 
   (local (defthm l1
            (implies (and (sbitsetp x)
@@ -1016,6 +1050,8 @@ is not performed for other block sizes.</p>"
                                   (sets::in a (sbitset-pair-members pair))))))
            :hints(("Goal"
                    :induct (len x)
+                   :expand ((sbitset-members x)
+                            (:free (n) (sbitset-find n x)))
                    :in-theory (disable in-of-sbitset-pair-members)
                    :do-not '(generalize fertilize)))))
 
@@ -1086,7 +1122,10 @@ only member is @('a')."
 
   (local (defthm l0
            (equal (sets::in a (sbitset-members (sbitset-singleton b)))
-                  (equal a (nfix b)))))
+                  (equal a (nfix b)))
+           :hints (("goal" :use ((:instance niq-lemma
+                                  (c (nfix b)) (a 60) (b a)))
+                    :in-theory (e/d (mod) (niq-lemma mod-blocksize-nonsense))))))
 
   (defthm sbitset-members-of-sbitset-singleton
     (equal (sbitset-members (sbitset-singleton a))

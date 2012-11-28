@@ -24,7 +24,7 @@
 (include-book "misc/definline" :dir :system)
 (include-book "../misc/witness-cp")
 (local (include-book "ihs-extensions"))
-(local (include-book "arithmetic-3/extra/top-ext" :dir :system))
+(local (include-book "arithmetic-3/top" :dir :system))
 
 
 (defxdoc bitsets
