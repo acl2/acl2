@@ -1418,17 +1418,52 @@ sub add_deps {
     (my $base = $target) =~ s/\.cert$//;
     my $lispfile = $base . ".lisp";
 
-    # Clean the cert and out files if we're cleaning.
+    # Clean the cert and out files, etc., if we're cleaning.
     if ($clean_certs) {
 	my $outfile = $target . ".out";
 	my $timefile = $target . ".time";
-	my $compfile = $base . ".lx64fsl";
 	my $acl2xfile = $base . ".acl2x";
 	unlink($target) if (-e $target);
 	unlink($outfile) if (-e $outfile);
 	unlink($timefile) if (-e $timefile);
-	unlink($compfile) if (-e $compfile);
 	unlink($acl2xfile) if (-e $acl2xfile);
+	my $tmpfile;
+	# Keep what follows in sync with unversioned-files.txt.
+	$tmpfile = $base . ".lx64fsl"; unlink($tmpfile) if (-e $tmpfile);
+	$tmpfile = $base . "\@expansion.lsp"; unlink($tmpfile) if (-e $tmpfile);
+	# $tmpfile = $base . "*.out"; -- already covered by $outfile above
+	$tmpfile = $base . ".date"; unlink($tmpfile) if (-e $tmpfile);
+	# $tmpfile = $base . ".cert" -- already covered by $target above
+	$tmpfile = $base . ".cert.temp"; unlink($tmpfile) if (-e $tmpfile);
+	$tmpfile = $base . ".pcert0"; unlink($tmpfile) if (-e $tmpfile);
+	$tmpfile = $base . ".pcert1"; unlink($tmpfile) if (-e $tmpfile);
+	$tmpfile = $base . ".pcert0.temp"; unlink($tmpfile) if (-e $tmpfile);
+	$tmpfile = $base . ".port"; unlink($tmpfile) if (-e $tmpfile);
+	# $tmpfile = $base . ".acl2x"; -- already covered by $acl2xfile above
+	$tmpfile = $base . ".h"; unlink($tmpfile) if (-e $tmpfile);
+	$tmpfile = $base . ".c"; unlink($tmpfile) if (-e $tmpfile);
+	$tmpfile = $base . ".data"; unlink($tmpfile) if (-e $tmpfile);
+	$tmpfile = $base . ".o"; unlink($tmpfile) if (-e $tmpfile);
+	$tmpfile = $base . ".sbin"; unlink($tmpfile) if (-e $tmpfile);
+	$tmpfile = $base . ".lbin"; unlink($tmpfile) if (-e $tmpfile);
+	$tmpfile = $base . ".fasl"; unlink($tmpfile) if (-e $tmpfile);
+	$tmpfile = $base . ".ufsl"; unlink($tmpfile) if (-e $tmpfile);
+	$tmpfile = $base . ".64ufasl"; unlink($tmpfile) if (-e $tmpfile);
+	$tmpfile = $base . ".ufasl"; unlink($tmpfile) if (-e $tmpfile);
+	$tmpfile = $base . ".pfsl"; unlink($tmpfile) if (-e $tmpfile);
+	$tmpfile = $base . ".dfsl"; unlink($tmpfile) if (-e $tmpfile);
+	$tmpfile = $base . ".dx32fsl"; unlink($tmpfile) if (-e $tmpfile);
+	$tmpfile = $base . ".lx32fsl"; unlink($tmpfile) if (-e $tmpfile);
+	$tmpfile = $base . ".d64fsl"; unlink($tmpfile) if (-e $tmpfile);
+	$tmpfile = $base . ".dx64fsl"; unlink($tmpfile) if (-e $tmpfile);
+	$tmpfile = $base . ".lx64fsl"; unlink($tmpfile) if (-e $tmpfile);
+	$tmpfile = $base . ".bin"; unlink($tmpfile) if (-e $tmpfile);
+	$tmpfile = $base . ".sparcf"; unlink($tmpfile) if (-e $tmpfile);
+	$tmpfile = $base . ".axpf"; unlink($tmpfile) if (-e $tmpfile);
+	$tmpfile = $base . ".x86f"; unlink($tmpfile) if (-e $tmpfile);
+	$tmpfile = $base . ".ppcf"; unlink($tmpfile) if (-e $tmpfile);
+	$tmpfile = $base . ".fas"; unlink($tmpfile) if (-e $tmpfile);
+	$tmpfile = $base . ".lib"; unlink($tmpfile) if (-e $tmpfile);
     }
 
     # First check that the corresponding .lisp file exists.

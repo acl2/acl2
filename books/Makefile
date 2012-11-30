@@ -59,13 +59,6 @@ export ACL2_PCERT
 
 # Note: arithmetic-4 could be added in analogy to arithmetic-5.
 
-### Temporary deletion till we get the license straightened out.
-# ifdef HONS_P
-# 	DIRS_HONS=models/X86
-# else
-	DIRS_HONS=
-# endif
-
 DIRS1 = cowles arithmetic meta xdoc
 DIRS2_EXCEPT_WK_COI = ordinals data-structures bdd ihs arithmetic-2 arithmetic-3 arithmetic-5 \
 	misc models/jvm/m1 models/jvm/m5 proofstyles rtl arithmetic-3/extra sorting make-event parallel hints \
@@ -74,31 +67,49 @@ DIRS2_EXCEPT_WK_COI = ordinals data-structures bdd ihs arithmetic-2 arithmetic-3
 	data-structures/memories unicode str concurrent-programs/bakery \
 	concurrent-programs/german-protocol deduction/passmore clause-processors \
 	quadratic-reciprocity tools paco hacking security regex \
-	defsort hons-archive serialize wp-gen xdoc-impl system tutorial-problems cutil \
-	countereg-gen demos leftist-trees $(DIRS_HONS)
+	defsort serialize wp-gen xdoc-impl system tutorial-problems cutil \
+	countereg-gen demos leftist-trees taspi
 DIRS2_EXCEPT_WK = $(DIRS2_EXCEPT_WK_COI) coi misc/misc2
 DIRS2 = $(DIRS2_EXCEPT_WK) workshops
 SHORTDIRS2 = ordinals data-structures bdd
 
+# If ACL2_CENTAUR is already set then we leave it alone.  Otherwise
+# we set ACL2_CENTAUR to `before' to obtain extra parallelism via the
+# centaur/ books unless specific directories are specified, in which
+# case we set ACL2_CENTAUR to `skip' to avoid certifying the centaur
+# books needlessly.  (If a books directory depends on the centaur
+# books, then its dependency should be recorded among the long list of
+# dependencies below.)
+ifdef ACL2_BOOK_DIRS
+ifndef ACL2_CENTAUR
+ACL2_CENTAUR ?= skip
+endif
+else
+ACL2_CENTAUR ?= before
 # The following can be any subset of DIRS2, and can be set by the user
 # on the command line, e.g., from the ACL2 sources directory:
 #   make -j 8 regression ACL2_BOOK_DIRS='symbolic paco'
 # The directory dependencies (below) should guarantee that all
 # necessary supporting directories are made before the ones specified
 # explicitly in ACL2_BOOK_DIRS.
-ACL2_BOOK_DIRS ?= $(DIRS2)
+ACL2_BOOK_DIRS := $(DIRS2)
+endif
+
+ALL_PLUS_DIRS = $(DIRS1) $(ACL2_BOOK_DIRS)
 
 ifdef ACL2
-	ACL2_FOR_HONS = $(ACL2)
+	ACL2_FOR_HONS ?= $(ACL2)
+	ACL2_FOR_CENTAUR ?= $(ACL2)
 else
 	ACL2_FOR_HONS ?= `cd .. ; pwd`/saved_acl2h
+	ACL2_FOR_CENTAUR ?= `cd .. ; pwd`/saved_acl2
 endif
 
 # Since we have specified that ACL2_BOOK_DIRS is to be a subset of
 # DIRS2, we don't need to add it explicitly on the next line.
 .PHONY: $(DIRS1) $(DIRS2)
 
-# Same as all-plus below, using DIRS2_EXCEPT_WK instead of DIRS2.  Much faster!!  Omits
+# Same as all-plus below, using DIRS2_EXCEPT_WK instead of DIRS2.  Much faster!  Omits
 # books less likely to be needed, in particular, under workshops/.
 all:
 	@date ; $(TIME) $(MAKE) all-aux
@@ -108,6 +119,7 @@ all:
 # manually by inspecting the Makefiles.
 
 arithmetic: cowles
+data-structures: arithmetic
 meta: arithmetic
 ordinals: top-with-meta-cert
 ihs: arithmetic data-structures
@@ -149,7 +161,6 @@ sorting: arithmetic-3/extra
 tools: arithmetic-5 misc xdoc
 regex: tools cutil str misc
 defsort: misc unicode tools
-hons-archive: defsort unicode tools arithmetic-3
 str: arithmetic unicode defsort tools xdoc misc
 coi: arithmetic arithmetic-2 arithmetic-3 data-structures ihs make-event \
 	misc ordinals rtl
@@ -162,14 +173,6 @@ countereg-gen: xdoc arithmetic-5 tools defexec finite-set-theory/osets \
 	arithmetic-3 arithmetic ordinals
 leftist-trees: arithmetic-5 sorting
 demos: make-event cutil misc tools arithmetic
-
-# Note: There is no need to include values for "centaur:", since dependencies
-# are handled by cert.pl in that case.
-# There is also need to include taspi here -- after all, there is actually
-# no taspi target -- but we found these two with the following command in the
-# taspi directory
-#   find . -name 'Makefile' -print -exec fgrep ACL2_SYSTEM {} \; | fgrep ':'
-# so we figured we might as well include taspi here.
 taspi: misc arithmetic-3
 
 # Let us wait for everything else before workshops.  Starting after
@@ -186,15 +189,172 @@ $(DIRS2): top-with-meta-cert
 .PHONY: all-aux
 all-aux: $(DIRS1) $(DIRS2_EXCEPT_WK)
 
-# We should really parallelize the compile targets below (fasl, all-fasl,
-# all-o, etc.) as with the .cert targets above.  Any volunteers?
+# Certify all books that need certification.  If you want to get a
+# total time for certifying all books, then first do "make clean".  By
+# default we do the centaur books first, because one of them might
+# support a non-centaur book.  This is quite a commitment: henceforth,
+# the regression could in theory fail if we remove the centaur books
+# (say, because someone has a problem with Perl).  We'll face that
+# problem if it occurs; for example, we could remove the "offending"
+# directory from DIRS2_EXCEPT_WK_COI, or we could use
+# ACL2_CENTAUR=skip on the command line.
 
-# Keep the following pairs in sync with the two targets just above.
-# They will create compiled files for books that may have already been
-# certified in another lisp (.fasl files for all-fasl, etc.).
-# Of course, the underlying lisp of the ACL2 that is run should agree with
-# the desired compiled file extension.
+.PHONY: all-plus centaur
 
+ifeq ($(ACL2_CENTAUR),before)
+all-plus: $(ALL_PLUS_DIRS)
+$(ALL_PLUS_DIRS): centaur
+else
+ifeq ($(ACL2_CENTAUR),after)
+all-plus: centaur
+centaur: $(ALL_PLUS_DIRS)
+else
+all-plus: $(ALL_PLUS_DIRS)
+endif
+endif
+
+.PHONY: hons clean-hons
+# For a parallel "make hons", use e.g.:
+#   make hons ACL2_HONS_OPT="-j4"
+# In general, ACL2_HONS_OPT is passed to the cert.pl command in centaur/.
+# Note that this variable is set automatically in ../GNUmakefile using
+# ACL2_JOBS.
+hons:
+	./cert.pl --targets regression-hons-targets \
+	  $(ACL2_HONS_OPT) \
+	  --acl2-books "`pwd`" \
+	  --acl2 $(ACL2_FOR_HONS)
+
+# WARNING: clean-hons will clean everywhere relevant to books/centaur/ under
+# the books/ directory, not merely under books/centaur/.
+clean-hons:
+	rm -rf centaur/manual
+	./cert.pl -c centaur/doc.lisp \
+	  $(ACL2_HONS_OPT) \
+	  --acl2-books "`pwd`" \
+	  -q
+	cd taspi/ ; make clean
+
+# Clean all books, not only the "basic" ones.
+.PHONY: clean
+clean:
+	@for dir in $(DIRS1) $(DIRS2) ; \
+	do \
+	if [ -f $$dir/Makefile ]; then \
+	(cd $$dir ; \
+	$(MAKE) FAST_DEPS_FOR_CLEAN=1 clean ; \
+	cd ..) ; \
+	fi \
+	done
+
+# See instructions for hons above -- except we expect to use the
+# centaur target with vanilla ACL2, as opposed to ACL2(h).
+centaur:
+	./cert.pl --targets regression-centaur-targets \
+	  $(ACL2_HONS_OPT) \
+	  --acl2-books "`pwd`" \
+	  --acl2 $(ACL2_FOR_CENTAUR)
+
+# WARNING: clean-centaur will clean everywhere relevant to books/centaur/ under
+# the books/ directory, not merely under books/centaur/.
+.PHONY: clean-centaur
+ifeq ($(ACL2_CENTAUR),skip)
+clean-centaur:
+	@echo "Skipping actions for clean-centaur."
+else
+clean-centaur:
+	rm -rf centaur/manual
+	./cert.pl -c centaur/doc.lisp \
+	  $(ACL2_HONS_OPT) \
+	  --acl2-books "`pwd`" \
+	  -q
+endif
+
+.PHONY: clean
+clean: clean-centaur
+
+# Tar up books and support, not including workshops or nonstd stuff.
+.PHONY: tar
+tar:
+	tar cvf books.tar Makefile Makefile-generic Makefile-subdirs README README.html certify-numbers.lsp $(DIRS1) $(DIRS2_EXCEPT_WK)
+
+# The following "short" targets allow for a relatively short test, in response
+# to a request from GCL maintainer Camm Maguire.
+
+.PHONY: short-clean
+short-clean:
+	@rm -f short-test.log
+	@for dir in $(DIRS1) $(SHORTDIRS2) ; \
+	do \
+	if [ -f $$dir/Makefile ]; then \
+	(cd $$dir ; \
+	$(MAKE) clean ; \
+	cd ..) ; \
+	fi \
+	done
+
+.PHONY: short-test-aux
+short-test-aux:
+	@for dir in $(DIRS1) ; \
+	do \
+	if [ -f $$dir/Makefile ]; then \
+	(cd $$dir ; \
+	$(MAKE) all ; \
+	cd ..) ; \
+	fi \
+	done
+	@$(MAKE) top-with-meta-cert
+	@for dir in $(SHORTDIRS2) ; \
+	do \
+	if [ -f $$dir/Makefile ]; then \
+	(cd $$dir ; \
+	$(MAKE) all ; \
+	cd ..) ; \
+	fi \
+	done
+
+.PHONY: short-test
+short-test:
+	@rm -f short-test.log
+	$(MAKE) short-clean
+	$(MAKE) short-test-aux > short-test.log 2> short-test.log
+	@if [ ! -f short-test.log ] || (fgrep '**' short-test.log > /dev/null) ; then \
+	(echo 'Short test failed!' ; exit 1) ; else \
+	echo 'Short test passed.' ; fi
+
+# The following target is primarily for developers to be able to check
+# well-formedness of the ACL2 world after including each book.
+# WARNING: Be sure to run "make regression" first!
+# The explicit make of top-with-meta.cert is there in order to avoid
+# removing that file after the .bkchk.out file is made (which
+# otherwise happens, somehow!).
+
+.PHONY: chk-include-book-worlds-top
+chk-include-book-worlds-top:
+	@(cd system ; $(MAKE) ; cd ..)
+	@for dir in $(DIRS1) ; \
+	do \
+	if [ -f $$dir/Makefile ]; then \
+	(cd $$dir ; \
+	$(MAKE) chk-include-book-worlds ; \
+	cd ..) ; \
+	fi \
+	done
+	@(cd arithmetic/ ; $(MAKE) -f ../Makefile-generic top-with-meta.cert ; cd ..)
+	@(cd arithmetic/ ; $(MAKE) -f ../Makefile-generic top-with-meta.bkchk.out ; cd ..)
+	@for dir in $(DIRS2) ; \
+	do \
+	if [ -f $$dir/Makefile ]; then \
+	(cd $$dir ; \
+	$(MAKE) chk-include-book-worlds ; \
+	cd ..) ; \
+	fi \
+	done
+
+# The targets below create compiled files for books that may have
+# already been certified in another lisp (.fasl files for all-fasl,
+# etc.).  Of course, the underlying lisp of the ACL2 that is run
+# should agree with the desired compiled file extension.
 # IMPORTANT: In order to use the targets below, you will first need to
 # have certified saving expansion files, e.g. with the following 'make'
 # argument.
@@ -487,37 +647,6 @@ lx32fsl-aux:
 	cd ..) ; \
 	fi \
 	done
-
-# Certify all books that need certification.  If you want to get a total time
-# for certifying all books, then first do "make clean".
-.PHONY: all-plus
-all-plus: $(DIRS1) $(ACL2_BOOK_DIRS)
-
-.PHONY: hons clean-hons
-# For a parallel "make hons", use e.g.:
-#   make hons ACL2_HONS_OPT="-j4"
-# In general, ACL2_HONS_OPT is passed to the cert.pl command in centaur/.
-hons:
-	./cert.pl --targets regression-hons-targets \
-	  $(ACL2_HONS_OPT) \
-	  --acl2-books "`pwd`" \
-	  --acl2 $(ACL2_FOR_HONS)
-
-# WARNING: clean-hons will clean everywhere relevant to books/centaur/ under
-# the books/ directory, not merely under books/centaur/.
-clean-hons:
-	rm -rf centaur/manual
-	./cert.pl -c centaur/doc.lisp \
-	  $(ACL2_HONS_OPT) \
-	  --acl2-books "`pwd`" \
-	  -q
-	cd taspi/ ; make clean
-
-# Keep the following three pairs in sync with the two targets just above.
-# They will create compiled files for books that may have already been
-# certified in another lisp (.fasl files for all-fasl, etc.).
-# Of course, the underlying lisp of the ACL2 that is run should agree with
-# the desired compiled file extension.
 
 .PHONY: all-fasl
 all-fasl:
@@ -859,93 +988,3 @@ top-with-meta-lx64fsl:
 .PHONY: top-with-meta-lx32fsl
 top-with-meta-lx32fsl:
 	cd arithmetic ; $(MAKE) top-with-meta.lx32fsl
-
-# Clean all books, not only the "basic" ones.
-.PHONY: clean
-clean:
-	@for dir in $(DIRS1) $(DIRS2) ; \
-	do \
-	if [ -f $$dir/Makefile ]; then \
-	(cd $$dir ; \
-	$(MAKE) FAST_DEPS_FOR_CLEAN=1 clean ; \
-	cd ..) ; \
-	fi \
-	done
-
-# Tar up books and support, not including workshops or nonstd stuff.
-.PHONY: tar
-tar:
-	tar cvf books.tar Makefile Makefile-generic Makefile-subdirs README README.html certify-numbers.lsp $(DIRS1) $(DIRS2_EXCEPT_WK)
-
-# The following "short" targets allow for a relatively short test, in response
-# to a request from GCL maintainer Camm Maguire.
-
-.PHONY: short-clean
-short-clean:
-	@rm -f short-test.log
-	@for dir in $(DIRS1) $(SHORTDIRS2) ; \
-	do \
-	if [ -f $$dir/Makefile ]; then \
-	(cd $$dir ; \
-	$(MAKE) clean ; \
-	cd ..) ; \
-	fi \
-	done
-
-.PHONY: short-test-aux
-short-test-aux:
-	@for dir in $(DIRS1) ; \
-	do \
-	if [ -f $$dir/Makefile ]; then \
-	(cd $$dir ; \
-	$(MAKE) all ; \
-	cd ..) ; \
-	fi \
-	done
-	@$(MAKE) top-with-meta-cert
-	@for dir in $(SHORTDIRS2) ; \
-	do \
-	if [ -f $$dir/Makefile ]; then \
-	(cd $$dir ; \
-	$(MAKE) all ; \
-	cd ..) ; \
-	fi \
-	done
-
-.PHONY: short-test
-short-test:
-	@rm -f short-test.log
-	$(MAKE) short-clean
-	$(MAKE) short-test-aux > short-test.log 2> short-test.log
-	@if [ ! -f short-test.log ] || (fgrep '**' short-test.log > /dev/null) ; then \
-	(echo 'Short test failed!' ; exit 1) ; else \
-	echo 'Short test passed.' ; fi
-
-# The following target is primarily for developers to be able to check
-# well-formedness of the ACL2 world after including each book.
-# WARNING: Be sure to run "make regression" first!
-# The explicit make of top-with-meta.cert is there in order to avoid
-# removing that file after the .bkchk.out file is made (which
-# otherwise happens, somehow!).
-
-.PHONY: chk-include-book-worlds-top
-chk-include-book-worlds-top:
-	@(cd system ; $(MAKE) ; cd ..)
-	@for dir in $(DIRS1) ; \
-	do \
-	if [ -f $$dir/Makefile ]; then \
-	(cd $$dir ; \
-	$(MAKE) chk-include-book-worlds ; \
-	cd ..) ; \
-	fi \
-	done
-	@(cd arithmetic/ ; $(MAKE) -f ../Makefile-generic top-with-meta.cert ; cd ..)
-	@(cd arithmetic/ ; $(MAKE) -f ../Makefile-generic top-with-meta.bkchk.out ; cd ..)
-	@for dir in $(DIRS2) ; \
-	do \
-	if [ -f $$dir/Makefile ]; then \
-	(cd $$dir ; \
-	$(MAKE) chk-include-book-worlds ; \
-	cd ..) ; \
-	fi \
-	done
