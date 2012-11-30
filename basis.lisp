@@ -6167,9 +6167,14 @@
        skip this char
   ~ev[]
   If ~c[x] is a character, then ~c[vx] is the value of ~c[#\\x] under the
-  current alist.  When we say ``format ~c[str] under ~c[a+]'' we mean
-  recursively process the given string under an alist obtained by
-  appending ~c[a] to the current alist.
+  current alist.  Consider for example the discussion above for ~c[~~y],
+  ``~c[~~yx  pretty print vx]'', applied to the following expression:
+  ~c[(fmt \"HELLO ~~y7\" (list (cons #\\7 'world)) *standard-co* state nil)].
+  Then in this example, ~c[vx] is the value of character ~c[#\\7] under the
+  given alist, which is the symbol, ~c[WORLD]; thus, ACL2 will pretty print the
+  symbol, ~c[WORLD].  When we say ``format ~c[str] under ~c[a+]'' we mean
+  recursively process the given string under an alist obtained by appending
+  ~c[a] to the current alist.
 
   Note:  ~c[~~p], ~c[~~q], ~c[~~P], and ~c[~~Q] are also currently supported,
   but are deprecated.  These are respectively the same as ~c[~~x], ~c[~~y],

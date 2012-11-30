@@ -264,8 +264,19 @@ ACL2_SIZE =
 # on the make command line.
 ACL2_IGNORE = -i
 
-# Supporting regressions:
+# Supporting regressions (see community books file, books/Makefile):
 export ACL2_PCERT
+
+# Here we provide support for a convenient way to pass -j down to the
+# community books Makefile, for both `make' and cert.pl.  It seems
+# cleanest and perhaps critical that below, when we call in the books
+# directory we do so with an explicit -j, rather than leaving this to
+# the Makefile in the books/ directory.
+export ACL2_HONS_OPT
+ifdef ACL2_JOBS
+ACL2_HONS_OPT += -j$(ACL2_JOBS)
+ACL2_JOBS_OPT := -j $(ACL2_JOBS)
+endif
 
 # The order of the files below is unimportant.
 
@@ -757,7 +768,7 @@ large-acl2h:
 
 .PHONY: large-acl2d
 large-acl2d:
-	$(MAKE) large ACL2_HONS=d
+	$(MAKE) large ACL2_DEVEL=d
 
 .PHONY: large-acl2p
 large-acl2p:
@@ -786,7 +797,7 @@ move-large:
 # log.
 .PHONY: certify-books
 certify-books:
-	cd books ; $(MAKE) $(ACL2_IGNORE)
+	cd books ; $(MAKE) $(ACL2_JOBS_OPT) $(ACL2_IGNORE)
 
 # Certify books that are not up-to-date, even those less likely to be included
 # in other books.  This does *not* certify the nonstd/ books.  It would be
@@ -799,43 +810,38 @@ certify-books:
 .PHONY: regression
 regression:
 	uname -a
-	cd books ; $(MAKE) $(ACL2_IGNORE) all-plus
-
-.PHONY: hons-check
-hons-check:
-	@if [ "$(ACL2)" = "" ]; then \
-		echo 'Error: "make" variable ACL2 must be set for "hons" targets.' ;\
-		exit 1 ;\
-	fi
+	cd books ; $(MAKE) $(ACL2_IGNORE) $(ACL2_JOBS_OPT) all-plus
 
 .PHONY: regression-hons-only
-regression-hons-only: hons-check
+regression-hons-only:
 	uname -a
 	cd books ; \
-	  $(MAKE) $(ACL2_IGNORE) hons ACL2_HONS_OPT=$(ACL2_HONS_OPT) ACL2=$(ACL2)
+	  $(MAKE) $(ACL2_IGNORE) hons ACL2=$(ACL2)
 
 .PHONY: regression-hons
-# For a HONS regression, we do regression-hons-only first both to get
-# the extra parallelism and (primarily) to check up front that `make'
-# variable ACL2 is bound.
+# For a HONS regression, we do regression-hons-only first to get the
+# extra parallelism provided by cert.pl.  For regression-hons-only the
+# default for ACL2 is saved_acl2h in the development directory; for
+# regression, saved_acl2.  So the user might be happiest simply
+# providing a value for ACL2.
 regression-hons:
 	$(MAKE) regression-hons-only
-	$(MAKE) regression HONS_P=t
+	$(MAKE) regression ACL2_CENTAUR=skip
 
 .PHONY: regression-fast
 regression-fast:
 	uname -a
-	cd books ; pwd ; $(MAKE) $(ACL2_IGNORE) -f Makefile-fast
+	cd books ; pwd ; $(MAKE) $(ACL2_IGNORE) $(ACL2_JOBS_OPT) -f Makefile-fast
 
 .PHONY: regression-nonstd
 regression-nonstd:
 	uname -a
-	cd books/nonstd ; $(MAKE) $(ACL2_IGNORE) all-nonstd
+	cd books/nonstd ; $(MAKE) $(ACL2_IGNORE) $(ACL2_JOBS_OPT) all-nonstd
 
 # Certify main books from scratch.
 .PHONY: certify-books-fresh
 certify-books-fresh: clean-books
-	$(MAKE) $(ACL2_IGNORE) certify-books
+	$(MAKE) $(ACL2_IGNORE) $(ACL2_JOBS_OPT) certify-books
 
 # Do regression tests from scratch.
 # These targets are for developers (see comment for target regression).
@@ -844,7 +850,7 @@ certify-books-fresh: clean-books
 .PHONY: regression-fresh regression-fast-fresh regression-nonstd-fresh
 regression-fresh: clean-books
 	$(MAKE) $(ACL2_IGNORE) regression
-regression-hons-fresh: hons-check clean-books
+regression-hons-fresh: clean-books
 	$(MAKE) $(ACL2_IGNORE) regression-hons
 regression-fast-fresh: clean-books
 	$(MAKE) $(ACL2_IGNORE) regression-fast
@@ -855,7 +861,7 @@ regression-nonstd-fresh: clean-books-nonstd
 # from GCL maintainer Camm Maguire.
 .PHONY: certify-books-short
 certify-books-short:
-	cd books ; $(MAKE) short-test
+	cd books ; $(MAKE) $(ACL2_JOBS_OPT) short-test
 
 .PHONY: certify-books-test
 certify-books-test: certify-books-fresh
@@ -956,7 +962,7 @@ clean-doc:
 
 .PHONY: clean-books
 clean-books:
-	cd books ; $(MAKE) $(ACL2_IGNORE) HONS_P=t clean ; $(MAKE) $(ACL2_IGNORE) clean-hons
+	cd books ; $(MAKE) $(ACL2_IGNORE) clean
 
 .PHONY: clean-books-nonstd
 clean-books-nonstd:

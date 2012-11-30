@@ -39542,7 +39542,8 @@
 
   ~l[table] for a general discussion of tables.~/
 
-  ~l[add-macro-fn] for a more general discussion of this ~il[table]."
+  ~l[add-macro-fn] for a more general discussion of this ~il[table] and for a
+  way to associate a macro name with a function name in theory events."
 
   (declare (xargs :guard (plist-worldp wrld)))
   (table-alist 'untrans-table wrld))
@@ -39584,19 +39585,20 @@
   (add-macro-fn macro-name function-name nil) ; same as abov
   (add-macro-fn macro-name function-name t)
   ~ev[]
+
   This is a convenient way to add an entry to ~ilc[macro-aliases-table] and at
-  the same time extend the ~c[:]~ilc[untrans-table].  As suggested by the
-  example above, calls of a function in this table will be printed as
-  corresponding calls of macros, with right-associated arguments printed flat
-  in the case of a binary function symbol if the optional third argument is t.
-  In that case, for a binary function symbol ~c[fn] associated with macro name
-  ~c[mac], then a call ~c[(fn arg1 (fn arg2 (... (fn argk arg))))] will be
-  displayed to the user as though the ``term'' were
-  ~c[(mac arg1 arg2 ... argk arg)].  For a call ~c[(f a1 ... ak)] of a function
-  symbol that is not binary, or the optional argument is not supplied as ~c[t],
-  then the effect is simply to replace ~c[f] by the corresponding macro symbol.
-  ~l[macro-aliases-table], ~pl[remove-macro-alias], ~pl[untrans-table], and
-  ~pl[remove-macro-fn].~/"
+  the same time extend the ~ilc[untrans-table].  As suggested by the example
+  above, calls of a function in this table will be printed as corresponding
+  calls of macros, with right-associated arguments printed flat in the case of
+  a binary function symbol if the optional third argument is t.  In that case,
+  for a binary function symbol ~c[fn] associated with macro name ~c[mac], then
+  a call ~c[(fn arg1 (fn arg2 (... (fn argk arg))))] will be displayed to the
+  user as though the ``term'' were ~c[(mac arg1 arg2 ... argk arg)].  For a
+  call ~c[(f a1 ... ak)] of a function symbol that is not binary, or the
+  optional argument is not supplied as ~c[t], then the effect is simply to
+  replace ~c[f] by the corresponding macro symbol.  ~l[add-macro-alias], which
+  is invoked on the first two arguments.  Also ~pl[remove-macro-alias],
+  ~pl[untrans-table], and ~pl[remove-macro-fn].~/"
 
   `(progn (add-macro-alias ,macro ,macro-fn)
           (table untrans-table ',macro-fn '(,macro . ,right-associate-p))))
@@ -41044,7 +41046,8 @@
   This example associates the function symbol ~ilc[binary-append] with the
   macro name ~ilc[append].  As a result, the name ~ilc[append] may be used as a
   runic designator (~pl[theories]) by the various theory
-  functions.  ~l[macro-aliases-table] for more details.~/
+  functions.  ~l[macro-aliases-table] for more details.  Also ~pl[add-macro-fn]
+  for an extension of this utility that also affects printing.~/
   ~bv[]
   General Form:
   (add-macro-alias macro-name function-name)

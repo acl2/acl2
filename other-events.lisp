@@ -18099,9 +18099,9 @@
   the automation of the certification of collections of ACL2 ~il[books].  We
   assume here a familiarity with Unix/Linux ~c[make].  We also assume that you
   are using GNU ~c[make] rather than some other flavor of ~c[make].  And
-  finally, we generally assume that as is typically the case by following the
-  standard installation instructions, you install the ACL2 community books in
-  the ~c[books/] subdirectory of your ACL2 distribution.
+  finally, we generally assume, as is typically the case by following the
+  standard installation instructions, that you install the ACL2 community books
+  in the ~c[books/] subdirectory of your ACL2 distribution.
 
   The basic idea is to stand in the ACL2 sources directory and submit the
   following command, in order to certify all the ~il[books].
@@ -18119,10 +18119,14 @@
   make regression ACL2=<your_favorite_acl2_executable>
   ~ev[]
   If you have a multi-processor machine or the like, then you can use the
-  ~c[-j] option to obtain ~c[make]-level parallelism by specifying the number
-  of processes:
+  ~c[ACL2_JOBS] variable to obtain ~c[make]-level parallelism by specifying the
+  number of concurrent processes.  The following example shows how to specify 8
+  concurrent processes.  Note that we avoid using the customary `make' option
+  for concurrent processes, in this case `-j 8', because part of the regression
+  (under the ~c[centaur/] community books directory) would fail to take
+  advantage of that directive.
   ~bv[]
-  make -j 8 regression
+  make ACL2_JOBS=8 regression
   ~ev[]
   You can also specify just the directories you want, among those offered in
   ~c[Makefile].  For example:

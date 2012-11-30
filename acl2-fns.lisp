@@ -965,13 +965,9 @@ notation causes an error and (b) the use of ,. is not permitted."
                (c (and (not (equal name ""))
                        (char name 0))))
           (cond ((member c '(#\B #\O #\X))
-                 #+gcl
-                 (identity ; seems necessary to return a single value
+                 (values ; seems necessary in GCL to return a single value
                   (read-from-string
-                   (concatenate 'string "#" (remove #\_ name))))
-                 #-gcl
-                 (read-from-string
-                  (concatenate 'string "#" (remove #\_ name))))
+                   (concatenate 'string "#" (remove #\_ name)))))
                 (t (let ((n (read-from-string (remove #\_ name))))
                      (cond ((numberp n) n)
                            (*read-suppress* nil)
