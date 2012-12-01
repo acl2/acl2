@@ -69,6 +69,11 @@ DIRS2_EXCEPT_WK_COI = ordinals data-structures bdd ihs arithmetic-2 arithmetic-3
 	quadratic-reciprocity tools paco hacking security regex \
 	defsort serialize wp-gen xdoc-impl system tutorial-problems cutil \
 	countereg-gen demos leftist-trees taspi
+# Add directories other than centaur that depend on hons, say, for performance:
+HONS_ONLY_DIRS = models/y86
+ifdef ACL2_HONS_REGRESSION
+DIRS2_EXCEPT_WK_COI += $(HONS_ONLY_DIRS)
+endif
 DIRS2_EXCEPT_WK = $(DIRS2_EXCEPT_WK_COI) coi misc/misc2
 DIRS2 = $(DIRS2_EXCEPT_WK) workshops
 SHORTDIRS2 = ordinals data-structures bdd
@@ -103,6 +108,10 @@ ifdef ACL2
 else
 	ACL2_FOR_HONS ?= `cd .. ; pwd`/saved_acl2h
 	ACL2_FOR_CENTAUR ?= `cd .. ; pwd`/saved_acl2
+ifdef ACL2_HONS_REGRESSION
+# and ACL2 not defined
+	export ACL2 = $(shell cd .. ; pwd)/saved_acl2h
+endif
 endif
 
 # Since we have specified that ACL2_BOOK_DIRS is to be a subset of
@@ -174,6 +183,7 @@ countereg-gen: xdoc arithmetic-5 tools defexec finite-set-theory/osets \
 leftist-trees: arithmetic-5 sorting
 demos: make-event cutil misc tools arithmetic
 taspi: misc arithmetic-3
+models/y86: tools centaur misc arithmetic-5 rtl arithmetic defexec
 
 # Let us wait for everything else before workshops.  Starting after
 # Version_4.3 we include the coi books, because of
@@ -238,7 +248,7 @@ clean-hons:
 # Clean all books, not only the "basic" ones.
 .PHONY: clean
 clean:
-	@for dir in $(DIRS1) $(DIRS2) ; \
+	@for dir in $(DIRS1) $(DIRS2) $(HONS_ONLY_DIRS) ; \
 	do \
 	if [ -f $$dir/Makefile ]; then \
 	(cd $$dir ; \

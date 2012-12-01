@@ -16,11 +16,11 @@ SAT_SOLVER_TYPE ?= minisat
 # Your C compiler
 CC = gcc
 
-ACL2_SYSTEM_BOOKS = ../..
+ACL2_SYSTEM_BOOKS ?= $(shell cd ../.. ; pwd)
 
 # I need a full path so that I can hardcode a call to 
 # ACL2 in our SULFA smt solver.
-ACL2 = ${PWD}/${ACL2_SYSTEM_BOOKS}/../saved_acl2
+ACL2 ?= ${PWD}/${ACL2_SYSTEM_BOOKS}/../saved_acl2
 
 # I want the defaults set in this makefile to carry over into
 # subdirectories.

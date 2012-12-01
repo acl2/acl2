@@ -54,11 +54,11 @@ ifdef MAKEFILE_LIST
 # Determine the location of this Makefile-generic.  NOTE: We have
 # tried $(realpath $(dir ...)) and similarly for abspath, but they
 # have returned the empty string, presumably an error.
-BOOKS_DIR := $(dir $(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST)))
+BOOKS_DIR := $(shell cd $(dir $(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST))) ; pwd)
 
 # Determine the default location of ACL2.  To override, set the ACL2
 # variable on the command line or in the environment.
-ACL2 ?= $(BOOKS_DIR)../saved_acl2
+ACL2 ?= $(shell cd $(BOOKS_DIR)/.. ; pwd)/saved_acl2
 
 # Unless otherwise specified, use the books under this directory as
 # the system books.  We set the flag ACL2_SYSTEM_BOOKS_DYNAMIC if any

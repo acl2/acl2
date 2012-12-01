@@ -3,13 +3,13 @@
 # books directory.  You are welcome to omit this line, or not as you prefer, in
 # your contribution.
 #ACL2_SYSTEM_BOOKS = /projects/hvg/reeber-local/v2-9-4-linux/books
-ACL2_SYSTEM_BOOKS = ../../../..
+ACL2_SYSTEM_BOOKS ?= $(shell cd ../../../.. ; pwd)
 
 include ${ACL2_SYSTEM_BOOKS}/Makefile-generic
 
 # OPTIONALLY EDIT THE FOLLOWING.  But do not use "time" or "nice"; at least one
 # of these can cause trouble in some environments.
-ACL2 = ${ACL2_SYSTEM_BOOKS}/../saved_acl2
+ACL2 ?= ${ACL2_SYSTEM_BOOKS}/../saved_acl2
 
 BOOKS = translation \
         bv-lib-definitions \

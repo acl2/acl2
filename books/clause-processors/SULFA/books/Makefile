@@ -1,5 +1,5 @@
 
-ACL2_SYSTEM_BOOKS = ../../..
+ACL2_SYSTEM_BOOKS ?= $(shell cd ../../.. ; pwd)
 
 DIRS = sat clause-processors sat-tests bv-smt-solver 
 
