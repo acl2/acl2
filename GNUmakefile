@@ -816,7 +816,7 @@ regression:
 regression-hons-only:
 	uname -a
 	cd books ; \
-	  $(MAKE) $(ACL2_IGNORE) hons ACL2=$(ACL2)
+	  $(MAKE) $(ACL2_IGNORE) hons
 
 .PHONY: regression-hons
 # For a HONS regression, we do regression-hons-only first to get the
@@ -826,7 +826,7 @@ regression-hons-only:
 # providing a value for ACL2.
 regression-hons:
 	$(MAKE) regression-hons-only
-	$(MAKE) regression ACL2_CENTAUR=skip
+	$(MAKE) regression ACL2_CENTAUR=skip ACL2_HONS_REGRESSION=t
 
 .PHONY: regression-fast
 regression-fast:
