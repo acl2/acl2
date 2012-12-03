@@ -3749,12 +3749,51 @@
   ":Doc-Section Miscellaneous
 
   how to specify the arity of a constrained function~/
+
+  We start with a gentle introduction to signatures, where we pretend that
+  there are no single-threaded objects (more on that below ~-[] for now, if you
+  don't know anything about single-threaded objects, that's fine!).  Here are
+  some simple examples of signatures.
+  ~bv[]
+  ((hd *) => *)
+  ((pair * *) => *)
+  ((foo * *) => (mv * * *))
+  ~ev[]
+  The first of these says that ~c[hd] is a function of one argument, while the
+  other two say that ~c[pair] and ~c[foo] are functions that each take two
+  arguments.  The first two say that ~c[hd] and ~c[pair] return a single
+  value.  The third says that ~c[foo] returns three values, much as the
+  following definition returns three values:
+  ~bv[]
+  (defun bar (x y)
+    (mv y x (cons x y)))
+  ~ev[]
+
+  Corresponding ``old-style'' signatures are as follows.  In each case, a
+  function symbol is followed by a list of formal parameters and then either
+  ~c[t], to denote a single value return, or ~c[(mv t t t)], to denote a
+  multiple value return (in this case, returning three values).
+  ~bv[]
+  (hd (x) t)
+  (pair (x y) t)
+  (foo (x y) (mv t t t))
+  ~ev[]
+
+  That concludes our gentle introduction.  The documentation below is more
+  general, for example covering single-threaded objects and keyword values such
+  as ~c[:guard].  When reading what follows below, it is sufficient to know
+  about single-threaded objects (or ``stobjs'') that each has a unique symbolic
+  name and that ~ilc[state] is the name of the only built-in single-threaded
+  object.  All other stobjs are introduced by the user via ~ilc[defstobj] or
+  ~ilc[defabsstobj].  An object that is not a single-threaded object is said to
+  be ``ordinary.''  For a discussion of single-threaded objects, ~pl[stobj].~/
+
   ~bv[]
   Examples:
   ((hd *) => *)
   ((hd *) => * :formals (x) :guard (consp x))
   ((printer * state) => (mv * * state))
-  ((mach * mach-state * state) => (mv * mach-state)
+  ((mach * mach-state * state) => (mv * mach-state))
 
   General Form:
   ((fn ...) => *)
@@ -3768,19 +3807,12 @@
   asterisks and/or the names of single-threaded objects, ~c[stobj] is a
   single-threaded object name, and the optional ~c[:kwdi] and ~c[:vali] are as
   described below.  ACL2 also supports an older style of signature, described
-  below after we describe the preferred style.~/
+  below after we describe the preferred style.
 
   Signatures specify three syntactic aspects of a function symbol: (1) the
   ``arity'' or how many arguments the function takes, (2) the ``multiplicity''
   or how many results it returns via ~c[MV], and (3) which of those arguments
   and results are single-threaded objects and which objects they are.
-
-  For a discussion of single-threaded objects, ~pl[stobj].  For the current
-  purposes it is sufficient to know that every single-threaded object has a
-  unique symbolic name and that ~ilc[state] is the name of the only built-in
-  single-threaded object.  All other stobjs are introduced by the user via
-  ~ilc[defstobj] or ~ilc[defabsstobj].  An object that is not a single-threaded
-  object is said to be ``ordinary.''
 
   A signature typically has the form ~c[((fn x1 ... xn) => val)].  Such a
   signature has two parts, separated by the symbol ``=>''.  The first part,
