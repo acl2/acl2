@@ -61,7 +61,8 @@ export ACL2_PCERT
 
 DIRS1 = cowles arithmetic meta xdoc
 DIRS2_EXCEPT_WK_COI = ordinals data-structures bdd ihs arithmetic-2 arithmetic-3 arithmetic-5 \
-	misc models/jvm/m1-original models/jvm/m5 proofstyles rtl arithmetic-3/extra sorting make-event parallel hints \
+	misc models/jvm/m1-original models/jvm/m1 models/jvm/m5 \
+proofstyles rtl arithmetic-3/extra sorting make-event parallel hints \
 	fix-cert finite-set-theory finite-set-theory/osets powerlists textbook \
 	defexec symbolic \
 	data-structures/memories unicode str concurrent-programs/bakery \
@@ -158,6 +159,7 @@ quadratic-reciprocity: rtl
 misc/misc2: rtl coi top-with-meta-cert
 hints: misc
 models/jvm/m1-original: arithmetic-3/extra
+models/jvm/m1: arithmetic-5
 models/jvm/m5: top-with-meta-cert ordinals misc ihs
 # models/jvm/m5 is needed for paco/books, not paco
 models/X86: tools arithmetic-5 arithmetic misc rtl defexec
