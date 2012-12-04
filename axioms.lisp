@@ -20874,12 +20874,12 @@
          (and (alistp fn)
               (no-duplicatesp-equal (strip-cars fn))))
 
-       (defun nat-listp (x)
+       (defun nat-listp (l)
          (declare (xargs :guard t))
-         (cond ((atom x)
-                (equal x nil))
-               (t (and (natp (car x))
-                       (nat-listp (cdr x))))))
+         (cond ((atom l)
+                (eq l nil))
+               (t (and (natp (car l))
+                       (nat-listp (cdr l))))))
 
        (defun nat-function-p (x)
          (and (function-p x)
@@ -26836,6 +26836,28 @@
            (integerp x))
   :rule-classes :forward-chaining)
 
+(defun acl2-number-listp (l)
+
+  ":Doc-Section ACL2::ACL2-built-ins
+
+  recognizer for a true list of numbers~/
+
+  The predicate ~c[acl2-number-listp] tests whether its argument is a true list
+  of numbers.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/~/"
+
+  (declare (xargs :guard t))
+  (cond ((atom l)
+         (eq l nil))
+        (t (and (acl2-numberp (car l))
+                (acl2-number-listp (cdr l))))))
+
+(defthm acl2-number-listp-forward-to-true-listp
+  (implies (acl2-number-listp x)
+           (true-listp x))
+  :rule-classes :forward-chaining)
+
 (defun rational-listp (l)
 
   ":Doc-Section ACL2::ACL2-built-ins
@@ -26853,9 +26875,9 @@
         (t (and (rationalp (car l))
                 (rational-listp (cdr l))))))
 
-(defthm rational-listp-forward-to-true-listp
+(defthm rational-listp-forward-to-acl2-number-listp
   (implies (rational-listp x)
-           (true-listp x))
+           (acl2-number-listp x))
   :rule-classes :forward-chaining)
 
 ;; RAG - This function is analogous to rational-listp.
@@ -26880,9 +26902,9 @@
 ;; RAG - Standard forward chaining theorem about <type>-listp.
 
 #+:non-standard-analysis
-(defthm real-listp-forward-to-true-listp
+(defthm real-listp-forward-to-acl2-number-listp
   (implies (real-listp x)
-           (true-listp x))
+           (acl2-number-listp x))
   :rule-classes :forward-chaining)
 
 (defun integer-listp (l)
@@ -26898,13 +26920,35 @@
 
   (declare (xargs :guard t))
   (cond ((atom l)
-         (equal l nil))
+         (eq l nil))
         (t (and (integerp (car l))
                 (integer-listp (cdr l))))))
 
 (defthm integer-listp-forward-to-rational-listp
   (implies (integer-listp x)
            (rational-listp x))
+  :rule-classes :forward-chaining)
+
+(defun nat-listp (l)
+
+  ":Doc-Section ACL2::ACL2-built-ins
+
+  recognizer for a true list of natural  numbers~/
+
+  The predicate ~c[nat-listp] tests whether its argument is a true
+  list of natural numbers.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/~/"
+
+  (declare (xargs :guard t))
+  (cond ((atom l)
+         (eq l nil))
+        (t (and (natp (car l))
+                (nat-listp (cdr l))))))
+
+(defthm nat-listp-forward-to-integer-listp
+  (implies (nat-listp x)
+           (integer-listp x))
   :rule-classes :forward-chaining)
 
 ;; RAG - Analogous to the forward rule from integers to rationals.
@@ -46919,6 +46963,11 @@ Lisp definition."
   ":Doc-Section Miscellaneous
 
   control printing from the garbage collector~/
+
+  ~bv[]
+  General Form:
+  (gc-verbose arg)
+  ~ev[]
 
   Garbage collection (gc) is performed by every Lisp implementation; ~pl[gc$].
   However, different ACL2 builds might see more or fewer messages.  This macro

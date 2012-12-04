@@ -19745,6 +19745,16 @@
   collector, for certain host Lisps.  ~l[gc-verbose].  Thanks to Shilpi Goel
   for requesting this utility.
 
+  Added definitions of functions ~ilc[nat-listp] and ~ilc[acl2-number-listp].
+  Thanks to Harsh Raju Chamarthi for requesting these additions.  Many
+  community books had varying definitions of these functions; these additions
+  guarantee that all books must agree on how these two functions are
+  defined.  (Some community books have been changed in order that they remain
+  certifiable, given these additions.)  Note that a few built-in
+  ~c[:]~ilc[forward-chaining] rules were modified in order to accommodate these
+  additions, and the definition of ~ilc[integer-listp] was modified to call
+  ~ilc[eq] instead of ~ilc[equal], like the other such definitions.
+
   ~st[HEURISTIC IMPROVEMENTS]
 
   We obtained a substantial speedup ~-[] 13% observed for the regression suite,

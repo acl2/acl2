@@ -6170,11 +6170,21 @@
   current alist.  Consider for example the discussion above for ~c[~~y],
   ``~c[~~yx  pretty print vx]'', applied to the following expression:
   ~c[(fmt \"HELLO ~~y7\" (list (cons #\\7 'world)) *standard-co* state nil)].
-  Then in this example, ~c[vx] is the value of character ~c[#\\7] under the
-  given alist, which is the symbol, ~c[WORLD]; thus, ACL2 will pretty print the
-  symbol, ~c[WORLD].  When we say ``format ~c[str] under ~c[a+]'' we mean
-  recursively process the given string under an alist obtained by appending
-  ~c[a] to the current alist.
+  Then in this example: ~c[#\\x] is 7; and ~c[vx] is the value of character
+  ~c[#\\7] under the given alist, which is the symbol, ~c[WORLD].  Thus, ACL2
+  will print ~c[HELLO WORLD].  When we say ``format ~c[str] under ~c[a+]'' we
+  mean: process the given string under an alist obtained by appending ~c[a] to
+  the current alist.  The following example illustrates how this works.
+  ~bv[]
+  ACL2 !>(fms \"~~@0\"
+              (list (cons #\\0 (cons \"~~x0 ~~@1\" (list (cons #\\0  'abc))))
+                    (cons #\\1 \"-- and now: ~~x0 again~~%\"))
+              *standard-co* state nil)
+
+  ABC -- and now: ABC again
+  <state>
+  ACL2 !>
+  ~ev[]
 
   Note:  ~c[~~p], ~c[~~q], ~c[~~P], and ~c[~~Q] are also currently supported,
   but are deprecated.  These are respectively the same as ~c[~~x], ~c[~~y],

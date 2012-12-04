@@ -1135,7 +1135,7 @@
 ; than as ironclad guarantees that the functions can be guard-verified in
 ; definitional (or even conservative) extensions of the ground-zero theory.  We
 ; consider this sufficient, as the event that some package axiom will cause
-; such bogus marking as guard-verified to be much less likely than the event
+; such bogus marking as guard-verified seems much less likely than the event
 ; that our system has other serious bugs!
 
 (verify-termination-boot-strap safe-access-command-tuple-form) ; and guards
