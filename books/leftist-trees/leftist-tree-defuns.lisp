@@ -176,12 +176,12 @@ The basic recursive requirements are:
                 (+ 1 (rank-lt (right-lt tree))))
          (<= (rank-lt (right-lt tree))
              (rank-lt (left-lt tree)))
-         (if (consp (left-lt tree))
-             (lexorder (root-lt tree) (root-lt (left-lt tree)))
-           t)
-         (if (consp (right-lt tree))
-             (lexorder (root-lt tree) (root-lt (right-lt tree)))
-           t))))
+         (implies (consp (left-lt tree))
+                  (lexorder (root-lt tree) 
+                            (root-lt (left-lt tree))))
+         (implies (consp (right-lt tree))
+                  (lexorder (root-lt tree)
+                            (root-lt (right-lt tree)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;
 ;; HEAP OPERATIONS ;;
