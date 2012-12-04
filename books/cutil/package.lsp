@@ -109,6 +109,7 @@
      substitute
      union
      delete
+     nat-listp ; included 12/4/2012 by Matt K., for addition to *acl2-exports*
      )))
 
 #!CUTIL

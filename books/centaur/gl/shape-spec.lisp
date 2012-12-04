@@ -11,12 +11,14 @@
 (local (include-book "ihs/ihs-lemmas" :dir :system))
 (local (include-book "centaur/misc/fast-alists" :dir :system))
 
-(defund nat-listp (x)
+; Modified slightly 12/4/2012 by Matt K. to be redundant with new ACL2
+; definition.
+(defund nat-listp (l)
   (declare (xargs :guard t))
-  (if (atom x)
-      (null x)
-    (and (natp (car x))
-         (nat-listp (cdr x)))))
+  (cond ((atom l)
+         (eq l nil))
+        (t (and (natp (car l))
+                (nat-listp (cdr l))))))
 
 (defund slice-to-bdd-env (slice env)
   (declare (xargs :guard (and (alistp slice)

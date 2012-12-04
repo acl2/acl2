@@ -149,11 +149,14 @@ an arbitrary symbol in ACL2.
            (simplep (car x))
            (simplep (cdr x)))))
 
-(defun nat-listp (x)
-  (or (null x)
-      (and (consp x)
-           (natp (car x))
-           (nat-listp (cdr x)))))
+; Modified slightly 12/4/2012 by Matt K. to be redundant with new ACL2
+; definition.
+(defun nat-listp (l)
+  (declare (xargs :guard t))
+  (cond ((atom l)
+         (eq l nil))
+        (t (and (natp (car l))
+                (nat-listp (cdr l))))))
 
 (defun nat->list (n)
   (if (zp n) () (cons nil (nat->list (1- n)))))

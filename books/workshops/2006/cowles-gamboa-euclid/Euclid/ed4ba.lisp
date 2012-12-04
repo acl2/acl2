@@ -34,8 +34,11 @@
 To certify this book, first, create a world with the following package:
 
 (defpkg "INT-REM"
-        (union-eq *acl2-exports*
-		  *common-lisp-symbols-from-main-lisp-package*))
+  (set-difference-eq (union-eq
+                      *acl2-exports*
+                      *common-lisp-symbols-from-main-lisp-package*)
+; Subtracted 12/4/2012 by Matt K. for addition to *acl2-exports* ; ; ;
+                     '(nat-listp acl2-number-listp)))
 
    (certify-book "ed4ba" 
                  1

@@ -87,12 +87,14 @@
            (+ 2 (expt 2 60))
            (expt 2 90)))
 
-   (defun nat-listp (x)
+   ;; Modified slightly 12/4/2012 by Matt K. to be redundant with new ACL2
+   ;; definition.
+   (defun nat-listp (l)
      (declare (xargs :guard t))
-     (if (atom x)
-         (null x)
-       (and (natp (car x))
-            (nat-listp (cdr x)))))
+     (cond ((atom l)
+            (eq l nil))
+           (t (and (natp (car l))
+                   (nat-listp (cdr l))))))
 
    (defun test1 (num indices)
      (declare (xargs :guard (and (integerp num)

@@ -881,12 +881,14 @@
                     (random-acl2-number-list-len (1- len) state)
                     (mv (cons elem lst) state)))))
 
-(defun acl2-number-listp (x)
+; Modified slightly 12/4/2012 by Matt K. to be redundant with new ACL2
+; definition.
+(defun acl2-number-listp (l)
   (declare (xargs :guard t))
-  (IF (ATOM X)
-    (NULL X)
-    (AND (ACL2-NUMBERP (CAR X))
-         (ACL2-NUMBER-LISTP (CDR X)))))
+  (cond ((atom l)
+         (eq l nil))
+        (t (and (acl2-numberp (car l))
+                (acl2-number-listp (cdr l))))))
 
 (defthm random-acl2-number-list-len-type
   (acl2-number-listp (car (random-acl2-number-list-len l r)))

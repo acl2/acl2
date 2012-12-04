@@ -22,12 +22,12 @@
 (in-package "ACL2")
 
 
-(defund nat-listp (x)
+(defund nat-listp (l)
   (declare (xargs :guard t))
-  (if (atom x)
-      (eq x nil)
-    (and (natp (car x))
-         (nat-listp (cdr x)))))
+  (cond ((atom l)
+         (eq l nil))
+        (t (and (natp (car l))
+                (nat-listp (cdr l))))))
 
 (local (in-theory (enable nat-listp)))
 

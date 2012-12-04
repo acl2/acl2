@@ -139,7 +139,8 @@
 
      numlist
      defsection))
-  '()))
+  '(nat-listp ; included 12/4/2012 by Matt K., for addition to *acl2-exports*
+    )))
 
 (defpkg "GL-SYM" nil)
 (defpkg "GL-THM" nil)

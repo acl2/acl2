@@ -316,12 +316,12 @@
 
 ; Nat-listp and Integer-listp
 
-(defun nat-listp (x)
+(defun nat-listp (l)
   (declare (xargs :guard t))
-  (if (atom x)
-      (eq x nil)
-    (and (natp (car x))
-         (nat-listp (cdr x)))))
+  (cond ((atom l)
+         (eq l nil))
+        (t (and (natp (car l))
+                (nat-listp (cdr l))))))
 
 (defthm nat-listp-forward
   (implies (nat-listp x)

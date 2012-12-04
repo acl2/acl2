@@ -184,6 +184,7 @@
      enable
      disable
      e/d
+     nat-listp ; included 12/4/2012 by Matt K., for addition to *acl2-exports*
      )))
 
 (assign acl2::verbose-theory-warning nil)

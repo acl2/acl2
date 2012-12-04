@@ -179,11 +179,14 @@ theorem demonstrates that msr1- decrements measures which are non-0.
                       (and (equal a b)
                            (msr< x y))))))
 
-(defun nat-listp (x)
-  (or (null x)
-      (and (consp x)
-           (natp (first x))
-           (nat-listp (rest x)))))
+; Modified slightly 12/4/2012 by Matt K. to be redundant with new ACL2
+; definition.
+(defun nat-listp (l)
+  (declare (xargs :guard t))
+  (cond ((atom l)
+         (eq l nil))
+        (t (and (natp (car l))
+                (nat-listp (cdr l))))))
 
 (defthm nat-listp-is-true-listp
   (implies (nat-listp x)

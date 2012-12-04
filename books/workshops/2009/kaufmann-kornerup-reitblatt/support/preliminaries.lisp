@@ -77,7 +77,7 @@
 (defun nat-listp (l)
   (declare (xargs :guard t))
   (cond ((atom l)
-         (equal l nil))
+         (eq l nil))
         (t (and (natp (car l))
                 (nat-listp (cdr l))))))
 

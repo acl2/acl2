@@ -676,19 +676,8 @@
 
 ;NEEDED BY EVERYONE:
   
-(defun nat-listp (x)
-  (declare (xargs :guard t))
-  (if (atom x)
-    (null x)
-    (and (natp (car x))
-         (nat-listp (cdr x)))))
-
-(defun acl2-number-listp (x)
-   (declare (xargs :guard t))
-  (if (atom x)
-    (null x)
-    (and (acl2-numberp (car x))
-         (acl2-number-listp (cdr x)))))
+; 12/4/2012, Matt K.: Omitting the definitions of nat-listp and
+; acl2-number-listp, which are being built into ACL2.
 
 (defun naturals-listp (x)
    (declare (xargs :guard t))

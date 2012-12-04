@@ -37,8 +37,11 @@
 To certify this book, first, create a world with the following package:
 
 (defpkg "GAUSS-INT"
-        (union-eq *acl2-exports*
-		  *common-lisp-symbols-from-main-lisp-package*))
+  (set-difference-eq (union-eq
+                      *acl2-exports*
+                      *common-lisp-symbols-from-main-lisp-package*)
+; Subtracted 12/4/2012 by Matt K. for addition to *acl2-exports* ; ; ;
+                     '(nat-listp acl2-number-listp)))
 
    (certify-book "ed5aa" 
                  1

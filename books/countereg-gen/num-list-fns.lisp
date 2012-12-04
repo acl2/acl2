@@ -53,12 +53,8 @@
   :rule-classes :forward-chaining)
 |#
 
-(defun acl2-number-listp (x)
-   (declare (xargs :guard t))
-  (if (atom x)
-    (null x)
-    (and (acl2-numberp (car x))
-         (acl2-number-listp (cdr x)))))
+; The definition of acl2-number-listp that was here has been omitted 12/4/2012
+; by Matt K., since it is now included in ACL2.
 
 (defthm rational-listp-forward-to-acl2-number-listp
   (implies (rational-listp x)

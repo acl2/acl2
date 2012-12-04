@@ -26,12 +26,14 @@
     (and (quartet-p (car x))
          (quartet-list-p (cdr x)))))
 
-(defun nat-listp (x)
+; Modified slightly 12/4/2012 by Matt K. to be redundant with new ACL2
+; definition.
+(defun nat-listp (l)
   (declare (xargs :guard t))
-  (if (atom x)
-      (equal x nil)
-    (and (natp (car x))
-         (nat-listp (cdr x)))))
+  (cond ((atom l)
+         (eq l nil))
+        (t (and (natp (car l))
+                (nat-listp (cdr l))))))
 
 (defthm nat-listp-true-listp
   (implies (nat-listp x)

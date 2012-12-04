@@ -116,11 +116,14 @@
             (fixlist (cdr list)))
     nil))
 
-(defun acl2-number-listp (list)
-  (if (consp list)
-      (and (acl2-numberp (car list))
-           (acl2-number-listp (cdr list)))
-    (null list)))
+; Modified slightly 12/4/2012 by Matt K. to be redundant with new ACL2
+; definition.
+(defun acl2-number-listp (l)
+  (declare (xargs :guard t))
+  (cond ((atom l)
+         (eq l nil))
+        (t (and (acl2-numberp (car l))
+                (acl2-number-listp (cdr l))))))
 
 (defthm acl2-number-listp-fixlist
   (acl2-number-listp (fixlist list)))
