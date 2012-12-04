@@ -144,17 +144,17 @@ optimized version of @(see sbitset-pair-members).</p>"
 
   (defconst *sbitset-block-size* 60))
 
-(defthm floor-is-nonnegative-integer-quotient
-  (implies (and (natp a) (posp b))
-           (equal (floor a b)
-                  (nonnegative-integer-quotient a b))))
+(local (defthm floor-is-nonnegative-integer-quotient
+         (implies (and (natp a) (posp b))
+                  (equal (floor a b)
+                         (nonnegative-integer-quotient a b)))))
 
 (local (in-theory (disable truncate)))
 
-(defthm truncate-is-nonnegative-integer-quotient
-  (implies (and (natp a) (posp b))
-           (equal (truncate a b)
-                  (nonnegative-integer-quotient a b))))
+(local (defthm truncate-is-nonnegative-integer-quotient
+         (implies (and (natp a) (posp b))
+                  (equal (truncate a b)
+                         (nonnegative-integer-quotient a b)))))
 
 
 (local
