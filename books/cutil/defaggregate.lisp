@@ -68,14 +68,16 @@ for a new record-like structure.  It is similar to @('struct') in C or
 @({
  (defaggregate prefix
    fields
-   &key tag         ; required
-        require     ; nil by default
-        legiblep    ; t by default
-        hons        ; nil by default
-        mode        ; current defun-mode by default
-        parents     ; '(acl2::undocumented) by default
-        short       ; nil by default
-        long        ; nil by default
+   &key tag                 ; required
+        require             ; nil by default
+        legiblep            ; t by default
+        hons                ; nil by default
+        already-definedp    ; nil by default
+        mode                ; current defun-mode by default
+        parents             ; '(acl2::undocumented) by default
+        short               ; nil by default
+        long                ; nil by default
+        rest                ; nil by default
         )
 })
 
@@ -265,6 +267,13 @@ constructed and used in an ephemeral manner.</p>
 
 <p>Because honsing is somewhat at odds with the notion of legible structures,
 @(':hons t') implies @(':legiblep nil').</p>
+
+<h4>Already defined predicates (@(':already-definedp') parameter)</h4>
+
+<p>Can be set if you have already defined the function.  This can be used to
+generate all of the ordinary @('defaggregate') theorems without generating a
+@('defund') event, and is useful when you are dealing with mutually recursive
+recognizers.</p>
 
 
 <h4>Defun-mode (@(':mode') parameter)</h4>
@@ -1139,8 +1148,8 @@ term.  The attempted binding of~|~% ~p1~%~%is not of this form."
   (cons (da-main-autodoc name fields require parents short long)
         (da-fields-autodoc name fields)))
 
-(defun defaggregate-fn (name fields tag require honsp legiblep patbindp mode
-                             parents short long)
+(defun defaggregate-fn (name fields tag require honsp legiblep patbindp 
+                             already-definedp mode parents short long)
   (and (or (symbolp name)
            (er hard 'defaggregate "Name must be a symbol."))
        (or (symbol-listp fields)
@@ -1159,6 +1168,10 @@ term.  The attempted binding of~|~% ~p1~%~%is not of this form."
            (er hard 'defaggregate "The names given to :require must be unique."))
        (or (member mode '(:logic :program))
            (er hard 'defaggregate "The mode must be :logic or :program."))
+       (or (eq mode :logic)
+           (not already-definedp)
+           (er hard 'defaggregate ":mode :program and already-definedp cannot ~
+                                   be used together."))
        (or (symbol-listp parents)
            (er hard 'defaggregate "The :parents must be a list of symbols."))
        (or (stringp short)
@@ -1190,7 +1203,9 @@ term.  The attempted binding of~|~% ~p1~%~%is not of this form."
                  '(logic)
                '(program))
 
-            ,(da-make-recognizer name tag fields require legiblep)
+            ,@(if already-definedp
+                 nil
+                (list (da-make-recognizer name tag fields require legiblep)))
             ,(da-make-constructor name tag fields require honsp legiblep)
             ,(da-make-honsed-constructor name tag fields require legiblep)
             ,@(da-make-accessors name tag fields legiblep)
@@ -1293,13 +1308,14 @@ term.  The attempted binding of~|~% ~p1~%~%is not of this form."
                              (legiblep ''t)
                              hons
                              (patbindp ''t)
+                             (already-definedp 'nil)
                              mode
                              (parents '(acl2::undocumented))
                              short
                              long)
   `(make-event (let ((mode (or ',mode (default-defun-mode (w state)))))
                  (defaggregate-fn ',name ',fields ',tag ',require ',hons ',legiblep
-                   ',patbindp mode ',parents ',short ',long))))
+                   ',patbindp ',already-definedp mode ',parents ',short ',long))))
 
 
 
