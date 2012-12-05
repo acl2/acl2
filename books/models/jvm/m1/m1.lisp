@@ -8,28 +8,10 @@ symbols I don't import are defined acceptably in the ACL2 package, e.g., NTH,
 but I want to students to see their definitions as warm-up exercises.
 
 (defpkg "M1"
- '(; Symbols Commonly Used in Programs
-   t      nil    quote     if        equal
-   and    or     not       implies   iff
-   cons   car    cdr       consp     endp
-   list   list*  atom      symbolp
-   +      -      *         /         expt
-   floor  mod    natp      integerp  nfix
-   zp     <      <=        >         >=
-   let    let*   cond      case      otherwise
-   ; Symbols Commonly Used in Commands
-   defun     defthm  thm  defconst
-   defmacro  progn   \&rest mutual-recursion    in-package
-   declare   ignore  xargs  in-theory enable  disable e/d
-   include-book  certify-book      ld      i-am-here
-   pbt pcb pcb! pe pe! pf pl pr pr!
-   puff u ubt ubt! 
-   ; Less Commonly Used Symbols
-   o-p         o<       acl2-count    intern-in-package-of-symbol
-   coerce      symbol-name   string   concatenate    true-listp
-   strip-cars  assoc    pairlis\$    pairlis-x2  syntaxp   quotep
-   kwote eq ffn-symb fargn mv mv-let mv-nth force assoc-equal max
-   ash ))
+  (set-difference-eq (union-eq *acl2-exports*
+                               *common-lisp-symbols-from-main-lisp-package*)
+                     '(push pop pc program step
+                            nth update-nth nth-update-nth)))
 
 (certify-book "m1" 1)
 
