@@ -30743,7 +30743,7 @@
   (prog2$ (or (eq case :upcase)
               (eq case :downcase)
               (illegal 'set-print-case
-                       "The value ~x0 is illegal as an ACL2 print-base, which ~
+                       "The value ~x0 is illegal as an ACL2 print-case, which ~
                         must be :UPCASE or :DOWNCASE."
                        (list (cons #\0 case))))
           (f-put-global 'print-case case state)))
@@ -31004,7 +31004,7 @@
   Use ~c[princ$] to do basic printing of atoms (i.e., other than ~c[cons]
   pairs).  In particular, ~c[princ$] prints a string without the surrounding
   double-quotes and without escaping double-quote characters within the
-  string.  Note that ~c[princ] is sensitive to the print-base and print-case;
+  string.  Note that ~c[princ$] is sensitive to the print-base and print-case;
   ~pl[set-print-base] and ~pl[set-print-case].  ~c[Princ$] returns
   ~ilc[state].
   ~bv[]

@@ -1736,7 +1736,7 @@
 (defun pos-listp (l)
   (declare (xargs :guard t))
   (cond ((atom l)
-         (equal l nil))
+         (eq l nil))
         (t (and (posp (car l))
                 (pos-listp (cdr l))))))
 

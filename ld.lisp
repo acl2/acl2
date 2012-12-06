@@ -19576,6 +19576,12 @@
 ; books/centaur/vl/util/print-htmlencode.lisp, *never-profile-ht* is now
 ; defined in ACL2.
 
+; Changed equal to eq in the body of the definition of pos-listp.
+
+; Fixed a typo (":type-prescrption", in chk-acceptable-type-prescription-rule)
+; that could have affected warnings printed when :type-prescription rules are
+; submitted.
+
   :doc
   ":Doc-Section release-notes
 
@@ -19689,6 +19695,11 @@
 
   The macros ~ilc[memoize] and ~ilc[unmemoize] now cause a warning rather than
   an error in ACL2 (and work as before in ACL2(h)).
+
+  Terms are now parsed into ~c[:]~ilc[type-prescription] rules in a manner that
+  removes ~ilc[let] bindings both at the top level and in the conclusion (but
+  still not in the hypotheses of the rule).  ~l[type-prescription].  Thanks to
+  Jared Davis for requesting such an enhancement.
 
   ~st[NEW FEATURES]
 

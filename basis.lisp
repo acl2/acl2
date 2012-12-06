@@ -5517,7 +5517,7 @@
 
 ; If s is a symbol or a string, we print it out, breaking on hyphens but not
 ; being fooled by fmt directives inside it.  We also allow s to be a number
-; (not sure why this was every allowed, but we continue to support it).  We
+; (not sure why this was ever allowed, but we continue to support it).  We
 ; return the new col and state.
 
   (declare (type (signed-byte 30) col))
