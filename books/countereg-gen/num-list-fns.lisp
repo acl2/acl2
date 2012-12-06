@@ -19,7 +19,7 @@
 ; already in program mode:
 (DEFUN POS-LISTP (acl2::L)
    (declare (xargs :guard t))
-  (COND ((ATOM acl2::L) (EQUAL acl2::L NIL))
+  (COND ((ATOM acl2::L) (EQ acl2::L NIL))
         (T (AND (POSP (CAR acl2::L))
                 (POS-LISTP (CDR acl2::L))))))
 
