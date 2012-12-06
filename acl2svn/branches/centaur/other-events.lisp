@@ -3749,12 +3749,51 @@
   ":Doc-Section Miscellaneous
 
   how to specify the arity of a constrained function~/
+
+  We start with a gentle introduction to signatures, where we pretend that
+  there are no single-threaded objects (more on that below ~-[] for now, if you
+  don't know anything about single-threaded objects, that's fine!).  Here are
+  some simple examples of signatures.
+  ~bv[]
+  ((hd *) => *)
+  ((pair * *) => *)
+  ((foo * *) => (mv * * *))
+  ~ev[]
+  The first of these says that ~c[hd] is a function of one argument, while the
+  other two say that ~c[pair] and ~c[foo] are functions that each take two
+  arguments.  The first two say that ~c[hd] and ~c[pair] return a single
+  value.  The third says that ~c[foo] returns three values, much as the
+  following definition returns three values:
+  ~bv[]
+  (defun bar (x y)
+    (mv y x (cons x y)))
+  ~ev[]
+
+  Corresponding ``old-style'' signatures are as follows.  In each case, a
+  function symbol is followed by a list of formal parameters and then either
+  ~c[t], to denote a single value return, or ~c[(mv t t t)], to denote a
+  multiple value return (in this case, returning three values).
+  ~bv[]
+  (hd (x) t)
+  (pair (x y) t)
+  (foo (x y) (mv t t t))
+  ~ev[]
+
+  That concludes our gentle introduction.  The documentation below is more
+  general, for example covering single-threaded objects and keyword values such
+  as ~c[:guard].  When reading what follows below, it is sufficient to know
+  about single-threaded objects (or ``stobjs'') that each has a unique symbolic
+  name and that ~ilc[state] is the name of the only built-in single-threaded
+  object.  All other stobjs are introduced by the user via ~ilc[defstobj] or
+  ~ilc[defabsstobj].  An object that is not a single-threaded object is said to
+  be ``ordinary.''  For a discussion of single-threaded objects, ~pl[stobj].~/
+
   ~bv[]
   Examples:
   ((hd *) => *)
   ((hd *) => * :formals (x) :guard (consp x))
   ((printer * state) => (mv * * state))
-  ((mach * mach-state * state) => (mv * mach-state)
+  ((mach * mach-state * state) => (mv * mach-state))
 
   General Form:
   ((fn ...) => *)
@@ -3768,19 +3807,12 @@
   asterisks and/or the names of single-threaded objects, ~c[stobj] is a
   single-threaded object name, and the optional ~c[:kwdi] and ~c[:vali] are as
   described below.  ACL2 also supports an older style of signature, described
-  below after we describe the preferred style.~/
+  below after we describe the preferred style.
 
   Signatures specify three syntactic aspects of a function symbol: (1) the
   ``arity'' or how many arguments the function takes, (2) the ``multiplicity''
   or how many results it returns via ~c[MV], and (3) which of those arguments
   and results are single-threaded objects and which objects they are.
-
-  For a discussion of single-threaded objects, ~pl[stobj].  For the current
-  purposes it is sufficient to know that every single-threaded object has a
-  unique symbolic name and that ~ilc[state] is the name of the only built-in
-  single-threaded object.  All other stobjs are introduced by the user via
-  ~ilc[defstobj] or ~ilc[defabsstobj].  An object that is not a single-threaded
-  object is said to be ``ordinary.''
 
   A signature typically has the form ~c[((fn x1 ... xn) => val)].  Such a
   signature has two parts, separated by the symbol ``=>''.  The first part,
@@ -12113,10 +12145,10 @@
             (include-book-er
              file1 file2
              (cons "~x0 was apparently certified with ~sa.  The inclusion of ~
-                    this book in the current ACL2 may render this ACL2 sesion ~
-                    unsound!  We recommend you recertify the book with the ~
-                    current version, ~sb.  See :DOC version.  No compiled ~
-                    file will be loaded with this book."
+                    this book in the current ACL2 may render this ACL2 ~
+                    session unsound!  We recommend you recertify the book ~
+                    with the current version, ~sb.  See :DOC version.  No ~
+                    compiled file will be loaded with this book."
                    (list (cons #\a version)
                          (cons #\b (f-get-global 'acl2-version state))))
              :uncertified-okp
@@ -18099,9 +18131,9 @@
   the automation of the certification of collections of ACL2 ~il[books].  We
   assume here a familiarity with Unix/Linux ~c[make].  We also assume that you
   are using GNU ~c[make] rather than some other flavor of ~c[make].  And
-  finally, we generally assume that as is typically the case by following the
-  standard installation instructions, you install the ACL2 community books in
-  the ~c[books/] subdirectory of your ACL2 distribution.
+  finally, we generally assume, as is typically the case by following the
+  standard installation instructions, that you install the ACL2 community books
+  in the ~c[books/] subdirectory of your ACL2 distribution.
 
   The basic idea is to stand in the ACL2 sources directory and submit the
   following command, in order to certify all the ~il[books].
@@ -18119,10 +18151,14 @@
   make regression ACL2=<your_favorite_acl2_executable>
   ~ev[]
   If you have a multi-processor machine or the like, then you can use the
-  ~c[-j] option to obtain ~c[make]-level parallelism by specifying the number
-  of processes:
+  ~c[ACL2_JOBS] variable to obtain ~c[make]-level parallelism by specifying the
+  number of concurrent processes.  The following example shows how to specify 8
+  concurrent processes.  Note that we avoid using the customary `make' option
+  for concurrent processes, in this case `-j 8', because part of the regression
+  (under the ~c[centaur/] community books directory) would fail to take
+  advantage of that directive.
   ~bv[]
-  make -j 8 regression
+  make ACL2_JOBS=8 regression
   ~ev[]
   You can also specify just the directories you want, among those offered in
   ~c[Makefile].  For example:
@@ -22646,13 +22682,16 @@
   keywords are ~c[:LOGIC] and ~c[:EXEC].  The default for ~c[recognizer] is
   obtained by adding the suffix ~c[\"P\"] to ~c[name].  The default value for
   ~c[:LOGIC] is formed by adding the suffix ~c[\"$AP\"] to ~c[recognizer]; for
-  ~c[:EXEC], by adding the suffix ~c[\"$CP\"].
+  ~c[:EXEC], by adding the suffix ~c[\"$CP\"].  The ~c[:EXEC] function must be
+  the recognizer for the specified ~c[:CONCRETE] stobj.
 
   ~c[Creator] is a function spec (for the creator function).  The valid
   keywords are ~c[:LOGIC] and ~c[:EXEC].  The default for ~c[creator] is
   obtained by adding the prefix ~c[\"CREATE-\"] to ~c[name].  The default value
   for ~c[:LOGIC] is formed by adding the suffix ~c[\"$A\"] to ~c[creator]; for
-  ~c[:EXEC], by adding the suffix ~c[\"$C\"].
+  ~c[:EXEC], by adding the suffix ~c[\"$C\"].  The ~c[:CREATOR] function must
+  be the creator for the specified ~c[:CONCRETE] stobj, as ACL2 checks that the
+  ~c[:CREATOR] function takes no arguments and returns the ~c[:CONCRETE] stobj.
 
   ~c[Corr-fn] is a known function symbol that takes two arguments (for the
   correspondence theorems).
@@ -22663,8 +22702,15 @@
   stobj (not merely congruent concrete stobjs), and their ~c[:EXPORTS] fields
   should have the same length and also correspond, as follows: the ith export
   of each should have the same ~c[:LOGIC] and ~c[:EXEC] symbols.  ~l[defstobj]
-  for more about congruent stobjs.  Note the if two names are congruent, then
+  for more about congruent stobjs.  Note that if two names are congruent, then
   they are either both ordinary stobjs or both abstract stobjs.
+
+  An important aspect of the ~c[congruent-to] parameter is that if it is not
+  ~c[nil], then the checks for lemmas ~-[] ~c[{CORRESPONDENCE}],
+  ~c[{GUARD-THM}], and ~c[{PRESERVED}] ~-[] are omitted.  Thus, the values of
+  keyword ~c[:CORR-FN], and the values of keywords ~c[:CORRESPONDENCE],
+  ~c[:GUARD-THM], and ~c[:PRESERVED] in each export (as we discuss next), are
+  irrelevant; they are not inferred and they need not be supplied.
 
   The value of ~c[:EXPORTS] is a non-empty true list.  Each ~c[ei] is a
   function spec (for an exported function).  The valid keywords are ~c[:LOGIC],
@@ -23285,8 +23331,94 @@
               (declare (ignore unify-subst))
               ans)))
 
-(defun chk-defabsstobj-method (method st st$c st$ap corr-fn missing ctx wrld
-                                      state)
+(defun chk-defabsstobj-method-lemmas (method st st$c st$ap corr-fn
+                                             missing wrld state)
+  (let ((correspondence (access absstobj-method method :CORRESPONDENCE))
+        (preserved (access absstobj-method method :PRESERVED)))
+    (cond
+     ((null correspondence) ; recognizer method
+      (assert$ (null preserved)
+               (value (cons missing wrld))))
+     (t
+      (let* ((formals (access absstobj-method method :FORMALS))
+             (guard-pre (access absstobj-method method :GUARD-PRE))
+             (logic (access absstobj-method method :LOGIC))
+             (exec (access absstobj-method method :EXEC))
+             (expected-corr-formula
+              (absstobj-correspondence-formula
+               logic exec corr-fn formals guard-pre st st$c wrld))
+             (old-corr-formula (formula correspondence nil wrld))
+             (tuple (cond
+                     ((null old-corr-formula)
+                      `(,correspondence
+                        ,expected-corr-formula))
+                     ((one-way-unify-p old-corr-formula
+                                       expected-corr-formula)
+                      nil)
+                     (t `(,correspondence
+                          ,expected-corr-formula
+                          ,@old-corr-formula))))
+             (missing (cond (tuple (cons tuple missing))
+                            (t missing)))
+             (guard-thm-p (access absstobj-method method :GUARD-THM-P))
+             (tuple
+              (cond
+               ((eq guard-thm-p :SKIP) nil)
+               (t
+                (let* ((expected-guard-thm-formula
+                        (make-implication
+                         (cons (fcons-term* corr-fn st$c st)
+                               (flatten-ands-in-lit guard-pre))
+                         (conjoin (flatten-ands-in-lit
+                                   (guard exec t wrld)))))
+                       (taut-p
+                        (and (null guard-thm-p)
+                             (tautologyp expected-guard-thm-formula
+                                         wrld)))
+                       (guard-thm (access absstobj-method method
+                                          :GUARD-THM))
+                       (old-guard-thm-formula
+                        (and (not taut-p) ; optimization
+                             (formula guard-thm nil wrld))))
+                  (cond
+                   (taut-p nil)
+                   ((null old-guard-thm-formula)
+                    `(,guard-thm ,expected-guard-thm-formula))
+                   ((one-way-unify-p old-guard-thm-formula
+                                     expected-guard-thm-formula)
+                    nil)
+                   (t `(,guard-thm
+                        ,expected-guard-thm-formula
+                        ,@old-guard-thm-formula)))))))
+             (missing (cond (tuple (cons tuple missing))
+                            (t missing))))
+        (cond
+         ((null preserved)
+          (value (cons missing wrld)))
+         (t
+          (let* ((expected-preserved-formula
+                  (absstobj-preserved-formula
+                   logic exec formals guard-pre st st$c st$ap
+                   wrld))
+                 (old-preserved-formula
+                  (formula preserved nil wrld))
+                 (tuple
+                  (cond
+                   ((null old-preserved-formula)
+                    `(,preserved ,expected-preserved-formula))
+                   ((one-way-unify-p old-preserved-formula
+                                     expected-preserved-formula)
+                    nil)
+                   (t
+                    `(,preserved
+                      ,expected-preserved-formula
+                      ,@old-preserved-formula))))
+                 (missing (cond (tuple (cons tuple missing))
+                                (t missing))))
+            (value (cons missing wrld))))))))))
+
+(defun chk-defabsstobj-method (method st st$c st$ap corr-fn congruent-to
+                                      missing ctx wrld state)
 
 ; The input, missing, is a list of tuples (name expected-event . old-event),
 ; where old-event may be nil; see chk-acceptable-defabsstobj.  We return a pair
@@ -23298,101 +23430,20 @@
                      (chk-all-but-new-name name ctx 'function wrld state)
                      (chk-just-new-name name 'function nil ctx wrld state))))
       (cond
-       ((member-eq (ld-skip-proofsp state)
-                   '(include-book include-book-with-locals))
+       ((or congruent-to
+            (member-eq (ld-skip-proofsp state)
+                       '(include-book include-book-with-locals)))
 
 ; We allow the :correspondence, :preserved, and :guard-thm theorems to be
 ; local.
 
         (value (cons missing wrld)))
-       (t
-        (let ((correspondence (access absstobj-method method :CORRESPONDENCE))
-              (preserved (access absstobj-method method :PRESERVED)))
-          (cond
-           ((null correspondence) ; recognizer method
-            (assert$ (null preserved)
-                     (value (cons missing wrld))))
-           (t
-            (let* ((formals (access absstobj-method method :FORMALS))
-                   (guard-pre (access absstobj-method method :GUARD-PRE))
-                   (logic (access absstobj-method method :LOGIC))
-                   (exec (access absstobj-method method :EXEC))
-                   (expected-corr-formula
-                    (absstobj-correspondence-formula
-                     logic exec corr-fn formals guard-pre st st$c wrld))
-                   (old-corr-formula (formula correspondence nil wrld))
-                   (tuple (cond
-                           ((null old-corr-formula)
-                            `(,correspondence
-                              ,expected-corr-formula))
-                           ((one-way-unify-p old-corr-formula
-                                             expected-corr-formula)
-                            nil)
-                           (t `(,correspondence
-                                ,expected-corr-formula
-                                ,@old-corr-formula))))
-                   (missing (cond (tuple (cons tuple missing))
-                                  (t missing)))
-                   (guard-thm-p (access absstobj-method method :GUARD-THM-P))
-                   (tuple
-                    (cond
-                     ((eq guard-thm-p :SKIP) nil)
-                     (t
-                      (let* ((expected-guard-thm-formula
-                              (make-implication
-                               (cons (fcons-term* corr-fn st$c st)
-                                     (flatten-ands-in-lit guard-pre))
-                               (conjoin (flatten-ands-in-lit
-                                         (guard exec t wrld)))))
-                             (taut-p
-                              (and (null guard-thm-p)
-                                   (tautologyp expected-guard-thm-formula
-                                               wrld)))
-                             (guard-thm (access absstobj-method method
-                                                :GUARD-THM))
-                             (old-guard-thm-formula
-                              (and (not taut-p) ; optimization
-                                   (formula guard-thm nil wrld))))
-                        (cond
-                         (taut-p nil)
-                         ((null old-guard-thm-formula)
-                          `(,guard-thm ,expected-guard-thm-formula))
-                         ((one-way-unify-p old-guard-thm-formula
-                                           expected-guard-thm-formula)
-                          nil)
-                         (t `(,guard-thm
-                              ,expected-guard-thm-formula
-                              ,@old-guard-thm-formula)))))))
-                   (missing (cond (tuple (cons tuple missing))
-                                  (t missing))))
-              (cond
-               ((null preserved)
-                (value (cons missing wrld)))
-               (t
-                (let* ((expected-preserved-formula
-                        (absstobj-preserved-formula
-                         logic exec formals guard-pre st st$c st$ap
-                         wrld))
-                       (old-preserved-formula
-                        (formula preserved nil wrld))
-                       (tuple
-                        (cond
-                         ((null old-preserved-formula)
-                          `(,preserved ,expected-preserved-formula))
-                         ((one-way-unify-p old-preserved-formula
-                                           expected-preserved-formula)
-                          nil)
-                         (t
-                          `(,preserved
-                            ,expected-preserved-formula
-                            ,@old-preserved-formula))))
-                       (missing (cond (tuple (cons tuple missing))
-                                      (t missing))))
-                  (value (cons missing wrld))))))))))))))
+       (t (chk-defabsstobj-method-lemmas method st st$c st$ap corr-fn
+                                         missing wrld state))))))
 
 (defun chk-acceptable-defabsstobj1 (st st$c st$ap corr-fn fields
-                                       types see-doc ctx wrld state methods
-                                       missing)
+                                       types congruent-to see-doc ctx wrld
+                                       state methods missing)
 
 ; See chk-acceptable-defabsstobj (whose return value is computed by the present
 ; function) for the form of the result.  Note that fields begins with the
@@ -23415,8 +23466,8 @@
        (er soft erp "~@0" method))
       (t
        (er-let* ((missing/wrld
-                  (chk-defabsstobj-method method st st$c st$ap corr-fn missing
-                                          ctx wrld state)))
+                  (chk-defabsstobj-method method st st$c st$ap corr-fn
+                                          congruent-to missing ctx wrld state)))
          (let ((missing (car missing/wrld))
                (wrld (cdr missing/wrld)))
            (cond ((assoc-eq (access absstobj-method method :name)
@@ -23430,7 +23481,7 @@
                      st st$c st$ap corr-fn
                      (cdr fields)
                      (cdr types)
-                     see-doc ctx wrld state
+                     congruent-to see-doc ctx wrld state
                      (cons method methods)
                      missing)))))))))))
 
@@ -23509,7 +23560,8 @@
 
                                     (list* recognizer creator exports)
                                     (list* :RECOGNIZER :CREATOR nil)
-                                    see-doc ctx wrld2 state nil nil))))))
+                                    congruent-to see-doc ctx wrld2 state nil
+                                    nil))))))
 
 (defun defabsstobj-axiomatic-defs (st$c methods)
   (cond
@@ -23705,15 +23757,17 @@
                                            (t msg))
                                      ctx wrld state-vars)))))
 
-(defun chk-defabsstobj-guards (methods ctx wrld state)
-  (let ((msg (chk-defabsstobj-guards1 methods nil ctx wrld
-                                      (default-state-vars t))))
-    (cond (msg (er soft ctx
-                   "One or more guards of exported functions fail to obey ~
-                    single-threadedness restrictions.  See :DOC defabsstobj.  ~
-                    See below for details.~|~%~@0~|~%"
-                   msg))
-          (t (value nil)))))
+(defun chk-defabsstobj-guards (methods congruent-to ctx wrld state)
+  (cond
+   (congruent-to (value nil)) ; no need to check!
+   (t (let ((msg (chk-defabsstobj-guards1 methods nil ctx wrld
+                                          (default-state-vars t))))
+        (cond (msg (er soft ctx
+                       "At least one guard of an exported function fails to ~
+                        obey single-threadedness restrictions.  See :DOC ~
+                        defabsstobj.  See below for details.~|~%~@0~|~%"
+                       msg))
+              (t (value nil)))))))
 
 (defun make-absstobj-logic-exec-pairs (methods)
   (cond ((endp methods) nil)
@@ -23912,7 +23966,8 @@
                         (pprogn
                          (set-w 'extension wrld3 state)
                          (er-progn
-                          (chk-defabsstobj-guards methods ctx wrld3 state)
+                          (chk-defabsstobj-guards methods congruent-to ctx
+                                                  wrld3 state)
 
 ; The call of install-event below follows closely the corresponding call in
 ; defstobj-fn.  In particular, see the comment in defstobj-fn about a "cheat".
@@ -29895,7 +29950,14 @@
                       different guards."
                      str condition key))
                 (t t)))))))
-      (prog2$
+      (progn$
+       (or (global-val 'hons-enabled wrld)
+           (warning$-cw (if val 'memoize 'unmemoize)
+                        "The ~#0~[un~/~]memoization request for ~x1 is being ~
+                         ignored because this ACL2 executable is not ~
+                         hons-enabled."
+                        (if val 1 0)
+                        key))
        (and val
             (let ((stobjs-in (stobjs-in key wrld)))
               (cond
@@ -29918,11 +29980,7 @@
 
 (table memoize-table nil nil
        :guard
-       #+hons (memoize-table-chk key val world)
-       #-hons (er hard 'memoize-table
-                  "It is illegal to modify memoize-table except in a ~
-                   hons-enabled ACL2 executable.  See :DOC ~
-                   hons-and-memoization."))
+       (memoize-table-chk key val world))
 
 ; The following code supports print-gv.
 
@@ -34036,7 +34094,8 @@
   ~c[\"$NOTINLINE\"] and notinline.
 
   (3) No special treatment for inlining (or notinlining) is given for function
-  symbols locally defined by ~ilc[flet], except in the case of symbols
+  symbols locally defined by ~ilc[flet], with two exceptions: when explicitly
+  declared ~c[inline] or ~c[notinline] by the ~c[flet] form, and for symbols
   discussed in (1) and (2) above that, at some point in the current ACL2
   session, were defined as function symbols in ACL2 (even if not currently
   defined because of undoing or being ~il[local]).

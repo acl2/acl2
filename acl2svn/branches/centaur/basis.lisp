@@ -4829,13 +4829,7 @@
 ; We only increment i by a small amount, j.
 
            (type (integer 0 100) j)
-           (type string s)
-           (xargs :guard 
-
-; A less restrictive guard that uses the knowledge that j is between 0 and 100
-; may exist.
-
-                  (< (expt 2 29) maximum)))
+           (type string s))
   (the character
        (cond ((< (+f i j) maximum) (charf s (+f i j)))
              (t
@@ -4981,13 +4975,7 @@
 
 (defun fmt-var (s alist i maximum)
   (declare (type (signed-byte 30) i maximum)
-           (type string s)
-           (xargs :guard
-
-; A less restrictive guard that uses the knowledge that j is between 0 and 100
-; may exist.
-
-                  (< (expt 2 29) maximum)))
+           (type string s))
   (let ((x (assoc (the character (fmt-char s i 2 maximum t)) alist)))
     (cond (x (cdr x))
           (t (er hard 'fmt-var
@@ -5529,7 +5517,7 @@
 
 ; If s is a symbol or a string, we print it out, breaking on hyphens but not
 ; being fooled by fmt directives inside it.  We also allow s to be a number
-; (not sure why this was every allowed, but we continue to support it).  We
+; (not sure why this was ever allowed, but we continue to support it).  We
 ; return the new col and state.
 
   (declare (type (signed-byte 30) col))
@@ -6179,9 +6167,24 @@
        skip this char
   ~ev[]
   If ~c[x] is a character, then ~c[vx] is the value of ~c[#\\x] under the
-  current alist.  When we say ``format ~c[str] under ~c[a+]'' we mean
-  recursively process the given string under an alist obtained by
-  appending ~c[a] to the current alist.
+  current alist.  Consider for example the discussion above for ~c[~~y],
+  ``~c[~~yx  pretty print vx]'', applied to the following expression:
+  ~c[(fmt \"HELLO ~~y7\" (list (cons #\\7 'world)) *standard-co* state nil)].
+  Then in this example: ~c[#\\x] is 7; and ~c[vx] is the value of character
+  ~c[#\\7] under the given alist, which is the symbol, ~c[WORLD].  Thus, ACL2
+  will print ~c[HELLO WORLD].  When we say ``format ~c[str] under ~c[a+]'' we
+  mean: process the given string under an alist obtained by appending ~c[a] to
+  the current alist.  The following example illustrates how this works.
+  ~bv[]
+  ACL2 !>(fms \"~~@0\"
+              (list (cons #\\0 (cons \"~~x0 ~~@1\" (list (cons #\\0  'abc))))
+                    (cons #\\1 \"-- and now: ~~x0 again~~%\"))
+              *standard-co* state nil)
+
+  ABC -- and now: ABC again
+  <state>
+  ACL2 !>
+  ~ev[]
 
   Note:  ~c[~~p], ~c[~~q], ~c[~~P], and ~c[~~Q] are also currently supported,
   but are deprecated.  These are respectively the same as ~c[~~x], ~c[~~y],

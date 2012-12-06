@@ -11832,44 +11832,47 @@ at this point because they use some functions not yet defines.
                  (list :auto-mode amp)))))))
 
 (defun tau-data-fn (fn wrld)
-  (cond
-   ((and (symbolp fn)
-         (arity fn wrld))
-    (let ((tau-pair (getprop fn 'tau-pair nil 'current-acl2-world wrld))
-          (sigs1 (getprop fn 'signature-rules-form-1 nil
-                          'current-acl2-world wrld))
-          (sigs2 (getprop fn 'signature-rules-form-2 nil
-                          'current-acl2-world wrld))
-          (big-switch (getprop fn 'big-switch nil 'current-acl2-world wrld))
-          (mv-nth-synonym (member-eq fn (global-val 'tau-mv-nth-synonyms
-                                                    wrld))))
-      (cond
-       ((or tau-pair sigs1 sigs2 big-switch mv-nth-synonym)
-        `(,fn
-          (recognizer-index
-           ,(car tau-pair))
-          (pos-implicants
-           ,(decode-tau
-             (getprop fn 'pos-implicants *tau-empty* 'current-acl2-world wrld)
-             'v))
-          (neg-implicants
-           ,(decode-tau
-             (getprop fn 'neg-implicants *tau-empty* 'current-acl2-world wrld)
-             'v))
-          (signatures
-           ,(let ((sigs1 (decode-tau-signature-rules nil fn sigs1 wrld))
-                  (sigs2 (decode-tau-signature-rules t fn sigs2 wrld)))
-              (if (eq sigs1 t)
-                  (if (eq sigs2 t)
-                      t
+  (let ((fn (deref-macro-name fn (macro-aliases wrld))))
+    (cond
+     ((and (symbolp fn)
+           (arity fn wrld))
+      (let ((tau-pair (getprop fn 'tau-pair nil 'current-acl2-world wrld))
+            (sigs1 (getprop fn 'signature-rules-form-1 nil
+                            'current-acl2-world wrld))
+            (sigs2 (getprop fn 'signature-rules-form-2 nil
+                            'current-acl2-world wrld))
+            (big-switch (getprop fn 'big-switch nil 'current-acl2-world wrld))
+            (mv-nth-synonym (member-eq fn (global-val 'tau-mv-nth-synonyms
+                                                      wrld))))
+        (cond
+         ((or tau-pair sigs1 sigs2 big-switch mv-nth-synonym)
+          `(,fn
+            (recognizer-index
+             ,(car tau-pair))
+            (pos-implicants
+             ,(decode-tau
+               (getprop fn 'pos-implicants *tau-empty* 'current-acl2-world
+                        wrld)
+               'v))
+            (neg-implicants
+             ,(decode-tau
+               (getprop fn 'neg-implicants *tau-empty* 'current-acl2-world
+                        wrld)
+               'v))
+            (signatures
+             ,(let ((sigs1 (decode-tau-signature-rules nil fn sigs1 wrld))
+                    (sigs2 (decode-tau-signature-rules t fn sigs2 wrld)))
+                (if (eq sigs1 t)
+                    (if (eq sigs2 t)
+                        t
                       sigs2)
                   (if (eq sigs2 t)
                       sigs1
-                      `(and ,sigs1 ,sigs2)))))
-          (big-switch? ,(if big-switch :yes :no))
-          (mv-nth-synonym? ,(if mv-nth-synonym :yes :no))))
-       (t nil))))
-   (t nil)))
+                    `(and ,sigs1 ,sigs2)))))
+            (big-switch? ,(if big-switch :yes :no))
+            (mv-nth-synonym? ,(if mv-nth-synonym :yes :no))))
+         (t nil))))
+     (t nil))))
 
 (defmacro tau-data (fn)
 
@@ -11886,8 +11889,10 @@ at this point because they use some functions not yet defines.
   ~ev[]
 
   This macro returns a list structure that indicates what facts about the
-  function symbol ~c[fn] are known to the tau system.
-  ~l[introduction-to-the-tau-system] for background details.~/
+  symbol ~c[fn] are known to the tau system.  ~c[Fn] should either be a
+  function symbol or else a macro associated with ~c[fn];
+  ~pl[macro-aliases-table].  ~l[introduction-to-the-tau-system] for background
+  details.~/
 
   The list structure should be self-explanatory given the following brief
   comments.  The ``index'' of a function, when non-~c[nil], means the function

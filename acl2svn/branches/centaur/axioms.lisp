@@ -20961,12 +20961,12 @@
          (and (alistp fn)
               (no-duplicatesp-equal (strip-cars fn))))
 
-       (defun nat-listp (x)
+       (defun nat-listp (l)
          (declare (xargs :guard t))
-         (cond ((atom x)
-                (equal x nil))
-               (t (and (natp (car x))
-                       (nat-listp (cdr x))))))
+         (cond ((atom l)
+                (eq l nil))
+               (t (and (natp (car l))
+                       (nat-listp (cdr l))))))
 
        (defun nat-function-p (x)
          (and (function-p x)
@@ -26923,6 +26923,28 @@
            (integerp x))
   :rule-classes :forward-chaining)
 
+(defun acl2-number-listp (l)
+
+  ":Doc-Section ACL2::ACL2-built-ins
+
+  recognizer for a true list of numbers~/
+
+  The predicate ~c[acl2-number-listp] tests whether its argument is a true list
+  of numbers.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/~/"
+
+  (declare (xargs :guard t))
+  (cond ((atom l)
+         (eq l nil))
+        (t (and (acl2-numberp (car l))
+                (acl2-number-listp (cdr l))))))
+
+(defthm acl2-number-listp-forward-to-true-listp
+  (implies (acl2-number-listp x)
+           (true-listp x))
+  :rule-classes :forward-chaining)
+
 (defun rational-listp (l)
 
   ":Doc-Section ACL2::ACL2-built-ins
@@ -26940,9 +26962,9 @@
         (t (and (rationalp (car l))
                 (rational-listp (cdr l))))))
 
-(defthm rational-listp-forward-to-true-listp
+(defthm rational-listp-forward-to-acl2-number-listp
   (implies (rational-listp x)
-           (true-listp x))
+           (acl2-number-listp x))
   :rule-classes :forward-chaining)
 
 ;; RAG - This function is analogous to rational-listp.
@@ -26967,9 +26989,9 @@
 ;; RAG - Standard forward chaining theorem about <type>-listp.
 
 #+:non-standard-analysis
-(defthm real-listp-forward-to-true-listp
+(defthm real-listp-forward-to-acl2-number-listp
   (implies (real-listp x)
-           (true-listp x))
+           (acl2-number-listp x))
   :rule-classes :forward-chaining)
 
 (defun integer-listp (l)
@@ -26985,13 +27007,35 @@
 
   (declare (xargs :guard t))
   (cond ((atom l)
-         (equal l nil))
+         (eq l nil))
         (t (and (integerp (car l))
                 (integer-listp (cdr l))))))
 
 (defthm integer-listp-forward-to-rational-listp
   (implies (integer-listp x)
            (rational-listp x))
+  :rule-classes :forward-chaining)
+
+(defun nat-listp (l)
+
+  ":Doc-Section ACL2::ACL2-built-ins
+
+  recognizer for a true list of natural  numbers~/
+
+  The predicate ~c[nat-listp] tests whether its argument is a true
+  list of natural numbers.
+
+  To see the ACL2 definition of this function, ~pl[pf].~/~/"
+
+  (declare (xargs :guard t))
+  (cond ((atom l)
+         (eq l nil))
+        (t (and (natp (car l))
+                (nat-listp (cdr l))))))
+
+(defthm nat-listp-forward-to-integer-listp
+  (implies (nat-listp x)
+           (integer-listp x))
   :rule-classes :forward-chaining)
 
 ;; RAG - Analogous to the forward rule from integers to rationals.
@@ -27410,16 +27454,13 @@
     CLEAR-MEMOIZE-TABLE FAST-ALIST-FREE HONS-EQUAL HONS-RESIZE-FN HONS-GET HONS
     HONS-SHRINK-ALIST! MEMOIZE-SUMMARY CLEAR-MEMOIZE-STATISTICS
     make-fast-alist
-
     serialize-read-fn serialize-write-fn
     read-object-suppress
-
     assign-lock
     throw-or-attach-call
-
     oracle-apply oracle-apply-raw
-
     time-tracker-fn
+    gc-verbose-fn
   ))
 
 (defconst *primitive-macros-with-raw-code*
@@ -30804,7 +30845,7 @@
   (prog2$ (or (eq case :upcase)
               (eq case :downcase)
               (illegal 'set-print-case
-                       "The value ~x0 is illegal as an ACL2 print-base, which ~
+                       "The value ~x0 is illegal as an ACL2 print-case, which ~
                         must be :UPCASE or :DOWNCASE."
                        (list (cons #\0 case))))
           (f-put-global 'print-case case state)))
@@ -31065,7 +31106,7 @@
   Use ~c[princ$] to do basic printing of atoms (i.e., other than ~c[cons]
   pairs).  In particular, ~c[princ$] prints a string without the surrounding
   double-quotes and without escaping double-quote characters within the
-  string.  Note that ~c[princ] is sensitive to the print-base and print-case;
+  string.  Note that ~c[princ$] is sensitive to the print-base and print-case;
   ~pl[set-print-base] and ~pl[set-print-case].  ~c[Princ$] returns
   ~ilc[state].
   ~bv[]
@@ -39659,7 +39700,8 @@
 
   ~l[table] for a general discussion of tables.~/
 
-  ~l[add-macro-fn] for a more general discussion of this ~il[table]."
+  ~l[add-macro-fn] for a more general discussion of this ~il[table] and for a
+  way to associate a macro name with a function name in theory events."
 
   (declare (xargs :guard (plist-worldp wrld)))
   (table-alist 'untrans-table wrld))
@@ -39701,19 +39743,20 @@
   (add-macro-fn macro-name function-name nil) ; same as abov
   (add-macro-fn macro-name function-name t)
   ~ev[]
+
   This is a convenient way to add an entry to ~ilc[macro-aliases-table] and at
-  the same time extend the ~c[:]~ilc[untrans-table].  As suggested by the
-  example above, calls of a function in this table will be printed as
-  corresponding calls of macros, with right-associated arguments printed flat
-  in the case of a binary function symbol if the optional third argument is t.
-  In that case, for a binary function symbol ~c[fn] associated with macro name
-  ~c[mac], then a call ~c[(fn arg1 (fn arg2 (... (fn argk arg))))] will be
-  displayed to the user as though the ``term'' were
-  ~c[(mac arg1 arg2 ... argk arg)].  For a call ~c[(f a1 ... ak)] of a function
-  symbol that is not binary, or the optional argument is not supplied as ~c[t],
-  then the effect is simply to replace ~c[f] by the corresponding macro symbol.
-  ~l[macro-aliases-table], ~pl[remove-macro-alias], ~pl[untrans-table], and
-  ~pl[remove-macro-fn].~/"
+  the same time extend the ~ilc[untrans-table].  As suggested by the example
+  above, calls of a function in this table will be printed as corresponding
+  calls of macros, with right-associated arguments printed flat in the case of
+  a binary function symbol if the optional third argument is t.  In that case,
+  for a binary function symbol ~c[fn] associated with macro name ~c[mac], then
+  a call ~c[(fn arg1 (fn arg2 (... (fn argk arg))))] will be displayed to the
+  user as though the ``term'' were ~c[(mac arg1 arg2 ... argk arg)].  For a
+  call ~c[(f a1 ... ak)] of a function symbol that is not binary, or the
+  optional argument is not supplied as ~c[t], then the effect is simply to
+  replace ~c[f] by the corresponding macro symbol.  ~l[add-macro-alias], which
+  is invoked on the first two arguments.  Also ~pl[remove-macro-alias],
+  ~pl[untrans-table], and ~pl[remove-macro-fn].~/"
 
   `(progn (add-macro-alias ,macro ,macro-fn)
           (table untrans-table ',macro-fn '(,macro . ,right-associate-p))))
@@ -40851,16 +40894,28 @@
             (* x 2)))
     (mv (f 4) (g 5)))~/
 
-  General Form:
+  General Forms:
   (flet (def1 ... defk) body)
+  (flet (def1 ... defk) declare-form1 .. declare-formk body)
   ~ev[]
   where ~c[body] is a term, and each ~c[defi] is a definition as in ~ilc[defun]
-  but with the leading ~c[defun] symbol omitted.  ~l[defun].
+  but with the leading ~c[defun] symbol omitted.  ~l[defun].  If any
+  ~c[declare-formi] are supplied, then each must be of the form
+  ~c[(declare decl1 ... decln)], where each ~c[decli] is of the form
+  ~c[(inline g1 ... gm)] or ~c[(notinline g1 ... gm)], and each ~c[gi] is
+  defined by some ~c[defi].
+
+  The only effect of the declarations is to provide advice to the host Lisp
+  compiler.  The declarations are otherwise ignored by ACL2, so we mainly
+  ignore them in the discussion below.
+
   The innermost ~c[flet]-binding of a function symbol, ~c[f], above a call of
   ~c[f], is the one that provides the definition of ~c[f] for that call.  Note
   that ~c[flet] does not provide recursion.  Consider the following example.
   ~bv[]
+  ; Give a global definition of f:
   (defun f (x) (+ x 3))
+  ; Evaluate an expression using a local binding of f:
   (flet ((f (x) (cons x (f (1+ x)))))
     (f 4))
   ~ev[]
@@ -40914,10 +40969,12 @@
   ~ev[]
 
   Under the hood, ACL2 translates ~c[flet] bindings to ~ilc[lambda] expressions
-  (~pl[term]).  The following example illustrates this point.
+  (~pl[term]), throwing away the ~c[inline] and ~c[notinline] declarations (if
+  any).  The following example illustrates this point.
   ~bv[]
   ACL2 !>:trans (flet ((f (x) (cons x x))
                        (g (x y) (+ x y)))
+                  (declare (inline f))
                   (f (g 3 4)))
 
   ((LAMBDA (X) (CONS X X))
@@ -41147,7 +41204,8 @@
   This example associates the function symbol ~ilc[binary-append] with the
   macro name ~ilc[append].  As a result, the name ~ilc[append] may be used as a
   runic designator (~pl[theories]) by the various theory
-  functions.  ~l[macro-aliases-table] for more details.~/
+  functions.  ~l[macro-aliases-table] for more details.  Also ~pl[add-macro-fn]
+  for an extension of this utility that also affects printing.~/
   ~bv[]
   General Form:
   (add-macro-alias macro-name function-name)
@@ -46988,9 +47046,57 @@ Lisp definition."
   is up to the user to pass in the right arguments, although we may do some
   rudimentary checks.
 
-  This function always returns ~c[nil].~/~/"
+  Also ~pl[gc-verbose].
+
+  Evaluation of a call of this macro always returns ~c[nil].~/~/"
 
   `(gc$-fn ',args))
+
+#-acl2-loop-only
+(defun-one-output gc-verbose-fn (arg)
+
+; For a related function, see gc$-fn.
+
+  (let ((arg (and arg t))) ; coerce to Boolean
+    (declare (ignorable arg))
+    #+ccl (ccl::gc-verbose arg arg)
+    #+cmu (setq ext:*gc-verbose* arg)
+    #+gcl (si:*notify-gbc* arg)
+    #-(or ccl cmu gcl)
+    (format t "GC-VERBOSE is not supported in this Common Lisp.~%Contact the ~
+               ACL2 developers if you would like to help add such support.")
+    nil))
+
+#+acl2-loop-only
+(defun gc-verbose-fn (arg)
+  (declare (ignore arg)
+           (xargs :guard t))
+  nil)
+
+(defmacro gc-verbose (arg)
+  ":Doc-Section Miscellaneous
+
+  control printing from the garbage collector~/
+
+  ~bv[]
+  General Form:
+  (gc-verbose arg)
+  ~ev[]
+
+  Garbage collection (gc) is performed by every Lisp implementation; ~pl[gc$].
+  However, different ACL2 builds might see more or fewer messages.  This macro
+  is intended to provide an interface for controlling the verbosity, which is
+  off if the argument evaluates to ~c[nil] and otherwise is on.
+
+  The above functionality is only supported for the following host Common Lisp
+  implementations: CCL, CMUCL, and GCL.  Otherwise, the only effect of this
+  macro is to print a notice that it is not supported.  You are welcome to
+  contact the ACL2 developers if you would like to help in adding such support
+  for another host Common Lisp.
+
+  Evaluation of a call of this macro always returns ~c[nil].~/~/"
+
+  `(gc-verbose-fn ,arg))
 
 (defun get-wormhole-status (name state)
 
