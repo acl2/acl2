@@ -3713,12 +3713,13 @@
 
 ; To play with ppr we recommend executing this form:
 
-; (ppr2 (ppr1 x (print-base) 30 0 state t) 0 *standard-co* state t)
+; (ppr2 (ppr1 x (print-base) (print-radix) 30 0 state t)
+;       0 *standard-co* state t)
 
 ; This will prettyprint x on a page of width 30, assuming that printing starts
 ; in column 0.  To see the ppr tuple that drives the printer, just evaluate the
 ; inner ppr1 form,
-; (ppr1 x (print-base) 30 0 state nil).
+; (ppr1 x (print-base) (print-radix) 30 0 state nil).
 
 ; The following test macro is handy.  A typical call of the macro is
 
@@ -3742,7 +3743,7 @@
 
 ;   (defun testfn (d x state)
 ;     (declare (xargs :mode :program :stobjs (state)))
-;     (let ((tuple (ppr1 x (print-base) d 0 state t)))
+;     (let ((tuple (ppr1 x (print-base) (print-radix) d 0 state t)))
 ;       (pprogn
 ;        (fms "~%Tuple: ~x0~%Output:~%" (list (cons #\0 tuple))
 ;             *standard-co* state nil)
@@ -3846,16 +3847,16 @@
 ;               (III YYY ZZZ)))
 ;       
 ; 
-; (ppr2 (ppr1 (@ test-term) (print-base) 30 0 state nil) 0 *standard-co*
-;       state nil)
+; (ppr2 (ppr1 (@ test-term) (print-base) (print-radix) 30 0 state nil) 0
+;       *standard-co* state nil)
 ; ; =>
 ; (FFF (GGG (HHH '(A . B)))          (WIDE 25 (FLAT 3 FFF)                    
 ;      (III YYY ZZZ))                         (FLAT 20 (GGG (HHH '(A . B))))
 ;                                             (FLAT 14 (III YYY ZZZ)))      
 ; <-          25         ->|
 ; 
-; (ppr2 (ppr1 (@ test-term) (print-base) 20 0 state nil) 0 *standard-co*
-;       state nil)
+; (ppr2 (ppr1 (@ test-term) (print-base) (print-radix) 20 0 state nil) 0
+;       *standard-co* state nil)
 ; ; =>
 ; (FFF                               (1 20 (FLAT 3 FFF)          
 ;  (GGG                                    (4 19 (FLAT 3 GGG)            
@@ -3905,8 +3906,8 @@
 ; In the little table below I show, for various values of d, two things: the
 ; characters output by
 
-; (ppr2 (ppr1 `(xx . yy) (print-base) d 0 state nil) 0 *standard-co* state
-;       nil)
+; (ppr2 (ppr1 `(xx . yy) (print-base) (print-radix) d 0 state nil)
+;       0 *standard-co* state nil)
 
 ; and the ppr tuple produced by the ppr1 call.
 ;        
@@ -3948,7 +3949,7 @@
 
 ; BUG
 ; ACL2 p!>(let ((x '(foo bigggggggggggggggg . :littlllllllllllllle)))
-;          (ppr2 (ppr1 x (print-base) 40 0 state nil)
+;          (ppr2 (ppr1 x (print-base) (print-radix) 40 0 state nil)
 ;                0 *standard-co* state nil))
 ; (x   = (DOT 1)
 ; lst = ((FLAT 21 :LITTLLLLLLLLLLLLLLE))
@@ -4144,7 +4145,7 @@
          ((< x print-base) (1+f acc))
          (t (flsz-integer (truncate x print-base) print-base (1+f acc))))))
 
-(defun flsz-atom (x print-base acc state)
+(defun flsz-atom (x print-base print-radix acc state)
   (declare (type (unsigned-byte 5) print-base)
            (type (signed-byte 30) acc))
   (the-fixnum
@@ -4158,8 +4159,10 @@
          ((integerp x)
           (flsz-integer x
                         print-base
-                        (cond ((int= print-base 10)
+                        (cond ((null print-radix)
                                acc)
+                              ((int= print-base 10) ; `.' suffix
+                               (+f 1 acc))
                               (t ; #b, #o, or #x prefix
                                (+f 2 acc)))))
          ((symbolp x)
@@ -4194,21 +4197,17 @@
                         print-base
                         (flsz-integer (denominator x)
                                       print-base
-                                      (cond ((int= print-base 10)
-                                             (1+f acc))
+                                      (cond ((null print-radix)
+                                             (+f 1 acc))
+                                            ((int= print-base 10) ; #10r prefix
+                                             (+f 5 acc))
                                             (t ; #b, #o, or #x prefix
                                              (+f 3 acc))))))
          ((complex-rationalp x)
           (flsz-atom (realpart x)
                      print-base
-                     (flsz-atom (imagpart x)
-                                print-base
-                                (cond ((int= print-base 10)
-                                       (+f 5 acc))
-                                      (t
-; Compensate for adding twice for #b, #o, or #x prefix.
-                                       (+f 3 acc)))
-                                state)
+                     print-radix
+                     (flsz-atom (imagpart x) print-base print-radix acc state)
                      state))
          ((stringp x)
           (+f 2 acc (the-half-fixnum! (length x) 'flsz-atom)))
@@ -4222,7 +4221,7 @@
                     (t 3))))
          (t 0))))
 
-(defun flsz1 (x print-base j maximum state eviscp)
+(defun flsz1 (x print-base print-radix j maximum state eviscp)
 
 ; Actually, maximum should be of type (signed-byte 29).
 
@@ -4230,31 +4229,36 @@
            (type (signed-byte 30) j maximum))
   (the-fixnum
    (cond ((> j maximum) j)
-         ((atom x) (flsz-atom x print-base j state))
+         ((atom x) (flsz-atom x print-base print-radix j state))
          ((evisceratedp eviscp x)
           (+f j (the-half-fixnum! (length (cdr x)) 'flsz)))
          ((atom (cdr x))
           (cond ((null (cdr x))
-                 (flsz1 (car x) print-base (+f 2 j) maximum state eviscp))
+                 (flsz1 (car x) print-base print-radix (+f 2 j) maximum state
+                        eviscp))
                 (t (flsz1 (cdr x)
                           print-base
-                          (flsz1 (car x) print-base (+f 5 j) maximum state
-                                 eviscp)
+                          print-radix
+                          (flsz1 (car x) print-base print-radix (+f 5 j)
+                                 maximum state eviscp)
                           maximum state eviscp))))
          ((and (eq (car x) 'quote)
                (consp (cdr x))
                (null (cddr x)))
-          (flsz1 (cadr x) print-base (+f 1 j) maximum state eviscp))
+          (flsz1 (cadr x) print-base print-radix (+f 1 j) maximum state
+                 eviscp))
          (t (flsz1 (cdr x)
                    print-base
-                   (flsz1 (car x) print-base (+f 1 j) maximum state eviscp)
+                   print-radix
+                   (flsz1 (car x) print-base print-radix (+f 1 j) maximum state
+                          eviscp)
                    maximum state eviscp)))))
 
 (defun output-in-infixp (state)
   (let ((infixp (f-get-global 'infixp state)))
     (or (eq infixp t) (eq infixp :out))))
 
-(defun flatsize-infix (x print-base termp j max state eviscp)
+(defun flatsize-infix (x print-base print-radix termp j max state eviscp)
 
 ; Suppose that printing x flat in infix notation causes k characters to come
 ; out.  Then we return j+k.  All answers greater than max are equivalent.
@@ -4268,12 +4272,13 @@
 ; space.  But note that we use infix output only if infixp is t or :out.
 
   (declare (ignore termp))
-  (+ 2 (flsz1 x print-base j max state eviscp)))
+  (+ 2 (flsz1 x print-base print-radix j max state eviscp)))
 
 (defun flsz (x termp j maximum state eviscp)
   (cond ((output-in-infixp state)
-         (flatsize-infix x (print-base) termp j maximum state eviscp))
-        (t (flsz1 x (print-base) j maximum state eviscp))))
+         (flatsize-infix x (print-base) (print-radix) termp j maximum state
+                         eviscp))
+        (t (flsz1 x (print-base) (print-radix) j maximum state eviscp))))
 
 (defun max-width (lst maximum)
   (cond ((null lst) maximum)
@@ -4283,7 +4288,7 @@
 
 (mutual-recursion
 
-(defun ppr1 (x print-base width rpc state eviscp)
+(defun ppr1 (x print-base print-radix width rpc state eviscp)
 
 ; We create a ppr tuple for x, i.e., a list structure that tells us how to
 ; prettyprint x, in a column of the given width.  Rpc stands for `right paren
@@ -4295,7 +4300,7 @@
 ; themselves as data.
 
   (declare (type (signed-byte 30) print-base width rpc))
-  (let ((sz (flsz1 x print-base rpc width state eviscp)))
+  (let ((sz (flsz1 x print-base print-radix rpc width state eviscp)))
     (declare (type (signed-byte 30) sz))
     (cond ((or (atom x)
                (evisceratedp eviscp x)
@@ -4305,11 +4310,11 @@
           ((and (eq (car x) 'quote)
                 (consp (cdr x))
                 (null (cddr x)))
-           (let* ((x1 (ppr1 (cadr x) print-base (+f width -1) rpc state
+           (let* ((x1 (ppr1 (cadr x) print-base print-radix (+f width -1) rpc state
                             eviscp)))
              (cons 'quote (cons (+ 1 (cadr x1)) x1))))
           (t
-           (let* ((x1 (ppr1 (car x) print-base (+f width -1)
+           (let* ((x1 (ppr1 (car x) print-base print-radix (+f width -1)
                             (the-fixnum (if (null (cdr x)) (+ rpc 1) 0))
                             state eviscp))
 
@@ -4327,7 +4332,7 @@
 ; the car and the cdr.
 
                   (x2 (cons x1
-                            (ppr1-lst (cdr x) print-base (+f width -1)
+                            (ppr1-lst (cdr x) print-base print-radix (+f width -1)
                                       (+f rpc 1) state eviscp)))
 
 ; If the fn is a symbol, then we get the maximum width of any single argument.
@@ -4378,7 +4383,7 @@
 
 ; If you haven't read about cons-ppr1, above, do so now.
 
-(defun ppr1-lst (lst print-base width rpc state eviscp)
+(defun ppr1-lst (lst print-base print-radix width rpc state eviscp)
 
   (declare (type (signed-byte 30) print-base width rpc))
   (cond ((atom lst)
@@ -4394,15 +4399,16 @@
 
          (cond ((null lst) nil)
                (t (cons-ppr1 '(dot 1)
-                             (list (ppr1 lst print-base width rpc state
-                                         eviscp))
+                             (list (ppr1 lst print-base print-radix width rpc
+                                         state eviscp))
                              width (ppr-flat-right-margin) eviscp))))
 
 ; The case for an eviscerated terminal cdr is handled the same way.
 
         ((evisceratedp eviscp lst)
          (cons-ppr1 '(dot 1)
-                    (list (ppr1 lst print-base width rpc state eviscp))
+                    (list (ppr1 lst print-base print-radix width rpc state
+                                eviscp))
                     width (ppr-flat-right-margin) eviscp))
 
 ; If the list is a true singleton, we just use ppr1 and we pass it the rpc that
@@ -4410,13 +4416,15 @@
 ; the same line.
 
         ((null (cdr lst))
-         (list (ppr1 (car lst) print-base width rpc state eviscp)))
+         (list (ppr1 (car lst) print-base print-radix width rpc state eviscp)))
 
 ; Otherwise, we know that the car is followed by more elements.  So its rpc is
 ; 0.
 
-        (t (cons-ppr1 (ppr1 (car lst) print-base width 0 state eviscp)
-                      (ppr1-lst (cdr lst) print-base width rpc state eviscp)
+        (t (cons-ppr1 (ppr1 (car lst) print-base print-radix width 0 state
+                            eviscp)
+                      (ppr1-lst (cdr lst) print-base print-radix width rpc
+                                state eviscp)
                       width (ppr-flat-right-margin) eviscp))))
 
 )
@@ -4711,8 +4719,9 @@
     (declare (type (signed-byte 30) fmt-hard-right-margin))
     (cond
      ((< col fmt-hard-right-margin)
-      (ppr2 (ppr1 x (print-base) (+f fmt-hard-right-margin (-f col)) 0
-                  state eviscp)
+      (ppr2 (ppr1 x (print-base) (print-radix)
+                  (+f fmt-hard-right-margin (-f col))
+                  0 state eviscp)
             col channel state eviscp))
      (t (let ((er
                (er hard 'ppr
@@ -4985,8 +4994,8 @@
                   ~x2, supplied with the fmt string.~|~%~x3"
                  i (char s (+f i 2)) alist s)))))
 
-(defun splat-atom (x print-base indent col channel state)
-  (let* ((sz (flsz-atom x print-base 0 state))
+(defun splat-atom (x print-base print-radix indent col channel state)
+  (let* ((sz (flsz-atom x print-base print-radix 0 state))
          (too-bigp (> (+ col sz) (fmt-hard-right-margin state))))
     (pprogn (if too-bigp
                 (pprogn (newline channel state)
@@ -5003,20 +5012,22 @@
 
 (mutual-recursion
 
-(defun splat (x print-base indent col channel state)
+(defun splat (x print-base print-radix indent col channel state)
   (cond ((atom x)
-         (splat-atom x print-base indent col channel state))
+         (splat-atom x print-base print-radix indent col channel state))
         ((and (eq (car x) 'quote)
               (consp (cdr x))
               (null (cddr x)))
          (pprogn (princ$ #\' channel state)
-                 (splat (cadr x) print-base indent (1+ col) channel state)))
+                 (splat (cadr x) print-base print-radix indent (1+ col) channel
+                        state)))
         (t (pprogn (princ$ #\( channel state)
-                   (splat1 x print-base indent (1+ col) channel state)))))
+                   (splat1 x print-base print-radix indent (1+ col) channel
+                           state)))))
 
-(defun splat1 (x print-base indent col channel state)
+(defun splat1 (x print-base print-radix indent col channel state)
   (mv-let (col state)
-          (splat (car x) print-base indent col channel state)
+          (splat (car x) print-base print-radix indent col channel state)
           (cond ((null (cdr x))
                  (pprogn (princ$ #\) channel state)
                          (mv (1+ col) state)))
@@ -5027,8 +5038,7 @@
                                 (princ$ ". " channel state)
                                 (mv-let (col state)
                                         (splat (cdr x)
-                                               print-base
-                                               indent
+                                               print-base print-radix indent
                                                (+ indent 2)
                                                channel state)
                                         (pprogn (princ$ #\) channel state)
@@ -5037,28 +5047,35 @@
                            (princ$ " . " channel state)
                            (mv-let (col state)
                                    (splat (cdr x)
-                                          print-base
-                                          indent (+ 3 col) channel
-                                          state)
+                                          print-base print-radix indent
+                                          (+ 3 col)
+                                          channel state)
                                    (pprogn (princ$ #\) channel state)
                                            (mv (1+ col) state)))))))
                 (t (pprogn
                     (princ$ #\Space channel state)
-                    (splat1 (cdr x) print-base indent (1+ col) channel
-                            state))))))
+                    (splat1 (cdr x) print-base print-radix indent (1+ col)
+                            channel state))))))
 
 )
 
-(defun number-of-digits (n print-base)
+(defun number-of-digits (n print-base print-radix)
 
 ; We compute the width of the field necessary to express the integer n
 ; in the given print-base.  We assume minus signs are printed but plus
 ; signs are not.  Thus, if n is -123 we return 4, if n is 123 we
 ; return 3.
 
-  (cond ((< n 0) (1+ (number-of-digits (abs n) print-base)))
-        ((< n print-base) 1)
-        (t (1+ (number-of-digits (floor n print-base) print-base)))))
+  (cond ((< n 0) (1+ (number-of-digits (abs n) print-base print-radix)))
+        ((< n print-base)
+         (cond ((null print-radix)
+                1)
+               ((int= print-base 10) ; `.' suffix
+                2)
+               (t ; #b, #o, or #x prefix
+                3)))
+        (t (1+ (number-of-digits (floor n print-base) print-base
+                                 print-radix)))))
 
 (defun left-pad-with-blanks (n width col channel state)
 
@@ -5068,7 +5085,7 @@
   (declare (type (signed-byte 30) col))
   (the2s
    (signed-byte 30)
-   (let ((d (the-half-fixnum! (number-of-digits n (print-base state))
+   (let ((d (the-half-fixnum! (number-of-digits n (print-base) (print-radix))
                               'left-pad-with-blanks)))
      (declare (type (signed-byte 30) d))
      (cond ((>= d width)
@@ -5353,7 +5370,7 @@
                  (get-output-stream-from-channel channel)
                  eviscp)
     (return-from fmt-ppr *the-live-state*)))
-  (ppr2 (ppr1 x (print-base) width rpc state eviscp)
+  (ppr2 (ppr1 x (print-base) (print-radix) width rpc state eviscp)
         col channel state eviscp))
 
 (mutual-recursion
@@ -5526,7 +5543,7 @@
    (cond
     ((acl2-numberp s)
      (pprogn (prin1$ s channel state)
-             (mv (flsz-atom s (print-base) col state) state)))
+             (mv (flsz-atom s (print-base) (print-radix) col state) state)))
     ((stringp s)
      (fmt-tilde-s1 s 0 (the-fixnum! (length s) 'fmt-tilde-s) col
                    channel state))
@@ -5536,7 +5553,7 @@
         ((keywordp s)
          (cond
           ((needs-slashes str state)
-           (splat-atom s (print-base) 0 col channel state))
+           (splat-atom s (print-base) (print-radix) 0 col channel state))
           (t (fmt0 ":~s0" (list (cons #\0 str)) 0 4 col channel state nil))))
         ((or (equal (symbol-package-name s)
                     (f-get-global 'current-package state))
@@ -5548,7 +5565,7 @@
                 (known-package-alist state)))))
          (cond
           ((needs-slashes str state)
-           (splat-atom s (print-base) 0 col channel state))
+           (splat-atom s (print-base) (print-radix) 0 col channel state))
           (t (fmt-tilde-s1 str 0
                            (the-fixnum! (length str) 'fmt-tilde-s)
                            col channel state))))
@@ -5557,7 +5574,7 @@
            (cond
             ((or (needs-slashes p state)
                  (needs-slashes str state))
-             (splat-atom s (print-base) 0 col channel state))
+             (splat-atom s (print-base) (print-radix) 0 col channel state))
             (t (fmt0 "~s0::~-~s1"
                      (list (cons #\0 p)
                            (cons #\1 str))
@@ -5901,7 +5918,7 @@
               (maybe-newline
                (mv-letc (col state)
                         (splat (fmt-var s alist i maximum)
-                               (print-base)
+                               (print-base) (print-radix)
                                (if (eql fmc #\F) (1+f col) 0)
                                col channel state)
                         (fmt0 s alist (+f i 3) maximum col channel
@@ -6155,7 +6172,8 @@
        symbol would normally be printed with surrounding vertical bar
        characters (|), in which case print as with ~~fx); if vx is a
        string, print the characters in it, breaking on hyphens; else
-       vx is a number, to be printed using the current print-base
+       vx is a number, to be printed using the current print-base and
+       print-radix
   ~~    tilde space: print a space
   ~~_x  print vx spaces
   ~~
@@ -9839,11 +9857,14 @@
 
 ; The safe way to call this function is with normalp = nil, which yields the
 ; actual original body of fn.  The normalized body is provably equal to the
-; unnormalized body, but that is not a strong enough property in some cases,
-; e.g., for collecting functions from the body whose guards have not yet been
-; verified.  Functional instantiation may also be problematic if constraints
-; are gathered using the normalized body, although we do not yet have an
-; example showing that this is critical.
+; unnormalized body, but that is not a strong enough property in some cases.
+; Consider for example the following definition: (defun foo () (car 3)).  Then
+; (body 'foo nil (w state)) is (CAR '3), so guard verification for foo will
+; fail, as it should.  But (body 'foo t (w state)) is 'NIL, so we had better
+; scan the unnormalized body when generating the guard conjecture rather than
+; the normalized body.  Functional instantiation may also be problematic if
+; constraints are gathered using the normalized body, although we do not yet
+; have an example showing that this is critical.
 
 ; WARNING: If normalp is non-nil, then we are getting the most recent body
 ; installed by a :definition rule with non-nil :install-body value.  Be careful

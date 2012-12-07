@@ -4022,6 +4022,7 @@
     ((accumulated-ttree nil)
      (gag-state nil)
      (print-base 10 set-print-base)
+     (print-radix nil set-print-radix)
      (proof-tree-ctx nil)
      (saved-output-p t))
     (pprogn (f-put-global 'saved-output-reversed nil state)
@@ -6580,7 +6581,7 @@
 (defmacro with-base-10 (form)
 
 ; Form evaluates to state.  Here, we want to evaluate form with the print base
-; set to 10.
+; set to 10 and the print radix set to nil.
 
 ; In order to avoid parallelism hazards due to wormhole printing from inside
 ; the waterfall (see for example (io? prove t ...) in waterfall-msg), we avoid
@@ -6597,10 +6598,12 @@
 ;   (f-put-global 'parallelism-hazards-action t state)
 ;   (DEFTHM FORCE-TEST ...) ; see mini-proveall
 
-  `(cond ((eq (f-get-global 'print-base state) 10)
+  `(cond ((and (eq (f-get-global 'print-base state) 10)
+               (eq (f-get-global 'print-radix state) nil))
           ,form)
          (t (mv-let (erp val state)
-                    (state-global-let* ((print-base 10 set-print-base))
+                    (state-global-let* ((print-base 10 set-print-base)
+                                        (print-radix nil set-print-radix))
                                        (pprogn ,form (value nil)))
                     (declare (ignore erp val))
                     state))))
@@ -10320,7 +10323,7 @@
                               char-subst-table
                               nil))
                             (t (car doc-tuple)))
-                           (print-base)
+                           (print-base) (print-radix)
                            2
                            (length-prefix prefix)
                            channel state)

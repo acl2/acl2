@@ -390,7 +390,7 @@
   ~c[getprop] very fast in the special case that the world provided to
   ~c[getprop] has been installed.  To permit more than one installed world,
   each of which is permitted to be changed via ~c[putprop], ACL2 requires
-  that worlds be named and these names are used to distinquish
+  that worlds be named and these names are used to distinguish
   installed versions of the various worlds.  At the moment we do not
   further document ~c[getprop] and ~c[putprop].
 

@@ -1362,6 +1362,7 @@
        (state-global-let*
         ((in-verify-flg t)
          (print-base 10)
+         (print-radix nil)
          (inhibit-output-lst
           (remove1-eq 'proof-checker
                       (f-get-global 'inhibit-output-lst state))))
@@ -1390,6 +1391,7 @@
            (state-global-let*
             ((in-verify-flg t)
              (print-base 10)
+             (print-radix nil)
              (inhibit-output-lst
               (remove1-eq 'proof-checker
                           (f-get-global 'inhibit-output-lst state))))
