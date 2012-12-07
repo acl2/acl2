@@ -19582,6 +19582,10 @@
 ; that could have affected warnings printed when :type-prescription rules are
 ; submitted.
 
+; Modified the definition of mbe to use ignorable.  Some Lisps might warn, but
+; they probably warned before.  With this change, CCL svn rev 15527 doesn't
+; warn.
+
   :doc
   ":Doc-Section release-notes
 
@@ -19700,6 +19704,12 @@
   removes ~ilc[let] bindings both at the top level and in the conclusion (but
   still not in the hypotheses of the rule).  ~l[type-prescription].  Thanks to
   Jared Davis for requesting such an enhancement.
+
+  Printing of numbers is now appropriately sensitive to the print radix;
+  ~pl[set-print-radix].  Thanks to Shilpi Goel for requesting this enhancement.
+
+  The system function ~c[explode-atom] no longer includes the radix indicator.
+  The new function ~c[explode-atom+] may be used for that purpose.
 
   ~st[NEW FEATURES]
 

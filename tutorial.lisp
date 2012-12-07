@@ -10375,6 +10375,8 @@
 
   o ~l[SET-PRINT-BASE] to control the radix in which numbers are printed.
 
+  o ~l[SET-PRINT-RADIX] to control whether the radix of a number is printed.
+
   o ~l[SET-PRINT-CASE] to control whether symbols are printed in upper case or
   in lower case.
   ~eq[]~bv[]
