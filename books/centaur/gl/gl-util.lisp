@@ -128,7 +128,6 @@ passed to ~x2 in that theorem.~%"
 (defmacro set-preferred-def (fn thm)
   `(make-event (set-preferred-def-fn ',fn ',thm (w state))))
 
-
 (defmacro gl-clause-proc-exec-fns-table ()
   '(table-alist 'gl-clause-proc-exec-fns world))
 
@@ -136,7 +135,7 @@ passed to ~x2 in that theorem.~%"
   '(cdr (assoc 'auto (gl-clause-proc-exec-fns-table))))
 
 (defmacro gl-clause-proc-forbidden-exec-fns ()
-  '(cdr (assoc 'forbidden (gl-clause-proc-exec-fns-table))))
+  '(cdr (assoc 'forbid (gl-clause-proc-exec-fns-table))))
 
 (defmacro add-clause-proc-exec-fns (fns)
   `(table gl-clause-proc-exec-fns
@@ -147,10 +146,6 @@ passed to ~x2 in that theorem.~%"
   `(table gl-clause-proc-exec-fns
           'forbid
           (append ,fns (gl-clause-proc-forbidden-exec-fns))))
-
-
-
-
 
 (defun norm-function-body (fn world)
   (declare (xargs :guard (and (symbolp fn) (plist-worldp world))))
